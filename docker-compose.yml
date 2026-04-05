@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: agripilot
+      POSTGRES_PASSWORD: agripilot_secret
+      POSTGRES_DB: agripilot_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agripilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://agripilot:agripilot_secret@db:5432/agripilot_prod?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-strong-random-secret-in-production}
+      JWT_EXPIRES_IN: 24h
+
+volumes:
+  pgdata:

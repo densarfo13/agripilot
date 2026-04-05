@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci && cd server && npm ci && npx prisma generate && cd .. && npx vite build"
+
+[deploy]
+startCommand = "cd server && npx prisma db push --skip-generate && node src/server.js"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[service]
+internalPort = 4000

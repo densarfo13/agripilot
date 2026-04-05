@@ -1,0 +1,566 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum UserRole {
+  super_admin
+  institutional_admin
+  reviewer
+  field_officer
+  investor_viewer
+}
+
+enum ApplicationStatus {
+  draft
+  submitted
+  under_review
+  needs_more_evidence
+  field_review_required
+  fraud_hold
+  approved
+  conditional_approved
+  rejected
+  escalated
+}
+
+enum DecisionType {
+  approve
+  conditional_approve
+  reject
+  needs_more_evidence
+  field_review_required
+  escalate
+}
+
+enum FraudRiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum EvidenceType {
+  farm_photo
+  id_document
+  land_title
+  crop_photo
+  harvest_receipt
+  input_receipt
+  other
+}
+
+enum FarmActivityType {
+  planting
+  spraying
+  fertilizing
+  irrigation
+  weeding
+  harvesting
+  storage
+  selling
+  other
+}
+
+enum ReminderType {
+  spraying
+  fertilizing
+  weeding
+  irrigation
+  harvesting
+  harvest_check
+  farm_visit_followup
+  evidence_completion
+  storage_check
+  market_check
+  pest_inspection
+  drying_reminder
+  custom
+  general
+}
+
+enum NotificationType {
+  application_update
+  verification_complete
+  decision_made
+  evidence_needed
+  reminder_due
+  reminder
+  field_visit_scheduled
+  harvest_guidance
+  storage_alert
+  post_harvest
+  market
+  weather
+  buyer_guidance
+  system
+  general
+}
+
+enum StorageMethod {
+  sealed_bags
+  hermetic_bag
+  open_air
+  warehouse
+  silo
+  traditional
+  cold_storage
+  other
+}
+
+enum StorageCondition {
+  good
+  fair
+  poor
+  deteriorating
+  unknown
+}
+
+// ─── User ───────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String    @map("password_hash")
+  fullName          String    @map("full_name")
+  role              UserRole  @default(field_officer)
+  active            Boolean   @default(true)
+  preferredLanguage String    @default("en") @map("preferred_language")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  farmersCreated      Farmer[]            @relation("FarmerCreatedBy")
+  applicationsCreated Application[]       @relation("ApplicationCreatedBy")
+  reviewAssignments   ReviewAssignment[]  @relation("ReviewAssignedTo")
+  fieldAssignments    Application[]       @relation("FieldOfficerAssigned")
+  reviewNotes         ReviewNote[]
+  auditLogs           AuditLog[]
+  fieldVisits         FieldVisit[]
+
+  @@map("users")
+}
+
+// ─── Farmer ─────────────────────────────────────────────
+
+model Farmer {
+  id                String    @id @default(uuid())
+  fullName          String    @map("full_name")
+  phone             String
+  nationalId        String?   @map("national_id")
+  region            String
+  district          String?
+  village           String?
+  countryCode       String    @default("KE") @map("country_code")
+  regionCode        String?   @map("region_code")
+  preferredLanguage String    @default("en") @map("preferred_language")
+  primaryCrop       String?   @map("primary_crop")
+  farmSizeAcres     Float?    @map("farm_size_acres")
+  yearsExperience   Int?      @map("years_experience")
+  deviceId          String?   @map("device_id")
+  createdById       String    @map("created_by_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  createdBy           User                @relation("FarmerCreatedBy", fields: [createdById], references: [id])
+  applications        Application[]
+  farmActivities      FarmActivity[]
+  reminders           Reminder[]
+  notifications       FarmerNotification[]
+  produceStorageStatus ProduceStorageStatus[]
+  buyerInterests      BuyerInterest[]
+
+  @@map("farmers")
+}
+
+// ─── Application ────────────────────────────────────────
+
+model Application {
+  id                     String            @id @default(uuid())
+  farmerId               String            @map("farmer_id")
+  createdById            String            @map("created_by_id")
+  status                 ApplicationStatus @default(draft)
+  cropType               String            @map("crop_type")
+  farmSizeAcres          Float             @map("farm_size_acres")
+  requestedAmount        Float             @map("requested_amount")
+  currencyCode           String            @default("KES") @map("currency_code")
+  purpose                String?
+  season                 String?
+  assignedReviewerId     String?           @map("assigned_reviewer_id")
+  assignedFieldOfficerId String?           @map("assigned_field_officer_id")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  farmer              Farmer              @relation(fields: [farmerId], references: [id])
+  createdBy           User                @relation("ApplicationCreatedBy", fields: [createdById], references: [id])
+  assignedFieldOfficer User?              @relation("FieldOfficerAssigned", fields: [assignedFieldOfficerId], references: [id])
+  farmLocation        FarmLocation?
+  farmBoundary        FarmBoundary?
+  evidenceFiles       EvidenceFile[]
+  verificationResult  VerificationResult?
+  fraudResult         FraudResult?
+  decisionResult      DecisionResult?
+  benchmarkResult     BenchmarkResult?
+  intelligenceResult  IntelligenceResult?
+  reviewAssignments   ReviewAssignment[]
+  reviewNotes         ReviewNote[]
+  auditLogs           AuditLog[]
+  fieldVisits         FieldVisit[]
+
+  @@map("applications")
+}
+
+// ─── Farm Location ──────────────────────────────────────
+
+model FarmLocation {
+  id              String   @id @default(uuid())
+  applicationId   String   @unique @map("application_id")
+  latitude        Float
+  longitude       Float
+  accuracy        Float?
+  altitude        Float?
+  capturedAt      DateTime @default(now()) @map("captured_at")
+  deviceId        String?  @map("device_id")
+  gpsMethod       String?  @map("gps_method")
+
+  application     Application @relation(fields: [applicationId], references: [id])
+
+  @@map("farm_locations")
+}
+
+// ─── Farm Boundary ──────────────────────────────────────
+
+model FarmBoundary {
+  id              String          @id @default(uuid())
+  applicationId   String          @unique @map("application_id")
+  measuredArea    Float?          @map("measured_area_acres")
+  perimeterMeters Float?          @map("perimeter_meters")
+  capturedAt      DateTime        @default(now()) @map("captured_at")
+
+  application     Application     @relation(fields: [applicationId], references: [id])
+  points          BoundaryPoint[]
+
+  @@map("farm_boundaries")
+}
+
+model BoundaryPoint {
+  id          String       @id @default(uuid())
+  boundaryId  String       @map("boundary_id")
+  pointOrder  Int          @map("point_order")
+  latitude    Float
+  longitude   Float
+
+  boundary    FarmBoundary @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
+
+  @@map("boundary_points")
+}
+
+// ─── Evidence ───────────────────────────────────────────
+
+model EvidenceFile {
+  id              String       @id @default(uuid())
+  applicationId   String       @map("application_id")
+  type            EvidenceType
+  filename        String
+  originalName    String       @map("original_name")
+  mimeType        String       @map("mime_type")
+  sizeBytes       Int          @map("size_bytes")
+  url             String
+  photoHash       String?      @map("photo_hash")
+  metadata        Json?
+  uploadedAt      DateTime     @default(now()) @map("uploaded_at")
+
+  application     Application  @relation(fields: [applicationId], references: [id])
+
+  @@map("evidence_files")
+}
+
+// ─── Verification Result ────────────────────────────────
+
+model VerificationResult {
+  id                  String   @id @default(uuid())
+  applicationId       String   @unique @map("application_id")
+  verificationScore   Float    @map("verification_score")
+  confidence          String
+  recommendation      String
+  flags               Json     @default("[]")
+  reasons             Json     @default("[]")
+  factors             Json     @default("{}")
+  intelligenceSummary Json?    @map("intelligence_summary")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  application         Application @relation(fields: [applicationId], references: [id])
+
+  @@map("verification_results")
+}
+
+// ─── Fraud Result ───────────────────────────────────────
+
+model FraudResult {
+  id                  String         @id @default(uuid())
+  applicationId       String         @unique @map("application_id")
+  fraudRiskScore      Float          @map("fraud_risk_score")
+  fraudRiskLevel      FraudRiskLevel @map("fraud_risk_level")
+  action              String
+  flags               Json           @default("[]")
+  reasons             Json           @default("[]")
+  matchedRecords      Json           @default("[]") @map("matched_records")
+  intelligenceSummary Json?          @map("intelligence_summary")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  application         Application    @relation(fields: [applicationId], references: [id])
+
+  @@map("fraud_results")
+}
+
+// ─── Decision Result ────────────────────────────────────
+
+model DecisionResult {
+  id                      String       @id @default(uuid())
+  applicationId           String       @unique @map("application_id")
+  decision                DecisionType
+  decisionLabel           String       @map("decision_label")
+  riskLevel               String       @map("risk_level")
+  recommendedAmount       Float?       @map("recommended_amount")
+  blockers                Json         @default("[]")
+  reasons                 Json         @default("[]")
+  nextActions             Json         @default("[]") @map("next_actions")
+  createdAt               DateTime     @default(now()) @map("created_at")
+
+  application             Application  @relation(fields: [applicationId], references: [id])
+
+  @@map("decision_results")
+}
+
+// ─── Benchmark Result ───────────────────────────────────
+
+model BenchmarkResult {
+  id                      String   @id @default(uuid())
+  applicationId           String   @unique @map("application_id")
+  peerGroupSize           Int      @map("peer_group_size")
+  verificationPercentile  Float?   @map("verification_percentile")
+  yieldPercentile         Float?   @map("yield_percentile")
+  repaymentPercentile     Float?   @map("repayment_percentile")
+  strengths               Json     @default("[]")
+  concerns                Json     @default("[]")
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  application             Application @relation(fields: [applicationId], references: [id])
+
+  @@map("benchmark_results")
+}
+
+// ─── Intelligence Result ────────────────────────────────
+
+model IntelligenceResult {
+  id                    String   @id @default(uuid())
+  applicationId         String   @unique @map("application_id")
+  mlShadowScore         Float?   @map("ml_shadow_score")
+  mlShadowConfidence    Float?   @map("ml_shadow_confidence")
+  satelliteSignal       Json?    @map("satellite_signal")
+  yieldSignal           Json?    @map("yield_signal")
+  relationshipSignal    Json?    @map("relationship_signal")
+  anomalySignal         Json?    @map("anomaly_signal")
+  cropPredictionSignal  Json?    @map("crop_prediction_signal")
+  weatherSignal         Json?    @map("weather_signal")
+  marketSignal          Json?    @map("market_signal")
+  chatbotSignal         Json?    @map("chatbot_signal")
+  analyticsSignal       Json?    @map("analytics_signal")
+  storageSignal         Json?    @map("storage_signal")
+  buyerSignal           Json?    @map("buyer_signal")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  application           Application @relation(fields: [applicationId], references: [id])
+
+  @@map("intelligence_results")
+}
+
+// ─── Review Assignment ──────────────────────────────────
+
+model ReviewAssignment {
+  id              String    @id @default(uuid())
+  applicationId   String    @map("application_id")
+  reviewerId      String    @map("reviewer_id")
+  assignedAt      DateTime  @default(now()) @map("assigned_at")
+  completedAt     DateTime? @map("completed_at")
+  status          String    @default("assigned")
+
+  application     Application @relation(fields: [applicationId], references: [id])
+  reviewer        User        @relation("ReviewAssignedTo", fields: [reviewerId], references: [id])
+
+  @@map("review_assignments")
+}
+
+// ─── Review Note ────────────────────────────────────────
+
+model ReviewNote {
+  id              String   @id @default(uuid())
+  applicationId   String   @map("application_id")
+  authorId        String   @map("author_id")
+  content         String
+  internal        Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  application     Application @relation(fields: [applicationId], references: [id])
+  author          User        @relation(fields: [authorId], references: [id])
+
+  @@map("review_notes")
+}
+
+// ─── Audit Log ──────────────────────────────────────────
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  applicationId   String?  @map("application_id")
+  userId          String   @map("user_id")
+  action          String
+  details         Json?
+  previousStatus  String?  @map("previous_status")
+  newStatus       String?  @map("new_status")
+  ipAddress       String?  @map("ip_address")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  application     Application? @relation(fields: [applicationId], references: [id])
+  user            User         @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// ─── Field Visit ────────────────────────────────────────
+
+model FieldVisit {
+  id              String    @id @default(uuid())
+  applicationId   String    @map("application_id")
+  officerId       String    @map("officer_id")
+  visitDate       DateTime  @map("visit_date")
+  notes           String?
+  findings        Json?
+  completed       Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  application     Application @relation(fields: [applicationId], references: [id])
+  officer         User        @relation(fields: [officerId], references: [id])
+
+  @@map("field_visits")
+}
+
+// ─── Portfolio Snapshot ─────────────────────────────────
+
+model PortfolioSnapshot {
+  id                     String   @id @default(uuid())
+  snapshotDate           DateTime @map("snapshot_date")
+  totalApplications      Int      @map("total_applications")
+  totalRequestedAmount   Float    @map("total_requested_amount")
+  totalRecommendedAmount Float    @map("total_recommended_amount")
+  avgVerificationScore   Float?   @map("avg_verification_score")
+  decisionMix            Json     @map("decision_mix")
+  riskMix                Json     @map("risk_mix")
+  statusMix              Json     @map("status_mix")
+  topRiskCrops           Json     @map("top_risk_crops")
+  topRiskRegions         Json     @map("top_risk_regions")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  @@map("portfolio_snapshots")
+}
+
+// ─── Farm Activity ──────────────────────────────────────
+
+model FarmActivity {
+  id              String           @id @default(uuid())
+  farmerId        String           @map("farmer_id")
+  activityType    FarmActivityType @map("activity_type")
+  cropType        String?          @map("crop_type")
+  description     String?
+  quantity        Float?
+  unit            String?
+  metadata        Json?
+  activityDate    DateTime         @map("activity_date")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  farmer          Farmer           @relation(fields: [farmerId], references: [id])
+
+  @@map("farm_activities")
+}
+
+// ─── Reminder ───────────────────────────────────────────
+
+model Reminder {
+  id              String       @id @default(uuid())
+  farmerId        String       @map("farmer_id")
+  reminderType    ReminderType @map("reminder_type")
+  title           String
+  message         String
+  dueDate         DateTime     @map("due_date")
+  completed       Boolean      @default(false)
+  completedAt     DateTime?    @map("completed_at")
+  metadata        Json?
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  farmer          Farmer       @relation(fields: [farmerId], references: [id])
+
+  @@map("reminders")
+}
+
+// ─── Farmer Notification ────────────────────────────────
+
+model FarmerNotification {
+  id               String           @id @default(uuid())
+  farmerId         String           @map("farmer_id")
+  notificationType NotificationType @map("notification_type")
+  title            String
+  message          String
+  read             Boolean          @default(false)
+  metadata         Json?
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  farmer           Farmer           @relation(fields: [farmerId], references: [id])
+
+  @@map("farmer_notifications")
+}
+
+// ─── Produce Storage Status ─────────────────────────────
+
+model ProduceStorageStatus {
+  id               String           @id @default(uuid())
+  farmerId         String           @map("farmer_id")
+  cropType         String           @map("crop_type")
+  quantityKg       Float?           @map("quantity_kg")
+  harvestDate      DateTime?        @map("harvest_date")
+  storageMethod    StorageMethod?   @map("storage_method")
+  storageCondition StorageCondition @default(unknown) @map("storage_condition")
+  readyToSell      Boolean          @default(false) @map("ready_to_sell")
+  notes            String?
+  metadata         Json?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  farmer           Farmer           @relation(fields: [farmerId], references: [id])
+
+  @@map("produce_storage_status")
+}
+
+// ─── Buyer Interest ─────────────────────────────────────
+
+model BuyerInterest {
+  id               String   @id @default(uuid())
+  farmerId         String   @map("farmer_id")
+  cropType         String   @map("crop_type")
+  quantityKg       Float?   @map("quantity_kg")
+  preferredBuyerType String? @map("preferred_buyer_type")
+  priceExpectation Float?   @map("price_expectation")
+  currencyCode     String   @default("KES") @map("currency_code")
+  notes            String?
+  status           String   @default("expressed") // expressed, matched, withdrawn
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  farmer           Farmer   @relation(fields: [farmerId], references: [id])
+
+  @@map("buyer_interests")
+}

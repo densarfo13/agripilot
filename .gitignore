@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.production
+server/.env
+server/node_modules/
+server/uploads/
+*.log
+.claude/
+backend/
+mobile/
+website/
+docs/
+.DS_Store
+Thumbs.db
