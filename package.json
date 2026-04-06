@@ -13,7 +13,10 @@
     "preview": "vite preview",
     "build:android": "vite build && npx cap sync android",
     "android:sync": "npx cap sync android",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "build:ios": "vite build && npx cap sync ios",
+    "ios:sync": "npx cap sync ios",
+    "ios:open": "npx cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

@@ -12,8 +12,9 @@ async function main() {
     process.exit(1);
   }
 
-  app.listen(config.port, () => {
-    console.log(`[SERVER] AgriPilot MVP running on http://localhost:${config.port}`);
+  app.listen(config.port, '0.0.0.0', () => {
+    console.log(`[SERVER] AgriPilot MVP running on http://0.0.0.0:${config.port}`);
+    console.log(`[SERVER] LAN access: http://10.0.0.63:${config.port}`);
     console.log(`[SERVER] Environment: ${config.nodeEnv}`);
   });
 }
