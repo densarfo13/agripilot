@@ -49,6 +49,13 @@ export async function login({ email, password }) {
     throw err;
   }
 
+  // Federated-only accounts have no password hash
+  if (!user.passwordHash) {
+    const err = new Error('This account uses federated login (Google/Microsoft). Use the provider sign-in button.');
+    err.statusCode = 401;
+    throw err;
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     const err = new Error('Invalid credentials');
@@ -61,6 +68,9 @@ export async function login({ email, password }) {
     err.statusCode = 403;
     throw err;
   }
+
+  // Update last login method
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginMethod: 'local' } });
 
   const token = generateToken(user);
   const sanitized = sanitizeUser(user);
@@ -93,11 +103,20 @@ export async function changePassword({ userId, currentPassword, newPassword }) {
     throw err;
   }
 
-  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!valid) {
-    const err = new Error('Current password is incorrect');
-    err.statusCode = 400;
-    throw err;
+  // If user has no password (federated-only), currentPassword must be empty/null to set initial password
+  if (!user.passwordHash) {
+    if (currentPassword) {
+      const err = new Error('This account has no password set. Leave current password empty to set one.');
+      err.statusCode = 400;
+      throw err;
+    }
+  } else {
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      const err = new Error('Current password is incorrect');
+      err.statusCode = 400;
+      throw err;
+    }
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);

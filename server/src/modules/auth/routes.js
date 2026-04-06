@@ -5,8 +5,11 @@ import { isValidEmail, validatePassword } from '../../middleware/validate.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
+import * as federated from './federated.js';
 
 const router = Router();
+
+// ─── Local Auth ────────────────────────────────────────
 
 // Staff registration — requires admin authentication.
 // Farmers use /farmer-register (public). Staff accounts are created by admins.
@@ -102,6 +105,112 @@ router.get('/farmer-profile', authenticate, asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Farmer profile not found' });
   }
   res.json(profile);
+}));
+
+// ─── Federated Auth Discovery ──────────────────────────
+
+// Returns which providers are configured (no secrets exposed)
+router.get('/providers', (req, res) => {
+  res.json({
+    google: federated.isGoogleEnabled(),
+    microsoft: federated.isMicrosoftEnabled(),
+  });
+});
+
+// ─── Google OAuth2 ─────────────────────────────────────
+
+router.get('/google', (req, res) => {
+  if (!federated.isGoogleEnabled()) {
+    return res.status(501).json({ error: 'Google authentication is not configured' });
+  }
+  const state = req.query.mode || 'login'; // 'login' or 'link'
+  res.redirect(federated.getGoogleAuthUrl(state));
+});
+
+router.get('/google/callback', asyncHandler(async (req, res) => {
+  const { code, error: providerError, state } = req.query;
+
+  if (providerError || !code) {
+    return res.send(federated.generateCallbackHtml({
+      error: providerError || 'Authentication cancelled',
+    }));
+  }
+
+  try {
+    const providerUser = await federated.getGoogleUserInfo(code);
+    const result = await federated.federatedLogin(providerUser);
+    res.send(federated.generateCallbackHtml(result));
+  } catch (err) {
+    res.send(federated.generateCallbackHtml({
+      error: err.message || 'Google authentication failed',
+    }));
+  }
+}));
+
+// ─── Microsoft OAuth2 ──────────────────────────────────
+
+router.get('/microsoft', (req, res) => {
+  if (!federated.isMicrosoftEnabled()) {
+    return res.status(501).json({ error: 'Microsoft authentication is not configured' });
+  }
+  const state = req.query.mode || 'login';
+  res.redirect(federated.getMicrosoftAuthUrl(state));
+});
+
+router.get('/microsoft/callback', asyncHandler(async (req, res) => {
+  const { code, error: providerError, state } = req.query;
+
+  if (providerError || !code) {
+    return res.send(federated.generateCallbackHtml({
+      error: providerError || 'Authentication cancelled',
+    }));
+  }
+
+  try {
+    const providerUser = await federated.getMicrosoftUserInfo(code);
+    const result = await federated.federatedLogin(providerUser);
+    res.send(federated.generateCallbackHtml(result));
+  } catch (err) {
+    res.send(federated.generateCallbackHtml({
+      error: err.message || 'Microsoft authentication failed',
+    }));
+  }
+}));
+
+// ─── Provider Link / Unlink (authenticated) ────────────
+
+// Link a provider to current user's account (via popup flow)
+router.get('/link/google', authenticate, (req, res) => {
+  if (!federated.isGoogleEnabled()) {
+    return res.status(501).json({ error: 'Google authentication is not configured' });
+  }
+  res.redirect(federated.getGoogleAuthUrl('link'));
+});
+
+router.get('/link/microsoft', authenticate, (req, res) => {
+  if (!federated.isMicrosoftEnabled()) {
+    return res.status(501).json({ error: 'Microsoft authentication is not configured' });
+  }
+  res.redirect(federated.getMicrosoftAuthUrl('link'));
+});
+
+// List linked providers
+router.get('/linked-providers', authenticate, asyncHandler(async (req, res) => {
+  const providers = await federated.listLinkedProviders(req.user.sub);
+  res.json(providers);
+}));
+
+// Unlink a provider
+router.delete('/unlink-provider/:provider', authenticate, asyncHandler(async (req, res) => {
+  const provider = req.params.provider;
+  if (!['google', 'microsoft'].includes(provider)) {
+    return res.status(400).json({ error: 'Invalid provider. Must be google or microsoft.' });
+  }
+  const result = await federated.unlinkProvider({
+    userId: req.user.sub,
+    provider,
+  });
+  res.json(result);
 }));
 
 export default router;

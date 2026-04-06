@@ -48,4 +48,20 @@ export const config = {
     dir: process.env.UPLOAD_DIR || './uploads',
     maxFileSizeMB: parseInt(process.env.MAX_FILE_SIZE_MB || '10', 10),
   },
+  // ─── Federated Auth (optional — features disabled if not configured) ──
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  },
+  microsoft: {
+    clientId: process.env.MICROSOFT_CLIENT_ID || '',
+    clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
+    tenantId: process.env.MICROSOFT_TENANT_ID || 'common',
+  },
+  auth: {
+    // Base URL for OAuth callbacks (must match provider console config)
+    callbackBaseUrl: process.env.AUTH_CALLBACK_BASE_URL || `http://localhost:${process.env.PORT || '4000'}`,
+    // Frontend origin for postMessage target and redirect
+    frontendBaseUrl: process.env.FRONTEND_BASE_URL || 'http://localhost:5173',
+  },
 };

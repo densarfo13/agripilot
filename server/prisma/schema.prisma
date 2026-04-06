@@ -140,30 +140,58 @@ enum StorageCondition {
   unknown
 }
 
+// ─── Auth Provider ──────────────────────────────────────
+
+enum AuthProvider {
+  local
+  google
+  microsoft
+}
+
 // ─── User ───────────────────────────────────────────────
 
 model User {
   id                String    @id @default(uuid())
   email             String    @unique
-  passwordHash      String    @map("password_hash")
+  passwordHash      String?   @map("password_hash")
   fullName          String    @map("full_name")
   role              UserRole  @default(field_officer)
   active            Boolean   @default(true)
   preferredLanguage String    @default("en") @map("preferred_language")
+  lastLoginMethod   String?   @map("last_login_method")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  farmerProfile       Farmer?             @relation("FarmerUserAccount")
-  farmersCreated      Farmer[]            @relation("FarmerCreatedBy")
-  applicationsCreated Application[]       @relation("ApplicationCreatedBy")
-  reviewAssignments   ReviewAssignment[]  @relation("ReviewAssignedTo")
-  fieldAssignments    Application[]       @relation("FieldOfficerAssigned")
-  reviewNotes         ReviewNote[]
-  auditLogs           AuditLog[]
-  fieldVisits         FieldVisit[]
+  farmerProfile         Farmer?             @relation("FarmerUserAccount")
+  farmersCreated        Farmer[]            @relation("FarmerCreatedBy")
+  applicationsCreated   Application[]       @relation("ApplicationCreatedBy")
+  reviewAssignments     ReviewAssignment[]  @relation("ReviewAssignedTo")
+  fieldAssignments      Application[]       @relation("FieldOfficerAssigned")
+  reviewNotes           ReviewNote[]
+  auditLogs             AuditLog[]
+  fieldVisits           FieldVisit[]
+  federatedIdentities   FederatedIdentity[]
 
   @@map("users")
+}
+
+// ─── Federated Identity ────────────────────────────────
+
+model FederatedIdentity {
+  id                String       @id @default(uuid())
+  userId            String       @map("user_id")
+  provider          AuthProvider
+  providerAccountId String       @map("provider_account_id")
+  providerEmail     String       @map("provider_email")
+  linkedAt          DateTime     @default(now()) @map("linked_at")
+  metadata          Json?
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId], map: "uq_fed_provider_account")
+  @@index([userId], map: "idx_fed_user")
+  @@map("federated_identities")
 }
 
 // ─── Farmer ─────────────────────────────────────────────
