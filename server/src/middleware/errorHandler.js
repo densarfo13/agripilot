@@ -1,12 +1,28 @@
 import { config } from '../config/index.js';
+import { opsEvent } from '../utils/opsLogger.js';
 
 /**
  * Global error handler middleware.
  * Never exposes stack traces in production.
+ * Emits structured ops events for observability.
  */
 export function errorHandler(err, req, res, _next) {
   // Log error server-side always — include requestId for tracing
   const rid = req.requestId || 'unknown';
+  const statusCode = err.statusCode || 500;
+
+  // Emit structured ops event for all handled errors
+  opsEvent('system', 'unhandled_route_error', statusCode >= 500 ? 'error' : 'warn', {
+    requestId: rid,
+    method: req.method,
+    path: req.originalUrl || req.path,
+    error: err.message,
+    statusCode,
+    userId: req.user?.sub || null,
+    ip: req.ip,
+    ...(err.code ? { prismaCode: err.code } : {}),
+  });
+
   if (config.isProduction) {
     console.error(JSON.stringify({
       level: 'error',
@@ -15,7 +31,7 @@ export function errorHandler(err, req, res, _next) {
       method: req.method,
       path: req.originalUrl || req.path,
       error: err.message,
-      statusCode: err.statusCode || 500,
+      statusCode,
       userId: req.user?.sub || null,
     }));
   } else {
@@ -39,7 +55,6 @@ export function errorHandler(err, req, res, _next) {
     return res.status(413).json({ error: `File too large. Maximum size is ${config.upload.maxFileSizeMB}MB` });
   }
 
-  const statusCode = err.statusCode || 500;
   const message = statusCode === 500 && config.isProduction
     ? 'Internal server error'
     : err.message || 'Internal server error';

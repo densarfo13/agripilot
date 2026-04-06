@@ -65,18 +65,21 @@ export async function deleteEvidence(evidenceId) {
     throw err;
   }
 
-  // Delete the physical file from disk
+  // Delete DB record first (authoritative), then clean up disk file
+  const deleted = await prisma.evidenceFile.delete({ where: { id: evidenceId } });
+
+  // Best-effort disk cleanup after DB deletion succeeds
   try {
     const filePath = path.join(process.cwd(), evidence.url);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
   } catch (fsErr) {
-    console.warn(`[EVIDENCE] Failed to delete file from disk: ${fsErr.message}`);
-    // Continue with DB deletion even if file removal fails
+    // Log but don't fail — orphaned file on disk is better than inconsistent DB
+    console.warn(`[EVIDENCE] Disk cleanup failed for ${evidence.filename}: ${fsErr.message}. File may be orphaned.`);
   }
 
-  return prisma.evidenceFile.delete({ where: { id: evidenceId } });
+  return deleted;
 }
 
 export async function checkDuplicateHash(photoHash) {

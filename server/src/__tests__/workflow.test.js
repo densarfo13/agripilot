@@ -7,8 +7,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * Verifies: state transitions, optimistic locking, validation, audit trail creation.
  */
 
-vi.mock('../config/database.js', () => ({
-  default: {
+vi.mock('../config/database.js', () => {
+  const mockPrisma = {
     application: {
       findUnique: vi.fn(),
       updateMany: vi.fn(),
@@ -21,8 +21,12 @@ vi.mock('../config/database.js', () => ({
     reviewAssignment: { create: vi.fn() },
     user: { findUnique: vi.fn() },
     farmer: { findUnique: vi.fn() },
-  },
-}));
+    // Interactive transaction: executes the callback passing the prisma client itself
+    // so tx.application.updateMany etc. reference the same mocks.
+    $transaction: vi.fn(async (fn) => fn(mockPrisma)),
+  };
+  return { default: mockPrisma };
+});
 
 import prisma from '../config/database.js';
 import {

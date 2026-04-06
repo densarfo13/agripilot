@@ -1,15 +1,16 @@
 import prisma from '../../config/database.js';
+import { logWorkflowEvent } from '../../utils/opsLogger.js';
 
 /**
  * Harvest Report Service
  *
- * Formal cycle close. A harvest report marks the season as completed
- * and records the outcome: yield, sales, notes.
+ * Formal harvest recording. A harvest report transitions the season to 'harvested'
+ * (pending final review/closure). Final closure to 'completed' is a separate step.
  *
- * Once submitted, the season status transitions to 'completed'.
+ * Status flow: active → harvested (on report) → completed (on final review)
  */
 
-export async function createHarvestReport(seasonId, data) {
+export async function createHarvestReport(seasonId, data, userId = null) {
   const season = await prisma.farmSeason.findUnique({
     where: { id: seasonId },
     include: { harvestReport: true },
@@ -48,7 +49,9 @@ export async function createHarvestReport(seasonId, data) {
       ? Math.round((totalHarvestKg / season.farmSizeAcres) * 100) / 100
       : null;
 
-  // Create report + close season in a transaction
+  const now = new Date();
+
+  // Create report + transition to 'harvested' in a transaction
   const [report] = await prisma.$transaction([
     prisma.harvestReport.create({
       data: {
@@ -62,9 +65,22 @@ export async function createHarvestReport(seasonId, data) {
     }),
     prisma.farmSeason.update({
       where: { id: seasonId },
-      data: { status: 'completed' },
+      data: {
+        status: 'harvested',
+        closedAt: now,
+        closedBy: userId,
+        closureReason: 'Harvest report submitted',
+      },
     }),
   ]);
+
+  logWorkflowEvent('season_status_changed', {
+    seasonId,
+    fromStatus: 'active',
+    toStatus: 'harvested',
+    userId,
+    trigger: 'harvest_report',
+  });
 
   return report;
 }

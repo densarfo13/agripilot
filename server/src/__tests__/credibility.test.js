@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../config/database.js', () => ({
-  default: {
+vi.mock('../config/database.js', () => {
+  const mockPrisma = {
     farmer: { findUnique: vi.fn() },
     farmSeason: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     seasonProgressEntry: { findMany: vi.fn(), create: vi.fn() },
@@ -10,9 +10,10 @@ vi.mock('../config/database.js', () => ({
     progressScore: { findUnique: vi.fn() },
     credibilityAssessment: { findUnique: vi.fn(), upsert: vi.fn() },
     officerValidation: { findMany: vi.fn() },
-    $transaction: vi.fn(),
-  },
-}));
+    $transaction: vi.fn(async (fn) => fn(mockPrisma)),
+  };
+  return { default: mockPrisma };
+});
 
 vi.mock('../modules/regionConfig/service.js', () => ({
   DEFAULT_COUNTRY_CODE: 'KE',

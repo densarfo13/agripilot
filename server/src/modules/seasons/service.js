@@ -2,6 +2,7 @@ import prisma from '../../config/database.js';
 import { getCropCalendar, getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { STAGE_ORDER } from '../lifecycle/service.js';
 import { generateCropLifecycleReminders } from '../reminders/service.js';
+import { isValidFileReference } from '../../utils/uploadHealth.js';
 
 /**
  * Farm Season Service
@@ -126,8 +127,11 @@ export async function updateSeason(id, data) {
     err.statusCode = 404;
     throw err;
   }
-  if (season.status === 'completed') {
-    const err = new Error('Cannot update a completed season');
+
+  // Only active seasons can be edited (harvested/completed/abandoned/failed are locked)
+  const NON_EDITABLE = ['completed', 'harvested', 'abandoned', 'failed'];
+  if (NON_EDITABLE.includes(season.status)) {
+    const err = new Error(`Cannot update a season with status '${season.status}'. Reopen it first if corrections are needed.`);
     err.statusCode = 400;
     throw err;
   }
@@ -136,9 +140,15 @@ export async function updateSeason(id, data) {
   if (data.seedQuantity !== undefined) updateData.seedQuantity = data.seedQuantity ? parseFloat(data.seedQuantity) : null;
   if (data.seedType !== undefined) updateData.seedType = data.seedType;
   if (data.declaredIntent !== undefined) updateData.declaredIntent = data.declaredIntent;
-  if (data.status === 'abandoned') updateData.status = 'abandoned';
   if (data.cropFailureReported !== undefined) updateData.cropFailureReported = !!data.cropFailureReported;
   if (data.partialHarvest !== undefined) updateData.partialHarvest = !!data.partialHarvest;
+
+  // Status changes MUST go through transitionSeasonStatus — block direct status edits
+  if (data.status && data.status !== season.status) {
+    const err = new Error('Status changes must use the dedicated status transition endpoints (e.g., /abandon, /close, /reopen)');
+    err.statusCode = 400;
+    throw err;
+  }
 
   return prisma.farmSeason.update({
     where: { id },
@@ -170,37 +180,46 @@ export async function createProgressEntry(seasonId, data) {
     throw err;
   }
 
+  // Validate imageUrl if provided (prevent directory traversal)
+  if (data.imageUrl && !isValidFileReference(data.imageUrl)) {
+    const err = new Error('Invalid imageUrl format. Must be an /uploads/ path or https:// URL.');
+    err.statusCode = 400;
+    throw err;
+  }
+
   // Determine lifecycle stage based on time since planting
   const lifecycleStage = data.lifecycleStage || computeExpectedStage(season.plantingDate, season.cropType, season.farmer?.countryCode);
 
   const entryDate = data.entryDate ? new Date(data.entryDate) : new Date();
 
-  const entry = await prisma.seasonProgressEntry.create({
-    data: {
-      seasonId,
-      entryType,
-      activityType: data.activityType || null,
-      description: data.description || null,
-      quantity: data.quantity ? parseFloat(data.quantity) : null,
-      unit: data.unit || null,
-      cropCondition: data.cropCondition || null,
-      conditionNotes: data.conditionNotes || null,
-      followedAdvice: data.followedAdvice || null,
-      adviceNotes: data.adviceNotes || null,
-      imageUrl: data.imageUrl || null,
-      imageStage: data.imageStage || null,
-      imageUploadedAt: data.imageUrl ? new Date() : null,
-      imageLatitude: data.imageLatitude ? parseFloat(data.imageLatitude) : null,
-      imageLongitude: data.imageLongitude ? parseFloat(data.imageLongitude) : null,
-      lifecycleStage,
-      entryDate,
-    },
-  });
-
-  // Update lastActivityDate on season
-  await prisma.farmSeason.update({
-    where: { id: seasonId },
-    data: { lastActivityDate: entryDate },
+  // Transaction: create entry + update lastActivityDate atomically
+  const entry = await prisma.$transaction(async (tx) => {
+    const created = await tx.seasonProgressEntry.create({
+      data: {
+        seasonId,
+        entryType,
+        activityType: data.activityType || null,
+        description: data.description || null,
+        quantity: data.quantity ? parseFloat(data.quantity) : null,
+        unit: data.unit || null,
+        cropCondition: data.cropCondition || null,
+        conditionNotes: data.conditionNotes || null,
+        followedAdvice: data.followedAdvice || null,
+        adviceNotes: data.adviceNotes || null,
+        imageUrl: data.imageUrl || null,
+        imageStage: data.imageStage || null,
+        imageUploadedAt: data.imageUrl ? new Date() : null,
+        imageLatitude: data.imageLatitude ? parseFloat(data.imageLatitude) : null,
+        imageLongitude: data.imageLongitude ? parseFloat(data.imageLongitude) : null,
+        lifecycleStage,
+        entryDate,
+      },
+    });
+    await tx.farmSeason.update({
+      where: { id: seasonId },
+      data: { lastActivityDate: entryDate },
+    });
+    return created;
   });
 
   return entry;

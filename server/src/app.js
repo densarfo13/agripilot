@@ -10,6 +10,7 @@ import { requestId } from './middleware/requestId.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { authenticate, requireApprovedFarmer } from './middleware/auth.js';
 import prisma from './config/database.js';
+import { checkUploadDirHealth, listDiskFiles } from './utils/uploadHealth.js';
 
 // Route imports
 import authRoutes from './modules/auth/routes.js';
@@ -59,7 +60,7 @@ app.use(helmet({
 const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
 };
 
 if (config.cors.origins.length > 0) {
@@ -123,6 +124,44 @@ app.get('/api/health', async (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
   } catch (err) {
     res.status(503).json({ status: 'degraded', timestamp: new Date().toISOString(), error: 'Database unreachable' });
+  }
+});
+
+// ─── Extended Health Check (admin-only) ────────────────────
+app.get('/api/ops/health', authenticate, async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  try {
+    // DB latency
+    const dbStart = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const dbLatencyMs = Date.now() - dbStart;
+
+    // Upload dir health
+    const uploadHealth = checkUploadDirHealth();
+
+    // Evidence file count in DB
+    const evidenceCount = await prisma.evidenceFile.count();
+
+    // Active season count
+    const activeSeasons = await prisma.farmSeason.count({ where: { status: 'active' } });
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      database: { connected: true, latencyMs: dbLatencyMs },
+      uploads: uploadHealth,
+      counts: {
+        evidenceFiles: evidenceCount,
+        diskFiles: uploadHealth.fileCount,
+        orphanRisk: uploadHealth.fileCount - evidenceCount, // positive = potential orphans
+        activeSeasons,
+      },
+    });
+  } catch (err) {
+    res.status(503).json({ status: 'degraded', error: err.message });
   }
 });
 

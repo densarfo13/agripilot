@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { isValidEmail, validatePassword } from '../../middleware/validate.js';
+import { registrationLimiter } from '../../middleware/rateLimiters.js';
+import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
@@ -63,8 +65,8 @@ router.post('/change-password', authenticate, asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-// Farmer self-registration (public)
-router.post('/farmer-register', asyncHandler(async (req, res) => {
+// Farmer self-registration (public — tighter rate limit + idempotency)
+router.post('/farmer-register', registrationLimiter, idempotencyCheck, asyncHandler(async (req, res) => {
   const { fullName, phone, email, password, countryCode, region, district, village, preferredLanguage, primaryCrop, farmSizeAcres } = req.body;
 
   if (!fullName || !phone || !email || !password) {

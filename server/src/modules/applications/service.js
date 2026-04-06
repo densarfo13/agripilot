@@ -224,13 +224,24 @@ export async function approveApplication(id, userId, { reason, recommendedAmount
     if (!isNaN(parsed) && parsed > 0) extraData.recommendedAmount = parsed;
   }
 
-  const updated = await atomicTransition(id, app.status, 'approved', extraData);
-
-  if (reason) {
-    await prisma.reviewNote.create({
-      data: { applicationId: id, authorId: userId, content: `Approved: ${reason}`, internal: false },
+  // Transaction: status change + review note atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.application.updateMany({
+      where: { id, status: app.status },
+      data: { status: 'approved', ...extraData },
     });
-  }
+    if (result.count === 0) {
+      const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (reason) {
+      await tx.reviewNote.create({
+        data: { applicationId: id, authorId: userId, content: `Approved: ${reason}`, internal: false },
+      });
+    }
+    return tx.application.findUnique({ where: { id }, include: FULL_INCLUDE });
+  });
 
   return { application: updated, previousStatus: app.status };
 }
@@ -239,10 +250,21 @@ export async function rejectApplication(id, userId, reason) {
   const app = await getApplicationStatus(id);
   validateTransition(app.status, 'rejected');
 
-  const updated = await atomicTransition(id, app.status, 'rejected');
-
-  await prisma.reviewNote.create({
-    data: { applicationId: id, authorId: userId, content: `Rejected: ${reason}`, internal: false },
+  // Transaction: status change + review note atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.application.updateMany({
+      where: { id, status: app.status },
+      data: { status: 'rejected' },
+    });
+    if (result.count === 0) {
+      const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    await tx.reviewNote.create({
+      data: { applicationId: id, authorId: userId, content: `Rejected: ${reason}`, internal: false },
+    });
+    return tx.application.findUnique({ where: { id }, include: FULL_INCLUDE });
   });
 
   return { application: updated, previousStatus: app.status };
@@ -252,10 +274,21 @@ export async function escalateApplication(id, userId, reason) {
   const app = await getApplicationStatus(id);
   validateTransition(app.status, 'escalated');
 
-  const updated = await atomicTransition(id, app.status, 'escalated');
-
-  await prisma.reviewNote.create({
-    data: { applicationId: id, authorId: userId, content: `Escalated: ${reason}`, internal: true },
+  // Transaction: status change + review note atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.application.updateMany({
+      where: { id, status: app.status },
+      data: { status: 'escalated' },
+    });
+    if (result.count === 0) {
+      const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    await tx.reviewNote.create({
+      data: { applicationId: id, authorId: userId, content: `Escalated: ${reason}`, internal: true },
+    });
+    return tx.application.findUnique({ where: { id }, include: FULL_INCLUDE });
   });
 
   return { application: updated, previousStatus: app.status };
@@ -295,14 +328,25 @@ export async function requestEvidence(id, userId, { reason, requiredTypes }) {
   const app = await getApplicationStatus(id);
   validateTransition(app.status, 'needs_more_evidence');
 
-  const updated = await atomicTransition(id, app.status, 'needs_more_evidence');
-
-  await prisma.reviewNote.create({
-    data: {
-      applicationId: id, authorId: userId,
-      content: `Evidence requested: ${reason}${requiredTypes ? ` (Types: ${requiredTypes.join(', ')})` : ''}`,
-      internal: false,
-    },
+  // Transaction: status change + review note atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.application.updateMany({
+      where: { id, status: app.status },
+      data: { status: 'needs_more_evidence' },
+    });
+    if (result.count === 0) {
+      const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    await tx.reviewNote.create({
+      data: {
+        applicationId: id, authorId: userId,
+        content: `Evidence requested: ${reason}${requiredTypes ? ` (Types: ${requiredTypes.join(', ')})` : ''}`,
+        internal: false,
+      },
+    });
+    return tx.application.findUnique({ where: { id }, include: FULL_INCLUDE });
   });
 
   return { application: updated, previousStatus: app.status };
@@ -345,20 +389,21 @@ export async function assignReviewer(applicationId, reviewerId) {
     validateTransition(app.status, 'under_review');
   }
 
-  await prisma.reviewAssignment.create({
-    data: { applicationId, reviewerId, status: 'assigned' },
-  });
-
+  // Transaction: assignment + status update atomically
   const updateData = { assignedReviewerId: reviewerId };
   if (shouldTransition) {
     updateData.status = 'under_review';
   }
-  // If already under_review, approved, disbursed, etc. — just assign without status change
 
-  return prisma.application.update({
-    where: { id: applicationId },
-    data: updateData,
-    include: FULL_INCLUDE,
+  return prisma.$transaction(async (tx) => {
+    await tx.reviewAssignment.create({
+      data: { applicationId, reviewerId, status: 'assigned' },
+    });
+    return tx.application.update({
+      where: { id: applicationId },
+      data: updateData,
+      include: FULL_INCLUDE,
+    });
   });
 }
 

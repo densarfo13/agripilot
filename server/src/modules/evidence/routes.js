@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { uploadLimiter } from '../../middleware/rateLimiters.js';
+import { dedupGuard } from '../../middleware/dedup.js';
+import { uploadCleanup } from '../../middleware/uploadCleanup.js';
 import { config } from '../../config/index.js';
 import * as evidenceService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
@@ -34,7 +37,9 @@ router.use(authenticate);
 router.post('/:applicationId',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
+  uploadLimiter,
   upload.single('file'),
+  uploadCleanup,
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
     const VALID_EVIDENCE_TYPES = ['farm_photo', 'id_document', 'land_title', 'crop_photo', 'receipt', 'boundary_photo', 'other'];

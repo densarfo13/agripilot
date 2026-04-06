@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID, parsePositiveInt } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
+import { idempotencyCheck } from '../../middleware/idempotency.js';
 import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
 import { inviteFarmer } from '../auth/farmer-registration.js';
@@ -28,7 +30,7 @@ router.get('/me', asyncHandler(async (req, res) => {
 // ─── Staff-only routes ─────────────────────────────────
 
 // Create farmer (staff creates on behalf of farmer — auto-approved)
-router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const { fullName, phone, region } = req.body;
   if (!fullName || !phone || !region) {
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
@@ -39,7 +41,7 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
 }));
 
 // Invite farmer (admin/field officer — creates pre-approved farmer record)
-router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_officer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const farmer = await inviteFarmer({
     ...req.body,
     invitedById: req.user.sub,

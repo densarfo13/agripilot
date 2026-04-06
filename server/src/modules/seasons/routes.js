@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
+import { submissionLimiter } from '../../middleware/rateLimiters.js';
+import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as svc from './service.js';
 import { getSeasonComparison } from './comparison.js';
 import { computeProgressScore, getProgressScore, CLASSIFICATION_LABELS } from './scoring.js';
@@ -13,6 +16,8 @@ import { createOfficerValidation, listOfficerValidations, getValidationSummary }
 import { getAdviceAdherence } from './adviceAdherence.js';
 import { getSeasonHistory, compareSeasons } from './seasonHistory.js';
 import { getSeasonTrustSummary, getPerformanceExport } from './trustSummary.js';
+import prisma from '../../config/database.js';
+import { transitionSeasonStatus, checkSeasonStaleness, getStaleSeasons } from './statusTransitions.js';
 import { writeAuditLog } from '../audit/service.js';
 
 const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'reviewer'];
@@ -59,6 +64,8 @@ router.post('/farmer/:farmerId',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireFarmerOwnership,
+  submissionLimiter,
+  idempotencyCheck,
   asyncHandler(async (req, res) => {
     const season = await svc.createSeason(req.params.farmerId, req.body);
     writeAuditLog({
@@ -77,6 +84,13 @@ router.get('/farmer/:farmerId',
     res.json(await svc.listSeasons(req.params.farmerId, req.query));
   }));
 
+// Get all stale seasons (admin dashboard) — must be before /:id to avoid param capture
+router.get('/ops/stale-seasons',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    res.json(await getStaleSeasons());
+  }));
+
 // Get season by ID
 router.get('/:id',
   validateParamUUID('id'),
@@ -93,7 +107,9 @@ router.get('/:id',
       season.plantingDate, season.cropType, season.farmer?.countryCode
     );
 
-    res.json({ ...season, expectedTimeline, expectedStage });
+    const stalenessWarnings = checkSeasonStaleness(season);
+
+    res.json({ ...season, expectedTimeline, expectedStage, stalenessWarnings });
   }));
 
 // Update season (limited fields)
@@ -114,6 +130,8 @@ router.post('/:id/progress',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireSeasonAccess,
+  submissionLimiter,
+  dedupGuard('progress'),
   asyncHandler(async (req, res) => {
     // Validate enums if provided
     if (req.body.cropCondition && !VALID_CONDITIONS.includes(req.body.cropCondition)) {
@@ -150,6 +168,8 @@ router.post('/:id/condition',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireSeasonAccess,
+  submissionLimiter,
+  dedupGuard('condition'),
   asyncHandler(async (req, res) => {
     if (!req.body.cropCondition || !VALID_CONDITIONS.includes(req.body.cropCondition)) {
       return res.status(400).json({ error: `cropCondition is required and must be one of: ${VALID_CONDITIONS.join(', ')}` });
@@ -167,6 +187,8 @@ router.post('/:id/stage-confirmation',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireSeasonAccess,
+  submissionLimiter,
+  dedupGuard('stage-confirmation'),
   asyncHandler(async (req, res) => {
     if (!req.body.confirmedStage || !VALID_STAGES.includes(req.body.confirmedStage)) {
       return res.status(400).json({ error: `confirmedStage is required and must be one of: ${VALID_STAGES.join(', ')}` });
@@ -264,8 +286,11 @@ router.post('/:id/harvest-report',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireSeasonAccess,
+  submissionLimiter,
+  dedupGuard('harvest-report'),
+  idempotencyCheck,
   asyncHandler(async (req, res) => {
-    const report = await createHarvestReport(req.params.id, req.body);
+    const report = await createHarvestReport(req.params.id, req.body, req.user.sub);
     writeAuditLog({
       userId: req.user.sub, action: 'harvest_report_created',
       details: { seasonId: req.params.id, totalHarvestKg: report.totalHarvestKg },
@@ -365,6 +390,8 @@ router.post('/:id/progress-image',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireSeasonAccess,
+  submissionLimiter,
+  dedupGuard('progress-image'),
   asyncHandler(async (req, res) => {
     if (req.body.imageStage && !VALID_IMAGE_STAGES.includes(req.body.imageStage)) {
       return res.status(400).json({ error: `imageStage must be one of: ${VALID_IMAGE_STAGES.join(', ')}` });
@@ -395,6 +422,7 @@ router.post('/:id/officer-validate',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   requireSeasonAccess,
+  dedupGuard('officer-validate'),
   asyncHandler(async (req, res) => {
     const validation = await createOfficerValidation(req.params.id, req.user.sub, req.body);
     writeAuditLog({
@@ -475,6 +503,105 @@ router.get('/farmer/:farmerId/performance-export',
   authorize(...STAFF_ROLES, 'investor_viewer'),
   asyncHandler(async (req, res) => {
     res.json(await getPerformanceExport(req.params.farmerId));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  SEASON STATUS TRANSITIONS
+// ═══════════════════════════════════════════════════════
+
+// Abandon a season (farmer or staff)
+router.post('/:id/abandon',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireSeasonAccess,
+  dedupGuard('abandon'),
+  asyncHandler(async (req, res) => {
+    const { season, previousStatus } = await transitionSeasonStatus(req.params.id, 'abandoned', {
+      userId: req.user.sub,
+      role: req.user.role,
+      reason: req.body.reason || 'Season abandoned',
+    });
+    writeAuditLog({
+      userId: req.user.sub, action: 'season_abandoned',
+      details: { seasonId: req.params.id, previousStatus, reason: req.body.reason },
+    }).catch(() => {});
+    res.json({ message: 'Season abandoned', season });
+  }));
+
+// Declare crop failure (farmer or staff)
+router.post('/:id/crop-failure',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireSeasonAccess,
+  dedupGuard('crop-failure'),
+  asyncHandler(async (req, res) => {
+    const { season, previousStatus } = await transitionSeasonStatus(req.params.id, 'failed', {
+      userId: req.user.sub,
+      role: req.user.role,
+      reason: req.body.reason || 'Crop failure declared',
+    });
+    // Also flag the cropFailureReported field
+    await prisma.farmSeason.update({
+      where: { id: req.params.id },
+      data: { cropFailureReported: true },
+    });
+    writeAuditLog({
+      userId: req.user.sub, action: 'season_crop_failure',
+      details: { seasonId: req.params.id, previousStatus, reason: req.body.reason },
+    }).catch(() => {});
+    res.json({ message: 'Crop failure recorded', season });
+  }));
+
+// Close/complete a harvested season (admin review)
+router.post('/:id/close',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  requireSeasonAccess,
+  dedupGuard('close-season'),
+  asyncHandler(async (req, res) => {
+    const { season, previousStatus } = await transitionSeasonStatus(req.params.id, 'completed', {
+      userId: req.user.sub,
+      role: req.user.role,
+      reason: req.body.reason || 'Season reviewed and closed',
+    });
+    writeAuditLog({
+      userId: req.user.sub, action: 'season_closed',
+      details: { seasonId: req.params.id, previousStatus, reason: req.body.reason },
+    }).catch(() => {});
+    res.json({ message: 'Season closed', season });
+  }));
+
+// Reopen a season (staff/admin — requires reason)
+router.post('/:id/reopen',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  requireSeasonAccess,
+  dedupGuard('reopen-season'),
+  asyncHandler(async (req, res) => {
+    if (!req.body.reason) {
+      return res.status(400).json({ error: 'A reason is required to reopen a season' });
+    }
+    const { season, previousStatus } = await transitionSeasonStatus(req.params.id, 'active', {
+      userId: req.user.sub,
+      role: req.user.role,
+      reason: req.body.reason,
+    });
+    writeAuditLog({
+      userId: req.user.sub, action: 'season_reopened',
+      details: { seasonId: req.params.id, previousStatus, reason: req.body.reason },
+    }).catch(() => {});
+    res.json({ message: 'Season reopened', season, previousStatus });
+  }));
+
+// Get staleness warnings for a specific season
+router.get('/:id/staleness',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    const season = await svc.getSeasonById(req.params.id);
+    const warnings = checkSeasonStaleness(season);
+    res.json({ seasonId: req.params.id, status: season.status, warnings });
   }));
 
 export default router;

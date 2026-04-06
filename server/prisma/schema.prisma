@@ -650,8 +650,10 @@ model ProduceStorageStatus {
 
 enum SeasonStatus {
   active
-  completed
-  abandoned
+  harvested    // harvest report submitted, pending final review/closure
+  completed    // fully closed and reviewed
+  abandoned    // voluntarily abandoned by farmer
+  failed       // crop failure declared
 }
 
 enum CropCondition {
@@ -688,6 +690,12 @@ model FarmSeason {
   cropFailureReported Boolean        @default(false) @map("crop_failure_reported")
   partialHarvest      Boolean        @default(false) @map("partial_harvest")
   lastActivityDate    DateTime?      @map("last_activity_date")
+  closedAt            DateTime?      @map("closed_at")
+  closedBy            String?        @map("closed_by")
+  closureReason       String?        @map("closure_reason")
+  reopenedAt          DateTime?      @map("reopened_at")
+  reopenedBy          String?        @map("reopened_by")
+  reopenReason        String?        @map("reopen_reason")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 

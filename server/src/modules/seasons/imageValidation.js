@@ -1,5 +1,6 @@
 import prisma from '../../config/database.js';
 import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
+import { isValidFileReference } from '../../utils/uploadHealth.js';
 
 /**
  * Image Validation Service
@@ -56,6 +57,13 @@ export async function addProgressImage(seasonId, data) {
     throw err;
   }
 
+  // Validate image URL is safe (no directory traversal, valid format)
+  if (!isValidFileReference(data.imageUrl)) {
+    const err = new Error('Invalid imageUrl format. Must be an /uploads/ path or https:// URL.');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const imageStage = data.imageStage || null;
   if (imageStage && !IMAGE_STAGES.includes(imageStage)) {
     const err = new Error(`imageStage must be one of: ${IMAGE_STAGES.join(', ')}`);
@@ -96,25 +104,27 @@ export async function addProgressImage(seasonId, data) {
     });
   }
 
-  const entry = await prisma.seasonProgressEntry.create({
-    data: {
-      seasonId,
-      entryType: 'activity',
-      activityType: data.activityType || null,
-      description: data.description || `Progress image: ${imageStage || 'untagged'}`,
-      imageUrl: data.imageUrl,
-      imageStage,
-      imageUploadedAt,
-      imageLatitude: data.latitude ? parseFloat(data.latitude) : null,
-      imageLongitude: data.longitude ? parseFloat(data.longitude) : null,
-      entryDate,
-    },
-  });
-
-  // Update lastActivityDate on season
-  await prisma.farmSeason.update({
-    where: { id: seasonId },
-    data: { lastActivityDate: entryDate },
+  // Transaction: create entry + update lastActivityDate atomically
+  const entry = await prisma.$transaction(async (tx) => {
+    const created = await tx.seasonProgressEntry.create({
+      data: {
+        seasonId,
+        entryType: 'activity',
+        activityType: data.activityType || null,
+        description: data.description || `Progress image: ${imageStage || 'untagged'}`,
+        imageUrl: data.imageUrl,
+        imageStage,
+        imageUploadedAt,
+        imageLatitude: data.latitude ? parseFloat(data.latitude) : null,
+        imageLongitude: data.longitude ? parseFloat(data.longitude) : null,
+        entryDate,
+      },
+    });
+    await tx.farmSeason.update({
+      where: { id: seasonId },
+      data: { lastActivityDate: entryDate },
+    });
+    return created;
   });
 
   return { entry, warnings };

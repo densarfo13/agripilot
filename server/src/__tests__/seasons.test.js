@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../config/database.js', () => ({
-  default: {
+vi.mock('../config/database.js', () => {
+  const mockPrisma = {
     farmer: { findUnique: vi.fn() },
     farmSeason: {
       findUnique: vi.fn(),
@@ -19,8 +19,10 @@ vi.mock('../config/database.js', () => ({
       findMany: vi.fn(),
     },
     reminder: { create: vi.fn(), findMany: vi.fn() },
-  },
-}));
+    $transaction: vi.fn(async (fn) => fn(mockPrisma)),
+  };
+  return { default: mockPrisma };
+});
 
 vi.mock('../modules/regionConfig/service.js', () => ({
   DEFAULT_COUNTRY_CODE: 'KE',
@@ -118,7 +120,7 @@ describe('Season Service', () => {
     it('rejects updating completed season', async () => {
       prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'completed' });
       await expect(updateSeason('s-1', { seedType: 'hybrid' }))
-        .rejects.toThrow(/Cannot update a completed season/);
+        .rejects.toThrow(/Cannot update a season with status/);
     });
   });
 
