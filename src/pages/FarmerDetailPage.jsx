@@ -56,6 +56,9 @@ export default function FarmerDetailPage() {
           <AccessAssignmentSection farmer={farmer} isAdmin={isAdmin} isCreator={isCreator} onUpdate={load} />
         )}
 
+        {/* Performance Profile Section — visible to staff & investor_viewer */}
+        <PerformanceProfileSection farmerId={farmer.id} />
+
         <div className="detail-grid">
           <div className="card">
             <div className="card-header">Farmer Information</div>
@@ -394,6 +397,158 @@ function ApproveModal({ farmer, officers, onClose, onDone }) {
     </div>
   );
 }
+
+// ─── Performance Profile Section ───────────────────────
+
+function PerformanceProfileSection({ farmerId }) {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    api.get(`/seasons/farmer/${farmerId}/performance-profile`)
+      .then(r => setProfile(r.data))
+      .catch(() => setProfile(null))
+      .finally(() => setLoading(false));
+  }, [farmerId]);
+
+  if (loading) return <div className="card" style={{ marginBottom: '1.25rem' }}><div className="card-body"><span className="text-muted">Loading performance profile...</span></div></div>;
+  if (!profile) return null;
+
+  const { summary, yieldHistory, reliabilitySignals, seasons } = profile;
+
+  const CLASSIFICATION_COLORS = {
+    on_track: { bg: '#d1fae5', color: '#065f46' },
+    slight_delay: { bg: '#fef3c7', color: '#92400e' },
+    at_risk: { bg: '#fed7aa', color: '#9a3412' },
+    critical: { bg: '#fee2e2', color: '#991b1b' },
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: '1.25rem' }}>
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Performance Profile</span>
+        <button className="btn btn-outline btn-sm" onClick={() => setExpanded(!expanded)}>
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      <div className="card-body">
+        {/* Summary row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={metricBox}>
+            <div style={metricLabel}>Seasons</div>
+            <div style={metricValue}>{summary.totalSeasons} total / {summary.completedSeasons} completed</div>
+          </div>
+          <div style={metricBox}>
+            <div style={metricLabel}>Avg Score</div>
+            <div style={metricValue}>{summary.avgProgressScore ?? 'N/A'}{summary.avgProgressScore ? '/100' : ''}</div>
+          </div>
+          <div style={metricBox}>
+            <div style={metricLabel}>Consistency</div>
+            <div style={metricValue}>{summary.consistencyRate !== null ? `${summary.consistencyRate}%` : 'N/A'}</div>
+          </div>
+          <div style={metricBox}>
+            <div style={metricLabel}>Trend</div>
+            <div style={{ ...metricValue, color: summary.productivityTrend === 'improving' ? '#16a34a' : summary.productivityTrend === 'declining' ? '#dc2626' : '#6b7280' }}>
+              {summary.productivityTrend === 'improving' ? 'Improving' : summary.productivityTrend === 'declining' ? 'Declining' : summary.productivityTrend === 'stable' ? 'Stable' : 'Insufficient data'}
+            </div>
+          </div>
+          <div style={metricBox}>
+            <div style={metricLabel}>Activities</div>
+            <div style={metricValue}>{summary.totalActivities}</div>
+          </div>
+          <div style={metricBox}>
+            <div style={metricLabel}>Crops</div>
+            <div style={metricValue}>{summary.cropTypes.join(', ') || 'None'}</div>
+          </div>
+        </div>
+
+        {/* Reliability signals */}
+        {reliabilitySignals.length > 0 && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Reliability Signals</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {reliabilitySignals.map((s, i) => (
+                <span key={i} style={{
+                  display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: 12,
+                  fontSize: '0.75rem', fontWeight: 500,
+                  background: s.positive ? '#d1fae5' : '#fee2e2',
+                  color: s.positive ? '#065f46' : '#991b1b',
+                }}>{s.label}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Expanded: yield history + season table */}
+        {expanded && (
+          <>
+            {yieldHistory.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Yield History</div>
+                <table style={{ width: '100%', fontSize: '0.8rem' }}>
+                  <thead><tr style={{ background: '#f9fafb' }}>
+                    <th style={thStyle}>Crop</th><th style={thStyle}>Planted</th><th style={thStyle}>Yield/Acre</th><th style={thStyle}>Total Kg</th>
+                  </tr></thead>
+                  <tbody>
+                    {yieldHistory.map((y, i) => (
+                      <tr key={i}>
+                        <td style={tdStyle}>{y.cropType}</td>
+                        <td style={tdStyle}>{new Date(y.plantingDate).toLocaleDateString()}</td>
+                        <td style={tdStyle}>{y.yieldPerAcre}</td>
+                        <td style={tdStyle}>{y.totalHarvestKg}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {seasons.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>All Seasons</div>
+                <table style={{ width: '100%', fontSize: '0.8rem' }}>
+                  <thead><tr style={{ background: '#f9fafb' }}>
+                    <th style={thStyle}>Crop</th><th style={thStyle}>Planted</th><th style={thStyle}>Status</th>
+                    <th style={thStyle}>Score</th><th style={thStyle}>Classification</th><th style={thStyle}>Entries</th>
+                  </tr></thead>
+                  <tbody>
+                    {seasons.map(s => {
+                      const cls = s.progressScore?.classification;
+                      const clsColor = CLASSIFICATION_COLORS[cls] || { bg: '#f3f4f6', color: '#6b7280' };
+                      return (
+                        <tr key={s.id}>
+                          <td style={tdStyle}>{s.cropType}</td>
+                          <td style={tdStyle}>{new Date(s.plantingDate).toLocaleDateString()}</td>
+                          <td style={tdStyle}><StatusBadge value={s.status} /></td>
+                          <td style={tdStyle}>{s.progressScore?.score ?? '-'}</td>
+                          <td style={tdStyle}>
+                            {cls ? <span style={{ padding: '0.15rem 0.5rem', borderRadius: 10, fontSize: '0.7rem', fontWeight: 600, background: clsColor.bg, color: clsColor.color }}>
+                              {cls.replace('_', ' ')}
+                            </span> : '-'}
+                          </td>
+                          <td style={tdStyle}>{s.progressEntries}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const metricBox = { background: '#f9fafb', borderRadius: 6, padding: '0.6rem', textAlign: 'center' };
+const metricLabel = { fontSize: '0.7rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' };
+const metricValue = { fontSize: '0.85rem', fontWeight: 600, color: '#111827' };
+const thStyle = { padding: '0.4rem 0.5rem', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid #e5e7eb' };
+const tdStyle = { padding: '0.4rem 0.5rem', borderBottom: '1px solid #f3f4f6' };
+
+// ─── Modals ─────────────────────────────────────────────
 
 function RejectModal({ farmer, onClose, onDone }) {
   const [reason, setReason] = useState('');

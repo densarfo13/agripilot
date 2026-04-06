@@ -8,6 +8,7 @@ export default function FarmerDashboardPage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lifecycle, setLifecycle] = useState(null);
+  const [seasons, setSeasons] = useState(null);
 
   useEffect(() => {
     api.get('/auth/farmer-profile')
@@ -33,6 +34,9 @@ export default function FarmerDashboardPage() {
       api.get(`/lifecycle/farmers/${user.farmerId}`)
         .then(r => setLifecycle(r.data))
         .catch(() => {});
+      api.get(`/seasons/farmer/${user.farmerId}?status=active`)
+        .then(r => setSeasons(r.data))
+        .catch(() => setSeasons([]));
     }
   }, [isApproved, user?.farmerId]);
 
@@ -137,6 +141,37 @@ export default function FarmerDashboardPage() {
               )}
               {!lifecycle && <p style={{ color: '#666', marginTop: '1rem' }}>Your account is active. Check your applications and reminders below.</p>}
             </div>
+
+            {/* Active Seasons / Progress tracking */}
+            {seasons && seasons.length > 0 && (
+              <div style={{ ...styles.card, marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.75rem' }}>My Farm Progress</h3>
+                {seasons.map(s => (
+                  <div key={s.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                      <span style={{ fontWeight: 600 }}>{s.cropType}</span>
+                      <span style={{ color: '#16a34a', fontWeight: 500 }}>{s.status}</span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.2rem' }}>
+                      {s.farmSizeAcres} acres | Planted: {new Date(s.plantingDate).toLocaleDateString()}
+                      {s.progressScore && <> | Score: <strong>{s.progressScore.progressScore}/100</strong></>}
+                    </div>
+                  </div>
+                ))}
+                <p style={{ fontSize: '0.8rem', color: '#9ca3af', margin: '0.5rem 0 0' }}>
+                  Log activities, confirm stages, and track your harvest through your Farmer Home.
+                </p>
+              </div>
+            )}
+
+            {seasons && seasons.length === 0 && (
+              <div style={{ ...styles.card, marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.5rem' }}>Farm Progress</h3>
+                <p style={{ color: '#666', fontSize: '0.9rem', margin: 0 }}>
+                  No active growing seasons yet. Ask your field officer to set up your first season to start tracking progress.
+                </p>
+              </div>
+            )}
 
             {profile && profile.applications && profile.applications.length > 0 && (
               <div style={{ ...styles.card, marginTop: '1rem' }}>

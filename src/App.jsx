@@ -26,10 +26,12 @@ const FarmerRemindersTab = lazy(() => import('./pages/FarmerRemindersTab.jsx'));
 const FarmerNotificationsTab = lazy(() => import('./pages/FarmerNotificationsTab.jsx'));
 const FarmerStorageTab = lazy(() => import('./pages/FarmerStorageTab.jsx'));
 const FarmerMarketTab = lazy(() => import('./pages/FarmerMarketTab.jsx'));
+const FarmerProgressTab = lazy(() => import('./pages/FarmerProgressTab.jsx'));
 const AdminControlPage = lazy(() => import('./pages/AdminControlPage.jsx'));
 const FarmerRegisterPage = lazy(() => import('./pages/FarmerRegisterPage.jsx'));
 const FarmerDashboardPage = lazy(() => import('./pages/FarmerDashboardPage.jsx'));
 const PendingRegistrationsPage = lazy(() => import('./pages/PendingRegistrationsPage.jsx'));
+const InvestorIntelligencePage = lazy(() => import('./pages/InvestorIntelligencePage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
@@ -83,7 +85,9 @@ export default function App() {
               <Route path="notifications" element={<FarmerNotificationsTab />} />
               <Route path="storage" element={<FarmerStorageTab />} />
               <Route path="market" element={<FarmerMarketTab />} />
+              <Route path="progress" element={<FarmerProgressTab />} />
             </Route>
+            <Route path="investor/farmers/:farmerId" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><InvestorIntelligencePage /></RoleRoute>} />
             <Route path="portfolio" element={<PortfolioPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="audit" element={<RoleRoute roles={ADMIN_ROLES}><AuditPage /></RoleRoute>} />

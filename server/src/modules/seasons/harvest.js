@@ -1,0 +1,91 @@
+import prisma from '../../config/database.js';
+
+/**
+ * Harvest Report Service
+ *
+ * Formal cycle close. A harvest report marks the season as completed
+ * and records the outcome: yield, sales, notes.
+ *
+ * Once submitted, the season status transitions to 'completed'.
+ */
+
+export async function createHarvestReport(seasonId, data) {
+  const season = await prisma.farmSeason.findUnique({
+    where: { id: seasonId },
+    include: { harvestReport: true },
+  });
+
+  if (!season) {
+    const err = new Error('Season not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (season.status !== 'active') {
+    const err = new Error('Harvest report can only be submitted for active seasons');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (season.harvestReport) {
+    const err = new Error('A harvest report already exists for this season');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  if (!data.totalHarvestKg || parseFloat(data.totalHarvestKg) <= 0) {
+    const err = new Error('totalHarvestKg is required and must be positive');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const totalHarvestKg = parseFloat(data.totalHarvestKg);
+
+  // Auto-compute yield per acre if farm size is known
+  const yieldPerAcre = data.yieldPerAcre
+    ? parseFloat(data.yieldPerAcre)
+    : season.farmSizeAcres > 0
+      ? Math.round((totalHarvestKg / season.farmSizeAcres) * 100) / 100
+      : null;
+
+  // Create report + close season in a transaction
+  const [report] = await prisma.$transaction([
+    prisma.harvestReport.create({
+      data: {
+        seasonId,
+        totalHarvestKg,
+        yieldPerAcre,
+        salesAmount: data.salesAmount ? parseFloat(data.salesAmount) : null,
+        salesCurrency: data.salesCurrency || null,
+        notes: data.notes || null,
+      },
+    }),
+    prisma.farmSeason.update({
+      where: { id: seasonId },
+      data: { status: 'completed' },
+    }),
+  ]);
+
+  return report;
+}
+
+export async function getHarvestReport(seasonId) {
+  const report = await prisma.harvestReport.findUnique({
+    where: { seasonId },
+    include: {
+      season: {
+        select: {
+          id: true, cropType: true, farmSizeAcres: true, plantingDate: true,
+          expectedHarvestDate: true, status: true,
+          farmer: { select: { id: true, fullName: true, region: true } },
+        },
+      },
+    },
+  });
+  if (!report) {
+    const err = new Error('No harvest report found for this season');
+    err.statusCode = 404;
+    throw err;
+  }
+  return report;
+}

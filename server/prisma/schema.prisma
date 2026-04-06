@@ -233,6 +233,7 @@ model Farmer {
   userAccount         User?               @relation("FarmerUserAccount", fields: [userId], references: [id])
   applications        Application[]
   farmActivities      FarmActivity[]
+  farmSeasons         FarmSeason[]
   reminders           Reminder[]
   notifications       FarmerNotification[]
   produceStorageStatus ProduceStorageStatus[]
@@ -643,6 +644,132 @@ model ProduceStorageStatus {
 
   @@index([farmerId], map: "idx_storage_farmer")
   @@map("produce_storage_status")
+}
+
+// ─── Farm Season (Progress Tracking) ───────────────────
+
+enum SeasonStatus {
+  active
+  completed
+  abandoned
+}
+
+enum CropCondition {
+  good
+  average
+  poor
+}
+
+enum AdviceFollowed {
+  yes
+  no
+  partial
+}
+
+enum PerformanceClassification {
+  on_track
+  slight_delay
+  at_risk
+  critical
+}
+
+model FarmSeason {
+  id                  String         @id @default(uuid())
+  farmerId            String         @map("farmer_id")
+  cropType            String         @map("crop_type")
+  farmSizeAcres       Float          @map("farm_size_acres")
+  areaUnit            String         @default("acres") @map("area_unit")
+  seedQuantity        Float?         @map("seed_quantity")
+  seedType            String?        @map("seed_type")
+  plantingDate        DateTime       @map("planting_date")
+  expectedHarvestDate DateTime?      @map("expected_harvest_date")
+  declaredIntent      String?        @map("declared_intent")
+  status              SeasonStatus   @default(active)
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  farmer              Farmer         @relation(fields: [farmerId], references: [id])
+  progressEntries     SeasonProgressEntry[]
+  stageConfirmations  StageConfirmation[]
+  harvestReport       HarvestReport?
+  progressScore       ProgressScore?
+
+  @@index([farmerId], map: "idx_seasons_farmer")
+  @@index([status], map: "idx_seasons_status")
+  @@index([cropType], map: "idx_seasons_crop")
+  @@map("farm_seasons")
+}
+
+model SeasonProgressEntry {
+  id              String           @id @default(uuid())
+  seasonId        String           @map("season_id")
+  entryType       String           @default("activity") // activity, condition, advice
+  activityType    FarmActivityType? @map("activity_type")
+  description     String?
+  quantity        Float?
+  unit            String?
+  cropCondition   CropCondition?   @map("crop_condition")
+  conditionNotes  String?          @map("condition_notes")
+  followedAdvice  AdviceFollowed?  @map("followed_advice")
+  adviceNotes     String?          @map("advice_notes")
+  imageUrl        String?          @map("image_url")
+  imageStage      String?          @map("image_stage") // early_growth, mid_stage, pre_harvest, harvest, storage
+  lifecycleStage  LifecycleStage?  @map("lifecycle_stage")
+  entryDate       DateTime         @map("entry_date")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  season          FarmSeason       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@index([seasonId], map: "idx_progress_season")
+  @@index([entryDate], map: "idx_progress_date")
+  @@index([entryType], map: "idx_progress_type")
+  @@map("season_progress_entries")
+}
+
+model StageConfirmation {
+  id              String         @id @default(uuid())
+  seasonId        String         @map("season_id")
+  expectedStage   LifecycleStage @map("expected_stage")
+  confirmedStage  LifecycleStage @map("confirmed_stage")
+  isMismatch      Boolean        @default(false) @map("is_mismatch")
+  note            String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  season          FarmSeason     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@index([seasonId], map: "idx_stage_confirm_season")
+  @@map("stage_confirmations")
+}
+
+model HarvestReport {
+  id              String       @id @default(uuid())
+  seasonId        String       @unique @map("season_id")
+  totalHarvestKg  Float        @map("total_harvest_kg")
+  yieldPerAcre    Float?       @map("yield_per_acre")
+  salesAmount     Float?       @map("sales_amount")
+  salesCurrency   String?      @map("sales_currency")
+  notes           String?
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  season          FarmSeason   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@map("harvest_reports")
+}
+
+model ProgressScore {
+  id                          String                      @id @default(uuid())
+  seasonId                    String                      @unique @map("season_id")
+  progressScore               Float                       @map("progress_score")
+  riskLevel                   String                      @map("risk_level")
+  performanceClassification   PerformanceClassification   @map("performance_classification")
+  factors                     Json                        @default("{}")
+  reasons                     Json                        @default("[]")
+  createdAt                   DateTime                    @default(now()) @map("created_at")
+  updatedAt                   DateTime                    @updatedAt @map("updated_at")
+
+  season                      FarmSeason                  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@map("progress_scores")
 }
 
 // ─── Buyer Interest ─────────────────────────────────────

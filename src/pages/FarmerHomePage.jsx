@@ -56,6 +56,7 @@ export default function FarmerHomePage() {
           { to: `/farmer-home/${farmerId}/notifications`, label: `Notifications${unread ? ` (${unread})` : ''}` },
           { to: `/farmer-home/${farmerId}/storage`, label: 'Storage' },
           { to: `/farmer-home/${farmerId}/market`, label: 'Market' },
+          { to: `/farmer-home/${farmerId}/progress`, label: 'Progress' },
         ].map(nav => (
           <NavLink
             key={nav.to}

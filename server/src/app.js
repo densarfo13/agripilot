@@ -37,6 +37,7 @@ import postHarvestRoutes from './modules/postHarvest/routes.js';
 import marketGuidanceRoutes from './modules/marketGuidance/routes.js';
 import buyerInterestRoutes from './modules/buyerInterest/routes.js';
 import lifecycleRoutes from './modules/lifecycle/routes.js';
+import seasonRoutes from './modules/seasons/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -165,6 +166,7 @@ app.use('/api/post-harvest', postHarvestRoutes);
 app.use('/api/market-guidance', marketGuidanceRoutes);
 app.use('/api/buyer-interest', buyerInterestRoutes);
 app.use('/api/lifecycle', lifecycleRoutes);
+app.use('/api/seasons', seasonRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {
