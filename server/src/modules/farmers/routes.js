@@ -6,6 +6,7 @@ import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
 import { inviteFarmer } from '../auth/farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
+import { createNotification } from '../notifications/service.js';
 
 const router = Router();
 router.use(authenticate);
@@ -44,12 +45,29 @@ router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_of
     invitedById: req.user.sub,
     assignedOfficerId: req.body.assignedOfficerId || null,
   });
+
+  // Send welcome notification to the farmer
+  createNotification(farmer.id, {
+    notificationType: 'system',
+    title: 'Welcome to AgriPilot',
+    message: `You have been invited to AgriPilot by your institution. Your account is active and ready to use.${farmer.userAccount ? ' Log in with the credentials provided by your administrator.' : ' Contact your field officer or administrator to set up your login credentials.'}`,
+    metadata: { invitedById: req.user.sub },
+  }).catch(() => {});
+
   writeAuditLog({
     userId: req.user.sub,
     action: 'farmer_invited',
-    details: { farmerId: farmer.id, phone: farmer.phone },
+    details: { farmerId: farmer.id, phone: farmer.phone, hasLoginAccount: !!farmer.userAccount },
   }).catch(() => {});
-  res.status(201).json(farmer);
+
+  // Return clear summary including whether credentials were created
+  res.status(201).json({
+    farmer,
+    credentialsCreated: !!farmer.userAccount,
+    deliveryNote: farmer.userAccount
+      ? 'Login account created. Share the credentials with the farmer securely.'
+      : 'No login account created. Farmer can self-register later, or an admin can create credentials.',
+  });
 }));
 
 // List farmers (staff only — farmers cannot enumerate other farmers)
@@ -169,13 +187,30 @@ router.post('/:id/resend-invite',
     const updated = await prisma.farmer.update({
       where: { id: req.params.id },
       data: { invitedAt: new Date() },
+      include: { userAccount: { select: { id: true, email: true } } },
     });
+
+    // Send reminder notification to the farmer
+    createNotification(farmer.id, {
+      notificationType: 'system',
+      title: 'Invitation Reminder',
+      message: `You have been re-invited to AgriPilot.${updated.userAccount ? ' Log in with the credentials provided by your administrator.' : ' Contact your field officer or administrator to set up your login credentials.'}`,
+      metadata: { resentById: req.user.sub },
+    }).catch(() => {});
+
     writeAuditLog({
       userId: req.user.sub,
       action: 'farmer_invite_resent',
       details: { farmerId: req.params.id },
     }).catch(() => {});
-    res.json({ message: 'Invite resent', farmer: updated });
+    res.json({
+      message: 'Invite resent',
+      farmer: updated,
+      hasLoginAccount: !!updated.userAccount,
+      deliveryNote: updated.userAccount
+        ? 'Farmer already has a login account. A reminder notification has been sent.'
+        : 'No login account exists. Share credentials with the farmer or they can self-register with their phone number.',
+    });
   }));
 
 // Update farmer (staff only)

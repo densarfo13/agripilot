@@ -201,6 +201,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
+  const [success, setSuccess] = useState(null); // holds { credentialsCreated, deliveryNote }
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -224,12 +225,34 @@ function InviteFarmerModal({ onClose, onCreated }) {
         payload.email = form.email;
         payload.password = form.password;
       }
-      await api.post('/farmers/invite', payload);
-      onCreated();
+      const res = await api.post('/farmers/invite', payload);
+      setSuccess({ credentialsCreated: res.data.credentialsCreated, deliveryNote: res.data.deliveryNote, farmerName: form.fullName });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to invite farmer');
     } finally { setSaving(false); }
   };
+
+  if (success) {
+    return (
+      <div className="modal-overlay" onClick={() => { onCreated(); }}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">Farmer Invited <button className="btn btn-outline btn-sm" onClick={() => onCreated()}>X</button></div>
+          <div className="modal-body">
+            <div style={{ background: '#ecfdf5', color: '#065f46', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
+              <strong>{success.farmerName}</strong> has been successfully invited to AgriPilot.
+            </div>
+            <div style={{ background: success.credentialsCreated ? '#eff6ff' : '#fffbeb', color: success.credentialsCreated ? '#1e40af' : '#92400e', padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem' }}>
+              <strong>{success.credentialsCreated ? 'Login Account Created' : 'No Login Account'}</strong>
+              <p style={{ margin: '0.5rem 0 0' }}>{success.deliveryNote}</p>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-primary" onClick={() => onCreated()}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
