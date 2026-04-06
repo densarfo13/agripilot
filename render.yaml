@@ -9,8 +9,11 @@ services:
     plan: free
     name: agripilot
     runtime: node
-    buildCommand: npm ci && cd server && npm ci && npx prisma generate && cd .. && npx vite build
+    region: oregon
+    nodeVersion: "22"
+    buildCommand: npm ci && npm run build
     startCommand: cd server && npx prisma db push --skip-generate && node prisma/seed.js; node src/server.js
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
