@@ -1,6 +1,7 @@
 import prisma from '../../config/database.js';
 import { getRegionConfig } from '../regionConfig/service.js';
 import { createNotification } from '../notifications/service.js';
+import { onActivityLogged, ACTIVITY_STAGE_MAP } from '../lifecycle/service.js';
 
 /**
  * Farm Activity Service
@@ -39,6 +40,9 @@ export async function createActivity(farmerId, data) {
     }
   }
 
+  // Determine lifecycle stage at time of activity
+  const activityStage = ACTIVITY_STAGE_MAP[data.activityType] || null;
+
   const activity = await prisma.farmActivity.create({
     data: {
       farmerId,
@@ -47,6 +51,7 @@ export async function createActivity(farmerId, data) {
       description: data.description || null,
       quantity: data.quantity ? parseFloat(data.quantity) : null,
       unit: data.unit || null,
+      lifecycleStage: activityStage,
       metadata: data.metadata || null,
       activityDate: data.activityDate ? new Date(data.activityDate) : new Date(),
     },
@@ -55,6 +60,10 @@ export async function createActivity(farmerId, data) {
 
   // Auto-generate reminders based on activity type
   await generateFollowUpReminders(farmerId, activity, farmer);
+
+  // Update lifecycle stage
+  const stageUpdate = await onActivityLogged(farmerId, activity).catch(() => null);
+  activity.stageUpdate = stageUpdate;
 
   return activity;
 }
@@ -100,10 +109,18 @@ export async function getActivitySummary(farmerId) {
     },
   });
 
+  const recentActivities = await prisma.farmActivity.findMany({
+    where: { farmerId },
+    orderBy: { activityDate: 'desc' },
+    take: 5,
+    select: { id: true, activityType: true, cropType: true, activityDate: true, lifecycleStage: true },
+  });
+
   return {
     byType: activities,
     recentActivity,
     thisMonthCount: thisMonth,
+    recentActivities,
   };
 }
 

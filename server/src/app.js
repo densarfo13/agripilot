@@ -32,6 +32,7 @@ import regionConfigRoutes from './modules/regionConfig/routes.js';
 import postHarvestRoutes from './modules/postHarvest/routes.js';
 import marketGuidanceRoutes from './modules/marketGuidance/routes.js';
 import buyerInterestRoutes from './modules/buyerInterest/routes.js';
+import lifecycleRoutes from './modules/lifecycle/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,6 +89,7 @@ app.use('/api/region-config', regionConfigRoutes);
 app.use('/api/post-harvest', postHarvestRoutes);
 app.use('/api/market-guidance', marketGuidanceRoutes);
 app.use('/api/buyer-interest', buyerInterestRoutes);
+app.use('/api/lifecycle', lifecycleRoutes);
 
 // ─── Production Static Serving ─────────────────────────
 if (config.nodeEnv === 'production') {

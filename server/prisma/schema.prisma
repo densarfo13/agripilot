@@ -25,6 +25,15 @@ enum RegistrationStatus {
   disabled
 }
 
+enum LifecycleStage {
+  pre_planting
+  planting
+  vegetative
+  flowering
+  harvest
+  post_harvest
+}
+
 enum ApplicationStatus {
   draft
   submitted
@@ -182,6 +191,11 @@ model Farmer {
   rejectedAt           DateTime?           @map("rejected_at")
   rejectionReason      String?             @map("rejection_reason")
   assignedOfficerId    String?             @map("assigned_officer_id")
+  currentStage         LifecycleStage      @default(pre_planting) @map("current_stage")
+  stageUpdatedAt       DateTime?           @map("stage_updated_at")
+  stageSource          String?             @map("stage_source")   // 'activity', 'manual', 'seeded'
+  stageConfidence      String?             @map("stage_confidence") // 'high', 'medium', 'low'
+  stageCropType        String?             @map("stage_crop_type")
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
@@ -497,6 +511,7 @@ model FarmActivity {
   description     String?
   quantity        Float?
   unit            String?
+  lifecycleStage  LifecycleStage? @map("lifecycle_stage") // stage at time of activity
   metadata        Json?
   activityDate    DateTime         @map("activity_date")
   createdAt       DateTime         @default(now()) @map("created_at")
@@ -517,6 +532,8 @@ model Reminder {
   dueDate         DateTime     @map("due_date")
   completed       Boolean      @default(false)
   completedAt     DateTime?    @map("completed_at")
+  lifecycleStage  LifecycleStage? @map("lifecycle_stage")
+  triggerSource   String?         @map("trigger_source") // 'lifecycle_engine', 'activity', 'manual', 'seeded'
   metadata        Json?
   createdAt       DateTime     @default(now()) @map("created_at")
 

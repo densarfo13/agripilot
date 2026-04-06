@@ -759,6 +759,40 @@ async function main() {
   });
   console.log('  ✅ All staff-created farmers marked as approved');
 
+  // Set lifecycle stages for demo farmers (demo mode — seeded stages)
+  console.log('Setting demo lifecycle stages...');
+  const allFarmers = await prisma.farmer.findMany({ select: { id: true, fullName: true, primaryCrop: true } });
+  const stageByName = {
+    'John Mwangi': 'vegetative',
+    'Amina Hassan': 'flowering',
+    'Peter Otieno': 'harvest',
+    'Hassan Omar': 'post_harvest',
+    'Ali Bakari': 'vegetative',
+    'Elizabeth Wambui': 'planting',
+    'Samuel Kipchoge': 'pre_planting',
+    'Juma Hamisi': 'vegetative',
+    'Fatima Abdallah': 'planting',
+    'Emmanuel Shirima': 'harvest',
+    'Rehema Mwenda': 'pre_planting',
+  };
+
+  for (const f of allFarmers) {
+    const stage = stageByName[f.fullName];
+    if (stage) {
+      await prisma.farmer.update({
+        where: { id: f.id },
+        data: {
+          currentStage: stage,
+          stageUpdatedAt: new Date(),
+          stageSource: 'seeded',
+          stageConfidence: 'high',
+          stageCropType: f.primaryCrop,
+        },
+      });
+    }
+  }
+  console.log('  ✅ Demo lifecycle stages set');
+
   // ─── Summary ──────────────────────────────────────────
   console.log('\n🎉 Seed completed!\n');
   console.log('Demo Accounts:');

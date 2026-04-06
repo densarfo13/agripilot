@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 
-const ACTIVITY_TYPES = ['planting', 'fertilizing', 'weeding', 'spraying', 'harvesting', 'soil_preparation', 'irrigation', 'other'];
+const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
 export default function FarmerActivitiesTab() {
   const { farmerId, refresh } = useFarmerContext();

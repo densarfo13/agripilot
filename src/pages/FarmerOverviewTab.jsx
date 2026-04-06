@@ -1,15 +1,149 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
+import api from '../api/client.js';
+
+const STAGE_META = {
+  pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
+  planting: { label: 'Planting', color: '#16a34a', emoji: '\u{1F33E}' },
+  vegetative: { label: 'Vegetative', color: '#059669', emoji: '\u{1F33F}' },
+  flowering: { label: 'Flowering', color: '#d97706', emoji: '\u{1F33B}' },
+  harvest: { label: 'Harvest', color: '#ea580c', emoji: '\u{1F33D}' },
+  post_harvest: { label: 'Post-Harvest', color: '#7c3aed', emoji: '\u{1F4E6}' },
+};
 
 export default function FarmerOverviewTab() {
-  const { farmer, summary, reminderSummary, unread, farmerId } = useFarmerContext();
+  const { farmer, summary, reminderSummary, unread, farmerId, refresh } = useFarmerContext();
   const navigate = useNavigate();
   const recentApps = farmer?.applications?.slice(0, 5) || [];
+  const [lifecycle, setLifecycle] = useState(null);
+  const [lcLoading, setLcLoading] = useState(true);
+  const [recomputing, setRecomputing] = useState(false);
+
+  useEffect(() => {
+    api.get(`/lifecycle/farmers/${farmerId}`)
+      .then(r => setLifecycle(r.data))
+      .catch(() => {})
+      .finally(() => setLcLoading(false));
+  }, [farmerId]);
+
+  const handleRecompute = async () => {
+    setRecomputing(true);
+    try {
+      await api.post(`/lifecycle/farmers/${farmerId}/recompute`);
+      const r = await api.get(`/lifecycle/farmers/${farmerId}`);
+      setLifecycle(r.data);
+      refresh();
+    } catch {}
+    setRecomputing(false);
+  };
+
+  const handleGenerateReminders = async () => {
+    try {
+      const r = await api.post(`/lifecycle/farmers/${farmerId}/generate-reminders`);
+      alert(`Generated ${r.data.generated} reminders for ${lifecycle?.currentStage?.replace(/_/g, ' ')} stage.`);
+      refresh();
+    } catch {}
+  };
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
+      {/* Lifecycle Stage Card */}
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Lifecycle Stage</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-outline btn-sm" onClick={handleGenerateReminders} disabled={lcLoading || !lifecycle}>
+              Generate Reminders
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={handleRecompute} disabled={recomputing || lcLoading}>
+              {recomputing ? 'Recomputing...' : 'Recompute'}
+            </button>
+          </div>
+        </div>
+        <div className="card-body">
+          {lcLoading ? (
+            <div style={{ textAlign: 'center', padding: '1rem', color: '#999' }}>Loading lifecycle...</div>
+          ) : lifecycle ? (
+            <>
+              {/* Stage progress bar */}
+              <div style={{ display: 'flex', gap: '2px', marginBottom: '1rem' }}>
+                {(lifecycle.stages || Object.keys(STAGE_META)).map((stage, i) => {
+                  const meta = STAGE_META[stage];
+                  const isCurrent = stage === lifecycle.currentStage;
+                  const isPast = i < lifecycle.stageIndex;
+                  return (
+                    <div key={stage} style={{
+                      flex: 1, textAlign: 'center', padding: '0.5rem 0.25rem',
+                      background: isCurrent ? meta.color : isPast ? `${meta.color}22` : '#f3f4f6',
+                      color: isCurrent ? '#fff' : isPast ? meta.color : '#9ca3af',
+                      borderRadius: i === 0 ? '6px 0 0 6px' : i === 5 ? '0 6px 6px 0' : '0',
+                      fontSize: '0.7rem', fontWeight: isCurrent ? 700 : 400,
+                      transition: 'all 0.2s',
+                    }}>
+                      <div style={{ fontSize: '1rem' }}>{meta.emoji}</div>
+                      {meta.label}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Current stage detail */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Current Stage</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: STAGE_META[lifecycle.currentStage]?.color }}>
+                    {STAGE_META[lifecycle.currentStage]?.emoji} {STAGE_META[lifecycle.currentStage]?.label || lifecycle.currentStage}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Crop</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType || 'Not set'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Confidence</div>
+                  <span className={`badge ${lifecycle.stageConfidence === 'high' ? 'badge-approved' : lifecycle.stageConfidence === 'medium' ? 'badge-submitted' : 'badge-draft'}`}>
+                    {lifecycle.stageConfidence || 'unknown'}
+                  </span>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Source</div>
+                  <span className="text-sm">{lifecycle.stageSource === 'activity' ? 'Activity-driven' : lifecycle.stageSource === 'seeded' ? 'Demo data' : lifecycle.stageSource || 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Last activity and reason */}
+              {lifecycle.reason && (
+                <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '4px', fontSize: '0.8rem', color: '#64748b' }}>
+                  {lifecycle.reason}
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {lifecycle.recommendations && lifecycle.recommendations.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Next Actions</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {lifecycle.recommendations.slice(0, 4).map((rec, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
+                        <span style={{ color: '#16a34a', fontWeight: 600, flexShrink: 0 }}>-</span>
+                        <div>
+                          <span style={{ fontWeight: 500 }}>{rec.title}</span>
+                          <span style={{ color: '#6b7280', marginLeft: '0.5rem' }}>{rec.message}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1rem', color: '#999' }}>Unable to load lifecycle data</div>
+          )}
+        </div>
+      </div>
+
       {/* Quick stats */}
       <div className="stats-grid" style={{ marginBottom: '1.25rem' }}>
         <div className="stat-card">

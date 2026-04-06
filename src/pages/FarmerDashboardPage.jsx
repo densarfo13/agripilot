@@ -6,6 +6,7 @@ export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lifecycle, setLifecycle] = useState(null);
 
   useEffect(() => {
     api.get('/auth/farmer-profile')
@@ -17,6 +18,14 @@ export default function FarmerDashboardPage() {
   const isPending = user?.registrationStatus === 'pending_approval';
   const isRejected = user?.registrationStatus === 'rejected';
   const isApproved = user?.registrationStatus === 'approved';
+
+  useEffect(() => {
+    if (isApproved && user?.farmerId) {
+      api.get(`/lifecycle/farmers/${user.farmerId}`)
+        .then(r => setLifecycle(r.data))
+        .catch(() => {});
+    }
+  }, [isApproved, user?.farmerId]);
 
   return (
     <div style={styles.container}>
@@ -83,6 +92,29 @@ export default function FarmerDashboardPage() {
             <p style={{ color: '#555', lineHeight: 1.6 }}>
               Your registration has been approved. You can now access farmer services.
             </p>
+            {lifecycle && (
+              <div style={{ ...styles.profileSummary, marginTop: '1rem' }}>
+                <h4 style={{ margin: '0 0 0.75rem' }}>Current Season</h4>
+                <div style={styles.detailRow}>
+                  <span>Stage</span>
+                  <span style={{ textTransform: 'capitalize', fontWeight: 500 }}>{lifecycle.currentStage?.replace(/_/g, ' ')}</span>
+                </div>
+                {lifecycle.cropType && (
+                  <div style={styles.detailRow}>
+                    <span>Crop</span>
+                    <span>{lifecycle.cropType}</span>
+                  </div>
+                )}
+                {lifecycle.recommendations?.length > 0 && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.4rem' }}>Next steps:</div>
+                    {lifecycle.recommendations.slice(0, 3).map((r, i) => (
+                      <div key={i} style={{ fontSize: '0.8rem', color: '#555', padding: '0.2rem 0' }}>- {r.title}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {profile && profile.applications && profile.applications.length > 0 && (
               <div style={styles.profileSummary}>
                 <h4 style={{ margin: '0 0 0.75rem' }}>Your Applications</h4>
