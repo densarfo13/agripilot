@@ -1,10 +1,12 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore.js';
 
-// Detect native platform (Capacitor injects window.Capacitor on native)
-const isNative = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform === true;
+// Detect native platform: Capacitor injects window.Capacitor on native
+// isNativePlatform can be a function (returns bool) or a boolean depending on version
+const cap = typeof window !== 'undefined' && window.Capacitor;
+const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
 
-// On native (Android/iOS), API calls must go to the live server.
+// On native (Android/iOS), API calls must go to the server over LAN.
 // On web, relative '/api' works via Vite proxy or Express production serving.
 const API_BASE = isNative
   ? 'http://10.0.0.63:4000/api'
