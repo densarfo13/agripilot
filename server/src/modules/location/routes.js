@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import * as locationService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -12,6 +13,7 @@ router.use(authenticate);
 router.post('/:applicationId/gps',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
+  dedupGuard('gps-capture'),
   asyncHandler(async (req, res) => {
     const { latitude, longitude } = req.body;
     if (latitude === undefined || longitude === undefined) {
@@ -48,6 +50,7 @@ router.get('/:applicationId/gps',
 router.post('/:applicationId/boundary',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
+  dedupGuard('boundary-capture'),
   asyncHandler(async (req, res) => {
     const boundary = await locationService.captureBoundary(req.params.applicationId, req.body);
     writeAuditLog({

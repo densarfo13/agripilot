@@ -38,35 +38,38 @@ export async function farmerSelfRegister({
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Create user with farmer role, inactive until approved
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      fullName,
-      role: 'farmer',
-      active: true, // can log in, but access is limited by role
-      preferredLanguage: preferredLanguage || 'en',
-    },
-  });
+  // Transaction: create user + farmer atomically (prevents orphaned user on farmer creation failure)
+  const { user, farmer } = await prisma.$transaction(async (tx) => {
+    const newUser = await tx.user.create({
+      data: {
+        email,
+        passwordHash,
+        fullName,
+        role: 'farmer',
+        active: true, // can log in, but access is limited by role
+        preferredLanguage: preferredLanguage || 'en',
+      },
+    });
 
-  // Create farmer record linked to user, self-registered, pending approval
-  const farmer = await prisma.farmer.create({
-    data: {
-      fullName,
-      phone,
-      region: region || 'Not specified',
-      district: district || null,
-      village: village || null,
-      countryCode: countryCode || DEFAULT_COUNTRY_CODE,
-      preferredLanguage: preferredLanguage || 'en',
-      primaryCrop: primaryCrop || null,
-      farmSizeAcres: farmSizeAcres || null,
-      selfRegistered: true,
-      registrationStatus: 'pending_approval',
-      userId: user.id,
-      createdById: user.id, // self-created
-    },
+    const newFarmer = await tx.farmer.create({
+      data: {
+        fullName,
+        phone,
+        region: region || 'Not specified',
+        district: district || null,
+        village: village || null,
+        countryCode: countryCode || DEFAULT_COUNTRY_CODE,
+        preferredLanguage: preferredLanguage || 'en',
+        primaryCrop: primaryCrop || null,
+        farmSizeAcres: farmSizeAcres || null,
+        selfRegistered: true,
+        registrationStatus: 'pending_approval',
+        userId: newUser.id,
+        createdById: newUser.id,
+      },
+    });
+
+    return { user: newUser, farmer: newFarmer };
   });
 
   return {
@@ -165,22 +168,27 @@ export async function rejectRegistration({ farmerId, rejectedById, rejectionReas
     throw err;
   }
 
-  const updated = await prisma.farmer.update({
-    where: { id: farmerId },
-    data: {
-      registrationStatus: 'rejected',
-      rejectedAt: new Date(),
-      rejectionReason: rejectionReason || null,
-    },
-  });
-
-  // Deactivate the user account
-  if (farmer.userId) {
-    await prisma.user.update({
-      where: { id: farmer.userId },
-      data: { active: false },
+  // Transaction: reject farmer + deactivate user atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const rejected = await tx.farmer.update({
+      where: { id: farmerId },
+      data: {
+        registrationStatus: 'rejected',
+        rejectedAt: new Date(),
+        rejectionReason: rejectionReason || null,
+      },
     });
-  }
+
+    // Deactivate the linked user account
+    if (farmer.userId) {
+      await tx.user.update({
+        where: { id: farmer.userId },
+        data: { active: false },
+      });
+    }
+
+    return rejected;
+  });
 
   return updated;
 }
@@ -221,9 +229,7 @@ export async function inviteFarmer({
     throw err;
   }
 
-  let userId = null;
-
-  // If email + password provided, create a linked user account
+  // Check email uniqueness before transaction if provided
   if (email && password) {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
     if (existing) {
@@ -231,46 +237,53 @@ export async function inviteFarmer({
       err.statusCode = 409;
       throw err;
     }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: {
-        email: email.toLowerCase().trim(),
-        passwordHash,
-        fullName,
-        role: 'farmer',
-        active: true,
-        preferredLanguage: preferredLanguage || 'en',
-      },
-    });
-    userId = user.id;
   }
 
-  const farmer = await prisma.farmer.create({
-    data: {
-      fullName,
-      phone,
-      region,
-      district: district || null,
-      village: village || null,
-      countryCode: countryCode || DEFAULT_COUNTRY_CODE,
-      preferredLanguage: preferredLanguage || 'en',
-      primaryCrop: primaryCrop || null,
-      farmSizeAcres: farmSizeAcres ? parseFloat(farmSizeAcres) : null,
-      selfRegistered: false,
-      registrationStatus: 'approved', // invited farmers are pre-approved
-      invitedAt: new Date(),
-      approvedAt: new Date(),
-      approvedById: invitedById,
-      assignedOfficerId: assignedOfficerId || null,
-      userId: userId,
-      createdById: invitedById,
-    },
-    include: {
-      userAccount: userId ? {
-        select: { id: true, email: true, fullName: true },
-      } : false,
-    },
+  // Transaction: create user (if needed) + farmer atomically
+  const farmer = await prisma.$transaction(async (tx) => {
+    let userId = null;
+
+    if (email && password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await tx.user.create({
+        data: {
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          fullName,
+          role: 'farmer',
+          active: true,
+          preferredLanguage: preferredLanguage || 'en',
+        },
+      });
+      userId = user.id;
+    }
+
+    return tx.farmer.create({
+      data: {
+        fullName,
+        phone,
+        region,
+        district: district || null,
+        village: village || null,
+        countryCode: countryCode || DEFAULT_COUNTRY_CODE,
+        preferredLanguage: preferredLanguage || 'en',
+        primaryCrop: primaryCrop || null,
+        farmSizeAcres: farmSizeAcres ? parseFloat(farmSizeAcres) : null,
+        selfRegistered: false,
+        registrationStatus: 'approved', // invited farmers are pre-approved
+        invitedAt: new Date(),
+        approvedAt: new Date(),
+        approvedById: invitedById,
+        assignedOfficerId: assignedOfficerId || null,
+        userId: userId,
+        createdById: invitedById,
+      },
+      include: {
+        userAccount: userId ? {
+          select: { id: true, email: true, fullName: true },
+        } : false,
+      },
+    });
   });
 
   return farmer;

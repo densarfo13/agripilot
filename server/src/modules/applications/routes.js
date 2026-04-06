@@ -4,6 +4,7 @@ import { authenticate, authorize, requireApprovedFarmer, requireApplicationAcces
 import { validateParamUUID, isValidUUID, parsePositiveInt } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { workflowLimiter } from '../../middleware/rateLimiters.js';
+import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as appService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -23,7 +24,7 @@ router.use(requireApprovedFarmer);
 // ═══════════════════════════════════════════════════════
 
 // Create application
-router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const { farmerId, cropType, farmSizeAcres, requestedAmount } = req.body;
   if (!farmerId || !cropType || !farmSizeAcres || !requestedAmount) {
     return res.status(400).json({ error: 'farmerId, cropType, farmSizeAcres, and requestedAmount are required' });
@@ -178,7 +179,7 @@ router.patch('/:id/status', validateParamUUID('id'), authorize('super_admin', 'i
 }));
 
 // Assign reviewer
-router.post('/:id/assign-reviewer', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/assign-reviewer', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), dedupGuard('assign-reviewer'), asyncHandler(async (req, res) => {
   const { reviewerId } = req.body;
   if (!reviewerId) return res.status(400).json({ error: 'reviewerId is required' });
   const app = await appService.assignReviewer(req.params.id, reviewerId);
@@ -190,7 +191,7 @@ router.post('/:id/assign-reviewer', validateParamUUID('id'), authorize('super_ad
 }));
 
 // Assign field officer
-router.post('/:id/assign-field-officer', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/assign-field-officer', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), dedupGuard('assign-officer'), asyncHandler(async (req, res) => {
   const { officerId } = req.body;
   if (!officerId) return res.status(400).json({ error: 'officerId is required' });
   const app = await appService.assignFieldOfficer(req.params.id, officerId);

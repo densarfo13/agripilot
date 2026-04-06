@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApplicationAccess } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import * as fieldVisitService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -18,6 +19,7 @@ router.get('/my-visits/list', authorize('field_officer', 'super_admin', 'institu
 router.post('/:applicationId',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
+  dedupGuard('field-visit'),
   asyncHandler(async (req, res) => {
     const visit = await fieldVisitService.createFieldVisit(req.params.applicationId, req.user.sub, req.body);
     writeAuditLog({

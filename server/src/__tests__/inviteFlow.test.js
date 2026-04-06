@@ -11,6 +11,7 @@ vi.mock('../config/database.js', () => {
   const mockPrisma = {
     user: { findUnique: vi.fn(), update: vi.fn() },
     farmer: { findUnique: vi.fn(), update: vi.fn(), create: vi.fn() },
+    $transaction: vi.fn(async (fn) => fn(mockPrisma)),
   };
   return { default: mockPrisma };
 });

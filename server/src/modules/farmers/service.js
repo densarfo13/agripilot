@@ -109,28 +109,31 @@ export async function updateAccessStatus(farmerId, newStatus, userId) {
     updateData.approvedAt = new Date();
     updateData.approvedById = userId;
   }
-  if (newStatus === 'disabled') {
-    // Also deactivate the linked user account
-    if (farmer.userId) {
-      await prisma.user.update({ where: { id: farmer.userId }, data: { active: false } });
-      invalidateAuthCache(farmer.userId);
+
+  // Transaction: farmer status + user activation state atomically
+  const result = await prisma.$transaction(async (tx) => {
+    if (newStatus === 'disabled' && farmer.userId) {
+      await tx.user.update({ where: { id: farmer.userId }, data: { active: false } });
     }
-  }
-  if (newStatus === 'approved' || newStatus === 'pending_approval') {
-    // Reactivate the linked user account
-    if (farmer.userId) {
-      await prisma.user.update({ where: { id: farmer.userId }, data: { active: true } });
-      invalidateAuthCache(farmer.userId);
+    if ((newStatus === 'approved' || newStatus === 'pending_approval') && farmer.userId) {
+      await tx.user.update({ where: { id: farmer.userId }, data: { active: true } });
     }
+
+    return tx.farmer.update({
+      where: { id: farmerId },
+      data: updateData,
+      include: {
+        userAccount: { select: { id: true, email: true, active: true } },
+      },
+    });
+  });
+
+  // Invalidate auth cache after successful transaction
+  if (farmer.userId && ['disabled', 'approved', 'pending_approval'].includes(newStatus)) {
+    invalidateAuthCache(farmer.userId);
   }
 
-  return prisma.farmer.update({
-    where: { id: farmerId },
-    data: updateData,
-    include: {
-      userAccount: { select: { id: true, email: true, active: true } },
-    },
-  });
+  return result;
 }
 
 /**

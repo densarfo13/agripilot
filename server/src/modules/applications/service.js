@@ -298,13 +298,24 @@ export async function disburseApplication(id, userId, { reason } = {}) {
   const app = await getApplicationStatus(id);
   validateTransition(app.status, 'disbursed');
 
-  const updated = await atomicTransition(id, app.status, 'disbursed');
-
-  if (reason) {
-    await prisma.reviewNote.create({
-      data: { applicationId: id, authorId: userId, content: `Disbursed: ${reason}`, internal: false },
+  // Transaction: status change + review note atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.application.updateMany({
+      where: { id, status: app.status },
+      data: { status: 'disbursed' },
     });
-  }
+    if (result.count === 0) {
+      const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (reason) {
+      await tx.reviewNote.create({
+        data: { applicationId: id, authorId: userId, content: `Disbursed: ${reason}`, internal: false },
+      });
+    }
+    return tx.application.findUnique({ where: { id }, include: FULL_INCLUDE });
+  });
 
   return { application: updated, previousStatus: app.status };
 }
@@ -313,13 +324,24 @@ export async function reopenApplication(id, userId, reason) {
   const app = await getApplicationStatus(id);
   validateTransition(app.status, 'under_review');
 
-  const updated = await atomicTransition(id, app.status, 'under_review');
-
-  if (reason) {
-    await prisma.reviewNote.create({
-      data: { applicationId: id, authorId: userId, content: `Reopened: ${reason}`, internal: true },
+  // Transaction: status change + review note atomically
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.application.updateMany({
+      where: { id, status: app.status },
+      data: { status: 'under_review' },
     });
-  }
+    if (result.count === 0) {
+      const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (reason) {
+      await tx.reviewNote.create({
+        data: { applicationId: id, authorId: userId, content: `Reopened: ${reason}`, internal: true },
+      });
+    }
+    return tx.application.findUnique({ where: { id }, include: FULL_INCLUDE });
+  });
 
   return { application: updated, previousStatus: app.status };
 }

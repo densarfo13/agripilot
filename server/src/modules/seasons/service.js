@@ -49,6 +49,22 @@ export async function createSeason(farmerId, data) {
     throw err;
   }
 
+  // Validate planting date is within reasonable bounds
+  const now = new Date();
+  const maxFutureDays = 365; // 1 year ahead
+  const maxPastDays = 730;   // 2 years back
+  const daysDiff = Math.floor((plantingDate - now) / (1000 * 60 * 60 * 24));
+  if (daysDiff > maxFutureDays) {
+    const err = new Error(`Planting date cannot be more than ${maxFutureDays} days in the future`);
+    err.statusCode = 400;
+    throw err;
+  }
+  if (daysDiff < -maxPastDays) {
+    const err = new Error(`Planting date cannot be more than ${maxPastDays} days in the past`);
+    err.statusCode = 400;
+    throw err;
+  }
+
   // Compute expected harvest date from crop calendar
   const countryCode = farmer.countryCode || DEFAULT_COUNTRY_CODE;
   const calendar = getCropCalendar(countryCode, data.cropType);
