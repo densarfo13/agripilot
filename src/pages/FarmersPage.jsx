@@ -69,7 +69,7 @@ export default function FarmersPage() {
                         <td>{f.phone}</td>
                         <td>{f.region}</td>
                         <td>{f.primaryCrop || '-'}</td>
-                        <td>{f.farmSizeAcres ? `${f.farmSizeAcres} acres` : '-'}</td>
+                        <td>{f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>{f.yearsExperience ? `${f.yearsExperience} yrs` : '-'}</td>
                         <td>{f._count?.applications || 0}</td>
                       </tr>

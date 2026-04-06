@@ -72,10 +72,10 @@ router.get('/pending-registrations',
     res.json(pending);
   }));
 
-// Approve farmer registration
+// Approve farmer registration (admin only — field officers cannot approve to prevent self-dealing)
 router.post('/:id/approve-registration',
   validateParamUUID('id'),
-  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  authorize('super_admin', 'institutional_admin'),
   asyncHandler(async (req, res) => {
     const { approveRegistration } = await import('../auth/farmer-registration.js');
     const { assignedOfficerId } = req.body;
@@ -92,10 +92,10 @@ router.post('/:id/approve-registration',
     res.json(result);
   }));
 
-// Reject farmer registration
+// Reject farmer registration (admin only)
 router.post('/:id/reject-registration',
   validateParamUUID('id'),
-  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  authorize('super_admin', 'institutional_admin'),
   asyncHandler(async (req, res) => {
     const { rejectRegistration } = await import('../auth/farmer-registration.js');
     const { rejectionReason } = req.body;

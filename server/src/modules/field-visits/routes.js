@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
+import { authenticate, authorize, requireApplicationAccess } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as fieldVisitService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
@@ -27,22 +27,23 @@ router.post('/:applicationId',
     res.status(201).json(visit);
   }));
 
-// List field visits for an application
+// List field visits for an application (scoped by assignment)
 router.get('/:applicationId',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
+  requireApplicationAccess,
   asyncHandler(async (req, res) => {
     const visits = await fieldVisitService.listFieldVisits(req.params.applicationId);
     res.json(visits);
   }));
 
-// Complete a field visit
+// Complete a field visit (officer ownership enforced in service)
 router.patch('/visit/:visitId/complete',
   validateParamUUID('visitId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   asyncHandler(async (req, res) => {
     const { findings, notes } = req.body;
-    const visit = await fieldVisitService.completeFieldVisit(req.params.visitId, findings, notes);
+    const visit = await fieldVisitService.completeFieldVisit(req.params.visitId, req.user.sub, findings, notes);
     writeAuditLog({
       userId: req.user.sub, action: 'field_visit_completed',
       details: { visitId: req.params.visitId }, ipAddress: req.ip,

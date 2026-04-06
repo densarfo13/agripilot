@@ -32,11 +32,8 @@ export function errorHandler(err, req, res, _next) {
     ? 'Internal server error'
     : err.message || 'Internal server error';
 
-  res.status(statusCode).json({
-    error: message,
-    // Only include stack in non-production AND for non-500 errors or explicitly
-    ...(!config.isProduction && { stack: err.stack }),
-  });
+  // Never include stack traces in API responses — log them server-side only
+  res.status(statusCode).json({ error: message });
 }
 
 /**

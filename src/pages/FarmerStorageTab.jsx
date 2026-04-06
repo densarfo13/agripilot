@@ -166,6 +166,17 @@ export default function FarmerStorageTab() {
       {error && !showForm && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
       {loading ? <div className="loading">Loading storage data...</div> : (
         <>
+          {/* Proactive alerts for items over storage limit or in poor condition */}
+          {dashboard?.items?.filter(i => i.isOverStorageLimit).length > 0 && (
+            <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>
+              <strong>Storage limit exceeded:</strong> {dashboard.items.filter(i => i.isOverStorageLimit).map(i => `${i.cropType} (${i.daysSinceHarvest}/${i.maxRecommendedDays} days)`).join(', ')}. Consider selling to avoid quality loss.
+            </div>
+          )}
+          {dashboard?.items?.filter(i => ['poor', 'deteriorating'].includes(i.storageCondition)).length > 0 && (
+            <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+              <strong>Condition alert:</strong> {dashboard.items.filter(i => ['poor', 'deteriorating'].includes(i.storageCondition)).map(i => `${i.cropType} (${tStorageCondition(i.storageCondition)})`).join(', ')}. Check storage and consider selling or improving conditions.
+            </div>
+          )}
           {(!dashboard || dashboard.totalItems === 0) ? (
             <div className="card"><div className="card-body"><div className="empty-state">No stored produce tracked yet. Click "Add / Update Storage" to get started.</div></div></div>
           ) : (

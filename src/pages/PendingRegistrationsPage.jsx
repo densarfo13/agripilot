@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client.js';
+import { useAuthStore } from '../store/authStore.js';
 
 export default function PendingRegistrationsPage() {
+  const currentUser = useAuthStore((s) => s.user);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
   const [actionTarget, setActionTarget] = useState(null);
   const [officers, setOfficers] = useState([]);
+  const [loadError, setLoadError] = useState('');
 
   const load = () => {
     setLoading(true);
+    setLoadError('');
     const endpoint = filter === 'pending' ? '/users/pending-registrations' : '/users/self-registered';
-    api.get(endpoint).then(r => setRegistrations(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get(endpoint).then(r => setRegistrations(r.data)).catch(() => setLoadError('Failed to load registrations')).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [filter]);
@@ -37,7 +41,8 @@ export default function PendingRegistrationsPage() {
         </div>
       </div>
       <div className="page-body">
-        {loading ? <div className="loading">Loading...</div> : registrations.length === 0 ? (
+        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
+        {loading ? <div className="loading">Loading registrations...</div> : registrations.length === 0 ? (
           <div className="card">
             <div className="card-body" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
               {filter === 'pending' ? 'No pending farmer registrations.' : 'No self-registered farmers yet.'}
@@ -74,7 +79,7 @@ export default function PendingRegistrationsPage() {
                       </td>
                       <td className="text-sm text-muted">{new Date(r.createdAt).toLocaleDateString()}</td>
                       <td>
-                        {r.registrationStatus === 'pending_approval' && (
+                        {r.registrationStatus === 'pending_approval' && ['super_admin', 'institutional_admin'].includes(currentUser?.role) && (
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button className="btn btn-sm btn-success" onClick={() => setActionTarget({ farmer: r, action: 'approve' })}>
                               Approve
@@ -83,6 +88,9 @@ export default function PendingRegistrationsPage() {
                               Reject
                             </button>
                           </div>
+                        )}
+                        {r.registrationStatus === 'pending_approval' && currentUser?.role === 'field_officer' && (
+                          <span className="text-sm text-muted">Awaiting admin review</span>
                         )}
                         {r.registrationStatus === 'approved' && (
                           <span className="text-sm text-muted">Approved</span>

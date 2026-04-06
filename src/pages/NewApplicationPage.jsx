@@ -27,6 +27,11 @@ export default function NewApplicationPage() {
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  // Derive currency and area unit from selected farmer's country
+  const selectedFarmer = farmers.find(f => f.id === form.farmerId);
+  const currency = selectedFarmer?.countryCode === 'TZ' ? 'TZS' : 'KES';
+  const areaUnit = selectedFarmer?.countryCode === 'TZ' ? 'hectares' : 'acres';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -72,13 +77,13 @@ export default function NewApplicationPage() {
                   <input className="form-input" required value={form.cropType} onChange={set('cropType')} placeholder="e.g. maize, wheat, coffee" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Farm Size (acres) *</label>
+                  <label className="form-label">Farm Size ({areaUnit}) *</label>
                   <input className="form-input" type="number" step="0.1" required value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Requested Amount (KES) *</label>
+                  <label className="form-label">Requested Amount ({currency}) *</label>
                   <input className="form-input" type="number" required value={form.requestedAmount} onChange={set('requestedAmount')} />
                 </div>
                 <div className="form-group">

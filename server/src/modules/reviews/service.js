@@ -43,6 +43,11 @@ export async function completeReviewAssignment(assignmentId, reviewerId) {
     err.statusCode = 403;
     throw err;
   }
+  if (assignment.status === 'completed') {
+    const err = new Error('Review assignment is already completed');
+    err.statusCode = 409;
+    throw err;
+  }
 
   return prisma.reviewAssignment.update({
     where: { id: assignmentId },

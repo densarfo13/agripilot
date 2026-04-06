@@ -32,7 +32,14 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
-  if (!portfolio) return <div className="loading">Unable to load dashboard data.</div>;
+  if (!portfolio) return (
+    <div className="page-body">
+      <div className="alert alert-danger">
+        Unable to load dashboard data.
+        <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    </div>
+  );
 
   const fmt = (n) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(0) + 'K' : n;
 
@@ -133,7 +140,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {portfolio.recentApplications.map(app => (
+                  {portfolio.recentApplications.length > 0 ? portfolio.recentApplications.map(app => (
                     <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
                       <td style={{ fontWeight: 500 }}>{app.farmer.fullName}</td>
                       <td>{app.farmer.region}</td>
@@ -142,7 +149,9 @@ export default function DashboardPage() {
                       <td><StatusBadge value={app.status} /></td>
                       <td className="text-muted text-sm">{new Date(app.createdAt).toLocaleDateString()}</td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr><td colSpan={6} className="empty-state">No applications yet</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

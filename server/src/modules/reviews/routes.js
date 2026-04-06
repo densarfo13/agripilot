@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
+import { authenticate, authorize, requireApplicationAccess } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as reviewService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
@@ -15,10 +15,11 @@ router.get('/my-assignments', authorize('super_admin', 'institutional_admin', 'r
   res.json(assignments);
 }));
 
-// Add review note
+// Add review note (scoped)
 router.post('/:applicationId/notes',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'reviewer'),
+  requireApplicationAccess,
   asyncHandler(async (req, res) => {
     const { content, internal } = req.body;
     if (!content) return res.status(400).json({ error: 'content is required' });
@@ -30,19 +31,21 @@ router.post('/:applicationId/notes',
     res.status(201).json(note);
   }));
 
-// List review notes
+// List review notes (scoped)
 router.get('/:applicationId/notes',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
+  requireApplicationAccess,
   asyncHandler(async (req, res) => {
     const notes = await reviewService.listReviewNotes(req.params.applicationId);
     res.json(notes);
   }));
 
-// Get review assignments for an application
+// Get review assignments for an application (scoped)
 router.get('/:applicationId/assignments',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
+  requireApplicationAccess,
   asyncHandler(async (req, res) => {
     const assignments = await reviewService.getReviewAssignments(req.params.applicationId);
     res.json(assignments);

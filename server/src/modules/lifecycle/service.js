@@ -333,7 +333,10 @@ export async function onActivityLogged(farmerId, activity) {
   if (!farmer) return null;
 
   // Don't override manually set or seeded stages automatically
-  // But DO still compute — just don't persist unless the activity moves forward
+  if (farmer.stageSource === 'seeded' || farmer.stageSource === 'manual') {
+    return null;
+  }
+
   const mappedStage = ACTIVITY_STAGE_MAP[activity.activityType];
   if (!mappedStage) return null;
 

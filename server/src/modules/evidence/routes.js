@@ -37,7 +37,11 @@ router.post('/:applicationId',
   upload.single('file'),
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'File is required' });
+    const VALID_EVIDENCE_TYPES = ['farm_photo', 'id_document', 'land_title', 'crop_photo', 'receipt', 'boundary_photo', 'other'];
     const type = req.body.type || 'other';
+    if (!VALID_EVIDENCE_TYPES.includes(type)) {
+      return res.status(400).json({ error: `Invalid evidence type. Must be one of: ${VALID_EVIDENCE_TYPES.join(', ')}` });
+    }
     const evidence = await evidenceService.uploadEvidence(req.params.applicationId, req.file, type);
     writeAuditLog({
       applicationId: req.params.applicationId, userId: req.user.sub,
@@ -60,10 +64,10 @@ router.delete('/file/:evidenceId',
   validateParamUUID('evidenceId'),
   authorize('super_admin', 'institutional_admin'),
   asyncHandler(async (req, res) => {
-    await evidenceService.deleteEvidence(req.params.evidenceId);
+    const evidence = await evidenceService.deleteEvidence(req.params.evidenceId);
     writeAuditLog({
       userId: req.user.sub, action: 'evidence_deleted',
-      details: { evidenceId: req.params.evidenceId }, ipAddress: req.ip,
+      details: { evidenceId: req.params.evidenceId, applicationId: evidence?.applicationId }, ipAddress: req.ip,
     }).catch(() => {});
     res.json({ message: 'Evidence deleted' });
   }));

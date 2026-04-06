@@ -17,15 +17,17 @@ export default function FarmerNotificationsTab() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [markingAll, setMarkingAll] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const loadNotifications = () => {
     setLoading(true);
+    setLoadError('');
     const params = { limit: 50 };
     if (filter === 'unread') params.read = 'false';
     else if (filter === 'read') params.read = 'true';
     api.get(`/notifications/farmer/${farmerId}`, { params })
       .then(r => setNotifications(r.data))
-      .catch(() => {})
+      .catch(() => setLoadError('Failed to load notifications'))
       .finally(() => setLoading(false));
   };
 
@@ -69,6 +71,7 @@ export default function FarmerNotificationsTab() {
         )}
       </div>
 
+      {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadNotifications}>Retry</button></div>}
       {loading ? <div className="loading">Loading notifications...</div> : notifications.length === 0 ? (
         <div className="card"><div className="card-body"><div className="empty-state">No notifications</div></div></div>
       ) : (

@@ -134,8 +134,8 @@ export function getStorageGuidance(cropType, countryCode = 'KE') {
       country: regionCfg.country,
     },
     cashew: {
-      recommendedMethod: 'warehouse',
-      maxDays: 365,
+      recommendedMethod: storageDefault.method,
+      maxDays: storageDefault.maxDays,
       optimalMoisture: '8%',
       tips: [
         'Dry raw cashew nuts to <8% moisture',
@@ -232,17 +232,30 @@ export async function getStorageDashboard(farmerId) {
 // ─── Helpers ────────────────────────────────────────────
 
 async function checkStorageConditions(farmerId, storageStatus, farmer) {
+  // Deduplicate: check for recent (last 24h) notifications for same crop to prevent spam
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
   // If condition is poor or deteriorating, notify farmer
   if (['poor', 'deteriorating'].includes(storageStatus.storageCondition)) {
-    try {
-      await createNotification(farmerId, {
-        notificationType: 'post_harvest',
+    const existingConditionAlert = await prisma.notification.findFirst({
+      where: {
+        farmerId,
         title: `Storage alert: ${storageStatus.cropType}`,
-        message: `Your ${storageStatus.cropType} storage condition is ${storageStatus.storageCondition}. Consider selling soon or improving storage conditions.`,
-        metadata: { storageStatusId: storageStatus.id, cropType: storageStatus.cropType },
-      });
-    } catch (e) {
-      console.error('Failed to create storage notification:', e.message);
+        createdAt: { gte: oneDayAgo },
+      },
+    });
+
+    if (!existingConditionAlert) {
+      try {
+        await createNotification(farmerId, {
+          notificationType: 'post_harvest',
+          title: `Storage alert: ${storageStatus.cropType}`,
+          message: `Your ${storageStatus.cropType} storage condition is ${storageStatus.storageCondition}. Consider selling soon or improving storage conditions.`,
+          metadata: { storageStatusId: storageStatus.id, cropType: storageStatus.cropType },
+        });
+      } catch (e) {
+        console.error('Failed to create storage notification:', e.message);
+      }
     }
   }
 
@@ -251,15 +264,25 @@ async function checkStorageConditions(farmerId, storageStatus, farmer) {
     const daysSince = Math.floor((Date.now() - new Date(storageStatus.harvestDate).getTime()) / (1000 * 60 * 60 * 24));
     const storageDefault = getStorageDefault(farmer.countryCode, storageStatus.cropType);
     if (daysSince > storageDefault.maxDays * 0.8) {
-      try {
-        await createNotification(farmerId, {
-          notificationType: 'post_harvest',
+      const existingDurationAlert = await prisma.notification.findFirst({
+        where: {
+          farmerId,
           title: `Storage duration warning: ${storageStatus.cropType}`,
-          message: `Your ${storageStatus.cropType} has been in storage for ${daysSince} days (recommended max: ${storageDefault.maxDays}). Consider selling to avoid quality loss.`,
-          metadata: { storageStatusId: storageStatus.id, daysSince },
-        });
-      } catch (e) {
-        console.error('Failed to create duration notification:', e.message);
+          createdAt: { gte: oneDayAgo },
+        },
+      });
+
+      if (!existingDurationAlert) {
+        try {
+          await createNotification(farmerId, {
+            notificationType: 'post_harvest',
+            title: `Storage duration warning: ${storageStatus.cropType}`,
+            message: `Your ${storageStatus.cropType} has been in storage for ${daysSince} days (recommended max: ${storageDefault.maxDays}). Consider selling to avoid quality loss.`,
+            metadata: { storageStatusId: storageStatus.id, daysSince },
+          });
+        } catch (e) {
+          console.error('Failed to create duration notification:', e.message);
+        }
       }
     }
   }

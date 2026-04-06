@@ -31,7 +31,11 @@ export default function PortfolioPage() {
   };
 
   if (loading) return <div className="loading">Loading portfolio...</div>;
-  if (!data) return <div className="loading">Unable to load portfolio.</div>;
+  if (!data) return (
+    <div className="page-body">
+      <div className="alert alert-danger">Unable to load portfolio data. <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button></div>
+    </div>
+  );
 
   const fmt = (n) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(0) + 'K' : n?.toLocaleString() || '0';
 

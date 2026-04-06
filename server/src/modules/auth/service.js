@@ -13,9 +13,14 @@ export async function register({ email, password, fullName, role }) {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Only super_admin can create admin roles; default to field_officer
+  // Validate role — reject unknown roles instead of silently downgrading
   const validRoles = ['field_officer', 'reviewer', 'investor_viewer'];
-  const safeRole = validRoles.includes(role) ? role : 'field_officer';
+  if (!role || !validRoles.includes(role)) {
+    const err = new Error(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+    err.statusCode = 400;
+    throw err;
+  }
+  const safeRole = role;
 
   const user = await prisma.user.create({
     data: {

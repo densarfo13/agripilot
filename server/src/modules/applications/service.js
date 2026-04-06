@@ -124,8 +124,24 @@ export async function updateApplication(id, data) {
   await getApplicationById(id);
   const updateData = {};
   if (data.cropType) updateData.cropType = data.cropType;
-  if (data.farmSizeAcres !== undefined) updateData.farmSizeAcres = parseFloat(data.farmSizeAcres);
-  if (data.requestedAmount !== undefined) updateData.requestedAmount = parseFloat(data.requestedAmount);
+  if (data.farmSizeAcres !== undefined) {
+    const val = parseFloat(data.farmSizeAcres);
+    if (isNaN(val) || val <= 0) {
+      const err = new Error('farmSizeAcres must be a positive number');
+      err.statusCode = 400;
+      throw err;
+    }
+    updateData.farmSizeAcres = val;
+  }
+  if (data.requestedAmount !== undefined) {
+    const val = parseFloat(data.requestedAmount);
+    if (isNaN(val) || val <= 0) {
+      const err = new Error('requestedAmount must be a positive number');
+      err.statusCode = 400;
+      throw err;
+    }
+    updateData.requestedAmount = val;
+  }
   if (data.purpose !== undefined) updateData.purpose = data.purpose;
   if (data.season !== undefined) updateData.season = data.season;
   if (data.currencyCode) updateData.currencyCode = data.currencyCode;
@@ -317,13 +333,29 @@ export async function assignReviewer(applicationId, reviewerId) {
     throw err;
   }
 
+  const app = await getApplicationById(applicationId);
+
+  // Only transition to under_review if the current status allows it
+  const statusesAllowingReviewTransition = ['submitted', 'needs_more_evidence', 'field_review_required', 'escalated', 'fraud_hold', 'rejected'];
+  const shouldTransition = statusesAllowingReviewTransition.includes(app.status);
+
+  if (shouldTransition) {
+    validateTransition(app.status, 'under_review');
+  }
+
   await prisma.reviewAssignment.create({
     data: { applicationId, reviewerId, status: 'assigned' },
   });
 
+  const updateData = { assignedReviewerId: reviewerId };
+  if (shouldTransition) {
+    updateData.status = 'under_review';
+  }
+  // If already under_review, approved, disbursed, etc. — just assign without status change
+
   return prisma.application.update({
     where: { id: applicationId },
-    data: { assignedReviewerId: reviewerId, status: 'under_review' },
+    data: updateData,
     include: FULL_INCLUDE,
   });
 }

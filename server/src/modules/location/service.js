@@ -52,6 +52,22 @@ export async function captureBoundary(applicationId, data) {
     await prisma.farmBoundary.delete({ where: { id: existing.id } });
   }
 
+  // Validate all boundary point coordinates
+  for (let i = 0; i < points.length; i++) {
+    const lat = parseFloat(points[i].latitude);
+    const lng = parseFloat(points[i].longitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      const err = new Error(`Boundary point ${i + 1}: latitude must be between -90 and 90`);
+      err.statusCode = 400;
+      throw err;
+    }
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      const err = new Error(`Boundary point ${i + 1}: longitude must be between -180 and 180`);
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   return prisma.farmBoundary.create({
     data: {
       applicationId,

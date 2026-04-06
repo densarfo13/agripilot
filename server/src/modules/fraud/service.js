@@ -123,15 +123,16 @@ export async function runFraudAnalysis(applicationId) {
     reasons.push(`Requested amount (${app.requestedAmount}) exceeds region maximum (${regionCfg.maxLoanAmount} ${regionCfg.currencyCode})`);
   }
 
-  // 6. Region min loan check (suspiciously low)
+  // 6. Region min loan check (suspiciously low — potential structuring or test fraud)
   if (regionCfg.minLoanAmount && app.requestedAmount < regionCfg.minLoanAmount) {
+    riskScore += 5;
     flags.push('below_region_min');
     reasons.push(`Requested amount below region minimum (${regionCfg.minLoanAmount} ${regionCfg.currencyCode})`);
   }
 
   // 7. Missing critical data
-  if (!app.farmLocation) { riskScore += 5; flags.push('no_gps'); }
-  if (app.evidenceFiles.length === 0) { riskScore += 10; flags.push('no_evidence'); }
+  if (!app.farmLocation) { riskScore += 5; flags.push('no_gps'); reasons.push('No GPS location captured for farm'); }
+  if (app.evidenceFiles.length === 0) { riskScore += 10; flags.push('no_evidence'); reasons.push('No evidence files uploaded'); }
 
   // Normalize risk score to 0-100
   riskScore = Math.min(100, riskScore);

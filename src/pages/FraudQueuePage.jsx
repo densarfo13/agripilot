@@ -9,15 +9,17 @@ export default function FraudQueuePage() {
   const [actionLoading, setActionLoading] = useState({});
   const [modal, setModal] = useState(null); // { appId, action, title }
   const [modalReason, setModalReason] = useState('');
+  const [loadError, setLoadError] = useState('');
   const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const res = await api.get('/applications', { params: { status: 'fraud_hold', limit: 100 } });
       setApps(res.data.applications || []);
     } catch {
-      // ignore
+      setLoadError('Failed to load fraud queue');
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,8 @@ export default function FraudQueuePage() {
         <button className="btn btn-outline" onClick={load}>Refresh</button>
       </div>
       <div className="page-body">
-        {loading ? <div className="loading">Loading...</div> : apps.length === 0 ? (
+        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
+        {loading ? <div className="loading">Loading fraud queue...</div> : apps.length === 0 ? (
           <div className="card"><div className="card-body"><div className="empty-state">No applications on fraud hold</div></div></div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -95,21 +98,9 @@ export default function FraudQueuePage() {
                           <strong>Fraud Score:</strong> {fraud.fraudRiskScore}/100
                           <span style={{ marginLeft: '1rem' }}><strong>Risk Level:</strong> {fraud.fraudRiskLevel}</span>
                         </div>
-                        {fraud.flags && fraud.flags.length > 0 && (
-                          <div style={{ marginBottom: '0.75rem' }}>
-                            <strong>Flags:</strong>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.35rem' }}>
-                              {fraud.flags.map((f, i) => (
-                                <span key={i} style={{ background: '#fef2f2', color: '#dc2626', padding: '0.2rem 0.6rem', borderRadius: 4, fontSize: '0.85rem', border: '1px solid #fecaca' }}>
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                         {fraud.reasons && fraud.reasons.length > 0 && (
                           <div style={{ marginBottom: '0.5rem' }}>
-                            <strong>Details:</strong>
+                            <strong>Findings:</strong>
                             <ul style={{ margin: '0.25rem 0 0 1.25rem', padding: 0 }}>
                               {fraud.reasons.map((r, i) => <li key={i} style={{ fontSize: '0.9rem' }}>{r}</li>)}
                             </ul>

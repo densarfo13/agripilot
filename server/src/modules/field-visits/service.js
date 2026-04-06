@@ -29,11 +29,24 @@ export async function listFieldVisits(applicationId) {
   });
 }
 
-export async function completeFieldVisit(visitId, findings, notes) {
+export async function completeFieldVisit(visitId, userId, findings, notes) {
   const visit = await prisma.fieldVisit.findUnique({ where: { id: visitId } });
   if (!visit) {
     const err = new Error('Field visit not found');
     err.statusCode = 404;
+    throw err;
+  }
+
+  if (visit.completed) {
+    const err = new Error('Field visit is already completed');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  // Only the assigned officer (or admins — checked at route level) can complete
+  if (visit.officerId !== userId) {
+    const err = new Error('Only the assigned field officer can complete this visit');
+    err.statusCode = 403;
     throw err;
   }
 

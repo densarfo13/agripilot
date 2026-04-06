@@ -8,21 +8,26 @@ export default function AuditPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
+    setLoadError('');
     api.get('/audit', { params: { page, limit: 50 } })
       .then(r => { setLogs(r.data.logs); setTotal(r.data.total); })
-      .catch(() => {})
+      .catch(() => setLoadError('Failed to load audit trail'))
       .finally(() => setLoading(false));
-  }, [page]);
+  };
+
+  useEffect(() => { load(); }, [page]);
 
   return (
     <>
       <div className="page-header"><h1>Audit Trail ({total})</h1></div>
       <div className="page-body">
-        {loading ? <div className="loading">Loading...</div> : (
+        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
+        {loading ? <div className="loading">Loading audit trail...</div> : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>
               <div className="table-wrap">
@@ -31,6 +36,7 @@ export default function AuditPage() {
                     <tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>Application</th><th>Status Change</th></tr>
                   </thead>
                   <tbody>
+                    {logs.length === 0 && <tr><td colSpan={6} className="empty-state">No audit events found</td></tr>}
                     {logs.map(log => (
                       <tr key={log.id} onClick={() => log.applicationId && navigate(`/applications/${log.applicationId}`)} style={{ cursor: log.applicationId ? 'pointer' : 'default' }}>
                         <td className="text-sm">{new Date(log.createdAt).toLocaleString()}</td>

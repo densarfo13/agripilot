@@ -18,9 +18,11 @@ export default function FarmerMarketTab() {
   const [interestForm, setInterestForm] = useState({ cropType: '', quantityKg: '', preferredBuyerType: '', priceExpectation: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
+  const loadData = () => {
     setLoading(true);
+    setLoadError('');
     Promise.all([
       api.get('/market-guidance/prices', { params: { country } }),
       api.get('/market-guidance/buyer-types', { params: { country } }),
@@ -29,9 +31,11 @@ export default function FarmerMarketTab() {
       setPrices(pRes.data?.crops || pRes.data || []);
       setBuyerTypes(bRes.data?.buyerTypes || bRes.data || []);
       setInterests(iRes.data || []);
-    }).catch(() => {})
+    }).catch(() => setLoadError('Failed to load market data'))
       .finally(() => setLoading(false));
-  }, [farmerId, country]);
+  };
+
+  useEffect(() => { loadData(); }, [farmerId, country]);
 
   const loadTips = (crop) => {
     setSelectedCrop(crop);
@@ -77,6 +81,7 @@ export default function FarmerMarketTab() {
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
+      {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadData}>Retry</button></div>}
       {/* Advisory disclaimer */}
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#92400e' }}>
         <strong>Advisory only:</strong> Prices shown are estimated ranges for general guidance. They are not live market prices. Always verify current prices with local buyers before making selling decisions.

@@ -18,6 +18,7 @@ export default function ApplicationDetailPage() {
   const [actionModal, setActionModal] = useState(null); // {type, title}
   const [actionReason, setActionReason] = useState('');
   const [actionAmount, setActionAmount] = useState('');
+  const [loadError, setLoadError] = useState('');
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const isAdmin = ADMIN_ROLES.includes(user?.role);
@@ -35,8 +36,11 @@ export default function ApplicationDetailPage() {
     ]).then(([appRes, auditRes]) => {
       setApp(appRes.data);
       setAuditLogs(auditRes.data);
-    }).catch(() => navigate('/applications'))
-      .finally(() => setLoading(false));
+      setLoadError('');
+    }).catch((err) => {
+      const msg = err.response?.data?.error || 'Failed to load application';
+      setLoadError(msg);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   // Engine scoring — uses new nested endpoints
@@ -76,7 +80,14 @@ export default function ApplicationDetailPage() {
   };
 
   if (loading) return <div className="loading">Loading application...</div>;
-  if (!app) return null;
+  if (!app) return (
+    <div className="page-body">
+      <div className="alert alert-danger">
+        {loadError || 'Application not found or you do not have permission to view it.'}
+        <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => navigate('/applications')}>Back to Applications</button>
+      </div>
+    </div>
+  );
 
   const currency = app.currencyCode || 'KES';
   const TABS = ['overview', 'location', 'evidence', 'engines', 'reviews', 'timeline'];
@@ -109,7 +120,7 @@ export default function ApplicationDetailPage() {
             <StatusBadge value={app.status} />
           </h1>
           <div className="text-sm text-muted" style={{ marginTop: 2 }}>
-            {currency} {app.requestedAmount?.toLocaleString()} | {app.farmSizeAcres} acres | {app.season || 'No season'}
+            {currency} {app.requestedAmount?.toLocaleString()} | {app.farmSizeAcres} {app.farmer?.countryCode === 'TZ' ? 'hectares' : 'acres'} | {app.season || 'No season'}
             {app.farmer?.countryCode && ` | ${app.farmer.countryCode}`}
           </div>
         </div>
@@ -135,8 +146,16 @@ export default function ApplicationDetailPage() {
 
       {/* Engine buttons bar */}
       {canRunEngines && app.status !== 'draft' && (
-        <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-          <span className="text-sm text-muted" style={{ alignSelf: 'center', marginRight: '0.25rem' }}>Engines:</span>
+        <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem', alignItems: 'center' }}>
+          <button className="btn btn-primary btn-sm" disabled={!!actionLoading} onClick={async () => {
+            for (const eng of ['verification', 'fraud', 'decision', 'benchmark']) {
+              await runEngine(eng, eng);
+            }
+          }}>
+            {actionLoading ? `Running ${actionLoading}...` : 'Run All Engines'}
+          </button>
+          <span style={{ color: 'var(--gray-300)', margin: '0 0.25rem' }}>|</span>
+          <span className="text-sm text-muted" style={{ marginRight: '0.125rem' }}>Individual:</span>
           <button className="btn btn-outline btn-sm" disabled={!!actionLoading} onClick={() => runEngine('verification', 'Verification')}>
             {actionLoading === 'verification' ? '...' : 'Verification'}
           </button>
@@ -217,7 +236,7 @@ function OverviewTab({ app, currency }) {
         <div className="card-body">
           <div className="detail-row"><span className="detail-label">Status</span><span className="detail-value"><StatusBadge value={app.status} /></span></div>
           <div className="detail-row"><span className="detail-label">Crop Type</span><span className="detail-value">{app.cropType}</span></div>
-          <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{app.farmSizeAcres} acres</span></div>
+          <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{app.farmSizeAcres} {app.farmer?.countryCode === 'TZ' ? 'hectares' : 'acres'}</span></div>
           <div className="detail-row"><span className="detail-label">Requested Amount</span><span className="detail-value">{currency} {app.requestedAmount?.toLocaleString()}</span></div>
           {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#16a34a' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
           <div className="detail-row"><span className="detail-label">Purpose</span><span className="detail-value">{app.purpose || '-'}</span></div>
@@ -246,6 +265,24 @@ function OverviewTab({ app, currency }) {
                 <strong>Human review required:</strong> The decision engine recommends <em>{app.decisionResult.decisionLabel}</em>
                 {app.decisionResult.recommendedAmount && <> for {currency} {app.decisionResult.recommendedAmount.toLocaleString()}</>}.
                 Use the <strong>Approve</strong> or <strong>Reject</strong> button above to finalize.
+              </div>
+            )}
+            {app.decisionResult.decision === 'reject' && (
+              <div className="alert alert-danger" style={{ marginBottom: '1rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
+                <strong>Application rejected.</strong> {app.decisionResult.decisionLabel}.
+                {app.decisionResult.nextActions?.length > 0 && <> Next: {app.decisionResult.nextActions[0]}.</>}
+              </div>
+            )}
+            {app.decisionResult.decision === 'escalate' && (
+              <div className="alert alert-warning" style={{ marginBottom: '1rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+                <strong>Escalated for senior review.</strong> {app.decisionResult.decisionLabel}.
+                {app.decisionResult.nextActions?.length > 0 && <> Next: {app.decisionResult.nextActions[0]}.</>}
+              </div>
+            )}
+            {app.decisionResult.decision === 'needs_more_evidence' && (
+              <div className="alert alert-warning" style={{ marginBottom: '1rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+                <strong>More evidence needed.</strong> {app.decisionResult.decisionLabel}.
+                {app.decisionResult.nextActions?.length > 0 && <> Next: {app.decisionResult.nextActions[0]}.</>}
               </div>
             )}
             <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem' }}>
@@ -386,7 +423,19 @@ function EnginesTab({ app, currency }) {
                 <div className="detail-row"><span className="detail-label">Risk Level</span><span className="detail-value"><StatusBadge value={f.fraudRiskLevel} /></span></div>
                 <div className="detail-row"><span className="detail-label">Action</span><span className="detail-value">{f.action}</span></div>
               </div>
-              {f.flags?.length > 0 && <div className="alert alert-danger" style={{ marginTop: '0.75rem' }}><strong>Fraud Flags:</strong> {f.flags.join(', ')}</div>}
+              {f.reasons?.length > 0 && (
+                <div className="alert alert-danger" style={{ marginTop: '0.75rem' }}>
+                  <strong>Fraud Findings:</strong>
+                  <ul style={{ marginTop: '0.25rem', paddingLeft: '1.25rem', marginBottom: 0 }}>
+                    {f.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              )}
+              {(f.action === 'hold' || f.action === 'block') && app.status !== 'fraud_hold' && app.status !== 'rejected' && (
+                <div className="alert alert-warning" style={{ marginTop: '0.75rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+                  <strong>⚠ Stale result:</strong> This application was released from fraud hold. Fraud results may be outdated — consider re-running fraud analysis.
+                </div>
+              )}
               {f.intelligenceSummary && <div className="text-sm text-muted" style={{ marginTop: '0.5rem' }}>Intelligence context attached</div>}
             </>
           ) : <div className="empty-state">Fraud analysis not yet run</div>}

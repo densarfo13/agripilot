@@ -101,6 +101,25 @@ export async function getMyFarmerProfile(userId) {
 
 export async function updateFarmer(id, data) {
   await getFarmerById(id); // ensure exists
+
+  // Validate numeric fields
+  if (data.farmSizeAcres !== undefined && data.farmSizeAcres !== null && data.farmSizeAcres !== '') {
+    const val = parseFloat(data.farmSizeAcres);
+    if (isNaN(val) || val < 0) {
+      const err = new Error('farmSizeAcres must be a non-negative number');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+  if (data.yearsExperience !== undefined && data.yearsExperience !== null && data.yearsExperience !== '') {
+    const val = parseInt(data.yearsExperience, 10);
+    if (isNaN(val) || val < 0) {
+      const err = new Error('yearsExperience must be a non-negative integer');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   return prisma.farmer.update({
     where: { id },
     data: {
@@ -112,7 +131,7 @@ export async function updateFarmer(id, data) {
       ...(data.village !== undefined && { village: data.village }),
       ...(data.primaryCrop !== undefined && { primaryCrop: data.primaryCrop }),
       ...(data.farmSizeAcres !== undefined && { farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null }),
-      ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience) : null }),
+      ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience, 10) : null }),
     },
   });
 }

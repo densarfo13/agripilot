@@ -5,6 +5,7 @@ import prisma from '../config/database.js';
 /**
  * JWT authentication middleware.
  * Extracts token from Authorization header, verifies it,
+ * checks that the user account is still active in the database,
  * and attaches user to req.user.
  */
 export function authenticate(req, res, next) {
@@ -14,13 +15,32 @@ export function authenticate(req, res, next) {
   }
 
   const token = header.slice(7);
+  let payload;
   try {
-    const payload = jwt.verify(token, config.jwt.secret);
-    req.user = payload; // { sub, email, role }
-    next();
+    payload = jwt.verify(token, config.jwt.secret);
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+
+  // Verify user still exists and is active in the database
+  prisma.user.findUnique({
+    where: { id: payload.sub },
+    select: { id: true, active: true, role: true },
+  })
+    .then((user) => {
+      if (!user) {
+        return res.status(401).json({ error: 'User account no longer exists' });
+      }
+      if (!user.active) {
+        return res.status(403).json({ error: 'Account deactivated' });
+      }
+      // Use DB role (source of truth) rather than JWT role in case it was changed
+      req.user = { ...payload, role: user.role };
+      next();
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Authentication check failed' });
+    });
 }
 
 /**
@@ -73,5 +93,83 @@ export function requireApprovedFarmer(req, res, next) {
     })
     .catch(() => {
       res.status(500).json({ error: 'Failed to verify farmer status' });
+    });
+}
+
+/**
+ * Farmer ownership middleware.
+ * For farmer-role users, verifies that the :farmerId param belongs to them.
+ * Staff roles (non-farmer) pass through unconditionally.
+ * Use AFTER authenticate middleware on routes with :farmerId param.
+ */
+export function requireFarmerOwnership(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  // Staff roles can access any farmer's data
+  if (req.user.role !== 'farmer') {
+    return next();
+  }
+  // Farmer role — verify ownership
+  const farmerId = req.params.farmerId;
+  if (!farmerId) {
+    return next(); // No farmerId param on this route — skip
+  }
+  prisma.farmer.findUnique({
+    where: { id: farmerId },
+    select: { userId: true },
+  })
+    .then((farmer) => {
+      if (!farmer) {
+        return res.status(404).json({ error: 'Farmer not found' });
+      }
+      if (farmer.userId !== req.user.sub) {
+        return res.status(403).json({ error: 'Access denied — you can only access your own data' });
+      }
+      next();
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Ownership check failed' });
+    });
+}
+
+/**
+ * Application assignment scoping middleware.
+ * For field_officer role: verifies the application is assigned to them.
+ * For reviewer role: verifies the application is assigned to them.
+ * Admin roles pass through.
+ * Use AFTER authenticate on routes with :id param referencing an application.
+ */
+export function requireApplicationAccess(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  const role = req.user.role;
+  // Admin roles can access any application
+  if (['super_admin', 'institutional_admin'].includes(role)) {
+    return next();
+  }
+  const applicationId = req.params.id || req.params.applicationId;
+  if (!applicationId) {
+    return next();
+  }
+  prisma.application.findUnique({
+    where: { id: applicationId },
+    select: { assignedFieldOfficerId: true, assignedReviewerId: true },
+  })
+    .then((app) => {
+      if (!app) {
+        return res.status(404).json({ error: 'Application not found' });
+      }
+      if (role === 'field_officer' && app.assignedFieldOfficerId !== req.user.sub) {
+        return res.status(403).json({ error: 'You are not assigned to this application' });
+      }
+      if (role === 'reviewer' && app.assignedReviewerId !== req.user.sub) {
+        return res.status(403).json({ error: 'You are not assigned to this application' });
+      }
+      next();
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Application access check failed' });
     });
 }

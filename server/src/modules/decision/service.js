@@ -63,12 +63,20 @@ export async function runDecisionEngine(applicationId) {
   const nextActions = [];
 
   // Fraud overrides
+  // Surface specific fraud flags in decision reasons for clarity
+  const fraudFlags = app.fraudResult.flags || [];
+  const fraudReasons = app.fraudResult.reasons || [];
+
   if (fRiskLevel === 'critical') {
     decision = 'reject';
     decisionLabel = 'Rejected — Critical Fraud Risk';
     riskLevel = 'high';
     blockers.push('Critical fraud indicators detected');
     reasons.push(`Fraud risk score: ${fRiskScore}/100`);
+    // Surface the specific fraud findings so reviewer doesn't have to check fraud tab separately
+    if (fraudReasons.length > 0) {
+      reasons.push(...fraudReasons.slice(0, 3).map(r => `Fraud: ${r}`));
+    }
     nextActions.push('Investigate fraud flags', 'Contact farmer for verification');
   } else if (fRiskLevel === 'high') {
     decision = 'escalate';
@@ -76,22 +84,26 @@ export async function runDecisionEngine(applicationId) {
     riskLevel = 'high';
     blockers.push('High fraud risk requires manual review');
     reasons.push(`Fraud risk score: ${fRiskScore}/100`);
+    if (fraudReasons.length > 0) {
+      reasons.push(...fraudReasons.slice(0, 3).map(r => `Fraud: ${r}`));
+    }
     nextActions.push('Senior reviewer assessment required', 'Additional field visit recommended');
   } else if (vScore >= approveThreshold && fRiskLevel === 'low') {
     decision = 'approve';
-    decisionLabel = 'Approved';
+    decisionLabel = 'Recommended for Approval';
     riskLevel = 'low';
     recommendedAmount = app.requestedAmount;
     reasons.push(`Strong verification (${vScore}/100)`, 'Low fraud risk');
     reasons.push(`Region: ${regionCfg.country} (${regionCfg.currencyCode})`);
+    nextActions.push('Review recommendation and confirm approval', 'Verify farmer identity before disbursement');
   } else if (vScore >= conditionalThreshold && (fRiskLevel === 'low' || fRiskLevel === 'medium')) {
     decision = 'conditional_approve';
-    decisionLabel = 'Conditionally Approved';
+    decisionLabel = 'Conditionally Recommended';
     riskLevel = fRiskLevel === 'medium' ? 'medium' : 'low';
     recommendedAmount = app.requestedAmount * 0.8;
     reasons.push(`Moderate verification (${vScore}/100, threshold: ${conditionalThreshold})`);
     if (fRiskLevel === 'medium') reasons.push('Medium fraud risk — reduced amount');
-    nextActions.push('Verify conditions before disbursement');
+    nextActions.push('Verify conditions before disbursement', 'Consider field visit before approval');
 
     if (app.verificationResult.flags?.length > 0) {
       blockers.push(...app.verificationResult.flags.map(f => `Resolve: ${f}`));

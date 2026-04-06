@@ -10,8 +10,8 @@ export default function ReportsPage() {
     api.get('/reports/portfolio').then(r => setReport(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <><div className="page-header"><h1>Reports</h1></div><div className="page-body"><div className="loading">Loading...</div></div></>;
-  if (!report) return <><div className="page-header"><h1>Reports</h1></div><div className="page-body"><div className="loading">Failed to load report data.</div></div></>;
+  if (loading) return <><div className="page-header"><h1>Reports</h1></div><div className="page-body"><div className="loading">Loading report...</div></div></>;
+  if (!report) return <><div className="page-header"><h1>Reports</h1></div><div className="page-body"><div className="alert alert-danger">Failed to load report data. <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button></div></div></>;
 
   const fmt = (n) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(0) + 'K' : n?.toLocaleString() || '0';
 

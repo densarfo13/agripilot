@@ -11,7 +11,8 @@ import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.j
 
 const VALID_REMINDER_TYPES = [
   'fertilizing', 'weeding', 'spraying', 'irrigation', 'harvesting',
-  'storage_check', 'market_check', 'custom',
+  'storage_check', 'market_check', 'pest_inspection', 'drying_reminder',
+  'harvest_check', 'farm_visit_followup', 'evidence_completion', 'general', 'custom',
 ];
 
 export async function createReminder(farmerId, data) {

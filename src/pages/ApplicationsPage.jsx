@@ -12,13 +12,15 @@ export default function ApplicationsPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const navigate = useNavigate();
 
   const load = () => {
     setLoading(true);
+    setLoadError('');
     api.get('/applications', { params: { page, limit: 20, status: status || undefined, search: search || undefined } })
       .then(r => { setApps(r.data.applications); setTotal(r.data.total); })
-      .catch(() => {})
+      .catch(() => setLoadError('Failed to load applications. Please try again.'))
       .finally(() => setLoading(false));
   };
 
@@ -41,7 +43,8 @@ export default function ApplicationsPage() {
         </div>
       </div>
       <div className="page-body">
-        {loading ? <div className="loading">Loading...</div> : (
+        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
+        {loading ? <div className="loading">Loading applications...</div> : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>
               <div className="table-wrap">
