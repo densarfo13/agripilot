@@ -10,11 +10,11 @@ router.use(authenticate);
 // Run fraud analysis
 router.post('/:applicationId/run', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await fraudService.runFraudAnalysis(req.params.applicationId);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'fraud_analysis_run', details: { riskScore: result.fraudRiskScore, riskLevel: result.fraudRiskLevel },
     ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.json(result);
 }));
 

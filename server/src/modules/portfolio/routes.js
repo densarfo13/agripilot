@@ -16,10 +16,10 @@ router.get('/summary', authorize('super_admin', 'institutional_admin', 'investor
 // Take a portfolio snapshot
 router.post('/snapshot', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const snapshot = await portfolioService.takeSnapshot();
-  await writeAuditLog({
+  writeAuditLog({
     userId: req.user.sub, action: 'portfolio_snapshot_taken',
     details: { snapshotId: snapshot.id }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.status(201).json(snapshot);
 }));
 

@@ -34,10 +34,10 @@ router.post('/:applicationId', authorize('super_admin', 'institutional_admin', '
   if (!req.file) return res.status(400).json({ error: 'File is required' });
   const type = req.body.type || 'other';
   const evidence = await evidenceService.uploadEvidence(req.params.applicationId, req.file, type);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'evidence_uploaded', details: { evidenceId: evidence.id, type }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.status(201).json(evidence);
 }));
 
@@ -50,10 +50,10 @@ router.get('/:applicationId', asyncHandler(async (req, res) => {
 // Delete evidence
 router.delete('/file/:evidenceId', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   await evidenceService.deleteEvidence(req.params.evidenceId);
-  await writeAuditLog({
+  writeAuditLog({
     userId: req.user.sub, action: 'evidence_deleted',
     details: { evidenceId: req.params.evidenceId }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.json({ message: 'Evidence deleted' });
 }));
 

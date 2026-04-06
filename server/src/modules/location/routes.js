@@ -14,10 +14,10 @@ router.post('/:applicationId/gps', authorize('super_admin', 'institutional_admin
     return res.status(400).json({ error: 'latitude and longitude are required' });
   }
   const location = await locationService.captureGPS(req.params.applicationId, req.body);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'gps_captured', details: { latitude, longitude }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.status(201).json(location);
 }));
 
@@ -31,10 +31,10 @@ router.get('/:applicationId/gps', asyncHandler(async (req, res) => {
 // Capture boundary for an application
 router.post('/:applicationId/boundary', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
   const boundary = await locationService.captureBoundary(req.params.applicationId, req.body);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'boundary_captured', details: { pointCount: boundary.points.length }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.status(201).json(boundary);
 }));
 

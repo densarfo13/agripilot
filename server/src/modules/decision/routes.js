@@ -10,13 +10,13 @@ router.use(authenticate);
 // Run decision engine
 router.post('/:applicationId/run', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await decisionService.runDecisionEngine(req.params.applicationId);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'decision_engine_run',
     details: { decision: result.decision, riskLevel: result.riskLevel },
     newStatus: result.decision === 'approve' ? 'approved' : result.decision === 'reject' ? 'rejected' : null,
     ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.json(result);
 }));
 

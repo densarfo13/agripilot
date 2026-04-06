@@ -10,11 +10,11 @@ router.use(authenticate);
 // Run verification engine for an application
 router.post('/:applicationId/run', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await verificationService.runVerification(req.params.applicationId);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'verification_run', details: { score: result.verificationScore, confidence: result.confidence },
     ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.json(result);
 }));
 

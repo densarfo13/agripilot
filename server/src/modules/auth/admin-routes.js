@@ -35,7 +35,7 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
     select: { id: true, email: true, fullName: true, role: true, active: true, createdAt: true },
   });
 
-  await writeAuditLog({ userId: req.user.sub, action: 'user_created', details: { newUserId: user.id, role } });
+  writeAuditLog({ userId: req.user.sub, action: 'user_created', details: { newUserId: user.id, role } }).catch(() => {});
   res.status(201).json(user);
 }));
 
@@ -50,7 +50,7 @@ router.patch('/:id/toggle-active', authorize('super_admin'), asyncHandler(async 
     select: { id: true, email: true, fullName: true, role: true, active: true },
   });
 
-  await writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } });
+  writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } }).catch(() => {});
   res.json(updated);
 }));
 

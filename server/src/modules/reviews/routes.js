@@ -12,10 +12,10 @@ router.post('/:applicationId/notes', authorize('super_admin', 'institutional_adm
   const { content, internal } = req.body;
   if (!content) return res.status(400).json({ error: 'content is required' });
   const note = await reviewService.addReviewNote(req.params.applicationId, req.user.sub, content, internal !== false);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'review_note_added', ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.status(201).json(note);
 }));
 
@@ -34,10 +34,10 @@ router.get('/:applicationId/assignments', asyncHandler(async (req, res) => {
 // Complete a review assignment
 router.patch('/assignments/:assignmentId/complete', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const assignment = await reviewService.completeReviewAssignment(req.params.assignmentId, req.user.sub);
-  await writeAuditLog({
+  writeAuditLog({
     userId: req.user.sub, action: 'review_assignment_completed',
     details: { assignmentId: req.params.assignmentId }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.json(assignment);
 }));
 

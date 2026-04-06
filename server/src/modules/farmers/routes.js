@@ -14,7 +14,7 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
   }
   const farmer = await farmersService.createFarmer(req.body, req.user.sub);
-  await writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id } });
+  writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id } }).catch(() => {});
   res.status(201).json(farmer);
 }));
 
@@ -39,14 +39,14 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // Update farmer
 router.put('/:id', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
   const farmer = await farmersService.updateFarmer(req.params.id, req.body);
-  await writeAuditLog({ userId: req.user.sub, action: 'farmer_updated', details: { farmerId: farmer.id } });
+  writeAuditLog({ userId: req.user.sub, action: 'farmer_updated', details: { farmerId: farmer.id } }).catch(() => {});
   res.json(farmer);
 }));
 
 // Delete farmer
 router.delete('/:id', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   await farmersService.deleteFarmer(req.params.id);
-  await writeAuditLog({ userId: req.user.sub, action: 'farmer_deleted', details: { farmerId: req.params.id } });
+  writeAuditLog({ userId: req.user.sub, action: 'farmer_deleted', details: { farmerId: req.params.id } }).catch(() => {});
   res.json({ message: 'Farmer deleted' });
 }));
 

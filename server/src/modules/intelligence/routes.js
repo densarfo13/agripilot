@@ -10,10 +10,10 @@ router.use(authenticate);
 // Run intelligence engine (admin/reviewer only — this is secondary intelligence)
 router.post('/:applicationId/run', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const result = await intelligenceService.runIntelligence(req.params.applicationId);
-  await writeAuditLog({
+  writeAuditLog({
     applicationId: req.params.applicationId, userId: req.user.sub,
     action: 'intelligence_run', details: { mlShadowScore: result.mlShadowScore }, ipAddress: req.ip,
-  });
+  }).catch(() => {});
   res.json(result);
 }));
 
