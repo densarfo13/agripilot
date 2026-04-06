@@ -11,6 +11,7 @@ import prisma from '../../config/database.js';
 export async function writeAuditLog({
   applicationId = null,
   userId = null,
+  organizationId = null,
   action,
   details = null,
   previousStatus = null,
@@ -22,6 +23,7 @@ export async function writeAuditLog({
       data: {
         applicationId,
         userId,
+        organizationId,
         action,
         details,
         previousStatus,

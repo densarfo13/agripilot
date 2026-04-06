@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
+import { extractOrganization } from '../../middleware/orgScope.js';
 import { validateParamUUID, parsePositiveInt } from '../../middleware/validate.js';
 import prisma from '../../config/database.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(extractOrganization);
 
 // Get audit trail for an application
 router.get('/application/:applicationId',
@@ -20,13 +22,16 @@ router.get('/application/:applicationId',
     res.json(logs);
   }));
 
-// Get all audit logs (admin only)
-router.get('/', authorize('super_admin'), asyncHandler(async (req, res) => {
+// Get all audit logs (admin only, org-scoped)
+router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const page = parsePositiveInt(req.query.page, 1, 1000);
   const limit = parsePositiveInt(req.query.limit, 50, 200);
   const where = {};
   if (req.query.action) where.action = req.query.action;
   if (req.query.userId) where.userId = req.query.userId;
+
+  // Org-scope: institutional_admin sees only their org's audit logs
+  if (req.organizationId) where.organizationId = req.organizationId;
 
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({

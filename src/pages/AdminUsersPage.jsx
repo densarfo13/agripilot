@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
             <div className="card-body" style={{ padding: 0 }}>
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th>{isSuperAdmin && <th>Actions</th>}</tr>
+                  <tr><th>Name</th><th>Email</th><th>Role</th>{isSuperAdmin && <th>Organization</th>}<th>Status</th><th>Created</th>{isSuperAdmin && <th>Actions</th>}</tr>
                 </thead>
                 <tbody>
                   {users.map(u => (
@@ -52,6 +52,7 @@ export default function AdminUsersPage() {
                       <td style={{ fontWeight: 500 }}>{u.fullName}</td>
                       <td>{u.email}</td>
                       <td><span className="badge badge-submitted">{u.role.replace(/_/g, ' ')}</span></td>
+                      {isSuperAdmin && <td className="text-sm text-muted">{u.organization?.name || '—'}</td>}
                       <td>{u.active ? <span className="badge badge-approved">Active</span> : <span className="badge badge-rejected">Inactive</span>}</td>
                       <td className="text-sm text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                       {isSuperAdmin && (

@@ -68,6 +68,7 @@ router.get('/:applicationId',
 router.delete('/file/:evidenceId',
   validateParamUUID('evidenceId'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('evidence-delete'),
   asyncHandler(async (req, res) => {
     const evidence = await evidenceService.deleteEvidence(req.params.evidenceId);
     writeAuditLog({

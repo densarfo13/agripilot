@@ -90,10 +90,11 @@ export async function farmerSelfRegister({
 
 /**
  * Get pending farmer registrations (for admin/institutional staff).
+ * @param {Object} orgScope - Organization filter, e.g. { organizationId: 'xxx' }
  */
-export async function getPendingRegistrations() {
+export async function getPendingRegistrations(orgScope = {}) {
   return prisma.farmer.findMany({
-    where: { selfRegistered: true, registrationStatus: 'pending_approval' },
+    where: { selfRegistered: true, registrationStatus: 'pending_approval', ...orgScope },
     include: {
       userAccount: {
         select: { id: true, email: true, fullName: true, createdAt: true },
@@ -105,10 +106,11 @@ export async function getPendingRegistrations() {
 
 /**
  * Get all self-registered farmers with any status (for admin view).
+ * @param {Object} orgScope - Organization filter
  */
-export async function getAllSelfRegistered() {
+export async function getAllSelfRegistered(orgScope = {}) {
   return prisma.farmer.findMany({
-    where: { selfRegistered: true },
+    where: { selfRegistered: true, ...orgScope },
     include: {
       userAccount: {
         select: { id: true, email: true, fullName: true, createdAt: true },
@@ -122,31 +124,34 @@ export async function getAllSelfRegistered() {
  * Approve a farmer registration.
  */
 export async function approveRegistration({ farmerId, approvedById, assignedOfficerId }) {
-  const farmer = await prisma.farmer.findUnique({ where: { id: farmerId } });
-  if (!farmer) {
-    const err = new Error('Farmer not found');
-    err.statusCode = 404;
-    throw err;
-  }
-  if (farmer.registrationStatus !== 'pending_approval') {
-    const err = new Error(`Cannot approve: current status is ${farmer.registrationStatus}`);
-    err.statusCode = 400;
-    throw err;
-  }
+  // Transaction: read + status check + update atomically to prevent race conditions
+  const updated = await prisma.$transaction(async (tx) => {
+    const farmer = await tx.farmer.findUnique({ where: { id: farmerId } });
+    if (!farmer) {
+      const err = new Error('Farmer not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (farmer.registrationStatus !== 'pending_approval') {
+      const err = new Error(`Cannot approve: current status is ${farmer.registrationStatus}`);
+      err.statusCode = 400;
+      throw err;
+    }
 
-  const updated = await prisma.farmer.update({
-    where: { id: farmerId },
-    data: {
-      registrationStatus: 'approved',
-      approvedAt: new Date(),
-      approvedById,
-      assignedOfficerId: assignedOfficerId || null,
-    },
-    include: {
-      userAccount: {
-        select: { id: true, email: true, fullName: true },
+    return tx.farmer.update({
+      where: { id: farmerId },
+      data: {
+        registrationStatus: 'approved',
+        approvedAt: new Date(),
+        approvedById,
+        assignedOfficerId: assignedOfficerId || null,
       },
-    },
+      include: {
+        userAccount: {
+          select: { id: true, email: true, fullName: true },
+        },
+      },
+    });
   });
 
   return updated;
@@ -213,6 +218,7 @@ export async function inviteFarmer({
   farmSizeAcres,
   invitedById,
   assignedOfficerId,
+  organizationId,
 }) {
   // Validate required fields
   if (!fullName || !phone || !region) {
@@ -253,6 +259,7 @@ export async function inviteFarmer({
           role: 'farmer',
           active: true,
           preferredLanguage: preferredLanguage || 'en',
+          organizationId: organizationId || null,
         },
       });
       userId = user.id;
@@ -276,6 +283,7 @@ export async function inviteFarmer({
         approvedById: invitedById,
         assignedOfficerId: assignedOfficerId || null,
         userId: userId,
+        organizationId: organizationId || null,
         createdById: invitedById,
       },
       include: {

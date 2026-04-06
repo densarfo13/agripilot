@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../../config/database.js';
 import { config } from '../../config/index.js';
 
-export async function register({ email, password, fullName, role }) {
+export async function register({ email, password, fullName, role, organizationId }) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     const err = new Error('Email already registered');
@@ -28,6 +28,7 @@ export async function register({ email, password, fullName, role }) {
       passwordHash,
       fullName,
       role: safeRole,
+      organizationId: organizationId || null,
     },
   });
 
@@ -45,6 +46,9 @@ export async function login({ email, password }) {
     include: {
       farmerProfile: {
         select: { id: true, registrationStatus: true, fullName: true },
+      },
+      organization: {
+        select: { id: true, name: true, type: true },
       },
     },
   });
@@ -85,6 +89,10 @@ export async function login({ email, password }) {
     sanitized.farmerId = user.farmerProfile.id;
     sanitized.registrationStatus = user.farmerProfile.registrationStatus;
   }
+
+  // Include organization info
+  sanitized.organizationId = user.organizationId || null;
+  sanitized.organization = user.organization || null;
 
   return {
     user: sanitized,
@@ -157,6 +165,7 @@ function sanitizeUser(user) {
     fullName: user.fullName,
     role: user.role,
     active: user.active,
+    organizationId: user.organizationId || null,
     createdAt: user.createdAt,
   };
 }

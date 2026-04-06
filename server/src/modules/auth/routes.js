@@ -29,7 +29,7 @@ router.post('/register', authenticate, authorize('super_admin', 'institutional_a
     return res.status(400).json({ error: pwCheck.message });
   }
 
-  const result = await authService.register({ email: email.toLowerCase().trim(), password, fullName: fullName.trim(), role });
+  const result = await authService.register({ email: email.toLowerCase().trim(), password, fullName: fullName.trim(), role, organizationId: req.user?.organizationId });
   writeAuditLog({ userId: req.user.sub, action: 'staff_registered', details: { newUserId: result.user.id, role: result.user.role } }).catch(() => {});
   res.status(201).json(result);
 }));

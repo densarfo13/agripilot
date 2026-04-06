@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, invalidateAuthCache } from '../../middleware/auth.js';
+import { extractOrganization, orgWhereUser, orgWhereFarmer } from '../../middleware/orgScope.js';
 import { validateParamUUID, isValidEmail, validatePassword } from '../../middleware/validate.js';
 import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
@@ -10,21 +11,28 @@ import { getPendingRegistrations, getAllSelfRegistered, approveRegistration, rej
 
 const router = Router();
 router.use(authenticate);
+router.use(extractOrganization);
 
-// ─── User Management (admin-only) ─────────────────────
+// ─── User Management (admin-only, org-scoped) ─────────
 
-// List all users
+// List all users (scoped to organization)
 router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+  const where = orgWhereUser(req);
   const users = await prisma.user.findMany({
-    select: { id: true, email: true, fullName: true, role: true, active: true, createdAt: true },
+    where,
+    select: {
+      id: true, email: true, fullName: true, role: true, active: true, createdAt: true,
+      organizationId: true,
+      organization: { select: { id: true, name: true } },
+    },
     orderBy: { createdAt: 'desc' },
   });
   res.json(users);
 }));
 
-// Create user (super_admin only)
+// Create user (super_admin only — assigns to org)
 router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
-  const { email, password, fullName, role } = req.body;
+  const { email, password, fullName, role, organizationId } = req.body;
   if (!email || !password || !fullName || !role) {
     return res.status(400).json({ error: 'email, password, fullName, and role are required' });
   }
@@ -44,13 +52,25 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (existing) return res.status(409).json({ error: 'Email already registered' });
 
+  // Use provided organizationId or fall back to creator's org
+  const targetOrgId = organizationId || req.organizationId || null;
+
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { email: email.toLowerCase().trim(), passwordHash, fullName: fullName.trim(), role },
-    select: { id: true, email: true, fullName: true, role: true, active: true, createdAt: true },
+    data: {
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      fullName: fullName.trim(),
+      role,
+      organizationId: targetOrgId,
+    },
+    select: {
+      id: true, email: true, fullName: true, role: true, active: true, createdAt: true,
+      organizationId: true,
+    },
   });
 
-  writeAuditLog({ userId: req.user.sub, action: 'user_created', details: { newUserId: user.id, role } }).catch(() => {});
+  writeAuditLog({ userId: req.user.sub, action: 'user_created', details: { newUserId: user.id, role }, organizationId: targetOrgId }).catch(() => {});
   res.status(201).json(user);
 }));
 
@@ -92,22 +112,21 @@ router.patch('/:id/reset-password',
     res.json(result);
   }));
 
-// ─── Farmer Registration Management ────────────────────
-// Accessible by admins AND field officers
+// ─── Farmer Registration Management (org-scoped) ──────
 
-// List pending farmer registrations
+// List pending farmer registrations (scoped to organization)
 router.get('/pending-registrations',
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   asyncHandler(async (req, res) => {
-    const pending = await getPendingRegistrations();
+    const pending = await getPendingRegistrations(orgWhereFarmer(req));
     res.json(pending);
   }));
 
-// List all self-registered farmers (any status)
+// List all self-registered farmers (any status, org-scoped)
 router.get('/self-registered',
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   asyncHandler(async (req, res) => {
-    const all = await getAllSelfRegistered();
+    const all = await getAllSelfRegistered(orgWhereFarmer(req));
     res.json(all);
   }));
 
@@ -126,6 +145,7 @@ router.post('/:id/approve-registration',
       userId: req.user.sub,
       action: 'farmer_registration_approved',
       details: { farmerId: req.params.id, assignedOfficerId },
+      organizationId: req.organizationId,
     }).catch(() => {});
     res.json(result);
   }));
@@ -145,6 +165,7 @@ router.post('/:id/reject-registration',
       userId: req.user.sub,
       action: 'farmer_registration_rejected',
       details: { farmerId: req.params.id, rejectionReason },
+      organizationId: req.organizationId,
     }).catch(() => {});
     res.json(result);
   }));

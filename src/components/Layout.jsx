@@ -102,6 +102,11 @@ export default function Layout() {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-brand">AgriPilot</div>
+        {user?.organization?.name && (
+          <div className="sidebar-org" title={`Organization: ${user.organization.name} (${user.organization.type})`}>
+            {user.organization.name}
+          </div>
+        )}
         <nav className="sidebar-nav">
           {NAV.map((section) => {
             if (section.roles && !section.roles.includes(user?.role)) return null;

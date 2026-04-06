@@ -3,6 +3,7 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
+import { extractOrganization } from '../../middleware/orgScope.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -11,6 +12,7 @@ const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'rev
 const router = Router();
 router.use(authenticate);
 router.use(requireApprovedFarmer);
+router.use(extractOrganization);
 
 // List activities for a farmer (supports filters: type, cropType, from, to)
 router.get('/farmer/:farmerId',

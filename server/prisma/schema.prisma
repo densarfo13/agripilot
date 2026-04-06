@@ -7,6 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Organization ──────────────────────────────────────
+
+enum OrganizationType {
+  NGO
+  LENDER
+  COOPERATIVE
+  INVESTOR
+  DEVELOPMENT_PARTNER
+  INTERNAL
+}
+
+model Organization {
+  id          String            @id @default(uuid())
+  name        String
+  type        OrganizationType  @default(INTERNAL)
+  countryCode String?           @map("country_code")
+  regionCode  String?           @map("region_code")
+  isActive    Boolean           @default(true) @map("is_active")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  users       User[]
+  farmers     Farmer[]
+
+  @@map("organizations")
+}
+
 // ─── Enums ──────────────────────────────────────────────
 
 enum UserRole {
@@ -157,12 +184,14 @@ model User {
   fullName          String    @map("full_name")
   role              UserRole  @default(field_officer)
   active            Boolean   @default(true)
+  organizationId    String?   @map("organization_id")
   preferredLanguage String    @default("en") @map("preferred_language")
   lastLoginMethod   String?   @map("last_login_method")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
+  organization          Organization?       @relation(fields: [organizationId], references: [id])
   farmerProfile         Farmer?             @relation("FarmerUserAccount")
   farmersCreated        Farmer[]            @relation("FarmerCreatedBy")
   applicationsCreated   Application[]       @relation("ApplicationCreatedBy")
@@ -173,6 +202,7 @@ model User {
   fieldVisits           FieldVisit[]
   federatedIdentities   FederatedIdentity[]
 
+  @@index([organizationId], map: "idx_users_org")
   @@map("users")
 }
 
@@ -211,6 +241,7 @@ model Farmer {
   farmSizeAcres        Float?              @map("farm_size_acres")
   yearsExperience      Int?                @map("years_experience")
   deviceId             String?             @map("device_id")
+  organizationId       String?             @map("organization_id")
   createdById          String              @map("created_by_id")
   selfRegistered       Boolean             @default(false) @map("self_registered")
   registrationStatus   RegistrationStatus  @default(pending_approval) @map("registration_status")
@@ -229,6 +260,7 @@ model Farmer {
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
+  organization        Organization?       @relation(fields: [organizationId], references: [id])
   createdBy           User                @relation("FarmerCreatedBy", fields: [createdById], references: [id])
   userAccount         User?               @relation("FarmerUserAccount", fields: [userId], references: [id])
   applications        Application[]
@@ -239,6 +271,7 @@ model Farmer {
   produceStorageStatus ProduceStorageStatus[]
   buyerInterests      BuyerInterest[]
 
+  @@index([organizationId], map: "idx_farmers_org")
   @@index([createdById], map: "idx_farmers_created_by")
   @@index([registrationStatus], map: "idx_farmers_reg_status")
   @@index([countryCode], map: "idx_farmers_country")
@@ -502,6 +535,7 @@ model AuditLog {
   id              String   @id @default(uuid())
   applicationId   String?  @map("application_id")
   userId          String?  @map("user_id")
+  organizationId  String?  @map("organization_id")
   action          String
   details         Json?
   previousStatus  String?  @map("previous_status")
@@ -514,6 +548,7 @@ model AuditLog {
 
   @@index([applicationId], map: "idx_audit_application")
   @@index([userId], map: "idx_audit_user")
+  @@index([organizationId], map: "idx_audit_org")
   @@index([action], map: "idx_audit_action")
   @@index([createdAt], map: "idx_audit_created_at")
   @@map("audit_logs")
@@ -543,6 +578,7 @@ model FieldVisit {
 
 model PortfolioSnapshot {
   id                     String   @id @default(uuid())
+  organizationId         String?  @map("organization_id")
   snapshotDate           DateTime @map("snapshot_date")
   totalApplications      Int      @map("total_applications")
   totalRequestedAmount   Float    @map("total_requested_amount")
@@ -555,6 +591,7 @@ model PortfolioSnapshot {
   topRiskRegions         Json     @map("top_risk_regions")
   createdAt              DateTime @default(now()) @map("created_at")
 
+  @@index([organizationId], map: "idx_portfolio_org")
   @@map("portfolio_snapshots")
 }
 

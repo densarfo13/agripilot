@@ -19,6 +19,7 @@ import { getSeasonTrustSummary, getPerformanceExport } from './trustSummary.js';
 import prisma from '../../config/database.js';
 import { transitionSeasonStatus, checkSeasonStaleness, getStaleSeasons } from './statusTransitions.js';
 import { writeAuditLog } from '../audit/service.js';
+import { extractOrganization, verifyOrgAccess } from '../../middleware/orgScope.js';
 
 const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'reviewer'];
 const VALID_CONDITIONS = ['good', 'average', 'poor'];
@@ -28,6 +29,7 @@ const VALID_IMAGE_STAGES = ['early_growth', 'mid_stage', 'pre_harvest', 'harvest
 
 const router = Router();
 router.use(authenticate);
+router.use(extractOrganization);
 router.use(requireApprovedFarmer);
 
 // ─── Season ownership middleware ────────────────────────
@@ -263,6 +265,7 @@ router.post('/:id/progress-score',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES),
   requireSeasonAccess,
+  dedupGuard('progress-score'),
   asyncHandler(async (req, res) => {
     const result = await computeProgressScore(req.params.id);
     writeAuditLog({
@@ -359,6 +362,7 @@ router.post('/:id/recompute-credibility',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES),
   requireSeasonAccess,
+  dedupGuard('recompute-credibility'),
   asyncHandler(async (req, res) => {
     const result = await computeCredibility(req.params.id);
     writeAuditLog({

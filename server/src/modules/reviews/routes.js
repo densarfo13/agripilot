@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApplicationAccess } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import * as reviewService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -20,6 +21,7 @@ router.post('/:applicationId/notes',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'reviewer'),
   requireApplicationAccess,
+  dedupGuard('review-note'),
   asyncHandler(async (req, res) => {
     const { content, internal } = req.body;
     if (!content) return res.status(400).json({ error: 'content is required' });
@@ -55,6 +57,7 @@ router.get('/:applicationId/assignments',
 router.patch('/assignments/:assignmentId/complete',
   validateParamUUID('assignmentId'),
   authorize('super_admin', 'institutional_admin', 'reviewer'),
+  dedupGuard('complete-assignment'),
   asyncHandler(async (req, res) => {
     const assignment = await reviewService.completeReviewAssignment(req.params.assignmentId, req.user.sub);
     writeAuditLog({

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -33,6 +34,7 @@ router.get('/farmer/:farmerId/summary',
 router.post('/farmer/:farmerId',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES),
+  dedupGuard('reminder-create'),
   asyncHandler(async (req, res) => {
     if (!req.body.title || !req.body.message || !req.body.dueDate) {
       return res.status(400).json({ error: 'title, message, and dueDate are required' });
@@ -46,6 +48,7 @@ router.post('/farmer/:farmerId',
 router.post('/farmer/:farmerId/generate',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES),
+  dedupGuard('reminder-generate'),
   asyncHandler(async (req, res) => {
     const { cropType, plantingDate } = req.body;
     if (!cropType || !plantingDate) {

@@ -5,6 +5,7 @@ import { validateParamUUID, isValidUUID, parsePositiveInt } from '../../middlewa
 import { dedupGuard } from '../../middleware/dedup.js';
 import { workflowLimiter } from '../../middleware/rateLimiters.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
+import { extractOrganization, orgWhereApplication, verifyOrgAccess } from '../../middleware/orgScope.js';
 import * as appService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -18,6 +19,7 @@ import * as intelligenceService from '../intelligence/service.js';
 const router = Router();
 router.use(authenticate);
 router.use(requireApprovedFarmer);
+router.use(extractOrganization);
 
 // ═══════════════════════════════════════════════════════
 //  CRUD
@@ -58,13 +60,14 @@ router.get('/', authorize('super_admin', 'institutional_admin', 'reviewer', 'fie
     page: parsePositiveInt(req.query.page, 1, 1000),
     limit: parsePositiveInt(req.query.limit, 20, 100),
     status, farmerId, search, assignedReviewerId, assignedFieldOfficerId,
+    orgScope: orgWhereApplication(req),
   });
   res.json(result);
 }));
 
 // Get stats
 router.get('/stats', authorize('super_admin', 'institutional_admin', 'investor_viewer'), asyncHandler(async (req, res) => {
-  const stats = await appService.getApplicationStats();
+  const stats = await appService.getApplicationStats(orgWhereApplication(req));
   res.json(stats);
 }));
 
@@ -167,7 +170,7 @@ router.post('/:id/request-evidence', validateParamUUID('id'), authorize('super_a
 }));
 
 // Generic status update (admin-only — prefer specific workflow actions above)
-router.patch('/:id/status', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.patch('/:id/status', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), dedupGuard('app-status-change'), asyncHandler(async (req, res) => {
   const { status } = req.body;
   if (!status) return res.status(400).json({ error: 'status is required' });
   const { application, previousStatus } = await appService.updateStatus(req.params.id, status, req.user.sub);

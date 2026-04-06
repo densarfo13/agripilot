@@ -3,6 +3,7 @@ import prisma from '../../config/database.js';
 /**
  * Report generation service.
  * Generates structured report data for institutional use.
+ * All queries are org-scoped where applicable.
  */
 
 export async function getApplicationReport(applicationId) {
@@ -63,7 +64,23 @@ export async function getApplicationReport(applicationId) {
   };
 }
 
-export async function getPortfolioReport() {
+export async function getPortfolioReport(orgScope = {}) {
+  const appWhere = {};
+  if (orgScope.farmer) appWhere.farmer = orgScope.farmer;
+
+  const resultWhere = {};
+  if (orgScope.farmer) resultWhere.application = { farmer: orgScope.farmer };
+
+  // Build org join condition for raw SQL
+  const hasOrgFilter = orgScope.farmer?.organizationId;
+  const orgJoinClause = hasOrgFilter
+    ? `JOIN farmers f ON a.farmer_id = f.id AND f.organization_id = '${hasOrgFilter}'`
+    : 'JOIN farmers f ON a.farmer_id = f.id';
+
+  const orgAppWhereClause = hasOrgFilter
+    ? `WHERE a.farmer_id IN (SELECT id FROM farmers WHERE organization_id = '${hasOrgFilter}')`
+    : '';
+
   const [
     totalByStatus,
     totalByRegion,
@@ -73,40 +90,44 @@ export async function getPortfolioReport() {
   ] = await Promise.all([
     prisma.application.groupBy({
       by: ['status'],
+      where: appWhere,
       _count: true,
       _sum: { requestedAmount: true },
     }),
 
-    prisma.$queryRaw`
+    prisma.$queryRawUnsafe(`
       SELECT f.region, COUNT(a.id)::int as count,
              SUM(a.requested_amount) as total_amount
       FROM applications a
-      JOIN farmers f ON a.farmer_id = f.id
+      ${orgJoinClause}
       GROUP BY f.region
       ORDER BY count DESC
-    `,
+    `),
 
     prisma.application.groupBy({
       by: ['cropType'],
+      where: appWhere,
       _count: true,
       _sum: { requestedAmount: true },
       orderBy: { _count: { cropType: 'desc' } },
     }),
 
     prisma.verificationResult.aggregate({
+      where: resultWhere,
       _avg: { verificationScore: true },
       _count: true,
     }),
 
-    prisma.$queryRaw`
-      SELECT DATE_TRUNC('month', created_at) as month,
+    prisma.$queryRawUnsafe(`
+      SELECT DATE_TRUNC('month', a.created_at) as month,
              COUNT(*)::int as count,
-             SUM(requested_amount) as total_amount
-      FROM applications
-      GROUP BY DATE_TRUNC('month', created_at)
+             SUM(a.requested_amount) as total_amount
+      FROM applications a
+      ${hasOrgFilter ? `WHERE a.farmer_id IN (SELECT id FROM farmers WHERE organization_id = '${hasOrgFilter}')` : ''}
+      GROUP BY DATE_TRUNC('month', a.created_at)
       ORDER BY month DESC
       LIMIT 12
-    `,
+    `),
   ]);
 
   return {

@@ -4,8 +4,23 @@ import prisma from '../../config/database.js';
  * Portfolio Summary Engine
  * Aggregates all applications into a portfolio-level overview
  * for institutional dashboards and investor reports.
+ *
+ * All queries are org-scoped: each organization sees only its own data.
+ * super_admin with no org filter sees global data.
  */
-export async function getPortfolioSummary() {
+export async function getPortfolioSummary(orgScope = {}) {
+  // Build application where clause from org scope
+  const appWhere = {};
+  if (orgScope.farmer) appWhere.farmer = orgScope.farmer;
+
+  // Build farmer where clause from org scope
+  const farmerWhere = {};
+  if (orgScope.farmer) Object.assign(farmerWhere, orgScope.farmer);
+
+  // Build scoped fraud/verification/decision where via application
+  const resultWhere = {};
+  if (orgScope.farmer) resultWhere.application = { farmer: orgScope.farmer };
+
   const [
     totalApps,
     statusCounts,
@@ -18,15 +33,17 @@ export async function getPortfolioSummary() {
     avgVerification,
     recommendedTotal,
   ] = await Promise.all([
-    prisma.application.count(),
+    prisma.application.count({ where: appWhere }),
 
     prisma.application.groupBy({
       by: ['status'],
+      where: appWhere,
       _count: true,
       _sum: { requestedAmount: true },
     }),
 
     prisma.application.aggregate({
+      where: appWhere,
       _sum: { requestedAmount: true },
       _avg: { requestedAmount: true, farmSizeAcres: true },
       _count: true,
@@ -34,11 +51,13 @@ export async function getPortfolioSummary() {
 
     prisma.fraudResult.groupBy({
       by: ['fraudRiskLevel'],
+      where: resultWhere,
       _count: true,
     }),
 
     prisma.application.groupBy({
       by: ['cropType'],
+      where: appWhere,
       _count: true,
       _sum: { requestedAmount: true },
       _avg: { requestedAmount: true },
@@ -48,10 +67,12 @@ export async function getPortfolioSummary() {
 
     prisma.farmer.groupBy({
       by: ['region'],
+      where: farmerWhere,
       _count: true,
     }),
 
     prisma.application.findMany({
+      where: appWhere,
       take: 10,
       orderBy: { createdAt: 'desc' },
       select: {
@@ -63,14 +84,17 @@ export async function getPortfolioSummary() {
 
     prisma.decisionResult.groupBy({
       by: ['decision'],
+      where: resultWhere,
       _count: true,
     }),
 
     prisma.verificationResult.aggregate({
+      where: resultWhere,
       _avg: { verificationScore: true },
     }),
 
     prisma.decisionResult.aggregate({
+      where: resultWhere,
       _sum: { recommendedAmount: true },
     }),
   ]);
@@ -93,11 +117,14 @@ export async function getPortfolioSummary() {
   };
 }
 
-export async function takeSnapshot() {
-  const summary = await getPortfolioSummary();
+export async function takeSnapshot(organizationId = null) {
+  // Pass org scope matching the format expected by getPortfolioSummary
+  const orgScope = organizationId ? { farmer: { organizationId } } : {};
+  const summary = await getPortfolioSummary(orgScope);
 
   return prisma.portfolioSnapshot.create({
     data: {
+      organizationId,
       snapshotDate: new Date(),
       totalApplications: summary.totalApplications,
       totalRequestedAmount: summary.totalRequestedAmount,
@@ -112,8 +139,12 @@ export async function takeSnapshot() {
   });
 }
 
-export async function getSnapshotHistory(limit = 30) {
+export async function getSnapshotHistory(limit = 30, organizationId = null) {
+  const where = {};
+  if (organizationId) where.organizationId = organizationId;
+
   return prisma.portfolioSnapshot.findMany({
+    where,
     orderBy: { snapshotDate: 'desc' },
     take: limit,
   });

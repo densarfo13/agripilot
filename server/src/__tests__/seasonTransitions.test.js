@@ -350,10 +350,13 @@ describe('Harvest Report — harvested status', () => {
     });
 
     const mockReport = { id: 'r-1', totalHarvestKg: 500, yieldPerAcre: 250 };
-    // Batched $transaction receives an array of promises — mock returns results
-    prisma.$transaction.mockImplementation(async (arg) => {
-      if (Array.isArray(arg)) return [mockReport, {}];
-      return arg(prisma); // callback form
+    // Interactive $transaction: callback receives tx proxy with optimistic lock
+    prisma.$transaction.mockImplementation(async (cb) => {
+      const tx = {
+        farmSeason: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+        harvestReport: { create: vi.fn().mockResolvedValue(mockReport) },
+      };
+      return cb(tx);
     });
 
     const report = await createHarvestReport('s-h1', { totalHarvestKg: 500 }, 'u-1');

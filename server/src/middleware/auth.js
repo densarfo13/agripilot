@@ -65,14 +65,14 @@ export function authenticate(req, res, next) {
     if (!cached.active) {
       return res.status(403).json({ error: 'Account deactivated' });
     }
-    req.user = { ...payload, role: cached.role };
+    req.user = { ...payload, role: cached.role, organizationId: cached.organizationId || null };
     return next();
   }
 
   // Cache miss — verify user still exists and is active in the database
   prisma.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, active: true, role: true },
+    select: { id: true, active: true, role: true, organizationId: true },
   })
     .then((user) => {
       if (!user) {
@@ -85,7 +85,7 @@ export function authenticate(req, res, next) {
         return res.status(403).json({ error: 'Account deactivated' });
       }
       // Use DB role (source of truth) rather than JWT role in case it was changed
-      req.user = { ...payload, role: user.role };
+      req.user = { ...payload, role: user.role, organizationId: user.organizationId || null };
       next();
     })
     .catch(() => {

@@ -39,6 +39,17 @@ async function main() {
   await prisma.application.deleteMany();
   await prisma.farmer.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
+
+  // ─── Organizations ───────────────────────────────────
+  console.log('Creating organizations...');
+  const defaultOrg = await prisma.organization.create({
+    data: { name: 'AgriPilot Demo Lender', type: 'LENDER', countryCode: 'KE' },
+  });
+  const partnerOrg = await prisma.organization.create({
+    data: { name: 'Green Fields NGO', type: 'NGO', countryCode: 'KE' },
+  });
+  console.log(`  ✅ 2 organizations created`);
 
   // ─── Users ────────────────────────────────────────────
   console.log('Creating users...');
@@ -55,31 +66,31 @@ async function main() {
   const passwordHash = staffHash; // default for backward compat
 
   const superAdmin = await prisma.user.create({
-    data: { email: 'admin@agripilot.com', passwordHash: adminHash, fullName: 'Sarah Okonkwo', role: 'super_admin' },
+    data: { email: 'admin@agripilot.com', passwordHash: adminHash, fullName: 'Sarah Okonkwo', role: 'super_admin', organizationId: defaultOrg.id },
   });
 
   const instAdmin = await prisma.user.create({
-    data: { email: 'institution@agripilot.com', passwordHash: adminHash, fullName: 'James Mutua', role: 'institutional_admin' },
+    data: { email: 'institution@agripilot.com', passwordHash: adminHash, fullName: 'James Mutua', role: 'institutional_admin', organizationId: defaultOrg.id },
   });
 
   const reviewer1 = await prisma.user.create({
-    data: { email: 'reviewer@agripilot.com', passwordHash, fullName: 'Grace Wanjiku', role: 'reviewer' },
+    data: { email: 'reviewer@agripilot.com', passwordHash, fullName: 'Grace Wanjiku', role: 'reviewer', organizationId: defaultOrg.id },
   });
 
   const reviewer2 = await prisma.user.create({
-    data: { email: 'reviewer2@agripilot.com', passwordHash, fullName: 'Peter Ochieng', role: 'reviewer' },
+    data: { email: 'reviewer2@agripilot.com', passwordHash, fullName: 'Peter Ochieng', role: 'reviewer', organizationId: defaultOrg.id },
   });
 
   const fieldOfficer1 = await prisma.user.create({
-    data: { email: 'officer@agripilot.com', passwordHash, fullName: 'David Kamau', role: 'field_officer' },
+    data: { email: 'officer@agripilot.com', passwordHash, fullName: 'David Kamau', role: 'field_officer', organizationId: defaultOrg.id },
   });
 
   const fieldOfficer2 = await prisma.user.create({
-    data: { email: 'officer2@agripilot.com', passwordHash, fullName: 'Mary Achieng', role: 'field_officer' },
+    data: { email: 'officer2@agripilot.com', passwordHash, fullName: 'Mary Achieng', role: 'field_officer', organizationId: defaultOrg.id },
   });
 
   const investor = await prisma.user.create({
-    data: { email: 'investor@agripilot.com', passwordHash: viewerHash, fullName: 'Robert Chen', role: 'investor_viewer' },
+    data: { email: 'investor@agripilot.com', passwordHash: viewerHash, fullName: 'Robert Chen', role: 'investor_viewer', organizationId: defaultOrg.id },
   });
 
   console.log(`  ✅ ${7} users created`);
@@ -92,7 +103,7 @@ async function main() {
         fullName: 'John Mwangi', phone: '+254712345678', nationalId: 'KE-29384756',
         region: 'Central', district: 'Kiambu', village: 'Githunguri',
         primaryCrop: 'maize', farmSizeAcres: 5.0, yearsExperience: 12,
-        createdById: fieldOfficer1.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer1.id,
       },
     }),
     prisma.farmer.create({
@@ -100,7 +111,7 @@ async function main() {
         fullName: 'Amina Hassan', phone: '+254723456789', nationalId: 'KE-38475621',
         region: 'Rift Valley', district: 'Uasin Gishu', village: 'Eldoret',
         primaryCrop: 'wheat', farmSizeAcres: 15.0, yearsExperience: 8,
-        createdById: fieldOfficer1.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer1.id,
       },
     }),
     prisma.farmer.create({
@@ -108,7 +119,7 @@ async function main() {
         fullName: 'Peter Otieno', phone: '+254734567890', nationalId: 'KE-47562183',
         region: 'Western', district: 'Bungoma', village: 'Kanduyi',
         primaryCrop: 'sugarcane', farmSizeAcres: 8.0, yearsExperience: 15,
-        createdById: fieldOfficer2.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer2.id,
       },
     }),
     prisma.farmer.create({
@@ -116,7 +127,7 @@ async function main() {
         fullName: 'Florence Nyambura', phone: '+254745678901', nationalId: 'KE-56218347',
         region: 'Central', district: 'Murang\'a', village: 'Kangema',
         primaryCrop: 'coffee', farmSizeAcres: 3.0, yearsExperience: 20,
-        createdById: fieldOfficer1.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer1.id,
       },
     }),
     prisma.farmer.create({
@@ -125,7 +136,7 @@ async function main() {
         region: 'Coast', district: 'Kilifi', village: 'Malindi',
         primaryCrop: 'cassava', farmSizeAcres: 4.0, yearsExperience: 6,
         deviceId: 'DEVICE-001', // shared device for fraud test
-        createdById: fieldOfficer2.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer2.id,
       },
     }),
     prisma.farmer.create({
@@ -134,7 +145,7 @@ async function main() {
         region: 'Coast', district: 'Kilifi', village: 'Malindi',
         primaryCrop: 'cassava', farmSizeAcres: 3.5, yearsExperience: 4,
         deviceId: 'DEVICE-001', // same device — fraud signal
-        createdById: fieldOfficer2.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer2.id,
       },
     }),
     prisma.farmer.create({
@@ -142,7 +153,7 @@ async function main() {
         fullName: 'Elizabeth Wambui', phone: '+254778901234', nationalId: 'KE-78901234',
         region: 'Central', district: 'Nyeri', village: 'Karatina',
         primaryCrop: 'tea', farmSizeAcres: 2.0, yearsExperience: 25,
-        createdById: fieldOfficer1.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer1.id,
       },
     }),
     prisma.farmer.create({
@@ -150,7 +161,7 @@ async function main() {
         fullName: 'Samuel Kipchoge', phone: '+254789012345', nationalId: 'KE-89012345',
         region: 'Rift Valley', district: 'Nandi', village: 'Kapsabet',
         primaryCrop: 'maize', farmSizeAcres: 20.0, yearsExperience: 10,
-        createdById: fieldOfficer2.id,
+        organizationId: defaultOrg.id, createdById: fieldOfficer2.id,
       },
     }),
   ]);

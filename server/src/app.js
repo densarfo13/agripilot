@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { requestId } from './middleware/requestId.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { authenticate, requireApprovedFarmer } from './middleware/auth.js';
+import { extractOrganization } from './middleware/orgScope.js';
 import prisma from './config/database.js';
 import { checkUploadDirHealth, listDiskFiles } from './utils/uploadHealth.js';
 
@@ -173,7 +174,11 @@ app.use('/api/users', adminUserRoutes);
 app.get('/api/me', authenticate, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.sub },
-    select: { id: true, email: true, fullName: true, role: true, active: true, createdAt: true },
+    select: {
+      id: true, email: true, fullName: true, role: true, active: true, createdAt: true,
+      organizationId: true,
+      organization: { select: { id: true, name: true, type: true } },
+    },
   });
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);

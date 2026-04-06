@@ -51,9 +51,27 @@ export async function createHarvestReport(seasonId, data, userId = null) {
 
   const now = new Date();
 
-  // Create report + transition to 'harvested' in a transaction
-  const [report] = await prisma.$transaction([
-    prisma.harvestReport.create({
+  // Create report + transition to 'harvested' in an interactive transaction
+  // Uses optimistic lock (status condition) to prevent concurrent double-harvest
+  const report = await prisma.$transaction(async (tx) => {
+    // Optimistic lock: only update if status is still 'active'
+    const lockResult = await tx.farmSeason.updateMany({
+      where: { id: seasonId, status: 'active' },
+      data: {
+        status: 'harvested',
+        closedAt: now,
+        closedBy: userId,
+        closureReason: 'Harvest report submitted',
+      },
+    });
+
+    if (lockResult.count === 0) {
+      const err = new Error('Season status changed concurrently — please retry');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    return tx.harvestReport.create({
       data: {
         seasonId,
         totalHarvestKg,
@@ -62,17 +80,8 @@ export async function createHarvestReport(seasonId, data, userId = null) {
         salesCurrency: data.salesCurrency || null,
         notes: data.notes || null,
       },
-    }),
-    prisma.farmSeason.update({
-      where: { id: seasonId },
-      data: {
-        status: 'harvested',
-        closedAt: now,
-        closedBy: userId,
-        closureReason: 'Harvest report submitted',
-      },
-    }),
-  ]);
+    });
+  });
 
   logWorkflowEvent('season_status_changed', {
     seasonId,

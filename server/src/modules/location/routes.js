@@ -3,11 +3,13 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
+import { extractOrganization } from '../../middleware/orgScope.js';
 import * as locationService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(extractOrganization);
 
 // Capture GPS for an application
 router.post('/:applicationId/gps',

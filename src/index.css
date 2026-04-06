@@ -36,6 +36,7 @@ a:hover { text-decoration: underline; }
 .app-layout { display: flex; height: 100vh; }
 .sidebar { width: var(--sidebar-width); background: var(--gray-900); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; }
 .sidebar-brand { padding: 1rem 1.25rem; font-size: 1.125rem; font-weight: 700; border-bottom: 1px solid var(--gray-700); }
+.sidebar-org { padding: 0.25rem 1.25rem 0.5rem; font-size: 0.75rem; color: var(--gray-400); border-bottom: 1px solid var(--gray-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-nav { flex: 1; padding: 0.75rem 0; overflow-y: auto; }
 .sidebar-section { padding: 0.5rem 1.25rem 0.25rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); font-weight: 600; }
 .sidebar-link { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 1.25rem; color: var(--gray-300); font-size: 0.875rem; cursor: pointer; transition: all 0.15s; text-decoration: none; border-left: 3px solid transparent; }

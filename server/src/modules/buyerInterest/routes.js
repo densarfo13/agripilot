@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -32,6 +33,7 @@ router.post('/farmer/:farmerId',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireFarmerOwnership,
+  dedupGuard('buyer-interest'),
   asyncHandler(async (req, res) => {
     if (!req.body.cropType) {
       return res.status(400).json({ error: 'cropType is required' });
@@ -53,6 +55,7 @@ router.get('/:id',
 router.patch('/:id/status',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES),
+  dedupGuard('interest-status'),
   asyncHandler(async (req, res) => {
     const VALID_INTEREST_STATUSES = ['interested', 'contacted', 'negotiating', 'agreed', 'completed', 'withdrawn', 'expired'];
     if (!req.body.status) {

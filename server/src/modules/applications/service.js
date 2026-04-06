@@ -93,7 +93,7 @@ export async function createApplication(data, userId) {
   });
 }
 
-export async function listApplications({ page = 1, limit = 20, status, farmerId, search, assignedReviewerId, assignedFieldOfficerId }) {
+export async function listApplications({ page = 1, limit = 20, status, farmerId, search, assignedReviewerId, assignedFieldOfficerId, orgScope = {} }) {
   const where = {};
   if (status) where.status = status;
   if (farmerId) where.farmerId = farmerId;
@@ -104,6 +104,10 @@ export async function listApplications({ page = 1, limit = 20, status, farmerId,
       { farmer: { fullName: { contains: search, mode: 'insensitive' } } },
       { cropType: { contains: search, mode: 'insensitive' } },
     ];
+  }
+  // Apply org scope — filters by farmer's organization
+  if (orgScope.farmer) {
+    where.farmer = { ...where.farmer, ...orgScope.farmer };
   }
 
   const [applications, total] = await Promise.all([
@@ -172,13 +176,18 @@ export async function updateApplication(id, data) {
   });
 }
 
-export async function getApplicationStats() {
+export async function getApplicationStats(orgScope = {}) {
+  const where = {};
+  if (orgScope.farmer) where.farmer = orgScope.farmer;
+
   const statusCounts = await prisma.application.groupBy({
     by: ['status'],
+    where,
     _count: true,
   });
 
   const totalRequested = await prisma.application.aggregate({
+    where,
     _sum: { requestedAmount: true },
     _count: true,
     _avg: { requestedAmount: true, farmSizeAcres: true },

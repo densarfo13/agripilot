@@ -4,6 +4,7 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID, parsePositiveInt } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
+import { extractOrganization, orgWhereFarmer, verifyOrgAccess } from '../../middleware/orgScope.js';
 import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
 import { inviteFarmer } from '../auth/farmer-registration.js';
@@ -12,6 +13,7 @@ import { createNotification } from '../notifications/service.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(extractOrganization);
 
 // ─── Farmer's own profile (farmer-role users) ──────────
 
@@ -35,8 +37,8 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
   if (!fullName || !phone || !region) {
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
   }
-  const farmer = await farmersService.createFarmer(req.body, req.user.sub);
-  writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id } }).catch(() => {});
+  const farmer = await farmersService.createFarmer(req.body, req.user.sub, req.organizationId);
+  writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id }, organizationId: req.organizationId }).catch(() => {});
   res.status(201).json(farmer);
 }));
 
@@ -46,6 +48,7 @@ router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_of
     ...req.body,
     invitedById: req.user.sub,
     assignedOfficerId: req.body.assignedOfficerId || null,
+    organizationId: req.organizationId,
   });
 
   // Send welcome notification to the farmer
@@ -80,6 +83,7 @@ router.get('/', authorize('super_admin', 'institutional_admin', 'reviewer', 'fie
     limit: parsePositiveInt(req.query.limit, 20, 100),
     search,
     region,
+    orgScope: orgWhereFarmer(req),
   });
   res.json(result);
 }));
@@ -89,7 +93,7 @@ router.get('/pending-registrations',
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   asyncHandler(async (req, res) => {
     const { getPendingRegistrations } = await import('../auth/farmer-registration.js');
-    const pending = await getPendingRegistrations();
+    const pending = await getPendingRegistrations(orgWhereFarmer(req));
     res.json(pending);
   }));
 
@@ -97,6 +101,7 @@ router.get('/pending-registrations',
 router.post('/:id/approve-registration',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('farmer-approve'),
   asyncHandler(async (req, res) => {
     const { approveRegistration } = await import('../auth/farmer-registration.js');
     const { assignedOfficerId } = req.body;
@@ -117,6 +122,7 @@ router.post('/:id/approve-registration',
 router.post('/:id/reject-registration',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('farmer-reject'),
   asyncHandler(async (req, res) => {
     const { rejectRegistration } = await import('../auth/farmer-registration.js');
     const { rejectionReason } = req.body;
@@ -133,9 +139,12 @@ router.post('/:id/reject-registration',
     res.json(result);
   }));
 
-// Get farmer by ID (staff only)
+// Get farmer by ID (staff only, org-scoped)
 router.get('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const farmer = await farmersService.getFarmerById(req.params.id);
+  if (!verifyOrgAccess(req, farmer.organizationId)) {
+    return res.status(403).json({ error: 'Access denied — farmer belongs to another organization' });
+  }
   res.json(farmer);
 }));
 
@@ -143,6 +152,7 @@ router.get('/:id', validateParamUUID('id'), authorize('super_admin', 'institutio
 router.patch('/:id/access-status',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('farmer-access-status'),
   asyncHandler(async (req, res) => {
     const { status } = req.body;
     if (!status) {
@@ -165,6 +175,7 @@ router.patch('/:id/access-status',
 router.post('/:id/assign-officer',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('farmer-assign-officer'),
   asyncHandler(async (req, res) => {
     const { officerId } = req.body;
     const result = await farmersService.assignOfficerToFarmer(req.params.id, officerId, req.user.sub);
@@ -180,6 +191,7 @@ router.post('/:id/assign-officer',
 router.post('/:id/resend-invite',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
+  dedupGuard('farmer-resend-invite'),
   asyncHandler(async (req, res) => {
     const farmer = await farmersService.getFarmerById(req.params.id);
     if (farmer.selfRegistered) {

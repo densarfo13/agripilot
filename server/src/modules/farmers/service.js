@@ -5,7 +5,7 @@ import { invalidateAuthCache } from '../../middleware/auth.js';
 /**
  * Create a farmer (staff-initiated — auto-approved, not self-registered).
  */
-export async function createFarmer(data, userId) {
+export async function createFarmer(data, userId, organizationId) {
   return prisma.farmer.create({
     data: {
       fullName: data.fullName,
@@ -21,6 +21,7 @@ export async function createFarmer(data, userId) {
       countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
       regionCode: data.regionCode || null,
       preferredLanguage: data.preferredLanguage || 'en',
+      organizationId: organizationId || null,
       createdById: userId,
       // Staff-created farmers are auto-approved
       selfRegistered: false,
@@ -32,8 +33,8 @@ export async function createFarmer(data, userId) {
   });
 }
 
-export async function listFarmers({ page = 1, limit = 20, search, region }) {
-  const where = {};
+export async function listFarmers({ page = 1, limit = 20, search, region, orgScope = {} }) {
+  const where = { ...orgScope };
   if (search) {
     where.OR = [
       { fullName: { contains: search, mode: 'insensitive' } },

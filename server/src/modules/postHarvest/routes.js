@@ -3,6 +3,7 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -39,6 +40,7 @@ router.post('/storage/farmer/:farmerId',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireFarmerOwnership,
+  dedupGuard('storage-upsert'),
   asyncHandler(async (req, res) => {
     // Validate required fields
     if (!req.body.cropType) {

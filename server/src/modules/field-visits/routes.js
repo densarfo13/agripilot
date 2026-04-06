@@ -3,11 +3,13 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApplicationAccess } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
+import { extractOrganization } from '../../middleware/orgScope.js';
 import * as fieldVisitService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(extractOrganization);
 
 // Get my field visits (must be before /:applicationId routes)
 router.get('/my-visits/list', authorize('field_officer', 'super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
@@ -43,6 +45,7 @@ router.get('/:applicationId',
 router.patch('/visit/:visitId/complete',
   validateParamUUID('visitId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
+  dedupGuard('field-visit-complete'),
   asyncHandler(async (req, res) => {
     const { findings, notes } = req.body;
     const visit = await fieldVisitService.completeFieldVisit(req.params.visitId, req.user.sub, findings, notes);

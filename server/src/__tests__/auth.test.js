@@ -139,7 +139,7 @@ describe('Auth Middleware', () => {
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-123' },
-        select: { id: true, active: true, role: true },
+        select: { id: true, active: true, role: true, organizationId: true },
       });
       expect(req.user.role).toBe('farmer');
     });
