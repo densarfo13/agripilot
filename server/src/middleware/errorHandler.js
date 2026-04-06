@@ -5,9 +5,21 @@ import { config } from '../config/index.js';
  * Never exposes stack traces in production.
  */
 export function errorHandler(err, req, res, _next) {
-  // Log error server-side always
-  console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
-  if (!config.isProduction) {
+  // Log error server-side always — include requestId for tracing
+  const rid = req.requestId || 'unknown';
+  if (config.isProduction) {
+    console.error(JSON.stringify({
+      level: 'error',
+      timestamp: new Date().toISOString(),
+      requestId: rid,
+      method: req.method,
+      path: req.originalUrl || req.path,
+      error: err.message,
+      statusCode: err.statusCode || 500,
+      userId: req.user?.sub || null,
+    }));
+  } else {
+    console.error(`[ERROR] ${req.method} ${req.path} rid=${rid}:`, err.message);
     console.error(err.stack);
   }
 
@@ -33,7 +45,10 @@ export function errorHandler(err, req, res, _next) {
     : err.message || 'Internal server error';
 
   // Never include stack traces in API responses — log them server-side only
-  res.status(statusCode).json({ error: message });
+  // Include requestId so users can reference it in support tickets
+  const response = { error: message };
+  if (statusCode >= 500) response.requestId = rid;
+  res.status(statusCode).json(response);
 }
 
 /**

@@ -2,6 +2,41 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import prisma from '../config/database.js';
 
+// ─── Lightweight in-memory user cache (auth hot path) ──────
+// Avoids hitting the DB on every single API request.
+// TTL: 60 seconds. Invalidated explicitly on role/status changes.
+const AUTH_CACHE_TTL_MS = 60_000;
+const authCache = new Map(); // userId → { user, expiresAt }
+
+function getCachedUser(userId) {
+  const entry = authCache.get(userId);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    authCache.delete(userId);
+    return null;
+  }
+  return entry.user;
+}
+
+function setCachedUser(userId, user) {
+  authCache.set(userId, { user, expiresAt: Date.now() + AUTH_CACHE_TTL_MS });
+  // Prevent unbounded growth — evict oldest if cache exceeds 500 entries
+  if (authCache.size > 500) {
+    const firstKey = authCache.keys().next().value;
+    authCache.delete(firstKey);
+  }
+}
+
+/** Invalidate a specific user from the auth cache (call on role/status change). */
+export function invalidateAuthCache(userId) {
+  if (userId) authCache.delete(userId);
+}
+
+/** Clear entire auth cache (used in tests). */
+export function clearAuthCache() {
+  authCache.clear();
+}
+
 /**
  * JWT authentication middleware.
  * Extracts token from Authorization header, verifies it,
@@ -22,7 +57,17 @@ export function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  // Verify user still exists and is active in the database
+  // Check cache first
+  const cached = getCachedUser(payload.sub);
+  if (cached) {
+    if (!cached.active) {
+      return res.status(403).json({ error: 'Account deactivated' });
+    }
+    req.user = { ...payload, role: cached.role };
+    return next();
+  }
+
+  // Cache miss — verify user still exists and is active in the database
   prisma.user.findUnique({
     where: { id: payload.sub },
     select: { id: true, active: true, role: true },
@@ -31,6 +76,7 @@ export function authenticate(req, res, next) {
       if (!user) {
         return res.status(401).json({ error: 'User account no longer exists' });
       }
+      setCachedUser(payload.sub, user);
       if (!user.active) {
         return res.status(403).json({ error: 'Account deactivated' });
       }

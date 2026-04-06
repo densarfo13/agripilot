@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireApplicationAccess } from '../../middleware/auth.js';
 import { validateParamUUID, isValidUUID, parsePositiveInt } from '../../middleware/validate.js';
+import { dedupGuard } from '../../middleware/dedup.js';
+import { workflowLimiter } from '../../middleware/rateLimiters.js';
 import * as appService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -85,7 +87,7 @@ router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutio
 // ═══════════════════════════════════════════════════════
 
 // Submit (draft → submitted)
-router.post('/:id/submit', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/submit', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), requireApplicationAccess, workflowLimiter, dedupGuard('submit'), asyncHandler(async (req, res) => {
   const app = await appService.submitApplication(req.params.id);
   writeAuditLog({
     applicationId: app.id, userId: req.user.sub, action: 'application_submitted',
@@ -95,7 +97,7 @@ router.post('/:id/submit', validateParamUUID('id'), authorize('super_admin', 'in
 }));
 
 // Approve (scoped — reviewer must be assigned)
-router.post('/:id/approve', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/approve', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('approve'), asyncHandler(async (req, res) => {
   const { reason, recommendedAmount } = req.body;
   const { application, previousStatus } = await appService.approveApplication(req.params.id, req.user.sub, { reason, recommendedAmount });
   writeAuditLog({
@@ -106,7 +108,7 @@ router.post('/:id/approve', validateParamUUID('id'), authorize('super_admin', 'i
 }));
 
 // Reject (scoped)
-router.post('/:id/reject', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/reject', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('reject'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   if (!reason) return res.status(400).json({ error: 'reason is required for rejection' });
   const { application, previousStatus } = await appService.rejectApplication(req.params.id, req.user.sub, reason);
@@ -118,7 +120,7 @@ router.post('/:id/reject', validateParamUUID('id'), authorize('super_admin', 'in
 }));
 
 // Escalate (scoped)
-router.post('/:id/escalate', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/escalate', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('escalate'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   if (!reason) return res.status(400).json({ error: 'reason is required for escalation' });
   const { application, previousStatus } = await appService.escalateApplication(req.params.id, req.user.sub, reason);
@@ -130,7 +132,7 @@ router.post('/:id/escalate', validateParamUUID('id'), authorize('super_admin', '
 }));
 
 // Reopen
-router.post('/:id/reopen', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/reopen', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), workflowLimiter, dedupGuard('reopen'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const { application, previousStatus } = await appService.reopenApplication(req.params.id, req.user.sub, reason);
   writeAuditLog({
@@ -141,7 +143,7 @@ router.post('/:id/reopen', validateParamUUID('id'), authorize('super_admin', 'in
 }));
 
 // Disburse (approved/conditional → disbursed)
-router.post('/:id/disburse', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/disburse', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), workflowLimiter, dedupGuard('disburse'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const { application, previousStatus } = await appService.disburseApplication(req.params.id, req.user.sub, { reason });
   writeAuditLog({
@@ -152,7 +154,7 @@ router.post('/:id/disburse', validateParamUUID('id'), authorize('super_admin', '
 }));
 
 // Request Evidence (scoped)
-router.post('/:id/request-evidence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/request-evidence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('request-evidence'), asyncHandler(async (req, res) => {
   const { reason, requiredTypes } = req.body;
   if (!reason) return res.status(400).json({ error: 'reason is required' });
   const { application, previousStatus } = await appService.requestEvidence(req.params.id, req.user.sub, { reason, requiredTypes });
@@ -204,7 +206,7 @@ router.post('/:id/assign-field-officer', validateParamUUID('id'), authorize('sup
 // ═══════════════════════════════════════════════════════
 
 // Run verification engine (scoped)
-router.post('/:id/score-verification', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/score-verification', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('score-verification'), asyncHandler(async (req, res) => {
   const result = await verificationService.runVerification(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -215,7 +217,7 @@ router.post('/:id/score-verification', validateParamUUID('id'), authorize('super
 }));
 
 // Run fraud analysis (scoped)
-router.post('/:id/score-fraud', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/score-fraud', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('score-fraud'), asyncHandler(async (req, res) => {
   const result = await fraudService.runFraudAnalysis(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -226,7 +228,7 @@ router.post('/:id/score-fraud', validateParamUUID('id'), authorize('super_admin'
 }));
 
 // Run decision engine (scoped)
-router.post('/:id/score-decision', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/score-decision', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('score-decision'), asyncHandler(async (req, res) => {
   const result = await decisionService.runDecisionEngine(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -241,7 +243,7 @@ router.post('/:id/score-decision', validateParamUUID('id'), authorize('super_adm
 }));
 
 // Run benchmark (scoped)
-router.post('/:id/score-benchmark', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.post('/:id/score-benchmark', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), requireApplicationAccess, workflowLimiter, dedupGuard('score-benchmark'), asyncHandler(async (req, res) => {
   const result = await benchmarkService.runBenchmark(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -251,7 +253,7 @@ router.post('/:id/score-benchmark', validateParamUUID('id'), authorize('super_ad
 }));
 
 // Run intelligence (admin only — secondary/shadow)
-router.post('/:id/score-intelligence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/score-intelligence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), workflowLimiter, dedupGuard('score-intelligence'), asyncHandler(async (req, res) => {
   const result = await intelligenceService.runIntelligence(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,

@@ -62,6 +62,25 @@ export async function runDecisionEngine(applicationId) {
   const reasons = [];
   const nextActions = [];
 
+  // ─── Humanize raw verification/fraud flag names ─────
+  const FLAG_LABELS = {
+    no_gps: 'GPS location not captured',
+    no_evidence: 'No evidence files uploaded',
+    no_boundary: 'Farm boundary not captured',
+    low_evidence: 'Fewer evidence files than expected',
+    size_mismatch: 'Claimed farm size differs from measured boundary',
+    duplicate_photos: 'Same photos found in other applications',
+    shared_device: 'Device used by multiple farmers',
+    gps_proximity: 'GPS location very close to another application',
+    amount_outlier: 'Requested amount unusually high for region/crop',
+    exceeds_region_max: 'Amount exceeds regional maximum loan limit',
+    below_region_min: 'Amount below regional minimum loan',
+    incomplete_profile: 'Farmer profile is incomplete',
+  };
+  function humanizeFlag(flag) {
+    return FLAG_LABELS[flag] || flag.replace(/_/g, ' ');
+  }
+
   // Fraud overrides
   // Surface specific fraud flags in decision reasons for clarity
   const fraudFlags = app.fraudResult.flags || [];
@@ -69,62 +88,60 @@ export async function runDecisionEngine(applicationId) {
 
   if (fRiskLevel === 'critical') {
     decision = 'reject';
-    decisionLabel = 'Rejected — Critical Fraud Risk';
+    decisionLabel = 'Rejected — Critical fraud indicators detected. This application cannot proceed.';
     riskLevel = 'high';
-    blockers.push('Critical fraud indicators detected');
-    reasons.push(`Fraud risk score: ${fRiskScore}/100`);
-    // Surface the specific fraud findings so reviewer doesn't have to check fraud tab separately
+    blockers.push('Critical fraud risk — application blocked');
+    reasons.push(`Fraud risk score: ${fRiskScore}/100 (critical threshold: 70+)`);
     if (fraudReasons.length > 0) {
-      reasons.push(...fraudReasons.slice(0, 3).map(r => `Fraud: ${r}`));
+      reasons.push(...fraudReasons.slice(0, 3));
     }
-    nextActions.push('Investigate fraud flags', 'Contact farmer for verification');
+    nextActions.push('Investigate the fraud flags listed below', 'Contact the farmer directly to verify identity and details');
   } else if (fRiskLevel === 'high') {
     decision = 'escalate';
-    decisionLabel = 'Escalated — High Fraud Risk';
+    decisionLabel = 'Escalated — High fraud risk requires senior review before proceeding.';
     riskLevel = 'high';
-    blockers.push('High fraud risk requires manual review');
-    reasons.push(`Fraud risk score: ${fRiskScore}/100`);
+    blockers.push('High fraud risk — needs senior reviewer sign-off');
+    reasons.push(`Fraud risk score: ${fRiskScore}/100 (high threshold: 50+)`);
     if (fraudReasons.length > 0) {
-      reasons.push(...fraudReasons.slice(0, 3).map(r => `Fraud: ${r}`));
+      reasons.push(...fraudReasons.slice(0, 3));
     }
-    nextActions.push('Senior reviewer assessment required', 'Additional field visit recommended');
+    nextActions.push('Assign to a senior reviewer for manual assessment', 'Schedule a field visit to verify farm and farmer');
   } else if (vScore >= approveThreshold && fRiskLevel === 'low') {
     decision = 'approve';
-    decisionLabel = 'Recommended for Approval';
+    decisionLabel = 'Recommended for full approval — strong verification with low fraud risk.';
     riskLevel = 'low';
     recommendedAmount = app.requestedAmount;
-    reasons.push(`Strong verification (${vScore}/100)`, 'Low fraud risk');
-    reasons.push(`Region: ${regionCfg.country} (${regionCfg.currencyCode})`);
-    nextActions.push('Review recommendation and confirm approval', 'Verify farmer identity before disbursement');
+    reasons.push(`Verification score ${vScore}/100 (above ${approveThreshold} threshold)`, 'Fraud risk is low');
+    nextActions.push('Click Approve above to confirm this recommendation', 'Verify farmer identity before disbursing funds');
   } else if (vScore >= conditionalThreshold && (fRiskLevel === 'low' || fRiskLevel === 'medium')) {
     decision = 'conditional_approve';
-    decisionLabel = 'Conditionally Recommended';
+    decisionLabel = `Conditionally recommended at 80% of requested amount — resolve issues before full approval.`;
     riskLevel = fRiskLevel === 'medium' ? 'medium' : 'low';
     recommendedAmount = app.requestedAmount * 0.8;
-    reasons.push(`Moderate verification (${vScore}/100, threshold: ${conditionalThreshold})`);
-    if (fRiskLevel === 'medium') reasons.push('Medium fraud risk — reduced amount');
-    nextActions.push('Verify conditions before disbursement', 'Consider field visit before approval');
+    reasons.push(`Verification score ${vScore}/100 (above ${conditionalThreshold} regional threshold, below ${approveThreshold} full-approval threshold)`);
+    if (fRiskLevel === 'medium') reasons.push('Medium fraud risk — amount reduced as precaution');
+    nextActions.push('Resolve the blockers listed below', 'Consider a field visit before approving');
 
     if (app.verificationResult.flags?.length > 0) {
-      blockers.push(...app.verificationResult.flags.map(f => `Resolve: ${f}`));
+      blockers.push(...app.verificationResult.flags.map(f => humanizeFlag(f)));
     }
   } else if (vScore >= rejectThreshold) {
     decision = 'needs_more_evidence';
-    decisionLabel = 'Needs More Evidence';
+    decisionLabel = 'More evidence needed — verification score is too low to proceed.';
     riskLevel = 'medium';
-    reasons.push(`Insufficient verification (${vScore}/100, need ${conditionalThreshold}+)`);
-    nextActions.push('Request additional evidence', 'Schedule field visit');
+    reasons.push(`Verification score ${vScore}/100 (needs ${conditionalThreshold}+ for conditional approval)`);
+    nextActions.push('Use "Request Evidence" to ask the farmer for missing documentation', 'Schedule a field visit to verify the farm');
 
     if (app.verificationResult.flags?.length > 0) {
-      blockers.push(...app.verificationResult.flags.map(f => `Missing: ${f}`));
+      blockers.push(...app.verificationResult.flags.map(f => humanizeFlag(f)));
     }
   } else {
     decision = 'reject';
-    decisionLabel = 'Rejected — Insufficient Verification';
+    decisionLabel = 'Rejected — verification score is below the minimum threshold.';
     riskLevel = 'high';
-    reasons.push(`Low verification score (${vScore}/100)`);
-    blockers.push('Verification score below minimum threshold');
-    nextActions.push('Farmer may reapply with complete documentation');
+    reasons.push(`Verification score ${vScore}/100 (below ${rejectThreshold} minimum)`);
+    blockers.push('Verification too low — farmer should reapply with complete GPS, boundary, and evidence data');
+    nextActions.push('Inform the farmer they may reapply with complete documentation');
   }
 
   const result = await prisma.decisionResult.upsert({

@@ -23,7 +23,7 @@ vi.mock('../config/database.js', () => {
 
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database.js';
-import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership, requireApplicationAccess } from '../middleware/auth.js';
+import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership, requireApplicationAccess, clearAuthCache } from '../middleware/auth.js';
 
 // Helper to create mock req/res/next
 function createMocks(overrides = {}) {
@@ -44,6 +44,7 @@ function createMocks(overrides = {}) {
 describe('Auth Middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAuthCache();
   });
 
   describe('authorize', () => {

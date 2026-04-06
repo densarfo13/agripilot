@@ -6,6 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { requestId } from './middleware/requestId.js';
+import { requestLogger } from './middleware/requestLogger.js';
 import { authenticate, requireApprovedFarmer } from './middleware/auth.js';
 import prisma from './config/database.js';
 
@@ -84,13 +86,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
-// ─── Request Logging (non-production) ──────────────────
-if (!config.isProduction) {
-  app.use((req, _res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-    next();
-  });
-}
+// ─── Request ID & Structured Logging ──────────────────
+app.use(requestId);
+app.use(requestLogger);
 
 // ─── Rate Limiters ─────────────────────────────────────
 const authLimiter = rateLimit({

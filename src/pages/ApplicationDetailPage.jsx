@@ -228,9 +228,84 @@ export default function ApplicationDetailPage() {
   );
 }
 
+function DecisionBanner({ decision, app, currency }) {
+  const d = decision;
+  const BANNER_MAP = {
+    approve: { bg: '#eff6ff', border: '#bfdbfe', color: '#1e40af', icon: 'Recommended for Approval' },
+    conditional_approve: { bg: '#eff6ff', border: '#bfdbfe', color: '#1e40af', icon: 'Conditionally Recommended' },
+    reject: { bg: '#fef2f2', border: '#fecaca', color: '#991b1b', icon: 'Rejected' },
+    escalate: { bg: '#fffbeb', border: '#fde68a', color: '#92400e', icon: 'Escalated for Senior Review' },
+    needs_more_evidence: { bg: '#fffbeb', border: '#fde68a', color: '#92400e', icon: 'More Evidence Needed' },
+  };
+  const style = BANNER_MAP[d.decision] || BANNER_MAP.needs_more_evidence;
+  const isRecommendation = ['approve', 'conditional_approve'].includes(d.decision);
+  const isPending = isRecommendation && ['under_review', 'escalated'].includes(app.status);
+
+  return (
+    <div style={{ background: style.bg, border: `1px solid ${style.border}`, color: style.color, borderRadius: 8, padding: '1rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>
+            {isRecommendation ? 'Engine Recommendation' : 'Engine Decision'}: {style.icon}
+          </div>
+          {d.recommendedAmount && (
+            <div style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+              Amount: <strong>{currency} {d.recommendedAmount.toLocaleString()}</strong>
+              {d.recommendedAmount !== app.requestedAmount && <span style={{ opacity: 0.7 }}> (requested: {currency} {app.requestedAmount?.toLocaleString()})</span>}
+            </div>
+          )}
+          {isPending && (
+            <div style={{ fontSize: '0.85rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
+              A reviewer must confirm this recommendation using the Approve or Reject button above.
+            </div>
+          )}
+        </div>
+        <StatusBadge value={d.riskLevel} />
+      </div>
+      {d.nextActions?.length > 0 && (
+        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+          <strong>Next step:</strong> {d.nextActions[0]}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OverviewTab({ app, currency }) {
+  const d = app.decisionResult;
   return (
     <div className="detail-grid">
+      {/* Decision summary FIRST — most important for reviewers */}
+      {d && (
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <div className="card-header">
+            Decision Summary
+            <span className="text-sm text-muted" style={{ marginLeft: '0.5rem' }}>
+              {['approve', 'conditional_approve'].includes(d.decision) ? '(engine recommendation — not final)' : '(auto-applied)'}
+            </span>
+          </div>
+          <div className="card-body">
+            <DecisionBanner decision={d} app={app} currency={currency} />
+            {d.blockers?.length > 0 && (
+              <div className="alert alert-warning" style={{ marginBottom: '0.75rem' }}>
+                <strong>Blockers:</strong>
+                <ul style={{ marginTop: '0.25rem', paddingLeft: '1.25rem', marginBottom: 0 }}>
+                  {d.blockers.map((b, i) => <li key={i}>{b}</li>)}
+                </ul>
+              </div>
+            )}
+            {d.reasons?.length > 0 && (
+              <details style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Supporting reasons ({d.reasons.length})</summary>
+                <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem' }}>
+                  {d.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                </ul>
+              </details>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="card-header">Application Details</div>
         <div className="card-body">
@@ -241,8 +316,7 @@ function OverviewTab({ app, currency }) {
           {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#16a34a' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
           <div className="detail-row"><span className="detail-label">Purpose</span><span className="detail-value">{app.purpose || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value">{app.season || '-'}</span></div>
-          <div className="detail-row"><span className="detail-label">Created By</span><span className="detail-value">{app.createdBy?.fullName}</span></div>
-          <div className="detail-row"><span className="detail-label">Created At</span><span className="detail-value">{new Date(app.createdAt).toLocaleString()}</span></div>
+          <div className="detail-row"><span className="detail-label">Created</span><span className="detail-value">{new Date(app.createdAt).toLocaleString()} by {app.createdBy?.fullName}</span></div>
         </div>
       </div>
       <div className="card">
@@ -255,70 +329,20 @@ function OverviewTab({ app, currency }) {
           <div className="detail-row"><span className="detail-label">Primary Crop</span><span className="detail-value">{app.farmer?.primaryCrop || '-'}</span></div>
         </div>
       </div>
-      {app.decisionResult && (
-        <div className="card" style={{ gridColumn: '1 / -1' }}>
-          <div className="card-header">Decision Engine Recommendation</div>
-          <div className="card-body">
-            {/* Banner when decision recommends approval but status is still under_review */}
-            {['approve', 'conditional_approve'].includes(app.decisionResult.decision) && app.status === 'under_review' && (
-              <div className="alert alert-info" style={{ marginBottom: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af' }}>
-                <strong>Human review required:</strong> The decision engine recommends <em>{app.decisionResult.decisionLabel}</em>
-                {app.decisionResult.recommendedAmount && <> for {currency} {app.decisionResult.recommendedAmount.toLocaleString()}</>}.
-                Use the <strong>Approve</strong> or <strong>Reject</strong> button above to finalize.
-              </div>
-            )}
-            {app.decisionResult.decision === 'reject' && (
-              <div className="alert alert-danger" style={{ marginBottom: '1rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
-                <strong>Application rejected.</strong> {app.decisionResult.decisionLabel}.
-                {app.decisionResult.nextActions?.length > 0 && <> Next: {app.decisionResult.nextActions[0]}.</>}
-              </div>
-            )}
-            {app.decisionResult.decision === 'escalate' && (
-              <div className="alert alert-warning" style={{ marginBottom: '1rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
-                <strong>Escalated for senior review.</strong> {app.decisionResult.decisionLabel}.
-                {app.decisionResult.nextActions?.length > 0 && <> Next: {app.decisionResult.nextActions[0]}.</>}
-              </div>
-            )}
-            {app.decisionResult.decision === 'needs_more_evidence' && (
-              <div className="alert alert-warning" style={{ marginBottom: '1rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
-                <strong>More evidence needed.</strong> {app.decisionResult.decisionLabel}.
-                {app.decisionResult.nextActions?.length > 0 && <> Next: {app.decisionResult.nextActions[0]}.</>}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem' }}>
-              <div><div className="stat-label">Recommendation</div><StatusBadge value={app.decisionResult.decision} /></div>
-              <div><div className="stat-label">Risk Level</div><StatusBadge value={app.decisionResult.riskLevel} /></div>
-              {app.decisionResult.recommendedAmount && <div><div className="stat-label">Recommended Amount</div><div style={{ fontWeight: 700 }}>{currency} {app.decisionResult.recommendedAmount.toLocaleString()}</div></div>}
-            </div>
-            <div className="text-sm" style={{ fontWeight: 600 }}>{app.decisionResult.decisionLabel}</div>
-            {app.decisionResult.reasons?.length > 0 && (
-              <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#4b5563' }}>
-                {app.decisionResult.reasons.map((r, i) => <li key={i}>{r}</li>)}
-              </ul>
-            )}
-            {app.decisionResult.blockers?.length > 0 && (
-              <div className="alert alert-warning" style={{ marginTop: '0.75rem' }}>
-                <strong>Blockers:</strong>
-                <ul style={{ marginTop: '0.25rem', paddingLeft: '1.25rem' }}>
-                  {app.decisionResult.blockers.map((b, i) => <li key={i}>{b}</li>)}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Intelligence Summary if available */}
+      {/* Intelligence Summary — collapsed by default */}
       {app.verificationResult?.intelligenceSummary && (
         <div className="card" style={{ gridColumn: '1 / -1' }}>
-          <div className="card-header">Intelligence Context <span className="text-sm text-muted">(shadow — advisory only)</span></div>
           <div className="card-body">
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', fontSize: '0.875rem' }}>
-              {app.verificationResult.intelligenceSummary.cropOutlook && <div><span className="detail-label">Crop Outlook</span> {app.verificationResult.intelligenceSummary.cropOutlook}</div>}
-              {app.verificationResult.intelligenceSummary.marketOutlook && <div><span className="detail-label">Market</span> {app.verificationResult.intelligenceSummary.marketOutlook}</div>}
-              {app.verificationResult.intelligenceSummary.weatherRisk && <div><span className="detail-label">Weather Risk</span> {app.verificationResult.intelligenceSummary.weatherRisk}</div>}
-              {app.verificationResult.intelligenceSummary.trustLevel && <div><span className="detail-label">Trust</span> {app.verificationResult.intelligenceSummary.trustLevel}</div>}
-              {app.verificationResult.intelligenceSummary.demandLevel && <div><span className="detail-label">Demand</span> {app.verificationResult.intelligenceSummary.demandLevel}</div>}
-            </div>
+            <details>
+              <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}>Intelligence Context (advisory only)</summary>
+              <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', fontSize: '0.875rem', marginTop: '0.75rem' }}>
+                {app.verificationResult.intelligenceSummary.cropOutlook && <div><span className="detail-label">Crop Outlook</span> {app.verificationResult.intelligenceSummary.cropOutlook}</div>}
+                {app.verificationResult.intelligenceSummary.marketOutlook && <div><span className="detail-label">Market</span> {app.verificationResult.intelligenceSummary.marketOutlook}</div>}
+                {app.verificationResult.intelligenceSummary.weatherRisk && <div><span className="detail-label">Weather Risk</span> {app.verificationResult.intelligenceSummary.weatherRisk}</div>}
+                {app.verificationResult.intelligenceSummary.trustLevel && <div><span className="detail-label">Trust</span> {app.verificationResult.intelligenceSummary.trustLevel}</div>}
+                {app.verificationResult.intelligenceSummary.demandLevel && <div><span className="detail-label">Demand</span> {app.verificationResult.intelligenceSummary.demandLevel}</div>}
+              </div>
+            </details>
           </div>
         </div>
       )}

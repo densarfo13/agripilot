@@ -13,7 +13,7 @@ import { config } from '../config/index.js';
 
 function createMocks() {
   return {
-    req: { method: 'POST', path: '/test' },
+    req: { method: 'POST', path: '/test', requestId: 'test-rid-123' },
     res: {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
@@ -37,7 +37,7 @@ describe('Error Handler', () => {
       errorHandler(err, req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Something went wrong' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Something went wrong', requestId: 'test-rid-123' });
     });
 
     it('uses custom statusCode from error', () => {
@@ -58,7 +58,7 @@ describe('Error Handler', () => {
 
       errorHandler(err, req, res, next);
 
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error', requestId: 'test-rid-123' });
     });
 
     it('shows error message in production for non-500 errors', () => {

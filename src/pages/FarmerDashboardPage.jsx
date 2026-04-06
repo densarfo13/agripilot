@@ -107,49 +107,52 @@ export default function FarmerDashboardPage() {
             </p>
           </div>
         ) : isApproved ? (
-          <div style={styles.card}>
-            <div style={styles.statusBadge('#d4edda', '#155724')}>Approved</div>
-            <h3 style={{ marginTop: '1rem' }}>Your Account is Active</h3>
-            <p style={{ color: '#555', lineHeight: 1.6 }}>
-              Your registration has been approved. You can now access farmer services.
-            </p>
-            {lifecycle && (
-              <div style={{ ...styles.profileSummary, marginTop: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.75rem' }}>Current Season</h4>
-                <div style={styles.detailRow}>
-                  <span>Stage</span>
-                  <span style={{ fontWeight: 500 }}>{tLifecycleStage(lifecycle.currentStage)}</span>
-                </div>
-                {lifecycle.cropType && (
+          <>
+            <div style={styles.card}>
+              <div style={styles.statusBadge('#d4edda', '#155724')}>Active Account</div>
+              {lifecycle && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.75rem' }}>Current Season</h3>
                   <div style={styles.detailRow}>
-                    <span>Crop</span>
-                    <span>{lifecycle.cropType}</span>
+                    <span>Stage</span>
+                    <span style={{ fontWeight: 600 }}>{tLifecycleStage(lifecycle.currentStage)}</span>
                   </div>
-                )}
-                {lifecycle.recommendations?.length > 0 && (
-                  <div style={{ marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.4rem' }}>Next steps:</div>
-                    {lifecycle.recommendations.slice(0, 3).map((r, i) => (
-                      <div key={i} style={{ fontSize: '0.8rem', color: '#555', padding: '0.2rem 0' }}>- {r.title}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                  {lifecycle.cropType && (
+                    <div style={styles.detailRow}>
+                      <span>Crop</span>
+                      <span>{lifecycle.cropType}</span>
+                    </div>
+                  )}
+                  {lifecycle.recommendations?.length > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#333', marginBottom: '0.4rem' }}>What to do next:</div>
+                      {lifecycle.recommendations.slice(0, 3).map((r, i) => (
+                        <div key={i} style={{ fontSize: '0.85rem', color: '#555', padding: '0.3rem 0', paddingLeft: '0.5rem', borderLeft: '2px solid #16a34a' }}>
+                          {r.title}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {!lifecycle && <p style={{ color: '#666', marginTop: '1rem' }}>Your account is active. Check your applications and reminders below.</p>}
+            </div>
+
             {profile && profile.applications && profile.applications.length > 0 && (
-              <div style={styles.profileSummary}>
-                <h4 style={{ margin: '0 0 0.75rem' }}>Your Applications</h4>
+              <div style={{ ...styles.card, marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.75rem' }}>My Applications</h3>
                 {profile.applications.map(app => (
-                  <div key={app.id} style={styles.detailRow}>
-                    <span>{app.cropType}</span>
+                  <div key={app.id} style={{ ...styles.detailRow, padding: '0.5rem 0' }}>
+                    <span style={{ fontWeight: 500 }}>{app.cropType}</span>
                     <span>{tStatus(app.status)}</span>
                   </div>
                 ))}
               </div>
             )}
+
             {profile && profile.notifications && profile.notifications.length > 0 && (
-              <div style={styles.profileSummary}>
-                <h4 style={{ margin: '0 0 0.75rem' }}>Recent Notifications</h4>
+              <div style={{ ...styles.card, marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.75rem' }}>Notifications</h3>
                 {profile.notifications.map(n => (
                   <div key={n.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee', fontSize: '0.875rem' }}>
                     <strong>{n.title}</strong>
@@ -158,7 +161,7 @@ export default function FarmerDashboardPage() {
                 ))}
               </div>
             )}
-          </div>
+          </>
         ) : (
           <div style={styles.card}>
             <p>Loading your account status...</p>

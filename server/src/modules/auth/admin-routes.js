@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
+import { authenticate, authorize, invalidateAuthCache } from '../../middleware/auth.js';
 import { validateParamUUID, isValidEmail, validatePassword } from '../../middleware/validate.js';
 import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
@@ -67,6 +67,7 @@ router.patch('/:id/toggle-active',
       data: { active: !user.active },
       select: { id: true, email: true, fullName: true, role: true, active: true },
     });
+    invalidateAuthCache(req.params.id);
 
     writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } }).catch(() => {});
     res.json(updated);

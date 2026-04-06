@@ -191,14 +191,31 @@ export async function getApplicationStats() {
 //  WORKFLOW ACTIONS
 // ═══════════════════════════════════════════════════════
 
+/**
+ * Lightweight status-only fetch for workflow pre-checks.
+ * Avoids the heavy 12-table FULL_INCLUDE join when we only need status.
+ */
+async function getApplicationStatus(id) {
+  const app = await prisma.application.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+  if (!app) {
+    const err = new Error('Application not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  return app;
+}
+
 export async function submitApplication(id) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'submitted');
   return atomicTransition(id, app.status, 'submitted');
 }
 
 export async function approveApplication(id, userId, { reason, recommendedAmount } = {}) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'approved');
 
   const extraData = {};
@@ -219,7 +236,7 @@ export async function approveApplication(id, userId, { reason, recommendedAmount
 }
 
 export async function rejectApplication(id, userId, reason) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'rejected');
 
   const updated = await atomicTransition(id, app.status, 'rejected');
@@ -232,7 +249,7 @@ export async function rejectApplication(id, userId, reason) {
 }
 
 export async function escalateApplication(id, userId, reason) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'escalated');
 
   const updated = await atomicTransition(id, app.status, 'escalated');
@@ -245,7 +262,7 @@ export async function escalateApplication(id, userId, reason) {
 }
 
 export async function disburseApplication(id, userId, { reason } = {}) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'disbursed');
 
   const updated = await atomicTransition(id, app.status, 'disbursed');
@@ -260,7 +277,7 @@ export async function disburseApplication(id, userId, { reason } = {}) {
 }
 
 export async function reopenApplication(id, userId, reason) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'under_review');
 
   const updated = await atomicTransition(id, app.status, 'under_review');
@@ -275,7 +292,7 @@ export async function reopenApplication(id, userId, reason) {
 }
 
 export async function requestEvidence(id, userId, { reason, requiredTypes }) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, 'needs_more_evidence');
 
   const updated = await atomicTransition(id, app.status, 'needs_more_evidence');
@@ -292,7 +309,7 @@ export async function requestEvidence(id, userId, { reason, requiredTypes }) {
 }
 
 export async function updateStatus(id, newStatus, userId) {
-  const app = await getApplicationById(id);
+  const app = await getApplicationStatus(id);
   validateTransition(app.status, newStatus);
   const previousStatus = app.status;
 

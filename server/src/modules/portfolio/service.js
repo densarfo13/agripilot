@@ -14,6 +14,9 @@ export async function getPortfolioSummary() {
     cropMix,
     regionMix,
     recentApps,
+    decisionMix,
+    avgVerification,
+    recommendedTotal,
   ] = await Promise.all([
     prisma.application.count(),
 
@@ -53,26 +56,24 @@ export async function getPortfolioSummary() {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, status: true, cropType: true, requestedAmount: true, createdAt: true,
+        currencyCode: true,
         farmer: { select: { fullName: true, region: true } },
       },
     }),
+
+    prisma.decisionResult.groupBy({
+      by: ['decision'],
+      _count: true,
+    }),
+
+    prisma.verificationResult.aggregate({
+      _avg: { verificationScore: true },
+    }),
+
+    prisma.decisionResult.aggregate({
+      _sum: { recommendedAmount: true },
+    }),
   ]);
-
-  // Decision mix
-  const decisionMix = await prisma.decisionResult.groupBy({
-    by: ['decision'],
-    _count: true,
-  });
-
-  // Avg verification score
-  const avgVerification = await prisma.verificationResult.aggregate({
-    _avg: { verificationScore: true },
-  });
-
-  // Recommended amount total
-  const recommendedTotal = await prisma.decisionResult.aggregate({
-    _sum: { recommendedAmount: true },
-  });
 
   return {
     totalApplications: totalApps,

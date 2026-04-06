@@ -3,20 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { useAuthStore } from '../store/authStore.js';
+import { ADMIN_ROLES } from '../utils/roles.js';
 
 const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#7c3aed', '#be185d', '#059669', '#ea580c', '#6366f1'];
 
 export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState(null);
   const [queues, setQueues] = useState({ verification: 0, fraud: 0, escalated: 0 });
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const user = useAuthStore(s => s.user);
+  const isAdmin = ADMIN_ROLES.includes(user?.role);
 
   useEffect(() => {
-    Promise.all([
+    const fetches = [
       api.get('/portfolio/summary'),
       api.get('/applications/stats'),
-    ]).then(([pRes, sRes]) => {
+    ];
+    // Fetch pending registrations for admins
+    if (isAdmin) {
+      fetches.push(api.get('/users/pending-registrations').catch(() => ({ data: [] })));
+    }
+    Promise.all(fetches).then(([pRes, sRes, pendingRes]) => {
+      if (pendingRes) setPendingCount(pendingRes.data.length || 0);
       setPortfolio(pRes.data);
       const stats = sRes.data;
       const byStatus = {};
@@ -48,7 +59,7 @@ export default function DashboardPage() {
       <div className="page-header"><h1>Dashboard</h1></div>
       <div className="page-body">
         {/* Queue alerts */}
-        {(queues.verification > 0 || queues.fraud > 0 || queues.escalated > 0) && (
+        {(queues.verification > 0 || queues.fraud > 0 || queues.escalated > 0 || pendingCount > 0) && (
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
             {queues.verification > 0 && (
               <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -66,6 +77,12 @@ export default function DashboardPage() {
               <div onClick={() => navigate('/applications?status=escalated')} style={{ cursor: 'pointer', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.25rem' }}>⚡</span>
                 <span><strong>{queues.escalated}</strong> escalated</span>
+              </div>
+            )}
+            {pendingCount > 0 && (
+              <div onClick={() => navigate('/farmer-registrations')} style={{ cursor: 'pointer', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>👤</span>
+                <span><strong>{pendingCount}</strong> pending farmer registrations</span>
               </div>
             )}
           </div>

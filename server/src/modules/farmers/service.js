@@ -1,5 +1,6 @@
 import prisma from '../../config/database.js';
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
+import { invalidateAuthCache } from '../../middleware/auth.js';
 
 /**
  * Create a farmer (staff-initiated — auto-approved, not self-registered).
@@ -112,12 +113,14 @@ export async function updateAccessStatus(farmerId, newStatus, userId) {
     // Also deactivate the linked user account
     if (farmer.userId) {
       await prisma.user.update({ where: { id: farmer.userId }, data: { active: false } });
+      invalidateAuthCache(farmer.userId);
     }
   }
   if (newStatus === 'approved' || newStatus === 'pending_approval') {
     // Reactivate the linked user account
     if (farmer.userId) {
       await prisma.user.update({ where: { id: farmer.userId }, data: { active: true } });
+      invalidateAuthCache(farmer.userId);
     }
   }
 
