@@ -28,7 +28,7 @@ import AdminControlPage from './pages/AdminControlPage.jsx';
 import FarmerRegisterPage from './pages/FarmerRegisterPage.jsx';
 import FarmerDashboardPage from './pages/FarmerDashboardPage.jsx';
 import PendingRegistrationsPage from './pages/PendingRegistrationsPage.jsx';
-import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES } from './utils/roles.js';
+import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore(s => s.token);
@@ -67,6 +67,7 @@ export default function App() {
           <Route path="applications" element={<RoleRoute roles={STAFF_ROLES}><ApplicationsPage /></RoleRoute>} />
           <Route path="applications/new" element={<RoleRoute roles={STAFF_ROLES}><NewApplicationPage /></RoleRoute>} />
           <Route path="applications/:id" element={<RoleRoute roles={STAFF_ROLES}><ApplicationDetailPage /></RoleRoute>} />
+          <Route path="farmer-registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
           <Route path="verification-queue" element={<RoleRoute roles={REVIEW_ROLES}><VerificationQueuePage /></RoleRoute>} />
           <Route path="fraud-queue" element={<RoleRoute roles={REVIEW_ROLES}><FraudQueuePage /></RoleRoute>} />
           <Route path="farmer-home/:farmerId" element={<RoleRoute roles={STAFF_ROLES}><FarmerHomePage /></RoleRoute>}>
@@ -81,7 +82,7 @@ export default function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="audit" element={<RoleRoute roles={ADMIN_ROLES}><AuditPage /></RoleRoute>} />
           <Route path="admin/users" element={<RoleRoute roles={ADMIN_ROLES}><AdminUsersPage /></RoleRoute>} />
-          <Route path="admin/registrations" element={<RoleRoute roles={ADMIN_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
+          <Route path="admin/registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
           <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -30,6 +30,7 @@ router.post('/:applicationId',
 // List field visits for an application
 router.get('/:applicationId',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const visits = await fieldVisitService.listFieldVisits(req.params.applicationId);
     res.json(visits);

@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate, authorize } from '../../middleware/auth.js';
 import { isValidEmail, validatePassword } from '../../middleware/validate.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
+import { writeAuditLog } from '../audit/service.js';
 
 const router = Router();
 
-router.post('/register', asyncHandler(async (req, res) => {
+// Staff registration — requires admin authentication.
+// Farmers use /farmer-register (public). Staff accounts are created by admins.
+router.post('/register', authenticate, authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const { email, password, fullName, role } = req.body;
 
   if (!email || !password || !fullName) {
@@ -22,6 +25,7 @@ router.post('/register', asyncHandler(async (req, res) => {
   }
 
   const result = await authService.register({ email: email.toLowerCase().trim(), password, fullName: fullName.trim(), role });
+  writeAuditLog({ userId: req.user.sub, action: 'staff_registered', details: { newUserId: result.user.id, role: result.user.role } }).catch(() => {});
   res.status(201).json(result);
 }));
 
@@ -84,6 +88,7 @@ router.post('/farmer-register', asyncHandler(async (req, res) => {
     primaryCrop,
     farmSizeAcres,
   });
+  writeAuditLog({ userId: result.user.id, action: 'farmer_self_registered', details: { farmerId: result.farmer.id } }).catch(() => {});
   res.status(201).json(result);
 }));
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
+import { authenticate, authorize, requireApprovedFarmer } from '../../middleware/auth.js';
 import { validateParamUUID, isValidUUID, parsePositiveInt } from '../../middleware/validate.js';
 import * as appService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
@@ -14,6 +14,7 @@ import * as intelligenceService from '../intelligence/service.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(requireApprovedFarmer);
 
 // ═══════════════════════════════════════════════════════
 //  CRUD
@@ -43,7 +44,7 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
 }));
 
 // List applications (scoped: reviewers see only assigned, field officers see only assigned)
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const { status, farmerId, search } = req.query;
   let assignedReviewerId;
   let assignedFieldOfficerId;
@@ -65,7 +66,7 @@ router.get('/stats', authorize('super_admin', 'institutional_admin', 'investor_v
 }));
 
 // Get application by ID
-router.get('/:id', validateParamUUID('id'), asyncHandler(async (req, res) => {
+router.get('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const app = await appService.getApplicationById(req.params.id);
   res.json(app);
 }));
@@ -261,25 +262,25 @@ router.post('/:id/score-intelligence', validateParamUUID('id'), authorize('super
 //  ENGINE RESULTS (GET — nested under applications)
 // ═══════════════════════════════════════════════════════
 
-router.get('/:id/verification', validateParamUUID('id'), asyncHandler(async (req, res) => {
+router.get('/:id/verification', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const result = await verificationService.getVerificationResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No verification result found' });
   res.json(result);
 }));
 
-router.get('/:id/fraud', validateParamUUID('id'), asyncHandler(async (req, res) => {
+router.get('/:id/fraud', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const result = await fraudService.getFraudResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No fraud result found' });
   res.json(result);
 }));
 
-router.get('/:id/decision', validateParamUUID('id'), asyncHandler(async (req, res) => {
+router.get('/:id/decision', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const result = await decisionService.getDecisionResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No decision result found' });
   res.json(result);
 }));
 
-router.get('/:id/benchmark', validateParamUUID('id'), asyncHandler(async (req, res) => {
+router.get('/:id/benchmark', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
   const result = await benchmarkService.getBenchmarkResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No benchmark result found' });
   res.json(result);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import api from '../api/client.js';
-import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES } from '../utils/roles.js';
+import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
 
 const NAV = [
   { section: 'Overview', items: [
@@ -11,6 +11,7 @@ const NAV = [
   { section: 'Operations', roles: STAFF_ROLES, items: [
     { to: '/farmers', label: 'Farmers', icon: 'F' },
     { to: '/applications', label: 'Applications', icon: 'A' },
+    { to: '/farmer-registrations', label: 'Farmer Registrations', icon: 'R', roles: REGISTRATION_ROLES },
     { to: '/verification-queue', label: 'Verification Queue', icon: 'V', roles: REVIEW_ROLES },
     { to: '/fraud-queue', label: 'Fraud Queue', icon: '!', roles: REVIEW_ROLES },
   ]},
@@ -22,7 +23,6 @@ const NAV = [
     { to: '/admin/control', label: 'Control Center', icon: 'C' },
     { to: '/audit', label: 'Audit Trail', icon: 'T' },
     { to: '/admin/users', label: 'User Management', icon: 'U' },
-    { to: '/admin/registrations', label: 'Farmer Registrations', icon: 'R' },
   ] },
 ];
 

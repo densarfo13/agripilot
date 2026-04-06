@@ -27,6 +27,7 @@ router.post('/:applicationId/run',
 // Get decision result
 router.get('/:applicationId',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const result = await decisionService.getDecisionResult(req.params.applicationId);
     if (!result) return res.status(404).json({ error: 'No decision result found' });

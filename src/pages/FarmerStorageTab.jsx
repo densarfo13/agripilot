@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 import { tStorageMethod, tStorageCondition } from '../utils/i18n.js';
+import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 
 const STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse', 'silo', 'traditional', 'cold_storage', 'other'];
 const STORAGE_CONDITIONS = ['good', 'fair', 'poor', 'deteriorating', 'unknown'];
@@ -40,7 +41,7 @@ export default function FarmerStorageTab() {
 
   const loadGuidance = (cropType) => {
     setSelectedCrop(cropType);
-    api.get(`/post-harvest/guidance/${cropType}`, { params: { country: farmer?.countryCode || 'KE' } })
+    api.get(`/post-harvest/guidance/${cropType}`, { params: { country: farmer?.countryCode || DEFAULT_COUNTRY_CODE } })
       .then(r => setGuidance(r.data))
       .catch(() => setGuidance(null));
   };

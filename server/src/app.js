@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { authenticate } from './middleware/auth.js';
+import { authenticate, requireApprovedFarmer } from './middleware/auth.js';
 import prisma from './config/database.js';
 
 // Route imports
@@ -142,6 +142,8 @@ app.get('/api/me', authenticate, async (req, res) => {
 });
 
 // ─── Protected API Routes ───────────────────────────────
+// Note: /api/farmers handles its own /me endpoint (no approval gate for viewing own profile).
+// The requireApprovedFarmer middleware is applied inside individual route files where needed.
 app.use('/api/farmers', farmersRoutes);
 app.use('/api/applications', applicationsRoutes);
 app.use('/api/location', locationRoutes);

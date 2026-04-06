@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
 /**
  * Fraud Analysis Engine (Region-Aware)
@@ -27,7 +27,7 @@ export async function runFraudAnalysis(applicationId) {
     throw err;
   }
 
-  const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(app.farmer.countryCode || DEFAULT_COUNTRY_CODE);
   const flags = [];
   const reasons = [];
   const matchedRecords = [];

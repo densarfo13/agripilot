@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate, requireApprovedFarmer } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
+import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import * as svc from './service.js';
 
 const VALID_STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse', 'silo', 'traditional', 'cold_storage', 'other'];
@@ -9,6 +10,7 @@ const VALID_STORAGE_CONDITIONS = ['good', 'fair', 'poor', 'deteriorating', 'unkn
 
 const router = Router();
 router.use(authenticate);
+router.use(requireApprovedFarmer);
 
 // ─── Storage Status ─────────────────────────────────────
 
@@ -53,7 +55,7 @@ router.get('/storage/:id',
 
 // Get storage guidance for a crop (optional: ?country=TZ)
 router.get('/guidance/:cropType', (req, res) => {
-  const country = req.query.country || 'KE';
+  const country = req.query.country || DEFAULT_COUNTRY_CODE;
   res.json(svc.getStorageGuidance(req.params.cropType, country));
 });
 

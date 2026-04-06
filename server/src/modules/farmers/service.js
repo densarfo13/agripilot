@@ -1,5 +1,9 @@
 import prisma from '../../config/database.js';
+import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
+/**
+ * Create a farmer (staff-initiated — auto-approved, not self-registered).
+ */
 export async function createFarmer(data, userId) {
   return prisma.farmer.create({
     data: {
@@ -13,10 +17,15 @@ export async function createFarmer(data, userId) {
       farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null,
       yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience) : null,
       deviceId: data.deviceId || null,
-      countryCode: data.countryCode || 'KE',
+      countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
       regionCode: data.regionCode || null,
       preferredLanguage: data.preferredLanguage || 'en',
       createdById: userId,
+      // Staff-created farmers are auto-approved
+      selfRegistered: false,
+      registrationStatus: 'approved',
+      approvedAt: new Date(),
+      approvedById: userId,
     },
     include: { createdBy: { select: { id: true, fullName: true, email: true } } },
   });
@@ -67,6 +76,27 @@ export async function getFarmerById(id) {
     throw err;
   }
   return farmer;
+}
+
+/**
+ * Get farmer profile for a logged-in farmer user (via userId).
+ * Returns registration status, applications, and unread notifications.
+ */
+export async function getMyFarmerProfile(userId) {
+  return prisma.farmer.findUnique({
+    where: { userId },
+    include: {
+      applications: {
+        select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      },
+      notifications: {
+        where: { read: false },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      },
+    },
+  });
 }
 
 export async function updateFarmer(id, data) {

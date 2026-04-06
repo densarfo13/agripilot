@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig, getStorageDefault } from '../regionConfig/service.js';
+import { getRegionConfig, getStorageDefault, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { createNotification } from '../notifications/service.js';
 
 /**
@@ -195,7 +195,7 @@ export async function getStorageDashboard(farmerId) {
     orderBy: { updatedAt: 'desc' },
   });
 
-  const regionCfg = getRegionConfig(farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(farmer.countryCode || DEFAULT_COUNTRY_CODE);
 
   const summary = {
     totalItems: items.length,

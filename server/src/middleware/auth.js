@@ -39,3 +39,39 @@ export function authorize(...roles) {
     next();
   };
 }
+
+/**
+ * Farmer registration status gate.
+ * For farmer-role users, checks that their registration is approved.
+ * Non-farmer roles pass through unconditionally.
+ * Use AFTER authenticate middleware.
+ */
+export function requireApprovedFarmer(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  // Non-farmer roles are not subject to registration approval
+  if (req.user.role !== 'farmer') {
+    return next();
+  }
+  // Farmer role — verify registration status from DB
+  prisma.farmer.findUnique({
+    where: { userId: req.user.sub },
+    select: { registrationStatus: true },
+  })
+    .then((farmer) => {
+      if (!farmer) {
+        return res.status(403).json({ error: 'Farmer profile not found' });
+      }
+      if (farmer.registrationStatus !== 'approved') {
+        return res.status(403).json({
+          error: 'Account pending approval',
+          registrationStatus: farmer.registrationStatus,
+        });
+      }
+      next();
+    })
+    .catch(() => {
+      res.status(500).json({ error: 'Failed to verify farmer status' });
+    });
+}

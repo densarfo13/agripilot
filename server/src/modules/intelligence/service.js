@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { injectIntelligenceSummary as injectVerificationSummary } from '../verification/service.js';
 import { injectIntelligenceSummary as injectFraudSummary } from '../fraud/service.js';
 
@@ -41,7 +41,7 @@ export async function runIntelligence(applicationId) {
     throw err;
   }
 
-  const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(app.farmer.countryCode || DEFAULT_COUNTRY_CODE);
   const errors = []; // Collect non-fatal signal errors
 
   // ─── ML Shadow Score ────────────────────────────────

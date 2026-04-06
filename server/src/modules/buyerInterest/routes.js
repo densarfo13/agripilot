@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate, requireApprovedFarmer } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as svc from './service.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(requireApprovedFarmer);
 
 // Crop demand summary (aggregated) — must be before /:id routes
 router.get('/demand/summary', asyncHandler(async (req, res) => {

@@ -191,6 +191,7 @@ model Farmer {
   approvedById         String?             @map("approved_by_id")
   rejectedAt           DateTime?           @map("rejected_at")
   rejectionReason      String?             @map("rejection_reason")
+  invitedAt            DateTime?           @map("invited_at")
   assignedOfficerId    String?             @map("assigned_officer_id")
   currentStage         LifecycleStage      @default(pre_planting) @map("current_stage")
   stageUpdatedAt       DateTime?           @map("stage_updated_at")

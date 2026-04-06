@@ -37,6 +37,7 @@ router.post('/:applicationId/gps',
 // Get GPS for an application
 router.get('/:applicationId/gps',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const location = await locationService.getLocation(req.params.applicationId);
     if (!location) return res.status(404).json({ error: 'No GPS data found' });
@@ -59,6 +60,7 @@ router.post('/:applicationId/boundary',
 // Get boundary for an application
 router.get('/:applicationId/boundary',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const boundary = await locationService.getBoundary(req.params.applicationId);
     if (!boundary) return res.status(404).json({ error: 'No boundary data found' });

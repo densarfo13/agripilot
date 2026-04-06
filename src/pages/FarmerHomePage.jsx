@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, NavLink, Outlet, useOutletContext } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 
 export default function FarmerHomePage() {
   const { farmerId } = useParams();
@@ -39,7 +40,7 @@ export default function FarmerHomePage() {
         <div>
           <h1>{farmer.fullName}</h1>
           <span className="text-muted" style={{ fontSize: '0.9rem' }}>
-            {farmer.region}{farmer.district ? `, ${farmer.district}` : ''} | {farmer.countryCode || 'KE'}
+            {farmer.region}{farmer.district ? `, ${farmer.district}` : ''} | {farmer.countryCode || DEFAULT_COUNTRY_CODE}
             {farmer.primaryCrop ? ` | ${farmer.primaryCrop}` : ''}
           </span>
         </div>

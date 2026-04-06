@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
 /**
  * Benchmarking Engine (Region-Aware)
@@ -23,7 +23,7 @@ export async function runBenchmark(applicationId) {
     throw err;
   }
 
-  const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(app.farmer.countryCode || DEFAULT_COUNTRY_CODE);
 
   // Find peer group — same crop type, same region
   const peers = await prisma.application.findMany({

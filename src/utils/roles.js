@@ -14,8 +14,11 @@ export const REVIEW_ROLES = ['super_admin', 'institutional_admin', 'reviewer'];
 // Full administrative access
 export const ADMIN_ROLES = ['super_admin', 'institutional_admin'];
 
-// Can create farmers and applications
+// Can create farmers, applications, and manage farmer registrations
 export const CREATOR_ROLES = ['super_admin', 'institutional_admin', 'field_officer'];
+
+// Can view/approve/reject farmer registrations
+export const REGISTRATION_ROLES = ['super_admin', 'institutional_admin', 'field_officer'];
 
 // Institutional staff roles (visible in user management dropdown, excludes farmer)
 export const INSTITUTIONAL_ROLES = ['super_admin', 'institutional_admin', 'reviewer', 'field_officer', 'investor_viewer'];

@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
 /**
  * Reminder Service
@@ -133,7 +133,7 @@ export async function getReminderSummary(farmerId) {
  */
 export async function generateCropLifecycleReminders(farmerId, cropType, plantingDate) {
   const farmer = await prisma.farmer.findUnique({ where: { id: farmerId } });
-  const regionCfg = getRegionConfig(farmer?.countryCode || 'KE');
+  const regionCfg = getRegionConfig(farmer?.countryCode || DEFAULT_COUNTRY_CODE);
 
   const schedules = getCropSchedule(cropType);
   const reminders = [];

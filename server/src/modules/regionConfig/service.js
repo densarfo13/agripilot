@@ -81,8 +81,11 @@ const regionDefaults = {
   },
 };
 
+/** Default country code used as fallback across all modules. */
+export const DEFAULT_COUNTRY_CODE = 'KE';
+
 export function getRegionConfig(countryCode) {
-  return regionDefaults[countryCode?.toUpperCase()] || regionDefaults.KE;
+  return regionDefaults[countryCode?.toUpperCase()] || regionDefaults[DEFAULT_COUNTRY_CODE];
 }
 
 export function listRegionConfigs() {

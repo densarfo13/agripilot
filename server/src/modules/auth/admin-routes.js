@@ -10,10 +10,11 @@ import { getPendingRegistrations, getAllSelfRegistered, approveRegistration, rej
 
 const router = Router();
 router.use(authenticate);
-router.use(authorize('super_admin', 'institutional_admin'));
+
+// ─── User Management (admin-only) ─────────────────────
 
 // List all users
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const users = await prisma.user.findMany({
     select: { id: true, email: true, fullName: true, role: true, active: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
@@ -21,7 +22,7 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(users);
 }));
 
-// Create user (admin-only registration)
+// Create user (super_admin only)
 router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
   const { email, password, fullName, role } = req.body;
   if (!email || !password || !fullName || !role) {
@@ -53,7 +54,7 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
   res.status(201).json(user);
 }));
 
-// Toggle user active status
+// Toggle user active status (super_admin only)
 router.patch('/:id/toggle-active',
   validateParamUUID('id'),
   authorize('super_admin'),
@@ -71,7 +72,7 @@ router.patch('/:id/toggle-active',
     res.json(updated);
   }));
 
-// Admin reset user password
+// Admin reset user password (super_admin only)
 router.patch('/:id/reset-password',
   validateParamUUID('id'),
   authorize('super_admin'),
@@ -91,22 +92,28 @@ router.patch('/:id/reset-password',
   }));
 
 // ─── Farmer Registration Management ────────────────────
+// Accessible by admins AND field officers
 
 // List pending farmer registrations
-router.get('/pending-registrations', asyncHandler(async (req, res) => {
-  const pending = await getPendingRegistrations();
-  res.json(pending);
-}));
+router.get('/pending-registrations',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const pending = await getPendingRegistrations();
+    res.json(pending);
+  }));
 
 // List all self-registered farmers (any status)
-router.get('/self-registered', asyncHandler(async (req, res) => {
-  const all = await getAllSelfRegistered();
-  res.json(all);
-}));
+router.get('/self-registered',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const all = await getAllSelfRegistered();
+    res.json(all);
+  }));
 
 // Approve farmer registration
 router.post('/:id/approve-registration',
   validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
   asyncHandler(async (req, res) => {
     const { assignedOfficerId } = req.body;
     const result = await approveRegistration({
@@ -125,6 +132,7 @@ router.post('/:id/approve-registration',
 // Reject farmer registration
 router.post('/:id/reject-registration',
   validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
   asyncHandler(async (req, res) => {
     const { rejectionReason } = req.body;
     const result = await rejectRegistration({

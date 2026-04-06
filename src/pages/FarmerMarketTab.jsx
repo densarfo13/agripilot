@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
+import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 
 export default function FarmerMarketTab() {
   const { farmerId, farmer } = useFarmerContext();
-  const country = farmer?.countryCode || 'KE';
+  const country = farmer?.countryCode || DEFAULT_COUNTRY_CODE;
   const [prices, setPrices] = useState([]);
   const [buyerTypes, setBuyerTypes] = useState([]);
   const [interests, setInterests] = useState([]);

@@ -33,6 +33,7 @@ router.post('/:applicationId/notes',
 // List review notes
 router.get('/:applicationId/notes',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const notes = await reviewService.listReviewNotes(req.params.applicationId);
     res.json(notes);
@@ -41,6 +42,7 @@ router.get('/:applicationId/notes',
 // Get review assignments for an application
 router.get('/:applicationId/assignments',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const assignments = await reviewService.getReviewAssignments(req.params.applicationId);
     res.json(assignments);

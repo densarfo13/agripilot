@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
 /**
  * Verification Scoring Engine (Region-Aware)
@@ -30,7 +30,7 @@ export async function runVerification(applicationId) {
     throw err;
   }
 
-  const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(app.farmer.countryCode || DEFAULT_COUNTRY_CODE);
   const factors = {};
   const flags = [];
   const reasons = [];

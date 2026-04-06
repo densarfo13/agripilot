@@ -49,6 +49,7 @@ router.post('/:applicationId',
 // List evidence for application
 router.get('/:applicationId',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const files = await evidenceService.listEvidence(req.params.applicationId);
     res.json(files);

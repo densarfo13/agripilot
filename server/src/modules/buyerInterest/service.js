@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { createNotification } from '../notifications/service.js';
 
 /**
@@ -23,7 +23,7 @@ export async function expressInterest(farmerId, data) {
     throw err;
   }
 
-  const regionCfg = getRegionConfig(farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(farmer.countryCode || DEFAULT_COUNTRY_CODE);
 
   const interest = await prisma.buyerInterest.create({
     data: {

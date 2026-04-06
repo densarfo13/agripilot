@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
+import { authenticate, authorize, requireApprovedFarmer } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as lifecycleService from './service.js';
 
@@ -8,6 +8,7 @@ const VALID_STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'ha
 
 const router = Router();
 router.use(authenticate);
+router.use(requireApprovedFarmer);
 
 // Get farmer lifecycle state
 router.get('/farmers/:farmerId',

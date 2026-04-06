@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { getRegionConfig } from '../regionConfig/service.js';
+import { getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
 /**
  * Decision Engine (Region-Aware)
@@ -47,7 +47,7 @@ export async function runDecisionEngine(applicationId) {
     throw err;
   }
 
-  const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
+  const regionCfg = getRegionConfig(app.farmer.countryCode || DEFAULT_COUNTRY_CODE);
   const approveThreshold = 80;
   const conditionalThreshold = regionCfg.verificationThreshold || 60;
   const rejectThreshold = 40;

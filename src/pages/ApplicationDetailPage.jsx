@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { ADMIN_ROLES, REVIEW_ROLES } from '../utils/roles.js';
+import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 
 export default function ApplicationDetailPage() {
   const { id } = useParams();
@@ -231,7 +232,7 @@ function OverviewTab({ app, currency }) {
           <div className="detail-row"><span className="detail-label">Name</span><span className="detail-value">{app.farmer?.fullName}</span></div>
           <div className="detail-row"><span className="detail-label">Phone</span><span className="detail-value">{app.farmer?.phone}</span></div>
           <div className="detail-row"><span className="detail-label">Region</span><span className="detail-value">{app.farmer?.region}</span></div>
-          <div className="detail-row"><span className="detail-label">Country</span><span className="detail-value">{app.farmer?.countryCode || 'KE'}</span></div>
+          <div className="detail-row"><span className="detail-label">Country</span><span className="detail-value">{app.farmer?.countryCode || DEFAULT_COUNTRY_CODE}</span></div>
           <div className="detail-row"><span className="detail-label">Primary Crop</span><span className="detail-value">{app.farmer?.primaryCrop || '-'}</span></div>
         </div>
       </div>

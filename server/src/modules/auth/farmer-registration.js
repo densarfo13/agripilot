@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import prisma from '../../config/database.js';
+import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 
 /**
  * Farmer self-registration.
@@ -57,7 +58,7 @@ export async function farmerSelfRegister({
       region: region || 'Not specified',
       district: district || null,
       village: village || null,
-      countryCode: countryCode || 'KE',
+      countryCode: countryCode || DEFAULT_COUNTRY_CODE,
       preferredLanguage: preferredLanguage || 'en',
       primaryCrop: primaryCrop || null,
       farmSizeAcres: farmSizeAcres || null,
@@ -182,6 +183,97 @@ export async function rejectRegistration({ farmerId, rejectedById, rejectionReas
   }
 
   return updated;
+}
+
+/**
+ * Invite a farmer (admin or field officer only).
+ * Creates a Farmer record with registrationStatus = approved and invitedAt set.
+ * Does NOT create a User account — the farmer can later self-register and link.
+ * Or, if email/password are provided, creates a linked User account immediately.
+ */
+export async function inviteFarmer({
+  fullName,
+  phone,
+  email,
+  password,
+  countryCode,
+  region,
+  district,
+  village,
+  preferredLanguage,
+  primaryCrop,
+  farmSizeAcres,
+  invitedById,
+  assignedOfficerId,
+}) {
+  // Validate required fields
+  if (!fullName || !phone || !region) {
+    const err = new Error('fullName, phone, and region are required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Check duplicate phone
+  const existingFarmer = await prisma.farmer.findFirst({ where: { phone } });
+  if (existingFarmer) {
+    const err = new Error('Phone number already registered');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  let userId = null;
+
+  // If email + password provided, create a linked user account
+  if (email && password) {
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (existing) {
+      const err = new Error('Email already registered');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase().trim(),
+        passwordHash,
+        fullName,
+        role: 'farmer',
+        active: true,
+        preferredLanguage: preferredLanguage || 'en',
+      },
+    });
+    userId = user.id;
+  }
+
+  const farmer = await prisma.farmer.create({
+    data: {
+      fullName,
+      phone,
+      region,
+      district: district || null,
+      village: village || null,
+      countryCode: countryCode || DEFAULT_COUNTRY_CODE,
+      preferredLanguage: preferredLanguage || 'en',
+      primaryCrop: primaryCrop || null,
+      farmSizeAcres: farmSizeAcres ? parseFloat(farmSizeAcres) : null,
+      selfRegistered: false,
+      registrationStatus: 'approved', // invited farmers are pre-approved
+      invitedAt: new Date(),
+      approvedAt: new Date(),
+      approvedById: invitedById,
+      assignedOfficerId: assignedOfficerId || null,
+      userId: userId,
+      createdById: invitedById,
+    },
+    include: {
+      userAccount: userId ? {
+        select: { id: true, email: true, fullName: true },
+      } : false,
+    },
+  });
+
+  return farmer;
 }
 
 /**

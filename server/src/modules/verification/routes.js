@@ -25,6 +25,7 @@ router.post('/:applicationId/run',
 // Get verification result
 router.get('/:applicationId',
   validateParamUUID('applicationId'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
   asyncHandler(async (req, res) => {
     const result = await verificationService.getVerificationResult(req.params.applicationId);
     if (!result) return res.status(404).json({ error: 'No verification result found' });
