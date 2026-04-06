@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "cd server && npm test",
     "dev": "vite",
     "build": "vite build && cd server && npx prisma generate",
     "start": "cd server && node src/server.js",
