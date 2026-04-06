@@ -43,6 +43,25 @@ function validateTransition(currentStatus, newStatus) {
   }
 }
 
+/**
+ * Atomic status transition with optimistic locking.
+ * Uses updateMany with status condition to prevent race conditions
+ * (e.g., two reviewers approving simultaneously).
+ */
+async function atomicTransition(id, expectedStatus, newStatus, extraData = {}) {
+  const result = await prisma.application.updateMany({
+    where: { id, status: expectedStatus },
+    data: { status: newStatus, ...extraData },
+  });
+  if (result.count === 0) {
+    const err = new Error('Application status has changed since you loaded it. Please refresh and try again.');
+    err.statusCode = 409;
+    throw err;
+  }
+  // Fetch the full updated record
+  return prisma.application.findUnique({ where: { id }, include: FULL_INCLUDE });
+}
+
 // ═══════════════════════════════════════════════════════
 //  CRUD
 // ═══════════════════════════════════════════════════════
@@ -175,31 +194,21 @@ export async function getApplicationStats() {
 export async function submitApplication(id) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'submitted');
-  return prisma.application.update({
-    where: { id },
-    data: { status: 'submitted' },
-    include: FULL_INCLUDE,
-  });
+  return atomicTransition(id, app.status, 'submitted');
 }
 
 export async function approveApplication(id, userId, { reason, recommendedAmount } = {}) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'approved');
 
-  const updateData = { status: 'approved' };
-  // Persist recommended amount (from decision engine or manual override)
+  const extraData = {};
   if (recommendedAmount !== undefined && recommendedAmount !== null) {
     const parsed = parseFloat(recommendedAmount);
-    if (!isNaN(parsed) && parsed > 0) updateData.recommendedAmount = parsed;
+    if (!isNaN(parsed) && parsed > 0) extraData.recommendedAmount = parsed;
   }
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: updateData,
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, 'approved', extraData);
 
-  // Add review note if reason provided
   if (reason) {
     await prisma.reviewNote.create({
       data: { applicationId: id, authorId: userId, content: `Approved: ${reason}`, internal: false },
@@ -213,11 +222,7 @@ export async function rejectApplication(id, userId, reason) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'rejected');
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: { status: 'rejected' },
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, 'rejected');
 
   await prisma.reviewNote.create({
     data: { applicationId: id, authorId: userId, content: `Rejected: ${reason}`, internal: false },
@@ -230,11 +235,7 @@ export async function escalateApplication(id, userId, reason) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'escalated');
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: { status: 'escalated' },
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, 'escalated');
 
   await prisma.reviewNote.create({
     data: { applicationId: id, authorId: userId, content: `Escalated: ${reason}`, internal: true },
@@ -247,11 +248,7 @@ export async function disburseApplication(id, userId, { reason } = {}) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'disbursed');
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: { status: 'disbursed' },
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, 'disbursed');
 
   if (reason) {
     await prisma.reviewNote.create({
@@ -266,11 +263,7 @@ export async function reopenApplication(id, userId, reason) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'under_review');
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: { status: 'under_review' },
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, 'under_review');
 
   if (reason) {
     await prisma.reviewNote.create({
@@ -285,11 +278,7 @@ export async function requestEvidence(id, userId, { reason, requiredTypes }) {
   const app = await getApplicationById(id);
   validateTransition(app.status, 'needs_more_evidence');
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: { status: 'needs_more_evidence' },
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, 'needs_more_evidence');
 
   await prisma.reviewNote.create({
     data: {
@@ -307,11 +296,7 @@ export async function updateStatus(id, newStatus, userId) {
   validateTransition(app.status, newStatus);
   const previousStatus = app.status;
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: { status: newStatus },
-    include: FULL_INCLUDE,
-  });
+  const updated = await atomicTransition(id, app.status, newStatus);
 
   return { application: updated, previousStatus };
 }

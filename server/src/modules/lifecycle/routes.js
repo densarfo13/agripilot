@@ -43,6 +43,7 @@ router.post('/farmers/:farmerId/generate-reminders',
       state.currentStage,
       state.cropType
     );
+    writeAuditLog({ userId: req.user.sub, action: 'lifecycle_reminders_generated', details: { farmerId: req.params.farmerId, stage: state.currentStage, count: reminders.length } }).catch(() => {});
     res.json({ stage: state.currentStage, generated: reminders.length, reminders });
   }));
 
