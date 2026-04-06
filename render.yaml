@@ -11,7 +11,7 @@ services:
     runtime: node
     region: oregon
     env: node
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npx vite build && cd server && npm ci && npx prisma generate
     startCommand: cd server && npx prisma db push --skip-generate && node prisma/seed.js; node src/server.js
     healthCheckPath: /api/health
     envVars:
