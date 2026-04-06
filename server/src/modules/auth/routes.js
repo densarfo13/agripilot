@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate } from '../../middleware/auth.js';
 import * as authService from './service.js';
+import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
 
 const router = Router();
 
@@ -44,6 +45,35 @@ router.post('/change-password', authenticate, asyncHandler(async (req, res) => {
     newPassword,
   });
   res.json(result);
+}));
+
+// Farmer self-registration (public)
+router.post('/farmer-register', asyncHandler(async (req, res) => {
+  const { fullName, phone, email, password, countryCode, region, district, village, preferredLanguage, primaryCrop, farmSizeAcres } = req.body;
+
+  if (!fullName || !phone || !email || !password) {
+    return res.status(400).json({ error: 'fullName, phone, email, and password are required' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  const result = await farmerSelfRegister({
+    fullName, phone, email, password, countryCode, region, district, village, preferredLanguage, primaryCrop, farmSizeAcres,
+  });
+  res.status(201).json(result);
+}));
+
+// Get own farmer profile (authenticated farmer)
+router.get('/farmer-profile', authenticate, asyncHandler(async (req, res) => {
+  if (req.user.role !== 'farmer') {
+    return res.status(403).json({ error: 'Only farmer accounts can access this' });
+  }
+  const profile = await getFarmerProfile(req.user.sub);
+  if (!profile) {
+    return res.status(404).json({ error: 'Farmer profile not found' });
+  }
+  res.json(profile);
 }));
 
 export default router;

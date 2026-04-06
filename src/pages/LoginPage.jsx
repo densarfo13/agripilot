@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 
@@ -52,6 +52,9 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#666', margin: '0.5rem 0 0' }}>
+            Are you a farmer? <Link to="/farmer-register" style={{ color: '#2E7D32', fontWeight: 600 }}>Register here</Link>
+          </p>
         </form>
       </div>
     </div>

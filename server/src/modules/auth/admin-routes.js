@@ -5,6 +5,7 @@ import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
 import { writeAuditLog } from '../audit/service.js';
 import { adminResetPassword } from './service.js';
+import { getPendingRegistrations, getAllSelfRegistered, approveRegistration, rejectRegistration } from './farmer-registration.js';
 
 const router = Router();
 router.use(authenticate);
@@ -62,6 +63,52 @@ router.patch('/:id/reset-password', authorize('super_admin'), asyncHandler(async
 
   const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
   writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } }).catch(() => {});
+  res.json(result);
+}));
+
+// ─── Farmer Registration Management ────────────────────
+
+// List pending farmer registrations
+router.get('/pending-registrations', asyncHandler(async (req, res) => {
+  const pending = await getPendingRegistrations();
+  res.json(pending);
+}));
+
+// List all self-registered farmers (any status)
+router.get('/self-registered', asyncHandler(async (req, res) => {
+  const all = await getAllSelfRegistered();
+  res.json(all);
+}));
+
+// Approve farmer registration
+router.post('/:id/approve-registration', asyncHandler(async (req, res) => {
+  const { assignedOfficerId } = req.body;
+  const result = await approveRegistration({
+    farmerId: req.params.id,
+    approvedById: req.user.sub,
+    assignedOfficerId,
+  });
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'farmer_registration_approved',
+    details: { farmerId: req.params.id, assignedOfficerId },
+  }).catch(() => {});
+  res.json(result);
+}));
+
+// Reject farmer registration
+router.post('/:id/reject-registration', asyncHandler(async (req, res) => {
+  const { rejectionReason } = req.body;
+  const result = await rejectRegistration({
+    farmerId: req.params.id,
+    rejectedById: req.user.sub,
+    rejectionReason,
+  });
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'farmer_registration_rejected',
+    details: { farmerId: req.params.id, rejectionReason },
+  }).catch(() => {});
   res.json(result);
 }));
 

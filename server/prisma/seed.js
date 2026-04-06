@@ -140,7 +140,11 @@ async function main() {
     }),
   ]);
 
-  console.log(`  ✅ ${farmers.length} farmers created`);
+  // Mark all seeded farmers as approved (they were created by staff, not self-registered)
+  await prisma.farmer.updateMany({
+    data: { registrationStatus: 'approved' },
+  });
+  console.log(`  ✅ ${farmers.length} farmers created (all approved)`);
 
   // ─── Applications ─────────────────────────────────────
   console.log('Creating applications...');

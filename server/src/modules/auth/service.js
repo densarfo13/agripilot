@@ -35,7 +35,14 @@ export async function register({ email, password, fullName, role }) {
 }
 
 export async function login({ email, password }) {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      farmerProfile: {
+        select: { id: true, registrationStatus: true, fullName: true },
+      },
+    },
+  });
   if (!user) {
     const err = new Error('Invalid credentials');
     err.statusCode = 401;
@@ -56,9 +63,16 @@ export async function login({ email, password }) {
   }
 
   const token = generateToken(user);
+  const sanitized = sanitizeUser(user);
+
+  // Include farmer registration status for farmer-role users
+  if (user.role === 'farmer' && user.farmerProfile) {
+    sanitized.farmerId = user.farmerProfile.id;
+    sanitized.registrationStatus = user.farmerProfile.registrationStatus;
+  }
 
   return {
-    user: sanitizeUser(user),
+    user: sanitized,
     accessToken: token,
   };
 }

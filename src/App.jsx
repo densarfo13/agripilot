@@ -24,10 +24,16 @@ import FarmerNotificationsTab from './pages/FarmerNotificationsTab.jsx';
 import FarmerStorageTab from './pages/FarmerStorageTab.jsx';
 import FarmerMarketTab from './pages/FarmerMarketTab.jsx';
 import AdminControlPage from './pages/AdminControlPage.jsx';
+import FarmerRegisterPage from './pages/FarmerRegisterPage.jsx';
+import FarmerDashboardPage from './pages/FarmerDashboardPage.jsx';
+import PendingRegistrationsPage from './pages/PendingRegistrationsPage.jsx';
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore(s => s.token);
+  const user = useAuthStore(s => s.user);
   if (!token) return <Navigate to="/login" replace />;
+  // Farmer-role users get their own limited dashboard
+  if (user?.role === 'farmer') return <FarmerDashboardPage />;
   return children;
 }
 
@@ -36,6 +42,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/farmer-register" element={<FarmerRegisterPage />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<DashboardPage />} />
           <Route path="farmers" element={<FarmersPage />} />
@@ -57,6 +64,7 @@ export default function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="admin/registrations" element={<PendingRegistrationsPage />} />
           <Route path="admin/control" element={<AdminControlPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

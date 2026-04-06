@@ -1,0 +1,197 @@
+import React, { useEffect, useState } from 'react';
+import api from '../api/client.js';
+
+export default function PendingRegistrationsPage() {
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('pending');
+  const [actionTarget, setActionTarget] = useState(null);
+  const [officers, setOfficers] = useState([]);
+
+  const load = () => {
+    setLoading(true);
+    const endpoint = filter === 'pending' ? '/users/pending-registrations' : '/users/self-registered';
+    api.get(endpoint).then(r => setRegistrations(r.data)).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [filter]);
+
+  useEffect(() => {
+    // Load field officers for assignment
+    api.get('/users').then(r => {
+      setOfficers(r.data.filter(u => u.role === 'field_officer' && u.active));
+    }).catch(() => {});
+  }, []);
+
+  return (
+    <>
+      <div className="page-header">
+        <h1>Farmer Registrations</h1>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className={`btn btn-sm ${filter === 'pending' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('pending')}>
+            Pending
+          </button>
+          <button className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('all')}>
+            All Self-Registered
+          </button>
+        </div>
+      </div>
+      <div className="page-body">
+        {loading ? <div className="loading">Loading...</div> : registrations.length === 0 ? (
+          <div className="card">
+            <div className="card-body" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+              {filter === 'pending' ? 'No pending farmer registrations.' : 'No self-registered farmers yet.'}
+            </div>
+          </div>
+        ) : (
+          <div className="card">
+            <div className="card-body" style={{ padding: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Region</th>
+                    <th>Crop</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registrations.map(r => (
+                    <tr key={r.id}>
+                      <td style={{ fontWeight: 500 }}>{r.fullName}</td>
+                      <td>{r.phone}</td>
+                      <td className="text-sm">{r.userAccount?.email || '—'}</td>
+                      <td>{r.region}{r.district ? `, ${r.district}` : ''}</td>
+                      <td>{r.primaryCrop || '—'}</td>
+                      <td>
+                        <span className={`badge ${statusBadgeClass(r.registrationStatus)}`}>
+                          {r.registrationStatus.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="text-sm text-muted">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        {r.registrationStatus === 'pending_approval' && (
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn btn-sm btn-success" onClick={() => setActionTarget({ farmer: r, action: 'approve' })}>
+                              Approve
+                            </button>
+                            <button className="btn btn-sm btn-warning" onClick={() => setActionTarget({ farmer: r, action: 'reject' })}>
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {r.registrationStatus === 'approved' && (
+                          <span className="text-sm text-muted">Approved</span>
+                        )}
+                        {r.registrationStatus === 'rejected' && (
+                          <span className="text-sm text-muted">Rejected</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {actionTarget && (
+          <ActionModal
+            farmer={actionTarget.farmer}
+            action={actionTarget.action}
+            officers={officers}
+            onClose={() => setActionTarget(null)}
+            onDone={() => { setActionTarget(null); load(); }}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+function statusBadgeClass(status) {
+  switch (status) {
+    case 'pending_approval': return 'badge-submitted';
+    case 'approved': return 'badge-approved';
+    case 'rejected': return 'badge-rejected';
+    default: return '';
+  }
+}
+
+function ActionModal({ farmer, action, officers, onClose, onDone }) {
+  const [officerId, setOfficerId] = useState('');
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      if (action === 'approve') {
+        await api.post(`/users/${farmer.id}/approve-registration`, {
+          assignedOfficerId: officerId || undefined,
+        });
+      } else {
+        await api.post(`/users/${farmer.id}/reject-registration`, {
+          rejectionReason: reason || undefined,
+        });
+      }
+      onDone();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Action failed');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          {action === 'approve' ? 'Approve' : 'Reject'} Registration: {farmer.fullName}
+          <button className="btn btn-outline btn-sm" onClick={onClose}>X</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {error && <div className="alert alert-danger">{error}</div>}
+
+            <div style={{ background: '#f8f9fa', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
+              <div><strong>Phone:</strong> {farmer.phone}</div>
+              <div><strong>Region:</strong> {farmer.region}{farmer.district ? `, ${farmer.district}` : ''}</div>
+              {farmer.primaryCrop && <div><strong>Crop:</strong> {farmer.primaryCrop}</div>}
+              {farmer.farmSizeAcres && <div><strong>Farm Size:</strong> {farmer.farmSizeAcres} acres</div>}
+            </div>
+
+            {action === 'approve' ? (
+              <div className="form-group">
+                <label className="form-label">Assign Field Officer (optional)</label>
+                <select className="form-select" value={officerId} onChange={e => setOfficerId(e.target.value)}>
+                  <option value="">No assignment</option>
+                  {officers.map(o => (
+                    <option key={o.id} value={o.id}>{o.fullName} ({o.email})</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="form-group">
+                <label className="form-label">Rejection Reason (optional)</label>
+                <textarea className="form-input" rows={3} value={reason} onChange={e => setReason(e.target.value)}
+                  placeholder="e.g., Incomplete information, outside service area..." />
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+            <button type="submit" className={`btn ${action === 'approve' ? 'btn-success' : 'btn-warning'}`} disabled={saving}>
+              {saving ? 'Processing...' : action === 'approve' ? 'Approve Farmer' : 'Reject Registration'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

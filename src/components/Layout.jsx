@@ -21,6 +21,7 @@ const NAV = [
     { to: '/admin/control', label: 'Control Center', icon: 'C' },
     { to: '/audit', label: 'Audit Trail', icon: 'T' },
     { to: '/admin/users', label: 'User Management', icon: 'U' },
+    { to: '/admin/registrations', label: 'Farmer Registrations', icon: 'R' },
   ], roles: ['super_admin', 'institutional_admin'] },
 ];
 
