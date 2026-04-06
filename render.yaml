@@ -10,7 +10,7 @@ services:
     name: agripilot
     runtime: node
     region: oregon
-    nodeVersion: "22"
+    env: node
     buildCommand: npm ci && npm run build
     startCommand: cd server && npx prisma db push --skip-generate && node prisma/seed.js; node src/server.js
     healthCheckPath: /api/health
