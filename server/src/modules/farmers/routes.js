@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
-import { authenticate, authorize, requireApprovedFarmer } from '../../middleware/auth.js';
+import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID, parsePositiveInt } from '../../middleware/validate.js';
+import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
 import { inviteFarmer } from '../auth/farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
@@ -117,6 +118,65 @@ router.get('/:id', validateParamUUID('id'), authorize('super_admin', 'institutio
   const farmer = await farmersService.getFarmerById(req.params.id);
   res.json(farmer);
 }));
+
+// Update farmer access status (admin only — disable, reactivate, etc.)
+router.patch('/:id/access-status',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'status is required' });
+    }
+    const validStatuses = ['pending_approval', 'approved', 'rejected', 'disabled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    }
+    const result = await farmersService.updateAccessStatus(req.params.id, status, req.user.sub);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: `farmer_access_${status}`,
+      details: { farmerId: req.params.id, newStatus: status },
+    }).catch(() => {});
+    res.json(result);
+  }));
+
+// Assign/reassign field officer to farmer (admin only)
+router.post('/:id/assign-officer',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { officerId } = req.body;
+    const result = await farmersService.assignOfficerToFarmer(req.params.id, officerId, req.user.sub);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: officerId ? 'farmer_officer_assigned' : 'farmer_officer_unassigned',
+      details: { farmerId: req.params.id, officerId },
+    }).catch(() => {});
+    res.json(result);
+  }));
+
+// Resend invite (admin/field officer — re-invites a farmer)
+router.post('/:id/resend-invite',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const farmer = await farmersService.getFarmerById(req.params.id);
+    if (farmer.selfRegistered) {
+      return res.status(400).json({ error: 'Cannot resend invite for self-registered farmers' });
+    }
+    // Update invitedAt timestamp
+    const updated = await prisma.farmer.update({
+      where: { id: req.params.id },
+      data: { invitedAt: new Date() },
+    });
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_invite_resent',
+      details: { farmerId: req.params.id },
+    }).catch(() => {});
+    res.json({ message: 'Invite resent', farmer: updated });
+  }));
 
 // Update farmer (staff only)
 router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {

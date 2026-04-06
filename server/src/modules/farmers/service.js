@@ -64,6 +64,7 @@ export async function getFarmerById(id) {
     where: { id },
     include: {
       createdBy: { select: { id: true, fullName: true, email: true } },
+      userAccount: { select: { id: true, email: true, fullName: true, active: true, lastLoginMethod: true, createdAt: true } },
       applications: {
         orderBy: { createdAt: 'desc' },
         select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
@@ -76,6 +77,87 @@ export async function getFarmerById(id) {
     throw err;
   }
   return farmer;
+}
+
+// ─── Access & Assignment ─────────────────────────────────
+
+/**
+ * Update farmer access status (disable, reactivate, re-approve).
+ * Only admins can call this.
+ */
+export async function updateAccessStatus(farmerId, newStatus, userId) {
+  const farmer = await getFarmerById(farmerId);
+
+  const VALID_STATUS_TRANSITIONS = {
+    pending_approval: ['approved', 'rejected', 'disabled'],
+    approved: ['disabled'],
+    rejected: ['pending_approval', 'disabled'],
+    disabled: ['pending_approval', 'approved'],
+  };
+
+  const allowed = VALID_STATUS_TRANSITIONS[farmer.registrationStatus];
+  if (!allowed || !allowed.includes(newStatus)) {
+    const err = new Error(`Cannot transition from '${farmer.registrationStatus}' to '${newStatus}'`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const updateData = { registrationStatus: newStatus };
+
+  if (newStatus === 'approved') {
+    updateData.approvedAt = new Date();
+    updateData.approvedById = userId;
+  }
+  if (newStatus === 'disabled') {
+    // Also deactivate the linked user account
+    if (farmer.userId) {
+      await prisma.user.update({ where: { id: farmer.userId }, data: { active: false } });
+    }
+  }
+  if (newStatus === 'approved' || newStatus === 'pending_approval') {
+    // Reactivate the linked user account
+    if (farmer.userId) {
+      await prisma.user.update({ where: { id: farmer.userId }, data: { active: true } });
+    }
+  }
+
+  return prisma.farmer.update({
+    where: { id: farmerId },
+    data: updateData,
+    include: {
+      userAccount: { select: { id: true, email: true, active: true } },
+    },
+  });
+}
+
+/**
+ * Assign or reassign a field officer to a farmer.
+ */
+export async function assignOfficerToFarmer(farmerId, officerId, userId) {
+  await getFarmerById(farmerId);
+
+  if (officerId) {
+    const officer = await prisma.user.findUnique({ where: { id: officerId } });
+    if (!officer) {
+      const err = new Error('Field officer not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (!['field_officer', 'institutional_admin', 'super_admin'].includes(officer.role)) {
+      const err = new Error('User is not a field officer');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  return prisma.farmer.update({
+    where: { id: farmerId },
+    data: { assignedOfficerId: officerId || null },
+    include: {
+      createdBy: { select: { id: true, fullName: true, email: true } },
+      userAccount: { select: { id: true, email: true, active: true } },
+    },
+  });
 }
 
 /**
