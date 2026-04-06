@@ -140,11 +140,7 @@ async function main() {
     }),
   ]);
 
-  // Mark all seeded farmers as approved (they were created by staff, not self-registered)
-  await prisma.farmer.updateMany({
-    data: { registrationStatus: 'approved' },
-  });
-  console.log(`  ✅ ${farmers.length} farmers created (all approved)`);
+  console.log(`  ✅ ${farmers.length} farmers created`);
 
   // ─── Applications ─────────────────────────────────────
   console.log('Creating applications...');
@@ -756,9 +752,16 @@ async function main() {
   }
   console.log(`  ✅ ${notifData.length} notifications created`);
 
+  // Mark all seeded farmers as approved (they were created by staff, not self-registered)
+  await prisma.farmer.updateMany({
+    where: { selfRegistered: false },
+    data: { registrationStatus: 'approved' },
+  });
+  console.log('  ✅ All staff-created farmers marked as approved');
+
   // ─── Summary ──────────────────────────────────────────
   console.log('\n🎉 Seed completed!\n');
-  console.log('Demo Accounts (all use password: password123):');
+  console.log('Demo Accounts:');
   console.log('  super_admin:         admin@agripilot.com');
   console.log('  institutional_admin: institution@agripilot.com');
   console.log('  reviewer:            reviewer@agripilot.com / reviewer2@agripilot.com');
