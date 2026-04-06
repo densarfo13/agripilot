@@ -33,14 +33,18 @@ async function main() {
 
   // ─── Users ────────────────────────────────────────────
   console.log('Creating users...');
-  const passwordHash = await bcrypt.hash('password123', 10);
+  // Demo passwords — change before production use
+  const adminHash = await bcrypt.hash('AgriAdmin#2026', 10);
+  const staffHash = await bcrypt.hash('AgriStaff#2026', 10);
+  const viewerHash = await bcrypt.hash('AgriView#2026', 10);
+  const passwordHash = staffHash; // default for backward compat
 
   const superAdmin = await prisma.user.create({
-    data: { email: 'admin@agripilot.com', passwordHash, fullName: 'Sarah Okonkwo', role: 'super_admin' },
+    data: { email: 'admin@agripilot.com', passwordHash: adminHash, fullName: 'Sarah Okonkwo', role: 'super_admin' },
   });
 
   const instAdmin = await prisma.user.create({
-    data: { email: 'institution@agripilot.com', passwordHash, fullName: 'James Mutua', role: 'institutional_admin' },
+    data: { email: 'institution@agripilot.com', passwordHash: adminHash, fullName: 'James Mutua', role: 'institutional_admin' },
   });
 
   const reviewer1 = await prisma.user.create({
@@ -60,7 +64,7 @@ async function main() {
   });
 
   const investor = await prisma.user.create({
-    data: { email: 'investor@agripilot.com', passwordHash, fullName: 'Robert Chen', role: 'investor_viewer' },
+    data: { email: 'investor@agripilot.com', passwordHash: viewerHash, fullName: 'Robert Chen', role: 'investor_viewer' },
   });
 
   console.log(`  ✅ ${7} users created`);
