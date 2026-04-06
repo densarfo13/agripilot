@@ -9,7 +9,7 @@ const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNati
 // On native (Android/iOS), API calls must go to the server over LAN.
 // On web, relative '/api' works via Vite proxy or Express production serving.
 const API_BASE = isNative
-  ? 'http://10.0.0.63:4000/api'
+  ? 'https://agripilot.onrender.com/api'
   : '/api';
 
 const api = axios.create({
