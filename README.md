@@ -86,3 +86,59 @@ cd .. && npm run dev
 | reviewer | Review applications, add notes, recommend decisions |
 | field_officer | Create farmers/applications, field visits, evidence |
 | investor_viewer | Read-only portfolio and report access |
+| farmer | Self-registered, limited dashboard, pending approval |
+
+## Production Deployment
+
+### Environment Setup
+
+```bash
+# 1. Set required environment variables (never use defaults)
+DATABASE_URL=postgresql://user:pass@host:5432/agripilot
+JWT_SECRET=<random-64-char-string>
+NODE_ENV=production
+CORS_ORIGIN=https://your-domain.com
+PORT=4000
+```
+
+### Build and Deploy
+
+```bash
+# Frontend build
+npm ci --include=dev && npx vite build
+
+# Backend setup
+cd server && npm ci
+
+# Database migration (production — safe, no data loss)
+npx prisma generate
+npx prisma migrate deploy
+
+# Start server (serves both API and frontend static files)
+node src/server.js
+```
+
+### Critical Production Rules
+
+1. **Never run `seed.js` in production** — it wipes all data and creates demo accounts
+2. **Never use `prisma db push` in production** — use `prisma migrate deploy` instead
+3. **Set a strong JWT_SECRET** — minimum 64 random characters
+4. **Restrict CORS** — set `CORS_ORIGIN` to your frontend domain only
+5. **Use a managed PostgreSQL** — not Render free tier (auto-purges data)
+6. **Back up the database** before any migration
+
+### Render Deployment
+
+The `render.yaml` blueprint configures a web service and PostgreSQL database.
+For production, change the database plan from `free` to `starter` or higher.
+
+### Android / Capacitor
+
+```bash
+npm run build
+npx cap sync android
+npx cap open android   # Opens Android Studio
+```
+
+The native app API base URL is configured in `src/api/client.js`.
+Update the production URL before building a release APK.
