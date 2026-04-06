@@ -18,6 +18,8 @@ export default function AdminUsersPage() {
 
   useEffect(() => { load(); }, []);
 
+  const [resetTarget, setResetTarget] = useState(null);
+
   const toggleActive = async (userId) => {
     try {
       await api.patch(`/users/${userId}/toggle-active`);
@@ -50,9 +52,12 @@ export default function AdminUsersPage() {
                       <td>{u.active ? <span className="badge badge-approved">Active</span> : <span className="badge badge-rejected">Inactive</span>}</td>
                       <td className="text-sm text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                       {isSuperAdmin && (
-                        <td>
+                        <td style={{ display: 'flex', gap: '0.5rem' }}>
                           <button className={`btn btn-sm ${u.active ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleActive(u.id)}>
                             {u.active ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button className="btn btn-sm btn-outline" onClick={() => setResetTarget(u)}>
+                            Reset Password
                           </button>
                         </td>
                       )}
@@ -65,8 +70,55 @@ export default function AdminUsersPage() {
         )}
 
         {showCreate && <CreateUserModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+        {resetTarget && <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />}
       </div>
     </>
+  );
+}
+
+function ResetPasswordModal({ user, onClose }) {
+  const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    if (newPassword.length < 6) {
+      return setError('Password must be at least 6 characters');
+    }
+    setSaving(true);
+    try {
+      await api.patch(`/users/${user.id}/reset-password`, { newPassword });
+      setSuccess(`Password reset for ${user.fullName}`);
+      setTimeout(onClose, 1500);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to reset password');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">Reset Password for {user.fullName} <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {error && <div className="alert alert-danger">{error}</div>}
+            {success && <div className="alert alert-success" style={{ background: '#d4edda', color: '#155724', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>{success}</div>}
+            <div className="form-group">
+              <label className="form-label">New Password for {user.email}</label>
+              <input className="form-input" type="password" required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Resetting...' : 'Reset Password'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

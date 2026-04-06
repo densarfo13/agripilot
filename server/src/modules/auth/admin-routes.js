@@ -4,6 +4,7 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
 import { writeAuditLog } from '../audit/service.js';
+import { adminResetPassword } from './service.js';
 
 const router = Router();
 router.use(authenticate);
@@ -50,6 +51,18 @@ router.patch('/:id/toggle-active', authorize('super_admin'), asyncHandler(async 
 
   await writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } });
   res.json(updated);
+}));
+
+// Admin reset user password
+router.patch('/:id/reset-password', authorize('super_admin'), asyncHandler(async (req, res) => {
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'newPassword is required (min 6 characters)' });
+  }
+
+  const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
+  await writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } });
+  res.json(result);
 }));
 
 export default router;

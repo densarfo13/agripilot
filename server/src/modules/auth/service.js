@@ -71,6 +71,47 @@ function generateToken(user) {
   );
 }
 
+export async function changePassword({ userId, currentPassword, newPassword }) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    const err = new Error('Current password is incorrect');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
+
+  return { message: 'Password changed successfully' };
+}
+
+export async function adminResetPassword({ targetUserId, newPassword }) {
+  const user = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: targetUserId },
+    data: { passwordHash },
+  });
+
+  return { message: 'Password reset successfully' };
+}
+
 function sanitizeUser(user) {
   return {
     id: user.id,
