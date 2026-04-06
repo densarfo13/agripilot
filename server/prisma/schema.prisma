@@ -685,6 +685,9 @@ model FarmSeason {
   expectedHarvestDate DateTime?      @map("expected_harvest_date")
   declaredIntent      String?        @map("declared_intent")
   status              SeasonStatus   @default(active)
+  cropFailureReported Boolean        @default(false) @map("crop_failure_reported")
+  partialHarvest      Boolean        @default(false) @map("partial_harvest")
+  lastActivityDate    DateTime?      @map("last_activity_date")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
@@ -693,6 +696,8 @@ model FarmSeason {
   stageConfirmations  StageConfirmation[]
   harvestReport       HarvestReport?
   progressScore       ProgressScore?
+  credibilityAssessment CredibilityAssessment?
+  officerValidations  OfficerValidation[]
 
   @@index([farmerId], map: "idx_seasons_farmer")
   @@index([status], map: "idx_seasons_status")
@@ -714,6 +719,9 @@ model SeasonProgressEntry {
   adviceNotes     String?          @map("advice_notes")
   imageUrl        String?          @map("image_url")
   imageStage      String?          @map("image_stage") // early_growth, mid_stage, pre_harvest, harvest, storage
+  imageUploadedAt DateTime?        @map("image_uploaded_at")
+  imageLatitude   Float?           @map("image_latitude")
+  imageLongitude  Float?           @map("image_longitude")
   lifecycleStage  LifecycleStage?  @map("lifecycle_stage")
   entryDate       DateTime         @map("entry_date")
   createdAt       DateTime         @default(now()) @map("created_at")
@@ -770,6 +778,60 @@ model ProgressScore {
   season                      FarmSeason                  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@map("progress_scores")
+}
+
+// ─── Credibility & Validation ──────────────────────────
+
+enum CredibilityLevel {
+  high_confidence
+  medium_confidence
+  low_confidence
+  needs_review
+}
+
+enum ValidationType {
+  stage
+  condition
+  harvest
+  milestone
+  credibility
+}
+
+model CredibilityAssessment {
+  id                String           @id @default(uuid())
+  seasonId          String           @unique @map("season_id")
+  credibilityScore  Float            @map("credibility_score")
+  credibilityLevel  CredibilityLevel @map("credibility_level")
+  flags             Json             @default("[]")
+  reasons           Json             @default("[]")
+  confidence        String           @default("medium") // low, medium, high
+  evidenceCoverage  Json             @default("{}") @map("evidence_coverage")
+  anomalies         Json             @default("[]")
+  computedAt        DateTime         @default(now()) @map("computed_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  season            FarmSeason       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@map("credibility_assessments")
+}
+
+model OfficerValidation {
+  id                  String         @id @default(uuid())
+  seasonId            String         @map("season_id")
+  officerId           String         @map("officer_id")
+  validationType      ValidationType @map("validation_type")
+  confirmedStage      LifecycleStage? @map("confirmed_stage")
+  confirmedCondition  CropCondition?  @map("confirmed_condition")
+  confirmedHarvest    Boolean?       @map("confirmed_harvest")
+  note                String?
+  validatedAt         DateTime       @default(now()) @map("validated_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  season              FarmSeason     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@index([seasonId], map: "idx_officer_validation_season")
+  @@index([officerId], map: "idx_officer_validation_officer")
+  @@map("officer_validations")
 }
 
 // ─── Buyer Interest ─────────────────────────────────────

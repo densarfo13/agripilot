@@ -12,6 +12,7 @@ const CLASSIFICATION_COLORS = {
 export default function InvestorIntelligencePage() {
   const { farmerId } = useParams();
   const [data, setData] = useState(null);
+  const [credSummary, setCredSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -19,8 +20,11 @@ export default function InvestorIntelligencePage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    api.get(`/seasons/investor/farmers/${farmerId}/intelligence`)
-      .then(r => setData(r.data))
+    Promise.all([
+      api.get(`/seasons/investor/farmers/${farmerId}/intelligence`),
+      api.get(`/seasons/farmer/${farmerId}/credibility-summary`).catch(() => ({ data: null })),
+    ])
+      .then(([iRes, cRes]) => { setData(iRes.data); setCredSummary(cRes.data); })
       .catch(err => setError(err.response?.data?.error || 'Failed to load intelligence data'))
       .finally(() => setLoading(false));
   }, [farmerId]);
@@ -100,6 +104,50 @@ export default function InvestorIntelligencePage() {
                   </span>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Data Credibility & Trust */}
+        {credSummary?.overallCredibility && (
+          <div className="card" style={{ marginBottom: '1.25rem' }}>
+            <div className="card-header">Data Credibility</div>
+            <div className="card-body">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                <MetricCard
+                  label="Credibility Score"
+                  value={credSummary.overallCredibility.avgScore !== null ? `${credSummary.overallCredibility.avgScore}/100` : 'N/A'}
+                  color={credSummary.overallCredibility.level === 'high_confidence' ? '#16a34a' : credSummary.overallCredibility.level === 'medium_confidence' ? '#d97706' : '#dc2626'}
+                />
+                <MetricCard
+                  label="Confidence Level"
+                  value={(credSummary.overallCredibility.level || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                />
+                <MetricCard
+                  label="Credibility Trend"
+                  value={(credSummary.overallCredibility.trend || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  color={credSummary.overallCredibility.trend === 'improving' ? '#16a34a' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#6b7280'}
+                />
+                <MetricCard label="Assessed" value={`${credSummary.overallCredibility.seasonsAssessed}/${credSummary.overallCredibility.totalSeasons} seasons`} />
+              </div>
+              {Object.keys(credSummary.recurringFlags || {}).length > 0 && (
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.3rem' }}>Recurring Flags</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {Object.entries(credSummary.recurringFlags).map(([flag, count]) => (
+                      <span key={flag} style={{
+                        padding: '0.2rem 0.6rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 500,
+                        background: '#fee2e2', color: '#991b1b',
+                      }}>
+                        {flag.replace(/_/g, ' ')} ({count}x)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {Object.keys(credSummary.recurringFlags || {}).length === 0 && credSummary.overallCredibility.avgScore >= 70 && (
+                <div style={{ fontSize: '0.85rem', color: '#065f46' }}>No recurring data quality issues detected.</div>
+              )}
             </div>
           </div>
         )}

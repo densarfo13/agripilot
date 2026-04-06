@@ -32,6 +32,8 @@ export default function FarmerProgressTab() {
   const [showConditionForm, setShowConditionForm] = useState(false);
   const [showStageConfirm, setShowStageConfirm] = useState(false);
   const [showHarvestForm, setShowHarvestForm] = useState(false);
+  const [showImageForm, setShowImageForm] = useState(false);
+  const [credibility, setCredibility] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const loadSeasons = () => {
@@ -46,10 +48,12 @@ export default function FarmerProgressTab() {
             api.get(`/seasons/${active.id}/progress`),
             api.get(`/seasons/${active.id}/comparison`).catch(() => ({ data: null })),
             api.get(`/seasons/${active.id}/progress-score`).catch(() => ({ data: null })),
-          ]).then(([pRes, cRes, sRes]) => {
+            api.get(`/seasons/${active.id}/credibility`).catch(() => ({ data: null })),
+          ]).then(([pRes, cRes, sRes, crRes]) => {
             setEntries(pRes.data);
             setComparison(cRes.data);
             setScore(sRes.data);
+            setCredibility(crRes.data);
           });
         } else {
           setActiveSeason(null);
@@ -147,6 +151,34 @@ export default function FarmerProgressTab() {
       alert(err.response?.data?.error || 'Failed');
     }
     setSubmitting(false);
+  };
+
+  // ─── Image Upload Form ────────────────────────
+  const [imageForm, setImageForm] = useState({ imageUrl: '', imageStage: '', description: '' });
+
+  const handleImageUpload = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api.post(`/seasons/${activeSeason.id}/progress-image`, imageForm);
+      setShowImageForm(false);
+      setImageForm({ imageUrl: '', imageStage: '', description: '' });
+      loadSeasons();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed');
+    }
+    setSubmitting(false);
+  };
+
+  // ─── Edge-case flags ─────────────────────────
+  const handleEdgeCase = async (flag) => {
+    if (!activeSeason) return;
+    try {
+      await api.patch(`/seasons/${activeSeason.id}`, { [flag]: true });
+      loadSeasons();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed');
+    }
   };
 
   if (loading) return <div className="loading">Loading progress...</div>;
@@ -256,12 +288,55 @@ export default function FarmerProgressTab() {
                 </div>
               )}
 
+              {/* Credibility indicator (simple, non-technical) */}
+              {credibility && (
+                <div style={{
+                  padding: '0.5rem 0.75rem', borderRadius: 8, marginBottom: '0.75rem', fontSize: '0.85rem',
+                  background: credibility.credibilityLevel === 'high_confidence' ? '#d1fae520' : credibility.credibilityLevel === 'medium_confidence' ? '#fef3c720' : '#fee2e220',
+                  border: `1px solid ${credibility.credibilityLevel === 'high_confidence' ? '#bbf7d0' : credibility.credibilityLevel === 'medium_confidence' ? '#fde68a' : '#fecaca'}`,
+                }}>
+                  <strong>Data Quality:</strong>{' '}
+                  <span style={{ color: credibility.credibilityLevel === 'high_confidence' ? '#16a34a' : credibility.credibilityLevel === 'medium_confidence' ? '#d97706' : '#dc2626', fontWeight: 600 }}>
+                    {credibility.credibilityLevel === 'high_confidence' ? 'Strong' : credibility.credibilityLevel === 'medium_confidence' ? 'Moderate' : 'Needs Attention'}
+                  </span>
+                  {credibility.flags?.length > 0 && (
+                    <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>
+                      ({credibility.flags.length} item{credibility.flags.length > 1 ? 's' : ''} to review)
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Missing update prompt */}
+              {activeSeason.lastActivityDate && (() => {
+                const daysSince = Math.floor((Date.now() - new Date(activeSeason.lastActivityDate)) / 86400000);
+                if (daysSince >= 14) return (
+                  <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                    It has been <strong>{daysSince} days</strong> since your last update. Regular updates help build a stronger track record.
+                  </div>
+                );
+                return null;
+              })()}
+
               {/* Action buttons */}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <button className="btn btn-sm btn-primary" onClick={() => setShowProgressForm(true)}>Log Activity</button>
                 <button className="btn btn-sm btn-outline" onClick={() => setShowConditionForm(true)}>Update Condition</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#2563eb', color: '#2563eb' }} onClick={() => setShowImageForm(true)}>Add Photo</button>
                 <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => setShowHarvestForm(true)}>Submit Harvest Report</button>
               </div>
+
+              {/* Edge-case flags */}
+              {!activeSeason.cropFailureReported && !activeSeason.partialHarvest && (
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-sm btn-outline" style={{ fontSize: '0.75rem', color: '#dc2626', borderColor: '#fecaca' }} onClick={() => { if (confirm('Report crop failure for this season?')) handleEdgeCase('cropFailureReported'); }}>Report Crop Failure</button>
+                </div>
+              )}
+              {activeSeason.cropFailureReported && (
+                <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.75rem', background: '#fee2e2', borderRadius: 6, fontSize: '0.8rem', color: '#991b1b' }}>
+                  Crop failure reported for this season
+                </div>
+              )}
             </div>
           </div>
 
@@ -385,6 +460,38 @@ export default function FarmerProgressTab() {
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                     <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Harvest Report'}</button>
                     <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowHarvestForm(false)}>Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Image Upload Form ──────────────── */}
+          {showImageForm && (
+            <div className="card" style={{ marginBottom: '1rem' }}>
+              <div className="card-header">Add Progress Photo</div>
+              <div className="card-body">
+                <form onSubmit={handleImageUpload}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label className="form-label">Image URL *</label>
+                      <input className="form-input" required value={imageForm.imageUrl} onChange={e => setImageForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." />
+                    </div>
+                    <div>
+                      <label className="form-label">Growth Stage</label>
+                      <select className="form-input" value={imageForm.imageStage} onChange={e => setImageForm(f => ({ ...f, imageStage: e.target.value }))}>
+                        <option value="">Select stage...</option>
+                        {IMAGE_STAGES.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">Description</label>
+                      <input className="form-input" value={imageForm.description} onChange={e => setImageForm(f => ({ ...f, description: e.target.value }))} placeholder="What does this photo show?" />
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save Photo'}</button>
+                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowImageForm(false)}>Cancel</button>
                   </div>
                 </form>
               </div>

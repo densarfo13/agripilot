@@ -402,12 +402,16 @@ function ApproveModal({ farmer, officers, onClose, onDone }) {
 
 function PerformanceProfileSection({ farmerId }) {
   const [profile, setProfile] = useState(null);
+  const [credSummary, setCredSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    api.get(`/seasons/farmer/${farmerId}/performance-profile`)
-      .then(r => setProfile(r.data))
+    Promise.all([
+      api.get(`/seasons/farmer/${farmerId}/performance-profile`),
+      api.get(`/seasons/farmer/${farmerId}/credibility-summary`).catch(() => ({ data: null })),
+    ])
+      .then(([pRes, cRes]) => { setProfile(pRes.data); setCredSummary(cRes.data); })
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
   }, [farmerId]);
@@ -477,6 +481,40 @@ function PerformanceProfileSection({ farmerId }) {
                 }}>{s.label}</span>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Credibility summary */}
+        {credSummary?.overallCredibility && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Data Credibility</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem' }}>
+              <div style={metricBox}>
+                <div style={metricLabel}>Credibility</div>
+                <div style={{ ...metricValue, color: credSummary.overallCredibility.level === 'high_confidence' ? '#16a34a' : credSummary.overallCredibility.level === 'medium_confidence' ? '#d97706' : '#dc2626' }}>
+                  {credSummary.overallCredibility.avgScore ?? 'N/A'}{credSummary.overallCredibility.avgScore ? '/100' : ''}
+                </div>
+              </div>
+              <div style={metricBox}>
+                <div style={metricLabel}>Level</div>
+                <div style={metricValue}>{(credSummary.overallCredibility.level || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>
+              </div>
+              <div style={metricBox}>
+                <div style={metricLabel}>Trend</div>
+                <div style={{ ...metricValue, color: credSummary.overallCredibility.trend === 'improving' ? '#16a34a' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#6b7280' }}>
+                  {(credSummary.overallCredibility.trend || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </div>
+              </div>
+            </div>
+            {Object.keys(credSummary.recurringFlags || {}).length > 0 && (
+              <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                {Object.entries(credSummary.recurringFlags).map(([flag, count]) => (
+                  <span key={flag} style={{ display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500, background: '#fee2e2', color: '#991b1b' }}>
+                    {flag.replace(/_/g, ' ')} ({count}x)
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

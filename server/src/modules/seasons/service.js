@@ -137,6 +137,8 @@ export async function updateSeason(id, data) {
   if (data.seedType !== undefined) updateData.seedType = data.seedType;
   if (data.declaredIntent !== undefined) updateData.declaredIntent = data.declaredIntent;
   if (data.status === 'abandoned') updateData.status = 'abandoned';
+  if (data.cropFailureReported !== undefined) updateData.cropFailureReported = !!data.cropFailureReported;
+  if (data.partialHarvest !== undefined) updateData.partialHarvest = !!data.partialHarvest;
 
   return prisma.farmSeason.update({
     where: { id },
@@ -171,7 +173,9 @@ export async function createProgressEntry(seasonId, data) {
   // Determine lifecycle stage based on time since planting
   const lifecycleStage = data.lifecycleStage || computeExpectedStage(season.plantingDate, season.cropType, season.farmer?.countryCode);
 
-  return prisma.seasonProgressEntry.create({
+  const entryDate = data.entryDate ? new Date(data.entryDate) : new Date();
+
+  const entry = await prisma.seasonProgressEntry.create({
     data: {
       seasonId,
       entryType,
@@ -185,10 +189,21 @@ export async function createProgressEntry(seasonId, data) {
       adviceNotes: data.adviceNotes || null,
       imageUrl: data.imageUrl || null,
       imageStage: data.imageStage || null,
+      imageUploadedAt: data.imageUrl ? new Date() : null,
+      imageLatitude: data.imageLatitude ? parseFloat(data.imageLatitude) : null,
+      imageLongitude: data.imageLongitude ? parseFloat(data.imageLongitude) : null,
       lifecycleStage,
-      entryDate: data.entryDate ? new Date(data.entryDate) : new Date(),
+      entryDate,
     },
   });
+
+  // Update lastActivityDate on season
+  await prisma.farmSeason.update({
+    where: { id: seasonId },
+    data: { lastActivityDate: entryDate },
+  });
+
+  return entry;
 }
 
 export async function listProgressEntries(seasonId, filters = {}) {

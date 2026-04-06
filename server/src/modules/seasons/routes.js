@@ -7,6 +7,12 @@ import { getSeasonComparison } from './comparison.js';
 import { computeProgressScore, getProgressScore, CLASSIFICATION_LABELS } from './scoring.js';
 import { createHarvestReport, getHarvestReport } from './harvest.js';
 import { getPerformanceProfile, getSeasonPerformanceSummary, getInvestorIntelligence } from './profile.js';
+import { computeCredibility, getCredibility, getFarmerCredibilitySummary, CREDIBILITY_LEVELS } from './credibility.js';
+import { addProgressImage, getProgressImages } from './imageValidation.js';
+import { createOfficerValidation, listOfficerValidations, getValidationSummary } from './officerValidation.js';
+import { getAdviceAdherence } from './adviceAdherence.js';
+import { getSeasonHistory, compareSeasons } from './seasonHistory.js';
+import { getSeasonTrustSummary, getPerformanceExport } from './trustSummary.js';
 import { writeAuditLog } from '../audit/service.js';
 
 const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'reviewer'];
@@ -308,6 +314,167 @@ router.get('/investor/farmers/:farmerId/intelligence',
   authorize('super_admin', 'institutional_admin', 'investor_viewer'),
   asyncHandler(async (req, res) => {
     res.json(await getInvestorIntelligence(req.params.farmerId));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  CREDIBILITY ASSESSMENT
+// ═══════════════════════════════════════════════════════
+
+// Get credibility assessment for a season
+router.get('/:id/credibility',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    res.json(await getCredibility(req.params.id));
+  }));
+
+// Force recompute credibility
+router.post('/:id/recompute-credibility',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    const result = await computeCredibility(req.params.id);
+    writeAuditLog({
+      userId: req.user.sub, action: 'credibility_computed',
+      details: { seasonId: req.params.id, score: result.credibilityScore, level: result.credibilityLevel },
+    }).catch(() => {});
+    res.json(result);
+  }));
+
+// Credibility levels reference
+router.get('/meta/credibility-levels', (_req, res) => {
+  res.json(CREDIBILITY_LEVELS);
+});
+
+// Multi-season credibility summary for a farmer
+router.get('/farmer/:farmerId/credibility-summary',
+  validateParamUUID('farmerId'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    res.json(await getFarmerCredibilitySummary(req.params.farmerId));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  PROGRESS IMAGES
+// ═══════════════════════════════════════════════════════
+
+// Upload progress image with metadata
+router.post('/:id/progress-image',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    if (req.body.imageStage && !VALID_IMAGE_STAGES.includes(req.body.imageStage)) {
+      return res.status(400).json({ error: `imageStage must be one of: ${VALID_IMAGE_STAGES.join(', ')}` });
+    }
+    const result = await addProgressImage(req.params.id, req.body);
+    writeAuditLog({
+      userId: req.user.sub, action: 'progress_image_added',
+      details: { seasonId: req.params.id, imageStage: req.body.imageStage },
+    }).catch(() => {});
+    res.status(201).json(result);
+  }));
+
+// List progress images with validation metadata
+router.get('/:id/progress-images',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    res.json(await getProgressImages(req.params.id));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  OFFICER VALIDATION
+// ═══════════════════════════════════════════════════════
+
+// Submit officer validation for a season
+router.post('/:id/officer-validate',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    const validation = await createOfficerValidation(req.params.id, req.user.sub, req.body);
+    writeAuditLog({
+      userId: req.user.sub, action: 'officer_validation_created',
+      details: { seasonId: req.params.id, validationType: req.body.validationType },
+    }).catch(() => {});
+    res.status(201).json(validation);
+  }));
+
+// List officer validations for a season
+router.get('/:id/officer-validations',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    res.json(await listOfficerValidations(req.params.id));
+  }));
+
+// Get officer validation summary for a season
+router.get('/:id/validation-summary',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    res.json(await getValidationSummary(req.params.id));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  ADVICE ADHERENCE
+// ═══════════════════════════════════════════════════════
+
+// Get advice adherence analysis for a season
+router.get('/:id/advice-adherence',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    res.json(await getAdviceAdherence(req.params.id));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  SEASON HISTORY & COMPARISON
+// ═══════════════════════════════════════════════════════
+
+// Get full season history with trends for a farmer
+router.get('/farmer/:farmerId/season-history',
+  validateParamUUID('farmerId'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    res.json(await getSeasonHistory(req.params.farmerId));
+  }));
+
+// Compare two seasons side-by-side
+router.get('/compare/:seasonId1/:seasonId2',
+  validateParamUUID('seasonId1'),
+  validateParamUUID('seasonId2'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    res.json(await compareSeasons(req.params.seasonId1, req.params.seasonId2));
+  }));
+
+// ═══════════════════════════════════════════════════════
+//  TRUST SUMMARY & EXPORT
+// ═══════════════════════════════════════════════════════
+
+// Season-level trust summary (concise intelligence view)
+router.get('/:id/trust-summary',
+  validateParamUUID('id'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireSeasonAccess,
+  asyncHandler(async (req, res) => {
+    res.json(await getSeasonTrustSummary(req.params.id));
+  }));
+
+// Farmer-level performance export (bridge-ready)
+router.get('/farmer/:farmerId/performance-export',
+  validateParamUUID('farmerId'),
+  authorize(...STAFF_ROLES, 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    res.json(await getPerformanceExport(req.params.farmerId));
   }));
 
 export default router;
