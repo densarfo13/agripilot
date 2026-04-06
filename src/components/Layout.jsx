@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
+import { useOrgStore } from '../store/orgStore.js';
 import api from '../api/client.js';
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
 
@@ -21,6 +22,7 @@ const NAV = [
   ]},
   { section: 'Admin', roles: ADMIN_ROLES, items: [
     { to: '/admin/control', label: 'Control Center', icon: 'C' },
+    { to: '/admin/organizations', label: 'Organizations', icon: 'O', roles: ADMIN_ROLES },
     { to: '/audit', label: 'Audit Trail', icon: 'T' },
     { to: '/admin/users', label: 'User Management', icon: 'U' },
   ] },
@@ -88,25 +90,103 @@ function ChangePasswordModal({ onClose }) {
   );
 }
 
+// ─── Super Admin Org Switcher ─────────────────────────
+
+function OrgSwitcher() {
+  const { organizations, selectedOrgId, selectedOrgName, setSelectedOrg, clearSelectedOrg, setOrganizations } = useOrgStore();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    // Fetch organizations list for the switcher (no orgId filter — super_admin sees all)
+    api.get('/organizations', { params: { orgId: undefined } })
+      .then(r => setOrganizations(r.data))
+      .catch(() => {});
+  }, []);
+
+  const handleSelect = (org) => {
+    if (org) {
+      setSelectedOrg(org.id, org.name);
+    } else {
+      clearSelectedOrg();
+    }
+    setOpen(false);
+  };
+
+  return (
+    <div className="org-switcher">
+      <button
+        className="org-switcher-btn"
+        onClick={() => setOpen(!open)}
+        title={selectedOrgId ? `Viewing: ${selectedOrgName}` : 'Viewing: All Organizations'}
+      >
+        <span className="org-switcher-label">
+          {selectedOrgId ? selectedOrgName : 'All Organizations'}
+        </span>
+        <span className="org-switcher-arrow">{open ? '\u25B2' : '\u25BC'}</span>
+      </button>
+      {open && (
+        <div className="org-switcher-dropdown">
+          <div
+            className={`org-switcher-option ${!selectedOrgId ? 'active' : ''}`}
+            onClick={() => handleSelect(null)}
+          >
+            All Organizations
+          </div>
+          {organizations.map(org => (
+            <div
+              key={org.id}
+              className={`org-switcher-option ${selectedOrgId === org.id ? 'active' : ''}`}
+              onClick={() => handleSelect(org)}
+            >
+              <span>{org.name}</span>
+              <span className="org-switcher-type">{org.type.replace(/_/g, ' ').toLowerCase()}</span>
+            </div>
+          ))}
+          {organizations.length === 0 && (
+            <div className="org-switcher-option" style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+              No organizations found
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Layout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const handleLogout = () => {
+    useOrgStore.getState().clearSelectedOrg();
     logout();
     navigate('/login');
   };
+
+  // Determine displayed org context
+  const orgName = user?.organization?.name;
+  const orgType = user?.organization?.type;
 
   return (
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-brand">AgriPilot</div>
-        {user?.organization?.name && (
-          <div className="sidebar-org" title={`Organization: ${user.organization.name} (${user.organization.type})`}>
-            {user.organization.name}
+
+        {/* Org context: super_admin gets switcher, others see read-only org name */}
+        {isSuperAdmin ? (
+          <OrgSwitcher />
+        ) : orgName ? (
+          <div className="sidebar-org" title={`Organization: ${orgName}${orgType ? ` (${orgType.replace(/_/g, ' ')})` : ''}`}>
+            {orgName}
+          </div>
+        ) : (
+          <div className="sidebar-org" style={{ color: '#f59e0b' }} title="No organization assigned">
+            No organization
           </div>
         )}
+
         <nav className="sidebar-nav">
           {NAV.map((section) => {
             if (section.roles && !section.roles.includes(user?.role)) return null;

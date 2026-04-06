@@ -72,6 +72,9 @@ export default function FarmerDetailPage() {
               <div className="detail-row"><span className="detail-label">Primary Crop</span><span className="detail-value">{farmer.primaryCrop || '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{farmer.farmSizeAcres ? `${farmer.farmSizeAcres} ${farmer.countryCode === 'TZ' ? 'hectares' : 'acres'}` : '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Experience</span><span className="detail-value">{farmer.yearsExperience ? `${farmer.yearsExperience} years` : '-'}</span></div>
+              {farmer.organization && (
+                <div className="detail-row"><span className="detail-label">Organization</span><span className="detail-value">{farmer.organization.name} <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>({farmer.organization.type.replace(/_/g, ' ')})</span></span></div>
+              )}
               <div className="detail-row"><span className="detail-label">Created By</span><span className="detail-value">{farmer.createdBy?.fullName}</span></div>
               <div className="detail-row"><span className="detail-label">Created At</span><span className="detail-value">{new Date(farmer.createdAt).toLocaleDateString()}</span></div>
             </div>

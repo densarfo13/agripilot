@@ -31,10 +31,18 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Org context subtitle
+  const orgLabel = !isSuperAdmin && currentUser?.organization?.name
+    ? currentUser.organization.name
+    : null;
+
   return (
     <>
       <div className="page-header">
-        <h1>User Management</h1>
+        <div>
+          <h1>User Management</h1>
+          {orgLabel && <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{orgLabel}</div>}
+        </div>
         {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New User</button>}
       </div>
       <div className="page-body">
@@ -44,7 +52,15 @@ export default function AdminUsersPage() {
             <div className="card-body" style={{ padding: 0 }}>
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Email</th><th>Role</th>{isSuperAdmin && <th>Organization</th>}<th>Status</th><th>Created</th>{isSuperAdmin && <th>Actions</th>}</tr>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Organization</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    {isSuperAdmin && <th>Actions</th>}
+                  </tr>
                 </thead>
                 <tbody>
                   {users.map(u => (
@@ -52,7 +68,7 @@ export default function AdminUsersPage() {
                       <td style={{ fontWeight: 500 }}>{u.fullName}</td>
                       <td>{u.email}</td>
                       <td><span className="badge badge-submitted">{u.role.replace(/_/g, ' ')}</span></td>
-                      {isSuperAdmin && <td className="text-sm text-muted">{u.organization?.name || '—'}</td>}
+                      <td className="text-sm text-muted">{u.organization?.name || <span style={{ color: '#d97706' }}>Unassigned</span>}</td>
                       <td>{u.active ? <span className="badge badge-approved">Active</span> : <span className="badge badge-rejected">Inactive</span>}</td>
                       <td className="text-sm text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                       {isSuperAdmin && (
@@ -67,6 +83,9 @@ export default function AdminUsersPage() {
                       )}
                     </tr>
                   ))}
+                  {users.length === 0 && (
+                    <tr><td colSpan={7} className="empty-state">No users found</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -127,9 +146,17 @@ function ResetPasswordModal({ user, onClose }) {
 }
 
 function CreateUserModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'field_officer' });
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'field_officer', organizationId: '' });
+  const [orgs, setOrgs] = useState([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    // Fetch orgs for assignment dropdown
+    api.get('/organizations', { params: { orgId: undefined } })
+      .then(r => setOrgs(r.data))
+      .catch(() => {});
+  }, []);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -138,7 +165,13 @@ function CreateUserModal({ onClose, onCreated }) {
     setSaving(true);
     setError('');
     try {
-      await api.post('/users', form);
+      await api.post('/users', {
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        organizationId: form.organizationId || undefined,
+      });
       onCreated();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create user');
@@ -164,11 +197,20 @@ function CreateUserModal({ onClose, onCreated }) {
               <label className="form-label">Password</label>
               <input className="form-input" type="password" required minLength={8} value={form.password} onChange={set('password')} />
             </div>
-            <div className="form-group">
-              <label className="form-label">Role</label>
-              <select className="form-select" value={form.role} onChange={set('role')}>
-                {INSTITUTIONAL_ROLES.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Role</label>
+                <select className="form-select" value={form.role} onChange={set('role')}>
+                  {INSTITUTIONAL_ROLES.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Organization</label>
+                <select className="form-select" value={form.organizationId} onChange={set('organizationId')}>
+                  <option value="">Inherit from creator</option>
+                  {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+              </div>
             </div>
           </div>
           <div className="modal-footer">

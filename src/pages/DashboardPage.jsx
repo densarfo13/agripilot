@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useAuthStore } from '../store/authStore.js';
+import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
 
 const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#7c3aed', '#be185d', '#059669', '#ea580c', '#6366f1'];
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
+  const { selectedOrgId, selectedOrgName } = useOrgStore();
   const isAdmin = ADMIN_ROLES.includes(user?.role);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function DashboardPage() {
     }).catch(() => {
       // portfolio stays null — handled by "Unable to load" message below
     }).finally(() => setLoading(false));
-  }, []);
+  }, [selectedOrgId]);
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (!portfolio) return (
@@ -56,7 +58,17 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="page-header"><h1>Dashboard</h1></div>
+      <div className="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          {user?.role === 'super_admin' && selectedOrgName && (
+            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{selectedOrgName}</div>
+          )}
+          {user?.role !== 'super_admin' && user?.organization?.name && (
+            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{user.organization.name}</div>
+          )}
+        </div>
+      </div>
       <div className="page-body">
         {/* Queue alerts */}
         {(queues.verification > 0 || queues.fraud > 0 || queues.escalated > 0 || pendingCount > 0) && (

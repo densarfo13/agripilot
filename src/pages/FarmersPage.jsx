@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import { useOrgStore } from '../store/orgStore.js';
 import { CREATOR_ROLES } from '../utils/roles.js';
 
 export default function FarmersPage() {
@@ -15,6 +16,8 @@ export default function FarmersPage() {
   const [showInvite, setShowInvite] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
+  const { selectedOrgId } = useOrgStore();
+  const isSuperAdmin = user?.role === 'super_admin';
   const canCreate = CREATOR_ROLES.includes(user?.role);
 
   const load = (p = page, s = search) => {
@@ -25,7 +28,7 @@ export default function FarmersPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, selectedOrgId]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -36,7 +39,12 @@ export default function FarmersPage() {
   return (
     <>
       <div className="page-header">
-        <h1>Farmers ({total})</h1>
+        <div>
+          <h1>Farmers ({total})</h1>
+          {!isSuperAdmin && user?.organization?.name && (
+            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{user.organization.name}</div>
+          )}
+        </div>
         <div className="flex gap-1">
           <form onSubmit={handleSearch} className="flex gap-1">
             <input className="form-input" style={{ width: 220 }} placeholder="Search name, phone, ID..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -59,6 +67,7 @@ export default function FarmersPage() {
                       <th>Phone</th>
                       <th>Region</th>
                       <th>Status</th>
+                      {isSuperAdmin && <th>Organization</th>}
                       <th>Primary Crop</th>
                       <th>Farm Size</th>
                       <th>Applications</th>
@@ -71,12 +80,13 @@ export default function FarmersPage() {
                         <td>{f.phone}</td>
                         <td>{f.region}</td>
                         <td><RegistrationBadge status={f.registrationStatus} /></td>
+                        {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
                         <td>{f.primaryCrop || '-'}</td>
                         <td>{f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>{f._count?.applications || 0}</td>
                       </tr>
                     ))}
-                    {farmers.length === 0 && <tr><td colSpan={7} className="empty-state">No farmers found</td></tr>}
+                    {farmers.length === 0 && <tr><td colSpan={isSuperAdmin ? 8 : 7} className="empty-state">No farmers found</td></tr>}
                   </tbody>
                 </table>
               </div>

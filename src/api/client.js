@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore.js';
+import { useOrgStore } from '../store/orgStore.js';
 
 // Detect native platform: Capacitor injects window.Capacitor on native
 // isNativePlatform can be a function (returns bool) or a boolean depending on version
@@ -39,6 +40,16 @@ api.interceptors.request.use((config) => {
       config.headers['X-Idempotency-Key'] = generateId();
     }
   }
+
+  // Attach orgId for super_admin org scoping (backend reads ?orgId= query param)
+  const selectedOrgId = useOrgStore.getState().selectedOrgId;
+  if (selectedOrgId) {
+    config.params = config.params || {};
+    if (!config.params.orgId) {
+      config.params.orgId = selectedOrgId;
+    }
+  }
+
   return config;
 });
 

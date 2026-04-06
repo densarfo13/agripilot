@@ -28,6 +28,7 @@ const FarmerStorageTab = lazy(() => import('./pages/FarmerStorageTab.jsx'));
 const FarmerMarketTab = lazy(() => import('./pages/FarmerMarketTab.jsx'));
 const FarmerProgressTab = lazy(() => import('./pages/FarmerProgressTab.jsx'));
 const AdminControlPage = lazy(() => import('./pages/AdminControlPage.jsx'));
+const AdminOrganizationsPage = lazy(() => import('./pages/AdminOrganizationsPage.jsx'));
 const FarmerRegisterPage = lazy(() => import('./pages/FarmerRegisterPage.jsx'));
 const FarmerDashboardPage = lazy(() => import('./pages/FarmerDashboardPage.jsx'));
 const PendingRegistrationsPage = lazy(() => import('./pages/PendingRegistrationsPage.jsx'));
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="audit" element={<RoleRoute roles={ADMIN_ROLES}><AuditPage /></RoleRoute>} />
             <Route path="admin/users" element={<RoleRoute roles={ADMIN_ROLES}><AdminUsersPage /></RoleRoute>} />
             <Route path="admin/registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
+            <Route path="admin/organizations" element={<RoleRoute roles={ADMIN_ROLES}><AdminOrganizationsPage /></RoleRoute>} />
             <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

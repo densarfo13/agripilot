@@ -49,6 +49,7 @@ export async function listFarmers({ page = 1, limit = 20, search, region, orgSco
       where,
       include: {
         createdBy: { select: { id: true, fullName: true } },
+        organization: { select: { id: true, name: true, type: true } },
         _count: { select: { applications: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -67,6 +68,7 @@ export async function getFarmerById(id) {
     include: {
       createdBy: { select: { id: true, fullName: true, email: true } },
       userAccount: { select: { id: true, email: true, fullName: true, active: true, lastLoginMethod: true, createdAt: true } },
+      organization: { select: { id: true, name: true, type: true } },
       applications: {
         orderBy: { createdAt: 'desc' },
         select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
