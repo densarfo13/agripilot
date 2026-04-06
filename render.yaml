@@ -12,7 +12,7 @@ services:
     region: oregon
     env: node
     buildCommand: npm ci --include=dev && npx vite build && cd server && npm ci && npx prisma generate
-    startCommand: cd server && npx prisma db push --skip-generate --accept-data-loss && node prisma/seed.js; node src/server.js
+    startCommand: cd server && npx prisma db push --skip-generate --accept-data-loss && node src/server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -23,6 +23,8 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 24h
+      - key: CORS_ORIGIN
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: agripilot-db

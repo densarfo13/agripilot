@@ -77,6 +77,7 @@ tbody tr:hover { background: var(--gray-50); }
 .badge-fraud_hold { background: var(--danger-light); color: var(--danger); }
 .badge-needs_more_evidence { background: var(--warning-light); color: var(--warning); }
 .badge-field_review_required { background: var(--info-light); color: var(--info); }
+.badge-disbursed { background: #d1fae5; color: #047857; }
 .badge-low { background: var(--success-light); color: var(--success); }
 .badge-medium { background: var(--warning-light); color: var(--warning); }
 .badge-high { background: var(--danger-light); color: var(--danger); }

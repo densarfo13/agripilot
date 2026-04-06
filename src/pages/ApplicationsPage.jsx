@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 
-const STATUSES = ['', 'draft', 'submitted', 'under_review', 'needs_more_evidence', 'field_review_required', 'on_hold', 'approved', 'conditional_approved', 'rejected', 'escalated'];
+const STATUSES = ['', 'draft', 'submitted', 'under_review', 'needs_more_evidence', 'field_review_required', 'fraud_hold', 'approved', 'conditional_approved', 'rejected', 'escalated', 'disbursed'];
 
 export default function ApplicationsPage() {
   const [apps, setApps] = useState([]);

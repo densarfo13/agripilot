@@ -45,6 +45,7 @@ enum ApplicationStatus {
   conditional_approved
   rejected
   escalated
+  disbursed
 }
 
 enum DecisionType {
@@ -208,6 +209,12 @@ model Farmer {
   produceStorageStatus ProduceStorageStatus[]
   buyerInterests      BuyerInterest[]
 
+  @@index([createdById], map: "idx_farmers_created_by")
+  @@index([registrationStatus], map: "idx_farmers_reg_status")
+  @@index([countryCode], map: "idx_farmers_country")
+  @@index([region], map: "idx_farmers_region")
+  @@index([currentStage], map: "idx_farmers_stage")
+  @@index([assignedOfficerId], map: "idx_farmers_officer")
   @@map("farmers")
 }
 
@@ -245,6 +252,12 @@ model Application {
   auditLogs           AuditLog[]
   fieldVisits         FieldVisit[]
 
+  @@index([farmerId], map: "idx_applications_farmer")
+  @@index([createdById], map: "idx_applications_created_by")
+  @@index([status], map: "idx_applications_status")
+  @@index([assignedReviewerId], map: "idx_applications_reviewer")
+  @@index([assignedFieldOfficerId], map: "idx_applications_officer")
+  @@index([createdAt], map: "idx_applications_created_at")
   @@map("applications")
 }
 
@@ -290,6 +303,7 @@ model BoundaryPoint {
 
   boundary    FarmBoundary @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
 
+  @@index([boundaryId], map: "idx_boundary_points_boundary")
   @@map("boundary_points")
 }
 
@@ -310,6 +324,8 @@ model EvidenceFile {
 
   application     Application  @relation(fields: [applicationId], references: [id])
 
+  @@index([applicationId], map: "idx_evidence_application")
+  @@index([photoHash], map: "idx_evidence_hash")
   @@map("evidence_files")
 }
 
@@ -426,6 +442,8 @@ model ReviewAssignment {
   application     Application @relation(fields: [applicationId], references: [id])
   reviewer        User        @relation("ReviewAssignedTo", fields: [reviewerId], references: [id])
 
+  @@index([applicationId], map: "idx_review_assign_app")
+  @@index([reviewerId], map: "idx_review_assign_reviewer")
   @@map("review_assignments")
 }
 
@@ -442,6 +460,8 @@ model ReviewNote {
   application     Application @relation(fields: [applicationId], references: [id])
   author          User        @relation(fields: [authorId], references: [id])
 
+  @@index([applicationId], map: "idx_review_notes_app")
+  @@index([authorId], map: "idx_review_notes_author")
   @@map("review_notes")
 }
 
@@ -450,7 +470,7 @@ model ReviewNote {
 model AuditLog {
   id              String   @id @default(uuid())
   applicationId   String?  @map("application_id")
-  userId          String   @map("user_id")
+  userId          String?  @map("user_id")
   action          String
   details         Json?
   previousStatus  String?  @map("previous_status")
@@ -459,8 +479,12 @@ model AuditLog {
   createdAt       DateTime @default(now()) @map("created_at")
 
   application     Application? @relation(fields: [applicationId], references: [id])
-  user            User         @relation(fields: [userId], references: [id])
+  user            User?        @relation(fields: [userId], references: [id])
 
+  @@index([applicationId], map: "idx_audit_application")
+  @@index([userId], map: "idx_audit_user")
+  @@index([action], map: "idx_audit_action")
+  @@index([createdAt], map: "idx_audit_created_at")
   @@map("audit_logs")
 }
 
@@ -479,6 +503,8 @@ model FieldVisit {
   application     Application @relation(fields: [applicationId], references: [id])
   officer         User        @relation(fields: [officerId], references: [id])
 
+  @@index([applicationId], map: "idx_field_visits_app")
+  @@index([officerId], map: "idx_field_visits_officer")
   @@map("field_visits")
 }
 
@@ -518,6 +544,9 @@ model FarmActivity {
 
   farmer          Farmer           @relation(fields: [farmerId], references: [id])
 
+  @@index([farmerId], map: "idx_activities_farmer")
+  @@index([activityType], map: "idx_activities_type")
+  @@index([activityDate], map: "idx_activities_date")
   @@map("farm_activities")
 }
 
@@ -539,6 +568,9 @@ model Reminder {
 
   farmer          Farmer       @relation(fields: [farmerId], references: [id])
 
+  @@index([farmerId], map: "idx_reminders_farmer")
+  @@index([completed], map: "idx_reminders_completed")
+  @@index([dueDate], map: "idx_reminders_due")
   @@map("reminders")
 }
 
@@ -556,6 +588,8 @@ model FarmerNotification {
 
   farmer           Farmer           @relation(fields: [farmerId], references: [id])
 
+  @@index([farmerId], map: "idx_notifications_farmer")
+  @@index([read], map: "idx_notifications_read")
   @@map("farmer_notifications")
 }
 
@@ -577,6 +611,7 @@ model ProduceStorageStatus {
 
   farmer           Farmer           @relation(fields: [farmerId], references: [id])
 
+  @@index([farmerId], map: "idx_storage_farmer")
   @@map("produce_storage_status")
 }
 
@@ -597,5 +632,6 @@ model BuyerInterest {
 
   farmer           Farmer   @relation(fields: [farmerId], references: [id])
 
+  @@index([farmerId], map: "idx_buyer_interest_farmer")
   @@map("buyer_interests")
 }

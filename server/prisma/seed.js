@@ -1,6 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
+// ─── PRODUCTION GUARD ──────────────────────────────────
+// This script wipes ALL data. Never run in production.
+if (process.env.NODE_ENV === 'production') {
+  console.error('\n[FATAL] seed.js must NEVER run in production (NODE_ENV=production).');
+  console.error('[FATAL] This script deletes ALL data and creates demo accounts.');
+  console.error('[FATAL] If you need to seed production data, create a separate migration.\n');
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 async function main() {

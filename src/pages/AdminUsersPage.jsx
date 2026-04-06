@@ -86,8 +86,8 @@ function ResetPasswordModal({ user, onClose }) {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (newPassword.length < 6) {
-      return setError('Password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      return setError('Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number');
     }
     setSaving(true);
     try {
@@ -109,7 +109,7 @@ function ResetPasswordModal({ user, onClose }) {
             {success && <div className="alert alert-success" style={{ background: '#d4edda', color: '#155724', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>{success}</div>}
             <div className="form-group">
               <label className="form-label">New Password for {user.email}</label>
-              <input className="form-input" type="password" required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" />
+              <input className="form-input" type="password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" />
             </div>
           </div>
           <div className="modal-footer">
@@ -158,7 +158,7 @@ function CreateUserModal({ onClose, onCreated }) {
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
-              <input className="form-input" type="password" required minLength={6} value={form.password} onChange={set('password')} />
+              <input className="form-input" type="password" required minLength={8} value={form.password} onChange={set('password')} />
             </div>
             <div className="form-group">
               <label className="form-label">Role</label>

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
+import { validateParamUUID, isValidEmail, validatePassword } from '../../middleware/validate.js';
 import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
 import { writeAuditLog } from '../audit/service.js';
@@ -26,12 +27,25 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
   if (!email || !password || !fullName || !role) {
     return res.status(400).json({ error: 'email, password, fullName, and role are required' });
   }
-  const existing = await prisma.user.findUnique({ where: { email } });
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.valid) {
+    return res.status(400).json({ error: pwCheck.message });
+  }
+
+  const validRoles = ['super_admin', 'institutional_admin', 'reviewer', 'field_officer', 'investor_viewer', 'farmer'];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (existing) return res.status(409).json({ error: 'Email already registered' });
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { email, passwordHash, fullName, role },
+    data: { email: email.toLowerCase().trim(), passwordHash, fullName: fullName.trim(), role },
     select: { id: true, email: true, fullName: true, role: true, active: true, createdAt: true },
   });
 
@@ -40,31 +54,41 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
 }));
 
 // Toggle user active status
-router.patch('/:id/toggle-active', authorize('super_admin'), asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
-  if (!user) return res.status(404).json({ error: 'User not found' });
+router.patch('/:id/toggle-active',
+  validateParamUUID('id'),
+  authorize('super_admin'),
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const updated = await prisma.user.update({
-    where: { id: req.params.id },
-    data: { active: !user.active },
-    select: { id: true, email: true, fullName: true, role: true, active: true },
-  });
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { active: !user.active },
+      select: { id: true, email: true, fullName: true, role: true, active: true },
+    });
 
-  writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } }).catch(() => {});
-  res.json(updated);
-}));
+    writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } }).catch(() => {});
+    res.json(updated);
+  }));
 
 // Admin reset user password
-router.patch('/:id/reset-password', authorize('super_admin'), asyncHandler(async (req, res) => {
-  const { newPassword } = req.body;
-  if (!newPassword || newPassword.length < 6) {
-    return res.status(400).json({ error: 'newPassword is required (min 6 characters)' });
-  }
+router.patch('/:id/reset-password',
+  validateParamUUID('id'),
+  authorize('super_admin'),
+  asyncHandler(async (req, res) => {
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return res.status(400).json({ error: 'newPassword is required' });
+    }
+    const pwCheck = validatePassword(newPassword);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ error: pwCheck.message });
+    }
 
-  const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
-  writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } }).catch(() => {});
-  res.json(result);
-}));
+    const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
+    writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } }).catch(() => {});
+    res.json(result);
+  }));
 
 // ─── Farmer Registration Management ────────────────────
 
@@ -81,35 +105,39 @@ router.get('/self-registered', asyncHandler(async (req, res) => {
 }));
 
 // Approve farmer registration
-router.post('/:id/approve-registration', asyncHandler(async (req, res) => {
-  const { assignedOfficerId } = req.body;
-  const result = await approveRegistration({
-    farmerId: req.params.id,
-    approvedById: req.user.sub,
-    assignedOfficerId,
-  });
-  writeAuditLog({
-    userId: req.user.sub,
-    action: 'farmer_registration_approved',
-    details: { farmerId: req.params.id, assignedOfficerId },
-  }).catch(() => {});
-  res.json(result);
-}));
+router.post('/:id/approve-registration',
+  validateParamUUID('id'),
+  asyncHandler(async (req, res) => {
+    const { assignedOfficerId } = req.body;
+    const result = await approveRegistration({
+      farmerId: req.params.id,
+      approvedById: req.user.sub,
+      assignedOfficerId,
+    });
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_registration_approved',
+      details: { farmerId: req.params.id, assignedOfficerId },
+    }).catch(() => {});
+    res.json(result);
+  }));
 
 // Reject farmer registration
-router.post('/:id/reject-registration', asyncHandler(async (req, res) => {
-  const { rejectionReason } = req.body;
-  const result = await rejectRegistration({
-    farmerId: req.params.id,
-    rejectedById: req.user.sub,
-    rejectionReason,
-  });
-  writeAuditLog({
-    userId: req.user.sub,
-    action: 'farmer_registration_rejected',
-    details: { farmerId: req.params.id, rejectionReason },
-  }).catch(() => {});
-  res.json(result);
-}));
+router.post('/:id/reject-registration',
+  validateParamUUID('id'),
+  asyncHandler(async (req, res) => {
+    const { rejectionReason } = req.body;
+    const result = await rejectRegistration({
+      farmerId: req.params.id,
+      rejectedById: req.user.sub,
+      rejectionReason,
+    });
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_registration_rejected',
+      details: { farmerId: req.params.id, rejectionReason },
+    }).catch(() => {});
+    res.json(result);
+  }));
 
 export default router;

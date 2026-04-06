@@ -12,7 +12,7 @@ export default function FraudQueuePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/applications', { params: { status: 'on_hold', limit: 100 } });
+      const res = await api.get('/applications', { params: { status: 'fraud_hold', limit: 100 } });
       setApps(res.data.applications || []);
     } catch {
       // ignore

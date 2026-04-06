@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
+import { parsePositiveInt } from '../../middleware/validate.js';
 import * as portfolioService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -25,7 +26,7 @@ router.post('/snapshot', authorize('super_admin', 'institutional_admin'), asyncH
 
 // Get snapshot history
 router.get('/snapshots', authorize('super_admin', 'institutional_admin', 'investor_viewer'), asyncHandler(async (req, res) => {
-  const limit = req.query.limit ? parseInt(req.query.limit) : 30;
+  const limit = parsePositiveInt(req.query.limit, 30, 365);
   const snapshots = await portfolioService.getSnapshotHistory(limit);
   res.json(snapshots);
 }));

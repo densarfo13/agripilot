@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
@@ -39,21 +41,94 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ─── Global Middleware ──────────────────────────────────
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// ─── Trust Proxy (required for rate limiting behind Render/Docker proxy) ──
+if (config.isProduction) {
+  app.set('trust proxy', 1);
+}
 
-// Static file serving for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// ─── Security Headers ──────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: config.isProduction ? undefined : false, // disable CSP in dev for Vite
+  crossOriginEmbedderPolicy: false, // allow loading images from uploads
+}));
 
-// ─── Health Check ───────────────────────────────────────
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
+// ─── CORS ──────────────────────────────────────────────
+const corsOptions = {
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+if (config.cors.origins.length > 0) {
+  // Production: restrict to configured origins
+  corsOptions.origin = (origin, callback) => {
+    // Allow requests with no origin (server-to-server, mobile apps)
+    if (!origin || config.cors.origins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  };
+} else if (config.isProduction) {
+  // Production with no CORS_ORIGIN set — restrictive default
+  console.warn('[WARN] CORS_ORIGIN not set in production — only same-origin requests allowed');
+  corsOptions.origin = false;
+} else {
+  // Development: allow all origins
+  corsOptions.origin = true;
+}
+
+app.use(cors(corsOptions));
+
+// ─── Body Parsing ──────────────────────────────────────
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// ─── Request Logging (non-production) ──────────────────
+if (!config.isProduction) {
+  app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+  });
+}
+
+// ─── Rate Limiters ─────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per window
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Uses default keyGenerator (request IP via express trust proxy)
 });
 
-// ─── Auth (public) ──────────────────────────────────────
-app.use('/api/auth', authRoutes);
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 200, // 200 requests per minute
+  message: { error: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply API-wide rate limiter to all /api routes
+app.use('/api', apiLimiter);
+
+// ─── Uploads: authenticated static serving ─────────────
+// Files require a valid JWT to download (prevents public access to evidence)
+app.use('/uploads', authenticate, express.static(path.join(__dirname, '../uploads')));
+
+// ─── Health Check ───────────────────────────────────────
+app.get('/api/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
+  } catch (err) {
+    res.status(503).json({ status: 'degraded', timestamp: new Date().toISOString(), error: 'Database unreachable' });
+  }
+});
+
+// ─── Auth (public — with stricter rate limiting) ────────
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', adminUserRoutes);
 
 // ─── /me endpoint ───────────────────────────────────────
@@ -91,21 +166,22 @@ app.use('/api/market-guidance', marketGuidanceRoutes);
 app.use('/api/buyer-interest', buyerInterestRoutes);
 app.use('/api/lifecycle', lifecycleRoutes);
 
-// ─── Production Static Serving ─────────────────────────
-if (config.nodeEnv === 'production') {
-  const clientDist = path.join(__dirname, '../../dist');
-  app.use(express.static(clientDist));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
-} else {
-  // ─── 404 (dev only — Vite handles frontend) ──────────
-  app.use((req, res) => {
-    res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
-  });
-}
+// ─── API 404 (catch unmatched /api routes) ──────────────
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+});
 
 // ─── Error Handler ──────────────────────────────────────
 app.use(errorHandler);
+
+// ─── Production Static Serving ─────────────────────────
+if (config.isProduction) {
+  const clientDist = path.join(__dirname, '../../dist');
+  app.use(express.static(clientDist));
+  // SPA fallback: serve index.html for non-API routes (React Router handles client-side routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 export default app;

@@ -160,10 +160,15 @@ export async function runFraudAnalysis(applicationId) {
 
   // Auto-hold if critical or high
   if (fraudRiskLevel === 'critical' || fraudRiskLevel === 'high') {
-    await prisma.application.update({
-      where: { id: applicationId },
-      data: { status: 'on_hold' },
-    });
+    try {
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: { status: 'fraud_hold' },
+      });
+    } catch (statusErr) {
+      // If status transition fails (e.g., already in a terminal state), log but don't block fraud result
+      console.warn(`[FRAUD] Could not auto-hold application ${applicationId}: ${statusErr.message}`);
+    }
   }
 
   return result;

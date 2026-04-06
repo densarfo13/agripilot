@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate } from '../../middleware/auth.js';
+import { isValidEmail, validatePassword } from '../../middleware/validate.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
 
@@ -12,8 +13,15 @@ router.post('/register', asyncHandler(async (req, res) => {
   if (!email || !password || !fullName) {
     return res.status(400).json({ error: 'email, password, and fullName are required' });
   }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.valid) {
+    return res.status(400).json({ error: pwCheck.message });
+  }
 
-  const result = await authService.register({ email, password, fullName, role });
+  const result = await authService.register({ email: email.toLowerCase().trim(), password, fullName: fullName.trim(), role });
   res.status(201).json(result);
 }));
 
@@ -24,7 +32,7 @@ router.post('/login', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const result = await authService.login({ email, password });
+  const result = await authService.login({ email: email.toLowerCase().trim(), password });
   res.json(result);
 }));
 
@@ -35,8 +43,9 @@ router.post('/change-password', authenticate, asyncHandler(async (req, res) => {
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: 'currentPassword and newPassword are required' });
   }
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  const pwCheck = validatePassword(newPassword);
+  if (!pwCheck.valid) {
+    return res.status(400).json({ error: pwCheck.message });
   }
 
   const result = await authService.changePassword({
@@ -54,12 +63,26 @@ router.post('/farmer-register', asyncHandler(async (req, res) => {
   if (!fullName || !phone || !email || !password) {
     return res.status(400).json({ error: 'fullName, phone, email, and password are required' });
   }
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.valid) {
+    return res.status(400).json({ error: pwCheck.message });
   }
 
   const result = await farmerSelfRegister({
-    fullName, phone, email, password, countryCode, region, district, village, preferredLanguage, primaryCrop, farmSizeAcres,
+    fullName: fullName.trim(),
+    phone: phone.trim(),
+    email: email.toLowerCase().trim(),
+    password,
+    countryCode,
+    region,
+    district,
+    village,
+    preferredLanguage,
+    primaryCrop,
+    farmSizeAcres,
   });
   res.status(201).json(result);
 }));

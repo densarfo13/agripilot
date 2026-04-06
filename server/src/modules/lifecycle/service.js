@@ -92,6 +92,7 @@ export async function computeStageFromActivities(farmerId) {
   }
 
   // Find the most recent stage-relevant activity
+  // Activities are sorted by date DESC, so first match with a mapped stage wins
   let derivedStage = 'pre_planting';
   let latestRelevant = null;
   let cropType = null;
@@ -105,8 +106,8 @@ export async function computeStageFromActivities(farmerId) {
         derivedStage = mappedStage;
         latestRelevant = act;
         cropType = act.cropType || cropType;
+        break; // Most recent relevant activity determines stage
       }
-      break; // Most recent relevant activity determines stage
     }
   }
 

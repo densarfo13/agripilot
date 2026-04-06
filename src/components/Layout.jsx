@@ -40,8 +40,8 @@ function ChangePasswordModal({ onClose }) {
     if (form.newPassword !== form.confirmPassword) {
       return setError('New passwords do not match');
     }
-    if (form.newPassword.length < 6) {
-      return setError('New password must be at least 6 characters');
+    if (form.newPassword.length < 8) {
+      return setError('Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number');
     }
     setSaving(true);
     try {
@@ -70,11 +70,11 @@ function ChangePasswordModal({ onClose }) {
             </div>
             <div className="form-group">
               <label className="form-label">New Password</label>
-              <input className="form-input" type="password" required minLength={6} value={form.newPassword} onChange={set('newPassword')} />
+              <input className="form-input" type="password" required minLength={8} value={form.newPassword} onChange={set('newPassword')} />
             </div>
             <div className="form-group">
               <label className="form-label">Confirm New Password</label>
-              <input className="form-input" type="password" required minLength={6} value={form.confirmPassword} onChange={set('confirmPassword')} />
+              <input className="form-input" type="password" required minLength={8} value={form.confirmPassword} onChange={set('confirmPassword')} />
             </div>
           </div>
           <div className="modal-footer">

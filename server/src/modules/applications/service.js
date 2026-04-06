@@ -23,12 +23,13 @@ const FULL_INCLUDE = {
 const VALID_TRANSITIONS = {
   draft:                ['submitted'],
   submitted:            ['under_review', 'rejected'],
-  under_review:         ['approved', 'conditional_approved', 'rejected', 'needs_more_evidence', 'escalated', 'on_hold'],
+  under_review:         ['approved', 'conditional_approved', 'rejected', 'needs_more_evidence', 'escalated', 'fraud_hold', 'field_review_required'],
   needs_more_evidence:  ['under_review', 'rejected'],
+  field_review_required:['under_review', 'rejected'],
   escalated:            ['under_review', 'approved', 'rejected'],
-  on_hold:              ['under_review', 'rejected'],
+  fraud_hold:           ['under_review', 'rejected'],
   conditional_approved: ['approved', 'rejected', 'disbursed'],
-  approved:             ['disbursed', 'on_hold'],
+  approved:             ['disbursed', 'fraud_hold'],
   rejected:             ['under_review'],  // reopen
   disbursed:            [],
 };
@@ -210,6 +211,25 @@ export async function escalateApplication(id, userId, reason) {
   await prisma.reviewNote.create({
     data: { applicationId: id, authorId: userId, content: `Escalated: ${reason}`, internal: true },
   });
+
+  return { application: updated, previousStatus: app.status };
+}
+
+export async function disburseApplication(id, userId, { reason } = {}) {
+  const app = await getApplicationById(id);
+  validateTransition(app.status, 'disbursed');
+
+  const updated = await prisma.application.update({
+    where: { id },
+    data: { status: 'disbursed' },
+    include: FULL_INCLUDE,
+  });
+
+  if (reason) {
+    await prisma.reviewNote.create({
+      data: { applicationId: id, authorId: userId, content: `Disbursed: ${reason}`, internal: false },
+    });
+  }
 
   return { application: updated, previousStatus: app.status };
 }

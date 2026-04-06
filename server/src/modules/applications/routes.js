@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
+import { validateParamUUID, isValidUUID, parsePositiveInt } from '../../middleware/validate.js';
 import * as appService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -24,6 +25,15 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
   if (!farmerId || !cropType || !farmSizeAcres || !requestedAmount) {
     return res.status(400).json({ error: 'farmerId, cropType, farmSizeAcres, and requestedAmount are required' });
   }
+  if (!isValidUUID(farmerId)) {
+    return res.status(400).json({ error: 'Invalid farmerId format' });
+  }
+  if (isNaN(parseFloat(farmSizeAcres)) || parseFloat(farmSizeAcres) <= 0) {
+    return res.status(400).json({ error: 'farmSizeAcres must be a positive number' });
+  }
+  if (isNaN(parseFloat(requestedAmount)) || parseFloat(requestedAmount) <= 0) {
+    return res.status(400).json({ error: 'requestedAmount must be a positive number' });
+  }
   const app = await appService.createApplication(req.body, req.user.sub);
   writeAuditLog({
     applicationId: app.id, userId: req.user.sub, action: 'application_created',
@@ -34,13 +44,13 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
 
 // List applications
 router.get('/', asyncHandler(async (req, res) => {
-  const { page, limit, status, farmerId, search } = req.query;
+  const { status, farmerId, search } = req.query;
   let assignedReviewerId;
   if (req.user.role === 'reviewer') assignedReviewerId = req.user.sub;
 
   const result = await appService.listApplications({
-    page: page ? parseInt(page) : 1,
-    limit: limit ? parseInt(limit) : 20,
+    page: parsePositiveInt(req.query.page, 1, 1000),
+    limit: parsePositiveInt(req.query.limit, 20, 100),
     status, farmerId, search, assignedReviewerId,
   });
   res.json(result);
@@ -53,13 +63,13 @@ router.get('/stats', authorize('super_admin', 'institutional_admin', 'investor_v
 }));
 
 // Get application by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', validateParamUUID('id'), asyncHandler(async (req, res) => {
   const app = await appService.getApplicationById(req.params.id);
   res.json(app);
 }));
 
 // Update application
-router.put('/:id', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
   const app = await appService.updateApplication(req.params.id, req.body);
   writeAuditLog({
     applicationId: app.id, userId: req.user.sub, action: 'application_updated', ipAddress: req.ip,
@@ -72,7 +82,7 @@ router.put('/:id', authorize('super_admin', 'institutional_admin', 'field_office
 // ═══════════════════════════════════════════════════════
 
 // Submit (draft → submitted)
-router.post('/:id/submit', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.post('/:id/submit', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
   const app = await appService.submitApplication(req.params.id);
   writeAuditLog({
     applicationId: app.id, userId: req.user.sub, action: 'application_submitted',
@@ -82,7 +92,7 @@ router.post('/:id/submit', authorize('super_admin', 'institutional_admin', 'fiel
 }));
 
 // Approve
-router.post('/:id/approve', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/approve', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const { reason, recommendedAmount } = req.body;
   const { application, previousStatus } = await appService.approveApplication(req.params.id, req.user.sub, { reason, recommendedAmount });
   writeAuditLog({
@@ -93,7 +103,7 @@ router.post('/:id/approve', authorize('super_admin', 'institutional_admin', 'rev
 }));
 
 // Reject
-router.post('/:id/reject', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/reject', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   if (!reason) return res.status(400).json({ error: 'reason is required for rejection' });
   const { application, previousStatus } = await appService.rejectApplication(req.params.id, req.user.sub, reason);
@@ -105,7 +115,7 @@ router.post('/:id/reject', authorize('super_admin', 'institutional_admin', 'revi
 }));
 
 // Escalate
-router.post('/:id/escalate', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/escalate', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   if (!reason) return res.status(400).json({ error: 'reason is required for escalation' });
   const { application, previousStatus } = await appService.escalateApplication(req.params.id, req.user.sub, reason);
@@ -117,7 +127,7 @@ router.post('/:id/escalate', authorize('super_admin', 'institutional_admin', 're
 }));
 
 // Reopen
-router.post('/:id/reopen', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/reopen', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const { application, previousStatus } = await appService.reopenApplication(req.params.id, req.user.sub, reason);
   writeAuditLog({
@@ -127,8 +137,19 @@ router.post('/:id/reopen', authorize('super_admin', 'institutional_admin'), asyn
   res.json(application);
 }));
 
+// Disburse (approved/conditional → disbursed)
+router.post('/:id/disburse', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  const { application, previousStatus } = await appService.disburseApplication(req.params.id, req.user.sub, { reason });
+  writeAuditLog({
+    applicationId: application.id, userId: req.user.sub, action: 'application_disbursed',
+    previousStatus, newStatus: 'disbursed', details: { reason }, ipAddress: req.ip,
+  }).catch(() => {});
+  res.json(application);
+}));
+
 // Request Evidence
-router.post('/:id/request-evidence', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/request-evidence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const { reason, requiredTypes } = req.body;
   if (!reason) return res.status(400).json({ error: 'reason is required' });
   const { application, previousStatus } = await appService.requestEvidence(req.params.id, req.user.sub, { reason, requiredTypes });
@@ -140,7 +161,7 @@ router.post('/:id/request-evidence', authorize('super_admin', 'institutional_adm
 }));
 
 // Generic status update (legacy — prefer specific actions above)
-router.patch('/:id/status', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.patch('/:id/status', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const { status } = req.body;
   if (!status) return res.status(400).json({ error: 'status is required' });
   const { application, previousStatus } = await appService.updateStatus(req.params.id, status, req.user.sub);
@@ -152,7 +173,7 @@ router.patch('/:id/status', authorize('super_admin', 'institutional_admin', 'rev
 }));
 
 // Assign reviewer
-router.post('/:id/assign-reviewer', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/assign-reviewer', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const { reviewerId } = req.body;
   if (!reviewerId) return res.status(400).json({ error: 'reviewerId is required' });
   const app = await appService.assignReviewer(req.params.id, reviewerId);
@@ -164,7 +185,7 @@ router.post('/:id/assign-reviewer', authorize('super_admin', 'institutional_admi
 }));
 
 // Assign field officer
-router.post('/:id/assign-field-officer', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/assign-field-officer', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const { officerId } = req.body;
   if (!officerId) return res.status(400).json({ error: 'officerId is required' });
   const app = await appService.assignFieldOfficer(req.params.id, officerId);
@@ -180,7 +201,7 @@ router.post('/:id/assign-field-officer', authorize('super_admin', 'institutional
 // ═══════════════════════════════════════════════════════
 
 // Run verification engine
-router.post('/:id/score-verification', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/score-verification', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await verificationService.runVerification(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -191,7 +212,7 @@ router.post('/:id/score-verification', authorize('super_admin', 'institutional_a
 }));
 
 // Run fraud analysis
-router.post('/:id/score-fraud', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/score-fraud', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await fraudService.runFraudAnalysis(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -202,7 +223,7 @@ router.post('/:id/score-fraud', authorize('super_admin', 'institutional_admin', 
 }));
 
 // Run decision engine
-router.post('/:id/score-decision', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/score-decision', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await decisionService.runDecisionEngine(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -215,7 +236,7 @@ router.post('/:id/score-decision', authorize('super_admin', 'institutional_admin
 }));
 
 // Run benchmark
-router.post('/:id/score-benchmark', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.post('/:id/score-benchmark', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await benchmarkService.runBenchmark(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -225,7 +246,7 @@ router.post('/:id/score-benchmark', authorize('super_admin', 'institutional_admi
 }));
 
 // Run intelligence (admin only — secondary/shadow)
-router.post('/:id/score-intelligence', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.post('/:id/score-intelligence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   const result = await intelligenceService.runIntelligence(req.params.id);
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
@@ -238,31 +259,31 @@ router.post('/:id/score-intelligence', authorize('super_admin', 'institutional_a
 //  ENGINE RESULTS (GET — nested under applications)
 // ═══════════════════════════════════════════════════════
 
-router.get('/:id/verification', asyncHandler(async (req, res) => {
+router.get('/:id/verification', validateParamUUID('id'), asyncHandler(async (req, res) => {
   const result = await verificationService.getVerificationResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No verification result found' });
   res.json(result);
 }));
 
-router.get('/:id/fraud', asyncHandler(async (req, res) => {
+router.get('/:id/fraud', validateParamUUID('id'), asyncHandler(async (req, res) => {
   const result = await fraudService.getFraudResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No fraud result found' });
   res.json(result);
 }));
 
-router.get('/:id/decision', asyncHandler(async (req, res) => {
+router.get('/:id/decision', validateParamUUID('id'), asyncHandler(async (req, res) => {
   const result = await decisionService.getDecisionResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No decision result found' });
   res.json(result);
 }));
 
-router.get('/:id/benchmark', asyncHandler(async (req, res) => {
+router.get('/:id/benchmark', validateParamUUID('id'), asyncHandler(async (req, res) => {
   const result = await benchmarkService.getBenchmarkResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No benchmark result found' });
   res.json(result);
 }));
 
-router.get('/:id/intelligence', authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
+router.get('/:id/intelligence', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'reviewer'), asyncHandler(async (req, res) => {
   const result = await intelligenceService.getIntelligenceResult(req.params.id);
   if (!result) return res.status(404).json({ error: 'No intelligence result found' });
   res.json(result);

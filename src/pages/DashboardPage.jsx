@@ -23,7 +23,7 @@ export default function DashboardPage() {
       if (stats.statusCounts) stats.statusCounts.forEach(s => { byStatus[s.status] = s._count; });
       setQueues({
         verification: (byStatus.submitted || 0) + (byStatus.under_review || 0),
-        fraud: byStatus.on_hold || 0,
+        fraud: byStatus.fraud_hold || 0,
         escalated: byStatus.escalated || 0,
       });
     }).catch(() => {}).finally(() => setLoading(false));

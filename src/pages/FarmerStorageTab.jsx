@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
+import { tStorageMethod, tStorageCondition } from '../utils/i18n.js';
 
 const STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse', 'silo', 'traditional', 'cold_storage', 'other'];
 const STORAGE_CONDITIONS = ['good', 'fair', 'poor', 'deteriorating', 'unknown'];
@@ -133,13 +134,13 @@ export default function FarmerStorageTab() {
                 <div>
                   <label className="form-label">Storage Method</label>
                   <select className="form-select" value={form.storageMethod} onChange={e => setForm({ ...form, storageMethod: e.target.value })}>
-                    {STORAGE_METHODS.map(m => <option key={m} value={m}>{m.replace(/_/g, ' ')}</option>)}
+                    {STORAGE_METHODS.map(m => <option key={m} value={m}>{tStorageMethod(m)}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="form-label">Condition</label>
                   <select className="form-select" value={form.storageCondition} onChange={e => setForm({ ...form, storageCondition: e.target.value })}>
-                    {STORAGE_CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {STORAGE_CONDITIONS.map(c => <option key={c} value={c}>{tStorageCondition(c)}</option>)}
                   </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
@@ -175,7 +176,7 @@ export default function FarmerStorageTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                           <strong style={{ fontSize: '1.1rem' }}>{item.cropType}</strong>
                           <span style={{ color: CONDITION_COLORS[item.storageCondition], fontWeight: 600, fontSize: '0.85rem', padding: '0.15rem 0.5rem', borderRadius: 4, background: `${CONDITION_COLORS[item.storageCondition]}15`, border: `1px solid ${CONDITION_COLORS[item.storageCondition]}30` }}>
-                            {item.storageCondition}
+                            {tStorageCondition(item.storageCondition)}
                           </span>
                           {item.readyToSell && (
                             <span style={{ color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>Ready to sell</span>
@@ -186,7 +187,7 @@ export default function FarmerStorageTab() {
                         </div>
                         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.9rem', color: '#6b7280' }}>
                           {item.quantityKg && <span><strong>Qty:</strong> {item.quantityKg.toLocaleString()} kg</span>}
-                          {item.storageMethod && <span><strong>Method:</strong> {item.storageMethod.replace(/_/g, ' ')}</span>}
+                          {item.storageMethod && <span><strong>Method:</strong> {tStorageMethod(item.storageMethod)}</span>}
                           {item.daysSinceHarvest !== null && (
                             <span style={{ color: item.isOverStorageLimit ? '#dc2626' : undefined }}>
                               <strong>Days stored:</strong> {item.daysSinceHarvest} / {item.maxRecommendedDays}

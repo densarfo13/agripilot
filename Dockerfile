@@ -21,10 +21,14 @@ COPY --from=frontend-build /app/dist ./dist
 # Generate Prisma client
 RUN cd server && npx prisma generate
 
+# Create uploads directory
+RUN mkdir -p /app/server/uploads
+
 WORKDIR /app/server
 
 ENV NODE_ENV=production
 ENV PORT=4000
 EXPOSE 4000
 
-CMD ["node", "src/server.js"]
+# Run migrations then start server
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node src/server.js"]

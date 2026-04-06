@@ -31,7 +31,15 @@ export async function createActivity(farmerId, data) {
     throw err;
   }
 
-  const validation = ACTIVITY_VALIDATIONS[data.activityType] || ACTIVITY_VALIDATIONS.other;
+  // Validate activity type against known types
+  const validTypes = Object.keys(ACTIVITY_VALIDATIONS);
+  if (!validTypes.includes(data.activityType)) {
+    const err = new Error(`Invalid activityType. Must be one of: ${validTypes.join(', ')}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const validation = ACTIVITY_VALIDATIONS[data.activityType];
   for (const field of validation.requiredFields) {
     if (!data[field]) {
       const err = new Error(`${field} is required for ${data.activityType} activity`);

@@ -50,6 +50,26 @@ export function tActivity(type) {
   return t('activity.' + type, type?.replace(/_/g, ' '));
 }
 
+export function tLifecycleStage(stage) {
+  return t('lifecycle.' + stage, stage?.replace(/_/g, ' '));
+}
+
+export function tStorageMethod(method) {
+  return t('storage.method.' + method, method?.replace(/_/g, ' '));
+}
+
+export function tStorageCondition(condition) {
+  return t('storage.condition.' + condition, condition?.replace(/_/g, ' '));
+}
+
+export function tFraudRisk(level) {
+  return t('fraud.risk.' + level, level?.replace(/_/g, ' '));
+}
+
+export function tNav(key) {
+  return t('nav.' + key, key?.replace(/_/g, ' '));
+}
+
 export function isLoaded() {
   return loaded;
 }

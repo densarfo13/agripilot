@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
+import { validateParamUUID, parsePositiveInt } from '../../middleware/validate.js';
 import * as farmersService from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -20,10 +21,10 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
 
 // List farmers
 router.get('/', asyncHandler(async (req, res) => {
-  const { page, limit, search, region } = req.query;
+  const { search, region } = req.query;
   const result = await farmersService.listFarmers({
-    page: page ? parseInt(page) : 1,
-    limit: limit ? parseInt(limit) : 20,
+    page: parsePositiveInt(req.query.page, 1, 1000),
+    limit: parsePositiveInt(req.query.limit, 20, 100),
     search,
     region,
   });
@@ -31,20 +32,20 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get farmer by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', validateParamUUID('id'), asyncHandler(async (req, res) => {
   const farmer = await farmersService.getFarmerById(req.params.id);
   res.json(farmer);
 }));
 
 // Update farmer
-router.put('/:id', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
   const farmer = await farmersService.updateFarmer(req.params.id, req.body);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_updated', details: { farmerId: farmer.id } }).catch(() => {});
   res.json(farmer);
 }));
 
 // Delete farmer
-router.delete('/:id', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+router.delete('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   await farmersService.deleteFarmer(req.params.id);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_deleted', details: { farmerId: req.params.id } }).catch(() => {});
   res.json({ message: 'Farmer deleted' });

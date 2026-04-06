@@ -75,15 +75,17 @@ function SystemOverview({ navigate }) {
     { label: 'Submitted', count: statusMap.submitted || 0, color: '#2563eb' },
     { label: 'Under Review', count: statusMap.under_review || 0, color: '#0891b2' },
     { label: 'Needs Evidence', count: statusMap.needs_more_evidence || 0, color: '#d97706' },
-    { label: 'On Hold', count: statusMap.on_hold || 0, color: '#dc2626' },
+    { label: 'Field Review', count: statusMap.field_review_required || 0, color: '#0891b2' },
+    { label: 'Fraud Hold', count: statusMap.fraud_hold || 0, color: '#dc2626' },
     { label: 'Escalated', count: statusMap.escalated || 0, color: '#ea580c' },
     { label: 'Approved', count: statusMap.approved || 0, color: '#16a34a' },
     { label: 'Conditional', count: statusMap.conditional_approved || 0, color: '#059669' },
+    { label: 'Disbursed', count: statusMap.disbursed || 0, color: '#047857' },
     { label: 'Rejected', count: statusMap.rejected || 0, color: '#be185d' },
   ];
 
   const activeQueue = (statusMap.submitted || 0) + (statusMap.under_review || 0);
-  const fraudQueue = statusMap.on_hold || 0;
+  const fraudQueue = statusMap.fraud_hold || 0;
   const escalatedQueue = statusMap.escalated || 0;
   const approvalRate = total > 0 ? (((statusMap.approved || 0) + (statusMap.conditional_approved || 0)) / total * 100).toFixed(1) : 0;
 

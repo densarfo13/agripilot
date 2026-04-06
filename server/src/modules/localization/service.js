@@ -19,8 +19,9 @@ const translations = {
     'status.rejected': 'Rejected',
     'status.conditional_approved': 'Conditional Approval',
     'status.needs_more_evidence': 'Needs Evidence',
+    'status.field_review_required': 'Field Review Required',
+    'status.fraud_hold': 'Fraud Hold',
     'status.escalated': 'Escalated',
-    'status.on_hold': 'On Hold',
     'status.disbursed': 'Disbursed',
 
     // Roles
@@ -29,6 +30,7 @@ const translations = {
     'role.reviewer': 'Reviewer',
     'role.field_officer': 'Field Officer',
     'role.investor_viewer': 'Investor Viewer',
+    'role.farmer': 'Farmer',
 
     // Navigation
     'nav.dashboard': 'Dashboard',
@@ -43,6 +45,7 @@ const translations = {
     'nav.reminders': 'Reminders',
     'nav.post_harvest': 'Post-Harvest',
     'nav.notifications': 'Notifications',
+    'nav.lifecycle': 'Crop Lifecycle',
 
     // Activities
     'activity.planting': 'Planting',
@@ -54,6 +57,14 @@ const translations = {
     'activity.storage': 'Storage',
     'activity.selling': 'Selling',
     'activity.other': 'Other',
+
+    // Lifecycle Stages
+    'lifecycle.pre_planting': 'Pre-Planting',
+    'lifecycle.planting': 'Planting',
+    'lifecycle.vegetative': 'Vegetative Growth',
+    'lifecycle.flowering': 'Flowering',
+    'lifecycle.harvest': 'Harvest',
+    'lifecycle.post_harvest': 'Post-Harvest',
 
     // Reminders
     'reminder.pending': 'Pending',
@@ -98,6 +109,33 @@ const translations = {
     'post_harvest.market_prices': 'Market Prices',
     'post_harvest.buyer_interest': 'Buyer Interest',
 
+    // Storage
+    'storage.method.sealed_bags': 'Sealed Bags',
+    'storage.method.hermetic_bag': 'Hermetic Bag',
+    'storage.method.open_air': 'Open Air',
+    'storage.method.warehouse': 'Warehouse',
+    'storage.method.silo': 'Silo',
+    'storage.method.traditional': 'Traditional',
+    'storage.method.cold_storage': 'Cold Storage',
+    'storage.method.other': 'Other',
+    'storage.condition.good': 'Good',
+    'storage.condition.fair': 'Fair',
+    'storage.condition.poor': 'Poor',
+    'storage.condition.deteriorating': 'Deteriorating',
+    'storage.condition.unknown': 'Unknown',
+
+    // Fraud risk levels
+    'fraud.risk.low': 'Low Risk',
+    'fraud.risk.medium': 'Medium Risk',
+    'fraud.risk.high': 'High Risk',
+    'fraud.risk.critical': 'Critical Risk',
+
+    // Registration
+    'registration.pending_approval': 'Pending Approval',
+    'registration.approved': 'Approved',
+    'registration.rejected': 'Rejected',
+    'registration.disabled': 'Disabled',
+
     // Common
     'common.loading': 'Loading...',
     'common.no_data': 'No data available',
@@ -129,8 +167,9 @@ const translations = {
     'status.rejected': 'Imekataliwa',
     'status.conditional_approved': 'Idhini ya Masharti',
     'status.needs_more_evidence': 'Inahitaji Ushahidi',
+    'status.field_review_required': 'Inahitaji Ukaguzi wa Shamba',
+    'status.fraud_hold': 'Imesimamishwa kwa Ulaghai',
     'status.escalated': 'Imepandishwa',
-    'status.on_hold': 'Imesimamishwa',
     'status.disbursed': 'Imetolewa',
 
     // Roles
@@ -139,6 +178,7 @@ const translations = {
     'role.reviewer': 'Mkaguzi',
     'role.field_officer': 'Afisa wa Shamba',
     'role.investor_viewer': 'Mtazamaji wa Uwekezaji',
+    'role.farmer': 'Mkulima',
 
     // Navigation
     'nav.dashboard': 'Dashibodi',
@@ -153,6 +193,7 @@ const translations = {
     'nav.reminders': 'Vikumbusho',
     'nav.post_harvest': 'Baada ya Mavuno',
     'nav.notifications': 'Arifa',
+    'nav.lifecycle': 'Mzunguko wa Mazao',
 
     // Activities
     'activity.planting': 'Kupanda',
@@ -164,6 +205,14 @@ const translations = {
     'activity.storage': 'Kuhifadhi',
     'activity.selling': 'Kuuza',
     'activity.other': 'Nyingine',
+
+    // Lifecycle Stages
+    'lifecycle.pre_planting': 'Kabla ya Kupanda',
+    'lifecycle.planting': 'Kupanda',
+    'lifecycle.vegetative': 'Kukua kwa Mimea',
+    'lifecycle.flowering': 'Kuchanua',
+    'lifecycle.harvest': 'Mavuno',
+    'lifecycle.post_harvest': 'Baada ya Mavuno',
 
     // Reminders
     'reminder.pending': 'Zinazosubiri',
@@ -207,6 +256,33 @@ const translations = {
     'post_harvest.storage_guidance': 'Mwongozo wa Kuhifadhi',
     'post_harvest.market_prices': 'Bei za Soko',
     'post_harvest.buyer_interest': 'Maslahi ya Mnunuzi',
+
+    // Storage
+    'storage.method.sealed_bags': 'Mifuko Iliyofungwa',
+    'storage.method.hermetic_bag': 'Mfuko wa Hemetiki',
+    'storage.method.open_air': 'Hewani',
+    'storage.method.warehouse': 'Ghala',
+    'storage.method.silo': 'Silo',
+    'storage.method.traditional': 'Jadi',
+    'storage.method.cold_storage': 'Baridi',
+    'storage.method.other': 'Nyingine',
+    'storage.condition.good': 'Nzuri',
+    'storage.condition.fair': 'Wastani',
+    'storage.condition.poor': 'Mbaya',
+    'storage.condition.deteriorating': 'Inazorota',
+    'storage.condition.unknown': 'Haijulikani',
+
+    // Fraud risk levels
+    'fraud.risk.low': 'Hatari Ndogo',
+    'fraud.risk.medium': 'Hatari ya Wastani',
+    'fraud.risk.high': 'Hatari Kubwa',
+    'fraud.risk.critical': 'Hatari Kali',
+
+    // Registration
+    'registration.pending_approval': 'Inasubiri Idhini',
+    'registration.approved': 'Imeidhinishwa',
+    'registration.rejected': 'Imekataliwa',
+    'registration.disabled': 'Imezimwa',
 
     // Common
     'common.loading': 'Inapakia...',

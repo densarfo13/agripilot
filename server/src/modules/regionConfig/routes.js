@@ -17,34 +17,44 @@ router.get('/countries', (req, res) => {
 
 // Get region config for a country
 router.get('/:countryCode', (req, res) => {
-  res.json(svc.getRegionConfig(req.params.countryCode));
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  const validCodes = svc.getCountryCodes();
+  if (!validCodes.includes(cc)) {
+    return res.status(400).json({ error: `Unsupported country code. Available: ${validCodes.join(', ')}` });
+  }
+  res.json(svc.getRegionConfig(cc));
 });
 
 // Get current season for a country
 router.get('/:countryCode/season', (req, res) => {
-  res.json(svc.getCurrentSeason(req.params.countryCode));
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  res.json(svc.getCurrentSeason(cc));
 });
 
 // Get crop calendar for a country + crop
 router.get('/:countryCode/crop/:cropType', (req, res) => {
-  const cal = svc.getCropCalendar(req.params.countryCode, req.params.cropType);
-  if (!cal) return res.status(404).json({ error: 'No crop calendar found' });
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  const cal = svc.getCropCalendar(cc, req.params.cropType);
+  if (!cal) return res.status(404).json({ error: 'No crop calendar found for this combination' });
   res.json(cal);
 });
 
 // Get storage defaults for a country + crop
 router.get('/:countryCode/storage/:cropType', (req, res) => {
-  res.json(svc.getStorageDefault(req.params.countryCode, req.params.cropType));
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  res.json(svc.getStorageDefault(cc, req.params.cropType));
 });
 
 // Get regions for a country
 router.get('/:countryCode/regions', (req, res) => {
-  res.json(svc.getRegionsForCountry(req.params.countryCode));
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  res.json(svc.getRegionsForCountry(cc));
 });
 
 // Get crops for a country
 router.get('/:countryCode/crops', (req, res) => {
-  res.json(svc.getCropsForCountry(req.params.countryCode));
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  res.json(svc.getCropsForCountry(cc));
 });
 
 export default router;

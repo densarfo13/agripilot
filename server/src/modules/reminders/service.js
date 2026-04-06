@@ -9,6 +9,11 @@ import { getRegionConfig } from '../regionConfig/service.js';
  * Schema uses: completed (Boolean), completedAt (DateTime?)
  */
 
+const VALID_REMINDER_TYPES = [
+  'fertilizing', 'weeding', 'spraying', 'irrigation', 'harvesting',
+  'storage_check', 'market_check', 'custom',
+];
+
 export async function createReminder(farmerId, data) {
   const farmer = await prisma.farmer.findUnique({ where: { id: farmerId } });
   if (!farmer) {
@@ -17,13 +22,29 @@ export async function createReminder(farmerId, data) {
     throw err;
   }
 
+  // Validate reminderType
+  const reminderType = data.reminderType || 'custom';
+  if (!VALID_REMINDER_TYPES.includes(reminderType)) {
+    const err = new Error(`Invalid reminderType. Must be one of: ${VALID_REMINDER_TYPES.join(', ')}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Validate dueDate is a valid date
+  const dueDate = new Date(data.dueDate);
+  if (isNaN(dueDate.getTime())) {
+    const err = new Error('Invalid dueDate — must be a valid date string');
+    err.statusCode = 400;
+    throw err;
+  }
+
   return prisma.reminder.create({
     data: {
       farmerId,
-      reminderType: data.reminderType || 'custom',
+      reminderType,
       title: data.title,
       message: data.message,
-      dueDate: new Date(data.dueDate),
+      dueDate,
       metadata: data.metadata || null,
     },
   });

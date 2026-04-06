@@ -42,118 +42,164 @@ export async function runIntelligence(applicationId) {
   }
 
   const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
+  const errors = []; // Collect non-fatal signal errors
 
   // ─── ML Shadow Score ────────────────────────────────
-  const features = [];
-  if (app.verificationResult) features.push(app.verificationResult.verificationScore / 100);
-  if (app.fraudResult) features.push(1 - app.fraudResult.fraudRiskScore / 100);
-  if (app.farmer.yearsExperience) features.push(Math.min(1, app.farmer.yearsExperience / 20));
-  if (app.farmSizeAcres) features.push(Math.min(1, app.farmSizeAcres / 50));
+  let mlShadowScore = null;
+  let mlShadowConfidence = 0.3;
+  try {
+    const features = [];
+    if (app.verificationResult) features.push(app.verificationResult.verificationScore / 100);
+    if (app.fraudResult) features.push(1 - app.fraudResult.fraudRiskScore / 100);
+    if (app.farmer.yearsExperience) features.push(Math.min(1, app.farmer.yearsExperience / 20));
+    if (app.farmSizeAcres) features.push(Math.min(1, app.farmSizeAcres / 50));
 
-  const mlShadowScore = features.length > 0
-    ? Math.round(features.reduce((a, b) => a + b, 0) / features.length * 100) / 100
-    : null;
-  const mlShadowConfidence = features.length >= 3 ? 0.7 + (features.length * 0.05) : 0.3 + (features.length * 0.1);
+    mlShadowScore = features.length > 0
+      ? Math.round(features.reduce((a, b) => a + b, 0) / features.length * 100) / 100
+      : null;
+    mlShadowConfidence = features.length >= 3 ? 0.7 + (features.length * 0.05) : 0.3 + (features.length * 0.1);
+  } catch (e) {
+    errors.push({ signal: 'mlShadow', error: e.message });
+    console.warn('[INTELLIGENCE] ML Shadow Score computation failed:', e.message);
+  }
 
   // ─── Satellite Signal ───────────────────────────────
-  const satelliteSignal = app.farmLocation ? {
-    hasLocation: true,
-    ndviEstimate: 0.4 + Math.random() * 0.4,
-    landUseClass: 'agricultural',
-    vegetationHealth: mlShadowScore > 0.6 ? 'healthy' : 'moderate',
-    lastUpdated: new Date().toISOString(),
-    note: 'Simulated satellite signal — replace with real API in production',
-  } : { hasLocation: false, note: 'No GPS data available for satellite analysis' };
+  let satelliteSignal = { hasLocation: false, note: 'Signal computation failed' };
+  try {
+    satelliteSignal = app.farmLocation ? {
+      hasLocation: true,
+      ndviEstimate: 0.4 + Math.random() * 0.4,
+      landUseClass: 'agricultural',
+      vegetationHealth: mlShadowScore > 0.6 ? 'healthy' : 'moderate',
+      lastUpdated: new Date().toISOString(),
+      note: 'Simulated satellite signal — replace with real API in production',
+    } : { hasLocation: false, note: 'No GPS data available for satellite analysis' };
+  } catch (e) {
+    errors.push({ signal: 'satellite', error: e.message });
+    console.warn('[INTELLIGENCE] Satellite signal failed:', e.message);
+  }
 
   // ─── Yield Signal ───────────────────────────────────
-  const peerApps = await prisma.application.count({
-    where: { cropType: app.cropType, farmer: { region: app.farmer.region } },
-  });
+  let yieldSignal = { note: 'Signal computation failed' };
+  try {
+    const peerApps = await prisma.application.count({
+      where: { cropType: app.cropType, farmer: { region: app.farmer.region } },
+    });
 
-  const yieldSignal = {
-    cropType: app.cropType,
-    region: app.farmer.region,
-    country: regionCfg.country,
-    peerCount: peerApps,
-    estimatedYieldPerAcre: getEstimatedYield(app.cropType),
-    confidenceLevel: peerApps > 5 ? 'moderate' : 'low',
-    note: 'Simulated yield signal — replace with agronomic data in production',
-  };
+    yieldSignal = {
+      cropType: app.cropType,
+      region: app.farmer.region,
+      country: regionCfg.country,
+      peerCount: peerApps,
+      estimatedYieldPerAcre: getEstimatedYield(app.cropType),
+      confidenceLevel: peerApps > 5 ? 'moderate' : 'low',
+      note: 'Simulated yield signal — replace with agronomic data in production',
+    };
+  } catch (e) {
+    errors.push({ signal: 'yield', error: e.message });
+    console.warn('[INTELLIGENCE] Yield signal failed:', e.message);
+  }
 
   // ─── Relationship Signal ────────────────────────────
-  const farmerAppCount = await prisma.application.count({ where: { farmerId: app.farmerId } });
-  const farmerApprovedCount = await prisma.application.count({
-    where: { farmerId: app.farmerId, status: 'approved' },
-  });
+  let relationshipSignal = { trustLevel: 'unknown', note: 'Signal computation failed' };
+  let farmerAppCount = 0;
+  try {
+    farmerAppCount = await prisma.application.count({ where: { farmerId: app.farmerId } });
+    const farmerApprovedCount = await prisma.application.count({
+      where: { farmerId: app.farmerId, status: 'approved' },
+    });
 
-  const relationshipSignal = {
-    totalApplications: farmerAppCount,
-    approvedApplications: farmerApprovedCount,
-    isRepeatBorrower: farmerAppCount > 1,
-    trustLevel: farmerApprovedCount > 0 ? 'established' : farmerAppCount > 1 ? 'developing' : 'new',
-  };
+    relationshipSignal = {
+      totalApplications: farmerAppCount,
+      approvedApplications: farmerApprovedCount,
+      isRepeatBorrower: farmerAppCount > 1,
+      trustLevel: farmerApprovedCount > 0 ? 'established' : farmerAppCount > 1 ? 'developing' : 'new',
+    };
+  } catch (e) {
+    errors.push({ signal: 'relationship', error: e.message });
+    console.warn('[INTELLIGENCE] Relationship signal failed:', e.message);
+  }
 
   // ─── Anomaly Signal ─────────────────────────────────
-  const anomalySignal = {
-    amountVsRegionAvg: null,
-    sizeVsClaimed: null,
-    flags: [],
-  };
+  let anomalySignal = { amountVsRegionAvg: null, sizeVsClaimed: null, flags: [] };
+  try {
+    const regionalAvg = await prisma.application.aggregate({
+      where: { farmer: { region: app.farmer.region }, id: { not: applicationId } },
+      _avg: { requestedAmount: true },
+    });
 
-  const regionalAvg = await prisma.application.aggregate({
-    where: { farmer: { region: app.farmer.region }, id: { not: applicationId } },
-    _avg: { requestedAmount: true },
-  });
-
-  if (regionalAvg._avg.requestedAmount) {
-    const ratio = app.requestedAmount / regionalAvg._avg.requestedAmount;
-    anomalySignal.amountVsRegionAvg = Math.round(ratio * 100) / 100;
-    if (ratio > 2.5) anomalySignal.flags.push('amount_significantly_above_regional_average');
-  }
-
-  if (app.farmBoundary?.measuredArea && app.farmSizeAcres) {
-    const sizeRatio = app.farmBoundary.measuredArea / app.farmSizeAcres;
-    anomalySignal.sizeVsClaimed = Math.round(sizeRatio * 100) / 100;
-    if (sizeRatio < 0.5 || sizeRatio > 2.0) {
-      anomalySignal.flags.push('measured_area_significantly_differs_from_claimed');
+    if (regionalAvg._avg.requestedAmount) {
+      const ratio = app.requestedAmount / regionalAvg._avg.requestedAmount;
+      anomalySignal.amountVsRegionAvg = Math.round(ratio * 100) / 100;
+      if (ratio > 2.5) anomalySignal.flags.push('amount_significantly_above_regional_average');
     }
+
+    if (app.farmBoundary?.measuredArea && app.farmSizeAcres) {
+      const sizeRatio = app.farmBoundary.measuredArea / app.farmSizeAcres;
+      anomalySignal.sizeVsClaimed = Math.round(sizeRatio * 100) / 100;
+      if (sizeRatio < 0.5 || sizeRatio > 2.0) {
+        anomalySignal.flags.push('measured_area_significantly_differs_from_claimed');
+      }
+    }
+  } catch (e) {
+    errors.push({ signal: 'anomaly', error: e.message });
+    console.warn('[INTELLIGENCE] Anomaly signal failed:', e.message);
   }
 
-  // ─── Crop Prediction Signal (NEW) ───────────────────
-  const cropPredictionSignal = {
-    cropType: app.cropType,
-    region: app.farmer.region,
-    country: regionCfg.country,
-    seasonOutlook: getSeasonOutlook(app.cropType, app.farmer.region),
-    expectedPerformance: mlShadowScore > 0.7 ? 'above_average' : mlShadowScore > 0.4 ? 'average' : 'below_average',
-    riskFactors: getCropRiskFactors(app.cropType),
-    note: 'Simulated crop prediction — replace with ML model in production',
-  };
+  // ─── Crop Prediction Signal ─────────────────────────
+  let cropPredictionSignal = { expectedPerformance: 'unknown', note: 'Signal computation failed' };
+  try {
+    cropPredictionSignal = {
+      cropType: app.cropType,
+      region: app.farmer.region,
+      country: regionCfg.country,
+      seasonOutlook: getSeasonOutlook(app.cropType, app.farmer.region),
+      expectedPerformance: mlShadowScore > 0.7 ? 'above_average' : mlShadowScore > 0.4 ? 'average' : 'below_average',
+      riskFactors: getCropRiskFactors(app.cropType),
+      note: 'Simulated crop prediction — replace with ML model in production',
+    };
+  } catch (e) {
+    errors.push({ signal: 'cropPrediction', error: e.message });
+    console.warn('[INTELLIGENCE] Crop prediction signal failed:', e.message);
+  }
 
-  // ─── Weather Signal (NEW) ──────────────────────────
-  const weatherSignal = {
-    region: app.farmer.region,
-    country: regionCfg.country,
-    currentSeason: getCurrentSeason(),
-    rainfallOutlook: 'normal',
-    droughtRisk: 'low',
-    floodRisk: app.farmLocation ? 'low' : 'unknown',
-    temperatureOutlook: 'within_range',
-    note: 'Simulated weather signal — replace with weather API in production',
-  };
+  // ─── Weather Signal ─────────────────────────────────
+  let weatherSignal = { droughtRisk: 'unknown', note: 'Signal computation failed' };
+  try {
+    const season = getCurrentSeasonLocal();
+    weatherSignal = {
+      region: app.farmer.region,
+      country: regionCfg.country,
+      currentSeason: season,
+      rainfallOutlook: 'normal',
+      droughtRisk: 'low',
+      floodRisk: app.farmLocation ? 'low' : 'unknown',
+      temperatureOutlook: 'within_range',
+      note: 'Simulated weather signal — replace with weather API in production',
+    };
+  } catch (e) {
+    errors.push({ signal: 'weather', error: e.message });
+    console.warn('[INTELLIGENCE] Weather signal failed:', e.message);
+  }
 
-  // ─── Market Signal (NEW) ───────────────────────────
-  const marketSignal = {
-    cropType: app.cropType,
-    country: regionCfg.country,
-    currency: regionCfg.currencyCode,
-    priceOutlook: 'stable',
-    demandLevel: getCropDemandLevel(app.cropType),
-    exportPotential: getExportPotential(app.cropType, app.farmer.countryCode),
-    note: 'Simulated market signal — replace with market data API in production',
-  };
+  // ─── Market Signal ──────────────────────────────────
+  let marketSignal = { priceOutlook: 'unknown', demandLevel: 'unknown', note: 'Signal computation failed' };
+  try {
+    marketSignal = {
+      cropType: app.cropType,
+      country: regionCfg.country,
+      currency: regionCfg.currencyCode,
+      priceOutlook: 'stable',
+      demandLevel: getCropDemandLevel(app.cropType),
+      exportPotential: getExportPotential(app.cropType, app.farmer.countryCode),
+      note: 'Simulated market signal — replace with market data API in production',
+    };
+  } catch (e) {
+    errors.push({ signal: 'market', error: e.message });
+    console.warn('[INTELLIGENCE] Market signal failed:', e.message);
+  }
 
-  // ─── Chatbot Signal (NEW) ──────────────────────────
+  // ─── Chatbot Signal ─────────────────────────────────
   const chatbotSignal = {
     farmerEngagement: farmerAppCount > 1 ? 'active' : 'new',
     queriesCount: 0,
@@ -162,37 +208,55 @@ export async function runIntelligence(applicationId) {
     note: 'Placeholder — will be populated when chatbot is integrated',
   };
 
-  // ─── Analytics Signal (NEW) ────────────────────────
-  const totalApps = await prisma.application.count();
-  const approvedApps = await prisma.application.count({ where: { status: 'approved' } });
-  const analyticsSignal = {
-    portfolioApprovalRate: totalApps > 0 ? Math.round((approvedApps / totalApps) * 100) : 0,
-    cropConcentration: await getCropConcentration(app.cropType),
-    regionConcentration: await getRegionConcentration(app.farmer.region),
-    note: 'Portfolio-level analytics context for this application',
-  };
+  // ─── Analytics Signal ───────────────────────────────
+  let analyticsSignal = { note: 'Signal computation failed' };
+  try {
+    const totalApps = await prisma.application.count();
+    const approvedApps = await prisma.application.count({ where: { status: 'approved' } });
+    analyticsSignal = {
+      portfolioApprovalRate: totalApps > 0 ? Math.round((approvedApps / totalApps) * 100) : 0,
+      cropConcentration: await getCropConcentration(app.cropType),
+      regionConcentration: await getRegionConcentration(app.farmer.region),
+      note: 'Portfolio-level analytics context for this application',
+    };
+  } catch (e) {
+    errors.push({ signal: 'analytics', error: e.message });
+    console.warn('[INTELLIGENCE] Analytics signal failed:', e.message);
+  }
 
-  // ─── Storage Signal (NEW) ─────────────────────────
-  const storageSignal = {
-    cropType: app.cropType,
-    recommendedStorage: getStorageRecommendation(app.cropType),
-    postHarvestLossRisk: getPostHarvestLossRisk(app.cropType),
-    storageAvailability: 'unknown',
-    note: 'Simulated storage signal — replace with real storage data in production',
-  };
+  // ─── Storage Signal ──────────────────────────────────
+  let storageSignal = { postHarvestLossRisk: 'unknown', note: 'Signal computation failed' };
+  try {
+    storageSignal = {
+      cropType: app.cropType,
+      recommendedStorage: getStorageRecommendation(app.cropType),
+      postHarvestLossRisk: getPostHarvestLossRisk(app.cropType),
+      storageAvailability: 'unknown',
+      note: 'Simulated storage signal — replace with real storage data in production',
+    };
+  } catch (e) {
+    errors.push({ signal: 'storage', error: e.message });
+    console.warn('[INTELLIGENCE] Storage signal failed:', e.message);
+  }
 
-  // ─── Buyer Signal (NEW) ───────────────────────────
-  const buyerInterestCount = await prisma.buyerInterest.count({
-    where: { cropType: app.cropType, status: 'active' },
-  });
+  // ─── Buyer Signal ────────────────────────────────────
+  let buyerSignal = { demandLevel: 'unknown', note: 'Signal computation failed' };
+  try {
+    const buyerInterestCount = await prisma.buyerInterest.count({
+      where: { cropType: app.cropType, status: { not: 'withdrawn' } },
+    });
 
-  const buyerSignal = {
-    cropType: app.cropType,
-    region: app.farmer.region,
-    activeBuyerInterests: buyerInterestCount,
-    demandLevel: buyerInterestCount > 5 ? 'high' : buyerInterestCount > 0 ? 'moderate' : 'low',
-    note: 'Based on expressed buyer interest in the platform',
-  };
+    buyerSignal = {
+      cropType: app.cropType,
+      region: app.farmer.region,
+      activeBuyerInterests: buyerInterestCount,
+      demandLevel: buyerInterestCount > 5 ? 'high' : buyerInterestCount > 0 ? 'moderate' : 'low',
+      note: 'Based on expressed buyer interest in the platform',
+    };
+  } catch (e) {
+    errors.push({ signal: 'buyer', error: e.message });
+    console.warn('[INTELLIGENCE] Buyer signal failed:', e.message);
+  }
 
   // ─── Upsert result ────────────────────────────────
   const result = await prisma.intelligenceResult.upsert({
@@ -227,9 +291,20 @@ export async function runIntelligence(applicationId) {
   };
 
   await Promise.all([
-    injectVerificationSummary(applicationId, summary),
-    injectFraudSummary(applicationId, summary),
+    injectVerificationSummary(applicationId, summary).catch(e => {
+      errors.push({ signal: 'injectVerification', error: e.message });
+      console.warn('[INTELLIGENCE] Failed to inject verification summary:', e.message);
+    }),
+    injectFraudSummary(applicationId, summary).catch(e => {
+      errors.push({ signal: 'injectFraud', error: e.message });
+      console.warn('[INTELLIGENCE] Failed to inject fraud summary:', e.message);
+    }),
   ]);
+
+  // Attach non-fatal errors to result for transparency
+  if (errors.length > 0) {
+    result.signalErrors = errors;
+  }
 
   return result;
 }
@@ -270,7 +345,7 @@ function getCropRiskFactors(cropType) {
   return risks[cropType?.toLowerCase()] || ['general_pest_risk', 'weather_variability'];
 }
 
-function getCurrentSeason() {
+function getCurrentSeasonLocal() {
   const month = new Date().getMonth();
   if (month >= 2 && month <= 5) return 'long_rains';
   if (month >= 9 && month <= 11) return 'short_rains';

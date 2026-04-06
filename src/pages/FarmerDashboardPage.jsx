@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import api from '../api/client.js';
+import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -97,7 +98,7 @@ export default function FarmerDashboardPage() {
                 <h4 style={{ margin: '0 0 0.75rem' }}>Current Season</h4>
                 <div style={styles.detailRow}>
                   <span>Stage</span>
-                  <span style={{ textTransform: 'capitalize', fontWeight: 500 }}>{lifecycle.currentStage?.replace(/_/g, ' ')}</span>
+                  <span style={{ fontWeight: 500 }}>{tLifecycleStage(lifecycle.currentStage)}</span>
                 </div>
                 {lifecycle.cropType && (
                   <div style={styles.detailRow}>
@@ -121,7 +122,7 @@ export default function FarmerDashboardPage() {
                 {profile.applications.map(app => (
                   <div key={app.id} style={styles.detailRow}>
                     <span>{app.cropType}</span>
-                    <span style={{ textTransform: 'capitalize' }}>{app.status.replace(/_/g, ' ')}</span>
+                    <span>{tStatus(app.status)}</span>
                   </div>
                 ))}
               </div>

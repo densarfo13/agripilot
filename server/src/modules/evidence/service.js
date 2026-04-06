@@ -1,6 +1,8 @@
 import prisma from '../../config/database.js';
 import crypto from 'crypto';
 import fs from 'fs';
+import path from 'path';
+import { sanitizeFilename } from '../../middleware/validate.js';
 
 export async function uploadEvidence(applicationId, file, type) {
   // Verify application exists
@@ -18,16 +20,32 @@ export async function uploadEvidence(applicationId, file, type) {
     photoHash = crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
+  // Check for duplicate file uploads
+  if (photoHash) {
+    const duplicates = await checkDuplicateHash(photoHash);
+    if (duplicates.length > 0) {
+      const dupInfo = duplicates.map((d) => `app:${d.applicationId}`).join(', ');
+      console.warn(`[EVIDENCE] Duplicate file hash detected. Existing in: ${dupInfo}`);
+      // Allow upload but flag it in metadata
+    }
+  }
+
+  // Sanitize original filename before storing
+  const safeOriginalName = sanitizeFilename(file.originalname);
+
   return prisma.evidenceFile.create({
     data: {
       applicationId,
       type: type || 'other',
       filename: file.filename,
-      originalName: file.originalname,
+      originalName: safeOriginalName,
       mimeType: file.mimetype,
       sizeBytes: file.size,
       url: `/uploads/${file.filename}`,
       photoHash,
+      metadata: photoHash && (await checkDuplicateHash(photoHash)).length > 1
+        ? { duplicateWarning: true }
+        : undefined,
     },
   });
 }
@@ -46,6 +64,18 @@ export async function deleteEvidence(evidenceId) {
     err.statusCode = 404;
     throw err;
   }
+
+  // Delete the physical file from disk
+  try {
+    const filePath = path.join(process.cwd(), evidence.url);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (fsErr) {
+    console.warn(`[EVIDENCE] Failed to delete file from disk: ${fsErr.message}`);
+    // Continue with DB deletion even if file removal fails
+  }
+
   return prisma.evidenceFile.delete({ where: { id: evidenceId } });
 }
 

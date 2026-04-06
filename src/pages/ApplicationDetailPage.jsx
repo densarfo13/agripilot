@@ -90,7 +90,10 @@ export default function ApplicationDetailPage() {
     workflowActions.push({ key: 'escalate', label: 'Escalate', cls: 'btn-warning', needsReason: true });
     workflowActions.push({ key: 'request-evidence', label: 'Request Evidence', cls: 'btn-outline', needsReason: true });
   }
-  if (['rejected', 'needs_more_evidence', 'escalated', 'on_hold'].includes(app.status) && isAdmin) {
+  if (['approved', 'conditional_approved'].includes(app.status) && isAdmin) {
+    workflowActions.push({ key: 'disburse', label: 'Disburse', cls: 'btn-success', needsReason: false });
+  }
+  if (['rejected', 'needs_more_evidence', 'escalated', 'fraud_hold'].includes(app.status) && isAdmin) {
     workflowActions.push({ key: 'reopen', label: 'Reopen', cls: 'btn-outline', needsReason: false });
   }
 

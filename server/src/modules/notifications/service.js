@@ -24,10 +24,19 @@ export async function listNotifications(farmerId, filters = {}) {
   if (filters.read !== undefined) where.read = filters.read === 'true';
   if (filters.type) where.notificationType = filters.type;
 
+  // Bound limit: min 1, max 200, default 50
+  let take = 50;
+  if (filters.limit) {
+    const parsed = parseInt(filters.limit, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      take = Math.min(parsed, 200);
+    }
+  }
+
   return prisma.farmerNotification.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    take: filters.limit ? parseInt(filters.limit) : 50,
+    take,
   });
 }
 

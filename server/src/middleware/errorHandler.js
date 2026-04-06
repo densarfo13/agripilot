@@ -1,17 +1,41 @@
+import { config } from '../config/index.js';
+
 /**
  * Global error handler middleware.
+ * Never exposes stack traces in production.
  */
-export function errorHandler(err, req, res, next) {
+export function errorHandler(err, req, res, _next) {
+  // Log error server-side always
   console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
-
-  if (process.env.NODE_ENV === 'development') {
+  if (!config.isProduction) {
     console.error(err.stack);
   }
 
+  // Prisma known-error handling
+  if (err.code === 'P2002') {
+    return res.status(409).json({ error: 'A record with that value already exists' });
+  }
+  if (err.code === 'P2025') {
+    return res.status(404).json({ error: 'Record not found' });
+  }
+  if (err.code === 'P2003') {
+    return res.status(400).json({ error: 'Related record not found (foreign key constraint)' });
+  }
+
+  // Multer file size error
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: `File too large. Maximum size is ${config.upload.maxFileSizeMB}MB` });
+  }
+
   const statusCode = err.statusCode || 500;
+  const message = statusCode === 500 && config.isProduction
+    ? 'Internal server error'
+    : err.message || 'Internal server error';
+
   res.status(statusCode).json({
-    error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    error: message,
+    // Only include stack in non-production AND for non-500 errors or explicitly
+    ...(!config.isProduction && { stack: err.stack }),
   });
 }
 

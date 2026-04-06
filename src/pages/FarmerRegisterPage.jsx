@@ -35,8 +35,8 @@ export default function FarmerRegisterPage() {
     if (form.password !== form.confirmPassword) {
       return setError('Passwords do not match');
     }
-    if (form.password.length < 6) {
-      return setError('Password must be at least 6 characters');
+    if (form.password.length < 8) {
+      return setError('Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number');
     }
 
     setLoading(true);
@@ -104,8 +104,8 @@ export default function FarmerRegisterPage() {
           <input style={styles.input} placeholder="Email Address *" required value={form.email} onChange={set('email')} type="email" />
 
           <div style={styles.row}>
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Password *" required value={form.password} onChange={set('password')} type="password" minLength={6} />
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Confirm Password *" required value={form.confirmPassword} onChange={set('confirmPassword')} type="password" minLength={6} />
+            <input style={{ ...styles.input, flex: 1 }} placeholder="Password *" required value={form.password} onChange={set('password')} type="password" minLength={8} />
+            <input style={{ ...styles.input, flex: 1 }} placeholder="Confirm Password *" required value={form.confirmPassword} onChange={set('confirmPassword')} type="password" minLength={8} />
           </div>
 
           <div style={styles.sectionLabel}>Location</div>
