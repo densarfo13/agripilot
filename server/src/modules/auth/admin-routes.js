@@ -61,7 +61,7 @@ router.patch('/:id/reset-password', authorize('super_admin'), asyncHandler(async
   }
 
   const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
-  await writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } });
+  writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } }).catch(() => {});
   res.json(result);
 }));
 
