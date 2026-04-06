@@ -42,10 +42,16 @@ async function main() {
 
   // ─── Users ────────────────────────────────────────────
   console.log('Creating users...');
-  // Demo passwords — change before production use
-  const adminHash = await bcrypt.hash('AgriAdmin#2026', 10);
-  const staffHash = await bcrypt.hash('AgriStaff#2026', 10);
-  const viewerHash = await bcrypt.hash('AgriView#2026', 10);
+  // Seed passwords from env vars — NEVER use defaults in a shared/public environment
+  const seedAdminPw = process.env.SEED_ADMIN_PASSWORD || 'AgriAdmin#2026';
+  const seedStaffPw = process.env.SEED_STAFF_PASSWORD || 'AgriStaff#2026';
+  const seedViewerPw = process.env.SEED_VIEWER_PASSWORD || 'AgriView#2026';
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.warn('[SEED] WARNING: Using default seed passwords. Set SEED_ADMIN_PASSWORD, SEED_STAFF_PASSWORD, SEED_VIEWER_PASSWORD env vars for security.');
+  }
+  const adminHash = await bcrypt.hash(seedAdminPw, 10);
+  const staffHash = await bcrypt.hash(seedStaffPw, 10);
+  const viewerHash = await bcrypt.hash(seedViewerPw, 10);
   const passwordHash = staffHash; // default for backward compat
 
   const superAdmin = await prisma.user.create({

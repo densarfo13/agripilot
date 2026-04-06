@@ -76,9 +76,14 @@ export default function FarmerMarketTab() {
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
+      {/* Advisory disclaimer */}
+      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#92400e' }}>
+        <strong>Advisory only:</strong> Prices shown are estimated ranges for general guidance. They are not live market prices. Always verify current prices with local buyers before making selling decisions.
+      </div>
+
       {/* Market prices */}
       <div className="card" style={{ marginBottom: '1.25rem' }}>
-        <div className="card-header">Market Price Guidance ({country})</div>
+        <div className="card-header">Estimated Price Ranges ({country})</div>
         <div className="card-body" style={{ padding: 0 }}>
           {Array.isArray(prices) && prices.length > 0 ? (
             <div className="table-wrap">
@@ -158,6 +163,7 @@ export default function FarmerMarketTab() {
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
           My Selling Interests
+          <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 400 }}>Tracked for demand analysis — not a marketplace</span>
           <button className="btn btn-primary btn-sm" onClick={() => setShowInterest(!showInterest)}>
             {showInterest ? 'Cancel' : '+ Express Interest'}
           </button>

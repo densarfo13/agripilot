@@ -2,7 +2,15 @@
  * Frontend i18n utility
  * Fetches translations from the backend and provides a translate function.
  * Uses localStorage to cache translations and remember language preference.
+ *
+ * Translations are loaded at app startup (App.jsx) and on language switch.
+ * All t*() functions return fallback English if translations haven't loaded.
  */
+
+// Detect Capacitor native platform for correct API base URL
+const cap = typeof window !== 'undefined' && window.Capacitor;
+const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
+const API_BASE = isNative ? 'https://agripilot.onrender.com/api' : '/api';
 
 let currentLang = localStorage.getItem('agripilot_lang') || 'en';
 let translations = {};
@@ -20,13 +28,14 @@ export async function setLang(lang) {
 
 export async function loadTranslations(lang = currentLang) {
   try {
-    const resp = await fetch(`/api/localization/translations/${lang}`);
+    const resp = await fetch(`${API_BASE}/localization/translations/${lang}`);
     if (resp.ok) {
       translations = await resp.json();
       loaded = true;
     }
   } catch (e) {
-    console.warn('Failed to load translations:', e);
+    console.warn('[i18n] Failed to load translations:', e);
+    // Fallbacks in each t*() function will handle this gracefully
   }
 }
 

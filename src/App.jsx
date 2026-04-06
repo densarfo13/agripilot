@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore.js';
+import { loadTranslations, getCurrentLang } from './utils/i18n.js';
 
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -38,6 +39,14 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    loadTranslations(getCurrentLang())
+      .then(() => setI18nReady(true))
+      .catch(() => setI18nReady(true)); // proceed even if translations fail — fallbacks work
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

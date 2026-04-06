@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import api from '../api/client.js';
-import { tLifecycleStage, tStatus } from '../utils/i18n.js';
+import { tLifecycleStage, tStatus, getCurrentLang, setLang } from '../utils/i18n.js';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -15,6 +15,14 @@ export default function FarmerDashboardPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const [lang, setCurrentLang] = useState(getCurrentLang());
+
+  const switchLang = async (newLang) => {
+    await setLang(newLang);
+    setCurrentLang(newLang);
+    window.location.reload(); // reload to apply translations across all components
+  };
 
   const isPending = user?.registrationStatus === 'pending_approval';
   const isRejected = user?.registrationStatus === 'rejected';
@@ -32,9 +40,21 @@ export default function FarmerDashboardPage() {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.brand}>AgriPilot</h1>
-        <button onClick={() => { logout(); window.location.href = '/login'; }} style={styles.logoutBtn}>
-          Sign Out
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button
+              onClick={() => switchLang('en')}
+              style={{ ...styles.langBtn, fontWeight: lang === 'en' ? 700 : 400, color: lang === 'en' ? '#2563eb' : '#666' }}
+            >EN</button>
+            <button
+              onClick={() => switchLang('sw')}
+              style={{ ...styles.langBtn, fontWeight: lang === 'sw' ? 700 : 400, color: lang === 'sw' ? '#2563eb' : '#666' }}
+            >SW</button>
+          </div>
+          <button onClick={() => { logout(); window.location.href = '/login'; }} style={styles.logoutBtn}>
+            Sign Out
+          </button>
+        </div>
       </div>
 
       <div style={styles.content}>
@@ -159,6 +179,10 @@ const styles = {
   logoutBtn: {
     padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #d1d5db',
     borderRadius: '6px', cursor: 'pointer', color: '#666', fontSize: '0.85rem',
+  },
+  langBtn: {
+    padding: '0.3rem 0.6rem', background: 'transparent', border: '1px solid #d1d5db',
+    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem',
   },
   content: { maxWidth: '600px', margin: '2rem auto', padding: '0 1rem' },
   welcome: { marginBottom: '1.5rem' },
