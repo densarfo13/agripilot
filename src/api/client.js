@@ -6,11 +6,12 @@ import { useAuthStore } from '../store/authStore.js';
 const cap = typeof window !== 'undefined' && window.Capacitor;
 const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
 
-// On native (Android/iOS), API calls must go to the server over LAN.
+// On native (Android/iOS), API calls must go to the server's full URL.
 // On web, relative '/api' works via Vite proxy or Express production serving.
+// VITE_API_URL can be set at build time for native or custom deployments.
 const API_BASE = isNative
-  ? 'https://agripilot.onrender.com/api'
-  : '/api';
+  ? (import.meta.env.VITE_API_URL || 'https://agripilot.onrender.com/api')
+  : (import.meta.env.VITE_API_URL || '/api');
 
 const api = axios.create({
   baseURL: API_BASE,

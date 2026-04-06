@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
-
-const ROLES = ['super_admin', 'institutional_admin', 'reviewer', 'field_officer', 'investor_viewer'];
+import { INSTITUTIONAL_ROLES } from '../utils/roles.js';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
@@ -11,9 +10,11 @@ export default function AdminUsersPage() {
   const currentUser = useAuthStore(s => s.user);
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
+  const [actionError, setActionError] = useState('');
+
   const load = () => {
     setLoading(true);
-    api.get('/users').then(r => setUsers(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get('/users').then(r => { setUsers(r.data); setActionError(''); }).catch(() => setActionError('Failed to load users')).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -21,11 +22,12 @@ export default function AdminUsersPage() {
   const [resetTarget, setResetTarget] = useState(null);
 
   const toggleActive = async (userId) => {
+    setActionError('');
     try {
       await api.patch(`/users/${userId}/toggle-active`);
       load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to update user');
+      setActionError(err.response?.data?.error || 'Failed to update user');
     }
   };
 
@@ -36,6 +38,7 @@ export default function AdminUsersPage() {
         {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New User</button>}
       </div>
       <div className="page-body">
+        {actionError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{actionError}</div>}
         {loading ? <div className="loading">Loading...</div> : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>
@@ -163,7 +166,7 @@ function CreateUserModal({ onClose, onCreated }) {
             <div className="form-group">
               <label className="form-label">Role</label>
               <select className="form-select" value={form.role} onChange={set('role')}>
-                {ROLES.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
+                {INSTITUTIONAL_ROLES.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
           </div>

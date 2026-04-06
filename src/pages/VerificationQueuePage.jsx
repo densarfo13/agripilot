@@ -7,6 +7,7 @@ export default function VerificationQueuePage() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scoring, setScoring] = useState({});
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const load = async () => {
@@ -22,7 +23,7 @@ export default function VerificationQueuePage() {
       ].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setApps(all);
     } catch {
-      // ignore
+      setError('Failed to load verification queue');
     } finally {
       setLoading(false);
     }
@@ -37,7 +38,7 @@ export default function VerificationQueuePage() {
       await api.post(`/applications/${appId}/score-verification`);
       await load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Verification scoring failed');
+      setError(err.response?.data?.error || 'Verification scoring failed');
     } finally {
       setScoring(s => ({ ...s, [appId]: false }));
     }
@@ -73,6 +74,7 @@ export default function VerificationQueuePage() {
         </div>
       </div>
       <div className="page-body">
+        {error && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
         {loading ? <div className="loading">Loading...</div> : apps.length === 0 ? (
           <div className="card"><div className="card-body"><div className="empty-state">No applications awaiting verification</div></div></div>
         ) : (

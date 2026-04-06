@@ -4,6 +4,7 @@ import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
 import { useAuthStore } from '../store/authStore.js';
+import { ADMIN_ROLES, REVIEW_ROLES } from '../utils/roles.js';
 
 export default function ApplicationDetailPage() {
   const { id } = useParams();
@@ -15,10 +16,11 @@ export default function ApplicationDetailPage() {
   const [noteText, setNoteText] = useState('');
   const [actionModal, setActionModal] = useState(null); // {type, title}
   const [actionReason, setActionReason] = useState('');
+  const [actionAmount, setActionAmount] = useState('');
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
-  const isAdmin = ['super_admin', 'institutional_admin'].includes(user?.role);
-  const canRunEngines = ['super_admin', 'institutional_admin', 'reviewer'].includes(user?.role);
+  const isAdmin = ADMIN_ROLES.includes(user?.role);
+  const canRunEngines = REVIEW_ROLES.includes(user?.role);
 
   const reload = useCallback(() => {
     api.get(`/applications/${id}`).then(r => setApp(r.data)).catch(() => navigate('/applications'));
@@ -83,7 +85,7 @@ export default function ApplicationDetailPage() {
   const workflowActions = [];
   if (app.status === 'draft') workflowActions.push({ key: 'submit', label: 'Submit', cls: 'btn-primary', needsReason: false });
   if (['under_review', 'escalated'].includes(app.status) && canRunEngines) {
-    workflowActions.push({ key: 'approve', label: 'Approve', cls: 'btn-success', needsReason: false });
+    workflowActions.push({ key: 'approve', label: 'Approve', cls: 'btn-success', needsReason: true });
     workflowActions.push({ key: 'reject', label: 'Reject', cls: 'btn-danger', needsReason: true });
   }
   if (app.status === 'under_review' && canRunEngines) {
@@ -113,7 +115,16 @@ export default function ApplicationDetailPage() {
         <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
           {workflowActions.map(a => (
             <button key={a.key} className={`btn btn-sm ${a.cls}`} disabled={!!actionLoading}
-              onClick={() => a.needsReason ? setActionModal({ type: a.key, title: a.label }) : runWorkflowAction(a.key)}>
+              onClick={() => {
+                if (a.needsReason) {
+                  setActionModal({ type: a.key, title: a.label });
+                  setActionReason('');
+                  // Pre-fill recommended amount from decision engine for approve action
+                  setActionAmount(a.key === 'approve' && app.decisionResult?.recommendedAmount ? String(app.decisionResult.recommendedAmount) : '');
+                } else {
+                  runWorkflowAction(a.key);
+                }
+              }}>
               {actionLoading === a.key ? '...' : a.label}
             </button>
           ))}
@@ -169,11 +180,24 @@ export default function ApplicationDetailPage() {
                 <label className="form-label">Reason {actionModal.type === 'reject' ? '(required)' : '(optional)'}</label>
                 <textarea className="form-textarea" rows={3} value={actionReason} onChange={e => setActionReason(e.target.value)} placeholder="Enter reason..." />
               </div>
+              {actionModal.type === 'approve' && (
+                <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                  <label className="form-label">Approved Amount ({currency})</label>
+                  <input className="form-input" type="number" step="0.01" min="0" value={actionAmount} onChange={e => setActionAmount(e.target.value)} placeholder={`Requested: ${app.requestedAmount?.toLocaleString()}`} />
+                  <div className="text-sm text-muted" style={{ marginTop: '0.25rem' }}>
+                    Leave blank to approve full requested amount.
+                    {app.decisionResult?.recommendedAmount && ` Engine recommended: ${currency} ${app.decisionResult.recommendedAmount.toLocaleString()}`}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setActionModal(null)}>Cancel</button>
               <button className="btn btn-primary" disabled={!!actionLoading || (actionModal.type === 'reject' && !actionReason.trim())}
-                onClick={() => runWorkflowAction(actionModal.type, { reason: actionReason })}>
+                onClick={() => runWorkflowAction(actionModal.type, {
+                  reason: actionReason,
+                  ...(actionModal.type === 'approve' && actionAmount ? { recommendedAmount: parseFloat(actionAmount) } : {}),
+                })}>
                 {actionLoading ? '...' : `Confirm ${actionModal.title}`}
               </button>
             </div>
@@ -194,6 +218,7 @@ function OverviewTab({ app, currency }) {
           <div className="detail-row"><span className="detail-label">Crop Type</span><span className="detail-value">{app.cropType}</span></div>
           <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{app.farmSizeAcres} acres</span></div>
           <div className="detail-row"><span className="detail-label">Requested Amount</span><span className="detail-value">{currency} {app.requestedAmount?.toLocaleString()}</span></div>
+          {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#16a34a' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
           <div className="detail-row"><span className="detail-label">Purpose</span><span className="detail-value">{app.purpose || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value">{app.season || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Created By</span><span className="detail-value">{app.createdBy?.fullName}</span></div>
@@ -212,10 +237,18 @@ function OverviewTab({ app, currency }) {
       </div>
       {app.decisionResult && (
         <div className="card" style={{ gridColumn: '1 / -1' }}>
-          <div className="card-header">Decision Result</div>
+          <div className="card-header">Decision Engine Recommendation</div>
           <div className="card-body">
+            {/* Banner when decision recommends approval but status is still under_review */}
+            {['approve', 'conditional_approve'].includes(app.decisionResult.decision) && app.status === 'under_review' && (
+              <div className="alert alert-info" style={{ marginBottom: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af' }}>
+                <strong>Human review required:</strong> The decision engine recommends <em>{app.decisionResult.decisionLabel}</em>
+                {app.decisionResult.recommendedAmount && <> for {currency} {app.decisionResult.recommendedAmount.toLocaleString()}</>}.
+                Use the <strong>Approve</strong> or <strong>Reject</strong> button above to finalize.
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem' }}>
-              <div><div className="stat-label">Decision</div><StatusBadge value={app.decisionResult.decision} /></div>
+              <div><div className="stat-label">Recommendation</div><StatusBadge value={app.decisionResult.decision} /></div>
               <div><div className="stat-label">Risk Level</div><StatusBadge value={app.decisionResult.riskLevel} /></div>
               {app.decisionResult.recommendedAmount && <div><div className="stat-label">Recommended Amount</div><div style={{ fontWeight: 700 }}>{currency} {app.decisionResult.recommendedAmount.toLocaleString()}</div></div>}
             </div>

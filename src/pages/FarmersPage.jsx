@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import { CREATOR_ROLES } from '../utils/roles.js';
 
 export default function FarmersPage() {
   const [farmers, setFarmers] = useState([]);
@@ -9,16 +10,17 @@ export default function FarmersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
-  const canCreate = ['super_admin', 'institutional_admin', 'field_officer'].includes(user?.role);
+  const canCreate = CREATOR_ROLES.includes(user?.role);
 
   const load = (p = page, s = search) => {
     setLoading(true);
     api.get('/farmers', { params: { page: p, limit: 20, search: s || undefined } })
-      .then(r => { setFarmers(r.data.farmers); setTotal(r.data.total); })
-      .catch(() => {})
+      .then(r => { setFarmers(r.data.farmers); setTotal(r.data.total); setLoadError(''); })
+      .catch(() => setLoadError('Failed to load farmers list'))
       .finally(() => setLoading(false));
   };
 
@@ -43,6 +45,7 @@ export default function FarmersPage() {
         </div>
       </div>
       <div className="page-body">
+        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError}</div>}
         {loading ? <div className="loading">Loading...</div> : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>

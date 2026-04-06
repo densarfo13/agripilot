@@ -12,8 +12,13 @@ services:
     region: oregon
     env: node
     buildCommand: npm ci --include=dev && npx vite build && cd server && npm ci && npx prisma generate
-    startCommand: cd server && npx prisma db push --skip-generate --accept-data-loss && node src/server.js
+    startCommand: cd server && npx prisma db push --skip-generate && node src/server.js
     healthCheckPath: /api/health
+    # Persistent disk for evidence file uploads (requires paid plan)
+    # disk:
+    #   name: agripilot-uploads
+    #   mountPath: /app/server/uploads
+    #   sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production

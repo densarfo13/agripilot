@@ -42,16 +42,18 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
   res.status(201).json(app);
 }));
 
-// List applications
+// List applications (scoped: reviewers see only assigned, field officers see only assigned)
 router.get('/', asyncHandler(async (req, res) => {
   const { status, farmerId, search } = req.query;
   let assignedReviewerId;
+  let assignedFieldOfficerId;
   if (req.user.role === 'reviewer') assignedReviewerId = req.user.sub;
+  if (req.user.role === 'field_officer') assignedFieldOfficerId = req.user.sub;
 
   const result = await appService.listApplications({
     page: parsePositiveInt(req.query.page, 1, 1000),
     limit: parsePositiveInt(req.query.limit, 20, 100),
-    status, farmerId, search, assignedReviewerId,
+    status, farmerId, search, assignedReviewerId, assignedFieldOfficerId,
   });
   res.json(result);
 }));
@@ -228,8 +230,8 @@ router.post('/:id/score-decision', validateParamUUID('id'), authorize('super_adm
   writeAuditLog({
     applicationId: req.params.id, userId: req.user.sub,
     action: 'decision_engine_run',
-    details: { decision: result.decision, riskLevel: result.riskLevel },
-    newStatus: result.decision === 'approve' ? 'approved' : result.decision === 'reject' ? 'rejected' : null,
+    details: { decision: result.decision, riskLevel: result.riskLevel, recommendedAmount: result.recommendedAmount },
+    newStatus: result.decision === 'reject' ? 'rejected' : result.decision === 'escalate' ? 'escalated' : null,
     ipAddress: req.ip,
   }).catch(() => {});
   res.json(result);

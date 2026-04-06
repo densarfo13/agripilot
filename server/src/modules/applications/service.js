@@ -55,6 +55,10 @@ export async function createApplication(data, userId) {
     throw err;
   }
 
+  // Determine currency: explicit value > farmer country > default KES
+  const COUNTRY_CURRENCY = { TZ: 'TZS', KE: 'KES' };
+  const currencyCode = data.currencyCode || COUNTRY_CURRENCY[farmer.countryCode] || 'KES';
+
   return prisma.application.create({
     data: {
       farmerId: data.farmerId,
@@ -64,17 +68,18 @@ export async function createApplication(data, userId) {
       requestedAmount: parseFloat(data.requestedAmount),
       purpose: data.purpose || null,
       season: data.season || null,
-      currencyCode: data.currencyCode || farmer.countryCode === 'TZ' ? 'TZS' : 'KES',
+      currencyCode,
     },
     include: FULL_INCLUDE,
   });
 }
 
-export async function listApplications({ page = 1, limit = 20, status, farmerId, search, assignedReviewerId }) {
+export async function listApplications({ page = 1, limit = 20, status, farmerId, search, assignedReviewerId, assignedFieldOfficerId }) {
   const where = {};
   if (status) where.status = status;
   if (farmerId) where.farmerId = farmerId;
   if (assignedReviewerId) where.assignedReviewerId = assignedReviewerId;
+  if (assignedFieldOfficerId) where.assignedFieldOfficerId = assignedFieldOfficerId;
   if (search) {
     where.OR = [
       { farmer: { fullName: { contains: search, mode: 'insensitive' } } },
@@ -165,9 +170,16 @@ export async function approveApplication(id, userId, { reason, recommendedAmount
   const app = await getApplicationById(id);
   validateTransition(app.status, 'approved');
 
+  const updateData = { status: 'approved' };
+  // Persist recommended amount (from decision engine or manual override)
+  if (recommendedAmount !== undefined && recommendedAmount !== null) {
+    const parsed = parseFloat(recommendedAmount);
+    if (!isNaN(parsed) && parsed > 0) updateData.recommendedAmount = parsed;
+  }
+
   const updated = await prisma.application.update({
     where: { id },
-    data: { status: 'approved' },
+    data: updateData,
     include: FULL_INCLUDE,
   });
 
@@ -321,6 +333,11 @@ export async function assignFieldOfficer(applicationId, officerId) {
   if (!officer) {
     const err = new Error('Field officer not found');
     err.statusCode = 404;
+    throw err;
+  }
+  if (!['field_officer', 'institutional_admin', 'super_admin'].includes(officer.role)) {
+    const err = new Error('User is not a field officer');
+    err.statusCode = 400;
     throw err;
   }
 

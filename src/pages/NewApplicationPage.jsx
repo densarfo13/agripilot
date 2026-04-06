@@ -17,8 +17,12 @@ export default function NewApplicationPage() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
+  const [loadError, setLoadError] = useState('');
+
   useEffect(() => {
-    api.get('/farmers', { params: { limit: 100 } }).then(r => setFarmers(r.data.farmers)).catch(() => {});
+    api.get('/farmers', { params: { limit: 100 } })
+      .then(r => setFarmers(r.data.farmers))
+      .catch(() => setLoadError('Failed to load farmer list. Please refresh the page.'));
   }, []);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -27,11 +31,15 @@ export default function NewApplicationPage() {
     e.preventDefault();
     setSaving(true);
     setError('');
+    const acres = parseFloat(form.farmSizeAcres);
+    const amount = parseFloat(form.requestedAmount);
+    if (isNaN(acres) || acres <= 0) { setError('Farm size must be a positive number'); setSaving(false); return; }
+    if (isNaN(amount) || amount <= 0) { setError('Requested amount must be a positive number'); setSaving(false); return; }
     try {
       const res = await api.post('/applications', {
         ...form,
-        farmSizeAcres: parseFloat(form.farmSizeAcres),
-        requestedAmount: parseFloat(form.requestedAmount),
+        farmSizeAcres: acres,
+        requestedAmount: amount,
       });
       navigate(`/applications/${res.data.id}`);
     } catch (err) {
@@ -49,6 +57,7 @@ export default function NewApplicationPage() {
         <div className="card" style={{ maxWidth: 640 }}>
           <form onSubmit={handleSubmit}>
             <div className="card-body">
+              {loadError && <div className="alert alert-danger">{loadError}</div>}
               {error && <div className="alert alert-danger">{error}</div>}
               <div className="form-group">
                 <label className="form-label">Farmer *</label>

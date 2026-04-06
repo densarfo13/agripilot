@@ -2,27 +2,28 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import api from '../api/client.js';
+import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES } from '../utils/roles.js';
 
 const NAV = [
   { section: 'Overview', items: [
     { to: '/', label: 'Dashboard', icon: '/' },
   ]},
-  { section: 'Operations', items: [
+  { section: 'Operations', roles: STAFF_ROLES, items: [
     { to: '/farmers', label: 'Farmers', icon: 'F' },
     { to: '/applications', label: 'Applications', icon: 'A' },
-    { to: '/verification-queue', label: 'Verification Queue', icon: 'V' },
-    { to: '/fraud-queue', label: 'Fraud Queue', icon: '!' },
+    { to: '/verification-queue', label: 'Verification Queue', icon: 'V', roles: REVIEW_ROLES },
+    { to: '/fraud-queue', label: 'Fraud Queue', icon: '!', roles: REVIEW_ROLES },
   ]},
   { section: 'Analytics', items: [
     { to: '/portfolio', label: 'Portfolio', icon: 'P' },
     { to: '/reports', label: 'Reports', icon: 'R' },
   ]},
-  { section: 'Admin', items: [
+  { section: 'Admin', roles: ADMIN_ROLES, items: [
     { to: '/admin/control', label: 'Control Center', icon: 'C' },
     { to: '/audit', label: 'Audit Trail', icon: 'T' },
     { to: '/admin/users', label: 'User Management', icon: 'U' },
     { to: '/admin/registrations', label: 'Farmer Registrations', icon: 'R' },
-  ], roles: ['super_admin', 'institutional_admin'] },
+  ] },
 ];
 
 function ChangePasswordModal({ onClose }) {
@@ -104,10 +105,12 @@ export default function Layout() {
         <nav className="sidebar-nav">
           {NAV.map((section) => {
             if (section.roles && !section.roles.includes(user?.role)) return null;
+            const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(user?.role));
+            if (visibleItems.length === 0) return null;
             return (
               <div key={section.section}>
                 <div className="sidebar-section">{section.section}</div>
-                {section.items.map((item) => (
+                {visibleItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

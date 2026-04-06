@@ -46,6 +46,13 @@ const translations = {
     'nav.post_harvest': 'Post-Harvest',
     'nav.notifications': 'Notifications',
     'nav.lifecycle': 'Crop Lifecycle',
+    'nav.verification_queue': 'Verification Queue',
+    'nav.fraud_queue': 'Fraud Queue',
+    'nav.control_center': 'Control Center',
+    'nav.user_management': 'User Management',
+    'nav.farmer_registrations': 'Farmer Registrations',
+    'nav.market': 'Market',
+    'nav.storage': 'Storage',
 
     // Activities
     'activity.planting': 'Planting',
@@ -194,6 +201,13 @@ const translations = {
     'nav.post_harvest': 'Baada ya Mavuno',
     'nav.notifications': 'Arifa',
     'nav.lifecycle': 'Mzunguko wa Mazao',
+    'nav.verification_queue': 'Foleni ya Uthibitishaji',
+    'nav.fraud_queue': 'Foleni ya Ulaghai',
+    'nav.control_center': 'Kituo cha Udhibiti',
+    'nav.user_management': 'Usimamizi wa Watumiaji',
+    'nav.farmer_registrations': 'Usajili wa Wakulima',
+    'nav.market': 'Soko',
+    'nav.storage': 'Hifadhi',
 
     // Activities
     'activity.planting': 'Kupanda',

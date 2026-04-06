@@ -6,13 +6,18 @@ import { getRegionConfig } from '../regionConfig/service.js';
  * Combines verification score + fraud risk to produce a final decision recommendation.
  * Region config influences thresholds.
  *
+ * IMPORTANT: Both verification AND fraud analysis must be run before this engine.
+ *
  * Rules:
- * - If fraud is critical → reject
- * - If fraud is high → escalate
- * - If verification >= 80 and fraud low → approve
- * - If verification >= region threshold and fraud low/medium → conditional_approve (80%)
- * - If verification >= 40 → needs_more_evidence
- * - If verification < 40 → reject
+ * - If fraud is critical → auto-reject
+ * - If fraud is high → auto-escalate
+ * - If verification >= 80 and fraud low → RECOMMEND approve (human must confirm)
+ * - If verification >= region threshold and fraud low/medium → RECOMMEND conditional_approve (human must confirm)
+ * - If verification >= 40 → auto-transition to needs_more_evidence
+ * - If verification < 40 → auto-reject
+ *
+ * Positive decisions (approve, conditional_approve) are RECOMMENDATIONS only.
+ * A human reviewer must explicitly approve via the approve endpoint.
  */
 export async function runDecisionEngine(applicationId) {
   const app = await prisma.application.findUnique({
@@ -36,6 +41,12 @@ export async function runDecisionEngine(applicationId) {
     throw err;
   }
 
+  if (!app.fraudResult) {
+    const err = new Error('Fraud analysis must be run before decision engine');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const regionCfg = getRegionConfig(app.farmer.countryCode || 'KE');
   const approveThreshold = 80;
   const conditionalThreshold = regionCfg.verificationThreshold || 60;
@@ -43,8 +54,8 @@ export async function runDecisionEngine(applicationId) {
 
   const vScore = app.verificationResult.verificationScore;
   const vConfidence = app.verificationResult.confidence;
-  const fRiskLevel = app.fraudResult?.fraudRiskLevel || 'low';
-  const fRiskScore = app.fraudResult?.fraudRiskScore || 0;
+  const fRiskLevel = app.fraudResult.fraudRiskLevel;
+  const fRiskScore = app.fraudResult.fraudRiskScore;
 
   let decision, decisionLabel, riskLevel, recommendedAmount;
   const blockers = [];
@@ -110,20 +121,20 @@ export async function runDecisionEngine(applicationId) {
     create: { applicationId, decision, decisionLabel, riskLevel, recommendedAmount, blockers, reasons, nextActions },
   });
 
-  // Update application status based on decision
-  const statusMap = {
-    approve: 'approved',
-    conditional_approve: 'conditional_approved',
+  // Auto-transition only for negative/neutral outcomes.
+  // Positive outcomes (approve, conditional_approve) are RECOMMENDATIONS —
+  // a human reviewer must explicitly approve via the approve endpoint.
+  const autoTransitionMap = {
     reject: 'rejected',
     needs_more_evidence: 'needs_more_evidence',
     field_review_required: 'field_review_required',
     escalate: 'escalated',
   };
 
-  if (statusMap[decision]) {
+  if (autoTransitionMap[decision]) {
     await prisma.application.update({
       where: { id: applicationId },
-      data: { status: statusMap[decision] },
+      data: { status: autoTransitionMap[decision] },
     });
   }
 

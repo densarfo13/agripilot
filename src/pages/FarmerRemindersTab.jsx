@@ -15,6 +15,7 @@ export default function FarmerRemindersTab() {
   const [createForm, setCreateForm] = useState({ title: '', message: '', dueDate: '', reminderType: 'custom' });
   const [createLoading, setCreateLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const loadReminders = () => {
     setLoading(true);
@@ -23,8 +24,8 @@ export default function FarmerRemindersTab() {
     else if (filter === 'done') params.status = 'done';
     else if (filter === 'overdue') params.overdue = 'true';
     api.get(`/reminders/farmer/${farmerId}`, { params })
-      .then(r => setReminders(r.data))
-      .catch(() => {})
+      .then(r => { setReminders(r.data); setError(''); })
+      .catch(() => setError('Failed to load reminders'))
       .finally(() => setLoading(false));
   };
 
@@ -36,7 +37,9 @@ export default function FarmerRemindersTab() {
       await api.patch(`/reminders/${id}/done`);
       loadReminders();
       refresh();
-    } catch { } finally {
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to mark reminder as done');
+    } finally {
       setActionLoading(s => ({ ...s, [id]: null }));
     }
   };
@@ -47,7 +50,9 @@ export default function FarmerRemindersTab() {
       await api.patch(`/reminders/${id}/dismiss`);
       loadReminders();
       refresh();
-    } catch { } finally {
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to dismiss reminder');
+    } finally {
       setActionLoading(s => ({ ...s, [id]: null }));
     }
   };
@@ -65,7 +70,8 @@ export default function FarmerRemindersTab() {
       setGenForm({ cropType: '', plantingDate: '' });
       loadReminders();
       refresh();
-      alert(`Generated ${res.data.generated} reminders for ${genForm.cropType}`);
+      setSuccess(`Generated ${res.data.generated} reminders for ${genForm.cropType}`);
+      setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to generate reminders');
     } finally {
@@ -111,6 +117,9 @@ export default function FarmerRemindersTab() {
           </button>
         </div>
       </div>
+
+      {success && <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.9rem' }}>{success}</div>}
+      {error && !showGenerate && !showCreate && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
 
       {/* Generate crop lifecycle reminders */}
       {showGenerate && (

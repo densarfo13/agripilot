@@ -31,8 +31,8 @@ export default function FarmerStorageTab() {
   const loadDashboard = () => {
     setLoading(true);
     api.get(`/post-harvest/storage/farmer/${farmerId}/dashboard`)
-      .then(r => setDashboard(r.data))
-      .catch(() => {})
+      .then(r => { setDashboard(r.data); setError(''); })
+      .catch(() => setError('Failed to load storage data'))
       .finally(() => setLoading(false));
   };
 
@@ -162,6 +162,7 @@ export default function FarmerStorageTab() {
       )}
 
       {/* Storage items */}
+      {error && !showForm && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
       {loading ? <div className="loading">Loading storage data...</div> : (
         <>
           {(!dashboard || dashboard.totalItems === 0) ? (

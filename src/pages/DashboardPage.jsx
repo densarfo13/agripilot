@@ -26,7 +26,9 @@ export default function DashboardPage() {
         fraud: byStatus.fraud_hold || 0,
         escalated: byStatus.escalated || 0,
       });
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {
+      // portfolio stays null — handled by "Unable to load" message below
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="loading">Loading dashboard...</div>;

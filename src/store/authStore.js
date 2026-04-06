@@ -1,7 +1,21 @@
 import { create } from 'zustand';
 
+function safeParseUser() {
+  try {
+    const raw = localStorage.getItem('agripilot_user');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Basic sanity check — user must have at least id and role
+    if (parsed && typeof parsed === 'object' && parsed.role) return parsed;
+    return null;
+  } catch {
+    localStorage.removeItem('agripilot_user');
+    return null;
+  }
+}
+
 export const useAuthStore = create((set) => ({
-  user: JSON.parse(localStorage.getItem('agripilot_user') || 'null'),
+  user: safeParseUser(),
   token: localStorage.getItem('agripilot_token') || null,
 
   setAuth: (user, token) => {

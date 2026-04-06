@@ -10,7 +10,9 @@
 // Detect Capacitor native platform for correct API base URL
 const cap = typeof window !== 'undefined' && window.Capacitor;
 const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
-const API_BASE = isNative ? 'https://agripilot.onrender.com/api' : '/api';
+const API_BASE = isNative
+  ? (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || 'https://agripilot.onrender.com/api')
+  : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || '/api');
 
 let currentLang = localStorage.getItem('agripilot_lang') || 'en';
 let translations = {};

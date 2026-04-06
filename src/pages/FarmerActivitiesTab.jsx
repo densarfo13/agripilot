@@ -19,8 +19,8 @@ export default function FarmerActivitiesTab() {
     const params = {};
     if (filterType) params.type = filterType;
     api.get(`/activities/farmer/${farmerId}`, { params })
-      .then(r => setActivities(r.data))
-      .catch(() => {})
+      .then(r => { setActivities(r.data); setError(''); })
+      .catch(() => setError('Failed to load activities'))
       .finally(() => setLoading(false));
   };
 
@@ -104,6 +104,7 @@ export default function FarmerActivitiesTab() {
       )}
 
       {/* Activity list */}
+      {error && !showForm && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
       {loading ? <div className="loading">Loading activities...</div> : (
         <div className="card">
           <div className="card-header">Activities ({activities.length})</div>

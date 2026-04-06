@@ -1,9 +1,11 @@
 import { Router } from 'express';
-import { authenticate } from '../../middleware/auth.js';
+import { authenticate, authorize } from '../../middleware/auth.js';
 import * as svc from './service.js';
 
 const router = Router();
 router.use(authenticate);
+// Region config contains loan thresholds and verification settings — restrict to staff roles
+router.use(authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'));
 
 // List all region configs
 router.get('/', (req, res) => {

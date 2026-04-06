@@ -228,6 +228,7 @@ model Application {
   cropType               String            @map("crop_type")
   farmSizeAcres          Float             @map("farm_size_acres")
   requestedAmount        Float             @map("requested_amount")
+  recommendedAmount      Float?            @map("recommended_amount")
   currencyCode           String            @default("KES") @map("currency_code")
   purpose                String?
   season                 String?

@@ -28,6 +28,7 @@ import AdminControlPage from './pages/AdminControlPage.jsx';
 import FarmerRegisterPage from './pages/FarmerRegisterPage.jsx';
 import FarmerDashboardPage from './pages/FarmerDashboardPage.jsx';
 import PendingRegistrationsPage from './pages/PendingRegistrationsPage.jsx';
+import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES } from './utils/roles.js';
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore(s => s.token);
@@ -35,6 +36,13 @@ function ProtectedRoute({ children }) {
   if (!token) return <Navigate to="/login" replace />;
   // Farmer-role users get their own limited dashboard
   if (user?.role === 'farmer') return <FarmerDashboardPage />;
+  return children;
+}
+
+// Role-based route guard — redirects unauthorized roles to dashboard
+function RoleRoute({ roles, children }) {
+  const user = useAuthStore(s => s.user);
+  if (!roles.includes(user?.role)) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -54,14 +62,14 @@ export default function App() {
         <Route path="/farmer-register" element={<FarmerRegisterPage />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<DashboardPage />} />
-          <Route path="farmers" element={<FarmersPage />} />
-          <Route path="farmers/:id" element={<FarmerDetailPage />} />
-          <Route path="applications" element={<ApplicationsPage />} />
-          <Route path="applications/new" element={<NewApplicationPage />} />
-          <Route path="applications/:id" element={<ApplicationDetailPage />} />
-          <Route path="verification-queue" element={<VerificationQueuePage />} />
-          <Route path="fraud-queue" element={<FraudQueuePage />} />
-          <Route path="farmer-home/:farmerId" element={<FarmerHomePage />}>
+          <Route path="farmers" element={<RoleRoute roles={STAFF_ROLES}><FarmersPage /></RoleRoute>} />
+          <Route path="farmers/:id" element={<RoleRoute roles={STAFF_ROLES}><FarmerDetailPage /></RoleRoute>} />
+          <Route path="applications" element={<RoleRoute roles={STAFF_ROLES}><ApplicationsPage /></RoleRoute>} />
+          <Route path="applications/new" element={<RoleRoute roles={STAFF_ROLES}><NewApplicationPage /></RoleRoute>} />
+          <Route path="applications/:id" element={<RoleRoute roles={STAFF_ROLES}><ApplicationDetailPage /></RoleRoute>} />
+          <Route path="verification-queue" element={<RoleRoute roles={REVIEW_ROLES}><VerificationQueuePage /></RoleRoute>} />
+          <Route path="fraud-queue" element={<RoleRoute roles={REVIEW_ROLES}><FraudQueuePage /></RoleRoute>} />
+          <Route path="farmer-home/:farmerId" element={<RoleRoute roles={STAFF_ROLES}><FarmerHomePage /></RoleRoute>}>
             <Route index element={<FarmerOverviewTab />} />
             <Route path="activities" element={<FarmerActivitiesTab />} />
             <Route path="reminders" element={<FarmerRemindersTab />} />
@@ -71,10 +79,10 @@ export default function App() {
           </Route>
           <Route path="portfolio" element={<PortfolioPage />} />
           <Route path="reports" element={<ReportsPage />} />
-          <Route path="audit" element={<AuditPage />} />
-          <Route path="admin/users" element={<AdminUsersPage />} />
-          <Route path="admin/registrations" element={<PendingRegistrationsPage />} />
-          <Route path="admin/control" element={<AdminControlPage />} />
+          <Route path="audit" element={<RoleRoute roles={ADMIN_ROLES}><AuditPage /></RoleRoute>} />
+          <Route path="admin/users" element={<RoleRoute roles={ADMIN_ROLES}><AdminUsersPage /></RoleRoute>} />
+          <Route path="admin/registrations" element={<RoleRoute roles={ADMIN_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
+          <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
