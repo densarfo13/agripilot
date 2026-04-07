@@ -23,21 +23,30 @@ const ROLE_LABELS = {
 // Roles that require SoD approval before assignment
 const PRIVILEGED_ROLES = new Set(['super_admin', 'institutional_admin']);
 
+const STATUS_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'disabled', label: 'Disabled' },
+  { value: 'archived', label: 'Archived' },
+];
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [actionError, setActionError] = useState('');
+  const [confirmModal, setConfirmModal] = useState(null); // { user, action: 'disable'|'enable' }
   const currentUser = useAuthStore(s => s.user);
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const isInstAdmin = currentUser?.role === 'institutional_admin';
   const canManage = isSuperAdmin || isInstAdmin;
 
-  const load = () => {
+  const load = (status = statusFilter) => {
     setLoading(true);
-    api.get('/users')
+    api.get('/users', { params: status ? { status } : {} })
       .then(r => { setUsers(r.data); setActionError(''); })
       .catch(err => setActionError(formatApiError(err, 'Failed to load users')))
       .finally(() => setLoading(false));
@@ -45,28 +54,55 @@ export default function AdminUsersPage() {
 
   useEffect(() => { load(); }, []);
 
+  const handleFilterChange = (value) => {
+    setStatusFilter(value);
+    load(value);
+  };
+
   // Can this admin open the edit modal for a given user?
   const canEdit = (u) => {
     if (isSuperAdmin) return true;
-    if (isInstAdmin) {
-      return u.organizationId === currentUser?.organizationId && u.role !== 'super_admin';
-    }
+    if (isInstAdmin) return u.organizationId === currentUser?.organizationId && u.role !== 'super_admin';
     return false;
   };
 
-  const toggleActive = async (u) => {
+  // Can this admin disable/enable a given user?
+  const canDisable = (u) => {
+    if (u.id === currentUser?.id) return false;
+    if (u.archivedAt) return false;
+    if (isSuperAdmin) return true;
+    if (isInstAdmin) return u.organizationId === currentUser?.organizationId && u.role !== 'super_admin';
+    return false;
+  };
+
+  const doDisable = async (u) => {
     setActionError('');
+    setConfirmModal(null);
     try {
-      await api.patch(`/users/${u.id}/toggle-active`);
+      await api.post(`/users/${u.id}/disable`);
       load();
     } catch (err) {
-      setActionError(formatApiError(err, 'Failed to update user'));
+      setActionError(formatApiError(err, 'Failed to disable user'));
+    }
+  };
+
+  const doEnable = async (u) => {
+    setActionError('');
+    setConfirmModal(null);
+    try {
+      await api.post(`/users/${u.id}/enable`);
+      load();
+    } catch (err) {
+      setActionError(formatApiError(err, 'Failed to re-enable user'));
     }
   };
 
   const orgLabel = isInstAdmin && currentUser?.organization?.name
     ? currentUser.organization.name
     : null;
+
+  // Show "Archived" filter only to super_admin
+  const visibleFilters = isSuperAdmin ? STATUS_FILTERS : STATUS_FILTERS.filter(f => f.value !== 'archived');
 
   return (
     <>
@@ -78,10 +114,27 @@ export default function AdminUsersPage() {
         {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New User</button>}
       </div>
       <div className="page-body">
+        {/* Status filter tabs */}
+        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {visibleFilters.map(f => (
+            <button
+              key={f.value}
+              onClick={() => handleFilterChange(f.value)}
+              style={{
+                padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
+                border: statusFilter === f.value ? '1.5px solid #2563eb' : '1.5px solid #e5e7eb',
+                background: statusFilter === f.value ? '#eff6ff' : '#fff',
+                color: statusFilter === f.value ? '#1d4ed8' : '#6b7280',
+                fontWeight: statusFilter === f.value ? 600 : 400,
+              }}
+            >{f.label}</button>
+          ))}
+        </div>
+
         {actionError && (
           <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{actionError}</span>
-            <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={load}>Try again</button>
+            <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={() => load()}>Try again</button>
           </div>
         )}
         {loading ? <div className="loading">Loading...</div> : (
@@ -102,34 +155,41 @@ export default function AdminUsersPage() {
                   </thead>
                   <tbody>
                     {users.map(u => (
-                      <tr key={u.id}>
-                        <td style={{ fontWeight: 500 }}>{u.fullName}</td>
+                      <tr key={u.id} style={{ opacity: u.archivedAt ? 0.6 : 1 }}>
+                        <td style={{ fontWeight: 500 }}>
+                          {u.fullName}
+                          {u.archivedAt && <span style={{ fontSize: '0.72rem', color: '#6b7280', marginLeft: '0.4rem' }}>(archived)</span>}
+                        </td>
                         <td className="text-sm">{u.email}</td>
                         <td><span className="badge badge-submitted">{ROLE_LABELS[u.role] || u.role}</span></td>
                         <td className="text-sm text-muted">{u.organization?.name || <span style={{ color: '#d97706' }}>Unassigned</span>}</td>
-                        <td>{u.active ? <span className="badge badge-approved">Active</span> : <span className="badge badge-rejected">Inactive</span>}</td>
+                        <td><UserStatusBadge user={u} /></td>
                         <td className="text-sm text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                         {canManage && (
                           <td>
                             <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                              {canEdit(u) && (
-                                <button className="btn btn-sm btn-outline" onClick={() => setEditTarget(u)}>
-                                  Edit
-                                </button>
+                              {canEdit(u) && !u.archivedAt && (
+                                <button className="btn btn-sm btn-outline" onClick={() => setEditTarget(u)}>Edit</button>
                               )}
-                              {isSuperAdmin && u.id !== currentUser?.id && (
+                              {canDisable(u) && u.active && (
                                 <button
-                                  className={`btn btn-sm ${u.active ? 'btn-warning' : 'btn-success'}`}
-                                  onClick={() => toggleActive(u)}
-                                  title={u.active ? 'Deactivate this account' : 'Reactivate this account'}
+                                  className="btn btn-sm btn-outline"
+                                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                                  onClick={() => setConfirmModal({ user: u, action: 'disable' })}
                                 >
-                                  {u.active ? 'Deactivate' : 'Activate'}
+                                  Disable
                                 </button>
                               )}
-                              {isSuperAdmin && (
-                                <button className="btn btn-sm btn-outline" onClick={() => setResetTarget(u)}>
-                                  Reset PW
+                              {canDisable(u) && !u.active && !u.archivedAt && (
+                                <button
+                                  className="btn btn-sm btn-success"
+                                  onClick={() => setConfirmModal({ user: u, action: 'enable' })}
+                                >
+                                  Re-enable
                                 </button>
+                              )}
+                              {isSuperAdmin && !u.archivedAt && (
+                                <button className="btn btn-sm btn-outline" onClick={() => setResetTarget(u)}>Reset PW</button>
                               )}
                             </div>
                           </td>
@@ -160,8 +220,51 @@ export default function AdminUsersPage() {
             onSaved={load}
           />
         )}
+        {confirmModal?.action === 'disable' && (
+          <ConfirmModal
+            title="Disable User"
+            body={<>Disable login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#374151', fontSize: '0.875rem' }}>This user can no longer sign in. All their history, applications, and records are preserved. You can re-enable them at any time.</span></>}
+            confirmLabel="Disable User"
+            confirmStyle={{ background: '#dc2626', color: '#fff' }}
+            onConfirm={() => doDisable(confirmModal.user)}
+            onCancel={() => setConfirmModal(null)}
+          />
+        )}
+        {confirmModal?.action === 'enable' && (
+          <ConfirmModal
+            title="Re-enable User"
+            body={<>Restore login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#374151', fontSize: '0.875rem' }}>They will be able to sign in again immediately.</span></>}
+            confirmLabel="Re-enable User"
+            confirmStyle={{ background: '#16a34a', color: '#fff' }}
+            onConfirm={() => doEnable(confirmModal.user)}
+            onCancel={() => setConfirmModal(null)}
+          />
+        )}
       </div>
     </>
+  );
+}
+
+// Compact status badge for user rows
+function UserStatusBadge({ user }) {
+  if (user.archivedAt) return <span className="badge badge-disabled">Archived</span>;
+  if (!user.active) return <span className="badge badge-no-access">Disabled</span>;
+  return <span className="badge badge-active">Active</span>;
+}
+
+// Generic confirmation modal
+function ConfirmModal({ title, body, confirmLabel, confirmStyle = {}, onConfirm, onCancel }) {
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">{title} <button className="btn btn-outline btn-sm" onClick={onCancel}>✕</button></div>
+        <div className="modal-body"><p style={{ margin: 0 }}>{body}</p></div>
+        <div className="modal-footer">
+          <button className="btn btn-outline" onClick={onCancel}>Cancel</button>
+          <button className="btn" style={confirmStyle} onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -358,6 +461,17 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
             )}
           </div>
 
+          {/* ── Access & Offboarding (super_admin only, not self) ── */}
+          {isSuperAdmin && !isSelf && (
+            <>
+              <hr style={{ margin: '0 0 1.5rem', borderColor: '#e5e7eb' }} />
+              <div style={{ marginBottom: '1.5rem' }}>
+                {sectionHeading('Access & Offboarding')}
+                <AccessOffboardingSection user={user} onDone={onSaved} />
+              </div>
+            </>
+          )}
+
           {/* ── Organization (super_admin only, not self) ── */}
           {isSuperAdmin && !isSelf && (
             <>
@@ -428,6 +542,97 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
             setOrgSuccess('Organization updated');
             onSaved();
           }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Access & Offboarding Section (inside EditUserModal, super_admin only) ────
+
+function AccessOffboardingSection({ user, onDone }) {
+  const [confirm, setConfirm] = useState(null); // 'archive' | 'unarchive'
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const doArchive = async () => {
+    setConfirm(null);
+    setError('');
+    try {
+      await api.post(`/users/${user.id}/archive`);
+      setSuccess('User archived. They can no longer sign in and are hidden from normal views.');
+      onDone();
+    } catch (err) {
+      setError(formatApiError(err, 'Failed to archive user'));
+    }
+  };
+
+  const doUnarchive = async () => {
+    setConfirm(null);
+    setError('');
+    try {
+      await api.post(`/users/${user.id}/unarchive`);
+      setSuccess('User unarchived. Use Disable/Enable controls to restore access.');
+      onDone();
+    } catch (err) {
+      setError(formatApiError(err, 'Failed to unarchive user'));
+    }
+  };
+
+  return (
+    <div>
+      {error && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{error}</div>}
+      {success && <div style={{ background: '#d4edda', color: '#155724', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{success}</div>}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+        <span style={{ fontSize: '0.875rem', color: '#374151' }}>Current status:</span>
+        <UserStatusBadge user={user} />
+      </div>
+
+      {!user.archivedAt ? (
+        <div>
+          <p style={{ fontSize: '0.83rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+            Archiving removes this user from active lists and revokes login access. All linked records
+            (applications, reviews, audit history) are preserved. This can be reversed.
+          </p>
+          <button
+            className="btn btn-sm btn-outline"
+            style={{ color: '#dc2626', borderColor: '#dc2626' }}
+            onClick={() => setConfirm('archive')}
+          >
+            Archive User
+          </button>
+        </div>
+      ) : (
+        <div>
+          <p style={{ fontSize: '0.83rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+            Archived on {new Date(user.archivedAt).toLocaleDateString()}. Unarchiving restores
+            visibility but does not re-enable login — use the Enable button after unarchiving.
+          </p>
+          <button className="btn btn-sm btn-success" onClick={() => setConfirm('unarchive')}>
+            Unarchive User
+          </button>
+        </div>
+      )}
+
+      {confirm === 'archive' && (
+        <ConfirmModal
+          title="Archive User"
+          body={<>Archive <strong>{user.fullName}</strong>?<br /><br /><span style={{ fontSize: '0.875rem', color: '#374151' }}>This removes login access and hides the account from normal views. All linked records are preserved. This can be reversed by unarchiving.</span></>}
+          confirmLabel="Archive User"
+          confirmStyle={{ background: '#dc2626', color: '#fff' }}
+          onConfirm={doArchive}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === 'unarchive' && (
+        <ConfirmModal
+          title="Unarchive User"
+          body={<>Unarchive <strong>{user.fullName}</strong>? Their account will become visible again but login access remains disabled until you explicitly re-enable them.</>}
+          confirmLabel="Unarchive"
+          confirmStyle={{ background: '#2563eb', color: '#fff' }}
+          onConfirm={doUnarchive}
+          onCancel={() => setConfirm(null)}
         />
       )}
     </div>
