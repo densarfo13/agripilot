@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import prisma from '../../config/database.js';
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
+import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 
 /** Invite tokens expire after this many days */
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
@@ -31,6 +32,9 @@ export async function farmerSelfRegister({
   primaryCrop,
   farmSizeAcres,
 }) {
+  // Normalize phone before any checks or storage
+  const normalizedPhone = normalizePhoneForStorage(phone);
+
   // Check if email already exists
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -39,8 +43,8 @@ export async function farmerSelfRegister({
     throw err;
   }
 
-  // Check if phone already exists for a farmer
-  const existingFarmer = await prisma.farmer.findFirst({ where: { phone } });
+  // Check if phone already exists for a farmer (using normalized form)
+  const existingFarmer = await prisma.farmer.findFirst({ where: { phone: normalizedPhone } });
   if (existingFarmer) {
     const err = new Error('Phone number already registered');
     err.statusCode = 409;
@@ -65,7 +69,7 @@ export async function farmerSelfRegister({
     const newFarmer = await tx.farmer.create({
       data: {
         fullName,
-        phone,
+        phone: normalizedPhone,
         region: region || 'Not specified',
         district: district || null,
         village: village || null,
@@ -255,8 +259,11 @@ export async function inviteFarmer({
     throw err;
   }
 
-  // Check duplicate phone
-  const existingFarmer = await prisma.farmer.findFirst({ where: { phone } });
+  // Normalize phone before duplicate check and storage
+  const normalizedPhone = normalizePhoneForStorage(phone);
+
+  // Check duplicate phone (using normalized form)
+  const existingFarmer = await prisma.farmer.findFirst({ where: { phone: normalizedPhone } });
   if (existingFarmer) {
     const err = new Error('Phone number already registered');
     err.statusCode = 409;
@@ -305,7 +312,7 @@ export async function inviteFarmer({
     return tx.farmer.create({
       data: {
         fullName,
-        phone,
+        phone: normalizedPhone,
         region,
         district: district || null,
         village: village || null,

@@ -4,6 +4,7 @@ import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { ADMIN_ROLES, CREATOR_ROLES } from '../utils/roles.js';
+import { getCountryName } from '../utils/countries.js';
 
 const STATUS_COLORS = {
   pending_approval: { bg: '#fef3c7', color: '#92400e', label: 'Pending Approval' },
@@ -73,7 +74,7 @@ export default function FarmerDetailPage() {
               <div className="detail-row"><span className="detail-label">Region</span><span className="detail-value">{farmer.region}</span></div>
               <div className="detail-row"><span className="detail-label">District</span><span className="detail-value">{farmer.district || '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Village</span><span className="detail-value">{farmer.village || '-'}</span></div>
-              <div className="detail-row"><span className="detail-label">Country</span><span className="detail-value">{farmer.countryCode === 'TZ' ? 'Tanzania' : 'Kenya'}</span></div>
+              <div className="detail-row"><span className="detail-label">Country</span><span className="detail-value">{getCountryName(farmer.countryCode)}</span></div>
               <div className="detail-row"><span className="detail-label">Primary Crop</span><span className="detail-value">{farmer.primaryCrop || '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{farmer.farmSizeAcres ? `${farmer.farmSizeAcres} ${farmer.countryCode === 'TZ' ? 'hectares' : 'acres'}` : '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Experience</span><span className="detail-value">{farmer.yearsExperience ? `${farmer.yearsExperience} years` : '-'}</span></div>
@@ -121,6 +122,7 @@ export default function FarmerDetailPage() {
 
 function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   const [officers, setOfficers] = useState([]);
+  const [inviteStatus, setInviteStatus] = useState(null);
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
   const [resendInviteToken, setResendInviteToken] = useState(null);
@@ -140,6 +142,15 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
       }).catch(() => {});
     }
   }, [isAdmin]);
+
+  // Fetch invite/activation status for invited farmers
+  useEffect(() => {
+    if (!farmer.selfRegistered) {
+      api.get(`/farmers/${farmer.id}/invite-status`)
+        .then(r => setInviteStatus(r.data))
+        .catch(() => {}); // non-critical — degrades gracefully
+    }
+  }, [farmer.id, farmer.selfRegistered]);
 
   const clearMessages = () => { setActionError(''); setActionSuccess(''); };
 
@@ -227,6 +238,15 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
               No Login Account
             </span>
           )}
+          {inviteStatus && !farmer.selfRegistered && (
+            <span
+              title={inviteStatus.inviteExpiresAt ? `Expires: ${new Date(inviteStatus.inviteExpiresAt).toLocaleDateString()}` : undefined}
+              className={`badge ${inviteStatus.deliveryStatusCls || 'badge-draft'}`}
+              style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500 }}
+            >
+              {inviteStatus.deliveryStatusLabel || 'Invite Pending'}
+            </span>
+          )}
         </div>
 
         {/* Metadata grid */}
@@ -261,6 +281,21 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0', gridColumn: '1 / -1' }}>
               <span style={{ color: '#6b7280' }}>Rejection Reason</span>
               <span>{farmer.rejectionReason}</span>
+            </div>
+          )}
+          {inviteStatus?.inviteExpiresAt && !inviteStatus?.inviteAcceptedAt && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
+              <span style={{ color: '#6b7280' }}>Invite Expires</span>
+              <span style={{ color: new Date() > new Date(inviteStatus.inviteExpiresAt) ? '#dc2626' : undefined }}>
+                {new Date(inviteStatus.inviteExpiresAt).toLocaleDateString()}
+                {new Date() > new Date(inviteStatus.inviteExpiresAt) ? ' (expired)' : ''}
+              </span>
+            </div>
+          )}
+          {inviteStatus?.inviteAcceptedAt && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
+              <span style={{ color: '#6b7280' }}>Invite Accepted</span>
+              <span style={{ color: '#16a34a' }}>{new Date(inviteStatus.inviteAcceptedAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>

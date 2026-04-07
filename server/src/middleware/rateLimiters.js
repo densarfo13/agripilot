@@ -84,3 +84,17 @@ export const inviteAcceptLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Limiter for the login endpoint.
+ * Prevents brute-force credential stuffing attacks.
+ * 10 attempts per 15 minutes per IP — strict enough to slow attackers,
+ * permissive enough not to frustrate legitimate users who mistype.
+ */
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 login attempts per 15 minutes per IP
+  message: { error: 'Too many login attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

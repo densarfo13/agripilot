@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
-
-const COUNTRIES = [
-  { code: 'KE', label: 'Kenya' },
-  { code: 'TZ', label: 'Tanzania' },
-  { code: 'UG', label: 'Uganda' },
-  { code: 'GH', label: 'Ghana' },
-  { code: 'NG', label: 'Nigeria' },
-];
+import CountrySelect from '../components/CountrySelect.jsx';
+import PhoneInput from '../components/PhoneInput.jsx';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -110,7 +104,13 @@ export default function FarmerRegisterPage() {
           <div style={styles.sectionLabel}>Personal Information</div>
 
           <input style={styles.input} placeholder="Full Name *" required value={form.fullName} onChange={set('fullName')} />
-          <input style={styles.input} placeholder="Phone Number *" required value={form.phone} onChange={set('phone')} type="tel" />
+          <PhoneInput
+            style={styles.input}
+            value={form.phone}
+            onChange={set('phone')}
+            countryCode={form.countryCode}
+            required
+          />
           <input style={styles.input} placeholder="Email Address *" required value={form.email} onChange={set('email')} type="email" />
 
           <div style={styles.row}>
@@ -121,9 +121,13 @@ export default function FarmerRegisterPage() {
           <div style={styles.sectionLabel}>Location</div>
 
           <div style={styles.row}>
-            <select style={{ ...styles.input, flex: 1 }} value={form.countryCode} onChange={set('countryCode')}>
-              {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-            </select>
+            <CountrySelect
+              value={form.countryCode}
+              onChange={set('countryCode')}
+              selectStyle={{ ...styles.input, flex: 1 }}
+              inputStyle={{ ...styles.input, flex: 1 }}
+              wrapperStyle={{ flex: 1 }}
+            />
             <select style={{ ...styles.input, flex: 1 }} value={form.preferredLanguage} onChange={set('preferredLanguage')}>
               {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>

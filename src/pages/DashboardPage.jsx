@@ -116,19 +116,40 @@ export default function DashboardPage() {
               Pilot Adoption
             </span>
             {[
-              ['Approved', adoption.farmers?.approved],
-              ['Logged In', adoption.adoption?.loggedIn],
-              ['1st Update', adoption.adoption?.withFirstUpdate],
-              ['Harvest', adoption.adoption?.withHarvest],
-            ].map(([label, val]) => (
-              <div key={label} style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 72 }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0369a1' }}>{val ?? '—'}</div>
+              ['Approved', adoption.farmers?.approved, '#f0f9ff', '#bae6fd', '#0369a1'],
+              ['Invite Pending', adoption.farmers?.invitedNotActivated, '#fffbeb', '#fde68a', '#92400e'],
+              ['Logged In', adoption.adoption?.loggedIn, '#f0f9ff', '#bae6fd', '#0369a1'],
+              ['1st Update', adoption.adoption?.withFirstUpdate, '#f0f9ff', '#bae6fd', '#0369a1'],
+              ['Harvest', adoption.adoption?.withHarvest, '#f0f9ff', '#bae6fd', '#0369a1'],
+            ].map(([label, val, bg, border, color]) => (
+              <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 72 }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{val ?? '—'}</div>
                 <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{label}</div>
               </div>
             ))}
             <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')} style={{ marginLeft: 'auto' }}>
               Full Pilot Metrics →
             </button>
+          </div>
+        )}
+
+        {/* First-run empty state — shown to admins when no farmers exist yet */}
+        {isAdmin && adoption && (adoption.farmers?.total === 0) && portfolio.totalApplications === 0 && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#166534', marginBottom: '0.5rem' }}>Welcome to AgriPilot — Get started in 3 steps</div>
+            <ol style={{ margin: 0, paddingLeft: '1.4rem', color: '#374151', fontSize: '0.9rem', lineHeight: 1.8 }}>
+              <li>
+                <strong>Add your first farmers</strong> — go to{' '}
+                <span onClick={() => navigate('/farmers')} style={{ color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>Farmers</span>{' '}
+                and use <em>+ New Farmer</em> or <em>Invite Farmer</em>
+              </li>
+              <li>
+                <strong>Create a farm season</strong> — open a farmer profile and add a season to start tracking progress
+              </li>
+              <li>
+                <strong>Submit a loan application</strong> — once a season is active, submit an application to begin the credit workflow
+              </li>
+            </ol>
           </div>
         )}
 

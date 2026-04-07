@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import CountrySelect from '../components/CountrySelect.jsx';
+import { getCountryName } from '../utils/countries.js';
 
 const ORG_TYPES = ['NGO', 'LENDER', 'COOPERATIVE', 'INVESTOR', 'DEVELOPMENT_PARTNER', 'INTERNAL'];
 
@@ -88,7 +90,7 @@ export default function AdminOrganizationsPage() {
 
                     {org.countryCode && (
                       <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#6b7280' }}>
-                        Country: <strong>{org.countryCode}</strong>
+                        Country: <strong>{getCountryName(org.countryCode)}</strong>
                         {org.regionCode && <span> | Region: <strong>{org.regionCode}</strong></span>}
                       </div>
                     )}
@@ -153,12 +155,15 @@ function CreateOrgModal({ onClose, onCreated }) {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Country Code</label>
-                <select className="form-select" value={form.countryCode} onChange={set('countryCode')}>
-                  <option value="">Not specified</option>
-                  <option value="KE">Kenya (KE)</option>
-                  <option value="TZ">Tanzania (TZ)</option>
-                </select>
+                <label className="form-label">Country</label>
+                <CountrySelect
+                  className="form-select"
+                  searchClassName="form-input"
+                  value={form.countryCode}
+                  onChange={set('countryCode')}
+                  includeEmpty
+                  emptyLabel="Not specified"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Region Code</label>
@@ -226,12 +231,15 @@ function EditOrgModal({ org, onClose, onUpdated }) {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Country Code</label>
-                <select className="form-select" value={form.countryCode} onChange={set('countryCode')}>
-                  <option value="">Not specified</option>
-                  <option value="KE">Kenya (KE)</option>
-                  <option value="TZ">Tanzania (TZ)</option>
-                </select>
+                <label className="form-label">Country</label>
+                <CountrySelect
+                  className="form-select"
+                  searchClassName="form-input"
+                  value={form.countryCode}
+                  onChange={set('countryCode')}
+                  includeEmpty
+                  emptyLabel="Not specified"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Region Code</label>

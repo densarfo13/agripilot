@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import prisma from '../../config/database.js';
+import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
 function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
@@ -13,6 +14,8 @@ import { invalidateAuthCache } from '../../middleware/auth.js';
  */
 export async function createFarmer(data, userId, organizationId) {
   const { email, password } = data;
+  // Final normalization pass — route layer normalizes first, this is a safety net
+  const phone = normalizePhoneForStorage(data.phone);
 
   // If email + password provided: validate uniqueness then create User + Farmer atomically
   if (email && password) {
@@ -40,7 +43,7 @@ export async function createFarmer(data, userId, organizationId) {
       return tx.farmer.create({
         data: {
           fullName: data.fullName,
-          phone: data.phone,
+          phone,
           nationalId: data.nationalId || null,
           region: data.region,
           district: data.district || null,
@@ -71,7 +74,7 @@ export async function createFarmer(data, userId, organizationId) {
   const farmer = await prisma.farmer.create({
     data: {
       fullName: data.fullName,
-      phone: data.phone,
+      phone,
       nationalId: data.nationalId || null,
       region: data.region,
       district: data.district || null,

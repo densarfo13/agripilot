@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID, parsePositiveInt, isValidEmail, validatePassword } from '../../middleware/validate.js';
+import { validatePhone, normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
 import { inviteLimiter } from '../../middleware/rateLimiters.js';
@@ -46,7 +47,12 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
   if (!fullName || !phone || !region) {
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
   }
-  const farmer = await farmersService.createFarmer(req.body, req.user.sub, req.organizationId);
+  const normalizedPhone = normalizePhoneForStorage(phone);
+  const phoneCheck = validatePhone(normalizedPhone);
+  if (!phoneCheck.valid) {
+    return res.status(400).json({ error: phoneCheck.message });
+  }
+  const farmer = await farmersService.createFarmer({ ...req.body, phone: normalizedPhone }, req.user.sub, req.organizationId);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id }, organizationId: req.organizationId }).catch(() => {});
   res.status(201).json({
     farmer,
@@ -62,6 +68,14 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
 
 // Invite farmer (admin/field officer — creates pre-approved farmer record)
 router.post('/invite', inviteLimiter, authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('invite-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
+  if (req.body.phone) {
+    const normalizedPhone = normalizePhoneForStorage(req.body.phone);
+    const phoneCheck = validatePhone(normalizedPhone);
+    if (!phoneCheck.valid) {
+      return res.status(400).json({ error: phoneCheck.message });
+    }
+    req.body = { ...req.body, phone: normalizedPhone };
+  }
   const farmer = await inviteFarmer({
     ...req.body,
     invitedById: req.user.sub,

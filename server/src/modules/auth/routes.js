@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { isValidEmail, validatePassword } from '../../middleware/validate.js';
-import { registrationLimiter } from '../../middleware/rateLimiters.js';
+import { validatePhone, normalizePhoneForStorage } from '../../utils/phoneUtils.js';
+import { registrationLimiter, loginLimiter } from '../../middleware/rateLimiters.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
+import { logAuthEvent } from '../../utils/opsLogger.js';
 import * as federated from './federated.js';
 import prisma from '../../config/database.js';
 
@@ -35,14 +37,22 @@ router.post('/register', authenticate, authorize('super_admin', 'institutional_a
   res.status(201).json(result);
 }));
 
-router.post('/login', asyncHandler(async (req, res) => {
+router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const result = await authService.login({ email: email.toLowerCase().trim(), password });
+  const normalizedEmail = email.toLowerCase().trim();
+  let result;
+  try {
+    result = await authService.login({ email: normalizedEmail, password });
+  } catch (err) {
+    // Log all login failures for security monitoring (non-blocking, fire-and-forget)
+    logAuthEvent('login_failed', { email: normalizedEmail, ip: req.ip, reason: err.message });
+    throw err;
+  }
 
   // Record login event for adoption tracking (non-blocking)
   writeAuditLog({
@@ -142,10 +152,15 @@ router.post('/farmer-register', registrationLimiter, idempotencyCheck, asyncHand
   if (!pwCheck.valid) {
     return res.status(400).json({ error: pwCheck.message });
   }
+  const normalizedPhone = normalizePhoneForStorage(phone);
+  const phoneCheck = validatePhone(normalizedPhone);
+  if (!phoneCheck.valid) {
+    return res.status(400).json({ error: phoneCheck.message });
+  }
 
   const result = await farmerSelfRegister({
     fullName: fullName.trim(),
-    phone: phone.trim(),
+    phone: normalizedPhone,
     email: email.toLowerCase().trim(),
     password,
     countryCode,

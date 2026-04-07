@@ -4,6 +4,8 @@ import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { CREATOR_ROLES } from '../utils/roles.js';
+import CountrySelect from '../components/CountrySelect.jsx';
+import PhoneInput from '../components/PhoneInput.jsx';
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
@@ -103,6 +105,7 @@ export default function FarmersPage() {
                       <th>Phone</th>
                       <th>Region</th>
                       <th>Status</th>
+                      <th>Invite</th>
                       {isSuperAdmin && <th>Organization</th>}
                       <th>Primary Crop</th>
                       <th>Farm Size</th>
@@ -116,13 +119,14 @@ export default function FarmersPage() {
                         <td>{f.phone}</td>
                         <td>{f.region}</td>
                         <td><RegistrationBadge status={f.registrationStatus} /></td>
+                        <td>{!f.selfRegistered ? <InviteStatusBadge status={f.inviteDeliveryStatus} hasAccount={!!f.userId} /> : <span className="text-sm text-muted">—</span>}</td>
                         {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
                         <td>{f.primaryCrop || '-'}</td>
                         <td>{f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>{f._count?.applications || 0}</td>
                       </tr>
                     ))}
-                    {farmers.length === 0 && <tr><td colSpan={isSuperAdmin ? 8 : 7} className="empty-state">No farmers found</td></tr>}
+                    {farmers.length === 0 && <tr><td colSpan={isSuperAdmin ? 9 : 8} className="empty-state">No farmers found</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -192,8 +196,27 @@ function RegistrationBadge({ status }) {
   return <span className={`badge ${cls}`}>{label}</span>;
 }
 
+/**
+ * Invite delivery status badge for invited (non-self-registered) farmers.
+ * Shows a concise label based on inviteDeliveryStatus + whether they have a linked account.
+ */
+function InviteStatusBadge({ status, hasAccount }) {
+  if (hasAccount) {
+    return <span className="badge badge-approved" title="Farmer has a login account">Activated</span>;
+  }
+  const map = {
+    manual_share_ready: { cls: 'badge-draft', label: 'Link Ready' },
+    email_sent:         { cls: 'badge-submitted', label: 'Email Sent' },
+    phone_sent:         { cls: 'badge-submitted', label: 'SMS Sent' },
+    accepted:           { cls: 'badge-approved', label: 'Accepted' },
+    expired:            { cls: 'badge-rejected', label: 'Expired' },
+  };
+  const { cls, label } = map[status] || { cls: 'badge-draft', label: 'Pending' };
+  return <span className={`badge ${cls}`}>{label}</span>;
+}
+
 function CreateFarmerModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({ fullName: '', phone: '', region: '', district: '', village: '', primaryCrop: '', farmSizeAcres: '', yearsExperience: '', nationalId: '', email: '', password: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', region: '', district: '', village: '', countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', yearsExperience: '', nationalId: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
@@ -259,19 +282,37 @@ function CreateFarmerModal({ onClose, onCreated }) {
                 <input className="form-input" required value={form.fullName} onChange={set('fullName')} />
               </div>
               <div className="form-group">
-                <label className="form-label">Phone *</label>
-                <input className="form-input" required value={form.phone} onChange={set('phone')} />
+                <label className="form-label">Country</label>
+                <CountrySelect
+                  className="form-select"
+                  searchClassName="form-input"
+                  value={form.countryCode}
+                  onChange={set('countryCode')}
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
+                <label className="form-label">Phone *</label>
+                <PhoneInput
+                  className="form-input"
+                  value={form.phone}
+                  onChange={set('phone')}
+                  countryCode={form.countryCode}
+                  required
+                />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Region *</label>
                 <input className="form-input" required value={form.region} onChange={set('region')} />
               </div>
+            </div>
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label">National ID</label>
                 <input className="form-input" value={form.nationalId} onChange={set('nationalId')} />
               </div>
+              <div className="form-group" />
             </div>
             <div className="form-row">
               <div className="form-group">
@@ -414,21 +455,29 @@ function InviteFarmerModal({ onClose, onCreated }) {
                 <input className="form-input" required value={form.fullName} onChange={set('fullName')} />
               </div>
               <div className="form-group">
-                <label className="form-label">Phone *</label>
-                <input className="form-input" required value={form.phone} onChange={set('phone')} />
+                <label className="form-label">Country</label>
+                <CountrySelect
+                  className="form-select"
+                  searchClassName="form-input"
+                  value={form.countryCode}
+                  onChange={set('countryCode')}
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Region *</label>
-                <input className="form-input" required value={form.region} onChange={set('region')} />
+                <label className="form-label">Phone *</label>
+                <PhoneInput
+                  className="form-input"
+                  value={form.phone}
+                  onChange={set('phone')}
+                  countryCode={form.countryCode}
+                  required
+                />
               </div>
               <div className="form-group">
-                <label className="form-label">Country</label>
-                <select className="form-select" value={form.countryCode} onChange={set('countryCode')}>
-                  <option value="KE">Kenya</option>
-                  <option value="TZ">Tanzania</option>
-                </select>
+                <label className="form-label">Region *</label>
+                <input className="form-input" required value={form.region} onChange={set('region')} />
               </div>
             </div>
             <div className="form-row">
