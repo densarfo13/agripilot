@@ -205,6 +205,7 @@ model User {
   fullName          String    @map("full_name")
   role              UserRole  @default(field_officer)
   active            Boolean   @default(true)
+  archivedAt        DateTime? @map("archived_at")
   organizationId    String?   @map("organization_id")
   preferredLanguage String    @default("en") @map("preferred_language")
   lastLoginMethod   String?   @map("last_login_method")

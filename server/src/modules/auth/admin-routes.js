@@ -13,6 +13,10 @@ import {
   adminUpdateUserProfile,
   adminChangeUserRole,
   adminChangeUserOrg,
+  adminDisableUser,
+  adminEnableUser,
+  adminArchiveUser,
+  adminUnarchiveUser,
 } from './service.js';
 import { sodGuard } from '../../middleware/sodGuard.js';
 import { markExecuted } from '../security/service.js';
@@ -25,12 +29,27 @@ router.use(extractOrganization);
 // ─── User Management (admin-only, org-scoped) ─────────
 
 // List all users (scoped to organization)
+// ?status=active|disabled|archived — defaults to excluding archived users
 router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
-  const where = orgWhereUser(req);
+  const { status } = req.query;
+  const base = orgWhereUser(req);
+
+  let statusFilter = {};
+  if (status === 'active') {
+    statusFilter = { active: true, archivedAt: null };
+  } else if (status === 'disabled') {
+    statusFilter = { active: false, archivedAt: null };
+  } else if (status === 'archived') {
+    statusFilter = { archivedAt: { not: null } };
+  } else {
+    // Default: exclude archived users
+    statusFilter = { archivedAt: null };
+  }
+
   const users = await prisma.user.findMany({
-    where,
+    where: { ...base, ...statusFilter },
     select: {
-      id: true, email: true, fullName: true, role: true, active: true, createdAt: true,
+      id: true, email: true, fullName: true, role: true, active: true, archivedAt: true, createdAt: true,
       organizationId: true,
       organization: { select: { id: true, name: true } },
     },
@@ -110,7 +129,7 @@ router.get('/:id',
     const user = await prisma.user.findFirst({
       where,
       select: {
-        id: true, email: true, fullName: true, role: true, active: true,
+        id: true, email: true, fullName: true, role: true, active: true, archivedAt: true,
         preferredLanguage: true, organizationId: true, createdAt: true, lastLoginAt: true,
         organization: { select: { id: true, name: true } },
       },
@@ -222,23 +241,132 @@ router.patch('/:id/organization',
     res.json(user);
   }));
 
-// Toggle user active status (super_admin only)
+// Toggle user active status — kept for backward compatibility; new code should use /disable and /enable
+// Now extended to institutional_admin with org-scope enforcement
 router.patch('/:id/toggle-active',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const targetId = req.params.id;
+    if (targetId === req.user.sub) return res.status(403).json({ error: 'Cannot toggle your own account' });
+
+    const user = await prisma.user.findUnique({
+      where: { id: targetId },
+      select: { id: true, email: true, fullName: true, role: true, active: true, archivedAt: true, organizationId: true },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.archivedAt) return res.status(409).json({ error: 'User is archived. Unarchive before toggling status' });
+
+    if (req.user.role === 'institutional_admin') {
+      if (user.role === 'super_admin') return res.status(403).json({ error: 'Institutional admins cannot modify super admin accounts' });
+      if (user.organizationId !== req.organizationId) return res.status(403).json({ error: 'Cannot modify users outside your organization' });
+    }
+
+    const newActive = !user.active;
+    const updated = await prisma.user.update({
+      where: { id: targetId },
+      data: { active: newActive },
+      select: { id: true, email: true, fullName: true, role: true, active: true, archivedAt: true },
+    });
+    invalidateAuthCache(targetId);
+
+    writeAuditLog({
+      userId: req.user.sub,
+      action: newActive ? 'user_enabled' : 'user_disabled',
+      details: { targetUserId: user.id, previousActive: user.active, newActive },
+      organizationId: req.organizationId,
+    }).catch(() => {});
+    res.json(updated);
+  }));
+
+// ─── Explicit Offboarding Routes ─────────────────────────────────────────────
+
+// Disable a user — revoke login access, preserve all history
+// super_admin: any non-self user | institutional_admin: own-org non-super_admin only
+router.post('/:id/disable',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { user, previousActive } = await adminDisableUser({
+      targetUserId: req.params.id,
+      actorId: req.user.sub,
+      actorRole: req.user.role,
+      actorOrgId: req.organizationId,
+    });
+    invalidateAuthCache(req.params.id);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_disabled',
+      details: { targetUserId: req.params.id, previousActive, newActive: false },
+      organizationId: req.organizationId,
+      previousStatus: 'active',
+      newStatus: 'disabled',
+    }).catch(() => {});
+    res.json(user);
+  }));
+
+// Re-enable a disabled user — restore login access
+// super_admin: any user | institutional_admin: own-org non-super_admin only
+router.post('/:id/enable',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { user, previousActive } = await adminEnableUser({
+      targetUserId: req.params.id,
+      actorId: req.user.sub,
+      actorRole: req.user.role,
+      actorOrgId: req.organizationId,
+    });
+    invalidateAuthCache(req.params.id);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_enabled',
+      details: { targetUserId: req.params.id, previousActive, newActive: true },
+      organizationId: req.organizationId,
+      previousStatus: 'disabled',
+      newStatus: 'active',
+    }).catch(() => {});
+    res.json(user);
+  }));
+
+// Archive a user (soft delete — super_admin only)
+// Sets active=false + archivedAt. Preserves all linked records. Reversible.
+router.post('/:id/archive',
   validateParamUUID('id'),
   authorize('super_admin'),
   asyncHandler(async (req, res) => {
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const updated = await prisma.user.update({
-      where: { id: req.params.id },
-      data: { active: !user.active },
-      select: { id: true, email: true, fullName: true, role: true, active: true },
+    const { user } = await adminArchiveUser({
+      targetUserId: req.params.id,
+      actorId: req.user.sub,
     });
     invalidateAuthCache(req.params.id);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_archived',
+      details: { targetUserId: req.params.id },
+      organizationId: user.organizationId,
+      previousStatus: 'active',
+      newStatus: 'archived',
+    }).catch(() => {});
+    res.json(user);
+  }));
 
-    writeAuditLog({ userId: req.user.sub, action: user.active ? 'user_deactivated' : 'user_activated', details: { targetUserId: user.id } }).catch(() => {});
-    res.json(updated);
+// Unarchive a user (super_admin only)
+// Removes archivedAt — does NOT re-enable; admin must explicitly call /enable after.
+router.post('/:id/unarchive',
+  validateParamUUID('id'),
+  authorize('super_admin'),
+  asyncHandler(async (req, res) => {
+    const { user } = await adminUnarchiveUser({ targetUserId: req.params.id });
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_unarchived',
+      details: { targetUserId: req.params.id },
+      organizationId: user.organizationId,
+      previousStatus: 'archived',
+      newStatus: 'disabled',
+    }).catch(() => {});
+    res.json(user);
   }));
 
 // Admin reset user password (super_admin only, rate limited)

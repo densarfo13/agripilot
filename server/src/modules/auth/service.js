@@ -351,6 +351,162 @@ export async function adminChangeUserOrg({ targetUserId, newOrgId, actorId }) {
   return { user, previousOrgId: target.organizationId };
 }
 
+// ─── User Offboarding Services ────────────────────────────────────────────────
+
+const USER_SELECT = { id: true, email: true, fullName: true, role: true, active: true, archivedAt: true, organizationId: true };
+
+/**
+ * Disable a user (revoke login access, preserve all history).
+ * - super_admin: any non-self user
+ * - institutional_admin: own-org non-super_admin users only
+ */
+export async function adminDisableUser({ targetUserId, actorId, actorRole, actorOrgId }) {
+  if (targetUserId === actorId) {
+    const err = new Error('Cannot disable your own account');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: USER_SELECT });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (!target.active) {
+    const err = new Error('User is already disabled');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  if (actorRole === 'institutional_admin') {
+    if (target.role === 'super_admin') {
+      const err = new Error('Institutional admins cannot disable super admin accounts');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (target.organizationId !== actorOrgId) {
+      const err = new Error('Cannot disable users outside your organization');
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { active: false },
+    select: USER_SELECT,
+  });
+  return { user, previousActive: true };
+}
+
+/**
+ * Re-enable a disabled user (restore login access).
+ * - super_admin: any user
+ * - institutional_admin: own-org non-super_admin users only
+ * Cannot re-enable an archived user — must unarchive first.
+ */
+export async function adminEnableUser({ targetUserId, actorId, actorRole, actorOrgId }) {
+  const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: USER_SELECT });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (target.active) {
+    const err = new Error('User is already active');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  if (target.archivedAt) {
+    const err = new Error('User is archived. Unarchive the account before re-enabling');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  if (actorRole === 'institutional_admin') {
+    if (target.role === 'super_admin') {
+      const err = new Error('Institutional admins cannot re-enable super admin accounts');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (target.organizationId !== actorOrgId) {
+      const err = new Error('Cannot re-enable users outside your organization');
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { active: true },
+    select: USER_SELECT,
+  });
+  return { user, previousActive: false };
+}
+
+/**
+ * Archive a user (soft delete — super_admin only).
+ * Sets active=false + archivedAt=now. Preserves all linked records.
+ * Excluded from normal user list queries. Reversible via adminUnarchiveUser.
+ */
+export async function adminArchiveUser({ targetUserId, actorId }) {
+  if (targetUserId === actorId) {
+    const err = new Error('Cannot archive your own account');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: USER_SELECT });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (target.archivedAt) {
+    const err = new Error('User is already archived');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { active: false, archivedAt: new Date() },
+    select: USER_SELECT,
+  });
+  return { user };
+}
+
+/**
+ * Unarchive a user (super_admin only). Does not re-enable — admin must
+ * explicitly call enable after unarchiving.
+ */
+export async function adminUnarchiveUser({ targetUserId }) {
+  const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: USER_SELECT });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (!target.archivedAt) {
+    const err = new Error('User is not archived');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { archivedAt: null },
+    select: USER_SELECT,
+  });
+  return { user };
+}
+
 function sanitizeUser(user) {
   return {
     id: user.id,
