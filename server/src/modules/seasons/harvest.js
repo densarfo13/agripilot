@@ -34,18 +34,34 @@ export async function createHarvestReport(seasonId, data, userId = null) {
     throw err;
   }
 
-  if (!data.totalHarvestKg || parseFloat(data.totalHarvestKg) <= 0) {
-    const err = new Error('totalHarvestKg is required and must be positive');
+  const rawKg = parseFloat(data.totalHarvestKg);
+  // Zero-kg is allowed only when crop failure has already been flagged on the season
+  // OR the caller explicitly passes isCropFailure: true (e.g. field officer recording
+  // a failed crop at harvest stage). Negative values are never valid.
+  const isCropFailureHarvest =
+    data.isCropFailure === true || data.isCropFailure === 'true' || season.cropFailureReported;
+
+  if (isNaN(rawKg) || rawKg < 0) {
+    const err = new Error('totalHarvestKg must be a non-negative number.');
+    err.statusCode = 400;
+    throw err;
+  }
+  if (rawKg === 0 && !isCropFailureHarvest) {
+    const err = new Error(
+      'A harvest of 0 kg requires crop failure to be reported first. ' +
+      'Use the "Report Crop Failure" button before submitting the harvest report, ' +
+      'or pass isCropFailure: true if recording a failed crop.'
+    );
     err.statusCode = 400;
     throw err;
   }
 
-  const totalHarvestKg = parseFloat(data.totalHarvestKg);
+  const totalHarvestKg = rawKg;
 
-  // Auto-compute yield per acre if farm size is known
+  // Auto-compute yield per acre if farm size is known; zero-kg crops produce null yield
   const yieldPerAcre = data.yieldPerAcre
     ? parseFloat(data.yieldPerAcre)
-    : season.farmSizeAcres > 0
+    : totalHarvestKg > 0 && season.farmSizeAcres > 0
       ? Math.round((totalHarvestKg / season.farmSizeAcres) * 100) / 100
       : null;
 
@@ -55,14 +71,22 @@ export async function createHarvestReport(seasonId, data, userId = null) {
   // Uses optimistic lock (status condition) to prevent concurrent double-harvest
   const report = await prisma.$transaction(async (tx) => {
     // Optimistic lock: only update if status is still 'active'
+    // Also stamp cropFailureReported when caller declared a crop failure (0 kg path)
+    const seasonUpdateData = {
+      status: 'harvested',
+      closedAt: now,
+      closedBy: userId,
+      closureReason: isCropFailureHarvest && totalHarvestKg === 0
+        ? 'Crop failure — zero harvest reported'
+        : 'Harvest report submitted',
+    };
+    if (isCropFailureHarvest && !season.cropFailureReported) {
+      seasonUpdateData.cropFailureReported = true;
+    }
+
     const lockResult = await tx.farmSeason.updateMany({
       where: { id: seasonId, status: 'active' },
-      data: {
-        status: 'harvested',
-        closedAt: now,
-        closedBy: userId,
-        closureReason: 'Harvest report submitted',
-      },
+      data: seasonUpdateData,
     });
 
     if (lockResult.count === 0) {

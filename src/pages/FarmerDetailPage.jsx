@@ -531,12 +531,23 @@ function PerformanceProfileSection({ farmerId }) {
               </div>
             </div>
             {Object.keys(credSummary.recurringFlags || {}).length > 0 && (
-              <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                {Object.entries(credSummary.recurringFlags).map(([flag, count]) => (
-                  <span key={flag} style={{ display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500, background: '#fee2e2', color: '#991b1b' }}>
-                    {flag.replace(/_/g, ' ')} ({count}x)
-                  </span>
-                ))}
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600 }}>Recurring Flags</span>
+                  <a
+                    href={`/farmer-home/${farmerId}/progress`}
+                    style={{ fontSize: '0.72rem', color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}
+                  >
+                    View in Progress Tab →
+                  </a>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                  {Object.entries(credSummary.recurringFlags).map(([flag, count]) => (
+                    <span key={flag} style={{ display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500, background: '#fee2e2', color: '#991b1b' }}>
+                      {flag.replace(/_/g, ' ')} ({count}x)
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>

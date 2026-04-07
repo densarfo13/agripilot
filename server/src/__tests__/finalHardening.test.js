@@ -455,15 +455,15 @@ describe('Harvest Report Safety', () => {
       .rejects.toThrow(/already exists/);
   });
 
-  it('rejects non-positive harvest amount', async () => {
+  it('rejects non-positive harvest amount without crop failure flag', async () => {
     const { createHarvestReport } = await import('../modules/seasons/harvest.js');
 
     prisma.farmSeason.findUnique.mockResolvedValue({
-      id: 's-1', status: 'active', harvestReport: null, farmSizeAcres: 5,
+      id: 's-1', status: 'active', harvestReport: null, farmSizeAcres: 5, cropFailureReported: false,
     });
 
     await expect(createHarvestReport('s-1', { totalHarvestKg: 0 }))
-      .rejects.toThrow(/must be positive/);
+      .rejects.toThrow(/0 kg requires crop failure/);
   });
 
   it('creates harvest report with auto-computed yield', async () => {

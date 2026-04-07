@@ -101,7 +101,11 @@ export async function updateAccessStatus(farmerId, newStatus, userId) {
 
   const allowed = VALID_STATUS_TRANSITIONS[farmer.registrationStatus];
   if (!allowed || !allowed.includes(newStatus)) {
-    const err = new Error(`Cannot transition from '${farmer.registrationStatus}' to '${newStatus}'`);
+    const allowedStr = allowed?.length ? allowed.join(', ') : 'none';
+    const err = new Error(
+      `Cannot change farmer status from '${farmer.registrationStatus}' to '${newStatus}'. ` +
+      `Allowed transitions from '${farmer.registrationStatus}': ${allowedStr}.`
+    );
     err.statusCode = 400;
     throw err;
   }

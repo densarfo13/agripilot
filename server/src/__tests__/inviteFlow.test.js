@@ -133,28 +133,28 @@ describe('Farmer Access Status Transitions', () => {
       prisma.farmer.findUnique.mockResolvedValue(makeFarmer({ registrationStatus: 'approved' }));
 
       await expect(updateAccessStatus('farmer-1', 'rejected', 'admin-1'))
-        .rejects.toThrow(/Cannot transition from 'approved' to 'rejected'/);
+        .rejects.toThrow(/Cannot change farmer status from 'approved' to 'rejected'/);
     });
 
     it('approved -> pending_approval (not allowed)', async () => {
       prisma.farmer.findUnique.mockResolvedValue(makeFarmer({ registrationStatus: 'approved' }));
 
       await expect(updateAccessStatus('farmer-1', 'pending_approval', 'admin-1'))
-        .rejects.toThrow(/Cannot transition/);
+        .rejects.toThrow(/Cannot change farmer status/);
     });
 
     it('rejected -> approved (must go through pending first)', async () => {
       prisma.farmer.findUnique.mockResolvedValue(makeFarmer({ registrationStatus: 'rejected' }));
 
       await expect(updateAccessStatus('farmer-1', 'approved', 'admin-1'))
-        .rejects.toThrow(/Cannot transition/);
+        .rejects.toThrow(/Cannot change farmer status/);
     });
 
     it('pending_approval -> pending_approval (self-transition not allowed)', async () => {
       prisma.farmer.findUnique.mockResolvedValue(makeFarmer({ registrationStatus: 'pending_approval' }));
 
       await expect(updateAccessStatus('farmer-1', 'pending_approval', 'admin-1'))
-        .rejects.toThrow(/Cannot transition/);
+        .rejects.toThrow(/Cannot change farmer status/);
     });
   });
 

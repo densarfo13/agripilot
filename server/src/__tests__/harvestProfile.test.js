@@ -67,9 +67,9 @@ describe('Harvest Report', () => {
   });
 
   it('rejects invalid harvest quantity', async () => {
-    prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'active', harvestReport: null });
+    prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'active', harvestReport: null, cropFailureReported: false });
     await expect(createHarvestReport('s-1', { totalHarvestKg: 0 }))
-      .rejects.toThrow(/required and must be positive/);
+      .rejects.toThrow(/0 kg requires crop failure/);
   });
 
   it('rejects missing season', async () => {

@@ -347,24 +347,84 @@ export default function FarmerProgressTab() {
                 </div>
               )}
 
-              {/* Credibility indicator (simple, non-technical) */}
-              {credibility && (
-                <div style={{
-                  padding: '0.5rem 0.75rem', borderRadius: 8, marginBottom: '0.75rem', fontSize: '0.85rem',
-                  background: credibility.credibilityLevel === 'high_confidence' ? '#d1fae520' : credibility.credibilityLevel === 'medium_confidence' ? '#fef3c720' : '#fee2e220',
-                  border: `1px solid ${credibility.credibilityLevel === 'high_confidence' ? '#bbf7d0' : credibility.credibilityLevel === 'medium_confidence' ? '#fde68a' : '#fecaca'}`,
-                }}>
-                  <strong>Data Quality:</strong>{' '}
-                  <span style={{ color: credibility.credibilityLevel === 'high_confidence' ? '#16a34a' : credibility.credibilityLevel === 'medium_confidence' ? '#d97706' : '#dc2626', fontWeight: 600 }}>
-                    {credibility.credibilityLevel === 'high_confidence' ? 'Strong' : credibility.credibilityLevel === 'medium_confidence' ? 'Moderate' : 'Needs Attention'}
-                  </span>
-                  {credibility.flags?.length > 0 && (
-                    <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>
-                      ({credibility.flags.length} item{credibility.flags.length > 1 ? 's' : ''} to review)
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Credibility indicator — expandable with flag details */}
+              {credibility && (() => {
+                const lvl = credibility.credibilityLevel;
+                const isHigh = lvl === 'high_confidence';
+                const isMed = lvl === 'medium_confidence';
+                const borderColor = isHigh ? '#bbf7d0' : isMed ? '#fde68a' : '#fecaca';
+                const bg = isHigh ? '#f0fdf4' : isMed ? '#fffbeb' : '#fef2f2';
+                const labelColor = isHigh ? '#16a34a' : isMed ? '#d97706' : '#dc2626';
+                const label = isHigh ? 'Strong' : isMed ? 'Moderate' : 'Needs Attention';
+                const FLAG_LABELS = {
+                  burst_submissions: 'Several entries submitted in a single day — this can look like backfilling.',
+                  update_gap_detected: 'No updates for more than 4 weeks. Log activities regularly.',
+                  no_updates_logged: 'No activities logged yet. Start logging to build your record.',
+                  stage_regression: 'Crop stage went backward — confirm your current stage.',
+                  impossible_fast_progression: 'Stage progression was faster than expected.',
+                  high_stage_mismatch: 'Your confirmed stages often differ from the expected stage.',
+                  entries_before_planting: 'Some entries are dated before your planting date.',
+                  future_dated_entries: 'Entries with future dates were detected.',
+                  harvest_too_early: 'Harvest was logged too early in the season.',
+                  implausible_yield: 'Reported yield is unusually high — please verify the amount.',
+                  very_low_yield: 'Reported yield is unusually low.',
+                  condition_rapid_recovery: 'Crop condition improved from poor to good in less than a week.',
+                  advice_always_yes: 'All advice marked as followed every time — vary your responses if accurate.',
+                  advice_never_followed: 'Advice never marked as followed.',
+                  crop_failure_reported: 'Crop failure was reported for this season.',
+                  partial_harvest_reported: 'Partial harvest was reported.',
+                  season_abandoned: 'This season was abandoned.',
+                  harvest_image_too_early: 'A harvest photo was added too early in the season.',
+                  early_image_in_post_harvest: 'An early-growth photo was added during post-harvest.',
+                  image_stage_incoherent: 'Photo stages are inconsistent with the season timeline.',
+                };
+                return (
+                  <div style={{ border: `1px solid ${borderColor}`, background: bg, borderRadius: 8, marginBottom: '0.75rem', overflow: 'hidden' }}>
+                    <div style={{ padding: '0.5rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '0.85rem' }}>
+                        <strong>Data Quality:</strong>{' '}
+                        <span style={{ color: labelColor, fontWeight: 600 }}>{label}</span>
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#6b7280' }}>
+                          — how consistent and complete your farm records look
+                        </span>
+                      </div>
+                      {credibility.flags?.length > 0 && (
+                        <span style={{ fontSize: '0.78rem', color: labelColor, fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '0.5rem' }}>
+                          {credibility.flags.length} item{credibility.flags.length > 1 ? 's' : ''} to review ▾
+                        </span>
+                      )}
+                    </div>
+                    {credibility.flags?.length > 0 && (
+                      <div style={{ borderTop: `1px solid ${borderColor}`, padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        {credibility.flags.map(flag => (
+                          <div key={flag} style={{ fontSize: '0.8rem', display: 'flex', gap: '0.4rem', alignItems: 'flex-start' }}>
+                            <span style={{ color: labelColor, fontWeight: 700, flexShrink: 0 }}>•</span>
+                            <span style={{ color: '#374151' }}>{FLAG_LABELS[flag] || flag.replace(/_/g, ' ')}</span>
+                          </div>
+                        ))}
+                        {!isHigh && (
+                          <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#6b7280', borderTop: `1px solid ${borderColor}`, paddingTop: '0.35rem' }}>
+                            Tip: Log activities regularly, confirm your growth stage, and add photos to improve your data quality score.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Stale season banner — harvest overdue */}
+              {activeSeason.expectedHarvestDate && !activeSeason.cropFailureReported && (() => {
+                const daysOverdue = Math.floor((Date.now() - new Date(activeSeason.expectedHarvestDate)) / 86400000);
+                if (daysOverdue > 0) return (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                    Your expected harvest date was <strong>{daysOverdue} day{daysOverdue !== 1 ? 's' : ''} ago</strong>.{' '}
+                    If you have harvested, submit a harvest report below.{' '}
+                    If the crop failed or harvest is delayed, use the options below.
+                  </div>
+                );
+                return null;
+              })()}
 
               {/* Missing update prompt */}
               {activeSeason.lastActivityDate && (() => {
@@ -517,13 +577,27 @@ export default function FarmerProgressTab() {
             <div className="card" style={{ marginBottom: '1rem' }}>
               <div className="card-header">Submit Harvest Report</div>
               <div className="card-body">
-                <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 0.75rem' }}>This will close the current season.</p>
+                <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 0.75rem' }}>
+                  This will close the current season.
+                  {activeSeason.cropFailureReported && (
+                    <span style={{ display: 'block', marginTop: '0.25rem', color: '#b45309', fontWeight: 500 }}>
+                      Crop failure is recorded — you may enter 0 kg if there was no harvest.
+                    </span>
+                  )}
+                </p>
                 <form onSubmit={handleHarvest}>
                   {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Total Harvest (kg) *</label>
-                      <input className="form-input" type="number" step="0.1" required value={harvestForm.totalHarvestKg} onChange={e => setHarvestForm(f => ({ ...f, totalHarvestKg: e.target.value }))} />
+                      <input
+                        className="form-input" type="number" step="0.1"
+                        min={activeSeason.cropFailureReported ? '0' : '0.1'}
+                        required
+                        value={harvestForm.totalHarvestKg}
+                        onChange={e => setHarvestForm(f => ({ ...f, totalHarvestKg: e.target.value }))}
+                        placeholder={activeSeason.cropFailureReported ? '0 allowed for crop failure' : ''}
+                      />
                     </div>
                     <div>
                       <label className="form-label">Sales Amount</label>
