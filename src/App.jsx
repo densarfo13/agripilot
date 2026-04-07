@@ -37,6 +37,7 @@ const PilotMetricsPage = lazy(() => import('./pages/PilotMetricsPage.jsx'));
 const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
 const SecurityRequestsPage = lazy(() => import('./pages/SecurityRequestsPage.jsx'));
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage.jsx'));
+const PilotQAPage = lazy(() => import('./pages/PilotQAPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="admin/organizations" element={<RoleRoute roles={ADMIN_ROLES}><AdminOrganizationsPage /></RoleRoute>} />
             <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
             <Route path="admin/security" element={<RoleRoute roles={ADMIN_ROLES}><SecurityRequestsPage /></RoleRoute>} />
+            <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="pilot-metrics" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer', 'field_officer']}><PilotMetricsPage /></RoleRoute>} />
             <Route path="account" element={<AccountPage />} />
           </Route>

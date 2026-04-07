@@ -42,6 +42,7 @@ import lifecycleRoutes from './modules/lifecycle/routes.js';
 import seasonRoutes from './modules/seasons/routes.js';
 import organizationRoutes from './modules/organizations/routes.js';
 import pilotMetricsRoutes from './modules/pilotMetrics/routes.js';
+import pilotQARoutes from './modules/pilotQA/routes.js';
 import securityRoutes from './modules/security/routes.js';
 import inviteRoutes from './modules/invites/routes.js';
 
@@ -256,6 +257,7 @@ app.use('/api/lifecycle', lifecycleRoutes);
 app.use('/api/seasons', seasonRoutes);
 app.use('/api/organizations', organizationRoutes);
 app.use('/api/pilot', pilotMetricsRoutes);
+app.use('/api/pilot-qa', pilotQARoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/invites', inviteRoutes); // public invite acceptance (rate-limited internally)
 

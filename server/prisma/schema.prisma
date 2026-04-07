@@ -28,9 +28,10 @@ model Organization {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  users            User[]
-  farmers          Farmer[]
-  approvalRequests ApprovalRequest[]
+  users                User[]
+  farmers              Farmer[]
+  approvalRequests     ApprovalRequest[]
+  pilotChecklistItems  PilotChecklistItem[]
 
   @@map("organizations")
 }
@@ -226,6 +227,8 @@ model User {
   approvalRequestsMade     ApprovalRequest[] @relation("ApprovalRequestedBy")
   approvalRequestsApproved ApprovalRequest[] @relation("ApprovalApprovedBy")
   approvalRequestsRevoked  ApprovalRequest[] @relation("ApprovalRevokedBy")
+  // Pilot QA
+  pilotChecklistItems      PilotChecklistItem[] @relation("PilotChecklistUpdatedBy")
 
   @@index([organizationId], map: "idx_users_org")
   @@map("users")
@@ -976,4 +979,34 @@ model ApprovalRequest {
   @@index([targetSeasonId], map: "idx_approval_target_season")
   @@index([expiresAt], map: "idx_approval_expires_at")
   @@map("approval_requests")
+}
+
+// ─── Pilot QA Checklist ─────────────────────────────────
+
+enum PilotCheckStatus {
+  not_started
+  pass
+  fail
+  blocked
+  not_applicable
+}
+
+model PilotChecklistItem {
+  id             String           @id @default(uuid())
+  itemKey        String           @map("item_key")
+  category       String
+  status         PilotCheckStatus @default(not_started)
+  notes          String?
+  organizationId String?          @map("organization_id")
+  updatedById    String?          @map("updated_by_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  updatedBy    User?         @relation("PilotChecklistUpdatedBy", fields: [updatedById], references: [id])
+
+  @@unique([itemKey, organizationId], name: "item_org_unique")
+  @@index([organizationId], map: "idx_qa_org")
+  @@index([category, organizationId], map: "idx_qa_cat_org")
+  @@map("pilot_checklist_items")
 }

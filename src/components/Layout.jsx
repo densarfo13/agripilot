@@ -27,6 +27,7 @@ const NAV = [
     { to: '/audit', label: 'Audit Trail', icon: 'T' },
     { to: '/admin/users', label: 'User Management', icon: 'U' },
     { to: '/admin/security', label: 'Security Requests', icon: 'S', roles: ADMIN_ROLES },
+    { to: '/admin/pilot-qa', label: 'Pilot QA', icon: 'Q', roles: ADMIN_ROLES },
   ] },
 ];
 
