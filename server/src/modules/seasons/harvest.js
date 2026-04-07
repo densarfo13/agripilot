@@ -94,6 +94,75 @@ export async function createHarvestReport(seasonId, data, userId = null) {
   return report;
 }
 
+/**
+ * Update/correct an existing harvest report.
+ * Only allowed when the season has been reopened (status = 'active') and a report exists.
+ * This supports the correction flow: reopen → fix harvest data → re-submit.
+ */
+export async function updateHarvestReport(seasonId, data, userId = null) {
+  const season = await prisma.farmSeason.findUnique({
+    where: { id: seasonId },
+    include: { harvestReport: true },
+  });
+
+  if (!season) {
+    const err = new Error('Season not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (!season.harvestReport) {
+    const err = new Error('No harvest report exists to correct. Submit a new one instead.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Only allow corrections on reopened (active) seasons
+  if (season.status !== 'active') {
+    const err = new Error('Harvest report can only be corrected on reopened (active) seasons. Reopen the season first.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const updateData = {};
+  if (data.totalHarvestKg !== undefined) {
+    const val = parseFloat(data.totalHarvestKg);
+    if (isNaN(val) || val <= 0) {
+      const err = new Error('totalHarvestKg must be positive');
+      err.statusCode = 400;
+      throw err;
+    }
+    updateData.totalHarvestKg = val;
+    // Recompute yield if farm size is known
+    if (season.farmSizeAcres > 0) {
+      updateData.yieldPerAcre = Math.round((val / season.farmSizeAcres) * 100) / 100;
+    }
+  }
+  if (data.yieldPerAcre !== undefined) updateData.yieldPerAcre = parseFloat(data.yieldPerAcre);
+  if (data.salesAmount !== undefined) updateData.salesAmount = data.salesAmount ? parseFloat(data.salesAmount) : null;
+  if (data.salesCurrency !== undefined) updateData.salesCurrency = data.salesCurrency || null;
+  if (data.notes !== undefined) updateData.notes = data.notes || null;
+
+  if (Object.keys(updateData).length === 0) {
+    const err = new Error('No fields to update');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const updated = await prisma.harvestReport.update({
+    where: { seasonId },
+    data: updateData,
+  });
+
+  logWorkflowEvent('harvest_report_corrected', {
+    seasonId,
+    userId,
+    corrections: Object.keys(updateData),
+  });
+
+  return updated;
+}
+
 export async function getHarvestReport(seasonId) {
   const report = await prisma.harvestReport.findUnique({
     where: { seasonId },

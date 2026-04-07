@@ -10,6 +10,8 @@
  *
  * Bounded to MAX_ENTRIES to prevent memory leaks. Old entries are cleaned lazily.
  */
+import { opsEvent } from '../utils/opsLogger.js';
+
 const DEDUP_TTL_MS = 5_000; // 5 seconds
 const MAX_ENTRIES = 2000;
 const inflight = new Map(); // key → expiresAt
@@ -28,7 +30,8 @@ function cleanExpired() {
 export function dedupGuard(actionName) {
   return (req, res, next) => {
     const userId = req.user?.sub;
-    const resourceId = req.params.id;
+    // Support multiple param names: :id, :farmerId, :applicationId, :seasonId
+    const resourceId = req.params.id || req.params.farmerId || req.params.applicationId || req.params.seasonId;
     if (!userId || !resourceId) return next(); // no dedup without user+resource
 
     const key = `${userId}:${actionName}:${resourceId}`;
@@ -37,6 +40,9 @@ export function dedupGuard(actionName) {
     // Check for in-flight duplicate
     const expiresAt = inflight.get(key);
     if (expiresAt && now < expiresAt) {
+      opsEvent('workflow', 'duplicate_submission_blocked', 'warn', {
+        userId, actionName, resourceId, path: req.path,
+      });
       return res.status(409).json({
         error: 'This action is already being processed. Please wait a moment before retrying.',
       });

@@ -4,12 +4,22 @@ import fs from 'fs';
 import path from 'path';
 import { sanitizeFilename } from '../../middleware/validate.js';
 
+// Statuses that allow evidence uploads
+const UPLOADABLE_STATUSES = ['draft', 'submitted', 'under_review', 'needs_more_evidence', 'field_review_required'];
+
 export async function uploadEvidence(applicationId, file, type) {
   // Verify application exists
   const app = await prisma.application.findUnique({ where: { id: applicationId } });
   if (!app) {
     const err = new Error('Application not found');
     err.statusCode = 404;
+    throw err;
+  }
+
+  // Block uploads to finalized applications
+  if (!UPLOADABLE_STATUSES.includes(app.status)) {
+    const err = new Error(`Cannot upload evidence to an application with status '${app.status}'. Only allowed for: ${UPLOADABLE_STATUSES.join(', ')}`);
+    err.statusCode = 400;
     throw err;
   }
 
@@ -57,11 +67,24 @@ export async function listEvidence(applicationId) {
   });
 }
 
+// Statuses that block evidence deletion (finalized decisions)
+const DELETION_BLOCKED_STATUSES = ['approved', 'disbursed'];
+
 export async function deleteEvidence(evidenceId) {
-  const evidence = await prisma.evidenceFile.findUnique({ where: { id: evidenceId } });
+  const evidence = await prisma.evidenceFile.findUnique({
+    where: { id: evidenceId },
+    include: { application: { select: { id: true, status: true } } },
+  });
   if (!evidence) {
     const err = new Error('Evidence file not found');
     err.statusCode = 404;
+    throw err;
+  }
+
+  // Block deletion of evidence from approved/disbursed applications (audit integrity)
+  if (evidence.application && DELETION_BLOCKED_STATUSES.includes(evidence.application.status)) {
+    const err = new Error(`Cannot delete evidence from an application with status '${evidence.application.status}'. Evidence is part of the decision record.`);
+    err.statusCode = 400;
     throw err;
   }
 

@@ -8,7 +8,7 @@ import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as svc from './service.js';
 import { getSeasonComparison } from './comparison.js';
 import { computeProgressScore, getProgressScore, CLASSIFICATION_LABELS } from './scoring.js';
-import { createHarvestReport, getHarvestReport } from './harvest.js';
+import { createHarvestReport, getHarvestReport, updateHarvestReport } from './harvest.js';
 import { getPerformanceProfile, getSeasonPerformanceSummary, getInvestorIntelligence } from './profile.js';
 import { computeCredibility, getCredibility, getFarmerCredibilitySummary, CREDIBILITY_LEVELS } from './credibility.js';
 import { addProgressImage, getProgressImages } from './imageValidation.js';
@@ -20,6 +20,31 @@ import prisma from '../../config/database.js';
 import { transitionSeasonStatus, checkSeasonStaleness, getStaleSeasons } from './statusTransitions.js';
 import { writeAuditLog } from '../audit/service.js';
 import { extractOrganization, verifyOrgAccess } from '../../middleware/orgScope.js';
+
+// ─── Helper: verify farmer belongs to caller's org ────
+async function requireFarmerOrgAccess(req, res, next) {
+  // Cross-org users (super_admin) skip org check
+  if (req.isCrossOrg) return next();
+  if (!req.organizationId) return next();
+
+  const farmerId = req.params.farmerId;
+  if (!farmerId) return next();
+
+  const farmer = await prisma.farmer.findUnique({
+    where: { id: farmerId },
+    select: { organizationId: true },
+  });
+
+  if (!farmer) {
+    return res.status(404).json({ error: 'Farmer not found' });
+  }
+
+  if (!verifyOrgAccess(req, farmer.organizationId)) {
+    return res.status(403).json({ error: 'Access denied — farmer belongs to a different organization' });
+  }
+
+  next();
+}
 
 const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'reviewer'];
 const VALID_CONDITIONS = ['good', 'average', 'poor'];
@@ -67,6 +92,7 @@ router.post('/farmer/:farmerId',
   authorize(...STAFF_ROLES, 'farmer'),
   requireFarmerOwnership,
   submissionLimiter,
+  dedupGuard('create-season'),
   idempotencyCheck,
   asyncHandler(async (req, res) => {
     const season = await svc.createSeason(req.params.farmerId, req.body);
@@ -77,20 +103,23 @@ router.post('/farmer/:farmerId',
     res.status(201).json(season);
   }));
 
-// List seasons for a farmer (?status=active&cropType=maize)
+// List seasons for a farmer (?status=active&cropType=maize&page=1&limit=50)
 router.get('/farmer/:farmerId',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'farmer'),
   requireFarmerOwnership,
   asyncHandler(async (req, res) => {
-    res.json(await svc.listSeasons(req.params.farmerId, req.query));
+    const result = await svc.listSeasons(req.params.farmerId, req.query);
+    res.json(result);
   }));
 
 // Get all stale seasons (admin dashboard) — must be before /:id to avoid param capture
 router.get('/ops/stale-seasons',
   authorize('super_admin', 'institutional_admin'),
   asyncHandler(async (req, res) => {
-    res.json(await getStaleSeasons());
+    // Org-scoped: institutional_admin sees only their org's stale seasons
+    const opts = req.organizationId ? { organizationId: req.organizationId } : {};
+    res.json(await getStaleSeasons(opts));
   }));
 
 // Get season by ID
@@ -310,6 +339,21 @@ router.get('/:id/harvest-report',
     res.json(await getHarvestReport(req.params.id));
   }));
 
+// Correct/update harvest report (only on reopened seasons)
+router.patch('/:id/harvest-report',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  requireSeasonAccess,
+  dedupGuard('harvest-report-correction'),
+  asyncHandler(async (req, res) => {
+    const report = await updateHarvestReport(req.params.id, req.body, req.user.sub);
+    writeAuditLog({
+      userId: req.user.sub, action: 'harvest_report_corrected',
+      details: { seasonId: req.params.id, corrections: Object.keys(req.body) },
+    }).catch(() => {});
+    res.json(report);
+  }));
+
 // ═══════════════════════════════════════════════════════
 //  SEASON PERFORMANCE SUMMARY
 // ═══════════════════════════════════════════════════════
@@ -329,6 +373,7 @@ router.get('/:id/performance-summary',
 router.get('/farmer/:farmerId/performance-profile',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireFarmerOrgAccess,
   asyncHandler(async (req, res) => {
     res.json(await getPerformanceProfile(req.params.farmerId));
   }));
@@ -340,6 +385,7 @@ router.get('/farmer/:farmerId/performance-profile',
 router.get('/investor/farmers/:farmerId/intelligence',
   validateParamUUID('farmerId'),
   authorize('super_admin', 'institutional_admin', 'investor_viewer'),
+  requireFarmerOrgAccess,
   asyncHandler(async (req, res) => {
     res.json(await getInvestorIntelligence(req.params.farmerId));
   }));
@@ -381,6 +427,7 @@ router.get('/meta/credibility-levels', (_req, res) => {
 router.get('/farmer/:farmerId/credibility-summary',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireFarmerOrgAccess,
   asyncHandler(async (req, res) => {
     res.json(await getFarmerCredibilitySummary(req.params.farmerId));
   }));
@@ -475,6 +522,7 @@ router.get('/:id/advice-adherence',
 router.get('/farmer/:farmerId/season-history',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireFarmerOrgAccess,
   asyncHandler(async (req, res) => {
     res.json(await getSeasonHistory(req.params.farmerId));
   }));
@@ -505,6 +553,7 @@ router.get('/:id/trust-summary',
 router.get('/farmer/:farmerId/performance-export',
   validateParamUUID('farmerId'),
   authorize(...STAFF_ROLES, 'investor_viewer'),
+  requireFarmerOrgAccess,
   asyncHandler(async (req, res) => {
     res.json(await getPerformanceExport(req.params.farmerId));
   }));
@@ -539,15 +588,12 @@ router.post('/:id/crop-failure',
   requireSeasonAccess,
   dedupGuard('crop-failure'),
   asyncHandler(async (req, res) => {
+    // Atomic: status transition + cropFailureReported flag in single updateMany
     const { season, previousStatus } = await transitionSeasonStatus(req.params.id, 'failed', {
       userId: req.user.sub,
       role: req.user.role,
       reason: req.body.reason || 'Crop failure declared',
-    });
-    // Also flag the cropFailureReported field
-    await prisma.farmSeason.update({
-      where: { id: req.params.id },
-      data: { cropFailureReported: true },
+      extraData: { cropFailureReported: true },
     });
     writeAuditLog({
       userId: req.user.sub, action: 'season_crop_failure',

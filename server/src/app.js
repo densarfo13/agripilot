@@ -41,6 +41,7 @@ import buyerInterestRoutes from './modules/buyerInterest/routes.js';
 import lifecycleRoutes from './modules/lifecycle/routes.js';
 import seasonRoutes from './modules/seasons/routes.js';
 import organizationRoutes from './modules/organizations/routes.js';
+import pilotMetricsRoutes from './modules/pilotMetrics/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -167,6 +168,45 @@ app.get('/api/ops/health', authenticate, async (req, res) => {
   }
 });
 
+// ─── Ops: Orphaned file detection (admin-only) ─────────────
+app.get('/api/ops/orphaned-files', authenticate, async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  try {
+    const diskFiles = listDiskFiles();
+    if (diskFiles.length === 0) return res.json({ orphans: [], count: 0 });
+
+    // Get all filenames tracked in DB
+    const dbFiles = await prisma.evidenceFile.findMany({
+      select: { filename: true },
+    });
+    const dbFilenames = new Set(dbFiles.map(f => f.filename));
+
+    // Also check progress entry image URLs (they store /uploads/filename)
+    const progressImages = await prisma.seasonProgressEntry.findMany({
+      where: { imageUrl: { not: null } },
+      select: { imageUrl: true },
+    });
+    for (const pi of progressImages) {
+      if (pi.imageUrl && pi.imageUrl.startsWith('/uploads/')) {
+        dbFilenames.add(pi.imageUrl.replace('/uploads/', ''));
+      }
+    }
+
+    const orphans = diskFiles.filter(f => !dbFilenames.has(f.filename));
+
+    res.json({
+      orphans: orphans.slice(0, 100), // limit response size
+      count: orphans.length,
+      totalDiskFiles: diskFiles.length,
+      totalDbReferences: dbFilenames.size,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to detect orphans', details: err.message });
+  }
+});
+
 // ─── Auth (public — with stricter rate limiting) ────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', adminUserRoutes);
@@ -213,6 +253,7 @@ app.use('/api/buyer-interest', buyerInterestRoutes);
 app.use('/api/lifecycle', lifecycleRoutes);
 app.use('/api/seasons', seasonRoutes);
 app.use('/api/organizations', organizationRoutes);
+app.use('/api/pilot', pilotMetricsRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

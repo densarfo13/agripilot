@@ -107,15 +107,26 @@ export async function listSeasons(farmerId, filters = {}) {
   if (filters.status) where.status = filters.status;
   if (filters.cropType) where.cropType = filters.cropType;
 
-  return prisma.farmSeason.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      harvestReport: { select: { id: true, totalHarvestKg: true, yieldPerAcre: true } },
-      progressScore: { select: { progressScore: true, performanceClassification: true } },
-      _count: { select: { progressEntries: true, stageConfirmations: true } },
-    },
-  });
+  // Paginate with sensible defaults (most farmers have <20 seasons)
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(filters.limit) || 50));
+
+  const [seasons, total] = await Promise.all([
+    prisma.farmSeason.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        harvestReport: { select: { id: true, totalHarvestKg: true, yieldPerAcre: true } },
+        progressScore: { select: { progressScore: true, performanceClassification: true } },
+        _count: { select: { progressEntries: true, stageConfirmations: true } },
+      },
+    }),
+    prisma.farmSeason.count({ where }),
+  ]);
+
+  return { seasons, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function getSeasonById(id) {

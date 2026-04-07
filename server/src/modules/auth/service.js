@@ -78,8 +78,8 @@ export async function login({ email, password }) {
     throw err;
   }
 
-  // Update last login method
-  await prisma.user.update({ where: { id: user.id }, data: { lastLoginMethod: 'local' } });
+  // Update last login method and timestamp
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginMethod: 'local', lastLoginAt: new Date() } });
 
   const token = generateToken(user);
   const sanitized = sanitizeUser(user);

@@ -32,7 +32,7 @@ router.get('/me', asyncHandler(async (req, res) => {
 // ─── Staff-only routes ─────────────────────────────────
 
 // Create farmer (staff creates on behalf of farmer — auto-approved)
-router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), idempotencyCheck, asyncHandler(async (req, res) => {
+router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('create-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const { fullName, phone, region } = req.body;
   if (!fullName || !phone || !region) {
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
@@ -43,7 +43,7 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
 }));
 
 // Invite farmer (admin/field officer — creates pre-approved farmer record)
-router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_officer'), idempotencyCheck, asyncHandler(async (req, res) => {
+router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('invite-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const farmer = await inviteFarmer({
     ...req.body,
     invitedById: req.user.sub,
@@ -109,11 +109,12 @@ router.post('/:id/approve-registration',
       farmerId: req.params.id,
       approvedById: req.user.sub,
       assignedOfficerId,
+      organizationId: req.organizationId,
     });
     writeAuditLog({
       userId: req.user.sub,
       action: 'farmer_registration_approved',
-      details: { farmerId: req.params.id, assignedOfficerId },
+      details: { farmerId: req.params.id, assignedOfficerId, organizationId: req.organizationId },
     }).catch(() => {});
     res.json(result);
   }));

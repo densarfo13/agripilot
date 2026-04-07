@@ -37,6 +37,14 @@ async function main() {
   await prisma.farmBoundary.deleteMany();
   await prisma.farmLocation.deleteMany();
   await prisma.application.deleteMany();
+  // FarmSeason children (cascade deletes harvestReport, progressEntry, officerValidation, etc.)
+  await prisma.harvestReport.deleteMany();
+  await prisma.seasonProgressEntry.deleteMany();
+  await prisma.officerValidation.deleteMany();
+  await prisma.credibilityAssessment.deleteMany();
+  await prisma.progressScore.deleteMany();
+  await prisma.stageConfirmation.deleteMany();
+  await prisma.farmSeason.deleteMany();
   await prisma.farmer.deleteMany();
   await prisma.user.deleteMany();
   await prisma.organization.deleteMany();
@@ -819,20 +827,228 @@ async function main() {
   }
   console.log('  ✅ Demo lifecycle stages set');
 
+  // ─── Pilot Adoption Demo Data ─────────────────────────
+  // Creates farmer user accounts, farm seasons, progress entries, and harvest reports
+  // so the Pilot Metrics dashboard shows a realistic (non-empty) adoption funnel.
+  console.log('\nCreating pilot adoption demo data...');
+
+  // Farmer user accounts — link 4 KE farmers to user accounts
+  const farmerUserHash = staffHash;
+  const farmerUser1 = await prisma.user.create({
+    data: {
+      email: 'john.mwangi@farmer.agripilot.com',
+      passwordHash: farmerUserHash,
+      fullName: 'John Mwangi',
+      role: 'farmer',
+      organizationId: defaultOrg.id,
+      lastLoginAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // logged in 2d ago
+    },
+  });
+  const farmerUser2 = await prisma.user.create({
+    data: {
+      email: 'amina.hassan@farmer.agripilot.com',
+      passwordHash: farmerUserHash,
+      fullName: 'Amina Hassan',
+      role: 'farmer',
+      organizationId: defaultOrg.id,
+      lastLoginAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // logged in 5d ago
+    },
+  });
+  const farmerUser3 = await prisma.user.create({
+    data: {
+      email: 'peter.otieno@farmer.agripilot.com',
+      passwordHash: farmerUserHash,
+      fullName: 'Peter Otieno',
+      role: 'farmer',
+      organizationId: defaultOrg.id,
+      lastLoginAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // logged in yesterday
+    },
+  });
+  const farmerUser4 = await prisma.user.create({
+    data: {
+      email: 'florence.nyambura@farmer.agripilot.com',
+      passwordHash: farmerUserHash,
+      fullName: 'Florence Nyambura',
+      role: 'farmer',
+      organizationId: defaultOrg.id,
+      // no lastLoginAt — account created but never logged in (funnel drop-off demo)
+    },
+  });
+
+  // Link farmer accounts to their farmer records
+  await prisma.farmer.update({ where: { id: farmers[0].id }, data: { userId: farmerUser1.id } });
+  await prisma.farmer.update({ where: { id: farmers[1].id }, data: { userId: farmerUser2.id } });
+  await prisma.farmer.update({ where: { id: farmers[2].id }, data: { userId: farmerUser3.id } });
+  await prisma.farmer.update({ where: { id: farmers[3].id }, data: { userId: farmerUser4.id } });
+  console.log('  ✅ 4 farmer user accounts created and linked');
+
+  // Farm seasons for 4 KE farmers
+  const season1 = await prisma.farmSeason.create({
+    data: {
+      farmerId: farmers[0].id, cropType: 'maize', farmSizeAcres: 5.0,
+      plantingDate: new Date('2026-03-01'),
+      expectedHarvestDate: new Date('2026-07-15'),
+      status: 'active',
+    },
+  });
+  const season2 = await prisma.farmSeason.create({
+    data: {
+      farmerId: farmers[1].id, cropType: 'wheat', farmSizeAcres: 15.0,
+      plantingDate: new Date('2026-02-20'),
+      expectedHarvestDate: new Date('2026-06-30'),
+      status: 'active',
+    },
+  });
+  const season3 = await prisma.farmSeason.create({
+    data: {
+      farmerId: farmers[2].id, cropType: 'sugarcane', farmSizeAcres: 8.0,
+      plantingDate: new Date('2026-01-15'),
+      expectedHarvestDate: new Date('2026-04-30'),
+      status: 'harvested',
+    },
+  });
+  const season4 = await prisma.farmSeason.create({
+    data: {
+      farmerId: farmers[3].id, cropType: 'coffee', farmSizeAcres: 3.0,
+      plantingDate: new Date('2026-02-01'),
+      status: 'active',
+      // no expectedHarvestDate — shows in harvest_overdue attention check
+    },
+  });
+  console.log('  ✅ 4 farm seasons created');
+
+  // Progress entries — farmers[0] and [1] have entries with images, farmers[2] has entry without image
+  await prisma.seasonProgressEntry.createMany({
+    data: [
+      // farmers[0] — 2 entries, both with images (full engagement)
+      {
+        seasonId: season1.id, entryType: 'activity', activityType: 'planting',
+        description: 'Planted hybrid H614D maize seeds — 5 acres complete',
+        imageUrl: '/uploads/demo-s1-planting.jpg',
+        entryDate: new Date('2026-03-01'),
+      },
+      {
+        seasonId: season1.id, entryType: 'activity', activityType: 'fertilizing',
+        description: 'Applied DAP fertilizer at planting depth',
+        imageUrl: '/uploads/demo-s1-fertilizer.jpg',
+        entryDate: new Date('2026-03-05'),
+      },
+      // farmers[1] — 1 entry with image
+      {
+        seasonId: season2.id, entryType: 'activity', activityType: 'planting',
+        description: 'Planted certified wheat seed — 15 acres',
+        imageUrl: '/uploads/demo-s2-planting.jpg',
+        entryDate: new Date('2026-02-20'),
+      },
+      // farmers[2] — 1 entry without image (partial engagement, shows drop-off)
+      {
+        seasonId: season3.id, entryType: 'condition',
+        description: 'Sugarcane crop healthy, no pest issues observed',
+        entryDate: new Date('2026-02-01'),
+        // imageUrl intentionally absent
+      },
+      // farmers[3] has a season but NO progress entries — shows another drop-off step
+    ],
+  });
+  console.log('  ✅ 4 season progress entries created (3 with images)');
+
+  // Harvest report for farmers[2] (sugarcane — already harvested)
+  await prisma.harvestReport.create({
+    data: {
+      seasonId: season3.id,
+      totalHarvestKg: 48000,
+      yieldPerAcre: 6000,
+      salesAmount: 240000,
+      salesCurrency: 'KES',
+      notes: 'Slightly below expected yield due to mid-season dry spell',
+    },
+  });
+  console.log('  ✅ 1 harvest report created');
+
+  // ─── Green Fields NGO — Second Pilot Org ──────────────
+  // Gives super_admin meaningful cross-org comparison in Pilot Metrics.
+  console.log('\nCreating Green Fields NGO pilot org users and farmers...');
+
+  const ngoOfficer = await prisma.user.create({
+    data: {
+      email: 'officer@greenfields.agripilot.com',
+      passwordHash,
+      fullName: 'Wanjiru Kamau',
+      role: 'field_officer',
+      organizationId: partnerOrg.id,
+    },
+  });
+  await prisma.user.create({
+    data: {
+      email: 'admin@greenfields.agripilot.com',
+      passwordHash: adminHash,
+      fullName: 'Samuel Njuguna',
+      role: 'institutional_admin',
+      organizationId: partnerOrg.id,
+    },
+  });
+
+  const ngoFarmers = await Promise.all([
+    prisma.farmer.create({
+      data: {
+        fullName: 'Agnes Wanjiku', phone: '+254711223344', nationalId: 'KE-99887766',
+        region: 'Central', district: 'Nyeri', village: 'Othaya',
+        primaryCrop: 'coffee', farmSizeAcres: 2.5, yearsExperience: 8,
+        organizationId: partnerOrg.id, createdById: ngoOfficer.id,
+        registrationStatus: 'approved',
+      },
+    }),
+    prisma.farmer.create({
+      data: {
+        fullName: 'Joseph Karanja', phone: '+254722334455', nationalId: 'KE-88776655',
+        region: 'Central', district: 'Kirinyaga', village: 'Kerugoya',
+        primaryCrop: 'maize', farmSizeAcres: 4.0, yearsExperience: 12,
+        organizationId: partnerOrg.id, createdById: ngoOfficer.id,
+        registrationStatus: 'approved',
+      },
+    }),
+    prisma.farmer.create({
+      data: {
+        fullName: 'Lucy Muthoni', phone: '+254733445566',
+        region: 'Central', district: 'Muranga', village: "Murang'a Town",
+        primaryCrop: 'banana', farmSizeAcres: 1.5, yearsExperience: 5,
+        organizationId: partnerOrg.id, createdById: ngoOfficer.id,
+        registrationStatus: 'pending_approval', // shows in needs-attention for NGO admin
+      },
+    }),
+  ]);
+  console.log(`  ✅ ${ngoFarmers.length} Green Fields NGO farmers created (2 approved, 1 pending)`);
+
   // ─── Summary ──────────────────────────────────────────
   console.log('\n🎉 Seed completed!\n');
   console.log('Demo Accounts:');
-  console.log('  super_admin:         admin@agripilot.com');
-  console.log('  institutional_admin: institution@agripilot.com');
-  console.log('  reviewer:            reviewer@agripilot.com / reviewer2@agripilot.com');
-  console.log('  field_officer (KE):  officer@agripilot.com / officer2@agripilot.com');
-  console.log('  field_officer (TZ):  officer.tz@agripilot.com');
-  console.log('  investor_viewer:     investor@agripilot.com');
-  console.log(`\nKenya: ${farmers.length} farmers, ${apps.length} applications`);
+  console.log('  super_admin:                  admin@agripilot.com');
+  console.log('  institutional_admin (KE):     institution@agripilot.com');
+  console.log('  institutional_admin (NGO):    admin@greenfields.agripilot.com');
+  console.log('  reviewer:                     reviewer@agripilot.com / reviewer2@agripilot.com');
+  console.log('  field_officer (KE):           officer@agripilot.com / officer2@agripilot.com');
+  console.log('  field_officer (NGO):          officer@greenfields.agripilot.com');
+  console.log('  field_officer (TZ):           officer.tz@agripilot.com');
+  console.log('  investor_viewer:              investor@agripilot.com');
+  console.log('\nFarmer accounts (role=farmer, for pilot adoption funnel):');
+  console.log('  john.mwangi@farmer.agripilot.com     — logged in, season + progress + image');
+  console.log('  amina.hassan@farmer.agripilot.com    — logged in, season + progress + image');
+  console.log('  peter.otieno@farmer.agripilot.com    — logged in, season + progress (no image) + HARVEST');
+  console.log('  florence.nyambura@farmer.agripilot.com — account created, never logged in');
+  console.log(`\nKenya (${defaultOrg.name}): ${farmers.length} farmers, ${apps.length} applications`);
   console.log(`Tanzania: ${tzFarmers.length} farmers, 4 applications`);
-  console.log(`Total: ${farmers.length + tzFarmers.length} farmers, ${apps.length + 4} applications`);
+  console.log(`Green Fields NGO: ${ngoFarmers.length} farmers`);
+  console.log(`Total: ${farmers.length + tzFarmers.length + ngoFarmers.length} farmers`);
   console.log(`Activities: ${activityData.length}, Reminders: ${reminderData.length}`);
   console.log('Storage: 5, Buyer interests: 5, Notifications: 7');
+  console.log('\nPilot Adoption Funnel (AgriPilot Demo Lender):');
+  console.log('  Step 1 — Approved: all 8 KE farmers');
+  console.log('  Step 2 — Account activated: 4 (john, amina, peter, florence)');
+  console.log('  Step 3 — First login: 3 (john, amina, peter)');
+  console.log('  Step 4 — Season created: 4 (john, amina, peter, florence)');
+  console.log('  Step 5 — First update: 3 (john, amina, peter)');
+  console.log('  Step 6 — Image uploaded: 2 (john, amina)');
+  console.log('  Step 7 — Harvest reported: 1 (peter / sugarcane)');
   console.log('\nKenya Scenarios:');
   console.log('  App 1 (John Mwangi / maize)     — Approved, strong application');
   console.log('  App 2 (Amina Hassan / wheat)     — Conditional, missing ID');

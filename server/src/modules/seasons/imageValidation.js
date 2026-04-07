@@ -17,6 +17,9 @@ import { isValidFileReference } from '../../utils/uploadHealth.js';
 
 const IMAGE_STAGES = ['early_growth', 'mid_stage', 'pre_harvest', 'harvest', 'storage'];
 
+// Maximum progress images per season (prevents upload flooding)
+const MAX_IMAGES_PER_SEASON = 50;
+
 // Expected stage timing as fraction of growing period
 const STAGE_TIMING = {
   early_growth: { min: 0, max: 0.25 },
@@ -26,7 +29,7 @@ const STAGE_TIMING = {
   storage: { min: 0.75, max: 1.50 },
 };
 
-export { IMAGE_STAGES, STAGE_TIMING };
+export { IMAGE_STAGES, STAGE_TIMING, MAX_IMAGES_PER_SEASON };
 
 /**
  * Add a progress image entry with metadata validation.
@@ -53,6 +56,16 @@ export async function addProgressImage(seasonId, data) {
 
   if (!data.imageUrl) {
     const err = new Error('imageUrl is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Guard against unlimited image uploads per season
+  const existingImageCount = await prisma.seasonProgressEntry.count({
+    where: { seasonId, imageUrl: { not: null } },
+  });
+  if (existingImageCount >= MAX_IMAGES_PER_SEASON) {
+    const err = new Error(`Maximum of ${MAX_IMAGES_PER_SEASON} images per season reached`);
     err.statusCode = 400;
     throw err;
   }

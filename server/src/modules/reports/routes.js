@@ -4,6 +4,7 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 import { extractOrganization, orgWhereApplication, verifyOrgAccess } from '../../middleware/orgScope.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as reportService from './service.js';
+import { getPilotSummary } from '../pilotMetrics/service.js';
 import prisma from '../../config/database.js';
 
 const router = Router();
@@ -34,6 +35,27 @@ router.get('/portfolio',
   asyncHandler(async (req, res) => {
     const report = await reportService.getPortfolioReport(orgWhereApplication(req));
     res.json(report);
+  }));
+
+// Pilot summary report (exportable — org-scoped)
+router.get('/pilot-summary',
+  authorize('super_admin', 'institutional_admin', 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    const summary = await getPilotSummary({ organizationId: req.organizationId });
+    res.json(summary);
+  }));
+
+// Org-specific pilot summary (for super_admin cross-org inspection)
+router.get('/organization/:organizationId/pilot-summary',
+  validateParamUUID('organizationId'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    // institutional_admin can only view their own org
+    if (req.user.role === 'institutional_admin' && req.organizationId !== req.params.organizationId) {
+      return res.status(403).json({ error: 'Access denied — you can only view your own organization' });
+    }
+    const summary = await getPilotSummary({ organizationId: req.params.organizationId });
+    res.json(summary);
   }));
 
 export default router;

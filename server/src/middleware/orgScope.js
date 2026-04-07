@@ -77,7 +77,13 @@ export function extractOrganization(req, res, next) {
       setCachedOrg(userId, user.organizationId);
       applyOrgScope(req, res, next, user.organizationId, role);
     })
-    .catch(() => {
+    .catch((err) => {
+      logPermissionEvent('org_lookup_failed', {
+        userId,
+        role,
+        path: req.originalUrl || req.path,
+        error: err.message,
+      });
       res.status(500).json({ error: 'Organization lookup failed' });
     });
 }
@@ -96,6 +102,12 @@ function applyOrgScope(req, res, next, userOrgId, role) {
     // If user has no org assigned, deny access to org-scoped endpoints
     // (except farmer role which may have org via farmer profile)
     if (!userOrgId && role !== 'farmer') {
+      logPermissionEvent('org_not_assigned', {
+        userId: req.user.sub,
+        role,
+        path: req.originalUrl || req.path,
+        method: req.method,
+      });
       return res.status(403).json({ error: 'No organization assigned. Contact your administrator.' });
     }
   }
@@ -140,5 +152,16 @@ export function orgWhereUser(req) {
 export function verifyOrgAccess(req, recordOrgId) {
   if (req.isCrossOrg) return true; // super_admin cross-org
   if (!req.organizationId) return true; // no org enforcement (backward compat)
-  return req.organizationId === recordOrgId;
+  const allowed = req.organizationId === recordOrgId;
+  if (!allowed) {
+    logPermissionEvent('cross_org_access_denied', {
+      userId: req.user?.sub,
+      role: req.user?.role,
+      userOrgId: req.organizationId,
+      recordOrgId,
+      path: req.originalUrl || req.path,
+      method: req.method,
+    });
+  }
+  return allowed;
 }

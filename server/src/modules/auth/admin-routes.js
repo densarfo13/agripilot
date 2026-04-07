@@ -3,6 +3,8 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, invalidateAuthCache } from '../../middleware/auth.js';
 import { extractOrganization, orgWhereUser, orgWhereFarmer } from '../../middleware/orgScope.js';
 import { validateParamUUID, isValidEmail, validatePassword } from '../../middleware/validate.js';
+import { workflowLimiter } from '../../middleware/rateLimiters.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
 import { writeAuditLog } from '../audit/service.js';
@@ -93,10 +95,12 @@ router.patch('/:id/toggle-active',
     res.json(updated);
   }));
 
-// Admin reset user password (super_admin only)
+// Admin reset user password (super_admin only, rate limited)
 router.patch('/:id/reset-password',
   validateParamUUID('id'),
   authorize('super_admin'),
+  workflowLimiter,
+  dedupGuard('password-reset'),
   asyncHandler(async (req, res) => {
     const { newPassword } = req.body;
     if (!newPassword) {
@@ -134,17 +138,19 @@ router.get('/self-registered',
 router.post('/:id/approve-registration',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('farmer-approve'),
   asyncHandler(async (req, res) => {
     const { assignedOfficerId } = req.body;
     const result = await approveRegistration({
       farmerId: req.params.id,
       approvedById: req.user.sub,
       assignedOfficerId,
+      organizationId: req.organizationId,
     });
     writeAuditLog({
       userId: req.user.sub,
       action: 'farmer_registration_approved',
-      details: { farmerId: req.params.id, assignedOfficerId },
+      details: { farmerId: req.params.id, assignedOfficerId, organizationId: req.organizationId },
       organizationId: req.organizationId,
     }).catch(() => {});
     res.json(result);
@@ -154,6 +160,7 @@ router.post('/:id/approve-registration',
 router.post('/:id/reject-registration',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('farmer-reject'),
   asyncHandler(async (req, res) => {
     const { rejectionReason } = req.body;
     const result = await rejectRegistration({

@@ -19,6 +19,7 @@ const NAV = [
   { section: 'Analytics', items: [
     { to: '/portfolio', label: 'Portfolio', icon: 'P' },
     { to: '/reports', label: 'Reports', icon: 'R' },
+    { to: '/pilot-metrics', label: 'Pilot Metrics', icon: 'M', roles: [...ADMIN_ROLES, 'investor_viewer', 'field_officer'] },
   ]},
   { section: 'Admin', roles: ADMIN_ROLES, items: [
     { to: '/admin/control', label: 'Control Center', icon: 'C' },

@@ -42,6 +42,15 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   const result = await authService.login({ email: email.toLowerCase().trim(), password });
+
+  // Record login event for adoption tracking (non-blocking)
+  writeAuditLog({
+    userId: result.user.id,
+    organizationId: result.user.organizationId,
+    action: 'user_login',
+    details: { method: 'local', role: result.user.role },
+  }).catch(() => {});
+
   res.json(result);
 }));
 

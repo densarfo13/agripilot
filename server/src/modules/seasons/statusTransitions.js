@@ -85,7 +85,7 @@ export function canPerformTransition(fromStatus, toStatus, role) {
  * @param {object} opts - { userId, role, reason }
  * @returns {object} Updated season
  */
-export async function transitionSeasonStatus(seasonId, toStatus, { userId, role, reason }) {
+export async function transitionSeasonStatus(seasonId, toStatus, { userId, role, reason, extraData = {} }) {
   const season = await prisma.farmSeason.findUnique({ where: { id: seasonId } });
 
   if (!season) {
@@ -123,6 +123,16 @@ export async function transitionSeasonStatus(seasonId, toStatus, { userId, role,
     throw err;
   }
 
+  // Completing a season requires a harvest report (except when coming from failed/abandoned)
+  if (toStatus === 'completed' && fromStatus === 'harvested') {
+    const harvestReport = await prisma.harvestReport.findUnique({ where: { seasonId } });
+    if (!harvestReport) {
+      const err = new Error('Cannot close season without a harvest report. Submit a harvest report first.');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   // Build update data
   const updateData = { status: toStatus };
   const now = new Date();
@@ -144,6 +154,9 @@ export async function transitionSeasonStatus(seasonId, toStatus, { userId, role,
     updateData.closedBy = null;
     updateData.closureReason = null;
   }
+
+  // Merge any extra atomic data (e.g., cropFailureReported for crop-failure transition)
+  Object.assign(updateData, extraData);
 
   // Optimistic lock: use updateMany with status condition to prevent race conditions
   const result = await prisma.farmSeason.updateMany({
@@ -213,17 +226,24 @@ export function checkSeasonStaleness(season) {
 
 /**
  * Get all stale active seasons (for admin dashboards / reports).
+ * @param {object} opts - { organizationId } for org-scoped results. Omit for cross-org (super_admin).
  */
-export async function getStaleSeasons() {
+export async function getStaleSeasons({ organizationId } = {}) {
   const cutoffAge = new Date();
   cutoffAge.setDate(cutoffAge.getDate() - MAX_SEASON_AGE_DAYS);
 
   const cutoffActivity = new Date();
   cutoffActivity.setDate(cutoffActivity.getDate() - STALE_INACTIVITY_DAYS);
 
+  // Build org-scoped filter when organizationId is provided
+  const orgFilter = organizationId
+    ? { farmer: { organizationId } }
+    : {};
+
   const stale = await prisma.farmSeason.findMany({
     where: {
       status: 'active',
+      ...orgFilter,
       OR: [
         { plantingDate: { lt: cutoffAge } },
         { lastActivityDate: { lt: cutoffActivity } },
@@ -231,7 +251,7 @@ export async function getStaleSeasons() {
       ],
     },
     include: {
-      farmer: { select: { id: true, fullName: true, region: true } },
+      farmer: { select: { id: true, fullName: true, region: true, organizationId: true } },
     },
     orderBy: { plantingDate: 'asc' },
   });

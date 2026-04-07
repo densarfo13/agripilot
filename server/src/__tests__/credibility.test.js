@@ -4,7 +4,7 @@ vi.mock('../config/database.js', () => {
   const mockPrisma = {
     farmer: { findUnique: vi.fn() },
     farmSeason: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
-    seasonProgressEntry: { findMany: vi.fn(), create: vi.fn() },
+    seasonProgressEntry: { findMany: vi.fn(), create: vi.fn(), count: vi.fn().mockResolvedValue(0) },
     stageConfirmation: { findMany: vi.fn() },
     harvestReport: { findUnique: vi.fn() },
     progressScore: { findUnique: vi.fn() },

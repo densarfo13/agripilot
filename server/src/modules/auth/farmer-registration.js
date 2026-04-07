@@ -123,7 +123,7 @@ export async function getAllSelfRegistered(orgScope = {}) {
 /**
  * Approve a farmer registration.
  */
-export async function approveRegistration({ farmerId, approvedById, assignedOfficerId }) {
+export async function approveRegistration({ farmerId, approvedById, assignedOfficerId, organizationId }) {
   // Transaction: read + status check + update atomically to prevent race conditions
   const updated = await prisma.$transaction(async (tx) => {
     const farmer = await tx.farmer.findUnique({ where: { id: farmerId } });
@@ -138,20 +138,37 @@ export async function approveRegistration({ farmerId, approvedById, assignedOffi
       throw err;
     }
 
-    return tx.farmer.update({
+    const updateData = {
+      registrationStatus: 'approved',
+      approvedAt: new Date(),
+      approvedById,
+      assignedOfficerId: assignedOfficerId || null,
+    };
+
+    // Assign farmer to approver's organization if farmer has no org yet
+    if (!farmer.organizationId && organizationId) {
+      updateData.organizationId = organizationId;
+    }
+
+    const updatedFarmer = await tx.farmer.update({
       where: { id: farmerId },
-      data: {
-        registrationStatus: 'approved',
-        approvedAt: new Date(),
-        approvedById,
-        assignedOfficerId: assignedOfficerId || null,
-      },
+      data: updateData,
       include: {
         userAccount: {
           select: { id: true, email: true, fullName: true },
         },
       },
     });
+
+    // Also assign the user account to the org if it exists and has no org
+    if (updatedFarmer.userAccount && organizationId && !farmer.organizationId) {
+      await tx.user.update({
+        where: { id: updatedFarmer.userAccount.id },
+        data: { organizationId },
+      });
+    }
+
+    return updatedFarmer;
   });
 
   return updated;

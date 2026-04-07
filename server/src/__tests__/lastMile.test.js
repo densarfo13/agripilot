@@ -219,7 +219,7 @@ describe('Evidence Service', () => {
   it('uploadEvidence creates evidence record with url', async () => {
     const { uploadEvidence } = await import('../modules/evidence/service.js');
 
-    prisma.application.findUnique.mockResolvedValue({ id: 'a-1' });
+    prisma.application.findUnique.mockResolvedValue({ id: 'a-1', status: 'submitted' });
     prisma.evidenceFile.findMany.mockResolvedValue([]); // no duplicates
     const mockEvidence = { id: 'ev-1', url: '/uploads/test.jpg', type: 'farm_photo' };
     prisma.evidenceFile.create.mockResolvedValue(mockEvidence);

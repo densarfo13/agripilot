@@ -13,22 +13,24 @@ export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState(null);
   const [queues, setQueues] = useState({ verification: 0, fraud: 0, escalated: 0 });
   const [pendingCount, setPendingCount] = useState(0);
+  const [adoption, setAdoption] = useState(null);
+  const [attentionCount, setAttentionCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const { selectedOrgId, selectedOrgName } = useOrgStore();
   const isAdmin = ADMIN_ROLES.includes(user?.role);
+  const canSeePilotMetrics = isAdmin || user?.role === 'investor_viewer';
+  const canSeeAttention = isAdmin || user?.role === 'field_officer';
 
   useEffect(() => {
-    const fetches = [
+    Promise.all([
       api.get('/portfolio/summary'),
       api.get('/applications/stats'),
-    ];
-    // Fetch pending registrations for admins
-    if (isAdmin) {
-      fetches.push(api.get('/users/pending-registrations').catch(() => ({ data: [] })));
-    }
-    Promise.all(fetches).then(([pRes, sRes, pendingRes]) => {
+      isAdmin ? api.get('/users/pending-registrations').catch(() => ({ data: [] })) : Promise.resolve(null),
+      canSeePilotMetrics ? api.get('/pilot/metrics').catch(() => ({ data: null })) : Promise.resolve(null),
+      canSeeAttention ? api.get('/pilot/needs-attention').catch(() => ({ data: null })) : Promise.resolve(null),
+    ]).then(([pRes, sRes, pendingRes, mRes, aRes]) => {
       if (pendingRes) setPendingCount(pendingRes.data.length || 0);
       setPortfolio(pRes.data);
       const stats = sRes.data;
@@ -39,6 +41,8 @@ export default function DashboardPage() {
         fraud: byStatus.fraud_hold || 0,
         escalated: byStatus.escalated || 0,
       });
+      if (mRes?.data) setAdoption(mRes.data);
+      if (aRes?.data) setAttentionCount(aRes.data.totalItems || 0);
     }).catch(() => {
       // portfolio stays null — handled by "Unable to load" message below
     }).finally(() => setLoading(false));
@@ -97,6 +101,34 @@ export default function DashboardPage() {
                 <span><strong>{pendingCount}</strong> pending farmer registrations</span>
               </div>
             )}
+            {attentionCount > 0 && (
+              <div onClick={() => navigate('/pilot-metrics')} style={{ cursor: 'pointer', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+                <span><strong>{attentionCount}</strong> pilot items need attention</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {adoption && canSeePilotMetrics && (
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', flexShrink: 0 }}>
+              Pilot Adoption
+            </span>
+            {[
+              ['Approved', adoption.farmers?.approved],
+              ['Logged In', adoption.adoption?.loggedIn],
+              ['1st Update', adoption.adoption?.withFirstUpdate],
+              ['Harvest', adoption.adoption?.withHarvest],
+            ].map(([label, val]) => (
+              <div key={label} style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 72 }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0369a1' }}>{val ?? '—'}</div>
+                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{label}</div>
+              </div>
+            ))}
+            <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')} style={{ marginLeft: 'auto' }}>
+              Full Pilot Metrics →
+            </button>
           </div>
         )}
 
