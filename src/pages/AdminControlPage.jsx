@@ -135,9 +135,7 @@ function SystemOverview({ navigate }) {
                   background: item.urgent ? '#fffbeb' : '#fff',
                 }}
               >
-                <span style={{ color: item.urgent ? '#dc2626' : '#d97706', fontSize: '1rem', flexShrink: 0 }}>
-                  {item.urgent ? '🔴' : '🟡'}
-                </span>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, display: 'inline-block', background: item.urgent ? '#dc2626' : '#d97706' }} />
                 <span style={{ fontSize: '0.875rem', color: '#374151', flex: 1 }}>{item.label}</span>
                 <span style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 600, flexShrink: 0 }}>View →</span>
               </div>

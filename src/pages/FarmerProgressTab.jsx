@@ -59,6 +59,7 @@ export default function FarmerProgressTab() {
 
   const loadSeasons = () => {
     setLoading(true);
+    setPageError('');
     api.get(`/seasons/farmer/${farmerId}`)
       .then(r => {
         setSeasons(r.data);
@@ -83,7 +84,7 @@ export default function FarmerProgressTab() {
           setScore(null);
         }
       })
-      .catch(() => {})
+      .catch(() => setPageError('Failed to load season data. Check your connection.'))
       .finally(() => setLoading(false));
   };
 
@@ -242,9 +243,10 @@ export default function FarmerProgressTab() {
   return (
     <div>
       {pageError && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{pageError}</span>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: '1rem', lineHeight: 1 }} onClick={() => setPageError('')}>✕</button>
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ flex: 1 }}>{pageError}</span>
+          <button className="btn btn-outline btn-sm" style={{ color: '#dc2626', borderColor: '#fecaca' }} onClick={loadSeasons}>Retry</button>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0 0.25rem' }} onClick={() => setPageError('')}>✕</button>
         </div>
       )}
       {/* ─── No active season → prompt setup ─────── */}

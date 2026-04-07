@@ -47,7 +47,12 @@ export default function FarmerDetailPage() {
         <h1>{farmer.fullName}</h1>
         <div className="flex gap-1">
           <button className="btn btn-primary" onClick={() => navigate(`/farmer-home/${id}`)}>Farmer Home</button>
-          <button className="btn btn-outline" onClick={() => navigate('/farmers')}>Back to Farmers</button>
+          {farmer.registrationStatus === 'approved' && (
+            <button className="btn btn-outline" onClick={() => navigate(`/farmer-home/${id}/progress`)}>
+              View Progress
+            </button>
+          )}
+          <button className="btn btn-outline" onClick={() => navigate('/farmers')}>Back</button>
         </div>
       </div>
       <div className="page-body">

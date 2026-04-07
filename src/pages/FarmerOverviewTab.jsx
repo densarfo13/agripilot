@@ -117,13 +117,16 @@ export default function FarmerOverviewTab() {
                   {(() => {
                     const conf = lifecycle.stageConfidence;
                     const map = {
-                      high: { label: 'Validated', cls: 'badge-approved', hint: 'Stage confirmed by farmer activity' },
-                      medium: { label: 'Needs Verification', cls: 'badge-submitted', hint: 'Stage inferred — no recent confirmation' },
-                      low: { label: 'Low Confidence', cls: 'badge-draft', hint: 'Insufficient data to confirm stage' },
+                      high: { label: 'Validated', cls: 'badge-approved', hint: 'Confirmed by recent farmer activity' },
+                      medium: { label: 'Needs Verification', cls: 'badge-submitted', hint: 'Stage inferred — visit or ask farmer to confirm' },
+                      low: { label: 'Low Confidence', cls: 'badge-draft', hint: 'Not enough data — log activities to improve' },
                     };
                     const m = map[conf] || { label: conf || 'Unknown', cls: 'badge-draft', hint: '' };
                     return (
-                      <span className={`badge ${m.cls}`} title={m.hint}>{m.label}</span>
+                      <>
+                        <span className={`badge ${m.cls}`}>{m.label}</span>
+                        {m.hint && <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '0.2rem', lineHeight: 1.3 }}>{m.hint}</div>}
+                      </>
                     );
                   })()}
                 </div>

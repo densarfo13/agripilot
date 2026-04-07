@@ -166,35 +166,16 @@ export default function FarmerDashboardPage() {
               );
             })()}
 
-            <div style={styles.card}>
-              <div style={styles.statusBadge('#d4edda', '#155724')}>Active Account</div>
-              {lifecycle && (
-                <div style={{ marginTop: '1rem' }}>
-                  <h3 style={{ margin: '0 0 0.75rem' }}>Current Season</h3>
-                  <div style={styles.detailRow}>
-                    <span>Stage</span>
-                    <span style={{ fontWeight: 600 }}>{tLifecycleStage(lifecycle.currentStage)}</span>
-                  </div>
-                  {lifecycle.cropType && (
-                    <div style={styles.detailRow}>
-                      <span>Crop</span>
-                      <span>{lifecycle.cropType}</span>
-                    </div>
-                  )}
-                  {lifecycle.recommendations?.length > 0 && (
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#333', marginBottom: '0.4rem' }}>What to do next:</div>
-                      {lifecycle.recommendations.slice(0, 3).map((r, i) => (
-                        <div key={i} style={{ fontSize: '0.85rem', color: '#555', padding: '0.3rem 0', paddingLeft: '0.5rem', borderLeft: '2px solid #16a34a' }}>
-                          {r.title}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            {lifecycle && (
+              <div style={styles.card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={styles.statusBadge('#d4edda', '#155724')}>Active Account</div>
+                  <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                    {tLifecycleStage(lifecycle.currentStage)}{lifecycle.cropType ? ` · ${lifecycle.cropType}` : ''}
+                  </span>
                 </div>
-              )}
-              {!lifecycle && <p style={{ color: '#666', marginTop: '1rem' }}>Your account is active. Check your applications and reminders below.</p>}
-            </div>
+              </div>
+            )}
 
             {/* Active Seasons / Progress tracking */}
             {seasons && seasons.length > 0 && (

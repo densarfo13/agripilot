@@ -19,6 +19,8 @@ export default function ApplicationDetailPage() {
   const [actionReason, setActionReason] = useState('');
   const [actionAmount, setActionAmount] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const isAdmin = ADMIN_ROLES.includes(user?.role);
@@ -30,34 +32,35 @@ export default function ApplicationDetailPage() {
 
   useEffect(() => {
     setLoading(true);
+    setLoadError('');
     Promise.all([
       api.get(`/applications/${id}`),
       api.get(`/audit/application/${id}`).catch(() => ({ data: [] })),
     ]).then(([appRes, auditRes]) => {
       setApp(appRes.data);
       setAuditLogs(auditRes.data);
-      setLoadError('');
     }).catch((err) => {
-      const msg = err.response?.data?.error || 'Failed to load application';
-      setLoadError(msg);
+      setLoadError(err.response?.data?.error || 'Failed to load application.');
     }).finally(() => setLoading(false));
-  }, [id]);
+  }, [id, retryCount]);
 
-  // Engine scoring — uses new nested endpoints
+  // Engine scoring
   const runEngine = async (engine, label) => {
     setActionLoading(engine);
+    setActionError('');
     try {
       await api.post(`/applications/${id}/score-${engine}`);
       reload();
       api.get(`/audit/application/${id}`).then(r => setAuditLogs(r.data)).catch(() => {});
     } catch (err) {
-      alert(err.response?.data?.error || `Failed to run ${label}`);
+      setActionError(err.response?.data?.error || `Failed to run ${label}. Check connection and retry.`);
     } finally { setActionLoading(''); }
   };
 
   // Workflow actions
   const runWorkflowAction = async (action, body = {}) => {
     setActionLoading(action);
+    setActionError('');
     try {
       if (action === 'submit') await api.post(`/applications/${id}/submit`);
       else await api.post(`/applications/${id}/${action}`, body);
@@ -66,7 +69,7 @@ export default function ApplicationDetailPage() {
       setActionModal(null);
       setActionReason('');
     } catch (err) {
-      alert(err.response?.data?.error || `Failed: ${action}`);
+      setActionError(err.response?.data?.error || `Action failed. Please try again.`);
     } finally { setActionLoading(''); }
   };
 
@@ -82,9 +85,10 @@ export default function ApplicationDetailPage() {
   if (loading) return <div className="loading">Loading application...</div>;
   if (!app) return (
     <div className="page-body">
-      <div className="alert alert-danger">
-        {loadError || 'Application not found or you do not have permission to view it.'}
-        <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => navigate('/applications')}>Back to Applications</button>
+      <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <span style={{ flex: 1 }}>{loadError || 'Application not found or you do not have permission to view it.'}</span>
+        <button className="btn btn-outline btn-sm" onClick={() => setRetryCount(c => c + 1)}>Retry</button>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>Go Back</button>
       </div>
     </div>
   );
@@ -144,6 +148,36 @@ export default function ApplicationDetailPage() {
         </div>
       </div>
 
+      {/* What's needed now — reviewer guidance, shown only when actionable */}
+      {canRunEngines && app.status !== 'draft' && (() => {
+        const hasDecision = !!app.decisionResult;
+        const hasVerification = !!app.verificationResult;
+        const decisionReady = ['under_review', 'escalated'].includes(app.status) && hasDecision && workflowActions.length > 0;
+        const needsScoring = app.status === 'submitted' && !hasVerification;
+        if (needsScoring) return (
+          <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '0.6rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>
+                <strong>Start here:</strong> Run scoring to get a recommendation, then make your decision.
+              </span>
+              <button className="btn btn-primary btn-sm" disabled={!!actionLoading} onClick={async () => {
+                for (const eng of ['verification', 'fraud', 'decision']) await runEngine(eng, eng);
+              }}>
+                {actionLoading ? `Running ${actionLoading}...` : 'Score Now →'}
+              </button>
+            </div>
+          </div>
+        );
+        if (decisionReady) return (
+          <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#14532d' }}>
+              <strong>Decision ready</strong> — use Approve or Reject in the buttons above.
+            </div>
+          </div>
+        );
+        return null;
+      })()}
+
       {/* Engine buttons bar */}
       {canRunEngines && app.status !== 'draft' && (
         <div style={{ padding: '0 1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem', alignItems: 'center' }}>
@@ -173,6 +207,14 @@ export default function ApplicationDetailPage() {
               {actionLoading === 'intelligence' ? '...' : 'Intelligence'}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Inline error — shown below engines, cleared on next action */}
+      {actionError && (
+        <div style={{ margin: '0 1.5rem 0.5rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.875rem', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{actionError}</span>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b', fontWeight: 700 }} onClick={() => setActionError('')}>×</button>
         </div>
       )}
 
