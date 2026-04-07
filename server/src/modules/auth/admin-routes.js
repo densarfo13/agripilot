@@ -83,6 +83,24 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
   res.status(201).json(user);
 }));
 
+// ─── Farmer Registration Management (org-scoped) ──────
+
+// List pending farmer registrations (scoped to organization)
+router.get('/pending-registrations',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const pending = await getPendingRegistrations(orgWhereFarmer(req));
+    res.json(pending);
+  }));
+
+// List all self-registered farmers (any status, org-scoped)
+router.get('/self-registered',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const all = await getAllSelfRegistered(orgWhereFarmer(req));
+    res.json(all);
+  }));
+
 // Get single user (super_admin or own-org institutional_admin)
 router.get('/:id',
   validateParamUUID('id'),
@@ -264,24 +282,6 @@ router.patch('/:id/reset-password',
     const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
     writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } }).catch(() => {});
     res.json(result);
-  }));
-
-// ─── Farmer Registration Management (org-scoped) ──────
-
-// List pending farmer registrations (scoped to organization)
-router.get('/pending-registrations',
-  authorize('super_admin', 'institutional_admin', 'field_officer'),
-  asyncHandler(async (req, res) => {
-    const pending = await getPendingRegistrations(orgWhereFarmer(req));
-    res.json(pending);
-  }));
-
-// List all self-registered farmers (any status, org-scoped)
-router.get('/self-registered',
-  authorize('super_admin', 'institutional_admin', 'field_officer'),
-  asyncHandler(async (req, res) => {
-    const all = await getAllSelfRegistered(orgWhereFarmer(req));
-    res.json(all);
   }));
 
 // Approve farmer registration (admin only — field officers cannot approve)
