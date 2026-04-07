@@ -400,9 +400,12 @@ router.get('/:id/invite-status',
       where: { id: req.params.id },
       select: {
         id: true,
+        organizationId: true,
+        selfRegistered: true,
         registrationStatus: true,
         invitedAt: true,
         inviteExpiresAt: true,
+        inviteToken: true,
         inviteChannel: true,
         inviteDeliveryStatus: true,
         inviteAcceptedAt: true,
@@ -418,9 +421,14 @@ router.get('/:id/invite-status',
     const isExpired = farmer.inviteExpiresAt && new Date() > new Date(farmer.inviteExpiresAt) && !farmer.userId;
     const deliveryLabel = getDeliveryStatusLabel(farmer.inviteDeliveryStatus, !!farmer.userId);
 
+    const computedInviteStatus = farmersService.computeInviteStatus(farmer);
     res.json({
       farmerId: farmer.id,
       registrationStatus: farmer.registrationStatus,
+      accessStatus: farmersService.computeAccessStatus(farmer),
+      inviteStatus: computedInviteStatus,
+      // Return token only when link is ready but not yet accepted — so admins can copy it
+      inviteToken: computedInviteStatus === 'LINK_GENERATED' ? farmer.inviteToken : null,
       hasLoginAccount: !!farmer.userId,
       loginEmail: farmer.userAccount?.email || null,
       loginActive: farmer.userAccount?.active ?? null,

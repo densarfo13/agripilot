@@ -6,6 +6,7 @@ import { useOrgStore } from '../store/orgStore.js';
 import { CREATOR_ROLES } from '../utils/roles.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
+import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
@@ -104,7 +105,7 @@ export default function FarmersPage() {
                       <th>Name</th>
                       <th>Phone</th>
                       <th>Region</th>
-                      <th>Status</th>
+                      <th>Access</th>
                       <th>Invite</th>
                       {isSuperAdmin && <th>Organization</th>}
                       <th>Primary Crop</th>
@@ -118,8 +119,8 @@ export default function FarmersPage() {
                         <td style={{ fontWeight: 500 }}>{f.fullName}</td>
                         <td>{f.phone}</td>
                         <td>{f.region}</td>
-                        <td><RegistrationBadge status={f.registrationStatus} /></td>
-                        <td>{!f.selfRegistered ? <InviteStatusBadge status={f.inviteDeliveryStatus} hasAccount={!!f.userId} /> : <span className="text-sm text-muted">—</span>}</td>
+                        <td><AccessBadge value={f.accessStatus} /></td>
+                        <td>{!f.selfRegistered ? <InviteBadge value={f.inviteStatus} /> : <span className="text-sm text-muted">—</span>}</td>
                         {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
                         <td>{f.primaryCrop || '-'}</td>
                         <td>{f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
@@ -185,35 +186,6 @@ function InviteLinkBox({ url, label, expiresAt }) {
   );
 }
 
-function RegistrationBadge({ status }) {
-  const map = {
-    pending_approval: { cls: 'badge-submitted', label: 'Pending' },
-    approved: { cls: 'badge-approved', label: 'Active' },
-    rejected: { cls: 'badge-rejected', label: 'Rejected' },
-    disabled: { cls: '', label: 'Disabled' },
-  };
-  const { cls, label } = map[status] || { cls: '', label: status?.replace(/_/g, ' ') || '-' };
-  return <span className={`badge ${cls}`}>{label}</span>;
-}
-
-/**
- * Invite delivery status badge for invited (non-self-registered) farmers.
- * Shows a concise label based on inviteDeliveryStatus + whether they have a linked account.
- */
-function InviteStatusBadge({ status, hasAccount }) {
-  if (hasAccount) {
-    return <span className="badge badge-approved" title="Farmer has a login account">Activated</span>;
-  }
-  const map = {
-    manual_share_ready: { cls: 'badge-draft', label: 'Link Ready' },
-    email_sent:         { cls: 'badge-submitted', label: 'Email Sent' },
-    phone_sent:         { cls: 'badge-submitted', label: 'SMS Sent' },
-    accepted:           { cls: 'badge-approved', label: 'Accepted' },
-    expired:            { cls: 'badge-rejected', label: 'Expired' },
-  };
-  const { cls, label } = map[status] || { cls: 'badge-draft', label: 'Pending' };
-  return <span className={`badge ${cls}`}>{label}</span>;
-}
 
 function CreateFarmerModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ fullName: '', phone: '', region: '', district: '', village: '', countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', yearsExperience: '', nationalId: '', email: '', password: '' });

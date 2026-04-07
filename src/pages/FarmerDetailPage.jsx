@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { ADMIN_ROLES, CREATOR_ROLES } from '../utils/roles.js';
 import { getCountryName } from '../utils/countries.js';
@@ -221,32 +222,12 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
         )}
 
         {/* Status badges row */}
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, background: sc.bg, color: sc.color }}>
-            {sc.label}
-          </span>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+          <AccessBadge value={farmer.accessStatus} />
+          {!farmer.selfRegistered && <InviteBadge value={inviteStatus?.inviteStatus || farmer.inviteStatus} />}
           <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500, background: '#ede9fe', color: '#5b21b6' }}>
             {farmer.selfRegistered ? 'Self-Registered' : 'Invited'}
           </span>
-          {farmer.userAccount && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500, background: farmer.userAccount.active ? '#d1fae5' : '#fee2e2', color: farmer.userAccount.active ? '#065f46' : '#991b1b' }}>
-              Account {farmer.userAccount.active ? 'Active' : 'Inactive'}
-            </span>
-          )}
-          {!farmer.userAccount && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500, background: '#fef3c7', color: '#92400e' }}>
-              No Login Account
-            </span>
-          )}
-          {inviteStatus && !farmer.selfRegistered && (
-            <span
-              title={inviteStatus.inviteExpiresAt ? `Expires: ${new Date(inviteStatus.inviteExpiresAt).toLocaleDateString()}` : undefined}
-              className={`badge ${inviteStatus.deliveryStatusCls || 'badge-draft'}`}
-              style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500 }}
-            >
-              {inviteStatus.deliveryStatusLabel || 'Invite Pending'}
-            </span>
-          )}
         </div>
 
         {/* Metadata grid */}
@@ -325,6 +306,9 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
             )}
             {!farmer.selfRegistered && farmer.invitedAt && (
               <button className="btn btn-sm btn-outline" onClick={handleResendInvite} disabled={processing}>Resend Invite</button>
+            )}
+            {!farmer.selfRegistered && inviteStatus?.inviteStatus === 'LINK_GENERATED' && inviteStatus?.inviteToken && (
+              <CopyInviteLinkButton token={inviteStatus.inviteToken} />
             )}
             {!farmer.userAccount && (
               <button className="btn btn-sm btn-outline" onClick={() => setShowCreateLoginModal(true)} disabled={processing}
@@ -949,6 +933,25 @@ function CreateLoginModal({ farmer, onClose, onDone }) {
         </form>
       </div>
     </div>
+  );
+}
+
+// Compact button to copy the existing invite link (shown when status = LINK_GENERATED)
+function CopyInviteLinkButton({ token }) {
+  const [copied, setCopied] = React.useState(false);
+  const url = `${window.location.origin}/accept-invite?token=${token}`;
+  const copy = () => {
+    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(() => {});
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="btn btn-sm btn-outline"
+      style={{ color: copied ? '#16a34a' : '#2563eb', borderColor: copied ? '#16a34a' : '#2563eb' }}
+    >
+      {copied ? '✓ Link Copied' : 'Copy Invite Link'}
+    </button>
   );
 }
 

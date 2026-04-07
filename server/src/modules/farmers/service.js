@@ -3,6 +3,45 @@ import { randomUUID } from 'crypto';
 import prisma from '../../config/database.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 
+// ─── Computed status helpers ──────────────────────────────
+// These derive clean enum-style strings from raw DB fields so that
+// the UI never has to re-implement derivation logic.
+
+/**
+ * Derive the farmer's access status from DB state.
+ * @returns 'ACTIVE' | 'PENDING_APPROVAL' | 'NO_ACCESS' | 'DISABLED'
+ */
+export function computeAccessStatus(farmer) {
+  if (!farmer) return 'NO_ACCESS';
+  const { registrationStatus } = farmer;
+  if (registrationStatus === 'disabled') return 'DISABLED';
+  if (registrationStatus === 'pending_approval') return 'PENDING_APPROVAL';
+  if (registrationStatus === 'rejected') return 'NO_ACCESS';
+  // approved — check whether the linked account is active
+  const acct = farmer.userAccount;
+  if (acct?.active) return 'ACTIVE';
+  return 'NO_ACCESS'; // approved but no account yet, or account deactivated
+}
+
+/**
+ * Derive the farmer's invite status from DB state.
+ * Self-registered farmers are always NOT_SENT (they signed up themselves).
+ * @returns 'NOT_SENT' | 'LINK_GENERATED' | 'INVITE_SENT_EMAIL' | 'INVITE_SENT_PHONE' | 'ACCEPTED' | 'EXPIRED'
+ */
+export function computeInviteStatus(farmer) {
+  if (!farmer) return 'NOT_SENT';
+  if (farmer.selfRegistered) return 'NOT_SENT';
+  const { inviteDeliveryStatus, inviteToken, inviteExpiresAt, userId } = farmer;
+  // If the farmer has a linked account, access has been established
+  if (userId) return 'ACCEPTED';
+  // No account yet — check invite lifecycle
+  if (inviteToken && inviteExpiresAt && new Date() > new Date(inviteExpiresAt)) return 'EXPIRED';
+  if (inviteDeliveryStatus === 'email_sent') return 'INVITE_SENT_EMAIL';
+  if (inviteDeliveryStatus === 'phone_sent') return 'INVITE_SENT_PHONE';
+  if (inviteDeliveryStatus === 'manual_share_ready' || inviteToken) return 'LINK_GENERATED';
+  return 'NOT_SENT';
+}
+
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
 function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
@@ -122,6 +161,7 @@ export async function listFarmers({ page = 1, limit = 20, search, region, regist
       include: {
         createdBy: { select: { id: true, fullName: true } },
         organization: { select: { id: true, name: true, type: true } },
+        userAccount: { select: { id: true, active: true } },
         _count: { select: { applications: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -131,7 +171,14 @@ export async function listFarmers({ page = 1, limit = 20, search, region, regist
     prisma.farmer.count({ where }),
   ]);
 
-  return { farmers, total, page, limit, totalPages: Math.ceil(total / limit) };
+  // Attach computed status fields so the UI doesn't have to re-derive
+  const enriched = farmers.map(f => ({
+    ...f,
+    accessStatus: computeAccessStatus(f),
+    inviteStatus: computeInviteStatus(f),
+  }));
+
+  return { farmers: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function getFarmerById(id) {
@@ -152,7 +199,11 @@ export async function getFarmerById(id) {
     err.statusCode = 404;
     throw err;
   }
-  return farmer;
+  return {
+    ...farmer,
+    accessStatus: computeAccessStatus(farmer),
+    inviteStatus: computeInviteStatus(farmer),
+  };
 }
 
 // ─── Access & Assignment ─────────────────────────────────
