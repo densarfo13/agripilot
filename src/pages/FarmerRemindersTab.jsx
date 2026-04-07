@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
-import api from '../api/client.js';
+import api, { formatApiError } from '../api/client.js';
 
 export default function FarmerRemindersTab() {
   const { farmerId, refresh, activeSeason } = useFarmerContext();
@@ -25,7 +25,7 @@ export default function FarmerRemindersTab() {
     else if (filter === 'overdue') params.overdue = 'true';
     api.get(`/reminders/farmer/${farmerId}`, { params })
       .then(r => { setReminders(r.data); setError(''); })
-      .catch(() => setError('Failed to load reminders'))
+      .catch(err => setError(formatApiError(err, 'Failed to load reminders')))
       .finally(() => setLoading(false));
   };
 
@@ -38,7 +38,7 @@ export default function FarmerRemindersTab() {
       loadReminders();
       refresh();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to mark reminder as done');
+      setError(formatApiError(err, 'Failed to mark reminder as done'));
     } finally {
       setActionLoading(s => ({ ...s, [id]: null }));
     }
@@ -51,7 +51,7 @@ export default function FarmerRemindersTab() {
       loadReminders();
       refresh();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to dismiss reminder');
+      setError(formatApiError(err, 'Failed to dismiss reminder'));
     } finally {
       setActionLoading(s => ({ ...s, [id]: null }));
     }
@@ -129,7 +129,12 @@ export default function FarmerRemindersTab() {
       </div>
 
       {success && <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.9rem' }}>{success}</div>}
-      {error && !showGenerate && !showCreate && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {error && !showGenerate && !showCreate && (
+        <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{error}</span>
+          <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={loadReminders}>Try again</button>
+        </div>
+      )}
 
       {/* Generate crop lifecycle reminders */}
       {showGenerate && (

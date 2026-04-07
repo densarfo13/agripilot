@@ -1,18 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../api/client.js';
+import api, { formatApiError } from '../api/client.js';
+import { useDraft } from '../utils/useDraft.js';
 
 export default function NewApplicationPage() {
   const [searchParams] = useSearchParams();
-  const [farmers, setFarmers] = useState([]);
-  const [form, setForm] = useState({
-    farmerId: searchParams.get('farmerId') || '',
+  const farmerIdParam = searchParams.get('farmerId') || '';
+
+  const initialForm = {
+    farmerId: farmerIdParam,
     cropType: '',
     farmSizeAcres: '',
     requestedAmount: '',
     purpose: '',
     season: '',
-  });
+  };
+
+  const { state: form, setState: setFormDraft, clearDraft, draftRestored } = useDraft(
+    `new-application${farmerIdParam ? ':' + farmerIdParam : ''}`,
+    initialForm,
+  );
+
+  // Convenience setter that also persists to draft
+  const set = (k) => (e) => setFormDraft(f => ({ ...f, [k]: e.target.value }));
+
+  const [farmers, setFarmers] = useState([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
@@ -22,10 +34,8 @@ export default function NewApplicationPage() {
   useEffect(() => {
     api.get('/farmers', { params: { limit: 100 } })
       .then(r => setFarmers(r.data.farmers))
-      .catch(() => setLoadError('Failed to load farmer list. Please refresh the page.'));
+      .catch(err => setLoadError(formatApiError(err, 'Failed to load farmer list. Please refresh the page.')));
   }, []);
-
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   // Derive currency and area unit from selected farmer's country
   const selectedFarmer = farmers.find(f => f.id === form.farmerId);
@@ -46,9 +56,10 @@ export default function NewApplicationPage() {
         farmSizeAcres: acres,
         requestedAmount: amount,
       });
+      clearDraft();
       navigate(`/applications/${res.data.id}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create application');
+      setError(formatApiError(err, 'Failed to create application'));
     } finally { setSaving(false); }
   };
 
@@ -56,12 +67,18 @@ export default function NewApplicationPage() {
     <>
       <div className="page-header">
         <h1>New Application</h1>
-        <button className="btn btn-outline" onClick={() => navigate('/applications')}>Cancel</button>
+        <button className="btn btn-outline" onClick={() => { clearDraft(); navigate('/applications'); }}>Cancel</button>
       </div>
       <div className="page-body">
         <div className="card" style={{ maxWidth: 640 }}>
           <form onSubmit={handleSubmit}>
             <div className="card-body">
+              {draftRestored && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#1d4ed8', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Draft restored — your previous entry was saved automatically.</span>
+                  <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearDraft(); setFormDraft(initialForm); }}>Clear</button>
+                </div>
+              )}
               {loadError && <div className="alert alert-danger">{loadError}</div>}
               {error && <div className="alert alert-danger">{error}</div>}
               <div className="form-group">

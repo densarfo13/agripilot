@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
-import api from '../api/client.js';
+import api, { formatApiError } from '../api/client.js';
+import { useDraft } from '../utils/useDraft.js';
 
 const STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'harvest', 'post_harvest'];
 const STAGE_LABELS = {
@@ -124,7 +125,12 @@ export default function FarmerProgressTab() {
   };
 
   // ─── Progress Entry Form ──────────────────────────
-  const [progressForm, setProgressForm] = useState({ activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '', entryDate: new Date().toISOString().split('T')[0] });
+  // Draft key includes farmerId + season so restoring into the wrong season is impossible
+  const PROGRESS_DRAFT_INITIAL = { activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '', entryDate: new Date().toISOString().split('T')[0] };
+  const { state: progressForm, setState: setProgressForm, clearDraft: clearProgressDraft, draftRestored: progressDraftRestored } = useDraft(
+    `progress-form:${farmerId}:${activeSeason?.id || 'none'}`,
+    PROGRESS_DRAFT_INITIAL,
+  );
 
   const handleLogProgress = async (e) => {
     e.preventDefault();
@@ -132,11 +138,12 @@ export default function FarmerProgressTab() {
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/progress`, { ...progressForm, entryType: 'activity' });
+      clearProgressDraft();
       setShowProgressForm(false);
-      setProgressForm({ activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '', entryDate: new Date().toISOString().split('T')[0] });
+      setProgressForm(PROGRESS_DRAFT_INITIAL);
       loadSeasons();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save activity. Please try again.');
+      setFormError(formatApiError(err, 'Failed to save activity. Please try again.'));
     }
     setSubmitting(false);
   };
@@ -498,6 +505,12 @@ export default function FarmerProgressTab() {
               <div className="card-header">Log Activity</div>
               <div className="card-body">
                 <form onSubmit={handleLogProgress}>
+                  {progressDraftRestored && (
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#1d4ed8', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Draft restored — your previous entry was saved.</span>
+                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearProgressDraft(); setProgressForm(PROGRESS_DRAFT_INITIAL); }}>Clear</button>
+                    </div>
+                  )}
                   {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>

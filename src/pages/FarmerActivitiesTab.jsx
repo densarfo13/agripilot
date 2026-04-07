@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
-import api from '../api/client.js';
+import api, { formatApiError } from '../api/client.js';
 
 const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
@@ -20,7 +20,7 @@ export default function FarmerActivitiesTab() {
     if (filterType) params.type = filterType;
     api.get(`/activities/farmer/${farmerId}`, { params })
       .then(r => { setActivities(r.data); setError(''); })
-      .catch(() => setError('Failed to load activities'))
+      .catch(err => setError(formatApiError(err, 'Failed to load activities')))
       .finally(() => setLoading(false));
   };
 
@@ -44,7 +44,7 @@ export default function FarmerActivitiesTab() {
       loadActivities();
       refresh();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to log activity');
+      setError(formatApiError(err, 'Failed to log activity'));
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +111,12 @@ export default function FarmerActivitiesTab() {
       )}
 
       {/* Activity list */}
-      {error && !showForm && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {error && !showForm && (
+        <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{error}</span>
+          <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={loadActivities}>Try again</button>
+        </div>
+      )}
       {loading ? <div className="loading">Loading activities...</div> : (
         <div className="card">
           <div className="card-header">Activities ({activities.length})</div>

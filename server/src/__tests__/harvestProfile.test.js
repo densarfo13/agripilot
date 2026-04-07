@@ -66,10 +66,47 @@ describe('Harvest Report', () => {
       .rejects.toThrow(/already exists/);
   });
 
-  it('rejects invalid harvest quantity', async () => {
+  it('rejects 0 kg harvest without crop failure flag', async () => {
     prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'active', harvestReport: null, cropFailureReported: false });
     await expect(createHarvestReport('s-1', { totalHarvestKg: 0 }))
       .rejects.toThrow(/0 kg requires crop failure/);
+  });
+
+  it('rejects negative harvest quantity', async () => {
+    prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'active', harvestReport: null, cropFailureReported: false });
+    await expect(createHarvestReport('s-1', { totalHarvestKg: -5 }))
+      .rejects.toThrow(/non-negative number/);
+  });
+
+  it('allows 0 kg harvest when cropFailureReported is true', async () => {
+    const mockReport = { id: 'hr-1', totalHarvestKg: 0, yieldPerAcre: null };
+    prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'active', harvestReport: null, cropFailureReported: true, farmSizeAcres: 5 });
+    prisma.$transaction.mockImplementation(async (cb) => {
+      const tx = {
+        farmSeason: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+        harvestReport: { create: vi.fn().mockResolvedValue(mockReport) },
+      };
+      return cb(tx);
+    });
+
+    const result = await createHarvestReport('s-1', { totalHarvestKg: 0 });
+    expect(result.totalHarvestKg).toBe(0);
+    expect(result.yieldPerAcre).toBeNull();
+  });
+
+  it('allows 0 kg harvest when isCropFailure passed in body', async () => {
+    const mockReport = { id: 'hr-1', totalHarvestKg: 0, yieldPerAcre: null };
+    prisma.farmSeason.findUnique.mockResolvedValue({ id: 's-1', status: 'active', harvestReport: null, cropFailureReported: false, farmSizeAcres: 5 });
+    prisma.$transaction.mockImplementation(async (cb) => {
+      const tx = {
+        farmSeason: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+        harvestReport: { create: vi.fn().mockResolvedValue(mockReport) },
+      };
+      return cb(tx);
+    });
+
+    const result = await createHarvestReport('s-1', { totalHarvestKg: 0, isCropFailure: true });
+    expect(result.totalHarvestKg).toBe(0);
   });
 
   it('rejects missing season', async () => {
