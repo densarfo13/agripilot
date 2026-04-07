@@ -10,6 +10,7 @@ export default function FarmerHomePage() {
   const [summary, setSummary] = useState(null);
   const [reminderSummary, setReminderSummary] = useState(null);
   const [unread, setUnread] = useState(0);
+  const [activeSeason, setActiveSeason] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -20,11 +21,14 @@ export default function FarmerHomePage() {
       api.get(`/activities/farmer/${farmerId}/summary`),
       api.get(`/reminders/farmer/${farmerId}/summary`),
       api.get(`/notifications/farmer/${farmerId}/unread-count`),
-    ]).then(([fRes, aRes, rRes, nRes]) => {
+      // Lightweight active-season fetch — shared with child tabs via context
+      api.get(`/seasons/farmer/${farmerId}`, { params: { status: 'active' } }).catch(() => ({ data: [] })),
+    ]).then(([fRes, aRes, rRes, nRes, sRes]) => {
       setFarmer(fRes.data);
       setSummary(aRes.data);
       setReminderSummary(rRes.data);
       setUnread(nRes.data.unread || 0);
+      setActiveSeason(Array.isArray(sRes.data) ? (sRes.data[0] || null) : null);
     }).catch(() => navigate('/farmers'))
       .finally(() => setLoading(false));
   };
@@ -77,7 +81,7 @@ export default function FarmerHomePage() {
         ))}
       </div>
 
-      <Outlet context={{ farmer, summary, reminderSummary, unread, farmerId, refresh: loadData }} />
+      <Outlet context={{ farmer, summary, reminderSummary, unread, farmerId, refresh: loadData, activeSeason }} />
     </>
   );
 }

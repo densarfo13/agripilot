@@ -3,7 +3,7 @@ import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 
 export default function FarmerRemindersTab() {
-  const { farmerId, refresh } = useFarmerContext();
+  const { farmerId, refresh, activeSeason } = useFarmerContext();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
@@ -109,7 +109,17 @@ export default function FarmerRemindersTab() {
           ))}
         </div>
         <div className="flex gap-1">
-          <button className="btn btn-outline" onClick={() => { setShowGenerate(!showGenerate); setShowCreate(false); }}>
+          <button className="btn btn-outline" onClick={() => {
+            if (!showGenerate && activeSeason) {
+              // Prefill from active season so farmer doesn't re-type crop/date
+              setGenForm({
+                cropType: activeSeason.cropType || '',
+                plantingDate: activeSeason.plantingDate ? activeSeason.plantingDate.split('T')[0] : '',
+              });
+            }
+            setShowGenerate(s => !s);
+            setShowCreate(false);
+          }}>
             Generate Crop Reminders
           </button>
           <button className="btn btn-primary" onClick={() => { setShowCreate(!showCreate); setShowGenerate(false); }}>
@@ -209,11 +219,22 @@ export default function FarmerRemindersTab() {
                         <td>
                           {!r.completed && (
                             <div className="flex gap-1">
-                              <button className="btn btn-outline btn-sm" disabled={!!actionLoading[r.id]} onClick={() => markDone(r.id)}>
-                                {actionLoading[r.id] === 'done' ? '...' : 'Done'}
+                              <button
+                                className="btn btn-outline btn-sm"
+                                title="Mark as completed — you did this task"
+                                disabled={!!actionLoading[r.id]}
+                                onClick={() => markDone(r.id)}
+                              >
+                                {actionLoading[r.id] === 'done' ? '...' : '✓ Done'}
                               </button>
-                              <button className="btn btn-outline btn-sm" style={{ color: '#9ca3af' }} disabled={!!actionLoading[r.id]} onClick={() => dismiss(r.id)}>
-                                {actionLoading[r.id] === 'dismiss' ? '...' : 'Dismiss'}
+                              <button
+                                className="btn btn-outline btn-sm"
+                                style={{ color: '#9ca3af' }}
+                                title="Skip this reminder — remove it without marking as done"
+                                disabled={!!actionLoading[r.id]}
+                                onClick={() => dismiss(r.id)}
+                              >
+                                {actionLoading[r.id] === 'dismiss' ? '...' : 'Skip'}
                               </button>
                             </div>
                           )}

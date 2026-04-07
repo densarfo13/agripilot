@@ -112,6 +112,25 @@ export default function FarmerDashboardPage() {
           </div>
         ) : isApproved ? (
           <>
+            {/* Next Step card — primary call to action for approved farmers */}
+            {(() => {
+              const hasActiveSeason = seasons && seasons.length > 0;
+              const topRec = lifecycle?.recommendations?.[0];
+              const title = hasActiveSeason
+                ? (topRec?.title || 'Log your latest farm activity')
+                : 'Start your first growing season';
+              const detail = hasActiveSeason
+                ? (topRec?.message || 'Regular updates help build a stronger track record and improve your credit profile.')
+                : 'Your account is approved. Contact your field officer to set up your first season and begin tracking progress.';
+              return (
+                <div style={{ ...styles.card, marginBottom: '1rem', borderLeft: '4px solid #16a34a' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Your Next Step</div>
+                  <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.4rem' }}>{title}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#555', lineHeight: 1.5 }}>{detail}</div>
+                </div>
+              );
+            })()}
+
             <div style={styles.card}>
               <div style={styles.statusBadge('#d4edda', '#155724')}>Active Account</div>
               {lifecycle && (

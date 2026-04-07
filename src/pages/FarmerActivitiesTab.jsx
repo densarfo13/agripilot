@@ -5,7 +5,7 @@ import api from '../api/client.js';
 const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
 export default function FarmerActivitiesTab() {
-  const { farmerId, refresh } = useFarmerContext();
+  const { farmerId, refresh, activeSeason } = useFarmerContext();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
@@ -39,7 +39,8 @@ export default function FarmerActivitiesTab() {
         activityDate: form.activityDate || undefined,
       });
       setShowForm(false);
-      setForm({ activityType: 'planting', cropType: '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0] });
+      // Reset form but preserve crop prefill for next entry
+      setForm({ activityType: 'planting', cropType: activeSeason?.cropType || '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0] });
       loadActivities();
       refresh();
     } catch (err) {
@@ -56,7 +57,13 @@ export default function FarmerActivitiesTab() {
           <option value="">All Types</option>
           {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
         </select>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+        <button className="btn btn-primary" onClick={() => {
+          if (!showForm && activeSeason?.cropType) {
+            // Prefill crop from active season only when opening and field is blank
+            setForm(f => ({ ...f, cropType: f.cropType || activeSeason.cropType }));
+          }
+          setShowForm(s => !s);
+        }}>
           {showForm ? 'Cancel' : '+ Log Activity'}
         </button>
       </div>

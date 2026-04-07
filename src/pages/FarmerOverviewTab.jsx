@@ -20,6 +20,7 @@ export default function FarmerOverviewTab() {
   const [lifecycle, setLifecycle] = useState(null);
   const [lcLoading, setLcLoading] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
+  const [lcSuccess, setLcSuccess] = useState('');
 
   useEffect(() => {
     api.get(`/lifecycle/farmers/${farmerId}`)
@@ -42,7 +43,8 @@ export default function FarmerOverviewTab() {
   const handleGenerateReminders = async () => {
     try {
       const r = await api.post(`/lifecycle/farmers/${farmerId}/generate-reminders`);
-      alert(`Generated ${r.data.generated} reminders for ${lifecycle?.currentStage?.replace(/_/g, ' ')} stage.`);
+      setLcSuccess(`Generated ${r.data.generated} reminder${r.data.generated === 1 ? '' : 's'} for ${lifecycle?.currentStage?.replace(/_/g, ' ')} stage.`);
+      setTimeout(() => setLcSuccess(''), 5000);
       refresh();
     } catch {}
   };
@@ -63,6 +65,9 @@ export default function FarmerOverviewTab() {
           </div>
         </div>
         <div className="card-body">
+          {lcSuccess && (
+            <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>{lcSuccess}</div>
+          )}
           {lcLoading ? (
             <div style={{ textAlign: 'center', padding: '1rem', color: '#999' }}>Loading lifecycle...</div>
           ) : lifecycle ? (

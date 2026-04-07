@@ -121,6 +121,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showReactivateConfirm, setShowReactivateConfirm] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -180,7 +181,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
     } else if (status === 'approved' && !farmer.assignedOfficerId) {
       primaryAction = { label: 'Assign Field Officer', onClick: () => setShowAssignModal(true), className: 'btn-primary' };
     } else if (status === 'disabled') {
-      primaryAction = { label: 'Reactivate', onClick: handleReactivate, className: 'btn-success' };
+      primaryAction = { label: 'Reactivate', onClick: () => setShowReactivateConfirm(true), className: 'btn-success' };
     } else if (status === 'rejected') {
       primaryAction = { label: 'Reopen for Review', onClick: handleReopenPending, className: 'btn-primary' };
     }
@@ -303,6 +304,26 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
           onClose={() => setShowRejectModal(false)}
           onDone={() => { setShowRejectModal(false); onUpdate(); setActionSuccess('Registration rejected'); }}
         />
+      )}
+      {showReactivateConfirm && (
+        <div className="modal-overlay" onClick={() => setShowReactivateConfirm(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">Confirm Reactivation <button className="btn btn-outline btn-sm" onClick={() => setShowReactivateConfirm(false)}>X</button></div>
+            <div className="modal-body">
+              <p style={{ margin: 0 }}>Reactivate access for <strong>{farmer.fullName}</strong>? Their account will be restored to active status and they will be able to log in again.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowReactivateConfirm(false)}>Cancel</button>
+              <button
+                className="btn btn-success"
+                disabled={processing}
+                onClick={() => { setShowReactivateConfirm(false); handleReactivate(); }}
+              >
+                {processing ? 'Reactivating...' : 'Yes, Reactivate'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -602,7 +623,7 @@ function RejectModal({ farmer, onClose, onDone }) {
     setError('');
     try {
       await api.post(`/farmers/${farmer.id}/reject-registration`, {
-        rejectionReason: reason || undefined,
+        rejectionReason: reason,
       });
       onDone();
     } catch (err) {
@@ -618,9 +639,10 @@ function RejectModal({ farmer, onClose, onDone }) {
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
             <div className="form-group">
-              <label className="form-label">Rejection Reason (optional)</label>
-              <textarea className="form-input" rows={3} value={reason} onChange={e => setReason(e.target.value)}
+              <label className="form-label">Rejection Reason *</label>
+              <textarea className="form-input" rows={3} required value={reason} onChange={e => setReason(e.target.value)}
                 placeholder="e.g., Incomplete information, outside service area..." />
+              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>Required — the farmer will see this explanation.</div>
             </div>
           </div>
           <div className="modal-footer">

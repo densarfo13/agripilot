@@ -35,6 +35,22 @@ export default function FarmerProgressTab() {
   const [showImageForm, setShowImageForm] = useState(false);
   const [credibility, setCredibility] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [pageError, setPageError] = useState('');
+  const [seasonPrefilled, setSeasonPrefilled] = useState(false);
+  const [confirmCropFailure, setConfirmCropFailure] = useState(false);
+
+  // Close all panels and open exactly one — prevents multi-form bleed
+  const openForm = (setter) => {
+    setShowSeasonForm(false);
+    setShowProgressForm(false);
+    setShowConditionForm(false);
+    setShowStageConfirm(false);
+    setShowHarvestForm(false);
+    setShowImageForm(false);
+    setFormError('');
+    setter(true);
+  };
 
   const loadSeasons = () => {
     setLoading(true);
@@ -71,33 +87,56 @@ export default function FarmerProgressTab() {
   // ─── Season Setup Form ────────────────────────────
   const [seasonForm, setSeasonForm] = useState({ cropType: '', farmSizeAcres: '', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
 
+  // Opens season form and prefills from the most recent past season to reduce re-entry
+  const openSeasonForm = () => {
+    const lastSeason = seasons.filter(s => s.status !== 'active').sort((a, b) => new Date(b.plantingDate) - new Date(a.plantingDate))[0];
+    if (lastSeason) {
+      setSeasonForm({
+        cropType: lastSeason.cropType || '',
+        farmSizeAcres: lastSeason.farmSizeAcres || '',
+        plantingDate: new Date().toISOString().split('T')[0],
+        seedType: lastSeason.seedType || '',
+        seedQuantity: lastSeason.seedQuantity || '',
+        declaredIntent: lastSeason.declaredIntent || '',
+      });
+      setSeasonPrefilled(true);
+    } else {
+      setSeasonForm({ cropType: '', farmSizeAcres: '', plantingDate: new Date().toISOString().split('T')[0], seedType: '', seedQuantity: '', declaredIntent: '' });
+      setSeasonPrefilled(false);
+    }
+    openForm(setShowSeasonForm);
+  };
+
   const handleCreateSeason = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitting(true);
     try {
       await api.post(`/seasons/farmer/${farmerId}`, seasonForm);
       setShowSeasonForm(false);
+      setSeasonPrefilled(false);
       setSeasonForm({ cropType: '', farmSizeAcres: '', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to create season');
+      setFormError(err.response?.data?.error || 'Failed to create season. Please check your details and try again.');
     }
     setSubmitting(false);
   };
 
   // ─── Progress Entry Form ──────────────────────────
-  const [progressForm, setProgressForm] = useState({ activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '' });
+  const [progressForm, setProgressForm] = useState({ activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '', entryDate: new Date().toISOString().split('T')[0] });
 
   const handleLogProgress = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/progress`, { ...progressForm, entryType: 'activity' });
       setShowProgressForm(false);
-      setProgressForm({ activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '' });
+      setProgressForm({ activityType: '', description: '', quantity: '', unit: '', followedAdvice: '', adviceNotes: '', entryDate: new Date().toISOString().split('T')[0] });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed');
+      setFormError(err.response?.data?.error || 'Failed to save activity. Please try again.');
     }
     setSubmitting(false);
   };
@@ -107,6 +146,7 @@ export default function FarmerProgressTab() {
 
   const handleCondition = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/condition`, condForm);
@@ -114,7 +154,7 @@ export default function FarmerProgressTab() {
       setCondForm({ cropCondition: '', conditionNotes: '' });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed');
+      setFormError(err.response?.data?.error || 'Failed to save condition update. Please try again.');
     }
     setSubmitting(false);
   };
@@ -124,6 +164,7 @@ export default function FarmerProgressTab() {
 
   const handleStageConfirm = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/stage-confirmation`, stageForm);
@@ -131,7 +172,7 @@ export default function FarmerProgressTab() {
       setStageForm({ confirmedStage: '', note: '' });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed');
+      setFormError(err.response?.data?.error || 'Failed to save stage confirmation. Please try again.');
     }
     setSubmitting(false);
   };
@@ -141,6 +182,7 @@ export default function FarmerProgressTab() {
 
   const handleHarvest = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/harvest-report`, harvestForm);
@@ -148,7 +190,7 @@ export default function FarmerProgressTab() {
       setHarvestForm({ totalHarvestKg: '', salesAmount: '', notes: '' });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed');
+      setFormError(err.response?.data?.error || 'Failed to submit harvest report. Please try again.');
     }
     setSubmitting(false);
   };
@@ -158,6 +200,7 @@ export default function FarmerProgressTab() {
 
   const handleImageUpload = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/progress-image`, imageForm);
@@ -165,7 +208,7 @@ export default function FarmerProgressTab() {
       setImageForm({ imageUrl: '', imageStage: '', description: '' });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed');
+      setFormError(err.response?.data?.error || 'Failed to save photo. Please try again.');
     }
     setSubmitting(false);
   };
@@ -173,11 +216,13 @@ export default function FarmerProgressTab() {
   // ─── Edge-case flags ─────────────────────────
   const handleEdgeCase = async (flag) => {
     if (!activeSeason) return;
+    setConfirmCropFailure(false);
+    setPageError('');
     try {
       await api.patch(`/seasons/${activeSeason.id}`, { [flag]: true });
       loadSeasons();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed');
+      setPageError(err.response?.data?.error || 'Failed to update season. Please try again.');
     }
   };
 
@@ -185,12 +230,18 @@ export default function FarmerProgressTab() {
 
   return (
     <div>
+      {pageError && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{pageError}</span>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: '1rem', lineHeight: 1 }} onClick={() => setPageError('')}>✕</button>
+        </div>
+      )}
       {/* ─── No active season → prompt setup ─────── */}
       {!activeSeason && !showSeasonForm && (
         <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
           <h3 style={{ margin: '0 0 0.5rem' }}>No Active Season</h3>
           <p className="text-muted">Start a new farming season to begin tracking progress.</p>
-          <button className="btn btn-primary" onClick={() => setShowSeasonForm(true)}>Start New Season</button>
+          <button className="btn btn-primary" onClick={openSeasonForm}>Start New Season</button>
         </div>
       )}
 
@@ -200,6 +251,14 @@ export default function FarmerProgressTab() {
           <div className="card-header">New Season Setup</div>
           <div className="card-body">
             <form onSubmit={handleCreateSeason}>
+              {seasonPrefilled && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#1d4ed8', marginBottom: '0.75rem' }}>
+                  ℹ️ Prefilled from your last season — please review before submitting.
+                </div>
+              )}
+              {formError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
@@ -284,7 +343,7 @@ export default function FarmerProgressTab() {
               {comparison && !showStageConfirm && (
                 <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.85rem' }}>Does your farm look like it is at the <strong>{STAGE_LABELS[comparison.expectedStage]}</strong> stage?</span>
-                  <button className="btn btn-sm btn-outline" onClick={() => { setStageForm({ confirmedStage: comparison.expectedStage, note: '' }); setShowStageConfirm(true); }}>Confirm Stage</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => { setStageForm({ confirmedStage: comparison.expectedStage, note: '' }); openForm(setShowStageConfirm); }}>Confirm Stage</button>
                 </div>
               )}
 
@@ -320,16 +379,26 @@ export default function FarmerProgressTab() {
 
               {/* Action buttons */}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button className="btn btn-sm btn-primary" onClick={() => setShowProgressForm(true)}>Log Activity</button>
-                <button className="btn btn-sm btn-outline" onClick={() => setShowConditionForm(true)}>Update Condition</button>
-                <button className="btn btn-sm btn-outline" style={{ borderColor: '#2563eb', color: '#2563eb' }} onClick={() => setShowImageForm(true)}>Add Photo</button>
-                <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => setShowHarvestForm(true)}>Submit Harvest Report</button>
+                <button className="btn btn-sm btn-primary" onClick={() => openForm(setShowProgressForm)}>Log Activity</button>
+                <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowConditionForm)}>Update Condition</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#2563eb', color: '#2563eb' }} onClick={() => openForm(setShowImageForm)}>Add Photo</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => openForm(setShowHarvestForm)}>Submit Harvest Report</button>
               </div>
 
               {/* Edge-case flags */}
               {!activeSeason.cropFailureReported && !activeSeason.partialHarvest && (
-                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn btn-sm btn-outline" style={{ fontSize: '0.75rem', color: '#dc2626', borderColor: '#fecaca' }} onClick={() => { if (confirm('Report crop failure for this season?')) handleEdgeCase('cropFailureReported'); }}>Report Crop Failure</button>
+                <div style={{ marginTop: '0.5rem' }}>
+                  {!confirmCropFailure ? (
+                    <button className="btn btn-sm btn-outline" style={{ fontSize: '0.75rem', color: '#dc2626', borderColor: '#fecaca' }} onClick={() => setConfirmCropFailure(true)}>
+                      Report Crop Failure
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#fee2e2', borderRadius: 6, fontSize: '0.85rem', color: '#991b1b' }}>
+                      <span>Confirm: report crop failure for this season?</span>
+                      <button className="btn btn-sm btn-outline" style={{ borderColor: '#dc2626', color: '#dc2626', padding: '0.2rem 0.6rem' }} onClick={() => handleEdgeCase('cropFailureReported')}>Yes, Report</button>
+                      <button className="btn btn-sm btn-outline" style={{ padding: '0.2rem 0.6rem' }} onClick={() => setConfirmCropFailure(false)}>Cancel</button>
+                    </div>
+                  )}
                 </div>
               )}
               {activeSeason.cropFailureReported && (
@@ -346,6 +415,7 @@ export default function FarmerProgressTab() {
               <div className="card-header">Confirm Growth Stage</div>
               <div className="card-body">
                 <form onSubmit={handleStageConfirm}>
+                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 0.75rem' }}>
                     The system expects your crop to be at <strong>{STAGE_LABELS[comparison?.expectedStage]}</strong>. Select the stage that matches what you see:
                   </p>
@@ -368,6 +438,7 @@ export default function FarmerProgressTab() {
               <div className="card-header">Log Activity</div>
               <div className="card-body">
                 <form onSubmit={handleLogProgress}>
+                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Activity Type *</label>
@@ -383,6 +454,10 @@ export default function FarmerProgressTab() {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label className="form-label">Description</label>
                       <textarea className="form-input" rows={2} value={progressForm.description} onChange={e => setProgressForm(f => ({ ...f, description: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="form-label">Date</label>
+                      <input className="form-input" type="date" value={progressForm.entryDate} onChange={e => setProgressForm(f => ({ ...f, entryDate: e.target.value }))} />
                     </div>
                     <div>
                       <label className="form-label">Followed advice?</label>
@@ -413,6 +488,7 @@ export default function FarmerProgressTab() {
               <div className="card-header">Update Crop Condition</div>
               <div className="card-body">
                 <form onSubmit={handleCondition}>
+                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                     {['good', 'average', 'poor'].map(c => (
                       <label key={c} style={{
@@ -443,6 +519,7 @@ export default function FarmerProgressTab() {
               <div className="card-body">
                 <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 0.75rem' }}>This will close the current season.</p>
                 <form onSubmit={handleHarvest}>
+                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Total Harvest (kg) *</label>
@@ -472,6 +549,7 @@ export default function FarmerProgressTab() {
               <div className="card-header">Add Progress Photo</div>
               <div className="card-body">
                 <form onSubmit={handleImageUpload}>
+                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Image URL *</label>
@@ -585,7 +663,7 @@ export default function FarmerProgressTab() {
       {/* New season button at bottom for completed seasons */}
       {!activeSeason && seasons.length > 0 && !showSeasonForm && (
         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <button className="btn btn-primary" onClick={() => setShowSeasonForm(true)}>Start New Season</button>
+          <button className="btn btn-primary" onClick={openSeasonForm}>Start New Season</button>
         </div>
       )}
     </div>
