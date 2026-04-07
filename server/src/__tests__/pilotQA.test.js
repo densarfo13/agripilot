@@ -13,9 +13,11 @@ vi.mock('../config/database.js', () => {
     application:           { count: vi.fn() },
     credibilityAssessment: { count: vi.fn() },
     pilotChecklistItem: {
-      findMany: vi.fn(),
-      upsert:   vi.fn(),
-      count:    vi.fn(),
+      findMany:  vi.fn(),
+      findFirst: vi.fn(),
+      create:    vi.fn(),
+      update:    vi.fn(),
+      count:     vi.fn(),
     },
   };
   return { default: mockPrisma };
@@ -166,16 +168,21 @@ describe('getChecklist', () => {
 // ─── upsertChecklistItem ──────────────────────────────────
 
 describe('upsertChecklistItem', () => {
+  const mockRecord = {
+    id: 'item-1',
+    itemKey: 'org_setup.org_created',
+    status: 'pass',
+    notes: null,
+    updatedAt: new Date(),
+    updatedBy: null,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    prisma.pilotChecklistItem.upsert.mockResolvedValue({
-      id: 'item-1',
-      itemKey: 'org_setup.org_created',
-      status: 'pass',
-      notes: null,
-      updatedAt: new Date(),
-      updatedBy: null,
-    });
+    // Default: no existing record → triggers create path
+    prisma.pilotChecklistItem.findFirst.mockResolvedValue(null);
+    prisma.pilotChecklistItem.create.mockResolvedValue(mockRecord);
+    prisma.pilotChecklistItem.update.mockResolvedValue(mockRecord);
   });
 
   it('throws 400 for unknown itemKey', async () => {
@@ -188,7 +195,7 @@ describe('upsertChecklistItem', () => {
     expect(err.message).toMatch(/unknown/i);
   });
 
-  it('calls prisma.upsert with correct data for a valid item', async () => {
+  it('calls prisma.create with correct data when no existing record', async () => {
     await upsertChecklistItem({
       itemKey: 'org_setup.org_created',
       organizationId: 'org-1',
@@ -197,11 +204,30 @@ describe('upsertChecklistItem', () => {
       updatedById: 'user-1',
     });
 
-    expect(prisma.pilotChecklistItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.pilotChecklistItem.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { itemKey: 'org_setup.org_created', organizationId: 'org-1' } })
+    );
+    expect(prisma.pilotChecklistItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { item_org_unique: { itemKey: 'org_setup.org_created', organizationId: 'org-1' } },
-        create: expect.objectContaining({ status: 'pass', notes: 'Tested OK' }),
-        update: expect.objectContaining({ status: 'pass', notes: 'Tested OK' }),
+        data: expect.objectContaining({ status: 'pass', notes: 'Tested OK' }),
+      })
+    );
+  });
+
+  it('calls prisma.update when existing record found', async () => {
+    prisma.pilotChecklistItem.findFirst.mockResolvedValue({ id: 'item-1' });
+
+    await upsertChecklistItem({
+      itemKey: 'org_setup.org_created',
+      organizationId: 'org-1',
+      status: 'pass',
+      notes: 'Updated',
+    });
+
+    expect(prisma.pilotChecklistItem.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'item-1' },
+        data: expect.objectContaining({ status: 'pass', notes: 'Updated' }),
       })
     );
   });
@@ -216,10 +242,8 @@ describe('upsertChecklistItem', () => {
 
   it('uses null for organizationId when not provided', async () => {
     await upsertChecklistItem({ itemKey: 'org_setup.org_created', status: 'pass' });
-    expect(prisma.pilotChecklistItem.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { item_org_unique: { itemKey: 'org_setup.org_created', organizationId: null } },
-      })
+    expect(prisma.pilotChecklistItem.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { itemKey: 'org_setup.org_created', organizationId: null } })
     );
   });
 });

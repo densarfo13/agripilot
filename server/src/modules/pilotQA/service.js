@@ -287,15 +287,29 @@ export async function upsertChecklistItem({ itemKey, organizationId, status, not
   if (status !== undefined) data.status = status;
   if (notes !== undefined) data.notes = notes ?? null;
 
-  return prisma.pilotChecklistItem.upsert({
-    where: { item_org_unique: { itemKey, organizationId: organizationId ?? null } },
-    create: {
+  // NOTE: Prisma upsert with composite unique containing a nullable field is unreliable
+  // (PostgreSQL treats NULL != NULL, so the ON CONFLICT clause can't match null-org rows).
+  // Use findFirst + create/update to handle this correctly.
+  const orgId = organizationId ?? null;
+  const existing = await prisma.pilotChecklistItem.findFirst({
+    where: { itemKey, organizationId: orgId },
+  });
+
+  if (existing) {
+    return prisma.pilotChecklistItem.update({
+      where: { id: existing.id },
+      data,
+      include: { updatedBy: { select: { id: true, fullName: true } } },
+    });
+  }
+
+  return prisma.pilotChecklistItem.create({
+    data: {
       itemKey,
-      organizationId: organizationId ?? null,
+      organizationId: orgId,
       ...data,
       status: status ?? 'not_started',
     },
-    update: data,
     include: { updatedBy: { select: { id: true, fullName: true } } },
   });
 }
@@ -325,7 +339,7 @@ export async function getHealthIndicators({ organizationId }) {
     prisma.farmer.count({
       where: {
         ...farmerWhere,
-        seasons: { some: { progressEntries: { some: {} } } },
+        farmSeasons: { some: { progressEntries: { some: {} } } },
       },
     }),
     prisma.farmSeason.count({ where: { status: 'active', ...seasonWhere } }),
