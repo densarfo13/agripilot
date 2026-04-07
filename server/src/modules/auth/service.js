@@ -158,6 +158,199 @@ export async function adminResetPassword({ targetUserId, newPassword }) {
   return { message: 'Password reset successfully' };
 }
 
+// ─── Self-service profile update (safe fields only) ────
+
+/**
+ * Let a user update their own profile.
+ * Only fullName and preferredLanguage are mutable by the account owner.
+ * Email and role changes require admin action.
+ */
+export async function updateSelfProfile({ userId, fullName, preferredLanguage }) {
+  const data = {};
+  if (fullName !== undefined) data.fullName = fullName.trim();
+  if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
+
+  if (Object.keys(data).length === 0) {
+    const err = new Error('At least one updatable field required: fullName, preferredLanguage');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data,
+    select: { id: true, email: true, fullName: true, role: true, active: true, preferredLanguage: true, organizationId: true },
+  });
+  return user;
+}
+
+// ─── Admin-managed user profile update ─────────────────
+
+/**
+ * Admin updates another user's profile fields.
+ * - institutional_admin: own-org users only, cannot touch super_admin accounts, cannot change email
+ * - super_admin: any user, may also change email
+ */
+export async function adminUpdateUserProfile({ targetUserId, actorId, actorRole, actorOrgId, updates }) {
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Org scope enforcement for institutional_admin
+  if (actorRole === 'institutional_admin') {
+    if (target.organizationId !== actorOrgId) {
+      const err = new Error('Cannot edit users outside your organization');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (target.role === 'super_admin') {
+      const err = new Error('Cannot edit super_admin accounts');
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  const data = {};
+  if (updates.fullName !== undefined) data.fullName = updates.fullName.trim();
+  if (updates.preferredLanguage !== undefined) data.preferredLanguage = updates.preferredLanguage;
+
+  if (updates.email !== undefined) {
+    if (actorRole !== 'super_admin') {
+      const err = new Error('Only super_admin can change email addresses');
+      err.statusCode = 403;
+      throw err;
+    }
+    const emailLower = updates.email.toLowerCase().trim();
+    const conflict = await prisma.user.findUnique({ where: { email: emailLower } });
+    if (conflict && conflict.id !== targetUserId) {
+      const err = new Error('Email already in use by another account');
+      err.statusCode = 409;
+      throw err;
+    }
+    data.email = emailLower;
+  }
+
+  if (Object.keys(data).length === 0) {
+    const err = new Error('No valid fields provided. Accepted: fullName, preferredLanguage, email (super_admin only)');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data,
+    select: { id: true, email: true, fullName: true, role: true, active: true, preferredLanguage: true, organizationId: true },
+  });
+  return { user, previous: target };
+}
+
+// ─── Admin role change ──────────────────────────────────
+
+// Roles that may be assigned via admin role management (farmer assigned only via registration flow)
+const ASSIGNABLE_ROLES = ['super_admin', 'institutional_admin', 'reviewer', 'field_officer', 'investor_viewer'];
+// Roles institutional_admin may assign (cannot elevate to privileged roles)
+const INSTITUTIONAL_ASSIGNABLE_ROLES = ['reviewer', 'field_officer', 'investor_viewer'];
+
+/**
+ * Change a user's role.
+ * - Cannot change own role (prevents self-escalation)
+ * - super_admin: can assign any non-farmer role
+ * - institutional_admin: can only assign reviewer/field_officer/investor_viewer within own org
+ * - farmer role is NOT assignable via this route
+ */
+export async function adminChangeUserRole({ targetUserId, newRole, actorId, actorRole, actorOrgId }) {
+  if (targetUserId === actorId) {
+    const err = new Error('Cannot change your own role');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (!ASSIGNABLE_ROLES.includes(newRole)) {
+    const err = new Error(
+      newRole === 'farmer'
+        ? 'Cannot assign farmer role via role management. Use the farmer registration flow.'
+        : `Invalid role. Assignable roles: ${ASSIGNABLE_ROLES.join(', ')}`
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (actorRole === 'institutional_admin') {
+    if (target.organizationId !== actorOrgId) {
+      const err = new Error('Cannot change roles for users outside your organization');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (target.role === 'super_admin') {
+      const err = new Error('Cannot change the role of a super_admin account');
+      err.statusCode = 403;
+      throw err;
+    }
+    if (!INSTITUTIONAL_ASSIGNABLE_ROLES.includes(newRole)) {
+      const err = new Error(
+        `institutional_admin can only assign: ${INSTITUTIONAL_ASSIGNABLE_ROLES.join(', ')}`
+      );
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { role: newRole },
+    select: { id: true, email: true, fullName: true, role: true, active: true, organizationId: true },
+  });
+  return { user, previousRole: target.role };
+}
+
+// ─── Admin organization reassignment ───────────────────
+
+/**
+ * Move a user to a different organization (or remove from org).
+ * super_admin only — institutional_admin cannot reassign across orgs.
+ * Cannot change own organization.
+ */
+export async function adminChangeUserOrg({ targetUserId, newOrgId, actorId }) {
+  if (targetUserId === actorId) {
+    const err = new Error('Cannot change your own organization');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (newOrgId) {
+    const org = await prisma.organization.findUnique({ where: { id: newOrgId } });
+    if (!org) {
+      const err = new Error('Organization not found');
+      err.statusCode = 404;
+      throw err;
+    }
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { organizationId: newOrgId || null },
+    select: { id: true, email: true, fullName: true, role: true, active: true, organizationId: true },
+  });
+  return { user, previousOrgId: target.organizationId };
+}
+
 function sanitizeUser(user) {
   return {
     id: user.id,

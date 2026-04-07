@@ -8,6 +8,7 @@ import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
 import * as federated from './federated.js';
+import prisma from '../../config/database.js';
 
 const router = Router();
 
@@ -51,6 +52,34 @@ router.post('/login', asyncHandler(async (req, res) => {
     details: { method: 'local', role: result.user.role },
   }).catch(() => {});
 
+  res.json(result);
+}));
+
+// Get own account info (authenticated user)
+router.get('/me', authenticate, asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.sub },
+    select: {
+      id: true, email: true, fullName: true, role: true, active: true,
+      preferredLanguage: true, organizationId: true, lastLoginAt: true, createdAt: true,
+      organization: { select: { id: true, name: true } },
+    },
+  });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
+}));
+
+// Self-service profile update — safe fields only (no role, no email, no org)
+router.patch('/me', authenticate, asyncHandler(async (req, res) => {
+  const { fullName, preferredLanguage } = req.body;
+  if (fullName === undefined && preferredLanguage === undefined) {
+    return res.status(400).json({ error: 'At least one field required: fullName, preferredLanguage' });
+  }
+  const result = await authService.updateSelfProfile({
+    userId: req.user.sub,
+    fullName,
+    preferredLanguage,
+  });
   res.json(result);
 }));
 
