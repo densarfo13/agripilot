@@ -89,8 +89,63 @@ function SystemOverview({ navigate }) {
   const escalatedQueue = statusMap.escalated || 0;
   const approvalRate = total > 0 ? (((statusMap.approved || 0) + (statusMap.conditional_approved || 0)) / total * 100).toFixed(1) : 0;
 
+  // Compute attention items from pipeline data
+  const needsEvidenceCount = statusMap.needs_more_evidence || 0;
+  const fieldReviewCount = statusMap.field_review_required || 0;
+  const pendingCount = (statusMap.submitted || 0) + (statusMap.under_review || 0);
+  const attentionItems = [];
+  if (escalatedQueue > 0) attentionItems.push({
+    urgent: true, href: '/verification-queue',
+    label: `${escalatedQueue} escalated application${escalatedQueue > 1 ? 's' : ''} need a senior decision`,
+  });
+  if (fraudQueue > 0) attentionItems.push({
+    urgent: true, href: '/fraud-queue',
+    label: `${fraudQueue} application${fraudQueue > 1 ? 's' : ''} on fraud hold — review required`,
+  });
+  if (fieldReviewCount > 0) attentionItems.push({
+    urgent: true, href: '/verification-queue',
+    label: `${fieldReviewCount} application${fieldReviewCount > 1 ? 's' : ''} require a field officer visit`,
+  });
+  if (needsEvidenceCount > 0) attentionItems.push({
+    urgent: false, href: '/verification-queue',
+    label: `${needsEvidenceCount} application${needsEvidenceCount > 1 ? 's' : ''} waiting for evidence from farmers`,
+  });
+  if (pendingCount > 20) attentionItems.push({
+    urgent: false, href: '/verification-queue',
+    label: `${pendingCount} applications in the verification queue — consider bulk scoring`,
+  });
+
   return (
     <>
+      {/* Needs Attention */}
+      {attentionItems.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #fde68a' }}>
+          <div className="card-header" style={{ background: '#fffbeb', color: '#92400e', fontWeight: 700 }}>
+            Needs Attention ({attentionItems.length})
+          </div>
+          <div className="card-body" style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {attentionItems.map((item, i) => (
+              <div
+                key={i}
+                onClick={() => navigate(item.href)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                  padding: '0.55rem 1rem', cursor: 'pointer',
+                  borderBottom: i < attentionItems.length - 1 ? '1px solid #fef3c7' : 'none',
+                  background: item.urgent ? '#fffbeb' : '#fff',
+                }}
+              >
+                <span style={{ color: item.urgent ? '#dc2626' : '#d97706', fontSize: '1rem', flexShrink: 0 }}>
+                  {item.urgent ? '🔴' : '🟡'}
+                </span>
+                <span style={{ fontSize: '0.875rem', color: '#374151', flex: 1 }}>{item.label}</span>
+                <span style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 600, flexShrink: 0 }}>View →</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Quick action banners */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
@@ -101,7 +156,7 @@ function SystemOverview({ navigate }) {
           <div style={{ fontSize: '2rem', fontWeight: 700, color: '#dc2626' }}>{fraudQueue}</div>
           <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Fraud Hold</div>
         </div>
-        <div style={{ flex: 1, minWidth: 200, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', fontWeight: 700, color: '#d97706' }}>{escalatedQueue}</div>
           <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Escalated</div>
         </div>

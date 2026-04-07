@@ -33,7 +33,7 @@ export async function createFarmer(data, userId, organizationId) {
   });
 }
 
-export async function listFarmers({ page = 1, limit = 20, search, region, orgScope = {} }) {
+export async function listFarmers({ page = 1, limit = 20, search, region, registrationStatus, orgScope = {} }) {
   const where = { ...orgScope };
   if (search) {
     where.OR = [
@@ -43,6 +43,7 @@ export async function listFarmers({ page = 1, limit = 20, search, region, orgSco
     ];
   }
   if (region) where.region = region;
+  if (registrationStatus) where.registrationStatus = registrationStatus;
 
   const [farmers, total] = await Promise.all([
     prisma.farmer.findMany({

@@ -112,21 +112,56 @@ export default function FarmerDashboardPage() {
           </div>
         ) : isApproved ? (
           <>
-            {/* Next Step card — primary call to action for approved farmers */}
+            {/* Primary action card — single clear next step */}
             {(() => {
               const hasActiveSeason = seasons && seasons.length > 0;
-              const topRec = lifecycle?.recommendations?.[0];
-              const title = hasActiveSeason
-                ? (topRec?.title || 'Log your latest farm activity')
-                : 'Start your first growing season';
-              const detail = hasActiveSeason
-                ? (topRec?.message || 'Regular updates help build a stronger track record and improve your credit profile.')
-                : 'Your account is approved. Contact your field officer to set up your first season and begin tracking progress.';
+              const farmerId = user?.farmerId;
+              const stage = lifecycle?.currentStage;
+              const isHarvestStage = stage === 'harvest' || stage === 'post_harvest';
+              const daysSinceUpdate = seasons?.[0]?.lastActivityDate
+                ? Math.floor((Date.now() - new Date(seasons[0].lastActivityDate)) / 86400000)
+                : null;
+              const updateOverdue = daysSinceUpdate !== null && daysSinceUpdate >= 14;
+
+              // Pick the single most relevant action
+              let btnLabel, btnHref, cardTitle, cardDetail;
+              if (!hasActiveSeason) {
+                btnLabel = 'Start Season →';
+                btnHref = `/farmer-home/${farmerId}/progress`;
+                cardTitle = 'Set up your season';
+                cardDetail = 'Your account is active. Start a new season to begin tracking your farm progress.';
+              } else if (isHarvestStage) {
+                btnLabel = 'Report Harvest →';
+                btnHref = `/farmer-home/${farmerId}/progress`;
+                cardTitle = 'Time to report your harvest';
+                cardDetail = 'Your crop is at harvest stage. Submit your harvest report to close the season.';
+              } else if (updateOverdue) {
+                btnLabel = 'Log Update →';
+                btnHref = `/farmer-home/${farmerId}/progress`;
+                cardTitle = `No update in ${daysSinceUpdate} days`;
+                cardDetail = 'Log a farm activity or update your crop condition to keep your record current.';
+              } else {
+                const topRec = lifecycle?.recommendations?.[0];
+                btnLabel = 'Log Update →';
+                btnHref = `/farmer-home/${farmerId}/progress`;
+                cardTitle = topRec?.title || 'Log your latest activity';
+                cardDetail = topRec?.message || 'Regular updates help build a stronger track record.';
+              }
+
               return (
                 <div style={{ ...styles.card, marginBottom: '1rem', borderLeft: '4px solid #16a34a' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Your Next Step</div>
-                  <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.4rem' }}>{title}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#555', lineHeight: 1.5 }}>{detail}</div>
+                  <div style={{ fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>{cardTitle}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#555', lineHeight: 1.5, marginBottom: '1rem' }}>{cardDetail}</div>
+                  {farmerId && (
+                    <a href={btnHref} style={{
+                      display: 'inline-block', padding: '0.6rem 1.4rem', background: '#16a34a', color: '#fff',
+                      borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none',
+                      boxShadow: '0 2px 8px rgba(22,163,74,0.18)',
+                    }}>
+                      {btnLabel}
+                    </a>
+                  )}
                 </div>
               );
             })()}
@@ -173,7 +208,6 @@ export default function FarmerDashboardPage() {
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.2rem' }}>
                       {s.farmSizeAcres} acres | Planted: {new Date(s.plantingDate).toLocaleDateString()}
-                      {s.progressScore && <> | Score: <strong>{s.progressScore.progressScore}/100</strong></>}
                     </div>
                   </div>
                 ))}

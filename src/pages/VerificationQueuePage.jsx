@@ -3,6 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 
+// Compute a single human-readable "next action" for each application
+function getNextAction(app) {
+  const days = Math.floor((Date.now() - new Date(app.createdAt)) / 86400000);
+  const score = app.verificationResult?.verificationScore;
+
+  if (app.status === 'needs_more_evidence') {
+    return { label: 'Waiting for evidence', color: '#d97706', urgent: false };
+  }
+  if (app.status === 'field_review_required') {
+    return { label: 'Field visit needed', color: '#0891b2', urgent: true };
+  }
+  if (app.status === 'escalated') {
+    return { label: 'Senior review needed', color: '#ea580c', urgent: true };
+  }
+  if (!app.verificationResult) {
+    return { label: 'Score first', color: '#2563eb', urgent: days > 3 };
+  }
+  if (app.status === 'under_review') {
+    if (score >= 70) return { label: 'Approve or reject', color: '#16a34a', urgent: true };
+    if (score >= 40) return { label: 'Review carefully', color: '#d97706', urgent: days > 5 };
+    return { label: 'Consider rejecting', color: '#dc2626', urgent: false };
+  }
+  if (app.status === 'submitted') {
+    if (score >= 70) return { label: 'Move to review', color: '#16a34a', urgent: true };
+    if (score >= 40) return { label: 'Move to review', color: '#d97706', urgent: false };
+    return { label: 'Score low — review', color: '#dc2626', urgent: false };
+  }
+  return { label: '—', color: '#9ca3af', urgent: false };
+}
+
 export default function VerificationQueuePage() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,14 +44,27 @@ export default function VerificationQueuePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [submitted, underReview] = await Promise.all([
+      const [submitted, underReview, needsEvidence, fieldReview, escalated] = await Promise.all([
         api.get('/applications', { params: { status: 'submitted', limit: 100 } }),
         api.get('/applications', { params: { status: 'under_review', limit: 100 } }),
+        api.get('/applications', { params: { status: 'needs_more_evidence', limit: 100 } }),
+        api.get('/applications', { params: { status: 'field_review_required', limit: 50 } }),
+        api.get('/applications', { params: { status: 'escalated', limit: 50 } }),
       ]);
+      // Sort: urgent items (no score + aging, or decision-ready) first, then by age
+      const urgencyScore = (a) => {
+        const action = getNextAction(a);
+        const days = Math.floor((Date.now() - new Date(a.createdAt)) / 86400000);
+        if (action.urgent) return 1000 + days;
+        return days;
+      };
       const all = [
         ...(submitted.data.applications || []),
         ...(underReview.data.applications || []),
-      ].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        ...(needsEvidence.data.applications || []),
+        ...(fieldReview.data.applications || []),
+        ...(escalated.data.applications || []),
+      ].sort((a, b) => urgencyScore(b) - urgencyScore(a));
       setApps(all);
     } catch {
       setError('Failed to load verification queue');
@@ -66,12 +109,20 @@ export default function VerificationQueuePage() {
     setTimeout(() => setBulkProgress(null), 5000);
   };
 
-  const unscoredCount = apps.filter(a => !a.verificationResult).length;
+  const unscoredCount = apps.filter(a => !a.verificationResult && a.status === 'submitted').length;
+  const urgentCount = apps.filter(a => getNextAction(a).urgent).length;
 
   return (
     <>
       <div className="page-header">
-        <h1>Verification Queue ({apps.length})</h1>
+        <div>
+          <h1>Verification Queue ({apps.length})</h1>
+          {urgentCount > 0 && (
+            <div style={{ fontSize: '0.82rem', color: '#dc2626', fontWeight: 600, marginTop: '0.15rem' }}>
+              {urgentCount} item{urgentCount > 1 ? 's' : ''} need immediate attention
+            </div>
+          )}
+        </div>
         <div className="flex gap-1">
           {unscoredCount > 0 && (
             <button className="btn btn-primary" onClick={runAll} disabled={bulkProgress !== null && bulkProgress.done < bulkProgress.total}>
@@ -120,40 +171,53 @@ export default function VerificationQueuePage() {
                   <thead>
                     <tr>
                       <th>Farmer</th>
-                      <th>Region</th>
+                      <th>Region / Org</th>
                       <th>Crop</th>
                       <th>Amount</th>
                       <th>Status</th>
-                      <th>Verification</th>
-                      <th>Days Waiting</th>
-                      <th>Action</th>
+                      <th>Score</th>
+                      <th>Age</th>
+                      <th>Next Action</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {apps.map(a => {
                       const days = Math.floor((Date.now() - new Date(a.createdAt)) / 86400000);
+                      const nextAction = getNextAction(a);
+                      const score = a.verificationResult?.verificationScore;
                       return (
-                        <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer' }}>
+                        <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer', background: nextAction.urgent ? '#fffbeb' : undefined }}>
                           <td style={{ fontWeight: 500 }}>{a.farmer?.fullName}</td>
-                          <td>{a.farmer?.region}</td>
+                          <td>
+                            <div>{a.farmer?.region || '-'}</div>
+                            {a.farmer?.organization?.name && (
+                              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{a.farmer.organization.name}</div>
+                            )}
+                          </td>
                           <td>{a.cropType}</td>
                           <td>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</td>
                           <td><StatusBadge value={a.status} /></td>
                           <td>
-                            {a.verificationResult
-                              ? <span style={{ fontWeight: 600, color: a.verificationResult.verificationScore >= 70 ? '#16a34a' : a.verificationResult.verificationScore >= 40 ? '#d97706' : '#dc2626' }}>
-                                  {a.verificationResult.verificationScore}/100
+                            {score != null
+                              ? <span style={{ fontWeight: 600, color: score >= 70 ? '#16a34a' : score >= 40 ? '#d97706' : '#dc2626' }}>
+                                  {score}/100
                                 </span>
-                              : <span className="text-muted">Not scored</span>
+                              : <span className="text-muted" style={{ fontSize: '0.8rem' }}>Unscored</span>
                             }
                           </td>
                           <td>
                             <span style={{ color: days > 7 ? '#dc2626' : days > 3 ? '#d97706' : '#6b7280', fontWeight: days > 3 ? 600 : 400 }}>
-                              {days}d
+                              {days}d{days > 7 ? ' ⚠' : ''}
                             </span>
                           </td>
                           <td>
-                            {!a.verificationResult && (
+                            <span style={{ fontSize: '0.8rem', fontWeight: nextAction.urgent ? 700 : 500, color: nextAction.color }}>
+                              {nextAction.urgent ? '→ ' : ''}{nextAction.label}
+                            </span>
+                          </td>
+                          <td>
+                            {a.status === 'submitted' && !a.verificationResult && (
                               <button
                                 className="btn btn-outline btn-sm"
                                 disabled={scoring[a.id]}

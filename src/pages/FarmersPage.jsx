@@ -5,11 +5,20 @@ import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { CREATOR_ROLES } from '../utils/roles.js';
 
+const STATUS_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'pending_approval', label: 'Pending Approval' },
+  { value: 'approved', label: 'Active' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'disabled', label: 'Disabled' },
+];
+
 export default function FarmersPage() {
   const [farmers, setFarmers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -20,9 +29,13 @@ export default function FarmersPage() {
   const isSuperAdmin = user?.role === 'super_admin';
   const canCreate = CREATOR_ROLES.includes(user?.role);
 
-  const load = (p = page, s = search) => {
+  const load = (p = page, s = search, status = statusFilter) => {
     setLoading(true);
-    api.get('/farmers', { params: { page: p, limit: 20, search: s || undefined } })
+    api.get('/farmers', { params: {
+      page: p, limit: 20,
+      search: s || undefined,
+      registrationStatus: status || undefined,
+    }})
       .then(r => { setFarmers(r.data.farmers); setTotal(r.data.total); setLoadError(''); })
       .catch(() => setLoadError('Failed to load farmers list'))
       .finally(() => setLoading(false));
@@ -33,7 +46,13 @@ export default function FarmersPage() {
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
-    load(1, search);
+    load(1, search, statusFilter);
+  };
+
+  const handleStatusFilter = (value) => {
+    setStatusFilter(value);
+    setPage(1);
+    load(1, search, value);
   };
 
   return (
@@ -55,6 +74,23 @@ export default function FarmersPage() {
         </div>
       </div>
       <div className="page-body">
+        {/* Status filter tabs */}
+        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {STATUS_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => handleStatusFilter(f.value)}
+              style={{
+                padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
+                border: statusFilter === f.value ? '1.5px solid #2563eb' : '1.5px solid #e5e7eb',
+                background: statusFilter === f.value ? '#eff6ff' : '#fff',
+                color: statusFilter === f.value ? '#1d4ed8' : '#6b7280',
+                fontWeight: statusFilter === f.value ? 600 : 400,
+              }}
+            >{f.label}</button>
+          ))}
+        </div>
+
         {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError}</div>}
         {loading ? <div className="loading">Loading...</div> : (
           <div className="card">

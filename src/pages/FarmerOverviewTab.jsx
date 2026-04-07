@@ -59,8 +59,14 @@ export default function FarmerOverviewTab() {
             <button className="btn btn-outline btn-sm" onClick={handleGenerateReminders} disabled={lcLoading || !lifecycle}>
               Generate Reminders
             </button>
-            <button className="btn btn-outline btn-sm" onClick={handleRecompute} disabled={recomputing || lcLoading}>
-              {recomputing ? 'Recomputing...' : 'Recompute'}
+            <button
+              className="btn btn-sm"
+              style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '0.78rem', cursor: 'pointer', padding: '0.25rem 0.5rem' }}
+              onClick={handleRecompute}
+              disabled={recomputing || lcLoading}
+              title="Recalculate lifecycle stage from latest activity data"
+            >
+              {recomputing ? '↻ Recalculating...' : '↻ Refresh stage'}
             </button>
           </div>
         </div>
@@ -107,14 +113,23 @@ export default function FarmerOverviewTab() {
                   <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType || 'Not set'}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Confidence</div>
-                  <span className={`badge ${lifecycle.stageConfidence === 'high' ? 'badge-approved' : lifecycle.stageConfidence === 'medium' ? 'badge-submitted' : 'badge-draft'}`}>
-                    {lifecycle.stageConfidence || 'unknown'}
-                  </span>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Trust Status</div>
+                  {(() => {
+                    const conf = lifecycle.stageConfidence;
+                    const map = {
+                      high: { label: 'Validated', cls: 'badge-approved', hint: 'Stage confirmed by farmer activity' },
+                      medium: { label: 'Needs Verification', cls: 'badge-submitted', hint: 'Stage inferred — no recent confirmation' },
+                      low: { label: 'Low Confidence', cls: 'badge-draft', hint: 'Insufficient data to confirm stage' },
+                    };
+                    const m = map[conf] || { label: conf || 'Unknown', cls: 'badge-draft', hint: '' };
+                    return (
+                      <span className={`badge ${m.cls}`} title={m.hint}>{m.label}</span>
+                    );
+                  })()}
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Source</div>
-                  <span className="text-sm">{lifecycle.stageSource === 'activity' ? 'Activity-driven' : lifecycle.stageSource === 'seeded' ? 'Demo data' : lifecycle.stageSource || 'N/A'}</span>
+                  <span className="text-sm">{lifecycle.stageSource === 'activity' ? 'Farmer activities' : lifecycle.stageSource === 'seeded' ? 'Demo data' : lifecycle.stageSource?.replace(/_/g, ' ') || 'N/A'}</span>
                 </div>
               </div>
 

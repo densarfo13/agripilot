@@ -79,12 +79,13 @@ router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_of
 
 // List farmers (staff only — farmers cannot enumerate other farmers)
 router.get('/', authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
-  const { search, region } = req.query;
+  const { search, region, registrationStatus } = req.query;
   const result = await farmersService.listFarmers({
     page: parsePositiveInt(req.query.page, 1, 1000),
     limit: parsePositiveInt(req.query.limit, 20, 100),
     search,
     region,
+    registrationStatus,
     orgScope: orgWhereFarmer(req),
   });
   res.json(result);

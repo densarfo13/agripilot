@@ -487,15 +487,30 @@ export default function FarmerProgressTab() {
               <div className="card-body">
                 <form onSubmit={handleStageConfirm}>
                   {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
-                  <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 0.75rem' }}>
-                    The system expects your crop to be at <strong>{STAGE_LABELS[comparison?.expectedStage]}</strong>. Select the stage that matches what you see:
+                  <p style={{ fontSize: '0.875rem', color: '#374151', margin: '0 0 0.5rem' }}>
+                    We expect your crop to be at: <strong style={{ color: STAGE_COLORS[comparison?.expectedStage] }}>{STAGE_LABELS[comparison?.expectedStage]}</strong>
                   </p>
-                  <select className="form-input" required value={stageForm.confirmedStage} onChange={e => setStageForm(f => ({ ...f, confirmedStage: e.target.value }))}>
-                    {STAGES.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
-                  </select>
-                  <textarea className="form-input" style={{ marginTop: '0.5rem' }} rows={2} placeholder="Optional note..." value={stageForm.note} onChange={e => setStageForm(f => ({ ...f, note: e.target.value }))} />
+                  <p style={{ fontSize: '0.82rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+                    What stage does your farm actually look like?
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                    {STAGES.filter(s => s !== 'pre_planting').map(s => (
+                      <label key={s} style={{
+                        padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', fontSize: '0.875rem',
+                        border: stageForm.confirmedStage === s ? `2px solid ${STAGE_COLORS[s]}` : '2px solid #e5e7eb',
+                        background: stageForm.confirmedStage === s ? STAGE_COLORS[s] + '15' : '#fff',
+                        fontWeight: stageForm.confirmedStage === s ? 600 : 400,
+                        color: stageForm.confirmedStage === s ? STAGE_COLORS[s] : '#374151',
+                      }}>
+                        <input type="radio" name="stage" value={s} checked={stageForm.confirmedStage === s} onChange={() => setStageForm(f => ({ ...f, confirmedStage: s }))} style={{ display: 'none' }} />
+                        {STAGE_LABELS[s]}
+                        {s === comparison?.expectedStage && <span style={{ fontSize: '0.7rem', marginLeft: '0.3rem', opacity: 0.7 }}>(expected)</span>}
+                      </label>
+                    ))}
+                  </div>
+                  <textarea className="form-input" rows={2} placeholder="Note (optional) — e.g. drought, late start..." value={stageForm.note} onChange={e => setStageForm(f => ({ ...f, note: e.target.value }))} />
                   <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>Confirm</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting || !stageForm.confirmedStage}>{submitting ? 'Saving...' : 'Confirm Stage'}</button>
                     <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowStageConfirm(false)}>Cancel</button>
                   </div>
                 </form>
@@ -516,6 +531,7 @@ export default function FarmerProgressTab() {
                     </div>
                   )}
                   {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
+                  {/* Required fields first */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Activity Type *</label>
@@ -525,33 +541,41 @@ export default function FarmerProgressTab() {
                       </select>
                     </div>
                     <div>
-                      <label className="form-label">Quantity</label>
-                      <input className="form-input" type="number" step="0.1" value={progressForm.quantity} onChange={e => setProgressForm(f => ({ ...f, quantity: e.target.value }))} />
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="form-label">Description</label>
-                      <textarea className="form-input" rows={2} value={progressForm.description} onChange={e => setProgressForm(f => ({ ...f, description: e.target.value }))} />
-                    </div>
-                    <div>
                       <label className="form-label">Date</label>
                       <input className="form-input" type="date" value={progressForm.entryDate} onChange={e => setProgressForm(f => ({ ...f, entryDate: e.target.value }))} />
                     </div>
-                    <div>
-                      <label className="form-label">Followed advice?</label>
-                      <select className="form-input" value={progressForm.followedAdvice} onChange={e => setProgressForm(f => ({ ...f, followedAdvice: e.target.value }))}>
-                        <option value="">N/A</option>
-                        <option value="yes">Yes</option>
-                        <option value="partial">Partial</option>
-                        <option value="no">No</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="form-label">Unit</label>
-                      <input className="form-input" value={progressForm.unit} onChange={e => setProgressForm(f => ({ ...f, unit: e.target.value }))} placeholder="kg, bags, litres" />
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">Notes <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+                      <textarea className="form-input" rows={2} placeholder="What did you do? Any issues?" value={progressForm.description} onChange={e => setProgressForm(f => ({ ...f, description: e.target.value }))} />
                     </div>
                   </div>
+                  {/* Optional details — collapsed */}
+                  <details style={{ marginTop: '0.5rem' }}>
+                    <summary style={{ fontSize: '0.82rem', color: '#6b7280', cursor: 'pointer', padding: '0.25rem 0' }}>
+                      More details (quantity, unit, advice)
+                    </summary>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <div>
+                        <label className="form-label">Quantity <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+                        <input className="form-input" type="number" step="0.1" value={progressForm.quantity} onChange={e => setProgressForm(f => ({ ...f, quantity: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="form-label">Unit <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+                        <input className="form-input" value={progressForm.unit} onChange={e => setProgressForm(f => ({ ...f, unit: e.target.value }))} placeholder="kg, bags, litres" />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label className="form-label">Followed advice? <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+                        <select className="form-input" value={progressForm.followedAdvice} onChange={e => setProgressForm(f => ({ ...f, followedAdvice: e.target.value }))}>
+                          <option value="">N/A</option>
+                          <option value="yes">Yes</option>
+                          <option value="partial">Partial</option>
+                          <option value="no">No</option>
+                        </select>
+                      </div>
+                    </div>
+                  </details>
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save'}</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save Activity'}</button>
                     <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowProgressForm(false)}>Cancel</button>
                   </div>
                 </form>
@@ -621,8 +645,8 @@ export default function FarmerProgressTab() {
                       <input className="form-input" type="number" step="0.01" value={harvestForm.salesAmount} onChange={e => setHarvestForm(f => ({ ...f, salesAmount: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="form-label">Notes</label>
-                      <textarea className="form-input" rows={2} value={harvestForm.notes} onChange={e => setHarvestForm(f => ({ ...f, notes: e.target.value }))} />
+                      <label className="form-label">Notes <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+                      <textarea className="form-input" rows={2} placeholder="Any notes about quality, storage, buyer..." value={harvestForm.notes} onChange={e => setHarvestForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
                   </div>
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
