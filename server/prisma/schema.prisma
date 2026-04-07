@@ -276,6 +276,11 @@ model Farmer {
   rejectedAt           DateTime?           @map("rejected_at")
   rejectionReason      String?             @map("rejection_reason")
   invitedAt            DateTime?           @map("invited_at")
+  inviteToken          String?             @unique @map("invite_token")
+  inviteExpiresAt      DateTime?           @map("invite_expires_at")
+  inviteChannel        String?             @map("invite_channel")        // 'link', 'email', 'phone'
+  inviteDeliveryStatus String?             @map("invite_delivery_status") // 'manual_share_ready','email_sent','phone_sent','accepted','expired'
+  inviteAcceptedAt     DateTime?           @map("invite_accepted_at")
   assignedOfficerId    String?             @map("assigned_officer_id")
   currentStage         LifecycleStage      @default(pre_planting) @map("current_stage")
   stageUpdatedAt       DateTime?           @map("stage_updated_at")

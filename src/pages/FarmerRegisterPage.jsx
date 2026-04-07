@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 
 const COUNTRIES = [
@@ -25,6 +25,16 @@ export default function FarmerRegisterPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // If URL has ?invite= token, redirect to the dedicated AcceptInvitePage
+  // (the dedicated page handles token validation, expiry, and account creation cleanly)
+  useEffect(() => {
+    const token = searchParams.get('invite');
+    if (token) {
+      navigate(`/accept-invite?token=${token}`, { replace: true });
+    }
+  }, []);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 

@@ -1,12 +1,74 @@
+import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import prisma from '../../config/database.js';
+
+const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
+function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { invalidateAuthCache } from '../../middleware/auth.js';
 
 /**
  * Create a farmer (staff-initiated — auto-approved, not self-registered).
+ * If email + password are provided, also creates a linked User account.
  */
 export async function createFarmer(data, userId, organizationId) {
-  return prisma.farmer.create({
+  const { email, password } = data;
+
+  // If email + password provided: validate uniqueness then create User + Farmer atomically
+  if (email && password) {
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (existing) {
+      const err = new Error('Email already registered');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const passwordHash = await bcrypt.hash(password, 10);
+      const newUser = await tx.user.create({
+        data: {
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          fullName: data.fullName,
+          role: 'farmer',
+          active: true,
+          preferredLanguage: data.preferredLanguage || 'en',
+          organizationId: organizationId || null,
+        },
+      });
+
+      return tx.farmer.create({
+        data: {
+          fullName: data.fullName,
+          phone: data.phone,
+          nationalId: data.nationalId || null,
+          region: data.region,
+          district: data.district || null,
+          village: data.village || null,
+          primaryCrop: data.primaryCrop || null,
+          farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null,
+          yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience) : null,
+          deviceId: data.deviceId || null,
+          countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
+          regionCode: data.regionCode || null,
+          preferredLanguage: data.preferredLanguage || 'en',
+          organizationId: organizationId || null,
+          createdById: userId,
+          selfRegistered: false,
+          registrationStatus: 'approved',
+          approvedAt: new Date(),
+          approvedById: userId,
+          userId: newUser.id,
+        },
+        include: { createdBy: { select: { id: true, fullName: true, email: true } }, userAccount: { select: { id: true, email: true } } },
+      });
+    });
+  }
+
+  // No credentials — create farmer with an invite token so staff can share a sign-up link
+  const inviteToken = randomUUID();
+  const inviteExpiresAt = makeInviteExpiry();
+  const farmer = await prisma.farmer.create({
     data: {
       fullName: data.fullName,
       phone: data.phone,
@@ -23,14 +85,20 @@ export async function createFarmer(data, userId, organizationId) {
       preferredLanguage: data.preferredLanguage || 'en',
       organizationId: organizationId || null,
       createdById: userId,
-      // Staff-created farmers are auto-approved
       selfRegistered: false,
       registrationStatus: 'approved',
       approvedAt: new Date(),
       approvedById: userId,
+      inviteToken,
+      inviteExpiresAt,
+      inviteChannel: 'link',
+      inviteDeliveryStatus: 'manual_share_ready',
     },
     include: { createdBy: { select: { id: true, fullName: true, email: true } } },
   });
+  farmer._inviteToken = inviteToken;
+  farmer._inviteExpiresAt = inviteExpiresAt;
+  return farmer;
 }
 
 export async function listFarmers({ page = 1, limit = 20, search, region, registrationStatus, orgScope = {} }) {

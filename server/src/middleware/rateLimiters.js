@@ -60,3 +60,27 @@ export const securityLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Limiter for farmer invite creation and resend endpoints.
+ * Prevents invite-spam abuse — inviting is a relatively infrequent action.
+ */
+export const inviteLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // 20 invite actions per minute per IP
+  message: { error: 'Too many invite requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Limiter for public invite acceptance and token validation endpoints.
+ * Prevents token enumeration attacks.
+ */
+export const inviteAcceptLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 accept attempts per 15 minutes per IP
+  message: { error: 'Too many invite attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

@@ -1,9 +1,12 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
-import { validateParamUUID, parsePositiveInt } from '../../middleware/validate.js';
+import { validateParamUUID, parsePositiveInt, isValidEmail, validatePassword } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
+import { inviteLimiter } from '../../middleware/rateLimiters.js';
 import { extractOrganization, orgWhereFarmer, verifyOrgAccess } from '../../middleware/orgScope.js';
 import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
@@ -12,6 +15,10 @@ import { writeAuditLog } from '../audit/service.js';
 import { createNotification } from '../notifications/service.js';
 import { sodGuard } from '../../middleware/sodGuard.js';
 import { markExecuted } from '../security/service.js';
+import { getDeliveryStatusLabel } from '../notifications/deliveryService.js';
+
+const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
+function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
 
 const router = Router();
 router.use(authenticate);
@@ -41,11 +48,20 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
   }
   const farmer = await farmersService.createFarmer(req.body, req.user.sub, req.organizationId);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id }, organizationId: req.organizationId }).catch(() => {});
-  res.status(201).json(farmer);
+  res.status(201).json({
+    farmer,
+    credentialsCreated: !!farmer.userAccount,
+    inviteToken: farmer._inviteToken || null,
+    inviteExpiresAt: farmer._inviteExpiresAt || null,
+    deliveryStatus: farmer._inviteToken ? 'manual_share_ready' : null,
+    deliveryNote: farmer.userAccount
+      ? 'Login account created. Share the credentials with the farmer securely.'
+      : 'Farmer created. Copy and share the invite link with the farmer so they can activate their account.',
+  });
 }));
 
 // Invite farmer (admin/field officer — creates pre-approved farmer record)
-router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('invite-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
+router.post('/invite', inviteLimiter, authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('invite-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const farmer = await inviteFarmer({
     ...req.body,
     invitedById: req.user.sub,
@@ -67,13 +83,16 @@ router.post('/invite', authorize('super_admin', 'institutional_admin', 'field_of
     details: { farmerId: farmer.id, phone: farmer.phone, hasLoginAccount: !!farmer.userAccount },
   }).catch(() => {});
 
-  // Return clear summary including whether credentials were created
+  // Return clear summary including whether credentials were created and invite token
   res.status(201).json({
     farmer,
     credentialsCreated: !!farmer.userAccount,
+    inviteToken: farmer._inviteToken || null,
+    inviteExpiresAt: farmer.inviteExpiresAt || null,
+    deliveryStatus: farmer.inviteDeliveryStatus || null,
     deliveryNote: farmer.userAccount
       ? 'Login account created. Share the credentials with the farmer securely.'
-      : 'No login account created. Farmer can self-register later, or an admin can create credentials.',
+      : 'Invite link generated. Copy and share it with the farmer manually (email/phone delivery not yet configured).',
   });
 }));
 
@@ -222,10 +241,21 @@ router.post('/:id/resend-invite',
     if (farmer.selfRegistered) {
       return res.status(400).json({ error: 'Cannot resend invite for self-registered farmers' });
     }
-    // Update invitedAt timestamp
+    // Regenerate invite token (only for farmers without a login account)
+    const newToken = farmer.userAccount ? null : randomUUID();
+    const newExpiry = newToken ? makeInviteExpiry() : null;
+    // Update invitedAt, refresh invite token, and reset expiry
     const updated = await prisma.farmer.update({
       where: { id: req.params.id },
-      data: { invitedAt: new Date() },
+      data: {
+        invitedAt: new Date(),
+        ...(newToken ? {
+          inviteToken: newToken,
+          inviteExpiresAt: newExpiry,
+          inviteDeliveryStatus: 'manual_share_ready',
+          inviteChannel: 'link',
+        } : {}),
+      },
       include: { userAccount: { select: { id: true, email: true } } },
     });
 
@@ -240,15 +270,19 @@ router.post('/:id/resend-invite',
     writeAuditLog({
       userId: req.user.sub,
       action: 'farmer_invite_resent',
-      details: { farmerId: req.params.id },
+      details: { farmerId: req.params.id, hasLoginAccount: !!updated.userAccount /* no token logged */ },
     }).catch(() => {});
+
     res.json({
       message: 'Invite resent',
       farmer: updated,
       hasLoginAccount: !!updated.userAccount,
+      inviteToken: newToken || null,
+      inviteExpiresAt: newExpiry || null,
+      deliveryStatus: newToken ? 'manual_share_ready' : null,
       deliveryNote: updated.userAccount
         ? 'Farmer already has a login account. A reminder notification has been sent.'
-        : 'No login account exists. Share credentials with the farmer or they can self-register with their phone number.',
+        : 'Invite link refreshed. Copy and share the new link with the farmer.',
     });
   }));
 
@@ -258,6 +292,133 @@ router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutio
   writeAuditLog({ userId: req.user.sub, action: 'farmer_updated', details: { farmerId: farmer.id } }).catch(() => {});
   res.json(farmer);
 }));
+
+// Create login account for a farmer who doesn't have one yet (admin/field officer)
+// This is separate from /invite — it's for creating credentials for an existing farmer record.
+router.post('/:id/create-login',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  inviteLimiter,
+  dedupGuard('farmer-create-login'),
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email and password are required' });
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ error: pwCheck.message });
+    }
+
+    const farmer = await farmersService.getFarmerById(req.params.id);
+    if (!verifyOrgAccess(req, farmer.organizationId)) {
+      return res.status(403).json({ error: 'Access denied — farmer belongs to another organization' });
+    }
+    if (farmer.userId) {
+      return res.status(400).json({ error: 'This farmer already has a login account' });
+    }
+
+    // Check email uniqueness
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (existing) {
+      return res.status(409).json({ error: 'Email already registered to another account' });
+    }
+
+    // Create User + link to Farmer atomically; clear any pending invite token
+    const { user, updatedFarmer } = await prisma.$transaction(async (tx) => {
+      const passwordHash = await bcrypt.hash(password, 10);
+      const newUser = await tx.user.create({
+        data: {
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          fullName: farmer.fullName,
+          role: 'farmer',
+          active: true,
+          preferredLanguage: farmer.preferredLanguage || 'en',
+          organizationId: farmer.organizationId || null,
+        },
+      });
+      const linked = await tx.farmer.update({
+        where: { id: farmer.id },
+        data: {
+          userId: newUser.id,
+          inviteToken: null,       // consume any pending invite token
+          inviteDeliveryStatus: null,
+          inviteChannel: null,
+          inviteExpiresAt: null,
+        },
+        include: { userAccount: { select: { id: true, email: true } } },
+      });
+      return { user: newUser, updatedFarmer: linked };
+    });
+
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_login_created',
+      details: { farmerId: farmer.id, createdForEmail: user.email },
+    }).catch(() => {});
+
+    // In-app notification to farmer
+    createNotification(farmer.id, {
+      notificationType: 'system',
+      title: 'Login Account Created',
+      message: 'A login account has been created for you. Log in with the email and password provided by your administrator.',
+      metadata: { createdById: req.user.sub },
+    }).catch(() => {});
+
+    res.status(201).json({
+      message: 'Login account created successfully',
+      email: user.email,
+      farmer: updatedFarmer,
+    });
+  }));
+
+// Get invite/access status for a farmer (admin/field officer)
+router.get('/:id/invite-status',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const farmer = await prisma.farmer.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        registrationStatus: true,
+        invitedAt: true,
+        inviteExpiresAt: true,
+        inviteChannel: true,
+        inviteDeliveryStatus: true,
+        inviteAcceptedAt: true,
+        userId: true,
+        userAccount: { select: { id: true, email: true, active: true } },
+      },
+    });
+    if (!farmer) return res.status(404).json({ error: 'Farmer not found' });
+    if (!verifyOrgAccess(req, farmer.organizationId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const isExpired = farmer.inviteExpiresAt && new Date() > new Date(farmer.inviteExpiresAt) && !farmer.userId;
+    const deliveryLabel = getDeliveryStatusLabel(farmer.inviteDeliveryStatus, !!farmer.userId);
+
+    res.json({
+      farmerId: farmer.id,
+      registrationStatus: farmer.registrationStatus,
+      hasLoginAccount: !!farmer.userId,
+      loginEmail: farmer.userAccount?.email || null,
+      loginActive: farmer.userAccount?.active ?? null,
+      invitedAt: farmer.invitedAt,
+      inviteExpiresAt: farmer.inviteExpiresAt,
+      inviteChannel: farmer.inviteChannel,
+      inviteDeliveryStatus: isExpired ? 'expired' : (farmer.inviteDeliveryStatus || null),
+      inviteAcceptedAt: farmer.inviteAcceptedAt,
+      deliveryStatusLabel: isExpired ? 'Invite Expired' : deliveryLabel.label,
+      deliveryStatusCls: isExpired ? 'badge-rejected' : deliveryLabel.cls,
+    });
+  }));
 
 // Delete farmer (admin only)
 router.delete('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {

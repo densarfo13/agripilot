@@ -36,6 +36,7 @@ const InvestorIntelligencePage = lazy(() => import('./pages/InvestorIntelligence
 const PilotMetricsPage = lazy(() => import('./pages/PilotMetricsPage.jsx'));
 const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
 const SecurityRequestsPage = lazy(() => import('./pages/SecurityRequestsPage.jsx'));
+const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
@@ -72,6 +73,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/farmer-register" element={<FarmerRegisterPage />} />
+          <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<DashboardPage />} />
             <Route path="farmers" element={<RoleRoute roles={STAFF_ROLES}><FarmersPage /></RoleRoute>} />

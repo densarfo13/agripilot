@@ -103,6 +103,31 @@ router.post('/change-password', authenticate, asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+// Public: look up invite token to pre-fill the registration form
+// Kept for backwards compatibility — /api/invites/:token/validate is the canonical endpoint.
+// Returns only non-sensitive fields — no credentials, no IDs
+router.get('/invite-info/:token', asyncHandler(async (req, res) => {
+  const farmer = await prisma.farmer.findUnique({
+    where: { inviteToken: req.params.token },
+    select: {
+      fullName: true, phone: true, region: true, district: true, village: true,
+      countryCode: true, preferredLanguage: true, primaryCrop: true,
+      userId: true, inviteExpiresAt: true,
+    },
+  });
+  if (!farmer) return res.status(404).json({ error: 'Invalid or expired invite link. This link may have already been used.' });
+  if (farmer.userId) return res.status(400).json({ error: 'This invite has already been accepted. Use the login page to sign in.' });
+
+  const isExpired = farmer.inviteExpiresAt && new Date() > new Date(farmer.inviteExpiresAt);
+  if (isExpired) {
+    return res.status(410).json({ error: 'This invite link has expired. Please ask your administrator to resend the invite.', expired: true });
+  }
+
+  // Return only the pre-fill data — no IDs or tokens exposed
+  const { userId, inviteExpiresAt, ...prefill } = farmer;
+  res.json({ ...prefill, expiresAt: inviteExpiresAt, valid: true });
+}));
+
 // Farmer self-registration (public — tighter rate limit + idempotency)
 router.post('/farmer-register', registrationLimiter, idempotencyCheck, asyncHandler(async (req, res) => {
   const { fullName, phone, email, password, countryCode, region, district, village, preferredLanguage, primaryCrop, farmSizeAcres } = req.body;

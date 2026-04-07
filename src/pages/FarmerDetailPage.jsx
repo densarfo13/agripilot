@@ -123,6 +123,9 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   const [officers, setOfficers] = useState([]);
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
+  const [resendInviteToken, setResendInviteToken] = useState(null);
+  const [resendInviteExpiry, setResendInviteExpiry] = useState(null);
+  const [showCreateLoginModal, setShowCreateLoginModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -166,8 +169,10 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   });
 
   const handleResendInvite = () => doAction(async () => {
-    await api.post(`/farmers/${farmer.id}/resend-invite`);
-    setActionSuccess('Invite resent');
+    const res = await api.post(`/farmers/${farmer.id}/resend-invite`);
+    setResendInviteToken(res.data.inviteToken || null);
+    setResendInviteExpiry(res.data.inviteExpiresAt || null);
+    setActionSuccess('Invite resent. Copy the new link below and share it with the farmer.');
   });
 
   const status = farmer.registrationStatus;
@@ -195,7 +200,14 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
       <div className="card-header">Access & Assignment</div>
       <div className="card-body">
         {actionError && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{actionError}</div>}
-        {actionSuccess && <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '0.75rem', fontSize: '0.875rem' }}>{actionSuccess}</div>}
+        {actionSuccess && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: '0.875rem', marginBottom: resendInviteToken ? '0.5rem' : 0 }}>{actionSuccess}</div>
+            {resendInviteToken && (
+              <ResendInviteLinkBox url={`${window.location.origin}/accept-invite?token=${resendInviteToken}`} expiresAt={resendInviteExpiry} />
+            )}
+          </div>
+        )}
 
         {/* Status badges row */}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
@@ -279,6 +291,10 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
             {!farmer.selfRegistered && farmer.invitedAt && (
               <button className="btn btn-sm btn-outline" onClick={handleResendInvite} disabled={processing}>Resend Invite</button>
             )}
+            {!farmer.userAccount && (
+              <button className="btn btn-sm btn-outline" onClick={() => setShowCreateLoginModal(true)} disabled={processing}
+                style={{ color: '#2563eb', borderColor: '#2563eb' }}>Create Login</button>
+            )}
           </div>
         )}
       </div>
@@ -333,6 +349,19 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
           farmer={farmer}
           onClose={() => setShowDisableModal(false)}
           onDisabled={() => { setShowDisableModal(false); onUpdate(); setActionSuccess('Farmer access disabled'); }}
+        />
+      )}
+      {showCreateLoginModal && (
+        <CreateLoginModal
+          farmer={farmer}
+          onClose={() => setShowCreateLoginModal(false)}
+          onDone={(inviteToken, inviteExpiresAt) => {
+            setShowCreateLoginModal(false);
+            onUpdate();
+            setResendInviteToken(inviteToken || null);
+            setResendInviteExpiry(inviteExpiresAt || null);
+            setActionSuccess('Login account created. Share the credentials with the farmer.');
+          }}
         />
       )}
     </div>
@@ -833,6 +862,93 @@ function RejectModal({ farmer, onClose, onDone }) {
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+// Modal for creating a login account for a farmer that doesn't have one
+function CreateLoginModal({ farmer, onClose, onDone }) {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      await api.post(`/farmers/${farmer.id}/create-login`, { email, password });
+      onDone(null, null); // No invite token since we created credentials directly
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create login account');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          Create Login: {farmer.fullName}
+          <button className="btn btn-outline btn-sm" onClick={onClose}>X</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {error && <div className="alert alert-danger">{error}</div>}
+            <div style={{ background: '#eff6ff', color: '#1e40af', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
+              Creates a login account linked to this farmer profile. Share the email and password with the farmer securely.
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email *</label>
+              <input className="form-input" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="farmer@example.com" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Temporary Password *</label>
+              <input className="form-input" type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Creating...' : 'Create Login'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Inline copyable link box for resend invite result
+function ResendInviteLinkBox({ url, expiresAt }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(() => {});
+  };
+  return (
+    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '0.6rem 0.75rem' }}>
+      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534', marginBottom: '0.35rem' }}>
+        Share this invite link with the farmer (email, WhatsApp, SMS):
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: expiresAt ? '0.3rem' : 0 }}>
+        <input
+          readOnly
+          value={url}
+          onClick={e => e.target.select()}
+          style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.75rem', padding: '0.3rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', color: '#374151', cursor: 'text' }}
+        />
+        <button
+          type="button"
+          onClick={copy}
+          className="btn btn-outline btn-sm"
+          style={{ whiteSpace: 'nowrap', color: copied ? '#16a34a' : undefined, borderColor: copied ? '#16a34a' : undefined }}
+        >
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+      {expiresAt && (
+        <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+          Expires: {new Date(expiresAt).toLocaleDateString()} — resend to refresh
+        </div>
+      )}
     </div>
   );
 }

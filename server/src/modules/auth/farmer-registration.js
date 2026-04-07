@@ -1,6 +1,17 @@
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import prisma from '../../config/database.js';
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
+import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
+
+/** Invite tokens expire after this many days */
+const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
+
+function makeInviteExpiry() {
+  const d = new Date();
+  d.setDate(d.getDate() + INVITE_EXPIRY_DAYS);
+  return d;
+}
 
 /**
  * Farmer self-registration.
@@ -262,6 +273,15 @@ export async function inviteFarmer({
     }
   }
 
+  // Generate invite token only when no login account is being created
+  // (farmers with credentials don't need a token — they have email+password)
+  const needsToken = !(email && password);
+  const inviteToken = needsToken ? randomUUID() : null;
+  const inviteExpiresAt = needsToken ? makeInviteExpiry() : null;
+  // Honest delivery status: manual_share_ready since no email/SMS is configured
+  const inviteDeliveryStatus = needsToken ? 'manual_share_ready' : null;
+  const inviteChannel = needsToken ? 'link' : null;
+
   // Transaction: create user (if needed) + farmer atomically
   const farmer = await prisma.$transaction(async (tx) => {
     let userId = null;
@@ -300,6 +320,10 @@ export async function inviteFarmer({
         approvedById: invitedById,
         assignedOfficerId: assignedOfficerId || null,
         userId: userId,
+        inviteToken: inviteToken,
+        inviteExpiresAt: inviteExpiresAt,
+        inviteChannel: inviteChannel,
+        inviteDeliveryStatus: inviteDeliveryStatus,
         organizationId: organizationId || null,
         createdById: invitedById,
       },
@@ -311,6 +335,8 @@ export async function inviteFarmer({
     });
   });
 
+  // Attach invite token to returned object so the route can include it in the response
+  farmer._inviteToken = inviteToken;
   return farmer;
 }
 
