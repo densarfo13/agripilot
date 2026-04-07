@@ -48,3 +48,15 @@ export const submissionLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Stricter limiter for SoD/JIT security request endpoints.
+ * These are low-volume, high-sensitivity actions.
+ */
+export const securityLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 security actions per minute per IP
+  message: { error: 'Too many security requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

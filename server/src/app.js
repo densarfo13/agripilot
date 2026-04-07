@@ -42,6 +42,7 @@ import lifecycleRoutes from './modules/lifecycle/routes.js';
 import seasonRoutes from './modules/seasons/routes.js';
 import organizationRoutes from './modules/organizations/routes.js';
 import pilotMetricsRoutes from './modules/pilotMetrics/routes.js';
+import securityRoutes from './modules/security/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -254,6 +255,7 @@ app.use('/api/lifecycle', lifecycleRoutes);
 app.use('/api/seasons', seasonRoutes);
 app.use('/api/organizations', organizationRoutes);
 app.use('/api/pilot', pilotMetricsRoutes);
+app.use('/api/security', securityRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

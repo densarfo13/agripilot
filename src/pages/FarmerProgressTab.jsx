@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
 import { useDraft } from '../utils/useDraft.js';
+import { useAuthStore } from '../store/authStore.js';
 
 const STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'harvest', 'post_harvest'];
 const STAGE_LABELS = {
@@ -20,8 +21,11 @@ const IMAGE_STAGES = ['early_growth', 'mid_stage', 'pre_harvest', 'harvest', 'st
 
 export default function FarmerProgressTab() {
   const { farmerId } = useFarmerContext();
+  const currentUser  = useAuthStore(s => s.user);
+  const isAdmin      = ['super_admin', 'institutional_admin'].includes(currentUser?.role);
   const [seasons, setSeasons] = useState([]);
   const [activeSeason, setActiveSeason] = useState(null);
+  const [reopenTarget, setReopenTarget] = useState(null); // season being reopened
   const [entries, setEntries] = useState([]);
   const [comparison, setComparison] = useState(null);
   const [score, setScore] = useState(null);
@@ -725,7 +729,12 @@ export default function FarmerProgressTab() {
           <div className="card-body" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Crop</th><th>Planted</th><th>Status</th><th>Harvest</th><th>Score</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Crop</th><th>Planted</th><th>Status</th><th>Harvest</th><th>Score</th>
+                    {isAdmin && <th>Admin</th>}
+                  </tr>
+                </thead>
                 <tbody>
                   {seasons.filter(s => s.status !== 'active').map(s => (
                     <tr key={s.id}>
@@ -738,6 +747,17 @@ export default function FarmerProgressTab() {
                           {s.progressScore.progressScore}/100
                         </span>
                       ) : '—'}</td>
+                      {isAdmin && (
+                        <td>
+                          <button
+                            className="btn btn-sm btn-outline"
+                            style={{ fontSize: '0.75rem', color: '#2563eb', borderColor: '#bfdbfe' }}
+                            onClick={() => setReopenTarget(s)}
+                          >
+                            Reopen
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -747,12 +767,180 @@ export default function FarmerProgressTab() {
         </div>
       )}
 
+      {/* ─── Season Reopen SoD Modal ─────────────── */}
+      {reopenTarget && (
+        <ReopenSeasonModal
+          season={reopenTarget}
+          onClose={() => setReopenTarget(null)}
+          onReopened={() => { setReopenTarget(null); loadSeasons(); }}
+        />
+      )}
+
       {/* New season button at bottom for completed seasons */}
       {!activeSeason && seasons.length > 0 && !showSeasonForm && (
         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
           <button className="btn btn-primary" onClick={openSeasonForm}>Start New Season</button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── SoD: Reopen Season Modal ────────────────────────────────────────────────
+// Two-phase: (1) create ApprovalRequest, (2) execute reopen with approved ID
+function ReopenSeasonModal({ season, onClose, onReopened }) {
+  const [mode, setMode]         = useState('request');
+  const [reason, setReason]     = useState('');
+  const [approvalId, setApprovalId] = useState('');
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState('');
+  const [created, setCreated]   = useState(null);
+
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    if (!reason.trim() || reason.trim().length < 5) {
+      setError('Please provide a meaningful reason (at least 5 characters)');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const res = await api.post('/security/requests', {
+        requestType: 'season_reopen',
+        targetSeasonId: season.id,
+        reason: reason.trim(),
+      });
+      setCreated(res.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create approval request');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const executeReopen = async (e) => {
+    e.preventDefault();
+    if (!approvalId.trim()) {
+      setError('Please enter the Approval Request ID');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await api.post(`/seasons/${season.id}/reopen`, {
+        approvalRequestId: approvalId.trim(),
+      });
+      onReopened();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to reopen season');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          Reopen Season — {season.cropType}
+          <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#92400e', marginBottom: '1rem' }}>
+            <strong>Separation of Duties required.</strong> Reopening a season requires a second admin's approval
+            (4-hour execution window). Submit a request, ask another admin to approve it at{' '}
+            <em>Admin → Security Requests</em>, then return here to execute.
+          </div>
+
+          {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
+
+          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+            <button
+              type="button"
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#2563eb' : '#fff', color: mode === 'request' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              onClick={() => { setMode('request'); setError(''); }}
+            >
+              1. Create Request
+            </button>
+            <button
+              type="button"
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#2563eb' : '#fff', color: mode === 'execute' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              onClick={() => { setMode('execute'); setError(''); }}
+            >
+              2. Execute (have ID)
+            </button>
+          </div>
+
+          {mode === 'request' && !created && (
+            <form onSubmit={submitRequest}>
+              <div className="form-group">
+                <label className="form-label">Reason for reopening *</label>
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  required
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="Explain why this season needs to be reopened (e.g. data correction, harvest report error)..."
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Submitting…' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {mode === 'request' && created && (
+            <div>
+              <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>
+                <strong>Request submitted.</strong> Another admin must approve it. Approved requests expire in 4 hours.
+              </div>
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
+                <span style={{ color: '#6b7280' }}>Request ID: </span>
+                <code style={{ fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{created.id}</code>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+                Once approved, switch to the <strong>Execute</strong> tab and paste the ID above.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose}>Close</button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'execute' && (
+            <form onSubmit={executeReopen}>
+              <div className="form-group">
+                <label className="form-label">Approved Request ID *</label>
+                <input
+                  className="form-input"
+                  style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                  required
+                  value={approvalId}
+                  onChange={e => setApprovalId(e.target.value)}
+                  placeholder="Paste the approved Request ID here"
+                />
+                <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.3rem' }}>
+                  Find this at <em>Admin → Security Requests</em> after approval. Window: 4 hours.
+                </div>
+              </div>
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#1e40af', marginBottom: '0.75rem' }}>
+                This will reopen the <strong>{season.cropType}</strong> season (planted{' '}
+                {new Date(season.plantingDate).toLocaleDateString()}) for further data entry.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Reopening…' : 'Execute Reopen'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -34,6 +34,8 @@ const FarmerDashboardPage = lazy(() => import('./pages/FarmerDashboardPage.jsx')
 const PendingRegistrationsPage = lazy(() => import('./pages/PendingRegistrationsPage.jsx'));
 const InvestorIntelligencePage = lazy(() => import('./pages/InvestorIntelligencePage.jsx'));
 const PilotMetricsPage = lazy(() => import('./pages/PilotMetricsPage.jsx'));
+const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
+const SecurityRequestsPage = lazy(() => import('./pages/SecurityRequestsPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
@@ -97,7 +99,9 @@ export default function App() {
             <Route path="admin/registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
             <Route path="admin/organizations" element={<RoleRoute roles={ADMIN_ROLES}><AdminOrganizationsPage /></RoleRoute>} />
             <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
+            <Route path="admin/security" element={<RoleRoute roles={ADMIN_ROLES}><SecurityRequestsPage /></RoleRoute>} />
             <Route path="pilot-metrics" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer', 'field_officer']}><PilotMetricsPage /></RoleRoute>} />
+            <Route path="account" element={<AccountPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -20,6 +20,8 @@ import prisma from '../../config/database.js';
 import { transitionSeasonStatus, checkSeasonStaleness, getStaleSeasons } from './statusTransitions.js';
 import { writeAuditLog } from '../audit/service.js';
 import { extractOrganization, verifyOrgAccess } from '../../middleware/orgScope.js';
+import { sodGuard } from '../../middleware/sodGuard.js';
+import { markExecuted } from '../security/service.js';
 
 // ─── Helper: verify farmer belongs to caller's org ────
 async function requireFarmerOrgAccess(req, res, next) {
@@ -621,12 +623,13 @@ router.post('/:id/close',
     res.json({ message: 'Season closed', season });
   }));
 
-// Reopen a season (staff/admin — requires reason)
+// Reopen a season (SoD-protected — requires prior approved ApprovalRequest)
 router.post('/:id/reopen',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
   requireSeasonAccess,
   dedupGuard('reopen-season'),
+  sodGuard({ requestType: 'season_reopen', getTargetId: req => req.params.id }),
   asyncHandler(async (req, res) => {
     if (!req.body.reason) {
       return res.status(400).json({ error: 'A reason is required to reopen a season' });
@@ -636,9 +639,15 @@ router.post('/:id/reopen',
       role: req.user.role,
       reason: req.body.reason,
     });
+    // Mark the approval request as executed (idempotent — best effort)
+    markExecuted(req.approvalRequest.id).catch(() => {});
     writeAuditLog({
       userId: req.user.sub, action: 'season_reopened',
-      details: { seasonId: req.params.id, previousStatus, reason: req.body.reason },
+      details: {
+        seasonId: req.params.id, previousStatus, reason: req.body.reason,
+        approvalRequestId: req.approvalRequest.id,
+        approvedById: req.approvalRequest.approvedById,
+      },
     }).catch(() => {});
     res.json({ message: 'Season reopened', season, previousStatus });
   }));

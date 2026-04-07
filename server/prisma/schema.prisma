@@ -28,8 +28,9 @@ model Organization {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  users       User[]
-  farmers     Farmer[]
+  users            User[]
+  farmers          Farmer[]
+  approvalRequests ApprovalRequest[]
 
   @@map("organizations")
 }
@@ -167,6 +168,25 @@ enum StorageCondition {
   unknown
 }
 
+// ─── SoD / JIT Approval Enums ───────────────────────────
+
+enum ApprovalRequestType {
+  season_reopen       // SoD + JIT: reopen a closed/harvested/failed season
+  farmer_disable      // SoD: disable a farmer account
+  role_escalation     // SoD: assign super_admin or institutional_admin role
+  user_org_transfer   // SoD: move a user across organizations
+  privileged_reset    // SoD + JIT: force-reset an institutional_admin/super_admin password
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  expired
+  revoked
+  executed
+}
+
 // ─── Auth Provider ──────────────────────────────────────
 
 enum AuthProvider {
@@ -202,6 +222,10 @@ model User {
   auditLogs             AuditLog[]
   fieldVisits           FieldVisit[]
   federatedIdentities   FederatedIdentity[]
+  // SoD / JIT approval relations
+  approvalRequestsMade     ApprovalRequest[] @relation("ApprovalRequestedBy")
+  approvalRequestsApproved ApprovalRequest[] @relation("ApprovalApprovedBy")
+  approvalRequestsRevoked  ApprovalRequest[] @relation("ApprovalRevokedBy")
 
   @@index([organizationId], map: "idx_users_org")
   @@map("users")
@@ -899,4 +923,52 @@ model BuyerInterest {
 
   @@index([farmerId], map: "idx_buyer_interest_farmer")
   @@map("buyer_interests")
+}
+
+// ─── Approval Request (SoD + JIT) ───────────────────────
+
+model ApprovalRequest {
+  id              String              @id @default(uuid())
+  requestType     ApprovalRequestType @map("request_type")
+  status          ApprovalStatus      @default(pending)
+
+  // Actors
+  requestedById   String              @map("requested_by_id")
+  requestedBy     User                @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
+  approvedById    String?             @map("approved_by_id")
+  approvedBy      User?               @relation("ApprovalApprovedBy", fields: [approvedById], references: [id])
+  revokedById     String?             @map("revoked_by_id")
+  revokedBy       User?               @relation("ApprovalRevokedBy", fields: [revokedById], references: [id])
+
+  // Organization scope
+  organizationId  String?             @map("organization_id")
+  organization    Organization?       @relation(fields: [organizationId], references: [id])
+
+  // Target resource (one populated per request type)
+  targetUserId    String?             @map("target_user_id")
+  targetFarmerId  String?             @map("target_farmer_id")
+  targetSeasonId  String?             @map("target_season_id")
+  targetData      Json?               @map("target_data")
+
+  // Reason and outcome
+  reason          String
+  rejectionReason String?             @map("rejection_reason")
+
+  // JIT timing (null means no expiry window — pure SoD)
+  expiresAt       DateTime?           @map("expires_at")
+  revokedAt       DateTime?           @map("revoked_at")
+  executedAt      DateTime?           @map("executed_at")
+
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@index([requestedById], map: "idx_approval_requested_by")
+  @@index([status], map: "idx_approval_status")
+  @@index([requestType], map: "idx_approval_type")
+  @@index([organizationId], map: "idx_approval_org")
+  @@index([targetUserId], map: "idx_approval_target_user")
+  @@index([targetFarmerId], map: "idx_approval_target_farmer")
+  @@index([targetSeasonId], map: "idx_approval_target_season")
+  @@index([expiresAt], map: "idx_approval_expires_at")
+  @@map("approval_requests")
 }

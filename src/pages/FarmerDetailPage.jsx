@@ -122,6 +122,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showReactivateConfirm, setShowReactivateConfirm] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -147,10 +148,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
     }
   };
 
-  const handleDisable = () => doAction(async () => {
-    await api.patch(`/farmers/${farmer.id}/access-status`, { status: 'disabled' });
-    setActionSuccess('Farmer access disabled');
-  });
+  // handleDisable is now SoD-protected — opens DisableFarmerModal instead of calling API directly
 
   const handleReactivate = () => doAction(async () => {
     await api.patch(`/farmers/${farmer.id}/access-status`, { status: 'approved' });
@@ -270,7 +268,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
               <button className="btn btn-sm btn-outline" onClick={() => setShowAssignModal(true)} disabled={processing}>Assign Officer</button>
             )}
             {status === 'approved' && (
-              <button className="btn btn-sm btn-outline" onClick={handleDisable} disabled={processing}
+              <button className="btn btn-sm btn-outline" onClick={() => setShowDisableModal(true)} disabled={processing}
                 style={{ color: '#dc2626', borderColor: '#dc2626' }}>Disable Access</button>
             )}
             {!farmer.selfRegistered && farmer.invitedAt && (
@@ -325,11 +323,179 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
           </div>
         </div>
       )}
+      {showDisableModal && (
+        <DisableFarmerModal
+          farmer={farmer}
+          onClose={() => setShowDisableModal(false)}
+          onDisabled={() => { setShowDisableModal(false); onUpdate(); setActionSuccess('Farmer access disabled'); }}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Modals ─────────────────────────────────────────────
+
+// ── SoD: Disable Farmer Modal ─────────────────────────────
+// Two-phase: (1) create an ApprovalRequest, (2) execute with approved request ID
+function DisableFarmerModal({ farmer, onClose, onDisabled }) {
+  const [mode, setMode]       = useState('request'); // 'request' | 'execute'
+  const [reason, setReason]   = useState('');
+  const [approvalId, setApprovalId] = useState('');
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+  const [created, setCreated] = useState(null); // created ApprovalRequest
+
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    if (!reason.trim() || reason.trim().length < 5) {
+      setError('Please provide a meaningful reason (at least 5 characters)');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const res = await api.post('/security/requests', {
+        requestType: 'farmer_disable',
+        targetFarmerId: farmer.id,
+        reason: reason.trim(),
+      });
+      setCreated(res.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create approval request');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const executeDisable = async (e) => {
+    e.preventDefault();
+    if (!approvalId.trim()) {
+      setError('Please enter the Approval Request ID');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await api.patch(`/farmers/${farmer.id}/access-status`, {
+        status: 'disabled',
+        approvalRequestId: approvalId.trim(),
+      });
+      onDisabled();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to disable farmer');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          Disable Farmer Access — {farmer.fullName}
+          <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {/* SoD notice */}
+          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#92400e', marginBottom: '1rem' }}>
+            <strong>Separation of Duties required.</strong> Disabling a farmer requires approval from a second administrator.
+            Submit a request below, then ask another admin to approve it at <em>Admin → Security Requests</em>.
+            Once approved, return here and enter the Request ID to execute.
+          </div>
+
+          {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
+
+          {/* Phase toggle */}
+          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+            <button
+              type="button"
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#2563eb' : '#fff', color: mode === 'request' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              onClick={() => { setMode('request'); setError(''); }}
+            >
+              1. Create Request
+            </button>
+            <button
+              type="button"
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#2563eb' : '#fff', color: mode === 'execute' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              onClick={() => { setMode('execute'); setError(''); }}
+            >
+              2. Execute (have ID)
+            </button>
+          </div>
+
+          {mode === 'request' && !created && (
+            <form onSubmit={submitRequest}>
+              <div className="form-group">
+                <label className="form-label">Reason for disabling *</label>
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  required
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="Explain why this farmer's access needs to be disabled..."
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Submitting…' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {mode === 'request' && created && (
+            <div>
+              <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>
+                <strong>Request submitted successfully.</strong> Another admin must approve it before you can execute.
+              </div>
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
+                <span style={{ color: '#6b7280' }}>Request ID: </span>
+                <code style={{ fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{created.id}</code>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+                Once approved, switch to the <strong>Execute</strong> tab and paste the ID above to disable access.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose}>Close</button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'execute' && (
+            <form onSubmit={executeDisable}>
+              <div className="form-group">
+                <label className="form-label">Approved Request ID *</label>
+                <input
+                  className="form-input"
+                  style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                  required
+                  value={approvalId}
+                  onChange={e => setApprovalId(e.target.value)}
+                  placeholder="Paste the approved Request ID here"
+                />
+                <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.3rem' }}>
+                  Find this ID on <em>Admin → Security Requests</em> once your request has been approved.
+                </div>
+              </div>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#991b1b', marginBottom: '0.75rem' }}>
+                This will immediately disable <strong>{farmer.fullName}</strong>'s access. This action is audited and cannot be undone without a separate reactivation.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn btn-outline" style={{ color: '#dc2626', borderColor: '#dc2626' }} disabled={saving}>
+                  {saving ? 'Disabling…' : 'Execute Disable'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AssignOfficerModal({ farmerId, currentOfficerId, officers, onClose, onDone }) {
   const [officerId, setOfficerId] = useState(currentOfficerId || '');

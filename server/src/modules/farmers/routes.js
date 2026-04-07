@@ -10,6 +10,8 @@ import * as farmersService from './service.js';
 import { inviteFarmer } from '../auth/farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
 import { createNotification } from '../notifications/service.js';
+import { sodGuard } from '../../middleware/sodGuard.js';
+import { markExecuted } from '../security/service.js';
 
 const router = Router();
 router.use(authenticate);
@@ -149,7 +151,9 @@ router.get('/:id', validateParamUUID('id'), authorize('super_admin', 'institutio
   res.json(farmer);
 }));
 
-// Update farmer access status (admin only — disable, reactivate, etc.)
+// Update farmer access status (admin only)
+// Disabling a farmer is SoD-protected — requires prior approved ApprovalRequest.
+// Other status changes (approved, rejected, pending_approval) are not SoD-gated.
 router.patch('/:id/access-status',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
@@ -163,6 +167,25 @@ router.patch('/:id/access-status',
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
     }
+
+    // SoD gate for the 'disabled' transition only
+    if (status === 'disabled') {
+      return sodGuard({
+        requestType: 'farmer_disable',
+        getTargetId: r => r.params.id,
+      })(req, res, async () => {
+        const result = await farmersService.updateAccessStatus(req.params.id, status, req.user.sub);
+        markExecuted(req.approvalRequest.id).catch(() => {});
+        writeAuditLog({
+          userId: req.user.sub,
+          action: 'farmer_access_disabled',
+          details: { farmerId: req.params.id, approvalRequestId: req.approvalRequest.id, approvedById: req.approvalRequest.approvedById },
+        }).catch(() => {});
+        res.json(result);
+      });
+    }
+
+    // Non-SoD status changes proceed normally
     const result = await farmersService.updateAccessStatus(req.params.id, status, req.user.sub);
     writeAuditLog({
       userId: req.user.sub,

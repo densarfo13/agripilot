@@ -1,14 +1,21 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, invalidateAuthCache } from '../../middleware/auth.js';
-import { extractOrganization, orgWhereUser, orgWhereFarmer } from '../../middleware/orgScope.js';
+import { extractOrganization, orgWhereUser, orgWhereFarmer, invalidateOrgCache } from '../../middleware/orgScope.js';
 import { validateParamUUID, isValidEmail, validatePassword } from '../../middleware/validate.js';
 import { workflowLimiter } from '../../middleware/rateLimiters.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import prisma from '../../config/database.js';
 import bcrypt from 'bcryptjs';
 import { writeAuditLog } from '../audit/service.js';
-import { adminResetPassword } from './service.js';
+import {
+  adminResetPassword,
+  adminUpdateUserProfile,
+  adminChangeUserRole,
+  adminChangeUserOrg,
+} from './service.js';
+import { sodGuard } from '../../middleware/sodGuard.js';
+import { markExecuted } from '../security/service.js';
 import { getPendingRegistrations, getAllSelfRegistered, approveRegistration, rejectRegistration } from './farmer-registration.js';
 
 const router = Router();
@@ -76,6 +83,127 @@ router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
   res.status(201).json(user);
 }));
 
+// Get single user (super_admin or own-org institutional_admin)
+router.get('/:id',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const where = { id: req.params.id, ...orgWhereUser(req) };
+    const user = await prisma.user.findFirst({
+      where,
+      select: {
+        id: true, email: true, fullName: true, role: true, active: true,
+        preferredLanguage: true, organizationId: true, createdAt: true, lastLoginAt: true,
+        organization: { select: { id: true, name: true } },
+      },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  }));
+
+// Update user profile — fullName, preferredLanguage, email (super_admin only for email)
+router.patch('/:id',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { fullName, preferredLanguage, email } = req.body;
+    const { user, previous } = await adminUpdateUserProfile({
+      targetUserId: req.params.id,
+      actorId: req.user.sub,
+      actorRole: req.user.role,
+      actorOrgId: req.organizationId,
+      updates: { fullName, preferredLanguage, email },
+    });
+    // If email changed, flush auth cache so next token check picks up new email
+    if (email && previous.email !== email) invalidateAuthCache(req.params.id);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_profile_updated',
+      details: { targetUserId: req.params.id, changes: { fullName, preferredLanguage, ...(email ? { email } : {}) } },
+      organizationId: req.organizationId,
+    }).catch(() => {});
+    res.json(user);
+  }));
+
+// Change user role (cannot self-escalate; institutional_admin scope-limited)
+// Escalation to super_admin or institutional_admin is SoD-protected.
+const PRIVILEGED_ROLES = new Set(['super_admin', 'institutional_admin']);
+
+router.patch('/:id/role',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  workflowLimiter,
+  asyncHandler(async (req, res) => {
+    const { role } = req.body;
+    if (!role) return res.status(400).json({ error: 'role is required' });
+
+    // SoD gate for privileged role assignments
+    if (PRIVILEGED_ROLES.has(role)) {
+      return sodGuard({
+        requestType: 'role_escalation',
+        getTargetId: r => r.params.id,
+      })(req, res, async () => {
+        const { user, previousRole } = await adminChangeUserRole({
+          targetUserId: req.params.id,
+          newRole: role,
+          actorId: req.user.sub,
+          actorRole: req.user.role,
+          actorOrgId: req.organizationId,
+        });
+        invalidateAuthCache(req.params.id);
+        markExecuted(req.approvalRequest.id).catch(() => {});
+        writeAuditLog({
+          userId: req.user.sub,
+          action: 'user_role_changed',
+          details: { targetUserId: req.params.id, previousRole, newRole: role, approvalRequestId: req.approvalRequest.id },
+          organizationId: req.organizationId,
+        }).catch(() => {});
+        res.json(user);
+      });
+    }
+
+    // Non-privileged role changes proceed without SoD
+    const { user, previousRole } = await adminChangeUserRole({
+      targetUserId: req.params.id,
+      newRole: role,
+      actorId: req.user.sub,
+      actorRole: req.user.role,
+      actorOrgId: req.organizationId,
+    });
+    invalidateAuthCache(req.params.id);
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_role_changed',
+      details: { targetUserId: req.params.id, previousRole, newRole: role },
+      organizationId: req.organizationId,
+    }).catch(() => {});
+    res.json(user);
+  }));
+
+// Change user organization (super_admin only — SoD-protected, cannot change own org)
+router.patch('/:id/organization',
+  validateParamUUID('id'),
+  authorize('super_admin'),
+  sodGuard({ requestType: 'user_org_transfer', getTargetId: req => req.params.id }),
+  asyncHandler(async (req, res) => {
+    const { organizationId } = req.body;
+    const { user, previousOrgId } = await adminChangeUserOrg({
+      targetUserId: req.params.id,
+      newOrgId: organizationId || null,
+      actorId: req.user.sub,
+    });
+    invalidateAuthCache(req.params.id);
+    invalidateOrgCache(req.params.id);
+    markExecuted(req.approvalRequest.id).catch(() => {});
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'user_org_changed',
+      details: { targetUserId: req.params.id, previousOrgId, newOrgId: organizationId || null, approvalRequestId: req.approvalRequest.id },
+      organizationId: req.organizationId,
+    }).catch(() => {});
+    res.json(user);
+  }));
+
 // Toggle user active status (super_admin only)
 router.patch('/:id/toggle-active',
   validateParamUUID('id'),
@@ -96,6 +224,7 @@ router.patch('/:id/toggle-active',
   }));
 
 // Admin reset user password (super_admin only, rate limited)
+// Force-resetting a privileged account (super_admin or institutional_admin) is SoD-protected.
 router.patch('/:id/reset-password',
   validateParamUUID('id'),
   authorize('super_admin'),
@@ -111,6 +240,27 @@ router.patch('/:id/reset-password',
       return res.status(400).json({ error: pwCheck.message });
     }
 
+    // Check if target is a privileged account
+    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id }, select: { role: true } });
+    if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+    if (PRIVILEGED_ROLES.has(targetUser.role)) {
+      // SoD gate for privileged account password reset
+      return sodGuard({
+        requestType: 'privileged_reset',
+        getTargetId: r => r.params.id,
+      })(req, res, async () => {
+        const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
+        markExecuted(req.approvalRequest.id).catch(() => {});
+        writeAuditLog({
+          userId: req.user.sub, action: 'password_reset',
+          details: { targetUserId: req.params.id, privileged: true, approvalRequestId: req.approvalRequest.id },
+        }).catch(() => {});
+        res.json(result);
+      });
+    }
+
+    // Non-privileged reset proceeds without SoD
     const result = await adminResetPassword({ targetUserId: req.params.id, newPassword });
     writeAuditLog({ userId: req.user.sub, action: 'password_reset', details: { targetUserId: req.params.id } }).catch(() => {});
     res.json(result);
