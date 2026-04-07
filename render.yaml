@@ -12,7 +12,7 @@ services:
     region: oregon
     env: node
     buildCommand: npm ci --include=dev && npx vite build && cd server && npm ci && npx prisma generate
-    startCommand: cd server && npx prisma db push --skip-generate && node src/server.js
+    startCommand: cd server && npx prisma db push --accept-data-loss --skip-generate && node src/server.js
     healthCheckPath: /api/health
     # Persistent disk for evidence file uploads (requires paid plan)
     # disk:
