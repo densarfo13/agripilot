@@ -1,5 +1,5 @@
 /**
- * One-time startup script: ensures admin@agripilot.com exists with the correct password.
+ * One-time startup script: ensures admin@farroway.com exists with the correct password.
  * Safe to run on every start — uses upsert, no data is deleted.
  */
 import { PrismaClient } from '@prisma/client';
@@ -15,7 +15,7 @@ try {
   let org = await prisma.organization.findFirst({ select: { id: true } });
   if (!org) {
     org = await prisma.organization.create({
-      data: { name: 'AgriPilot Demo', type: 'INTERNAL' },
+      data: { name: 'Farroway Demo', type: 'INTERNAL' },
       select: { id: true },
     });
     console.log('[INIT] Created default organization');
@@ -23,9 +23,9 @@ try {
 
   // Upsert admin user
   const user = await prisma.user.upsert({
-    where: { email: 'admin@agripilot.com' },
+    where: { email: 'admin@farroway.com' },
     create: {
-      email: 'admin@agripilot.com',
+      email: 'admin@farroway.com',
       passwordHash,
       fullName: 'Sarah Okonkwo',
       role: 'super_admin',

@@ -120,7 +120,7 @@ export default function FraudQueuePage() {
                       </button>
                       <button
                         className="btn btn-outline btn-sm"
-                        style={{ color: '#d97706', borderColor: '#d97706' }}
+                        style={{ color: '#F59E0B', borderColor: '#F59E0B' }}
                         disabled={!!actionLoading[a.id]}
                         onClick={(e) => openActionModal(a.id, 'escalate', 'Escalate Application', e)}
                       >
@@ -128,7 +128,7 @@ export default function FraudQueuePage() {
                       </button>
                       <button
                         className="btn btn-outline btn-sm"
-                        style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                        style={{ color: '#EF4444', borderColor: '#EF4444' }}
                         disabled={!!actionLoading[a.id]}
                         onClick={(e) => openActionModal(a.id, 'reject', 'Reject Application', e)}
                       >

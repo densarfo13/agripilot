@@ -128,7 +128,7 @@ export default function FarmerRemindersTab() {
         </div>
       </div>
 
-      {success && <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.9rem' }}>{success}</div>}
+      {success && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.9rem' }}>{success}</div>}
       {error && !showGenerate && !showCreate && (
         <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{error}</span>
@@ -142,7 +142,7 @@ export default function FarmerRemindersTab() {
           <div className="card-header">Generate Crop Lifecycle Reminders</div>
           <div className="card-body">
             <form onSubmit={handleGenerate}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: '#fef2f2', borderRadius: 4 }}>{error}</div>}
+              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
@@ -168,7 +168,7 @@ export default function FarmerRemindersTab() {
           <div className="card-header">Create Custom Reminder</div>
           <div className="card-body">
             <form onSubmit={handleCreate}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: '#fef2f2', borderRadius: 4 }}>{error}</div>}
+              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Title *</label>
@@ -212,7 +212,7 @@ export default function FarmerRemindersTab() {
                   </thead>
                   <tbody>
                     {reminders.map(r => (
-                      <tr key={r.id} style={{ background: isOverdue(r) ? '#fef2f2' : r.completed ? '#f0fdf4' : undefined }}>
+                      <tr key={r.id} style={{ background: isOverdue(r) ? 'rgba(239,68,68,0.15)' : r.completed ? 'rgba(34,197,94,0.15)' : undefined }}>
                         <td className="text-sm" style={{ color: isOverdue(r) ? '#dc2626' : undefined, fontWeight: isOverdue(r) ? 600 : 400 }}>
                           {new Date(r.dueDate).toLocaleDateString()}
                           {isOverdue(r) && <span style={{ display: 'block', fontSize: '0.75rem' }}>OVERDUE</span>}

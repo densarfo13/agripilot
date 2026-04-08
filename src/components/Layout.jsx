@@ -27,6 +27,7 @@ const NAV = [
     { to: '/audit', label: 'Audit Trail', icon: 'T' },
     { to: '/admin/users', label: 'User Management', icon: 'U' },
     { to: '/admin/security', label: 'Security Requests', icon: 'S', roles: ADMIN_ROLES },
+    { to: '/admin/notifications', label: 'Auto Notifications', icon: 'N', roles: ADMIN_ROLES },
     { to: '/admin/pilot-qa', label: 'Pilot QA', icon: 'Q', roles: ADMIN_ROLES },
   ] },
 ];
@@ -112,7 +113,7 @@ export default function Layout() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <div className="sidebar-brand">AgriPilot</div>
+        <div className="sidebar-brand">Farroway</div>
 
         {/* Org context: super_admin gets switcher, others see read-only org name */}
         {isSuperAdmin ? (

@@ -135,7 +135,7 @@ export default function LoginPage() {
           <p style={{ ...styles.subtitle, marginBottom: '1.5rem' }}>
             Your role requires multi-factor authentication. Please set up MFA from your account settings after signing in, or contact your administrator.
           </p>
-          <p style={{ fontSize: '0.8rem', color: '#9ca3af', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.8rem', color: '#71717A', textAlign: 'center' }}>
             A temporary session has been issued. Go to <strong>Account &gt; Security</strong> to enroll.
           </p>
           <button style={{ ...styles.button, marginTop: '1.5rem' }} onClick={() => { setMfaStep(null); setMfaToken(''); }}>
@@ -174,7 +174,7 @@ export default function LoginPage() {
               Cancel — use a different account
             </button>
           </form>
-          <p style={{ fontSize: '0.8rem', color: '#9ca3af', textAlign: 'center', marginTop: '1rem' }}>
+          <p style={{ fontSize: '0.8rem', color: '#71717A', textAlign: 'center', marginTop: '1rem' }}>
             Lost access to your authenticator? Enter a backup code instead.
           </p>
         </div>
@@ -186,8 +186,8 @@ export default function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>AgriPilot</h1>
-        <p style={styles.subtitle}>Institutional Credit Platform</p>
+        <h1 style={styles.title}>Farroway</h1>
+        <p style={styles.subtitle}>The smarter way to farm.</p>
         <form onSubmit={handleSubmit} style={styles.form}>
           {error && <div style={styles.error}>{error}</div>}
           <input
@@ -210,7 +210,7 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
           <div style={{ textAlign: 'right' }}>
-            <Link to="/forgot-password" style={{ fontSize: '0.8rem', color: '#2563eb' }}>
+            <Link to="/forgot-password" style={{ fontSize: '0.8rem', color: '#22C55E' }}>
               Forgot password?
             </Link>
           </div>
@@ -242,8 +242,8 @@ export default function LoginPage() {
           </>
         )}
 
-        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#666', margin: '1rem 0 0' }}>
-          Are you a farmer? <Link to="/farmer-register" style={{ color: '#2E7D32', fontWeight: 600 }}>Register here</Link>
+        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', margin: '1rem 0 0' }}>
+          Are you a farmer? <Link to="/farmer-register" style={{ color: '#22C55E', fontWeight: 600 }}>Register here</Link>
         </p>
       </div>
     </div>
@@ -282,17 +282,17 @@ function SsoIcon() {
 }
 
 const styles = {
-  container: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f2f5' },
-  card: { background: '#fff', borderRadius: '8px', padding: '2.5rem', width: '100%', maxWidth: '400px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
-  title: { fontSize: '1.5rem', fontWeight: 700, color: '#1a1a2e', textAlign: 'center', marginBottom: '0.25rem' },
-  subtitle: { fontSize: '0.875rem', color: '#666', textAlign: 'center', marginBottom: '1.5rem' },
+  container: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A' },
+  card: { background: '#162033', borderRadius: '8px', padding: '2.5rem', width: '100%', maxWidth: '400px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  title: { fontSize: '1.5rem', fontWeight: 700, color: '#FFFFFF', textAlign: 'center', marginBottom: '0.25rem' },
+  subtitle: { fontSize: '0.875rem', color: '#A1A1AA', textAlign: 'center', marginBottom: '1.5rem' },
   form: { display: 'flex', flexDirection: 'column', gap: '1rem' },
-  input: { padding: '0.75rem 1rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.9375rem', outline: 'none' },
-  button: { padding: '0.75rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' },
-  linkBtn: { background: 'none', border: 'none', color: '#6b7280', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline', padding: '0.25rem 0' },
-  error: { background: '#fef2f2', color: '#dc2626', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', textAlign: 'center' },
+  input: { padding: '0.75rem 1rem', border: '1px solid #243041', borderRadius: '6px', fontSize: '0.9375rem', outline: 'none', background: '#1E293B', color: '#FFFFFF' },
+  button: { padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' },
+  linkBtn: { background: 'none', border: 'none', color: '#A1A1AA', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline', padding: '0.25rem 0' },
+  error: { background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', textAlign: 'center' },
   divider: { display: 'flex', alignItems: 'center', margin: '1.25rem 0', gap: '0.75rem' },
-  dividerText: { color: '#9ca3af', fontSize: '0.8rem', flexShrink: 0, padding: '0 0.5rem', background: '#fff', position: 'relative', zIndex: 1, margin: '0 auto' },
+  dividerText: { color: '#71717A', fontSize: '0.8rem', flexShrink: 0, padding: '0 0.5rem', background: '#162033', position: 'relative', zIndex: 1, margin: '0 auto' },
   federatedButtons: { display: 'flex', flexDirection: 'column', gap: '0.625rem' },
-  federatedBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', padding: '0.65rem 1rem', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#374151' },
+  federatedBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', padding: '0.65rem 1rem', border: '1px solid #243041', borderRadius: '6px', background: '#162033', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#A1A1AA' },
 };

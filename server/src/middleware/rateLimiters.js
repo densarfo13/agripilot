@@ -74,6 +74,43 @@ export const inviteLimiter = rateLimit({
 });
 
 /**
+ * Limiter for MFA enrollment initiation.
+ * Prevents secret generation spam.
+ */
+export const mfaEnrollLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 enrollment attempts per 15 minutes per IP
+  message: { error: 'Too many MFA enrollment attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Limiter for MFA code verification (challenge, step-up, disable).
+ * Tight limit to prevent TOTP brute-force (only 1M codes per 30s window anyway,
+ * but belt-and-suspenders to prevent automated scanning).
+ */
+export const mfaVerifyLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // 10 code attempts per 5 minutes per IP
+  message: { error: 'Too many MFA verification attempts. Please try again in 5 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Limiter for password reset initiation (forgot-password).
+ * Prevents email flooding / enumeration timing attacks.
+ */
+export const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per 15 minutes per IP
+  message: { error: 'Too many password reset attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
  * Limiter for public invite acceptance and token validation endpoints.
  * Prevents token enumeration attacks.
  */

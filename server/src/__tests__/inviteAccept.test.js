@@ -62,10 +62,12 @@ describe('Delivery Honesty — no email/SMS configured', () => {
     expect(isSmsConfigured()).toBe(false);
   });
 
-  it('isEmailConfigured returns true when RESEND_API_KEY is set', () => {
-    process.env.RESEND_API_KEY = 'test-key';
+  it('isEmailConfigured returns true when SENDGRID_API_KEY and EMAIL_FROM_ADDRESS are set', () => {
+    process.env.SENDGRID_API_KEY = 'SG.test-key';
+    process.env.EMAIL_FROM_ADDRESS = 'noreply@test.com';
     expect(isEmailConfigured()).toBe(true);
-    delete process.env.RESEND_API_KEY;
+    delete process.env.SENDGRID_API_KEY;
+    delete process.env.EMAIL_FROM_ADDRESS;
   });
 
   it('isSmsConfigured returns true when all Twilio vars are set', () => {

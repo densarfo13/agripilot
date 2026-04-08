@@ -8,7 +8,7 @@
 const translations = {
   en: {
     // App
-    'app.name': 'AgriPilot',
+    'app.name': 'Farroway',
     'app.tagline': 'Institutional Credit Platform',
 
     // Statuses
@@ -163,7 +163,7 @@ const translations = {
 
   sw: {
     // App
-    'app.name': 'AgriPilot',
+    'app.name': 'Farroway',
     'app.tagline': 'Jukwaa la Mikopo ya Taasisi',
 
     // Statuses

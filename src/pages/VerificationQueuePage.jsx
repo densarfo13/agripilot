@@ -9,28 +9,28 @@ function getNextAction(app) {
   const score = app.verificationResult?.verificationScore;
 
   if (app.status === 'needs_more_evidence') {
-    return { label: 'Waiting for evidence', color: '#d97706', urgent: false };
+    return { label: 'Waiting for evidence', color: '#F59E0B', urgent: false };
   }
   if (app.status === 'field_review_required') {
     return { label: 'Field visit needed', color: '#0891b2', urgent: true };
   }
   if (app.status === 'escalated') {
-    return { label: 'Senior review needed', color: '#ea580c', urgent: true };
+    return { label: 'Senior review needed', color: '#F59E0B', urgent: true };
   }
   if (!app.verificationResult) {
-    return { label: 'Score first', color: '#2563eb', urgent: days > 3 };
+    return { label: 'Score first', color: '#22C55E', urgent: days > 3 };
   }
   if (app.status === 'under_review') {
-    if (score >= 70) return { label: 'Approve or reject', color: '#16a34a', urgent: true };
-    if (score >= 40) return { label: 'Review carefully', color: '#d97706', urgent: days > 5 };
-    return { label: 'Consider rejecting', color: '#dc2626', urgent: false };
+    if (score >= 70) return { label: 'Approve or reject', color: '#22C55E', urgent: true };
+    if (score >= 40) return { label: 'Review carefully', color: '#F59E0B', urgent: days > 5 };
+    return { label: 'Consider rejecting', color: '#EF4444', urgent: false };
   }
   if (app.status === 'submitted') {
-    if (score >= 70) return { label: 'Move to review', color: '#16a34a', urgent: true };
-    if (score >= 40) return { label: 'Move to review', color: '#d97706', urgent: false };
-    return { label: 'Score low — review', color: '#dc2626', urgent: false };
+    if (score >= 70) return { label: 'Move to review', color: '#22C55E', urgent: true };
+    if (score >= 40) return { label: 'Move to review', color: '#F59E0B', urgent: false };
+    return { label: 'Score low — review', color: '#EF4444', urgent: false };
   }
-  return { label: '—', color: '#9ca3af', urgent: false };
+  return { label: '—', color: '#71717A', urgent: false };
 }
 
 export default function VerificationQueuePage() {
@@ -118,7 +118,7 @@ export default function VerificationQueuePage() {
         <div>
           <h1>Verification Queue ({apps.length})</h1>
           {urgentCount > 0 && (
-            <div style={{ fontSize: '0.82rem', color: '#dc2626', fontWeight: 600, marginTop: '0.15rem' }}>
+            <div style={{ fontSize: '0.82rem', color: '#EF4444', fontWeight: 600, marginTop: '0.15rem' }}>
               {urgentCount} item{urgentCount > 1 ? 's' : ''} need immediate attention
             </div>
           )}
@@ -138,8 +138,8 @@ export default function VerificationQueuePage() {
         {error && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
         {bulkProgress && (
           <div style={{
-            background: bulkProgress.done < bulkProgress.total ? '#eff6ff' : bulkProgress.failed > 0 ? '#fef3c7' : '#d1fae5',
-            border: `1px solid ${bulkProgress.done < bulkProgress.total ? '#bfdbfe' : bulkProgress.failed > 0 ? '#fde68a' : '#a7f3d0'}`,
+            background: bulkProgress.done < bulkProgress.total ? 'rgba(34,197,94,0.15)' : bulkProgress.failed > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
+            border: `1px solid #243041`,
             borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.875rem',
             display: 'flex', alignItems: 'center', gap: '0.75rem',
           }}>
@@ -148,15 +148,15 @@ export default function VerificationQueuePage() {
                 <span style={{ fontWeight: 600 }}>Scoring in progress...</span>
                 <span>{bulkProgress.done} / {bulkProgress.total} done</span>
                 {/* Progress bar */}
-                <div style={{ flex: 1, height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: '#2563eb', borderRadius: 3, width: `${Math.round(bulkProgress.done / bulkProgress.total * 100)}%`, transition: 'width 0.2s' }} />
+                <div style={{ flex: 1, height: 6, background: '#243041', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: '#22C55E', borderRadius: 3, width: `${Math.round(bulkProgress.done / bulkProgress.total * 100)}%`, transition: 'width 0.2s' }} />
                 </div>
               </>
             ) : (
               <>
                 <span style={{ fontWeight: 600 }}>{bulkProgress.failed === 0 ? 'All scored successfully' : `Scoring complete`}</span>
                 <span>{bulkProgress.done - bulkProgress.failed} scored</span>
-                {bulkProgress.failed > 0 && <span style={{ color: '#b45309' }}>{bulkProgress.failed} failed — refresh to retry</span>}
+                {bulkProgress.failed > 0 && <span style={{ color: '#F59E0B' }}>{bulkProgress.failed} failed — refresh to retry</span>}
               </>
             )}
           </div>
@@ -187,12 +187,12 @@ export default function VerificationQueuePage() {
                       const nextAction = getNextAction(a);
                       const score = a.verificationResult?.verificationScore;
                       return (
-                        <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer', background: nextAction.urgent ? '#fffbeb' : undefined }}>
+                        <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer', background: nextAction.urgent ? 'rgba(245,158,11,0.15)' : undefined }}>
                           <td style={{ fontWeight: 500 }}>{a.farmer?.fullName}</td>
                           <td>
                             <div>{a.farmer?.region || '-'}</div>
                             {a.farmer?.organization?.name && (
-                              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{a.farmer.organization.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{a.farmer.organization.name}</div>
                             )}
                           </td>
                           <td>{a.cropType}</td>
@@ -200,14 +200,14 @@ export default function VerificationQueuePage() {
                           <td><StatusBadge value={a.status} /></td>
                           <td>
                             {score != null
-                              ? <span style={{ fontWeight: 600, color: score >= 70 ? '#16a34a' : score >= 40 ? '#d97706' : '#dc2626' }}>
+                              ? <span style={{ fontWeight: 600, color: score >= 70 ? '#22C55E' : score >= 40 ? '#F59E0B' : '#EF4444' }}>
                                   {score}/100
                                 </span>
                               : <span className="text-muted" style={{ fontSize: '0.8rem' }}>Unscored</span>
                             }
                           </td>
                           <td>
-                            <span style={{ color: days > 7 ? '#dc2626' : days > 3 ? '#d97706' : '#6b7280', fontWeight: days > 3 ? 600 : 400 }}>
+                            <span style={{ color: days > 7 ? '#EF4444' : days > 3 ? '#F59E0B' : '#A1A1AA', fontWeight: days > 3 ? 600 : 400 }}>
                               {days}d{days > 7 ? ' ⚠' : ''}
                             </span>
                           </td>

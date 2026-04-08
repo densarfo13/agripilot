@@ -13,7 +13,7 @@ if (process.env.NODE_ENV === 'production') {
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding AgriPilot MVP database...\n');
+  console.log('🌱 Seeding Farroway MVP database...\n');
 
   // ─── Clean existing data ──────────────────────────────
   console.log('Cleaning existing data...');
@@ -52,7 +52,7 @@ async function main() {
   // ─── Organizations ───────────────────────────────────
   console.log('Creating organizations...');
   const defaultOrg = await prisma.organization.create({
-    data: { name: 'AgriPilot Demo Lender', type: 'LENDER', countryCode: 'KE' },
+    data: { name: 'Farroway Demo Lender', type: 'LENDER', countryCode: 'KE' },
   });
   const partnerOrg = await prisma.organization.create({
     data: { name: 'Green Fields NGO', type: 'NGO', countryCode: 'KE' },
@@ -74,31 +74,31 @@ async function main() {
   const passwordHash = staffHash; // default for backward compat
 
   const superAdmin = await prisma.user.create({
-    data: { email: 'admin@agripilot.com', passwordHash: adminHash, fullName: 'Sarah Okonkwo', role: 'super_admin', organizationId: defaultOrg.id },
+    data: { email: 'admin@farroway.com', passwordHash: adminHash, fullName: 'Sarah Okonkwo', role: 'super_admin', organizationId: defaultOrg.id },
   });
 
   const instAdmin = await prisma.user.create({
-    data: { email: 'institution@agripilot.com', passwordHash: adminHash, fullName: 'James Mutua', role: 'institutional_admin', organizationId: defaultOrg.id },
+    data: { email: 'institution@farroway.com', passwordHash: adminHash, fullName: 'James Mutua', role: 'institutional_admin', organizationId: defaultOrg.id },
   });
 
   const reviewer1 = await prisma.user.create({
-    data: { email: 'reviewer@agripilot.com', passwordHash, fullName: 'Grace Wanjiku', role: 'reviewer', organizationId: defaultOrg.id },
+    data: { email: 'reviewer@farroway.com', passwordHash, fullName: 'Grace Wanjiku', role: 'reviewer', organizationId: defaultOrg.id },
   });
 
   const reviewer2 = await prisma.user.create({
-    data: { email: 'reviewer2@agripilot.com', passwordHash, fullName: 'Peter Ochieng', role: 'reviewer', organizationId: defaultOrg.id },
+    data: { email: 'reviewer2@farroway.com', passwordHash, fullName: 'Peter Ochieng', role: 'reviewer', organizationId: defaultOrg.id },
   });
 
   const fieldOfficer1 = await prisma.user.create({
-    data: { email: 'officer@agripilot.com', passwordHash, fullName: 'David Kamau', role: 'field_officer', organizationId: defaultOrg.id },
+    data: { email: 'officer@farroway.com', passwordHash, fullName: 'David Kamau', role: 'field_officer', organizationId: defaultOrg.id },
   });
 
   const fieldOfficer2 = await prisma.user.create({
-    data: { email: 'officer2@agripilot.com', passwordHash, fullName: 'Mary Achieng', role: 'field_officer', organizationId: defaultOrg.id },
+    data: { email: 'officer2@farroway.com', passwordHash, fullName: 'Mary Achieng', role: 'field_officer', organizationId: defaultOrg.id },
   });
 
   const investor = await prisma.user.create({
-    data: { email: 'investor@agripilot.com', passwordHash: viewerHash, fullName: 'Robert Chen', role: 'investor_viewer', organizationId: defaultOrg.id },
+    data: { email: 'investor@farroway.com', passwordHash: viewerHash, fullName: 'Robert Chen', role: 'investor_viewer', organizationId: defaultOrg.id },
   });
 
   console.log(`  ✅ ${7} users created`);
@@ -571,7 +571,7 @@ async function main() {
   // ─── Tanzania Farmers ──────────────────────────────────
   console.log('Creating Tanzania farmers...');
   const tzOfficer = await prisma.user.create({
-    data: { email: 'officer.tz@agripilot.com', passwordHash, fullName: 'Baraka Mwalimu', role: 'field_officer', preferredLanguage: 'sw' },
+    data: { email: 'officer.tz@farroway.com', passwordHash, fullName: 'Baraka Mwalimu', role: 'field_officer', preferredLanguage: 'sw' },
   });
 
   const tzFarmers = await Promise.all([
@@ -778,7 +778,7 @@ async function main() {
     { farmerId: farmers[0].id, notificationType: 'reminder', title: 'Upcoming: Top-dress maize', message: 'Remember to apply CAN fertilizer at knee-height stage by April 10.' },
     { farmerId: farmers[3].id, notificationType: 'post_harvest', title: 'Coffee storage tip', message: 'Keep parchment coffee below 11% moisture for best prices.' },
     { farmerId: farmers[7].id, notificationType: 'post_harvest', title: 'Storage alert: maize', message: 'Your maize storage condition is poor. Consider selling soon.', read: false },
-    { farmerId: tzFarmers[0].id, notificationType: 'system', title: 'Karibu AgriPilot', message: 'Umefanikiwa kujiandikisha. Karibu kwenye mfumo wa AgriPilot.' },
+    { farmerId: tzFarmers[0].id, notificationType: 'system', title: 'Karibu Farroway', message: 'Umefanikiwa kujiandikisha. Karibu kwenye mfumo wa Farroway.' },
     { farmerId: tzFarmers[1].id, notificationType: 'market', title: 'Bei ya mpunga', message: 'Bei ya mpunga imepanda kwa 10% wiki hii katika soko la Morogoro.' },
   ];
   for (const n of notifData) {
@@ -836,7 +836,7 @@ async function main() {
   const farmerUserHash = staffHash;
   const farmerUser1 = await prisma.user.create({
     data: {
-      email: 'john.mwangi@farmer.agripilot.com',
+      email: 'john.mwangi@farmer.farroway.com',
       passwordHash: farmerUserHash,
       fullName: 'John Mwangi',
       role: 'farmer',
@@ -846,7 +846,7 @@ async function main() {
   });
   const farmerUser2 = await prisma.user.create({
     data: {
-      email: 'amina.hassan@farmer.agripilot.com',
+      email: 'amina.hassan@farmer.farroway.com',
       passwordHash: farmerUserHash,
       fullName: 'Amina Hassan',
       role: 'farmer',
@@ -856,7 +856,7 @@ async function main() {
   });
   const farmerUser3 = await prisma.user.create({
     data: {
-      email: 'peter.otieno@farmer.agripilot.com',
+      email: 'peter.otieno@farmer.farroway.com',
       passwordHash: farmerUserHash,
       fullName: 'Peter Otieno',
       role: 'farmer',
@@ -866,7 +866,7 @@ async function main() {
   });
   const farmerUser4 = await prisma.user.create({
     data: {
-      email: 'florence.nyambura@farmer.agripilot.com',
+      email: 'florence.nyambura@farmer.farroway.com',
       passwordHash: farmerUserHash,
       fullName: 'Florence Nyambura',
       role: 'farmer',
@@ -971,7 +971,7 @@ async function main() {
 
   const ngoOfficer = await prisma.user.create({
     data: {
-      email: 'officer@greenfields.agripilot.com',
+      email: 'officer@greenfields.farroway.com',
       passwordHash,
       fullName: 'Wanjiru Kamau',
       role: 'field_officer',
@@ -980,7 +980,7 @@ async function main() {
   });
   await prisma.user.create({
     data: {
-      email: 'admin@greenfields.agripilot.com',
+      email: 'admin@greenfields.farroway.com',
       passwordHash: adminHash,
       fullName: 'Samuel Njuguna',
       role: 'institutional_admin',
@@ -1022,26 +1022,26 @@ async function main() {
   // ─── Summary ──────────────────────────────────────────
   console.log('\n🎉 Seed completed!\n');
   console.log('Demo Accounts:');
-  console.log('  super_admin:                  admin@agripilot.com');
-  console.log('  institutional_admin (KE):     institution@agripilot.com');
-  console.log('  institutional_admin (NGO):    admin@greenfields.agripilot.com');
-  console.log('  reviewer:                     reviewer@agripilot.com / reviewer2@agripilot.com');
-  console.log('  field_officer (KE):           officer@agripilot.com / officer2@agripilot.com');
-  console.log('  field_officer (NGO):          officer@greenfields.agripilot.com');
-  console.log('  field_officer (TZ):           officer.tz@agripilot.com');
-  console.log('  investor_viewer:              investor@agripilot.com');
+  console.log('  super_admin:                  admin@farroway.com');
+  console.log('  institutional_admin (KE):     institution@farroway.com');
+  console.log('  institutional_admin (NGO):    admin@greenfields.farroway.com');
+  console.log('  reviewer:                     reviewer@farroway.com / reviewer2@farroway.com');
+  console.log('  field_officer (KE):           officer@farroway.com / officer2@farroway.com');
+  console.log('  field_officer (NGO):          officer@greenfields.farroway.com');
+  console.log('  field_officer (TZ):           officer.tz@farroway.com');
+  console.log('  investor_viewer:              investor@farroway.com');
   console.log('\nFarmer accounts (role=farmer, for pilot adoption funnel):');
-  console.log('  john.mwangi@farmer.agripilot.com     — logged in, season + progress + image');
-  console.log('  amina.hassan@farmer.agripilot.com    — logged in, season + progress + image');
-  console.log('  peter.otieno@farmer.agripilot.com    — logged in, season + progress (no image) + HARVEST');
-  console.log('  florence.nyambura@farmer.agripilot.com — account created, never logged in');
+  console.log('  john.mwangi@farmer.farroway.com     — logged in, season + progress + image');
+  console.log('  amina.hassan@farmer.farroway.com    — logged in, season + progress + image');
+  console.log('  peter.otieno@farmer.farroway.com    — logged in, season + progress (no image) + HARVEST');
+  console.log('  florence.nyambura@farmer.farroway.com — account created, never logged in');
   console.log(`\nKenya (${defaultOrg.name}): ${farmers.length} farmers, ${apps.length} applications`);
   console.log(`Tanzania: ${tzFarmers.length} farmers, 4 applications`);
   console.log(`Green Fields NGO: ${ngoFarmers.length} farmers`);
   console.log(`Total: ${farmers.length + tzFarmers.length + ngoFarmers.length} farmers`);
   console.log(`Activities: ${activityData.length}, Reminders: ${reminderData.length}`);
   console.log('Storage: 5, Buyer interests: 5, Notifications: 7');
-  console.log('\nPilot Adoption Funnel (AgriPilot Demo Lender):');
+  console.log('\nPilot Adoption Funnel (Farroway Demo Lender):');
   console.log('  Step 1 — Approved: all 8 KE farmers');
   console.log('  Step 2 — Account activated: 4 (john, amina, peter, florence)');
   console.log('  Step 3 — First login: 3 (john, amina, peter)');

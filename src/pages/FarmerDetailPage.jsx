@@ -3,15 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
+import { TrustBadge, RiskBadge } from '../components/TrustRiskBadge.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { ADMIN_ROLES, CREATOR_ROLES } from '../utils/roles.js';
 import { getCountryName } from '../utils/countries.js';
 
 const STATUS_COLORS = {
-  pending_approval: { bg: '#fef3c7', color: '#92400e', label: 'Pending Approval' },
-  approved: { bg: '#d1fae5', color: '#065f46', label: 'Active' },
-  rejected: { bg: '#fee2e2', color: '#991b1b', label: 'Rejected' },
-  disabled: { bg: '#f3f4f6', color: '#6b7280', label: 'Disabled' },
+  pending_approval: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Pending Approval' },
+  approved: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E', label: 'Active' },
+  rejected: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Rejected' },
+  disabled: { bg: '#1E293B', color: '#A1A1AA', label: 'Disabled' },
 };
 
 export default function FarmerDetailPage() {
@@ -63,8 +64,18 @@ export default function FarmerDetailPage() {
           <AccessAssignmentSection farmer={farmer} isAdmin={isAdmin} isCreator={isCreator} onUpdate={load} />
         )}
 
+        {/* Trust & Risk compact summary — staff only */}
+        {(isAdmin || isCreator || user?.role === 'reviewer') && (
+          <FarmerTrustRiskPanel farmerId={farmer.id} />
+        )}
+
         {/* Performance Profile Section — visible to staff & investor_viewer */}
         <PerformanceProfileSection farmerId={farmer.id} />
+
+        {/* Historical Performance + Benchmarks — staff only (not farmer-facing) */}
+        {(isAdmin || isCreator || user?.role === 'reviewer' || user?.role === 'investor_viewer') && (
+          <HistoricalPerformanceSection farmerId={farmer.id} userRole={user?.role} />
+        )}
 
         <div className="detail-grid">
           <div className="card">
@@ -80,7 +91,7 @@ export default function FarmerDetailPage() {
               <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{farmer.farmSizeAcres ? `${farmer.farmSizeAcres} ${farmer.countryCode === 'TZ' ? 'hectares' : 'acres'}` : '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Experience</span><span className="detail-value">{farmer.yearsExperience ? `${farmer.yearsExperience} years` : '-'}</span></div>
               {farmer.organization && (
-                <div className="detail-row"><span className="detail-label">Organization</span><span className="detail-value">{farmer.organization.name} <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>({farmer.organization.type.replace(/_/g, ' ')})</span></span></div>
+                <div className="detail-row"><span className="detail-label">Organization</span><span className="detail-value">{farmer.organization.name} <span style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>({farmer.organization.type.replace(/_/g, ' ')})</span></span></div>
               )}
               <div className="detail-row"><span className="detail-label">Created By</span><span className="detail-value">{farmer.createdBy?.fullName}</span></div>
               <div className="detail-row"><span className="detail-label">Created At</span><span className="detail-value">{new Date(farmer.createdAt).toLocaleDateString()}</span></div>
@@ -107,7 +118,7 @@ export default function FarmerDetailPage() {
                     </tr>
                   ))}
                   {(!farmer.applications || farmer.applications.length === 0) && (
-                    <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#9ca3af' }}>No applications yet</td></tr>
+                    <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#71717A' }}>No applications yet</td></tr>
                   )}
                 </tbody>
               </table>
@@ -128,6 +139,9 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   const [actionSuccess, setActionSuccess] = useState('');
   const [resendInviteToken, setResendInviteToken] = useState(null);
   const [resendInviteExpiry, setResendInviteExpiry] = useState(null);
+  const [resendChannel, setResendChannel] = useState('link');
+  const [resendContactEmail, setResendContactEmail] = useState('');
+  const [showResendChannelPicker, setShowResendChannelPicker] = useState(false);
   const [showCreateLoginModal, setShowCreateLoginModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
@@ -181,10 +195,18 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   });
 
   const handleResendInvite = () => doAction(async () => {
-    const res = await api.post(`/farmers/${farmer.id}/resend-invite`);
+    const payload = { channel: resendChannel };
+    if (resendChannel === 'email' && resendContactEmail) payload.contactEmail = resendContactEmail;
+    const res = await api.post(`/farmers/${farmer.id}/resend-invite`, payload);
     setResendInviteToken(res.data.inviteToken || null);
     setResendInviteExpiry(res.data.inviteExpiresAt || null);
-    setActionSuccess('Invite resent. Copy the new link below and share it with the farmer.');
+    setShowResendChannelPicker(false);
+    const delivered = res.data.deliveryStatus === 'email_sent' || res.data.deliveryStatus === 'phone_sent';
+    setActionSuccess(
+      delivered
+        ? `Invite ${res.data.deliveryChannel === 'email' ? 'email' : 'SMS'} sent. ${res.data.deliveryNote || ''}`
+        : res.data.deliveryNote || 'Invite resent. Copy the new link below and share it with the farmer.'
+    );
   });
 
   const status = farmer.registrationStatus;
@@ -214,7 +236,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
         {actionError && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{actionError}</div>}
         {actionSuccess && (
           <div style={{ marginBottom: '0.75rem' }}>
-            <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: '0.875rem', marginBottom: resendInviteToken ? '0.5rem' : 0 }}>{actionSuccess}</div>
+            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: '0.875rem', marginBottom: resendInviteToken ? '0.5rem' : 0 }}>{actionSuccess}</div>
             {resendInviteToken && (
               <ResendInviteLinkBox url={`${window.location.origin}/accept-invite?token=${resendInviteToken}`} expiresAt={resendInviteExpiry} />
             )}
@@ -225,58 +247,70 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
           <AccessBadge value={farmer.accessStatus} />
           {!farmer.selfRegistered && <InviteBadge value={inviteStatus?.inviteStatus || farmer.inviteStatus} />}
-          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500, background: '#ede9fe', color: '#5b21b6' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 500, background: 'rgba(139,92,246,0.15)', color: '#A78BFA' }}>
             {farmer.selfRegistered ? 'Self-Registered' : 'Invited'}
           </span>
         </div>
 
         {/* Metadata grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1.5rem', fontSize: '0.875rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-            <span style={{ color: '#6b7280' }}>Assigned Officer</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+            <span style={{ color: '#A1A1AA' }}>Assigned Officer</span>
             <span style={{ fontWeight: 500 }}>{assignedOfficerName || farmer.assignedOfficerId ? (assignedOfficerName || 'Assigned') : 'Unassigned'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-            <span style={{ color: '#6b7280' }}>Login Email</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+            <span style={{ color: '#A1A1AA' }}>Login Email</span>
             <span style={{ fontWeight: 500 }}>{farmer.userAccount?.email || 'None'}</span>
           </div>
           {farmer.invitedAt && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-              <span style={{ color: '#6b7280' }}>Invited</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Invited</span>
               <span>{new Date(farmer.invitedAt).toLocaleDateString()}</span>
             </div>
           )}
           {farmer.approvedAt && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-              <span style={{ color: '#6b7280' }}>Approved</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Approved</span>
               <span>{new Date(farmer.approvedAt).toLocaleDateString()}</span>
             </div>
           )}
           {farmer.rejectedAt && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-              <span style={{ color: '#6b7280' }}>Rejected</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Rejected</span>
               <span>{new Date(farmer.rejectedAt).toLocaleDateString()}</span>
             </div>
           )}
           {farmer.rejectionReason && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0', gridColumn: '1 / -1' }}>
-              <span style={{ color: '#6b7280' }}>Rejection Reason</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0', gridColumn: '1 / -1' }}>
+              <span style={{ color: '#A1A1AA' }}>Rejection Reason</span>
               <span>{farmer.rejectionReason}</span>
             </div>
           )}
+          {inviteStatus?.inviteDeliveryStatus && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Delivery</span>
+              <span style={{ fontWeight: 500 }}>{inviteStatus.deliveryStatusLabel || inviteStatus.inviteDeliveryStatus}</span>
+            </div>
+          )}
+          {inviteStatus?.inviteChannel && inviteStatus.inviteChannel !== 'link' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Sent via</span>
+              <span style={{ fontWeight: 500 }}>{inviteStatus.inviteChannel === 'email' ? 'Email' : 'SMS'}</span>
+            </div>
+          )}
           {inviteStatus?.inviteExpiresAt && !inviteStatus?.inviteAcceptedAt && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-              <span style={{ color: '#6b7280' }}>Invite Expires</span>
-              <span style={{ color: new Date() > new Date(inviteStatus.inviteExpiresAt) ? '#dc2626' : undefined }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Invite Expires</span>
+              <span style={{ color: new Date() > new Date(inviteStatus.inviteExpiresAt) ? '#EF4444' : undefined }}>
                 {new Date(inviteStatus.inviteExpiresAt).toLocaleDateString()}
                 {new Date() > new Date(inviteStatus.inviteExpiresAt) ? ' (expired)' : ''}
               </span>
             </div>
           )}
           {inviteStatus?.inviteAcceptedAt && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-              <span style={{ color: '#6b7280' }}>Invite Accepted</span>
-              <span style={{ color: '#16a34a' }}>{new Date(inviteStatus.inviteAcceptedAt).toLocaleDateString()}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
+              <span style={{ color: '#A1A1AA' }}>Invite Accepted</span>
+              <span style={{ color: '#22C55E' }}>{new Date(inviteStatus.inviteAcceptedAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>
@@ -302,21 +336,78 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
             )}
             {status === 'approved' && (
               <button className="btn btn-sm btn-outline" onClick={() => setShowDisableModal(true)} disabled={processing}
-                style={{ color: '#dc2626', borderColor: '#dc2626' }}>Disable Access</button>
+                style={{ color: '#EF4444', borderColor: '#EF4444' }}>Disable Access</button>
             )}
-            {!farmer.selfRegistered && farmer.invitedAt && (
-              <button className="btn btn-sm btn-outline" onClick={handleResendInvite} disabled={processing}>Resend Invite</button>
+            {!farmer.selfRegistered && farmer.invitedAt && !showResendChannelPicker && (
+              <button className="btn btn-sm btn-outline" onClick={() => setShowResendChannelPicker(true)} disabled={processing}>Resend Invite</button>
             )}
             {!farmer.selfRegistered && inviteStatus?.inviteStatus === 'LINK_GENERATED' && inviteStatus?.inviteToken && (
               <CopyInviteLinkButton token={inviteStatus.inviteToken} />
             )}
             {!farmer.userAccount && (
               <button className="btn btn-sm btn-outline" onClick={() => setShowCreateLoginModal(true)} disabled={processing}
-                style={{ color: '#2563eb', borderColor: '#2563eb' }}>Create Login</button>
+                style={{ color: '#22C55E', borderColor: '#22C55E' }}>Create Login</button>
             )}
           </div>
         )}
       </div>
+
+      {/* Resend invite channel picker */}
+      {showResendChannelPicker && (
+        <div style={{ borderTop: '1px solid #243041', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>Resend via</div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+            {[
+              { value: 'link', label: 'Manual Share' },
+              { value: 'email', label: 'Send via Email' },
+              { value: 'phone', label: 'Send via SMS' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setResendChannel(opt.value)}
+                style={{
+                  padding: '0.25rem 0.6rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer',
+                  border: `1.5px solid ${resendChannel === opt.value ? '#22C55E' : '#243041'}`,
+                  background: resendChannel === opt.value ? '#22C55E' : '#162033',
+                  color: resendChannel === opt.value ? '#fff' : '#FFFFFF',
+                  fontWeight: resendChannel === opt.value ? 600 : 400,
+                }}
+              >{opt.label}</button>
+            ))}
+          </div>
+          {resendChannel === 'email' && (
+            <input
+              className="form-input"
+              type="email"
+              placeholder="Farmer's email address"
+              value={resendContactEmail}
+              onChange={e => setResendContactEmail(e.target.value)}
+              style={{ fontSize: '0.82rem', marginBottom: '0.5rem', maxWidth: 280 }}
+            />
+          )}
+          {resendChannel === 'phone' && farmer.phone && (
+            <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginBottom: '0.5rem' }}>
+              SMS will be sent to <strong>{farmer.phone}</strong>.
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={handleResendInvite}
+              disabled={processing || (resendChannel === 'email' && !resendContactEmail.trim())}
+            >
+              {processing ? 'Sending...' : 'Send'}
+            </button>
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => { setShowResendChannelPicker(false); setResendChannel('link'); setResendContactEmail(''); }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {showAssignModal && (
@@ -451,7 +542,7 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
         </div>
         <div className="modal-body">
           {/* SoD notice */}
-          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#92400e', marginBottom: '1rem' }}>
+          <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#F59E0B', marginBottom: '1rem' }}>
             <strong>Separation of Duties required.</strong> Disabling a farmer requires approval from a second administrator.
             Submit a request below, then ask another admin to approve it at <em>Admin → Security Requests</em>.
             Once approved, return here and enter the Request ID to execute.
@@ -460,17 +551,17 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
           {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
 
           {/* Phase toggle */}
-          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #243041', borderRadius: 6, overflow: 'hidden' }}>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#2563eb' : '#fff', color: mode === 'request' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
               1. Create Request
             </button>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#2563eb' : '#fff', color: mode === 'execute' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
               2. Execute (have ID)
@@ -501,14 +592,14 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
 
           {mode === 'request' && created && (
             <div>
-              <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>
                 <strong>Request submitted successfully.</strong> Another admin must approve it before you can execute.
               </div>
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
-                <span style={{ color: '#6b7280' }}>Request ID: </span>
+              <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
+                <span style={{ color: '#A1A1AA' }}>Request ID: </span>
                 <code style={{ fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{created.id}</code>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+              <div style={{ fontSize: '0.82rem', color: '#A1A1AA' }}>
                 Once approved, switch to the <strong>Execute</strong> tab and paste the ID above to disable access.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
@@ -529,16 +620,16 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
                   onChange={e => setApprovalId(e.target.value)}
                   placeholder="Paste the approved Request ID here"
                 />
-                <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.3rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#A1A1AA', marginTop: '0.3rem' }}>
                   Find this ID on <em>Admin → Security Requests</em> once your request has been approved.
                 </div>
               </div>
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#991b1b', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#EF4444', marginBottom: '0.75rem' }}>
                 This will immediately disable <strong>{farmer.fullName}</strong>'s access. This action is audited and cannot be undone without a separate reactivation.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                 <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn btn-outline" style={{ color: '#dc2626', borderColor: '#dc2626' }} disabled={saving}>
+                <button type="submit" className="btn btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} disabled={saving}>
                   {saving ? 'Disabling…' : 'Execute Disable'}
                 </button>
               </div>
@@ -618,7 +709,7 @@ function ApproveModal({ farmer, officers, onClose, onDone }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-            <div style={{ background: '#f8f9fa', borderRadius: 6, padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
+            <div style={{ background: '#1E293B', borderRadius: 6, padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
               <div><strong>Phone:</strong> {farmer.phone}</div>
               <div><strong>Region:</strong> {farmer.region}{farmer.district ? `, ${farmer.district}` : ''}</div>
               {farmer.primaryCrop && <div><strong>Crop:</strong> {farmer.primaryCrop}</div>}
@@ -637,6 +728,42 @@ function ApproveModal({ farmer, officers, onClose, onDone }) {
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+// ─── Trust & Risk Panel ────────────────────────────────
+
+function FarmerTrustRiskPanel({ farmerId }) {
+  const [trust, setTrust] = useState(null);
+  const [risk, setRisk] = useState(null);
+
+  useEffect(() => {
+    api.get(`/trust/farmers/${farmerId}`).then(r => setTrust(r.data)).catch(() => {});
+    api.get(`/trust/risk/farmers/${farmerId}`).then(r => setRisk(r.data)).catch(() => {});
+  }, [farmerId]);
+
+  if (!trust && !risk) return null;
+
+  return (
+    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-start' }}>
+      {trust?.trustLevel && (
+        <div style={{ background: '#162033', border: '1px solid #243041', borderRadius: 8, padding: '0.6rem 1rem', minWidth: 160 }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#71717A', marginBottom: '0.3rem' }}>Record Trust</div>
+          <TrustBadge trustLevel={trust.trustLevel} topReason={trust.negativeTrustFactors?.[0] || trust.trustReasons?.[0]} />
+        </div>
+      )}
+      {risk?.riskLevel && risk.riskLevel !== 'Low' && (
+        <div style={{ background: '#162033', border: '1px solid #243041', borderRadius: 8, padding: '0.6rem 1rem', minWidth: 200 }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#71717A', marginBottom: '0.3rem' }}>Risk Signal</div>
+          <RiskBadge riskLevel={risk.riskLevel} riskReason={risk.riskReason} />
+          {risk.nextRecommendedAction && (
+            <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', color: '#FFFFFF', lineHeight: 1.4 }}>
+              Next: {risk.nextRecommendedAction}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -665,10 +792,10 @@ function PerformanceProfileSection({ farmerId }) {
   const { summary, yieldHistory, reliabilitySignals, seasons } = profile;
 
   const CLASSIFICATION_COLORS = {
-    on_track: { bg: '#d1fae5', color: '#065f46' },
-    slight_delay: { bg: '#fef3c7', color: '#92400e' },
-    at_risk: { bg: '#fed7aa', color: '#9a3412' },
-    critical: { bg: '#fee2e2', color: '#991b1b' },
+    on_track: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+    slight_delay: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+    at_risk: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+    critical: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   };
 
   return (
@@ -696,7 +823,7 @@ function PerformanceProfileSection({ farmerId }) {
           </div>
           <div style={metricBox}>
             <div style={metricLabel}>Trend</div>
-            <div style={{ ...metricValue, color: summary.productivityTrend === 'improving' ? '#16a34a' : summary.productivityTrend === 'declining' ? '#dc2626' : '#6b7280' }}>
+            <div style={{ ...metricValue, color: summary.productivityTrend === 'improving' ? '#22C55E' : summary.productivityTrend === 'declining' ? '#EF4444' : '#A1A1AA' }}>
               {summary.productivityTrend === 'improving' ? 'Improving' : summary.productivityTrend === 'declining' ? 'Declining' : summary.productivityTrend === 'stable' ? 'Stable' : 'Insufficient data'}
             </div>
           </div>
@@ -713,14 +840,14 @@ function PerformanceProfileSection({ farmerId }) {
         {/* Reliability signals */}
         {reliabilitySignals.length > 0 && (
           <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Reliability Signals</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>Reliability Signals</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
               {reliabilitySignals.map((s, i) => (
                 <span key={i} style={{
                   display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: 12,
                   fontSize: '0.75rem', fontWeight: 500,
-                  background: s.positive ? '#d1fae5' : '#fee2e2',
-                  color: s.positive ? '#065f46' : '#991b1b',
+                  background: s.positive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: s.positive ? '#22C55E' : '#EF4444',
                 }}>{s.label}</span>
               ))}
             </div>
@@ -730,11 +857,11 @@ function PerformanceProfileSection({ farmerId }) {
         {/* Credibility summary */}
         {credSummary?.overallCredibility && (
           <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Data Credibility</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>Data Credibility</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem' }}>
               <div style={metricBox}>
                 <div style={metricLabel}>Credibility</div>
-                <div style={{ ...metricValue, color: credSummary.overallCredibility.level === 'high_confidence' ? '#16a34a' : credSummary.overallCredibility.level === 'medium_confidence' ? '#d97706' : '#dc2626' }}>
+                <div style={{ ...metricValue, color: credSummary.overallCredibility.level === 'high_confidence' ? '#22C55E' : credSummary.overallCredibility.level === 'medium_confidence' ? '#F59E0B' : '#EF4444' }}>
                   {credSummary.overallCredibility.avgScore ?? 'N/A'}{credSummary.overallCredibility.avgScore ? '/100' : ''}
                 </div>
               </div>
@@ -744,7 +871,7 @@ function PerformanceProfileSection({ farmerId }) {
               </div>
               <div style={metricBox}>
                 <div style={metricLabel}>Trend</div>
-                <div style={{ ...metricValue, color: credSummary.overallCredibility.trend === 'improving' ? '#16a34a' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#6b7280' }}>
+                <div style={{ ...metricValue, color: credSummary.overallCredibility.trend === 'improving' ? '#22C55E' : credSummary.overallCredibility.trend === 'declining' ? '#EF4444' : '#A1A1AA' }}>
                   {(credSummary.overallCredibility.trend || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                 </div>
               </div>
@@ -752,17 +879,17 @@ function PerformanceProfileSection({ farmerId }) {
             {Object.keys(credSummary.recurringFlags || {}).length > 0 && (
               <div style={{ marginTop: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600 }}>Recurring Flags</span>
+                  <span style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Recurring Flags</span>
                   <a
                     href={`/farmer-home/${farmerId}/progress`}
-                    style={{ fontSize: '0.72rem', color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: '0.72rem', color: '#22C55E', textDecoration: 'none', fontWeight: 500 }}
                   >
                     View in Progress Tab →
                   </a>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                   {Object.entries(credSummary.recurringFlags).map(([flag, count]) => (
-                    <span key={flag} style={{ display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500, background: '#fee2e2', color: '#991b1b' }}>
+                    <span key={flag} style={{ display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500, background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
                       {flag.replace(/_/g, ' ')} ({count}x)
                     </span>
                   ))}
@@ -777,9 +904,9 @@ function PerformanceProfileSection({ farmerId }) {
           <>
             {yieldHistory.length > 0 && (
               <div style={{ marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Yield History</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>Yield History</div>
                 <table style={{ width: '100%', fontSize: '0.8rem' }}>
-                  <thead><tr style={{ background: '#f9fafb' }}>
+                  <thead><tr style={{ background: '#1E293B' }}>
                     <th style={thStyle}>Crop</th><th style={thStyle}>Planted</th><th style={thStyle}>Yield/Acre</th><th style={thStyle}>Total Kg</th>
                   </tr></thead>
                   <tbody>
@@ -798,16 +925,16 @@ function PerformanceProfileSection({ farmerId }) {
 
             {seasons.length > 0 && (
               <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>All Seasons</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>All Seasons</div>
                 <table style={{ width: '100%', fontSize: '0.8rem' }}>
-                  <thead><tr style={{ background: '#f9fafb' }}>
+                  <thead><tr style={{ background: '#1E293B' }}>
                     <th style={thStyle}>Crop</th><th style={thStyle}>Planted</th><th style={thStyle}>Status</th>
                     <th style={thStyle}>Score</th><th style={thStyle}>Classification</th><th style={thStyle}>Entries</th>
                   </tr></thead>
                   <tbody>
                     {seasons.map(s => {
                       const cls = s.progressScore?.classification;
-                      const clsColor = CLASSIFICATION_COLORS[cls] || { bg: '#f3f4f6', color: '#6b7280' };
+                      const clsColor = CLASSIFICATION_COLORS[cls] || { bg: '#1E293B', color: '#A1A1AA' };
                       return (
                         <tr key={s.id}>
                           <td style={tdStyle}>{s.cropType}</td>
@@ -834,11 +961,11 @@ function PerformanceProfileSection({ farmerId }) {
   );
 }
 
-const metricBox = { background: '#f9fafb', borderRadius: 6, padding: '0.6rem', textAlign: 'center' };
-const metricLabel = { fontSize: '0.7rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' };
-const metricValue = { fontSize: '0.85rem', fontWeight: 600, color: '#111827' };
-const thStyle = { padding: '0.4rem 0.5rem', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid #e5e7eb' };
-const tdStyle = { padding: '0.4rem 0.5rem', borderBottom: '1px solid #f3f4f6' };
+const metricBox = { background: '#1E293B', borderRadius: 6, padding: '0.6rem', textAlign: 'center' };
+const metricLabel = { fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem' };
+const metricValue = { fontSize: '0.85rem', fontWeight: 600, color: '#FFFFFF' };
+const thStyle = { padding: '0.4rem 0.5rem', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid #243041' };
+const tdStyle = { padding: '0.4rem 0.5rem', borderBottom: '1px solid #243041' };
 
 // ─── Modals ─────────────────────────────────────────────
 
@@ -872,7 +999,7 @@ function RejectModal({ farmer, onClose, onDone }) {
               <label className="form-label">Rejection Reason *</label>
               <textarea className="form-input" rows={3} required value={reason} onChange={e => setReason(e.target.value)}
                 placeholder="e.g., Incomplete information, outside service area..." />
-              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>Required — the farmer will see this explanation.</div>
+              <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.25rem' }}>Required — the farmer will see this explanation.</div>
             </div>
           </div>
           <div className="modal-footer">
@@ -914,7 +1041,7 @@ function CreateLoginModal({ farmer, onClose, onDone }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-            <div style={{ background: '#eff6ff', color: '#1e40af', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
+            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
               Creates a login account linked to this farmer profile. Share the email and password with the farmer securely.
             </div>
             <div className="form-group">
@@ -948,7 +1075,7 @@ function CopyInviteLinkButton({ token }) {
       type="button"
       onClick={copy}
       className="btn btn-sm btn-outline"
-      style={{ color: copied ? '#16a34a' : '#2563eb', borderColor: copied ? '#16a34a' : '#2563eb' }}
+      style={{ color: copied ? '#22C55E' : '#22C55E', borderColor: copied ? '#22C55E' : '#22C55E' }}
     >
       {copied ? '✓ Link Copied' : 'Copy Invite Link'}
     </button>
@@ -962,8 +1089,8 @@ function ResendInviteLinkBox({ url, expiresAt }) {
     navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(() => {});
   };
   return (
-    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '0.6rem 0.75rem' }}>
-      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534', marginBottom: '0.35rem' }}>
+    <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem' }}>
+      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#22C55E', marginBottom: '0.35rem' }}>
         Share this invite link with the farmer (email, WhatsApp, SMS):
       </div>
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: expiresAt ? '0.3rem' : 0 }}>
@@ -971,22 +1098,247 @@ function ResendInviteLinkBox({ url, expiresAt }) {
           readOnly
           value={url}
           onClick={e => e.target.select()}
-          style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.75rem', padding: '0.3rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', color: '#374151', cursor: 'text' }}
+          style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.75rem', padding: '0.3rem 0.5rem', border: '1px solid #243041', borderRadius: 4, background: '#162033', color: '#FFFFFF', cursor: 'text' }}
         />
         <button
           type="button"
           onClick={copy}
           className="btn btn-outline btn-sm"
-          style={{ whiteSpace: 'nowrap', color: copied ? '#16a34a' : undefined, borderColor: copied ? '#16a34a' : undefined }}
+          style={{ whiteSpace: 'nowrap', color: copied ? '#22C55E' : undefined, borderColor: copied ? '#22C55E' : undefined }}
         >
           {copied ? '✓ Copied' : 'Copy'}
         </button>
       </div>
       {expiresAt && (
-        <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+        <div style={{ fontSize: '0.72rem', color: '#A1A1AA' }}>
           Expires: {new Date(expiresAt).toLocaleDateString()} — resend to refresh
         </div>
       )}
     </div>
   );
 }
+
+// ─── Historical Performance + Benchmarks ───────────────────
+
+const DIRECTION_STYLE = {
+  above_average: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  below_average: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
+  around_average: { bg: '#1E293B', color: '#FFFFFF' },
+  improving: { bg: 'rgba(34,197,94,0.15)', color: '#16A34A' },
+  declining: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+  stable: { bg: '#1E293B', color: '#A1A1AA' },
+};
+
+const CLASSIFICATION_COLOR = {
+  on_track:    { color: '#22C55E' },
+  slight_delay: { color: '#F59E0B' },
+  at_risk:     { color: '#ea580c' },
+  critical:    { color: '#EF4444' },
+};
+
+const STATUS_COLOR = {
+  active:    { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  completed: { bg: 'rgba(34,197,94,0.15)', color: '#16A34A' },
+  harvested: { bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
+  abandoned: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+  failed:    { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
+};
+
+const TREND_LABEL = {
+  improving: { text: 'Improving', color: '#22C55E' },
+  declining: { text: 'Declining', color: '#EF4444' },
+  stable:    { text: 'Stable',   color: '#A1A1AA' },
+  insufficient_data: { text: 'Insufficient data', color: '#71717A' },
+};
+
+function HistoricalPerformanceSection({ farmerId, userRole }) {
+  const [history, setHistory] = useState(null);
+  const [benchmarks, setBenchmarks] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const isInvestor = userRole === 'investor_viewer';
+
+  useEffect(() => {
+    Promise.all([
+      api.get(`/performance/farmers/${farmerId}/history`),
+      api.get(`/performance/farmers/${farmerId}/benchmarks`).catch(() => ({ data: null })),
+    ])
+      .then(([hRes, bRes]) => {
+        setHistory(hRes.data);
+        setBenchmarks(bRes.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [farmerId]);
+
+  if (loading) return null;
+  if (!history || history.seasons.length === 0) return null;
+
+  const { seasons, selfTrend, summary } = history;
+  const comparisons = benchmarks?.comparisons ?? [];
+
+  return (
+    <div className="card" style={{ marginBottom: '1.25rem' }}>
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Historical Performance &amp; Benchmarks</span>
+        <button className="btn btn-outline btn-sm" onClick={() => setExpanded(!expanded)}>
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      <div className="card-body">
+
+        {/* Summary strip */}
+        {summary && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
+            {[
+              { label: 'Seasons', value: `${summary.totalSeasons} total` },
+              { label: 'Completed', value: summary.completedSeasons },
+              { label: 'Completion rate', value: `${summary.completionRate}%` },
+              { label: 'Avg score', value: summary.avgProgressScore != null ? `${summary.avgProgressScore}/100` : 'N/A' },
+              { label: 'Avg trust', value: summary.avgTrustScore != null ? `${summary.avgTrustScore}/100` : 'N/A' },
+              { label: 'Trust trend', value: TREND_LABEL[summary.trustTrend]?.text ?? '—', color: TREND_LABEL[summary.trustTrend]?.color },
+            ].map(item => (
+              <div key={item.label} style={{ background: '#1E293B', borderRadius: 6, padding: '0.5rem 0.7rem' }}>
+                <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 600, marginBottom: 2 }}>{item.label}</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: item.color ?? '#111827' }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Self-trend (season vs prior season) */}
+        {selfTrend && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>
+              Season-on-Season Trend (latest vs prior)
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {Object.entries(selfTrend.trends).map(([key, dir]) => {
+                const st = DIRECTION_STYLE[dir] ?? DIRECTION_STYLE.stable;
+                const labels = {
+                  progressScore: 'Score',
+                  updateFrequency: 'Activity',
+                  validationCount: 'Validations',
+                  evidenceRate: 'Evidence',
+                  credibilityScore: 'Credibility',
+                };
+                return (
+                  <span key={key} style={{
+                    display: 'inline-block', padding: '3px 8px', borderRadius: 12,
+                    fontSize: '0.73rem', fontWeight: 500,
+                    background: st.bg, color: st.color,
+                  }}>
+                    {labels[key] ?? key}: {dir.replace(/_/g, ' ')}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Explainable benchmark comparisons */}
+        {!isInvestor && comparisons.length > 0 && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>
+              Benchmarks vs Organization Average
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              {comparisons.map((c, i) => {
+                const style = DIRECTION_STYLE[c.direction] ?? DIRECTION_STYLE.stable;
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
+                    background: style.bg, borderRadius: 6, padding: '0.4rem 0.7rem',
+                  }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.78rem', color: style.color, flexShrink: 0 }}>
+                      {c.comparisonLabel}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: style.color, opacity: 0.85 }}>
+                      — {c.comparisonReason}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Org baseline footnote */}
+        {!isInvestor && benchmarks?.orgBaseline && (
+          <div style={{ fontSize: '0.72rem', color: '#71717A', marginBottom: '0.75rem' }}>
+            Org baseline: {benchmarks.orgBaseline.farmerCount} farmers,{' '}
+            {benchmarks.orgBaseline.seasonCount} seasons (last 24 months).
+            Avg score: {benchmarks.orgBaseline.avgProgressScore ?? 'N/A'}/100 ·
+            Avg updates/mo: {benchmarks.orgBaseline.avgUpdateFrequency ?? 'N/A'} ·
+            Completion rate: {benchmarks.orgBaseline.completionRate ?? 'N/A'}%
+          </div>
+        )}
+
+        {/* Season-by-season table — expanded view */}
+        {expanded && seasons.length > 0 && (
+          <div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.5rem' }}>
+              Season History
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead>
+                  <tr style={{ background: '#1E293B' }}>
+                    <th style={thStyle}>Season</th>
+                    <th style={thStyle}>Crop</th>
+                    <th style={thStyle}>Status</th>
+                    {!isInvestor && <th style={thStyle}>Score</th>}
+                    {!isInvestor && <th style={thStyle}>Trust</th>}
+                    {!isInvestor && <th style={thStyle}>Updates</th>}
+                    {!isInvestor && <th style={thStyle}>Validations</th>}
+                    {!isInvestor && <th style={thStyle}>Evidence%</th>}
+                    <th style={thStyle}>Yield/acre</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seasons.map((s, i) => {
+                    const stStatus = STATUS_COLOR[s.status] ?? {};
+                    const clsColor = CLASSIFICATION_COLOR[s.progressClassification] ?? {};
+                    return (
+                      <tr key={s.seasonId} style={{ borderBottom: '1px solid #243041' }}>
+                        <td style={tdStyle}>
+                          {s.plantingDate
+                            ? new Date(s.plantingDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+                            : `Season ${i + 1}`}
+                        </td>
+                        <td style={tdStyle}>{s.cropType}</td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            display: 'inline-block', padding: '1px 6px', borderRadius: 10,
+                            background: stStatus.bg, color: stStatus.color, fontSize: '0.71rem', fontWeight: 600,
+                          }}>
+                            {s.status}
+                          </span>
+                        </td>
+                        {!isInvestor && (
+                          <td style={{ ...tdStyle, color: clsColor.color, fontWeight: 600 }}>
+                            {s.progressScore != null ? `${s.progressScore}/100` : '—'}
+                          </td>
+                        )}
+                        {!isInvestor && (
+                          <td style={tdStyle}>{s.trustScore != null ? `${s.trustScore}/100` : '—'}</td>
+                        )}
+                        {!isInvestor && <td style={tdStyle}>{s.updateCount ?? '—'}</td>}
+                        {!isInvestor && <td style={tdStyle}>{s.validationCount ?? '—'}</td>}
+                        {!isInvestor && <td style={tdStyle}>{s.evidenceRate != null ? `${s.evidenceRate}%` : '—'}</td>}
+                        <td style={tdStyle}>
+                          {s.yieldPerAcre != null ? `${s.yieldPerAcre.toFixed(1)}` : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

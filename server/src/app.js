@@ -53,6 +53,7 @@ import feedbackRoutes from './modules/feedback/routes.js';
 import mfaRoutes from './modules/mfa/routes.js';
 import autoNotificationRoutes from './modules/autoNotifications/routes.js';
 import performanceRoutes from './modules/performance/routes.js';
+import farmProfileRoutes from './modules/farmProfiles/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -289,6 +290,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/auto-notifications', autoNotificationRoutes);
 app.use('/api/performance', performanceRoutes);
+app.use('/api/v1/farms', farmProfileRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

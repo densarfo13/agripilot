@@ -15,6 +15,8 @@
  * requestId, userId, and arbitrary metadata.
  */
 
+import { recordEvent as _storeEvent } from './eventStore.js';
+
 const SEVERITY_LEVELS = ['debug', 'info', 'warn', 'error', 'critical'];
 
 /**
@@ -60,6 +62,9 @@ export function opsEvent(category, event, severity, meta = {}) {
     console.log(`[OPS] ${severityColor}${severity.toUpperCase()}\x1b[0m ${category}/${event}${details}`);
   }
 
+  // Publish to in-memory event store for /api/system/errors
+  _storeEvent(category, event, severity, meta);
+
   return entry; // Return for testing
 }
 
@@ -92,4 +97,22 @@ export function logWorkflowEvent(event, meta = {}) {
 
 export function logSystemEvent(event, severity = 'info', meta = {}) {
   return opsEvent('system', event, severity, meta);
+}
+
+export function logDeliveryEvent(event, meta = {}) {
+  const severity = ['send_failed', 'all_channels_failed', 'provider_error'].includes(event)
+    ? 'error'
+    : ['provider_unconfigured', 'channel_fallback'].includes(event)
+    ? 'warn'
+    : 'info';
+  return opsEvent('delivery', event, severity, meta);
+}
+
+export function logNotificationEvent(event, meta = {}) {
+  const severity = ['cycle_error', 'send_failed'].includes(event)
+    ? 'error'
+    : ['cycle_slow'].includes(event)
+    ? 'warn'
+    : 'info';
+  return opsEvent('notification', event, severity, meta);
 }

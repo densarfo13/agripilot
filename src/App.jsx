@@ -6,6 +6,7 @@ import { loadTranslations, getCurrentLang } from './utils/i18n.js';
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import StepUpModal from './components/StepUpModal.jsx';
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
@@ -38,6 +39,9 @@ const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
 const SecurityRequestsPage = lazy(() => import('./pages/SecurityRequestsPage.jsx'));
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage.jsx'));
 const PilotQAPage = lazy(() => import('./pages/PilotQAPage.jsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
+const AutoNotificationsPage = lazy(() => import('./pages/AutoNotificationsPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
@@ -61,6 +65,7 @@ function RoleRoute({ roles, children }) {
 
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
+  const stepUpRequired = useAuthStore((s) => s.stepUpRequired);
 
   useEffect(() => {
     loadTranslations(getCurrentLang())
@@ -70,9 +75,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {stepUpRequired && <StepUpModal />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/farmer-register" element={<FarmerRegisterPage />} />
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -103,6 +111,7 @@ export default function App() {
             <Route path="admin/organizations" element={<RoleRoute roles={ADMIN_ROLES}><AdminOrganizationsPage /></RoleRoute>} />
             <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
             <Route path="admin/security" element={<RoleRoute roles={ADMIN_ROLES}><SecurityRequestsPage /></RoleRoute>} />
+            <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />
             <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="pilot-metrics" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer', 'field_officer']}><PilotMetricsPage /></RoleRoute>} />
             <Route path="account" element={<AccountPage />} />

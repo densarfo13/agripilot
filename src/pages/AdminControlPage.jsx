@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../api/client.js';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#7c3aed', '#be185d', '#059669'];
+const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
 export default function AdminControlPage() {
   const [tab, setTab] = useState('overview');
@@ -19,15 +19,15 @@ export default function AdminControlPage() {
   return (
     <>
       <div className="page-header"><h1>Admin Control Center</h1></div>
-      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e5e7eb', marginBottom: '1.25rem', background: '#fff', borderRadius: '8px 8px 0 0', padding: '0 0.5rem' }}>
+      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #243041', marginBottom: '1.25rem', background: '#162033', borderRadius: '8px 8px 0 0', padding: '0 0.5rem' }}>
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             style={{
               padding: '0.75rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer',
-              color: tab === t.key ? '#2563eb' : '#6b7280',
-              borderBottom: tab === t.key ? '2px solid #2563eb' : '2px solid transparent',
+              color: tab === t.key ? '#22C55E' : '#A1A1AA',
+              borderBottom: tab === t.key ? '2px solid #22C55E' : '2px solid transparent',
               fontWeight: tab === t.key ? 600 : 400, marginBottom: '-2px', fontSize: '0.9rem',
             }}
           >
@@ -71,14 +71,14 @@ function SystemOverview({ navigate }) {
 
   // Pipeline stages
   const pipeline = [
-    { label: 'Draft', count: statusMap.draft || 0, color: '#9ca3af' },
-    { label: 'Submitted', count: statusMap.submitted || 0, color: '#2563eb' },
+    { label: 'Draft', count: statusMap.draft || 0, color: '#71717A' },
+    { label: 'Submitted', count: statusMap.submitted || 0, color: '#22C55E' },
     { label: 'Under Review', count: statusMap.under_review || 0, color: '#0891b2' },
-    { label: 'Needs Evidence', count: statusMap.needs_more_evidence || 0, color: '#d97706' },
+    { label: 'Needs Evidence', count: statusMap.needs_more_evidence || 0, color: '#F59E0B' },
     { label: 'Field Review', count: statusMap.field_review_required || 0, color: '#0891b2' },
-    { label: 'Fraud Hold', count: statusMap.fraud_hold || 0, color: '#dc2626' },
+    { label: 'Fraud Hold', count: statusMap.fraud_hold || 0, color: '#EF4444' },
     { label: 'Escalated', count: statusMap.escalated || 0, color: '#ea580c' },
-    { label: 'Approved', count: statusMap.approved || 0, color: '#16a34a' },
+    { label: 'Approved', count: statusMap.approved || 0, color: '#22C55E' },
     { label: 'Conditional', count: statusMap.conditional_approved || 0, color: '#059669' },
     { label: 'Disbursed', count: statusMap.disbursed || 0, color: '#047857' },
     { label: 'Rejected', count: statusMap.rejected || 0, color: '#be185d' },
@@ -119,8 +119,8 @@ function SystemOverview({ navigate }) {
     <>
       {/* Needs Attention */}
       {attentionItems.length > 0 && (
-        <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #fde68a' }}>
-          <div className="card-header" style={{ background: '#fffbeb', color: '#92400e', fontWeight: 700 }}>
+        <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #243041' }}>
+          <div className="card-header" style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontWeight: 700 }}>
             Needs Attention ({attentionItems.length})
           </div>
           <div className="card-body" style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -131,13 +131,13 @@ function SystemOverview({ navigate }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.55rem 1rem', cursor: 'pointer',
-                  borderBottom: i < attentionItems.length - 1 ? '1px solid #fef3c7' : 'none',
-                  background: item.urgent ? '#fffbeb' : '#fff',
+                  borderBottom: i < attentionItems.length - 1 ? '1px solid #243041' : 'none',
+                  background: item.urgent ? 'rgba(245,158,11,0.15)' : '#162033',
                 }}
               >
-                <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, display: 'inline-block', background: item.urgent ? '#dc2626' : '#d97706' }} />
-                <span style={{ fontSize: '0.875rem', color: '#374151', flex: 1 }}>{item.label}</span>
-                <span style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 600, flexShrink: 0 }}>View →</span>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, display: 'inline-block', background: item.urgent ? '#EF4444' : '#F59E0B' }} />
+                <span style={{ fontSize: '0.875rem', color: '#FFFFFF', flex: 1 }}>{item.label}</span>
+                <span style={{ fontSize: '0.8rem', color: '#22C55E', fontWeight: 600, flexShrink: 0 }}>View →</span>
               </div>
             ))}
           </div>
@@ -146,21 +146,21 @@ function SystemOverview({ navigate }) {
 
       {/* Quick action banners */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#2563eb' }}>{activeQueue}</div>
-          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Awaiting Verification</div>
+        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#22C55E' }}>{activeQueue}</div>
+          <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Awaiting Verification</div>
         </div>
-        <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#dc2626' }}>{fraudQueue}</div>
-          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Fraud Hold</div>
+        <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: 'rgba(239,68,68,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#EF4444' }}>{fraudQueue}</div>
+          <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Fraud Hold</div>
         </div>
-        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#d97706' }}>{escalatedQueue}</div>
-          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Escalated</div>
+        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#F59E0B' }}>{escalatedQueue}</div>
+          <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Escalated</div>
         </div>
-        <div style={{ flex: 1, minWidth: 200, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#16a34a' }}>{approvalRate}%</div>
-          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Approval Rate</div>
+        <div style={{ flex: 1, minWidth: 200, background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#22C55E' }}>{approvalRate}%</div>
+          <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Approval Rate</div>
         </div>
       </div>
 
@@ -181,7 +181,7 @@ function SystemOverview({ navigate }) {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={pipeline}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
@@ -282,7 +282,7 @@ function RegionConfig() {
           <div className="card-body">
             {season ? (
               <>
-                <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value" style={{ fontWeight: 600, color: '#2563eb' }}>{season.name || season.season}</span></div>
+                <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value" style={{ fontWeight: 600, color: '#22C55E' }}>{season.name || season.season}</span></div>
                 <div className="detail-row"><span className="detail-label">Period</span><span className="detail-value">{season.months || season.period || '-'}</span></div>
                 {season.description && <div className="detail-row"><span className="detail-label">Description</span><span className="detail-value">{season.description}</span></div>}
               </>
@@ -291,10 +291,10 @@ function RegionConfig() {
             )}
             {cfg.seasons && (
               <div style={{ marginTop: '1rem' }}>
-                <strong style={{ fontSize: '0.85rem', color: '#6b7280' }}>All Seasons:</strong>
+                <strong style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>All Seasons:</strong>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                   {Object.entries(cfg.seasons).map(([key, val]) => (
-                    <div key={key} style={{ padding: '0.5rem 0.75rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: '0.85rem' }}>
+                    <div key={key} style={{ padding: '0.5rem 0.75rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 6, fontSize: '0.85rem' }}>
                       <strong>{key.replace(/_/g, ' ')}</strong>
                       <div className="text-muted">{typeof val === 'object' ? val.months || JSON.stringify(val) : val}</div>
                     </div>
@@ -314,7 +314,7 @@ function RegionConfig() {
             {Array.isArray(crops) && crops.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {crops.map((c, i) => (
-                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, fontSize: '0.85rem', color: '#16a34a', fontWeight: 500 }}>
+                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 20, fontSize: '0.85rem', color: '#22C55E', fontWeight: 500 }}>
                     {typeof c === 'string' ? c : c.name || c.crop}
                   </span>
                 ))}
@@ -330,7 +330,7 @@ function RegionConfig() {
             {Array.isArray(regions) && regions.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {regions.map((r, i) => (
-                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 20, fontSize: '0.85rem', color: '#2563eb' }}>
+                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 20, fontSize: '0.85rem', color: '#22C55E' }}>
                     {typeof r === 'string' ? r : r.name || r.region}
                   </span>
                 ))}
@@ -387,7 +387,7 @@ function DemandIntelligence() {
                     <strong style={{ fontSize: '0.85rem' }}>By Region:</strong>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                       {Object.entries(demandKE.byRegion).map(([region, count]) => (
-                        <span key={region} style={{ padding: '0.25rem 0.6rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: '0.85rem' }}>
+                        <span key={region} style={{ padding: '0.25rem 0.6rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 4, fontSize: '0.85rem' }}>
                           {region}: <strong>{count}</strong>
                         </span>
                       ))}
@@ -414,7 +414,7 @@ function DemandIntelligence() {
                     <strong style={{ fontSize: '0.85rem' }}>By Region:</strong>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                       {Object.entries(demandTZ.byRegion).map(([region, count]) => (
-                        <span key={region} style={{ padding: '0.25rem 0.6rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: '0.85rem' }}>
+                        <span key={region} style={{ padding: '0.25rem 0.6rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 4, fontSize: '0.85rem' }}>
                           {region}: <strong>{count}</strong>
                         </span>
                       ))}
@@ -434,7 +434,7 @@ function DemandIntelligence() {
           <div className="card-body">
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={cropDemand}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
                 <XAxis dataKey="cropType" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
@@ -514,14 +514,14 @@ function LanguagePanel() {
                 onClick={() => loadTranslations(lang.code)}
                 style={{
                   cursor: 'pointer', padding: '1rem 1.5rem', borderRadius: 8,
-                  border: selectedLang === lang.code ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                  background: selectedLang === lang.code ? '#eff6ff' : '#fff',
+                  border: selectedLang === lang.code ? '2px solid #22C55E' : '1px solid #243041',
+                  background: selectedLang === lang.code ? 'rgba(34,197,94,0.15)' : '#162033',
                   minWidth: 150, textAlign: 'center',
                 }}
               >
                 <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{lang.name}</div>
-                <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{lang.code}</div>
-                <div style={{ fontSize: '0.85rem', color: '#2563eb', marginTop: '0.25rem' }}>{lang.keyCount} keys</div>
+                <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>{lang.code}</div>
+                <div style={{ fontSize: '0.85rem', color: '#22C55E', marginTop: '0.25rem' }}>{lang.keyCount} keys</div>
               </div>
             ))}
           </div>
@@ -534,13 +534,13 @@ function LanguagePanel() {
           <div className="card-body">
             {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([prefix, keys]) => (
               <div key={prefix} style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.25rem' }}>
+                <h4 style={{ margin: '0 0 0.5rem', color: '#FFFFFF', borderBottom: '1px solid #243041', paddingBottom: '0.25rem' }}>
                   {prefix} ({keys.length})
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem 1.5rem' }}>
                   {keys.map(({ key, value }) => (
                     <div key={key} style={{ display: 'flex', gap: '0.5rem', padding: '0.2rem 0', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#6b7280', minWidth: 200, fontFamily: 'monospace', fontSize: '0.8rem' }}>{key}</span>
+                      <span style={{ color: '#A1A1AA', minWidth: 200, fontFamily: 'monospace', fontSize: '0.8rem' }}>{key}</span>
                       <span style={{ fontWeight: 500 }}>{value}</span>
                     </div>
                   ))}

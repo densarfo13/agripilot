@@ -159,7 +159,7 @@ async function computeAutoStatus({ organizationId }) {
     prisma.farmSeason.count({
       where: {
         status: 'active',
-        progressEntries: { some: { createdAt: { lt: overdueThreshold }, validatedAt: null } },
+        progressEntries: { some: { createdAt: { lt: overdueThreshold } } },
         ...seasonWhere,
       },
     }),
@@ -353,7 +353,7 @@ export async function getHealthIndicators({ organizationId }) {
     prisma.farmSeason.count({
       where: {
         status: 'active',
-        progressEntries: { some: { createdAt: { lt: overdueThresh }, validatedAt: null } },
+        progressEntries: { some: { createdAt: { lt: overdueThresh } } },
         ...seasonWhere,
       },
     }),

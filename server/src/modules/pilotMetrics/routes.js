@@ -24,6 +24,11 @@ import {
   getNeedsAttention,
   getReviewerEfficiency,
   getPilotSummary,
+  getDeliveryStats,
+  getAlerts,
+  getPilotReport,
+  saveDailySnapshot,
+  getSnapshotTrends,
 } from './service.js';
 import { setupPilotOrganization } from './pilotSetup.js';
 
@@ -88,6 +93,66 @@ router.get('/summary',
   asyncHandler(async (req, res) => {
     const summary = await getPilotSummary({ organizationId: req.organizationId });
     res.json(summary);
+  }));
+
+// ─── GET /api/pilot/delivery-stats ────────────────────────
+// Invite delivery outcomes, failed invites, resend recommendations
+router.get('/delivery-stats',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const stats = await getDeliveryStats({ organizationId: req.organizationId });
+    res.json(stats);
+  }));
+
+// ─── GET /api/pilot/alerts ─────────────────────────────────
+// Derived operational alerts from current platform state
+router.get('/alerts',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const result = await getAlerts({ organizationId: req.organizationId });
+    // field_officer sees only operational alerts, not invite/delivery alerts
+    if (req.user.role === 'field_officer') {
+      result.alerts = result.alerts.filter(a =>
+        ['VALIDATION_BACKLOG', 'HARVEST_OVERDUE', 'INACTIVE_FARMERS'].includes(a.type)
+      );
+      result.alertCount = result.alerts.length;
+    }
+    res.json(result);
+  }));
+
+// ─── GET /api/pilot/report ─────────────────────────────────
+// Comprehensive exportable report. ?format=json|csv
+router.get('/report',
+  authorize('super_admin', 'institutional_admin', 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    const format = req.query.format === 'csv' ? 'csv' : 'json';
+    const result = await getPilotReport({ organizationId: req.organizationId, format });
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="pilot-report.csv"');
+      return res.send(result.csv);
+    }
+    res.json(result.json);
+  }));
+
+// ─── POST /api/pilot/snapshot ──────────────────────────────
+// Trigger a daily snapshot save (can be called by a cron or manually)
+router.post('/snapshot',
+  authorize('super_admin', 'institutional_admin'),
+  workflowLimiter,
+  asyncHandler(async (req, res) => {
+    const snapshot = await saveDailySnapshot({ organizationId: req.organizationId });
+    res.json({ message: 'Snapshot saved', snapshot });
+  }));
+
+// ─── GET /api/pilot/trends ─────────────────────────────────
+// Snapshot trend for the last N days. ?days=30
+router.get('/trends',
+  authorize('super_admin', 'institutional_admin', 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    const days = Math.min(parseInt(req.query.days || '30', 10), 90);
+    const trends = await getSnapshotTrends({ organizationId: req.organizationId, days });
+    res.json(trends);
   }));
 
 // ─── POST /api/pilot/setup ────────────────────────────────

@@ -52,7 +52,7 @@ export default function FarmerHomePage() {
       </div>
 
       {/* Sub-navigation tabs */}
-      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e5e7eb', marginBottom: '1.25rem', background: '#fff', borderRadius: '8px 8px 0 0', padding: '0 0.5rem' }}>
+      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #243041', marginBottom: '1.25rem', background: '#162033', borderRadius: '8px 8px 0 0', padding: '0 0.5rem' }}>
         {[
           { to: `/farmer-home/${farmerId}`, label: 'Overview', end: true },
           { to: `/farmer-home/${farmerId}/activities`, label: 'Activities' },
@@ -69,8 +69,8 @@ export default function FarmerHomePage() {
             style={({ isActive }) => ({
               padding: '0.75rem 1.25rem',
               textDecoration: 'none',
-              color: isActive ? '#2563eb' : '#6b7280',
-              borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
+              color: isActive ? '#22C55E' : '#A1A1AA',
+              borderBottom: isActive ? '2px solid #22C55E' : '2px solid transparent',
               fontWeight: isActive ? 600 : 400,
               marginBottom: '-2px',
               fontSize: '0.9rem',

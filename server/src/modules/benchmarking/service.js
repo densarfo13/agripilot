@@ -25,7 +25,7 @@ export async function runBenchmark(applicationId) {
 
   const regionCfg = getRegionConfig(app.farmer.countryCode || DEFAULT_COUNTRY_CODE);
 
-  // Find peer group — same crop type, same region
+  // Find peer group — same crop type, same region (bounded to avoid large in-memory comparison sets)
   const peers = await prisma.application.findMany({
     where: {
       cropType: app.cropType,
@@ -36,6 +36,7 @@ export async function runBenchmark(applicationId) {
       verificationResult: true,
       farmer: true,
     },
+    take: 500,
   });
 
   const peerGroupSize = peers.length;

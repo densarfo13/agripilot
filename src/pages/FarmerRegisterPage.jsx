@@ -9,6 +9,14 @@ const LANGUAGES = [
   { code: 'sw', label: 'Kiswahili' },
 ];
 
+const CROPS = [
+  { value: '', label: 'Select crop (optional)' },
+  { value: 'maize', label: 'Maize' },
+  { value: 'rice', label: 'Rice' },
+  { value: 'cassava', label: 'Cassava' },
+  { value: 'wheat', label: 'Wheat' },
+];
+
 export default function FarmerRegisterPage() {
   const [form, setForm] = useState({
     fullName: '', phone: '', email: '', password: '', confirmPassword: '',
@@ -73,11 +81,11 @@ export default function FarmerRegisterPage() {
           <div style={styles.successIcon}>&#10003;</div>
           <h1 style={styles.title}>Registration Received</h1>
           <p style={styles.successText}>
-            Thank you for registering with AgriPilot. Your application is now <strong>pending review</strong>.
+            Thank you for registering with Farroway. Your application is now <strong>pending review</strong>.
           </p>
           <div style={styles.nextSteps}>
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>What happens next:</h3>
-            <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#555' }}>
+            <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#A1A1AA' }}>
               <li>Our team will review your registration</li>
               <li>A field officer may be assigned to verify your details</li>
               <li>You will be notified once your account is approved</li>
@@ -95,7 +103,7 @@ export default function FarmerRegisterPage() {
   return (
     <div style={styles.container}>
       <div style={{ ...styles.card, maxWidth: '480px' }}>
-        <h1 style={styles.title}>AgriPilot</h1>
+        <h1 style={styles.title}>Farroway</h1>
         <p style={styles.subtitle}>Farmer Registration</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
@@ -142,7 +150,9 @@ export default function FarmerRegisterPage() {
           <div style={styles.sectionLabel}>Farm Details (optional)</div>
 
           <div style={styles.row}>
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Primary Crop" value={form.primaryCrop} onChange={set('primaryCrop')} />
+            <select style={{ ...styles.input, flex: 1 }} value={form.primaryCrop} onChange={set('primaryCrop')}>
+              {CROPS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
             <input style={{ ...styles.input, flex: 1 }} placeholder="Farm Size (acres)" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} type="number" step="0.1" min="0" />
           </div>
 
@@ -150,8 +160,8 @@ export default function FarmerRegisterPage() {
             {loading ? 'Submitting...' : 'Register'}
           </button>
 
-          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#666', margin: '0.5rem 0 0' }}>
-            Already have an account? <Link to="/login" style={{ color: '#2563eb' }}>Sign In</Link>
+          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
+            Already have an account? <Link to="/login" style={{ color: '#22C55E' }}>Sign In</Link>
           </p>
         </form>
       </div>
@@ -162,40 +172,41 @@ export default function FarmerRegisterPage() {
 const styles = {
   container: {
     minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: '#f0f2f5', padding: '1rem',
+    background: '#0F172A', padding: '1rem',
   },
   card: {
-    background: '#fff', borderRadius: '8px', padding: '2rem', width: '100%', maxWidth: '400px',
+    background: '#162033', borderRadius: '8px', padding: '2rem', width: '100%', maxWidth: '400px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   },
-  title: { fontSize: '1.5rem', fontWeight: 700, color: '#1a1a2e', textAlign: 'center', marginBottom: '0.25rem' },
-  subtitle: { fontSize: '0.875rem', color: '#666', textAlign: 'center', marginBottom: '1.5rem' },
+  title: { fontSize: '1.5rem', fontWeight: 700, color: '#FFFFFF', textAlign: 'center', marginBottom: '0.25rem' },
+  subtitle: { fontSize: '0.875rem', color: '#A1A1AA', textAlign: 'center', marginBottom: '1.5rem' },
   form: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
   input: {
-    padding: '0.65rem 0.85rem', border: '1px solid #d1d5db', borderRadius: '6px',
+    padding: '0.65rem 0.85rem', border: '1px solid #243041', borderRadius: '6px',
     fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box',
+    background: '#1E293B', color: '#FFFFFF',
   },
   row: { display: 'flex', gap: '0.5rem' },
   sectionLabel: {
-    fontSize: '0.8rem', fontWeight: 600, color: '#374151', textTransform: 'uppercase',
+    fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', textTransform: 'uppercase',
     letterSpacing: '0.05em', marginTop: '0.25rem',
   },
   button: {
-    padding: '0.75rem', background: '#2E7D32', color: '#fff', border: 'none', borderRadius: '6px',
+    padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none', borderRadius: '6px',
     fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', marginTop: '0.5rem',
   },
   error: {
-    background: '#fef2f2', color: '#dc2626', padding: '0.75rem', borderRadius: '6px',
+    background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '0.75rem', borderRadius: '6px',
     fontSize: '0.875rem', textAlign: 'center',
   },
   successIcon: {
-    width: '60px', height: '60px', borderRadius: '50%', background: '#d4edda', color: '#2E7D32',
+    width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(34,197,94,0.2)', color: '#22C55E',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem',
     fontWeight: 700, margin: '0 auto 1rem',
   },
-  successText: { textAlign: 'center', color: '#555', fontSize: '0.95rem', lineHeight: 1.5 },
+  successText: { textAlign: 'center', color: '#A1A1AA', fontSize: '0.95rem', lineHeight: 1.5 },
   nextSteps: {
-    background: '#f8f9fa', borderRadius: '6px', padding: '1rem', margin: '1rem 0',
+    background: '#1E293B', borderRadius: '6px', padding: '1rem', margin: '1rem 0',
     lineHeight: 1.6,
   },
 };

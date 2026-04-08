@@ -1,8 +1,8 @@
 #!/bin/bash
-# ─── AgriPilot Production Deployment Script ─────────────
+# ─── Farroway Production Deployment Script ─────────────
 set -e
 
-echo "🌾 AgriPilot Deployment"
+echo "🌾 Farroway Deployment"
 echo "========================"
 
 # 1. Install dependencies

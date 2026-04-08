@@ -243,9 +243,9 @@ export default function FarmerProgressTab() {
   return (
     <div>
       {pageError && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <span style={{ flex: 1 }}>{pageError}</span>
-          <button className="btn btn-outline btn-sm" style={{ color: '#dc2626', borderColor: '#fecaca' }} onClick={loadSeasons}>Retry</button>
+          <button className="btn btn-outline btn-sm" style={{ color: '#dc2626', borderColor: 'rgba(239,68,68,0.3)' }} onClick={loadSeasons}>Retry</button>
           <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0 0.25rem' }} onClick={() => setPageError('')}>✕</button>
         </div>
       )}
@@ -265,12 +265,12 @@ export default function FarmerProgressTab() {
           <div className="card-body">
             <form onSubmit={handleCreateSeason}>
               {seasonPrefilled && (
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#1d4ed8', marginBottom: '0.75rem' }}>
+                <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#0EA5E9', marginBottom: '0.75rem' }}>
                   ℹ️ Prefilled from your last season — please review before submitting.
                 </div>
               )}
               {formError && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>
+                <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
@@ -338,12 +338,12 @@ export default function FarmerProgressTab() {
                       return (
                         <div key={s} style={{
                           flex: 1, height: 8, borderRadius: 4,
-                          background: isActual ? STAGE_COLORS[s] : isExpected ? STAGE_COLORS[s] + '40' : '#e5e7eb',
+                          background: isActual ? STAGE_COLORS[s] : isExpected ? STAGE_COLORS[s] + '40' : '#243041',
                         }} title={`${STAGE_LABELS[s]}${isExpected ? ' (expected)' : ''}${isActual ? ' (actual)' : ''}`} />
                       );
                     })}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>
                     Expected: <strong>{STAGE_LABELS[comparison.expectedStage]}</strong>
                     {comparison.dimensions?.stageAlignment?.actualStage && (
                       <> | Actual: <strong>{STAGE_LABELS[comparison.dimensions.stageAlignment.actualStage]}</strong></>
@@ -354,7 +354,7 @@ export default function FarmerProgressTab() {
 
               {/* Stage confirmation prompt */}
               {comparison && !showStageConfirm && (
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.85rem' }}>Does your farm look like it is at the <strong>{STAGE_LABELS[comparison.expectedStage]}</strong> stage?</span>
                   <button className="btn btn-sm btn-outline" onClick={() => { setStageForm({ confirmedStage: comparison.expectedStage, note: '' }); openForm(setShowStageConfirm); }}>Confirm Stage</button>
                 </div>
@@ -365,8 +365,8 @@ export default function FarmerProgressTab() {
                 const lvl = credibility.credibilityLevel;
                 const isHigh = lvl === 'high_confidence';
                 const isMed = lvl === 'medium_confidence';
-                const borderColor = isHigh ? '#bbf7d0' : isMed ? '#fde68a' : '#fecaca';
-                const bg = isHigh ? '#f0fdf4' : isMed ? '#fffbeb' : '#fef2f2';
+                const borderColor = isHigh ? 'rgba(34,197,94,0.3)' : isMed ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)';
+                const bg = isHigh ? 'rgba(34,197,94,0.15)' : isMed ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)';
                 const labelColor = isHigh ? '#16a34a' : isMed ? '#d97706' : '#dc2626';
                 const label = isHigh ? 'Strong' : isMed ? 'Moderate' : 'Needs Attention';
                 const FLAG_LABELS = {
@@ -397,7 +397,7 @@ export default function FarmerProgressTab() {
                       <div style={{ fontSize: '0.85rem' }}>
                         <strong>Data Quality:</strong>{' '}
                         <span style={{ color: labelColor, fontWeight: 600 }}>{label}</span>
-                        <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#6b7280' }}>
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#A1A1AA' }}>
                           — how consistent and complete your farm records look
                         </span>
                       </div>
@@ -412,11 +412,11 @@ export default function FarmerProgressTab() {
                         {credibility.flags.map(flag => (
                           <div key={flag} style={{ fontSize: '0.8rem', display: 'flex', gap: '0.4rem', alignItems: 'flex-start' }}>
                             <span style={{ color: labelColor, fontWeight: 700, flexShrink: 0 }}>•</span>
-                            <span style={{ color: '#374151' }}>{FLAG_LABELS[flag] || flag.replace(/_/g, ' ')}</span>
+                            <span style={{ color: '#FFFFFF' }}>{FLAG_LABELS[flag] || flag.replace(/_/g, ' ')}</span>
                           </div>
                         ))}
                         {!isHigh && (
-                          <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#6b7280', borderTop: `1px solid ${borderColor}`, paddingTop: '0.35rem' }}>
+                          <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#A1A1AA', borderTop: `1px solid ${borderColor}`, paddingTop: '0.35rem' }}>
                             Tip: Log activities regularly, confirm your growth stage, and add photos to improve your data quality score.
                           </div>
                         )}
@@ -430,7 +430,7 @@ export default function FarmerProgressTab() {
               {activeSeason.expectedHarvestDate && !activeSeason.cropFailureReported && (() => {
                 const daysOverdue = Math.floor((Date.now() - new Date(activeSeason.expectedHarvestDate)) / 86400000);
                 if (daysOverdue > 0) return (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                  <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
                     Your expected harvest date was <strong>{daysOverdue} day{daysOverdue !== 1 ? 's' : ''} ago</strong>.{' '}
                     If you have harvested, submit a harvest report below.{' '}
                     If the crop failed or harvest is delayed, use the options below.
@@ -443,7 +443,7 @@ export default function FarmerProgressTab() {
               {activeSeason.lastActivityDate && (() => {
                 const daysSince = Math.floor((Date.now() - new Date(activeSeason.lastActivityDate)) / 86400000);
                 if (daysSince >= 14) return (
-                  <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                  <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
                     It has been <strong>{daysSince} days</strong> since your last update. Regular updates help build a stronger track record.
                   </div>
                 );
@@ -454,7 +454,7 @@ export default function FarmerProgressTab() {
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <button className="btn btn-sm btn-primary" onClick={() => openForm(setShowProgressForm)}>Log Activity</button>
                 <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowConditionForm)}>Update Condition</button>
-                <button className="btn btn-sm btn-outline" style={{ borderColor: '#2563eb', color: '#2563eb' }} onClick={() => openForm(setShowImageForm)}>Add Photo</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#22C55E', color: '#22C55E' }} onClick={() => openForm(setShowImageForm)}>Add Photo</button>
                 <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => openForm(setShowHarvestForm)}>Submit Harvest Report</button>
               </div>
 
@@ -462,11 +462,11 @@ export default function FarmerProgressTab() {
               {!activeSeason.cropFailureReported && !activeSeason.partialHarvest && (
                 <div style={{ marginTop: '0.5rem' }}>
                   {!confirmCropFailure ? (
-                    <button className="btn btn-sm btn-outline" style={{ fontSize: '0.75rem', color: '#dc2626', borderColor: '#fecaca' }} onClick={() => setConfirmCropFailure(true)}>
+                    <button className="btn btn-sm btn-outline" style={{ fontSize: '0.75rem', color: '#dc2626', borderColor: 'rgba(239,68,68,0.3)' }} onClick={() => setConfirmCropFailure(true)}>
                       Report Crop Failure
                     </button>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#fee2e2', borderRadius: 6, fontSize: '0.85rem', color: '#991b1b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.15)', borderRadius: 6, fontSize: '0.85rem', color: '#EF4444' }}>
                       <span>Confirm: report crop failure for this season?</span>
                       <button className="btn btn-sm btn-outline" style={{ borderColor: '#dc2626', color: '#dc2626', padding: '0.2rem 0.6rem' }} onClick={() => handleEdgeCase('cropFailureReported')}>Yes, Report</button>
                       <button className="btn btn-sm btn-outline" style={{ padding: '0.2rem 0.6rem' }} onClick={() => setConfirmCropFailure(false)}>Cancel</button>
@@ -475,7 +475,7 @@ export default function FarmerProgressTab() {
                 </div>
               )}
               {activeSeason.cropFailureReported && (
-                <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.75rem', background: '#fee2e2', borderRadius: 6, fontSize: '0.8rem', color: '#991b1b' }}>
+                <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(239,68,68,0.15)', borderRadius: 6, fontSize: '0.8rem', color: '#EF4444' }}>
                   Crop failure reported for this season
                 </div>
               )}
@@ -488,21 +488,21 @@ export default function FarmerProgressTab() {
               <div className="card-header">Confirm Growth Stage</div>
               <div className="card-body">
                 <form onSubmit={handleStageConfirm}>
-                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
-                  <p style={{ fontSize: '0.875rem', color: '#374151', margin: '0 0 0.5rem' }}>
+                  {formError && <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
+                  <p style={{ fontSize: '0.875rem', color: '#FFFFFF', margin: '0 0 0.5rem' }}>
                     We expect your crop to be at: <strong style={{ color: STAGE_COLORS[comparison?.expectedStage] }}>{STAGE_LABELS[comparison?.expectedStage]}</strong>
                   </p>
-                  <p style={{ fontSize: '0.82rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+                  <p style={{ fontSize: '0.82rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
                     What stage does your farm actually look like?
                   </p>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
                     {STAGES.filter(s => s !== 'pre_planting').map(s => (
                       <label key={s} style={{
                         padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', fontSize: '0.875rem',
-                        border: stageForm.confirmedStage === s ? `2px solid ${STAGE_COLORS[s]}` : '2px solid #e5e7eb',
-                        background: stageForm.confirmedStage === s ? STAGE_COLORS[s] + '15' : '#fff',
+                        border: stageForm.confirmedStage === s ? `2px solid ${STAGE_COLORS[s]}` : '2px solid #243041',
+                        background: stageForm.confirmedStage === s ? STAGE_COLORS[s] + '15' : '#162033',
                         fontWeight: stageForm.confirmedStage === s ? 600 : 400,
-                        color: stageForm.confirmedStage === s ? STAGE_COLORS[s] : '#374151',
+                        color: stageForm.confirmedStage === s ? STAGE_COLORS[s] : '#FFFFFF',
                       }}>
                         <input type="radio" name="stage" value={s} checked={stageForm.confirmedStage === s} onChange={() => setStageForm(f => ({ ...f, confirmedStage: s }))} style={{ display: 'none' }} />
                         {STAGE_LABELS[s]}
@@ -527,12 +527,12 @@ export default function FarmerProgressTab() {
               <div className="card-body">
                 <form onSubmit={handleLogProgress}>
                   {progressDraftRestored && (
-                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#1d4ed8', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#0EA5E9', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Draft restored — your previous entry was saved.</span>
-                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearProgressDraft(); setProgressForm(PROGRESS_DRAFT_INITIAL); }}>Clear</button>
+                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0EA5E9', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearProgressDraft(); setProgressForm(PROGRESS_DRAFT_INITIAL); }}>Clear</button>
                     </div>
                   )}
-                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
+                  {formError && <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   {/* Required fields first */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
@@ -553,7 +553,7 @@ export default function FarmerProgressTab() {
                   </div>
                   {/* Optional details — collapsed */}
                   <details style={{ marginTop: '0.5rem' }}>
-                    <summary style={{ fontSize: '0.82rem', color: '#6b7280', cursor: 'pointer', padding: '0.25rem 0' }}>
+                    <summary style={{ fontSize: '0.82rem', color: '#A1A1AA', cursor: 'pointer', padding: '0.25rem 0' }}>
                       More details (quantity, unit, advice)
                     </summary>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
@@ -591,13 +591,13 @@ export default function FarmerProgressTab() {
               <div className="card-header">Update Crop Condition</div>
               <div className="card-body">
                 <form onSubmit={handleCondition}>
-                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
+                  {formError && <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                     {['good', 'average', 'poor'].map(c => (
                       <label key={c} style={{
                         flex: 1, textAlign: 'center', padding: '0.75rem', borderRadius: 8, cursor: 'pointer',
-                        border: condForm.cropCondition === c ? `2px solid ${CONDITION_COLORS[c]}` : '2px solid #e5e7eb',
-                        background: condForm.cropCondition === c ? CONDITION_COLORS[c] + '12' : '#fff',
+                        border: condForm.cropCondition === c ? `2px solid ${CONDITION_COLORS[c]}` : '2px solid #243041',
+                        background: condForm.cropCondition === c ? CONDITION_COLORS[c] + '12' : '#162033',
                         fontWeight: condForm.cropCondition === c ? 600 : 400,
                       }}>
                         <input type="radio" name="cond" value={c} checked={condForm.cropCondition === c} onChange={() => setCondForm(f => ({ ...f, cropCondition: c }))} style={{ display: 'none' }} />
@@ -620,7 +620,7 @@ export default function FarmerProgressTab() {
             <div className="card" style={{ marginBottom: '1rem' }}>
               <div className="card-header">Submit Harvest Report</div>
               <div className="card-body">
-                <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 0.75rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
                   This will close the current season.
                   {activeSeason.cropFailureReported && (
                     <span style={{ display: 'block', marginTop: '0.25rem', color: '#b45309', fontWeight: 500 }}>
@@ -629,7 +629,7 @@ export default function FarmerProgressTab() {
                   )}
                 </p>
                 <form onSubmit={handleHarvest}>
-                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
+                  {formError && <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Total Harvest (kg) *</label>
@@ -666,7 +666,7 @@ export default function FarmerProgressTab() {
               <div className="card-header">Add Progress Photo</div>
               <div className="card-body">
                 <form onSubmit={handleImageUpload}>
-                  {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
+                  {formError && <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#dc2626', marginBottom: '0.75rem' }}>{formError}</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Image URL *</label>
@@ -707,8 +707,8 @@ export default function FarmerProgressTab() {
                           <td style={{ fontWeight: 500 }}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</td>
                           <td>
                             <span style={{ padding: '0.2rem 0.5rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
-                              background: dim.status === 'on_track' ? '#d1fae5' : dim.status === 'slight_delay' ? '#fef3c7' : dim.status === 'at_risk' ? '#fee2e2' : '#f3f4f6',
-                              color: dim.status === 'on_track' ? '#065f46' : dim.status === 'slight_delay' ? '#92400e' : dim.status === 'at_risk' ? '#991b1b' : '#6b7280',
+                              background: dim.status === 'on_track' ? 'rgba(34,197,94,0.15)' : dim.status === 'slight_delay' ? 'rgba(245,158,11,0.15)' : dim.status === 'at_risk' ? 'rgba(239,68,68,0.15)' : '#1E293B',
+                              color: dim.status === 'on_track' ? '#22C55E' : dim.status === 'slight_delay' ? '#F59E0B' : dim.status === 'at_risk' ? '#EF4444' : '#6b7280',
                             }}>{dim.status?.replace(/_/g, ' ')}</span>
                           </td>
                           <td className="text-muted" style={{ fontSize: '0.85rem' }}>{dim.label}</td>
@@ -777,7 +777,7 @@ export default function FarmerProgressTab() {
                         <td>
                           <button
                             className="btn btn-sm btn-outline"
-                            style={{ fontSize: '0.75rem', color: '#2563eb', borderColor: '#bfdbfe' }}
+                            style={{ fontSize: '0.75rem', color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)' }}
                             onClick={() => setReopenTarget(s)}
                           >
                             Reopen
@@ -872,7 +872,7 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#92400e', marginBottom: '1rem' }}>
+          <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#F59E0B', marginBottom: '1rem' }}>
             <strong>Separation of Duties required.</strong> Reopening a season requires a second admin's approval
             (4-hour execution window). Submit a request, ask another admin to approve it at{' '}
             <em>Admin → Security Requests</em>, then return here to execute.
@@ -880,17 +880,17 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
 
           {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
 
-          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #243041', borderRadius: 6, overflow: 'hidden' }}>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#2563eb' : '#fff', color: mode === 'request' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
               1. Create Request
             </button>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#2563eb' : '#fff', color: mode === 'execute' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
               2. Execute (have ID)
@@ -921,14 +921,14 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
 
           {mode === 'request' && created && (
             <div>
-              <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>
                 <strong>Request submitted.</strong> Another admin must approve it. Approved requests expire in 4 hours.
               </div>
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
-                <span style={{ color: '#6b7280' }}>Request ID: </span>
+              <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
+                <span style={{ color: '#A1A1AA' }}>Request ID: </span>
                 <code style={{ fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{created.id}</code>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+              <div style={{ fontSize: '0.82rem', color: '#A1A1AA' }}>
                 Once approved, switch to the <strong>Execute</strong> tab and paste the ID above.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
@@ -949,11 +949,11 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
                   onChange={e => setApprovalId(e.target.value)}
                   placeholder="Paste the approved Request ID here"
                 />
-                <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.3rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#A1A1AA', marginTop: '0.3rem' }}>
                   Find this at <em>Admin → Security Requests</em> after approval. Window: 4 hours.
                 </div>
               </div>
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#1e40af', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#0EA5E9', marginBottom: '0.75rem' }}>
                 This will reopen the <strong>{season.cropType}</strong> season (planted{' '}
                 {new Date(season.plantingDate).toLocaleDateString()}) for further data entry.
               </div>

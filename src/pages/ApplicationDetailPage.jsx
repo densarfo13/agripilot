@@ -156,8 +156,8 @@ export default function ApplicationDetailPage() {
         const needsScoring = app.status === 'submitted' && !hasVerification;
         if (needsScoring) return (
           <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '0.6rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>
+            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.6rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '0.875rem', color: '#22C55E' }}>
                 <strong>Start here:</strong> Run scoring to get a recommendation, then make your decision.
               </span>
               <button className="btn btn-primary btn-sm" disabled={!!actionLoading} onClick={async () => {
@@ -170,7 +170,7 @@ export default function ApplicationDetailPage() {
         );
         if (decisionReady) return (
           <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#14532d' }}>
+            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#22C55E' }}>
               <strong>Decision ready</strong> — use Approve or Reject in the buttons above.
             </div>
           </div>
@@ -212,9 +212,9 @@ export default function ApplicationDetailPage() {
 
       {/* Inline error — shown below engines, cleared on next action */}
       {actionError && (
-        <div style={{ margin: '0 1.5rem 0.5rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.875rem', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ margin: '0 1.5rem 0.5rem', background: 'rgba(239,68,68,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.875rem', color: '#EF4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{actionError}</span>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b', fontWeight: 700 }} onClick={() => setActionError('')}>×</button>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontWeight: 700 }} onClick={() => setActionError('')}>×</button>
         </div>
       )}
 
@@ -273,11 +273,11 @@ export default function ApplicationDetailPage() {
 function DecisionBanner({ decision, app, currency }) {
   const d = decision;
   const BANNER_MAP = {
-    approve: { bg: '#eff6ff', border: '#bfdbfe', color: '#1e40af', icon: 'Recommended for Approval' },
-    conditional_approve: { bg: '#eff6ff', border: '#bfdbfe', color: '#1e40af', icon: 'Conditionally Recommended' },
-    reject: { bg: '#fef2f2', border: '#fecaca', color: '#991b1b', icon: 'Rejected' },
-    escalate: { bg: '#fffbeb', border: '#fde68a', color: '#92400e', icon: 'Escalated for Senior Review' },
-    needs_more_evidence: { bg: '#fffbeb', border: '#fde68a', color: '#92400e', icon: 'More Evidence Needed' },
+    approve: { bg: 'rgba(34,197,94,0.15)', border: '#243041', color: '#22C55E', icon: 'Recommended for Approval' },
+    conditional_approve: { bg: 'rgba(34,197,94,0.15)', border: '#243041', color: '#22C55E', icon: 'Conditionally Recommended' },
+    reject: { bg: 'rgba(239,68,68,0.15)', border: '#243041', color: '#EF4444', icon: 'Rejected' },
+    escalate: { bg: 'rgba(245,158,11,0.15)', border: '#243041', color: '#F59E0B', icon: 'Escalated for Senior Review' },
+    needs_more_evidence: { bg: 'rgba(245,158,11,0.15)', border: '#243041', color: '#F59E0B', icon: 'More Evidence Needed' },
   };
   const style = BANNER_MAP[d.decision] || BANNER_MAP.needs_more_evidence;
   const isRecommendation = ['approve', 'conditional_approve'].includes(d.decision);
@@ -337,7 +337,7 @@ function OverviewTab({ app, currency }) {
               </div>
             )}
             {d.reasons?.length > 0 && (
-              <details style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+              <details style={{ fontSize: '0.875rem', color: '#A1A1AA' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Supporting reasons ({d.reasons.length})</summary>
                 <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem' }}>
                   {d.reasons.map((r, i) => <li key={i}>{r}</li>)}
@@ -355,7 +355,7 @@ function OverviewTab({ app, currency }) {
           <div className="detail-row"><span className="detail-label">Crop Type</span><span className="detail-value">{app.cropType}</span></div>
           <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{app.farmSizeAcres} {app.farmer?.countryCode === 'TZ' ? 'hectares' : 'acres'}</span></div>
           <div className="detail-row"><span className="detail-label">Requested Amount</span><span className="detail-value">{currency} {app.requestedAmount?.toLocaleString()}</span></div>
-          {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#16a34a' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
+          {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#22C55E' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
           <div className="detail-row"><span className="detail-label">Purpose</span><span className="detail-value">{app.purpose || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value">{app.season || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Created</span><span className="detail-value">{new Date(app.createdAt).toLocaleString()} by {app.createdBy?.fullName}</span></div>
@@ -498,7 +498,7 @@ function EnginesTab({ app, currency }) {
                 </div>
               )}
               {(f.action === 'hold' || f.action === 'block') && app.status !== 'fraud_hold' && app.status !== 'rejected' && (
-                <div className="alert alert-warning" style={{ marginTop: '0.75rem', background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+                <div className="alert alert-warning" style={{ marginTop: '0.75rem', background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', color: '#F59E0B' }}>
                   <strong>⚠ Stale result:</strong> This application was released from fraud hold. Fraud results may be outdated — consider re-running fraud analysis.
                 </div>
               )}
@@ -519,7 +519,7 @@ function EnginesTab({ app, currency }) {
               {d.nextActions?.length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
                   <div className="text-sm" style={{ fontWeight: 600 }}>Next Actions:</div>
-                  <ul style={{ paddingLeft: '1.25rem', fontSize: '0.8125rem', color: '#4b5563' }}>
+                  <ul style={{ paddingLeft: '1.25rem', fontSize: '0.8125rem', color: '#A1A1AA' }}>
                     {d.nextActions.map((a, i) => <li key={i}>{a}</li>)}
                   </ul>
                 </div>
@@ -574,12 +574,12 @@ function ReviewsTab({ app, noteText, setNoteText, addNote, canRunEngines }) {
             </div>
           )}
           {notes.map(n => (
-            <div key={n.id} style={{ padding: '0.75rem', borderBottom: '1px solid #f3f4f6' }}>
+            <div key={n.id} style={{ padding: '0.75rem', borderBottom: '1px solid #243041' }}>
               <div className="flex-between">
                 <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{n.author?.fullName}</span>
                 <span className="text-sm text-muted">{new Date(n.createdAt).toLocaleString()}</span>
               </div>
-              <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#374151' }}>{n.content}</p>
+              <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#FFFFFF' }}>{n.content}</p>
             </div>
           ))}
           {notes.length === 0 && <div className="empty-state">No review notes yet</div>}

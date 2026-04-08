@@ -1,10 +1,10 @@
-# AgriPilot Demo Accounts
+# Farroway Demo Accounts
 
 > These accounts are pre-seeded with realistic data. Change passwords before any production use.
 
 ## Live URL
 
-**https://agripilot.onrender.com**
+**https://agripilot-production.up.railway.app**
 
 ---
 
@@ -12,8 +12,8 @@
 
 | Role | Name | Email | Password |
 |------|------|-------|----------|
-| Super Admin | Sarah Okonkwo | `admin@agripilot.com` | `AgriAdmin#2026` |
-| Institutional Admin | James Mutua | `institution@agripilot.com` | `AgriAdmin#2026` |
+| Super Admin | Sarah Okonkwo | `admin@farroway.com` | `AgriAdmin#2026` |
+| Institutional Admin | James Mutua | `institution@farroway.com` | `AgriAdmin#2026` |
 
 **Access:** Full system — dashboard, all applications, user management, audit logs, control center.
 
@@ -23,11 +23,11 @@
 
 | Role | Name | Email | Password |
 |------|------|-------|----------|
-| Reviewer | Grace Wanjiku | `reviewer@agripilot.com` | `AgriStaff#2026` |
-| Reviewer | Peter Ochieng | `reviewer2@agripilot.com` | `AgriStaff#2026` |
-| Field Officer (Kenya) | David Kamau | `officer@agripilot.com` | `AgriStaff#2026` |
-| Field Officer (Kenya) | Mary Achieng | `officer2@agripilot.com` | `AgriStaff#2026` |
-| Field Officer (Tanzania) | Joseph Mwalimu | `officer.tz@agripilot.com` | `AgriStaff#2026` |
+| Reviewer | Grace Wanjiku | `reviewer@farroway.com` | `AgriStaff#2026` |
+| Reviewer | Peter Ochieng | `reviewer2@farroway.com` | `AgriStaff#2026` |
+| Field Officer (Kenya) | David Kamau | `officer@farroway.com` | `AgriStaff#2026` |
+| Field Officer (Kenya) | Mary Achieng | `officer2@farroway.com` | `AgriStaff#2026` |
+| Field Officer (Tanzania) | Joseph Mwalimu | `officer.tz@farroway.com` | `AgriStaff#2026` |
 
 **Access:** Farmer registration, applications, verification queue, fraud queue.
 
@@ -37,7 +37,7 @@
 
 | Role | Name | Email | Password |
 |------|------|-------|----------|
-| Investor/Funder | Robert Chen | `investor@agripilot.com` | `AgriView#2026` |
+| Investor/Funder | Robert Chen | `investor@farroway.com` | `AgriView#2026` |
 
 **Access:** Portfolio dashboard, reports (read-only).
 
@@ -60,11 +60,11 @@
 
 ## Recommended Demo Path
 
-1. **Log in as:** `admin@agripilot.com` / `AgriAdmin#2026`
+1. **Log in as:** `admin@farroway.com` / `AgriAdmin#2026`
 2. **Show dashboard** — overview of all applications and portfolio
 3. **Click "John Mwangi"** — approved application with full evidence, GPS, boundary, verification, decision
 4. **Click "Hassan Omar"** — fraud escalation case with duplicate photos and shared device
-5. **Switch to reviewer:** `reviewer@agripilot.com` / `AgriStaff#2026` — show verification queue
+5. **Switch to reviewer:** `reviewer@farroway.com` / `AgriStaff#2026` — show verification queue
 6. **Show audit log** — complete trail of every action
 7. **Show portfolio** — aggregate risk and decision analytics
 

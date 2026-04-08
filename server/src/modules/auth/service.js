@@ -81,7 +81,6 @@ export async function login({ email, password }) {
   // Update last login method and timestamp
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginMethod: 'local', lastLoginAt: new Date() } });
 
-  const token = generateToken(user);
   const sanitized = sanitizeUser(user);
 
   // Include farmer registration status for farmer-role users
@@ -94,17 +93,141 @@ export async function login({ email, password }) {
   sanitized.organizationId = user.organizationId || null;
   sanitized.organization = user.organization || null;
 
-  return {
-    user: sanitized,
-    accessToken: token,
-  };
+  // ─── MFA gate ────────────────────────────────────────────
+  // Import here to avoid circular dependency (mfa/service imports prisma)
+  const { isMfaRequired } = await import('../mfa/service.js');
+
+  if (isMfaRequired(user.role)) {
+    if (!user.mfaEnabled) {
+      // MFA required but not enrolled → return setup-required signal
+      const mfaSetupToken = generateMfaChallengeToken(user);
+      return {
+        mfaSetupRequired: true,
+        mfaToken: mfaSetupToken,
+        user: { id: user.id, role: user.role, email: user.email },
+      };
+    }
+    // MFA required and enrolled → return challenge-required signal
+    const mfaChallengeToken = generateMfaChallengeToken(user);
+    return {
+      mfaChallengeRequired: true,
+      mfaToken: mfaChallengeToken,
+      user: { id: user.id, role: user.role, email: user.email },
+    };
+  }
+
+  // MFA not required for this role → issue full access token immediately
+  const token = generateToken(user);
+  return { user: sanitized, accessToken: token };
 }
 
-function generateToken(user) {
+/**
+ * Complete MFA challenge after password login.
+ * Verifies the TOTP code and issues a full access JWT with mfaVerifiedAt.
+ */
+export async function completeMfaChallenge({ mfaToken, totpCode }) {
+  // Validate the short-lived MFA challenge token
+  let payload;
+  try {
+    payload = jwt.verify(mfaToken, config.jwt.secret);
+  } catch {
+    const err = new Error('Invalid or expired MFA token. Please log in again.');
+    err.statusCode = 401;
+    throw err;
+  }
+
+  if (payload.purpose !== 'mfa_challenge') {
+    const err = new Error('Invalid token type.');
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const { verifyMfaCode } = await import('../mfa/service.js');
+  const valid = await verifyMfaCode(payload.sub, totpCode);
+  if (!valid) {
+    const err = new Error('Invalid authenticator code. Please try again.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Fetch fresh user data for the full token
+  const user = await prisma.user.findUnique({
+    where: { id: payload.sub },
+    select: { id: true, email: true, role: true, active: true, tokenVersion: true, organizationId: true, fullName: true, createdAt: true },
+  });
+  if (!user || !user.active) {
+    const err = new Error('Account not found or deactivated.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const accessToken = generateToken(user, { mfaVerifiedAt: Math.floor(Date.now() / 1000) });
+  return { user: sanitizeUser(user), accessToken };
+}
+
+/**
+ * Logout: bump tokenVersion to invalidate all issued JWTs for this user.
+ */
+export async function logout(userId) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
+  // Invalidate auth cache so the new tokenVersion takes effect immediately
+  const { invalidateAuthCache } = await import('../../middleware/auth.js');
+  invalidateAuthCache(userId);
+}
+
+/**
+ * Step-up: re-verify MFA and return a new JWT with refreshed mfaVerifiedAt.
+ */
+export async function stepUpAuth({ userId, totpCode }) {
+  const { verifyMfaCode } = await import('../mfa/service.js');
+  const valid = await verifyMfaCode(userId, totpCode);
+  if (!valid) {
+    const err = new Error('Invalid authenticator code.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, role: true, active: true, tokenVersion: true, organizationId: true, fullName: true, createdAt: true },
+  });
+  if (!user || !user.active) {
+    const err = new Error('Account not found or deactivated.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const accessToken = generateToken(user, { mfaVerifiedAt: Math.floor(Date.now() / 1000) });
+  return { accessToken };
+}
+
+function generateToken(user, extraClaims = {}) {
   return jwt.sign(
-    { sub: user.id, email: user.email, role: user.role },
+    {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      tv: user.tokenVersion ?? 0,   // tokenVersion for revocation
+      ...extraClaims,
+    },
     config.jwt.secret,
     { expiresIn: config.jwt.expiresIn },
+  );
+}
+
+/**
+ * Short-lived MFA challenge token (purpose: 'mfa_challenge').
+ * Used when MFA is required but not yet verified after password login.
+ * Expires in MFA_CHALLENGE_TOKEN_MINUTES (default 5 min).
+ */
+function generateMfaChallengeToken(user) {
+  return jwt.sign(
+    { sub: user.id, email: user.email, role: user.role, purpose: 'mfa_challenge', tv: user.tokenVersion ?? 0 },
+    config.jwt.secret,
+    { expiresIn: `${config.mfa.challengeTokenMinutes}m` },
   );
 }
 

@@ -1,10 +1,10 @@
-# AgriPilot — Digital Verification for Agricultural Credit
+# Farroway — Digital Verification for Agricultural Credit
 
 ---
 
 ## What It Does
 
-AgriPilot is a verification and decision platform for institutions that extend credit to smallholder farmers. It digitizes the entire application workflow — from farmer registration and GPS capture to fraud detection and portfolio reporting.
+Farroway is a verification and decision platform for institutions that extend credit to smallholder farmers. It digitizes the entire application workflow — from farmer registration and GPS capture to fraud detection and portfolio reporting.
 
 ---
 
@@ -83,6 +83,6 @@ Every action — creation, submission, GPS capture, review, decision — is logg
 
 ## Contact
 
-**Live demo:** https://agripilot.onrender.com
+**Live demo:** https://agripilot-production.up.railway.app
 **Android app:** Available on request
 **Email:** [your email here]

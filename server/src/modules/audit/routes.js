@@ -18,6 +18,7 @@ router.get('/application/:applicationId',
       where: { applicationId: req.params.applicationId },
       include: { user: { select: { id: true, fullName: true, role: true } } },
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
     res.json(logs);
   }));

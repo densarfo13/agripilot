@@ -28,7 +28,7 @@ check() {
 }
 
 echo "================================================================"
-echo "  FULL VALIDATION — AgriPilot Product Rules"
+echo "  FULL VALIDATION — Farroway Product Rules"
 echo "  $(date)"
 echo "================================================================"
 echo ""

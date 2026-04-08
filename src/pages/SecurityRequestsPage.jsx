@@ -36,12 +36,12 @@ const TYPE_EXPIRY = {
 };
 
 const STATUS_STYLE = {
-  pending:  { bg: '#fef3c7', color: '#92400e' },
-  approved: { bg: '#d1fae5', color: '#065f46' },
-  rejected: { bg: '#fee2e2', color: '#991b1b' },
-  expired:  { bg: '#f3f4f6', color: '#6b7280' },
-  revoked:  { bg: '#f3f4f6', color: '#6b7280' },
-  executed: { bg: '#eff6ff', color: '#1d4ed8' },
+  pending:  { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+  approved: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  rejected: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
+  expired:  { bg: '#1E293B', color: '#71717A' },
+  revoked:  { bg: '#1E293B', color: '#71717A' },
+  executed: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
 };
 
 function timeLeft(expiresAt) {
@@ -122,7 +122,7 @@ export default function SecurityRequestsPage() {
       <div className="page-header">
         <div>
           <h1>Security Requests</h1>
-          <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>
+          <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>
             Separation of Duties — approval queue for sensitive operations
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function SecurityRequestsPage() {
         )}
 
         {/* Info banner */}
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#1e40af' }}>
+        <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#22C55E' }}>
           <strong>How it works:</strong> Sensitive actions require a second admin to approve before they can be executed.
           Pending requests below need review. Approved requests have a limited execution window after which they expire.
           If you requested an action and it has been approved, copy the Request ID and use it in the original page to execute.
@@ -201,7 +201,7 @@ export default function SecurityRequestsPage() {
                               {TYPE_LABELS[r.requestType] ?? r.requestType}
                             </span>
                             {isSelf && (
-                              <span style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.1rem' }}>
+                              <span style={{ display: 'block', fontSize: '0.75rem', color: '#71717A', marginTop: '0.1rem' }}>
                                 Your request
                               </span>
                             )}
@@ -211,11 +211,11 @@ export default function SecurityRequestsPage() {
                               const field = TARGET_ID_FIELD[r.requestType];
                               const id    = field && r[field];
                               const label = TARGET_LABEL[r.requestType] ?? 'Resource';
-                              if (!id) return <span style={{ color: '#9ca3af' }}>—</span>;
+                              if (!id) return <span style={{ color: '#71717A' }}>—</span>;
                               return (
                                 <span title={id}>
-                                  <span style={{ color: '#6b7280', marginRight: '0.25rem' }}>{label}:</span>
-                                  <code style={{ fontFamily: 'monospace', fontSize: '0.75rem', background: '#f3f4f6', padding: '0.1rem 0.3rem', borderRadius: 3 }}>
+                                  <span style={{ color: '#A1A1AA', marginRight: '0.25rem' }}>{label}:</span>
+                                  <code style={{ fontFamily: 'monospace', fontSize: '0.75rem', background: '#1E293B', padding: '0.1rem 0.3rem', borderRadius: 3 }}>
                                     {id.slice(0, 8)}…
                                   </code>
                                 </span>
@@ -230,7 +230,7 @@ export default function SecurityRequestsPage() {
                               {r.reason?.length > 60 ? r.reason.slice(0, 60) + '…' : r.reason}
                             </span>
                             {r.rejectionReason && (
-                              <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.2rem' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '0.2rem' }}>
                                 Rejected: {r.rejectionReason}
                               </div>
                             )}
@@ -240,19 +240,19 @@ export default function SecurityRequestsPage() {
                               {r.status}
                             </span>
                           </td>
-                          <td style={{ fontSize: '0.8rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                          <td style={{ fontSize: '0.8rem', color: '#A1A1AA', whiteSpace: 'nowrap' }}>
                             {new Date(r.createdAt).toLocaleDateString()}
                           </td>
                           <td style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                             {tl ? (
-                              <span style={{ color: expired ? '#dc2626' : '#059669', fontWeight: 600 }}>
+                              <span style={{ color: expired ? '#EF4444' : '#22C55E', fontWeight: 600 }}>
                                 {tl}
                               </span>
                             ) : r.status === 'approved' && r.expiresAt ? (
-                              <span style={{ color: '#dc2626', fontWeight: 600 }}>Expired</span>
+                              <span style={{ color: '#EF4444', fontWeight: 600 }}>Expired</span>
                             ) : (
                               TYPE_EXPIRY[r.requestType] ? (
-                                <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                                <span style={{ color: '#71717A', fontSize: '0.75rem' }}>
                                   {TYPE_EXPIRY[r.requestType]} on approval
                                 </span>
                               ) : '—'
@@ -276,7 +276,7 @@ export default function SecurityRequestsPage() {
                               {r.status === 'approved' && isSelf && !expired && (
                                 <button
                                   className="btn btn-sm btn-outline"
-                                  style={{ color: '#2563eb', borderColor: '#2563eb', fontSize: '0.78rem' }}
+                                  style={{ color: '#22C55E', borderColor: '#22C55E', fontSize: '0.78rem' }}
                                   onClick={() => copyId(r.id)}
                                   title={`Request ID: ${r.id}`}
                                 >
@@ -288,7 +288,7 @@ export default function SecurityRequestsPage() {
                               {r.status === 'approved' && (isSuperAdmin || isSelf) && !expired && (
                                 <button
                                   className="btn btn-sm btn-outline"
-                                  style={{ color: '#dc2626', borderColor: '#fecaca', fontSize: '0.78rem' }}
+                                  style={{ color: '#EF4444', borderColor: '#EF4444', fontSize: '0.78rem' }}
                                   onClick={() => openModal(r, 'revoke')}
                                 >
                                   Revoke
@@ -297,7 +297,7 @@ export default function SecurityRequestsPage() {
 
                               {/* Nothing to do for terminal statuses */}
                               {['executed', 'expired', 'revoked', 'rejected'].includes(r.status) && !canAct && (
-                                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>—</span>
+                                <span style={{ fontSize: '0.75rem', color: '#71717A' }}>—</span>
                               )}
                             </div>
                           </td>
@@ -338,13 +338,13 @@ export default function SecurityRequestsPage() {
                 {' '}requested by{' '}
                 <span style={{ fontWeight: 600 }}>{modal.req.requestedBy?.fullName ?? 'unknown'}</span>
               </div>
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                <span style={{ color: '#6b7280' }}>Reason: </span>
+              <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                <span style={{ color: '#A1A1AA' }}>Reason: </span>
                 {modal.req.reason}
               </div>
 
               {modal.action === 'approve' && (
-                <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#065f46' }}>
+                <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#22C55E' }}>
                   Approving creates a timed execution window ({TYPE_EXPIRY[modal.req.requestType] ?? 'limited time'}).
                   The requester must execute the action within that window or it will expire.
                 </div>
@@ -369,7 +369,7 @@ export default function SecurityRequestsPage() {
               <button className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
               <button
                 className={`btn ${modal.action === 'approve' ? 'btn-success' : modal.action === 'reject' ? 'btn-warning' : 'btn-outline'}`}
-                style={modal.action === 'revoke' ? { color: '#dc2626', borderColor: '#dc2626' } : {}}
+                style={modal.action === 'revoke' ? { color: '#EF4444', borderColor: '#EF4444' } : {}}
                 onClick={submitAction}
                 disabled={actionSaving}
               >

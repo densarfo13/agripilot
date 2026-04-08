@@ -101,8 +101,8 @@ export default function AcceptInvitePage() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={styles.logo}>AgriPilot</div>
-          <p style={{ textAlign: 'center', color: '#6b7280' }}>Validating your invite link…</p>
+          <div style={styles.logo}>Farroway</div>
+          <p style={{ textAlign: 'center', color: '#A1A1AA' }}>Validating your invite link…</p>
         </div>
       </div>
     );
@@ -113,21 +113,21 @@ export default function AcceptInvitePage() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={styles.logo}>AgriPilot</div>
+          <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>{status === 'expired' ? '⏰' : '🔗'}</div>
             <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>
               {status === 'expired' ? 'Invite Link Expired' : 'Invalid Invite Link'}
             </h2>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
+            <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
           </div>
           {status === 'expired' && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#92400e', marginBottom: '1rem' }}>
+            <div style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid #854d0e', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#FACC15', marginBottom: '1rem' }}>
               <strong>What to do:</strong> Contact your field officer or institution and ask them to resend the invite. A new link will be generated for you.
             </div>
           )}
-          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#6b7280', marginBottom: 0 }}>
-            Already have an account? <Link to="/login" style={{ color: '#2563eb' }}>Sign In</Link>
+          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', marginBottom: 0 }}>
+            Already have an account? <Link to="/login" style={{ color: '#22C55E' }}>Sign In</Link>
           </p>
         </div>
       </div>
@@ -139,11 +139,11 @@ export default function AcceptInvitePage() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={styles.logo}>AgriPilot</div>
+          <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✅</div>
             <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>Already Activated</h2>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
+            <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
           </div>
           <button onClick={() => navigate('/login')} style={styles.button}>Go to Login</button>
         </div>
@@ -156,12 +156,12 @@ export default function AcceptInvitePage() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={styles.logo}>AgriPilot</div>
+          <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
-            <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#d1fae5', color: '#065f46', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 700, margin: '0 auto 1rem' }}>✓</div>
-            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700, color: '#065f46' }}>Account Activated!</h2>
-            <p style={{ color: '#374151', fontSize: '0.9rem', lineHeight: 1.5 }}>
-              Welcome to AgriPilot, <strong>{inviteData?.fullName}</strong>. Your account is ready. You can now sign in with your email and password.
+            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', color: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 700, margin: '0 auto 1rem' }}>✓</div>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700, color: '#22C55E' }}>Account Activated!</h2>
+            <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              Welcome to Farroway, <strong>{inviteData?.fullName}</strong>. Your account is ready. You can now sign in with your email and password.
             </p>
           </div>
           <button onClick={() => navigate('/login')} style={styles.button}>Sign In Now</button>
@@ -174,15 +174,15 @@ export default function AcceptInvitePage() {
   return (
     <div style={styles.container}>
       <div style={{ ...styles.card, maxWidth: '460px' }}>
-        <div style={styles.logo}>AgriPilot</div>
+        <div style={styles.logo}>Farroway</div>
         <h1 style={styles.title}>Activate Your Account</h1>
 
         {inviteData && (
-          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '0.75rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#1e40af' }}>
+          <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#A1A1AA' }}>
             <strong>Welcome, {inviteData.fullName}!</strong><br />
             Your farmer profile has been set up. Choose an email and password to complete your account.
             {inviteData.expiresAt && (
-              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#3b82f6' }}>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#22C55E' }}>
                 This link expires on {new Date(inviteData.expiresAt).toLocaleDateString()}.
               </div>
             )}
@@ -197,21 +197,21 @@ export default function AcceptInvitePage() {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{ flex: 1 }}>
               <label style={styles.fieldLabel}>Full Name</label>
-              <input style={{ ...styles.input, background: '#f9fafb', color: '#6b7280' }} value={inviteData?.fullName || ''} readOnly />
+              <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={inviteData?.fullName || ''} readOnly />
             </div>
             <div style={{ flex: 1 }}>
               <label style={styles.fieldLabel}>Phone</label>
-              <input style={{ ...styles.input, background: '#f9fafb', color: '#6b7280' }} value={inviteData?.phone || ''} readOnly />
+              <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={inviteData?.phone || ''} readOnly />
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{ flex: 1 }}>
               <label style={styles.fieldLabel}>Region</label>
-              <input style={{ ...styles.input, background: '#f9fafb', color: '#6b7280' }} value={inviteData?.region || ''} readOnly />
+              <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={inviteData?.region || ''} readOnly />
             </div>
             <div style={{ flex: 1 }}>
               <label style={styles.fieldLabel}>Language</label>
-              <input style={{ ...styles.input, background: '#f9fafb', color: '#6b7280' }} value={LANGUAGES.find(l => l.code === inviteData?.preferredLanguage)?.label || inviteData?.preferredLanguage || ''} readOnly />
+              <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={LANGUAGES.find(l => l.code === inviteData?.preferredLanguage)?.label || inviteData?.preferredLanguage || ''} readOnly />
             </div>
           </div>
 
@@ -261,8 +261,8 @@ export default function AcceptInvitePage() {
             {submitting ? 'Activating…' : 'Activate Account'}
           </button>
 
-          <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#6b7280', margin: '0.5rem 0 0' }}>
-            Already have an account? <Link to="/login" style={{ color: '#2563eb' }}>Sign In</Link>
+          <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
+            Already have an account? <Link to="/login" style={{ color: '#22C55E' }}>Sign In</Link>
           </p>
         </form>
       </div>
@@ -273,40 +273,40 @@ export default function AcceptInvitePage() {
 const styles = {
   container: {
     minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: '#f0f2f5', padding: '1rem',
+    background: '#0F172A', padding: '1rem',
   },
   card: {
-    background: '#fff', borderRadius: 8, padding: '2rem', width: '100%', maxWidth: 400,
+    background: '#162033', borderRadius: 8, padding: '2rem', width: '100%', maxWidth: 400,
     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   },
   logo: {
-    fontSize: '1.4rem', fontWeight: 700, color: '#1a1a2e', textAlign: 'center',
+    fontSize: '1.4rem', fontWeight: 700, color: '#FFFFFF', textAlign: 'center',
     marginBottom: '0.25rem',
   },
   title: {
-    fontSize: '1.05rem', fontWeight: 600, color: '#111827', textAlign: 'center',
+    fontSize: '1.05rem', fontWeight: 600, color: '#FFFFFF', textAlign: 'center',
     marginBottom: '1rem', marginTop: '0.25rem',
   },
   form: { display: 'flex', flexDirection: 'column', gap: '0.65rem' },
   input: {
     display: 'block', width: '100%', padding: '0.6rem 0.75rem',
-    border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.875rem',
-    outline: 'none', boxSizing: 'border-box',
+    border: '1px solid #243041', borderRadius: 6, fontSize: '0.875rem',
+    outline: 'none', boxSizing: 'border-box', background: '#1E293B', color: '#FFFFFF',
   },
   fieldLabel: {
-    display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#374151', marginBottom: '0.2rem',
+    display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.2rem',
   },
   sectionLabel: {
-    fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase',
+    fontSize: '0.75rem', fontWeight: 700, color: '#A1A1AA', textTransform: 'uppercase',
     letterSpacing: '0.05em', marginTop: '0.25rem',
   },
   button: {
-    padding: '0.75rem', background: '#2E7D32', color: '#fff', border: 'none',
+    padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none',
     borderRadius: 6, fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer',
     marginTop: '0.25rem',
   },
   error: {
-    background: '#fef2f2', color: '#dc2626', padding: '0.65rem 0.75rem',
+    background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '0.65rem 0.75rem',
     borderRadius: 6, fontSize: '0.875rem',
   },
 };

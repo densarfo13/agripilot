@@ -83,7 +83,7 @@ export default function FarmerMarketTab() {
     <div className="page-body" style={{ paddingTop: 0 }}>
       {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadData}>Retry</button></div>}
       {/* Advisory disclaimer */}
-      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#92400e' }}>
+      <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#F59E0B' }}>
         <strong>Advisory only:</strong> Prices shown are estimated ranges for general guidance. They are not live market prices. Always verify current prices with local buyers before making selling decisions.
       </div>
 
@@ -154,10 +154,10 @@ export default function FarmerMarketTab() {
           <div className="card-body">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
               {buyerTypes.map((bt, i) => (
-                <div key={i} style={{ padding: '0.75rem 1rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, minWidth: 180 }}>
+                <div key={i} style={{ padding: '0.75rem 1rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 8, minWidth: 180 }}>
                   <strong>{bt.type || bt.name}</strong>
-                  {bt.description && <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#6b7280' }}>{bt.description}</p>}
-                  {bt.suitableFor && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#2563eb' }}>Best for: {Array.isArray(bt.suitableFor) ? bt.suitableFor.join(', ') : bt.suitableFor}</p>}
+                  {bt.description && <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#A1A1AA' }}>{bt.description}</p>}
+                  {bt.suitableFor && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#22C55E' }}>Best for: {Array.isArray(bt.suitableFor) ? bt.suitableFor.join(', ') : bt.suitableFor}</p>}
                 </div>
               ))}
             </div>
@@ -169,15 +169,15 @@ export default function FarmerMarketTab() {
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
           My Selling Interests
-          <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 400 }}>Tracked for demand analysis — not a marketplace</span>
+          <span style={{ fontSize: '0.8rem', color: '#A1A1AA', fontWeight: 400 }}>Tracked for demand analysis — not a marketplace</span>
           <button className="btn btn-primary btn-sm" onClick={() => setShowInterest(!showInterest)}>
             {showInterest ? 'Cancel' : '+ Express Interest'}
           </button>
         </div>
         <div className="card-body" style={{ padding: showInterest || interests.length > 0 ? undefined : undefined }}>
           {showInterest && (
-            <form onSubmit={handleExpressInterest} style={{ marginBottom: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: '#fef2f2', borderRadius: 4 }}>{error}</div>}
+            <form onSubmit={handleExpressInterest} style={{ marginBottom: '1rem', padding: '1rem', background: '#1E293B', borderRadius: 8, border: '1px solid #243041' }}>
+              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
@@ -231,9 +231,9 @@ export default function FarmerMarketTab() {
                       <td>
                         <span style={{
                           padding: '0.15rem 0.5rem', borderRadius: 4, fontSize: '0.85rem', fontWeight: 500,
-                          color: interest.status === 'expressed' ? '#2563eb' : interest.status === 'matched' ? '#16a34a' : '#9ca3af',
-                          background: interest.status === 'expressed' ? '#eff6ff' : interest.status === 'matched' ? '#f0fdf4' : '#f9fafb',
-                          border: `1px solid ${interest.status === 'expressed' ? '#bfdbfe' : interest.status === 'matched' ? '#bbf7d0' : '#e5e7eb'}`,
+                          color: interest.status === 'expressed' ? '#22C55E' : interest.status === 'matched' ? '#16a34a' : '#9ca3af',
+                          background: interest.status === 'expressed' ? 'rgba(34,197,94,0.1)' : interest.status === 'matched' ? 'rgba(22,163,106,0.1)' : '#1E293B',
+                          border: `1px solid ${interest.status === 'expressed' ? 'rgba(34,197,94,0.3)' : interest.status === 'matched' ? 'rgba(34,197,94,0.3)' : '#243041'}`,
                         }}>
                           {interest.status}
                         </span>

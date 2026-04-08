@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
   const load = (status = statusFilter) => {
     setLoading(true);
     api.get('/users', { params: status ? { status } : {} })
-      .then(r => { setUsers(r.data); setActionError(''); })
+      .then(r => { setUsers(r.data.users || r.data || []); setActionError(''); })
       .catch(err => setActionError(formatApiError(err, 'Failed to load users')))
       .finally(() => setLoading(false));
   };
@@ -109,7 +109,7 @@ export default function AdminUsersPage() {
       <div className="page-header">
         <div>
           <h1>User Management</h1>
-          {orgLabel && <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{orgLabel}</div>}
+          {orgLabel && <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{orgLabel}</div>}
         </div>
         {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New User</button>}
       </div>
@@ -122,9 +122,9 @@ export default function AdminUsersPage() {
               onClick={() => handleFilterChange(f.value)}
               style={{
                 padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
-                border: statusFilter === f.value ? '1.5px solid #2563eb' : '1.5px solid #e5e7eb',
-                background: statusFilter === f.value ? '#eff6ff' : '#fff',
-                color: statusFilter === f.value ? '#1d4ed8' : '#6b7280',
+                border: statusFilter === f.value ? '1.5px solid #22C55E' : '1.5px solid #243041',
+                background: statusFilter === f.value ? 'rgba(34,197,94,0.15)' : '#162033',
+                color: statusFilter === f.value ? '#22C55E' : '#A1A1AA',
                 fontWeight: statusFilter === f.value ? 600 : 400,
               }}
             >{f.label}</button>
@@ -158,11 +158,11 @@ export default function AdminUsersPage() {
                       <tr key={u.id} style={{ opacity: u.archivedAt ? 0.6 : 1 }}>
                         <td style={{ fontWeight: 500 }}>
                           {u.fullName}
-                          {u.archivedAt && <span style={{ fontSize: '0.72rem', color: '#6b7280', marginLeft: '0.4rem' }}>(archived)</span>}
+                          {u.archivedAt && <span style={{ fontSize: '0.72rem', color: '#A1A1AA', marginLeft: '0.4rem' }}>(archived)</span>}
                         </td>
                         <td className="text-sm">{u.email}</td>
                         <td><span className="badge badge-submitted">{ROLE_LABELS[u.role] || u.role}</span></td>
-                        <td className="text-sm text-muted">{u.organization?.name || <span style={{ color: '#d97706' }}>Unassigned</span>}</td>
+                        <td className="text-sm text-muted">{u.organization?.name || <span style={{ color: '#F59E0B' }}>Unassigned</span>}</td>
                         <td><UserStatusBadge user={u} /></td>
                         <td className="text-sm text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                         {canManage && (
@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
                               {canDisable(u) && u.active && (
                                 <button
                                   className="btn btn-sm btn-outline"
-                                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                                  style={{ color: '#EF4444', borderColor: '#EF4444' }}
                                   onClick={() => setConfirmModal({ user: u, action: 'disable' })}
                                 >
                                   Disable
@@ -223,9 +223,9 @@ export default function AdminUsersPage() {
         {confirmModal?.action === 'disable' && (
           <ConfirmModal
             title="Disable User"
-            body={<>Disable login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#374151', fontSize: '0.875rem' }}>This user can no longer sign in. All their history, applications, and records are preserved. You can re-enable them at any time.</span></>}
+            body={<>Disable login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#FFFFFF', fontSize: '0.875rem' }}>This user can no longer sign in. All their history, applications, and records are preserved. You can re-enable them at any time.</span></>}
             confirmLabel="Disable User"
-            confirmStyle={{ background: '#dc2626', color: '#fff' }}
+            confirmStyle={{ background: '#EF4444', color: '#fff' }}
             onConfirm={() => doDisable(confirmModal.user)}
             onCancel={() => setConfirmModal(null)}
           />
@@ -233,9 +233,9 @@ export default function AdminUsersPage() {
         {confirmModal?.action === 'enable' && (
           <ConfirmModal
             title="Re-enable User"
-            body={<>Restore login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#374151', fontSize: '0.875rem' }}>They will be able to sign in again immediately.</span></>}
+            body={<>Restore login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#FFFFFF', fontSize: '0.875rem' }}>They will be able to sign in again immediately.</span></>}
             confirmLabel="Re-enable User"
-            confirmStyle={{ background: '#16a34a', color: '#fff' }}
+            confirmStyle={{ background: '#22C55E', color: '#fff' }}
             onConfirm={() => doEnable(confirmModal.user)}
             onCancel={() => setConfirmModal(null)}
           />
@@ -364,13 +364,13 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
   };
 
   const sectionHeading = (label) => (
-    <div style={{ fontWeight: 600, marginBottom: '0.75rem', fontSize: '0.78rem', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.06em' }}>
+    <div style={{ fontWeight: 600, marginBottom: '0.75rem', fontSize: '0.78rem', textTransform: 'uppercase', color: '#A1A1AA', letterSpacing: '0.06em' }}>
       {label}
     </div>
   );
 
   const successBanner = (msg) => (
-    <div style={{ background: '#d4edda', color: '#155724', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{msg}</div>
+    <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{msg}</div>
   );
 
   return (
@@ -406,7 +406,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
                 <div className="form-group">
                   <label className="form-label">
                     Email{' '}
-                    <span style={{ color: '#9ca3af', fontSize: '0.78rem', fontWeight: 400 }}>(super admin only)</span>
+                    <span style={{ color: '#71717A', fontSize: '0.78rem', fontWeight: 400 }}>(super admin only)</span>
                   </label>
                   <input className="form-input" type="email" value={profile.email}
                     onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} />
@@ -420,13 +420,13 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
             </form>
           </div>
 
-          <hr style={{ margin: '0 0 1.5rem', borderColor: '#e5e7eb' }} />
+          <hr style={{ margin: '0 0 1.5rem', borderColor: '#243041' }} />
 
           {/* ── Role ── */}
           <div style={{ marginBottom: '1.5rem' }}>
             {sectionHeading('Role')}
             {isSelf ? (
-              <p style={{ fontSize: '0.84rem', color: '#9ca3af', margin: 0 }}>
+              <p style={{ fontSize: '0.84rem', color: '#71717A', margin: 0 }}>
                 You cannot change your own role.
               </p>
             ) : (
@@ -442,12 +442,12 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
                     ))}
                   </select>
                   {isInstAdmin && (
-                    <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '0.3rem' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#71717A', marginTop: '0.3rem' }}>
                       You may assign: Reviewer, Field Officer, Investor Viewer
                     </div>
                   )}
                   {isSuperAdmin && PRIVILEGED_ROLES.has(selectedRole) && (
-                    <div style={{ fontSize: '0.78rem', color: '#d97706', marginTop: '0.3rem' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#F59E0B', marginTop: '0.3rem' }}>
                       ⚠ Assigning a privileged role requires SoD approval from a second admin.
                     </div>
                   )}
@@ -464,7 +464,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
           {/* ── Access & Offboarding (super_admin only, not self) ── */}
           {isSuperAdmin && !isSelf && (
             <>
-              <hr style={{ margin: '0 0 1.5rem', borderColor: '#e5e7eb' }} />
+              <hr style={{ margin: '0 0 1.5rem', borderColor: '#243041' }} />
               <div style={{ marginBottom: '1.5rem' }}>
                 {sectionHeading('Access & Offboarding')}
                 <AccessOffboardingSection user={user} onDone={onSaved} />
@@ -475,13 +475,13 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
           {/* ── Organization (super_admin only, not self) ── */}
           {isSuperAdmin && !isSelf && (
             <>
-              <hr style={{ margin: '0 0 1.5rem', borderColor: '#e5e7eb' }} />
+              <hr style={{ margin: '0 0 1.5rem', borderColor: '#243041' }} />
               <div style={{ marginBottom: '1.5rem' }}>
                 {sectionHeading('Organization')}
                 <form onSubmit={saveOrg}>
                   {orgError && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{orgError}</div>}
                   {orgSuccess && successBanner(orgSuccess)}
-                  <div style={{ fontSize: '0.78rem', color: '#d97706', marginBottom: '0.6rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#F59E0B', marginBottom: '0.6rem' }}>
                     ⚠ Organization transfers require SoD approval from a second admin.
                   </div>
                   <div className="form-group">
@@ -582,22 +582,22 @@ function AccessOffboardingSection({ user, onDone }) {
   return (
     <div>
       {error && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{error}</div>}
-      {success && <div style={{ background: '#d4edda', color: '#155724', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{success}</div>}
+      {success && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{success}</div>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: '0.875rem', color: '#374151' }}>Current status:</span>
+        <span style={{ fontSize: '0.875rem', color: '#FFFFFF' }}>Current status:</span>
         <UserStatusBadge user={user} />
       </div>
 
       {!user.archivedAt ? (
         <div>
-          <p style={{ fontSize: '0.83rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+          <p style={{ fontSize: '0.83rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
             Archiving removes this user from active lists and revokes login access. All linked records
             (applications, reviews, audit history) are preserved. This can be reversed.
           </p>
           <button
             className="btn btn-sm btn-outline"
-            style={{ color: '#dc2626', borderColor: '#dc2626' }}
+            style={{ color: '#EF4444', borderColor: '#EF4444' }}
             onClick={() => setConfirm('archive')}
           >
             Archive User
@@ -605,7 +605,7 @@ function AccessOffboardingSection({ user, onDone }) {
         </div>
       ) : (
         <div>
-          <p style={{ fontSize: '0.83rem', color: '#6b7280', margin: '0 0 0.75rem' }}>
+          <p style={{ fontSize: '0.83rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
             Archived on {new Date(user.archivedAt).toLocaleDateString()}. Unarchiving restores
             visibility but does not re-enable login — use the Enable button after unarchiving.
           </p>
@@ -618,9 +618,9 @@ function AccessOffboardingSection({ user, onDone }) {
       {confirm === 'archive' && (
         <ConfirmModal
           title="Archive User"
-          body={<>Archive <strong>{user.fullName}</strong>?<br /><br /><span style={{ fontSize: '0.875rem', color: '#374151' }}>This removes login access and hides the account from normal views. All linked records are preserved. This can be reversed by unarchiving.</span></>}
+          body={<>Archive <strong>{user.fullName}</strong>?<br /><br /><span style={{ fontSize: '0.875rem', color: '#FFFFFF' }}>This removes login access and hides the account from normal views. All linked records are preserved. This can be reversed by unarchiving.</span></>}
           confirmLabel="Archive User"
-          confirmStyle={{ background: '#dc2626', color: '#fff' }}
+          confirmStyle={{ background: '#EF4444', color: '#fff' }}
           onConfirm={doArchive}
           onCancel={() => setConfirm(null)}
         />
@@ -630,7 +630,7 @@ function AccessOffboardingSection({ user, onDone }) {
           title="Unarchive User"
           body={<>Unarchive <strong>{user.fullName}</strong>? Their account will become visible again but login access remains disabled until you explicitly re-enable them.</>}
           confirmLabel="Unarchive"
-          confirmStyle={{ background: '#2563eb', color: '#fff' }}
+          confirmStyle={{ background: '#22C55E', color: '#fff' }}
           onConfirm={doUnarchive}
           onCancel={() => setConfirm(null)}
         />
@@ -680,12 +680,12 @@ function ResetPasswordModal({ user, onClose }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {isPrivilegedTarget && (
-              <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#92400e', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#F59E0B', marginBottom: '0.75rem' }}>
                 ⚠ <strong>{ROLE_LABELS[user.role]}</strong> account — resetting this password requires SoD approval.
               </div>
             )}
             {error && <div className="alert alert-danger">{error}</div>}
-            {success && <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>{success}</div>}
+            {success && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>{success}</div>}
             <div className="form-group">
               <label className="form-label">New Password for {user.email}</label>
               <input className="form-input" type="password" required minLength={8}
@@ -872,7 +872,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#92400e', marginBottom: '1rem' }}>
+          <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#F59E0B', marginBottom: '1rem' }}>
             <strong>Separation of Duties required.</strong> {description}{' '}
             Submit a request, have another admin approve it at <em>Admin → Security Requests</em>,
             then return here to execute.
@@ -880,23 +880,23 @@ function SodActionModal({ title, description, requestType, targetField, targetId
 
           {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
           {execSuccess && (
-            <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '0.75rem', fontSize: '0.85rem' }}>
               {execSuccess}
             </div>
           )}
 
           {/* Phase toggle */}
-          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #243041', borderRadius: 6, overflow: 'hidden' }}>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#2563eb' : '#fff', color: mode === 'request' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
               1. Create Request
             </button>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#2563eb' : '#fff', color: mode === 'execute' ? '#fff' : '#374151', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
               2. Execute (have ID)
@@ -929,14 +929,14 @@ function SodActionModal({ title, description, requestType, targetField, targetId
           {/* Request submitted — show ID */}
           {mode === 'request' && created && (
             <div>
-              <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>
                 <strong>Request submitted.</strong> Another admin must approve it before you can execute.
               </div>
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
-                <span style={{ color: '#6b7280' }}>Request ID: </span>
+              <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
+                <span style={{ color: '#A1A1AA' }}>Request ID: </span>
                 <code style={{ fontFamily: 'monospace', fontSize: '0.78rem', wordBreak: 'break-all' }}>{created.id}</code>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+              <div style={{ fontSize: '0.82rem', color: '#A1A1AA' }}>
                 Once approved, switch to the <strong>Execute</strong> tab and paste the ID to proceed.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
@@ -958,7 +958,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
                   onChange={e => setApprovalId(e.target.value)}
                   placeholder="Paste the approved Request ID here"
                 />
-                <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.3rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#A1A1AA', marginTop: '0.3rem' }}>
                   Find this at <em>Admin → Security Requests</em> after your request has been approved.
                 </div>
               </div>

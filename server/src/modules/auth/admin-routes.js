@@ -19,11 +19,14 @@ import {
   adminUnarchiveUser,
 } from './service.js';
 import { sodGuard } from '../../middleware/sodGuard.js';
+import { requireStepUp } from '../../middleware/requireStepUp.js';
+import { requireMfa } from '../../middleware/requireMfa.js';
 import { markExecuted } from '../security/service.js';
 import { getPendingRegistrations, getAllSelfRegistered, approveRegistration, rejectRegistration } from './farmer-registration.js';
 
 const router = Router();
 router.use(authenticate);
+router.use(requireMfa);
 router.use(extractOrganization);
 
 // ─── User Management (admin-only, org-scoped) ─────────
@@ -46,16 +49,24 @@ router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(as
     statusFilter = { archivedAt: null };
   }
 
-  const users = await prisma.user.findMany({
-    where: { ...base, ...statusFilter },
-    select: {
-      id: true, email: true, fullName: true, role: true, active: true, archivedAt: true, createdAt: true,
-      organizationId: true,
-      organization: { select: { id: true, name: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(users);
+  const page  = Math.max(1, parseInt(req.query.page  || '1',   10));
+  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit || '100', 10)));
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where: { ...base, ...statusFilter },
+      select: {
+        id: true, email: true, fullName: true, role: true, active: true, archivedAt: true, createdAt: true,
+        organizationId: true,
+        organization: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.user.count({ where: { ...base, ...statusFilter } }),
+  ]);
+  res.json({ users, total, page, limit, totalPages: Math.ceil(total / limit) });
 }));
 
 // Create user (super_admin only — assigns to org)
@@ -170,6 +181,7 @@ router.patch('/:id/role',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
   workflowLimiter,
+  requireStepUp(),
   asyncHandler(async (req, res) => {
     const { role } = req.body;
     if (!role) return res.status(400).json({ error: 'role is required' });
@@ -221,6 +233,7 @@ router.patch('/:id/role',
 router.patch('/:id/organization',
   validateParamUUID('id'),
   authorize('super_admin'),
+  requireStepUp(),
   sodGuard({ requestType: 'user_org_transfer', getTargetId: req => req.params.id }),
   asyncHandler(async (req, res) => {
     const { organizationId } = req.body;
@@ -246,6 +259,7 @@ router.patch('/:id/organization',
 router.patch('/:id/toggle-active',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  requireStepUp(),
   asyncHandler(async (req, res) => {
     const targetId = req.params.id;
     if (targetId === req.user.sub) return res.status(403).json({ error: 'Cannot toggle your own account' });
@@ -286,6 +300,7 @@ router.patch('/:id/toggle-active',
 router.post('/:id/disable',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  requireStepUp(),
   asyncHandler(async (req, res) => {
     const { user, previousActive } = await adminDisableUser({
       targetUserId: req.params.id,
@@ -310,6 +325,7 @@ router.post('/:id/disable',
 router.post('/:id/enable',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin'),
+  requireStepUp(),
   asyncHandler(async (req, res) => {
     const { user, previousActive } = await adminEnableUser({
       targetUserId: req.params.id,
@@ -334,6 +350,7 @@ router.post('/:id/enable',
 router.post('/:id/archive',
   validateParamUUID('id'),
   authorize('super_admin'),
+  requireStepUp(),
   asyncHandler(async (req, res) => {
     const { user } = await adminArchiveUser({
       targetUserId: req.params.id,
@@ -375,6 +392,7 @@ router.patch('/:id/reset-password',
   validateParamUUID('id'),
   authorize('super_admin'),
   workflowLimiter,
+  requireStepUp(),
   dedupGuard('password-reset'),
   asyncHandler(async (req, res) => {
     const { newPassword } = req.body;

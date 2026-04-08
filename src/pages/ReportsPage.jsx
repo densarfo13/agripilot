@@ -44,11 +44,11 @@ export default function ReportsPage() {
             <div className="card-body">
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={report.cropBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
                   <XAxis dataKey="cropType" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Bar dataKey="_count" fill="#16a34a" radius={[4, 4, 0, 0]} name="Count" />
+                  <Bar dataKey="_count" fill="#22C55E" radius={[4, 4, 0, 0]} name="Count" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -76,11 +76,11 @@ export default function ReportsPage() {
               <div className="card-body">
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={report.monthlyTrend.map(m => ({ month: new Date(m.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), count: m.count }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
                     <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

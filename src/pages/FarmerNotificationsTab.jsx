@@ -3,12 +3,12 @@ import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 
 const TYPE_COLORS = {
-  application_update: '#2563eb',
+  application_update: '#22C55E',
   reminder: '#d97706',
   post_harvest: '#16a34a',
   market: '#7c3aed',
   weather: '#0891b2',
-  system: '#6b7280',
+  system: '#A1A1AA',
 };
 
 export default function FarmerNotificationsTab() {
@@ -82,7 +82,7 @@ export default function FarmerNotificationsTab() {
               className="card"
               style={{
                 cursor: !n.read ? 'pointer' : 'default',
-                borderLeft: `3px solid ${TYPE_COLORS[n.notificationType] || '#e5e7eb'}`,
+                borderLeft: `3px solid ${TYPE_COLORS[n.notificationType] || '#243041'}`,
                 opacity: n.read ? 0.7 : 1,
               }}
               onClick={() => !n.read && markRead(n.id)}
@@ -91,20 +91,20 @@ export default function FarmerNotificationsTab() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', display: 'inline-block', flexShrink: 0 }} />}
+                      {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', display: 'inline-block', flexShrink: 0 }} />}
                       <span style={{ fontWeight: n.read ? 400 : 600, fontSize: '0.95rem' }}>{n.title}</span>
                       <span style={{
                         fontSize: '0.75rem',
                         padding: '0.1rem 0.4rem',
                         borderRadius: 3,
-                        background: `${TYPE_COLORS[n.notificationType] || '#e5e7eb'}15`,
-                        color: TYPE_COLORS[n.notificationType] || '#6b7280',
-                        border: `1px solid ${TYPE_COLORS[n.notificationType] || '#e5e7eb'}30`,
+                        background: `${TYPE_COLORS[n.notificationType] || '#243041'}15`,
+                        color: TYPE_COLORS[n.notificationType] || '#A1A1AA',
+                        border: `1px solid ${TYPE_COLORS[n.notificationType] || '#243041'}30`,
                       }}>
                         {n.notificationType?.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>{n.message}</p>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#A1A1AA' }}>{n.message}</p>
                   </div>
                   <span className="text-sm text-muted" style={{ whiteSpace: 'nowrap', marginLeft: '1rem' }}>
                     {new Date(n.createdAt).toLocaleDateString()}

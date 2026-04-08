@@ -16,7 +16,7 @@ import { writeAuditLog } from '../audit/service.js';
 import { createNotification } from '../notifications/service.js';
 import { sodGuard } from '../../middleware/sodGuard.js';
 import { markExecuted } from '../security/service.js';
-import { getDeliveryStatusLabel } from '../notifications/deliveryService.js';
+import { getDeliveryStatusLabel, dispatchInvite } from '../notifications/deliveryService.js';
 
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
 function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
@@ -43,7 +43,7 @@ router.get('/me', asyncHandler(async (req, res) => {
 
 // Create farmer (staff creates on behalf of farmer — auto-approved)
 router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('create-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
-  const { fullName, phone, region } = req.body;
+  const { fullName, phone, region, channel, contactEmail } = req.body;
   if (!fullName || !phone || !region) {
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
   }
@@ -54,20 +54,51 @@ router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'
   }
   const farmer = await farmersService.createFarmer({ ...req.body, phone: normalizedPhone }, req.user.sub, req.organizationId);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id }, organizationId: req.organizationId }).catch(() => {});
+
+  // Attempt invite delivery if an invite token was generated and a channel was requested
+  let deliveryResult = { delivered: false, channel: 'link', deliveryStatus: farmer._inviteToken ? 'manual_share_ready' : null };
+  if (farmer._inviteToken && !farmer.userAccount && channel && channel !== 'link') {
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+    const inviteUrl = `${frontendBase}/accept-invite?token=${farmer._inviteToken}`;
+    deliveryResult = await dispatchInvite({
+      channel,
+      toEmail: contactEmail || null,
+      toPhone: normalizedPhone,
+      farmerName: fullName,
+      inviteUrl,
+      inviterName: req.user.fullName || null,
+      expiresAt: farmer._inviteExpiresAt,
+    });
+    // Persist the actual delivery outcome
+    if (deliveryResult.deliveryStatus) {
+      await prisma.farmer.update({
+        where: { id: farmer.id },
+        data: {
+          inviteDeliveryStatus: deliveryResult.deliveryStatus,
+          inviteChannel: deliveryResult.channel,
+        },
+      }).catch(() => {});
+    }
+  }
+
   res.status(201).json({
     farmer,
     credentialsCreated: !!farmer.userAccount,
     inviteToken: farmer._inviteToken || null,
     inviteExpiresAt: farmer._inviteExpiresAt || null,
-    deliveryStatus: farmer._inviteToken ? 'manual_share_ready' : null,
+    deliveryStatus: deliveryResult.deliveryStatus || null,
+    deliveryChannel: deliveryResult.channel || null,
     deliveryNote: farmer.userAccount
       ? 'Login account created. Share the credentials with the farmer securely.'
-      : 'Farmer created. Copy and share the invite link with the farmer so they can activate their account.',
+      : deliveryResult.delivered
+        ? `Invite ${deliveryResult.channel === 'email' ? 'email' : 'SMS'} sent to the farmer.`
+        : deliveryResult.reason || 'Farmer created. Copy and share the invite link with the farmer so they can activate their account.',
   });
 }));
 
 // Invite farmer (admin/field officer — creates pre-approved farmer record)
 router.post('/invite', inviteLimiter, authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('invite-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
+  const { channel, contactEmail } = req.body;
   if (req.body.phone) {
     const normalizedPhone = normalizePhoneForStorage(req.body.phone);
     const phoneCheck = validatePhone(normalizedPhone);
@@ -83,30 +114,57 @@ router.post('/invite', inviteLimiter, authorize('super_admin', 'institutional_ad
     organizationId: req.organizationId,
   });
 
+  // Attempt invite delivery when channel is email or phone
+  let deliveryResult = { delivered: false, channel: 'link', deliveryStatus: farmer._inviteToken ? 'manual_share_ready' : null };
+  if (farmer._inviteToken && !farmer.userAccount && channel && channel !== 'link') {
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+    const inviteUrl = `${frontendBase}/accept-invite?token=${farmer._inviteToken}`;
+    deliveryResult = await dispatchInvite({
+      channel,
+      toEmail: contactEmail || null,
+      toPhone: farmer.phone || null,
+      farmerName: farmer.fullName,
+      inviteUrl,
+      inviterName: req.user.fullName || null,
+      expiresAt: farmer.inviteExpiresAt,
+    });
+    if (deliveryResult.deliveryStatus) {
+      await prisma.farmer.update({
+        where: { id: farmer.id },
+        data: {
+          inviteDeliveryStatus: deliveryResult.deliveryStatus,
+          inviteChannel: deliveryResult.channel,
+        },
+      }).catch(() => {});
+    }
+  }
+
   // Send welcome notification to the farmer
   createNotification(farmer.id, {
     notificationType: 'system',
-    title: 'Welcome to AgriPilot',
-    message: `You have been invited to AgriPilot by your institution. Your account is active and ready to use.${farmer.userAccount ? ' Log in with the credentials provided by your administrator.' : ' Contact your field officer or administrator to set up your login credentials.'}`,
+    title: 'Welcome to Farroway',
+    message: `You have been invited to Farroway by your institution. Your account is active and ready to use.${farmer.userAccount ? ' Log in with the credentials provided by your administrator.' : ' Contact your field officer or administrator to set up your login credentials.'}`,
     metadata: { invitedById: req.user.sub },
   }).catch(() => {});
 
   writeAuditLog({
     userId: req.user.sub,
     action: 'farmer_invited',
-    details: { farmerId: farmer.id, phone: farmer.phone, hasLoginAccount: !!farmer.userAccount },
+    details: { farmerId: farmer.id, phone: farmer.phone, hasLoginAccount: !!farmer.userAccount, channel: deliveryResult.channel },
   }).catch(() => {});
 
-  // Return clear summary including whether credentials were created and invite token
   res.status(201).json({
     farmer,
     credentialsCreated: !!farmer.userAccount,
     inviteToken: farmer._inviteToken || null,
     inviteExpiresAt: farmer.inviteExpiresAt || null,
-    deliveryStatus: farmer.inviteDeliveryStatus || null,
+    deliveryStatus: deliveryResult.deliveryStatus || (farmer.inviteDeliveryStatus || null),
+    deliveryChannel: deliveryResult.channel || null,
     deliveryNote: farmer.userAccount
       ? 'Login account created. Share the credentials with the farmer securely.'
-      : 'Invite link generated. Copy and share it with the farmer manually (email/phone delivery not yet configured).',
+      : deliveryResult.delivered
+        ? `Invite ${deliveryResult.channel === 'email' ? 'email' : 'SMS'} sent to the farmer.`
+        : deliveryResult.reason || 'Invite link generated. Copy and share it with the farmer manually.',
   });
 }));
 
@@ -251,6 +309,7 @@ router.post('/:id/resend-invite',
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   dedupGuard('farmer-resend-invite'),
   asyncHandler(async (req, res) => {
+    const { channel, contactEmail } = req.body;
     const farmer = await farmersService.getFarmerById(req.params.id);
     if (farmer.selfRegistered) {
       return res.status(400).json({ error: 'Cannot resend invite for self-registered farmers' });
@@ -258,7 +317,24 @@ router.post('/:id/resend-invite',
     // Regenerate invite token (only for farmers without a login account)
     const newToken = farmer.userAccount ? null : randomUUID();
     const newExpiry = newToken ? makeInviteExpiry() : null;
-    // Update invitedAt, refresh invite token, and reset expiry
+
+    // Attempt delivery before persisting so we know the actual channel
+    let deliveryResult = { delivered: false, channel: 'link', deliveryStatus: newToken ? 'manual_share_ready' : null };
+    if (newToken && channel && channel !== 'link') {
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+      const inviteUrl = `${frontendBase}/accept-invite?token=${newToken}`;
+      deliveryResult = await dispatchInvite({
+        channel,
+        toEmail: contactEmail || null,
+        toPhone: farmer.phone || null,
+        farmerName: farmer.fullName,
+        inviteUrl,
+        inviterName: req.user.fullName || null,
+        expiresAt: newExpiry,
+      });
+    }
+
+    // Update invitedAt, refresh invite token, and persist actual delivery outcome
     const updated = await prisma.farmer.update({
       where: { id: req.params.id },
       data: {
@@ -266,8 +342,8 @@ router.post('/:id/resend-invite',
         ...(newToken ? {
           inviteToken: newToken,
           inviteExpiresAt: newExpiry,
-          inviteDeliveryStatus: 'manual_share_ready',
-          inviteChannel: 'link',
+          inviteDeliveryStatus: deliveryResult.deliveryStatus || 'manual_share_ready',
+          inviteChannel: deliveryResult.channel || 'link',
         } : {}),
       },
       include: { userAccount: { select: { id: true, email: true } } },
@@ -277,14 +353,14 @@ router.post('/:id/resend-invite',
     createNotification(farmer.id, {
       notificationType: 'system',
       title: 'Invitation Reminder',
-      message: `You have been re-invited to AgriPilot.${updated.userAccount ? ' Log in with the credentials provided by your administrator.' : ' Contact your field officer or administrator to set up your login credentials.'}`,
+      message: `You have been re-invited to Farroway.${updated.userAccount ? ' Log in with the credentials provided by your administrator.' : ' Contact your field officer or administrator to set up your login credentials.'}`,
       metadata: { resentById: req.user.sub },
     }).catch(() => {});
 
     writeAuditLog({
       userId: req.user.sub,
       action: 'farmer_invite_resent',
-      details: { farmerId: req.params.id, hasLoginAccount: !!updated.userAccount /* no token logged */ },
+      details: { farmerId: req.params.id, hasLoginAccount: !!updated.userAccount, channel: deliveryResult.channel },
     }).catch(() => {});
 
     res.json({
@@ -293,10 +369,13 @@ router.post('/:id/resend-invite',
       hasLoginAccount: !!updated.userAccount,
       inviteToken: newToken || null,
       inviteExpiresAt: newExpiry || null,
-      deliveryStatus: newToken ? 'manual_share_ready' : null,
+      deliveryStatus: deliveryResult.deliveryStatus || null,
+      deliveryChannel: deliveryResult.channel || null,
       deliveryNote: updated.userAccount
         ? 'Farmer already has a login account. A reminder notification has been sent.'
-        : 'Invite link refreshed. Copy and share the new link with the farmer.',
+        : deliveryResult.delivered
+          ? `Invite ${deliveryResult.channel === 'email' ? 'email' : 'SMS'} sent to the farmer.`
+          : deliveryResult.reason || 'Invite link refreshed. Copy and share the new link with the farmer.',
     });
   }));
 

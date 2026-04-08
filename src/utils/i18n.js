@@ -11,10 +11,10 @@
 const cap = typeof window !== 'undefined' && window.Capacitor;
 const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
 const API_BASE = isNative
-  ? (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || 'https://agripilot.onrender.com/api')
+  ? (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || 'https://agripilot-production.up.railway.app/api')
   : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || '/api');
 
-let currentLang = localStorage.getItem('agripilot_lang') || 'en';
+let currentLang = localStorage.getItem('farroway_lang') || 'en';
 let translations = {};
 let loaded = false;
 
@@ -24,7 +24,7 @@ export function getCurrentLang() {
 
 export async function setLang(lang) {
   currentLang = lang;
-  localStorage.setItem('agripilot_lang', lang);
+  localStorage.setItem('farroway_lang', lang);
   await loadTranslations(lang);
 }
 

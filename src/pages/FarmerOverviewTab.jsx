@@ -72,10 +72,10 @@ export default function FarmerOverviewTab() {
         </div>
         <div className="card-body">
           {lcSuccess && (
-            <div style={{ background: '#d1fae5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#065f46', marginBottom: '0.75rem' }}>{lcSuccess}</div>
+            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>{lcSuccess}</div>
           )}
           {lcLoading ? (
-            <div style={{ textAlign: 'center', padding: '1rem', color: '#999' }}>Loading lifecycle...</div>
+            <div style={{ textAlign: 'center', padding: '1rem', color: '#71717A' }}>Loading lifecycle...</div>
           ) : lifecycle ? (
             <>
               {/* Stage progress bar */}
@@ -87,8 +87,8 @@ export default function FarmerOverviewTab() {
                   return (
                     <div key={stage} style={{
                       flex: 1, textAlign: 'center', padding: '0.5rem 0.25rem',
-                      background: isCurrent ? meta.color : isPast ? `${meta.color}22` : '#f3f4f6',
-                      color: isCurrent ? '#fff' : isPast ? meta.color : '#9ca3af',
+                      background: isCurrent ? meta.color : isPast ? `${meta.color}22` : '#1E293B',
+                      color: isCurrent ? '#FFFFFF' : isPast ? meta.color : '#9ca3af',
                       borderRadius: i === 0 ? '6px 0 0 6px' : i === 5 ? '0 6px 6px 0' : '0',
                       fontSize: '0.7rem', fontWeight: isCurrent ? 700 : 400,
                       transition: 'all 0.2s',
@@ -103,17 +103,17 @@ export default function FarmerOverviewTab() {
               {/* Current stage detail */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Current Stage</div>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Current Stage</div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 600, color: STAGE_META[lifecycle.currentStage]?.color }}>
                     {STAGE_META[lifecycle.currentStage]?.emoji} {STAGE_META[lifecycle.currentStage]?.label || lifecycle.currentStage}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Crop</div>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Crop</div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType || 'Not set'}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Trust Status</div>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Trust Status</div>
                   {(() => {
                     const conf = lifecycle.stageConfidence;
                     const map = {
@@ -125,20 +125,20 @@ export default function FarmerOverviewTab() {
                     return (
                       <>
                         <span className={`badge ${m.cls}`}>{m.label}</span>
-                        {m.hint && <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '0.2rem', lineHeight: 1.3 }}>{m.hint}</div>}
+                        {m.hint && <div style={{ fontSize: '0.72rem', color: '#A1A1AA', marginTop: '0.2rem', lineHeight: 1.3 }}>{m.hint}</div>}
                       </>
                     );
                   })()}
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Source</div>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Source</div>
                   <span className="text-sm">{lifecycle.stageSource === 'activity' ? 'Farmer activities' : lifecycle.stageSource === 'seeded' ? 'Demo data' : lifecycle.stageSource?.replace(/_/g, ' ') || 'N/A'}</span>
                 </div>
               </div>
 
               {/* Last activity and reason */}
               {lifecycle.reason && (
-                <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '4px', fontSize: '0.8rem', color: '#64748b' }}>
+                <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: '#1E293B', borderRadius: '4px', fontSize: '0.8rem', color: '#A1A1AA' }}>
                   {lifecycle.reason}
                 </div>
               )}
@@ -146,14 +146,14 @@ export default function FarmerOverviewTab() {
               {/* Recommendations */}
               {lifecycle.recommendations && lifecycle.recommendations.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Next Actions</div>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Next Actions</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     {lifecycle.recommendations.slice(0, 4).map((rec, i) => (
                       <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
                         <span style={{ color: '#16a34a', fontWeight: 600, flexShrink: 0 }}>-</span>
                         <div>
                           <span style={{ fontWeight: 500 }}>{rec.title}</span>
-                          <span style={{ color: '#6b7280', marginLeft: '0.5rem' }}>{rec.message}</span>
+                          <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>{rec.message}</span>
                         </div>
                       </div>
                     ))}
@@ -162,7 +162,7 @@ export default function FarmerOverviewTab() {
               )}
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '1rem', color: '#999' }}>Unable to load lifecycle data</div>
+            <div style={{ textAlign: 'center', padding: '1rem', color: '#71717A' }}>Unable to load lifecycle data</div>
           )}
         </div>
       </div>

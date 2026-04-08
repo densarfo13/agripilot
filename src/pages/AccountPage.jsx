@@ -32,6 +32,15 @@ export default function AccountPage() {
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
 
+  // MFA state
+  const [mfa, setMfa] = useState(null); // { enabled, enrolledAt, backupCodesRemaining, required, exempt }
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState('');
+  const [mfaSuccess, setMfaSuccess] = useState('');
+  const [mfaPanel, setMfaPanel] = useState(null); // null | 'enroll' | 'disable' | 'backup'
+  const [enrollData, setEnrollData] = useState(null); // { otpauthUrl, pendingToken }
+  const [mfaCode, setMfaCode] = useState('');
+
   // Password change
   const [showPw, setShowPw] = useState(false);
   const [pw, setPw] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -51,7 +60,78 @@ export default function AccountPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadMfa(); }, []);
+
+  const loadMfa = () => {
+    api.get('/mfa/status')
+      .then(r => setMfa(r.data))
+      .catch(() => {}); // MFA section just won't show if this fails
+  };
+
+  const startEnroll = async () => {
+    setMfaError(''); setMfaSuccess(''); setMfaCode('');
+    setMfaLoading(true);
+    try {
+      const { data } = await api.post('/mfa/enroll/init');
+      setEnrollData(data);
+      setMfaPanel('enroll');
+    } catch (err) {
+      setMfaError(formatApiError(err, 'Failed to start MFA enrollment'));
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const completeEnroll = async (e) => {
+    e.preventDefault();
+    setMfaError(''); setMfaSuccess('');
+    setMfaLoading(true);
+    try {
+      const { data } = await api.post('/mfa/enroll/verify', { pendingToken: enrollData.pendingToken, code: mfaCode });
+      setMfaSuccess('MFA enabled. Save your backup codes in a safe place:');
+      setEnrollData({ backupCodes: data.backupCodes });
+      setMfaCode('');
+      setMfaPanel('backup_show');
+      loadMfa();
+    } catch (err) {
+      setMfaError(formatApiError(err, 'Verification failed'));
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const disableMfa = async (e) => {
+    e.preventDefault();
+    setMfaError(''); setMfaSuccess('');
+    setMfaLoading(true);
+    try {
+      await api.post('/mfa/disable', { totpCode: mfaCode });
+      setMfaSuccess('MFA has been disabled.');
+      setMfaCode(''); setMfaPanel(null);
+      loadMfa();
+    } catch (err) {
+      setMfaError(formatApiError(err, 'Failed to disable MFA'));
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const regenBackupCodes = async (e) => {
+    e.preventDefault();
+    setMfaError(''); setMfaSuccess('');
+    setMfaLoading(true);
+    try {
+      const { data } = await api.post('/mfa/backup-codes/regenerate', { totpCode: mfaCode });
+      setEnrollData({ backupCodes: data.backupCodes });
+      setMfaSuccess('New backup codes generated. Save them now — old codes are gone.');
+      setMfaCode(''); setMfaPanel('backup_show');
+      loadMfa();
+    } catch (err) {
+      setMfaError(formatApiError(err, 'Failed to regenerate codes'));
+    } finally {
+      setMfaLoading(false);
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -122,25 +202,25 @@ export default function AccountPage() {
           <div className="card-body">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 1.5rem', fontSize: '0.9rem' }}>
               <div>
-                <div style={{ color: '#6b7280', fontSize: '0.78rem', marginBottom: '0.2rem' }}>EMAIL</div>
+                <div style={{ color: '#A1A1AA', fontSize: '0.78rem', marginBottom: '0.2rem' }}>EMAIL</div>
                 <div style={{ fontWeight: 500 }}>{me?.email}</div>
               </div>
               <div>
-                <div style={{ color: '#6b7280', fontSize: '0.78rem', marginBottom: '0.2rem' }}>ROLE</div>
+                <div style={{ color: '#A1A1AA', fontSize: '0.78rem', marginBottom: '0.2rem' }}>ROLE</div>
                 <span className="badge badge-submitted">{ROLE_LABELS[me?.role] || me?.role}</span>
               </div>
               <div>
-                <div style={{ color: '#6b7280', fontSize: '0.78rem', marginBottom: '0.2rem' }}>ORGANIZATION</div>
+                <div style={{ color: '#A1A1AA', fontSize: '0.78rem', marginBottom: '0.2rem' }}>ORGANIZATION</div>
                 <div style={{ fontWeight: 500 }}>
-                  {me?.organization?.name || <span style={{ color: '#d97706' }}>Unassigned</span>}
+                  {me?.organization?.name || <span style={{ color: '#F59E0B' }}>Unassigned</span>}
                 </div>
               </div>
               <div>
-                <div style={{ color: '#6b7280', fontSize: '0.78rem', marginBottom: '0.2rem' }}>LAST LOGIN</div>
+                <div style={{ color: '#A1A1AA', fontSize: '0.78rem', marginBottom: '0.2rem' }}>LAST LOGIN</div>
                 <div>{me?.lastLoginAt ? new Date(me.lastLoginAt).toLocaleString() : 'N/A'}</div>
               </div>
             </div>
-            <p style={{ fontSize: '0.78rem', color: '#9ca3af', margin: '0.75rem 0 0' }}>
+            <p style={{ fontSize: '0.78rem', color: '#71717A', margin: '0.75rem 0 0' }}>
               Email, role, and organization can only be changed by an administrator.
             </p>
           </div>
@@ -153,7 +233,7 @@ export default function AccountPage() {
             <form onSubmit={handleSave}>
               {saveError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{saveError}</div>}
               {saveSuccess && (
-                <div style={{ background: '#d4edda', color: '#155724', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
+                <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
                   {saveSuccess}
                 </div>
               )}
@@ -186,6 +266,112 @@ export default function AccountPage() {
           </div>
         </div>
 
+        {/* MFA Security */}
+        {mfa && !mfa.exempt && (
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Two-Factor Authentication {mfa.required && <span style={{ fontSize: '0.72rem', background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '0.15rem 0.4rem', borderRadius: 4, marginLeft: 6 }}>Required for your role</span>}</span>
+              {mfa.enabled && !mfaPanel && (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-outline btn-sm" onClick={() => { setMfaPanel('backup'); setMfaError(''); setMfaCode(''); }}>Regen Backup Codes</button>
+                  <button className="btn btn-outline btn-sm" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => { setMfaPanel('disable'); setMfaError(''); setMfaCode(''); }}>Disable MFA</button>
+                </div>
+              )}
+              {!mfa.enabled && !mfaPanel && (
+                <button className="btn btn-primary btn-sm" onClick={startEnroll} disabled={mfaLoading}>
+                  {mfaLoading ? 'Loading...' : 'Enable MFA'}
+                </button>
+              )}
+            </div>
+            <div className="card-body">
+              {mfaError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{mfaError}</div>}
+              {mfaSuccess && !mfaPanel && (
+                <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>{mfaSuccess}</div>
+              )}
+
+              {/* Status line */}
+              {!mfaPanel && (
+                <div style={{ fontSize: '0.9rem', color: '#FFFFFF' }}>
+                  {mfa.enabled ? (
+                    <>
+                      <span style={{ color: '#22C55E', fontWeight: 600 }}>Active</span>
+                      {mfa.enrolledAt && <span style={{ color: '#71717A', marginLeft: 8 }}>since {new Date(mfa.enrolledAt).toLocaleDateString()}</span>}
+                      <span style={{ color: '#A1A1AA', marginLeft: 12 }}>{mfa.backupCodesRemaining} backup code{mfa.backupCodesRemaining !== 1 ? 's' : ''} remaining</span>
+                    </>
+                  ) : (
+                    <span style={{ color: '#71717A' }}>Not enabled</span>
+                  )}
+                </div>
+              )}
+
+              {/* Enroll: show QR code */}
+              {mfaPanel === 'enroll' && enrollData?.otpauthUrl && (
+                <div>
+                  <p style={{ fontSize: '0.875rem', marginBottom: '1rem' }}>
+                    Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code below to confirm.
+                  </p>
+                  <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(enrollData.otpauthUrl)}`} alt="MFA QR code" style={{ borderRadius: 4, border: '1px solid #243041' }} />
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: '#71717A', marginBottom: '0.75rem', wordBreak: 'break-all' }}>
+                    Can't scan? Copy this URL into your app: <code style={{ fontSize: '0.7rem' }}>{enrollData.otpauthUrl}</code>
+                  </p>
+                  <form onSubmit={completeEnroll} style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input className="form-input" type="text" inputMode="numeric" placeholder="6-digit code" maxLength={10}
+                      value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\s/g, ''))} required style={{ flex: 1, letterSpacing: '0.2em' }} />
+                    <button type="submit" className="btn btn-primary" disabled={mfaLoading || mfaCode.length < 6}>{mfaLoading ? '...' : 'Confirm'}</button>
+                    <button type="button" className="btn btn-outline" onClick={() => { setMfaPanel(null); setEnrollData(null); setMfaCode(''); setMfaError(''); }}>Cancel</button>
+                  </form>
+                </div>
+              )}
+
+              {/* Show backup codes after enrollment / regen */}
+              {mfaPanel === 'backup_show' && enrollData?.backupCodes && (
+                <div>
+                  {mfaSuccess && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>{mfaSuccess}</div>}
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#EF4444', marginBottom: '0.75rem' }}>
+                    Save these backup codes securely. They will NOT be shown again.
+                  </p>
+                  <div style={{ fontFamily: 'monospace', background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem', fontSize: '0.9rem', letterSpacing: '0.1em', marginBottom: '1rem' }}>
+                    {enrollData.backupCodes.map((c, i) => <span key={i}>{c}</span>)}
+                  </div>
+                  <button className="btn btn-primary" onClick={() => { setMfaPanel(null); setEnrollData(null); setMfaSuccess(''); }}>Done</button>
+                </div>
+              )}
+
+              {/* Disable MFA */}
+              {mfaPanel === 'disable' && (
+                <form onSubmit={disableMfa} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>Enter your current authenticator code to disable MFA:</p>
+                    <input className="form-input" type="text" inputMode="numeric" placeholder="6-digit code" maxLength={10}
+                      value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\s/g, ''))} required style={{ letterSpacing: '0.2em', width: '100%', marginBottom: '0.5rem' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '1.875rem', flexShrink: 0 }}>
+                    <button type="submit" className="btn btn-danger btn-sm" disabled={mfaLoading || mfaCode.length < 6}>{mfaLoading ? '...' : 'Disable'}</button>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => { setMfaPanel(null); setMfaCode(''); setMfaError(''); }}>Cancel</button>
+                  </div>
+                </form>
+              )}
+
+              {/* Regenerate backup codes */}
+              {mfaPanel === 'backup' && (
+                <form onSubmit={regenBackupCodes} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>Enter your current authenticator code to generate new backup codes (old codes will be invalidated):</p>
+                    <input className="form-input" type="text" inputMode="numeric" placeholder="6-digit code" maxLength={10}
+                      value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\s/g, ''))} required style={{ letterSpacing: '0.2em', width: '100%', marginBottom: '0.5rem' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '1.875rem', flexShrink: 0 }}>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={mfaLoading || mfaCode.length < 6}>{mfaLoading ? '...' : 'Regenerate'}</button>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => { setMfaPanel(null); setMfaCode(''); setMfaError(''); }}>Cancel</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Password change */}
         <div className="card">
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -199,7 +385,7 @@ export default function AccountPage() {
               <form onSubmit={handlePwChange}>
                 {pwError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{pwError}</div>}
                 {pwSuccess && (
-                  <div style={{ background: '#d4edda', color: '#155724', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
+                  <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
                     {pwSuccess}
                   </div>
                 )}

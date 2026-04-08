@@ -32,7 +32,7 @@ async function main() {
       const { default: bcrypt } = await import('bcryptjs');
       const hash = await bcrypt.hash(process.env.RESET_ADMIN_PW, 10);
       const updated = await prisma.user.update({
-        where: { email: 'admin@agripilot.com' },
+        where: { email: 'admin@farroway.com' },
         data: { passwordHash: hash },
         select: { id: true, email: true, role: true },
       });
@@ -49,7 +49,7 @@ async function main() {
 
   const host = '0.0.0.0';
   const server = app.listen(config.port, host, () => {
-    console.log(`[SERVER] AgriPilot running on http://${host}:${config.port}`);
+    console.log(`[SERVER] Farroway running on http://${host}:${config.port}`);
     console.log(`[SERVER] Environment: ${config.nodeEnv}`);
     if (config.isProduction && config.cors.origins.length > 0) {
       console.log(`[SERVER] CORS origins: ${config.cors.origins.join(', ')}`);

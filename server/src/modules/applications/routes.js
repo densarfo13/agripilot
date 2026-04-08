@@ -4,6 +4,7 @@ import { authenticate, authorize, requireApprovedFarmer, requireApplicationAcces
 import { validateParamUUID, isValidUUID, parsePositiveInt } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { workflowLimiter } from '../../middleware/rateLimiters.js';
+import { requireStepUp } from '../../middleware/requireStepUp.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
 import { extractOrganization, orgWhereApplication, verifyOrgAccess } from '../../middleware/orgScope.js';
 import * as appService from './service.js';
@@ -147,7 +148,7 @@ router.post('/:id/reopen', validateParamUUID('id'), authorize('super_admin', 'in
 }));
 
 // Disburse (approved/conditional → disbursed)
-router.post('/:id/disburse', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), workflowLimiter, dedupGuard('disburse'), asyncHandler(async (req, res) => {
+router.post('/:id/disburse', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), workflowLimiter, requireStepUp(), dedupGuard('disburse'), asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const { application, previousStatus } = await appService.disburseApplication(req.params.id, req.user.sub, { reason });
   writeAuditLog({

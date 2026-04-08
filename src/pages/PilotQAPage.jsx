@@ -7,26 +7,26 @@ import { useOrgStore } from '../store/orgStore.js';
 // ─── Status config ────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  not_started: { label: 'Not Started', bg: '#f3f4f6', color: '#4b5563' },
-  pass:         { label: 'Pass',        bg: '#d1fae5', color: '#065f46' },
-  fail:         { label: 'Fail',        bg: '#fee2e2', color: '#991b1b' },
-  blocked:      { label: 'Blocked',     bg: '#fef3c7', color: '#92400e' },
-  not_applicable:{ label: 'N/A',        bg: '#ede9fe', color: '#5b21b6' },
+  not_started: { label: 'Not Started', bg: '#1E293B', color: '#A1A1AA' },
+  pass:         { label: 'Pass',        bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  fail:         { label: 'Fail',        bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
+  blocked:      { label: 'Blocked',     bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+  not_applicable:{ label: 'N/A',        bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
 };
 
 const STATUS_OPTIONS = ['not_started', 'pass', 'fail', 'blocked', 'not_applicable'];
 
 const CATEGORY_META = {
-  org_setup:          { label: 'A. Organization Setup',   color: '#1d4ed8' },
+  org_setup:          { label: 'A. Organization Setup',   color: '#16A34A' },
   user_onboarding:    { label: 'B. User Onboarding',      color: '#059669' },
   invite_delivery:    { label: 'C. Invite Delivery',      color: '#0891b2' },
   farmer_first_use:   { label: 'D. Farmer First Use',     color: '#7c3aed' },
-  officer_workflow:   { label: 'E. Officer Workflow',     color: '#d97706' },
+  officer_workflow:   { label: 'E. Officer Workflow',     color: '#F59E0B' },
   reviewer_workflow:  { label: 'F. Reviewer Workflow',    color: '#be185d' },
-  admin_visibility:   { label: 'G. Admin Visibility',     color: '#374151' },
-  security_access:    { label: 'H. Security & Access',    color: '#dc2626' },
-  country_phone:      { label: 'I. Country & Phone',      color: '#2563eb' },
-  season_lifecycle:   { label: 'J. Season Lifecycle',     color: '#16a34a' },
+  admin_visibility:   { label: 'G. Admin Visibility',     color: '#FFFFFF' },
+  security_access:    { label: 'H. Security & Access',    color: '#EF4444' },
+  country_phone:      { label: 'I. Country & Phone',      color: '#22C55E' },
+  season_lifecycle:   { label: 'J. Season Lifecycle',     color: '#22C55E' },
   image_evidence:     { label: 'K. Image & Evidence',     color: '#ea580c' },
   monitoring_failure: { label: 'L. Monitoring & Failures',color: '#6366f1' },
 };
@@ -65,13 +65,13 @@ function StatusBadge({ status, small }) {
 function HealthTile({ label, value, sub, warn }) {
   return (
     <div style={{
-      background: warn ? '#fffbeb' : '#f9fafb',
-      border: `1px solid ${warn ? '#fde68a' : '#e5e7eb'}`,
+      background: warn ? 'rgba(245,158,11,0.15)' : '#1E293B',
+      border: `1px solid ${warn ? '#243041' : '#243041'}`,
       borderRadius: 8, padding: '0.5rem 0.9rem', textAlign: 'center', minWidth: 90,
     }}>
-      <div style={{ fontSize: '1.25rem', fontWeight: 700, color: warn ? '#92400e' : '#111827' }}>{value ?? '—'}</div>
-      <div style={{ fontSize: '0.68rem', color: '#6b7280', fontWeight: 500 }}>{label}</div>
-      {sub && <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{sub}</div>}
+      <div style={{ fontSize: '1.25rem', fontWeight: 700, color: warn ? '#F59E0B' : '#FFFFFF' }}>{value ?? '—'}</div>
+      <div style={{ fontSize: '0.68rem', color: '#A1A1AA', fontWeight: 500 }}>{label}</div>
+      {sub && <div style={{ fontSize: '0.65rem', color: '#71717A' }}>{sub}</div>}
     </div>
   );
 }
@@ -175,7 +175,7 @@ export default function PilotQAPage() {
       <div className="page-header">
         <div>
           <h1>Pilot QA Checklist</h1>
-          <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>
+          <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>
             Internal pilot readiness &amp; field validation — admin only
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function PilotQAPage() {
         {/* ── Health Indicators ── */}
         {health && (
           <div style={{ marginBottom: '1.25rem' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', marginBottom: '0.5rem' }}>
               Live Health Indicators
             </div>
             <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -226,13 +226,13 @@ export default function PilotQAPage() {
                 {report.passRate !== null && (
                   <span style={{
                     padding: '0.2rem 0.6rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700,
-                    background: report.passRate >= 80 ? '#d1fae5' : report.passRate >= 50 ? '#fef3c7' : '#fee2e2',
-                    color:      report.passRate >= 80 ? '#065f46' : report.passRate >= 50 ? '#92400e'  : '#991b1b',
+                    background: report.passRate >= 80 ? 'rgba(34,197,94,0.15)' : report.passRate >= 50 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                    color:      report.passRate >= 80 ? '#22C55E' : report.passRate >= 50 ? '#F59E0B'  : '#EF4444',
                   }}>
                     {report.passRate}% pass rate
                   </span>
                 )}
-                <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{reportOpen ? '▲' : '▼'}</span>
+                <span style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{reportOpen ? '▲' : '▼'}</span>
               </div>
             </div>
             {reportOpen && (
@@ -240,16 +240,16 @@ export default function PilotQAPage() {
                 {/* Summary row */}
                 <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   {[
-                    ['Total', report.total, '#374151'],
-                    ['Pass', report.pass, '#065f46'],
-                    ['Fail', report.fail, '#991b1b'],
-                    ['Blocked', report.blocked, '#92400e'],
-                    ['Not Started', report.not_started, '#4b5563'],
+                    ['Total', report.total, '#FFFFFF'],
+                    ['Pass', report.pass, '#22C55E'],
+                    ['Fail', report.fail, '#EF4444'],
+                    ['Blocked', report.blocked, '#F59E0B'],
+                    ['Not Started', report.not_started, '#A1A1AA'],
                     ['N/A', report.not_applicable, '#5b21b6'],
                   ].map(([label, val, color]) => (
                     <div key={label} style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '1.5rem', fontWeight: 700, color }}>{val}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{label}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{label}</div>
                     </div>
                   ))}
                 </div>
@@ -258,10 +258,10 @@ export default function PilotQAPage() {
                   {/* Top failures */}
                   {report.topFailCategories.length > 0 && (
                     <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#991b1b', marginBottom: '0.35rem' }}>Top Failures</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#EF4444', marginBottom: '0.35rem' }}>Top Failures</div>
                       {report.topFailCategories.map(c => (
-                        <div key={c.category} style={{ fontSize: '0.8rem', color: '#374151', marginBottom: '0.2rem' }}>
-                          {c.label} <span style={{ color: '#991b1b', fontWeight: 600 }}>({c.count})</span>
+                        <div key={c.category} style={{ fontSize: '0.8rem', color: '#FFFFFF', marginBottom: '0.2rem' }}>
+                          {c.label} <span style={{ color: '#EF4444', fontWeight: 600 }}>({c.count})</span>
                         </div>
                       ))}
                     </div>
@@ -269,10 +269,10 @@ export default function PilotQAPage() {
                   {/* Top blocked */}
                   {report.topBlockedCategories.length > 0 && (
                     <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#92400e', marginBottom: '0.35rem' }}>Top Blocked</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F59E0B', marginBottom: '0.35rem' }}>Top Blocked</div>
                       {report.topBlockedCategories.map(c => (
-                        <div key={c.category} style={{ fontSize: '0.8rem', color: '#374151', marginBottom: '0.2rem' }}>
-                          {c.label} <span style={{ color: '#92400e', fontWeight: 600 }}>({c.count})</span>
+                        <div key={c.category} style={{ fontSize: '0.8rem', color: '#FFFFFF', marginBottom: '0.2rem' }}>
+                          {c.label} <span style={{ color: '#F59E0B', fontWeight: 600 }}>({c.count})</span>
                         </div>
                       ))}
                     </div>
@@ -280,10 +280,10 @@ export default function PilotQAPage() {
                   {/* Key risks */}
                   {report.keyRisks.length > 0 && (
                     <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', marginBottom: '0.35rem' }}>Untested Areas</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.35rem' }}>Untested Areas</div>
                       {report.keyRisks.map(c => (
-                        <div key={c.category} style={{ fontSize: '0.8rem', color: '#374151', marginBottom: '0.2rem' }}>
-                          {c.label} <span style={{ color: '#6b7280' }}>({c.untested} untested)</span>
+                        <div key={c.category} style={{ fontSize: '0.8rem', color: '#FFFFFF', marginBottom: '0.2rem' }}>
+                          {c.label} <span style={{ color: '#A1A1AA' }}>({c.untested} untested)</span>
                         </div>
                       ))}
                     </div>
@@ -316,17 +316,17 @@ export default function PilotQAPage() {
                   {link && (
                     <span
                       onClick={e => { e.stopPropagation(); navigate(link.to); }}
-                      style={{ fontSize: '0.7rem', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}
+                      style={{ fontSize: '0.7rem', color: '#22C55E', cursor: 'pointer', textDecoration: 'underline' }}
                     >
                       {link.label} →
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#065f46', fontWeight: 600 }}>{stats.pass}/{stats.total} pass</span>
-                  {stats.fail > 0 && <span style={{ fontSize: '0.75rem', color: '#991b1b', fontWeight: 600 }}>{stats.fail} fail</span>}
-                  {stats.blocked > 0 && <span style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: 600 }}>{stats.blocked} blocked</span>}
-                  <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{isOpen ? '▲' : '▼'}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#22C55E', fontWeight: 600 }}>{stats.pass}/{stats.total} pass</span>
+                  {stats.fail > 0 && <span style={{ fontSize: '0.75rem', color: '#EF4444', fontWeight: 600 }}>{stats.fail} fail</span>}
+                  {stats.blocked > 0 && <span style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600 }}>{stats.blocked} blocked</span>}
+                  <span style={{ fontSize: '0.8rem', color: '#71717A' }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
               </div>
 
@@ -343,19 +343,19 @@ export default function PilotQAPage() {
                         return (
                           <React.Fragment key={item.itemKey}>
                             <tr style={{
-                              borderTop: idx === 0 ? 'none' : '1px solid #f3f4f6',
-                              background: item.status === 'fail' ? '#fff5f5' : item.status === 'blocked' ? '#fffdf0' : 'white',
+                              borderTop: idx === 0 ? 'none' : '1px solid #243041',
+                              background: item.status === 'fail' ? 'rgba(239,68,68,0.15)' : item.status === 'blocked' ? 'rgba(245,158,11,0.15)' : '#162033',
                             }}>
                               {/* Label + description */}
                               <td style={{ padding: '0.6rem 1rem', width: '40%' }}>
-                                <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827' }}>{item.label}</div>
-                                <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '0.1rem' }}>{item.description}</div>
+                                <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#FFFFFF' }}>{item.label}</div>
+                                <div style={{ fontSize: '0.72rem', color: '#A1A1AA', marginTop: '0.1rem' }}>{item.description}</div>
                                 {item.suggestedStatus && (
                                   <div style={{ marginTop: '0.25rem' }}>
                                     <span style={{
                                       fontSize: '0.68rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: 10,
-                                      background: item.suggestedStatus === 'pass' ? '#d1fae5' : '#fee2e2',
-                                      color: item.suggestedStatus === 'pass' ? '#065f46' : '#991b1b',
+                                      background: item.suggestedStatus === 'pass' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                                      color: item.suggestedStatus === 'pass' ? '#22C55E' : '#EF4444',
                                     }}>
                                       auto: {item.suggestedStatus}
                                     </span>
@@ -371,9 +371,9 @@ export default function PilotQAPage() {
                                   onChange={e => saveItem(item.itemKey, { status: e.target.value, notes: item.notes })}
                                   style={{
                                     padding: '0.3rem 0.5rem', fontSize: '0.8rem', borderRadius: 6, cursor: 'pointer',
-                                    border: '1px solid #d1d5db', width: '100%',
-                                    background: STATUS_CONFIG[item.status]?.bg || '#f3f4f6',
-                                    color: STATUS_CONFIG[item.status]?.color || '#374151',
+                                    border: '1px solid #243041', width: '100%',
+                                    background: STATUS_CONFIG[item.status]?.bg || '#1E293B',
+                                    color: STATUS_CONFIG[item.status]?.color || '#FFFFFF',
                                     fontWeight: 600, opacity: isSaving ? 0.6 : 1,
                                   }}
                                 >
@@ -402,18 +402,18 @@ export default function PilotQAPage() {
                               {/* Last updated */}
                               <td style={{ padding: '0.6rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 {item.updatedAt && (
-                                  <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>
+                                  <div style={{ fontSize: '0.68rem', color: '#71717A' }}>
                                     {new Date(item.updatedAt).toLocaleDateString()}
                                     {item.updatedBy && <span> · {item.updatedBy.fullName}</span>}
                                   </div>
                                 )}
-                                {isSaving && <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>saving…</span>}
+                                {isSaving && <span style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>saving…</span>}
                               </td>
                             </tr>
 
                             {/* Inline notes row */}
                             {noteIsOpen && (
-                              <tr style={{ background: '#fafafa', borderTop: '1px dashed #e5e7eb' }}>
+                              <tr style={{ background: '#1E293B', borderTop: '1px dashed #243041' }}>
                                 <td colSpan={4} style={{ padding: '0.5rem 1rem 0.75rem' }}>
                                   <textarea
                                     rows={2}
@@ -443,7 +443,7 @@ export default function PilotQAPage() {
                                     {item.notes && (
                                       <button
                                         className="btn btn-outline btn-sm"
-                                        style={{ color: '#6b7280' }}
+                                        style={{ color: '#A1A1AA' }}
                                         disabled={isSaving}
                                         onClick={() => {
                                           saveItem(item.itemKey, { status: item.status, notes: null });

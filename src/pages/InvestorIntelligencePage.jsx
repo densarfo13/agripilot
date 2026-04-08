@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 
 const CLASSIFICATION_COLORS = {
-  on_track: { bg: '#d1fae5', color: '#065f46', label: 'On Track' },
-  slight_delay: { bg: '#fef3c7', color: '#92400e', label: 'Slight Delay' },
-  at_risk: { bg: '#fed7aa', color: '#9a3412', label: 'At Risk' },
-  critical: { bg: '#fee2e2', color: '#991b1b', label: 'Critical' },
+  on_track: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E', label: 'On Track' },
+  slight_delay: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Slight Delay' },
+  at_risk: { bg: 'rgba(245,158,11,0.2)', color: '#F59E0B', label: 'At Risk' },
+  critical: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Critical' },
 };
 
 export default function InvestorIntelligencePage() {
@@ -81,7 +81,7 @@ export default function InvestorIntelligencePage() {
               <MetricCard
                 label="Trend"
                 value={summary.productivityTrend === 'improving' ? 'Improving' : summary.productivityTrend === 'declining' ? 'Declining' : summary.productivityTrend === 'stable' ? 'Stable' : 'Insufficient'}
-                color={summary.productivityTrend === 'improving' ? '#16a34a' : summary.productivityTrend === 'declining' ? '#dc2626' : '#6b7280'}
+                color={summary.productivityTrend === 'improving' ? '#16a34a' : summary.productivityTrend === 'declining' ? '#dc2626' : '#A1A1AA'}
               />
             </div>
           </div>
@@ -97,8 +97,8 @@ export default function InvestorIntelligencePage() {
                   <span key={i} style={{
                     display: 'inline-block', padding: '0.3rem 0.75rem', borderRadius: 16,
                     fontSize: '0.8rem', fontWeight: 500,
-                    background: s.positive ? '#d1fae5' : '#fee2e2',
-                    color: s.positive ? '#065f46' : '#991b1b',
+                    background: s.positive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                    color: s.positive ? '#22C55E' : '#EF4444',
                   }}>
                     {s.positive ? '+' : '-'} {s.label}
                   </span>
@@ -126,18 +126,18 @@ export default function InvestorIntelligencePage() {
                 <MetricCard
                   label="Credibility Trend"
                   value={(credSummary.overallCredibility.trend || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                  color={credSummary.overallCredibility.trend === 'improving' ? '#16a34a' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#6b7280'}
+                  color={credSummary.overallCredibility.trend === 'improving' ? '#16a34a' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#A1A1AA'}
                 />
                 <MetricCard label="Assessed" value={`${credSummary.overallCredibility.seasonsAssessed}/${credSummary.overallCredibility.totalSeasons} seasons`} />
               </div>
               {Object.keys(credSummary.recurringFlags || {}).length > 0 && (
                 <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '0.3rem' }}>Recurring Flags</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.3rem' }}>Recurring Flags</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {Object.entries(credSummary.recurringFlags).map(([flag, count]) => (
                       <span key={flag} style={{
                         padding: '0.2rem 0.6rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 500,
-                        background: '#fee2e2', color: '#991b1b',
+                        background: 'rgba(239,68,68,0.15)', color: '#EF4444',
                       }}>
                         {flag.replace(/_/g, ' ')} ({count}x)
                       </span>
@@ -146,7 +146,7 @@ export default function InvestorIntelligencePage() {
                 </div>
               )}
               {Object.keys(credSummary.recurringFlags || {}).length === 0 && credSummary.overallCredibility.avgScore >= 70 && (
-                <div style={{ fontSize: '0.85rem', color: '#065f46' }}>No recurring data quality issues detected.</div>
+                <div style={{ fontSize: '0.85rem', color: '#22C55E' }}>No recurring data quality issues detected.</div>
               )}
             </div>
           </div>
@@ -198,8 +198,8 @@ export default function InvestorIntelligencePage() {
                         <td>
                           <span style={{
                             padding: '0.2rem 0.5rem', borderRadius: 10, fontSize: '0.75rem', fontWeight: 600,
-                            background: s.status === 'completed' ? '#d1fae5' : s.status === 'active' ? '#dbeafe' : '#f3f4f6',
-                            color: s.status === 'completed' ? '#065f46' : s.status === 'active' ? '#1e40af' : '#6b7280',
+                            background: s.status === 'completed' ? 'rgba(34,197,94,0.15)' : s.status === 'active' ? 'rgba(14,165,233,0.15)' : '#1E293B',
+                            color: s.status === 'completed' ? '#22C55E' : s.status === 'active' ? '#0EA5E9' : '#A1A1AA',
                           }}>{s.status}</span>
                         </td>
                         <td style={{ fontWeight: 600 }}>{s.progressScore?.score ?? '-'}</td>
@@ -234,8 +234,8 @@ export default function InvestorIntelligencePage() {
 
 function DetailRow({ label, value }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', padding: '0.35rem 0' }}>
-      <span style={{ color: '#6b7280' }}>{label}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #1E293B', padding: '0.35rem 0' }}>
+      <span style={{ color: '#A1A1AA' }}>{label}</span>
       <span style={{ fontWeight: 500 }}>{value}</span>
     </div>
   );
@@ -243,9 +243,9 @@ function DetailRow({ label, value }) {
 
 function MetricCard({ label, value, color }) {
   return (
-    <div style={{ background: '#f9fafb', borderRadius: 6, padding: '0.75rem', textAlign: 'center' }}>
-      <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem' }}>{label}</div>
-      <div style={{ fontSize: '1rem', fontWeight: 700, color: color || '#111827' }}>{value}</div>
+    <div style={{ background: '#1E293B', borderRadius: 6, padding: '0.75rem', textAlign: 'center' }}>
+      <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem' }}>{label}</div>
+      <div style={{ fontSize: '1rem', fontWeight: 700, color: color || '#FFFFFF' }}>{value}</div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 {
-  "name": "agripilot",
+  "name": "farroway",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build && cd server && npx prisma generate",
     "start": "cd server && node src/server.js",
-    "postinstall": "cd server && npm install",
+    "postinstall": "[ -d server ] && cd server && npm install || true",
     "db:push": "cd server && npx prisma db push",
     "db:seed": "cd server && node prisma/seed.js",
     "preview": "vite preview",

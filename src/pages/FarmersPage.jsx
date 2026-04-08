@@ -64,7 +64,7 @@ export default function FarmersPage() {
         <div>
           <h1>Farmers ({total})</h1>
           {!isSuperAdmin && user?.organization?.name && (
-            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{user.organization.name}</div>
+            <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{user.organization.name}</div>
           )}
         </div>
         <div className="flex gap-1">
@@ -85,9 +85,9 @@ export default function FarmersPage() {
               onClick={() => handleStatusFilter(f.value)}
               style={{
                 padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
-                border: statusFilter === f.value ? '1.5px solid #2563eb' : '1.5px solid #e5e7eb',
-                background: statusFilter === f.value ? '#eff6ff' : '#fff',
-                color: statusFilter === f.value ? '#1d4ed8' : '#6b7280',
+                border: statusFilter === f.value ? '1.5px solid #22C55E' : '1.5px solid #243041',
+                background: statusFilter === f.value ? 'rgba(34,197,94,0.15)' : '#162033',
+                color: statusFilter === f.value ? '#22C55E' : '#A1A1AA',
                 fontWeight: statusFilter === f.value ? 600 : 400,
               }}
             >{f.label}</button>
@@ -163,26 +163,26 @@ function InviteLinkBox({ url, label, expiresAt }) {
     navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(() => {});
   };
   return (
-    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '0.75rem' }}>
-      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#166534', marginBottom: '0.4rem' }}>{label}</div>
+    <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem' }}>
+      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#22C55E', marginBottom: '0.4rem' }}>{label}</div>
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: expiresAt ? '0.35rem' : 0 }}>
         <input
           readOnly
           value={url}
           onClick={e => e.target.select()}
-          style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.78rem', padding: '0.35rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', color: '#374151', cursor: 'text' }}
+          style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.78rem', padding: '0.35rem 0.5rem', border: '1px solid #243041', borderRadius: 4, background: '#0F172A', color: '#FFFFFF', cursor: 'text' }}
         />
         <button
           type="button"
           onClick={copy}
           className="btn btn-outline btn-sm"
-          style={{ whiteSpace: 'nowrap', color: copied ? '#16a34a' : undefined, borderColor: copied ? '#16a34a' : undefined }}
+          style={{ whiteSpace: 'nowrap', color: copied ? '#22C55E' : undefined, borderColor: copied ? '#22C55E' : undefined }}
         >
           {copied ? '✓ Copied' : 'Copy Link'}
         </button>
       </div>
       {expiresAt && (
-        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+        <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>
           Link expires: {new Date(expiresAt).toLocaleDateString()} — resend from Farmer Detail if needed
         </div>
       )}
@@ -215,7 +215,7 @@ function RowCopyLinkButton({ farmerId }) {
       className="btn btn-outline btn-sm"
       onClick={handle}
       disabled={state === 'loading'}
-      style={{ fontSize: '0.75rem', color: state === 'copied' ? '#16a34a' : state === 'error' ? '#dc2626' : '#2563eb', borderColor: state === 'copied' ? '#16a34a' : state === 'error' ? '#dc2626' : undefined }}
+      style={{ fontSize: '0.75rem', color: state === 'copied' ? '#22C55E' : state === 'error' ? '#EF4444' : '#22C55E', borderColor: state === 'copied' ? '#22C55E' : state === 'error' ? '#EF4444' : undefined }}
     >
       {state === 'loading' ? '…' : state === 'copied' ? '✓ Copied' : state === 'error' ? 'Failed' : 'Copy Link'}
     </button>
@@ -239,13 +239,13 @@ function StepIndicator({ step }) {
               <div style={{
                 width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '0.8rem', fontWeight: 700,
-                background: done ? '#16a34a' : active ? '#2563eb' : '#e5e7eb',
-                color: (done || active) ? '#fff' : '#6b7280',
+                background: done ? '#22C55E' : active ? '#22C55E' : '#243041',
+                color: (done || active) ? '#fff' : '#A1A1AA',
               }}>{done ? '✓' : num}</div>
-              <div style={{ fontSize: '0.7rem', marginTop: '0.2rem', color: active ? '#1d4ed8' : done ? '#15803d' : '#6b7280', fontWeight: active ? 600 : 400 }}>{label}</div>
+              <div style={{ fontSize: '0.7rem', marginTop: '0.2rem', color: active ? '#22C55E' : done ? '#22C55E' : '#A1A1AA', fontWeight: active ? 600 : 400 }}>{label}</div>
             </div>
             {i < STEP_LABELS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: done ? '#16a34a' : '#e5e7eb', marginBottom: '1rem' }} />
+              <div style={{ flex: 1, height: 2, background: done ? '#22C55E' : '#243041', marginBottom: '1rem' }} />
             )}
           </React.Fragment>
         );
@@ -261,6 +261,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
     countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', yearsExperience: '',
     nationalId: '', preferredLanguage: 'en',
     accessMode: 'invite_link', // 'invite_link' | 'create_now'
+    channel: 'link',           // 'link' | 'email' | 'phone'
+    contactEmail: '',          // for email channel delivery (not the future login email)
     email: '', password: '',
   });
   const [error, setError] = useState('');
@@ -273,8 +275,9 @@ function CreateFarmerModal({ onClose, onCreated }) {
   // Step 1 validation
   const step1Valid = form.fullName.trim() && form.phone.trim() && form.region.trim();
   // Step 2 validation
-  const step2Valid = form.accessMode === 'invite_link' ||
-    (form.email.trim() && form.password.length >= 8);
+  const step2Valid = form.accessMode === 'create_now'
+    ? (form.email.trim() && form.password.length >= 8)
+    : form.channel !== 'email' || form.contactEmail.trim();
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -294,6 +297,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
         preferredLanguage: form.preferredLanguage,
         email: form.accessMode === 'create_now' ? form.email : undefined,
         password: form.accessMode === 'create_now' ? form.password : undefined,
+        channel: form.accessMode === 'invite_link' ? form.channel : undefined,
+        contactEmail: form.accessMode === 'invite_link' && form.channel === 'email' ? form.contactEmail : undefined,
       };
       const res = await api.post('/farmers', payload);
       setSuccess({
@@ -301,6 +306,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
         credentialsCreated: res.data.credentialsCreated,
         inviteToken: res.data.inviteToken,
         inviteExpiresAt: res.data.inviteExpiresAt,
+        deliveryStatus: res.data.deliveryStatus,
+        deliveryChannel: res.data.deliveryChannel,
         deliveryNote: res.data.deliveryNote,
       });
     } catch (err) {
@@ -311,16 +318,25 @@ function CreateFarmerModal({ onClose, onCreated }) {
   // ── Success screen ────────────────────────────────────────
   if (success) {
     const inviteUrl = success.inviteToken ? `${window.location.origin}/accept-invite?token=${success.inviteToken}` : null;
+    const delivered = success.deliveryStatus === 'email_sent' || success.deliveryStatus === 'phone_sent';
     return (
       <div className="modal-overlay" onClick={() => onCreated()}>
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">Farmer Created <button className="btn btn-outline btn-sm" onClick={() => onCreated()}>X</button></div>
           <div className="modal-body">
-            <div style={{ background: '#ecfdf5', color: '#065f46', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
-              <strong>{success.farmerName}</strong> has been added to AgriPilot.
+            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
+              <strong>{success.farmerName}</strong> has been added to Farroway.
             </div>
-            <div style={{ background: success.credentialsCreated ? '#eff6ff' : '#fffbeb', color: success.credentialsCreated ? '#1e40af' : '#92400e', padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem', marginBottom: inviteUrl ? '0.75rem' : 0 }}>
-              <strong>{success.credentialsCreated ? 'Login Account Created' : 'Invite Link Generated'}</strong>
+            <div style={{
+              background: success.credentialsCreated ? 'rgba(34,197,94,0.15)' : delivered ? 'rgba(34,197,94,0.15)' : '#1E293B',
+              color: success.credentialsCreated ? '#22C55E' : delivered ? '#22C55E' : '#F59E0B',
+              padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem', marginBottom: inviteUrl ? '0.75rem' : 0,
+            }}>
+              <strong>
+                {success.credentialsCreated ? 'Login Account Created'
+                  : delivered ? (success.deliveryChannel === 'email' ? 'Invite Email Sent' : 'Invite SMS Sent')
+                  : 'Invite Link Generated'}
+              </strong>
               {success.deliveryNote && <p style={{ margin: '0.5rem 0 0' }}>{success.deliveryNote}</p>}
             </div>
             {inviteUrl && (
@@ -409,15 +425,15 @@ function CreateFarmerModal({ onClose, onCreated }) {
           {/* ── Step 2: Account Access ── */}
           {step === 2 && (
             <div>
-              <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '1rem' }}>
-                How will <strong>{form.fullName}</strong> get access to AgriPilot?
+              <p style={{ fontSize: '0.875rem', color: '#FFFFFF', marginBottom: '1rem' }}>
+                How will <strong>{form.fullName}</strong> get access to Farroway?
               </p>
               <div
                 onClick={() => setVal('accessMode', 'invite_link')}
                 style={{
-                  border: `2px solid ${form.accessMode === 'invite_link' ? '#2563eb' : '#e5e7eb'}`,
+                  border: `2px solid ${form.accessMode === 'invite_link' ? '#22C55E' : '#243041'}`,
                   borderRadius: 8, padding: '0.875rem', marginBottom: '0.75rem', cursor: 'pointer',
-                  background: form.accessMode === 'invite_link' ? '#eff6ff' : '#fff',
+                  background: form.accessMode === 'invite_link' ? 'rgba(34,197,94,0.15)' : '#162033',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -425,23 +441,72 @@ function CreateFarmerModal({ onClose, onCreated }) {
                   <strong style={{ fontSize: '0.9rem' }}>Generate Invite Link</strong>
                   <span className="badge badge-link-generated" style={{ marginLeft: 'auto' }}>Recommended</span>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280', paddingLeft: '1.4rem' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#A1A1AA', paddingLeft: '1.4rem' }}>
                   A secure link is generated. Share it via WhatsApp, SMS, or email — the farmer sets their own email and password.
                 </p>
+                {form.accessMode === 'invite_link' && (
+                  <div onClick={e => e.stopPropagation()} style={{ paddingLeft: '1.4rem', marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.4rem' }}>Delivery method</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {[
+                        { value: 'link', label: 'Manual Share' },
+                        { value: 'email', label: 'Send via Email' },
+                        { value: 'phone', label: 'Send via SMS' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setVal('channel', opt.value)}
+                          style={{
+                            padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer',
+                            border: `1.5px solid ${form.channel === opt.value ? '#22C55E' : '#243041'}`,
+                            background: form.channel === opt.value ? '#22C55E' : '#162033',
+                            color: form.channel === opt.value ? '#fff' : '#FFFFFF',
+                            fontWeight: form.channel === opt.value ? 600 : 400,
+                          }}
+                        >{opt.label}</button>
+                      ))}
+                    </div>
+                    {form.channel === 'email' && (
+                      <div className="form-group" style={{ marginTop: '0.6rem' }}>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Farmer's email address *</label>
+                        <input
+                          className="form-input"
+                          type="email"
+                          placeholder="farmer@example.com"
+                          value={form.contactEmail}
+                          onChange={set('contactEmail')}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                        <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.2rem' }}>The invite link will be sent here via email.</div>
+                      </div>
+                    )}
+                    {form.channel === 'phone' && (
+                      <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.4rem' }}>
+                        The invite link will be sent as an SMS to <strong>{form.phone || 'the phone number from Step 1'}</strong>.
+                      </div>
+                    )}
+                    {form.channel === 'link' && (
+                      <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.4rem' }}>
+                        The invite link will be shown after creation — copy and share it manually.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div
                 onClick={() => setVal('accessMode', 'create_now')}
                 style={{
-                  border: `2px solid ${form.accessMode === 'create_now' ? '#2563eb' : '#e5e7eb'}`,
+                  border: `2px solid ${form.accessMode === 'create_now' ? '#22C55E' : '#243041'}`,
                   borderRadius: 8, padding: '0.875rem', cursor: 'pointer',
-                  background: form.accessMode === 'create_now' ? '#eff6ff' : '#fff',
+                  background: form.accessMode === 'create_now' ? 'rgba(34,197,94,0.15)' : '#162033',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                   <input type="radio" readOnly checked={form.accessMode === 'create_now'} />
                   <strong style={{ fontSize: '0.9rem' }}>Create Login Now</strong>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280', paddingLeft: '1.4rem' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#A1A1AA', paddingLeft: '1.4rem' }}>
                   Set an email and temporary password for the farmer. They can change it after first login.
                 </p>
                 {form.accessMode === 'create_now' && (
@@ -463,8 +528,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
           {/* ── Step 3: Review ── */}
           {step === 3 && (
             <div>
-              <div style={{ background: '#f9fafb', borderRadius: 8, padding: '1rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.5rem', color: '#374151' }}>Farmer Details</div>
+              <div style={{ background: '#1E293B', borderRadius: 8, padding: '1rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.5rem', color: '#FFFFFF' }}>Farmer Details</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem 1rem' }}>
                   {[['Name', form.fullName], ['Phone', form.phone], ['Region', form.region], ['Country', form.countryCode],
                     form.district && ['District', form.district], form.village && ['Village', form.village],
@@ -473,19 +538,23 @@ function CreateFarmerModal({ onClose, onCreated }) {
                     form.yearsExperience && ['Experience', `${form.yearsExperience} yrs`],
                   ].filter(Boolean).map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', gap: '0.35rem' }}>
-                      <span style={{ color: '#6b7280', minWidth: 80 }}>{k}:</span>
+                      <span style={{ color: '#A1A1AA', minWidth: 80 }}>{k}:</span>
                       <span style={{ fontWeight: 500 }}>{v}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div style={{ background: form.accessMode === 'invite_link' ? '#eff6ff' : '#f0fdf4', border: `1px solid ${form.accessMode === 'invite_link' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 8, padding: '0.875rem', fontSize: '0.875rem' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: form.accessMode === 'invite_link' ? '#1e40af' : '#065f46' }}>
+              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.875rem', fontSize: '0.875rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: '#22C55E' }}>
                   {form.accessMode === 'invite_link' ? 'Invite Link will be generated' : 'Login Account will be created'}
                 </div>
-                <p style={{ margin: 0, color: '#374151' }}>
+                <p style={{ margin: 0, color: '#FFFFFF' }}>
                   {form.accessMode === 'invite_link'
-                    ? 'A secure invite link will be ready to share after creation.'
+                    ? form.channel === 'email'
+                      ? `Invite link will be emailed to ${form.contactEmail}`
+                      : form.channel === 'phone'
+                        ? `Invite link will be sent via SMS to ${form.phone}`
+                        : 'A secure invite link will be ready to share after creation.'
                     : `Login email: ${form.email}`}
                 </p>
               </div>
@@ -521,13 +590,15 @@ function InviteFarmerModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
     fullName: '', phone: '', email: '', password: '', region: '', district: '', village: '',
     countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', preferredLanguage: 'en',
+    channel: 'link', contactEmail: '',
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
-  const [success, setSuccess] = useState(null); // holds { credentialsCreated, deliveryNote }
+  const [success, setSuccess] = useState(null);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const setVal = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -544,13 +615,23 @@ function InviteFarmerModal({ onClose, onCreated }) {
         primaryCrop: form.primaryCrop || undefined,
         farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : undefined,
         preferredLanguage: form.preferredLanguage,
+        channel: !createAccount ? form.channel : undefined,
+        contactEmail: !createAccount && form.channel === 'email' ? form.contactEmail : undefined,
       };
       if (createAccount && form.email && form.password) {
         payload.email = form.email;
         payload.password = form.password;
       }
       const res = await api.post('/farmers/invite', payload);
-      setSuccess({ credentialsCreated: res.data.credentialsCreated, deliveryNote: res.data.deliveryNote, farmerName: form.fullName, inviteToken: res.data.inviteToken, inviteExpiresAt: res.data.inviteExpiresAt });
+      setSuccess({
+        credentialsCreated: res.data.credentialsCreated,
+        deliveryNote: res.data.deliveryNote,
+        deliveryStatus: res.data.deliveryStatus,
+        deliveryChannel: res.data.deliveryChannel,
+        farmerName: form.fullName,
+        inviteToken: res.data.inviteToken,
+        inviteExpiresAt: res.data.inviteExpiresAt,
+      });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to invite farmer');
     } finally { setSaving(false); }
@@ -558,16 +639,25 @@ function InviteFarmerModal({ onClose, onCreated }) {
 
   if (success) {
     const inviteUrl = success.inviteToken ? `${window.location.origin}/accept-invite?token=${success.inviteToken}` : null;
+    const delivered = success.deliveryStatus === 'email_sent' || success.deliveryStatus === 'phone_sent';
     return (
       <div className="modal-overlay" onClick={() => { onCreated(); }}>
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">Farmer Invited <button className="btn btn-outline btn-sm" onClick={() => onCreated()}>X</button></div>
           <div className="modal-body">
-            <div style={{ background: '#ecfdf5', color: '#065f46', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
-              <strong>{success.farmerName}</strong> has been successfully invited to AgriPilot.
+            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
+              <strong>{success.farmerName}</strong> has been successfully invited to Farroway.
             </div>
-            <div style={{ background: success.credentialsCreated ? '#eff6ff' : '#fffbeb', color: success.credentialsCreated ? '#1e40af' : '#92400e', padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem', marginBottom: inviteUrl ? '0.75rem' : 0 }}>
-              <strong>{success.credentialsCreated ? 'Login Account Created' : 'No Login Account'}</strong>
+            <div style={{
+              background: success.credentialsCreated ? 'rgba(34,197,94,0.15)' : delivered ? 'rgba(34,197,94,0.15)' : '#1E293B',
+              color: success.credentialsCreated ? '#22C55E' : delivered ? '#22C55E' : '#F59E0B',
+              padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem', marginBottom: inviteUrl ? '0.75rem' : 0,
+            }}>
+              <strong>
+                {success.credentialsCreated ? 'Login Account Created'
+                  : delivered ? (success.deliveryChannel === 'email' ? 'Invite Email Sent' : 'Invite SMS Sent')
+                  : 'No Login Account'}
+              </strong>
               <p style={{ margin: '0.5rem 0 0' }}>{success.deliveryNote}</p>
             </div>
             {inviteUrl && (
@@ -589,7 +679,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-            <div style={{ background: '#eff6ff', color: '#1e40af', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
+            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
               Invited farmers are pre-approved and can begin using the system immediately once they have login credentials.
             </div>
             <div className="form-row">
@@ -651,8 +741,59 @@ function InviteFarmerModal({ onClose, onCreated }) {
               </select>
             </div>
 
+            {/* Invite delivery channel (shown when not creating an account) */}
+            {!createAccount && (
+              <div style={{ borderTop: '1px solid #243041', marginTop: '1rem', paddingTop: '1rem' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '0.5rem' }}>Invite delivery</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                  {[
+                    { value: 'link', label: 'Manual Share' },
+                    { value: 'email', label: 'Send via Email' },
+                    { value: 'phone', label: 'Send via SMS' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setVal('channel', opt.value)}
+                      style={{
+                        padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer',
+                        border: `1.5px solid ${form.channel === opt.value ? '#22C55E' : '#243041'}`,
+                        background: form.channel === opt.value ? '#22C55E' : '#162033',
+                        color: form.channel === opt.value ? '#fff' : '#FFFFFF',
+                        fontWeight: form.channel === opt.value ? 600 : 400,
+                      }}
+                    >{opt.label}</button>
+                  ))}
+                </div>
+                {form.channel === 'email' && (
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Farmer's email address *</label>
+                    <input
+                      className="form-input"
+                      type="email"
+                      placeholder="farmer@example.com"
+                      value={form.contactEmail}
+                      onChange={set('contactEmail')}
+                      required
+                    />
+                    <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.2rem' }}>The invite link will be sent to this address.</div>
+                  </div>
+                )}
+                {form.channel === 'phone' && form.phone && (
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>
+                    Invite SMS will be sent to <strong>{form.phone}</strong>.
+                  </div>
+                )}
+                {form.channel === 'link' && (
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>
+                    Copy the link after inviting and share it manually.
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Optional: create login account */}
-            <div style={{ borderTop: '1px solid #e5e7eb', marginTop: '1rem', paddingTop: '1rem' }}>
+            <div style={{ borderTop: '1px solid #243041', marginTop: '1rem', paddingTop: '1rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
                 <input type="checkbox" checked={createAccount} onChange={e => setCreateAccount(e.target.checked)} />
                 Create login account now (optional)
@@ -670,7 +811,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
                 </div>
               )}
               {!createAccount && (
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '0.5rem 0 0' }}>
+                <p style={{ fontSize: '0.8rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
                   Farmer profile will be created without a login account. The farmer can later self-register with matching phone number.
                 </p>
               )}

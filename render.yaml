@@ -1,13 +1,13 @@
 databases:
-  - name: agripilot-db
+  - name: farroway-db
     plan: free
-    databaseName: agripilot
-    user: agripilot
+    databaseName: farroway
+    user: farroway
 
 services:
   - type: web
     plan: free
-    name: agripilot
+    name: farroway
     runtime: node
     region: oregon
     env: node
@@ -16,7 +16,7 @@ services:
     healthCheckPath: /api/health
     # Persistent disk for evidence file uploads (requires paid plan)
     # disk:
-    #   name: agripilot-uploads
+    #   name: farroway-uploads
     #   mountPath: /app/server/uploads
     #   sizeGB: 1
     envVars:
@@ -32,5 +32,5 @@ services:
         sync: false
       - key: DATABASE_URL
         fromDatabase:
-          name: agripilot-db
+          name: farroway-db
           property: connectionString

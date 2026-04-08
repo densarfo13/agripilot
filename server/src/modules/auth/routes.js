@@ -3,14 +3,16 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { isValidEmail, validatePassword } from '../../middleware/validate.js';
 import { validatePhone, normalizePhoneForStorage } from '../../utils/phoneUtils.js';
-import { registrationLimiter, loginLimiter } from '../../middleware/rateLimiters.js';
+import { registrationLimiter, loginLimiter, mfaVerifyLimiter, passwordResetLimiter } from '../../middleware/rateLimiters.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
+import { initiatePasswordReset, completePasswordReset } from './resetService.js';
 import { writeAuditLog } from '../audit/service.js';
 import { logAuthEvent } from '../../utils/opsLogger.js';
 import * as federated from './federated.js';
 import prisma from '../../config/database.js';
+import { config } from '../../config/index.js';
 
 const router = Router();
 
@@ -93,7 +95,103 @@ router.patch('/me', authenticate, asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-// Change own password (authenticated user)
+// ─── Logout ────────────────────────────────────────────
+// Bumps tokenVersion so all existing JWTs for this user become invalid.
+
+router.post('/logout', authenticate, asyncHandler(async (req, res) => {
+  await authService.logout(req.user.sub);
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'user_logout',
+    details: { method: req.user.lastLoginMethod || 'unknown' },
+  }).catch(() => {});
+  res.json({ message: 'Logged out successfully.' });
+}));
+
+// ─── MFA Challenge (after password login) ──────────────
+// Called when login returned { mfaChallengeRequired: true, mfaToken }.
+// Accepts the mfaToken (in body) + TOTP code, returns full access JWT.
+
+router.post('/mfa/verify', mfaVerifyLimiter, asyncHandler(async (req, res) => {
+  const { mfaToken, code } = req.body;
+  if (!mfaToken || !code) {
+    return res.status(400).json({ error: 'mfaToken and code are required' });
+  }
+
+  let result;
+  try {
+    result = await authService.completeMfaChallenge({
+      mfaToken,
+      totpCode: String(code).trim(),
+    });
+  } catch (err) {
+    logAuthEvent('mfa_challenge_failed', { ip: req.ip, reason: err.message });
+    throw err;
+  }
+
+  writeAuditLog({
+    userId: result.user.id,
+    action: 'mfa_challenge_success',
+    details: { method: 'totp' },
+  }).catch(() => {});
+
+  res.json(result);
+}));
+
+// ─── Step-up Auth ──────────────────────────────────────
+// Re-verify MFA and get a new JWT with refreshed mfaVerifiedAt.
+// Called when a sensitive route returns { code: 'STEP_UP_REQUIRED' }.
+
+router.post('/step-up', authenticate, mfaVerifyLimiter, asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'code is required' });
+
+  let result;
+  try {
+    result = await authService.stepUpAuth({
+      userId: req.user.sub,
+      totpCode: String(code).trim(),
+    });
+  } catch (err) {
+    logAuthEvent('step_up_failed', { userId: req.user.sub, ip: req.ip, reason: err.message });
+    throw err;
+  }
+
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'step_up_verified',
+    details: {},
+  }).catch(() => {});
+
+  res.json(result);
+}));
+
+// ─── Forgot Password ───────────────────────────────────
+// Self-service reset initiation. Always returns 200 (anti-enumeration).
+
+router.post('/forgot-password', passwordResetLimiter, asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'email is required' });
+  if (!isValidEmail(email)) return res.status(400).json({ error: 'Invalid email format' });
+
+  const result = await initiatePasswordReset({ email });
+  res.json(result);
+}));
+
+// ─── Reset Password (with token) ──────────────────────
+// Validates the reset token and sets a new password.
+
+router.post('/reset-password', passwordResetLimiter, asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: 'token and newPassword are required' });
+  }
+
+  const result = await completePasswordReset({ rawToken: token, newPassword });
+  res.json(result);
+}));
+
+// ─── Change own password (authenticated user) ──────────
 router.post('/change-password', authenticate, asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -194,6 +292,7 @@ router.get('/providers', (req, res) => {
   res.json({
     google: federated.isGoogleEnabled(),
     microsoft: federated.isMicrosoftEnabled(),
+    oidc: federated.isOidcEnabled() ? { displayName: config.oidc?.displayName || 'SSO' } : false,
   });
 });
 
@@ -203,27 +302,23 @@ router.get('/google', (req, res) => {
   if (!federated.isGoogleEnabled()) {
     return res.status(501).json({ error: 'Google authentication is not configured' });
   }
-  const state = req.query.mode || 'login'; // 'login' or 'link'
-  res.redirect(federated.getGoogleAuthUrl(state));
+  res.redirect(federated.getGoogleAuthUrl({ mode: 'login' }));
 });
 
 router.get('/google/callback', asyncHandler(async (req, res) => {
   const { code, error: providerError, state } = req.query;
 
   if (providerError || !code) {
-    return res.send(federated.generateCallbackHtml({
-      error: providerError || 'Authentication cancelled',
-    }));
+    return res.send(federated.generateCallbackHtml({ error: providerError || 'Authentication cancelled' }));
   }
 
   try {
+    const statePayload = federated.verifyOAuthState(state);
     const providerUser = await federated.getGoogleUserInfo(code);
-    const result = await federated.federatedLogin(providerUser);
+    const result = await federated.handleFederatedCallback({ providerUser, statePayload });
     res.send(federated.generateCallbackHtml(result));
   } catch (err) {
-    res.send(federated.generateCallbackHtml({
-      error: err.message || 'Google authentication failed',
-    }));
+    res.send(federated.generateCallbackHtml({ error: err.message || 'Google authentication failed' }));
   }
 }));
 
@@ -233,46 +328,78 @@ router.get('/microsoft', (req, res) => {
   if (!federated.isMicrosoftEnabled()) {
     return res.status(501).json({ error: 'Microsoft authentication is not configured' });
   }
-  const state = req.query.mode || 'login';
-  res.redirect(federated.getMicrosoftAuthUrl(state));
+  res.redirect(federated.getMicrosoftAuthUrl({ mode: 'login' }));
 });
 
 router.get('/microsoft/callback', asyncHandler(async (req, res) => {
   const { code, error: providerError, state } = req.query;
 
   if (providerError || !code) {
-    return res.send(federated.generateCallbackHtml({
-      error: providerError || 'Authentication cancelled',
-    }));
+    return res.send(federated.generateCallbackHtml({ error: providerError || 'Authentication cancelled' }));
   }
 
   try {
+    const statePayload = federated.verifyOAuthState(state);
     const providerUser = await federated.getMicrosoftUserInfo(code);
-    const result = await federated.federatedLogin(providerUser);
+    const result = await federated.handleFederatedCallback({ providerUser, statePayload });
     res.send(federated.generateCallbackHtml(result));
   } catch (err) {
-    res.send(federated.generateCallbackHtml({
-      error: err.message || 'Microsoft authentication failed',
-    }));
+    res.send(federated.generateCallbackHtml({ error: err.message || 'Microsoft authentication failed' }));
+  }
+}));
+
+// ─── Generic OIDC ──────────────────────────────────────
+
+router.get('/oidc', asyncHandler(async (req, res) => {
+  if (!federated.isOidcEnabled()) {
+    return res.status(501).json({ error: 'OIDC authentication is not configured' });
+  }
+  const url = await federated.getOidcAuthUrl({ mode: 'login' });
+  res.redirect(url);
+}));
+
+router.get('/oidc/callback', asyncHandler(async (req, res) => {
+  const { code, error: providerError, state } = req.query;
+
+  if (providerError || !code) {
+    return res.send(federated.generateCallbackHtml({ error: providerError || 'Authentication cancelled' }));
+  }
+
+  try {
+    const statePayload = federated.verifyOAuthState(state);
+    const providerUser = await federated.getOidcUserInfo(code);
+    const result = await federated.handleFederatedCallback({ providerUser, statePayload });
+    res.send(federated.generateCallbackHtml(result));
+  } catch (err) {
+    res.send(federated.generateCallbackHtml({ error: err.message || 'OIDC authentication failed' }));
   }
 }));
 
 // ─── Provider Link / Unlink (authenticated) ────────────
 
-// Link a provider to current user's account (via popup flow)
+// Link a provider to current user's account (via popup flow).
+// userId is encoded in signed state so the callback knows who is linking.
 router.get('/link/google', authenticate, (req, res) => {
   if (!federated.isGoogleEnabled()) {
     return res.status(501).json({ error: 'Google authentication is not configured' });
   }
-  res.redirect(federated.getGoogleAuthUrl('link'));
+  res.redirect(federated.getGoogleAuthUrl({ mode: 'link', userId: req.user.sub }));
 });
 
 router.get('/link/microsoft', authenticate, (req, res) => {
   if (!federated.isMicrosoftEnabled()) {
     return res.status(501).json({ error: 'Microsoft authentication is not configured' });
   }
-  res.redirect(federated.getMicrosoftAuthUrl('link'));
+  res.redirect(federated.getMicrosoftAuthUrl({ mode: 'link', userId: req.user.sub }));
 });
+
+router.get('/link/oidc', authenticate, asyncHandler(async (req, res) => {
+  if (!federated.isOidcEnabled()) {
+    return res.status(501).json({ error: 'OIDC authentication is not configured' });
+  }
+  const url = await federated.getOidcAuthUrl({ mode: 'link', userId: req.user.sub });
+  res.redirect(url);
+}));
 
 // List linked providers
 router.get('/linked-providers', authenticate, asyncHandler(async (req, res) => {
@@ -283,8 +410,8 @@ router.get('/linked-providers', authenticate, asyncHandler(async (req, res) => {
 // Unlink a provider
 router.delete('/unlink-provider/:provider', authenticate, asyncHandler(async (req, res) => {
   const provider = req.params.provider;
-  if (!['google', 'microsoft'].includes(provider)) {
-    return res.status(400).json({ error: 'Invalid provider. Must be google or microsoft.' });
+  if (!['google', 'microsoft', 'oidc'].includes(provider)) {
+    return res.status(400).json({ error: 'Invalid provider. Must be google, microsoft, or oidc.' });
   }
   const result = await federated.unlinkProvider({
     userId: req.user.sub,

@@ -4,7 +4,7 @@ import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#0891b2', '#7c3aed', '#be185d', '#059669'];
+const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
 export default function PortfolioPage() {
   const [data, setData] = useState(null);
@@ -60,11 +60,11 @@ export default function PortfolioPage() {
             <div className="card-body">
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={data.statusBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
                   <XAxis dataKey="status" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={70} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -1,4 +1,4 @@
-# AgriPilot Pre-Demo Checklist
+# Farroway Pre-Demo Checklist
 
 > Run this 5 minutes before any live demo or pilot meeting.
 
@@ -6,7 +6,7 @@
 
 ## 1. Server Health
 
-- [ ] Open https://agripilot.onrender.com/api/health
+- [ ] Open https://agripilot-production.up.railway.app/api/health
 - [ ] Confirm response shows `"status":"ok"`
 - [ ] If the page takes 30+ seconds to load, it is cold-starting — wait for it
 
@@ -14,8 +14,8 @@
 
 ## 2. Admin Login
 
-- [ ] Open https://agripilot.onrender.com/login
-- [ ] Log in with `admin@agripilot.com` / `AgriAdmin#2026`
+- [ ] Open https://agripilot-production.up.railway.app/login
+- [ ] Log in with `admin@farroway.com` / `AgriAdmin#2026`
 - [ ] Confirm Dashboard loads with data (not empty)
 - [ ] Confirm sidebar shows: Dashboard, Farmers, Applications, Verification Queue, Fraud Queue, Portfolio, Reports, Audit, Control Center, User Management
 
@@ -78,7 +78,7 @@
 ## 10. Reviewer Login (optional)
 
 - [ ] Open a private/incognito window
-- [ ] Log in as `reviewer@agripilot.com` / `AgriStaff#2026`
+- [ ] Log in as `reviewer@farroway.com` / `AgriStaff#2026`
 - [ ] Confirm dashboard loads
 - [ ] Confirm Verification Queue and Fraud Queue are accessible
 
@@ -86,16 +86,16 @@
 
 ## 11. No Insecure Defaults
 
-- [ ] Confirm `password123` does NOT work for `admin@agripilot.com`
+- [ ] Confirm `password123` does NOT work for `admin@farroway.com`
 - [ ] If it does, reseed the database: `cd server && node prisma/seed.js`
 
 ---
 
 ## 12. Android APK (if demoing mobile)
 
-- [ ] Open AgriPilot app on phone
+- [ ] Open Farroway app on phone
 - [ ] Confirm login works with demo credentials
-- [ ] Confirm app shows correct AgriPilot logo (leaf + checkmark)
+- [ ] Confirm app shows correct Farroway logo (leaf + checkmark)
 
 ---
 
@@ -122,7 +122,7 @@ cd server && node prisma/seed.js
 
 | Account | Email | Password |
 |---------|-------|----------|
-| Admin | admin@agripilot.com | AgriAdmin#2026 |
-| Reviewer | reviewer@agripilot.com | AgriStaff#2026 |
-| Field Officer | officer@agripilot.com | AgriStaff#2026 |
-| Investor | investor@agripilot.com | AgriView#2026 |
+| Admin | admin@farroway.com | AgriAdmin#2026 |
+| Reviewer | reviewer@farroway.com | AgriStaff#2026 |
+| Field Officer | officer@farroway.com | AgriStaff#2026 |
+| Investor | investor@farroway.com | AgriView#2026 |

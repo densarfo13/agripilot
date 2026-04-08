@@ -44,7 +44,7 @@ export default function PendingRegistrationsPage() {
         {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
         {loading ? <div className="loading">Loading registrations...</div> : registrations.length === 0 ? (
           <div className="card">
-            <div className="card-body" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+            <div className="card-body" style={{ textAlign: 'center', padding: '2rem', color: '#A1A1AA' }}>
               {filter === 'pending' ? 'No pending farmer registrations.' : 'No self-registered farmers yet.'}
             </div>
           </div>
@@ -167,7 +167,7 @@ function ActionModal({ farmer, action, officers, onClose, onDone }) {
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
 
-            <div style={{ background: '#f8f9fa', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
+            <div style={{ background: '#1E293B', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
               <div><strong>Phone:</strong> {farmer.phone}</div>
               <div><strong>Region:</strong> {farmer.region}{farmer.district ? `, ${farmer.district}` : ''}</div>
               {farmer.primaryCrop && <div><strong>Crop:</strong> {farmer.primaryCrop}</div>}

@@ -210,6 +210,13 @@ model User {
   preferredLanguage String    @default("en") @map("preferred_language")
   lastLoginMethod   String?   @map("last_login_method")
   lastLoginAt       DateTime? @map("last_login_at")
+  // ─── MFA ───────────────────────────────────────────────
+  mfaEnabled        Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret         String?   @map("mfa_secret")         // AES-encrypted TOTP secret
+  mfaEnrolledAt     DateTime? @map("mfa_enrolled_at")
+  mfaBackupCodes    String[]  @default([]) @map("mfa_backup_codes")  // bcrypt-hashed backup codes
+  // ─── Token revocation ──────────────────────────────────
+  tokenVersion      Int       @default(0) @map("token_version")      // bump on logout/disable
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -230,9 +237,30 @@ model User {
   approvalRequestsRevoked  ApprovalRequest[] @relation("ApprovalRevokedBy")
   // Pilot QA
   pilotChecklistItems      PilotChecklistItem[] @relation("PilotChecklistUpdatedBy")
+  // Feedback
+  feedback                 UserFeedback[]
+  // Auth
+  passwordResetTokens      PasswordResetToken[]
 
   @@index([organizationId], map: "idx_users_org")
+  @@index([organizationId, role], map: "idx_users_org_role")
   @@map("users")
+}
+
+// ─── Password Reset Token ──────────────────────────────
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")   // SHA-256 of the raw token
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_pwd_reset_user")
+  @@map("password_reset_tokens")
 }
 
 // ─── Federated Identity ────────────────────────────────
@@ -304,6 +332,7 @@ model Farmer {
   notifications       FarmerNotification[]
   produceStorageStatus ProduceStorageStatus[]
   buyerInterests      BuyerInterest[]
+  farmProfiles        FarmProfile[]
 
   @@index([organizationId], map: "idx_farmers_org")
   @@index([createdById], map: "idx_farmers_created_by")
@@ -356,6 +385,8 @@ model Application {
   @@index([assignedReviewerId], map: "idx_applications_reviewer")
   @@index([assignedFieldOfficerId], map: "idx_applications_officer")
   @@index([createdAt], map: "idx_applications_created_at")
+  @@index([status, createdAt], map: "idx_applications_status_created")
+  @@index([assignedReviewerId, status], map: "idx_applications_reviewer_status")
   @@map("applications")
 }
 
@@ -649,6 +680,7 @@ model FarmActivity {
   @@index([farmerId], map: "idx_activities_farmer")
   @@index([activityType], map: "idx_activities_type")
   @@index([activityDate], map: "idx_activities_date")
+  @@index([farmerId, activityDate], map: "idx_activities_farmer_date")
   @@map("farm_activities")
 }
 
@@ -781,6 +813,7 @@ model FarmSeason {
   @@index([farmerId], map: "idx_seasons_farmer")
   @@index([status], map: "idx_seasons_status")
   @@index([cropType], map: "idx_seasons_crop")
+  @@index([status, createdAt], map: "idx_seasons_status_created")
   @@map("farm_seasons")
 }
 
@@ -904,12 +937,14 @@ model OfficerValidation {
   confirmedHarvest    Boolean?       @map("confirmed_harvest")
   note                String?
   validatedAt         DateTime       @default(now()) @map("validated_at")
+  completedAt         DateTime?      @map("completed_at")
   createdAt           DateTime       @default(now()) @map("created_at")
 
   season              FarmSeason     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@index([seasonId], map: "idx_officer_validation_season")
   @@index([officerId], map: "idx_officer_validation_officer")
+  @@index([officerId, completedAt], map: "idx_officer_validation_officer_completed")
   @@map("officer_validations")
 }
 
@@ -1010,4 +1045,160 @@ model PilotChecklistItem {
   @@index([organizationId], map: "idx_qa_org")
   @@index([category, organizationId], map: "idx_qa_cat_org")
   @@map("pilot_checklist_items")
+}
+
+// ─── User Feedback ──────────────────────────────────────
+
+model UserFeedback {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  role        String
+  message     String
+  context     String?
+  severity    String   @default("info") // info, low, medium, high
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "idx_feedback_user")
+  @@index([severity], map: "idx_feedback_severity")
+  @@index([createdAt], map: "idx_feedback_created_at")
+  @@map("user_feedback")
+}
+
+// ─── Pilot Daily Snapshot ───────────────────────────────
+
+model PilotDailySnapshot {
+  id                  String   @id @default(uuid())
+  organizationId      String?  @map("organization_id")
+  snapshotDate        DateTime @map("snapshot_date")
+  farmerCount         Int      @map("farmer_count")
+  activeCount         Int      @map("active_count")
+  updatesCount        Int      @map("updates_count")
+  validationsCount    Int      @map("validations_count")
+  inviteSentCount     Int      @default(0) @map("invite_sent_count")
+  inviteAcceptedCount Int      @default(0) @map("invite_accepted_count")
+  riskDistribution    Json     @default("{}") @map("risk_distribution")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, snapshotDate], name: "snapshot_org_date_unique")
+  @@index([organizationId, snapshotDate], map: "idx_snapshot_org_date")
+  @@map("pilot_daily_snapshots")
+}
+
+// ─── Auto Notification (triggered messaging system) ─────
+
+enum AutoNotifChannel {
+  sms
+  email
+  in_app
+}
+
+enum AutoNotifStatus {
+  pending
+  sent
+  failed
+  skipped     // rate-limited or opted-out
+}
+
+enum AutoNotifType {
+  invite_reminder         // farmer invited but not accepted after N days
+  no_first_update         // no first progress entry after planting
+  stale_farmer            // no activity for N days
+  validation_pending      // season awaiting officer validation
+  reviewer_backlog        // reviewer has too many pending applications
+  high_risk_alert         // season risk level is Critical or High
+}
+
+model AutoNotification {
+  id             String          @id @default(uuid())
+  organizationId String?         @map("organization_id")
+  userId         String?         @map("user_id")          // target staff user (null = all in org/role)
+  roleTarget     String?         @map("role_target")       // 'field_officer' | 'reviewer' | etc.
+  farmerId       String?         @map("farmer_id")
+  seasonId       String?         @map("season_id")
+  type           AutoNotifType
+  channel        AutoNotifChannel
+  subject        String?
+  message        String
+  status         AutoNotifStatus @default(pending)
+  attempts       Int             @default(0)
+  sentAt         DateTime?       @map("sent_at")
+  failureReason  String?         @map("failure_reason")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@index([organizationId], map: "idx_autonotif_org")
+  @@index([userId], map: "idx_autonotif_user")
+  @@index([farmerId], map: "idx_autonotif_farmer")
+  @@index([type, status], map: "idx_autonotif_type_status")
+  @@index([createdAt], map: "idx_autonotif_created_at")
+  @@map("auto_notifications")
+}
+
+// ─── Farm Profile (MVP persistence) ────────────────────
+
+enum FarmCrop {
+  maize
+  rice
+  cassava
+  wheat
+}
+
+enum FarmStage {
+  planting
+  growing
+  flowering
+  harvest
+}
+
+enum RecommendationStatus {
+  pending
+  completed
+  skipped
+}
+
+model FarmProfile {
+  id              String    @id @default(uuid())
+  farmerId        String    @map("farmer_id")
+  farmerName      String    @map("farmer_name")
+  farmName        String?   @map("farm_name")
+  locationName    String?   @map("location_name")
+  latitude        Float?
+  longitude       Float?
+  crop            FarmCrop
+  farmSizeAcres   Float?    @map("farm_size_acres")
+  stage           FarmStage @default(planting)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  farmer          Farmer    @relation(fields: [farmerId], references: [id])
+  recommendations RecommendationRecord[]
+
+  @@index([farmerId], map: "idx_farm_profiles_farmer")
+  @@index([crop], map: "idx_farm_profiles_crop")
+  @@map("farm_profiles")
+}
+
+model RecommendationRecord {
+  id                String               @id @default(uuid())
+  farmProfileId     String               @map("farm_profile_id")
+  title             String
+  action            String
+  urgency           String?
+  confidence        Float?
+  reason            String?
+  nextReviewDays    Int?                 @map("next_review_days")
+  score             Float?
+  status            RecommendationStatus @default(pending)
+  farmerNote        String?              @map("farmer_note")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  farmProfile       FarmProfile          @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+
+  @@index([farmProfileId], map: "idx_rec_records_farm")
+  @@index([status], map: "idx_rec_records_status")
+  @@index([farmProfileId, createdAt], map: "idx_rec_records_farm_created")
+  @@map("recommendation_records")
 }

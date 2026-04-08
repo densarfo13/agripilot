@@ -8,6 +8,8 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 import { extractOrganization } from '../../middleware/orgScope.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { workflowLimiter } from '../../middleware/rateLimiters.js';
+import { requireStepUp } from '../../middleware/requireStepUp.js';
+import { requireMfa } from '../../middleware/requireMfa.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import {
   createApprovalRequest,
@@ -21,6 +23,7 @@ import {
 
 const router = Router();
 router.use(authenticate);
+router.use(requireMfa);
 router.use(extractOrganization);
 
 // Only admins can manage the security queue
@@ -99,6 +102,7 @@ router.post('/requests/:id/approve',
   validateParamUUID('id'),
   authorize(...SECURITY_ADMIN_ROLES),
   workflowLimiter,
+  requireStepUp(15),  // SoD approval: tighter 15-min window
   dedupGuard('security-approve'),
   asyncHandler(async (req, res) => {
     const request = await approveRequest({

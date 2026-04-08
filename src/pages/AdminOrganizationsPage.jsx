@@ -7,12 +7,12 @@ import { getCountryName } from '../utils/countries.js';
 const ORG_TYPES = ['NGO', 'LENDER', 'COOPERATIVE', 'INVESTOR', 'DEVELOPMENT_PARTNER', 'INTERNAL'];
 
 const TYPE_COLORS = {
-  NGO: { bg: '#dbeafe', color: '#1d4ed8' },
-  LENDER: { bg: '#d1fae5', color: '#065f46' },
-  COOPERATIVE: { bg: '#fef3c7', color: '#92400e' },
-  INVESTOR: { bg: '#ede9fe', color: '#5b21b6' },
-  DEVELOPMENT_PARTNER: { bg: '#fce7f3', color: '#be185d' },
-  INTERNAL: { bg: '#f3f4f6', color: '#4b5563' },
+  NGO: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  LENDER: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  COOPERATIVE: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+  INVESTOR: { bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
+  DEVELOPMENT_PARTNER: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
+  INTERNAL: { bg: '#1E293B', color: '#A1A1AA' },
 };
 
 export default function AdminOrganizationsPage() {
@@ -59,43 +59,43 @@ export default function AdminOrganizationsPage() {
                   <div className="card-body">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827' }}>{org.name}</div>
+                        <div style={{ fontWeight: 700, fontSize: '1rem', color: '#FFFFFF' }}>{org.name}</div>
                         <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.6rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: tc.bg, color: tc.color }}>
                           {org.type.replace(/_/g, ' ')}
                         </span>
                       </div>
                       <span style={{
                         padding: '0.2rem 0.6rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600,
-                        background: org.isActive ? '#d1fae5' : '#fee2e2',
-                        color: org.isActive ? '#065f46' : '#991b1b',
+                        background: org.isActive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                        color: org.isActive ? '#22C55E' : '#EF4444',
                       }}>
                         {org.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
-                      <div style={{ textAlign: 'center', padding: '0.5rem', background: '#f9fafb', borderRadius: 6 }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>{org._count?.users ?? 0}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 500 }}>Users</div>
+                      <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>{org._count?.users ?? 0}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>Users</div>
                       </div>
-                      <div style={{ textAlign: 'center', padding: '0.5rem', background: '#f9fafb', borderRadius: 6 }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>{org._count?.farmers ?? 0}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 500 }}>Farmers</div>
+                      <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>{org._count?.farmers ?? 0}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>Farmers</div>
                       </div>
-                      <div style={{ textAlign: 'center', padding: '0.5rem', background: '#f9fafb', borderRadius: 6 }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>{org._count?.applications ?? 0}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 500 }}>Applications</div>
+                      <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>{org._count?.applications ?? 0}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>Applications</div>
                       </div>
                     </div>
 
                     {org.countryCode && (
-                      <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#6b7280' }}>
+                      <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#A1A1AA' }}>
                         Country: <strong>{getCountryName(org.countryCode)}</strong>
                         {org.regionCode && <span> | Region: <strong>{org.regionCode}</strong></span>}
                       </div>
                     )}
 
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#9ca3af' }}>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#71717A' }}>
                       Created {new Date(org.createdAt).toLocaleDateString()}
                     </div>
                   </div>
@@ -252,7 +252,7 @@ function EditOrgModal({ org, onClose, onUpdated }) {
                 Organization is active
               </label>
             </div>
-            <div style={{ padding: '0.5rem 0.75rem', background: '#f9fafb', borderRadius: 6, fontSize: '0.8rem', color: '#6b7280' }}>
+            <div style={{ padding: '0.5rem 0.75rem', background: '#1E293B', borderRadius: 6, fontSize: '0.8rem', color: '#A1A1AA' }}>
               ID: <code style={{ fontSize: '0.7rem' }}>{org.id}</code>
             </div>
           </div>

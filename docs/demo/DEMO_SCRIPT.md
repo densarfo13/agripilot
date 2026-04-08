@@ -1,4 +1,4 @@
-# AgriPilot 10-Minute Demo Script
+# Farroway 10-Minute Demo Script
 
 > Read this word-for-word in a live call. Screens and clicks are marked clearly.
 
@@ -6,8 +6,8 @@
 
 ## SETUP (before the call)
 
-- Open https://agripilot.onrender.com in Chrome
-- Log in as `admin@agripilot.com` / `AgriAdmin#2026`
+- Open https://agripilot-production.up.railway.app in Chrome
+- Log in as `admin@farroway.com` / `AgriAdmin#2026`
 - Make sure the Dashboard loads with data
 - Have this script open on a second screen or printed
 
@@ -21,7 +21,7 @@
 
 The problem is this: when institutions like yours extend credit to smallholder farmers, the verification process is manual, slow, and vulnerable to fraud. Field officers collect paper forms. Reviewers re-enter data. GPS coordinates are taken on paper. There is no systematic way to detect when the same farm photo is submitted by two different applicants, or when two applications come from the same device.
 
-AgriPilot solves this. It is a digital verification and decision platform for agricultural credit. Let me show you how it works."
+Farroway solves this. It is a digital verification and decision platform for agricultural credit. Let me show you how it works."
 
 ---
 
@@ -163,13 +163,13 @@ This is the view a program director or funder would use to track their agricultu
 
 Today, most agricultural credit programs rely on paper forms, manual GPS logging, and human judgment to detect fraud. The result is slow disbursement, high default rates, and limited accountability.
 
-AgriPilot digitizes the entire verification workflow. GPS capture, boundary mapping, photo evidence with hash-based fraud detection, automated verification scoring, and a complete audit trail.
+Farroway digitizes the entire verification workflow. GPS capture, boundary mapping, photo evidence with hash-based fraud detection, automated verification scoring, and a complete audit trail.
 
 It works on any Android phone in the field. It works on desktop for reviewers and administrators. It supports multiple countries, currencies, and languages.
 
 We are not claiming to replace human judgment. We are giving your team better data to make faster, safer decisions.
 
-What I am asking for is a pilot. A small group of field officers — five to ten — using AgriPilot for one lending cycle. We would set up accounts, train your team in one session, and support you through the cycle.
+What I am asking for is a pilot. A small group of field officers — five to ten — using Farroway for one lending cycle. We would set up accounts, train your team in one session, and support you through the cycle.
 
 The goal is simple: show you the difference between paper-based verification and digital verification on real applications in your program.
 
@@ -180,6 +180,6 @@ Can we set up a pilot?"
 ## AFTER THE DEMO
 
 - Offer to create accounts for their team on the spot
-- Share the live URL: https://agripilot.onrender.com
+- Share the live URL: https://agripilot-production.up.railway.app
 - Share the APK if they want to try on Android
 - Follow up with the one-pager within 24 hours

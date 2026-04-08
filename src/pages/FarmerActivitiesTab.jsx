@@ -74,7 +74,7 @@ export default function FarmerActivitiesTab() {
           <div className="card-header">Log New Activity</div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: '#fef2f2', borderRadius: 4 }}>{error}</div>}
+              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Activity Type *</label>

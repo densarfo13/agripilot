@@ -1,5 +1,5 @@
-// AgriPilot Service Worker — minimal for PWA installability
-const CACHE_NAME = 'agripilot-v1';
+// Farroway Service Worker — minimal for PWA installability
+const CACHE_NAME = 'farroway-v1';
 
 // Install: cache the app shell
 self.addEventListener('install', (event) => {

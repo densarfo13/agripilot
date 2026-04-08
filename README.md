@@ -1,4 +1,4 @@
-# AgriPilot — Institutional Credit Platform MVP
+# Farroway — Institutional Credit Platform MVP
 
 Agricultural credit application management system with verification, fraud detection, decision engines, and portfolio management.
 
@@ -14,7 +14,7 @@ Agricultural credit application management system with verification, fraud detec
 ## Project Structure
 
 ```
-/agripilot
+/farroway
 ├── server/                # Express backend
 │   ├── prisma/
 │   │   ├── schema.prisma  # Database schema
@@ -94,7 +94,7 @@ cd .. && npm run dev
 
 ```bash
 # 1. Set required environment variables (never use defaults)
-DATABASE_URL=postgresql://user:pass@host:5432/agripilot
+DATABASE_URL=postgresql://user:pass@host:5432/farroway
 JWT_SECRET=<random-64-char-string>
 NODE_ENV=production
 CORS_ORIGIN=https://your-domain.com

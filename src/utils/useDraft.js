@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 
-const PREFIX = 'agripilot:draft:';
+const PREFIX = 'farroway:draft:';
 
 /**
  * Persists form state to localStorage so a partial entry survives

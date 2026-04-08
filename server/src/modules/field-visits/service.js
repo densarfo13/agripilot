@@ -26,6 +26,7 @@ export async function listFieldVisits(applicationId) {
     where: { applicationId },
     include: { officer: { select: { id: true, fullName: true } } },
     orderBy: { visitDate: 'desc' },
+    take: 100,
   });
 }
 
@@ -73,5 +74,6 @@ export async function getMyFieldVisits(officerId) {
       },
     },
     orderBy: { visitDate: 'desc' },
+    take: 200,
   });
 }

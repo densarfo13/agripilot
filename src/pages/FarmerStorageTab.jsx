@@ -118,7 +118,7 @@ export default function FarmerStorageTab() {
           <div className="card-header">Storage Status Update</div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: '#fef2f2', borderRadius: 4 }}>{error}</div>}
+              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
@@ -198,7 +198,7 @@ export default function FarmerStorageTab() {
                             <span style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 600 }}>Over storage limit!</span>
                           )}
                         </div>
-                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.9rem', color: '#6b7280' }}>
+                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.9rem', color: '#A1A1AA' }}>
                           {item.quantityKg && <span><strong>Qty:</strong> {item.quantityKg.toLocaleString()} kg</span>}
                           {item.storageMethod && <span><strong>Method:</strong> {tStorageMethod(item.storageMethod)}</span>}
                           {item.daysSinceHarvest !== null && (

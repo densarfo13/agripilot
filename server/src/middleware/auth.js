@@ -28,6 +28,17 @@ function setCachedUser(userId, user) {
   }
 }
 
+/**
+ * Bump a user's tokenVersion in the cache so the next request forces a DB re-check.
+ * Called after logout, password reset, MFA changes.
+ */
+export function bumpCachedTokenVersion(userId) {
+  const entry = authCache.get(userId);
+  if (entry?.user) {
+    entry.user.tokenVersion = (entry.user.tokenVersion || 0) + 1;
+  }
+}
+
 /** Invalidate a specific user from the auth cache (call on role/status change). */
 export function invalidateAuthCache(userId) {
   if (userId) authCache.delete(userId);
@@ -65,6 +76,12 @@ export function authenticate(req, res, next) {
     if (!cached.active) {
       return res.status(403).json({ error: 'Account deactivated' });
     }
+    // tokenVersion check: if cached version is newer than JWT version, token was revoked
+    if (cached.tokenVersion !== undefined && payload.tv !== undefined &&
+        payload.tv < cached.tokenVersion) {
+      logAuthEvent('token_revoked', { userId: payload.sub, ip: req.ip });
+      return res.status(401).json({ error: 'Session expired. Please log in again.' });
+    }
     req.user = { ...payload, role: cached.role, organizationId: cached.organizationId || null };
     return next();
   }
@@ -72,7 +89,7 @@ export function authenticate(req, res, next) {
   // Cache miss — verify user still exists and is active in the database
   prisma.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, active: true, role: true, organizationId: true },
+    select: { id: true, active: true, role: true, organizationId: true, tokenVersion: true },
   })
     .then((user) => {
       if (!user) {
@@ -83,6 +100,13 @@ export function authenticate(req, res, next) {
       if (!user.active) {
         logAuthEvent('account_deactivated', { userId: payload.sub, ip: req.ip });
         return res.status(403).json({ error: 'Account deactivated' });
+      }
+      // tokenVersion: JWT 'tv' claim must match DB version (0 if never set)
+      const jwtTv = payload.tv ?? 0;
+      const dbTv  = user.tokenVersion ?? 0;
+      if (jwtTv < dbTv) {
+        logAuthEvent('token_revoked', { userId: payload.sub, ip: req.ip });
+        return res.status(401).json({ error: 'Session expired. Please log in again.' });
       }
       // Use DB role (source of truth) rather than JWT role in case it was changed
       req.user = { ...payload, role: user.role, organizationId: user.organizationId || null };

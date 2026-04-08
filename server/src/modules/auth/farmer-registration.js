@@ -5,6 +5,8 @@ import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 
+const VALID_FARM_CROPS = ['maize', 'rice', 'cassava', 'wheat'];
+
 /** Invite tokens expire after this many days */
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
 
@@ -84,7 +86,23 @@ export async function farmerSelfRegister({
       },
     });
 
-    return { user: newUser, farmer: newFarmer };
+    // Auto-create a FarmProfile if crop is a valid enum value
+    let farmProfile = null;
+    const cropLower = (primaryCrop || '').toLowerCase().trim();
+    if (VALID_FARM_CROPS.includes(cropLower)) {
+      farmProfile = await tx.farmProfile.create({
+        data: {
+          farmerId: newFarmer.id,
+          farmerName: fullName,
+          locationName: [region, district].filter(Boolean).join(', ') || null,
+          crop: cropLower,
+          farmSizeAcres: farmSizeAcres || null,
+          stage: 'planting',
+        },
+      });
+    }
+
+    return { user: newUser, farmer: newFarmer, farmProfile };
   });
 
   return {
@@ -99,6 +117,7 @@ export async function farmerSelfRegister({
       fullName: farmer.fullName,
       registrationStatus: farmer.registrationStatus,
     },
+    farmProfile: farmProfile ? { id: farmProfile.id, crop: farmProfile.crop } : null,
     message: 'Registration received. Your account is pending approval.',
   };
 }
@@ -116,6 +135,7 @@ export async function getPendingRegistrations(orgScope = {}) {
       },
     },
     orderBy: { createdAt: 'desc' },
+    take: 500,
   });
 }
 
@@ -132,6 +152,7 @@ export async function getAllSelfRegistered(orgScope = {}) {
       },
     },
     orderBy: { createdAt: 'desc' },
+    take: 500,
   });
 }
 
