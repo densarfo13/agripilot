@@ -1,7 +1,6 @@
 /**
  * One-time startup script: ensures admin@agripilot.com exists with the correct password.
  * Safe to run on every start — uses upsert, no data is deleted.
- * Remove this script once the deployment is stable.
  */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -12,13 +11,15 @@ try {
   const password = process.env.ADMIN_INIT_PW || 'AgriAdmin#2026';
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Ensure default org exists
-  const org = await prisma.organization.upsert({
-    where: { name: 'AgriPilot Demo' },
-    create: { name: 'AgriPilot Demo', type: 'INTERNAL' },
-    update: {},
-    select: { id: true },
-  });
+  // Find any existing org, or create a minimal one
+  let org = await prisma.organization.findFirst({ select: { id: true } });
+  if (!org) {
+    org = await prisma.organization.create({
+      data: { name: 'AgriPilot Demo', type: 'INTERNAL' },
+      select: { id: true },
+    });
+    console.log('[INIT] Created default organization');
+  }
 
   // Upsert admin user
   const user = await prisma.user.upsert({
