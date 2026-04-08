@@ -260,7 +260,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
     fullName: '', phone: '', region: '', district: '', village: '',
     countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', yearsExperience: '',
     nationalId: '', preferredLanguage: 'en',
-    accessMode: 'invite_link', // 'invite_link' | 'create_now'
+    accessMode: 'invite_link', // 'record_only' | 'invite_link' | 'create_now'
     channel: 'link',           // 'link' | 'email' | 'phone'
     contactEmail: '',          // for email channel delivery (not the future login email)
     email: '', password: '',
@@ -275,7 +275,9 @@ function CreateFarmerModal({ onClose, onCreated }) {
   // Step 1 validation
   const step1Valid = form.fullName.trim() && form.phone.trim() && form.region.trim();
   // Step 2 validation
-  const step2Valid = form.accessMode === 'create_now'
+  const step2Valid = form.accessMode === 'record_only'
+    ? true
+    : form.accessMode === 'create_now'
     ? (form.email.trim() && form.password.length >= 8)
     : form.channel !== 'email' || form.contactEmail.trim();
 
@@ -299,6 +301,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
         password: form.accessMode === 'create_now' ? form.password : undefined,
         channel: form.accessMode === 'invite_link' ? form.channel : undefined,
         contactEmail: form.accessMode === 'invite_link' && form.channel === 'email' ? form.contactEmail : undefined,
+        recordOnly: form.accessMode === 'record_only' ? true : undefined,
       };
       const res = await api.post('/farmers', payload);
       setSuccess({
@@ -429,6 +432,22 @@ function CreateFarmerModal({ onClose, onCreated }) {
                 How will <strong>{form.fullName}</strong> get access to Farroway?
               </p>
               <div
+                onClick={() => setVal('accessMode', 'record_only')}
+                style={{
+                  border: `2px solid ${form.accessMode === 'record_only' ? '#22C55E' : '#243041'}`,
+                  borderRadius: 8, padding: '0.875rem', marginBottom: '0.75rem', cursor: 'pointer',
+                  background: form.accessMode === 'record_only' ? 'rgba(34,197,94,0.15)' : '#162033',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <input type="radio" readOnly checked={form.accessMode === 'record_only'} />
+                  <strong style={{ fontSize: '0.9rem' }}>Record Only</strong>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#A1A1AA', paddingLeft: '1.4rem' }}>
+                  Create a farmer profile for tracking — no login account. You can invite them later.
+                </p>
+              </div>
+              <div
                 onClick={() => setVal('accessMode', 'invite_link')}
                 style={{
                   border: `2px solid ${form.accessMode === 'invite_link' ? '#22C55E' : '#243041'}`,
@@ -546,10 +565,14 @@ function CreateFarmerModal({ onClose, onCreated }) {
               </div>
               <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.875rem', fontSize: '0.875rem' }}>
                 <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: '#22C55E' }}>
-                  {form.accessMode === 'invite_link' ? 'Invite Link will be generated' : 'Login Account will be created'}
+                  {form.accessMode === 'record_only' ? 'Record Only — No Login'
+                    : form.accessMode === 'invite_link' ? 'Invite Link will be generated'
+                    : 'Login Account will be created'}
                 </div>
                 <p style={{ margin: 0, color: '#FFFFFF' }}>
-                  {form.accessMode === 'invite_link'
+                  {form.accessMode === 'record_only'
+                    ? 'Farmer profile will be created for tracking. You can invite them to log in later.'
+                    : form.accessMode === 'invite_link'
                     ? form.channel === 'email'
                       ? `Invite link will be emailed to ${form.contactEmail}`
                       : form.channel === 'phone'

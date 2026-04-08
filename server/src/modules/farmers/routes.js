@@ -7,7 +7,7 @@ import { validateParamUUID, parsePositiveInt, isValidEmail, validatePassword } f
 import { validatePhone, normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
-import { inviteLimiter } from '../../middleware/rateLimiters.js';
+import { inviteLimiter, resendInviteLimiter } from '../../middleware/rateLimiters.js';
 import { extractOrganization, orgWhereFarmer, verifyOrgAccess } from '../../middleware/orgScope.js';
 import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
@@ -306,6 +306,7 @@ router.post('/:id/assign-officer',
 // Resend invite (admin/field officer — re-invites a farmer)
 router.post('/:id/resend-invite',
   validateParamUUID('id'),
+  resendInviteLimiter,
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   dedupGuard('farmer-resend-invite'),
   asyncHandler(async (req, res) => {

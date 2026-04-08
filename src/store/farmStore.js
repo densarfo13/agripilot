@@ -1,5 +1,15 @@
 import { create } from 'zustand';
 import api from '../api/client.js';
+import { enqueue, isOnline } from '../utils/offlineQueue.js';
+
+/** Queue a mutation for later sync if offline */
+async function queueIfOffline(method, url, data) {
+  await enqueue({ method, url, data });
+}
+
+function isNetworkError(err) {
+  return !err.response && (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || !navigator.onLine);
+}
 
 export const useFarmStore = create((set, get) => ({
   // State
@@ -54,9 +64,18 @@ export const useFarmStore = create((set, get) => ({
     }
   },
 
-  // Update a farm profile
+  // Update a farm profile (optimistic + offline queue)
   updateProfile: async (farmId, data) => {
     set({ error: null });
+    // Optimistic: apply changes locally immediately
+    const prev = get().profiles.find(p => p.id === farmId);
+    const optimistic = prev ? { ...prev, ...data } : null;
+    if (optimistic) {
+      set((s) => ({
+        profiles: s.profiles.map(p => p.id === farmId ? optimistic : p),
+        currentProfile: s.currentProfile?.id === farmId ? optimistic : s.currentProfile,
+      }));
+    }
     try {
       const r = await api.patch(`/v1/farms/${farmId}`, data);
       const updated = r.data;
@@ -66,6 +85,17 @@ export const useFarmStore = create((set, get) => ({
       }));
       return updated;
     } catch (err) {
+      if (isNetworkError(err)) {
+        await queueIfOffline('PATCH', `/v1/farms/${farmId}`, data);
+        return optimistic; // keep optimistic state
+      }
+      // Revert optimistic on server error
+      if (prev) {
+        set((s) => ({
+          profiles: s.profiles.map(p => p.id === farmId ? prev : p),
+          currentProfile: s.currentProfile?.id === farmId ? prev : s.currentProfile,
+        }));
+      }
       set({ error: err.response?.data?.error || 'Failed to update farm profile' });
       return null;
     }
@@ -95,20 +125,35 @@ export const useFarmStore = create((set, get) => ({
     }
   },
 
-  // Save a recommendation to history
+  // Save a recommendation to history (offline-aware)
   saveRecommendation: async (farmId, data) => {
     try {
       const r = await api.post(`/v1/farms/${farmId}/recommendations`, data);
       set((s) => ({ recommendations: [r.data, ...s.recommendations] }));
       return r.data;
     } catch (err) {
+      if (isNetworkError(err)) {
+        await queueIfOffline('POST', `/v1/farms/${farmId}/recommendations`, data);
+        // Optimistic: add a placeholder
+        const placeholder = { ...data, id: `offline-${Date.now()}`, status: 'pending', _offline: true };
+        set((s) => ({ recommendations: [placeholder, ...s.recommendations] }));
+        return placeholder;
+      }
       set({ error: err.response?.data?.error || 'Failed to save recommendation' });
       return null;
     }
   },
 
-  // Update recommendation status (complete/skip with optional note)
+  // Update recommendation status (optimistic + offline queue)
   updateRecommendation: async (farmId, recId, data) => {
+    // Optimistic update
+    const prevRec = get().recommendations.find(r => r.id === recId);
+    const optimistic = prevRec ? { ...prevRec, ...data } : null;
+    if (optimistic) {
+      set((s) => ({
+        recommendations: s.recommendations.map(rec => rec.id === recId ? optimistic : rec),
+      }));
+    }
     try {
       const r = await api.patch(`/v1/farms/${farmId}/recommendations/${recId}`, data);
       set((s) => ({
@@ -116,6 +161,16 @@ export const useFarmStore = create((set, get) => ({
       }));
       return r.data;
     } catch (err) {
+      if (isNetworkError(err)) {
+        await queueIfOffline('PATCH', `/v1/farms/${farmId}/recommendations/${recId}`, data);
+        return optimistic;
+      }
+      // Revert
+      if (prevRec) {
+        set((s) => ({
+          recommendations: s.recommendations.map(rec => rec.id === recId ? prevRec : rec),
+        }));
+      }
       set({ error: err.response?.data?.error || 'Failed to update recommendation' });
       return null;
     }

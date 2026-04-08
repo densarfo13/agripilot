@@ -237,6 +237,38 @@ app.get('/api/ops/orphaned-files', authenticate, async (req, res) => {
   }
 });
 
+// ─── Ops: Quick pilot metrics (admin + field officer) ──────
+app.get('/api/ops/metrics', authenticate, async (req, res) => {
+  const allowed = ['super_admin', 'institutional_admin', 'field_officer'];
+  if (!allowed.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Insufficient access' });
+  }
+  try {
+    const [farmers, seasons, apps, users, pendingReg] = await Promise.all([
+      prisma.farmer.count(),
+      prisma.farmSeason.groupBy({ by: ['status'], _count: true }),
+      prisma.application.groupBy({ by: ['status'], _count: true }),
+      prisma.user.count({ where: { active: true } }),
+      prisma.farmer.count({ where: { registrationStatus: 'pending_approval' } }),
+    ]);
+
+    const seasonMap = {};
+    seasons.forEach(s => { seasonMap[s.status] = s._count; });
+    const appMap = {};
+    apps.forEach(a => { appMap[a.status] = a._count; });
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      farmers: { total: farmers },
+      seasons: seasonMap,
+      applications: appMap,
+      users: { active: users, pendingRegistrations: pendingReg },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load metrics' });
+  }
+});
+
 // ─── Auth (public — with stricter rate limiting) ────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', adminUserRoutes);

@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { PriorityBadge } from '../components/TrustRiskBadge.jsx';
+import { SkeletonDashboard } from '../components/SkeletonLoader.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
@@ -73,7 +74,7 @@ export default function DashboardPage() {
     }).finally(() => setLoading(false));
   }, [selectedOrgId]);
 
-  if (loading) return <div className="loading">Loading dashboard...</div>;
+  if (loading) return <SkeletonDashboard />;
   if (!portfolio) return (
     <div className="page-body">
       <div className="alert alert-danger">
@@ -99,117 +100,47 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="page-body">
-        {/* Queue alerts */}
-        {(queues.verification > 0 || queues.fraud > 0 || queues.escalated > 0 || pendingCount > 0) && (
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-            {queues.verification > 0 && (
-              <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>📋</span>
-                <span><strong>{queues.verification}</strong> awaiting verification</span>
-              </div>
-            )}
-            {queues.fraud > 0 && (
-              <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', background: 'rgba(239,68,68,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>🚨</span>
-                <span><strong>{queues.fraud}</strong> on fraud hold</span>
-              </div>
-            )}
-            {queues.escalated > 0 && (
-              <div onClick={() => navigate('/applications?status=escalated')} style={{ cursor: 'pointer', background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>⚡</span>
-                <span><strong>{queues.escalated}</strong> escalated</span>
-              </div>
-            )}
-            {pendingCount > 0 && (
-              <div onClick={() => navigate('/farmer-registrations')} style={{ cursor: 'pointer', background: 'rgba(245,158,11,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>👤</span>
-                <span><strong>{pendingCount}</strong> pending farmer registrations</span>
-              </div>
-            )}
-            {attentionCount > 0 && (
-              <div onClick={() => navigate('/pilot-metrics')} style={{ cursor: 'pointer', background: 'rgba(239,68,68,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-                <span><strong>{attentionCount}</strong> pilot items need attention</span>
-              </div>
-            )}
+        {/* First-run empty state — shown to admins when no farmers exist yet */}
+        {isAdmin && adoption && (adoption.farmers?.total === 0) && portfolio.totalApplications === 0 && (
+          <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#22C55E', marginBottom: '0.5rem' }}>Welcome to Farroway — Get started in 3 steps</div>
+            <ol style={{ margin: 0, paddingLeft: '1.4rem', color: '#FFFFFF', fontSize: '0.9rem', lineHeight: 1.8 }}>
+              <li>
+                <strong>Add your first farmers</strong> — go to{' '}
+                <span onClick={() => navigate('/farmers')} style={{ color: '#22C55E', cursor: 'pointer', textDecoration: 'underline' }}>Farmers</span>{' '}
+                and use <em>+ New Farmer</em> or <em>Invite Farmer</em>
+              </li>
+              <li>
+                <strong>Create a farm season</strong> — open a farmer profile and add a season to start tracking progress
+              </li>
+              <li>
+                <strong>Submit a loan application</strong> — once a season is active, submit an application to begin the credit workflow
+              </li>
+            </ol>
           </div>
         )}
 
-        {adoption && canSeePilotMetrics && (
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', flexShrink: 0 }}>
-              Pilot Adoption
-            </span>
-            {[
-              ['Approved', adoption.farmers?.approved, '#1E293B', '#243041', '#22C55E'],
-              ['Invite Pending', adoption.farmers?.invitedNotActivated, '#1E293B', '#243041', '#F59E0B'],
-              ['Logged In', adoption.adoption?.loggedIn, '#1E293B', '#243041', '#22C55E'],
-              ['1st Update', adoption.adoption?.withFirstUpdate, '#1E293B', '#243041', '#22C55E'],
-              ['Harvest', adoption.adoption?.withHarvest, '#1E293B', '#243041', '#22C55E'],
-            ].map(([label, val, bg, border, color]) => (
-              <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 72 }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{val ?? '—'}</div>
-                <div style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{label}</div>
-              </div>
-            ))}
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-              <a
-                href="/api/pilot/report?format=csv"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline btn-sm"
-                style={{ textDecoration: 'none' }}
-              >
-                Export CSV
-              </a>
-              <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')}>
-                Full Metrics →
-              </button>
-            </div>
+        {/* ── 1. KPI Strip — top-level metrics ── */}
+        <div className="stats-grid">
+          <div className="stat-card" onClick={() => navigate('/farmers')} style={{ cursor: 'pointer' }}>
+            <div className="stat-label">Active Farmers</div>
+            <div className="stat-value">{adoption?.farmers?.approved ?? portfolio.totalApplications}</div>
           </div>
-        )}
-
-        {/* Alerts panel — shown to admins when there are active alerts */}
-        {canSeePilotMetrics && alerts.length > 0 && (
-          <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #243041' }}>
-            <div className="card-header" style={{ background: 'rgba(245,158,11,0.15)', borderBottom: '1px solid #243041', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, color: '#F59E0B' }}>Active Alerts ({alerts.length})</span>
-              <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')}>View Details</button>
-            </div>
-            <div className="card-body" style={{ padding: 0 }}>
-              {alerts.slice(0, 5).map((alert, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-                  padding: '0.7rem 1rem',
-                  borderBottom: i < Math.min(alerts.length, 5) - 1 ? '1px solid #243041' : 'none',
-                  background: alert.severity === 'high' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
-                }}>
-                  <span style={{ fontSize: '0.85rem', marginTop: '0.1rem' }}>
-                    {alert.severity === 'high' ? '🔴' : '🟡'}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#FFFFFF', marginBottom: '0.15rem' }}>
-                      {alert.type.replace(/_/g, ' ')}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#A1A1AA' }}>{alert.message}</div>
-                  </div>
-                </div>
-              ))}
-              {alerts.length > 5 && (
-                <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: '#A1A1AA', textAlign: 'center' }}>
-                  +{alerts.length - 5} more alerts — view in Pilot Metrics
-                </div>
-              )}
-            </div>
+          <div className="stat-card" onClick={canSeeAttention ? () => navigate('/verification-queue') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
+            <div className="stat-label">Pending Validation</div>
+            <div className="stat-value" style={{ color: queues.verification > 0 ? '#F59E0B' : undefined }}>{queues.verification}</div>
           </div>
-        )}
+          <div className="stat-card" onClick={canSeeAttention ? () => navigate('/pilot-metrics') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
+            <div className="stat-label">Needs Attention</div>
+            <div className="stat-value" style={{ color: attentionCount > 0 ? '#EF4444' : undefined }}>{attentionCount}</div>
+          </div>
+          <div className="stat-card" onClick={() => navigate('/farmer-registrations')} style={{ cursor: 'pointer' }}>
+            <div className="stat-label">Invite Pending</div>
+            <div className="stat-value" style={{ color: pendingCount > 0 ? '#F59E0B' : undefined }}>{pendingCount}</div>
+          </div>
+        </div>
 
-        {/* Benchmark summary card — admin/pilot metrics roles */}
-        {canSeePilotMetrics && benchmarkSummary && (
-          <BenchmarkSummaryCard data={benchmarkSummary} onNavigate={() => navigate('/admin/notifications')} />
-        )}
-
-        {/* Daily Tasks — role-scoped, derived from workflow state */}
+        {/* ── 2. Daily Tasks — role-scoped, derived from workflow state ── */}
         {canSeeTasks && tasks.length > 0 && (
           <div className="card" style={{ marginBottom: '1.25rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -250,27 +181,56 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* First-run empty state — shown to admins when no farmers exist yet */}
-        {isAdmin && adoption && (adoption.farmers?.total === 0) && portfolio.totalApplications === 0 && (
-          <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#22C55E', marginBottom: '0.5rem' }}>Welcome to Farroway — Get started in 3 steps</div>
-            <ol style={{ margin: 0, paddingLeft: '1.4rem', color: '#FFFFFF', fontSize: '0.9rem', lineHeight: 1.8 }}>
-              <li>
-                <strong>Add your first farmers</strong> — go to{' '}
-                <span onClick={() => navigate('/farmers')} style={{ color: '#22C55E', cursor: 'pointer', textDecoration: 'underline' }}>Farmers</span>{' '}
-                and use <em>+ New Farmer</em> or <em>Invite Farmer</em>
-              </li>
-              <li>
-                <strong>Create a farm season</strong> — open a farmer profile and add a season to start tracking progress
-              </li>
-              <li>
-                <strong>Submit a loan application</strong> — once a season is active, submit an application to begin the credit workflow
-              </li>
-            </ol>
+        {/* ── 3. Needs Attention — queue banners + alerts ── */}
+        {(queues.fraud > 0 || queues.escalated > 0 || alerts.length > 0) && (
+          <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #243041' }}>
+            <div className="card-header" style={{ background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid #243041' }}>
+              <span style={{ fontWeight: 700, color: '#EF4444' }}>Needs Attention</span>
+            </div>
+            <div className="card-body" style={{ padding: 0 }}>
+              {queues.fraud > 0 && (
+                <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', borderBottom: '1px solid #243041', background: 'rgba(239,68,68,0.08)' }}>
+                  <span style={{ fontSize: '0.85rem' }}>🚨</span>
+                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.fraud}</strong> on fraud hold</span>
+                  <span style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>Review →</span>
+                </div>
+              )}
+              {queues.escalated > 0 && (
+                <div onClick={() => navigate('/applications?status=escalated')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', borderBottom: '1px solid #243041', background: 'rgba(245,158,11,0.08)' }}>
+                  <span style={{ fontSize: '0.85rem' }}>⚡</span>
+                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.escalated}</strong> escalated</span>
+                  <span style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>Review →</span>
+                </div>
+              )}
+              {canSeePilotMetrics && alerts.slice(0, 3).map((alert, i) => (
+                <div key={i} onClick={() => navigate('/pilot-metrics')} style={{
+                  cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                  padding: '0.7rem 1rem',
+                  borderBottom: i < Math.min(alerts.length, 3) - 1 || (queues.fraud + queues.escalated) > 0 ? '1px solid #243041' : 'none',
+                  background: alert.severity === 'high' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
+                }}>
+                  <span style={{ fontSize: '0.85rem', marginTop: '0.1rem' }}>
+                    {alert.severity === 'high' ? '🔴' : '🟡'}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#FFFFFF', marginBottom: '0.15rem' }}>
+                      {alert.type.replace(/_/g, ' ')}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#A1A1AA' }}>{alert.message}</div>
+                  </div>
+                </div>
+              ))}
+              {alerts.length > 3 && (
+                <div onClick={() => navigate('/pilot-metrics')} style={{ cursor: 'pointer', padding: '0.5rem 1rem', fontSize: '0.78rem', color: '#A1A1AA', textAlign: 'center' }}>
+                  +{alerts.length - 3} more alerts
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        <div className="stats-grid">
+        {/* ── 4. Operations — portfolio stats + pilot adoption ── */}
+        <div className="stats-grid" style={{ marginBottom: '1.25rem' }}>
           <div className="stat-card">
             <div className="stat-label">Total Applications</div>
             <div className="stat-value">{portfolio.totalApplications}</div>
@@ -289,7 +249,47 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        {adoption && canSeePilotMetrics && (
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', flexShrink: 0 }}>
+              Pilot Adoption
+            </span>
+            {[
+              ['Approved', adoption.farmers?.approved, '#22C55E'],
+              ['Invite Pending', adoption.farmers?.invitedNotActivated, '#F59E0B'],
+              ['Logged In', adoption.adoption?.loggedIn, '#22C55E'],
+              ['1st Update', adoption.adoption?.withFirstUpdate, '#22C55E'],
+              ['Harvest', adoption.adoption?.withHarvest, '#22C55E'],
+            ].map(([label, val, color]) => (
+              <div key={label} style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 72 }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{val ?? '—'}</div>
+                <div style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{label}</div>
+              </div>
+            ))}
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+              <a
+                href="/api/pilot/report?format=csv"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline btn-sm"
+                style={{ textDecoration: 'none' }}
+              >
+                Export CSV
+              </a>
+              <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')}>
+                Full Metrics →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. Trust / Risk / Benchmark summary ── */}
+        {canSeePilotMetrics && benchmarkSummary && (
+          <BenchmarkSummaryCard data={benchmarkSummary} onNavigate={() => navigate('/admin/notifications')} />
+        )}
+
+        {/* ── 6. Charts — application/reporting summaries ── */}
+        <div className="dashboard-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
           <div className="card">
             <div className="card-header">Applications by Status</div>
             <div className="card-body">

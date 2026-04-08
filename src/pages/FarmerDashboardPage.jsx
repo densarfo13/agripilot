@@ -5,6 +5,7 @@ import api from '../api/client.js';
 import { tLifecycleStage, tStatus, getCurrentLang, setLang } from '../utils/i18n.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -157,7 +158,7 @@ export default function FarmerDashboardPage() {
         </div>
 
         {loading ? (
-          <div style={styles.card}><p>Loading...</p></div>
+          <SkeletonFarmerDashboard />
         ) : isPending ? (
           <div style={styles.card}>
             <div style={styles.statusBadge('rgba(245,158,11,0.15)', '#F59E0B')}>Pending Approval</div>
@@ -551,18 +552,20 @@ const styles = {
   container: { minHeight: '100vh', background: '#0F172A' },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '1rem 2rem', background: '#162033', borderBottom: '1px solid #243041',
+    padding: '0.75rem 1rem', background: '#162033', borderBottom: '1px solid #243041',
+    position: 'sticky', top: 0, zIndex: 100,
   },
   brand: { fontSize: '1.25rem', fontWeight: 700, color: '#22C55E', margin: 0 },
   logoutBtn: {
-    padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #243041',
-    borderRadius: '6px', cursor: 'pointer', color: '#A1A1AA', fontSize: '0.85rem',
+    padding: '0.4rem 0.75rem', background: 'transparent', border: '1px solid #243041',
+    borderRadius: '6px', cursor: 'pointer', color: '#A1A1AA', fontSize: '0.8rem',
+    minHeight: '36px',
   },
   langBtn: {
     padding: '0.3rem 0.6rem', background: 'transparent', border: '1px solid #243041',
-    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem',
+    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', minHeight: '32px',
   },
-  content: { maxWidth: '600px', margin: '2rem auto', padding: '0 1rem' },
+  content: { maxWidth: '600px', margin: '1rem auto', padding: '0 0.75rem' },
   welcome: { marginBottom: '1.5rem' },
   card: {
     background: '#162033', borderRadius: '8px', padding: '1.5rem',

@@ -62,13 +62,25 @@ export const securityLimiter = rateLimit({
 });
 
 /**
- * Limiter for farmer invite creation and resend endpoints.
+ * Limiter for farmer invite creation endpoints.
  * Prevents invite-spam abuse — inviting is a relatively infrequent action.
  */
 export const inviteLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 20, // 20 invite actions per minute per IP
+  max: 10, // 10 invite actions per minute per IP
   message: { error: 'Too many invite requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Stricter limiter for invite resend.
+ * Resending is a recovery action, not a bulk operation.
+ */
+export const resendInviteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 resends per 15 min per IP
+  message: { error: 'Too many resend attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });

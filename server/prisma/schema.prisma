@@ -251,6 +251,7 @@ model User {
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
+  @@index([active], map: "idx_users_active")
   @@map("users")
 }
 
@@ -348,6 +349,8 @@ model Farmer {
   @@index([region], map: "idx_farmers_region")
   @@index([currentStage], map: "idx_farmers_stage")
   @@index([assignedOfficerId], map: "idx_farmers_officer")
+  @@index([organizationId, assignedOfficerId], map: "idx_farmers_org_officer")
+  @@index([organizationId, registrationStatus], map: "idx_farmers_org_reg_status")
   @@map("farmers")
 }
 

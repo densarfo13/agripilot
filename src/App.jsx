@@ -2,11 +2,14 @@ import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore.js';
 import { loadTranslations, getCurrentLang } from './utils/i18n.js';
+import { initAutoSync } from './utils/offlineQueue.js';
+import api from './api/client.js';
 
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
+import SyncStatus from './components/SyncStatus.jsx';
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
@@ -71,11 +74,14 @@ export default function App() {
     loadTranslations(getCurrentLang())
       .then(() => setI18nReady(true))
       .catch(() => setI18nReady(true)); // proceed even if translations fail — fallbacks work
+    // Initialize offline sync — replays queued mutations when back online
+    initAutoSync(api);
   }, []);
 
   return (
     <BrowserRouter>
       {stepUpRequired && <StepUpModal />}
+      <SyncStatus />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />

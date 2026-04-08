@@ -26,7 +26,7 @@ import { writeAuditLog } from '../audit/service.js';
 import { opsEvent } from '../../utils/opsLogger.js';
 
 // ─── Roles that REQUIRE MFA ────────────────────────────────
-export const MFA_REQUIRED_ROLES = new Set(['institutional_admin', 'reviewer']);
+export const MFA_REQUIRED_ROLES = new Set(['super_admin', 'institutional_admin', 'reviewer']);
 export const MFA_EXEMPT_ROLES   = new Set(['farmer']);
 
 export function isMfaRequired(role) { return MFA_REQUIRED_ROLES.has(role); }

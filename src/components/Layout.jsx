@@ -100,6 +100,7 @@ export default function Layout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super_admin';
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     useOrgStore.getState().clearSelectedOrg();
@@ -107,13 +108,28 @@ export default function Layout() {
     navigate('/login');
   };
 
+  // Close sidebar on navigation (mobile)
+  const handleNavClick = () => setSidebarOpen(false);
+
   // Determine displayed org context
   const orgName = user?.organization?.name;
   const orgType = user?.organization?.type;
 
   return (
     <div className="app-layout">
-      <aside className="sidebar">
+      {/* Mobile hamburger */}
+      <button
+        className="mobile-menu-btn"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        aria-label="Toggle menu"
+      >
+        <span /><span /><span />
+      </button>
+
+      {/* Overlay — closes sidebar on tap */}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-brand"><FarrowayLogo size={22} /></div>
 
         {/* Org context: super_admin gets switcher, others see read-only org name */}
@@ -143,6 +159,7 @@ export default function Layout() {
                     to={item.to}
                     end={item.to === '/'}
                     className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+                    onClick={handleNavClick}
                   >
                     {item.label}
                   </NavLink>
@@ -154,7 +171,7 @@ export default function Layout() {
         <div className="sidebar-user">
           <div className="sidebar-user-name">{user?.fullName}</div>
           <div className="sidebar-user-role">{user?.role?.replace(/_/g, ' ')}</div>
-          <NavLink to="/account" className={({ isActive }) => `btn btn-outline btn-sm${isActive ? ' active' : ''}`} style={{ marginTop: '0.5rem', display: 'block', textAlign: 'center', color: '#9ca3af', borderColor: '#4b5563', textDecoration: 'none' }}>
+          <NavLink to="/account" className={({ isActive }) => `btn btn-outline btn-sm${isActive ? ' active' : ''}`} style={{ marginTop: '0.5rem', display: 'block', textAlign: 'center', color: '#9ca3af', borderColor: '#4b5563', textDecoration: 'none' }} onClick={handleNavClick}>
             My Account
           </NavLink>
           <button onClick={handleLogout} className="btn btn-outline btn-sm" style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'center', color: '#9ca3af', borderColor: '#4b5563' }}>
@@ -162,7 +179,7 @@ export default function Layout() {
           </button>
         </div>
       </aside>
-      <main className="main-content">
+      <main className="main-content" onClick={() => sidebarOpen && setSidebarOpen(false)}>
         <Outlet />
       </main>
     </div>

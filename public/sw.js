@@ -1,12 +1,18 @@
 // Farroway Service Worker — PWA + offline API caching
-const CACHE_NAME = 'farroway-v2';
-const API_CACHE = 'farroway-api-v1';
+const CACHE_NAME = 'farroway-v3';
+const API_CACHE = 'farroway-api-v2';
 
-// API paths to cache for offline use
+// API paths to cache for offline use (GET requests only)
 const CACHEABLE_API = [
   '/api/v1/farms',
   '/api/v1/insights/recommend',
   '/api/auth/farmer-profile',
+  '/api/v1/referral',
+  '/api/localization/translations',
+  '/api/portfolio/summary',
+  '/api/tasks',
+  '/api/lifecycle/farmers',
+  '/api/seasons/farmer',
 ];
 
 function isApiCacheable(pathname) {
@@ -28,7 +34,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE).map((k) => caches.delete(k))
+        keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE)
+          .map((k) => caches.delete(k))
       )
     )
   );

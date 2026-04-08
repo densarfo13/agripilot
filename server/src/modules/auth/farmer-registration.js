@@ -56,7 +56,7 @@ export async function farmerSelfRegister({
   const passwordHash = await bcrypt.hash(password, 10);
 
   // Transaction: create user + farmer atomically (prevents orphaned user on farmer creation failure)
-  const { user, farmer } = await prisma.$transaction(async (tx) => {
+  const { user, farmer, farmProfile } = await prisma.$transaction(async (tx) => {
     const newUser = await tx.user.create({
       data: {
         email,
