@@ -24,4 +24,4 @@ ENV PORT=4000
 EXPOSE 4000
 
 WORKDIR /app/server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node scripts/init-admin.mjs && node src/server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node scripts/init-admin.mjs && node src/server.js"]
