@@ -5,17 +5,16 @@ export default function FarrowayLogo({ size = 32, showText = true, textColor = '
     <div style={{ display: 'flex', alignItems: 'center', gap: size * 0.25 }}>
       <svg width={size} height={size} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="fwg" x1="0.2" y1="0" x2="0.8" y2="1">
-            <stop offset="0%" stopColor="#B8E635"/>
-            <stop offset="35%" stopColor="#4ADE80"/>
-            <stop offset="70%" stopColor="#22C55E"/>
-            <stop offset="100%" stopColor="#15803D"/>
+          <linearGradient id="fwg" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0%" stopColor="#C4E538"/>
+            <stop offset="30%" stopColor="#7ED957"/>
+            <stop offset="60%" stopColor="#38B249"/>
+            <stop offset="100%" stopColor="#1B8A3A"/>
           </linearGradient>
         </defs>
-        <path d="M180 56 C260 36,380 52,432 88 C440 140,436 220,412 292 C388 360,330 416,260 464 C200 420,140 356,108 280 C76 204,80 120,96 76 C120 60,150 56,180 56Z" fill="url(#fwg)"/>
-        <path d="M120 195 C180 172,320 164,420 200" stroke="#0F172A" strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.85"/>
-        <path d="M112 265 C175 240,330 230,415 268" stroke="#0F172A" strokeWidth="12" fill="none" strokeLinecap="round" opacity="0.75"/>
-        <path d="M125 330 C185 310,310 302,390 335" stroke="#0F172A" strokeWidth="10" fill="none" strokeLinecap="round" opacity="0.55"/>
+        <path d="M200 52 C280 38,390 60,440 120 C470 168,460 240,430 310 C400 380,340 430,270 468 C210 440,140 390,100 320 C60 250,56 170,72 110 C88 68,140 52,200 52Z" fill="url(#fwg)"/>
+        <path d="M88 190 C160 160,300 155,450 205" stroke="#0F172A" strokeWidth="16" fill="none" strokeLinecap="round" opacity="0.8"/>
+        <path d="M78 275 C155 242,310 235,440 285" stroke="#0F172A" strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.7"/>
       </svg>
       {showText && (
         <span style={{
