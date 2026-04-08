@@ -11,12 +11,13 @@ export default function FarmerDashboardPage() {
   const [lifecycle, setLifecycle] = useState(null);
   const [seasons, setSeasons] = useState(null);
 
-  // Farm profile + recommendations + weather store
+  // Farm profile + recommendations + weather + finance store
   const {
     profiles: farmProfiles, currentProfile: farmProfile, recommendations,
-    weather, weatherRecs,
+    weather, weatherRecs, financeScore,
     fetchProfiles, fetchRecommendations, updateRecommendation,
     fetchWeather, fetchWeatherRecs, saveRecommendation,
+    fetchFinanceScore, recalculateFinanceScore,
   } = useFarmStore();
   const [recNoteId, setRecNoteId] = useState(null);
   const [recNote, setRecNote] = useState('');
@@ -44,6 +45,7 @@ export default function FarmerDashboardPage() {
       fetchRecommendations(farmProfile.id);
       fetchWeather(farmProfile.id);
       fetchWeatherRecs(farmProfile.id);
+      fetchFinanceScore(farmProfile.id);
     }
   }, [farmProfile?.id]);
 
@@ -60,6 +62,13 @@ export default function FarmerDashboardPage() {
     await updateRecommendation(farmProfile.id, recId, data);
     setRecNoteId(null);
     setRecNote('');
+  };
+
+  const bandColor = (band) => {
+    if (band === 'Strong') return '#22C55E';
+    if (band === 'Good') return '#0EA5E9';
+    if (band === 'Fair') return '#F59E0B';
+    return '#EF4444';
   };
 
   const isPending = user?.registrationStatus === 'pending_approval';
@@ -220,6 +229,64 @@ export default function FarmerDashboardPage() {
                 </div>
               );
             })()}
+
+            {/* Farm Finance Score */}
+            {financeScore && (
+              <div style={{ ...styles.card, marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0 }}>Farroway Farm Score</h3>
+                  <span style={{ fontSize: '0.65rem', color: '#71717A', textTransform: 'uppercase' }}>
+                    {financeScore.confidence} confidence
+                  </span>
+                </div>
+
+                {/* Score gauge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                  <div style={styles.scoreCircle(financeScore.band)}>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>{financeScore.score}</span>
+                    <span style={{ fontSize: '0.6rem', color: '#A1A1AA' }}>/100</span>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: bandColor(financeScore.band) }}>{financeScore.band}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{financeScore.readiness}</div>
+                  </div>
+                </div>
+
+                {/* Score bar */}
+                <div style={{ background: '#1E293B', borderRadius: '4px', height: '6px', marginBottom: '0.75rem' }}>
+                  <div style={{
+                    width: `${financeScore.score}%`, height: '100%', borderRadius: '4px',
+                    background: bandColor(financeScore.band),
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+
+                {/* Top factors */}
+                {financeScore.factors?.slice(0, 3).map((f, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', fontSize: '0.8rem', borderBottom: '1px solid #243041' }}>
+                    <span style={{ color: '#A1A1AA' }}>{f.label}</span>
+                    <span style={{ fontWeight: 600, color: f.impact.startsWith('-') ? '#EF4444' : '#22C55E' }}>{f.impact}</span>
+                  </div>
+                ))}
+
+                {/* Next steps */}
+                {financeScore.nextSteps?.length > 0 && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#71717A', textTransform: 'uppercase', marginBottom: '0.3rem' }}>To improve</div>
+                    {financeScore.nextSteps.map((step, i) => (
+                      <div key={i} style={{ fontSize: '0.8rem', color: '#A1A1AA', padding: '0.2rem 0', paddingLeft: '0.5rem', borderLeft: '2px solid #243041' }}>
+                        {step}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => farmProfile && recalculateFinanceScore(farmProfile.id)}
+                  style={{ ...styles.recBtnNote, marginTop: '0.75rem', fontSize: '0.7rem' }}
+                >Recalculate</button>
+              </div>
+            )}
 
             {lifecycle && (
               <div style={styles.card}>
@@ -460,6 +527,12 @@ const styles = {
     width: '100%', padding: '0.4rem 0.6rem', background: '#1E293B', border: '1px solid #243041',
     borderRadius: '6px', color: '#FFFFFF', fontSize: '0.8rem', outline: 'none', boxSizing: 'border-box',
   },
+  scoreCircle: (band) => ({
+    width: '64px', height: '64px', borderRadius: '50%',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    background: '#1E293B',
+    border: `3px solid ${band === 'Strong' ? '#22C55E' : band === 'Good' ? '#0EA5E9' : band === 'Fair' ? '#F59E0B' : '#EF4444'}`,
+  }),
   weatherStat: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     background: '#1E293B', borderRadius: '8px', padding: '0.5rem 0.75rem', minWidth: '60px',

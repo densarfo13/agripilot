@@ -1175,6 +1175,7 @@ model FarmProfile {
   farmer          Farmer    @relation(fields: [farmerId], references: [id])
   recommendations RecommendationRecord[]
   weatherSnapshots WeatherSnapshot[]
+  financeScores   FarmFinanceScore[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
   @@index([crop], map: "idx_farm_profiles_crop")
@@ -1225,4 +1226,25 @@ model WeatherSnapshot {
   @@index([farmProfileId], map: "idx_weather_farm")
   @@index([fetchedAt], map: "idx_weather_fetched")
   @@map("weather_snapshots")
+}
+
+// ─── Farm Finance Score ────────────────────────────────
+
+model FarmFinanceScore {
+  id              String   @id @default(uuid())
+  farmProfileId   String   @map("farm_profile_id")
+  score           Int
+  band            String
+  readiness       String
+  confidence      String   @default("medium")
+  factors         Json     @default("[]")
+  nextSteps       Json     @default("[]") @map("next_steps")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  farmProfile     FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+
+  @@index([farmProfileId], map: "idx_finance_score_farm")
+  @@index([farmProfileId, createdAt], map: "idx_finance_score_farm_created")
+  @@map("farm_finance_scores")
 }

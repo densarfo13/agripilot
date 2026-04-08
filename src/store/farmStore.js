@@ -9,6 +9,7 @@ export const useFarmStore = create((set, get) => ({
   dashboardSummary: null,
   weather: null,
   weatherRecs: null,
+  financeScore: null,
   loading: false,
   error: null,
 
@@ -152,6 +153,30 @@ export const useFarmStore = create((set, get) => ({
       return r.data;
     } catch (err) {
       set({ weatherRecs: null });
+      return null;
+    }
+  },
+
+  // Fetch finance score for a farm profile
+  fetchFinanceScore: async (farmId) => {
+    try {
+      const r = await api.get(`/v1/farms/${farmId}/finance-score`);
+      set({ financeScore: r.data });
+      return r.data;
+    } catch (err) {
+      set({ financeScore: null });
+      return null;
+    }
+  },
+
+  // Recalculate finance score
+  recalculateFinanceScore: async (farmId) => {
+    try {
+      const r = await api.post(`/v1/farms/${farmId}/finance-score/recalculate`);
+      set({ financeScore: r.data });
+      return r.data;
+    } catch (err) {
+      set({ financeScore: null });
       return null;
     }
   },
