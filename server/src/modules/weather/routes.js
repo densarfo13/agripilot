@@ -61,7 +61,7 @@ router.get('/farms/:farmId/weather', validateParamUUID('farmId'), asyncHandler(a
 // ─── POST /api/v1/insights/recommend ───────────────────
 // Weather-enriched recommendation endpoint
 router.post('/insights/recommend', asyncHandler(async (req, res) => {
-  const { farmProfileId, crop, stage, weather: explicitWeather } = req.body;
+  const { farmProfileId, crop, stage, weather: explicitWeather, soilMoisture, pestRisk, daysSinceLastFertilizer, marketPriceTrend } = req.body;
 
   // Validate farmProfileId if provided
   if (farmProfileId) {
@@ -97,6 +97,7 @@ router.post('/insights/recommend', asyncHandler(async (req, res) => {
     crop: resolvedCrop,
     stage: resolvedStage,
     weather: explicitWeather,
+    extra: { soilMoisture, pestRisk, daysSinceLastFertilizer, marketPriceTrend },
   });
 
   res.json(result);

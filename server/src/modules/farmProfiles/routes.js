@@ -115,4 +115,29 @@ router.patch('/:farmId/recommendations/:recId', validateParamUUID('farmId'), val
   res.json(rec);
 }));
 
+// POST /api/v1/farms/:farmId/recommendations/:recId/feedback — submit feedback on a recommendation
+router.post('/:farmId/recommendations/:recId/feedback', validateParamUUID('farmId'), validateParamUUID('recId'), asyncHandler(async (req, res) => {
+  await verifyFarmProfileOwnership(req, req.params.farmId);
+  const { helpful, note } = req.body;
+  if (typeof helpful !== 'boolean') {
+    return res.status(400).json({ error: 'helpful (boolean) is required' });
+  }
+  // Verify rec belongs to this farm
+  const rec = await prisma.recommendationRecord.findFirst({
+    where: { id: req.params.recId, farmProfileId: req.params.farmId },
+    select: { id: true },
+  });
+  if (!rec) return res.status(404).json({ error: 'Recommendation not found' });
+
+  const feedback = await prisma.recommendationFeedback.create({
+    data: {
+      recommendationId: req.params.recId,
+      userId: req.user.sub,
+      helpful,
+      note: note || null,
+    },
+  });
+  res.status(201).json({ id: feedback.id, helpful: feedback.helpful });
+}));
+
 export default router;

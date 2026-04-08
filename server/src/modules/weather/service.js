@@ -138,7 +138,7 @@ function snapshotToWeather(snapshot) {
  * @param {Object} [params.weather] - explicit weather override
  * @returns {Promise<{recommendations: Array, weatherContext: Object}>}
  */
-export async function getWeatherRecommendations({ farmProfileId, crop, stage, weather: explicitWeather }) {
+export async function getWeatherRecommendations({ farmProfileId, crop, stage, weather: explicitWeather, extra = {} }) {
   let weatherData, weatherSource;
 
   if (explicitWeather && explicitWeather.temperatureC != null) {
@@ -153,7 +153,7 @@ export async function getWeatherRecommendations({ farmProfileId, crop, stage, we
     weatherSource = 'fallback';
   }
 
-  const recommendations = buildWeatherRecommendations(crop, stage, weatherData);
+  const recommendations = buildWeatherRecommendations(crop, stage, weatherData, extra);
 
   return {
     recommendations,
@@ -170,11 +170,12 @@ export async function getWeatherRecommendations({ farmProfileId, crop, stage, we
 
 // ─── Recommendation rules engine ───────────────────────
 
-function buildWeatherRecommendations(crop, stage, weather) {
+function buildWeatherRecommendations(crop, stage, weather, extra = {}) {
   const recs = [];
   const temp = weather.temperatureC;
   const rain = weather.rainForecastMm;
   const humidity = weather.humidityPct;
+  const { soilMoisture, pestRisk, daysSinceLastFertilizer, marketPriceTrend } = extra;
 
   // Rain preparation
   if (rain > 20) {
@@ -271,6 +272,93 @@ function buildWeatherRecommendations(crop, stage, weather) {
       reason: `${rain}mm rain forecast. Harvesting before rain prevents crop spoilage and storage losses.`,
       nextReviewDays: 1,
       score: 0.85,
+    });
+  }
+
+  // Soil moisture guidance
+  if (soilMoisture != null) {
+    if (soilMoisture < 20) {
+      recs.push({
+        title: 'Soil moisture critically low',
+        action: 'Irrigate immediately. Consider drip irrigation to conserve water.',
+        urgency: 'high',
+        confidence: 0.85,
+        reason: `Soil moisture at ${soilMoisture}%. Crops need at least 20% for healthy root uptake.`,
+        nextReviewDays: 1,
+        score: 0.9,
+      });
+    } else if (soilMoisture > 80 && rain > 5) {
+      recs.push({
+        title: 'Waterlogging risk',
+        action: 'Ensure drainage channels are clear. Avoid additional irrigation.',
+        urgency: 'medium',
+        confidence: 0.75,
+        reason: `Soil moisture at ${soilMoisture}% with ${rain}mm rain expected. Excess water damages roots.`,
+        nextReviewDays: 2,
+        score: 0.75,
+      });
+    }
+  }
+
+  // Pest risk alert
+  if (pestRisk != null && pestRisk > 0.6) {
+    const urgency = pestRisk > 0.8 ? 'high' : 'medium';
+    recs.push({
+      title: 'Elevated pest risk',
+      action: 'Scout fields for pest damage. Apply targeted pest control if infestation is confirmed.',
+      urgency,
+      confidence: 0.7,
+      reason: `Pest risk index is ${Math.round(pestRisk * 100)}%${humidity > 60 ? `. High humidity (${humidity}%) favours pest activity.` : '.'}`,
+      nextReviewDays: 3,
+      score: pestRisk > 0.8 ? 0.85 : 0.7,
+    });
+  }
+
+  // Fertilizer timing based on days since last application
+  if (daysSinceLastFertilizer != null) {
+    if (daysSinceLastFertilizer > 30 && stage === 'growing') {
+      recs.push({
+        title: 'Fertilizer application overdue',
+        action: 'Apply top-dressing fertilizer to support continued growth.',
+        urgency: 'medium',
+        confidence: 0.7,
+        reason: `Last fertilizer was ${daysSinceLastFertilizer} days ago during growing stage. Nutrient depletion slows development.`,
+        nextReviewDays: 5,
+        score: 0.7,
+      });
+    } else if (daysSinceLastFertilizer < 7 && rain > 15) {
+      recs.push({
+        title: 'Recent fertilizer at risk',
+        action: 'Monitor for nutrient runoff. Reapply lighter dose after rain if needed.',
+        urgency: 'medium',
+        confidence: 0.65,
+        reason: `Fertilizer applied ${daysSinceLastFertilizer} days ago and ${rain}mm rain forecast. Heavy rain can wash away nutrients.`,
+        nextReviewDays: 3,
+        score: 0.65,
+      });
+    }
+  }
+
+  // Market price trend
+  if (marketPriceTrend === 'rising' && stage === 'harvest') {
+    recs.push({
+      title: 'Market prices rising',
+      action: 'Consider holding harvest briefly if storage conditions allow — prices trending upward.',
+      urgency: 'low',
+      confidence: 0.6,
+      reason: `Market prices for ${crop || 'your crop'} are trending upward. Timing your sale can improve returns.`,
+      nextReviewDays: 5,
+      score: 0.6,
+    });
+  } else if (marketPriceTrend === 'falling' && stage === 'harvest') {
+    recs.push({
+      title: 'Market prices declining',
+      action: 'Sell harvested produce soon to avoid further price drops.',
+      urgency: 'high',
+      confidence: 0.65,
+      reason: `Market prices for ${crop || 'your crop'} are falling. Early sale minimises losses.`,
+      nextReviewDays: 2,
+      score: 0.8,
     });
   }
 

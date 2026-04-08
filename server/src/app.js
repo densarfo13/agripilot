@@ -56,6 +56,8 @@ import performanceRoutes from './modules/performance/routes.js';
 import farmProfileRoutes from './modules/farmProfiles/routes.js';
 import weatherRoutes from './modules/weather/routes.js';
 import financeScoreRoutes from './modules/financeScore/routes.js';
+import referralRoutes from './modules/referral/routes.js';
+import analyticsRoutes from './modules/analytics/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -296,6 +298,8 @@ app.use('/api/v1/farms', farmProfileRoutes);
 app.use('/api/v1/weather', weatherRoutes);
 app.use('/api/v1', weatherRoutes); // mounts /farms/:farmId/weather and /insights/recommend under /api/v1
 app.use('/api/v1/farms', financeScoreRoutes);
+app.use('/api/v1/referral', referralRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

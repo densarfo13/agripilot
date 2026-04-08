@@ -241,6 +241,13 @@ model User {
   feedback                 UserFeedback[]
   // Auth
   passwordResetTokens      PasswordResetToken[]
+  // Referral
+  referralCode             String?   @unique @map("referral_code")
+  referredById             String?   @map("referred_by_id")
+  referralsGiven           Referral[] @relation("ReferralGiver")
+  referralsReceived        Referral[] @relation("ReferralReceiver")
+  // Analytics
+  analyticsEvents          AnalyticsEvent[]
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1198,6 +1205,7 @@ model RecommendationRecord {
   updatedAt         DateTime             @updatedAt @map("updated_at")
 
   farmProfile       FarmProfile          @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+  feedback          RecommendationFeedback[]
 
   @@index([farmProfileId], map: "idx_rec_records_farm")
   @@index([status], map: "idx_rec_records_status")
@@ -1247,4 +1255,56 @@ model FarmFinanceScore {
   @@index([farmProfileId], map: "idx_finance_score_farm")
   @@index([farmProfileId, createdAt], map: "idx_finance_score_farm_created")
   @@map("farm_finance_scores")
+}
+
+// ─── Referral ──────────────────────────────────────────
+
+model Referral {
+  id           String   @id @default(uuid())
+  referrerId   String   @map("referrer_id")
+  refereeId    String   @map("referee_id")
+  code         String
+  status       String   @default("joined") // joined, active
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  referrer     User     @relation("ReferralGiver", fields: [referrerId], references: [id])
+  referee      User     @relation("ReferralReceiver", fields: [refereeId], references: [id])
+
+  @@index([referrerId], map: "idx_referral_referrer")
+  @@index([refereeId], map: "idx_referral_referee")
+  @@index([code], map: "idx_referral_code")
+  @@map("referrals")
+}
+
+// ─── Recommendation Feedback ───────────────────────────
+
+model RecommendationFeedback {
+  id                 String   @id @default(uuid())
+  recommendationId   String   @map("recommendation_id")
+  userId             String?  @map("user_id")
+  helpful            Boolean
+  note               String?
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  recommendation     RecommendationRecord @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId], map: "idx_rec_feedback_rec")
+  @@map("recommendation_feedback")
+}
+
+// ─── Analytics Event ───────────────────────────────────
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  event     String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([event], map: "idx_analytics_event")
+  @@index([userId], map: "idx_analytics_user")
+  @@index([createdAt], map: "idx_analytics_created")
+  @@map("analytics_events")
 }

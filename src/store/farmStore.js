@@ -181,6 +181,42 @@ export const useFarmStore = create((set, get) => ({
     }
   },
 
+  // Submit feedback on a recommendation
+  submitRecFeedback: async (farmId, recId, helpful, note) => {
+    try {
+      await api.post(`/v1/farms/${farmId}/recommendations/${recId}/feedback`, { helpful, note: note || null });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // Referral
+  referral: null,
+  fetchReferral: async () => {
+    try {
+      const r = await api.get('/v1/referral');
+      set({ referral: r.data });
+      return r.data;
+    } catch {
+      set({ referral: null });
+      return null;
+    }
+  },
+  applyReferral: async (code) => {
+    const r = await api.post('/v1/referral/apply', { code });
+    return r.data;
+  },
+
+  // Analytics (fire-and-forget)
+  trackEvent: async (event, metadata) => {
+    try {
+      await api.post('/v1/analytics/track', { event, metadata });
+    } catch {
+      // silent
+    }
+  },
+
   // Select a profile
   setCurrentProfile: (profile) => set({ currentProfile: profile }),
 }));

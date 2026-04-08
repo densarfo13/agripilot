@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { useFarmStore } from '../store/farmStore.js';
 import api from '../api/client.js';
 import { tLifecycleStage, tStatus, getCurrentLang, setLang } from '../utils/i18n.js';
+import OnboardingWizard from '../components/OnboardingWizard.jsx';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -14,21 +15,29 @@ export default function FarmerDashboardPage() {
   // Farm profile + recommendations + weather + finance store
   const {
     profiles: farmProfiles, currentProfile: farmProfile, recommendations,
-    weather, weatherRecs, financeScore,
+    weather, weatherRecs, financeScore, referral,
     fetchProfiles, fetchRecommendations, updateRecommendation,
     fetchWeather, fetchWeatherRecs, saveRecommendation,
     fetchFinanceScore, recalculateFinanceScore,
+    submitRecFeedback, fetchReferral, trackEvent,
   } = useFarmStore();
+  const { createProfile } = useFarmStore();
   const [recNoteId, setRecNoteId] = useState(null);
   const [recNote, setRecNote] = useState('');
+  const [feedbackSent, setFeedbackSent] = useState({});
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     api.get('/auth/farmer-profile')
       .then(r => setProfile(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-    // Load farm profiles
-    fetchProfiles();
+    // Load farm profiles + referral
+    fetchProfiles().then(profiles => {
+      if (profiles.length === 0) setShowOnboarding(true);
+    });
+    fetchReferral();
+    trackEvent('dashboard_viewed');
   }, []);
 
   const [lang, setCurrentLang] = useState(getCurrentLang());
@@ -53,6 +62,7 @@ export default function FarmerDashboardPage() {
   const handleSaveWeatherRec = async (rec) => {
     if (!farmProfile) return;
     await saveRecommendation(farmProfile.id, rec);
+    trackEvent('recommendation_saved', { title: rec.title });
   };
 
   const handleRecAction = async (recId, status) => {
@@ -60,8 +70,16 @@ export default function FarmerDashboardPage() {
     const data = { status };
     if (recNoteId === recId && recNote.trim()) data.farmerNote = recNote.trim();
     await updateRecommendation(farmProfile.id, recId, data);
+    trackEvent(`recommendation_${status}`, { recId });
     setRecNoteId(null);
     setRecNote('');
+  };
+
+  const handleFeedback = async (recId, helpful) => {
+    if (!farmProfile || feedbackSent[recId]) return;
+    await submitRecFeedback(farmProfile.id, recId, helpful);
+    setFeedbackSent(prev => ({ ...prev, [recId]: helpful ? 'yes' : 'no' }));
+    trackEvent('recommendation_feedback', { recId, helpful });
   };
 
   const bandColor = (band) => {
@@ -69,6 +87,19 @@ export default function FarmerDashboardPage() {
     if (band === 'Good') return '#0EA5E9';
     if (band === 'Fair') return '#F59E0B';
     return '#EF4444';
+  };
+
+  const handleOnboardingComplete = async (data) => {
+    const profile = await createProfile(data);
+    if (profile) {
+      setShowOnboarding(false);
+      trackEvent('onboarding_completed', { crop: data.crop });
+      // Fetch new data for the created profile
+      fetchRecommendations(profile.id);
+      fetchWeather(profile.id);
+      fetchWeatherRecs(profile.id);
+      fetchFinanceScore(profile.id);
+    }
   };
 
   const isPending = user?.registrationStatus === 'pending_approval';
@@ -96,6 +127,9 @@ export default function FarmerDashboardPage() {
 
   return (
     <div style={styles.container}>
+      {showOnboarding && isApproved && (
+        <OnboardingWizard userName={user?.fullName?.split(' ')[0]} onComplete={handleOnboardingComplete} />
+      )}
       <div style={styles.header}>
         <h1 style={styles.brand}>Farroway</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -434,8 +468,47 @@ export default function FarmerDashboardPage() {
                       </div>
                     )}
                     {rec.farmerNote && <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.3rem', fontStyle: 'italic' }}>Note: {rec.farmerNote}</div>}
+                    {rec.status !== 'pending' && !feedbackSent[rec.id] && (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#71717A' }}>Was this helpful?</span>
+                        <button onClick={() => handleFeedback(rec.id, true)} style={styles.feedbackBtn}>Yes</button>
+                        <button onClick={() => handleFeedback(rec.id, false)} style={styles.feedbackBtn}>No</button>
+                      </div>
+                    )}
+                    {feedbackSent[rec.id] && (
+                      <div style={{ fontSize: '0.7rem', color: '#71717A', marginTop: '0.3rem' }}>Thanks for your feedback</div>
+                    )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Referral Card */}
+            {referral && (
+              <div style={{ ...styles.card, marginTop: '1rem', borderLeft: '4px solid #8B5CF6' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Invite a Farmer</div>
+                <p style={{ fontSize: '0.85rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
+                  Share your code with other farmers to help them join Farroway.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <div style={{
+                    flex: 1, padding: '0.5rem 0.75rem', background: '#1E293B', borderRadius: '6px',
+                    fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.1em', color: '#FFFFFF', textAlign: 'center',
+                  }}>{referral.code}</div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(referral.link || referral.code);
+                      trackEvent('referral_shared');
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem', background: '#8B5CF6', color: '#fff', border: 'none',
+                      borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
+                    }}
+                  >Copy</button>
+                </div>
+                {referral.referralCount > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: '#71717A' }}>{referral.referralCount} farmer{referral.referralCount !== 1 ? 's' : ''} joined with your code</div>
+                )}
               </div>
             )}
 
@@ -536,6 +609,11 @@ const styles = {
   weatherStat: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     background: '#1E293B', borderRadius: '8px', padding: '0.5rem 0.75rem', minWidth: '60px',
+  },
+  feedbackBtn: {
+    padding: '0.2rem 0.5rem', background: 'transparent', color: '#A1A1AA',
+    border: '1px solid #243041', borderRadius: '4px', cursor: 'pointer',
+    fontSize: '0.65rem', fontWeight: 600,
   },
   weatherValue: { fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF' },
   weatherLabel: { fontSize: '0.65rem', color: '#71717A', marginTop: '0.1rem', textTransform: 'uppercase' },
