@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import app from './app.js';
 import { config } from './config/index.js';
 import prisma from './config/database.js';
+import { startNotificationCron, stopNotificationCron } from './modules/autoNotifications/cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,27 @@ async function main() {
     process.exit(1);
   }
 
+  // One-time admin password reset (remove RESET_ADMIN_PW env var after use)
+  if (process.env.RESET_ADMIN_PW) {
+    try {
+      const { default: bcrypt } = await import('bcryptjs');
+      const hash = await bcrypt.hash(process.env.RESET_ADMIN_PW, 10);
+      const updated = await prisma.user.update({
+        where: { email: 'admin@agripilot.com' },
+        data: { passwordHash: hash },
+        select: { id: true, email: true, role: true },
+      });
+      console.log('[RESET] Admin password reset for:', updated.email);
+    } catch (err) {
+      console.error('[RESET] Admin password reset failed:', err.message);
+    }
+  }
+
+  // Start automated notification cron (skip in test environment)
+  if (config.nodeEnv !== 'test') {
+    startNotificationCron();
+  }
+
   const host = '0.0.0.0';
   const server = app.listen(config.port, host, () => {
     console.log(`[SERVER] AgriPilot running on http://${host}:${config.port}`);
@@ -38,6 +60,7 @@ async function main() {
   const shutdown = async (signal) => {
     console.log(`\n[SERVER] ${signal} received. Shutting down gracefully...`);
     server.close(async () => {
+      stopNotificationCron();
       await prisma.$disconnect();
       console.log('[SERVER] Shut down complete.');
       process.exit(0);
