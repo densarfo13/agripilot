@@ -28,7 +28,9 @@ function resolveOrgId(req, queryOrBodyOrgId) {
     return req.organizationId ?? null;
   }
   // super_admin: use provided org ID or null (global view)
-  return queryOrBodyOrgId ?? null;
+  // Guard against duplicate query params sending an array
+  const val = Array.isArray(queryOrBodyOrgId) ? queryOrBodyOrgId[0] : queryOrBodyOrgId;
+  return val ?? null;
 }
 
 // ─── GET /api/pilot-qa/checklist ──────────────────────────

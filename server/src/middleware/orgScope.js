@@ -91,7 +91,8 @@ export function extractOrganization(req, res, next) {
 function applyOrgScope(req, res, next, userOrgId, role) {
   if (role === 'super_admin') {
     // super_admin can optionally scope to a specific org via query param
-    const requestedOrg = req.query.orgId || null;
+    const rawOrgId = req.query.orgId;
+    const requestedOrg = (Array.isArray(rawOrgId) ? rawOrgId[0] : rawOrgId) || null;
     req.organizationId = requestedOrg;
     req.isCrossOrg = !requestedOrg; // true = unscoped global access
   } else {

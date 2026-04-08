@@ -95,16 +95,15 @@ export default function PilotQAPage() {
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super_admin';
 
-  // Effective org ID to scope requests
-  const orgParam = isSuperAdmin && selectedOrgId ? `?orgId=${selectedOrgId}` : '';
+  // orgId is auto-attached by the API interceptor from orgStore — no manual param needed
 
   const load = useCallback(() => {
     setLoading(true);
     setError('');
     Promise.all([
-      api.get(`/pilot-qa/checklist${orgParam}`),
-      api.get(`/pilot-qa/health${orgParam}`),
-      api.get(`/pilot-qa/report${orgParam}`),
+      api.get('/pilot-qa/checklist'),
+      api.get('/pilot-qa/health'),
+      api.get('/pilot-qa/report'),
     ])
       .then(([cRes, hRes, rRes]) => {
         setItems(cRes.data);
@@ -113,7 +112,7 @@ export default function PilotQAPage() {
       })
       .catch(() => setError('Failed to load pilot QA data'))
       .finally(() => setLoading(false));
-  }, [orgParam]);
+  }, [selectedOrgId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -142,7 +141,7 @@ export default function PilotQAPage() {
           : i
       ));
       // Refresh report silently
-      api.get(`/pilot-qa/report${orgParam}`).then(r => setReport(r.data)).catch(() => {});
+      api.get('/pilot-qa/report').then(r => setReport(r.data)).catch(() => {});
     } catch (err) {
       setError(err.response?.data?.error || 'Save failed');
     } finally {
