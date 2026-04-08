@@ -50,15 +50,15 @@ describe('Rate Limiter Configuration', () => {
 // ─── 2. MFA Role Policy ─────────────────────────────────────
 
 describe('MFA Role Policy', () => {
-  it('requires MFA for super_admin, institutional_admin, reviewer', async () => {
+  it('requires MFA for institutional_admin, reviewer', async () => {
     const { isMfaRequired } = await import('../modules/mfa/service.js');
-    expect(isMfaRequired('super_admin')).toBe(true);
     expect(isMfaRequired('institutional_admin')).toBe(true);
     expect(isMfaRequired('reviewer')).toBe(true);
   });
 
-  it('does not require MFA for farmer, field_officer, investor_viewer', async () => {
+  it('does not require MFA for super_admin, farmer, field_officer, investor_viewer', async () => {
     const { isMfaRequired } = await import('../modules/mfa/service.js');
+    expect(isMfaRequired('super_admin')).toBe(false);
     expect(isMfaRequired('farmer')).toBe(false);
     expect(isMfaRequired('field_officer')).toBe(false);
     expect(isMfaRequired('investor_viewer')).toBe(false);
@@ -70,10 +70,9 @@ describe('MFA Role Policy', () => {
     expect(isMfaExempt('super_admin')).toBe(false);
   });
 
-  it('MFA_REQUIRED_ROLES set contains exactly 3 roles', async () => {
+  it('MFA_REQUIRED_ROLES set contains exactly 2 roles', async () => {
     const { MFA_REQUIRED_ROLES } = await import('../modules/mfa/service.js');
-    expect(MFA_REQUIRED_ROLES.size).toBe(3);
-    expect(MFA_REQUIRED_ROLES.has('super_admin')).toBe(true);
+    expect(MFA_REQUIRED_ROLES.size).toBe(2);
     expect(MFA_REQUIRED_ROLES.has('institutional_admin')).toBe(true);
     expect(MFA_REQUIRED_ROLES.has('reviewer')).toBe(true);
   });
