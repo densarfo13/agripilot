@@ -70,6 +70,16 @@ api.interceptors.response.use(
     const config = error.config;
 
     if (error.response?.status === 401) {
+      const code = error.response?.data?.code;
+      // Step-up required — show modal, do NOT logout
+      if (code === 'STEP_UP_REQUIRED' || code === 'STEP_UP_EXPIRED') {
+        useAuthStore.getState().setStepUpRequired(true);
+        return Promise.reject(error);
+      }
+      // MFA setup/challenge required — user has limited token; do NOT logout so they can enroll
+      if (code === 'MFA_SETUP_REQUIRED' || code === 'MFA_CHALLENGE_REQUIRED') {
+        return Promise.reject(error);
+      }
       useAuthStore.getState().logout();
       window.location.href = '/login';
       return Promise.reject(error);

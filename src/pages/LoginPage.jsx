@@ -8,40 +8,52 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [providers, setProviders] = useState({ google: false, microsoft: false });
-  const [federatedLoading, setFederatedLoading] = useState(null); // 'google' | 'microsoft' | null
+  const [providers, setProviders] = useState({ google: false, microsoft: false, oidc: false });
+  const [federatedLoading, setFederatedLoading] = useState(null);
+
+  // MFA challenge state
+  const [mfaStep, setMfaStep] = useState(null); // null | 'challenge' | 'setup_required'
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  // Fetch available federated providers on mount
   useEffect(() => {
     api.get('/auth/providers')
       .then(({ data }) => setProviders(data))
-      .catch(() => {}); // silently fail — buttons just won't show
+      .catch(() => {});
   }, []);
 
-  // Listen for postMessage from federated auth popup
+  // Handle postMessage from federated auth popup
   const handleAuthMessage = useCallback((event) => {
-    // Parse the message — it arrives as a JSON string
     let data;
     try {
       data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
     } catch {
-      return; // not our message
-    }
-
-    if (!data || data.type !== 'agripilot-auth') return;
-
-    setFederatedLoading(null);
-
-    if (data.error) {
-      setError(data.error);
       return;
     }
+    if (!data || data.type !== 'agripilot-auth') return;
+    setFederatedLoading(null);
 
+    if (data.error) { setError(data.error); return; }
+
+    // Full login
     if (data.user && data.accessToken) {
       setAuth(data.user, data.accessToken);
       navigate('/');
+      return;
+    }
+    // MFA required from SSO
+    if (data.mfaChallengeRequired && data.mfaToken) {
+      setMfaToken(data.mfaToken);
+      setMfaStep('challenge');
+      return;
+    }
+    if (data.mfaSetupRequired && data.mfaToken) {
+      setAuth(data.user, data.mfaToken);
+      navigate('/account');
     }
   }, [setAuth, navigate]);
 
@@ -57,6 +69,19 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
+      if (data.mfaChallengeRequired) {
+        setMfaToken(data.mfaToken);
+        setMfaStep('challenge');
+        return;
+      }
+      if (data.mfaSetupRequired) {
+        // Log the user in with the temporary mfaToken so they can reach Account > Security
+        // to enroll MFA. The token is valid but lacks mfaVerifiedAt, so protected admin
+        // routes will still block until MFA is fully enrolled and verified.
+        setAuth(data.user, data.mfaToken);
+        navigate('/account');
+        return;
+      }
       setAuth(data.user, data.accessToken);
       navigate('/');
     } catch (err) {
@@ -66,33 +91,98 @@ export default function LoginPage() {
     }
   };
 
-  // Federated login via popup
+  // Submit MFA challenge code
+  const handleMfaSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMfaLoading(true);
+    try {
+      const { data } = await api.post('/auth/mfa/verify', { mfaToken, code: mfaCode });
+      setAuth(data.user, data.accessToken);
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Invalid code. Please try again.');
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  // Open SSO popup
   const openFederatedLogin = (provider) => {
     setError('');
     setFederatedLoading(provider);
-
-    const width = 500;
-    const height = 600;
+    const width = 500, height = 600;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
-
     const popup = window.open(
       `/api/auth/${provider}`,
       `agripilot-${provider}-login`,
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
     );
-
-    // Monitor popup closure (user may close without completing)
     const interval = setInterval(() => {
-      if (!popup || popup.closed) {
-        clearInterval(interval);
-        setFederatedLoading(null);
-      }
+      if (!popup || popup.closed) { clearInterval(interval); setFederatedLoading(null); }
     }, 500);
   };
 
-  const hasFederated = providers.google || providers.microsoft;
+  const hasFederated = providers.google || providers.microsoft || providers.oidc;
 
+  // ── MFA Setup Required screen ──
+  if (mfaStep === 'setup_required') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <h1 style={styles.title}>MFA Required</h1>
+          <p style={{ ...styles.subtitle, marginBottom: '1.5rem' }}>
+            Your role requires multi-factor authentication. Please set up MFA from your account settings after signing in, or contact your administrator.
+          </p>
+          <p style={{ fontSize: '0.8rem', color: '#9ca3af', textAlign: 'center' }}>
+            A temporary session has been issued. Go to <strong>Account &gt; Security</strong> to enroll.
+          </p>
+          <button style={{ ...styles.button, marginTop: '1.5rem' }} onClick={() => { setMfaStep(null); setMfaToken(''); }}>
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── MFA Challenge screen ──
+  if (mfaStep === 'challenge') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <h1 style={styles.title}>Two-Factor Authentication</h1>
+          <p style={styles.subtitle}>Enter the 6-digit code from your authenticator app</p>
+          <form onSubmit={handleMfaSubmit} style={styles.form}>
+            {error && <div style={styles.error}>{error}</div>}
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9A-Fa-f]{6,10}"
+              placeholder="000000"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\s/g, ''))}
+              maxLength={10}
+              style={{ ...styles.input, textAlign: 'center', letterSpacing: '0.25em', fontSize: '1.25rem' }}
+              autoFocus
+              required
+            />
+            <button type="submit" disabled={mfaLoading || mfaCode.length < 6} style={styles.button}>
+              {mfaLoading ? 'Verifying...' : 'Verify'}
+            </button>
+            <button type="button" onClick={() => { setMfaStep(null); setError(''); setMfaCode(''); }} style={styles.linkBtn}>
+              Cancel — use a different account
+            </button>
+          </form>
+          <p style={{ fontSize: '0.8rem', color: '#9ca3af', textAlign: 'center', marginTop: '1rem' }}>
+            Lost access to your authenticator? Enter a backup code instead.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Normal login screen ──
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -119,32 +209,33 @@ export default function LoginPage() {
           <button type="submit" disabled={loading || !!federatedLoading} style={styles.button}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          <div style={{ textAlign: 'right' }}>
+            <Link to="/forgot-password" style={{ fontSize: '0.8rem', color: '#2563eb' }}>
+              Forgot password?
+            </Link>
+          </div>
         </form>
 
         {hasFederated && (
           <>
-            <div style={styles.divider}>
-              <span style={styles.dividerText}>or</span>
-            </div>
+            <div style={styles.divider}><span style={styles.dividerText}>or</span></div>
             <div style={styles.federatedButtons}>
               {providers.google && (
-                <button
-                  onClick={() => openFederatedLogin('google')}
-                  disabled={!!federatedLoading}
-                  style={styles.federatedBtn}
-                >
+                <button onClick={() => openFederatedLogin('google')} disabled={!!federatedLoading} style={styles.federatedBtn}>
                   <GoogleIcon />
                   <span>{federatedLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
                 </button>
               )}
               {providers.microsoft && (
-                <button
-                  onClick={() => openFederatedLogin('microsoft')}
-                  disabled={!!federatedLoading}
-                  style={styles.federatedBtn}
-                >
+                <button onClick={() => openFederatedLogin('microsoft')} disabled={!!federatedLoading} style={styles.federatedBtn}>
                   <MicrosoftIcon />
                   <span>{federatedLoading === 'microsoft' ? 'Connecting...' : 'Continue with Microsoft'}</span>
+                </button>
+              )}
+              {providers.oidc && (
+                <button onClick={() => openFederatedLogin('oidc')} disabled={!!federatedLoading} style={styles.federatedBtn}>
+                  <SsoIcon />
+                  <span>{federatedLoading === 'oidc' ? 'Connecting...' : `Continue with ${providers.oidc.displayName || 'SSO'}`}</span>
                 </button>
               )}
             </div>
@@ -159,7 +250,6 @@ export default function LoginPage() {
   );
 }
 
-// Inline SVG icons (no external dependencies)
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" style={{ flexShrink: 0 }}>
@@ -182,99 +272,27 @@ function MicrosoftIcon() {
   );
 }
 
+function SsoIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
 const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#f0f2f5',
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '8px',
-    padding: '2.5rem',
-    width: '100%',
-    maxWidth: '400px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: 700,
-    color: '#1a1a2e',
-    textAlign: 'center',
-    marginBottom: '0.25rem',
-  },
-  subtitle: {
-    fontSize: '0.875rem',
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: '1.5rem',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  input: {
-    padding: '0.75rem 1rem',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    fontSize: '0.9375rem',
-    outline: 'none',
-  },
-  button: {
-    padding: '0.75rem',
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '0.9375rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  error: {
-    background: '#fef2f2',
-    color: '#dc2626',
-    padding: '0.75rem',
-    borderRadius: '6px',
-    fontSize: '0.875rem',
-    textAlign: 'center',
-  },
-  divider: {
-    display: 'flex',
-    alignItems: 'center',
-    margin: '1.25rem 0',
-    gap: '0.75rem',
-  },
-  dividerText: {
-    color: '#9ca3af',
-    fontSize: '0.8rem',
-    flexShrink: 0,
-    padding: '0 0.5rem',
-    background: '#fff',
-    position: 'relative',
-    zIndex: 1,
-    margin: '0 auto',
-  },
-  federatedButtons: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.625rem',
-  },
-  federatedBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.625rem',
-    padding: '0.65rem 1rem',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    background: '#fff',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    color: '#374151',
-    transition: 'background 0.15s',
-  },
+  container: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f2f5' },
+  card: { background: '#fff', borderRadius: '8px', padding: '2.5rem', width: '100%', maxWidth: '400px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  title: { fontSize: '1.5rem', fontWeight: 700, color: '#1a1a2e', textAlign: 'center', marginBottom: '0.25rem' },
+  subtitle: { fontSize: '0.875rem', color: '#666', textAlign: 'center', marginBottom: '1.5rem' },
+  form: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+  input: { padding: '0.75rem 1rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.9375rem', outline: 'none' },
+  button: { padding: '0.75rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' },
+  linkBtn: { background: 'none', border: 'none', color: '#6b7280', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline', padding: '0.25rem 0' },
+  error: { background: '#fef2f2', color: '#dc2626', padding: '0.75rem', borderRadius: '6px', fontSize: '0.875rem', textAlign: 'center' },
+  divider: { display: 'flex', alignItems: 'center', margin: '1.25rem 0', gap: '0.75rem' },
+  dividerText: { color: '#9ca3af', fontSize: '0.8rem', flexShrink: 0, padding: '0 0.5rem', background: '#fff', position: 'relative', zIndex: 1, margin: '0 auto' },
+  federatedButtons: { display: 'flex', flexDirection: 'column', gap: '0.625rem' },
+  federatedBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', padding: '0.65rem 1rem', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#374151' },
 };
