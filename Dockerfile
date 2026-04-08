@@ -1,34 +1,27 @@
-# ─── AgriPilot Docker Production Image ──────────────────
-FROM node:20-alpine AS frontend-build
+FROM node:20-alpine
 WORKDIR /app
+
+# Frontend deps (ignore postinstall — server/ not copied yet)
 COPY package*.json ./
-RUN npm ci
+RUN npm install --ignore-scripts
+
+# Server deps
+COPY server/package*.json ./server/
+RUN cd server && npm install --omit=dev
+
+# Copy all source
 COPY . .
+
+# Generate Prisma client + build frontend
+RUN cd server && npx prisma generate
 RUN npx vite build
 
-FROM node:20-alpine AS production
-WORKDIR /app
-
-# Copy server
-COPY server/package*.json ./server/
-RUN cd server && npm ci --omit=dev
-
-COPY server/ ./server/
-
-# Copy built frontend
-COPY --from=frontend-build /app/dist ./dist
-
-# Generate Prisma client
-RUN cd server && npx prisma generate
-
-# Create uploads directory
+# Uploads directory
 RUN mkdir -p /app/server/uploads
-
-WORKDIR /app/server
 
 ENV NODE_ENV=production
 ENV PORT=4000
 EXPOSE 4000
 
-# Run migrations then start server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node src/server.js"]
+WORKDIR /app/server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node scripts/init-admin.mjs && node src/server.js"]
