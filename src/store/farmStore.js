@@ -7,6 +7,8 @@ export const useFarmStore = create((set, get) => ({
   currentProfile: null,
   recommendations: [],
   dashboardSummary: null,
+  weather: null,
+  weatherRecs: null,
   loading: false,
   error: null,
 
@@ -126,6 +128,30 @@ export const useFarmStore = create((set, get) => ({
       return r.data;
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load dashboard summary' });
+      return null;
+    }
+  },
+
+  // Fetch weather for a farm profile
+  fetchWeather: async (farmId) => {
+    try {
+      const r = await api.get(`/v1/farms/${farmId}/weather`);
+      set({ weather: r.data });
+      return r.data;
+    } catch (err) {
+      set({ weather: null });
+      return null;
+    }
+  },
+
+  // Fetch weather-enriched recommendations
+  fetchWeatherRecs: async (farmId) => {
+    try {
+      const r = await api.post('/v1/insights/recommend', { farmProfileId: farmId });
+      set({ weatherRecs: r.data });
+      return r.data;
+    } catch (err) {
+      set({ weatherRecs: null });
       return null;
     }
   },

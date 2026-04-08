@@ -1174,6 +1174,7 @@ model FarmProfile {
 
   farmer          Farmer    @relation(fields: [farmerId], references: [id])
   recommendations RecommendationRecord[]
+  weatherSnapshots WeatherSnapshot[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
   @@index([crop], map: "idx_farm_profiles_crop")
@@ -1201,4 +1202,27 @@ model RecommendationRecord {
   @@index([status], map: "idx_rec_records_status")
   @@index([farmProfileId, createdAt], map: "idx_rec_records_farm_created")
   @@map("recommendation_records")
+}
+
+// ─── Weather Snapshot (lean cache) ─────────────────────
+
+model WeatherSnapshot {
+  id              String   @id @default(uuid())
+  farmProfileId   String   @map("farm_profile_id")
+  latitude        Float
+  longitude       Float
+  temperatureC    Float    @map("temperature_c")
+  rainForecastMm  Float    @map("rain_forecast_mm")
+  humidityPct     Float?   @map("humidity_pct")
+  windSpeedKmh    Float?   @map("wind_speed_kmh")
+  condition       String?
+  forecastDays    Int      @default(3) @map("forecast_days")
+  source          String   @default("open-meteo")
+  fetchedAt       DateTime @default(now()) @map("fetched_at")
+
+  farmProfile     FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+
+  @@index([farmProfileId], map: "idx_weather_farm")
+  @@index([fetchedAt], map: "idx_weather_fetched")
+  @@map("weather_snapshots")
 }

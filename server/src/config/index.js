@@ -123,6 +123,13 @@ export const config = {
     displayName: process.env.OIDC_DISPLAY_NAME || 'SSO',  // shown in UI
     scopes: process.env.OIDC_SCOPES || 'openid email profile',
   },
+  // ─── Weather Integration (optional) ────────────────────
+  weather: {
+    apiKey: process.env.WEATHER_API_KEY || '',
+    baseUrl: process.env.WEATHER_BASE_URL || 'https://api.open-meteo.com/v1',
+    timeoutMs: parseInt(process.env.WEATHER_TIMEOUT_MS || '5000', 10),
+    cacheTtlMinutes: parseInt(process.env.WEATHER_CACHE_TTL_MINUTES || '30', 10),
+  },
   // ─── OAuth state signing ───────────────────────────────
   // Used to HMAC-sign the OAuth state param to prevent CSRF.
   // Falls back to JWT secret if not separately configured.

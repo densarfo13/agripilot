@@ -54,6 +54,7 @@ import mfaRoutes from './modules/mfa/routes.js';
 import autoNotificationRoutes from './modules/autoNotifications/routes.js';
 import performanceRoutes from './modules/performance/routes.js';
 import farmProfileRoutes from './modules/farmProfiles/routes.js';
+import weatherRoutes from './modules/weather/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -291,6 +292,8 @@ app.use('/api/mfa', mfaRoutes);
 app.use('/api/auto-notifications', autoNotificationRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/v1/farms', farmProfileRoutes);
+app.use('/api/v1/weather', weatherRoutes);
+app.use('/api/v1', weatherRoutes); // mounts /farms/:farmId/weather and /insights/recommend under /api/v1
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

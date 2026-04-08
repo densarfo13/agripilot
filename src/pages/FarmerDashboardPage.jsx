@@ -11,10 +11,12 @@ export default function FarmerDashboardPage() {
   const [lifecycle, setLifecycle] = useState(null);
   const [seasons, setSeasons] = useState(null);
 
-  // Farm profile + recommendations store
+  // Farm profile + recommendations + weather store
   const {
     profiles: farmProfiles, currentProfile: farmProfile, recommendations,
+    weather, weatherRecs,
     fetchProfiles, fetchRecommendations, updateRecommendation,
+    fetchWeather, fetchWeatherRecs, saveRecommendation,
   } = useFarmStore();
   const [recNoteId, setRecNoteId] = useState(null);
   const [recNote, setRecNote] = useState('');
@@ -36,12 +38,20 @@ export default function FarmerDashboardPage() {
     window.location.reload(); // reload to apply translations across all components
   };
 
-  // Fetch recommendations when farm profile is loaded
+  // Fetch recommendations + weather when farm profile is loaded
   useEffect(() => {
     if (farmProfile?.id) {
       fetchRecommendations(farmProfile.id);
+      fetchWeather(farmProfile.id);
+      fetchWeatherRecs(farmProfile.id);
     }
   }, [farmProfile?.id]);
+
+  // Save a weather recommendation to history
+  const handleSaveWeatherRec = async (rec) => {
+    if (!farmProfile) return;
+    await saveRecommendation(farmProfile.id, rec);
+  };
 
   const handleRecAction = async (recId, status) => {
     if (!farmProfile) return;
@@ -222,6 +232,61 @@ export default function FarmerDashboardPage() {
               </div>
             )}
 
+            {/* Weather Card */}
+            {weather && weather.temperatureC != null && (
+              <div style={{ ...styles.card, marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h3 style={{ margin: 0 }}>Weather</h3>
+                  <span style={{ fontSize: '0.7rem', color: '#71717A' }}>
+                    {weather._source === 'live' ? 'Live' : weather._source === 'cached' ? 'Cached' : 'Estimated'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={styles.weatherStat}>
+                    <span style={styles.weatherValue}>{Math.round(weather.temperatureC)}°C</span>
+                    <span style={styles.weatherLabel}>Temp</span>
+                  </div>
+                  <div style={styles.weatherStat}>
+                    <span style={styles.weatherValue}>{weather.rainForecastMm}mm</span>
+                    <span style={styles.weatherLabel}>Rain (3d)</span>
+                  </div>
+                  {weather.humidityPct != null && (
+                    <div style={styles.weatherStat}>
+                      <span style={styles.weatherValue}>{weather.humidityPct}%</span>
+                      <span style={styles.weatherLabel}>Humidity</span>
+                    </div>
+                  )}
+                  {weather.windSpeedKmh != null && (
+                    <div style={styles.weatherStat}>
+                      <span style={styles.weatherValue}>{Math.round(weather.windSpeedKmh)}</span>
+                      <span style={styles.weatherLabel}>Wind km/h</span>
+                    </div>
+                  )}
+                </div>
+                {weather.condition && (
+                  <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.5rem' }}>{weather.condition}</div>
+                )}
+              </div>
+            )}
+
+            {/* Weather-Based Recommendations */}
+            {weatherRecs?.recommendations?.length > 0 && (
+              <div style={{ ...styles.card, marginTop: '1rem', borderLeft: '4px solid #0EA5E9' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Weather Insights</div>
+                {weatherRecs.recommendations.slice(0, 2).map((rec, i) => (
+                  <div key={i} style={{ padding: '0.5rem 0', borderBottom: i < 1 ? '1px solid #243041' : 'none' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rec.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>{rec.action}</div>
+                    {rec.reason && <div style={{ fontSize: '0.75rem', color: '#71717A', marginTop: '0.15rem' }}>{rec.reason}</div>}
+                    <button
+                      onClick={() => handleSaveWeatherRec(rec)}
+                      style={{ ...styles.recBtnNote, marginTop: '0.4rem', fontSize: '0.7rem' }}
+                    >Save to history</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Active Seasons / Progress tracking */}
             {seasons && seasons.length > 0 && (
               <div style={{ ...styles.card, marginTop: '1rem' }}>
@@ -395,4 +460,10 @@ const styles = {
     width: '100%', padding: '0.4rem 0.6rem', background: '#1E293B', border: '1px solid #243041',
     borderRadius: '6px', color: '#FFFFFF', fontSize: '0.8rem', outline: 'none', boxSizing: 'border-box',
   },
+  weatherStat: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    background: '#1E293B', borderRadius: '8px', padding: '0.5rem 0.75rem', minWidth: '60px',
+  },
+  weatherValue: { fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF' },
+  weatherLabel: { fontSize: '0.65rem', color: '#71717A', marginTop: '0.1rem', textTransform: 'uppercase' },
 };
