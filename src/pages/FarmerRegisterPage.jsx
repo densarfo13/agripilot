@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 import CountrySelect from '../components/CountrySelect.jsx';
+import FarrowayLogo from '../components/FarrowayLogo.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 
 const LANGUAGES = [
@@ -103,7 +104,9 @@ export default function FarmerRegisterPage() {
   return (
     <div style={styles.container}>
       <div style={{ ...styles.card, maxWidth: '480px' }}>
-        <h1 style={styles.title}>Farroway</h1>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+          <FarrowayLogo size={36} />
+        </div>
         <p style={styles.subtitle}>Farmer Registration</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>

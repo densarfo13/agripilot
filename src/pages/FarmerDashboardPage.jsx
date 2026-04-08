@@ -4,6 +4,7 @@ import { useFarmStore } from '../store/farmStore.js';
 import api from '../api/client.js';
 import { tLifecycleStage, tStatus, getCurrentLang, setLang } from '../utils/i18n.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
+import FarrowayLogo from '../components/FarrowayLogo.jsx';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -131,7 +132,7 @@ export default function FarmerDashboardPage() {
         <OnboardingWizard userName={user?.fullName?.split(' ')[0]} onComplete={handleOnboardingComplete} />
       )}
       <div style={styles.header}>
-        <h1 style={styles.brand}>Farroway</h1>
+        <FarrowayLogo size={28} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             <button

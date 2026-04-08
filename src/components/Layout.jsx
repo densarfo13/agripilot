@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import api from '../api/client.js';
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
+import FarrowayLogo from './FarrowayLogo.jsx';
 
 const NAV = [
   { section: 'Overview', items: [
@@ -113,7 +114,7 @@ export default function Layout() {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <div className="sidebar-brand">Farroway</div>
+        <div className="sidebar-brand"><FarrowayLogo size={22} /></div>
 
         {/* Org context: super_admin gets switcher, others see read-only org name */}
         {isSuperAdmin ? (

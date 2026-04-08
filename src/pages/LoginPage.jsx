@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import FarrowayLogo from '../components/FarrowayLogo.jsx';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -186,7 +187,9 @@ export default function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Farroway</h1>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+          <FarrowayLogo size={40} />
+        </div>
         <p style={styles.subtitle}>The smarter way to farm.</p>
         <form onSubmit={handleSubmit} style={styles.form}>
           {error && <div style={styles.error}>{error}</div>}
