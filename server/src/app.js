@@ -1,3 +1,4 @@
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -45,6 +46,13 @@ import pilotMetricsRoutes from './modules/pilotMetrics/routes.js';
 import pilotQARoutes from './modules/pilotQA/routes.js';
 import securityRoutes from './modules/security/routes.js';
 import inviteRoutes from './modules/invites/routes.js';
+import trustRoutes from './modules/trust/routes.js';
+import taskRoutes from './modules/tasks/routes.js';
+import systemRoutes from './modules/system/routes.js';
+import feedbackRoutes from './modules/feedback/routes.js';
+import mfaRoutes from './modules/mfa/routes.js';
+import autoNotificationRoutes from './modules/autoNotifications/routes.js';
+import performanceRoutes from './modules/performance/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,9 +64,17 @@ if (config.isProduction) {
   app.set('trust proxy', 1);
 }
 
+// ─── Production Static Assets (served early, before API middleware) ─────
+// Must be registered before API routes so asset requests never hit the API
+// middleware chain. The SPA fallback (app.get('*')) remains at the bottom.
+if (config.isProduction) {
+  const clientDist = path.join(__dirname, '../../dist');
+  app.use(express.static(clientDist));
+}
+
 // ─── Security Headers ──────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: config.isProduction ? undefined : false, // disable CSP in dev for Vite
+  contentSecurityPolicy: false, // Vite bundles use inline scripts; configure CSP via reverse proxy if needed
   crossOriginEmbedderPolicy: false, // allow loading images from uploads
 }));
 
@@ -69,7 +85,10 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
 };
 
-if (config.cors.origins.length > 0) {
+if (config.cors.origins.includes('*')) {
+  // Wildcard — allow all origins (explicit opt-in)
+  corsOptions.origin = true;
+} else if (config.cors.origins.length > 0) {
   // Production: restrict to configured origins
   corsOptions.origin = (origin, callback) => {
     // Allow requests with no origin (server-to-server, mobile apps)
@@ -80,9 +99,11 @@ if (config.cors.origins.length > 0) {
     }
   };
 } else if (config.isProduction) {
-  // Production with no CORS_ORIGIN set — restrictive default
-  console.warn('[WARN] CORS_ORIGIN not set in production — only same-origin requests allowed');
-  corsOptions.origin = false;
+  // Production with no CORS_ORIGIN set — allow same-origin (no Origin header) requests only
+  corsOptions.origin = (origin, callback) => {
+    if (!origin) callback(null, true);
+    else callback(new Error(`CORS: origin ${origin} not allowed`));
+  };
 } else {
   // Development: allow all origins
   corsOptions.origin = true;
@@ -132,6 +153,7 @@ app.get('/api/health', async (_req, res) => {
     res.status(503).json({ status: 'degraded', timestamp: new Date().toISOString(), error: 'Database unreachable' });
   }
 });
+
 
 // ─── Extended Health Check (admin-only) ────────────────────
 app.get('/api/ops/health', authenticate, async (req, res) => {
@@ -260,6 +282,13 @@ app.use('/api/pilot', pilotMetricsRoutes);
 app.use('/api/pilot-qa', pilotQARoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/invites', inviteRoutes); // public invite acceptance (rate-limited internally)
+app.use('/api/trust', trustRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/mfa', mfaRoutes);
+app.use('/api/auto-notifications', autoNotificationRoutes);
+app.use('/api/performance', performanceRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {
