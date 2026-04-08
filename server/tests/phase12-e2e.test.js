@@ -1,6 +1,6 @@
 /**
  * Phase 12 — End-to-End Validation
- * 6 comprehensive test scenarios covering the full AgriPilot pipeline:
+ * 6 comprehensive test scenarios covering the full Farroway pipeline:
  *   1. Kenya: Full approval pipeline (submit → verify → fraud → decision → approve)
  *   2. Kenya: Fraud detection pipeline (submit → verify → fraud hold → escalate)
  *   3. Tanzania: Multi-region credit pipeline with TZS currency
@@ -25,7 +25,7 @@ async function api(method, path, body) {
 
 describe('Phase 12 — End-to-End Validation (6 Scenarios)', () => {
   before(async () => {
-    const r = await api('POST', '/auth/login', { email: 'admin@agripilot.com', password: 'password123' });
+    const r = await api('POST', '/auth/login', { email: 'admin@farroway.com', password: 'password123' });
     assert.equal(r.status, 200);
     token = r.data.accessToken || r.data.token;
   });

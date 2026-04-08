@@ -35,7 +35,7 @@ export default function LoginPage() {
     } catch {
       return;
     }
-    if (!data || data.type !== 'agripilot-auth') return;
+    if (!data || data.type !== 'farroway-auth') return;
     setFederatedLoading(null);
 
     if (data.error) { setError(data.error); return; }
@@ -117,7 +117,7 @@ export default function LoginPage() {
     const top = window.screenY + (window.outerHeight - height) / 2;
     const popup = window.open(
       `/api/auth/${provider}`,
-      `agripilot-${provider}-login`,
+      `farroway-${provider}-login`,
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
     );
     const interval = setInterval(() => {

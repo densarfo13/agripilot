@@ -19,7 +19,7 @@ async function api(method, path, body) {
 
 describe('Phase 10 — Post-harvest endpoints', () => {
   before(async () => {
-    const r = await api('POST', '/auth/login', { email: 'admin@agripilot.com', password: 'password123' });
+    const r = await api('POST', '/auth/login', { email: 'admin@farroway.com', password: 'password123' });
     assert.equal(r.status, 200);
     token = r.data.accessToken || r.data.token;
     const farmers = await api('GET', '/farmers?limit=1');

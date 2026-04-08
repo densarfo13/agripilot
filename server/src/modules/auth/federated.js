@@ -624,7 +624,7 @@ export function generateCallbackHtml(result) {
 <script>
 try {
   if (window.opener) {
-    window.opener.postMessage({type:'agripilot-auth',error:${JSON.stringify(safeError)}}, ${JSON.stringify(frontendOrigin)});
+    window.opener.postMessage({type:'farroway-auth',error:${JSON.stringify(safeError)}}, ${JSON.stringify(frontendOrigin)});
   }
 } catch(e) {}
 setTimeout(function(){ window.close(); }, 2000);
@@ -637,7 +637,7 @@ setTimeout(function(){ window.close(); }, 2000);
   // Handles: normal login (accessToken), MFA challenge (mfaChallengeRequired + mfaToken),
   // MFA setup required (mfaSetupRequired + mfaToken), and provider link (linked: true).
   const payload = JSON.stringify({
-    type: 'agripilot-auth',
+    type: 'farroway-auth',
     user: result.user,
     ...(result.accessToken         && { accessToken: result.accessToken }),
     ...(result.mfaChallengeRequired && { mfaChallengeRequired: true, mfaToken: result.mfaToken }),

@@ -1,4 +1,4 @@
-package com.agripilot.app;
+package com.farroway.app;
 
 import com.getcapacitor.BridgeActivity;
 

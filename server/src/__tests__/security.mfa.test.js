@@ -335,7 +335,7 @@ describe('generateCallbackHtml', () => {
   it('includes accessToken in success payload', () => {
     const html = generateCallbackHtml({ user: { id: 'u1' }, accessToken: 'tok123' });
     expect(html).toContain('tok123');
-    expect(html).toContain('agripilot-auth');
+    expect(html).toContain('farroway-auth');
   });
 
   it('includes mfaChallengeRequired and mfaToken in challenge payload, excludes accessToken', () => {

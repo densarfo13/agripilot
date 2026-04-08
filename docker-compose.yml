@@ -4,15 +4,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: agripilot
-      POSTGRES_PASSWORD: agripilot_secret
-      POSTGRES_DB: agripilot_prod
+      POSTGRES_USER: farroway
+      POSTGRES_PASSWORD: farroway_secret
+      POSTGRES_DB: farroway_prod
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agripilot"]
+      test: ["CMD-SHELL", "pg_isready -U farroway"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://agripilot:agripilot_secret@db:5432/agripilot_prod?schema=public
+      DATABASE_URL: postgresql://farroway:farroway_secret@db:5432/farroway_prod?schema=public
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-strong-random-secret-in-production}
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4000}
