@@ -253,6 +253,8 @@ model User {
   issuesReported           Issue[] @relation("IssueReporter")
   issuesAssigned           Issue[] @relation("IssueAssignee")
   issueComments            IssueComment[] @relation("IssueCommenter")
+  issueAttachments         IssueAttachment[] @relation("IssueUploader")
+  staffNotifications       StaffNotification[] @relation("StaffNotifications")
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1391,6 +1393,7 @@ model Issue {
   assignedTo   User?         @relation("IssueAssignee", fields: [assignedToId], references: [id])
   organization Organization? @relation(fields: [orgId], references: [id])
   comments     IssueComment[]
+  attachments  IssueAttachment[]
 
   @@index([userId], map: "idx_issues_user")
   @@index([orgId], map: "idx_issues_org")
@@ -1415,4 +1418,38 @@ model IssueComment {
 
   @@index([issueId], map: "idx_issue_comments_issue")
   @@map("issue_comments")
+}
+
+model IssueAttachment {
+  id          String   @id @default(uuid())
+  issueId     String   @map("issue_id")
+  userId      String   @map("user_id")
+  filename    String
+  originalName String  @map("original_name")
+  mimeType    String   @map("mime_type")
+  sizeBytes   Int      @map("size_bytes")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user  User  @relation("IssueUploader", fields: [userId], references: [id])
+
+  @@index([issueId], map: "idx_issue_attachments_issue")
+  @@map("issue_attachments")
+}
+
+model StaffNotification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  message   String
+  metadata  Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation("StaffNotifications", fields: [userId], references: [id])
+
+  @@index([userId, read], map: "idx_staff_notif_user_read")
+  @@index([createdAt], map: "idx_staff_notif_created")
+  @@map("staff_notifications")
 }

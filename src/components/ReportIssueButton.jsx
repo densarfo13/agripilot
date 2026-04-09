@@ -43,9 +43,14 @@ export default function ReportIssueButton() {
   const [myLoading, setMyLoading] = useState(false);
   const location = useLocation();
 
+  const [expandedIssue, setExpandedIssue] = useState(null);
+  const [issueComments, setIssueComments] = useState({});
+  const [newComment, setNewComment] = useState('');
+  const [commentSending, setCommentSending] = useState(false);
+
   const autoPriority = CATEGORY_PRIORITY[category] || 'MEDIUM';
 
-  const reset = () => { setIssueType('BUG'); setCategory('FRICTION'); setDescription(''); setResult(null); };
+  const reset = () => { setIssueType('BUG'); setCategory('FRICTION'); setDescription(''); setResult(null); setExpandedIssue(null); };
   const handleOpen = () => { reset(); setTab('new'); setOpen(true); };
   const handleClose = () => { setOpen(false); setTimeout(reset, 300); };
 
@@ -78,6 +83,30 @@ export default function ReportIssueButton() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const loadIssueComments = (issueId) => {
+    api.get(`/issues/${issueId}/comments`)
+      .then((res) => setIssueComments((prev) => ({ ...prev, [issueId]: res.data })))
+      .catch(() => {});
+  };
+
+  const sendComment = async (issueId) => {
+    if (!newComment.trim()) return;
+    setCommentSending(true);
+    try {
+      const res = await api.post(`/issues/${issueId}/comments`, { text: newComment.trim() });
+      setIssueComments((prev) => ({ ...prev, [issueId]: [...(prev[issueId] || []), res.data] }));
+      setNewComment('');
+    } catch { /* ignore */ }
+    finally { setCommentSending(false); }
+  };
+
+  const toggleIssueExpand = (issueId) => {
+    if (expandedIssue === issueId) { setExpandedIssue(null); return; }
+    setExpandedIssue(issueId);
+    setNewComment('');
+    if (!issueComments[issueId]) loadIssueComments(issueId);
   };
 
   return (
@@ -163,11 +192,13 @@ export default function ReportIssueButton() {
                 ) : myIssues.length === 0 ? (
                   <div style={{ textAlign: 'center', color: '#71717A', padding: '1rem 0' }}>No issues submitted yet.</div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '400px', overflowY: 'auto' }}>
                     {myIssues.map((issue) => {
                       const sStyle = STATUS_STYLE[issue.status] || {};
+                      const isExp = expandedIssue === issue.id;
                       return (
-                        <div key={issue.id} style={{ background: '#1E293B', borderRadius: 6, padding: '0.65rem 0.85rem' }}>
+                        <div key={issue.id} style={{ background: '#1E293B', borderRadius: 6, padding: '0.65rem 0.85rem', cursor: 'pointer' }}
+                          onClick={() => toggleIssueExpand(issue.id)}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
                             <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                               <span style={{ ...sStyle, padding: '0.1rem 0.45rem', borderRadius: 3, fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase' }}>
@@ -179,7 +210,7 @@ export default function ReportIssueButton() {
                             <span style={{ fontSize: '0.68rem', color: '#71717A' }}>{new Date(issue.createdAt).toLocaleDateString()}</span>
                           </div>
                           <div style={{ fontSize: '0.82rem', color: '#E5E7EB', lineHeight: 1.35 }}>
-                            {issue.description.length > 100 ? issue.description.slice(0, 100) + '...' : issue.description}
+                            {isExp ? issue.description : (issue.description.length > 100 ? issue.description.slice(0, 100) + '...' : issue.description)}
                           </div>
                           {issue.adminNote && (
                             <div style={{ fontSize: '0.75rem', color: '#22C55E', marginTop: '0.3rem', fontStyle: 'italic' }}>
@@ -189,6 +220,30 @@ export default function ReportIssueButton() {
                           {issue.resolutionNote && (
                             <div style={{ fontSize: '0.75rem', color: '#0891b2', marginTop: '0.2rem', fontStyle: 'italic' }}>
                               Resolution: {issue.resolutionNote}
+                            </div>
+                          )}
+                          {isExp && (
+                            <div style={{ marginTop: '0.5rem', borderTop: '1px solid #243041', paddingTop: '0.4rem' }} onClick={(e) => e.stopPropagation()}>
+                              <div style={{ fontSize: '0.72rem', color: '#A1A1AA', fontWeight: 600, marginBottom: '0.3rem' }}>Comments</div>
+                              {(issueComments[issue.id] || []).length === 0 && (
+                                <div style={{ fontSize: '0.75rem', color: '#71717A', marginBottom: '0.3rem' }}>No comments yet.</div>
+                              )}
+                              {(issueComments[issue.id] || []).map((c) => (
+                                <div key={c.id} style={{ fontSize: '0.78rem', padding: '0.25rem 0.4rem', background: '#162033', borderRadius: 4, marginBottom: '0.2rem' }}>
+                                  <span style={{ fontWeight: 600, color: '#38BDF8' }}>{c.user?.fullName}</span>
+                                  <span style={{ color: '#71717A', fontSize: '0.65rem', marginLeft: '0.4rem' }}>{new Date(c.createdAt).toLocaleString()}</span>
+                                  <div style={{ color: '#E5E7EB', marginTop: '0.1rem' }}>{c.text}</div>
+                                </div>
+                              ))}
+                              <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.3rem' }}>
+                                <input value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                                  placeholder="Add a comment..." maxLength={1000}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendComment(issue.id); } }}
+                                  style={{ flex: 1, padding: '0.4rem 0.5rem', background: '#162033', border: '1px solid #243041', borderRadius: 4, color: '#fff', fontSize: '0.78rem' }} />
+                                <button className="btn btn-primary btn-sm" style={{ fontSize: '0.72rem' }}
+                                  disabled={commentSending || !newComment.trim()}
+                                  onClick={() => sendComment(issue.id)}>{commentSending ? '...' : 'Post'}</button>
+                              </div>
                             </div>
                           )}
                         </div>

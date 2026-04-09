@@ -442,14 +442,157 @@ describe('Issue Comments', () => {
   });
 });
 
-// ─── Assignment Notifications ───────────────────────────
+// ─── In-App Notifications ───────────────────────────────
 
-describe('Assignment Notifications', () => {
-  it('backend logs issue_assigned opsEvent on assignment change', () => {
+describe('In-App Notifications', () => {
+  it('schema has StaffNotification model', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('model StaffNotification');
+    expect(s).toContain('staff_notifications');
+    expect(s).toContain('StaffNotifications');
+    expect(s).toContain('idx_staff_notif_user_read');
+  });
+
+  it('backend has notifyStaff helper', () => {
     const c = readFile('server/src/modules/issues/routes.js');
-    expect(c).toContain('issue_assigned');
-    expect(c).toContain('assignedBy');
-    expect(c).toContain('previousAssignee');
+    expect(c).toContain('async function notifyStaff');
+    expect(c).toContain('staffNotification.create');
+  });
+
+  it('backend has GET /notifications endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/notifications'");
+    expect(c).toContain('unreadCount');
+  });
+
+  it('backend has PATCH /notifications/read endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.patch('/notifications/read'");
+    expect(c).toContain('read: true');
+  });
+
+  it('sends notification on assignment', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("notifyStaff(assignedToId, 'issue_assigned'");
+  });
+
+  it('sends notification on status change to reporter', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("notifyStaff(existing.userId, 'issue_status_changed'");
+  });
+
+  it('sends notification on comment to assignee', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("notifyStaff(fullIssue.assignedToId, 'issue_comment'");
+  });
+
+  it('admin UI has notification bell with unread count', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('unreadCount');
+    expect(ui).toContain('showNotifs');
+    expect(ui).toContain('loadNotifications');
+    expect(ui).toContain('Mark all read');
+    expect(ui).toContain('Notifications');
+  });
+});
+
+// ─── SLA Breach Alerts ──────────────────────────────────
+
+describe('SLA Breach Alerts', () => {
+  it('backend has SLA_THRESHOLDS config', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('SLA_THRESHOLDS');
+    expect(c).toContain('response: 4');
+    expect(c).toContain('resolve: 24');
+  });
+
+  it('insights include breach counts', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('breachedResponse');
+    expect(c).toContain('breachedResolve');
+    expect(c).toContain('thresholds');
+  });
+
+  it('admin UI shows SLA breach alerts in insights', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('SLA Breaches');
+    expect(ui).toContain('awaiting first response');
+    expect(ui).toContain('past resolution deadline');
+  });
+
+  it('admin UI shows SLA BREACH flag on cards', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('isBreached');
+    expect(ui).toContain('SLA BREACH');
+  });
+});
+
+// ─── File Attachments ───────────────────────────────────
+
+describe('File Attachments', () => {
+  it('schema has IssueAttachment model', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('model IssueAttachment');
+    expect(s).toContain('issue_attachments');
+    expect(s).toContain('IssueUploader');
+    expect(s).toContain('idx_issue_attachments_issue');
+  });
+
+  it('Issue model has attachments relation', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('attachments  IssueAttachment[]');
+  });
+
+  it('backend has multer upload config', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('issueUpload');
+    expect(c).toContain('multer');
+    expect(c).toContain('uploads/issues');
+    expect(c).toContain('MAX_ATTACHMENT_SIZE');
+    expect(c).toContain('ALLOWED_MIME_TYPES');
+  });
+
+  it('backend has GET /:id/attachments endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/:id/attachments'");
+    expect(c).toContain('issueAttachment.findMany');
+  });
+
+  it('backend has POST /:id/attachments endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.post('/:id/attachments'");
+    expect(c).toContain('issueAttachment.create');
+    expect(c).toContain('issue_attachment_added');
+  });
+
+  it('admin UI has attachment section in expanded card', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('showAttachments');
+    expect(ui).toContain('uploadFile');
+    expect(ui).toContain('Upload');
+    expect(ui).toContain('toggleAttachments');
+    expect(ui).toContain('No attachments');
+  });
+});
+
+// ─── User-Facing Comments ───────────────────────────────
+
+describe('User-Facing Comments', () => {
+  it('backend uses canAccessIssue for comment auth (reporter + admin)', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('canAccessIssue');
+    expect(c).toContain('isReporter');
+    expect(c).toContain('isAdmin');
+  });
+
+  it('user My Issues shows expandable comments', () => {
+    const ui = readFile('src/components/ReportIssueButton.jsx');
+    expect(ui).toContain('expandedIssue');
+    expect(ui).toContain('issueComments');
+    expect(ui).toContain('loadIssueComments');
+    expect(ui).toContain('sendComment');
+    expect(ui).toContain('No comments yet');
+    expect(ui).toContain('Add a comment');
   });
 });
 

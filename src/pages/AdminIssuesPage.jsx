@@ -61,6 +61,12 @@ export default function AdminIssuesPage() {
   const [commentText, setCommentText] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   const [showComments, setShowComments] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [attachments, setAttachments] = useState({});
+  const [showAttachments, setShowAttachments] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const limit = 30;
 
   const load = () => {
@@ -169,6 +175,58 @@ export default function AdminIssuesPage() {
     return `${Math.round(hrs / 24)}d`;
   };
 
+  // ── Notifications ──
+  const loadNotifications = () => {
+    api.get('/issues/notifications').then((res) => {
+      setNotifications(res.data.items || []);
+      setUnreadCount(res.data.unreadCount || 0);
+    }).catch(() => {});
+  };
+  useEffect(() => { loadNotifications(); const iv = setInterval(loadNotifications, 60000); return () => clearInterval(iv); }, []);
+
+  const markAllRead = () => {
+    api.patch('/issues/notifications/read', {}).then(() => { setUnreadCount(0); setNotifications((n) => n.map((x) => ({ ...x, read: true }))); }).catch(() => {});
+  };
+
+  // ── Attachments ──
+  const loadAttachments = async (issueId) => {
+    try {
+      const res = await api.get(`/issues/${issueId}/attachments`);
+      setAttachments((prev) => ({ ...prev, [issueId]: res.data }));
+    } catch { /* ignore */ }
+  };
+
+  const uploadFile = async (issueId, file) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post(`/issues/${issueId}/attachments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setAttachments((prev) => ({ ...prev, [issueId]: [...(prev[issueId] || []), res.data] }));
+    } catch (err) {
+      setActionError(err.response?.data?.error || 'Failed to upload file');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const toggleAttachments = (issueId) => {
+    if (showAttachments === issueId) { setShowAttachments(null); return; }
+    setShowAttachments(issueId);
+    if (!attachments[issueId]) loadAttachments(issueId);
+  };
+
+  // ── SLA breach check ──
+  const isBreached = (issue) => {
+    if (issue.status === 'FIXED' || issue.status === 'VERIFIED') return false;
+    const thresholds = { HIGH: { response: 4, resolve: 24 }, MEDIUM: { response: 12, resolve: 72 }, LOW: { response: 48, resolve: 168 } };
+    const t = thresholds[issue.priority] || thresholds.MEDIUM;
+    const ageHrs = (Date.now() - new Date(issue.createdAt).getTime()) / 3600000;
+    if (!issue.firstResponseAt && ageHrs > t.response) return 'response';
+    if (ageHrs > t.resolve) return 'resolve';
+    return false;
+  };
+
   const totalPages = Math.ceil(total / limit);
   const hasFilters = statusFilter || typeFilter || catFilter || prioFilter || assignFilter;
 
@@ -176,9 +234,32 @@ export default function AdminIssuesPage() {
     <>
       <div className="page-header">
         <h1>Issues ({total})</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button className={`btn ${showInsights ? 'btn-primary' : 'btn-outline'} btn-sm`}
             onClick={() => setShowInsights(!showInsights)}>Insights</button>
+          <div style={{ position: 'relative' }}>
+            <button className={`btn ${showNotifs ? 'btn-primary' : 'btn-outline'} btn-sm`}
+              onClick={() => setShowNotifs(!showNotifs)} title="Notifications">
+              🔔 {unreadCount > 0 && <span style={{ background: '#EF4444', color: '#fff', borderRadius: '50%', padding: '0 0.35rem', fontSize: '0.68rem', marginLeft: '0.2rem' }}>{unreadCount}</span>}
+            </button>
+            {showNotifs && (
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, width: 320, maxHeight: 350, overflowY: 'auto', background: '#162033', border: '1px solid #243041', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', zIndex: 100 }}>
+                <div style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid #243041', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>Notifications</span>
+                  {unreadCount > 0 && <button className="btn btn-outline btn-sm" style={{ fontSize: '0.68rem' }} onClick={markAllRead}>Mark all read</button>}
+                </div>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: '#71717A', fontSize: '0.82rem' }}>No notifications</div>
+                ) : notifications.map((n) => (
+                  <div key={n.id} style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid #1E293B', background: n.read ? 'transparent' : 'rgba(56,189,248,0.05)' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#A1A1AA' }}>{n.message}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#71717A', marginTop: '0.15rem' }}>{new Date(n.createdAt).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <button className="btn btn-outline" onClick={() => { load(); loadInsights(); }}>Refresh</button>
         </div>
       </div>
@@ -241,6 +322,17 @@ export default function AdminIssuesPage() {
                     </div>
                     <div style={{ fontSize: '0.68rem', color: '#71717A' }}>{insights.sla.sampledResolved} issues</div>
                   </div>
+                  {(insights.sla.breachedResponse > 0 || insights.sla.breachedResolve > 0) && (
+                    <div style={{ borderLeft: '3px solid #EF4444', paddingLeft: '0.6rem' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#EF4444', fontWeight: 600, textTransform: 'uppercase' }}>SLA Breaches</div>
+                      {insights.sla.breachedResponse > 0 && (
+                        <div style={{ fontSize: '0.82rem', color: '#EF4444' }}>{insights.sla.breachedResponse} awaiting first response</div>
+                      )}
+                      {insights.sla.breachedResolve > 0 && (
+                        <div style={{ fontSize: '0.82rem', color: '#EF4444' }}>{insights.sla.breachedResolve} past resolution deadline</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {/* Frequent issues */}
@@ -380,6 +472,7 @@ export default function AdminIssuesPage() {
                           {' · '}<span style={{ color: issue.status === 'OPEN' || issue.status === 'IN_PROGRESS' ? '#F59E0B' : '#71717A' }}>{ageLabel(issue.createdAt)} old</span>
                           {' · '}{issue.pageRoute || 'N/A'}
                           {issue._count?.comments > 0 && <span style={{ color: '#38BDF8' }}>{' · '}{issue._count.comments} comment{issue._count.comments !== 1 ? 's' : ''}</span>}
+                          {isBreached(issue) && <span style={{ color: '#EF4444', fontWeight: 600 }}>{' · '}SLA BREACH</span>}
                         </div>
 
                         {isExpanded && (
@@ -461,8 +554,36 @@ export default function AdminIssuesPage() {
                                 </select>
                               </div>
                             </div>
-                            {/* Comments thread */}
+                            {/* Attachments */}
                             <div style={{ marginTop: '0.6rem', borderTop: '1px solid #243041', paddingTop: '0.5rem' }}>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button className="btn btn-outline btn-sm" style={{ fontSize: '0.72rem' }}
+                                  onClick={() => toggleAttachments(issue.id)}>
+                                  {showAttachments === issue.id ? 'Hide Files' : 'Files'}
+                                </button>
+                                <label className="btn btn-outline btn-sm" style={{ fontSize: '0.72rem', cursor: 'pointer' }}>
+                                  {uploading ? '...' : '+ Upload'}
+                                  <input type="file" hidden accept="image/*,.pdf,.txt"
+                                    onChange={(e) => { if (e.target.files[0]) uploadFile(issue.id, e.target.files[0]); e.target.value = ''; }} />
+                                </label>
+                              </div>
+                              {showAttachments === issue.id && (
+                                <div style={{ marginTop: '0.4rem' }}>
+                                  {(attachments[issue.id] || []).length === 0 ? (
+                                    <div style={{ fontSize: '0.78rem', color: '#71717A' }}>No attachments.</div>
+                                  ) : (attachments[issue.id] || []).map((a) => (
+                                    <div key={a.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.78rem', padding: '0.25rem 0', borderBottom: '1px solid #1E293B' }}>
+                                      <a href={`/uploads/issues/${a.filename}`} target="_blank" rel="noopener noreferrer"
+                                        style={{ color: '#38BDF8', textDecoration: 'underline' }}>{a.originalName}</a>
+                                      <span style={{ color: '#71717A' }}>{(a.sizeBytes / 1024).toFixed(0)} KB</span>
+                                      <span style={{ color: '#71717A' }}>{a.user?.fullName}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {/* Comments thread */}
+                            <div style={{ marginTop: '0.5rem', borderTop: '1px solid #243041', paddingTop: '0.5rem' }}>
                               <button className="btn btn-outline btn-sm" style={{ fontSize: '0.72rem' }}
                                 onClick={() => toggleComments(issue.id)}>
                                 {showComments === issue.id ? 'Hide Comments' : `Comments (${issue._count?.comments || 0})`}
