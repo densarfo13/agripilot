@@ -224,6 +224,74 @@ describe('Insights View', () => {
   });
 });
 
+// ─── Assignment ─────────────────────────────────────────
+
+describe('Issue Assignment', () => {
+  it('schema has assignedToId field on Issue model', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('assignedToId');
+    expect(s).toContain('assigned_to_id');
+  });
+
+  it('schema has IssueAssignee relation', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('IssueAssignee');
+    expect(s).toContain('IssueReporter');
+  });
+
+  it('schema has assignee index', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('idx_issues_assignee');
+  });
+
+  it('backend supports assignedToId in PATCH', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('assignedToId');
+    expect(c).toContain("data.assignedToId = assignedToId || null");
+  });
+
+  it('backend has GET /api/issues/assignees endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/assignees'");
+    expect(c).toContain('super_admin');
+    expect(c).toContain('institutional_admin');
+    expect(c).toContain('reviewer');
+  });
+
+  it('backend supports assignedToMe and unassigned filters', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('assignedToMe');
+    expect(c).toContain("where.assignedToId = req.user.sub");
+    expect(c).toContain("where.assignedToId = null");
+  });
+
+  it('backend includes assignedTo in GET /issues select', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("assignedTo: { select: { id: true, fullName: true } }");
+  });
+
+  it('admin UI has assignee filter dropdown', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('assignFilter');
+    expect(ui).toContain('All Assignees');
+    expect(ui).toContain('Assigned to Me');
+    expect(ui).toContain('Unassigned');
+  });
+
+  it('admin UI has assign dropdown on expanded card', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain("Assign:");
+    expect(ui).toContain("assignedToId");
+    expect(ui).toContain("assignees.map");
+  });
+
+  it('admin UI loads assignees list', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain("/issues/assignees");
+    expect(ui).toContain("setAssignees");
+  });
+});
+
 // ─── No Regression ──────────────────────────────────────
 
 describe('No Regression', () => {

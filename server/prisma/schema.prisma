@@ -250,7 +250,8 @@ model User {
   // Analytics
   analyticsEvents          AnalyticsEvent[]
   // Issues
-  issues                   Issue[]
+  issuesReported           Issue[] @relation("IssueReporter")
+  issuesAssigned           Issue[] @relation("IssueAssignee")
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1379,14 +1380,17 @@ model Issue {
   pageRoute       String?       @map("page_route")
   adminNote       String?       @map("admin_note")
   resolutionNote  String?       @map("resolution_note")
+  assignedToId    String?       @map("assigned_to_id")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation("IssueReporter", fields: [userId], references: [id])
+  assignedTo   User?         @relation("IssueAssignee", fields: [assignedToId], references: [id])
   organization Organization? @relation(fields: [orgId], references: [id])
 
   @@index([userId], map: "idx_issues_user")
   @@index([orgId], map: "idx_issues_org")
+  @@index([assignedToId], map: "idx_issues_assignee")
   @@index([status], map: "idx_issues_status")
   @@index([issueType], map: "idx_issues_type")
   @@index([category], map: "idx_issues_category")

@@ -52,6 +52,8 @@ export default function AdminIssuesPage() {
   const [noteEditing, setNoteEditing] = useState(null);
   const [resEditing, setResEditing] = useState(null);
   const [showInsights, setShowInsights] = useState(false);
+  const [assignFilter, setAssignFilter] = useState('');
+  const [assignees, setAssignees] = useState([]);
   const limit = 30;
 
   const load = () => {
@@ -61,6 +63,9 @@ export default function AdminIssuesPage() {
     if (typeFilter) params.issueType = typeFilter;
     if (catFilter) params.category = catFilter;
     if (prioFilter) params.priority = prioFilter;
+    if (assignFilter === 'me') params.assignedToMe = 'true';
+    else if (assignFilter === 'unassigned') params.unassigned = 'true';
+    else if (assignFilter) params.assignedToId = assignFilter;
 
     api.get('/issues', { params })
       .then((res) => { setIssues(res.data.items); setTotal(res.data.total); setDistribution(res.data.distribution || {}); })
@@ -72,8 +77,11 @@ export default function AdminIssuesPage() {
     api.get('/issues/insights').then((res) => setInsights(res.data)).catch(() => {});
   };
 
-  useEffect(() => { load(); }, [page, statusFilter, typeFilter, catFilter, prioFilter]);
+  useEffect(() => { load(); }, [page, statusFilter, typeFilter, catFilter, prioFilter, assignFilter]);
   useEffect(() => { loadInsights(); }, []);
+  useEffect(() => {
+    api.get('/issues/assignees').then((res) => setAssignees(res.data || [])).catch(() => {});
+  }, []);
 
   const updateIssue = async (id, data) => {
     setActionLoading((s) => ({ ...s, [id]: true })); setActionError('');
@@ -91,7 +99,7 @@ export default function AdminIssuesPage() {
   };
 
   const totalPages = Math.ceil(total / limit);
-  const hasFilters = statusFilter || typeFilter || catFilter || prioFilter;
+  const hasFilters = statusFilter || typeFilter || catFilter || prioFilter || assignFilter;
 
   return (
     <>
@@ -188,8 +196,14 @@ export default function AdminIssuesPage() {
           <select value={typeFilter} onChange={(e) => { setPage(1); setTypeFilter(e.target.value); }} style={SEL}>
             {ISSUE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
+          <select value={assignFilter} onChange={(e) => { setPage(1); setAssignFilter(e.target.value); }} style={SEL}>
+            <option value="">All Assignees</option>
+            <option value="me">Assigned to Me</option>
+            <option value="unassigned">Unassigned</option>
+            {assignees.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
+          </select>
           {hasFilters && (
-            <button className="btn btn-outline btn-sm" onClick={() => { setStatusFilter(''); setTypeFilter(''); setCatFilter(''); setPrioFilter(''); setPage(1); }}>
+            <button className="btn btn-outline btn-sm" onClick={() => { setStatusFilter(''); setTypeFilter(''); setCatFilter(''); setPrioFilter(''); setAssignFilter(''); setPage(1); }}>
               Clear
             </button>
           )}
@@ -233,6 +247,12 @@ export default function AdminIssuesPage() {
                           <span style={{ width: 8, height: 8, borderRadius: '50%', background: pColor, display: 'inline-block' }}
                             title={`Priority: ${issue.priority}`} />
                           <span style={{ fontSize: '0.68rem', color: pColor }}>{issue.priority}</span>
+                          {issue.assignedTo && (
+                            <span style={{ fontSize: '0.72rem', color: '#38BDF8' }} title="Assigned to">→ {issue.assignedTo.fullName}</span>
+                          )}
+                          {!issue.assignedToId && (
+                            <span style={{ fontSize: '0.68rem', color: '#71717A', fontStyle: 'italic' }}>unassigned</span>
+                          )}
                           {issue.organization && <span style={{ fontSize: '0.72rem', color: '#71717A' }}>{issue.organization.name}</span>}
                         </div>
                         <div style={{ fontSize: '0.88rem', color: '#FFFFFF', lineHeight: 1.4 }}>
@@ -310,6 +330,16 @@ export default function AdminIssuesPage() {
                                     style={{ fontSize: '0.68rem', ...(issue.priority === p ? { background: PRIORITY_DOT[p], color: '#fff', borderColor: PRIORITY_DOT[p] } : {}) }}
                                     onClick={() => updateIssue(issue.id, { priority: p })}>{p}</button>
                                 ))}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <span style={{ color: '#A1A1AA' }}>Assign:</span>
+                                <select value={issue.assignedToId || ''}
+                                  disabled={actionLoading[issue.id]}
+                                  onChange={(e) => updateIssue(issue.id, { assignedToId: e.target.value || null })}
+                                  style={{ ...SEL, fontSize: '0.72rem', padding: '0.25rem 0.5rem', minWidth: 120 }}>
+                                  <option value="">Unassigned</option>
+                                  {assignees.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
+                                </select>
                               </div>
                             </div>
                           </div>

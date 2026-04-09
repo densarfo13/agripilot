@@ -76,7 +76,7 @@ router.post('/', issueLimiter, asyncHandler(async (req, res) => {
       pageRoute: pageRoute ? String(pageRoute).slice(0, 200) : null,
     },
     select: {
-      id: true, issueType: true, category: true, priority: true, status: true, createdAt: true,
+      id: true, issueType: true, category: true, priority: true, status: true, assignedToId: true, createdAt: true,
     },
   });
 
@@ -109,6 +109,7 @@ router.get('/mine', asyncHandler(async (req, res) => {
       select: {
         id: true, issueType: true, category: true, description: true, status: true,
         priority: true, pageRoute: true, adminNote: true, resolutionNote: true,
+        assignedToId: true, assignedTo: { select: { id: true, fullName: true } },
         createdAt: true, updatedAt: true,
       },
     }),
@@ -179,6 +180,9 @@ router.get('/',
     if (req.query.issueType && VALID_TYPES.includes(req.query.issueType)) where.issueType = req.query.issueType;
     if (req.query.category && VALID_CATEGORIES.includes(req.query.category)) where.category = req.query.category;
     if (req.query.priority && VALID_PRIORITIES.includes(req.query.priority)) where.priority = req.query.priority;
+    if (req.query.assignedToId) where.assignedToId = req.query.assignedToId;
+    if (req.query.assignedToMe === 'true') where.assignedToId = req.user.sub;
+    if (req.query.unassigned === 'true') where.assignedToId = null;
 
     if (req.user.role === 'institutional_admin' && req.organizationId) {
       where.orgId = req.organizationId;
@@ -194,7 +198,9 @@ router.get('/',
         take: limit,
         select: {
           id: true, issueType: true, category: true, description: true, status: true, priority: true,
-          pageRoute: true, adminNote: true, resolutionNote: true, createdAt: true, updatedAt: true,
+          pageRoute: true, adminNote: true, resolutionNote: true, assignedToId: true,
+          assignedTo: { select: { id: true, fullName: true } },
+          createdAt: true, updatedAt: true,
           user: { select: { id: true, fullName: true, email: true } },
           organization: { select: { id: true, name: true } },
         },
@@ -212,13 +218,31 @@ router.get('/',
     });
   }));
 
+// ─── GET /api/issues/assignees ──────────────────────────
+// Admin-only. Returns list of users who can be assigned issues.
+
+router.get('/assignees',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const where = { role: { in: ['super_admin', 'institutional_admin', 'reviewer'] } };
+    if (req.user.role === 'institutional_admin' && req.organizationId) {
+      where.organizationId = req.organizationId;
+    }
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { fullName: 'asc' },
+      select: { id: true, fullName: true, role: true },
+    });
+    res.json(users);
+  }));
+
 // ─── PATCH /api/issues/:id ──────────────────────────────
 
 router.patch('/:id',
   authorize('super_admin', 'institutional_admin'),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { status, adminNote, resolutionNote, priority, category } = req.body;
+    const { status, adminNote, resolutionNote, priority, category, assignedToId } = req.body;
 
     if (status && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
@@ -243,6 +267,7 @@ router.patch('/:id',
     if (category) data.category = category;
     if (adminNote !== undefined) data.adminNote = adminNote ? String(adminNote).slice(0, 1000) : null;
     if (resolutionNote !== undefined) data.resolutionNote = resolutionNote ? String(resolutionNote).slice(0, 2000) : null;
+    if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Nothing to update' });
@@ -253,7 +278,9 @@ router.patch('/:id',
       data,
       select: {
         id: true, issueType: true, category: true, description: true, status: true, priority: true,
-        adminNote: true, resolutionNote: true, pageRoute: true, createdAt: true, updatedAt: true,
+        adminNote: true, resolutionNote: true, assignedToId: true,
+        assignedTo: { select: { id: true, fullName: true } },
+        pageRoute: true, createdAt: true, updatedAt: true,
         user: { select: { id: true, fullName: true, email: true } },
       },
     });
