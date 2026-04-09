@@ -22,11 +22,15 @@ const STATUS_STYLE = {
   RESOLVED: { background: 'rgba(34,197,94,0.15)', color: '#22C55E' },
 };
 
+const PRIORITY_DOT = { high: '#EF4444', medium: '#F59E0B', low: '#71717A' };
+
 const TYPE_LABEL = {
-  BUG: 'Bug',
-  DATA_ISSUE: 'Data Issue',
-  ACCESS_ISSUE: 'Access Issue',
-  FEATURE_REQUEST: 'Feature Request',
+  BUG: 'Bug', DATA_ISSUE: 'Data Issue', ACCESS_ISSUE: 'Access Issue', FEATURE_REQUEST: 'Feature Request',
+};
+
+const selectStyle = {
+  background: '#1E293B', color: '#fff', border: '1px solid #243041',
+  borderRadius: 6, padding: '0.45rem 0.75rem', fontSize: '0.85rem',
 };
 
 export default function AdminIssuesPage() {
@@ -41,6 +45,7 @@ export default function AdminIssuesPage() {
   const [actionLoading, setActionLoading] = useState({});
   const [actionError, setActionError] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  const [noteEditing, setNoteEditing] = useState(null); // { id, text }
   const limit = 30;
 
   const load = () => {
@@ -62,16 +67,16 @@ export default function AdminIssuesPage() {
 
   useEffect(() => { load(); }, [page, statusFilter, typeFilter]);
 
-  const updateStatus = async (id, newStatus) => {
+  const updateIssue = async (id, data) => {
     setActionLoading((s) => ({ ...s, [id]: true }));
     setActionError('');
     try {
-      const res = await api.patch(`/issues/${id}`, { status: newStatus });
+      const res = await api.patch(`/issues/${id}`, data);
       setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, ...res.data } : i)));
-      // Refresh distribution
-      load();
+      if (data.status) load(); // refresh distribution on status change
+      if (data.adminNote !== undefined) setNoteEditing(null);
     } catch (err) {
-      setActionError(err.response?.data?.error || 'Failed to update status');
+      setActionError(err.response?.data?.error || 'Failed to update issue');
     } finally {
       setActionLoading((s) => ({ ...s, [id]: false }));
     }
@@ -107,12 +112,10 @@ export default function AdminIssuesPage() {
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <select className="form-select" value={statusFilter} onChange={(e) => { setPage(1); setStatusFilter(e.target.value); }}
-            style={{ background: '#1E293B', color: '#fff', border: '1px solid #243041', borderRadius: 6, padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}>
+          <select className="form-select" value={statusFilter} onChange={(e) => { setPage(1); setStatusFilter(e.target.value); }} style={selectStyle}>
             {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <select className="form-select" value={typeFilter} onChange={(e) => { setPage(1); setTypeFilter(e.target.value); }}
-            style={{ background: '#1E293B', color: '#fff', border: '1px solid #243041', borderRadius: 6, padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}>
+          <select className="form-select" value={typeFilter} onChange={(e) => { setPage(1); setTypeFilter(e.target.value); }} style={selectStyle}>
             {ISSUE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
           {(statusFilter || typeFilter) && (
@@ -147,6 +150,7 @@ export default function AdminIssuesPage() {
             {issues.map((issue) => {
               const sStyle = STATUS_STYLE[issue.status] || {};
               const isExpanded = expandedId === issue.id;
+              const pColor = PRIORITY_DOT[issue.priority] || PRIORITY_DOT.medium;
               return (
                 <div key={issue.id} className="card" style={{ cursor: 'pointer' }} onClick={() => setExpandedId(isExpanded ? null : issue.id)}>
                   <div className="card-body" style={{ padding: '0.85rem 1rem' }}>
@@ -154,17 +158,19 @@ export default function AdminIssuesPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                           <span style={{
-                            ...sStyle,
-                            padding: '0.15rem 0.55rem',
-                            borderRadius: '4px',
-                            fontSize: '0.72rem',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
+                            ...sStyle, padding: '0.15rem 0.55rem', borderRadius: '4px',
+                            fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase',
                           }}>
                             {issue.status.replace('_', ' ')}
                           </span>
                           <span style={{ fontSize: '0.78rem', color: '#A1A1AA', fontWeight: 600 }}>
                             {TYPE_LABEL[issue.issueType] || issue.issueType}
+                          </span>
+                          <span title={`Priority: ${issue.priority || 'medium'}`} style={{
+                            width: 8, height: 8, borderRadius: '50%', background: pColor, display: 'inline-block',
+                          }} />
+                          <span style={{ fontSize: '0.68rem', color: pColor, textTransform: 'capitalize' }}>
+                            {issue.priority || 'medium'}
                           </span>
                           {issue.organization && (
                             <span style={{ fontSize: '0.72rem', color: '#71717A' }}>{issue.organization.name}</span>
@@ -174,11 +180,73 @@ export default function AdminIssuesPage() {
                           {isExpanded ? issue.description : (issue.description.length > 120 ? issue.description.slice(0, 120) + '...' : issue.description)}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#71717A', marginTop: '0.35rem' }}>
-                          {issue.user?.fullName || 'Unknown'} &middot; {new Date(issue.createdAt).toLocaleDateString()} &middot; {issue.pageRoute || 'N/A'}
+                          {issue.user?.fullName || 'Unknown'}
+                          {issue.user?.email ? ` (${issue.user.email})` : ''}
+                          {' \u00B7 '}{new Date(issue.createdAt).toLocaleDateString()}
+                          {' \u00B7 '}{issue.pageRoute || 'N/A'}
                         </div>
-                        {isExpanded && issue.adminNote && (
-                          <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.5rem', padding: '0.5rem', background: '#1E293B', borderRadius: 4 }}>
-                            <strong>Admin note:</strong> {issue.adminNote}
+
+                        {/* Expanded: admin note display/edit + priority change */}
+                        {isExpanded && (
+                          <div style={{ marginTop: '0.6rem' }} onClick={(e) => e.stopPropagation()}>
+                            {/* Admin note */}
+                            {noteEditing?.id === issue.id ? (
+                              <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
+                                <textarea
+                                  value={noteEditing.text}
+                                  onChange={(e) => setNoteEditing({ id: issue.id, text: e.target.value })}
+                                  placeholder="Add an admin note (visible to user)..."
+                                  rows={2}
+                                  style={{
+                                    flex: 1, padding: '0.5rem', background: '#1E293B', border: '1px solid #243041',
+                                    borderRadius: 4, color: '#fff', fontSize: '0.82rem', resize: 'vertical',
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  disabled={actionLoading[issue.id]}
+                                  onClick={() => updateIssue(issue.id, { adminNote: noteEditing.text || '' })}
+                                >
+                                  Save
+                                </button>
+                                <button className="btn btn-outline btn-sm" onClick={() => setNoteEditing(null)}>Cancel</button>
+                              </div>
+                            ) : (
+                              <div style={{ marginBottom: '0.5rem' }}>
+                                {issue.adminNote ? (
+                                  <div style={{ fontSize: '0.8rem', color: '#A1A1AA', padding: '0.5rem', background: '#1E293B', borderRadius: 4 }}>
+                                    <strong>Admin note:</strong> {issue.adminNote}
+                                    <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}
+                                      onClick={() => setNoteEditing({ id: issue.id, text: issue.adminNote || '' })}>Edit</button>
+                                  </div>
+                                ) : (
+                                  <button className="btn btn-outline btn-sm" style={{ fontSize: '0.75rem' }}
+                                    onClick={() => setNoteEditing({ id: issue.id, text: '' })}>
+                                    + Add Note
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Priority change */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
+                              <span style={{ color: '#A1A1AA' }}>Priority:</span>
+                              {['low', 'medium', 'high'].map((p) => (
+                                <button
+                                  key={p}
+                                  className="btn btn-outline btn-sm"
+                                  disabled={issue.priority === p || actionLoading[issue.id]}
+                                  style={{
+                                    fontSize: '0.7rem', textTransform: 'capitalize',
+                                    ...(issue.priority === p ? { background: PRIORITY_DOT[p], color: '#fff', borderColor: PRIORITY_DOT[p] } : {}),
+                                  }}
+                                  onClick={() => updateIssue(issue.id, { priority: p })}
+                                >
+                                  {p}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -186,32 +254,25 @@ export default function AdminIssuesPage() {
                       {/* Status actions */}
                       <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                         {issue.status === 'OPEN' && (
-                          <button
-                            className="btn btn-outline btn-sm"
+                          <button className="btn btn-outline btn-sm"
                             style={{ color: '#F59E0B', borderColor: '#F59E0B', fontSize: '0.75rem' }}
                             disabled={actionLoading[issue.id]}
-                            onClick={() => updateStatus(issue.id, 'IN_PROGRESS')}
-                          >
+                            onClick={() => updateIssue(issue.id, { status: 'IN_PROGRESS' })}>
                             {actionLoading[issue.id] ? '...' : 'Start'}
                           </button>
                         )}
                         {(issue.status === 'OPEN' || issue.status === 'IN_PROGRESS') && (
-                          <button
-                            className="btn btn-outline btn-sm"
+                          <button className="btn btn-outline btn-sm"
                             style={{ color: '#22C55E', borderColor: '#22C55E', fontSize: '0.75rem' }}
                             disabled={actionLoading[issue.id]}
-                            onClick={() => updateStatus(issue.id, 'RESOLVED')}
-                          >
+                            onClick={() => updateIssue(issue.id, { status: 'RESOLVED' })}>
                             {actionLoading[issue.id] ? '...' : 'Resolve'}
                           </button>
                         )}
                         {issue.status === 'RESOLVED' && (
-                          <button
-                            className="btn btn-outline btn-sm"
-                            style={{ fontSize: '0.75rem' }}
+                          <button className="btn btn-outline btn-sm" style={{ fontSize: '0.75rem' }}
                             disabled={actionLoading[issue.id]}
-                            onClick={() => updateStatus(issue.id, 'OPEN')}
-                          >
+                            onClick={() => updateIssue(issue.id, { status: 'OPEN' })}>
                             {actionLoading[issue.id] ? '...' : 'Reopen'}
                           </button>
                         )}

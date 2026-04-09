@@ -20,6 +20,7 @@ import { opsEvent } from '../../utils/opsLogger.js';
 
 const VALID_TYPES = ['BUG', 'DATA_ISSUE', 'ACCESS_ISSUE', 'FEATURE_REQUEST'];
 const VALID_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED'];
+const VALID_PRIORITIES = ['low', 'medium', 'high'];
 const MAX_DESC_LENGTH = 2000;
 
 // Rate limit: 10 issues per 10 minutes per user
@@ -39,7 +40,7 @@ router.use(extractOrganization);
 // ─── POST /api/issues ───────────────────────────────────
 
 router.post('/', issueLimiter, asyncHandler(async (req, res) => {
-  const { issueType, description, pageRoute } = req.body;
+  const { issueType, description, pageRoute, priority } = req.body;
 
   if (!description || typeof description !== 'string' || !description.trim()) {
     return res.status(400).json({ error: 'description is required' });
@@ -51,16 +52,19 @@ router.post('/', issueLimiter, asyncHandler(async (req, res) => {
     return res.status(400).json({ error: `issueType must be one of: ${VALID_TYPES.join(', ')}` });
   }
 
+  const resolvedPriority = VALID_PRIORITIES.includes(priority) ? priority : 'medium';
+
   const issue = await prisma.issue.create({
     data: {
       userId: req.user.sub,
       orgId: req.organizationId || null,
       issueType,
       description: description.trim(),
+      priority: resolvedPriority,
       pageRoute: pageRoute ? String(pageRoute).slice(0, 200) : null,
     },
     select: {
-      id: true, issueType: true, status: true, createdAt: true,
+      id: true, issueType: true, status: true, priority: true, createdAt: true,
     },
   });
 
@@ -73,6 +77,33 @@ router.post('/', issueLimiter, asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({ message: 'Issue reported successfully. We will review it shortly.', id: issue.id });
+}));
+
+// ─── GET /api/issues/mine ───────────────────────────────
+// Any authenticated user — see your own submitted issues
+
+router.get('/mine', asyncHandler(async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit || '20', 10), 50);
+  const page = Math.max(1, parseInt(req.query.page || '1', 10));
+  const skip = (page - 1) * limit;
+
+  const where = { userId: req.user.sub };
+
+  const [items, total] = await Promise.all([
+    prisma.issue.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+      select: {
+        id: true, issueType: true, description: true, status: true,
+        priority: true, pageRoute: true, adminNote: true, createdAt: true, updatedAt: true,
+      },
+    }),
+    prisma.issue.count({ where }),
+  ]);
+
+  res.json({ total, page, limit, items });
 }));
 
 // ─── GET /api/issues ────────────────────────────────────
@@ -107,7 +138,7 @@ router.get('/',
         skip,
         take: limit,
         select: {
-          id: true, issueType: true, description: true, status: true,
+          id: true, issueType: true, description: true, status: true, priority: true,
           pageRoute: true, adminNote: true, createdAt: true, updatedAt: true,
           user: { select: { id: true, fullName: true, email: true } },
           organization: { select: { id: true, name: true } },
@@ -140,10 +171,13 @@ router.patch('/:id',
   authorize('super_admin', 'institutional_admin'),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { status, adminNote } = req.body;
+    const { status, adminNote, priority } = req.body;
 
     if (status && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    if (priority && !VALID_PRIORITIES.includes(priority)) {
+      return res.status(400).json({ error: `priority must be one of: ${VALID_PRIORITIES.join(', ')}` });
     }
 
     const existing = await prisma.issue.findUnique({ where: { id } });
@@ -158,6 +192,7 @@ router.patch('/:id',
 
     const data = {};
     if (status) data.status = status;
+    if (priority) data.priority = priority;
     if (adminNote !== undefined) data.adminNote = adminNote ? String(adminNote).slice(0, 1000) : null;
 
     if (Object.keys(data).length === 0) {
@@ -168,7 +203,7 @@ router.patch('/:id',
       where: { id },
       data,
       select: {
-        id: true, issueType: true, description: true, status: true,
+        id: true, issueType: true, description: true, status: true, priority: true,
         adminNote: true, pageRoute: true, createdAt: true, updatedAt: true,
         user: { select: { id: true, fullName: true, email: true } },
       },

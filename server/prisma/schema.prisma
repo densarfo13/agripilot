@@ -1359,6 +1359,7 @@ model Issue {
   userId      String      @map("user_id")
   issueType   IssueType   @map("issue_type")
   description String
+  priority    String      @default("medium")
   status      IssueStatus @default(OPEN)
   pageRoute   String?     @map("page_route")
   adminNote   String?     @map("admin_note")
