@@ -8,6 +8,7 @@ import LocationDetect from '../components/LocationDetect.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { getCropLabel } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
+import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
 
 const STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'harvest', 'post_harvest'];
 const STAGE_LABELS = {
@@ -96,7 +97,7 @@ export default function FarmerProgressTab() {
   useEffect(() => { loadSeasons(); }, [farmerId]);
 
   // ─── Season Setup Form ────────────────────────────
-  const [seasonForm, setSeasonForm] = useState({ cropType: '', farmSizeAcres: '', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
+  const [seasonForm, setSeasonForm] = useState({ cropType: '', farmSizeAcres: '', landSizeUnit: 'ACRE', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
 
   // Opens season form and prefills from the most recent past season to reduce re-entry
   const openSeasonForm = () => {
@@ -105,6 +106,7 @@ export default function FarmerProgressTab() {
       setSeasonForm({
         cropType: lastSeason.cropType || '',
         farmSizeAcres: lastSeason.farmSizeAcres || '',
+        landSizeUnit: lastSeason.landSizeUnit || 'ACRE',
         plantingDate: new Date().toISOString().split('T')[0],
         seedType: lastSeason.seedType || '',
         seedQuantity: lastSeason.seedQuantity || '',
@@ -112,7 +114,7 @@ export default function FarmerProgressTab() {
       });
       setSeasonPrefilled(true);
     } else {
-      setSeasonForm({ cropType: '', farmSizeAcres: '', plantingDate: new Date().toISOString().split('T')[0], seedType: '', seedQuantity: '', declaredIntent: '' });
+      setSeasonForm({ cropType: '', farmSizeAcres: '', landSizeUnit: 'ACRE', plantingDate: new Date().toISOString().split('T')[0], seedType: '', seedQuantity: '', declaredIntent: '' });
       setSeasonPrefilled(false);
     }
     openForm(setShowSeasonForm);
@@ -127,7 +129,7 @@ export default function FarmerProgressTab() {
       trackPilotEvent('season_created', { farmerId, crop: seasonForm.cropType });
       setShowSeasonForm(false);
       setSeasonPrefilled(false);
-      setSeasonForm({ cropType: '', farmSizeAcres: '', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
+      setSeasonForm({ cropType: '', farmSizeAcres: '', landSizeUnit: 'ACRE', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
       showSuccess('Season created. You can now start logging activities.');
       loadSeasons();
     } catch (err) {
@@ -316,8 +318,13 @@ export default function FarmerProgressTab() {
                   />
                 </div>
                 <div>
-                  <label className="form-label">Farm Size (acres) *</label>
-                  <input className="form-input" type="number" step="0.1" required value={seasonForm.farmSizeAcres} onChange={e => setSeasonForm(f => ({ ...f, farmSizeAcres: e.target.value }))} />
+                  <label className="form-label">Farm Size *</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input className="form-input" style={{ flex: 1 }} type="number" step="0.1" required value={seasonForm.farmSizeAcres} onChange={e => setSeasonForm(f => ({ ...f, farmSizeAcres: e.target.value }))} />
+                    <select className="form-input" style={{ width: 'auto', minWidth: '7rem' }} value={seasonForm.landSizeUnit} onChange={e => setSeasonForm(f => ({ ...f, landSizeUnit: e.target.value }))}>
+                      {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="form-label">Planting Date *</label>
@@ -351,7 +358,7 @@ export default function FarmerProgressTab() {
           {/* Season header + score */}
           <div className="card" style={{ marginBottom: '1rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Season: {getCropLabel(activeSeason.cropType)} ({activeSeason.farmSizeAcres} {activeSeason.areaUnit || 'acres'})</span>
+              <span>Season: {getCropLabel(activeSeason.cropType)} ({activeSeason.landSizeValue ? formatLandSize(activeSeason.landSizeValue, activeSeason.landSizeUnit) : `${activeSeason.farmSizeAcres} ${activeSeason.areaUnit || 'acres'}`})</span>
               {score?.performanceClassification && (
                 <span style={{ padding: '0.25rem 0.75rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, background: CLASS_COLORS[score.performanceClassification] + '18', color: CLASS_COLORS[score.performanceClassification] }}>
                   {CLASS_LABELS[score.performanceClassification]} — {score.progressScore}/100

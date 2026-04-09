@@ -4,6 +4,7 @@ import LocationDetect from './LocationDetect.jsx';
 import { useDraft } from '../utils/useDraft.js';
 import { compressImage } from '../utils/imageCompress.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
+import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 
 const STAGES = [
   { value: 'planting', label: 'Planting' },
@@ -38,7 +39,7 @@ function logOnboarding(event, detail = {}) {
 }
 
 const INITIAL_FORM = {
-  farmName: '', farmSizeAcres: '', locationName: '',
+  farmName: '', farmSizeAcres: '', landSizeUnit: 'ACRE', locationName: '',
   crop: '', stage: 'planting',
   latitude: null, longitude: null,
 };
@@ -190,9 +191,13 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
       setSubmitting(true);
       setNetworkError(false);
       try {
+        const ls = form.farmSizeAcres ? computeLandSizeFields(form.farmSizeAcres, form.landSizeUnit) : {};
         await onComplete({
           farmName: form.farmName.trim(),
           farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : null,
+          landSizeValue: ls.landSizeValue ?? null,
+          landSizeUnit: ls.landSizeUnit ?? null,
+          landSizeHectares: ls.landSizeHectares ?? null,
           locationName: form.locationName.trim() || null,
           latitude: form.latitude || null,
           longitude: form.longitude || null,
@@ -307,18 +312,31 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               )}
             </div>
             <div style={styles.field}>
-              <label style={styles.label}>Farm Size (acres) <span style={{ color: '#71717A', fontWeight: 400 }}>optional</span></label>
-              <input
-                value={form.farmSizeAcres}
-                onChange={e => { setForm(f => ({ ...f, farmSizeAcres: e.target.value })); setFieldErrors(fe => ({ ...fe, farmSizeAcres: undefined })); }}
-                placeholder="e.g. 5"
-                type="number"
-                min="0"
-                style={{
-                  ...styles.input,
-                  borderColor: fieldErrors.farmSizeAcres ? '#EF4444' : '#243041',
-                }}
-              />
+              <label style={styles.label}>Farm Size <span style={{ color: '#71717A', fontWeight: 400 }}>optional</span></label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  value={form.farmSizeAcres}
+                  onChange={e => { setForm(f => ({ ...f, farmSizeAcres: e.target.value })); setFieldErrors(fe => ({ ...fe, farmSizeAcres: undefined })); }}
+                  placeholder="e.g. 5"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  style={{
+                    ...styles.input,
+                    flex: 1,
+                    borderColor: fieldErrors.farmSizeAcres ? '#EF4444' : '#243041',
+                  }}
+                />
+                <select
+                  value={form.landSizeUnit}
+                  onChange={e => setForm(f => ({ ...f, landSizeUnit: e.target.value }))}
+                  style={{ ...styles.input, flex: '0 0 auto', width: 'auto', minWidth: '7rem' }}
+                >
+                  {UNIT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
               {fieldErrors.farmSizeAcres && (
                 <div style={styles.fieldError}>{fieldErrors.farmSizeAcres}</div>
               )}

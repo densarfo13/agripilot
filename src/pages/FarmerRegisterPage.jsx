@@ -7,6 +7,7 @@ import FarrowayLogo from '../components/FarrowayLogo.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import LocationDetect from '../components/LocationDetect.jsx';
 import { useDraft } from '../utils/useDraft.js';
+import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -16,7 +17,7 @@ const LANGUAGES = [
 const INITIAL_FORM = {
   fullName: '', phone: '', email: '', password: '', confirmPassword: '',
   countryCode: 'KE', region: '', district: '', village: '',
-  preferredLanguage: 'en', primaryCrop: '', farmSizeAcres: '',
+  preferredLanguage: 'en', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE',
   latitude: null, longitude: null, locationSource: null,
   geolocationAccuracy: null, geolocationCapturedAt: null,
 };
@@ -25,7 +26,7 @@ export default function FarmerRegisterPage() {
   // Persist non-sensitive fields across refresh (passwords are never stored)
   const { state: savedForm, setState: setSavedForm, clearDraft, draftRestored } = useDraft('farmer-register', {
     fullName: '', phone: '', countryCode: 'KE', region: '', district: '', village: '',
-    preferredLanguage: 'en', primaryCrop: '', farmSizeAcres: '',
+    preferredLanguage: 'en', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE',
   });
   const [form, setForm] = useState({
     ...INITIAL_FORM,
@@ -70,6 +71,7 @@ export default function FarmerRegisterPage() {
 
     setLoading(true);
     try {
+      const ls = form.farmSizeAcres ? computeLandSizeFields(form.farmSizeAcres, form.landSizeUnit) : {};
       await api.post('/auth/farmer-register', {
         fullName: form.fullName,
         phone: form.phone,
@@ -82,6 +84,8 @@ export default function FarmerRegisterPage() {
         preferredLanguage: form.preferredLanguage,
         primaryCrop: form.primaryCrop || undefined,
         farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : undefined,
+        landSizeValue: ls.landSizeValue ?? undefined,
+        landSizeUnit: ls.landSizeUnit ?? undefined,
         latitude: form.latitude || undefined,
         longitude: form.longitude || undefined,
         locationSource: form.locationSource || undefined,
@@ -221,7 +225,12 @@ export default function FarmerRegisterPage() {
                 optional
               />
             </div>
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Farm Size (acres)" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} type="number" step="0.1" min="0" />
+            <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+              <input style={{ ...styles.input, flex: 1 }} placeholder="Farm Size" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} type="number" step="0.1" min="0" />
+              <select style={{ ...styles.input, width: 'auto', minWidth: '7rem' }} value={form.landSizeUnit} onChange={e => { setForm(f => ({ ...f, landSizeUnit: e.target.value })); setSavedForm(prev => ({ ...prev, landSizeUnit: e.target.value })); }}>
+                {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} style={styles.button}>

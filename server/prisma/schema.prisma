@@ -311,6 +311,9 @@ model Farmer {
   preferredLanguage    String              @default("en") @map("preferred_language")
   primaryCrop          String?             @map("primary_crop")
   farmSizeAcres        Float?              @map("farm_size_acres")
+  landSizeValue        Float?              @map("land_size_value")
+  landSizeUnit         String?             @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
+  landSizeHectares     Float?              @map("land_size_hectares")   // normalized value
   yearsExperience      Int?                @map("years_experience")
   deviceId             String?             @map("device_id")
   organizationId       String?             @map("organization_id")
@@ -809,6 +812,9 @@ model FarmSeason {
   cropType            String         @map("crop_type")
   farmSizeAcres       Float          @map("farm_size_acres")
   areaUnit            String         @default("acres") @map("area_unit")
+  landSizeValue       Float?         @map("land_size_value")
+  landSizeUnit        String?        @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
+  landSizeHectares    Float?         @map("land_size_hectares")   // normalized value
   seedQuantity        Float?         @map("seed_quantity")
   seedType            String?        @map("seed_type")
   plantingDate        DateTime       @map("planting_date")
@@ -1192,6 +1198,9 @@ model FarmProfile {
   longitude       Float?
   crop            String
   farmSizeAcres   Float?    @map("farm_size_acres")
+  landSizeValue   Float?    @map("land_size_value")
+  landSizeUnit    String?   @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
+  landSizeHectares Float?   @map("land_size_hectares")   // normalized value
   stage           FarmStage @default(planting)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")

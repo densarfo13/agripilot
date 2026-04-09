@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import { formatLandSize } from '../utils/landSize.js';
 
 export default function PendingRegistrationsPage() {
   const currentUser = useAuthStore((s) => s.user);
@@ -171,7 +172,7 @@ function ActionModal({ farmer, action, officers, onClose, onDone }) {
               <div><strong>Phone:</strong> {farmer.phone}</div>
               <div><strong>Region:</strong> {farmer.region}{farmer.district ? `, ${farmer.district}` : ''}</div>
               {farmer.primaryCrop && <div><strong>Crop:</strong> {farmer.primaryCrop}</div>}
-              {farmer.farmSizeAcres && <div><strong>Farm Size:</strong> {farmer.farmSizeAcres} acres</div>}
+              {(farmer.landSizeValue || farmer.farmSizeAcres) && <div><strong>Farm Size:</strong> {formatLandSize(farmer.landSizeValue || farmer.farmSizeAcres, farmer.landSizeUnit)}</div>}
             </div>
 
             {action === 'approve' ? (

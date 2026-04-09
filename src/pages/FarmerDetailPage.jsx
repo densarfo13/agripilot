@@ -10,6 +10,7 @@ import { getCountryName } from '../utils/countries.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import { getCropLabel } from '../utils/crops.js';
+import { formatLandSize } from '../utils/landSize.js';
 
 const STATUS_COLORS = {
   pending_approval: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Pending Approval' },
@@ -116,7 +117,7 @@ export default function FarmerDetailPage() {
                 </div>
               )}
               <div className="detail-row"><span className="detail-label">Primary Crop</span><span className="detail-value">{farmer.primaryCrop || '-'}</span></div>
-              <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{farmer.farmSizeAcres ? `${farmer.farmSizeAcres} ${farmer.countryCode === 'TZ' ? 'hectares' : 'acres'}` : '-'}</span></div>
+              <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{farmer.landSizeValue ? formatLandSize(farmer.landSizeValue, farmer.landSizeUnit) : farmer.farmSizeAcres ? `${farmer.farmSizeAcres} ${farmer.countryCode === 'TZ' ? 'hectares' : 'acres'}` : '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Experience</span><span className="detail-value">{farmer.yearsExperience ? `${farmer.yearsExperience} years` : '-'}</span></div>
               {farmer.organization && (
                 <div className="detail-row"><span className="detail-label">Organization</span><span className="detail-value">{farmer.organization.name} <span style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>({farmer.organization.type.replace(/_/g, ' ')})</span></span></div>

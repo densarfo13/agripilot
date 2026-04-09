@@ -11,6 +11,7 @@ import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { getCropLabel } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
+import { formatLandSize } from '../utils/landSize.js';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -269,7 +270,7 @@ export default function FarmerDashboardPage() {
                 <div style={styles.detailRow}><span>Phone:</span> <span>{profile.phone}</span></div>
                 <div style={styles.detailRow}><span>Region:</span> <span>{profile.region}{profile.district ? `, ${profile.district}` : ''}</span></div>
                 {profile.primaryCrop && <div style={styles.detailRow}><span>Crop:</span> <span>{getCropLabel(profile.primaryCrop)}</span></div>}
-                {profile.farmSizeAcres && <div style={styles.detailRow}><span>Farm Size:</span> <span>{profile.farmSizeAcres} acres</span></div>}
+                {(profile.landSizeValue || profile.farmSizeAcres) && <div style={styles.detailRow}><span>Farm Size:</span> <span>{formatLandSize(profile.landSizeValue || profile.farmSizeAcres, profile.landSizeUnit)}</span></div>}
               </div>
             )}
           </div>
@@ -497,7 +498,7 @@ export default function FarmerDashboardPage() {
                         <span style={{ color: '#22C55E', fontWeight: 500 }}>{s.status}</span>
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>
-                        {s.farmSizeAcres} acres | Planted: {new Date(s.plantingDate).toLocaleDateString()}
+                        {formatLandSize(s.landSizeValue || s.farmSizeAcres, s.landSizeUnit)} | Planted: {new Date(s.plantingDate).toLocaleDateString()}
                       </div>
                       {isStale && (
                         <div style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600, marginTop: '0.25rem' }}>
@@ -542,7 +543,7 @@ export default function FarmerDashboardPage() {
                 </div>
                 <div style={styles.detailRow}><span>Farm:</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
                 {farmProfile.locationName && <div style={styles.detailRow}><span>Location:</span> <span>{farmProfile.locationName}</span></div>}
-                {farmProfile.farmSizeAcres && <div style={styles.detailRow}><span>Size:</span> <span>{farmProfile.farmSizeAcres} acres</span></div>}
+                {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>Size:</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}
                 <div style={styles.detailRow}><span>Stage:</span> <span style={{ textTransform: 'capitalize' }}>{farmProfile.stage}</span></div>
               </div>
             )}

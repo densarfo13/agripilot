@@ -4,6 +4,7 @@ import prisma from '../../config/database.js';
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
+import { computeLandSizeFields } from '../../utils/landSize.js';
 
 /**
  * Crops that allow automatic FarmProfile creation during self-registration.
@@ -55,6 +56,8 @@ export async function farmerSelfRegister({
   preferredLanguage,
   primaryCrop,
   farmSizeAcres,
+  landSizeValue,
+  landSizeUnit,
   latitude,
   longitude,
   locationSource,
@@ -95,6 +98,9 @@ export async function farmerSelfRegister({
       },
     });
 
+    // Compute normalized land size
+    const ls = computeLandSizeFields(landSizeValue ?? farmSizeAcres, landSizeUnit || 'ACRE');
+
     const newFarmer = await tx.farmer.create({
       data: {
         fullName,
@@ -105,7 +111,10 @@ export async function farmerSelfRegister({
         countryCode: countryCode || DEFAULT_COUNTRY_CODE,
         preferredLanguage: preferredLanguage || 'en',
         primaryCrop: primaryCrop || null,
-        farmSizeAcres: farmSizeAcres || null,
+        farmSizeAcres: farmSizeAcres || (ls.landSizeUnit === 'ACRE' ? ls.landSizeValue : null),
+        landSizeValue: ls.landSizeValue,
+        landSizeUnit: ls.landSizeUnit,
+        landSizeHectares: ls.landSizeHectares,
         latitude: latitude != null ? parseFloat(latitude) : null,
         longitude: longitude != null ? parseFloat(longitude) : null,
         locationSource: locationSource || null,
@@ -133,7 +142,10 @@ export async function farmerSelfRegister({
           latitude: latitude != null ? parseFloat(latitude) : null,
           longitude: longitude != null ? parseFloat(longitude) : null,
           crop: cropTrimmed,
-          farmSizeAcres: farmSizeAcres || null,
+          farmSizeAcres: farmSizeAcres || (ls.landSizeUnit === 'ACRE' ? ls.landSizeValue : null),
+          landSizeValue: ls.landSizeValue,
+          landSizeUnit: ls.landSizeUnit,
+          landSizeHectares: ls.landSizeHectares,
           stage: 'planting',
         },
       });

@@ -3,6 +3,7 @@ import { getCropCalendar, getRegionConfig, DEFAULT_COUNTRY_CODE } from '../regio
 import { STAGE_ORDER } from '../lifecycle/service.js';
 import { generateCropLifecycleReminders } from '../reminders/service.js';
 import { isValidFileReference } from '../../utils/uploadHealth.js';
+import { computeLandSizeFields } from '../../utils/landSize.js';
 
 /**
  * Farm Season Service
@@ -76,12 +77,18 @@ export async function createSeason(farmerId, data) {
 
   const regionCfg = getRegionConfig(countryCode);
 
+  // Compute normalized land size
+  const ls = computeLandSizeFields(data.landSizeValue ?? data.farmSizeAcres, data.landSizeUnit || 'ACRE');
+
   const season = await prisma.farmSeason.create({
     data: {
       farmerId,
       cropType: data.cropType,
       farmSizeAcres: parseFloat(data.farmSizeAcres),
       areaUnit: data.areaUnit || regionCfg.areaUnit || 'acres',
+      landSizeValue: ls.landSizeValue,
+      landSizeUnit: ls.landSizeUnit,
+      landSizeHectares: ls.landSizeHectares,
       seedQuantity: data.seedQuantity ? parseFloat(data.seedQuantity) : null,
       seedType: data.seedType || null,
       plantingDate,

@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js';
+import { computeLandSizeFields, isValidUnit } from '../../utils/landSize.js';
 
 /**
  * Full A-Z crop codes (UPPERCASE). Kept in sync with src/utils/crops.js (frontend).
@@ -119,6 +120,9 @@ export async function createFarmProfile(data, farmerId) {
     throw err;
   }
 
+  // Compute normalized land size fields
+  const landSize = computeLandSizeFields(data.landSizeValue ?? data.farmSizeAcres, data.landSizeUnit || 'ACRE');
+
   return prisma.farmProfile.create({
     data: {
       farmerId,
@@ -128,7 +132,10 @@ export async function createFarmProfile(data, farmerId) {
       latitude: data.latitude != null ? parseFloat(data.latitude) : null,
       longitude: data.longitude != null ? parseFloat(data.longitude) : null,
       crop: data.crop,
-      farmSizeAcres: data.farmSizeAcres != null ? parseFloat(data.farmSizeAcres) : null,
+      farmSizeAcres: data.farmSizeAcres != null ? parseFloat(data.farmSizeAcres) : (landSize.landSizeUnit === 'ACRE' ? landSize.landSizeValue : null),
+      landSizeValue: landSize.landSizeValue,
+      landSizeUnit: landSize.landSizeUnit,
+      landSizeHectares: landSize.landSizeHectares,
       stage: data.stage || 'planting',
     },
     include: { recommendations: { take: 3, orderBy: { createdAt: 'desc' } } },
@@ -175,6 +182,19 @@ export async function updateFarmProfile(farmProfileId, data) {
   if (data.longitude !== undefined) updateData.longitude = data.longitude != null ? parseFloat(data.longitude) : null;
   if (data.crop !== undefined) updateData.crop = data.crop;
   if (data.farmSizeAcres !== undefined) updateData.farmSizeAcres = data.farmSizeAcres != null ? parseFloat(data.farmSizeAcres) : null;
+  // Handle land size with unit
+  if (data.landSizeValue !== undefined || data.landSizeUnit !== undefined) {
+    const val = data.landSizeValue ?? updateData.farmSizeAcres;
+    const unit = data.landSizeUnit || 'ACRE';
+    const ls = computeLandSizeFields(val, unit);
+    updateData.landSizeValue = ls.landSizeValue;
+    updateData.landSizeUnit = ls.landSizeUnit;
+    updateData.landSizeHectares = ls.landSizeHectares;
+    // Keep farmSizeAcres in sync if unit is ACRE
+    if (ls.landSizeUnit === 'ACRE' && ls.landSizeValue != null) {
+      updateData.farmSizeAcres = ls.landSizeValue;
+    }
+  }
   if (data.stage !== undefined) updateData.stage = data.stage;
 
   if (Object.keys(updateData).length === 0) {
