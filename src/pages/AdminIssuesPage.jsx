@@ -54,6 +54,13 @@ export default function AdminIssuesPage() {
   const [showInsights, setShowInsights] = useState(false);
   const [assignFilter, setAssignFilter] = useState('');
   const [assignees, setAssignees] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkAction, setBulkAction] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [comments, setComments] = useState({});
+  const [commentText, setCommentText] = useState('');
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [showComments, setShowComments] = useState(null);
   const limit = 30;
 
   const load = () => {
@@ -96,6 +103,70 @@ export default function AdminIssuesPage() {
     } finally {
       setActionLoading((s) => ({ ...s, [id]: false }));
     }
+  };
+
+  // ── Bulk Operations ──
+  const toggleSelect = (id) => setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  const toggleSelectAll = () => {
+    if (selectedIds.length === issues.length) setSelectedIds([]);
+    else setSelectedIds(issues.map((i) => i.id));
+  };
+
+  const executeBulk = async (action) => {
+    if (selectedIds.length === 0) return;
+    setBulkLoading(true); setActionError('');
+    try {
+      const payload = { ids: selectedIds };
+      if (action === 'close') payload.status = 'VERIFIED';
+      else if (action === 'start') payload.status = 'IN_PROGRESS';
+      else if (action.startsWith('assign:')) payload.assignedToId = action.slice(7) || null;
+      else if (action === 'unassign') payload.assignedToId = null;
+      await api.patch('/issues/bulk', payload);
+      setSelectedIds([]);
+      setBulkAction('');
+      load(); loadInsights();
+    } catch (err) {
+      setActionError(err.response?.data?.error || 'Bulk action failed');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  // ── Comments ──
+  const loadComments = async (issueId) => {
+    try {
+      const res = await api.get(`/issues/${issueId}/comments`);
+      setComments((prev) => ({ ...prev, [issueId]: res.data }));
+    } catch { /* ignore */ }
+  };
+
+  const addComment = async (issueId) => {
+    if (!commentText.trim()) return;
+    setCommentLoading(true);
+    try {
+      const res = await api.post(`/issues/${issueId}/comments`, { text: commentText.trim() });
+      setComments((prev) => ({ ...prev, [issueId]: [...(prev[issueId] || []), res.data] }));
+      setCommentText('');
+    } catch (err) {
+      setActionError(err.response?.data?.error || 'Failed to add comment');
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
+  const toggleComments = (issueId) => {
+    if (showComments === issueId) { setShowComments(null); return; }
+    setShowComments(issueId);
+    setCommentText('');
+    if (!comments[issueId]) loadComments(issueId);
+  };
+
+  // ── SLA helper ──
+  const ageLabel = (createdAt) => {
+    const hrs = Math.round((Date.now() - new Date(createdAt).getTime()) / 3600000);
+    if (hrs < 1) return '<1h';
+    if (hrs < 24) return `${hrs}h`;
+    return `${Math.round(hrs / 24)}d`;
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -153,6 +224,25 @@ export default function AdminIssuesPage() {
                   ))}
                 </div>
               </div>
+              {/* SLA Metrics */}
+              {insights.sla && (
+                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', padding: '0.6rem 0', borderTop: '1px solid #243041' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase' }}>Avg First Response</div>
+                    <div style={{ fontSize: '1.1rem', color: '#38BDF8', fontWeight: 700 }}>
+                      {insights.sla.avgFirstResponseHrs !== null ? `${insights.sla.avgFirstResponseHrs}h` : '—'}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717A' }}>{insights.sla.sampledResponse} issues</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase' }}>Avg Resolution Time</div>
+                    <div style={{ fontSize: '1.1rem', color: '#22C55E', fontWeight: 700 }}>
+                      {insights.sla.avgResolveHrs !== null ? `${insights.sla.avgResolveHrs}h` : '—'}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#71717A' }}>{insights.sla.sampledResolved} issues</div>
+                  </div>
+                </div>
+              )}
               {/* Frequent issues */}
               {insights.frequent && insights.frequent.length > 0 && (
                 <div>
@@ -209,6 +299,23 @@ export default function AdminIssuesPage() {
           )}
         </div>
 
+        {/* ── Bulk Action Bar ── */}
+        {selectedIds.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem', padding: '0.6rem 0.85rem', background: '#1E293B', borderRadius: 6 }}>
+            <span style={{ fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 600 }}>{selectedIds.length} selected</span>
+            <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)} style={{ ...SEL, fontSize: '0.78rem' }}>
+              <option value="">Bulk Action...</option>
+              <option value="start">Start All</option>
+              <option value="close">Close All</option>
+              <option value="unassign">Unassign All</option>
+              {assignees.map((u) => <option key={u.id} value={`assign:${u.id}`}>Assign → {u.fullName}</option>)}
+            </select>
+            <button className="btn btn-primary btn-sm" disabled={!bulkAction || bulkLoading}
+              onClick={() => executeBulk(bulkAction)}>{bulkLoading ? '...' : 'Apply'}</button>
+            <button className="btn btn-outline btn-sm" onClick={() => { setSelectedIds([]); setBulkAction(''); }}>Cancel</button>
+          </div>
+        )}
+
         {actionError && (
           <div className="alert-inline alert-inline-danger" style={{ marginBottom: '0.75rem' }}>
             {actionError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => setActionError('')}>Dismiss</button>
@@ -226,6 +333,11 @@ export default function AdminIssuesPage() {
           </div></div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 0.25rem' }}>
+              <input type="checkbox" checked={selectedIds.length === issues.length && issues.length > 0}
+                onChange={toggleSelectAll} title="Select all" style={{ accentColor: '#22C55E' }} />
+              <span style={{ fontSize: '0.75rem', color: '#71717A' }}>Select all on page</span>
+            </div>
             {issues.map((issue) => {
               const sStyle = STATUS_STYLE[issue.status] || {};
               const isExpanded = expandedId === issue.id;
@@ -235,6 +347,10 @@ export default function AdminIssuesPage() {
                   onClick={() => setExpandedId(isExpanded ? null : issue.id)}>
                   <div className="card-body" style={{ padding: '0.85rem 1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                      <div onClick={(e) => e.stopPropagation()} style={{ paddingTop: '0.15rem' }}>
+                        <input type="checkbox" checked={selectedIds.includes(issue.id)}
+                          onChange={() => toggleSelect(issue.id)} style={{ accentColor: '#22C55E' }} />
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                           <span style={{ ...sStyle, padding: '0.15rem 0.55rem', borderRadius: 4, fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase' }}>
@@ -260,7 +376,10 @@ export default function AdminIssuesPage() {
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#71717A', marginTop: '0.35rem' }}>
                           {issue.user?.fullName || 'Unknown'}{issue.user?.email ? ` (${issue.user.email})` : ''}
-                          {' \u00B7 '}{new Date(issue.createdAt).toLocaleDateString()}{' \u00B7 '}{issue.pageRoute || 'N/A'}
+                          {' · '}{new Date(issue.createdAt).toLocaleDateString()}
+                          {' · '}<span style={{ color: issue.status === 'OPEN' || issue.status === 'IN_PROGRESS' ? '#F59E0B' : '#71717A' }}>{ageLabel(issue.createdAt)} old</span>
+                          {' · '}{issue.pageRoute || 'N/A'}
+                          {issue._count?.comments > 0 && <span style={{ color: '#38BDF8' }}>{' · '}{issue._count.comments} comment{issue._count.comments !== 1 ? 's' : ''}</span>}
                         </div>
 
                         {isExpanded && (
@@ -341,6 +460,35 @@ export default function AdminIssuesPage() {
                                   {assignees.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
                                 </select>
                               </div>
+                            </div>
+                            {/* Comments thread */}
+                            <div style={{ marginTop: '0.6rem', borderTop: '1px solid #243041', paddingTop: '0.5rem' }}>
+                              <button className="btn btn-outline btn-sm" style={{ fontSize: '0.72rem' }}
+                                onClick={() => toggleComments(issue.id)}>
+                                {showComments === issue.id ? 'Hide Comments' : `Comments (${issue._count?.comments || 0})`}
+                              </button>
+                              {showComments === issue.id && (
+                                <div style={{ marginTop: '0.5rem' }}>
+                                  {(comments[issue.id] || []).length === 0 && (
+                                    <div style={{ fontSize: '0.78rem', color: '#71717A', marginBottom: '0.4rem' }}>No comments yet.</div>
+                                  )}
+                                  {(comments[issue.id] || []).map((c) => (
+                                    <div key={c.id} style={{ fontSize: '0.8rem', padding: '0.35rem 0.5rem', background: '#1E293B', borderRadius: 4, marginBottom: '0.3rem' }}>
+                                      <span style={{ fontWeight: 600, color: '#38BDF8' }}>{c.user?.fullName || 'Unknown'}</span>
+                                      <span style={{ color: '#71717A', fontSize: '0.68rem', marginLeft: '0.5rem' }}>{new Date(c.createdAt).toLocaleString()}</span>
+                                      <div style={{ color: '#E5E7EB', marginTop: '0.15rem' }}>{c.text}</div>
+                                    </div>
+                                  ))}
+                                  <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem' }}>
+                                    <input value={commentText} onChange={(e) => setCommentText(e.target.value)}
+                                      placeholder="Add a comment..." maxLength={1000}
+                                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(issue.id); } }}
+                                      style={{ flex: 1, padding: '0.45rem 0.6rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 4, color: '#fff', fontSize: '0.8rem' }} />
+                                    <button className="btn btn-primary btn-sm" disabled={commentLoading || !commentText.trim()}
+                                      onClick={() => addComment(issue.id)}>{commentLoading ? '...' : 'Post'}</button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}

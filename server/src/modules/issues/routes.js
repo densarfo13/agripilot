@@ -2,11 +2,15 @@
  * Issue Escalation Routes — Feedback-to-Improvement Loop
  *
  * Routes:
- *   POST  /api/issues            — submit a new issue (any authenticated user)
- *   GET   /api/issues/mine       — list my issues (any authenticated user)
- *   GET   /api/issues            — list all issues (admin only)
- *   GET   /api/issues/insights   — category/priority summary (admin only)
- *   PATCH /api/issues/:id        — update issue (admin only)
+ *   POST  /api/issues              — submit a new issue (any authenticated user)
+ *   GET   /api/issues/mine         — list my issues (any authenticated user)
+ *   GET   /api/issues              — list all issues (admin only)
+ *   GET   /api/issues/insights     — category/priority/SLA summary (admin only)
+ *   GET   /api/issues/assignees    — list assignable users (admin only)
+ *   PATCH /api/issues/bulk         — bulk update issues (admin only)
+ *   PATCH /api/issues/:id          — update issue (admin only)
+ *   GET   /api/issues/:id/comments — list comments (admin only)
+ *   POST  /api/issues/:id/comments — add comment (admin only)
  */
 
 import { Router } from 'express';
@@ -156,6 +160,30 @@ router.get('/insights',
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // SLA metrics: avg first-response time and avg resolution time (in hours)
+    const slaIssues = await prisma.issue.findMany({
+      where: orgScope,
+      select: { createdAt: true, firstResponseAt: true, resolvedAt: true },
+    });
+    let responseTimeSum = 0, responseTimeCount = 0;
+    let resolveTimeSum = 0, resolveTimeCount = 0;
+    for (const si of slaIssues) {
+      if (si.firstResponseAt) {
+        responseTimeSum += (si.firstResponseAt.getTime() - si.createdAt.getTime());
+        responseTimeCount++;
+      }
+      if (si.resolvedAt) {
+        resolveTimeSum += (si.resolvedAt.getTime() - si.createdAt.getTime());
+        resolveTimeCount++;
+      }
+    }
+    const sla = {
+      avgFirstResponseHrs: responseTimeCount > 0 ? Math.round((responseTimeSum / responseTimeCount) / 3600000 * 10) / 10 : null,
+      avgResolveHrs: resolveTimeCount > 0 ? Math.round((resolveTimeSum / resolveTimeCount) / 3600000 * 10) / 10 : null,
+      sampledResponse: responseTimeCount,
+      sampledResolved: resolveTimeCount,
+    };
+
     res.json({
       total: totalCount,
       byCategory: Object.fromEntries(byCategory.map(r => [r.category, r._count])),
@@ -163,6 +191,7 @@ router.get('/insights',
       byStatus: Object.fromEntries(byStatus.map(r => [r.status, r._count])),
       byType: Object.fromEntries(byType.map(r => [r.issueType, r._count])),
       frequent,
+      sla,
     });
   }));
 
@@ -200,9 +229,11 @@ router.get('/',
           id: true, issueType: true, category: true, description: true, status: true, priority: true,
           pageRoute: true, adminNote: true, resolutionNote: true, assignedToId: true,
           assignedTo: { select: { id: true, fullName: true } },
+          firstResponseAt: true, resolvedAt: true,
           createdAt: true, updatedAt: true,
           user: { select: { id: true, fullName: true, email: true } },
           organization: { select: { id: true, name: true } },
+          _count: { select: { comments: true } },
         },
       }),
       prisma.issue.count({ where }),
@@ -234,6 +265,54 @@ router.get('/assignees',
       select: { id: true, fullName: true, role: true },
     });
     res.json(users);
+  }));
+
+// ─── PATCH /api/issues/bulk ─────────────────────────────
+// Admin-only. Bulk update multiple issues at once.
+
+router.patch('/bulk',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { ids, status, assignedToId, priority, category } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 50) {
+      return res.status(400).json({ error: 'ids must be an array of 1-50 issue IDs' });
+    }
+    if (status && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    if (priority && !VALID_PRIORITIES.includes(priority)) {
+      return res.status(400).json({ error: `priority must be one of: ${VALID_PRIORITIES.join(', ')}` });
+    }
+    if (category && !VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: `category must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    const data = {};
+    if (status) data.status = status;
+    if (priority) data.priority = priority;
+    if (category) data.category = category;
+    if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const where = { id: { in: ids } };
+    if (req.user.role === 'institutional_admin' && req.organizationId) {
+      where.orgId = req.organizationId;
+    }
+
+    const result = await prisma.issue.updateMany({ where, data });
+
+    opsEvent('workflow', 'issues_bulk_updated', 'info', {
+      count: result.count,
+      ids,
+      changes: data,
+      updatedBy: req.user.sub,
+    });
+
+    res.json({ updated: result.count });
   }));
 
 // ─── PATCH /api/issues/:id ──────────────────────────────
@@ -269,6 +348,19 @@ router.patch('/:id',
     if (resolutionNote !== undefined) data.resolutionNote = resolutionNote ? String(resolutionNote).slice(0, 2000) : null;
     if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
 
+    // SLA: auto-set firstResponseAt on first status change away from OPEN
+    if (status && status !== 'OPEN' && existing.status === 'OPEN' && !existing.firstResponseAt) {
+      data.firstResponseAt = new Date();
+    }
+    // SLA: auto-set resolvedAt when moving to FIXED or VERIFIED
+    if (status && (status === 'FIXED' || status === 'VERIFIED') && !existing.resolvedAt) {
+      data.resolvedAt = new Date();
+    }
+    // SLA: clear resolvedAt if reopened
+    if (status === 'OPEN' && existing.resolvedAt) {
+      data.resolvedAt = null;
+    }
+
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Nothing to update' });
     }
@@ -285,14 +377,90 @@ router.patch('/:id',
       },
     });
 
-    opsEvent('workflow', 'issue_status_updated', 'info', {
+    opsEvent('workflow', 'issue_updated', 'info', {
       issueId: id,
       oldStatus: existing.status,
       newStatus: status || existing.status,
       updatedBy: req.user.sub,
+      ...(assignedToId !== undefined && { assignedToId: assignedToId || null, previousAssignee: existing.assignedToId }),
     });
 
+    // Log assignment notification
+    if (assignedToId !== undefined && assignedToId !== existing.assignedToId) {
+      opsEvent('notification', 'issue_assigned', 'info', {
+        issueId: id,
+        assignedToId: assignedToId || null,
+        previousAssignee: existing.assignedToId,
+        assignedBy: req.user.sub,
+      });
+    }
+
     res.json(updated);
+  }));
+
+// ─── GET /api/issues/:id/comments ──────────────────────
+
+router.get('/:id/comments',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const comments = await prisma.issueComment.findMany({
+      where: { issueId: id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true, text: true, createdAt: true,
+        user: { select: { id: true, fullName: true } },
+      },
+    });
+    res.json(comments);
+  }));
+
+// ─── POST /api/issues/:id/comments ─────────────────────
+
+const commentLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  keyGenerator: (req) => req.user?.sub || 'anonymous',
+  message: { error: 'Too many comments. Please wait a few minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/:id/comments', commentLimiter,
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({ error: 'text is required' });
+    }
+    if (text.trim().length > 1000) {
+      return res.status(400).json({ error: 'comment must be 1000 characters or fewer' });
+    }
+
+    const issue = await prisma.issue.findUnique({ where: { id }, select: { id: true, orgId: true } });
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+    if (req.user.role === 'institutional_admin' && req.organizationId && issue.orgId !== req.organizationId) {
+      return res.status(403).json({ error: 'Not authorized to comment on this issue' });
+    }
+
+    const comment = await prisma.issueComment.create({
+      data: { issueId: id, userId: req.user.sub, text: text.trim() },
+      select: {
+        id: true, text: true, createdAt: true,
+        user: { select: { id: true, fullName: true } },
+      },
+    });
+
+    opsEvent('workflow', 'issue_comment_added', 'info', {
+      issueId: id,
+      commentId: comment.id,
+      userId: req.user.sub,
+    });
+
+    res.status(201).json(comment);
   }));
 
 export default router;

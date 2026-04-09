@@ -252,6 +252,7 @@ model User {
   // Issues
   issuesReported           Issue[] @relation("IssueReporter")
   issuesAssigned           Issue[] @relation("IssueAssignee")
+  issueComments            IssueComment[] @relation("IssueCommenter")
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1381,12 +1382,15 @@ model Issue {
   adminNote       String?       @map("admin_note")
   resolutionNote  String?       @map("resolution_note")
   assignedToId    String?       @map("assigned_to_id")
+  firstResponseAt DateTime?     @map("first_response_at")
+  resolvedAt      DateTime?     @map("resolved_at")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user         User          @relation("IssueReporter", fields: [userId], references: [id])
   assignedTo   User?         @relation("IssueAssignee", fields: [assignedToId], references: [id])
   organization Organization? @relation(fields: [orgId], references: [id])
+  comments     IssueComment[]
 
   @@index([userId], map: "idx_issues_user")
   @@index([orgId], map: "idx_issues_org")
@@ -1397,4 +1401,18 @@ model Issue {
   @@index([priority], map: "idx_issues_priority")
   @@index([createdAt], map: "idx_issues_created")
   @@map("issues")
+}
+
+model IssueComment {
+  id        String   @id @default(uuid())
+  issueId   String   @map("issue_id")
+  userId    String   @map("user_id")
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user  User  @relation("IssueCommenter", fields: [userId], references: [id])
+
+  @@index([issueId], map: "idx_issue_comments_issue")
+  @@map("issue_comments")
 }

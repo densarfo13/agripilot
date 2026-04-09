@@ -292,6 +292,167 @@ describe('Issue Assignment', () => {
   });
 });
 
+// ─── SLA Tracking ───────────────────────────────────────
+
+describe('SLA Tracking', () => {
+  it('schema has firstResponseAt and resolvedAt fields', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('firstResponseAt');
+    expect(s).toContain('first_response_at');
+    expect(s).toContain('resolvedAt');
+    expect(s).toContain('resolved_at');
+  });
+
+  it('backend auto-sets firstResponseAt on first status change from OPEN', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('firstResponseAt');
+    expect(c).toContain("existing.status === 'OPEN'");
+    expect(c).toContain('!existing.firstResponseAt');
+  });
+
+  it('backend auto-sets resolvedAt on FIXED or VERIFIED', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("status === 'FIXED'");
+    expect(c).toContain('!existing.resolvedAt');
+    expect(c).toContain('data.resolvedAt = new Date()');
+  });
+
+  it('backend clears resolvedAt on reopen', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("status === 'OPEN' && existing.resolvedAt");
+    expect(c).toContain('data.resolvedAt = null');
+  });
+
+  it('insights include SLA metrics', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('avgFirstResponseHrs');
+    expect(c).toContain('avgResolveHrs');
+    expect(c).toContain('sampledResponse');
+    expect(c).toContain('sampledResolved');
+  });
+
+  it('admin UI shows SLA in insights panel', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('Avg First Response');
+    expect(ui).toContain('Avg Resolution Time');
+    expect(ui).toContain('insights.sla');
+  });
+
+  it('admin UI shows issue age on cards', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('ageLabel');
+    expect(ui).toContain('old');
+  });
+});
+
+// ─── Bulk Operations ────────────────────────────────────
+
+describe('Bulk Operations', () => {
+  it('backend has PATCH /api/issues/bulk endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.patch('/bulk'");
+    expect(c).toContain('updateMany');
+    expect(c).toContain('issues_bulk_updated');
+  });
+
+  it('bulk endpoint validates ids array (1-50)', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('ids.length > 50');
+    expect(c).toContain('ids.length === 0');
+  });
+
+  it('bulk endpoint supports status, assignedToId, priority, category', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    // The destructuring in the bulk handler
+    expect(c).toContain('ids, status, assignedToId, priority, category');
+  });
+
+  it('admin UI has bulk selection checkboxes', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('selectedIds');
+    expect(ui).toContain('toggleSelect');
+    expect(ui).toContain('toggleSelectAll');
+    expect(ui).toContain('Select all on page');
+  });
+
+  it('admin UI has bulk action bar', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('Bulk Action...');
+    expect(ui).toContain('Start All');
+    expect(ui).toContain('Close All');
+    expect(ui).toContain('Unassign All');
+    expect(ui).toContain('executeBulk');
+  });
+});
+
+// ─── Issue Comments ─────────────────────────────────────
+
+describe('Issue Comments', () => {
+  it('schema has IssueComment model', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('model IssueComment');
+    expect(s).toContain('issueId');
+    expect(s).toContain('issue_comments');
+    expect(s).toContain('IssueCommenter');
+  });
+
+  it('schema has comment index on issueId', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('idx_issue_comments_issue');
+  });
+
+  it('Issue model has comments relation', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('comments     IssueComment[]');
+  });
+
+  it('backend has GET /:id/comments endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/:id/comments'");
+    expect(c).toContain('issueComment.findMany');
+  });
+
+  it('backend has POST /:id/comments endpoint with validation', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.post('/:id/comments'");
+    expect(c).toContain('issueComment.create');
+    expect(c).toContain('1000');
+    expect(c).toContain('issue_comment_added');
+  });
+
+  it('backend has rate limiter on comments', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('commentLimiter');
+  });
+
+  it('admin GET /issues includes comment count', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('_count: { select: { comments: true } }');
+  });
+
+  it('admin UI has comment thread in expanded card', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('showComments');
+    expect(ui).toContain('commentText');
+    expect(ui).toContain('addComment');
+    expect(ui).toContain('loadComments');
+    expect(ui).toContain('Hide Comments');
+    expect(ui).toContain('Add a comment');
+    expect(ui).toContain('No comments yet');
+  });
+});
+
+// ─── Assignment Notifications ───────────────────────────
+
+describe('Assignment Notifications', () => {
+  it('backend logs issue_assigned opsEvent on assignment change', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('issue_assigned');
+    expect(c).toContain('assignedBy');
+    expect(c).toContain('previousAssignee');
+  });
+});
+
 // ─── No Regression ──────────────────────────────────────
 
 describe('No Regression', () => {
