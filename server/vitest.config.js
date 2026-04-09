@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.js'],
+    exclude: ['tests/**', 'node_modules/**'],
     coverage: {
       reporter: ['text', 'text-summary'],
     },
