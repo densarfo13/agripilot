@@ -1347,24 +1347,40 @@ enum IssueType {
   FEATURE_REQUEST
 }
 
+enum IssueCategory {
+  BLOCKER
+  FRICTION
+  TRUST
+  FEATURE
+}
+
+enum IssuePriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
 enum IssueStatus {
   OPEN
   IN_PROGRESS
-  RESOLVED
+  FIXED
+  VERIFIED
 }
 
 model Issue {
-  id          String      @id @default(uuid())
-  orgId       String?     @map("org_id")
-  userId      String      @map("user_id")
-  issueType   IssueType   @map("issue_type")
-  description String
-  priority    String      @default("medium")
-  status      IssueStatus @default(OPEN)
-  pageRoute   String?     @map("page_route")
-  adminNote   String?     @map("admin_note")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  id              String        @id @default(uuid())
+  orgId           String?       @map("org_id")
+  userId          String        @map("user_id")
+  issueType       IssueType     @map("issue_type")
+  category        IssueCategory @default(FRICTION)
+  priority        IssuePriority @default(MEDIUM)
+  description     String
+  status          IssueStatus   @default(OPEN)
+  pageRoute       String?       @map("page_route")
+  adminNote       String?       @map("admin_note")
+  resolutionNote  String?       @map("resolution_note")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id])
   organization Organization? @relation(fields: [orgId], references: [id])
@@ -1373,6 +1389,8 @@ model Issue {
   @@index([orgId], map: "idx_issues_org")
   @@index([status], map: "idx_issues_status")
   @@index([issueType], map: "idx_issues_type")
+  @@index([category], map: "idx_issues_category")
+  @@index([priority], map: "idx_issues_priority")
   @@index([createdAt], map: "idx_issues_created")
   @@map("issues")
 }
