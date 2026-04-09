@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
+import { SkeletonTable } from '../components/SkeletonLoader.jsx';
 
 // Compute a single human-readable "next action" for each application
 function getNextAction(app) {
@@ -38,8 +39,10 @@ export default function VerificationQueuePage() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scoring, setScoring] = useState({});
+  const [approving, setApproving] = useState({});
   const [error, setError] = useState('');
   const [bulkProgress, setBulkProgress] = useState(null); // { done, total, failed }
+  const [urgencyFilter, setUrgencyFilter] = useState('all'); // 'all' | 'urgent' | 'not_urgent'
   const navigate = useNavigate();
 
   const load = async () => {
@@ -93,25 +96,50 @@ export default function VerificationQueuePage() {
     const unscored = apps.filter(a => !a.verificationResult);
     let done = 0;
     let failed = 0;
-    setBulkProgress({ done: 0, total: unscored.length, failed: 0 });
+    let lastFailReason = '';
+    const failedIds = [];
+    setBulkProgress({ done: 0, total: unscored.length, failed: 0, failedIds: [], lastFailReason: '' });
     for (const a of unscored) {
       setScoring(s => ({ ...s, [a.id]: true }));
       try {
         await api.post(`/applications/${a.id}/score-verification`);
-      } catch {
+      } catch (err) {
         failed++;
+        failedIds.push(a.id);
+        lastFailReason = err.response?.data?.error || err.message || 'Unknown error';
       }
       done++;
       setScoring(s => ({ ...s, [a.id]: false }));
-      setBulkProgress({ done, total: unscored.length, failed });
+      setBulkProgress({ done, total: unscored.length, failed, failedIds: [...failedIds], lastFailReason });
     }
     await load();
-    // Keep result visible for 5 s then clear
-    setTimeout(() => setBulkProgress(null), 5000);
+    // Keep result visible for 8 s (longer if failures) then clear
+    setTimeout(() => setBulkProgress(null), failed > 0 ? 8000 : 5000);
+  };
+
+  const quickApprove = async (appId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Approve this application? This action will be recorded.')) return;
+    setApproving(s => ({ ...s, [appId]: true }));
+    try {
+      await api.post(`/applications/${appId}/approve`, { reason: 'Quick-approved from queue (score >= 70)' });
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Quick approve failed');
+    } finally {
+      setApproving(s => ({ ...s, [appId]: false }));
+    }
   };
 
   const unscoredCount = apps.filter(a => !a.verificationResult && a.status === 'submitted').length;
   const urgentCount = apps.filter(a => getNextAction(a).urgent).length;
+
+  // Apply urgency filter
+  const filteredApps = urgencyFilter === 'all'
+    ? apps
+    : urgencyFilter === 'urgent'
+      ? apps.filter(a => getNextAction(a).urgent)
+      : apps.filter(a => !getNextAction(a).urgent);
 
   return (
     <>
@@ -125,6 +153,18 @@ export default function VerificationQueuePage() {
           )}
         </div>
         <div className="flex gap-1">
+          <select
+            value={urgencyFilter}
+            onChange={e => setUrgencyFilter(e.target.value)}
+            style={{
+              background: '#1E293B', color: '#E2E8F0', border: '1px solid #243041',
+              borderRadius: 6, padding: '0.4rem 0.6rem', fontSize: '0.85rem',
+            }}
+          >
+            <option value="all">All items ({apps.length})</option>
+            <option value="urgent">Urgent only ({urgentCount})</option>
+            <option value="not_urgent">Non-urgent ({apps.length - urgentCount})</option>
+          </select>
           {unscoredCount > 0 && (
             <button className="btn btn-primary" onClick={runAll} disabled={bulkProgress !== null && bulkProgress.done < bulkProgress.total}>
               {bulkProgress !== null && bulkProgress.done < bulkProgress.total
@@ -157,7 +197,7 @@ export default function VerificationQueuePage() {
               <>
                 <span style={{ fontWeight: 600 }}>{bulkProgress.failed === 0 ? 'All scored successfully' : `Scoring complete`}</span>
                 <span>{bulkProgress.done - bulkProgress.failed} scored</span>
-                {bulkProgress.failed > 0 && <span style={{ color: '#F59E0B' }}>{bulkProgress.failed} failed — refresh to retry</span>}
+                {bulkProgress.failed > 0 && <span style={{ color: '#F59E0B' }}>{bulkProgress.failed} failed — refresh to retry{bulkProgress.lastFailReason ? ` (${bulkProgress.lastFailReason})` : ''}</span>}
               </>
             )}
           </div>
@@ -183,13 +223,21 @@ export default function VerificationQueuePage() {
           </div>
         )}
 
-        {loading ? <div className="loading">Loading...</div> : apps.length === 0 ? (
+        {loading ? <SkeletonTable rows={6} /> : filteredApps.length === 0 && apps.length === 0 ? (
           <div className="card">
             <div className="card-body" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
               <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text)', marginBottom: '0.3rem' }}>All caught up</div>
               <div style={{ color: 'var(--subtext)', fontSize: '0.875rem' }}>
                 No applications awaiting verification. New submissions will appear here automatically.
+              </div>
+            </div>
+          </div>
+        ) : filteredApps.length === 0 ? (
+          <div className="card">
+            <div className="card-body" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+              <div style={{ color: 'var(--subtext)', fontSize: '0.875rem' }}>
+                No {urgencyFilter === 'urgent' ? 'urgent' : 'non-urgent'} items. Try changing the filter above.
               </div>
             </div>
           </div>
@@ -208,11 +256,11 @@ export default function VerificationQueuePage() {
                       <th>Score</th>
                       <th>Age</th>
                       <th>Next Action</th>
-                      <th></th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {apps.map(a => {
+                    {filteredApps.map(a => {
                       const days = Math.floor((Date.now() - new Date(a.createdAt)) / 86400000);
                       const nextAction = getNextAction(a);
                       const score = a.verificationResult?.verificationScore;
@@ -251,7 +299,7 @@ export default function VerificationQueuePage() {
                               {nextAction.urgent ? '→ ' : ''}{nextAction.label}
                             </span>
                           </td>
-                          <td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
                             {a.status === 'submitted' && !a.verificationResult && (
                               <button
                                 className="btn btn-outline btn-sm"
@@ -259,6 +307,16 @@ export default function VerificationQueuePage() {
                                 onClick={(e) => runVerification(a.id, e)}
                               >
                                 {scoring[a.id] ? 'Scoring...' : 'Score'}
+                              </button>
+                            )}
+                            {score != null && score >= 70 && ['submitted', 'under_review'].includes(a.status) && (
+                              <button
+                                className="btn btn-sm"
+                                style={{ background: '#22C55E', color: '#fff', marginLeft: '0.35rem', fontWeight: 600 }}
+                                disabled={approving[a.id]}
+                                onClick={(e) => quickApprove(a.id, e)}
+                              >
+                                {approving[a.id] ? 'Approving...' : 'Approve'}
                               </button>
                             )}
                           </td>

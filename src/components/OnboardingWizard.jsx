@@ -65,6 +65,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [saveStatus, setSaveStatus] = useState(draftRestored ? 'restored' : null); // null | 'saving' | 'saved' | 'restored'
   const [networkError, setNetworkError] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const submitGuardRef = useRef(false);
 
   const currentStep = STEP_KEYS[step];
@@ -105,7 +106,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   useEffect(() => {
     if (draftRestored) {
       logOnboarding('draft_restored', { step: STEP_KEYS[draft.step], form: draft.form });
-      const t = setTimeout(() => setSaveStatus(null), 4000);
+      const t = setTimeout(() => setSaveStatus(null), 8000);
       return () => clearTimeout(t);
     }
   }, []);
@@ -208,9 +209,12 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           stage: form.stage,
           photoFile: photoFile || null,
         });
-        // Success — clear the draft
+        // Success — clear the draft, show confirmation, track completion
         clearDraft();
         logOnboarding('onboarding_completed');
+        trackPilotEvent('onboarding_completed', { farmName: form.farmName.trim(), crop: form.crop });
+        setSubmitting(false);
+        setSubmitSuccess(true);
       } catch (err) {
         setStep(3); // go back to photo on error
         setSubmitting(false);
@@ -270,7 +274,12 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {/* Draft restored banner */}
         {saveStatus === 'restored' && (
           <div style={styles.draftBanner}>
-            ↻ Your previous progress was restored automatically.
+            &#8635; <strong>Draft restored</strong> — your previous progress was saved and has been restored automatically.
+            <button
+              type="button"
+              onClick={() => setSaveStatus(null)}
+              style={{ background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer', fontSize: '0.75rem', marginLeft: '0.5rem', textDecoration: 'underline', padding: 0 }}
+            >Dismiss</button>
           </div>
         )}
 
@@ -473,7 +482,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           </div>
         )}
 
-        {currentStep === 'processing' && (
+        {currentStep === 'processing' && !submitSuccess && (
           <div style={{ ...styles.stepContent, textAlign: 'center' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌱</div>
             <h2 style={styles.title}>Setting up your farm...</h2>
@@ -481,6 +490,19 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               We're creating your farm profile and preparing your first recommendations.
             </p>
             <div style={styles.spinner} />
+          </div>
+        )}
+
+        {currentStep === 'processing' && submitSuccess && (
+          <div style={{ ...styles.stepContent, textAlign: 'center' }}>
+            <div style={styles.successIcon}>&#10003;</div>
+            <h2 style={styles.title}>Farm created!</h2>
+            <p style={styles.subtitle}>
+              Your farm <strong>{form.farmName.trim()}</strong> is set up and ready. You'll start receiving personalised recommendations shortly.
+            </p>
+            <button onClick={() => window.location.reload()} style={styles.primaryBtn}>
+              Continue to Dashboard
+            </button>
           </div>
         )}
 
@@ -517,7 +539,7 @@ const styles = {
   },
   modal: {
     background: '#162033', borderRadius: '12px', padding: '2rem',
-    maxWidth: '420px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    maxWidth: 'min(420px, 92vw)', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
   },
   stepIndicator: {
     display: 'flex', justifyContent: 'center', gap: '1.5rem', marginBottom: '1.5rem',
@@ -576,5 +598,10 @@ const styles = {
     textAlign: 'center', marginTop: '0.75rem', padding: '0.75rem',
     background: 'rgba(245,158,11,0.08)', borderRadius: '8px',
     border: '1px solid rgba(245,158,11,0.2)',
+  },
+  successIcon: {
+    width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.15)',
+    border: '3px solid #22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '1.8rem', color: '#22C55E', margin: '0 auto 0.75rem', fontWeight: 700,
   },
 };

@@ -79,7 +79,7 @@ router.get('/:id', validateParamUUID('id'), authorize('super_admin', 'institutio
 }));
 
 // Update application (scoped)
-router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), requireApplicationAccess, asyncHandler(async (req, res) => {
+router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), requireApplicationAccess, dedupGuard('app-update'), asyncHandler(async (req, res) => {
   const app = await appService.updateApplication(req.params.id, req.body);
   writeAuditLog({
     applicationId: app.id, userId: req.user.sub, action: 'application_updated', ipAddress: req.ip,

@@ -2,6 +2,11 @@
  * IndexedDB-backed offline mutation queue.
  * When a POST/PATCH/PUT fails due to network error, the mutation is queued here.
  * On reconnect, queued mutations are replayed in order.
+ *
+ * LIMITATION: Sync failures stay local (IndexedDB + pilotTracker). Admins see
+ * the SyncStatus banner but not individual failure details. Server-side
+ * opsEvent('workflow', ...) fires when the replayed request eventually succeeds
+ * or fails, which flows to the Railway log drain.
  */
 
 const DB_NAME = 'farroway-offline';

@@ -63,6 +63,8 @@ export async function getPilotMetrics({ organizationId } = {}) {
     harvestReports,
     pendingOfficerValidation,
     lowCredibilitySeasons,
+    womenFarmers,
+    youthFarmers,
     totalApplications,
     submittedApplications,
     underReviewApplications,
@@ -117,6 +119,16 @@ export async function getPilotMetrics({ organizationId } = {}) {
       },
     }),
 
+    // Demographic counts
+    prisma.farmer.count({ where: { ...fFilter, gender: 'female' } }),
+    prisma.farmer.count({
+      where: {
+        ...fFilter,
+        // Youth: age <= 35 (aligned with impact/service.js isYouth definition)
+        dateOfBirth: { gt: new Date(new Date().getFullYear() - 36, new Date().getMonth(), new Date().getDate()) },
+      },
+    }),
+
     // Application counts
     prisma.application.count({ where: appFilter(organizationId) }),
     prisma.application.count({ where: { ...appFilter(organizationId), status: 'submitted' } }),
@@ -133,6 +145,8 @@ export async function getPilotMetrics({ organizationId } = {}) {
       approved: approvedFarmers,
       pendingApproval,
       invitedNotActivated,
+      womenFarmers,
+      youthFarmers,
     },
     adoption: {
       loggedIn: farmersLoggedIn,

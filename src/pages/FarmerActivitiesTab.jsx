@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
 import CropSelect from '../components/CropSelect.jsx';
@@ -15,6 +15,7 @@ export default function FarmerActivitiesTab() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ activityType: 'planting', cropType: '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0] });
   const [submitting, setSubmitting] = useState(false);
+  const submitGuardRef = useRef(false);
   const [error, setError] = useState('');
 
   const loadActivities = () => {
@@ -31,7 +32,9 @@ export default function FarmerActivitiesTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/activities/farmer/${farmerId}`, {
@@ -49,6 +52,7 @@ export default function FarmerActivitiesTab() {
     } catch (err) {
       setError(formatApiError(err, 'Failed to log activity'));
     } finally {
+      submitGuardRef.current = false;
       setSubmitting(false);
     }
   };

@@ -32,6 +32,10 @@ export async function getPortfolioSummary(orgScope = {}) {
     decisionMix,
     avgVerification,
     recommendedTotal,
+    totalFarmers,
+    womenFarmers,
+    youthFarmers,
+    farmerLandAgg,
   ] = await Promise.all([
     prisma.application.count({ where: appWhere }),
 
@@ -45,7 +49,7 @@ export async function getPortfolioSummary(orgScope = {}) {
     prisma.application.aggregate({
       where: appWhere,
       _sum: { requestedAmount: true },
-      _avg: { requestedAmount: true, farmSizeAcres: true },
+      _avg: { requestedAmount: true },
       _count: true,
     }),
 
@@ -97,6 +101,23 @@ export async function getPortfolioSummary(orgScope = {}) {
       where: resultWhere,
       _sum: { recommendedAmount: true },
     }),
+
+    // Demographics
+    prisma.farmer.count({ where: farmerWhere }),
+    prisma.farmer.count({ where: { ...farmerWhere, gender: 'female' } }),
+    prisma.farmer.count({
+      where: {
+        ...farmerWhere,
+        // Youth: age <= 35 (aligned with impact/service.js isYouth definition)
+        dateOfBirth: { gt: new Date(new Date().getFullYear() - 36, new Date().getMonth(), new Date().getDate()) },
+      },
+    }),
+
+    // Authoritative farm size average from farmer records (not legacy application field)
+    prisma.farmer.aggregate({
+      where: { ...farmerWhere, landSizeHectares: { not: null } },
+      _avg: { landSizeHectares: true },
+    }),
   ]);
 
   return {
@@ -104,7 +125,8 @@ export async function getPortfolioSummary(orgScope = {}) {
     totalRequestedAmount: amountAgg._sum.requestedAmount || 0,
     totalRecommendedAmount: recommendedTotal._sum.recommendedAmount || 0,
     avgRequestedAmount: amountAgg._avg.requestedAmount || 0,
-    avgFarmSizeAcres: amountAgg._avg.farmSizeAcres || 0,
+    avgFarmSizeHectares: farmerLandAgg._avg.landSizeHectares || 0,
+    avgFarmSizeAcres: farmerLandAgg._avg.landSizeHectares ? Math.round(farmerLandAgg._avg.landSizeHectares * 2.47105 * 100) / 100 : 0, // LEGACY: derived from hectares for backward compat
     avgVerificationScore: avgVerification._avg.verificationScore || 0,
     statusBreakdown: statusCounts.map(s => ({ status: s.status, count: s._count, totalAmount: s._sum.requestedAmount })),
     riskBreakdown: riskMix.map(r => ({ level: r.fraudRiskLevel, count: r._count })),
@@ -114,6 +136,13 @@ export async function getPortfolioSummary(orgScope = {}) {
     })),
     regionBreakdown: regionMix.map(r => ({ region: r.region, farmerCount: r._count })),
     recentApplications: recentApps,
+    demographics: {
+      totalFarmers,
+      womenFarmers,
+      youthFarmers,
+      womenPercent: totalFarmers > 0 ? Math.round((womenFarmers / totalFarmers) * 100) : 0,
+      youthPercent: totalFarmers > 0 ? Math.round((youthFarmers / totalFarmers) * 100) : 0,
+    },
   };
 }
 

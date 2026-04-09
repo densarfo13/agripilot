@@ -15,7 +15,7 @@
  * - Pre-filled fields (name, phone) are read-only — sourced from staff-created record
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
@@ -39,6 +39,7 @@ export default function AcceptInvitePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const submitGuardRef = useRef(false);
 
   // Validate the token on page load
   useEffect(() => {
@@ -55,6 +56,12 @@ export default function AcceptInvitePage() {
         setStatus('valid');
       })
       .catch(err => {
+        // Distinguish network errors from server responses
+        if (!err.response) {
+          setStatus('network_error');
+          setTokenError('Could not connect to the server. Please check your internet connection and try again.');
+          return;
+        }
         const data = err.response?.data;
         if (data?.expired) {
           setStatus('expired');
@@ -63,6 +70,9 @@ export default function AcceptInvitePage() {
           // Already accepted
           setStatus('already_accepted');
           setTokenError(data?.error || 'This invite has already been used.');
+        } else if (err.response?.status === 404 && data?.cancelled) {
+          setStatus('invalid');
+          setTokenError('This invite has been cancelled by your administrator. Please contact them to request a new invite.');
         } else {
           setStatus('invalid');
           setTokenError(data?.error || 'This invite link is invalid or has already been used.');
@@ -72,6 +82,7 @@ export default function AcceptInvitePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return; // prevent double-submit during async window
     setFormError('');
 
     if (password !== confirmPassword) {
@@ -81,6 +92,7 @@ export default function AcceptInvitePage() {
       return setFormError('Password must be at least 8 characters');
     }
 
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/invites/${token}/accept`, { email, password });
@@ -94,6 +106,7 @@ export default function AcceptInvitePage() {
         setFormError(data?.error || 'Failed to activate account. Please try again.');
       }
     } finally {
+      submitGuardRef.current = false;
       setSubmitting(false);
     }
   };
@@ -110,6 +123,23 @@ export default function AcceptInvitePage() {
     );
   }
 
+  // ─── Network Error ───────────────────────────────────────
+  if (status === 'network_error') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.logo}>Farroway</div>
+          <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📡</div>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>Connection Problem</h2>
+            <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
+          </div>
+          <button onClick={() => { setStatus('loading'); setTokenError(''); window.location.reload(); }} style={styles.button}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Invalid / Expired ───────────────────────────────────
   if (status === 'invalid' || status === 'expired') {
     return (
@@ -121,11 +151,15 @@ export default function AcceptInvitePage() {
             <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>
               {status === 'expired' ? 'Invite Link Expired' : 'Invalid Invite Link'}
             </h2>
-            <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
+            <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              {status === 'expired'
+                ? 'This invite link has expired. Please contact your field officer or organization admin to request a new invite link.'
+                : tokenError}
+            </p>
           </div>
           {status === 'expired' && (
             <div style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid #854d0e', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#FACC15', marginBottom: '1rem' }}>
-              <strong>What to do:</strong> Contact your field officer or institution and ask them to resend the invite. A new link will be generated for you.
+              <strong>What to do:</strong> Contact your field officer or organization admin and ask them to resend the invite. A new link will be generated for you. If you do not know who your field officer is, reach out to your organization's support team.
             </div>
           )}
           <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', marginBottom: 0 }}>

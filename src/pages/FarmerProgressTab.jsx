@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
 import { useDraft } from '../utils/useDraft.js';
@@ -45,6 +45,7 @@ export default function FarmerProgressTab() {
   const [showHarvestForm, setShowHarvestForm] = useState(false);
   const [showImageForm, setShowImageForm] = useState(false);
   const [credibility, setCredibility] = useState(null);
+  const submitGuardRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [pageError, setPageError] = useState('');
@@ -97,7 +98,11 @@ export default function FarmerProgressTab() {
   useEffect(() => { loadSeasons(); }, [farmerId]);
 
   // ─── Season Setup Form ────────────────────────────
-  const [seasonForm, setSeasonForm] = useState({ cropType: '', farmSizeAcres: '', landSizeUnit: 'ACRE', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
+  const SEASON_FORM_INITIAL = { cropType: '', farmSizeAcres: '', landSizeUnit: 'ACRE', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' };
+  const { state: seasonForm, setState: setSeasonForm, clearDraft: clearSeasonDraft, draftRestored: seasonDraftRestored } = useDraft(
+    `season-form:${farmerId}`,
+    SEASON_FORM_INITIAL,
+  );
 
   // Opens season form and prefills from the most recent past season to reduce re-entry
   const openSeasonForm = () => {
@@ -122,20 +127,24 @@ export default function FarmerProgressTab() {
 
   const handleCreateSeason = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setFormError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/seasons/farmer/${farmerId}`, seasonForm);
       trackPilotEvent('season_created', { farmerId, crop: seasonForm.cropType });
+      clearSeasonDraft();
       setShowSeasonForm(false);
       setSeasonPrefilled(false);
-      setSeasonForm({ cropType: '', farmSizeAcres: '', landSizeUnit: 'ACRE', plantingDate: '', seedType: '', seedQuantity: '', declaredIntent: '' });
+      setSeasonForm(SEASON_FORM_INITIAL);
       showSuccess('Season created. You can now start logging activities.');
       loadSeasons();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to create season. Please check your details and try again.');
+      setFormError(formatApiError(err, 'Failed to create season. Please check your details and try again.'));
     }
     setSubmitting(false);
+    submitGuardRef.current = false;
   };
 
   // ─── Progress Entry Form ──────────────────────────
@@ -150,23 +159,25 @@ export default function FarmerProgressTab() {
 
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 4000);
+    setTimeout(() => setSuccessMsg(''), 5000);
   };
 
   const [dupWarning, setDupWarning] = useState(false);
 
   const handleLogProgress = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setFormError('');
     // Client-side same-day duplicate warning
     const today = new Date().toISOString().split('T')[0];
     const sameDayEntry = entries.find(en => en.entryDate?.startsWith(today) && en.activityType === progressForm.activityType);
     if (sameDayEntry && !dupWarning) {
       setDupWarning(true);
-      setFormError(`You already logged a "${progressForm.activityType}" activity today. Submit again to confirm.`);
+      setFormError(`Duplicate check: You already logged "${progressForm.activityType}" today (${new Date(sameDayEntry.entryDate).toLocaleDateString()}). If this is a separate activity, click "Save Activity" again to confirm.`);
       return;
     }
     setDupWarning(false);
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/progress`, { ...progressForm, entryType: 'activity' });
@@ -177,7 +188,9 @@ export default function FarmerProgressTab() {
       clearProgressDraft();
       setShowProgressForm(false);
       setProgressForm(PROGRESS_DRAFT_INITIAL);
-      showSuccess('Activity logged successfully.');
+      showSuccess(isFirstUpdate
+        ? 'Update submitted — your first activity is recorded! Your progress tracking has begun.'
+        : 'Update submitted. Activity recorded successfully.');
       loadSeasons();
     } catch (err) {
       trackPilotEvent('update_failed', { farmerId, type: 'activity', error: err?.response?.data?.error || err.message });
@@ -185,6 +198,7 @@ export default function FarmerProgressTab() {
       setFormError(formatApiError(err, 'Failed to save activity. Your entry is saved locally — please try again.'));
     }
     setSubmitting(false);
+    submitGuardRef.current = false;
   };
 
   // ─── Condition Update Form ────────────────────────
@@ -192,7 +206,9 @@ export default function FarmerProgressTab() {
 
   const handleCondition = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setFormError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/condition`, condForm);
@@ -201,9 +217,10 @@ export default function FarmerProgressTab() {
       showSuccess('Condition update saved.');
       loadSeasons();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save condition update. Please try again.');
+      setFormError(formatApiError(err, 'Failed to save condition update. Please check your connection and try again.'));
     }
     setSubmitting(false);
+    submitGuardRef.current = false;
   };
 
   // ─── Stage Confirmation ───────────────────────────
@@ -211,7 +228,9 @@ export default function FarmerProgressTab() {
 
   const handleStageConfirm = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setFormError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/stage-confirmation`, stageForm);
@@ -220,9 +239,10 @@ export default function FarmerProgressTab() {
       showSuccess('Stage confirmed.');
       loadSeasons();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save stage confirmation. Please try again.');
+      setFormError(formatApiError(err, 'Failed to save stage confirmation. Please check your connection and try again.'));
     }
     setSubmitting(false);
+    submitGuardRef.current = false;
   };
 
   // ─── Harvest Report Form ──────────────────────────
@@ -230,7 +250,9 @@ export default function FarmerProgressTab() {
 
   const handleHarvest = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setFormError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/harvest-report`, harvestForm);
@@ -240,9 +262,10 @@ export default function FarmerProgressTab() {
       showSuccess('Harvest report submitted.');
       loadSeasons();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to submit harvest report. Please try again.');
+      setFormError(formatApiError(err, 'Failed to submit harvest report. Please check your connection and try again.'));
     }
     setSubmitting(false);
+    submitGuardRef.current = false;
   };
 
   // ─── Image Upload Form ────────────────────────
@@ -250,7 +273,9 @@ export default function FarmerProgressTab() {
 
   const handleImageUpload = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setFormError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       const payload = { ...imageForm };
@@ -259,18 +284,21 @@ export default function FarmerProgressTab() {
       trackPilotEvent('photo_uploaded', { farmerId, seasonId: activeSeason.id });
       setShowImageForm(false);
       setImageForm({ imageUrl: '', imageStage: '', description: '', latitude: null, longitude: null });
-      showSuccess('Photo uploaded successfully.');
+      showSuccess('Photo uploaded. Your progress photo has been saved to this season.');
       loadSeasons();
     } catch (err) {
       trackPilotEvent('photo_failed', { farmerId, error: err?.response?.data?.error || err.message });
-      setFormError(err.response?.data?.error || 'Failed to save photo. Please try again.');
+      setFormError(formatApiError(err, 'Failed to save photo. Please check the image URL and try again.'));
     }
     setSubmitting(false);
+    submitGuardRef.current = false;
   };
 
   // ─── Edge-case flags ─────────────────────────
   const handleEdgeCase = async (flag) => {
     if (!activeSeason) return;
+    if (submitGuardRef.current) return;
+    submitGuardRef.current = true;
     setConfirmCropFailure(false);
     setPageError('');
     try {
@@ -278,6 +306,8 @@ export default function FarmerProgressTab() {
       loadSeasons();
     } catch (err) {
       setPageError(err.response?.data?.error || 'Failed to update season. Please try again.');
+    } finally {
+      submitGuardRef.current = false;
     }
   };
 
@@ -380,7 +410,20 @@ export default function FarmerProgressTab() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>Planted</span><div style={{ fontWeight: 600 }}>{new Date(activeSeason.plantingDate).toLocaleDateString()}</div></div>
                 <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>Expected Harvest</span><div style={{ fontWeight: 600 }}>{activeSeason.expectedHarvestDate ? new Date(activeSeason.expectedHarvestDate).toLocaleDateString() : '—'}</div></div>
-                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>Progress Entries</span><div style={{ fontWeight: 600 }}>{activeSeason._count?.progressEntries || entries.length}</div></div>
+                <div>
+                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>Progress Entries</span>
+                  <div style={{ fontWeight: 600 }}>{activeSeason._count?.progressEntries || entries.length}</div>
+                  {entries.length > 0 && (
+                    <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
+                      Submitted
+                    </span>
+                  )}
+                  {entries.length === 0 && (
+                    <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(245,158,11,0.15)', color: '#d97706' }}>
+                      No entries yet
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Stage timeline bar */}
@@ -891,13 +934,16 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [created, setCreated]   = useState(null);
+  const reopenGuardRef          = useRef(false);
 
   const submitRequest = async (e) => {
     e.preventDefault();
+    if (reopenGuardRef.current) return;
     if (!reason.trim() || reason.trim().length < 5) {
       setError('Please provide a meaningful reason (at least 5 characters)');
       return;
     }
+    reopenGuardRef.current = true;
     setSaving(true);
     setError('');
     try {
@@ -910,16 +956,19 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create approval request');
     } finally {
+      reopenGuardRef.current = false;
       setSaving(false);
     }
   };
 
   const executeReopen = async (e) => {
     e.preventDefault();
+    if (reopenGuardRef.current) return;
     if (!approvalId.trim()) {
       setError('Please enter the Approval Request ID');
       return;
     }
+    reopenGuardRef.current = true;
     setSaving(true);
     setError('');
     try {
@@ -930,6 +979,7 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to reopen season');
     } finally {
+      reopenGuardRef.current = false;
       setSaving(false);
     }
   };

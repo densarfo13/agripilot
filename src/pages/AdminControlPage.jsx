@@ -11,6 +11,7 @@ export default function AdminControlPage() {
 
   const tabs = [
     { key: 'overview', label: 'System Overview' },
+    { key: 'ops', label: 'Operations Health' },
     { key: 'regions', label: 'Region Config' },
     { key: 'demand', label: 'Demand Intelligence' },
     { key: 'i18n', label: 'Languages' },
@@ -37,6 +38,7 @@ export default function AdminControlPage() {
       </div>
       <div className="page-body" style={{ paddingTop: 0 }}>
         {tab === 'overview' && <SystemOverview navigate={navigate} />}
+        {tab === 'ops' && <OperationsHealth />}
         {tab === 'regions' && <RegionConfig />}
         {tab === 'demand' && <DemandIntelligence />}
         {tab === 'i18n' && <LanguagePanel />}
@@ -563,6 +565,181 @@ function LanguagePanel() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  TAB: Operations Health (Go-Live Monitoring)
+// ═══════════════════════════════════════════════════════
+function OperationsHealth() {
+  const [health, setHealth] = useState(null);
+  const [errors, setErrors] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
+  const load = () => {
+    setLoadError('');
+    Promise.all([
+      api.get('/system/health'),
+      api.get('/system/errors', { params: { limit: 50 } }),
+    ]).then(([hRes, eRes]) => {
+      setHealth(hRes.data);
+      setErrors(eRes.data);
+    }).catch(() => setLoadError('Failed to load operations data. Ensure you have super_admin access.'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [autoRefresh]);
+
+  if (loading) return <div className="loading">Loading operations health...</div>;
+  if (loadError) return <div className="alert alert-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>;
+
+  const h = health || {};
+  const db = h.database || {};
+  const prov = h.providers || {};
+  const mon = h.monitoring || {};
+  const notif = h.notifications || {};
+  const plat = h.platform || {};
+  const up = h.uploads || {};
+  const errSummary = errors?.summary || {};
+  const recentEvents = errors?.events || [];
+
+  const statusColor = h.status === 'ok' ? '#22C55E' : '#F59E0B';
+
+  return (
+    <>
+      {/* Header with refresh controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: statusColor, display: 'inline-block' }} />
+          <span style={{ fontWeight: 700, color: statusColor, textTransform: 'uppercase' }}>{h.status || 'unknown'}</span>
+          <span style={{ fontSize: '0.8rem', color: '#71717A' }}>Uptime: {mon.uptimeHours || 0}h | Started: {mon.startedAt ? new Date(mon.startedAt).toLocaleString() : '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <label style={{ fontSize: '0.8rem', color: '#A1A1AA', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} /> Auto-refresh 30s
+          </label>
+          <button className="btn btn-outline btn-sm" onClick={load}>Refresh</button>
+        </div>
+      </div>
+
+      {/* Infrastructure health cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div className="card" style={{ padding: '0.85rem' }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>Database</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: db.connected ? '#22C55E' : '#EF4444' }}>{db.connected ? 'Connected' : 'Down'}</div>
+          {db.latencyMs != null && <div style={{ fontSize: '0.8rem', color: '#71717A' }}>{db.latencyMs}ms latency</div>}
+          {db.error && <div style={{ fontSize: '0.8rem', color: '#EF4444' }}>{db.error}</div>}
+        </div>
+        <div className="card" style={{ padding: '0.85rem' }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>Email</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: prov.email === 'configured' ? '#22C55E' : '#F59E0B' }}>
+            {prov.email === 'configured' ? 'Ready' : 'Not Configured'}
+          </div>
+        </div>
+        <div className="card" style={{ padding: '0.85rem' }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>SMS</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: prov.sms === 'configured' ? '#22C55E' : '#F59E0B' }}>
+            {prov.sms === 'configured' ? 'Ready' : 'Not Configured'}
+          </div>
+        </div>
+        <div className="card" style={{ padding: '0.85rem' }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>Uploads</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: up.writable ? '#22C55E' : '#EF4444' }}>
+            {up.writable ? 'Writable' : 'Error'}
+          </div>
+          {up.diskFreeBytes != null && <div style={{ fontSize: '0.8rem', color: '#71717A' }}>{Math.round(up.diskFreeBytes / 1e9)}GB free</div>}
+        </div>
+      </div>
+
+      {/* Error/Warning summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div className="card" style={{ padding: '0.85rem', borderLeft: `3px solid ${(errSummary.errorsLastHour || 0) > 0 ? '#EF4444' : '#22C55E'}` }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Errors (1h)</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (errSummary.errorsLastHour || 0) > 0 ? '#EF4444' : '#22C55E' }}>{errSummary.errorsLastHour || 0}</div>
+        </div>
+        <div className="card" style={{ padding: '0.85rem', borderLeft: `3px solid ${(errSummary.warningsLastHour || 0) > 0 ? '#F59E0B' : '#22C55E'}` }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Warnings (1h)</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (errSummary.warningsLastHour || 0) > 0 ? '#F59E0B' : '#22C55E' }}>{errSummary.warningsLastHour || 0}</div>
+        </div>
+        <div className="card" style={{ padding: '0.85rem', borderLeft: '3px solid #71717A' }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Errors (24h)</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{errSummary.errorsLast24h || 0}</div>
+        </div>
+        <div className="card" style={{ padding: '0.85rem', borderLeft: '3px solid #71717A' }}>
+          <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Failed Notifications</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (notif.totalFailed || 0) > 0 ? '#F59E0B' : '#22C55E' }}>{notif.totalFailed || 0}</div>
+          {(notif.failedByType || []).map(f => (
+            <div key={f.type} style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{f.type}: {f.count}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Platform counts */}
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <div className="card-header">Platform Counts</div>
+        <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.5rem' }}>
+          {[
+            ['Farmers', plat.farmerCount],
+            ['Active Users', plat.activeUsers],
+            ['Active Seasons', plat.activeSeasons],
+            ['Pending Approvals', plat.pendingApprovals],
+          ].map(([label, val]) => (
+            <div key={label} style={{ textAlign: 'center', padding: '0.5rem' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{val ?? '—'}</div>
+              <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Category breakdown */}
+      {errSummary.categoryCounts && Object.keys(errSummary.categoryCounts).length > 0 && (
+        <div className="card" style={{ marginBottom: '1.25rem' }}>
+          <div className="card-header">Event Categories (24h)</div>
+          <div className="card-body" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {Object.entries(errSummary.categoryCounts).sort(([, a], [, b]) => b - a).map(([cat, count]) => (
+              <span key={cat} style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}>
+                <strong>{cat}</strong>: {count}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent events log */}
+      <div className="card">
+        <div className="card-header">
+          Recent Events ({recentEvents.length})
+          <span style={{ fontSize: '0.75rem', color: '#71717A', fontWeight: 400, marginLeft: '0.5rem' }}>warn + error level</span>
+        </div>
+        <div className="card-body" style={{ maxHeight: 400, overflowY: 'auto', padding: 0 }}>
+          {recentEvents.length === 0 && (
+            <div style={{ padding: '1.5rem', color: '#22C55E', textAlign: 'center' }}>No recent warnings or errors</div>
+          )}
+          {recentEvents.map((ev, i) => {
+            const sevColor = ev.severity === 'critical' ? '#be185d' : ev.severity === 'error' ? '#EF4444' : '#F59E0B';
+            return (
+              <div key={ev.id || i} style={{ padding: '0.5rem 1rem', borderBottom: '1px solid #243041', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, color: sevColor, textTransform: 'uppercase', fontSize: '0.7rem', minWidth: 55 }}>{ev.severity}</span>
+                  <span style={{ color: '#A1A1AA', fontFamily: 'monospace', fontSize: '0.75rem' }}>{ev.category}/{ev.event}</span>
+                  <span style={{ marginLeft: 'auto', color: '#71717A', fontSize: '0.7rem' }}>{new Date(ev.timestamp).toLocaleTimeString()}</span>
+                </div>
+                {ev.userId && <div style={{ fontSize: '0.75rem', color: '#71717A' }}>user: {ev.userId.slice(0, 8)}...</div>}
+                {ev.error && <div style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: 2 }}>{ev.error}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </>
   );
 }

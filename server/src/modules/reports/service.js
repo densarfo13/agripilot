@@ -64,6 +64,79 @@ export async function getApplicationReport(applicationId) {
   };
 }
 
+/**
+ * Generate CSV string for pilot report (farmer-level export).
+ * Columns: Name, Phone, Region, Gender, DateOfBirth, FarmSize(ha), Crop, Stage,
+ *          InviteStatus, RegistrationStatus, HasLogin, Seasons, ProgressEntries, LastLogin
+ */
+export async function getPilotReportCSV(farmerWhere = {}) {
+  const farmers = await prisma.farmer.findMany({
+    where: farmerWhere,
+    select: {
+      fullName: true,
+      phone: true,
+      region: true,
+      gender: true,
+      dateOfBirth: true,
+      landSizeHectares: true,
+      registrationStatus: true,
+      inviteDeliveryStatus: true,
+      invitedAt: true,
+      inviteAcceptedAt: true,
+      assignedOfficerId: true,
+      profileImageUrl: true,
+      createdAt: true,
+      userAccount: { select: { lastLoginAt: true } },
+      farmSeasons: {
+        select: {
+          cropType: true,
+          status: true,
+          _count: { select: { progressEntries: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5000, // safety cap
+  });
+
+  const header = [
+    'Name', 'Phone', 'Region', 'Gender', 'DateOfBirth', 'FarmSize_ha',
+    'RegistrationStatus', 'InviteStatus', 'HasLogin', 'LastLogin',
+    'Seasons', 'TotalUpdates', 'PrimaryCrop', 'HasPhoto', 'CreatedAt',
+  ];
+
+  const escCSV = (val) => {
+    if (val == null) return '';
+    const s = String(val);
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const rows = farmers.map(f => {
+    const totalUpdates = f.farmSeasons.reduce((sum, s) => sum + (s._count?.progressEntries || 0), 0);
+    const primaryCrop = f.farmSeasons[0]?.cropType || '';
+    return [
+      f.fullName,
+      f.phone,
+      f.region,
+      f.gender,
+      f.dateOfBirth ? new Date(f.dateOfBirth).toISOString().split('T')[0] : '',
+      f.landSizeHectares != null ? f.landSizeHectares : '',
+      f.registrationStatus,
+      f.inviteDeliveryStatus || (f.invitedAt ? 'invited' : 'not_invited'),
+      f.userAccount ? 'yes' : 'no',
+      f.userAccount?.lastLoginAt ? new Date(f.userAccount.lastLoginAt).toISOString() : '',
+      f.farmSeasons.length,
+      totalUpdates,
+      primaryCrop,
+      f.profileImageUrl ? 'yes' : 'no',
+      new Date(f.createdAt).toISOString().split('T')[0],
+    ].map(escCSV).join(',');
+  });
+
+  return [header.join(','), ...rows].join('\n');
+}
+
 export async function getPortfolioReport(orgScope = {}) {
   const appWhere = {};
   if (orgScope.farmer) appWhere.farmer = orgScope.farmer;
@@ -71,15 +144,8 @@ export async function getPortfolioReport(orgScope = {}) {
   const resultWhere = {};
   if (orgScope.farmer) resultWhere.application = { farmer: orgScope.farmer };
 
-  // Build org join condition for raw SQL
+  // Build org filter for raw SQL — use parameterized queries to prevent SQL injection
   const hasOrgFilter = orgScope.farmer?.organizationId;
-  const orgJoinClause = hasOrgFilter
-    ? `JOIN farmers f ON a.farmer_id = f.id AND f.organization_id = '${hasOrgFilter}'`
-    : 'JOIN farmers f ON a.farmer_id = f.id';
-
-  const orgAppWhereClause = hasOrgFilter
-    ? `WHERE a.farmer_id IN (SELECT id FROM farmers WHERE organization_id = '${hasOrgFilter}')`
-    : '';
 
   const [
     totalByStatus,
@@ -95,14 +161,23 @@ export async function getPortfolioReport(orgScope = {}) {
       _sum: { requestedAmount: true },
     }),
 
-    prisma.$queryRawUnsafe(`
-      SELECT f.region, COUNT(a.id)::int as count,
-             SUM(a.requested_amount) as total_amount
-      FROM applications a
-      ${orgJoinClause}
-      GROUP BY f.region
-      ORDER BY count DESC
-    `),
+    hasOrgFilter
+      ? prisma.$queryRaw`
+          SELECT f.region, COUNT(a.id)::int as count,
+                 SUM(a.requested_amount) as total_amount
+          FROM applications a
+          JOIN farmers f ON a.farmer_id = f.id AND f.organization_id = ${hasOrgFilter}
+          GROUP BY f.region
+          ORDER BY count DESC
+        `
+      : prisma.$queryRaw`
+          SELECT f.region, COUNT(a.id)::int as count,
+                 SUM(a.requested_amount) as total_amount
+          FROM applications a
+          JOIN farmers f ON a.farmer_id = f.id
+          GROUP BY f.region
+          ORDER BY count DESC
+        `,
 
     prisma.application.groupBy({
       by: ['cropType'],
@@ -118,16 +193,47 @@ export async function getPortfolioReport(orgScope = {}) {
       _count: true,
     }),
 
-    prisma.$queryRawUnsafe(`
-      SELECT DATE_TRUNC('month', a.created_at) as month,
-             COUNT(*)::int as count,
-             SUM(a.requested_amount) as total_amount
-      FROM applications a
-      ${hasOrgFilter ? `WHERE a.farmer_id IN (SELECT id FROM farmers WHERE organization_id = '${hasOrgFilter}')` : ''}
-      GROUP BY DATE_TRUNC('month', a.created_at)
-      ORDER BY month DESC
-      LIMIT 12
-    `),
+    hasOrgFilter
+      ? prisma.$queryRaw`
+          SELECT DATE_TRUNC('month', a.created_at) as month,
+                 COUNT(*)::int as count,
+                 SUM(a.requested_amount) as total_amount
+          FROM applications a
+          WHERE a.farmer_id IN (SELECT id FROM farmers WHERE organization_id = ${hasOrgFilter})
+          GROUP BY DATE_TRUNC('month', a.created_at)
+          ORDER BY month DESC
+          LIMIT 12
+        `
+      : prisma.$queryRaw`
+          SELECT DATE_TRUNC('month', a.created_at) as month,
+                 COUNT(*)::int as count,
+                 SUM(a.requested_amount) as total_amount
+          FROM applications a
+          GROUP BY DATE_TRUNC('month', a.created_at)
+          ORDER BY month DESC
+          LIMIT 12
+        `,
+  ]);
+
+  // Demographic breakdown for portfolio
+  const farmerWhere = {};
+  if (orgScope.farmer) Object.assign(farmerWhere, orgScope.farmer);
+
+  const [totalFarmers, womenFarmers, youthFarmers, genderBreakdown] = await Promise.all([
+    prisma.farmer.count({ where: farmerWhere }),
+    prisma.farmer.count({ where: { ...farmerWhere, gender: 'female' } }),
+    prisma.farmer.count({
+      where: {
+        ...farmerWhere,
+        // Youth: age <= 35 (aligned with impact/service.js isYouth definition)
+        dateOfBirth: { gt: new Date(new Date().getFullYear() - 36, new Date().getMonth(), new Date().getDate()) },
+      },
+    }),
+    prisma.farmer.groupBy({
+      by: ['gender'],
+      where: farmerWhere,
+      _count: true,
+    }),
   ]);
 
   return {
@@ -138,5 +244,11 @@ export async function getPortfolioReport(orgScope = {}) {
     avgVerificationScore: avgScores._avg.verificationScore,
     totalVerified: avgScores._count,
     monthlyTrend,
+    demographics: {
+      totalFarmers,
+      womenFarmers,
+      youthFarmers,
+      genderBreakdown: genderBreakdown.map(g => ({ gender: g.gender || 'unknown', count: g._count })),
+    },
   };
 }

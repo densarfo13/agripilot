@@ -5,7 +5,10 @@ import path from 'path';
 import prisma from '../../config/database.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { config } from '../../config/index.js';
-import { computeLandSizeFields } from '../../utils/landSize.js';
+import { computeLandSizeFields, fromHectares } from '../../utils/landSize.js';
+import { normalizeCrop } from '../farmProfiles/service.js';
+
+const VALID_GENDERS = ['male', 'female', 'other', 'prefer_not_to_say'];
 
 // ─── Computed status helpers ──────────────────────────────
 // These derive clean enum-style strings from raw DB fields so that
@@ -39,6 +42,7 @@ export function computeInviteStatus(farmer) {
   // If the farmer has a linked account, access has been established
   if (userId) return 'ACCEPTED';
   // No account yet — check invite lifecycle
+  if (inviteDeliveryStatus === 'cancelled') return 'CANCELLED';
   if (inviteToken && inviteExpiresAt && new Date() > new Date(inviteExpiresAt)) return 'EXPIRED';
   if (inviteDeliveryStatus === 'email_sent') return 'INVITE_SENT_EMAIL';
   if (inviteDeliveryStatus === 'phone_sent') return 'INVITE_SENT_PHONE';
@@ -50,7 +54,7 @@ const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7',
 function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { invalidateAuthCache } from '../../middleware/auth.js';
-import { logWorkflowEvent } from '../../utils/opsLogger.js';
+import { logWorkflowEvent, opsEvent } from '../../utils/opsLogger.js';
 
 // ─── Duplicate Detection ─────────────────────────────────
 
@@ -59,13 +63,20 @@ import { logWorkflowEvent } from '../../utils/opsLogger.js';
  * Returns { hasDuplicate, duplicates[] } — warning-only, never blocks.
  * Used by staff-create and invite endpoints.
  */
-export async function checkDuplicateFarmer({ phone, fullName, region, organizationId }) {
+export async function checkDuplicateFarmer({ phone, fullName, region, organizationId, email }) {
   const conditions = [];
 
   // Exact phone match (strongest signal)
   if (phone) {
     const normalizedPhone = normalizePhoneForStorage(phone);
     conditions.push({ phone: normalizedPhone });
+  }
+
+  // Exact email match (strong signal) — check via linked user account
+  if (email) {
+    conditions.push({
+      userAccount: { email: { equals: email.toLowerCase().trim(), mode: 'insensitive' } },
+    });
   }
 
   // Name + region match (weaker signal, warn only)
@@ -129,6 +140,48 @@ export async function createFarmer(data, userId, organizationId) {
   // Final normalization pass — route layer normalizes first, this is a safety net
   const phone = normalizePhoneForStorage(data.phone);
 
+  // Gender validation
+  if (data.gender != null && data.gender !== '') {
+    data.gender = String(data.gender).toLowerCase().trim();
+    if (!VALID_GENDERS.includes(data.gender)) {
+      opsEvent('validation', 'gender_invalid', 'warn', { gender: data.gender, context: 'createFarmer' });
+      const err = new Error(`gender must be one of: ${VALID_GENDERS.join(', ')} (or null)`);
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  // Location coordinate validation
+  if (data.latitude != null) {
+    const lat = parseFloat(data.latitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      opsEvent('validation', 'coordinate_invalid', 'warn', { field: 'latitude', value: data.latitude, context: 'createFarmer' });
+      const err = new Error('latitude must be between -90 and 90');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+  if (data.longitude != null) {
+    const lng = parseFloat(data.longitude);
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      opsEvent('validation', 'coordinate_invalid', 'warn', { field: 'longitude', value: data.longitude, context: 'createFarmer' });
+      const err = new Error('longitude must be between -180 and 180');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+  if ((data.latitude != null) !== (data.longitude != null)) {
+    opsEvent('validation', 'coordinate_invalid', 'warn', { reason: 'partial_coordinates', context: 'createFarmer' });
+    const err = new Error('Both latitude and longitude must be provided together (or both omitted/null)');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Normalize primaryCrop
+  if (data.primaryCrop) {
+    data.primaryCrop = normalizeCrop(data.primaryCrop);
+  }
+
   // If email + password provided: validate uniqueness then create User + Farmer atomically
   if (email && password) {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
@@ -164,7 +217,7 @@ export async function createFarmer(data, userId, organizationId) {
           district: data.district || null,
           village: data.village || null,
           primaryCrop: data.primaryCrop || null,
-          farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : (ls.landSizeUnit === 'ACRE' ? ls.landSizeValue : null),
+          farmSizeAcres: ls.landSizeHectares != null ? fromHectares(ls.landSizeHectares, 'ACRE') : null,
           landSizeValue: ls.landSizeValue,
           landSizeUnit: ls.landSizeUnit,
           landSizeHectares: ls.landSizeHectares,
@@ -206,7 +259,7 @@ export async function createFarmer(data, userId, organizationId) {
       district: data.district || null,
       village: data.village || null,
       primaryCrop: data.primaryCrop || null,
-      farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : (ls2.landSizeUnit === 'ACRE' ? ls2.landSizeValue : null),
+      farmSizeAcres: ls2.landSizeHectares != null ? fromHectares(ls2.landSizeHectares, 'ACRE') : null,
       landSizeValue: ls2.landSizeValue,
       landSizeUnit: ls2.landSizeUnit,
       landSizeHectares: ls2.landSizeHectares,
@@ -433,6 +486,51 @@ export async function updateFarmer(id, data) {
     }
   }
 
+  // Gender validation — normalize to lowercase, reject invalid values
+  if (data.gender !== undefined && data.gender !== null && data.gender !== '') {
+    data.gender = String(data.gender).toLowerCase().trim();
+    if (!VALID_GENDERS.includes(data.gender)) {
+      opsEvent('validation', 'gender_invalid', 'warn', { gender: data.gender, farmerId: id, context: 'updateFarmer' });
+      const err = new Error(`gender must be one of: ${VALID_GENDERS.join(', ')} (or null)`);
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  // Location coordinate validation
+  if (data.latitude !== undefined && data.latitude !== null) {
+    const lat = parseFloat(data.latitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      opsEvent('validation', 'coordinate_invalid', 'warn', { field: 'latitude', value: data.latitude, farmerId: id, context: 'updateFarmer' });
+      const err = new Error('latitude must be between -90 and 90');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+  if (data.longitude !== undefined && data.longitude !== null) {
+    const lng = parseFloat(data.longitude);
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      opsEvent('validation', 'coordinate_invalid', 'warn', { field: 'longitude', value: data.longitude, farmerId: id, context: 'updateFarmer' });
+      const err = new Error('longitude must be between -180 and 180');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+  // If one coordinate is provided, both must be provided
+  const hasLat = data.latitude !== undefined && data.latitude !== null;
+  const hasLng = data.longitude !== undefined && data.longitude !== null;
+  if (hasLat !== hasLng) {
+    opsEvent('validation', 'coordinate_invalid', 'warn', { reason: 'partial_coordinates', farmerId: id, context: 'updateFarmer' });
+    const err = new Error('Both latitude and longitude must be provided together (or both omitted/null)');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Normalize primaryCrop to uppercase
+  if (data.primaryCrop !== undefined && data.primaryCrop !== null && data.primaryCrop !== '') {
+    data.primaryCrop = normalizeCrop(data.primaryCrop);
+  }
+
   // Compute normalized land size if relevant fields changed
   const lsUpdate = {};
   if (data.landSizeValue !== undefined || data.landSizeUnit !== undefined || data.farmSizeAcres !== undefined) {
@@ -440,6 +538,12 @@ export async function updateFarmer(id, data) {
     lsUpdate.landSizeValue = ls.landSizeValue;
     lsUpdate.landSizeUnit = ls.landSizeUnit;
     lsUpdate.landSizeHectares = ls.landSizeHectares;
+    // Keep legacy farmSizeAcres in sync for backward compat
+    if (ls.landSizeValue != null && ls.landSizeHectares != null) {
+      lsUpdate.farmSizeAcres = fromHectares(ls.landSizeHectares, 'ACRE');
+    } else {
+      lsUpdate.farmSizeAcres = null;
+    }
   }
 
   return prisma.farmer.update({
@@ -452,7 +556,7 @@ export async function updateFarmer(id, data) {
       ...(data.district !== undefined && { district: data.district }),
       ...(data.village !== undefined && { village: data.village }),
       ...(data.primaryCrop !== undefined && { primaryCrop: data.primaryCrop }),
-      ...(data.farmSizeAcres !== undefined && { farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null }),
+      ...(data.farmSizeAcres !== undefined && !lsUpdate.hasOwnProperty('farmSizeAcres') && { farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null }),
       ...lsUpdate,
       ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience, 10) : null }),
       ...(data.gender !== undefined && { gender: data.gender || null }),
@@ -462,6 +566,7 @@ export async function updateFarmer(id, data) {
       ...(data.locationSource !== undefined && { locationSource: data.locationSource || null }),
       ...(data.geolocationAccuracy !== undefined && { geolocationAccuracy: data.geolocationAccuracy != null ? parseFloat(data.geolocationAccuracy) : null }),
       ...(data.geolocationCapturedAt !== undefined && { geolocationCapturedAt: data.geolocationCapturedAt ? new Date(data.geolocationCapturedAt) : null }),
+      ...(data.assignedOfficerId !== undefined && { assignedOfficerId: data.assignedOfficerId || null }),
     },
   });
 }

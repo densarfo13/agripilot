@@ -290,7 +290,7 @@ const S = {
   inputWrap: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
     padding: '0.6rem 0.75rem', background: '#1E293B', border: '1px solid #243041',
-    borderRadius: '6px', cursor: 'pointer', minHeight: '38px', position: 'relative',
+    borderRadius: '6px', cursor: 'pointer', minHeight: '44px', position: 'relative',
   },
   searchInput: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '0.9rem', padding: 0 },
   dropdown: {
@@ -307,7 +307,8 @@ const S = {
   divider: { height: '1px', background: '#243041', margin: '0.25rem 0' },
   option: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
-    padding: '0.5rem 0.75rem', cursor: 'pointer', transition: 'background 0.1s', fontSize: '0.88rem',
+    padding: '0.6rem 0.75rem', cursor: 'pointer', transition: 'background 0.1s', fontSize: '0.88rem',
+    minHeight: '44px',
   },
   optionIcon: { fontSize: '1rem', width: '1.2rem', textAlign: 'center' },
   optionName: { flex: 1, color: '#FFFFFF' },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
@@ -20,6 +20,7 @@ export default function FarmerMarketTab() {
   const [showInterest, setShowInterest] = useState(false);
   const [interestForm, setInterestForm] = useState({ cropType: '', quantityKg: '', preferredBuyerType: '', priceExpectation: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
+  const submitGuardRef = useRef(false);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
 
@@ -53,7 +54,9 @@ export default function FarmerMarketTab() {
 
   const handleExpressInterest = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/buyer-interest/farmer/${farmerId}`, {
@@ -69,6 +72,7 @@ export default function FarmerMarketTab() {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to express interest');
     } finally {
+      submitGuardRef.current = false;
       setSubmitting(false);
     }
   };
@@ -77,7 +81,9 @@ export default function FarmerMarketTab() {
     try {
       await api.patch(`/buyer-interest/${id}/withdraw`);
       setInterests(prev => prev.map(i => i.id === id ? { ...i, status: 'withdrawn' } : i));
-    } catch { }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to withdraw interest');
+    }
   };
 
   if (loading) return <div className="loading">Loading market data...</div>;

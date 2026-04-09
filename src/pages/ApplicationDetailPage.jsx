@@ -75,13 +75,18 @@ export default function ApplicationDetailPage() {
     } finally { setActionLoading(''); }
   };
 
+  const [noteError, setNoteError] = useState('');
+
   const addNote = async () => {
     if (!noteText.trim()) return;
+    setNoteError('');
     try {
       await api.post(`/reviews/${id}/notes`, { content: noteText });
       setNoteText('');
       reload();
-    } catch {}
+    } catch (err) {
+      setNoteError(err.response?.data?.error || 'Failed to save note. Please try again.');
+    }
   };
 
   if (loading) return <div className="page-body"><div className="loading">Loading application...</div></div>;
@@ -229,7 +234,7 @@ export default function ApplicationDetailPage() {
         {tab === 'location' && <LocationTab app={app} />}
         {tab === 'evidence' && <EvidenceTab app={app} />}
         {tab === 'engines' && <EnginesTab app={app} currency={currency} />}
-        {tab === 'reviews' && <ReviewsTab app={app} noteText={noteText} setNoteText={setNoteText} addNote={addNote} canRunEngines={canRunEngines} />}
+        {tab === 'reviews' && <ReviewsTab app={app} noteText={noteText} setNoteText={setNoteText} addNote={addNote} noteError={noteError} canRunEngines={canRunEngines} />}
         {tab === 'timeline' && <TimelineTab logs={auditLogs} />}
         {tab === 'intelligence' && <IntelligenceTab app={app} />}
       </div>
@@ -559,7 +564,7 @@ function EnginesTab({ app, currency }) {
   );
 }
 
-function ReviewsTab({ app, noteText, setNoteText, addNote, canRunEngines }) {
+function ReviewsTab({ app, noteText, setNoteText, addNote, noteError, canRunEngines }) {
   const notes = app.reviewNotes || [];
   const assignments = app.reviewAssignments || [];
   const visits = app.fieldVisits || [];
@@ -570,9 +575,12 @@ function ReviewsTab({ app, noteText, setNoteText, addNote, canRunEngines }) {
         <div className="card-header">Review Notes ({notes.length})</div>
         <div className="card-body">
           {canRunEngines && (
-            <div className="flex gap-1" style={{ marginBottom: '1rem' }}>
-              <textarea className="form-textarea" style={{ minHeight: 60, flex: 1 }} value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add a review note..." />
-              <button className="btn btn-primary" onClick={addNote} style={{ alignSelf: 'flex-end' }}>Add Note</button>
+            <div style={{ marginBottom: '1rem' }}>
+              <div className="flex gap-1">
+                <textarea className="form-textarea" style={{ minHeight: 60, flex: 1 }} value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add a review note..." />
+                <button className="btn btn-primary" onClick={addNote} style={{ alignSelf: 'flex-end' }}>Add Note</button>
+              </div>
+              {noteError && <div className="alert alert-danger" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>{noteError}</div>}
             </div>
           )}
           {notes.map(n => (

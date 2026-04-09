@@ -47,6 +47,11 @@ export default function ReportIssueButton() {
   const [issueComments, setIssueComments] = useState({});
   const [newComment, setNewComment] = useState('');
   const [commentSending, setCommentSending] = useState(false);
+  const [issueAttachments, setIssueAttachments] = useState({});
+  const [attachUploading, setAttachUploading] = useState(false);
+  const [dragOverIssue, setDragOverIssue] = useState(null);
+  const [commentError, setCommentError] = useState('');
+  const [uploadError, setUploadError] = useState('');
 
   const autoPriority = CATEGORY_PRIORITY[category] || 'MEDIUM';
 
@@ -94,11 +99,12 @@ export default function ReportIssueButton() {
   const sendComment = async (issueId) => {
     if (!newComment.trim()) return;
     setCommentSending(true);
+    setCommentError('');
     try {
       const res = await api.post(`/issues/${issueId}/comments`, { text: newComment.trim() });
       setIssueComments((prev) => ({ ...prev, [issueId]: [...(prev[issueId] || []), res.data] }));
       setNewComment('');
-    } catch { /* ignore */ }
+    } catch (err) { setCommentError(err.response?.data?.error || 'Failed to send comment'); }
     finally { setCommentSending(false); }
   };
 
@@ -107,6 +113,35 @@ export default function ReportIssueButton() {
     setExpandedIssue(issueId);
     setNewComment('');
     if (!issueComments[issueId]) loadIssueComments(issueId);
+    if (!issueAttachments[issueId]) loadIssueAttachments(issueId);
+  };
+
+  const loadIssueAttachments = (issueId) => {
+    api.get(`/issues/${issueId}/attachments`)
+      .then((res) => setIssueAttachments((prev) => ({ ...prev, [issueId]: res.data })))
+      .catch(() => {});
+  };
+
+  const uploadIssueFile = async (issueId, file) => {
+    setAttachUploading(true);
+    setUploadError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post(`/issues/${issueId}/attachments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setIssueAttachments((prev) => ({ ...prev, [issueId]: [...(prev[issueId] || []), res.data] }));
+    } catch (err) { setUploadError(err.response?.data?.error || 'Failed to upload file'); }
+    finally { setAttachUploading(false); }
+  };
+
+  const handleIssueDragOver = (e, issueId) => { e.preventDefault(); e.stopPropagation(); setDragOverIssue(issueId); };
+  const handleIssueDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOverIssue(null); };
+  const handleIssueDrop = (e, issueId) => {
+    e.preventDefault(); e.stopPropagation(); setDragOverIssue(null);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      for (const file of Array.from(files).slice(0, 5)) uploadIssueFile(issueId, file);
+    }
   };
 
   return (
@@ -223,7 +258,45 @@ export default function ReportIssueButton() {
                             </div>
                           )}
                           {isExp && (
-                            <div style={{ marginTop: '0.5rem', borderTop: '1px solid #243041', paddingTop: '0.4rem' }} onClick={(e) => e.stopPropagation()}>
+                            <div style={{
+                              marginTop: '0.5rem', borderTop: '1px solid #243041', paddingTop: '0.4rem',
+                              ...(dragOverIssue === issue.id ? { background: 'rgba(56,189,248,0.08)', border: '2px dashed #38BDF8', borderRadius: 6, padding: '0.5rem' } : {}),
+                            }}
+                              onClick={(e) => e.stopPropagation()}
+                              onDragOver={(e) => handleIssueDragOver(e, issue.id)}
+                              onDragLeave={handleIssueDragLeave}
+                              onDrop={(e) => handleIssueDrop(e, issue.id)}>
+                              {/* Attachments */}
+                              <div style={{ marginBottom: '0.4rem' }}>
+                                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                  <span style={{ fontSize: '0.72rem', color: '#A1A1AA', fontWeight: 600 }}>Attachments</span>
+                                  <label style={{ fontSize: '0.68rem', color: '#38BDF8', cursor: 'pointer' }}>
+                                    {attachUploading ? '...' : '+ Upload'}
+                                    <input type="file" hidden accept="image/*,.pdf,.txt"
+                                      onChange={(e) => { if (e.target.files[0]) uploadIssueFile(issue.id, e.target.files[0]); e.target.value = ''; }} />
+                                  </label>
+                                  <span style={{ fontSize: '0.62rem', color: '#71717A', fontStyle: 'italic' }}>or drag & drop</span>
+                                </div>
+                                {uploadError && <div style={{ color: '#EF4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{uploadError}</div>}
+                                {(issueAttachments[issue.id] || []).length === 0 ? (
+                                  <div style={{ fontSize: '0.72rem', color: '#71717A' }}>No attachments.</div>
+                                ) : (issueAttachments[issue.id] || []).map((a) => (
+                                  <div key={a.id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', fontSize: '0.72rem', padding: '0.2rem 0' }}>
+                                    {a.mimeType?.startsWith('image/') ? (
+                                      <a href={`/uploads/issues/${a.filename}`} target="_blank" rel="noopener noreferrer">
+                                        <img src={`/uploads/issues/${a.filename}`} alt={a.originalName}
+                                          style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 3, border: '1px solid #243041' }} />
+                                      </a>
+                                    ) : (
+                                      <span style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#243041', borderRadius: 3, fontSize: '0.6rem', color: '#A1A1AA' }}>
+                                        {a.mimeType?.includes('pdf') ? 'PDF' : 'FILE'}
+                                      </span>
+                                    )}
+                                    <a href={`/uploads/issues/${a.filename}`} target="_blank" rel="noopener noreferrer"
+                                      style={{ color: '#38BDF8', textDecoration: 'underline', fontSize: '0.72rem' }}>{a.originalName}</a>
+                                  </div>
+                                ))}
+                              </div>
                               <div style={{ fontSize: '0.72rem', color: '#A1A1AA', fontWeight: 600, marginBottom: '0.3rem' }}>Comments</div>
                               {(issueComments[issue.id] || []).length === 0 && (
                                 <div style={{ fontSize: '0.75rem', color: '#71717A', marginBottom: '0.3rem' }}>No comments yet.</div>
@@ -244,6 +317,7 @@ export default function ReportIssueButton() {
                                   disabled={commentSending || !newComment.trim()}
                                   onClick={() => sendComment(issue.id)}>{commentSending ? '...' : 'Post'}</button>
                               </div>
+                              {commentError && <div style={{ color: '#EF4444', fontSize: '0.8rem', marginTop: '0.25rem' }}>{commentError}</div>}
                             </div>
                           )}
                         </div>

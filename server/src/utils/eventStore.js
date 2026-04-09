@@ -4,9 +4,14 @@
  * Stores the last MAX_EVENTS events in a circular buffer.
  * Also maintains per-type counters for the lifetime of the process.
  *
- * This is intentionally lightweight — no DB dependency, no persistence.
- * It resets on server restart. For a pilot, this is sufficient.
- * Extend to a persistent store (Redis, DB) if needed for production scale.
+ * LIMITATION: This is intentionally lightweight — no DB dependency, no persistence.
+ * It resets on server restart. For the pilot, this is sufficient because:
+ *   1. All ops events are also emitted to console (JSON in production) which
+ *      Railway's log drain captures and retains beyond process restarts.
+ *   2. The /api/system/errors endpoint serves real-time monitoring only.
+ *
+ * To extend: pipe events to a persistent store (Redis, Prisma SystemSetting,
+ * or external logging service) if post-restart audit replay is needed.
  */
 
 const MAX_EVENTS = 500;

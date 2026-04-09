@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api, { formatApiError } from '../api/client.js';
 import { useDraft } from '../utils/useDraft.js';
@@ -30,6 +30,7 @@ export default function NewApplicationPage() {
   const [farmers, setFarmers] = useState([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const submitGuardRef = useRef(false);
   const navigate = useNavigate();
 
   const [loadError, setLoadError] = useState('');
@@ -47,6 +48,8 @@ export default function NewApplicationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
+    submitGuardRef.current = true;
     setSaving(true);
     setError('');
     const acres = parseFloat(form.farmSizeAcres);
@@ -66,7 +69,7 @@ export default function NewApplicationPage() {
       navigate(`/applications/${res.data.id}`);
     } catch (err) {
       setError(formatApiError(err, 'Failed to create application'));
-    } finally { setSaving(false); }
+    } finally { submitGuardRef.current = false; setSaving(false); }
   };
 
   return (

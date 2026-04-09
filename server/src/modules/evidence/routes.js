@@ -38,6 +38,7 @@ router.post('/:applicationId',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   uploadLimiter,
+  dedupGuard('evidence-upload'),
   upload.single('file'),
   uploadCleanup,
   asyncHandler(async (req, res) => {

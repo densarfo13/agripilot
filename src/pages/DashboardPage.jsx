@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [alerts, setAlerts] = useState([]);
   const [benchmarkSummary, setBenchmarkSummary] = useState(null);
   const [expiringInvites, setExpiringInvites] = useState(0);
+  const [loadWarning, setLoadWarning] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
@@ -71,6 +72,10 @@ export default function DashboardPage() {
       if (tRes?.data) setTasks(Array.isArray(tRes.data) ? tRes.data : []);
       if (alertsRes?.data?.alerts) setAlerts(alertsRes.data.alerts);
       if (benchRes?.data) setBenchmarkSummary(benchRes.data);
+      const missingData = [];
+      if (canSeePilotMetrics && !mRes?.data) missingData.push('pilot metrics');
+      if (canSeeAttention && !aRes?.data) missingData.push('attention items');
+      if (missingData.length > 0) setLoadWarning(`Some data could not be loaded: ${missingData.join(', ')}. Try refreshing.`);
       // Fetch expiring invites (non-blocking)
       if (canSeeAttention) {
         api.get('/farmers/expiring-invites').then(r => setExpiringInvites(r.data?.count || 0)).catch(() => {});
@@ -106,6 +111,7 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="page-body">
+        {loadWarning && <div className="alert alert-warning" style={{ marginBottom: '1rem', fontSize: '0.85rem' }}>{loadWarning} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Refresh</button></div>}
         {/* First-run empty state — shown to admins when no farmers exist yet */}
         {isAdmin && adoption && (adoption.farmers?.total === 0) && portfolio.totalApplications === 0 && (
           <div className="alert-inline alert-inline-success" style={{ borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'block' }}>
@@ -129,14 +135,14 @@ export default function DashboardPage() {
         {/* ── 1. KPI Strip — top-level metrics ── */}
         <div className="stats-grid">
           <div className="stat-card" onClick={() => navigate('/farmers')} style={{ cursor: 'pointer' }}>
-            <div className="stat-label">Active Farmers</div>
+            <div className="stat-label">Approved Farmers</div>
             <div className="stat-value">{adoption?.farmers?.approved ?? 0}</div>
           </div>
           <div className="stat-card" onClick={canSeeAttention ? () => navigate('/verification-queue') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
             <div className="stat-label">Pending Validation</div>
             <div className="stat-value" style={{ color: queues.verification > 0 ? '#F59E0B' : undefined }}>{queues.verification}</div>
           </div>
-          <div className="stat-card" onClick={canSeeAttention ? () => navigate('/pilot-metrics') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
+          <div className="stat-card" onClick={canSeeAttention ? () => navigate('/farmers?filter=needs_attention') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
             <div className="stat-label">Needs Attention</div>
             <div className="stat-value" style={{ color: attentionCount > 0 ? '#EF4444' : undefined }}>{attentionCount}</div>
           </div>
@@ -199,8 +205,11 @@ export default function DashboardPage() {
                 );
               })}
               {tasks.length > 8 && (
-                <div style={{ padding: '0.6rem 1rem', fontSize: '0.8rem', color: '#A1A1AA', textAlign: 'center' }}>
-                  +{tasks.length - 8} more tasks
+                <div
+                  onClick={() => navigate('/pilot-metrics')}
+                  style={{ padding: '0.6rem 1rem', fontSize: '0.8rem', color: '#3B82F6', textAlign: 'center', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  View all {tasks.length} tasks →
                 </div>
               )}
             </div>
@@ -297,6 +306,8 @@ export default function DashboardPage() {
             </span>
             {[
               ['Approved', adoption.farmers?.approved, '#22C55E'],
+              ['Women', adoption.farmers?.womenFarmers, '#7c3aed'],
+              ['Youth (<35)', adoption.farmers?.youthFarmers, '#0891b2'],
               ['Invite Pending', adoption.farmers?.invitedNotActivated, '#F59E0B'],
               ['Logged In', adoption.adoption?.loggedIn, '#22C55E'],
               ['1st Update', adoption.adoption?.withFirstUpdate, '#22C55E'],
@@ -308,15 +319,25 @@ export default function DashboardPage() {
               </div>
             ))}
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-              <a
-                href="/api/pilot/report?format=csv"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 className="btn btn-outline btn-sm"
-                style={{ textDecoration: 'none' }}
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = `/api/reports/pilot-report?format=csv`;
+                  a.download = `pilot-report-${new Date().toISOString().split('T')[0]}.csv`;
+                  // Use fetch with auth header instead of direct link
+                  api.get('/reports/pilot-report?format=csv', { responseType: 'blob' })
+                    .then(r => {
+                      const url = URL.createObjectURL(new Blob([r.data], { type: 'text/csv' }));
+                      a.href = url;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    })
+                    .catch(() => alert('Export failed — please try again.'));
+                }}
               >
                 Export CSV
-              </a>
+              </button>
               <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')}>
                 Full Metrics →
               </button>

@@ -70,7 +70,7 @@ router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(as
 }));
 
 // Create user (super_admin only — assigns to org)
-router.post('/', authorize('super_admin'), asyncHandler(async (req, res) => {
+router.post('/', authorize('super_admin'), dedupGuard('admin-create-user'), asyncHandler(async (req, res) => {
   const { email, password, fullName, role, organizationId } = req.body;
   if (!email || !password || !fullName || !role) {
     return res.status(400).json({ error: 'email, password, fullName, and role are required' });

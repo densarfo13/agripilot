@@ -2,25 +2,32 @@
  * Issue Escalation Routes — Feedback-to-Improvement Loop
  *
  * Routes:
- *   POST  /api/issues                  — submit a new issue (any authenticated user)
- *   GET   /api/issues/mine             — list my issues (any authenticated user)
- *   GET   /api/issues/notifications    — staff notifications (admin only)
- *   PATCH /api/issues/notifications/read — mark notifications read (admin only)
- *   GET   /api/issues                  — list all issues (admin only)
- *   GET   /api/issues/insights         — category/priority/SLA summary (admin only)
- *   GET   /api/issues/assignees        — list assignable users (admin only)
- *   PATCH /api/issues/bulk             — bulk update issues (admin only)
- *   PATCH /api/issues/:id              — update issue (admin only)
- *   GET   /api/issues/:id/comments     — list comments (reporter + admin)
- *   POST  /api/issues/:id/comments     — add comment (reporter + admin)
- *   GET   /api/issues/:id/attachments  — list attachments (reporter + admin)
- *   POST  /api/issues/:id/attachments  — upload attachment (reporter + admin)
+ *   POST  /api/issues                          — submit a new issue (any authenticated user)
+ *   GET   /api/issues/mine                     — list my issues (any authenticated user)
+ *   GET   /api/issues/notifications            — staff notifications (admin only)
+ *   GET   /api/issues/notifications/stream     — SSE real-time notification stream (admin only)
+ *   PATCH /api/issues/notifications/read       — mark notifications read (admin only)
+ *   GET   /api/issues/notifications/preferences — get notification prefs
+ *   PATCH /api/issues/notifications/preferences — update notification prefs
+ *   POST  /api/issues/notifications/digest     — trigger notification digest email (admin only)
+ *   GET   /api/issues/sla-config               — get org SLA config
+ *   PATCH /api/issues/sla-config               — update org SLA config
+ *   GET   /api/issues/insights                 — category/priority/SLA summary (admin only)
+ *   GET   /api/issues                          — list all issues (admin only)
+ *   GET   /api/issues/assignees                — list assignable users (admin only)
+ *   PATCH /api/issues/bulk                     — bulk update issues (admin only)
+ *   PATCH /api/issues/:id                      — update issue (admin only)
+ *   GET   /api/issues/:id/comments             — list comments (reporter + admin)
+ *   POST  /api/issues/:id/comments             — add comment (reporter + admin)
+ *   GET   /api/issues/:id/attachments          — list attachments (reporter + admin)
+ *   POST  /api/issues/:id/attachments          — upload attachment (reporter + admin)
  */
 
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { extractOrganization } from '../../middleware/orgScope.js';
+import { dedupGuard } from '../../middleware/dedup.js';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import path from 'path';
@@ -28,6 +35,39 @@ import fs from 'fs';
 import prisma from '../../config/database.js';
 import { opsEvent } from '../../utils/opsLogger.js';
 import { isEmailConfigured } from '../notifications/deliveryService.js';
+
+// ── SSE ticket system ──
+// EventSource can't send Authorization headers. Instead of passing the raw JWT
+// in the query string (visible in logs), the client exchanges their JWT for a
+// short-lived, single-use opaque ticket via POST, then passes only that ticket ID
+// in the SSE query string. The ticket is consumed on first use and expires after 30s.
+import crypto from 'crypto';
+const sseTickets = new Map(); // ticketId → { userId, role, organizationId, expiresAt }
+const SSE_TICKET_TTL = 30000; // 30 seconds
+
+function sseTokenFromQuery(req, res, next) {
+  // Check for SSE ticket first (opaque, non-sensitive)
+  if (req.query.ticket && !req.headers.authorization) {
+    const ticket = sseTickets.get(req.query.ticket);
+    if (ticket && Date.now() < ticket.expiresAt) {
+      sseTickets.delete(req.query.ticket); // single-use
+      req.user = { sub: ticket.userId, role: ticket.role, organizationId: ticket.organizationId };
+      return next();
+    }
+    // Expired or invalid ticket — fall through to normal auth
+  }
+  // Fallback: accept raw token in query (backward compat)
+  if (req.query.token && !req.headers.authorization) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}
+
+// Clean up expired tickets periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, t] of sseTickets) { if (now >= t.expiresAt) sseTickets.delete(id); }
+}, 60000);
 
 const VALID_TYPES = ['BUG', 'DATA_ISSUE', 'ACCESS_ISSUE', 'FEATURE_REQUEST'];
 const VALID_CATEGORIES = ['BLOCKER', 'FRICTION', 'TRUST', 'FEATURE'];
@@ -85,6 +125,18 @@ const DEFAULT_NOTIF_PREFS = {
   sla_breach: { inApp: true, email: true },
 };
 
+// ── SSE connected clients map ──
+const sseClients = new Map(); // userId → Set<res>
+
+function pushToClient(userId, eventType, data) {
+  const clients = sseClients.get(userId);
+  if (!clients || clients.size === 0) return;
+  const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of clients) {
+    try { res.write(payload); } catch { clients.delete(res); }
+  }
+}
+
 // Helper: create staff notification (respects user preferences, optionally sends email)
 async function notifyStaff(userId, type, title, message, metadata = {}) {
   if (!userId) return;
@@ -96,7 +148,9 @@ async function notifyStaff(userId, type, title, message, metadata = {}) {
 
     // In-app notification
     if (typePref.inApp !== false) {
-      await prisma.staffNotification.create({ data: { userId, type, title, message, metadata } });
+      const notif = await prisma.staffNotification.create({ data: { userId, type, title, message, metadata } });
+      // Push via SSE
+      pushToClient(userId, 'notification', { id: notif.id, type, title, message, metadata, read: false, createdAt: notif.createdAt });
     }
 
     // Email notification (non-blocking)
@@ -104,6 +158,71 @@ async function notifyStaff(userId, type, title, message, metadata = {}) {
       sendIssueEmail(user.email, user.fullName, title, message).catch(() => {});
     }
   } catch { /* non-critical */ }
+}
+
+// Helper: auto-escalate SLA-breached issues (assign to fallback admin, bump priority)
+async function autoEscalateBreached(orgScope = {}) {
+  try {
+    const thresholds = { ...SLA_THRESHOLDS };
+    if (orgScope.orgId) {
+      const org = await prisma.organization.findUnique({ where: { id: orgScope.orgId }, select: { slaConfig: true } });
+      if (org?.slaConfig && typeof org.slaConfig === 'object') Object.assign(thresholds, org.slaConfig);
+    }
+
+    const openIssues = await prisma.issue.findMany({
+      where: { ...orgScope, status: { in: ['OPEN', 'IN_PROGRESS'] } },
+      select: { id: true, priority: true, status: true, createdAt: true, firstResponseAt: true, assignedToId: true, userId: true, description: true },
+    });
+
+    const now = Date.now();
+    const escalated = [];
+
+    for (const issue of openIssues) {
+      const thresh = thresholds[issue.priority] || thresholds.MEDIUM;
+      const ageHrs = (now - issue.createdAt.getTime()) / 3600000;
+      const isResponseBreached = !issue.firstResponseAt && ageHrs > thresh.response;
+      const isResolveBreached = ageHrs > thresh.resolve;
+
+      if (!isResponseBreached && !isResolveBreached) continue;
+
+      const data = {};
+      let shouldEscalate = false;
+
+      // Auto-assign unassigned breached issues to a fallback admin
+      if (!issue.assignedToId) {
+        const fallbackWhere = { role: { in: ['super_admin', 'institutional_admin'] } };
+        if (orgScope.orgId) fallbackWhere.organizationId = orgScope.orgId;
+        const fallback = await prisma.user.findFirst({ where: fallbackWhere, orderBy: { createdAt: 'asc' }, select: { id: true } });
+        if (fallback) {
+          data.assignedToId = fallback.id;
+          shouldEscalate = true;
+          notifyStaff(fallback.id, 'sla_breach',
+            'SLA breach — auto-assigned',
+            `Issue "${issue.description.slice(0, 60)}..." breached SLA and was auto-assigned to you.`,
+            { issueId: issue.id, breachType: isResponseBreached ? 'response' : 'resolve' });
+        }
+      }
+
+      // Bump priority if resolve-breached and not already HIGH
+      if (isResolveBreached && issue.priority !== 'HIGH') {
+        data.priority = issue.priority === 'LOW' ? 'MEDIUM' : 'HIGH';
+        shouldEscalate = true;
+      }
+
+      if (shouldEscalate) {
+        await prisma.issue.update({ where: { id: issue.id }, data });
+        escalated.push({ id: issue.id, changes: data });
+      }
+    }
+
+    if (escalated.length > 0) {
+      opsEvent('workflow', 'sla_auto_escalation', 'info', { escalatedCount: escalated.length, escalated });
+    }
+    return escalated;
+  } catch (err) {
+    opsEvent('workflow', 'sla_auto_escalation_failed', 'warn', { error: err?.message });
+    return [];
+  }
 }
 
 // Helper: send issue notification email via SendGrid
@@ -142,12 +261,13 @@ async function canAccessIssue(req, issueId) {
 }
 
 const router = Router();
+router.use(sseTokenFromQuery); // Allow ?token= for SSE (harmless for other routes)
 router.use(authenticate);
 router.use(extractOrganization);
 
 // ─── POST /api/issues ───────────────────────────────────
 
-router.post('/', issueLimiter, asyncHandler(async (req, res) => {
+router.post('/', issueLimiter, dedupGuard('issue-create'), asyncHandler(async (req, res) => {
   const { issueType, category, description, pageRoute, priority } = req.body;
 
   if (!description || typeof description !== 'string' || !description.trim()) {
@@ -249,6 +369,89 @@ router.patch('/notifications/read',
     if (Array.isArray(ids) && ids.length > 0) where.id = { in: ids };
     await prisma.staffNotification.updateMany({ where, data: { read: true } });
     res.json({ ok: true });
+  }));
+
+// ─── POST /api/issues/notifications/ticket ─────────────
+// Exchange JWT for a short-lived opaque SSE ticket (so raw JWT never appears in query strings/logs).
+
+router.post('/notifications/ticket',
+  authorize('super_admin', 'institutional_admin', 'reviewer'),
+  asyncHandler(async (req, res) => {
+    const ticketId = crypto.randomBytes(24).toString('hex');
+    sseTickets.set(ticketId, {
+      userId: req.user.sub,
+      role: req.user.role,
+      organizationId: req.organizationId || null,
+      expiresAt: Date.now() + SSE_TICKET_TTL,
+    });
+    res.json({ ticket: ticketId, expiresIn: SSE_TICKET_TTL });
+  }));
+
+// ─── GET /api/issues/notifications/stream ───────────────
+// SSE endpoint for real-time notification push.
+
+router.get('/notifications/stream',
+  authorize('super_admin', 'institutional_admin', 'reviewer'),
+  (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.write('event: connected\ndata: {}\n\n');
+
+    const userId = req.user.sub;
+    if (!sseClients.has(userId)) sseClients.set(userId, new Set());
+    sseClients.get(userId).add(res);
+
+    const heartbeat = setInterval(() => {
+      try { res.write(': heartbeat\n\n'); } catch { /* ignore */ }
+    }, 30000);
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      const set = sseClients.get(userId);
+      if (set) { set.delete(res); if (set.size === 0) sseClients.delete(userId); }
+    });
+  });
+
+// ─── POST /api/issues/notifications/digest ─────────────
+// Trigger a notification digest email for the requesting user (or all admins if super_admin).
+
+router.post('/notifications/digest',
+  authorize('super_admin', 'institutional_admin', 'reviewer'),
+  asyncHandler(async (req, res) => {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const targetUsers = req.body.allAdmins && req.user.role === 'super_admin'
+      ? await prisma.user.findMany({
+        where: { role: { in: ['super_admin', 'institutional_admin', 'reviewer'] } },
+        select: { id: true, email: true, fullName: true, notifPreferences: true },
+      })
+      : [await prisma.user.findUnique({ where: { id: req.user.sub }, select: { id: true, email: true, fullName: true, notifPreferences: true } })];
+
+    let sent = 0;
+    for (const user of targetUsers.filter(Boolean)) {
+      const prefs = { ...DEFAULT_NOTIF_PREFS, ...(user.notifPreferences || {}) };
+      if (!prefs.digest_email?.email && !prefs.sla_breach?.email) continue;
+      if (!user.email || !isEmailConfigured()) continue;
+
+      const unread = await prisma.staffNotification.findMany({
+        where: { userId: user.id, read: false, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: { type: true, title: true, message: true, createdAt: true },
+      });
+      if (unread.length === 0) continue;
+
+      const lines = unread.map((n) => `• [${n.type}] ${n.title}: ${n.message}`).join('\n');
+      const body = `You have ${unread.length} unread notification${unread.length > 1 ? 's' : ''} from the last 24 hours:\n\n${lines}`;
+      sendIssueEmail(user.email, user.fullName, `Daily Digest — ${unread.length} notification${unread.length > 1 ? 's' : ''}`, body).catch(() => {});
+      sent++;
+    }
+
+    opsEvent('notification', 'digest_sent', 'info', { sentTo: sent, triggeredBy: req.user.sub });
+    res.json({ ok: true, sent });
   }));
 
 // ─── GET /api/issues/notifications/preferences ──────────
@@ -404,6 +607,9 @@ router.get('/insights',
       if (ageHrs > thresh.resolve) breachedResolve++;
     }
 
+    // Auto-escalate breached issues (non-blocking)
+    const escalated = await autoEscalateBreached(orgScope);
+
     const sla = {
       avgFirstResponseHrs: responseTimeCount > 0 ? Math.round((responseTimeSum / responseTimeCount) / 3600000 * 10) / 10 : null,
       avgResolveHrs: resolveTimeCount > 0 ? Math.round((resolveTimeSum / resolveTimeCount) / 3600000 * 10) / 10 : null,
@@ -411,6 +617,7 @@ router.get('/insights',
       sampledResolved: resolveTimeCount,
       breachedResponse,
       breachedResolve,
+      escalatedCount: escalated.length,
       thresholds: effectiveThresholds,
     };
 
@@ -502,6 +709,7 @@ router.get('/assignees',
 
 router.patch('/bulk',
   authorize('super_admin', 'institutional_admin'),
+  dedupGuard('issue-bulk-update'),
   asyncHandler(async (req, res) => {
     const { ids, status, assignedToId, priority, category } = req.body;
 
@@ -768,4 +976,87 @@ router.post('/:id/attachments', issueUpload.single('file'), asyncHandler(async (
   res.status(201).json(attachment);
 }));
 
+// ── Periodic SLA auto-escalation (every 30 minutes) ──
+let slaEscalationInterval = null;
+function startSlaEscalation() {
+  if (slaEscalationInterval) return;
+  slaEscalationInterval = setInterval(() => {
+    autoEscalateBreached({}).catch(() => {});
+  }, 30 * 60 * 1000);
+}
+function stopSlaEscalation() {
+  if (slaEscalationInterval) { clearInterval(slaEscalationInterval); slaEscalationInterval = null; }
+}
+// Auto-start (will be cleared on module unload in test)
+if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+  startSlaEscalation();
+}
+
+// ── Periodic digest (checks every hour, sends once per 24h using DB marker) ──
+const DIGEST_CHECK_INTERVAL = 60 * 60 * 1000; // check every hour
+const DIGEST_MIN_GAP = 23 * 60 * 60 * 1000; // at least 23h between digests
+const DIGEST_SETTING_KEY = 'issues_digest_last_run';
+
+async function getLastDigestRun() {
+  try {
+    const row = await prisma.systemSetting.findUnique({ where: { key: DIGEST_SETTING_KEY } });
+    return row ? parseInt(row.value, 10) || 0 : 0;
+  } catch { return 0; }
+}
+async function setLastDigestRun() {
+  try {
+    await prisma.systemSetting.upsert({
+      where: { key: DIGEST_SETTING_KEY },
+      update: { value: String(Date.now()) },
+      create: { key: DIGEST_SETTING_KEY, value: String(Date.now()) },
+    });
+  } catch { /* ignore */ }
+}
+
+let digestInterval = null;
+async function runDigestIfDue() {
+  const lastRun = await getLastDigestRun();
+  if (Date.now() - lastRun < DIGEST_MIN_GAP) return; // too soon
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const admins = await prisma.user.findMany({
+      where: { role: { in: ['super_admin', 'institutional_admin', 'reviewer'] } },
+      select: { id: true, email: true, fullName: true, notifPreferences: true },
+    });
+    let sent = 0;
+    for (const user of admins) {
+      const prefs = { ...DEFAULT_NOTIF_PREFS, ...(user.notifPreferences || {}) };
+      if (!prefs.sla_breach?.email && !prefs.issue_assigned?.email) continue;
+      if (!user.email || !isEmailConfigured()) continue;
+      const unread = await prisma.staffNotification.findMany({
+        where: { userId: user.id, read: false, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' }, take: 30,
+        select: { type: true, title: true, message: true, createdAt: true },
+      });
+      if (unread.length === 0) continue;
+      const lines = unread.map((n) => `• [${n.type}] ${n.title}: ${n.message}`).join('\n');
+      sendIssueEmail(user.email, user.fullName,
+        `Daily Digest — ${unread.length} notification${unread.length > 1 ? 's' : ''}`,
+        `You have ${unread.length} unread notification${unread.length > 1 ? 's' : ''} from the last 24 hours:\n\n${lines}`).catch(() => {});
+      sent++;
+    }
+    await setLastDigestRun();
+    opsEvent('notification', 'daily_digest_auto', 'info', { adminCount: admins.length, sent });
+  } catch { /* non-critical */ }
+}
+
+function startDigestCron() {
+  if (digestInterval) return;
+  digestInterval = setInterval(() => { runDigestIfDue().catch(() => {}); }, DIGEST_CHECK_INTERVAL);
+  // Run once on startup after a short delay
+  setTimeout(() => { runDigestIfDue().catch(() => {}); }, 10000);
+}
+function stopDigestCron() {
+  if (digestInterval) { clearInterval(digestInterval); digestInterval = null; }
+}
+if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+  startDigestCron();
+}
+
+export { sseClients, pushToClient, autoEscalateBreached, startSlaEscalation, stopSlaEscalation, startDigestCron, stopDigestCron };
 export default router;

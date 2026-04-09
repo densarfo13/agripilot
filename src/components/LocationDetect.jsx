@@ -70,7 +70,7 @@ const fullBtn = {
 
 const compactBtn = {
   ...fullBtn,
-  width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.78rem', minHeight: 38,
+  width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.78rem', minHeight: 44,
 };
 
 const labelStyle = { display: 'flex', alignItems: 'center', gap: '0.3rem' };

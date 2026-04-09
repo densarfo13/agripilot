@@ -248,7 +248,7 @@ export default function FarmerOverviewTab() {
                 </tbody>
               </table>
             ) : (
-              <EmptyState icon="📝" title="No recent activities" compact />
+              <EmptyState icon="📝" title="No recent activities" message="Activities will appear here once the farmer logs updates." compact />
             )}
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function FarmerOverviewTab() {
                 </table>
               </div>
             ) : (
-              <EmptyState icon="📄" title="No applications yet" compact />
+              <EmptyState icon="📄" title="No applications yet" message="Create a credit application to start the review process." compact />
             )}
           </div>
         </div>

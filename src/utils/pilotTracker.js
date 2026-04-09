@@ -5,6 +5,11 @@
  * Events are stored in localStorage ring buffer and can be retrieved
  * via getPilotMetrics() for export or dashboard display.
  *
+ * LIMITATION: Data stays on the farmer's device only. Admins cannot see
+ * these events. For admin-visible telemetry, server-side opsEvent() is
+ * emitted for key actions (season_created, update_submitted, etc.) which
+ * flows through the eventStore and Railway log drain.
+ *
  * Tracked events:
  *   - invite_opened          — farmer opened accept-invite page
  *   - onboarding_started     — farmer entered onboarding wizard

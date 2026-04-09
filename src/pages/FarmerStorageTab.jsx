@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 import { tStorageMethod, tStorageCondition } from '../utils/i18n.js';
@@ -27,6 +27,7 @@ export default function FarmerStorageTab() {
     storageCondition: 'good', readyToSell: false, notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const submitGuardRef = useRef(false);
   const [error, setError] = useState('');
   const [selectedCrop, setSelectedCrop] = useState(null);
 
@@ -49,7 +50,9 @@ export default function FarmerStorageTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setError('');
+    submitGuardRef.current = true;
     setSubmitting(true);
     try {
       await api.post(`/post-harvest/storage/farmer/${farmerId}`, {
@@ -63,6 +66,7 @@ export default function FarmerStorageTab() {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update storage status');
     } finally {
+      submitGuardRef.current = false;
       setSubmitting(false);
     }
   };

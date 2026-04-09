@@ -98,6 +98,7 @@ export async function getImpactDashboard({ organizationId, filters = {} }) {
   // ─── Build aggregations ─────────────────────────────
   const now = new Date();
   const thirtyDaysAgo = new Date(now - 30 * 24 * 3600 * 1000);
+  const staleCutoff = new Date(now - 14 * 24 * 3600 * 1000); // Aligned with pilotMetrics STALE_DAYS
 
   const summary = {
     totalFarmers: 0,
@@ -164,7 +165,10 @@ export async function getImpactDashboard({ organizationId, filters = {} }) {
     // ── Needs Attention classification ──
     const hasSeasons = farmer.farmSeasons.length > 0;
     const hasAnyUpdate = farmer.farmSeasons.some(s => s.progressEntries.length > 0);
-    const isStale = hasActiveSeason && !hasRecentActivity;
+    const hasRecentActivityForStale = farmer.farmSeasons.some(s =>
+      s.lastActivityDate && new Date(s.lastActivityDate) > staleCutoff
+    );
+    const isStale = hasActiveSeason && !hasRecentActivityForStale;
     const needsFlag = (hasSeasons && !hasAnyUpdate) || (hasSeasons && !hasValidation) || isStale;
 
     if (needsFlag) {

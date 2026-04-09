@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
@@ -12,6 +12,7 @@ import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel } from '../utils/crops.js';
 import { UNIT_OPTIONS, computeLandSizeFields, formatLandSize } from '../utils/landSize.js';
+import { useDraft } from '../utils/useDraft.js';
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
@@ -37,17 +38,20 @@ function computeQuickFilterCounts(allFarmers, currentUserId) {
 }
 
 export default function FarmersPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [farmers, setFarmers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [quickFilter, setQuickFilter] = useState(''); // '', 'no_officer', 'invite_pending', 'no_apps'
+  const [quickFilter, setQuickFilter] = useState(searchParams.get('filter') || ''); // '', 'no_officer', 'invite_pending', 'no_apps', 'needs_attention'
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [quickCounts, setQuickCounts] = useState({ noOfficer: 0, invitePending: 0, noApps: 0 });
+  const [batchResending, setBatchResending] = useState(false);
+  const [batchResult, setBatchResult] = useState(null); // { refreshed, skipped }
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const { selectedOrgId } = useOrgStore();
@@ -220,6 +224,42 @@ export default function FarmersPage() {
                 style={{ padding: '0.2rem 0.5rem', borderRadius: 12, fontSize: '0.72rem', cursor: 'pointer', border: '1px solid #374151', background: '#1E293B', color: '#A1A1AA' }}
               >Clear</button>
             )}
+          </div>
+        )}
+
+        {/* Batch resend — visible when invite_pending filter is active */}
+        {quickFilter === 'invite_pending' && displayFarmers.length > 0 && canCreate && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem',
+            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+            borderRadius: 8, padding: '0.6rem 1rem',
+          }}>
+            <span style={{ fontSize: '0.82rem', color: '#F59E0B', flex: 1 }}>
+              {displayFarmers.length} farmer{displayFarmers.length !== 1 ? 's' : ''} with pending invites
+            </span>
+            {batchResult && (
+              <span style={{ fontSize: '0.78rem', color: '#22C55E' }}>
+                {batchResult.refreshed} refreshed{batchResult.skipped > 0 ? `, ${batchResult.skipped} rate-limited` : ''}
+              </span>
+            )}
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={batchResending}
+              onClick={async () => {
+                setBatchResending(true);
+                setBatchResult(null);
+                try {
+                  const ids = displayFarmers.map(f => f.id);
+                  const r = await api.post('/farmers/batch-resend-invites', { farmerIds: ids });
+                  setBatchResult(r.data);
+                  load(); // refresh list
+                } catch { setBatchResult({ refreshed: 0, skipped: 0, error: true }); }
+                setBatchResending(false);
+              }}
+              style={{ color: '#F59E0B', borderColor: '#F59E0B', whiteSpace: 'nowrap' }}
+            >
+              {batchResending ? 'Resending...' : 'Resend All Invites'}
+            </button>
           </div>
         )}
 
@@ -410,7 +450,7 @@ function StepIndicator({ step }) {
 
 function CreateFarmerModal({ onClose, onCreated }) {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
+  const CREATE_FARMER_INITIAL = {
     fullName: '', phone: '', region: '', district: '', village: '',
     countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE', yearsExperience: '',
     nationalId: '', preferredLanguage: 'en',
@@ -418,7 +458,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
     channel: 'link',           // 'link' | 'email' | 'phone'
     contactEmail: '',          // for email channel delivery (not the future login email)
     email: '', password: '',
-  });
+  };
+  const { state: form, setState: setForm, clearDraft: clearCreateDraft, draftRestored: createDraftRestored } = useDraft('create-farmer', CREATE_FARMER_INITIAL);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(null);
@@ -463,6 +504,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
       };
       const res = await api.post('/farmers', { ...payload, confirmDuplicate: duplicateWarning ? true : undefined });
       setDuplicateWarning(null);
+      clearCreateDraft();
       setSuccess({
         farmerName: form.fullName,
         credentialsCreated: res.data.credentialsCreated,
@@ -506,6 +548,9 @@ function CreateFarmerModal({ onClose, onCreated }) {
                   : 'Invite Link Generated'}
               </strong>
               {success.deliveryNote && <p style={{ margin: '0.5rem 0 0' }}>{success.deliveryNote}</p>}
+              {!delivered && !success.credentialsCreated && inviteUrl && (
+                <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>⚠ You must copy and share this link manually with the farmer.</p>
+              )}
             </div>
             {inviteUrl && (
               <InviteLinkBox url={inviteUrl} label="Share this link with the farmer to activate their account:" expiresAt={success.inviteExpiresAt} />
@@ -525,6 +570,11 @@ function CreateFarmerModal({ onClose, onCreated }) {
         <div className="modal-header">New Farmer <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
         <div className="modal-body">
           <StepIndicator step={step} />
+          {createDraftRestored && !success && (
+            <div className="alert-inline alert-inline-info" style={{ marginBottom: '0.75rem', fontSize: '0.82rem' }}>
+              Draft restored from your previous session. <button type="button" className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem', fontSize: '0.75rem' }} onClick={() => { clearCreateDraft(); setForm(CREATE_FARMER_INITIAL); setStep(1); }}>Discard draft</button>
+            </div>
+          )}
           {error && !duplicateWarning && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
 
           {duplicateWarning && (
@@ -802,11 +852,12 @@ function CreateFarmerModal({ onClose, onCreated }) {
 }
 
 function InviteFarmerModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({
+  const INVITE_FARMER_INITIAL = {
     fullName: '', phone: '', email: '', password: '', region: '', district: '', village: '',
     countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE', preferredLanguage: 'en',
     channel: 'link', contactEmail: '',
-  });
+  };
+  const { state: form, setState: setForm, clearDraft: clearInviteDraft, draftRestored: inviteDraftRestored } = useDraft('invite-farmer', INVITE_FARMER_INITIAL);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
@@ -844,6 +895,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
       }
       const res = await api.post('/farmers/invite', payload);
       setInviteDupWarning(null);
+      clearInviteDraft();
       setSuccess({
         credentialsCreated: res.data.credentialsCreated,
         deliveryNote: res.data.deliveryNote,
@@ -886,6 +938,9 @@ function InviteFarmerModal({ onClose, onCreated }) {
                   : 'No Login Account'}
               </strong>
               <p style={{ margin: '0.5rem 0 0' }}>{success.deliveryNote}</p>
+              {!delivered && !success.credentialsCreated && inviteUrl && (
+                <p style={{ margin: '0.5rem 0 0', fontWeight: 600, color: '#F59E0B' }}>⚠ You must copy and share this link manually with the farmer.</p>
+              )}
             </div>
             {inviteUrl && (
               <InviteLinkBox url={inviteUrl} label="Share this link with the farmer to complete registration:" expiresAt={success.inviteExpiresAt} />
@@ -905,6 +960,11 @@ function InviteFarmerModal({ onClose, onCreated }) {
         <div className="modal-header">Invite Farmer <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
+            {inviteDraftRestored && !success && (
+              <div className="alert-inline alert-inline-info" style={{ marginBottom: '0.75rem', fontSize: '0.82rem' }}>
+                Draft restored from your previous session. <button type="button" className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem', fontSize: '0.75rem' }} onClick={() => { clearInviteDraft(); setForm(INVITE_FARMER_INITIAL); }}>Discard draft</button>
+              </div>
+            )}
             {error && !inviteDupWarning && <div className="alert alert-danger">{error}</div>}
             {inviteDupWarning && (
               <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
