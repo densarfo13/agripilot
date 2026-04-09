@@ -32,6 +32,7 @@ model Organization {
   farmers              Farmer[]
   approvalRequests     ApprovalRequest[]
   pilotChecklistItems  PilotChecklistItem[]
+  issues               Issue[]
 
   @@map("organizations")
 }
@@ -248,6 +249,8 @@ model User {
   referralsReceived        Referral[] @relation("ReferralReceiver")
   // Analytics
   analyticsEvents          AnalyticsEvent[]
+  // Issues
+  issues                   Issue[]
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1333,4 +1336,42 @@ model AnalyticsEvent {
   @@index([userId], map: "idx_analytics_user")
   @@index([createdAt], map: "idx_analytics_created")
   @@map("analytics_events")
+}
+
+// ─── Issue Escalation ─────────────────────────────────
+
+enum IssueType {
+  BUG
+  DATA_ISSUE
+  ACCESS_ISSUE
+  FEATURE_REQUEST
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Issue {
+  id          String      @id @default(uuid())
+  orgId       String?     @map("org_id")
+  userId      String      @map("user_id")
+  issueType   IssueType   @map("issue_type")
+  description String
+  status      IssueStatus @default(OPEN)
+  pageRoute   String?     @map("page_route")
+  adminNote   String?     @map("admin_note")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [orgId], references: [id])
+
+  @@index([userId], map: "idx_issues_user")
+  @@index([orgId], map: "idx_issues_org")
+  @@index([status], map: "idx_issues_status")
+  @@index([issueType], map: "idx_issues_type")
+  @@index([createdAt], map: "idx_issues_created")
+  @@map("issues")
 }

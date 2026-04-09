@@ -59,6 +59,7 @@ import financeScoreRoutes from './modules/financeScore/routes.js';
 import referralRoutes from './modules/referral/routes.js';
 import analyticsRoutes from './modules/analytics/routes.js';
 import impactRoutes from './modules/impact/routes.js';
+import issueRoutes from './modules/issues/routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -324,6 +325,7 @@ app.use('/api/trust', trustRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/issues', issueRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/auto-notifications', autoNotificationRoutes);
 app.use('/api/performance', performanceRoutes);

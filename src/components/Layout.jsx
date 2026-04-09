@@ -5,6 +5,7 @@ import { useOrgStore } from '../store/orgStore.js';
 import api from '../api/client.js';
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
 import FarrowayLogo from './FarrowayLogo.jsx';
+import ReportIssueButton from './ReportIssueButton.jsx';
 
 const NAV = [
   { section: 'Overview', items: [
@@ -31,6 +32,7 @@ const NAV = [
     { to: '/admin/security', label: 'Security Requests', icon: 'S', roles: ADMIN_ROLES },
     { to: '/admin/notifications', label: 'Auto Notifications', icon: 'N', roles: ADMIN_ROLES },
     { to: '/admin/pilot-qa', label: 'Pilot QA', icon: 'Q', roles: ADMIN_ROLES },
+    { to: '/admin/issues', label: 'Issues', icon: '!', roles: ADMIN_ROLES },
   ] },
 ];
 
@@ -229,6 +231,7 @@ export default function Layout() {
       </aside>
       <main className="main-content" onClick={() => sidebarOpen && setSidebarOpen(false)}>
         <Outlet />
+        <ReportIssueButton />
       </main>
     </div>
   );
