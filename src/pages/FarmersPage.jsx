@@ -11,6 +11,7 @@ import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel } from '../utils/crops.js';
+import { UNIT_OPTIONS, computeLandSizeFields, formatLandSize } from '../utils/landSize.js';
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
@@ -257,7 +258,7 @@ export default function FarmersPage() {
                         <td>{!f.selfRegistered ? <InviteBadge value={f.inviteStatus} /> : <span className="text-sm text-muted">—</span>}</td>
                         {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
                         <td>{f.primaryCrop ? getCropLabel(f.primaryCrop) : '-'}</td>
-                        <td>{f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
+                        <td>{f.landSizeValue ? formatLandSize(f.landSizeValue, f.landSizeUnit) : f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>{f._count?.applications || 0}</td>
                         <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                           {f.inviteStatus === 'LINK_GENERATED' && <RowCopyLinkButton farmerId={f.id} />}
@@ -411,7 +412,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     fullName: '', phone: '', region: '', district: '', village: '',
-    countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', yearsExperience: '',
+    countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE', yearsExperience: '',
     nationalId: '', preferredLanguage: 'en',
     accessMode: 'invite_link', // 'record_only' | 'invite_link' | 'create_now'
     channel: 'link',           // 'link' | 'email' | 'phone'
@@ -439,6 +440,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
     setSaving(true);
     setError('');
     try {
+      const ls = form.farmSizeAcres ? computeLandSizeFields(form.farmSizeAcres, form.landSizeUnit) : {};
       const payload = {
         fullName: form.fullName,
         phone: form.phone,
@@ -449,6 +451,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
         nationalId: form.nationalId || undefined,
         primaryCrop: form.primaryCrop || undefined,
         farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : undefined,
+        landSizeValue: ls.landSizeValue ?? undefined,
+        landSizeUnit: ls.landSizeUnit ?? undefined,
         yearsExperience: form.yearsExperience ? parseInt(form.yearsExperience) : undefined,
         preferredLanguage: form.preferredLanguage,
         email: form.accessMode === 'create_now' ? form.email : undefined,
@@ -597,8 +601,13 @@ function CreateFarmerModal({ onClose, onCreated }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Farm Size ({form.countryCode === 'TZ' ? 'ha' : 'acres'})</label>
-                  <input className="form-input" type="number" step="0.1" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
+                  <label className="form-label">Farm Size</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input className="form-input" style={{ flex: 1 }} type="number" step="0.1" min="0" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
+                    <select className="form-input" style={{ width: 'auto', minWidth: '7rem' }} value={form.landSizeUnit} onChange={set('landSizeUnit')}>
+                      {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="form-group">
@@ -736,7 +745,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
                   {[['Name', form.fullName], ['Phone', form.phone], ['Region', form.region], ['Country', form.countryCode],
                     form.district && ['District', form.district], form.village && ['Village', form.village],
                     form.nationalId && ['National ID', form.nationalId], form.primaryCrop && ['Crop', getCropLabel(form.primaryCrop)],
-                    form.farmSizeAcres && ['Farm Size', `${form.farmSizeAcres} ${form.countryCode === 'TZ' ? 'ha' : 'ac'}`],
+                    form.farmSizeAcres && ['Farm Size', formatLandSize(form.farmSizeAcres, form.landSizeUnit)],
                     form.yearsExperience && ['Experience', `${form.yearsExperience} yrs`],
                   ].filter(Boolean).map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', gap: '0.35rem' }}>
@@ -795,7 +804,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
 function InviteFarmerModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
     fullName: '', phone: '', email: '', password: '', region: '', district: '', village: '',
-    countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', preferredLanguage: 'en',
+    countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE', preferredLanguage: 'en',
     channel: 'link', contactEmail: '',
   });
   const [error, setError] = useState('');
@@ -812,6 +821,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
     setSaving(true);
     setError('');
     try {
+      const lsInv = form.farmSizeAcres ? computeLandSizeFields(form.farmSizeAcres, form.landSizeUnit) : {};
       const payload = {
         fullName: form.fullName,
         phone: form.phone,
@@ -821,6 +831,8 @@ function InviteFarmerModal({ onClose, onCreated }) {
         countryCode: form.countryCode,
         primaryCrop: form.primaryCrop || undefined,
         farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : undefined,
+        landSizeValue: lsInv.landSizeValue ?? undefined,
+        landSizeUnit: lsInv.landSizeUnit ?? undefined,
         preferredLanguage: form.preferredLanguage,
         channel: !createAccount ? form.channel : undefined,
         contactEmail: !createAccount && form.channel === 'email' ? form.contactEmail : undefined,
@@ -965,8 +977,13 @@ function InviteFarmerModal({ onClose, onCreated }) {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Farm Size ({form.countryCode === 'TZ' ? 'hectares' : 'acres'})</label>
-                <input className="form-input" type="number" step="0.1" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
+                <label className="form-label">Farm Size</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input className="form-input" style={{ flex: 1 }} type="number" step="0.1" min="0" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
+                  <select className="form-input" style={{ width: 'auto', minWidth: '7rem' }} value={form.landSizeUnit} onChange={set('landSizeUnit')}>
+                    {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
             <div className="form-group">

@@ -137,6 +137,9 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
       if (form.farmSizeAcres && (isNaN(Number(form.farmSizeAcres)) || Number(form.farmSizeAcres) < 0)) {
         errs.farmSizeAcres = 'Enter a valid farm size.';
       }
+      if (form.farmSizeAcres && !['ACRE', 'HECTARE', 'SQUARE_METER'].includes(form.landSizeUnit)) {
+        errs.farmSizeAcres = 'Please select a valid unit.';
+      }
     }
     if (currentStep === 'crop') {
       if (!form.crop) errs.crop = 'Please select a crop.';

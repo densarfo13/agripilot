@@ -5,6 +5,7 @@ import path from 'path';
 import prisma from '../../config/database.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { config } from '../../config/index.js';
+import { computeLandSizeFields } from '../../utils/landSize.js';
 
 // ─── Computed status helpers ──────────────────────────────
 // These derive clean enum-style strings from raw DB fields so that
@@ -151,6 +152,7 @@ export async function createFarmer(data, userId, organizationId) {
         },
       });
 
+      const ls = computeLandSizeFields(data.landSizeValue ?? data.farmSizeAcres, data.landSizeUnit || 'ACRE');
       return tx.farmer.create({
         data: {
           fullName: data.fullName,
@@ -162,7 +164,10 @@ export async function createFarmer(data, userId, organizationId) {
           district: data.district || null,
           village: data.village || null,
           primaryCrop: data.primaryCrop || null,
-          farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null,
+          farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : (ls.landSizeUnit === 'ACRE' ? ls.landSizeValue : null),
+          landSizeValue: ls.landSizeValue,
+          landSizeUnit: ls.landSizeUnit,
+          landSizeHectares: ls.landSizeHectares,
           yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience) : null,
           deviceId: data.deviceId || null,
           countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
@@ -189,6 +194,7 @@ export async function createFarmer(data, userId, organizationId) {
   // No credentials — create farmer with an invite token so staff can share a sign-up link
   const inviteToken = randomUUID();
   const inviteExpiresAt = makeInviteExpiry();
+  const ls2 = computeLandSizeFields(data.landSizeValue ?? data.farmSizeAcres, data.landSizeUnit || 'ACRE');
   const farmer = await prisma.farmer.create({
     data: {
       fullName: data.fullName,
@@ -200,7 +206,10 @@ export async function createFarmer(data, userId, organizationId) {
       district: data.district || null,
       village: data.village || null,
       primaryCrop: data.primaryCrop || null,
-      farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null,
+      farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : (ls2.landSizeUnit === 'ACRE' ? ls2.landSizeValue : null),
+      landSizeValue: ls2.landSizeValue,
+      landSizeUnit: ls2.landSizeUnit,
+      landSizeHectares: ls2.landSizeHectares,
       yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience) : null,
       deviceId: data.deviceId || null,
       countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
@@ -424,6 +433,15 @@ export async function updateFarmer(id, data) {
     }
   }
 
+  // Compute normalized land size if relevant fields changed
+  const lsUpdate = {};
+  if (data.landSizeValue !== undefined || data.landSizeUnit !== undefined || data.farmSizeAcres !== undefined) {
+    const ls = computeLandSizeFields(data.landSizeValue ?? data.farmSizeAcres, data.landSizeUnit || 'ACRE');
+    lsUpdate.landSizeValue = ls.landSizeValue;
+    lsUpdate.landSizeUnit = ls.landSizeUnit;
+    lsUpdate.landSizeHectares = ls.landSizeHectares;
+  }
+
   return prisma.farmer.update({
     where: { id },
     data: {
@@ -435,6 +453,7 @@ export async function updateFarmer(id, data) {
       ...(data.village !== undefined && { village: data.village }),
       ...(data.primaryCrop !== undefined && { primaryCrop: data.primaryCrop }),
       ...(data.farmSizeAcres !== undefined && { farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null }),
+      ...lsUpdate,
       ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience, 10) : null }),
       ...(data.gender !== undefined && { gender: data.gender || null }),
       ...(data.dateOfBirth !== undefined && { dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null }),

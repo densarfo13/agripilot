@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
+import { formatLandSize } from '../utils/landSize.js';
 
 const CLASSIFICATION_COLORS = {
   on_track: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E', label: 'On Track' },
@@ -59,7 +60,7 @@ export default function InvestorIntelligencePage() {
           <div className="card-body">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem 1.5rem', fontSize: '0.875rem' }}>
               <DetailRow label="Primary Crop" value={farmer.primaryCrop || '-'} />
-              <DetailRow label="Farm Size" value={farmer.farmSizeAcres ? `${farmer.farmSizeAcres} acres` : '-'} />
+              <DetailRow label="Farm Size" value={farmer.landSizeValue ? formatLandSize(farmer.landSizeValue, farmer.landSizeUnit) : farmer.farmSizeAcres ? `${farmer.farmSizeAcres} acres` : '-'} />
               <DetailRow label="Experience" value={farmer.yearsExperience ? `${farmer.yearsExperience} years` : '-'} />
               <DetailRow label="Region" value={`${farmer.region}${farmer.district ? `, ${farmer.district}` : ''}`} />
               <DetailRow label="Country" value={farmer.country} />
@@ -166,7 +167,7 @@ export default function InvestorIntelligencePage() {
                     <tr key={i}>
                       <td>{y.cropType}</td>
                       <td>{new Date(y.plantingDate).toLocaleDateString()}</td>
-                      <td>{y.farmSizeAcres} acres</td>
+                      <td>{y.landSizeValue ? formatLandSize(y.landSizeValue, y.landSizeUnit) : `${y.farmSizeAcres} acres`}</td>
                       <td style={{ fontWeight: 600 }}>{y.yieldPerAcre}</td>
                       <td>{y.totalHarvestKg.toLocaleString()}</td>
                     </tr>
@@ -194,7 +195,7 @@ export default function InvestorIntelligencePage() {
                       <tr key={i}>
                         <td>{s.cropType}</td>
                         <td>{new Date(s.plantingDate).toLocaleDateString()}</td>
-                        <td>{s.farmSizeAcres}</td>
+                        <td>{s.landSizeValue ? formatLandSize(s.landSizeValue, s.landSizeUnit) : s.farmSizeAcres}</td>
                         <td>
                           <span style={{
                             padding: '0.2rem 0.5rem', borderRadius: 10, fontSize: '0.75rem', fontWeight: 600,

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import api, { formatApiError } from '../api/client.js';
 import { useDraft } from '../utils/useDraft.js';
 import CropSelect from '../components/CropSelect.jsx';
+import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 
 export default function NewApplicationPage() {
   const [searchParams] = useSearchParams();
@@ -12,6 +13,7 @@ export default function NewApplicationPage() {
     farmerId: farmerIdParam,
     cropType: '',
     farmSizeAcres: '',
+    landSizeUnit: 'ACRE',
     requestedAmount: '',
     purpose: '',
     season: '',
@@ -52,9 +54,12 @@ export default function NewApplicationPage() {
     if (isNaN(acres) || acres <= 0) { setError('Farm size must be a positive number'); setSaving(false); return; }
     if (isNaN(amount) || amount <= 0) { setError('Requested amount must be a positive number'); setSaving(false); return; }
     try {
+      const ls = computeLandSizeFields(acres, form.landSizeUnit);
       const res = await api.post('/applications', {
         ...form,
         farmSizeAcres: acres,
+        landSizeValue: ls.landSizeValue,
+        landSizeUnit: ls.landSizeUnit,
         requestedAmount: amount,
       });
       clearDraft();
@@ -101,8 +106,13 @@ export default function NewApplicationPage() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Farm Size ({areaUnit}) *</label>
-                  <input className="form-input" type="number" step="0.1" required value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
+                  <label className="form-label">Farm Size *</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input className="form-input" style={{ flex: 1 }} type="number" step="0.1" min="0" required value={form.farmSizeAcres} onChange={set('farmSizeAcres')} />
+                    <select className="form-input" style={{ width: 'auto', minWidth: '7rem' }} value={form.landSizeUnit} onChange={set('landSizeUnit')}>
+                      {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="form-row">
