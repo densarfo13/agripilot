@@ -45,6 +45,7 @@ const PilotQAPage = lazy(() => import('./pages/PilotQAPage.jsx'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const AutoNotificationsPage = lazy(() => import('./pages/AutoNotificationsPage.jsx'));
+const ImpactDashboardPage = lazy(() => import('./pages/ImpactDashboardPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 
@@ -120,6 +121,7 @@ export default function App() {
             <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />
             <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="pilot-metrics" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer', 'field_officer']}><PilotMetricsPage /></RoleRoute>} />
+            <Route path="impact" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer']}><ImpactDashboardPage /></RoleRoute>} />
             <Route path="account" element={<AccountPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

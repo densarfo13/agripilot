@@ -91,6 +91,7 @@ table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 thead th { text-align: left; padding: 0.625rem 0.75rem; font-weight: 600; color: var(--subtext); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid var(--border); background: var(--surface); white-space: nowrap; }
 tbody td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text); }
 tbody tr:hover { background: var(--card-hover); }
+.hover-row:hover { background: var(--card-hover); }
 
 /* ── Badges ─────────────────────────────────────── */
 .badge { display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }

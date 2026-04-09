@@ -21,6 +21,7 @@ const NAV = [
     { to: '/portfolio', label: 'Portfolio', icon: 'P' },
     { to: '/reports', label: 'Reports', icon: 'R' },
     { to: '/pilot-metrics', label: 'Pilot Metrics', icon: 'M', roles: [...ADMIN_ROLES, 'investor_viewer', 'field_officer'] },
+    { to: '/impact', label: 'Impact Dashboard', icon: 'I', roles: [...ADMIN_ROLES, 'investor_viewer'] },
   ]},
   { section: 'Admin', roles: ADMIN_ROLES, items: [
     { to: '/admin/control', label: 'Control Center', icon: 'C' },
@@ -101,6 +102,34 @@ export default function Layout() {
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super_admin';
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [queueCounts, setQueueCounts] = useState({});
+
+  // Fetch sidebar queue counts for staff users
+  useEffect(() => {
+    if (!user?.role || user.role === 'farmer' || user.role === 'investor_viewer') return;
+    const isStaff = STAFF_ROLES.includes(user.role);
+    if (!isStaff) return;
+
+    const fetchCounts = () => {
+      Promise.all([
+        api.get('/applications/stats').catch(() => null),
+        ADMIN_ROLES.includes(user.role) ? api.get('/users/pending-registrations').catch(() => null) : null,
+      ]).then(([statsRes, pendingRes]) => {
+        const counts = {};
+        if (statsRes?.data?.statusCounts) {
+          const byStatus = {};
+          statsRes.data.statusCounts.forEach(s => { byStatus[s.status] = s._count; });
+          counts.verification = (byStatus.submitted || 0) + (byStatus.under_review || 0);
+          counts.fraud = byStatus.fraud_hold || 0;
+        }
+        if (pendingRes?.data) counts.registrations = pendingRes.data.length || 0;
+        setQueueCounts(counts);
+      });
+    };
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 120_000); // refresh every 2 min
+    return () => clearInterval(interval);
+  }, [user?.role]);
 
   const handleLogout = () => {
     useOrgStore.getState().clearSelectedOrg();
@@ -153,17 +182,36 @@ export default function Layout() {
             return (
               <div key={section.section}>
                 <div className="sidebar-section">{section.section}</div>
-                {visibleItems.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/'}
-                    className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-                    onClick={handleNavClick}
-                  >
-                    {item.label}
-                  </NavLink>
-                ))}
+                {visibleItems.map((item) => {
+                  // Determine badge count for queue-type nav items
+                  let badgeCount = 0;
+                  if (item.to === '/verification-queue') badgeCount = queueCounts.verification || 0;
+                  else if (item.to === '/fraud-queue') badgeCount = queueCounts.fraud || 0;
+                  else if (item.to === '/farmer-registrations') badgeCount = queueCounts.registrations || 0;
+
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === '/'}
+                      className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      {badgeCount > 0 && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          minWidth: 20, height: 20, padding: '0 5px',
+                          borderRadius: 10, fontSize: '0.68rem', fontWeight: 700,
+                          background: item.to === '/fraud-queue' ? '#EF4444' : '#F59E0B',
+                          color: '#fff', lineHeight: 1, flexShrink: 0,
+                        }}>
+                          {badgeCount > 99 ? '99+' : badgeCount}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </div>
             );
           })}

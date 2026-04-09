@@ -1,7 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import prisma from '../../config/database.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
+import { config } from '../../config/index.js';
 
 // ─── Computed status helpers ──────────────────────────────
 // These derive clean enum-style strings from raw DB fields so that
@@ -84,6 +87,8 @@ export async function createFarmer(data, userId, organizationId) {
           fullName: data.fullName,
           phone,
           nationalId: data.nationalId || null,
+          gender: data.gender || null,
+          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
           region: data.region,
           district: data.district || null,
           village: data.village || null,
@@ -115,6 +120,8 @@ export async function createFarmer(data, userId, organizationId) {
       fullName: data.fullName,
       phone,
       nationalId: data.nationalId || null,
+      gender: data.gender || null,
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
       region: data.region,
       district: data.district || null,
       village: data.village || null,
@@ -350,6 +357,8 @@ export async function updateFarmer(id, data) {
       ...(data.primaryCrop !== undefined && { primaryCrop: data.primaryCrop }),
       ...(data.farmSizeAcres !== undefined && { farmSizeAcres: data.farmSizeAcres ? parseFloat(data.farmSizeAcres) : null }),
       ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience, 10) : null }),
+      ...(data.gender !== undefined && { gender: data.gender || null }),
+      ...(data.dateOfBirth !== undefined && { dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null }),
     },
   });
 }
@@ -364,4 +373,19 @@ export async function deleteFarmer(id) {
     throw err;
   }
   return prisma.farmer.delete({ where: { id } });
+}
+
+// ─── Profile Image Helpers ──────────────────────────────
+
+/**
+ * Delete an old profile image file from disk (best-effort).
+ * Only deletes local /uploads/ paths — ignores external URLs.
+ */
+export function deleteOldProfileImage(imageUrl) {
+  if (!imageUrl || !imageUrl.startsWith('/uploads/')) return;
+  const filename = path.basename(imageUrl);
+  // Safety: only delete files with profile- prefix (our naming convention)
+  if (!filename.startsWith('profile-')) return;
+  const filePath = path.join(path.resolve(config.upload.dir), filename);
+  try { fs.unlinkSync(filePath); } catch { /* file may already be gone */ }
 }

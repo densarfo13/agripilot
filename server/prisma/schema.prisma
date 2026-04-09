@@ -296,6 +296,8 @@ model Farmer {
   fullName             String              @map("full_name")
   phone                String
   nationalId           String?             @map("national_id")
+  gender               String?             // male, female, other, prefer_not_to_say
+  dateOfBirth          DateTime?           @map("date_of_birth")
   region               String
   district             String?
   village              String?
@@ -327,6 +329,9 @@ model Farmer {
   stageSource          String?             @map("stage_source")   // 'activity', 'manual', 'seeded'
   stageConfidence      String?             @map("stage_confidence") // 'high', 'medium', 'low'
   stageCropType        String?             @map("stage_crop_type")
+  profileImageUrl      String?             @map("profile_image_url")
+  profileImageUploadedAt DateTime?         @map("profile_image_uploaded_at")
+  profileImageUpdatedBy String?            @map("profile_image_updated_by")
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
@@ -351,6 +356,8 @@ model Farmer {
   @@index([assignedOfficerId], map: "idx_farmers_officer")
   @@index([organizationId, assignedOfficerId], map: "idx_farmers_org_officer")
   @@index([organizationId, registrationStatus], map: "idx_farmers_org_reg_status")
+  @@index([gender], map: "idx_farmers_gender")
+  @@index([organizationId, gender], map: "idx_farmers_org_gender")
   @@map("farmers")
 }
 
@@ -1148,12 +1155,8 @@ model AutoNotification {
 
 // ─── Farm Profile (MVP persistence) ────────────────────
 
-enum FarmCrop {
-  maize
-  rice
-  cassava
-  wheat
-}
+// FarmCrop enum removed — crop field is now a plain String to support
+// the full A-Z crop list plus "other:CustomName" values.
 
 enum FarmStage {
   planting
@@ -1176,7 +1179,7 @@ model FarmProfile {
   locationName    String?   @map("location_name")
   latitude        Float?
   longitude       Float?
-  crop            FarmCrop
+  crop            String
   farmSizeAcres   Float?    @map("farm_size_acres")
   stage           FarmStage @default(planting)
   createdAt       DateTime  @default(now()) @map("created_at")
