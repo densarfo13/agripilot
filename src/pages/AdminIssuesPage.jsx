@@ -67,6 +67,11 @@ export default function AdminIssuesPage() {
   const [attachments, setAttachments] = useState({});
   const [showAttachments, setShowAttachments] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState(null);
+  const [showSlaConfig, setShowSlaConfig] = useState(false);
+  const [slaConfig, setSlaConfig] = useState(null);
+  const [slaEditing, setSlaEditing] = useState(null);
   const limit = 30;
 
   const load = () => {
@@ -216,6 +221,29 @@ export default function AdminIssuesPage() {
     if (!attachments[issueId]) loadAttachments(issueId);
   };
 
+  // ── Notification Preferences ──
+  const loadPrefs = () => {
+    api.get('/issues/notifications/preferences').then((res) => setNotifPrefs({ ...res.data.defaults, ...res.data.preferences })).catch(() => {});
+  };
+  const savePrefs = (key, field, value) => {
+    const updated = { ...notifPrefs, [key]: { ...notifPrefs[key], [field]: value } };
+    setNotifPrefs(updated);
+    api.patch('/issues/notifications/preferences', { preferences: updated }).catch(() => {});
+  };
+
+  // ── SLA Config ──
+  const loadSlaConfig = () => {
+    api.get('/issues/sla-config').then((res) => {
+      setSlaConfig(res.data);
+      setSlaEditing(res.data.orgConfig || res.data.defaults);
+    }).catch(() => {});
+  };
+  const saveSlaConfig = () => {
+    api.patch('/issues/sla-config', { config: slaEditing })
+      .then(() => { loadInsights(); setShowSlaConfig(false); })
+      .catch((err) => setActionError(err.response?.data?.error || 'Failed to save SLA config'));
+  };
+
   // ── SLA breach check ──
   const isBreached = (issue) => {
     if (issue.status === 'FIXED' || issue.status === 'VERIFIED') return false;
@@ -248,6 +276,10 @@ export default function AdminIssuesPage() {
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>Notifications</span>
                   {unreadCount > 0 && <button className="btn btn-outline btn-sm" style={{ fontSize: '0.68rem' }} onClick={markAllRead}>Mark all read</button>}
                 </div>
+                <div style={{ padding: '0.3rem 0.75rem', borderBottom: '1px solid #243041' }}>
+                  <button className="btn btn-outline btn-sm" style={{ fontSize: '0.65rem', width: '100%' }}
+                    onClick={() => { setShowNotifs(false); if (!notifPrefs) loadPrefs(); setShowPrefs(!showPrefs); }}>Notification Preferences</button>
+                </div>
                 {notifications.length === 0 ? (
                   <div style={{ padding: '1rem', textAlign: 'center', color: '#71717A', fontSize: '0.82rem' }}>No notifications</div>
                 ) : notifications.map((n) => (
@@ -260,10 +292,66 @@ export default function AdminIssuesPage() {
               </div>
             )}
           </div>
+          <button className="btn btn-outline btn-sm" onClick={() => { if (!slaConfig) loadSlaConfig(); setShowSlaConfig(!showSlaConfig); }}>SLA</button>
           <button className="btn btn-outline" onClick={() => { load(); loadInsights(); }}>Refresh</button>
         </div>
       </div>
       <div className="page-body">
+
+        {/* ── Notification Preferences ── */}
+        {showPrefs && notifPrefs && (
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Notification Preferences</span>
+              <button className="btn btn-outline btn-sm" style={{ fontSize: '0.7rem' }} onClick={() => setShowPrefs(false)}>Close</button>
+            </div>
+            <div className="card-body">
+              <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginBottom: '0.5rem' }}>Toggle in-app and email for each event type:</div>
+              {Object.entries(notifPrefs).map(([key, val]) => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.3rem 0', borderBottom: '1px solid #1E293B' }}>
+                  <span style={{ flex: 1, fontSize: '0.82rem', color: '#E5E7EB' }}>{key.replace(/_/g, ' ')}</span>
+                  <label style={{ fontSize: '0.75rem', color: '#A1A1AA', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                    <input type="checkbox" checked={val.inApp !== false} onChange={(e) => savePrefs(key, 'inApp', e.target.checked)} style={{ accentColor: '#22C55E' }} /> In-app
+                  </label>
+                  <label style={{ fontSize: '0.75rem', color: '#A1A1AA', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                    <input type="checkbox" checked={val.email === true} onChange={(e) => savePrefs(key, 'email', e.target.checked)} style={{ accentColor: '#38BDF8' }} /> Email
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── SLA Config ── */}
+        {showSlaConfig && slaEditing && (
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>SLA Thresholds (hours)</span>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <button className="btn btn-primary btn-sm" style={{ fontSize: '0.7rem' }} onClick={saveSlaConfig}>Save</button>
+                <button className="btn btn-outline btn-sm" style={{ fontSize: '0.7rem' }} onClick={() => setShowSlaConfig(false)}>Cancel</button>
+              </div>
+            </div>
+            <div className="card-body">
+              <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginBottom: '0.5rem' }}>
+                Set response and resolution time targets per priority level for your organization:
+              </div>
+              {['HIGH', 'MEDIUM', 'LOW'].map((p) => (
+                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0', borderBottom: '1px solid #1E293B' }}>
+                  <span style={{ width: 70, fontSize: '0.82rem', color: PRIORITY_DOT[p], fontWeight: 600 }}>{p}</span>
+                  <label style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>Response:
+                    <input type="number" min="1" value={slaEditing[p]?.response || ''} style={{ ...SEL, width: 60, marginLeft: 4, fontSize: '0.78rem', padding: '0.25rem 0.4rem' }}
+                      onChange={(e) => setSlaEditing((s) => ({ ...s, [p]: { ...s[p], response: Number(e.target.value) } }))} />h
+                  </label>
+                  <label style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>Resolve:
+                    <input type="number" min="1" value={slaEditing[p]?.resolve || ''} style={{ ...SEL, width: 60, marginLeft: 4, fontSize: '0.78rem', padding: '0.25rem 0.4rem' }}
+                      onChange={(e) => setSlaEditing((s) => ({ ...s, [p]: { ...s[p], resolve: Number(e.target.value) } }))} />h
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Insights Panel ── */}
         {showInsights && insights && (
@@ -572,11 +660,22 @@ export default function AdminIssuesPage() {
                                   {(attachments[issue.id] || []).length === 0 ? (
                                     <div style={{ fontSize: '0.78rem', color: '#71717A' }}>No attachments.</div>
                                   ) : (attachments[issue.id] || []).map((a) => (
-                                    <div key={a.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.78rem', padding: '0.25rem 0', borderBottom: '1px solid #1E293B' }}>
-                                      <a href={`/uploads/issues/${a.filename}`} target="_blank" rel="noopener noreferrer"
-                                        style={{ color: '#38BDF8', textDecoration: 'underline' }}>{a.originalName}</a>
-                                      <span style={{ color: '#71717A' }}>{(a.sizeBytes / 1024).toFixed(0)} KB</span>
-                                      <span style={{ color: '#71717A' }}>{a.user?.fullName}</span>
+                                    <div key={a.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.78rem', padding: '0.35rem 0', borderBottom: '1px solid #1E293B' }}>
+                                      {a.mimeType?.startsWith('image/') ? (
+                                        <a href={`/uploads/issues/${a.filename}`} target="_blank" rel="noopener noreferrer">
+                                          <img src={`/uploads/issues/${a.filename}`} alt={a.originalName}
+                                            style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, border: '1px solid #243041' }} />
+                                        </a>
+                                      ) : (
+                                        <span style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#243041', borderRadius: 4, fontSize: '0.65rem', color: '#A1A1AA' }}>
+                                          {a.mimeType?.includes('pdf') ? 'PDF' : 'FILE'}
+                                        </span>
+                                      )}
+                                      <div style={{ flex: 1 }}>
+                                        <a href={`/uploads/issues/${a.filename}`} target="_blank" rel="noopener noreferrer"
+                                          style={{ color: '#38BDF8', textDecoration: 'underline' }}>{a.originalName}</a>
+                                        <div style={{ fontSize: '0.68rem', color: '#71717A' }}>{(a.sizeBytes / 1024).toFixed(0)} KB · {a.user?.fullName}</div>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>

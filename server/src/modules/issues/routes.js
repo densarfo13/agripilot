@@ -27,6 +27,7 @@ import path from 'path';
 import fs from 'fs';
 import prisma from '../../config/database.js';
 import { opsEvent } from '../../utils/opsLogger.js';
+import { isEmailConfigured } from '../notifications/deliveryService.js';
 
 const VALID_TYPES = ['BUG', 'DATA_ISSUE', 'ACCESS_ISSUE', 'FEATURE_REQUEST'];
 const VALID_CATEGORIES = ['BLOCKER', 'FRICTION', 'TRUST', 'FEATURE'];
@@ -76,12 +77,57 @@ const issueUpload = multer({
   },
 });
 
-// Helper: create staff notification
+// Default notification preferences
+const DEFAULT_NOTIF_PREFS = {
+  issue_assigned: { inApp: true, email: true },
+  issue_status_changed: { inApp: true, email: true },
+  issue_comment: { inApp: true, email: false },
+  sla_breach: { inApp: true, email: true },
+};
+
+// Helper: create staff notification (respects user preferences, optionally sends email)
 async function notifyStaff(userId, type, title, message, metadata = {}) {
   if (!userId) return;
   try {
-    await prisma.staffNotification.create({ data: { userId, type, title, message, metadata } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, fullName: true, notifPreferences: true } });
+    if (!user) return;
+    const prefs = { ...DEFAULT_NOTIF_PREFS, ...(user.notifPreferences || {}) };
+    const typePref = prefs[type] || { inApp: true, email: false };
+
+    // In-app notification
+    if (typePref.inApp !== false) {
+      await prisma.staffNotification.create({ data: { userId, type, title, message, metadata } });
+    }
+
+    // Email notification (non-blocking)
+    if (typePref.email && user.email && isEmailConfigured()) {
+      sendIssueEmail(user.email, user.fullName, title, message).catch(() => {});
+    }
   } catch { /* non-critical */ }
+}
+
+// Helper: send issue notification email via SendGrid
+async function sendIssueEmail(toEmail, recipientName, subject, body) {
+  try {
+    const sgMail = (await import('@sendgrid/mail')).default;
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS;
+    const fromName = process.env.EMAIL_FROM_NAME || 'Farroway';
+    await sgMail.send({
+      to: toEmail,
+      from: { email: fromAddress, name: fromName },
+      subject: `[Issues] ${subject}`,
+      text: `Hello ${recipientName},\n\n${body}\n\nView your issues dashboard for details.`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h3 style="color:#1d4ed8">${subject}</h3>
+        <p>Hello <strong>${recipientName}</strong>,</p>
+        <p>${body}</p>
+        <p style="color:#6b7280;font-size:13px;margin-top:16px">View your issues dashboard for details.</p>
+      </div>`,
+    });
+  } catch (err) {
+    opsEvent('notification', 'issue_email_failed', 'warn', { toEmail, error: err?.message });
+  }
 }
 
 // Helper: check if user can access issue (reporter or admin)
@@ -205,6 +251,82 @@ router.patch('/notifications/read',
     res.json({ ok: true });
   }));
 
+// ─── GET /api/issues/notifications/preferences ──────────
+
+router.get('/notifications/preferences',
+  authorize('super_admin', 'institutional_admin', 'reviewer'),
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.user.sub }, select: { notifPreferences: true } });
+    res.json({ defaults: DEFAULT_NOTIF_PREFS, preferences: user?.notifPreferences || {} });
+  }));
+
+// ─── PATCH /api/issues/notifications/preferences ────────
+
+router.patch('/notifications/preferences',
+  authorize('super_admin', 'institutional_admin', 'reviewer'),
+  asyncHandler(async (req, res) => {
+    const { preferences } = req.body;
+    if (!preferences || typeof preferences !== 'object') {
+      return res.status(400).json({ error: 'preferences object required' });
+    }
+    // Validate shape: each key should have {inApp, email} booleans
+    const clean = {};
+    for (const [key, val] of Object.entries(preferences)) {
+      if (DEFAULT_NOTIF_PREFS[key] && typeof val === 'object') {
+        clean[key] = {
+          inApp: val.inApp !== false,
+          email: val.email === true,
+        };
+      }
+    }
+    await prisma.user.update({ where: { id: req.user.sub }, data: { notifPreferences: clean } });
+    res.json({ preferences: clean });
+  }));
+
+// ─── GET /api/issues/sla-config ─────────────────────────
+// Admin-only. Get org SLA config or global defaults.
+
+router.get('/sla-config',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    let orgConfig = null;
+    if (req.organizationId) {
+      const org = await prisma.organization.findUnique({ where: { id: req.organizationId }, select: { slaConfig: true } });
+      orgConfig = org?.slaConfig || null;
+    }
+    res.json({ defaults: SLA_THRESHOLDS, orgConfig });
+  }));
+
+// ─── PATCH /api/issues/sla-config ───────────────────────
+// Admin-only. Set org-level SLA overrides.
+
+router.patch('/sla-config',
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { config } = req.body;
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ error: 'config object required' });
+    }
+    // Validate: each priority key should have response and resolve hours
+    const clean = {};
+    for (const prio of VALID_PRIORITIES) {
+      if (config[prio] && typeof config[prio] === 'object') {
+        const r = Number(config[prio].response);
+        const v = Number(config[prio].resolve);
+        if (r > 0 && v > 0) clean[prio] = { response: r, resolve: v };
+      }
+    }
+    if (Object.keys(clean).length === 0) {
+      return res.status(400).json({ error: 'At least one valid priority SLA config required' });
+    }
+    if (!req.organizationId) {
+      return res.status(400).json({ error: 'Organization context required' });
+    }
+    await prisma.organization.update({ where: { id: req.organizationId }, data: { slaConfig: clean } });
+    opsEvent('workflow', 'sla_config_updated', 'info', { orgId: req.organizationId, config: clean, updatedBy: req.user.sub });
+    res.json({ orgConfig: clean });
+  }));
+
 // ─── GET /api/issues/insights ───────────────────────────
 // Admin-only. Returns category/priority/status distributions and top frequent issue types.
 
@@ -259,6 +381,15 @@ router.get('/insights',
         resolveTimeCount++;
       }
     }
+    // Load org SLA config if available
+    let effectiveThresholds = { ...SLA_THRESHOLDS };
+    if (req.organizationId) {
+      const org = await prisma.organization.findUnique({ where: { id: req.organizationId }, select: { slaConfig: true } });
+      if (org?.slaConfig && typeof org.slaConfig === 'object') {
+        effectiveThresholds = { ...SLA_THRESHOLDS, ...org.slaConfig };
+      }
+    }
+
     // SLA breach counts for open/in-progress issues
     const openIssues = await prisma.issue.findMany({
       where: { ...orgScope, status: { in: ['OPEN', 'IN_PROGRESS'] } },
@@ -267,7 +398,7 @@ router.get('/insights',
     let breachedResponse = 0, breachedResolve = 0;
     const now = Date.now();
     for (const oi of openIssues) {
-      const thresh = SLA_THRESHOLDS[oi.priority] || SLA_THRESHOLDS.MEDIUM;
+      const thresh = effectiveThresholds[oi.priority] || effectiveThresholds.MEDIUM;
       const ageHrs = (now - oi.createdAt.getTime()) / 3600000;
       if (!oi.firstResponseAt && ageHrs > thresh.response) breachedResponse++;
       if (ageHrs > thresh.resolve) breachedResolve++;
@@ -280,7 +411,7 @@ router.get('/insights',
       sampledResolved: resolveTimeCount,
       breachedResponse,
       breachedResolve,
-      thresholds: SLA_THRESHOLDS,
+      thresholds: effectiveThresholds,
     };
 
     res.json({

@@ -33,6 +33,7 @@ model Organization {
   approvalRequests     ApprovalRequest[]
   pilotChecklistItems  PilotChecklistItem[]
   issues               Issue[]
+  slaConfig            Json?            @map("sla_config")
 
   @@map("organizations")
 }
@@ -255,6 +256,7 @@ model User {
   issueComments            IssueComment[] @relation("IssueCommenter")
   issueAttachments         IssueAttachment[] @relation("IssueUploader")
   staffNotifications       StaffNotification[] @relation("StaffNotifications")
+  notifPreferences         Json?               @map("notif_preferences")
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")

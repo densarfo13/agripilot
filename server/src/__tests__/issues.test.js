@@ -596,6 +596,125 @@ describe('User-Facing Comments', () => {
   });
 });
 
+// ─── Email Notifications ────────────────────────────────
+
+describe('Email Notifications', () => {
+  it('backend imports delivery service', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("import { isEmailConfigured } from '../notifications/deliveryService.js'");
+  });
+
+  it('backend has sendIssueEmail helper', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('async function sendIssueEmail');
+    expect(c).toContain('sgMail.send');
+    expect(c).toContain('[Issues]');
+  });
+
+  it('notifyStaff checks user preferences before sending', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('notifPreferences');
+    expect(c).toContain('typePref.inApp');
+    expect(c).toContain('typePref.email');
+    expect(c).toContain('isEmailConfigured()');
+  });
+
+  it('has DEFAULT_NOTIF_PREFS config', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('DEFAULT_NOTIF_PREFS');
+    expect(c).toContain('issue_assigned');
+    expect(c).toContain('issue_status_changed');
+    expect(c).toContain('issue_comment');
+    expect(c).toContain('sla_breach');
+  });
+});
+
+// ─── Notification Preferences ───────────────────────────
+
+describe('Notification Preferences', () => {
+  it('schema has notifPreferences on User', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('notifPreferences');
+    expect(s).toContain('notif_preferences');
+  });
+
+  it('backend has GET /notifications/preferences endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/notifications/preferences'");
+    expect(c).toContain('DEFAULT_NOTIF_PREFS');
+  });
+
+  it('backend has PATCH /notifications/preferences endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.patch('/notifications/preferences'");
+    expect(c).toContain('notifPreferences: clean');
+  });
+
+  it('admin UI has preferences panel', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('showPrefs');
+    expect(ui).toContain('notifPrefs');
+    expect(ui).toContain('Notification Preferences');
+    expect(ui).toContain('savePrefs');
+    expect(ui).toContain('In-app');
+    expect(ui).toContain('Email');
+  });
+});
+
+// ─── SLA Config Per Org ─────────────────────────────────
+
+describe('SLA Config Per Org', () => {
+  it('schema has slaConfig on Organization', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('slaConfig');
+    expect(s).toContain('sla_config');
+  });
+
+  it('backend has GET /sla-config endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/sla-config'");
+    expect(c).toContain('orgConfig');
+  });
+
+  it('backend has PATCH /sla-config endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.patch('/sla-config'");
+    expect(c).toContain('sla_config_updated');
+  });
+
+  it('insights uses org SLA config when available', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('effectiveThresholds');
+    expect(c).toContain('org.slaConfig');
+  });
+
+  it('admin UI has SLA config panel', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('showSlaConfig');
+    expect(ui).toContain('slaEditing');
+    expect(ui).toContain('saveSlaConfig');
+    expect(ui).toContain('SLA Thresholds');
+    expect(ui).toContain('loadSlaConfig');
+  });
+});
+
+// ─── Attachment Previews ────────────────────────────────
+
+describe('Attachment Previews', () => {
+  it('admin UI shows image thumbnails', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain("mimeType?.startsWith('image/')");
+    expect(ui).toContain('objectFit');
+    expect(ui).toContain('<img src=');
+  });
+
+  it('admin UI shows file type badges for non-images', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain("'PDF'");
+    expect(ui).toContain("'FILE'");
+  });
+});
+
 // ─── No Regression ──────────────────────────────────────
 
 describe('No Regression', () => {
