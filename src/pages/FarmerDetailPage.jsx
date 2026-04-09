@@ -364,6 +364,15 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
     setActionSuccess('Registration reopened for review');
   });
 
+  const [showCancelInviteConfirm, setShowCancelInviteConfirm] = useState(false);
+
+  const handleCancelInvite = () => doAction(async () => {
+    await api.post(`/farmers/${farmer.id}/cancel-invite`);
+    setActionSuccess('Invite cancelled. The link is no longer valid.');
+    setShowCancelInviteConfirm(false);
+    setResendInviteToken(null);
+  });
+
   const handleResendInvite = () => doAction(async () => {
     const payload = { channel: resendChannel };
     if (resendChannel === 'email' && resendContactEmail) payload.contactEmail = resendContactEmail;
@@ -509,7 +518,20 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
               <button className="btn btn-sm btn-outline-danger" onClick={() => setShowDisableModal(true)} disabled={processing}>Disable Access</button>
             )}
             {!farmer.selfRegistered && farmer.invitedAt && !showResendChannelPicker && (
-              <button className="btn btn-sm btn-outline" onClick={() => { setShowResendChannelPicker(true); setResendContactEmail(farmer.userAccount?.email || ''); }} disabled={processing || resendCooldown > 0}>{resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Invite'}</button>
+              <>
+                <button className="btn btn-sm btn-outline" onClick={() => { setShowResendChannelPicker(true); setResendContactEmail(farmer.userAccount?.email || ''); }} disabled={processing || resendCooldown > 0}>{resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Invite'}</button>
+                {isAdmin && !farmer.userAccount && farmer.inviteToken && !showCancelInviteConfirm && (
+                  <button className="btn btn-sm btn-outline" onClick={() => setShowCancelInviteConfirm(true)} disabled={processing}
+                    style={{ color: '#EF4444', borderColor: 'rgba(239,68,68,0.4)' }}>Cancel Invite</button>
+                )}
+                {showCancelInviteConfirm && (
+                  <span style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#F59E0B' }}>Revoke link?</span>
+                    <button className="btn btn-sm btn-outline-danger" onClick={handleCancelInvite} disabled={processing} style={{ fontSize: '0.75rem' }}>Yes, cancel</button>
+                    <button className="btn btn-sm btn-outline" onClick={() => setShowCancelInviteConfirm(false)} style={{ fontSize: '0.75rem' }}>No</button>
+                  </span>
+                )}
+              </>
             )}
             {!farmer.selfRegistered && inviteStatus?.inviteStatus === 'LINK_GENERATED' && inviteStatus?.inviteToken && (
               <CopyInviteLinkButton token={inviteStatus.inviteToken} />

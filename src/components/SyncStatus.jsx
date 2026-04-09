@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { count as queueCount, onSyncChange } from '../utils/offlineQueue.js';
+import { count as queueCount, onSyncChange, syncAll } from '../utils/offlineQueue.js';
+import api from '../api/client.js';
 
 /**
  * Floating sync status indicator.
@@ -28,9 +29,10 @@ export default function SyncStatus() {
       setSyncState(status);
       if (!status.syncing) {
         setPending(status.remaining || 0);
-        // Auto-clear success message after 3s
-        if (status.remaining === 0) {
-          setTimeout(() => setSyncState(null), 3000);
+        // Auto-clear sync result after delay (longer for failures so user can see/retry)
+        const clearDelay = status.failed > 0 ? 8000 : 3000;
+        if (status.remaining === 0 || status.failed > 0) {
+          setTimeout(() => setSyncState(null), clearDelay);
         }
       }
     });
@@ -58,6 +60,14 @@ export default function SyncStatus() {
         <div style={styles.pendingBanner}>
           <span style={styles.dot('#F59E0B')} />
           <span>{pending} update{pending !== 1 ? 's' : ''} waiting to sync</span>
+          {online && (
+            <button
+              onClick={() => syncAll(api)}
+              style={styles.syncNowBtn}
+            >
+              Sync Now
+            </button>
+          )}
         </div>
       )}
       {syncState?.syncing && (
@@ -66,7 +76,21 @@ export default function SyncStatus() {
           <span>Syncing changes...</span>
         </div>
       )}
-      {syncState && !syncState.syncing && syncState.synced > 0 && syncState.remaining === 0 && (
+      {syncState && !syncState.syncing && syncState.failed > 0 && (
+        <div style={styles.failedBanner}>
+          <span style={styles.dot('#EF4444')} />
+          <span>{syncState.failed} update{syncState.failed !== 1 ? 's' : ''} failed to sync</span>
+          {syncState.remaining > 0 && online && (
+            <button
+              onClick={() => syncAll(api)}
+              style={styles.syncNowBtn}
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
+      {syncState && !syncState.syncing && syncState.synced > 0 && syncState.failed === 0 && syncState.remaining === 0 && (
         <div style={styles.successBanner}>
           <span style={styles.dot('#22C55E')} />
           <span>{syncState.synced} update{syncState.synced !== 1 ? 's' : ''} synced</span>
@@ -93,6 +117,7 @@ const styles = {
     background: 'rgba(245,158,11,0.9)', color: '#fff', padding: '0.5rem 1rem',
     borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600,
     backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+    pointerEvents: 'auto',
   },
   syncingBanner: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -105,6 +130,19 @@ const styles = {
     background: 'rgba(34,197,94,0.9)', color: '#fff', padding: '0.5rem 1rem',
     borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600,
     backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+  },
+  failedBanner: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    background: 'rgba(239,68,68,0.85)', color: '#fff', padding: '0.5rem 1rem',
+    borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600,
+    backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+    pointerEvents: 'auto',
+  },
+  syncNowBtn: {
+    background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)',
+    color: '#fff', padding: '0.2rem 0.6rem', borderRadius: 6,
+    fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+    pointerEvents: 'auto', marginLeft: '0.5rem',
   },
   dot: (color) => ({
     width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0,

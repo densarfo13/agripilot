@@ -1,5 +1,5 @@
 import prisma from '../../config/database.js';
-import { computeLandSizeFields, isValidUnit } from '../../utils/landSize.js';
+import { computeLandSizeFields, isValidUnit, fromHectares } from '../../utils/landSize.js';
 
 /**
  * Full A-Z crop codes (UPPERCASE). Kept in sync with src/utils/crops.js (frontend).
@@ -92,6 +92,33 @@ export function validateCrop(crop) {
   throw err;
 }
 
+/**
+ * Normalize a crop string to uppercase.
+ * Resolves legacy aliases. Preserves custom name casing in "OTHER:CustomName".
+ */
+export function normalizeCrop(crop) {
+  if (!crop || typeof crop !== 'string') return crop;
+  const trimmed = crop.trim();
+  const upper = trimmed.toUpperCase();
+
+  // Known crop code
+  if (KNOWN_CROP_CODES.has(upper)) return upper;
+
+  // Legacy alias
+  const alias = LEGACY_ALIASES[trimmed.toLowerCase()];
+  if (alias) return alias;
+
+  // OTHER:CustomName — uppercase prefix, preserve custom name casing
+  if (upper.startsWith('OTHER:')) {
+    const customName = trimmed.slice(6).trim();
+    return customName.length > 0 ? `OTHER:${customName}` : 'OTHER';
+  }
+  if (upper === 'OTHER') return 'OTHER';
+
+  // Fallback: return uppercased
+  return upper;
+}
+
 export function validateStage(stage) {
   if (!VALID_STAGES.includes(stage)) {
     const err = new Error(`stage must be one of: ${VALID_STAGES.join(', ')}`);
@@ -120,8 +147,33 @@ export async function createFarmProfile(data, farmerId) {
     throw err;
   }
 
+  const normalizedCrop = normalizeCrop(data.crop);
+
+  // Validate coordinates if provided
+  if (data.latitude != null || data.longitude != null) {
+    if (data.latitude == null || data.longitude == null) {
+      const err = new Error('Both latitude and longitude are required when providing coordinates');
+      err.statusCode = 400;
+      throw err;
+    }
+    const lat = parseFloat(data.latitude);
+    const lon = parseFloat(data.longitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      const err = new Error('Latitude must be between -90 and 90');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+      const err = new Error('Longitude must be between -180 and 180');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   // Compute normalized land size fields
   const landSize = computeLandSizeFields(data.landSizeValue ?? data.farmSizeAcres, data.landSizeUnit || 'ACRE');
+  // Always compute farmSizeAcres from hectares for backward compat
+  const computedAcres = landSize.landSizeHectares != null ? fromHectares(landSize.landSizeHectares, 'ACRE') : null;
 
   return prisma.farmProfile.create({
     data: {
@@ -131,8 +183,8 @@ export async function createFarmProfile(data, farmerId) {
       locationName: data.locationName || null,
       latitude: data.latitude != null ? parseFloat(data.latitude) : null,
       longitude: data.longitude != null ? parseFloat(data.longitude) : null,
-      crop: data.crop,
-      farmSizeAcres: data.farmSizeAcres != null ? parseFloat(data.farmSizeAcres) : (landSize.landSizeUnit === 'ACRE' ? landSize.landSizeValue : null),
+      crop: normalizedCrop,
+      farmSizeAcres: computedAcres,
       landSizeValue: landSize.landSizeValue,
       landSizeUnit: landSize.landSizeUnit,
       landSizeHectares: landSize.landSizeHectares,
@@ -178,22 +230,46 @@ export async function updateFarmProfile(farmProfileId, data) {
   if (data.farmerName !== undefined) updateData.farmerName = data.farmerName;
   if (data.farmName !== undefined) updateData.farmName = data.farmName;
   if (data.locationName !== undefined) updateData.locationName = data.locationName;
-  if (data.latitude !== undefined) updateData.latitude = data.latitude != null ? parseFloat(data.latitude) : null;
-  if (data.longitude !== undefined) updateData.longitude = data.longitude != null ? parseFloat(data.longitude) : null;
-  if (data.crop !== undefined) updateData.crop = data.crop;
+  if (data.latitude !== undefined || data.longitude !== undefined) {
+    const hasLat = data.latitude != null && data.latitude !== undefined;
+    const hasLon = data.longitude != null && data.longitude !== undefined;
+    if (hasLat !== hasLon) {
+      const err = new Error('Both latitude and longitude are required when updating coordinates');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (hasLat) {
+      const lat = parseFloat(data.latitude);
+      const lon = parseFloat(data.longitude);
+      if (isNaN(lat) || lat < -90 || lat > 90) {
+        const err = new Error('Latitude must be between -90 and 90');
+        err.statusCode = 400;
+        throw err;
+      }
+      if (isNaN(lon) || lon < -180 || lon > 180) {
+        const err = new Error('Longitude must be between -180 and 180');
+        err.statusCode = 400;
+        throw err;
+      }
+      updateData.latitude = lat;
+      updateData.longitude = lon;
+    } else {
+      updateData.latitude = null;
+      updateData.longitude = null;
+    }
+  }
+  if (data.crop !== undefined) updateData.crop = data.crop != null ? normalizeCrop(data.crop) : null;
   if (data.farmSizeAcres !== undefined) updateData.farmSizeAcres = data.farmSizeAcres != null ? parseFloat(data.farmSizeAcres) : null;
-  // Handle land size with unit
-  if (data.landSizeValue !== undefined || data.landSizeUnit !== undefined) {
-    const val = data.landSizeValue ?? updateData.farmSizeAcres;
+  // Handle land size with unit — always recompute hectares and farmSizeAcres
+  if (data.landSizeValue !== undefined || data.landSizeUnit !== undefined || data.farmSizeAcres !== undefined) {
+    const val = data.landSizeValue ?? data.farmSizeAcres;
     const unit = data.landSizeUnit || 'ACRE';
     const ls = computeLandSizeFields(val, unit);
     updateData.landSizeValue = ls.landSizeValue;
     updateData.landSizeUnit = ls.landSizeUnit;
     updateData.landSizeHectares = ls.landSizeHectares;
-    // Keep farmSizeAcres in sync if unit is ACRE
-    if (ls.landSizeUnit === 'ACRE' && ls.landSizeValue != null) {
-      updateData.farmSizeAcres = ls.landSizeValue;
-    }
+    // Always keep farmSizeAcres in sync for backward compat
+    updateData.farmSizeAcres = ls.landSizeHectares != null ? fromHectares(ls.landSizeHectares, 'ACRE') : null;
   }
   if (data.stage !== undefined) updateData.stage = data.stage;
 

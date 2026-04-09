@@ -11,6 +11,7 @@ import { workflowLimiter } from '../../middleware/rateLimiters.js';
 import { requireStepUp } from '../../middleware/requireStepUp.js';
 import { requireMfa } from '../../middleware/requireMfa.js';
 import { dedupGuard } from '../../middleware/dedup.js';
+import { writeAuditLog } from '../audit/service.js';
 import {
   createApprovalRequest,
   approveRequest,
@@ -79,6 +80,7 @@ router.post('/requests',
       targetData,
       reason,
     });
+    writeAuditLog({ userId: req.user.sub, action: 'security_request_created', details: { requestId: request.id, requestType, targetUserId, targetFarmerId } }).catch(() => {});
 
     res.status(201).json(request);
   }));
@@ -111,6 +113,7 @@ router.post('/requests/:id/approve',
       approverRole: req.user.role,
       approverOrgId: req.organizationId,
     });
+    writeAuditLog({ userId: req.user.sub, action: 'security_request_approved', details: { requestId: req.params.id } }).catch(() => {});
     res.json(request);
   }));
 
@@ -131,6 +134,7 @@ router.post('/requests/:id/reject',
       rejecterId: req.user.sub,
       rejectionReason,
     });
+    writeAuditLog({ userId: req.user.sub, action: 'security_request_rejected', details: { requestId: req.params.id, rejectionReason } }).catch(() => {});
     res.json(request);
   }));
 
@@ -146,6 +150,7 @@ router.post('/requests/:id/revoke',
       revokerId: req.user.sub,
       revokerRole: req.user.role,
     });
+    writeAuditLog({ userId: req.user.sub, action: 'security_request_revoked', details: { requestId: req.params.id } }).catch(() => {});
     res.json(request);
   }));
 

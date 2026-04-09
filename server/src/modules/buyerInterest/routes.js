@@ -3,6 +3,7 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
+import prisma from '../../config/database.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -74,6 +75,12 @@ router.patch('/:id/withdraw',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   asyncHandler(async (req, res) => {
+    // Farmer-role ownership check: verify the interest belongs to this farmer
+    if (req.user.role === 'farmer') {
+      const interest = await prisma.buyerInterest.findUnique({ where: { id: req.params.id }, select: { farmer: { select: { userId: true } } } });
+      if (!interest) return res.status(404).json({ error: 'Interest not found' });
+      if (interest.farmer.userId !== req.user.sub) return res.status(403).json({ error: 'Access denied — you can only withdraw your own interests' });
+    }
     res.json(await svc.withdrawInterest(req.params.id));
   }));
 

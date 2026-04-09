@@ -30,7 +30,9 @@ function computeQuickFilterCounts(allFarmers, currentUserId) {
     if (!f.selfRegistered && f.inviteStatus && f.inviteStatus !== 'ACCEPTED' && f.inviteStatus !== 'NOT_SENT') invitePending++;
     if (f.registrationStatus === 'approved' && (!f._count?.applications || f._count.applications === 0)) noApps++;
     const isExpired = f.inviteStatus === 'EXPIRED';
-    if (isExpired || (f.registrationStatus === 'approved' && !f.assignedOfficerId)) needsAttention++;
+    const isCancelled = f.inviteStatus === 'CANCELLED';
+    const isStuck = f.registrationStatus === 'approved' && !f.userAccount && (isExpired || isCancelled || f.inviteStatus === 'NOT_SENT');
+    if (isExpired || isCancelled || isStuck || (f.registrationStatus === 'approved' && !f.assignedOfficerId)) needsAttention++;
     if (f.registrationStatus === 'approved' && f.userAccount && (!f._count?.applications || f._count.applications === 0)) noData++;
     if (currentUserId && f.assignedOfficerId === currentUserId) myFarmers++;
   }
@@ -100,7 +102,12 @@ export default function FarmersPage() {
     if (quickFilter === 'no_officer') return f.registrationStatus === 'approved' && !f.assignedOfficerId;
     if (quickFilter === 'invite_pending') return !f.selfRegistered && f.inviteStatus && f.inviteStatus !== 'ACCEPTED' && f.inviteStatus !== 'NOT_SENT';
     if (quickFilter === 'no_apps') return f.registrationStatus === 'approved' && (!f._count?.applications || f._count.applications === 0);
-    if (quickFilter === 'needs_attention') return f.inviteStatus === 'EXPIRED' || (f.registrationStatus === 'approved' && !f.assignedOfficerId);
+    if (quickFilter === 'needs_attention') {
+      const isExpired = f.inviteStatus === 'EXPIRED';
+      const isCancelled = f.inviteStatus === 'CANCELLED';
+      const isStuck = f.registrationStatus === 'approved' && !f.userAccount && (isExpired || isCancelled || f.inviteStatus === 'NOT_SENT');
+      return isExpired || isCancelled || isStuck || (f.registrationStatus === 'approved' && !f.assignedOfficerId);
+    }
     if (quickFilter === 'no_data') return f.registrationStatus === 'approved' && f.userAccount && (!f._count?.applications || f._count.applications === 0);
     if (quickFilter === 'my_farmers') return f.assignedOfficerId === user?.sub;
     return true;

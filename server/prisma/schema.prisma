@@ -319,7 +319,7 @@ model Farmer {
   geolocationCapturedAt DateTime?          @map("geolocation_captured_at")
   preferredLanguage    String              @default("en") @map("preferred_language")
   primaryCrop          String?             @map("primary_crop")
-  farmSizeAcres        Float?              @map("farm_size_acres")
+  farmSizeAcres        Float?              @map("farm_size_acres")      // LEGACY: auto-computed from landSizeHectares via fromHectares(); prefer landSizeValue+landSizeUnit
   landSizeValue        Float?              @map("land_size_value")
   landSizeUnit         String?             @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
   landSizeHectares     Float?              @map("land_size_hectares")   // normalized value
@@ -340,6 +340,7 @@ model Farmer {
   inviteChannel        String?             @map("invite_channel")        // 'link', 'email', 'phone'
   inviteDeliveryStatus String?             @map("invite_delivery_status") // 'manual_share_ready','email_sent','phone_sent','accepted','expired'
   inviteAcceptedAt     DateTime?           @map("invite_accepted_at")
+  inviteResendMeta     Json?               @map("invite_resend_meta")    // { timestamps: number[], totalCount: number, lastResentBy: string }
   assignedOfficerId    String?             @map("assigned_officer_id")
   currentStage         LifecycleStage      @default(pre_planting) @map("current_stage")
   stageUpdatedAt       DateTime?           @map("stage_updated_at")
@@ -1454,4 +1455,14 @@ model StaffNotification {
   @@index([userId, read], map: "idx_staff_notif_user_read")
   @@index([createdAt], map: "idx_staff_notif_created")
   @@map("staff_notifications")
+}
+
+// ─── System Settings (key-value config store) ──────────
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }

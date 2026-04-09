@@ -279,6 +279,35 @@ export async function getNeedsAttention({ organizationId, role } = {}) {
     });
   }
 
+  // 2b. Stuck farmers — approved but no login and no active invite (dead end)
+  const stuckFarmers = await prisma.farmer.findMany({
+    where: {
+      ...fFilter,
+      registrationStatus: 'approved',
+      userId: null,
+      OR: [
+        { inviteToken: null },
+        { inviteExpiresAt: { lt: now } },
+        { inviteDeliveryStatus: 'cancelled' },
+      ],
+    },
+    select: { id: true, fullName: true, region: true, createdAt: true, inviteDeliveryStatus: true },
+    orderBy: { createdAt: 'asc' },
+    take: MAX_ITEMS_PER_CATEGORY,
+  });
+  if (stuckFarmers.length > 0) {
+    items.push({
+      type: 'stuck_no_access',
+      priority: 'high',
+      label: 'Approved farmers with no login and no active invite',
+      count: stuckFarmers.length,
+      items: stuckFarmers.map(f => ({
+        id: f.id, name: f.fullName, region: f.region,
+        reason: f.inviteDeliveryStatus === 'cancelled' ? 'Invite cancelled' : 'Invite expired or missing',
+      })),
+    });
+  }
+
   // 3. Active seasons with no activity for 14+ days
   const staleSeasons = await prisma.farmSeason.findMany({
     where: {

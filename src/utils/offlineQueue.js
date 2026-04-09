@@ -38,6 +38,8 @@ function tx(mode) {
   });
 }
 
+const MAX_RETRIES = 5; // After 5 failed syncs, mutation is abandoned and logged
+
 /** Enqueue a failed mutation (deduplicates by url+method within 10s window) */
 export async function enqueue(mutation) {
   // Prevent exact-same mutation from being queued twice rapidly (e.g. double-tap)
@@ -55,6 +57,7 @@ export async function enqueue(mutation) {
     const req = store.add({
       ...mutation,
       createdAt: now,
+      retryCount: 0,
     });
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -134,9 +137,21 @@ function notify(status) {
   listeners.forEach(fn => fn(status));
 }
 
+/** Increment retry count for a mutation in-place via IDB update */
+async function incrementRetry(mutation) {
+  try {
+    const store = await tx('readwrite');
+    return new Promise((resolve) => {
+      const req = store.put({ ...mutation, retryCount: (mutation.retryCount || 0) + 1 });
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve(); // best-effort
+    });
+  } catch { /* best-effort */ }
+}
+
 /** Replay all queued mutations in order. Called on reconnect. */
 export async function syncAll(apiClient) {
-  if (syncing) return;
+  if (syncing) return; // Prevents double-sync from rapid online events
   syncing = true;
   notify({ syncing: true });
 
@@ -144,7 +159,23 @@ export async function syncAll(apiClient) {
   let synced = 0;
   let failed = 0;
 
-  for (const m of mutations) {
+  for (let i = 0; i < mutations.length; i++) {
+    const m = mutations[i];
+
+    // Max retry guard — abandon mutations that have failed too many times
+    if ((m.retryCount || 0) >= MAX_RETRIES) {
+      logSyncFailure('max_retries_exceeded', m, { retryCount: m.retryCount });
+      await remove(m.id);
+      failed++;
+      continue;
+    }
+
+    // Exponential backoff between items (skip delay for first item)
+    if (i > 0 && failed > 0) {
+      const delay = Math.min(1000 * Math.pow(2, failed - 1), 8000); // 1s, 2s, 4s, 8s cap
+      await new Promise(r => setTimeout(r, delay));
+    }
+
     try {
       if (m.method === 'POST') {
         await apiClient.post(m.url, m.data);
@@ -158,12 +189,21 @@ export async function syncAll(apiClient) {
     } catch (err) {
       // If it's still a network error, stop — we're still offline
       if (!err.response) {
+        await incrementRetry(m);
         failed++;
         logSyncFailure('network_still_offline', m);
         break;
       }
-      // Server rejected it (4xx/5xx) — remove from queue, it won't succeed on retry
       const status = err.response?.status;
+      // 409 Conflict — server already processed this (idempotency hit or state conflict)
+      // Safe to remove from queue
+      if (status === 409) {
+        logSyncFailure('conflict_already_processed', m, { status });
+        await remove(m.id);
+        synced++; // Count as synced — server already has the data
+        continue;
+      }
+      // Other server rejections (4xx/5xx) — remove from queue, it won't succeed on retry
       logSyncFailure('server_rejected', m, { status, error: err.response?.data?.error });
       await remove(m.id);
       failed++;

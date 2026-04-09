@@ -119,6 +119,7 @@ router.post('/:token/accept', asyncHandler(async (req, res) => {
       inviteExpiresAt: true,
       userId: true,
       registrationStatus: true,
+      createdById: true,
     },
   });
 
@@ -187,6 +188,19 @@ router.post('/:token/accept', asyncHandler(async (req, res) => {
     action: 'invite_accepted',
     details: { farmerId: farmer.id, email: user.email /* no token logged */ },
   }).catch(() => {});
+
+  // Notify the staff member who created/invited this farmer
+  if (farmer.createdById) {
+    prisma.staffNotification.create({
+      data: {
+        userId: farmer.createdById,
+        type: 'invite_accepted',
+        title: 'Invite Accepted',
+        message: `${farmer.fullName} has accepted the invite and created their account (${user.email}).`,
+        metadata: { farmerId: farmer.id, farmerName: farmer.fullName, email: user.email },
+      },
+    }).catch(() => {});
+  }
 
   res.status(201).json({
     message: 'Account activated successfully. You can now log in.',

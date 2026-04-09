@@ -4,7 +4,9 @@ import prisma from '../../config/database.js';
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
-import { computeLandSizeFields } from '../../utils/landSize.js';
+import { computeLandSizeFields, fromHectares } from '../../utils/landSize.js';
+import { normalizeCrop } from '../farmProfiles/service.js';
+import { opsEvent } from '../../utils/opsLogger.js';
 
 /**
  * Crops that allow automatic FarmProfile creation during self-registration.
@@ -66,10 +68,12 @@ export async function farmerSelfRegister({
 }) {
   // Normalize phone before any checks or storage
   const normalizedPhone = normalizePhoneForStorage(phone);
+  opsEvent('auth', 'registration_attempted', 'info', { email, phone: normalizedPhone });
 
   // Check if email already exists
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
+    opsEvent('auth', 'registration_duplicate_email', 'warn', { email });
     const err = new Error('Email already registered');
     err.statusCode = 409;
     throw err;
@@ -78,6 +82,7 @@ export async function farmerSelfRegister({
   // Check if phone already exists for a farmer (using normalized form)
   const existingFarmer = await prisma.farmer.findFirst({ where: { phone: normalizedPhone } });
   if (existingFarmer) {
+    opsEvent('auth', 'registration_failed', 'warn', { reason: 'duplicate_phone', phone: normalizedPhone });
     const err = new Error('Phone number already registered');
     err.statusCode = 409;
     throw err;
@@ -101,6 +106,9 @@ export async function farmerSelfRegister({
     // Compute normalized land size
     const ls = computeLandSizeFields(landSizeValue ?? farmSizeAcres, landSizeUnit || 'ACRE');
 
+    // Normalize crop code for consistency
+    const normalizedPrimaryCrop = primaryCrop ? normalizeCrop(primaryCrop) : null;
+
     const newFarmer = await tx.farmer.create({
       data: {
         fullName,
@@ -110,8 +118,8 @@ export async function farmerSelfRegister({
         village: village || null,
         countryCode: countryCode || DEFAULT_COUNTRY_CODE,
         preferredLanguage: preferredLanguage || 'en',
-        primaryCrop: primaryCrop || null,
-        farmSizeAcres: farmSizeAcres || (ls.landSizeUnit === 'ACRE' ? ls.landSizeValue : null),
+        primaryCrop: normalizedPrimaryCrop,
+        farmSizeAcres: ls.landSizeHectares != null ? fromHectares(ls.landSizeHectares, 'ACRE') : null,
         landSizeValue: ls.landSizeValue,
         landSizeUnit: ls.landSizeUnit,
         landSizeHectares: ls.landSizeHectares,
@@ -141,8 +149,8 @@ export async function farmerSelfRegister({
           locationName: [region, district].filter(Boolean).join(', ') || null,
           latitude: latitude != null ? parseFloat(latitude) : null,
           longitude: longitude != null ? parseFloat(longitude) : null,
-          crop: cropTrimmed,
-          farmSizeAcres: farmSizeAcres || (ls.landSizeUnit === 'ACRE' ? ls.landSizeValue : null),
+          crop: normalizeCrop(cropTrimmed),
+          farmSizeAcres: ls.landSizeHectares != null ? fromHectares(ls.landSizeHectares, 'ACRE') : null,
           landSizeValue: ls.landSizeValue,
           landSizeUnit: ls.landSizeUnit,
           landSizeHectares: ls.landSizeHectares,
@@ -153,6 +161,8 @@ export async function farmerSelfRegister({
 
     return { user: newUser, farmer: newFarmer, farmProfile };
   });
+
+  opsEvent('auth', 'registration_completed', 'info', { userId: user.id, farmerId: farmer.id, email: user.email });
 
   return {
     user: {
@@ -379,6 +389,10 @@ export async function inviteFarmer({
       userId = user.id;
     }
 
+    // Normalize crop and compute land size for consistency
+    const normalizedCrop = primaryCrop ? normalizeCrop(primaryCrop) : null;
+    const ls = farmSizeAcres ? computeLandSizeFields(parseFloat(farmSizeAcres), 'ACRE') : {};
+
     return tx.farmer.create({
       data: {
         fullName,
@@ -388,8 +402,11 @@ export async function inviteFarmer({
         village: village || null,
         countryCode: countryCode || DEFAULT_COUNTRY_CODE,
         preferredLanguage: preferredLanguage || 'en',
-        primaryCrop: primaryCrop || null,
-        farmSizeAcres: farmSizeAcres ? parseFloat(farmSizeAcres) : null,
+        primaryCrop: normalizedCrop,
+        farmSizeAcres: ls.landSizeHectares != null ? fromHectares(ls.landSizeHectares, 'ACRE') : null,
+        landSizeValue: ls.landSizeValue ?? null,
+        landSizeUnit: ls.landSizeUnit ?? null,
+        landSizeHectares: ls.landSizeHectares ?? null,
         selfRegistered: false,
         registrationStatus: 'approved', // invited farmers are pre-approved
         invitedAt: new Date(),

@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js';
+import { normalizeCrop } from '../farmProfiles/service.js';
 
 const FULL_INCLUDE = {
   farmer: { select: { id: true, fullName: true, phone: true, region: true, primaryCrop: true, countryCode: true, profileImageUrl: true } },
@@ -82,7 +83,7 @@ export async function createApplication(data, userId) {
     data: {
       farmerId: data.farmerId,
       createdById: userId,
-      cropType: data.cropType,
+      cropType: normalizeCrop(data.cropType),
       farmSizeAcres: parseFloat(data.farmSizeAcres),
       requestedAmount: parseFloat(data.requestedAmount),
       purpose: data.purpose || null,
@@ -146,7 +147,7 @@ export async function getApplicationById(id) {
 export async function updateApplication(id, data) {
   await getApplicationById(id);
   const updateData = {};
-  if (data.cropType) updateData.cropType = data.cropType;
+  if (data.cropType) updateData.cropType = normalizeCrop(data.cropType);
   if (data.farmSizeAcres !== undefined) {
     const val = parseFloat(data.farmSizeAcres);
     if (isNaN(val) || val <= 0) {

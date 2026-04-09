@@ -34,6 +34,7 @@ import path from 'path';
 import fs from 'fs';
 import prisma from '../../config/database.js';
 import { opsEvent } from '../../utils/opsLogger.js';
+import { writeAuditLog } from '../audit/service.js';
 import { isEmailConfigured } from '../notifications/deliveryService.js';
 
 // ── SSE ticket system ──
@@ -310,6 +311,7 @@ router.post('/', issueLimiter, dedupGuard('issue-create'), asyncHandler(async (r
     priority: resolvedPriority,
     pageRoute,
   });
+  writeAuditLog({ userId: req.user.sub, action: 'issue_created', details: { issueId: issue.id, issueType, category: resolvedCategory, priority: resolvedPriority } }).catch(() => {});
 
   res.status(201).json({ message: 'Issue reported successfully. We will review it shortly.', id: issue.id });
 }));
@@ -527,6 +529,7 @@ router.patch('/sla-config',
     }
     await prisma.organization.update({ where: { id: req.organizationId }, data: { slaConfig: clean } });
     opsEvent('workflow', 'sla_config_updated', 'info', { orgId: req.organizationId, config: clean, updatedBy: req.user.sub });
+    writeAuditLog({ userId: req.user.sub, action: 'sla_config_updated', details: { orgId: req.organizationId, priorities: Object.keys(clean) } }).catch(() => {});
     res.json({ orgConfig: clean });
   }));
 
@@ -749,6 +752,7 @@ router.patch('/bulk',
       changes: data,
       updatedBy: req.user.sub,
     });
+    writeAuditLog({ userId: req.user.sub, action: 'issues_bulk_updated', details: { count: result.count, changes: Object.keys(data) } }).catch(() => {});
 
     res.json({ updated: result.count });
   }));
@@ -822,6 +826,7 @@ router.patch('/:id',
       updatedBy: req.user.sub,
       ...(assignedToId !== undefined && { assignedToId: assignedToId || null, previousAssignee: existing.assignedToId }),
     });
+    writeAuditLog({ userId: req.user.sub, action: 'issue_updated', details: { issueId: id, previousStatus: existing.status, newStatus: status || existing.status, changes: Object.keys(data) } }).catch(() => {});
 
     // In-app notification for assignment
     if (assignedToId !== undefined && assignedToId !== existing.assignedToId) {

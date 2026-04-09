@@ -278,7 +278,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             <button
               type="button"
               onClick={() => setSaveStatus(null)}
-              style={{ background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer', fontSize: '0.75rem', marginLeft: '0.5rem', textDecoration: 'underline', padding: 0 }}
+              style={{ background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer', fontSize: '0.75rem', marginLeft: '0.5rem', textDecoration: 'underline', padding: '0.5rem', minHeight: '44px', minWidth: '44px' }}
             >Dismiss</button>
           </div>
         )}
@@ -518,10 +518,10 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           <div style={styles.resetConfirm}>
             <span style={{ fontSize: '0.82rem', color: '#F59E0B' }}>This will clear all entered data. Are you sure?</span>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button onClick={handleReset} style={{ ...styles.secondaryBtn, color: '#EF4444', borderColor: '#EF4444', padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+              <button onClick={handleReset} style={{ ...styles.secondaryBtn, color: '#EF4444', borderColor: '#EF4444', padding: '0.6rem 1rem', fontSize: '0.8rem', minHeight: '44px' }}>
                 Yes, start over
               </button>
-              <button onClick={() => setShowResetConfirm(false)} style={{ ...styles.secondaryBtn, padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+              <button onClick={() => setShowResetConfirm(false)} style={{ ...styles.secondaryBtn, padding: '0.6rem 1rem', fontSize: '0.8rem', minHeight: '44px' }}>
                 Cancel
               </button>
             </div>
@@ -592,7 +592,8 @@ const styles = {
   },
   resetLink: {
     background: 'none', border: 'none', color: '#71717A', fontSize: '0.75rem',
-    cursor: 'pointer', textDecoration: 'underline',
+    cursor: 'pointer', textDecoration: 'underline', padding: '0.75rem 1rem',
+    minHeight: '44px', display: 'inline-flex', alignItems: 'center',
   },
   resetConfirm: {
     textAlign: 'center', marginTop: '0.75rem', padding: '0.75rem',

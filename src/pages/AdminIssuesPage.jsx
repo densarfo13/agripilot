@@ -67,6 +67,7 @@ export default function AdminIssuesPage() {
   const [attachments, setAttachments] = useState({});
   const [showAttachments, setShowAttachments] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(null);
   const [showPrefs, setShowPrefs] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState(null);
   const [showSlaConfig, setShowSlaConfig] = useState(false);
@@ -180,14 +181,51 @@ export default function AdminIssuesPage() {
     return `${Math.round(hrs / 24)}d`;
   };
 
-  // ── Notifications ──
+  // ── Notifications (SSE real-time + initial load) ──
   const loadNotifications = () => {
     api.get('/issues/notifications').then((res) => {
       setNotifications(res.data.items || []);
       setUnreadCount(res.data.unreadCount || 0);
     }).catch(() => {});
   };
-  useEffect(() => { loadNotifications(); const iv = setInterval(loadNotifications, 60000); return () => clearInterval(iv); }, []);
+  useEffect(() => {
+    loadNotifications();
+
+    // SSE stream for real-time push (uses opaque ticket, not raw JWT)
+    let es;
+    let fallbackIv;
+    const connectSSE = async () => {
+      try {
+        // Exchange JWT for a short-lived SSE ticket (so raw token never appears in URL/logs)
+        const ticketRes = await api.post('/issues/notifications/ticket');
+        const ticket = ticketRes.data?.ticket;
+        if (!ticket) throw new Error('no ticket');
+
+        const baseURL = api.defaults?.baseURL || '';
+        const sseUrl = `${baseURL}/issues/notifications/stream?ticket=${encodeURIComponent(ticket)}`;
+        es = new EventSource(sseUrl);
+        es.addEventListener('notification', (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            setNotifications((prev) => [data, ...prev].slice(0, 20));
+            setUnreadCount((c) => c + 1);
+          } catch { /* ignore */ }
+        });
+        es.onerror = () => {
+          // Fallback: if SSE fails, poll every 60s
+          if (es) es.close();
+          es = null;
+          fallbackIv = setInterval(loadNotifications, 60000);
+        };
+      } catch {
+        // Ticket exchange or SSE not supported — fall back to polling
+        fallbackIv = setInterval(loadNotifications, 60000);
+      }
+    };
+    connectSSE();
+
+    return () => { if (es) es.close(); if (fallbackIv) clearInterval(fallbackIv); };
+  }, []);
 
   const markAllRead = () => {
     api.patch('/issues/notifications/read', {}).then(() => { setUnreadCount(0); setNotifications((n) => n.map((x) => ({ ...x, read: true }))); }).catch(() => {});
@@ -219,6 +257,20 @@ export default function AdminIssuesPage() {
     if (showAttachments === issueId) { setShowAttachments(null); return; }
     setShowAttachments(issueId);
     if (!attachments[issueId]) loadAttachments(issueId);
+  };
+
+  // ── Drag-and-Drop ──
+  const handleDragOver = (e, issueId) => { e.preventDefault(); e.stopPropagation(); setDragOver(issueId); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(null); };
+  const handleDrop = (e, issueId) => {
+    e.preventDefault(); e.stopPropagation(); setDragOver(null);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      for (const file of Array.from(files).slice(0, 5)) {
+        uploadFile(issueId, file);
+      }
+      if (showAttachments !== issueId) { setShowAttachments(issueId); if (!attachments[issueId]) loadAttachments(issueId); }
+    }
   };
 
   // ── Notification Preferences ──
@@ -276,9 +328,11 @@ export default function AdminIssuesPage() {
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>Notifications</span>
                   {unreadCount > 0 && <button className="btn btn-outline btn-sm" style={{ fontSize: '0.68rem' }} onClick={markAllRead}>Mark all read</button>}
                 </div>
-                <div style={{ padding: '0.3rem 0.75rem', borderBottom: '1px solid #243041' }}>
-                  <button className="btn btn-outline btn-sm" style={{ fontSize: '0.65rem', width: '100%' }}
-                    onClick={() => { setShowNotifs(false); if (!notifPrefs) loadPrefs(); setShowPrefs(!showPrefs); }}>Notification Preferences</button>
+                <div style={{ padding: '0.3rem 0.75rem', borderBottom: '1px solid #243041', display: 'flex', gap: '0.3rem' }}>
+                  <button className="btn btn-outline btn-sm" style={{ fontSize: '0.65rem', flex: 1 }}
+                    onClick={() => { setShowNotifs(false); if (!notifPrefs) loadPrefs(); setShowPrefs(!showPrefs); }}>Preferences</button>
+                  <button className="btn btn-outline btn-sm" style={{ fontSize: '0.65rem', flex: 1 }}
+                    onClick={() => { api.post('/issues/notifications/digest', {}).then(() => setActionError('')).catch(() => setActionError('Digest send failed')); }}>Send Digest</button>
                 </div>
                 {notifications.length === 0 ? (
                   <div style={{ padding: '1rem', textAlign: 'center', color: '#71717A', fontSize: '0.82rem' }}>No notifications</div>
@@ -418,6 +472,9 @@ export default function AdminIssuesPage() {
                       )}
                       {insights.sla.breachedResolve > 0 && (
                         <div style={{ fontSize: '0.82rem', color: '#EF4444' }}>{insights.sla.breachedResolve} past resolution deadline</div>
+                      )}
+                      {insights.sla.escalatedCount > 0 && (
+                        <div style={{ fontSize: '0.78rem', color: '#F59E0B', marginTop: '0.15rem' }}>{insights.sla.escalatedCount} auto-escalated</div>
                       )}
                     </div>
                   )}
@@ -642,8 +699,14 @@ export default function AdminIssuesPage() {
                                 </select>
                               </div>
                             </div>
-                            {/* Attachments */}
-                            <div style={{ marginTop: '0.6rem', borderTop: '1px solid #243041', paddingTop: '0.5rem' }}>
+                            {/* Attachments (with drag-and-drop) */}
+                            <div style={{
+                              marginTop: '0.6rem', borderTop: '1px solid #243041', paddingTop: '0.5rem',
+                              ...(dragOver === issue.id ? { background: 'rgba(56,189,248,0.08)', border: '2px dashed #38BDF8', borderRadius: 6, padding: '0.6rem' } : {}),
+                            }}
+                              onDragOver={(e) => handleDragOver(e, issue.id)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, issue.id)}>
                               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                 <button className="btn btn-outline btn-sm" style={{ fontSize: '0.72rem' }}
                                   onClick={() => toggleAttachments(issue.id)}>
@@ -654,6 +717,7 @@ export default function AdminIssuesPage() {
                                   <input type="file" hidden accept="image/*,.pdf,.txt"
                                     onChange={(e) => { if (e.target.files[0]) uploadFile(issue.id, e.target.files[0]); e.target.value = ''; }} />
                                 </label>
+                                <span style={{ fontSize: '0.68rem', color: '#71717A', fontStyle: 'italic' }}>or drag & drop files here</span>
                               </div>
                               {showAttachments === issue.id && (
                                 <div style={{ marginTop: '0.4rem' }}>

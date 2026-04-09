@@ -77,7 +77,7 @@ describe('Season Service', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             farmerId: 'f-1',
-            cropType: 'maize',
+            cropType: 'MAIZE', // normalizeCrop uppercases crop codes
             farmSizeAcres: 5,
             status: 'active',
           }),

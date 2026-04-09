@@ -34,7 +34,7 @@ const photoStorage = multer.diskStorage({
 });
 const photoUpload = multer({
   storage: photoStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max for profile photos
+  limits: { fileSize: (config.upload.maxFileSizeMB || 5) * 1024 * 1024 }, // Uses config (default 10 MB), aligned with client validation
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
     if (allowed.includes(file.mimetype)) cb(null, true);
@@ -410,6 +410,22 @@ router.post('/:id/resend-invite',
     if (farmer.selfRegistered) {
       return res.status(400).json({ error: 'Cannot resend invite for self-registered farmers' });
     }
+
+    // ── Rate protection: max 5 resends per 24 hours ──
+    const resendMeta = farmer.inviteResendMeta || {};
+    const now = Date.now();
+    const windowMs = 24 * 60 * 60 * 1000;
+    // Filter timestamps within the last 24 hours
+    const recentResends = Array.isArray(resendMeta.timestamps)
+      ? resendMeta.timestamps.filter(ts => now - ts < windowMs)
+      : [];
+    if (recentResends.length >= 5) {
+      opsEvent('workflow', 'invite_resend_rate_limited', 'warn', {
+        farmerId: req.params.id, resendCount: recentResends.length, userId: req.user?.sub,
+      });
+      return res.status(429).json({ error: 'Invite resend limit reached (max 5 per 24 hours). Please try again later.' });
+    }
+
     // Regenerate invite token (only for farmers without a login account)
     const newToken = farmer.userAccount ? null : randomUUID();
     const newExpiry = newToken ? makeInviteExpiry() : null;
@@ -430,11 +446,20 @@ router.post('/:id/resend-invite',
       });
     }
 
+    // Track resend count: append current timestamp and increment counter
+    const updatedTimestamps = [...recentResends, now];
+    const newResendCount = (resendMeta.totalCount || recentResends.length) + 1;
+
     // Update invitedAt, refresh invite token, and persist actual delivery outcome
     const updated = await prisma.farmer.update({
       where: { id: req.params.id },
       data: {
         invitedAt: new Date(),
+        inviteResendMeta: {
+          timestamps: updatedTimestamps,
+          totalCount: newResendCount,
+          lastResentBy: req.user.sub,
+        },
         ...(newToken ? {
           inviteToken: newToken,
           inviteExpiresAt: newExpiry,
@@ -453,10 +478,14 @@ router.post('/:id/resend-invite',
       metadata: { resentById: req.user.sub },
     }).catch(() => {});
 
+    opsEvent('workflow', 'invite_resent', 'info', {
+      farmerId: req.params.id, resendCount: newResendCount, channel: deliveryResult.channel, userId: req.user?.sub,
+    });
+
     writeAuditLog({
       userId: req.user.sub,
       action: 'farmer_invite_resent',
-      details: { farmerId: req.params.id, hasLoginAccount: !!updated.userAccount, channel: deliveryResult.channel },
+      details: { farmerId: req.params.id, hasLoginAccount: !!updated.userAccount, channel: deliveryResult.channel, resendCount: newResendCount },
     }).catch(() => {});
 
     res.json({
@@ -475,8 +504,126 @@ router.post('/:id/resend-invite',
     });
   }));
 
+// Cancel invite (admin — revokes the invite token and resets status)
+router.post('/:id/cancel-invite',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  dedupGuard('cancel-invite'),
+  asyncHandler(async (req, res) => {
+    const farmer = await farmersService.getFarmerById(req.params.id);
+    if (!verifyOrgAccess(req, farmer.organizationId)) {
+      return res.status(403).json({ error: 'Access denied — farmer belongs to another organization' });
+    }
+    if (farmer.userId) {
+      return res.status(400).json({ error: 'Cannot cancel invite — farmer already has a login account' });
+    }
+    if (!farmer.inviteToken) {
+      return res.status(400).json({ error: 'No active invite to cancel' });
+    }
+
+    const updated = await prisma.farmer.update({
+      where: { id: req.params.id },
+      data: {
+        inviteToken: null,
+        inviteExpiresAt: null,
+        inviteDeliveryStatus: 'cancelled',
+        inviteChannel: null,
+      },
+    });
+
+    opsEvent('workflow', 'invite_cancelled', 'info', {
+      farmerId: req.params.id, userId: req.user?.sub,
+    });
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_invite_cancelled',
+      details: { farmerId: req.params.id },
+    }).catch(() => {});
+
+    res.json({ message: 'Invite cancelled', farmer: updated });
+  }));
+
+// Batch resend invites (admin — resends invites for multiple stuck farmers)
+router.post('/batch-resend-invites',
+  authorize('super_admin', 'institutional_admin'),
+  dedupGuard('batch-resend-invites'),
+  asyncHandler(async (req, res) => {
+    const { farmerIds } = req.body;
+    if (!Array.isArray(farmerIds) || farmerIds.length === 0) {
+      return res.status(400).json({ error: 'farmerIds array is required' });
+    }
+    if (farmerIds.length > 50) {
+      return res.status(400).json({ error: 'Maximum 50 farmers per batch' });
+    }
+
+    const orgScope = orgWhereFarmer(req);
+    const farmers = await prisma.farmer.findMany({
+      where: {
+        id: { in: farmerIds },
+        ...orgScope,
+        userId: null,           // no login yet
+        selfRegistered: false,  // only invited farmers
+      },
+      select: {
+        id: true, fullName: true, phone: true,
+        inviteToken: true, inviteResendMeta: true,
+      },
+    });
+
+    let refreshed = 0;
+    let skipped = 0;
+    const results = [];
+
+    for (const farmer of farmers) {
+      // Rate check — skip if 5+ resends in 24h
+      const meta = farmer.inviteResendMeta || {};
+      const now = Date.now();
+      const recentResends = Array.isArray(meta.timestamps)
+        ? meta.timestamps.filter(ts => now - ts < 24 * 60 * 60 * 1000)
+        : [];
+      if (recentResends.length >= 5) {
+        skipped++;
+        results.push({ id: farmer.id, status: 'rate_limited' });
+        continue;
+      }
+
+      const newToken = randomUUID();
+      const newExpiry = makeInviteExpiry();
+
+      await prisma.farmer.update({
+        where: { id: farmer.id },
+        data: {
+          invitedAt: new Date(),
+          inviteToken: newToken,
+          inviteExpiresAt: newExpiry,
+          inviteDeliveryStatus: 'manual_share_ready',
+          inviteChannel: 'link',
+          inviteResendMeta: {
+            timestamps: [...recentResends, now],
+            totalCount: (meta.totalCount || recentResends.length) + 1,
+            lastResentBy: req.user.sub,
+          },
+        },
+      });
+      refreshed++;
+      results.push({ id: farmer.id, status: 'refreshed' });
+    }
+
+    opsEvent('workflow', 'batch_invite_resend', 'info', {
+      requested: farmerIds.length, refreshed, skipped,
+      userId: req.user?.sub,
+    });
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'batch_invite_resend',
+      details: { requested: farmerIds.length, refreshed, skipped },
+    }).catch(() => {});
+
+    res.json({ refreshed, skipped, notFound: farmerIds.length - farmers.length, results });
+  }));
+
 // Update farmer (staff only)
-router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+router.put('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('farmer-update'), asyncHandler(async (req, res) => {
   const farmer = await farmersService.updateFarmer(req.params.id, req.body);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_updated', details: { farmerId: farmer.id } }).catch(() => {});
   res.json(farmer);
@@ -584,6 +731,7 @@ router.get('/:id/invite-status',
         inviteChannel: true,
         inviteDeliveryStatus: true,
         inviteAcceptedAt: true,
+        inviteResendMeta: true,
         userId: true,
         userAccount: { select: { id: true, email: true, active: true } },
       },
@@ -614,12 +762,21 @@ router.get('/:id/invite-status',
       inviteAcceptedAt: farmer.inviteAcceptedAt,
       deliveryStatusLabel: isExpired ? 'Invite Expired' : deliveryLabel.label,
       deliveryStatusCls: isExpired ? 'badge-rejected' : deliveryLabel.cls,
+      // Proactive rate limit info (Rule 8: show before user hits wall)
+      resendCount24h: (() => {
+        const meta = farmer.inviteResendMeta || {};
+        const now = Date.now();
+        const recent = Array.isArray(meta.timestamps) ? meta.timestamps.filter(ts => now - ts < 24 * 60 * 60 * 1000) : [];
+        return recent.length;
+      })(),
+      resendLimit: 5,
     });
   }));
 
 // ─── Profile Photo: farmer self-upload ─────────────────
 router.post('/me/profile-photo',
   uploadLimiter,
+  dedupGuard('self-profile-photo'),
   photoUpload.single('photo'),
   uploadCleanup,
   asyncHandler(async (req, res) => {
@@ -685,6 +842,7 @@ router.post('/:id/profile-photo',
   validateParamUUID('id'),
   authorize('super_admin', 'institutional_admin', 'field_officer'),
   uploadLimiter,
+  dedupGuard('staff-profile-photo'),
   photoUpload.single('photo'),
   uploadCleanup,
   asyncHandler(async (req, res) => {

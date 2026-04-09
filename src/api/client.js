@@ -60,6 +60,14 @@ export function formatApiError(err, fallback = 'Something went wrong. Please try
     // No response received — connectivity or timeout issue
     return 'No network connection — check your signal and try again.';
   }
+  // Rate limited — show user-friendly message with retry hint
+  if (err.response.status === 429) {
+    const retryAfter = err.response.headers?.['retry-after'];
+    const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
+    return seconds
+      ? `Too many requests — please wait ${seconds} seconds and try again.`
+      : 'Too many requests — please wait a moment and try again.';
+  }
   return err.response?.data?.error || err.message || fallback;
 }
 

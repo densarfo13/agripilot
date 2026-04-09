@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { formatLandSize } from '../utils/landSize.js';
+import EmptyState from '../components/EmptyState.jsx';
 
 export default function PendingRegistrationsPage() {
   const currentUser = useAuthStore((s) => s.user);
@@ -15,7 +16,7 @@ export default function PendingRegistrationsPage() {
   const load = () => {
     setLoading(true);
     setLoadError('');
-    const endpoint = filter === 'pending' ? '/users/pending-registrations' : '/users/self-registered';
+    const endpoint = filter === 'pending' ? '/farmers/pending-registrations' : '/farmers/self-registered';
     api.get(endpoint).then(r => setRegistrations(r.data)).catch(() => setLoadError('Failed to load registrations')).finally(() => setLoading(false));
   };
 
@@ -45,8 +46,21 @@ export default function PendingRegistrationsPage() {
         {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
         {loading ? <div className="loading">Loading registrations...</div> : registrations.length === 0 ? (
           <div className="card">
-            <div className="card-body" style={{ textAlign: 'center', padding: '2rem', color: '#A1A1AA' }}>
-              {filter === 'pending' ? 'No pending farmer registrations.' : 'No self-registered farmers yet.'}
+            <div className="card-body">
+              {filter === 'pending' ? (
+                <EmptyState
+                  icon="✅"
+                  title="No pending registrations"
+                  message="All farmer registrations have been processed. New registrations will appear here automatically."
+                  variant="success"
+                />
+              ) : (
+                <EmptyState
+                  icon="👤"
+                  title="No self-registered farmers yet"
+                  message="Farmers who sign up on their own will appear here for review."
+                />
+              )}
             </div>
           </div>
         ) : (
@@ -143,11 +157,11 @@ function ActionModal({ farmer, action, officers, onClose, onDone }) {
     setError('');
     try {
       if (action === 'approve') {
-        await api.post(`/users/${farmer.id}/approve-registration`, {
+        await api.post(`/farmers/${farmer.id}/approve-registration`, {
           assignedOfficerId: officerId || undefined,
         });
       } else {
-        await api.post(`/users/${farmer.id}/reject-registration`, {
+        await api.post(`/farmers/${farmer.id}/reject-registration`, {
           rejectionReason: reason || undefined,
         });
       }

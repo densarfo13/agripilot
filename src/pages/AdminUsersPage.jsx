@@ -198,7 +198,13 @@ export default function AdminUsersPage() {
                     ))}
                     {users.length === 0 && (
                       <tr><td colSpan={canManage ? 7 : 6}>
-                        <EmptyState icon="👤" title="No users found" message="Try changing the role filter or search term." compact />
+                        <EmptyState
+                          icon="👤"
+                          title="No users found"
+                          message={statusFilter ? "No users match the current filter." : "No users have been created yet."}
+                          action={statusFilter ? { label: 'Clear filters', onClick: () => handleFilterChange('') } : undefined}
+                          compact
+                        />
                       </td></tr>
                     )}
                   </tbody>

@@ -34,21 +34,29 @@ export default function FarmerNotificationsTab() {
 
   useEffect(() => { loadNotifications(); }, [farmerId, filter]);
 
+  const [actionError, setActionError] = useState('');
+
   const markRead = async (id) => {
+    setActionError('');
     try {
       await api.patch(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       refresh();
-    } catch { }
+    } catch {
+      setActionError('Failed to mark as read. Please try again.');
+    }
   };
 
   const markAllRead = async () => {
     setMarkingAll(true);
+    setActionError('');
     try {
       await api.post(`/notifications/farmer/${farmerId}/mark-all-read`);
       loadNotifications();
       refresh();
-    } catch { } finally {
+    } catch {
+      setActionError('Failed to mark all as read. Please try again.');
+    } finally {
       setMarkingAll(false);
     }
   };
@@ -73,6 +81,7 @@ export default function FarmerNotificationsTab() {
       </div>
 
       {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadNotifications}>Retry</button></div>}
+      {actionError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{actionError}</div>}
       {loading ? <div className="loading">Loading notifications...</div> : notifications.length === 0 ? (
         <div className="card"><div className="card-body"><EmptyState icon="🔕" title="No notifications" message="You're all caught up. Notifications about your farm will appear here." compact variant="success" /></div></div>
       ) : (

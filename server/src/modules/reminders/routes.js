@@ -3,6 +3,7 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
+import prisma from '../../config/database.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -64,6 +65,12 @@ router.patch('/:id/done',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   asyncHandler(async (req, res) => {
+    // Farmer-role ownership check: verify the reminder belongs to this farmer
+    if (req.user.role === 'farmer') {
+      const reminder = await prisma.reminder.findUnique({ where: { id: req.params.id }, select: { farmer: { select: { userId: true } } } });
+      if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
+      if (reminder.farmer.userId !== req.user.sub) return res.status(403).json({ error: 'Access denied — you can only modify your own reminders' });
+    }
     res.json(await svc.markDone(req.params.id));
   }));
 
@@ -72,6 +79,11 @@ router.patch('/:id/dismiss',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES, 'farmer'),
   asyncHandler(async (req, res) => {
+    if (req.user.role === 'farmer') {
+      const reminder = await prisma.reminder.findUnique({ where: { id: req.params.id }, select: { farmer: { select: { userId: true } } } });
+      if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
+      if (reminder.farmer.userId !== req.user.sub) return res.status(403).json({ error: 'Access denied — you can only modify your own reminders' });
+    }
     res.json(await svc.dismissReminder(req.params.id));
   }));
 

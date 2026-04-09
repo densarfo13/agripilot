@@ -11,6 +11,7 @@ export default function PortfolioPage() {
   const [snapshots, setSnapshots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [snapping, setSnapping] = useState(false);
+  const [snapshotError, setSnapshotError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -23,11 +24,15 @@ export default function PortfolioPage() {
 
   const takeSnapshot = async () => {
     setSnapping(true);
+    setSnapshotError('');
     try {
       const res = await api.post('/portfolio/snapshot');
       setSnapshots(prev => [res.data, ...prev]);
-    } catch {}
-    setSnapping(false);
+    } catch (err) {
+      setSnapshotError(err.response?.data?.error || 'Failed to save snapshot. Please try again.');
+    } finally {
+      setSnapping(false);
+    }
   };
 
   if (loading) return <div className="loading">Loading portfolio...</div>;
@@ -45,6 +50,7 @@ export default function PortfolioPage() {
         <h1>Portfolio Overview</h1>
         <button className="btn btn-primary" onClick={takeSnapshot} disabled={snapping}>{snapping ? 'Saving...' : 'Take Snapshot'}</button>
       </div>
+      {snapshotError && <div className="alert alert-danger" style={{ margin: '0 1.5rem 1rem' }}>{snapshotError}</div>}
       <div className="page-body">
         <div className="stats-grid">
           <div className="stat-card"><div className="stat-label">Total Applications</div><div className="stat-value">{data.totalApplications}</div></div>
@@ -53,6 +59,25 @@ export default function PortfolioPage() {
           <div className="stat-card"><div className="stat-label">Avg Verification</div><div className="stat-value">{Math.round(data.avgVerificationScore)}/100</div></div>
           <div className="stat-card"><div className="stat-label">Avg Farm Size</div><div className="stat-value">{data.avgFarmSizeAcres?.toFixed(1)} acres</div></div>
         </div>
+
+        {/* Demographics breakdown */}
+        {data.demographics && data.demographics.totalFarmers > 0 && (
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', flexShrink: 0 }}>
+              Demographics
+            </span>
+            {[
+              ['Total Farmers', data.demographics.totalFarmers, '#22C55E'],
+              ['Women', `${data.demographics.womenFarmers} (${data.demographics.womenPercent}%)`, '#7c3aed'],
+              ['Youth (<35)', `${data.demographics.youthFarmers} (${data.demographics.youthPercent}%)`, '#0891b2'],
+            ].map(([label, val, color]) => (
+              <div key={label} style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 80 }}>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color }}>{val}</div>
+                <div style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
           <div className="card">

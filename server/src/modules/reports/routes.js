@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
-import { extractOrganization, orgWhereApplication, verifyOrgAccess } from '../../middleware/orgScope.js';
+import { extractOrganization, orgWhereApplication, orgWhereFarmer, verifyOrgAccess } from '../../middleware/orgScope.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as reportService from './service.js';
 import { getPilotSummary } from '../pilotMetrics/service.js';
@@ -57,6 +57,25 @@ router.get('/organization/:organizationId/pilot-summary',
     }
     const summary = await getPilotSummary({ organizationId: req.params.organizationId });
     res.json(summary);
+  }));
+
+// Pilot report CSV export (org-scoped) — downloadable farmer-level data
+router.get('/pilot-report',
+  authorize('super_admin', 'institutional_admin', 'investor_viewer'),
+  asyncHandler(async (req, res) => {
+    const format = req.query.format || 'json';
+    if (format === 'csv') {
+      const csv = await reportService.getPilotReportCSV(orgWhereFarmer(req));
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="pilot-report-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    }
+    // JSON fallback — return portfolio + pilot summary
+    const [portfolio, summary] = await Promise.all([
+      reportService.getPortfolioReport(orgWhereApplication(req)),
+      getPilotSummary({ organizationId: req.organizationId }),
+    ]);
+    res.json({ portfolio, summary });
   }));
 
 // Performance & benchmarking summary report (org-scoped)

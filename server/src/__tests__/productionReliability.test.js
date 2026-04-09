@@ -481,6 +481,77 @@ describe('Navigation and UX — actionable paths', () => {
   });
 });
 
+// ─── Last-Mile Hardening: Silent Failure Elimination ─────────
+
+describe('Silent Failure Elimination', () => {
+  it('FarmerNotificationsTab markRead surfaces error to user', () => {
+    const src = readFile('src/pages/FarmerNotificationsTab.jsx');
+    expect(src).toContain('actionError');
+    expect(src).toContain("'Failed to mark as read");
+  });
+
+  it('FarmerNotificationsTab markAllRead surfaces error to user', () => {
+    const src = readFile('src/pages/FarmerNotificationsTab.jsx');
+    expect(src).toContain("'Failed to mark all as read");
+  });
+
+  it('PortfolioPage takeSnapshot surfaces error to user', () => {
+    const src = readFile('src/pages/PortfolioPage.jsx');
+    expect(src).toContain('snapshotError');
+    expect(src).toContain("'Failed to save snapshot");
+  });
+});
+
+// ─── Last-Mile Hardening: Stuck State Detection ──────────────
+
+describe('Stuck State Detection', () => {
+  it('PilotMetrics detects stuck farmers (approved, no login, no invite)', () => {
+    const src = readFile('server/src/modules/pilotMetrics/service.js');
+    expect(src).toContain('stuck_no_access');
+    expect(src).toContain('Approved farmers with no login and no active invite');
+  });
+
+  it('System health endpoint includes consistency checks', () => {
+    const src = readFile('server/src/modules/system/routes.js');
+    expect(src).toContain('consistency');
+    expect(src).toContain('stuckFarmers');
+    expect(src).toContain('resend invite or create login');
+  });
+
+  it('FarmersPage needs_attention filter catches stuck and cancelled farmers', () => {
+    const src = readFile('src/pages/FarmersPage.jsx');
+    const filterSection = src.substring(src.indexOf("'needs_attention'"));
+    expect(filterSection).toContain('isCancelled');
+    expect(filterSection).toContain('isStuck');
+  });
+});
+
+// ─── Last-Mile Hardening: Invite Accept Safety ───────────────
+
+describe('Invite Accept Safety', () => {
+  it('Invite accept checks for disabled/rejected farmer before creating account', () => {
+    const src = readFile('server/src/modules/invites/routes.js');
+    // disabled/rejected checks must appear before the transaction
+    const disabledIdx = src.indexOf("registrationStatus === 'disabled'");
+    const rejectedIdx = src.indexOf("registrationStatus === 'rejected'");
+    const txIdx = src.indexOf('prisma.$transaction');
+    expect(disabledIdx).toBeGreaterThan(-1);
+    expect(rejectedIdx).toBeGreaterThan(-1);
+    expect(disabledIdx).toBeLessThan(txIdx);
+    expect(rejectedIdx).toBeLessThan(txIdx);
+  });
+
+  it('Invite accept transaction is atomic (userId + token consume)', () => {
+    const src = readFile('server/src/modules/invites/routes.js');
+    // All state changes happen inside a single $transaction block
+    expect(src).toContain('$transaction');
+    expect(src).toContain('userId: newUser.id');
+    expect(src).toContain('inviteToken: null');
+    expect(src).toContain('inviteAcceptedAt');
+    expect(src).toContain("inviteDeliveryStatus: 'accepted'");
+  });
+});
+
 // ─── Cross-cutting: existing safeguards still intact ──────────
 
 describe('Existing safeguards remain intact', () => {
@@ -517,5 +588,230 @@ describe('Existing safeguards remain intact', () => {
       const src = readFile(f);
       expect(src).toContain("import { dedupGuard }");
     }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Edge-Case Hardening — Phase 2: Permission & Report Alignment
+// ═══════════════════════════════════════════════════════════════
+
+describe('Permission Edge Cases — Ownership Checks', () => {
+  it('Reminders routes import prisma for ownership lookups', () => {
+    const src = readFile('server/src/modules/reminders/routes.js');
+    expect(src).toContain("import prisma from '../../config/database.js'");
+  });
+
+  it('Reminders PATCH /done enforces farmer ownership', () => {
+    const src = readFile('server/src/modules/reminders/routes.js');
+    expect(src).toContain("req.user.role === 'farmer'");
+    expect(src).toContain('reminder.farmer.userId !== req.user.sub');
+  });
+
+  it('Reminders PATCH /dismiss enforces farmer ownership', () => {
+    const src = readFile('server/src/modules/reminders/routes.js');
+    // Both /done and /dismiss have ownership checks — verify dismiss block exists
+    const dismissIdx = src.indexOf("'/:id/dismiss'");
+    expect(dismissIdx).toBeGreaterThan(0);
+    const dismissBlock = src.substring(dismissIdx);
+    expect(dismissBlock).toContain('farmer.userId !== req.user.sub');
+  });
+
+  it('BuyerInterest routes import prisma for ownership lookups', () => {
+    const src = readFile('server/src/modules/buyerInterest/routes.js');
+    expect(src).toContain("import prisma from '../../config/database.js'");
+  });
+
+  it('BuyerInterest withdraw enforces farmer ownership', () => {
+    const src = readFile('server/src/modules/buyerInterest/routes.js');
+    const withdrawIdx = src.indexOf("'/:id/withdraw'");
+    expect(withdrawIdx).toBeGreaterThan(0);
+    const withdrawBlock = src.substring(withdrawIdx);
+    expect(withdrawBlock).toContain("req.user.role === 'farmer'");
+    expect(withdrawBlock).toContain('interest.farmer.userId !== req.user.sub');
+  });
+});
+
+describe('Report Alignment — Portfolio Demographics', () => {
+  it('Portfolio farmerWhere filters by registrationStatus approved', () => {
+    const src = readFile('server/src/modules/portfolio/service.js');
+    expect(src).toContain("registrationStatus: 'approved'");
+  });
+
+  it('Portfolio youth query aligned to age <= 35 (year - 36)', () => {
+    const src = readFile('server/src/modules/portfolio/service.js');
+    expect(src).toContain('getFullYear() - 36');
+  });
+
+  it('pilotMetrics youth query aligned to age <= 35 (year - 36)', () => {
+    const src = readFile('server/src/modules/pilotMetrics/service.js');
+    expect(src).toContain('getFullYear() - 36');
+  });
+
+  it('Reports youth query aligned to age <= 35 (year - 36)', () => {
+    const src = readFile('server/src/modules/reports/service.js');
+    expect(src).toContain('getFullYear() - 36');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Edge-Case Hardening — Phase 3: Offline/Upload/Mobile Safety
+// ═══════════════════════════════════════════════════════════════
+
+describe('Offline Queue — Retry Safety', () => {
+  it('Has MAX_RETRIES constant to prevent infinite replay', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('MAX_RETRIES');
+  });
+
+  it('Tracks retryCount on enqueued mutations', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('retryCount: 0');
+  });
+
+  it('Abandons mutations that exceed max retries', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('max_retries_exceeded');
+  });
+
+  it('Handles 409 Conflict as already-processed during sync', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('conflict_already_processed');
+    expect(src).toContain('status === 409');
+  });
+
+  it('Includes exponential backoff between failed sync items', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('Math.pow(2,');
+  });
+
+  it('Sync lock prevents double-sync from rapid online events', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('if (syncing) return');
+  });
+});
+
+describe('API Client — Rate Limit UX', () => {
+  it('formatApiError handles 429 with user-friendly message', () => {
+    const src = readFile('src/api/client.js');
+    expect(src).toContain('status === 429');
+    expect(src).toContain('Too many requests');
+  });
+
+  it('Parses Retry-After header from 429 responses', () => {
+    const src = readFile('src/api/client.js');
+    expect(src).toContain('retry-after');
+  });
+});
+
+describe('Upload Limit Alignment', () => {
+  it('Server upload limit uses config.upload.maxFileSizeMB (not hardcoded)', () => {
+    const src = readFile('server/src/modules/farmers/routes.js');
+    expect(src).toContain('config.upload.maxFileSizeMB');
+  });
+
+  it('Client validates file size before upload', () => {
+    const src = readFile('src/components/ProfilePhotoUpload.jsx');
+    expect(src).toContain('MAX_FILE_SIZE');
+    expect(src).toContain('ACCEPTED_TYPES');
+  });
+});
+
+describe('Mobile Touch Targets — OnboardingWizard', () => {
+  it('Reset link has minimum 44px touch target', () => {
+    const src = readFile('src/components/OnboardingWizard.jsx');
+    // resetLink style should include minHeight for mobile
+    const resetIdx = src.indexOf('resetLink:');
+    expect(resetIdx).toBeGreaterThan(0);
+    const resetBlock = src.substring(resetIdx, resetIdx + 200);
+    expect(resetBlock).toContain("minHeight: '44px'");
+  });
+
+  it('Reset confirm buttons have minimum 44px touch target', () => {
+    const src = readFile('src/components/OnboardingWizard.jsx');
+    // "Yes, start over" button should have minHeight
+    expect(src).toContain("minHeight: '44px'");
+  });
+
+  it('Dismiss banner button has adequate touch target', () => {
+    const src = readFile('src/components/OnboardingWizard.jsx');
+    // Dismiss button should NOT have padding: 0 anymore
+    const dismissMatch = src.indexOf('Dismiss</button>');
+    expect(dismissMatch).toBeGreaterThan(0);
+    const dismissBlock = src.substring(Math.max(0, dismissMatch - 300), dismissMatch);
+    expect(dismissBlock).toContain("minHeight: '44px'");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Edge-Case Hardening — Phase 4: Audit/Feedback/Final Validation
+// ═══════════════════════════════════════════════════════════════
+
+describe('Sync Status — Failure Visibility', () => {
+  it('SyncStatus shows failure count when sync fails', () => {
+    const src = readFile('src/components/SyncStatus.jsx');
+    expect(src).toContain('syncState.failed > 0');
+    expect(src).toContain('failed to sync');
+  });
+
+  it('SyncStatus has failedBanner style', () => {
+    const src = readFile('src/components/SyncStatus.jsx');
+    expect(src).toContain('failedBanner');
+  });
+
+  it('SyncStatus shows Retry button on failure when online', () => {
+    const src = readFile('src/components/SyncStatus.jsx');
+    expect(src).toContain('Retry');
+  });
+});
+
+describe('Audit Trail — Critical Route Coverage', () => {
+  it('Issues routes import writeAuditLog', () => {
+    const src = readFile('server/src/modules/issues/routes.js');
+    expect(src).toContain("import { writeAuditLog }");
+  });
+
+  it('Issue creation writes audit log', () => {
+    const src = readFile('server/src/modules/issues/routes.js');
+    expect(src).toContain("action: 'issue_created'");
+  });
+
+  it('Issue update writes audit log', () => {
+    const src = readFile('server/src/modules/issues/routes.js');
+    expect(src).toContain("action: 'issue_updated'");
+  });
+
+  it('Issue bulk update writes audit log', () => {
+    const src = readFile('server/src/modules/issues/routes.js');
+    expect(src).toContain("action: 'issues_bulk_updated'");
+  });
+
+  it('SLA config update writes audit log', () => {
+    const src = readFile('server/src/modules/issues/routes.js');
+    expect(src).toContain("action: 'sla_config_updated'");
+  });
+
+  it('Security routes import writeAuditLog', () => {
+    const src = readFile('server/src/modules/security/routes.js');
+    expect(src).toContain("import { writeAuditLog }");
+  });
+
+  it('Security request creation writes audit log', () => {
+    const src = readFile('server/src/modules/security/routes.js');
+    expect(src).toContain("action: 'security_request_created'");
+  });
+
+  it('Security approval writes audit log', () => {
+    const src = readFile('server/src/modules/security/routes.js');
+    expect(src).toContain("action: 'security_request_approved'");
+  });
+
+  it('Security rejection writes audit log', () => {
+    const src = readFile('server/src/modules/security/routes.js');
+    expect(src).toContain("action: 'security_request_rejected'");
+  });
+
+  it('Security revocation writes audit log', () => {
+    const src = readFile('server/src/modules/security/routes.js');
+    expect(src).toContain("action: 'security_request_revoked'");
   });
 });

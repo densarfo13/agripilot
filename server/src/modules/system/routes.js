@@ -42,7 +42,7 @@ router.get('/health', asyncHandler(async (req, res) => {
 
   const uploadHealth = checkUploadDirHealth();
 
-  const [activeSeasons, farmerCount, userCount, pendingApprovals, failedNotifCount, recentFailedNotifs] = await Promise.all([
+  const [activeSeasons, farmerCount, userCount, pendingApprovals, failedNotifCount, recentFailedNotifs, stuckFarmers] = await Promise.all([
     prisma.farmSeason.count({ where: { status: 'active' } }).catch(() => null),
     prisma.farmer.count().catch(() => null),
     prisma.user.count({ where: { active: true } }).catch(() => null),
@@ -53,6 +53,18 @@ router.get('/health', asyncHandler(async (req, res) => {
       where: { status: 'failed' },
       _count: { id: true },
     }).catch(() => []),
+    // Consistency check: approved farmers with no login and no active invite
+    prisma.farmer.count({
+      where: {
+        registrationStatus: 'approved',
+        userId: null,
+        OR: [
+          { inviteToken: null },
+          { inviteExpiresAt: { lt: new Date() } },
+          { inviteDeliveryStatus: 'cancelled' },
+        ],
+      },
+    }).catch(() => null),
   ]);
 
   const monitoring = getMonitoringSummary();
@@ -87,6 +99,12 @@ router.get('/health', asyncHandler(async (req, res) => {
       errorsLastHour: monitoring.lastHour.errors,
       warningsLastHour: monitoring.lastHour.warnings,
       errorsLast24h: monitoring.last24h.errors,
+    },
+    consistency: {
+      stuckFarmers: stuckFarmers || 0, // approved + no login + no active invite
+      warnings: (stuckFarmers > 0)
+        ? [`${stuckFarmers} farmer(s) approved but unreachable — resend invite or create login`]
+        : [],
     },
   });
 }));

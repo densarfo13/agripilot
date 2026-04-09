@@ -5,6 +5,25 @@ import React from 'react';
  * Uses CSS classes from index.css (.skeleton, .skeleton-text, .skeleton-card, etc.)
  */
 
+/** Generic skeleton loader: renders animated placeholder bars */
+export default function SkeletonLoader({ lines = 3, width = '100%', compact = false }) {
+  return (
+    <div style={{ width, padding: compact ? '0.5rem 0' : '1rem 0' }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <div
+          key={i}
+          className="skeleton-text"
+          style={{
+            width: i === 0 ? '70%' : i === lines - 1 ? '45%' : '90%',
+            height: compact ? '0.6rem' : '0.75rem',
+            marginBottom: compact ? '0.4rem' : '0.6rem',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function SkeletonCard({ lines = 3, style }) {
   return (
     <div className="skeleton-card" style={style}>

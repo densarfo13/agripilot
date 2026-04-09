@@ -14,7 +14,8 @@ export async function getPortfolioSummary(orgScope = {}) {
   if (orgScope.farmer) appWhere.farmer = orgScope.farmer;
 
   // Build farmer where clause from org scope
-  const farmerWhere = {};
+  // Only count approved farmers — aligns with dashboard "Approved Farmers" label
+  const farmerWhere = { registrationStatus: 'approved' };
   if (orgScope.farmer) Object.assign(farmerWhere, orgScope.farmer);
 
   // Build scoped fraud/verification/decision where via application

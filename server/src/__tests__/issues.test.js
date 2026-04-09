@@ -715,6 +715,219 @@ describe('Attachment Previews', () => {
   });
 });
 
+// ─── Real-Time Push (SSE) ───────────────────────────────
+
+describe('Real-Time Push (SSE)', () => {
+  it('backend has SSE stream endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.get('/notifications/stream'");
+    expect(c).toContain('text/event-stream');
+    expect(c).toContain('Cache-Control');
+  });
+
+  it('backend has sseClients map and pushToClient helper', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('sseClients');
+    expect(c).toContain('pushToClient');
+    expect(c).toContain('new Map()');
+  });
+
+  it('notifyStaff pushes via SSE', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("pushToClient(userId, 'notification'");
+  });
+
+  it('SSE sends heartbeat every 30s', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('heartbeat');
+    expect(c).toContain('30000');
+  });
+
+  it('SSE cleans up on disconnect', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("req.on('close'");
+    expect(c).toContain('set.delete(res)');
+  });
+
+  it('SSE supports ticket-based auth (opaque, not raw JWT)', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('sseTickets');
+    expect(c).toContain('SSE_TICKET_TTL');
+    expect(c).toContain('req.query.ticket');
+    expect(c).toContain('sseTickets.delete');
+  });
+
+  it('backend has POST /notifications/ticket endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.post('/notifications/ticket'");
+    expect(c).toContain('crypto.randomBytes');
+    expect(c).toContain('sseTickets.set');
+  });
+
+  it('SSE falls back to raw token query if no ticket', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('sseTokenFromQuery');
+    expect(c).toContain('req.query.token');
+    expect(c).toContain("req.headers.authorization = `Bearer ${req.query.token}`");
+  });
+
+  it('admin UI exchanges JWT for SSE ticket before connecting', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('/issues/notifications/ticket');
+    expect(ui).toContain('ticket');
+    expect(ui).toContain('EventSource');
+    expect(ui).toContain('notifications/stream');
+    expect(ui).toContain("addEventListener('notification'");
+  });
+
+  it('admin UI falls back to polling if SSE fails', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('onerror');
+    expect(ui).toContain('setInterval(loadNotifications');
+  });
+});
+
+// ─── Notification Digest ────────────────────────────────
+
+describe('Notification Digest', () => {
+  it('backend has POST /notifications/digest endpoint', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("router.post('/notifications/digest'");
+    expect(c).toContain('digest_sent');
+  });
+
+  it('digest collects unread notifications from last 24h', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('24 * 60 * 60 * 1000');
+    expect(c).toContain('unread');
+    expect(c).toContain('Daily Digest');
+  });
+
+  it('backend has automatic daily digest cron with DB-persisted last-run marker', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('startDigestCron');
+    expect(c).toContain('stopDigestCron');
+    expect(c).toContain('daily_digest_auto');
+    expect(c).toContain('DIGEST_SETTING_KEY');
+    expect(c).toContain('getLastDigestRun');
+    expect(c).toContain('setLastDigestRun');
+    expect(c).toContain('DIGEST_MIN_GAP');
+    expect(c).toContain('systemSetting.upsert');
+    expect(c).toContain('systemSetting.findUnique');
+  });
+
+  it('schema has SystemSetting model for persistent config', () => {
+    const s = readFile('server/prisma/schema.prisma');
+    expect(s).toContain('model SystemSetting');
+    expect(s).toContain('system_settings');
+  });
+
+  it('admin UI has Send Digest button', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('Send Digest');
+    expect(ui).toContain('/issues/notifications/digest');
+  });
+});
+
+// ─── Drag-and-Drop Attachments ──────────────────────────
+
+describe('Drag-and-Drop Attachments', () => {
+  it('admin UI has drag-and-drop state', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('dragOver');
+    expect(ui).toContain('setDragOver');
+  });
+
+  it('admin UI has drag event handlers', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('handleDragOver');
+    expect(ui).toContain('handleDragLeave');
+    expect(ui).toContain('handleDrop');
+  });
+
+  it('admin UI shows drop zone styling when dragging', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('dashed');
+    expect(ui).toContain('dragOver === issue.id');
+  });
+
+  it('handleDrop uploads dropped files', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('e.dataTransfer');
+    expect(ui).toContain('uploadFile(issueId, file)');
+  });
+
+  it('admin UI shows drag-and-drop hint text', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('drag & drop');
+  });
+
+  it('user ReportIssueButton has drag-and-drop for attachments', () => {
+    const ui = readFile('src/components/ReportIssueButton.jsx');
+    expect(ui).toContain('dragOverIssue');
+    expect(ui).toContain('handleIssueDragOver');
+    expect(ui).toContain('handleIssueDragLeave');
+    expect(ui).toContain('handleIssueDrop');
+    expect(ui).toContain('drag & drop');
+  });
+
+  it('user ReportIssueButton has attachment upload and listing', () => {
+    const ui = readFile('src/components/ReportIssueButton.jsx');
+    expect(ui).toContain('issueAttachments');
+    expect(ui).toContain('uploadIssueFile');
+    expect(ui).toContain('loadIssueAttachments');
+    expect(ui).toContain('No attachments');
+  });
+});
+
+// ─── SLA Breach Auto-Escalation ─────────────────────────
+
+describe('SLA Breach Auto-Escalation', () => {
+  it('backend has autoEscalateBreached function', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('async function autoEscalateBreached');
+    expect(c).toContain('sla_auto_escalation');
+  });
+
+  it('auto-escalation assigns unassigned breached issues to fallback admin', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('fallback');
+    expect(c).toContain('data.assignedToId = fallback.id');
+    expect(c).toContain('auto-assigned');
+  });
+
+  it('auto-escalation bumps priority on resolve breach', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("issue.priority !== 'HIGH'");
+    expect(c).toContain("data.priority = issue.priority === 'LOW' ? 'MEDIUM' : 'HIGH'");
+  });
+
+  it('auto-escalation notifies fallback admin', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain("notifyStaff(fallback.id, 'sla_breach'");
+    expect(c).toContain('SLA breach — auto-assigned');
+  });
+
+  it('auto-escalation runs periodically (every 30 min)', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('startSlaEscalation');
+    expect(c).toContain('stopSlaEscalation');
+    expect(c).toContain('30 * 60 * 1000');
+  });
+
+  it('insights endpoint triggers auto-escalation', () => {
+    const c = readFile('server/src/modules/issues/routes.js');
+    expect(c).toContain('autoEscalateBreached(orgScope)');
+    expect(c).toContain('escalatedCount');
+  });
+
+  it('admin UI shows escalation count in SLA insights', () => {
+    const ui = readFile('src/pages/AdminIssuesPage.jsx');
+    expect(ui).toContain('escalatedCount');
+    expect(ui).toContain('auto-escalated');
+  });
+});
+
 // ─── No Regression ──────────────────────────────────────
 
 describe('No Regression', () => {

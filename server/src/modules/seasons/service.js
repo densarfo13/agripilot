@@ -4,6 +4,7 @@ import { STAGE_ORDER } from '../lifecycle/service.js';
 import { generateCropLifecycleReminders } from '../reminders/service.js';
 import { isValidFileReference } from '../../utils/uploadHealth.js';
 import { computeLandSizeFields } from '../../utils/landSize.js';
+import { normalizeCrop } from '../farmProfiles/service.js';
 
 /**
  * Farm Season Service
@@ -33,12 +34,15 @@ export async function createSeason(farmerId, data) {
     throw err;
   }
 
+  // Normalize crop before any checks or storage
+  const normalizedCropType = normalizeCrop(data.cropType);
+
   // Check for existing active season with same crop
   const existingActive = await prisma.farmSeason.findFirst({
-    where: { farmerId, status: 'active', cropType: data.cropType },
+    where: { farmerId, status: 'active', cropType: normalizedCropType },
   });
   if (existingActive) {
-    const err = new Error(`An active season for ${data.cropType} already exists. Complete or abandon it first.`);
+    const err = new Error(`An active season for ${normalizedCropType} already exists. Complete or abandon it first.`);
     err.statusCode = 409;
     throw err;
   }
@@ -68,7 +72,7 @@ export async function createSeason(farmerId, data) {
 
   // Compute expected harvest date from crop calendar
   const countryCode = farmer.countryCode || DEFAULT_COUNTRY_CODE;
-  const calendar = getCropCalendar(countryCode, data.cropType);
+  const calendar = getCropCalendar(countryCode, normalizedCropType);
   let expectedHarvestDate = null;
   if (calendar && calendar.growingDays) {
     expectedHarvestDate = new Date(plantingDate);
@@ -83,7 +87,7 @@ export async function createSeason(farmerId, data) {
   const season = await prisma.farmSeason.create({
     data: {
       farmerId,
-      cropType: data.cropType,
+      cropType: normalizedCropType,
       farmSizeAcres: parseFloat(data.farmSizeAcres),
       areaUnit: data.areaUnit || regionCfg.areaUnit || 'acres',
       landSizeValue: ls.landSizeValue,
