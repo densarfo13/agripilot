@@ -165,6 +165,9 @@ export default function AcceptInvitePage() {
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>
               Welcome to Farroway, <strong>{inviteData?.fullName}</strong>. Your account is ready. You can now sign in with your email and password.
             </p>
+            <div style={{ background: 'var(--info-light, #0c2d48)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.6rem 0.85rem', fontSize: '0.85rem', color: 'var(--info, #0EA5E9)', marginTop: '0.75rem', lineHeight: 1.5 }}>
+              <strong>What happens next:</strong> After signing in you'll set up your farm profile — add your farm name, crop, and location. It takes about 2 minutes.
+            </div>
           </div>
           <button onClick={() => navigate('/login')} style={styles.button}>Sign In Now</button>
         </div>

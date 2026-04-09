@@ -170,12 +170,12 @@ export default function AutoNotificationsPage() {
         )}
 
         {runResult && (
-          <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#22C55E' }}>
+          <div className="alert-inline alert-inline-success" style={{ fontSize: '0.85rem' }}>
             Cycle complete — <strong>{runResult.enqueued}</strong> enqueued,{' '}
             <strong>{runResult.sent}</strong> sent,{' '}
             <strong>{runResult.skipped}</strong> rate-limited,{' '}
             <strong>{runResult.failed}</strong> failed.
-            <button style={{ marginLeft: '1rem', cursor: 'pointer', background: 'none', border: 'none', color: '#22C55E', fontWeight: 600 }} onClick={() => setRunResult(null)}>✕</button>
+            <button className="alert-dismiss" onClick={() => setRunResult(null)}>✕</button>
           </div>
         )}
 
@@ -183,7 +183,7 @@ export default function AutoNotificationsPage() {
         {!statsLoading && <StatsBar stats={stats} />}
 
         {/* Info banner */}
-        <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#22C55E' }}>
+        <div className="alert-inline alert-inline-success" style={{ fontSize: '0.85rem' }}>
           <strong>How it works:</strong> The system runs daily at 08:00 UTC, evaluating 6 trigger rules.
           Messages are delivered via SMS → Email → In-App fallback. Each farmer is capped at 3 notifications per day.
           {isSuperAdmin && ' Use "Run Cycle Now" to trigger immediately.'}

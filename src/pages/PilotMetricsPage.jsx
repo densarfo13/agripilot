@@ -139,7 +139,7 @@ export default function PilotMetricsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Failed to export pilot summary');
+      setError('Failed to export pilot summary');
     }
   };
 

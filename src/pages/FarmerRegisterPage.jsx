@@ -137,7 +137,7 @@ export default function FarmerRegisterPage() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           {draftRestored && (
-            <div style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.8rem', textAlign: 'center', marginBottom: '0.75rem' }}>
+            <div className="alert-inline alert-inline-success" style={{ fontSize: '0.8rem', textAlign: 'center', justifyContent: 'center' }}>
               ↻ Your previous entry was restored automatically.
             </div>
           )}

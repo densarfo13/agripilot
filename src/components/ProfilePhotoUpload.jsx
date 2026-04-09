@@ -139,10 +139,9 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
           <div>
             {currentImageUrl && !preview && (
               <button
-                className="btn btn-outline btn-sm"
+                className="btn btn-outline-danger btn-sm"
                 onClick={handleRemove}
                 disabled={removing}
-                style={{ color: '#EF4444', borderColor: '#EF4444' }}
               >
                 {removing ? 'Removing...' : 'Remove Photo'}
               </button>

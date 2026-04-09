@@ -123,7 +123,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
   // Push history entry only when step increases (forward navigation)
   useEffect(() => {
-    if (step > prevStepRef.current && step > 0 && step < 4) {
+    if (step > prevStepRef.current && step > 0 && step <= 4) {
       window.history.pushState({ onboardingStep: step }, '');
     }
     prevStepRef.current = step;

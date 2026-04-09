@@ -52,6 +52,7 @@ function SystemOverview({ navigate }) {
   const [stats, setStats] = useState(null);
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -60,10 +61,11 @@ function SystemOverview({ navigate }) {
     ]).then(([sRes, pRes]) => {
       setStats(sRes.data);
       setPortfolio(pRes.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => { setLoadError('Failed to load system overview'); }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="loading">Loading system overview...</div>;
+  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button></div>;
 
   const statusMap = {};
   if (stats?.statusCounts) stats.statusCounts.forEach(s => { statusMap[s.status] = s._count; });
@@ -228,10 +230,12 @@ function RegionConfig() {
   const [crops, setCrops] = useState([]);
   const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const loadCountry = (code) => {
     setSelectedCountry(code);
     setLoading(true);
+    setLoadError('');
     Promise.all([
       api.get(`/region-config/${code}`),
       api.get(`/region-config/${code}/season`),
@@ -242,12 +246,13 @@ function RegionConfig() {
       setSeason(sRes.data);
       setCrops(cRes.data);
       setRegions(rRes.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => { setLoadError('Failed to load region config'); }).finally(() => setLoading(false));
   };
 
   useEffect(() => { loadCountry('KE'); }, []);
 
   if (loading) return <div className="loading">Loading region config...</div>;
+  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => loadCountry(selectedCountry)}>Retry</button></div>;
 
   const cfg = configs[0] || {};
 
@@ -351,8 +356,11 @@ function DemandIntelligence() {
   const [demandTZ, setDemandTZ] = useState(null);
   const [cropDemand, setCropDemand] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setLoadError('');
     Promise.all([
       api.get('/buyer-interest/demand/summary?country=KE'),
       api.get('/buyer-interest/demand/summary?country=TZ'),
@@ -364,10 +372,13 @@ function DemandIntelligence() {
       setDemandKE(keRes.data);
       setDemandTZ(tzRes.data);
       setCropDemand(cropResults.map(r => r.data).filter(d => d.totalInterests > 0));
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    }).catch(() => { setLoadError('Failed to load demand data'); }).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
 
   if (loading) return <div className="loading">Loading demand intelligence...</div>;
+  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>;
 
   return (
     <>
@@ -475,12 +486,13 @@ function LanguagePanel() {
   const [selectedLang, setSelectedLang] = useState(null);
   const [translations, setTranslations] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     fetch('/api/localization/languages')
       .then(r => r.json())
       .then(setLanguages)
-      .catch(() => {})
+      .catch(() => { setLoadError('Failed to load languages'); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -493,6 +505,7 @@ function LanguagePanel() {
   };
 
   if (loading) return <div className="loading">Loading languages...</div>;
+  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button></div>;
 
   // Group translations by prefix
   const grouped = {};

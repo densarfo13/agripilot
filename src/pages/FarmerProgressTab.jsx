@@ -153,9 +153,20 @@ export default function FarmerProgressTab() {
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
+  const [dupWarning, setDupWarning] = useState(false);
+
   const handleLogProgress = async (e) => {
     e.preventDefault();
     setFormError('');
+    // Client-side same-day duplicate warning
+    const today = new Date().toISOString().split('T')[0];
+    const sameDayEntry = entries.find(en => en.entryDate?.startsWith(today) && en.activityType === progressForm.activityType);
+    if (sameDayEntry && !dupWarning) {
+      setDupWarning(true);
+      setFormError(`You already logged a "${progressForm.activityType}" activity today. Submit again to confirm.`);
+      return;
+    }
+    setDupWarning(false);
     setSubmitting(true);
     try {
       await api.post(`/seasons/${activeSeason.id}/progress`, { ...progressForm, entryType: 'activity' });

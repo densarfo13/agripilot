@@ -407,7 +407,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
         {actionError && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{actionError}</div>}
         {actionSuccess && (
           <div style={{ marginBottom: '0.75rem' }}>
-            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: '0.875rem', marginBottom: resendInviteToken ? '0.5rem' : 0 }}>{actionSuccess}</div>
+            <div className="alert-inline alert-inline-success" style={{ marginBottom: resendInviteToken ? '0.5rem' : 0 }}>{actionSuccess}</div>
             {resendInviteToken && (
               <ResendInviteLinkBox url={`${window.location.origin}/accept-invite?token=${resendInviteToken}`} expiresAt={resendInviteExpiry} />
             )}
@@ -762,7 +762,7 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
 
           {mode === 'request' && created && (
             <div>
-              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>
+              <div className="alert-inline alert-inline-success" style={{ fontSize: '0.85rem' }}>
                 <strong>Request submitted successfully.</strong> Another admin must approve it before you can execute.
               </div>
               <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>
@@ -1219,7 +1219,7 @@ function CreateLoginModal({ farmer, onClose, onDone }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
+            <div className="alert-inline alert-inline-success" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>
               Creates a login account linked to this farmer profile. Share the email and password with the farmer securely.
             </div>
             <div className="form-group">
@@ -1333,6 +1333,7 @@ function HistoricalPerformanceSection({ farmerId, userRole }) {
   const [history, setHistory] = useState(null);
   const [benchmarks, setBenchmarks] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [expanded, setExpanded] = useState(false);
   const isInvestor = userRole === 'investor_viewer';
 
@@ -1345,11 +1346,12 @@ function HistoricalPerformanceSection({ farmerId, userRole }) {
         setHistory(hRes.data);
         setBenchmarks(bRes.data);
       })
-      .catch(() => {})
+      .catch(() => { setLoadError('Could not load performance history'); })
       .finally(() => setLoading(false));
   }, [farmerId]);
 
   if (loading) return null;
+  if (loadError) return <div className="card" style={{ marginBottom: '1.25rem' }}><div className="card-body"><div className="alert-inline alert-inline-danger">{loadError}</div></div></div>;
   if (!history || history.seasons.length === 0) return null;
 
   const { seasons, selfTrend, summary } = history;

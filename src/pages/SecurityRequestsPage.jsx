@@ -287,8 +287,8 @@ export default function SecurityRequestsPage() {
                               {/* Revoke — super_admin can revoke any; requester can revoke their own */}
                               {r.status === 'approved' && (isSuperAdmin || isSelf) && !expired && (
                                 <button
-                                  className="btn btn-sm btn-outline"
-                                  style={{ color: '#EF4444', borderColor: '#EF4444', fontSize: '0.78rem' }}
+                                  className="btn btn-sm btn-outline-danger"
+                                  style={{ fontSize: '0.78rem' }}
                                   onClick={() => openModal(r, 'revoke')}
                                 >
                                   Revoke
@@ -368,8 +368,7 @@ export default function SecurityRequestsPage() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
               <button
-                className={`btn ${modal.action === 'approve' ? 'btn-success' : modal.action === 'reject' ? 'btn-warning' : 'btn-outline'}`}
-                style={modal.action === 'revoke' ? { color: '#EF4444', borderColor: '#EF4444' } : {}}
+                className={`btn ${modal.action === 'approve' ? 'btn-success' : modal.action === 'reject' ? 'btn-warning' : modal.action === 'revoke' ? 'btn-outline-danger' : 'btn-outline'}`}
                 onClick={submitAction}
                 disabled={actionSaving}
               >

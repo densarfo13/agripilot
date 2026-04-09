@@ -265,7 +265,7 @@ export default function ImpactDashboardPage() {
       {error && data && (
         <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.5rem 0.75rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#EF4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{error}</span>
-          <button className="btn btn-outline btn-sm" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => retry()}>Retry</button>
+          <button className="btn btn-outline-danger btn-sm" onClick={() => retry()}>Retry</button>
         </div>
       )}
 

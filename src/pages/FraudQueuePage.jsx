@@ -10,6 +10,7 @@ export default function FraudQueuePage() {
   const [modal, setModal] = useState(null); // { appId, action, title }
   const [modalReason, setModalReason] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
 
   const load = async () => {
@@ -44,7 +45,7 @@ export default function FraudQueuePage() {
       await api.post(`/applications/${appId}/${action}`, { reason: modalReason || undefined });
       load();
     } catch (err) {
-      alert(err.response?.data?.error || `${action} failed`);
+      setActionError(err.response?.data?.error || `${action} failed`);
     } finally {
       setActionLoading(s => ({ ...s, [appId]: null }));
     }
@@ -57,7 +58,7 @@ export default function FraudQueuePage() {
       await api.post(`/applications/${appId}/reopen`);
       load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Reopen failed');
+      setActionError(err.response?.data?.error || 'Reopen failed');
     } finally {
       setActionLoading(s => ({ ...s, [appId]: null }));
     }
@@ -70,6 +71,7 @@ export default function FraudQueuePage() {
         <button className="btn btn-outline" onClick={load}>Refresh</button>
       </div>
       <div className="page-body">
+        {actionError && <div className="alert-inline alert-inline-danger" style={{ marginBottom: '1rem' }}>{actionError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => setActionError('')}>Dismiss</button></div>}
         {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
         {loading ? <div className="loading">Loading fraud queue...</div> : apps.length === 0 ? (
           <div className="card"><div className="card-body"><div className="empty-state">No applications on fraud hold</div></div></div>
@@ -127,8 +129,7 @@ export default function FraudQueuePage() {
                         {actionLoading[a.id] === 'escalate' ? 'Escalating...' : 'Escalate'}
                       </button>
                       <button
-                        className="btn btn-outline btn-sm"
-                        style={{ color: '#EF4444', borderColor: '#EF4444' }}
+                        className="btn btn-outline-danger btn-sm"
                         disabled={!!actionLoading[a.id]}
                         onClick={(e) => openActionModal(a.id, 'reject', 'Reject Application', e)}
                       >

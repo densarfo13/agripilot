@@ -492,7 +492,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">Farmer Created <button className="btn btn-outline btn-sm" onClick={() => onCreated()}>X</button></div>
           <div className="modal-body">
-            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
+            <div className="alert-inline alert-inline-success" style={{ padding: '1rem', borderRadius: 8 }}>
               <strong>{success.farmerName}</strong> has been added to Farroway.
             </div>
             <div style={{
@@ -872,7 +872,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">Farmer Invited <button className="btn btn-outline btn-sm" onClick={() => onCreated()}>X</button></div>
           <div className="modal-body">
-            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '1rem', borderRadius: 8, marginBottom: '1rem' }}>
+            <div className="alert-inline alert-inline-success" style={{ padding: '1rem', borderRadius: 8 }}>
               <strong>{success.farmerName}</strong> has been successfully invited to Farroway.
             </div>
             <div style={{
@@ -921,7 +921,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
                 </div>
               </div>
             )}
-            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
+            <div className="alert-inline alert-inline-success" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>
               Invited farmers are pre-approved and can begin using the system immediately once they have login credentials.
             </div>
             <div className="form-row">

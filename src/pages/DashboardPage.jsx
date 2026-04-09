@@ -108,7 +108,7 @@ export default function DashboardPage() {
       <div className="page-body">
         {/* First-run empty state — shown to admins when no farmers exist yet */}
         {isAdmin && adoption && (adoption.farmers?.total === 0) && portfolio.totalApplications === 0 && (
-          <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
+          <div className="alert-inline alert-inline-success" style={{ borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'block' }}>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#22C55E', marginBottom: '0.5rem' }}>Welcome to Farroway — Get started in 3 steps</div>
             <ol style={{ margin: 0, paddingLeft: '1.4rem', color: '#FFFFFF', fontSize: '0.9rem', lineHeight: 1.8 }}>
               <li>
@@ -130,7 +130,7 @@ export default function DashboardPage() {
         <div className="stats-grid">
           <div className="stat-card" onClick={() => navigate('/farmers')} style={{ cursor: 'pointer' }}>
             <div className="stat-label">Active Farmers</div>
-            <div className="stat-value">{adoption?.farmers?.approved ?? portfolio.totalApplications}</div>
+            <div className="stat-value">{adoption?.farmers?.approved ?? 0}</div>
           </div>
           <div className="stat-card" onClick={canSeeAttention ? () => navigate('/verification-queue') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
             <div className="stat-label">Pending Validation</div>
