@@ -7,7 +7,7 @@
     "test": "cd server && npm test",
     "dev": "vite",
     "build": "vite build && cd server && npx prisma generate",
-    "start": "cd server && node src/server.js",
+    "start": "cd server && npx prisma db push --accept-data-loss --skip-generate && node src/server.js",
     "postinstall": "[ -d server ] && cd server && npm install || true",
     "db:push": "cd server && npx prisma db push",
     "db:seed": "cd server && node prisma/seed.js",
