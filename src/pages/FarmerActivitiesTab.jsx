@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
+import CropSelect from '../components/CropSelect.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import { getCropLabel } from '../utils/crops.js';
 
 const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
 export default function FarmerActivitiesTab() {
-  const { farmerId, refresh, activeSeason } = useFarmerContext();
+  const { farmerId, farmer, refresh, activeSeason } = useFarmerContext();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
@@ -74,7 +77,7 @@ export default function FarmerActivitiesTab() {
           <div className="card-header">Log New Activity</div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
+              {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Activity Type *</label>
@@ -84,7 +87,12 @@ export default function FarmerActivitiesTab() {
                 </div>
                 <div>
                   <label className="form-label">Crop Type {['planting', 'harvesting'].includes(form.activityType) ? '*' : ''}</label>
-                  <input className="form-input" value={form.cropType} onChange={e => setForm({ ...form, cropType: e.target.value })} placeholder="e.g. maize" />
+                  <CropSelect
+                    value={form.cropType}
+                    onChange={(v) => setForm({ ...form, cropType: v })}
+                    countryCode={farmer?.countryCode}
+                    placeholder="Search crops..."
+                  />
                 </div>
                 <div>
                   <label className="form-label">Date</label>
@@ -138,7 +146,7 @@ export default function FarmerActivitiesTab() {
                       <tr key={a.id}>
                         <td className="text-sm">{new Date(a.activityDate).toLocaleDateString()}</td>
                         <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
-                        <td>{a.cropType || '-'}</td>
+                        <td>{a.cropType ? getCropLabel(a.cropType) : '-'}</td>
                         <td>{a.quantityKg ? `${a.quantityKg} kg` : '-'}</td>
                         <td className="text-sm text-muted">{a.description || '-'}</td>
                       </tr>
@@ -147,7 +155,7 @@ export default function FarmerActivitiesTab() {
                 </table>
               </div>
             ) : (
-              <div className="empty-state">No activities logged yet. Click "Log Activity" to get started.</div>
+              <EmptyState icon="📝" title="No activities logged yet" message="Start tracking your farming activities by logging your first entry." action={{ label: 'Log Activity', onClick: () => setShowForm(true) }} compact />
             )}
           </div>
         </div>

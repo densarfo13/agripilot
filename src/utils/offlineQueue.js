@@ -33,13 +33,23 @@ function tx(mode) {
   });
 }
 
-/** Enqueue a failed mutation */
+/** Enqueue a failed mutation (deduplicates by url+method within 10s window) */
 export async function enqueue(mutation) {
+  // Prevent exact-same mutation from being queued twice rapidly (e.g. double-tap)
+  const existing = await getAll();
+  const now = Date.now();
+  const isDupe = existing.some(m =>
+    m.method === mutation.method &&
+    m.url === mutation.url &&
+    (now - m.createdAt) < 10000 // within 10 seconds
+  );
+  if (isDupe) return -1; // silently skip duplicate
+
   const store = await tx('readwrite');
   return new Promise((resolve, reject) => {
     const req = store.add({
       ...mutation,
-      createdAt: Date.now(),
+      createdAt: now,
     });
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -86,6 +96,25 @@ export async function clear() {
   });
 }
 
+// ─── Sync failure logging (client-side ring buffer) ──────
+
+function logSyncFailure(reason, mutation, extra = {}) {
+  try {
+    const LOG_KEY = 'farroway:sync_failures';
+    const prev = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    prev.push({
+      ts: new Date().toISOString(),
+      reason,
+      method: mutation.method,
+      url: mutation.url,
+      ...extra,
+    });
+    // Keep last 30 entries
+    if (prev.length > 30) prev.splice(0, prev.length - 30);
+    localStorage.setItem(LOG_KEY, JSON.stringify(prev));
+  } catch { /* storage full — ignore */ }
+}
+
 // ─── Sync engine ──────────────────────────────────────────
 
 let syncing = false;
@@ -125,9 +154,12 @@ export async function syncAll(apiClient) {
       // If it's still a network error, stop — we're still offline
       if (!err.response) {
         failed++;
+        logSyncFailure('network_still_offline', m);
         break;
       }
       // Server rejected it (4xx/5xx) — remove from queue, it won't succeed on retry
+      const status = err.response?.status;
+      logSyncFailure('server_rejected', m, { status, error: err.response?.data?.error });
       await remove(m.id);
       failed++;
     }

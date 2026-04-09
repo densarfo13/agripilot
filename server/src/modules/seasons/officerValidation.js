@@ -73,6 +73,9 @@ export async function createOfficerValidation(seasonId, officerId, data) {
       confirmedCondition: data.confirmedCondition || null,
       confirmedHarvest: data.confirmedHarvest !== undefined ? !!data.confirmedHarvest : null,
       note: data.note || null,
+      latitude: data.latitude != null ? parseFloat(data.latitude) : null,
+      longitude: data.longitude != null ? parseFloat(data.longitude) : null,
+      locationAccuracy: data.locationAccuracy != null ? parseFloat(data.locationAccuracy) : null,
       validatedAt: data.validatedAt ? new Date(data.validatedAt) : new Date(),
     },
   });

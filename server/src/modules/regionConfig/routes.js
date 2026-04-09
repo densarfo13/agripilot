@@ -4,6 +4,13 @@ import * as svc from './service.js';
 
 const router = Router();
 router.use(authenticate);
+
+// ── Public-to-all-authenticated: crops for a country (used by crop selector) ──
+router.get('/:countryCode/crops', (req, res) => {
+  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
+  res.json(svc.getCropsForCountry(cc));
+});
+
 // Region config contains loan thresholds and verification settings — restrict to staff roles
 router.use(authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'));
 
@@ -53,10 +60,6 @@ router.get('/:countryCode/regions', (req, res) => {
   res.json(svc.getRegionsForCountry(cc));
 });
 
-// Get crops for a country
-router.get('/:countryCode/crops', (req, res) => {
-  const cc = req.params.countryCode.toUpperCase().slice(0, 3);
-  res.json(svc.getCropsForCountry(cc));
-});
+// Note: /:countryCode/crops is defined above (before authorize) so all roles can access it.
 
 export default router;

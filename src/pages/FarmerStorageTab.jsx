@@ -3,6 +3,7 @@ import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 import { tStorageMethod, tStorageCondition } from '../utils/i18n.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
+import EmptyState from '../components/EmptyState.jsx';
 
 const STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse', 'silo', 'traditional', 'cold_storage', 'other'];
 const STORAGE_CONDITIONS = ['good', 'fair', 'poor', 'deteriorating', 'unknown'];
@@ -118,7 +119,7 @@ export default function FarmerStorageTab() {
           <div className="card-header">Storage Status Update</div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
+              {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
@@ -178,7 +179,7 @@ export default function FarmerStorageTab() {
             </div>
           )}
           {(!dashboard || dashboard.totalItems === 0) ? (
-            <div className="card"><div className="card-body"><div className="empty-state">No stored produce tracked yet. Click "Add / Update Storage" to get started.</div></div></div>
+            <div className="card"><div className="card-body"><EmptyState icon="🏪" title="No stored produce tracked" message="Start tracking your stored harvest to monitor conditions and quantities." action={{ label: 'Add / Update Storage', onClick: () => setShowForm(true) }} compact /></div></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
               {dashboard.items.map(item => (

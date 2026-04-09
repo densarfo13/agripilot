@@ -2,27 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 import CountrySelect from '../components/CountrySelect.jsx';
+import CropSelect from '../components/CropSelect.jsx';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
+import LocationDetect from '../components/LocationDetect.jsx';
+import { useDraft } from '../utils/useDraft.js';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'sw', label: 'Kiswahili' },
 ];
 
-const CROPS = [
-  { value: '', label: 'Select crop (optional)' },
-  { value: 'maize', label: 'Maize' },
-  { value: 'rice', label: 'Rice' },
-  { value: 'cassava', label: 'Cassava' },
-  { value: 'wheat', label: 'Wheat' },
-];
+const INITIAL_FORM = {
+  fullName: '', phone: '', email: '', password: '', confirmPassword: '',
+  countryCode: 'KE', region: '', district: '', village: '',
+  preferredLanguage: 'en', primaryCrop: '', farmSizeAcres: '',
+  latitude: null, longitude: null, locationSource: null,
+  geolocationAccuracy: null, geolocationCapturedAt: null,
+};
 
 export default function FarmerRegisterPage() {
-  const [form, setForm] = useState({
-    fullName: '', phone: '', email: '', password: '', confirmPassword: '',
-    countryCode: 'KE', region: '', district: '', village: '',
+  // Persist non-sensitive fields across refresh (passwords are never stored)
+  const { state: savedForm, setState: setSavedForm, clearDraft, draftRestored } = useDraft('farmer-register', {
+    fullName: '', phone: '', countryCode: 'KE', region: '', district: '', village: '',
     preferredLanguage: 'en', primaryCrop: '', farmSizeAcres: '',
+  });
+  const [form, setForm] = useState({
+    ...INITIAL_FORM,
+    ...savedForm,
+    // Never restore passwords from localStorage
+    email: '', password: '', confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -39,7 +48,14 @@ export default function FarmerRegisterPage() {
     }
   }, []);
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    const val = e.target.value;
+    setForm(f => ({ ...f, [k]: val }));
+    // Persist non-sensitive fields to draft (never store passwords/email)
+    if (!['password', 'confirmPassword', 'email'].includes(k)) {
+      setSavedForm(prev => ({ ...prev, [k]: val }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,7 +82,13 @@ export default function FarmerRegisterPage() {
         preferredLanguage: form.preferredLanguage,
         primaryCrop: form.primaryCrop || undefined,
         farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : undefined,
+        latitude: form.latitude || undefined,
+        longitude: form.longitude || undefined,
+        locationSource: form.locationSource || undefined,
+        geolocationAccuracy: form.geolocationAccuracy || undefined,
+        geolocationCapturedAt: form.geolocationCapturedAt || undefined,
       });
+      clearDraft();
       setSuccess(true);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -110,6 +132,11 @@ export default function FarmerRegisterPage() {
         <p style={styles.subtitle}>Farmer Registration</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          {draftRestored && (
+            <div style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.8rem', textAlign: 'center', marginBottom: '0.75rem' }}>
+              ↻ Your previous entry was restored automatically.
+            </div>
+          )}
           {error && <div style={styles.error}>{error}</div>}
 
           <div style={styles.sectionLabel}>Personal Information</div>
@@ -130,6 +157,38 @@ export default function FarmerRegisterPage() {
           </div>
 
           <div style={styles.sectionLabel}>Location</div>
+
+          <LocationDetect
+            onDetected={(loc) => {
+              setForm(f => {
+                const next = {
+                  ...f,
+                  latitude: loc.latitude, longitude: loc.longitude,
+                  locationSource: 'gps', geolocationAccuracy: loc.accuracy,
+                  geolocationCapturedAt: loc.capturedAt,
+                };
+                // Only auto-fill empty text fields — never overwrite what the user typed
+                if (loc.region && !f.region) next.region = loc.region;
+                if (loc.district && !f.district) next.district = loc.district;
+                if (loc.locality && !f.village) next.village = loc.locality;
+                if (loc.countryCode && loc.countryCode.length === 2) next.countryCode = loc.countryCode;
+                return next;
+              });
+              // Persist filled fields to draft
+              const filled = {};
+              if (loc.region) filled.region = loc.region;
+              if (loc.district) filled.district = loc.district;
+              if (loc.locality) filled.village = loc.locality;
+              if (loc.countryCode) filled.countryCode = loc.countryCode;
+              if (Object.keys(filled).length) setSavedForm(prev => ({ ...prev, ...filled }));
+            }}
+            style={{ marginBottom: '0.25rem' }}
+          />
+          {form.latitude && (
+            <div style={{ fontSize: '0.72rem', color: '#22C55E', marginBottom: '0.5rem' }}>
+              GPS captured — location fields were filled where empty. You can edit them below.
+            </div>
+          )}
 
           <div style={styles.row}>
             <CountrySelect
@@ -153,9 +212,15 @@ export default function FarmerRegisterPage() {
           <div style={styles.sectionLabel}>Farm Details (optional)</div>
 
           <div style={styles.row}>
-            <select style={{ ...styles.input, flex: 1 }} value={form.primaryCrop} onChange={set('primaryCrop')}>
-              {CROPS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
+            <div style={{ flex: 1 }}>
+              <CropSelect
+                value={form.primaryCrop}
+                onChange={(v) => { setForm(f => ({ ...f, primaryCrop: v })); setSavedForm(prev => ({ ...prev, primaryCrop: v })); }}
+                countryCode={form.countryCode}
+                placeholder="Select crop (optional)"
+                optional
+              />
+            </div>
             <input style={{ ...styles.input, flex: 1 }} placeholder="Farm Size (acres)" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} type="number" step="0.1" min="0" />
           </div>
 

@@ -6,6 +6,8 @@
  * returns an error response or calls next() with req.approvalRequest attached.
  */
 
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 vi.mock('../config/database.js', () => {
   const mockPrisma = {
     approvalRequest: {

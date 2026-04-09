@@ -6,6 +6,7 @@ import ScoreBar from '../components/ScoreBar.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { ADMIN_ROLES, REVIEW_ROLES } from '../utils/roles.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
+import { getCropLabel } from '../utils/crops.js';
 
 export default function ApplicationDetailPage() {
   const { id } = useParams();
@@ -82,7 +83,7 @@ export default function ApplicationDetailPage() {
     } catch {}
   };
 
-  if (loading) return <div className="loading">Loading application...</div>;
+  if (loading) return <div className="page-body"><div className="loading">Loading application...</div></div>;
   if (!app) return (
     <div className="page-body">
       <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -120,7 +121,7 @@ export default function ApplicationDetailPage() {
       <div className="page-header">
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {app.farmer?.fullName} — {app.cropType}
+            {app.farmer?.fullName} — {getCropLabel(app.cropType)}
             <StatusBadge value={app.status} />
           </h1>
           <div className="text-sm text-muted" style={{ marginTop: 2 }}>
@@ -352,7 +353,7 @@ function OverviewTab({ app, currency }) {
         <div className="card-header">Application Details</div>
         <div className="card-body">
           <div className="detail-row"><span className="detail-label">Status</span><span className="detail-value"><StatusBadge value={app.status} /></span></div>
-          <div className="detail-row"><span className="detail-label">Crop Type</span><span className="detail-value">{app.cropType}</span></div>
+          <div className="detail-row"><span className="detail-label">Crop Type</span><span className="detail-value">{getCropLabel(app.cropType)}</span></div>
           <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{app.farmSizeAcres} {app.farmer?.countryCode === 'TZ' ? 'hectares' : 'acres'}</span></div>
           <div className="detail-row"><span className="detail-label">Requested Amount</span><span className="detail-value">{currency} {app.requestedAmount?.toLocaleString()}</span></div>
           {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#22C55E' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}

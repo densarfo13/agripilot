@@ -1,0 +1,157 @@
+/**
+ * Crop Recommendation Engine — lightweight, rule-based, explainable.
+ *
+ * Uses only existing land/context data to suggest crops.
+ * No black-box AI. Every recommendation has an explicit reason.
+ *
+ * Input context (all optional):
+ *   country    — "KE" | "TZ" | etc.
+ *   region     — string (e.g. "Nakuru")
+ *   season     — "long_rains" | "short_rains" | "masika" | "vuli" | "dry"
+ *   farmSize   — number (acres)
+ *   soilType   — string (e.g. "loam", "clay", "sandy")
+ *   altitude   — number (meters)
+ *   landType   — string (e.g. "irrigated", "rainfed", "wetland")
+ *
+ * Returns: { recommendations: [{ code, name, reason }], hasContext: boolean }
+ */
+
+import { getCropByCode } from './crops.js';
+
+// ── Country-level defaults ──────────────────────────────────
+const COUNTRY_CROPS = {
+  KE: ['MAIZE', 'WHEAT', 'TEA', 'COFFEE', 'SUGARCANE', 'RICE', 'BEAN', 'SORGHUM'],
+  TZ: ['MAIZE', 'RICE', 'COFFEE', 'COTTON', 'TEA', 'CASSAVA', 'BANANA', 'SORGHUM'],
+};
+
+// ── Season-crop affinity ────────────────────────────────────
+const SEASON_CROPS = {
+  long_rains: ['MAIZE', 'BEAN', 'RICE', 'SORGHUM', 'GROUNDNUT', 'SWEET_POTATO', 'CASSAVA'],
+  short_rains: ['BEAN', 'COWPEA', 'MAIZE', 'MILLET', 'GROUNDNUT'],
+  masika: ['MAIZE', 'RICE', 'BEAN', 'CASSAVA', 'SWEET_POTATO', 'GROUNDNUT'],
+  vuli: ['BEAN', 'COWPEA', 'MAIZE', 'MILLET', 'SORGHUM'],
+  dry: ['SORGHUM', 'MILLET', 'COWPEA', 'CASSAVA', 'SWEET_POTATO'],
+};
+
+// ── Soil-crop affinity ──────────────────────────────────────
+const SOIL_CROPS = {
+  loam:      ['MAIZE', 'WHEAT', 'BEAN', 'COFFEE', 'TOMATO', 'CABBAGE'],
+  clay:      ['RICE', 'SUGARCANE', 'BEAN', 'CABBAGE', 'SWEET_POTATO'],
+  sandy:     ['GROUNDNUT', 'CASSAVA', 'COWPEA', 'WATERMELON', 'SWEET_POTATO', 'MILLET'],
+  volcanic:  ['COFFEE', 'TEA', 'POTATO', 'MAIZE', 'BEAN'],
+  alluvial:  ['RICE', 'SUGARCANE', 'BANANA', 'MAIZE', 'BEAN'],
+  laterite:  ['CASSAVA', 'MANGO', 'GROUNDNUT', 'COWPEA'],
+  black:     ['COTTON', 'SORGHUM', 'SUNFLOWER', 'WHEAT', 'MAIZE'],
+};
+
+// ── Land-type affinity ──────────────────────────────────────
+const LAND_CROPS = {
+  irrigated: ['RICE', 'SUGARCANE', 'TOMATO', 'ONION', 'CABBAGE', 'WHEAT'],
+  rainfed:   ['MAIZE', 'SORGHUM', 'MILLET', 'BEAN', 'GROUNDNUT', 'CASSAVA'],
+  wetland:   ['RICE', 'SUGARCANE', 'BANANA'],
+  highland:  ['TEA', 'COFFEE', 'POTATO', 'WHEAT', 'BARLEY', 'PEA'],
+  lowland:   ['RICE', 'MAIZE', 'CASSAVA', 'PALM_OIL', 'COCONUT', 'SUGARCANE'],
+  arid:      ['SORGHUM', 'MILLET', 'COWPEA', 'GROUNDNUT', 'SESAME'],
+};
+
+// ── Farm-size heuristics ────────────────────────────────────
+const SMALL_FARM_CROPS = ['MAIZE', 'BEAN', 'KALE', 'TOMATO', 'ONION', 'SWEET_POTATO', 'CASSAVA'];
+const LARGE_FARM_CROPS = ['TEA', 'COFFEE', 'SUGARCANE', 'WHEAT', 'COTTON', 'SUNFLOWER', 'RICE'];
+
+/**
+ * Generate crop recommendations from available land context.
+ *
+ * @param {Object} ctx — context fields (all optional)
+ * @returns {{ recommendations: Array<{code, name, reason}>, hasContext: boolean, contextUsed: string[] }}
+ */
+export function recommendCrops(ctx = {}) {
+  const { country, region, season, farmSize, soilType, altitude, landType } = ctx;
+
+  const contextUsed = [];
+  const scores = new Map();
+
+  function addCrops(codes, reason) {
+    for (const code of codes) {
+      if (!scores.has(code)) scores.set(code, new Set());
+      scores.get(code).add(reason);
+    }
+  }
+
+  // 1. Country
+  const cc = country?.toUpperCase();
+  if (cc && COUNTRY_CROPS[cc]) {
+    addCrops(COUNTRY_CROPS[cc], `Common in ${cc === 'KE' ? 'Kenya' : cc === 'TZ' ? 'Tanzania' : cc}`);
+    contextUsed.push('country');
+  }
+
+  // 2. Season
+  const seasonKey = season?.toLowerCase();
+  if (seasonKey && SEASON_CROPS[seasonKey]) {
+    const label = seasonKey.replace(/_/g, ' ');
+    addCrops(SEASON_CROPS[seasonKey], `Suited to ${label} season`);
+    contextUsed.push('season');
+  }
+
+  // 3. Soil type
+  const soilKey = soilType?.toLowerCase();
+  if (soilKey && SOIL_CROPS[soilKey]) {
+    addCrops(SOIL_CROPS[soilKey], `Good for ${soilKey} soil`);
+    contextUsed.push('soilType');
+  }
+
+  // 4. Land type
+  const landKey = landType?.toLowerCase();
+  if (landKey && LAND_CROPS[landKey]) {
+    addCrops(LAND_CROPS[landKey], `Suited to ${landKey} land`);
+    contextUsed.push('landType');
+  }
+
+  // 5. Farm size
+  if (typeof farmSize === 'number' && farmSize > 0) {
+    if (farmSize < 2) {
+      addCrops(SMALL_FARM_CROPS, 'Good for small farms (<2 acres)');
+    } else if (farmSize > 20) {
+      addCrops(LARGE_FARM_CROPS, 'Viable at scale (>20 acres)');
+    }
+    contextUsed.push('farmSize');
+  }
+
+  // 6. Altitude
+  if (typeof altitude === 'number' && altitude > 0) {
+    if (altitude > 1500) {
+      addCrops(['TEA', 'COFFEE', 'POTATO', 'WHEAT', 'BARLEY', 'PEA'], `Suited to highland (${altitude}m)`);
+    } else if (altitude < 500) {
+      addCrops(['RICE', 'COCONUT', 'PALM_OIL', 'CASSAVA', 'BANANA'], `Suited to lowland (${altitude}m)`);
+    }
+    contextUsed.push('altitude');
+  }
+
+  const hasContext = contextUsed.length > 0;
+
+  if (!hasContext) {
+    return { recommendations: [], hasContext: false, contextUsed: [] };
+  }
+
+  // Rank by number of matching reasons (more context matches = stronger recommendation)
+  const ranked = [...scores.entries()]
+    .map(([code, reasons]) => ({ code, reasons: [...reasons], score: reasons.size }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+
+  const recommendations = ranked
+    .map(({ code, reasons }) => {
+      const crop = getCropByCode(code);
+      if (!crop) return null;
+      return { code: crop.code, name: crop.name, reason: reasons.join('; ') };
+    })
+    .filter(Boolean);
+
+  return { recommendations, hasContext, contextUsed };
+}
+
+/**
+ * Quick helper: get recommended crop codes for a country.
+ */
+export function getCountryRecommendedCodes(countryCode) {
+  return COUNTRY_CROPS[countryCode?.toUpperCase()] || [];
+}

@@ -60,15 +60,11 @@ export default function AdminOrganizationsPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: '1rem', color: '#FFFFFF' }}>{org.name}</div>
-                        <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.6rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: tc.bg, color: tc.color }}>
+                        <span className="badge" style={{ marginTop: '0.25rem', background: tc.bg, color: tc.color }}>
                           {org.type.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <span style={{
-                        padding: '0.2rem 0.6rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600,
-                        background: org.isActive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                        color: org.isActive ? '#22C55E' : '#EF4444',
-                      }}>
+                      <span className={`badge ${org.isActive ? 'badge-active' : 'badge-disabled'}`}>
                         {org.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>

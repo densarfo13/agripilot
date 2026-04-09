@@ -303,6 +303,11 @@ model Farmer {
   village              String?
   countryCode          String              @default("KE") @map("country_code")
   regionCode           String?             @map("region_code")
+  latitude             Float?
+  longitude            Float?
+  locationSource       String?             @map("location_source")     // 'gps', 'manual', 'reverse_geocoded'
+  geolocationAccuracy  Float?              @map("geolocation_accuracy") // meters
+  geolocationCapturedAt DateTime?          @map("geolocation_captured_at")
   preferredLanguage    String              @default("en") @map("preferred_language")
   primaryCrop          String?             @map("primary_crop")
   farmSizeAcres        Float?              @map("farm_size_acres")
@@ -329,6 +334,7 @@ model Farmer {
   stageSource          String?             @map("stage_source")   // 'activity', 'manual', 'seeded'
   stageConfidence      String?             @map("stage_confidence") // 'high', 'medium', 'low'
   stageCropType        String?             @map("stage_crop_type")
+  onboardingCompletedAt DateTime?          @map("onboarding_completed_at")
   profileImageUrl      String?             @map("profile_image_url")
   profileImageUploadedAt DateTime?         @map("profile_image_uploaded_at")
   profileImageUpdatedBy String?            @map("profile_image_updated_by")
@@ -358,6 +364,8 @@ model Farmer {
   @@index([organizationId, registrationStatus], map: "idx_farmers_org_reg_status")
   @@index([gender], map: "idx_farmers_gender")
   @@index([organizationId, gender], map: "idx_farmers_org_gender")
+  @@index([phone], map: "idx_farmers_phone")
+  @@unique([phone, organizationId], map: "uq_farmers_phone_org")
   @@map("farmers")
 }
 
@@ -953,6 +961,9 @@ model OfficerValidation {
   confirmedCondition  CropCondition?  @map("confirmed_condition")
   confirmedHarvest    Boolean?       @map("confirmed_harvest")
   note                String?
+  latitude            Float?
+  longitude           Float?
+  locationAccuracy    Float?         @map("location_accuracy")
   validatedAt         DateTime       @default(now()) @map("validated_at")
   completedAt         DateTime?      @map("completed_at")
   createdAt           DateTime       @default(now()) @map("created_at")

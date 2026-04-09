@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { getCropLabel } from '../utils/crops.js';
 
 const STATUSES = ['', 'draft', 'submitted', 'under_review', 'needs_more_evidence', 'field_review_required', 'fraud_hold', 'approved', 'conditional_approved', 'rejected', 'escalated', 'disbursed'];
 
@@ -67,7 +68,7 @@ export default function ApplicationsPage() {
                       <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer' }}>
                         <td style={{ fontWeight: 500 }}>{a.farmer?.fullName}</td>
                         <td>{a.farmer?.region}</td>
-                        <td>{a.cropType}</td>
+                        <td>{getCropLabel(a.cropType)}</td>
                         <td>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</td>
                         <td><StatusBadge value={a.status} /></td>
                         <td>{a.verificationResult ? `${a.verificationResult.verificationScore}/100` : '-'}</td>
@@ -76,7 +77,13 @@ export default function ApplicationsPage() {
                         <td className="text-sm text-muted">{new Date(a.createdAt).toLocaleDateString()}</td>
                       </tr>
                     ))}
-                    {apps.length === 0 && <tr><td colSpan={9} className="empty-state">No applications found</td></tr>}
+                    {apps.length === 0 && (
+                      <tr><td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: '#71717A' }}>
+                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{'\uD83D\uDCCB'}</div>
+                        <div style={{ fontWeight: 500, marginBottom: '0.2rem' }}>No applications found</div>
+                        <div style={{ fontSize: '0.82rem' }}>Try adjusting your filters or create a new application from a farmer profile.</div>
+                      </td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>

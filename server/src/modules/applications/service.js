@@ -1,7 +1,7 @@
 import prisma from '../../config/database.js';
 
 const FULL_INCLUDE = {
-  farmer: { select: { id: true, fullName: true, phone: true, region: true, primaryCrop: true, countryCode: true } },
+  farmer: { select: { id: true, fullName: true, phone: true, region: true, primaryCrop: true, countryCode: true, profileImageUrl: true } },
   createdBy: { select: { id: true, fullName: true, email: true } },
   assignedFieldOfficer: { select: { id: true, fullName: true, email: true } },
   farmLocation: true,
@@ -114,7 +114,7 @@ export async function listApplications({ page = 1, limit = 20, status, farmerId,
     prisma.application.findMany({
       where,
       include: {
-        farmer: { select: { id: true, fullName: true, region: true, countryCode: true } },
+        farmer: { select: { id: true, fullName: true, region: true, countryCode: true, profileImageUrl: true } },
         createdBy: { select: { id: true, fullName: true } },
         verificationResult: { select: { verificationScore: true, confidence: true } },
         fraudResult: { select: { fraudRiskLevel: true, fraudRiskScore: true } },

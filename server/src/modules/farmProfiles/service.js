@@ -1,17 +1,94 @@
 import prisma from '../../config/database.js';
 
-const VALID_CROPS = ['maize', 'rice', 'cassava', 'wheat'];
+/**
+ * Full A-Z crop codes (UPPERCASE). Kept in sync with src/utils/crops.js (frontend).
+ * The backend accepts both uppercase codes ("MAIZE") and legacy lowercase ("maize").
+ */
+const KNOWN_CROP_CODES = new Set([
+  // Forage / Tree Crops
+  'ALFALFA', 'ALMOND',
+  // Fruits A
+  'APPLE', 'APRICOT', 'AVOCADO',
+  // B
+  'BANANA', 'BARLEY', 'BEAN', 'BEETROOT', 'BLACK_PEPPER', 'BLUEBERRY',
+  // C
+  'CABBAGE', 'CACAO', 'CARROT', 'CASSAVA', 'CAULIFLOWER', 'CHILI', 'COCOA', 'COCONUT', 'COFFEE', 'CORN', 'COTTON', 'COWPEA', 'CUCUMBER',
+  // D
+  'DATE', 'DRAGON_FRUIT',
+  // E
+  'EGGPLANT',
+  // F
+  'FIG',
+  // G
+  'GARLIC', 'GINGER', 'GRAPE', 'GROUNDNUT',
+  // K
+  'KALE',
+  // L
+  'LETTUCE',
+  // M
+  'MAIZE', 'MANGO', 'MILLET', 'MUSHROOM',
+  // O
+  'OKRA', 'ONION', 'ORANGE',
+  // P
+  'PAPAYA', 'PALM_OIL', 'PEA', 'PEACH', 'PEAR', 'PEPPER', 'PINEAPPLE', 'PLANTAIN', 'POTATO',
+  // R
+  'RICE',
+  // S
+  'SESAME', 'SORGHUM', 'SOYBEAN', 'SPINACH', 'SUGARCANE', 'SUNFLOWER', 'SWEET_POTATO',
+  // T
+  'TOMATO', 'TEA',
+  // W
+  'WATERMELON', 'WHEAT',
+  // Y
+  'YAM',
+]);
+
+/**
+ * Legacy lowercase aliases that map to the new uppercase codes.
+ * Handles old data like "beans" → accepted as "BEAN", "sweet_potato" → "SWEET_POTATO".
+ */
+const LEGACY_ALIASES = {
+  beans: 'BEAN', chickpeas: 'BEAN', cowpeas: 'COWPEA', green_grams: 'BEAN',
+  groundnuts: 'GROUNDNUT', lentils: 'BEAN', pigeon_peas: 'PEA', soybeans: 'SOYBEAN',
+  irish_potato: 'POTATO', chilli: 'CHILI', napier_grass: 'ALFALFA',
+  corn: 'CORN', peanut: 'GROUNDNUT', sweet_potato: 'SWEET_POTATO',
+  palm_oil: 'PALM_OIL', black_pepper: 'BLACK_PEPPER', dragon_fruit: 'DRAGON_FRUIT',
+};
+
 const VALID_STAGES = ['planting', 'growing', 'flowering', 'harvest'];
 const VALID_REC_STATUSES = ['pending', 'completed', 'skipped'];
 
 // ─── Validation helpers ────────────────────────────────
 
 export function validateCrop(crop) {
-  if (!VALID_CROPS.includes(crop)) {
-    const err = new Error(`crop must be one of: ${VALID_CROPS.join(', ')}`);
+  if (!crop || typeof crop !== 'string') {
+    const err = new Error('crop is required');
     err.statusCode = 400;
     throw err;
   }
+  const trimmed = crop.trim();
+  const upper = trimmed.toUpperCase();
+
+  // Accept known crop codes (MAIZE) and legacy lowercase (maize)
+  if (KNOWN_CROP_CODES.has(upper)) return;
+  if (LEGACY_ALIASES[trimmed.toLowerCase()]) return;
+
+  // Accept OTHER and OTHER:CustomName
+  if (upper === 'OTHER') return;
+  if (upper.startsWith('OTHER:')) {
+    const customName = trimmed.slice(6).trim();
+    if (customName.length === 0) return; // "OTHER:" treated as bare "OTHER"
+    if (customName.length < 2) {
+      const err = new Error('Custom crop name must be at least 2 characters');
+      err.statusCode = 400;
+      throw err;
+    }
+    return;
+  }
+
+  const err = new Error(`Unknown crop "${crop}". Use a known crop code or "OTHER:YourCropName".`);
+  err.statusCode = 400;
+  throw err;
 }
 
 export function validateStage(stage) {

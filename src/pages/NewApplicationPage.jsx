@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api, { formatApiError } from '../api/client.js';
 import { useDraft } from '../utils/useDraft.js';
+import CropSelect from '../components/CropSelect.jsx';
 
 export default function NewApplicationPage() {
   const [searchParams] = useSearchParams();
@@ -74,9 +75,9 @@ export default function NewApplicationPage() {
           <form onSubmit={handleSubmit}>
             <div className="card-body">
               {draftRestored && (
-                <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Draft restored — your previous entry was saved automatically.</span>
-                  <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#22C55E', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearDraft(); setFormDraft(initialForm); }}>Clear</button>
+                <div className="alert-inline alert-inline-success">
+                  <span style={{ flex: 1 }}>Draft restored — your previous entry was saved automatically.</span>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => { clearDraft(); setFormDraft(initialForm); }}>Clear</button>
                 </div>
               )}
               {loadError && <div className="alert alert-danger">{loadError}</div>}
@@ -91,7 +92,13 @@ export default function NewApplicationPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Crop Type *</label>
-                  <input className="form-input" required value={form.cropType} onChange={set('cropType')} placeholder="e.g. maize, wheat, coffee" />
+                  <CropSelect
+                    value={form.cropType}
+                    onChange={(v) => setForm(f => ({ ...f, cropType: v }))}
+                    countryCode={selectedFarmer?.countryCode}
+                    required
+                    placeholder="Search crops..."
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Farm Size ({areaUnit}) *</label>

@@ -90,7 +90,7 @@ describe('Error Handler', () => {
       errorHandler(err, req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(409);
-      expect(res.json).toHaveBeenCalledWith({ error: 'A record with that value already exists' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'A record with that value already exists.' });
     });
 
     it('handles Prisma P2025 (record not found)', () => {

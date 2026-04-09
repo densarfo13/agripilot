@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api, { formatApiError } from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { INSTITUTIONAL_ROLES } from '../utils/roles.js';
+import EmptyState from '../components/EmptyState.jsx';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -173,8 +174,7 @@ export default function AdminUsersPage() {
                               )}
                               {canDisable(u) && u.active && (
                                 <button
-                                  className="btn btn-sm btn-outline"
-                                  style={{ color: '#EF4444', borderColor: '#EF4444' }}
+                                  className="btn btn-sm btn-outline-danger"
                                   onClick={() => setConfirmModal({ user: u, action: 'disable' })}
                                 >
                                   Disable
@@ -197,7 +197,9 @@ export default function AdminUsersPage() {
                       </tr>
                     ))}
                     {users.length === 0 && (
-                      <tr><td colSpan={canManage ? 7 : 6} className="empty-state">No users found</td></tr>
+                      <tr><td colSpan={canManage ? 7 : 6}>
+                        <EmptyState icon="👤" title="No users found" message="Try changing the role filter or search term." compact />
+                      </td></tr>
                     )}
                   </tbody>
                 </table>
@@ -370,7 +372,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
   );
 
   const successBanner = (msg) => (
-    <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{msg}</div>
+    <div className="alert-inline alert-inline-success">{msg}</div>
   );
 
   return (
@@ -582,7 +584,7 @@ function AccessOffboardingSection({ user, onDone }) {
   return (
     <div>
       {error && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{error}</div>}
-      {success && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.4rem 0.75rem', borderRadius: 5, marginBottom: '0.6rem', fontSize: '0.84rem' }}>{success}</div>}
+      {success && <div className="alert-inline alert-inline-success">{success}</div>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
         <span style={{ fontSize: '0.875rem', color: '#FFFFFF' }}>Current status:</span>
@@ -596,8 +598,7 @@ function AccessOffboardingSection({ user, onDone }) {
             (applications, reviews, audit history) are preserved. This can be reversed.
           </p>
           <button
-            className="btn btn-sm btn-outline"
-            style={{ color: '#EF4444', borderColor: '#EF4444' }}
+            className="btn btn-sm btn-outline-danger"
             onClick={() => setConfirm('archive')}
           >
             Archive User
@@ -685,7 +686,7 @@ function ResetPasswordModal({ user, onClose }) {
               </div>
             )}
             {error && <div className="alert alert-danger">{error}</div>}
-            {success && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>{success}</div>}
+            {success && <div className="alert-inline alert-inline-success">{success}</div>}
             <div className="form-group">
               <label className="form-label">New Password for {user.email}</label>
               <input className="form-input" type="password" required minLength={8}

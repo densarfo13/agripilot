@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 
 // Compute a single human-readable "next action" for each application
 function getNextAction(app) {
@@ -161,8 +162,37 @@ export default function VerificationQueuePage() {
             )}
           </div>
         )}
+        {/* Quick summary banner */}
+        {!loading && apps.length > 0 && (
+          <div style={{
+            display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap',
+          }}>
+            {[
+              { label: 'Urgent', count: urgentCount, color: '#EF4444', bg: 'rgba(239,68,68,0.1)' },
+              { label: 'Unscored', count: unscoredCount, color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+              { label: 'Total in queue', count: apps.length, color: '#A1A1AA', bg: '#1E293B' },
+            ].filter(s => s.count > 0).map(s => (
+              <div key={s.label} style={{
+                background: s.bg, border: '1px solid #243041', borderRadius: 8,
+                padding: '0.4rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+              }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: s.color }}>{s.count}</span>
+                <span style={{ fontSize: '0.78rem', color: s.color, fontWeight: 500 }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {loading ? <div className="loading">Loading...</div> : apps.length === 0 ? (
-          <div className="card"><div className="card-body"><div className="empty-state">No applications awaiting verification</div></div></div>
+          <div className="card">
+            <div className="card-body" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
+              <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text)', marginBottom: '0.3rem' }}>All caught up</div>
+              <div style={{ color: 'var(--subtext)', fontSize: '0.875rem' }}>
+                No applications awaiting verification. New submissions will appear here automatically.
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>
@@ -188,7 +218,12 @@ export default function VerificationQueuePage() {
                       const score = a.verificationResult?.verificationScore;
                       return (
                         <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer', background: nextAction.urgent ? 'rgba(245,158,11,0.15)' : undefined }}>
-                          <td style={{ fontWeight: 500 }}>{a.farmer?.fullName}</td>
+                          <td style={{ fontWeight: 500 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <FarmerAvatarSmall fullName={a.farmer?.fullName} profileImageUrl={a.farmer?.profileImageUrl} />
+                              <span>{a.farmer?.fullName}</span>
+                            </div>
+                          </td>
                           <td>
                             <div>{a.farmer?.region || '-'}</div>
                             {a.farmer?.organization?.name && (

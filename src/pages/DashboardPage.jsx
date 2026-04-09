@@ -8,6 +8,7 @@ import { SkeletonDashboard } from '../components/SkeletonLoader.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
+import { getCropLabel } from '../utils/crops.js';
 
 const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669', '#ea580c', '#6366f1'];
 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [benchmarkSummary, setBenchmarkSummary] = useState(null);
+  const [expiringInvites, setExpiringInvites] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
@@ -69,6 +71,10 @@ export default function DashboardPage() {
       if (tRes?.data) setTasks(Array.isArray(tRes.data) ? tRes.data : []);
       if (alertsRes?.data?.alerts) setAlerts(alertsRes.data.alerts);
       if (benchRes?.data) setBenchmarkSummary(benchRes.data);
+      // Fetch expiring invites (non-blocking)
+      if (canSeeAttention) {
+        api.get('/farmers/expiring-invites').then(r => setExpiringInvites(r.data?.count || 0)).catch(() => {});
+      }
     }).catch(() => {
       // portfolio stays null — handled by "Unable to load" message below
     }).finally(() => setLoading(false));
@@ -140,12 +146,32 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Expiring invites warning */}
+        {expiringInvites > 0 && (
+          <div
+            onClick={() => navigate('/farmers')}
+            style={{
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: 8, padding: '0.65rem 1rem', marginBottom: '1rem',
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              cursor: 'pointer', fontSize: '0.85rem', color: '#F59E0B',
+            }}
+          >
+            <span style={{ fontSize: '1rem' }}>⏰</span>
+            <span><strong>{expiringInvites}</strong> invite{expiringInvites !== 1 ? 's' : ''} expiring within 2 days — resend or share the link before they expire.</span>
+          </div>
+        )}
+
         {/* ── 2. Daily Tasks — role-scoped, derived from workflow state ── */}
         {canSeeTasks && tasks.length > 0 && (
           <div className="card" style={{ marginBottom: '1.25rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Your Tasks Today</span>
-              <span style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{tasks.length} open</span>
+              <span style={{ fontWeight: 700 }}>Action Required</span>
+              <span style={{ fontSize: '0.75rem', color: tasks.some(t => t.priority === 'High') ? '#EF4444' : '#A1A1AA', fontWeight: 600 }}>
+                {tasks.filter(t => t.priority === 'High').length > 0
+                  ? `${tasks.filter(t => t.priority === 'High').length} urgent \u00B7 ${tasks.length} total`
+                  : `${tasks.length} open`}
+              </span>
             </div>
             <div className="card-body" style={{ padding: 0 }}>
               {tasks.slice(0, 8).map((t, i) => {
@@ -181,6 +207,21 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Empty tasks state — shown when tasks are supported but none exist */}
+        {canSeeTasks && tasks.length === 0 && !loading && (
+          <div style={{
+            background: 'rgba(34,197,94,0.08)', border: '1px solid #243041', borderRadius: 10,
+            padding: '0.75rem 1rem', marginBottom: '1.25rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+          }}>
+            <span style={{ fontSize: '1.1rem' }}>{'\u2705'}</span>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#22C55E' }}>All caught up</div>
+              <div style={{ fontSize: '0.78rem', color: '#A1A1AA' }}>No pending tasks right now. New tasks will appear here when action is needed.</div>
+            </div>
+          </div>
+        )}
+
         {/* ── 3. Needs Attention — queue banners + alerts ── */}
         {(queues.fraud > 0 || queues.escalated > 0 || alerts.length > 0) && (
           <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #243041' }}>
@@ -190,16 +231,16 @@ export default function DashboardPage() {
             <div className="card-body" style={{ padding: 0 }}>
               {queues.fraud > 0 && (
                 <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', borderBottom: '1px solid #243041', background: 'rgba(239,68,68,0.08)' }}>
-                  <span style={{ fontSize: '0.85rem' }}>🚨</span>
-                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.fraud}</strong> on fraud hold</span>
-                  <span style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>Review →</span>
+                  <span style={{ fontSize: '0.85rem' }}>{'\uD83D\uDEA8'}</span>
+                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.fraud}</strong> application{queues.fraud > 1 ? 's' : ''} flagged for fraud — review required</span>
+                  <span style={{ fontSize: '0.75rem', color: '#EF4444', fontWeight: 600 }}>Review now {'\u2192'}</span>
                 </div>
               )}
               {queues.escalated > 0 && (
                 <div onClick={() => navigate('/applications?status=escalated')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', borderBottom: '1px solid #243041', background: 'rgba(245,158,11,0.08)' }}>
-                  <span style={{ fontSize: '0.85rem' }}>⚡</span>
-                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.escalated}</strong> escalated</span>
-                  <span style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>Review →</span>
+                  <span style={{ fontSize: '0.85rem' }}>{'\u26A1'}</span>
+                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.escalated}</strong> escalated application{queues.escalated > 1 ? 's' : ''} awaiting decision</span>
+                  <span style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600 }}>Review now {'\u2192'}</span>
                 </div>
               )}
               {canSeePilotMetrics && alerts.slice(0, 3).map((alert, i) => (
@@ -343,13 +384,15 @@ export default function DashboardPage() {
                     <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
                       <td style={{ fontWeight: 500 }}>{app.farmer.fullName}</td>
                       <td>{app.farmer.region}</td>
-                      <td>{app.cropType}</td>
+                      <td>{getCropLabel(app.cropType)}</td>
                       <td>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</td>
                       <td><StatusBadge value={app.status} /></td>
                       <td className="text-muted text-sm">{new Date(app.createdAt).toLocaleDateString()}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6} className="empty-state">No applications yet</td></tr>
+                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '1.5rem', color: '#71717A' }}>
+                      No applications yet. Create one from a farmer profile to begin the credit workflow.
+                    </td></tr>
                   )}
                 </tbody>
               </table>

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import api from '../api/client.js';
+import { getCropLabel } from '../utils/crops.js';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
@@ -21,32 +23,39 @@ export default function FarmerOverviewTab() {
   const [lcLoading, setLcLoading] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
   const [lcSuccess, setLcSuccess] = useState('');
+  const [lcError, setLcError] = useState('');
 
   useEffect(() => {
     api.get(`/lifecycle/farmers/${farmerId}`)
       .then(r => setLifecycle(r.data))
-      .catch(() => {})
+      .catch(() => {}) // lifecycle is supplemental — page shows "Unable to load" when null
       .finally(() => setLcLoading(false));
   }, [farmerId]);
 
   const handleRecompute = async () => {
     setRecomputing(true);
+    setLcError('');
     try {
       await api.post(`/lifecycle/farmers/${farmerId}/recompute`);
       const r = await api.get(`/lifecycle/farmers/${farmerId}`);
       setLifecycle(r.data);
       refresh();
-    } catch {}
+    } catch {
+      setLcError('Failed to refresh lifecycle stage. Please try again.');
+    }
     setRecomputing(false);
   };
 
   const handleGenerateReminders = async () => {
+    setLcError('');
     try {
       const r = await api.post(`/lifecycle/farmers/${farmerId}/generate-reminders`);
       setLcSuccess(`Generated ${r.data.generated} reminder${r.data.generated === 1 ? '' : 's'} for ${lifecycle?.currentStage?.replace(/_/g, ' ')} stage.`);
       setTimeout(() => setLcSuccess(''), 5000);
       refresh();
-    } catch {}
+    } catch {
+      setLcError('Failed to generate reminders. Please try again.');
+    }
   };
 
   return (
@@ -71,8 +80,11 @@ export default function FarmerOverviewTab() {
           </div>
         </div>
         <div className="card-body">
+          {lcError && (
+            <div className="alert-inline alert-inline-danger" style={{ marginBottom: '0.75rem' }}>{lcError}</div>
+          )}
           {lcSuccess && (
-            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>{lcSuccess}</div>
+            <div className="alert-inline alert-inline-success" style={{ marginBottom: '0.75rem' }}>{lcSuccess}</div>
           )}
           {lcLoading ? (
             <div style={{ textAlign: 'center', padding: '1rem', color: '#71717A' }}>Loading lifecycle...</div>
@@ -110,7 +122,7 @@ export default function FarmerOverviewTab() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Crop</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType || 'Not set'}</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType ? getCropLabel(lifecycle.cropType) : 'Not set'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Trust Status</div>
@@ -211,7 +223,7 @@ export default function FarmerOverviewTab() {
                 </tbody>
               </table>
             ) : (
-              <div className="empty-state">No upcoming reminders</div>
+              <EmptyState icon="✅" title="No upcoming reminders" compact />
             )}
           </div>
         </div>
@@ -229,14 +241,14 @@ export default function FarmerOverviewTab() {
                   {summary.recentActivities.map(a => (
                     <tr key={a.id}>
                       <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
-                      <td>{a.cropType || '-'}</td>
+                      <td>{a.cropType ? getCropLabel(a.cropType) : '-'}</td>
                       <td className="text-sm text-muted">{new Date(a.activityDate).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             ) : (
-              <div className="empty-state">No recent activities</div>
+              <EmptyState icon="📝" title="No recent activities" compact />
             )}
           </div>
         </div>
@@ -257,7 +269,7 @@ export default function FarmerOverviewTab() {
                   <tbody>
                     {recentApps.map(app => (
                       <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                        <td>{app.cropType}</td>
+                        <td>{getCropLabel(app.cropType)}</td>
                         <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                         <td><StatusBadge value={app.status} /></td>
                         <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>
@@ -267,7 +279,7 @@ export default function FarmerOverviewTab() {
                 </table>
               </div>
             ) : (
-              <div className="empty-state">No applications yet</div>
+              <EmptyState icon="📄" title="No applications yet" compact />
             )}
           </div>
         </div>

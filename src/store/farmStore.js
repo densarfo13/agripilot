@@ -46,9 +46,12 @@ export const useFarmStore = create((set, get) => ({
     }
   },
 
-  // Create a new farm profile
+  // Create a new farm profile (with duplicate-submit guard)
+  _createInFlight: false,
   createProfile: async (data) => {
-    set({ loading: true, error: null });
+    // Prevent duplicate submission from rapid taps/retries
+    if (get()._createInFlight) return null;
+    set({ _createInFlight: true, loading: true, error: null });
     try {
       const r = await api.post('/v1/farms', data);
       const profile = r.data;
@@ -56,10 +59,17 @@ export const useFarmStore = create((set, get) => ({
         profiles: [profile, ...s.profiles],
         currentProfile: profile,
         loading: false,
+        _createInFlight: false,
       }));
       return profile;
     } catch (err) {
-      set({ error: err.response?.data?.error || 'Failed to create farm profile', loading: false });
+      if (isNetworkError(err)) {
+        // Queue for offline sync — don't lose the user's data
+        await queueIfOffline('POST', '/v1/farms', data);
+        set({ loading: false, _createInFlight: false, error: 'Saved offline — will sync when reconnected.' });
+        return { _offline: true, ...data };
+      }
+      set({ error: err.response?.data?.error || 'Failed to create farm profile', loading: false, _createInFlight: false });
       return null;
     }
   },

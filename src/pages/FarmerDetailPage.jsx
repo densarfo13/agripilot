@@ -7,6 +7,9 @@ import { TrustBadge, RiskBadge } from '../components/TrustRiskBadge.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { ADMIN_ROLES, CREATOR_ROLES } from '../utils/roles.js';
 import { getCountryName } from '../utils/countries.js';
+import FarmerAvatar from '../components/FarmerAvatar.jsx';
+import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
+import { getCropLabel } from '../utils/crops.js';
 
 const STATUS_COLORS = {
   pending_approval: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Pending Approval' },
@@ -36,18 +39,29 @@ export default function FarmerDetailPage() {
 
   useEffect(() => { load(); }, [id]);
 
-  if (loading) return <div className="loading">Loading farmer...</div>;
+  if (loading) return <div className="page-body"><div className="loading">Loading farmer details...</div></div>;
   if (loadError) return (
     <div className="page-body">
       <div className="alert alert-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>
     </div>
   );
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+
   if (!farmer) return null;
 
   return (
     <>
       <div className="page-header">
-        <h1>{farmer.fullName}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <FarmerAvatar
+            fullName={farmer.fullName}
+            profileImageUrl={farmer.profileImageUrl}
+            size={48}
+            editable={isAdmin}
+            onClick={isAdmin ? () => setShowPhotoUpload(true) : undefined}
+          />
+          <h1 style={{ margin: 0 }}>{farmer.fullName}</h1>
+        </div>
         <div className="flex gap-1">
           <button className="btn btn-primary" onClick={() => navigate(`/farmer-home/${id}`)}>Farmer Home</button>
           {farmer.registrationStatus === 'approved' && (
@@ -59,6 +73,11 @@ export default function FarmerDetailPage() {
         </div>
       </div>
       <div className="page-body">
+        {/* Next Action Card — answers "what should I do next?" within 3 seconds */}
+        {(isAdmin || isCreator) && (
+          <NextActionCard farmer={farmer} navigate={navigate} isAdmin={isAdmin} />
+        )}
+
         {/* Access & Assignment Section */}
         {(isAdmin || isCreator) && (
           <AccessAssignmentSection farmer={farmer} isAdmin={isAdmin} isCreator={isCreator} onUpdate={load} />
@@ -87,6 +106,15 @@ export default function FarmerDetailPage() {
               <div className="detail-row"><span className="detail-label">District</span><span className="detail-value">{farmer.district || '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Village</span><span className="detail-value">{farmer.village || '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Country</span><span className="detail-value">{getCountryName(farmer.countryCode)}</span></div>
+              {farmer.latitude && (
+                <div className="detail-row">
+                  <span className="detail-label">GPS</span>
+                  <span className="detail-value" style={{ fontSize: '0.8rem' }}>
+                    {farmer.latitude.toFixed(5)}, {farmer.longitude.toFixed(5)}
+                    {farmer.locationSource && <span style={{ color: '#71717A', marginLeft: '0.4rem' }}>({farmer.locationSource})</span>}
+                  </span>
+                </div>
+              )}
               <div className="detail-row"><span className="detail-label">Primary Crop</span><span className="detail-value">{farmer.primaryCrop || '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{farmer.farmSizeAcres ? `${farmer.farmSizeAcres} ${farmer.countryCode === 'TZ' ? 'hectares' : 'acres'}` : '-'}</span></div>
               <div className="detail-row"><span className="detail-label">Experience</span><span className="detail-value">{farmer.yearsExperience ? `${farmer.yearsExperience} years` : '-'}</span></div>
@@ -111,7 +139,7 @@ export default function FarmerDetailPage() {
                 <tbody>
                   {farmer.applications?.map(app => (
                     <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                      <td>{app.cropType}</td>
+                      <td>{getCropLabel(app.cropType)}</td>
                       <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                       <td><StatusBadge value={app.status} /></td>
                       <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>
@@ -126,7 +154,140 @@ export default function FarmerDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Profile Photo Upload Modal */}
+      {showPhotoUpload && (
+        <ProfilePhotoUpload
+          farmerId={farmer.id}
+          fullName={farmer.fullName}
+          currentImageUrl={farmer.profileImageUrl}
+          onClose={() => setShowPhotoUpload(false)}
+          onUploaded={() => load()}
+        />
+      )}
     </>
+  );
+}
+
+// ─── Next Action Card ───────────────────────────────────
+
+function NextActionCard({ farmer, navigate, isAdmin }) {
+  const status = farmer.registrationStatus;
+  const hasOfficer = !!farmer.assignedOfficerId;
+  const hasLogin = !!farmer.userAccount;
+  const hasApps = farmer.applications?.length > 0;
+  const inviteExpired = farmer.invitedAt && farmer.inviteExpiresAt && new Date() > new Date(farmer.inviteExpiresAt);
+  const invitePending = farmer.invitedAt && !farmer.userAccount && !farmer.selfRegistered;
+
+  let severity = 'info'; // info | warning | danger | success
+  let icon = '';
+  let headline = '';
+  let detail = '';
+  let actionLabel = '';
+  let actionFn = null;
+
+  // Scroll to Access & Assignment section for actions handled by modals there
+  const scrollToAccess = () => {
+    const el = document.getElementById('access-assignment-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  if (status === 'pending_approval') {
+    severity = 'warning';
+    icon = '\u23F3'; // hourglass
+    headline = 'Awaiting approval';
+    detail = 'This farmer is registered but not yet approved. Review their information and approve or reject.';
+    if (isAdmin) { actionLabel = 'Review & Approve'; actionFn = scrollToAccess; }
+  } else if (status === 'rejected') {
+    severity = 'danger';
+    icon = '\u274C'; // cross
+    headline = 'Registration rejected';
+    detail = farmer.rejectionReason
+      ? `Rejected: ${farmer.rejectionReason}. Reopen if the issue has been resolved.`
+      : 'This registration was rejected. Reopen for review if circumstances have changed.';
+    if (isAdmin) { actionLabel = 'Reopen for Review'; actionFn = scrollToAccess; }
+  } else if (status === 'disabled') {
+    severity = 'danger';
+    icon = '\u26D4'; // no entry
+    headline = 'Access disabled';
+    detail = 'This farmer cannot log in or submit data. Reactivate to restore access.';
+    if (isAdmin) { actionLabel = 'Reactivate Access'; actionFn = scrollToAccess; }
+  } else if (status === 'approved') {
+    // Approved — check for blockers in priority order
+    if (!hasOfficer) {
+      severity = 'warning';
+      icon = '\uD83D\uDC64'; // person
+      headline = 'No field officer assigned';
+      detail = 'Assign a field officer so this farmer can receive validation visits and support.';
+      if (isAdmin) { actionLabel = 'Assign Officer'; actionFn = scrollToAccess; }
+    } else if (inviteExpired) {
+      severity = 'danger';
+      icon = '\u23F0'; // alarm
+      headline = 'Invite expired — resend required';
+      detail = 'The invite link has expired. Resend so the farmer can create their login.';
+      if (isAdmin) { actionLabel = 'Resend Invite'; actionFn = scrollToAccess; }
+    } else if (invitePending && !hasLogin) {
+      severity = 'warning';
+      icon = '\u2709\uFE0F'; // envelope
+      headline = 'Invite sent — awaiting activation';
+      detail = `Farmer was invited${farmer.invitedAt ? ` on ${new Date(farmer.invitedAt).toLocaleDateString()}` : ''} but has not yet created a login.`;
+    } else if (!hasLogin && !farmer.selfRegistered) {
+      severity = 'warning';
+      icon = '\uD83D\uDD11'; // key
+      headline = 'No login account';
+      detail = 'Create a login so this farmer can access the mobile app and submit data.';
+      if (isAdmin) { actionLabel = 'Create Login'; actionFn = scrollToAccess; }
+    } else if (!hasApps) {
+      severity = 'info';
+      icon = '\uD83D\uDCCB'; // clipboard
+      headline = 'No applications yet';
+      detail = 'This farmer is set up but has no loan applications. Start one to begin the credit workflow.';
+      actionLabel = 'Start Application';
+      actionFn = () => navigate(`/applications/new?farmerId=${farmer.id}`);
+    } else {
+      severity = 'success';
+      icon = '\u2705'; // checkmark
+      headline = 'On track';
+      detail = `${farmer.applications.length} application${farmer.applications.length > 1 ? 's' : ''} on file. Officer assigned. Login active.`;
+    }
+  }
+
+  if (!headline) return null;
+
+  const SEVERITY_STYLES = {
+    success: { bg: 'rgba(34,197,94,0.10)', border: '#22C55E', color: '#22C55E' },
+    warning: { bg: 'rgba(245,158,11,0.10)', border: '#F59E0B', color: '#F59E0B' },
+    danger:  { bg: 'rgba(239,68,68,0.10)', border: '#EF4444', color: '#EF4444' },
+    info:    { bg: 'rgba(8,145,178,0.10)', border: '#0891B2', color: '#0891B2' },
+  };
+  const s = SEVERITY_STYLES[severity];
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '0.75rem',
+      background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 10,
+      padding: '0.75rem 1rem', marginBottom: '1.25rem',
+    }}>
+      <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: s.color, marginBottom: '0.15rem' }}>
+          {headline}
+        </div>
+        <div style={{ fontSize: '0.8rem', color: '#A1A1AA', lineHeight: 1.4 }}>{detail}</div>
+      </div>
+      {actionLabel && (
+        <button
+          className="btn btn-sm"
+          style={{
+            background: s.border, color: '#fff', border: 'none', whiteSpace: 'nowrap',
+            padding: '0.4rem 0.9rem', fontWeight: 600, borderRadius: 6,
+          }}
+          onClick={actionFn || undefined}
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -142,6 +303,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   const [resendChannel, setResendChannel] = useState('link');
   const [resendContactEmail, setResendContactEmail] = useState('');
   const [showResendChannelPicker, setShowResendChannelPicker] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [showCreateLoginModal, setShowCreateLoginModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
@@ -166,6 +328,13 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
         .catch(() => {}); // non-critical — degrades gracefully
     }
   }, [farmer.id, farmer.selfRegistered]);
+
+  // Resend cooldown timer — prevents rapid re-sends
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const clearMessages = () => { setActionError(''); setActionSuccess(''); };
 
@@ -201,6 +370,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
     setResendInviteToken(res.data.inviteToken || null);
     setResendInviteExpiry(res.data.inviteExpiresAt || null);
     setShowResendChannelPicker(false);
+    setResendCooldown(60); // 60-second cooldown to prevent rapid re-sends
     const delivered = res.data.deliveryStatus === 'email_sent' || res.data.deliveryStatus === 'phone_sent';
     setActionSuccess(
       delivered
@@ -230,7 +400,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
   }
 
   return (
-    <div className="card" style={{ marginBottom: '1.25rem' }}>
+    <div id="access-assignment-section" className="card" style={{ marginBottom: '1.25rem' }}>
       <div className="card-header">Access & Assignment</div>
       <div className="card-body">
         {actionError && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{actionError}</div>}
@@ -335,11 +505,10 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
               <button className="btn btn-sm btn-outline" onClick={() => setShowAssignModal(true)} disabled={processing}>Assign Officer</button>
             )}
             {status === 'approved' && (
-              <button className="btn btn-sm btn-outline" onClick={() => setShowDisableModal(true)} disabled={processing}
-                style={{ color: '#EF4444', borderColor: '#EF4444' }}>Disable Access</button>
+              <button className="btn btn-sm btn-outline-danger" onClick={() => setShowDisableModal(true)} disabled={processing}>Disable Access</button>
             )}
             {!farmer.selfRegistered && farmer.invitedAt && !showResendChannelPicker && (
-              <button className="btn btn-sm btn-outline" onClick={() => setShowResendChannelPicker(true)} disabled={processing}>Resend Invite</button>
+              <button className="btn btn-sm btn-outline" onClick={() => { setShowResendChannelPicker(true); setResendContactEmail(farmer.userAccount?.email || ''); }} disabled={processing || resendCooldown > 0}>{resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Invite'}</button>
             )}
             {!farmer.selfRegistered && inviteStatus?.inviteStatus === 'LINK_GENERATED' && inviteStatus?.inviteToken && (
               <CopyInviteLinkButton token={inviteStatus.inviteToken} />
@@ -629,7 +798,7 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                 <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} disabled={saving}>
+                <button type="submit" className="btn btn-outline-danger" disabled={saving}>
                   {saving ? 'Disabling…' : 'Execute Disable'}
                 </button>
               </div>
@@ -754,12 +923,20 @@ function FarmerTrustRiskPanel({ farmerId }) {
         </div>
       )}
       {risk?.riskLevel && risk.riskLevel !== 'Low' && (
-        <div style={{ background: '#162033', border: '1px solid #243041', borderRadius: 8, padding: '0.6rem 1rem', minWidth: 200 }}>
+        <div style={{
+          background: risk.riskLevel === 'High' ? 'rgba(239,68,68,0.08)' : '#162033',
+          border: `1px solid ${risk.riskLevel === 'High' ? 'rgba(239,68,68,0.3)' : '#243041'}`,
+          borderRadius: 8, padding: '0.6rem 1rem', minWidth: 200,
+        }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#71717A', marginBottom: '0.3rem' }}>Risk Signal</div>
           <RiskBadge riskLevel={risk.riskLevel} riskReason={risk.riskReason} />
           {risk.nextRecommendedAction && (
-            <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', color: '#FFFFFF', lineHeight: 1.4 }}>
-              Next: {risk.nextRecommendedAction}
+            <div style={{
+              marginTop: '0.4rem', fontSize: '0.75rem', lineHeight: 1.4,
+              padding: '0.3rem 0.5rem', borderRadius: 6,
+              background: 'rgba(245,158,11,0.1)', color: '#F59E0B', fontWeight: 500,
+            }}>
+              {'\u27A1'} {risk.nextRecommendedAction}
             </div>
           )}
         </div>
@@ -833,7 +1010,7 @@ function PerformanceProfileSection({ farmerId }) {
           </div>
           <div style={metricBox}>
             <div style={metricLabel}>Crops</div>
-            <div style={metricValue}>{summary.cropTypes.join(', ') || 'None'}</div>
+            <div style={metricValue}>{summary.cropTypes.map(c => getCropLabel(c)).join(', ') || 'None'}</div>
           </div>
         </div>
 
@@ -912,7 +1089,7 @@ function PerformanceProfileSection({ farmerId }) {
                   <tbody>
                     {yieldHistory.map((y, i) => (
                       <tr key={i}>
-                        <td style={tdStyle}>{y.cropType}</td>
+                        <td style={tdStyle}>{getCropLabel(y.cropType)}</td>
                         <td style={tdStyle}>{new Date(y.plantingDate).toLocaleDateString()}</td>
                         <td style={tdStyle}>{y.yieldPerAcre}</td>
                         <td style={tdStyle}>{y.totalHarvestKg}</td>
@@ -937,7 +1114,7 @@ function PerformanceProfileSection({ farmerId }) {
                       const clsColor = CLASSIFICATION_COLORS[cls] || { bg: '#1E293B', color: '#A1A1AA' };
                       return (
                         <tr key={s.id}>
-                          <td style={tdStyle}>{s.cropType}</td>
+                          <td style={tdStyle}>{getCropLabel(s.cropType)}</td>
                           <td style={tdStyle}>{new Date(s.plantingDate).toLocaleDateString()}</td>
                           <td style={tdStyle}><StatusBadge value={s.status} /></td>
                           <td style={tdStyle}>{s.progressScore?.score ?? '-'}</td>
@@ -1306,7 +1483,7 @@ function HistoricalPerformanceSection({ farmerId, userRole }) {
                             ? new Date(s.plantingDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
                             : `Season ${i + 1}`}
                         </td>
-                        <td style={tdStyle}>{s.cropType}</td>
+                        <td style={tdStyle}>{getCropLabel(s.cropType)}</td>
                         <td style={tdStyle}>
                           <span style={{
                             display: 'inline-block', padding: '1px 6px', borderRadius: 10,

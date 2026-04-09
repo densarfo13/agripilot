@@ -22,6 +22,7 @@ const INVITE_CONFIG = {
   LINK_GENERATED:    { label: 'Link Ready',   cls: 'badge-link-generated' },
   INVITE_SENT_EMAIL: { label: 'Email Sent',   cls: 'badge-invite-sent' },
   INVITE_SENT_PHONE: { label: 'SMS Sent',     cls: 'badge-invite-sent' },
+  PENDING:           { label: 'Pending',      cls: 'badge-link-generated' },
   ACCEPTED:          { label: 'Accepted',     cls: 'badge-accepted' },
   EXPIRED:           { label: 'Expired',      cls: 'badge-expired' },
 };

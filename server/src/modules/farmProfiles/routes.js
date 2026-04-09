@@ -54,6 +54,16 @@ router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
   const farmerId = await resolveFarmerId(req);
   const profile = await service.createFarmProfile(req.body, farmerId);
   writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id } }).catch(() => {});
+
+  // Mark onboarding as completed for the farmer (first farm profile = onboarding done)
+  if (req.user.role === 'farmer') {
+    const prisma = (await import('../../config/database.js')).default;
+    prisma.farmer.updateMany({
+      where: { id: farmerId, onboardingCompletedAt: null },
+      data: { onboardingCompletedAt: new Date() },
+    }).catch(() => {});
+  }
+
   res.status(201).json(profile);
 }));
 

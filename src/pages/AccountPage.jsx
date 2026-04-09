@@ -233,7 +233,7 @@ export default function AccountPage() {
             <form onSubmit={handleSave}>
               {saveError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{saveError}</div>}
               {saveSuccess && (
-                <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
+                <div className="alert-inline alert-inline-success">
                   {saveSuccess}
                 </div>
               )}
@@ -270,11 +270,11 @@ export default function AccountPage() {
         {mfa && !mfa.exempt && (
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Two-Factor Authentication {mfa.required && <span style={{ fontSize: '0.72rem', background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '0.15rem 0.4rem', borderRadius: 4, marginLeft: 6 }}>Required for your role</span>}</span>
+              <span>Two-Factor Authentication {mfa.required && <span className="badge badge-rejected" style={{ marginLeft: 6 }}>Required for your role</span>}</span>
               {mfa.enabled && !mfaPanel && (
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => { setMfaPanel('backup'); setMfaError(''); setMfaCode(''); }}>Regen Backup Codes</button>
-                  <button className="btn btn-outline btn-sm" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => { setMfaPanel('disable'); setMfaError(''); setMfaCode(''); }}>Disable MFA</button>
+                  <button className="btn btn-outline-danger btn-sm" onClick={() => { setMfaPanel('disable'); setMfaError(''); setMfaCode(''); }}>Disable MFA</button>
                 </div>
               )}
               {!mfa.enabled && !mfaPanel && (
@@ -286,7 +286,7 @@ export default function AccountPage() {
             <div className="card-body">
               {mfaError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{mfaError}</div>}
               {mfaSuccess && !mfaPanel && (
-                <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>{mfaSuccess}</div>
+                <div className="alert-inline alert-inline-success">{mfaSuccess}</div>
               )}
 
               {/* Status line */}
@@ -328,7 +328,7 @@ export default function AccountPage() {
               {/* Show backup codes after enrollment / regen */}
               {mfaPanel === 'backup_show' && enrollData?.backupCodes && (
                 <div>
-                  {mfaSuccess && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>{mfaSuccess}</div>}
+                  {mfaSuccess && <div className="alert-inline alert-inline-success">{mfaSuccess}</div>}
                   <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#EF4444', marginBottom: '0.75rem' }}>
                     Save these backup codes securely. They will NOT be shown again.
                   </p>
@@ -385,7 +385,7 @@ export default function AccountPage() {
               <form onSubmit={handlePwChange}>
                 {pwError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{pwError}</div>}
                 {pwSuccess && (
-                  <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.9rem' }}>
+                  <div className="alert-inline alert-inline-success">
                     {pwSuccess}
                   </div>
                 )}

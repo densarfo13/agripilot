@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
+import CropSelect from '../components/CropSelect.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import { getCropLabel } from '../utils/crops.js';
 
 export default function FarmerMarketTab() {
   const { farmerId, farmer } = useFarmerContext();
@@ -123,7 +126,7 @@ export default function FarmerMarketTab() {
               </table>
             </div>
           ) : (
-            <div style={{ padding: '1rem' }} className="empty-state">No price data available</div>
+            <EmptyState icon="📊" title="No price data available" message="Market prices will appear here when available for your region." compact />
           )}
         </div>
       </div>
@@ -132,7 +135,7 @@ export default function FarmerMarketTab() {
       {tips && selectedCrop && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            Selling Tips: {tips.cropType || selectedCrop}
+            Selling Tips: {getCropLabel(tips.cropType || selectedCrop)}
             <button className="btn btn-outline btn-sm" onClick={() => { setTips(null); setSelectedCrop(''); }}>Close</button>
           </div>
           <div className="card-body">
@@ -177,11 +180,17 @@ export default function FarmerMarketTab() {
         <div className="card-body" style={{ padding: showInterest || interests.length > 0 ? undefined : undefined }}>
           {showInterest && (
             <form onSubmit={handleExpressInterest} style={{ marginBottom: '1rem', padding: '1rem', background: '#1E293B', borderRadius: 8, border: '1px solid #243041' }}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
+              {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
-                  <input className="form-input" value={interestForm.cropType} onChange={e => setInterestForm({ ...interestForm, cropType: e.target.value })} placeholder="e.g. maize" required />
+                  <CropSelect
+                    value={interestForm.cropType}
+                    onChange={(v) => setInterestForm({ ...interestForm, cropType: v })}
+                    countryCode={farmer?.countryCode}
+                    required
+                    placeholder="Search crops..."
+                  />
                 </div>
                 <div>
                   <label className="form-label">Quantity (kg)</label>
@@ -224,7 +233,7 @@ export default function FarmerMarketTab() {
                 <tbody>
                   {interests.map(interest => (
                     <tr key={interest.id}>
-                      <td style={{ fontWeight: 500 }}>{interest.cropType}</td>
+                      <td style={{ fontWeight: 500 }}>{getCropLabel(interest.cropType)}</td>
                       <td>{interest.quantityKg ? `${interest.quantityKg} kg` : '-'}</td>
                       <td>{interest.priceExpectation ? `${interest.currencyCode || 'KES'} ${interest.priceExpectation}` : '-'}</td>
                       <td>{interest.preferredBuyerType || '-'}</td>
@@ -241,7 +250,7 @@ export default function FarmerMarketTab() {
                       <td className="text-sm text-muted">{new Date(interest.createdAt).toLocaleDateString()}</td>
                       <td>
                         {interest.status === 'expressed' && (
-                          <button className="btn btn-outline btn-sm" style={{ color: '#dc2626', borderColor: '#dc2626' }} onClick={() => withdrawInterest(interest.id)}>
+                          <button className="btn btn-outline-danger btn-sm" onClick={() => withdrawInterest(interest.id)}>
                             Withdraw
                           </button>
                         )}
@@ -252,7 +261,7 @@ export default function FarmerMarketTab() {
               </table>
             </div>
           ) : (
-            !showInterest && <div className="empty-state">No selling interests expressed yet.</div>
+            !showInterest && <EmptyState icon="🤝" title="No selling interests yet" message="Express interest to connect with buyers for your crops." compact />
           )}
         </div>
       </div>

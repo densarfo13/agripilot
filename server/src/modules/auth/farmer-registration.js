@@ -5,7 +5,29 @@ import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
 import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 
-const VALID_FARM_CROPS = ['maize', 'rice', 'cassava', 'wheat'];
+/**
+ * Crops that allow automatic FarmProfile creation during self-registration.
+ * Uses a Set for O(1) lookup. Accepts both uppercase codes (MAIZE) and legacy lowercase (maize).
+ */
+const VALID_FARM_CROP_CODES = new Set([
+  'ALFALFA', 'ALMOND', 'APPLE', 'APRICOT', 'AVOCADO',
+  'BANANA', 'BARLEY', 'BEAN', 'BEETROOT', 'BLACK_PEPPER', 'BLUEBERRY',
+  'CABBAGE', 'CACAO', 'CARROT', 'CASSAVA', 'CAULIFLOWER', 'CHILI', 'COCOA', 'COCONUT', 'COFFEE', 'CORN', 'COTTON', 'COWPEA', 'CUCUMBER',
+  'DATE', 'DRAGON_FRUIT',
+  'EGGPLANT',
+  'FIG',
+  'GARLIC', 'GINGER', 'GRAPE', 'GROUNDNUT',
+  'KALE',
+  'LETTUCE',
+  'MAIZE', 'MANGO', 'MILLET', 'MUSHROOM',
+  'OKRA', 'ONION', 'ORANGE',
+  'PAPAYA', 'PALM_OIL', 'PEA', 'PEACH', 'PEAR', 'PEPPER', 'PINEAPPLE', 'PLANTAIN', 'POTATO',
+  'RICE',
+  'SESAME', 'SORGHUM', 'SOYBEAN', 'SPINACH', 'SUGARCANE', 'SUNFLOWER', 'SWEET_POTATO',
+  'TOMATO', 'TEA',
+  'WATERMELON', 'WHEAT',
+  'YAM',
+]);
 
 /** Invite tokens expire after this many days */
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
@@ -33,6 +55,11 @@ export async function farmerSelfRegister({
   preferredLanguage,
   primaryCrop,
   farmSizeAcres,
+  latitude,
+  longitude,
+  locationSource,
+  geolocationAccuracy,
+  geolocationCapturedAt,
 }) {
   // Normalize phone before any checks or storage
   const normalizedPhone = normalizePhoneForStorage(phone);
@@ -79,6 +106,11 @@ export async function farmerSelfRegister({
         preferredLanguage: preferredLanguage || 'en',
         primaryCrop: primaryCrop || null,
         farmSizeAcres: farmSizeAcres || null,
+        latitude: latitude != null ? parseFloat(latitude) : null,
+        longitude: longitude != null ? parseFloat(longitude) : null,
+        locationSource: locationSource || null,
+        geolocationAccuracy: geolocationAccuracy != null ? parseFloat(geolocationAccuracy) : null,
+        geolocationCapturedAt: geolocationCapturedAt ? new Date(geolocationCapturedAt) : null,
         selfRegistered: true,
         registrationStatus: 'pending_approval',
         userId: newUser.id,
@@ -86,16 +118,21 @@ export async function farmerSelfRegister({
       },
     });
 
-    // Auto-create a FarmProfile if crop is a valid enum value
+    // Auto-create a FarmProfile if crop is a known code or "OTHER:name"
     let farmProfile = null;
-    const cropLower = (primaryCrop || '').toLowerCase().trim();
-    if (VALID_FARM_CROPS.includes(cropLower)) {
+    const cropTrimmed = (primaryCrop || '').trim();
+    const cropUpper = cropTrimmed.toUpperCase();
+    const isKnownCrop = VALID_FARM_CROP_CODES.has(cropUpper);
+    const isOtherCrop = cropUpper === 'OTHER' || cropUpper.startsWith('OTHER:');
+    if (isKnownCrop || isOtherCrop) {
       farmProfile = await tx.farmProfile.create({
         data: {
           farmerId: newFarmer.id,
           farmerName: fullName,
           locationName: [region, district].filter(Boolean).join(', ') || null,
-          crop: cropLower,
+          latitude: latitude != null ? parseFloat(latitude) : null,
+          longitude: longitude != null ? parseFloat(longitude) : null,
+          crop: cropTrimmed,
           farmSizeAcres: farmSizeAcres || null,
           stage: 'planting',
         },

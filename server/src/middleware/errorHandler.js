@@ -41,7 +41,11 @@ export function errorHandler(err, req, res, _next) {
 
   // Prisma known-error handling
   if (err.code === 'P2002') {
-    return res.status(409).json({ error: 'A record with that value already exists' });
+    const target = err.meta?.target;
+    if (target && (target.includes('phone') || (Array.isArray(target) && target.some(t => t.includes('phone'))))) {
+      return res.status(409).json({ error: 'A farmer with this phone number already exists in this organization.' });
+    }
+    return res.status(409).json({ error: 'A record with that value already exists.' });
   }
   if (err.code === 'P2025') {
     return res.status(404).json({ error: 'Record not found' });

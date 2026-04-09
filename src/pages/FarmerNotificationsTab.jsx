@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api from '../api/client.js';
+import EmptyState from '../components/EmptyState.jsx';
 
 const TYPE_COLORS = {
   application_update: '#22C55E',
@@ -73,7 +74,7 @@ export default function FarmerNotificationsTab() {
 
       {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadNotifications}>Retry</button></div>}
       {loading ? <div className="loading">Loading notifications...</div> : notifications.length === 0 ? (
-        <div className="card"><div className="card-body"><div className="empty-state">No notifications</div></div></div>
+        <div className="card"><div className="card-body"><EmptyState icon="🔕" title="No notifications" message="You're all caught up. Notifications about your farm will appear here." compact variant="success" /></div></div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {notifications.map(n => (

@@ -4,6 +4,8 @@
  *   create → approve/reject → execute → [expire | revoke]
  */
 
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 vi.mock('../config/database.js', () => {
   const mockPrisma = {
     approvalRequest: {

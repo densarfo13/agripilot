@@ -6,6 +6,11 @@ import { tLifecycleStage, tStatus, getCurrentLang, setLang } from '../utils/i18n
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
 import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
+import FarmerAvatar from '../components/FarmerAvatar.jsx';
+import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
+import InlineAlert from '../components/InlineAlert.jsx';
+import { getCropLabel } from '../utils/crops.js';
+import { trackPilotEvent } from '../utils/pilotTracker.js';
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -28,18 +33,23 @@ export default function FarmerDashboardPage() {
   const [recNote, setRecNote] = useState('');
   const [feedbackSent, setFeedbackSent] = useState({});
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
     api.get('/auth/farmer-profile')
-      .then(r => setProfile(r.data))
-      .catch(() => {})
+      .then(r => { setProfile(r.data); setProfileError(''); })
+      .catch(() => setProfileError('Could not load your profile. Please check your connection.'))
       .finally(() => setLoading(false));
     // Load farm profiles + referral
     fetchProfiles().then(profiles => {
       if (profiles.length === 0) setShowOnboarding(true);
+    }).catch(() => {
+      // fetchProfiles failed — do NOT show onboarding, farmer may already be registered
+      setProfileError('Could not load your farm data. Please check your connection and refresh.');
     });
-    fetchReferral();
-    trackEvent('dashboard_viewed');
+    fetchReferral(); // supplemental — referral card just won't render if this fails
+    trackEvent('dashboard_viewed'); // fire-and-forget analytics
   }, []);
 
   const [lang, setCurrentLang] = useState(getCurrentLang());
@@ -91,17 +101,51 @@ export default function FarmerDashboardPage() {
     return '#EF4444';
   };
 
+  const [photoUploadWarning, setPhotoUploadWarning] = useState('');
+
+  const [onboardingError, setOnboardingError] = useState('');
+
   const handleOnboardingComplete = async (data) => {
-    const profile = await createProfile(data);
-    if (profile) {
-      setShowOnboarding(false);
-      trackEvent('onboarding_completed', { crop: data.crop });
-      // Fetch new data for the created profile
-      fetchRecommendations(profile.id);
-      fetchWeather(profile.id);
-      fetchWeatherRecs(profile.id);
-      fetchFinanceScore(profile.id);
+    const { photoFile, ...profileData } = data;
+    setOnboardingError('');
+    let newProfile;
+    try {
+      newProfile = await createProfile(profileData);
+    } catch (err) {
+      trackPilotEvent('onboarding_failed', { error: err?.message || 'createProfile failed' });
+      setOnboardingError('Failed to create your farm profile. Please check your connection and try again.');
+      return; // stay on onboarding — don't dismiss
     }
+    if (!newProfile) {
+      trackPilotEvent('onboarding_failed', { error: 'createProfile returned null' });
+      setOnboardingError('Something went wrong creating your profile. Please try again.');
+      return;
+    }
+    setShowOnboarding(false);
+    trackEvent('onboarding_completed', { crop: data.crop });
+    trackPilotEvent('onboarding_completed', { crop: data.crop });
+
+    // Upload profile photo if provided (non-blocking — but inform user on failure)
+    if (photoFile) {
+      try {
+        const formData = new FormData();
+        formData.append('photo', photoFile);
+        await api.post('/farmers/me/profile-photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        trackPilotEvent('photo_uploaded', { context: 'onboarding' });
+        api.get('/auth/farmer-profile').then(r => setProfile(r.data)).catch(() => {}); // refresh avatar — non-critical, photo already saved
+      } catch {
+        trackPilotEvent('photo_failed', { context: 'onboarding' });
+        setPhotoUploadWarning('Your farm was created, but the profile photo could not be uploaded. You can add it later from your profile.');
+      }
+    }
+
+    // Fetch new data for the created profile
+    fetchRecommendations(newProfile.id);
+    fetchWeather(newProfile.id);
+    fetchWeatherRecs(newProfile.id);
+    fetchFinanceScore(newProfile.id);
   };
 
   const isPending = user?.registrationStatus === 'pending_approval';
@@ -110,11 +154,14 @@ export default function FarmerDashboardPage() {
 
   const [nextTask, setNextTask] = useState(null);
 
+  const [dashError, setDashError] = useState('');
+
   useEffect(() => {
     if (isApproved && user?.farmerId) {
+      setDashError('');
       api.get(`/lifecycle/farmers/${user.farmerId}`)
         .then(r => setLifecycle(r.data))
-        .catch(() => {});
+        .catch(() => {}); // lifecycle is supplemental — page still works without it
       api.get(`/seasons/farmer/${user.farmerId}?status=active`)
         .then(r => setSeasons(r.data))
         .catch(() => setSeasons([]));
@@ -123,14 +170,26 @@ export default function FarmerDashboardPage() {
           const taskList = Array.isArray(r.data) ? r.data : [];
           setNextTask(taskList[0] || null);
         })
-        .catch(() => {});
+        .catch(() => {}); // tasks feed is supplemental
     }
   }, [isApproved, user?.farmerId]);
 
   return (
     <div style={styles.container}>
       {showOnboarding && isApproved && (
-        <OnboardingWizard userName={user?.fullName?.split(' ')[0]} onComplete={handleOnboardingComplete} />
+        <>
+          {onboardingError && (
+            <div style={{ padding: '0.5rem 1rem' }}>
+              <InlineAlert variant="danger" onDismiss={() => setOnboardingError('')}>{onboardingError}</InlineAlert>
+            </div>
+          )}
+          <OnboardingWizard userName={user?.fullName?.split(' ')[0]} countryCode={profile?.countryCode} onComplete={handleOnboardingComplete} />
+        </>
+      )}
+      {photoUploadWarning && (
+        <div style={{ padding: '0.5rem 1rem' }}>
+          <InlineAlert variant="warning" onDismiss={() => setPhotoUploadWarning('')}>{photoUploadWarning}</InlineAlert>
+        </div>
       )}
       <div style={styles.header}>
         <FarrowayLogo size={28} />
@@ -153,10 +212,38 @@ export default function FarmerDashboardPage() {
 
       <div style={styles.content}>
         <div style={styles.welcome}>
-          <h2 style={{ margin: 0 }}>Welcome, {user?.fullName}</h2>
-          <p style={{ color: '#A1A1AA', margin: '0.25rem 0 0' }}>{user?.email}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <FarmerAvatar
+              fullName={user?.fullName}
+              profileImageUrl={profile?.profileImageUrl}
+              size={52}
+              editable
+              onClick={() => setShowPhotoUpload(true)}
+            />
+            <div>
+              <h2 style={{ margin: 0 }}>Welcome, {user?.fullName}</h2>
+              <p style={{ color: '#A1A1AA', margin: '0.25rem 0 0' }}>{user?.email}</p>
+            </div>
+          </div>
         </div>
 
+        {showPhotoUpload && (
+          <ProfilePhotoUpload
+            farmerId={profile?.id}
+            fullName={user?.fullName}
+            currentImageUrl={profile?.profileImageUrl}
+            onClose={() => setShowPhotoUpload(false)}
+            onUploaded={() => {
+              // Refresh avatar display — non-critical, photo already saved
+              api.get('/auth/farmer-profile').then(r => setProfile(r.data)).catch(() => {});
+            }}
+            selfUpload
+          />
+        )}
+
+        {profileError && (
+          <InlineAlert variant="danger" onDismiss={() => setProfileError('')} action={{ label: 'Retry', onClick: () => { setLoading(true); setProfileError(''); api.get('/auth/farmer-profile').then(r => { setProfile(r.data); setProfileError(''); }).catch(() => setProfileError('Could not load your profile. Please check your connection.')).finally(() => setLoading(false)); } }}>{profileError}</InlineAlert>
+        )}
         {loading ? (
           <SkeletonFarmerDashboard />
         ) : isPending ? (
@@ -181,7 +268,7 @@ export default function FarmerDashboardPage() {
                 <div style={styles.detailRow}><span>Name:</span> <span>{profile.fullName}</span></div>
                 <div style={styles.detailRow}><span>Phone:</span> <span>{profile.phone}</span></div>
                 <div style={styles.detailRow}><span>Region:</span> <span>{profile.region}{profile.district ? `, ${profile.district}` : ''}</span></div>
-                {profile.primaryCrop && <div style={styles.detailRow}><span>Crop:</span> <span>{profile.primaryCrop}</span></div>}
+                {profile.primaryCrop && <div style={styles.detailRow}><span>Crop:</span> <span>{getCropLabel(profile.primaryCrop)}</span></div>}
                 {profile.farmSizeAcres && <div style={styles.detailRow}><span>Farm Size:</span> <span>{profile.farmSizeAcres} acres</span></div>}
               </div>
             )}
@@ -329,7 +416,7 @@ export default function FarmerDashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={styles.statusBadge('rgba(34,197,94,0.15)', '#22C55E')}>Active Account</div>
                   <span style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>
-                    {tLifecycleStage(lifecycle.currentStage)}{lifecycle.cropType ? ` · ${lifecycle.cropType}` : ''}
+                    {tLifecycleStage(lifecycle.currentStage)}{lifecycle.cropType ? ` · ${getCropLabel(lifecycle.cropType)}` : ''}
                   </span>
                 </div>
               </div>
@@ -394,17 +481,32 @@ export default function FarmerDashboardPage() {
             {seasons && seasons.length > 0 && (
               <div style={{ ...styles.card, marginTop: '1rem' }}>
                 <h3 style={{ margin: '0 0 0.75rem' }}>My Farm Progress</h3>
-                {seasons.map(s => (
-                  <div key={s.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #243041' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                      <span style={{ fontWeight: 600 }}>{s.cropType}</span>
-                      <span style={{ color: '#22C55E', fontWeight: 500 }}>{s.status}</span>
+                {seasons.map(s => {
+                  const daysSince = s.lastActivityDate
+                    ? Math.floor((Date.now() - new Date(s.lastActivityDate)) / 86400000)
+                    : null;
+                  const isStale = daysSince !== null && daysSince >= 14;
+                  return (
+                    <div key={s.id} style={{
+                      padding: '0.5rem 0', borderBottom: '1px solid #243041',
+                      borderLeft: isStale ? '3px solid #F59E0B' : 'none',
+                      paddingLeft: isStale ? '0.5rem' : 0,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                        <span style={{ fontWeight: 600 }}>{s.cropType}</span>
+                        <span style={{ color: '#22C55E', fontWeight: 500 }}>{s.status}</span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>
+                        {s.farmSizeAcres} acres | Planted: {new Date(s.plantingDate).toLocaleDateString()}
+                      </div>
+                      {isStale && (
+                        <div style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600, marginTop: '0.25rem' }}>
+                          {'\u26A0'} No update in {daysSince} days — log an activity to stay on track
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>
-                      {s.farmSizeAcres} acres | Planted: {new Date(s.plantingDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <p style={{ fontSize: '0.8rem', color: '#71717A', margin: '0.5rem 0 0' }}>
                   Log activities, confirm stages, and track your harvest through your Farmer Home.
                 </p>
@@ -412,11 +514,22 @@ export default function FarmerDashboardPage() {
             )}
 
             {seasons && seasons.length === 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <h3 style={{ margin: '0 0 0.5rem' }}>Farm Progress</h3>
-                <p style={{ color: '#A1A1AA', fontSize: '0.9rem', margin: 0 }}>
-                  No active growing seasons yet. Ask your field officer to set up your first season to start tracking progress.
+              <div style={{ ...styles.card, marginTop: '1rem', borderLeft: '4px solid #F59E0B' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.1rem' }}>{'\uD83C\uDF31'}</span>
+                  <h3 style={{ margin: 0 }}>No Active Season</h3>
+                </div>
+                <p style={{ color: '#A1A1AA', fontSize: '0.9rem', margin: '0 0 0.75rem', lineHeight: 1.5 }}>
+                  You don't have an active growing season yet. Start one to begin tracking your farm progress, get personalized recommendations, and build your credit history.
                 </p>
+                {user?.farmerId && (
+                  <a href={`/farmer-home/${user.farmerId}/progress`} style={{
+                    display: 'inline-block', padding: '0.5rem 1.2rem', background: '#F59E0B', color: '#fff',
+                    borderRadius: '6px', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none',
+                  }}>
+                    Start a Season {'\u2192'}
+                  </a>
+                )}
               </div>
             )}
 
@@ -562,8 +675,8 @@ const styles = {
     minHeight: '36px',
   },
   langBtn: {
-    padding: '0.3rem 0.6rem', background: 'transparent', border: '1px solid #243041',
-    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', minHeight: '32px',
+    padding: '0.4rem 0.7rem', background: 'transparent', border: '1px solid #243041',
+    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', minHeight: '36px',
   },
   content: { maxWidth: '600px', margin: '1rem auto', padding: '0 0.75rem' },
   welcome: { marginBottom: '1.5rem' },
@@ -586,19 +699,19 @@ const styles = {
     borderBottom: '1px solid #243041', fontSize: '0.9rem',
   },
   recBtnDone: {
-    padding: '0.3rem 0.7rem', background: 'rgba(34,197,94,0.15)', color: '#22C55E',
+    padding: '0.4rem 0.8rem', background: 'rgba(34,197,94,0.15)', color: '#22C55E',
     border: '1px solid rgba(34,197,94,0.3)', borderRadius: '6px', cursor: 'pointer',
-    fontSize: '0.75rem', fontWeight: 600,
+    fontSize: '0.75rem', fontWeight: 600, minHeight: '36px',
   },
   recBtnSkip: {
-    padding: '0.3rem 0.7rem', background: 'rgba(245,158,11,0.15)', color: '#F59E0B',
+    padding: '0.4rem 0.8rem', background: 'rgba(245,158,11,0.15)', color: '#F59E0B',
     border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', cursor: 'pointer',
-    fontSize: '0.75rem', fontWeight: 600,
+    fontSize: '0.75rem', fontWeight: 600, minHeight: '36px',
   },
   recBtnNote: {
-    padding: '0.3rem 0.7rem', background: 'transparent', color: '#A1A1AA',
+    padding: '0.4rem 0.8rem', background: 'transparent', color: '#A1A1AA',
     border: '1px solid #243041', borderRadius: '6px', cursor: 'pointer',
-    fontSize: '0.75rem', fontWeight: 600,
+    fontSize: '0.75rem', fontWeight: 600, minHeight: '36px',
   },
   noteInput: {
     width: '100%', padding: '0.4rem 0.6rem', background: '#1E293B', border: '1px solid #243041',

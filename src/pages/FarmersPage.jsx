@@ -7,6 +7,10 @@ import { CREATOR_ROLES } from '../utils/roles.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
+import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
+import CropSelect from '../components/CropSelect.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import { getCropLabel } from '../utils/crops.js';
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
@@ -16,16 +20,33 @@ const STATUS_FILTERS = [
   { value: 'disabled', label: 'Disabled' },
 ];
 
+// Operational quick-filters — computed client-side from loaded farmers
+function computeQuickFilterCounts(allFarmers, currentUserId) {
+  let noOfficer = 0, invitePending = 0, noApps = 0, needsAttention = 0, noData = 0, myFarmers = 0;
+  for (const f of allFarmers) {
+    if (f.registrationStatus === 'approved' && !f.assignedOfficerId) noOfficer++;
+    if (!f.selfRegistered && f.inviteStatus && f.inviteStatus !== 'ACCEPTED' && f.inviteStatus !== 'NOT_SENT') invitePending++;
+    if (f.registrationStatus === 'approved' && (!f._count?.applications || f._count.applications === 0)) noApps++;
+    const isExpired = f.inviteStatus === 'EXPIRED';
+    if (isExpired || (f.registrationStatus === 'approved' && !f.assignedOfficerId)) needsAttention++;
+    if (f.registrationStatus === 'approved' && f.userAccount && (!f._count?.applications || f._count.applications === 0)) noData++;
+    if (currentUserId && f.assignedOfficerId === currentUserId) myFarmers++;
+  }
+  return { noOfficer, invitePending, noApps, needsAttention, noData, myFarmers };
+}
+
 export default function FarmersPage() {
   const [farmers, setFarmers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [quickFilter, setQuickFilter] = useState(''); // '', 'no_officer', 'invite_pending', 'no_apps'
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [quickCounts, setQuickCounts] = useState({ noOfficer: 0, invitePending: 0, noApps: 0 });
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const { selectedOrgId } = useOrgStore();
@@ -39,7 +60,12 @@ export default function FarmersPage() {
       search: s || undefined,
       registrationStatus: status || undefined,
     }})
-      .then(r => { setFarmers(r.data.farmers); setTotal(r.data.total); setLoadError(''); })
+      .then(r => {
+        setFarmers(r.data.farmers);
+        setTotal(r.data.total);
+        setLoadError('');
+        setQuickCounts(computeQuickFilterCounts(r.data.farmers, user?.sub));
+      })
       .catch(() => setLoadError('Failed to load farmers list'))
       .finally(() => setLoading(false));
   };
@@ -49,14 +75,31 @@ export default function FarmersPage() {
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
+    setQuickFilter('');
     load(1, search, statusFilter);
   };
 
   const handleStatusFilter = (value) => {
     setStatusFilter(value);
+    setQuickFilter('');
     setPage(1);
     load(1, search, value);
   };
+
+  const handleQuickFilter = (value) => {
+    setQuickFilter(qf => qf === value ? '' : value);
+  };
+
+  // Apply client-side quick filter on top of server results
+  const displayFarmers = quickFilter ? farmers.filter(f => {
+    if (quickFilter === 'no_officer') return f.registrationStatus === 'approved' && !f.assignedOfficerId;
+    if (quickFilter === 'invite_pending') return !f.selfRegistered && f.inviteStatus && f.inviteStatus !== 'ACCEPTED' && f.inviteStatus !== 'NOT_SENT';
+    if (quickFilter === 'no_apps') return f.registrationStatus === 'approved' && (!f._count?.applications || f._count.applications === 0);
+    if (quickFilter === 'needs_attention') return f.inviteStatus === 'EXPIRED' || (f.registrationStatus === 'approved' && !f.assignedOfficerId);
+    if (quickFilter === 'no_data') return f.registrationStatus === 'approved' && f.userAccount && (!f._count?.applications || f._count.applications === 0);
+    if (quickFilter === 'my_farmers') return f.assignedOfficerId === user?.sub;
+    return true;
+  }) : farmers;
 
   return (
     <>
@@ -94,6 +137,91 @@ export default function FarmersPage() {
           ))}
         </div>
 
+        {/* Operational quick-filters — highlight common action items */}
+        {!loading && farmers.length > 0 && (quickCounts.myFarmers > 0 || quickCounts.noOfficer > 0 || quickCounts.invitePending > 0 || quickCounts.noApps > 0) && (
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.72rem', color: '#71717A', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', marginRight: '0.25rem' }}>Quick filters:</span>
+            {user?.role === 'field_officer' && quickCounts.myFarmers > 0 && (
+              <button
+                onClick={() => handleQuickFilter('my_farmers')}
+                style={{
+                  padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
+                  border: quickFilter === 'my_farmers' ? '1.5px solid #22C55E' : '1.5px solid #243041',
+                  background: quickFilter === 'my_farmers' ? 'rgba(34,197,94,0.15)' : '#162033',
+                  color: quickFilter === 'my_farmers' ? '#22C55E' : '#A1A1AA',
+                  fontWeight: quickFilter === 'my_farmers' ? 600 : 400,
+                }}
+              >My Farmers ({quickCounts.myFarmers})</button>
+            )}
+            {quickCounts.noOfficer > 0 && (
+              <button
+                onClick={() => handleQuickFilter('no_officer')}
+                style={{
+                  padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
+                  border: quickFilter === 'no_officer' ? '1.5px solid #F59E0B' : '1.5px solid #243041',
+                  background: quickFilter === 'no_officer' ? 'rgba(245,158,11,0.15)' : '#162033',
+                  color: quickFilter === 'no_officer' ? '#F59E0B' : '#A1A1AA',
+                  fontWeight: quickFilter === 'no_officer' ? 600 : 400,
+                }}
+              >No Officer ({quickCounts.noOfficer})</button>
+            )}
+            {quickCounts.invitePending > 0 && (
+              <button
+                onClick={() => handleQuickFilter('invite_pending')}
+                style={{
+                  padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
+                  border: quickFilter === 'invite_pending' ? '1.5px solid #F59E0B' : '1.5px solid #243041',
+                  background: quickFilter === 'invite_pending' ? 'rgba(245,158,11,0.15)' : '#162033',
+                  color: quickFilter === 'invite_pending' ? '#F59E0B' : '#A1A1AA',
+                  fontWeight: quickFilter === 'invite_pending' ? 600 : 400,
+                }}
+              >Invite Pending ({quickCounts.invitePending})</button>
+            )}
+            {quickCounts.noApps > 0 && (
+              <button
+                onClick={() => handleQuickFilter('no_apps')}
+                style={{
+                  padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
+                  border: quickFilter === 'no_apps' ? '1.5px solid #0891B2' : '1.5px solid #243041',
+                  background: quickFilter === 'no_apps' ? 'rgba(8,145,178,0.15)' : '#162033',
+                  color: quickFilter === 'no_apps' ? '#0891B2' : '#A1A1AA',
+                  fontWeight: quickFilter === 'no_apps' ? 600 : 400,
+                }}
+              >No Applications ({quickCounts.noApps})</button>
+            )}
+            {quickCounts.needsAttention > 0 && (
+              <button
+                onClick={() => handleQuickFilter('needs_attention')}
+                style={{
+                  padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
+                  border: quickFilter === 'needs_attention' ? '1.5px solid #EF4444' : '1.5px solid #243041',
+                  background: quickFilter === 'needs_attention' ? 'rgba(239,68,68,0.15)' : '#162033',
+                  color: quickFilter === 'needs_attention' ? '#EF4444' : '#A1A1AA',
+                  fontWeight: quickFilter === 'needs_attention' ? 600 : 400,
+                }}
+              >Needs Attention ({quickCounts.needsAttention})</button>
+            )}
+            {quickCounts.noData > 0 && (
+              <button
+                onClick={() => handleQuickFilter('no_data')}
+                style={{
+                  padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
+                  border: quickFilter === 'no_data' ? '1.5px solid #71717A' : '1.5px solid #243041',
+                  background: quickFilter === 'no_data' ? 'rgba(113,113,122,0.15)' : '#162033',
+                  color: quickFilter === 'no_data' ? '#A1A1AA' : '#71717A',
+                  fontWeight: quickFilter === 'no_data' ? 600 : 400,
+                }}
+              >No Data Yet ({quickCounts.noData})</button>
+            )}
+            {quickFilter && (
+              <button
+                onClick={() => setQuickFilter('')}
+                style={{ padding: '0.2rem 0.5rem', borderRadius: 12, fontSize: '0.72rem', cursor: 'pointer', border: '1px solid #374151', background: '#1E293B', color: '#A1A1AA' }}
+              >Clear</button>
+            )}
+          </div>
+        )}
+
         {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError}</div>}
         {loading ? <div className="loading">Loading...</div> : (
           <div className="card">
@@ -115,15 +243,20 @@ export default function FarmersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {farmers.map(f => (
+                    {displayFarmers.map(f => (
                       <tr key={f.id} onClick={() => navigate(`/farmers/${f.id}`)} style={{ cursor: 'pointer' }}>
-                        <td style={{ fontWeight: 500 }}>{f.fullName}</td>
+                        <td style={{ fontWeight: 500 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FarmerAvatarSmall fullName={f.fullName} profileImageUrl={f.profileImageUrl} />
+                            <span>{f.fullName}</span>
+                          </div>
+                        </td>
                         <td>{f.phone}</td>
                         <td>{f.region}</td>
                         <td><AccessBadge value={f.accessStatus} /></td>
                         <td>{!f.selfRegistered ? <InviteBadge value={f.inviteStatus} /> : <span className="text-sm text-muted">—</span>}</td>
                         {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
-                        <td>{f.primaryCrop || '-'}</td>
+                        <td>{f.primaryCrop ? getCropLabel(f.primaryCrop) : '-'}</td>
                         <td>{f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>{f._count?.applications || 0}</td>
                         <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
@@ -131,7 +264,27 @@ export default function FarmersPage() {
                         </td>
                       </tr>
                     ))}
-                    {farmers.length === 0 && <tr><td colSpan={isSuperAdmin ? 10 : 9} className="empty-state">No farmers found</td></tr>}
+                    {displayFarmers.length === 0 && !quickFilter && (
+                      <tr><td colSpan={isSuperAdmin ? 10 : 9}>
+                        <EmptyState
+                          icon="🌾"
+                          title="No farmers found"
+                          message="Try adjusting your search or status filter, or add your first farmer."
+                          compact
+                        />
+                      </td></tr>
+                    )}
+                    {displayFarmers.length === 0 && quickFilter && (
+                      <tr><td colSpan={isSuperAdmin ? 10 : 9}>
+                        <EmptyState
+                          icon="🔍"
+                          title="No farmers match this filter"
+                          message="Try a different filter or clear to see all farmers."
+                          action={{ label: 'Clear Filter', onClick: () => setQuickFilter('') }}
+                          compact
+                        />
+                      </td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -268,6 +421,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [duplicateWarning, setDuplicateWarning] = useState(null); // { duplicates: [...] }
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
   const setVal = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -303,7 +457,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
         contactEmail: form.accessMode === 'invite_link' && form.channel === 'email' ? form.contactEmail : undefined,
         recordOnly: form.accessMode === 'record_only' ? true : undefined,
       };
-      const res = await api.post('/farmers', payload);
+      const res = await api.post('/farmers', { ...payload, confirmDuplicate: duplicateWarning ? true : undefined });
+      setDuplicateWarning(null);
       setSuccess({
         farmerName: form.fullName,
         credentialsCreated: res.data.credentialsCreated,
@@ -314,7 +469,13 @@ function CreateFarmerModal({ onClose, onCreated }) {
         deliveryNote: res.data.deliveryNote,
       });
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create farmer');
+      if (err.response?.status === 409 && err.response?.data?.requiresConfirmation) {
+        setDuplicateWarning({ duplicates: err.response.data.duplicates || [] });
+        setError(err.response.data.error);
+      } else {
+        setDuplicateWarning(null);
+        setError(err.response?.data?.error || 'Failed to create farmer');
+      }
     } finally { setSaving(false); }
   };
 
@@ -360,7 +521,23 @@ function CreateFarmerModal({ onClose, onCreated }) {
         <div className="modal-header">New Farmer <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
         <div className="modal-body">
           <StepIndicator step={step} />
-          {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
+          {error && !duplicateWarning && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
+
+          {duplicateWarning && (
+            <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+              <div style={{ color: '#F59E0B', fontWeight: 600, marginBottom: '0.5rem' }}>Possible Duplicate Detected</div>
+              <div style={{ color: '#A1A1AA', marginBottom: '0.5rem' }}>{error}</div>
+              {duplicateWarning.duplicates.map(d => (
+                <div key={d.id} style={{ background: '#1E293B', borderRadius: 6, padding: '0.5rem 0.75rem', marginBottom: '0.35rem', fontSize: '0.8rem', color: '#E2E8F0' }}>
+                  {d.fullName} &middot; {d.phone} &middot; {d.region} &middot; <span style={{ color: '#71717A' }}>{d.status}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button className="btn btn-outline btn-sm" style={{ color: '#F59E0B', borderColor: 'rgba(245,158,11,0.3)' }} onClick={() => { handleSubmit(); }}>Create Anyway</button>
+                <button className="btn btn-outline btn-sm" onClick={() => { setDuplicateWarning(null); setError(''); }}>Cancel</button>
+              </div>
+            </div>
+          )}
 
           {/* ── Step 1: Farmer Info ── */}
           {step === 1 && (
@@ -411,7 +588,13 @@ function CreateFarmerModal({ onClose, onCreated }) {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Primary Crop</label>
-                  <input className="form-input" value={form.primaryCrop} onChange={set('primaryCrop')} />
+                  <CropSelect
+                    value={form.primaryCrop}
+                    onChange={(v) => setVal('primaryCrop', v)}
+                    countryCode={form.countryCode}
+                    placeholder="Select crop (optional)"
+                    optional
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Farm Size ({form.countryCode === 'TZ' ? 'ha' : 'acres'})</label>
@@ -552,7 +735,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem 1rem' }}>
                   {[['Name', form.fullName], ['Phone', form.phone], ['Region', form.region], ['Country', form.countryCode],
                     form.district && ['District', form.district], form.village && ['Village', form.village],
-                    form.nationalId && ['National ID', form.nationalId], form.primaryCrop && ['Crop', form.primaryCrop],
+                    form.nationalId && ['National ID', form.nationalId], form.primaryCrop && ['Crop', getCropLabel(form.primaryCrop)],
                     form.farmSizeAcres && ['Farm Size', `${form.farmSizeAcres} ${form.countryCode === 'TZ' ? 'ha' : 'ac'}`],
                     form.yearsExperience && ['Experience', `${form.yearsExperience} yrs`],
                   ].filter(Boolean).map(([k, v]) => (
@@ -619,12 +802,13 @@ function InviteFarmerModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [inviteDupWarning, setInviteDupWarning] = useState(null);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
   const setVal = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setSaving(true);
     setError('');
     try {
@@ -640,12 +824,14 @@ function InviteFarmerModal({ onClose, onCreated }) {
         preferredLanguage: form.preferredLanguage,
         channel: !createAccount ? form.channel : undefined,
         contactEmail: !createAccount && form.channel === 'email' ? form.contactEmail : undefined,
+        confirmDuplicate: inviteDupWarning ? true : undefined,
       };
       if (createAccount && form.email && form.password) {
         payload.email = form.email;
         payload.password = form.password;
       }
       const res = await api.post('/farmers/invite', payload);
+      setInviteDupWarning(null);
       setSuccess({
         credentialsCreated: res.data.credentialsCreated,
         deliveryNote: res.data.deliveryNote,
@@ -656,7 +842,13 @@ function InviteFarmerModal({ onClose, onCreated }) {
         inviteExpiresAt: res.data.inviteExpiresAt,
       });
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to invite farmer');
+      if (err.response?.status === 409 && err.response?.data?.requiresConfirmation) {
+        setInviteDupWarning({ duplicates: err.response.data.duplicates || [] });
+        setError(err.response.data.error);
+      } else {
+        setInviteDupWarning(null);
+        setError(err.response?.data?.error || 'Failed to invite farmer');
+      }
     } finally { setSaving(false); }
   };
 
@@ -701,7 +893,22 @@ function InviteFarmerModal({ onClose, onCreated }) {
         <div className="modal-header">Invite Farmer <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {error && <div className="alert alert-danger">{error}</div>}
+            {error && !inviteDupWarning && <div className="alert alert-danger">{error}</div>}
+            {inviteDupWarning && (
+              <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                <div style={{ color: '#F59E0B', fontWeight: 600, marginBottom: '0.5rem' }}>Possible Duplicate</div>
+                <div style={{ color: '#A1A1AA', marginBottom: '0.5rem' }}>{error}</div>
+                {inviteDupWarning.duplicates.map(d => (
+                  <div key={d.id} style={{ background: '#1E293B', borderRadius: 6, padding: '0.5rem 0.75rem', marginBottom: '0.35rem', fontSize: '0.8rem', color: '#E2E8F0' }}>
+                    {d.fullName} &middot; {d.phone} &middot; {d.region} &middot; <span style={{ color: '#71717A' }}>{d.status}</span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button type="button" className="btn btn-outline btn-sm" style={{ color: '#F59E0B', borderColor: 'rgba(245,158,11,0.3)' }} onClick={() => handleSubmit()}>Invite Anyway</button>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => { setInviteDupWarning(null); setError(''); }}>Cancel</button>
+                </div>
+              </div>
+            )}
             <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.8rem' }}>
               Invited farmers are pre-approved and can begin using the system immediately once they have login credentials.
             </div>
@@ -749,7 +956,13 @@ function InviteFarmerModal({ onClose, onCreated }) {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Primary Crop</label>
-                <input className="form-input" value={form.primaryCrop} onChange={set('primaryCrop')} />
+                <CropSelect
+                  value={form.primaryCrop}
+                  onChange={(v) => setVal('primaryCrop', v)}
+                  countryCode={form.countryCode}
+                  placeholder="Select crop (optional)"
+                  optional
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Farm Size ({form.countryCode === 'TZ' ? 'hectares' : 'acres'})</label>

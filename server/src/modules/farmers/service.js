@@ -49,6 +49,75 @@ const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7',
 function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
 import { DEFAULT_COUNTRY_CODE } from '../regionConfig/service.js';
 import { invalidateAuthCache } from '../../middleware/auth.js';
+import { logWorkflowEvent } from '../../utils/opsLogger.js';
+
+// ─── Duplicate Detection ─────────────────────────────────
+
+/**
+ * Check for potential duplicate farmers before creation.
+ * Returns { hasDuplicate, duplicates[] } — warning-only, never blocks.
+ * Used by staff-create and invite endpoints.
+ */
+export async function checkDuplicateFarmer({ phone, fullName, region, organizationId }) {
+  const conditions = [];
+
+  // Exact phone match (strongest signal)
+  if (phone) {
+    const normalizedPhone = normalizePhoneForStorage(phone);
+    conditions.push({ phone: normalizedPhone });
+  }
+
+  // Name + region match (weaker signal, warn only)
+  if (fullName && region) {
+    conditions.push({
+      AND: [
+        { fullName: { equals: fullName, mode: 'insensitive' } },
+        { region: { equals: region, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  if (conditions.length === 0) return { hasDuplicate: false, duplicates: [] };
+
+  const orgWhere = organizationId ? { organizationId } : {};
+  const matches = await prisma.farmer.findMany({
+    where: {
+      ...orgWhere,
+      OR: conditions,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      phone: true,
+      region: true,
+      registrationStatus: true,
+      createdAt: true,
+    },
+    take: 5,
+  });
+
+  if (matches.length > 0) {
+    logWorkflowEvent('duplicate_farmer_detected', {
+      inputPhone: phone,
+      inputName: fullName,
+      inputRegion: region,
+      matchCount: matches.length,
+      matchIds: matches.map(m => m.id),
+    });
+  }
+
+  return {
+    hasDuplicate: matches.length > 0,
+    duplicates: matches.map(m => ({
+      id: m.id,
+      fullName: m.fullName,
+      phone: m.phone,
+      region: m.region,
+      status: m.registrationStatus,
+      createdAt: m.createdAt,
+    })),
+  };
+}
 
 /**
  * Create a farmer (staff-initiated — auto-approved, not self-registered).
@@ -99,6 +168,11 @@ export async function createFarmer(data, userId, organizationId) {
           countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
           regionCode: data.regionCode || null,
           preferredLanguage: data.preferredLanguage || 'en',
+          latitude: data.latitude != null ? parseFloat(data.latitude) : null,
+          longitude: data.longitude != null ? parseFloat(data.longitude) : null,
+          locationSource: data.locationSource || null,
+          geolocationAccuracy: data.geolocationAccuracy != null ? parseFloat(data.geolocationAccuracy) : null,
+          geolocationCapturedAt: data.geolocationCapturedAt ? new Date(data.geolocationCapturedAt) : null,
           organizationId: organizationId || null,
           createdById: userId,
           selfRegistered: false,
@@ -132,6 +206,11 @@ export async function createFarmer(data, userId, organizationId) {
       countryCode: data.countryCode || DEFAULT_COUNTRY_CODE,
       regionCode: data.regionCode || null,
       preferredLanguage: data.preferredLanguage || 'en',
+      latitude: data.latitude != null ? parseFloat(data.latitude) : null,
+      longitude: data.longitude != null ? parseFloat(data.longitude) : null,
+      locationSource: data.locationSource || null,
+      geolocationAccuracy: data.geolocationAccuracy != null ? parseFloat(data.geolocationAccuracy) : null,
+      geolocationCapturedAt: data.geolocationCapturedAt ? new Date(data.geolocationCapturedAt) : null,
       organizationId: organizationId || null,
       createdById: userId,
       selfRegistered: false,
@@ -359,6 +438,11 @@ export async function updateFarmer(id, data) {
       ...(data.yearsExperience !== undefined && { yearsExperience: data.yearsExperience ? parseInt(data.yearsExperience, 10) : null }),
       ...(data.gender !== undefined && { gender: data.gender || null }),
       ...(data.dateOfBirth !== undefined && { dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null }),
+      ...(data.latitude !== undefined && { latitude: data.latitude != null ? parseFloat(data.latitude) : null }),
+      ...(data.longitude !== undefined && { longitude: data.longitude != null ? parseFloat(data.longitude) : null }),
+      ...(data.locationSource !== undefined && { locationSource: data.locationSource || null }),
+      ...(data.geolocationAccuracy !== undefined && { geolocationAccuracy: data.geolocationAccuracy != null ? parseFloat(data.geolocationAccuracy) : null }),
+      ...(data.geolocationCapturedAt !== undefined && { geolocationCapturedAt: data.geolocationCapturedAt ? new Date(data.geolocationCapturedAt) : null }),
     },
   });
 }

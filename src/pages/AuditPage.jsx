@@ -36,7 +36,11 @@ export default function AuditPage() {
                     <tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>Application</th><th>Status Change</th></tr>
                   </thead>
                   <tbody>
-                    {logs.length === 0 && <tr><td colSpan={6} className="empty-state">No audit events found</td></tr>}
+                    {logs.length === 0 && (
+                      <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#71717A' }}>
+                        No audit events match your current filters. Try broadening the date range or clearing the search.
+                      </td></tr>
+                    )}
                     {logs.map(log => (
                       <tr key={log.id} onClick={() => log.applicationId && navigate(`/applications/${log.applicationId}`)} style={{ cursor: log.applicationId ? 'pointer' : 'default' }}>
                         <td className="text-sm">{new Date(log.createdAt).toLocaleString()}</td>

@@ -1,22 +1,46 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import multer from 'multer';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID, parsePositiveInt, isValidEmail, validatePassword } from '../../middleware/validate.js';
 import { validatePhone, normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
-import { inviteLimiter, resendInviteLimiter } from '../../middleware/rateLimiters.js';
+import { inviteLimiter, resendInviteLimiter, uploadLimiter } from '../../middleware/rateLimiters.js';
 import { extractOrganization, orgWhereFarmer, verifyOrgAccess } from '../../middleware/orgScope.js';
+import { uploadCleanup } from '../../middleware/uploadCleanup.js';
+import { config } from '../../config/index.js';
 import prisma from '../../config/database.js';
 import * as farmersService from './service.js';
 import { inviteFarmer } from '../auth/farmer-registration.js';
 import { writeAuditLog } from '../audit/service.js';
+import { opsEvent, logUploadEvent } from '../../utils/opsLogger.js';
 import { createNotification } from '../notifications/service.js';
 import { sodGuard } from '../../middleware/sodGuard.js';
 import { markExecuted } from '../security/service.js';
 import { getDeliveryStatusLabel, dispatchInvite } from '../notifications/deliveryService.js';
+
+// ─── Profile photo upload (multer) ───────────────────────
+const photoStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, config.upload.dir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `profile-${uuidv4()}${ext}`);
+  },
+});
+const photoUpload = multer({
+  storage: photoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max for profile photos
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('File type not allowed. Accepted: JPEG, PNG, WebP'), false);
+  },
+});
 
 const INVITE_EXPIRY_DAYS = parseInt(process.env.INVITE_TOKEN_EXPIRY_DAYS || '7', 10);
 function makeInviteExpiry() { const d = new Date(); d.setDate(d.getDate() + INVITE_EXPIRY_DAYS); return d; }
@@ -41,17 +65,46 @@ router.get('/me', asyncHandler(async (req, res) => {
 
 // ─── Staff-only routes ─────────────────────────────────
 
+// Check for duplicate farmers (staff-facing — returns warning, not block)
+router.post('/check-duplicate',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const { phone, fullName, region } = req.body;
+    const result = await farmersService.checkDuplicateFarmer({
+      phone, fullName, region,
+      organizationId: req.organizationId,
+    });
+    res.json(result);
+  }));
+
 // Create farmer (staff creates on behalf of farmer — auto-approved)
 router.post('/', authorize('super_admin', 'institutional_admin', 'field_officer'), dedupGuard('create-farmer'), idempotencyCheck, asyncHandler(async (req, res) => {
   const { fullName, phone, region, channel, contactEmail } = req.body;
   if (!fullName || !phone || !region) {
+    opsEvent('workflow', 'validation_failure', 'warn', { endpoint: 'POST /farmers', reason: 'missing_required_fields', userId: req.user?.sub, ip: req.ip });
     return res.status(400).json({ error: 'fullName, phone, and region are required' });
   }
   const normalizedPhone = normalizePhoneForStorage(phone);
   const phoneCheck = validatePhone(normalizedPhone);
   if (!phoneCheck.valid) {
+    opsEvent('workflow', 'validation_failure', 'warn', { endpoint: 'POST /farmers', reason: 'invalid_phone', phone: normalizedPhone, userId: req.user?.sub, ip: req.ip });
     return res.status(400).json({ error: phoneCheck.message });
   }
+
+  // Duplicate phone check — block exact phone match to prevent silent duplicates
+  const dupCheck = await farmersService.checkDuplicateFarmer({
+    phone: normalizedPhone, fullName, region,
+    organizationId: req.organizationId,
+  });
+  const exactPhoneMatch = dupCheck.duplicates.find(d => d.phone === normalizedPhone);
+  if (exactPhoneMatch && !req.body.confirmDuplicate) {
+    return res.status(409).json({
+      error: `A farmer with phone ${normalizedPhone} already exists (${exactPhoneMatch.fullName}, ${exactPhoneMatch.region}).`,
+      duplicates: dupCheck.duplicates,
+      requiresConfirmation: true,
+    });
+  }
+
   const farmer = await farmersService.createFarmer({ ...req.body, phone: normalizedPhone }, req.user.sub, req.organizationId);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_created', details: { farmerId: farmer.id }, organizationId: req.organizationId }).catch(() => {});
 
@@ -107,6 +160,22 @@ router.post('/invite', inviteLimiter, authorize('super_admin', 'institutional_ad
     }
     req.body = { ...req.body, phone: normalizedPhone };
   }
+  // Duplicate phone check for invites
+  if (req.body.phone) {
+    const dupCheck = await farmersService.checkDuplicateFarmer({
+      phone: req.body.phone, fullName: req.body.fullName, region: req.body.region,
+      organizationId: req.organizationId,
+    });
+    const exactPhoneMatch = dupCheck.duplicates.find(d => d.phone === req.body.phone);
+    if (exactPhoneMatch && !req.body.confirmDuplicate) {
+      return res.status(409).json({
+        error: `A farmer with this phone number already exists (${exactPhoneMatch.fullName}).`,
+        duplicates: dupCheck.duplicates,
+        requiresConfirmation: true,
+      });
+    }
+  }
+
   const farmer = await inviteFarmer({
     ...req.body,
     invitedById: req.user.sub,
@@ -181,6 +250,32 @@ router.get('/', authorize('super_admin', 'institutional_admin', 'reviewer', 'fie
   });
   res.json(result);
 }));
+
+// Expiring invites — farmers whose invite will expire within N days (default 2)
+router.get('/expiring-invites',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  asyncHandler(async (req, res) => {
+    const withinDays = parseInt(req.query.days || '2', 10);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + withinDays);
+    const orgScope = orgWhereFarmer(req);
+    const expiring = await prisma.farmer.findMany({
+      where: {
+        ...orgScope,
+        userId: null,                      // no login yet
+        inviteToken: { not: null },        // has active invite
+        inviteExpiresAt: { lte: cutoff, gte: new Date() }, // expires within window
+      },
+      select: {
+        id: true, fullName: true, phone: true, region: true,
+        inviteExpiresAt: true, inviteChannel: true, inviteDeliveryStatus: true,
+        assignedOfficerId: true,
+      },
+      orderBy: { inviteExpiresAt: 'asc' },
+      take: 50,
+    });
+    res.json({ count: expiring.length, farmers: expiring, withinDays });
+  }));
 
 // Pending registrations (convenience alias under /api/farmers)
 router.get('/pending-registrations',
@@ -520,6 +615,135 @@ router.get('/:id/invite-status',
       deliveryStatusLabel: isExpired ? 'Invite Expired' : deliveryLabel.label,
       deliveryStatusCls: isExpired ? 'badge-rejected' : deliveryLabel.cls,
     });
+  }));
+
+// ─── Profile Photo: farmer self-upload ─────────────────
+router.post('/me/profile-photo',
+  uploadLimiter,
+  photoUpload.single('photo'),
+  uploadCleanup,
+  asyncHandler(async (req, res) => {
+    if (req.user.role !== 'farmer') {
+      return res.status(403).json({ error: 'Only farmer accounts can access this endpoint' });
+    }
+    if (!req.file) {
+      logUploadEvent('upload_failed', { endpoint: 'POST /farmers/me/profile-photo', reason: 'no_file', userId: req.user.sub });
+      return res.status(400).json({ error: 'Photo file is required' });
+    }
+
+    const farmer = await prisma.farmer.findUnique({ where: { userId: req.user.sub }, select: { id: true, profileImageUrl: true } });
+    if (!farmer) return res.status(404).json({ error: 'Farmer profile not found' });
+
+    // Delete old file if exists
+    farmersService.deleteOldProfileImage(farmer.profileImageUrl);
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    const updated = await prisma.farmer.update({
+      where: { id: farmer.id },
+      data: {
+        profileImageUrl: imageUrl,
+        profileImageUploadedAt: new Date(),
+        profileImageUpdatedBy: req.user.sub,
+      },
+    });
+
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_profile_photo_uploaded',
+      details: { farmerId: farmer.id, selfUpload: true },
+    }).catch(() => {});
+
+    res.json({ profileImageUrl: updated.profileImageUrl });
+  }));
+
+// Farmer self-remove profile photo
+router.delete('/me/profile-photo', asyncHandler(async (req, res) => {
+  if (req.user.role !== 'farmer') {
+    return res.status(403).json({ error: 'Only farmer accounts can access this endpoint' });
+  }
+  const farmer = await prisma.farmer.findUnique({ where: { userId: req.user.sub }, select: { id: true, profileImageUrl: true } });
+  if (!farmer) return res.status(404).json({ error: 'Farmer profile not found' });
+
+  farmersService.deleteOldProfileImage(farmer.profileImageUrl);
+
+  await prisma.farmer.update({
+    where: { id: farmer.id },
+    data: { profileImageUrl: null, profileImageUploadedAt: null, profileImageUpdatedBy: null },
+  });
+
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'farmer_profile_photo_removed',
+    details: { farmerId: farmer.id, selfRemove: true },
+  }).catch(() => {});
+
+  res.json({ message: 'Profile photo removed' });
+}));
+
+// ─── Profile Photo: staff upload for a farmer ──────────
+router.post('/:id/profile-photo',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  uploadLimiter,
+  photoUpload.single('photo'),
+  uploadCleanup,
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      logUploadEvent('upload_failed', { endpoint: `POST /farmers/${req.params.id}/profile-photo`, reason: 'no_file', userId: req.user?.sub });
+      return res.status(400).json({ error: 'Photo file is required' });
+    }
+
+    const farmer = await farmersService.getFarmerById(req.params.id);
+    if (!verifyOrgAccess(req, farmer.organizationId)) {
+      return res.status(403).json({ error: 'Access denied — farmer belongs to another organization' });
+    }
+
+    // Delete old file if exists
+    farmersService.deleteOldProfileImage(farmer.profileImageUrl);
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    const updated = await prisma.farmer.update({
+      where: { id: req.params.id },
+      data: {
+        profileImageUrl: imageUrl,
+        profileImageUploadedAt: new Date(),
+        profileImageUpdatedBy: req.user.sub,
+      },
+    });
+
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_profile_photo_uploaded',
+      details: { farmerId: req.params.id, uploadedBy: req.user.sub },
+    }).catch(() => {});
+
+    res.json({ profileImageUrl: updated.profileImageUrl });
+  }));
+
+// Staff remove profile photo for a farmer
+router.delete('/:id/profile-photo',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const farmer = await farmersService.getFarmerById(req.params.id);
+    if (!verifyOrgAccess(req, farmer.organizationId)) {
+      return res.status(403).json({ error: 'Access denied — farmer belongs to another organization' });
+    }
+
+    farmersService.deleteOldProfileImage(farmer.profileImageUrl);
+
+    await prisma.farmer.update({
+      where: { id: req.params.id },
+      data: { profileImageUrl: null, profileImageUploadedAt: null, profileImageUpdatedBy: null },
+    });
+
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'farmer_profile_photo_removed',
+      details: { farmerId: req.params.id, removedBy: req.user.sub },
+    }).catch(() => {});
+
+    res.json({ message: 'Profile photo removed' });
   }));
 
 // Delete farmer (admin only)

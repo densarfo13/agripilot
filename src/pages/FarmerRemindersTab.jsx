@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
+import EmptyState from '../components/EmptyState.jsx';
 
 export default function FarmerRemindersTab() {
   const { farmerId, refresh, activeSeason } = useFarmerContext();
@@ -128,7 +129,7 @@ export default function FarmerRemindersTab() {
         </div>
       </div>
 
-      {success && <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.9rem' }}>{success}</div>}
+      {success && <div className="alert-inline alert-inline-success" style={{ marginBottom: '1rem' }}>{success}</div>}
       {error && !showGenerate && !showCreate && (
         <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{error}</span>
@@ -142,7 +143,7 @@ export default function FarmerRemindersTab() {
           <div className="card-header">Generate Crop Lifecycle Reminders</div>
           <div className="card-body">
             <form onSubmit={handleGenerate}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
+              {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Crop Type *</label>
@@ -168,7 +169,7 @@ export default function FarmerRemindersTab() {
           <div className="card-header">Create Custom Reminder</div>
           <div className="card-body">
             <form onSubmit={handleCreate}>
-              {error && <div style={{ color: '#dc2626', marginBottom: '0.75rem', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', borderRadius: 4 }}>{error}</div>}
+              {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="form-label">Title *</label>
@@ -212,7 +213,7 @@ export default function FarmerRemindersTab() {
                   </thead>
                   <tbody>
                     {reminders.map(r => (
-                      <tr key={r.id} style={{ background: isOverdue(r) ? 'rgba(239,68,68,0.15)' : r.completed ? 'rgba(34,197,94,0.15)' : undefined }}>
+                      <tr key={r.id} style={{ background: isOverdue(r) ? 'var(--danger-light)' : r.completed ? 'var(--success-light)' : undefined }}>
                         <td className="text-sm" style={{ color: isOverdue(r) ? '#dc2626' : undefined, fontWeight: isOverdue(r) ? 600 : 400 }}>
                           {new Date(r.dueDate).toLocaleDateString()}
                           {isOverdue(r) && <span style={{ display: 'block', fontSize: '0.75rem' }}>OVERDUE</span>}
@@ -250,9 +251,12 @@ export default function FarmerRemindersTab() {
                 </table>
               </div>
             ) : (
-              <div className="empty-state">
-                {filter === 'overdue' ? 'No overdue reminders' : filter === 'done' ? 'No completed reminders' : 'No reminders yet'}
-              </div>
+              <EmptyState
+                icon={filter === 'overdue' ? '✅' : filter === 'done' ? '📋' : '🔔'}
+                title={filter === 'overdue' ? 'No overdue reminders' : filter === 'done' ? 'No completed reminders' : 'No reminders yet'}
+                message={filter === '' ? 'Generate crop lifecycle reminders or create a custom one.' : 'Try changing the filter to see other reminders.'}
+                compact
+              />
             )}
           </div>
         </div>

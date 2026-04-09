@@ -18,6 +18,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../api/client.js';
+import { trackPilotEvent } from '../utils/pilotTracker.js';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -47,6 +48,7 @@ export default function AcceptInvitePage() {
       return;
     }
 
+    trackPilotEvent('invite_opened', { token: token?.slice(0, 8) });
     api.get(`/invites/${token}/validate`)
       .then(r => {
         setInviteData(r.data);
