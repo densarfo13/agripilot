@@ -671,13 +671,13 @@ const styles = {
   },
   brand: { fontSize: '1.25rem', fontWeight: 700, color: '#22C55E', margin: 0 },
   logoutBtn: {
-    padding: '0.4rem 0.75rem', background: 'transparent', border: '1px solid #243041',
+    padding: '0.5rem 0.75rem', background: 'transparent', border: '1px solid #243041',
     borderRadius: '6px', cursor: 'pointer', color: '#A1A1AA', fontSize: '0.8rem',
-    minHeight: '36px',
+    minHeight: '44px',
   },
   langBtn: {
-    padding: '0.4rem 0.7rem', background: 'transparent', border: '1px solid #243041',
-    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', minHeight: '36px',
+    padding: '0.5rem 0.7rem', background: 'transparent', border: '1px solid #243041',
+    borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', minHeight: '44px',
   },
   content: { maxWidth: '600px', margin: '1rem auto', padding: '0 0.75rem' },
   welcome: { marginBottom: '1.5rem' },

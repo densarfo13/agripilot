@@ -24,6 +24,7 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
   const [error, setError] = useState('');
   const [removing, setRemoving] = useState(false);
   const inputRef = useRef(null);
+  const uploadGuardRef = useRef(false);
 
   const handleFile = (e) => {
     setError('');
@@ -44,7 +45,8 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || uploadGuardRef.current) return;
+    uploadGuardRef.current = true;
     setUploading(true);
     setError('');
     try {
@@ -64,10 +66,13 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
       setError(err.response?.data?.error || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
+      uploadGuardRef.current = false;
     }
   };
 
   const handleRemove = async () => {
+    if (uploadGuardRef.current) return;
+    uploadGuardRef.current = true;
     setRemoving(true);
     setError('');
     try {
@@ -81,6 +86,7 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
       setError(err.response?.data?.error || 'Failed to remove photo.');
     } finally {
       setRemoving(false);
+      uploadGuardRef.current = false;
     }
   };
 

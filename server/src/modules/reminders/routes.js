@@ -4,6 +4,7 @@ import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership 
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import prisma from '../../config/database.js';
+import { extractOrganization, verifyOrgAccess } from '../../middleware/orgScope.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -12,6 +13,16 @@ const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'rev
 const router = Router();
 router.use(authenticate);
 router.use(requireApprovedFarmer);
+router.use(extractOrganization);
+
+// Helper: verify farmerId belongs to requesting user's org (staff only)
+async function verifyFarmerOrg(req, res) {
+  if (req.user.role === 'farmer' || req.isCrossOrg) return true;
+  const farmer = await prisma.farmer.findUnique({ where: { id: req.params.farmerId }, select: { organizationId: true } });
+  if (!farmer) { res.status(404).json({ error: 'Farmer not found' }); return false; }
+  if (!verifyOrgAccess(req, farmer.organizationId)) { res.status(403).json({ error: 'Access denied — farmer belongs to a different organization' }); return false; }
+  return true;
+}
 
 // List reminders (supports filters: status=pending|done, type, overdue=true)
 router.get('/farmer/:farmerId',
@@ -37,6 +48,7 @@ router.post('/farmer/:farmerId',
   authorize(...STAFF_ROLES),
   dedupGuard('reminder-create'),
   asyncHandler(async (req, res) => {
+    if (!(await verifyFarmerOrg(req, res))) return;
     if (!req.body.title || !req.body.message || !req.body.dueDate) {
       return res.status(400).json({ error: 'title, message, and dueDate are required' });
     }
@@ -51,6 +63,7 @@ router.post('/farmer/:farmerId/generate',
   authorize(...STAFF_ROLES),
   dedupGuard('reminder-generate'),
   asyncHandler(async (req, res) => {
+    if (!(await verifyFarmerOrg(req, res))) return;
     const { cropType, plantingDate } = req.body;
     if (!cropType || !plantingDate) {
       return res.status(400).json({ error: 'cropType and plantingDate are required' });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
@@ -139,7 +139,8 @@ export default function FarmersPage() {
               key={f.value}
               onClick={() => handleStatusFilter(f.value)}
               style={{
-                padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
+                padding: '0.45rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
+                minHeight: '44px',
                 border: statusFilter === f.value ? '1.5px solid #22C55E' : '1.5px solid #243041',
                 background: statusFilter === f.value ? 'rgba(34,197,94,0.15)' : '#162033',
                 color: statusFilter === f.value ? '#22C55E' : '#A1A1AA',
@@ -309,6 +310,14 @@ export default function FarmersPage() {
                         <td>{f._count?.applications || 0}</td>
                         <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                           {f.inviteStatus === 'LINK_GENERATED' && <RowCopyLinkButton farmerId={f.id} />}
+                          {(f.inviteStatus === 'EXPIRED' || f.inviteStatus === 'NOT_SENT' || f.inviteStatus === 'CANCELLED') && f.registrationStatus === 'approved' && !f.userAccount && (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
+                              onClick={() => navigate(`/farmers/${f.id}`)}
+                              title="Resend invite or create login"
+                            >Recover</button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -456,6 +465,7 @@ function StepIndicator({ step }) {
 }
 
 function CreateFarmerModal({ onClose, onCreated }) {
+  const submitGuardRef = useRef(false);
   const [step, setStep] = useState(1);
   const CREATE_FARMER_INITIAL = {
     fullName: '', phone: '', region: '', district: '', village: '',
@@ -485,6 +495,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
     : form.channel !== 'email' || form.contactEmail.trim();
 
   const handleSubmit = async () => {
+    if (submitGuardRef.current) return;
+    submitGuardRef.current = true;
     setSaving(true);
     setError('');
     try {
@@ -529,7 +541,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
         setDuplicateWarning(null);
         setError(err.response?.data?.error || 'Failed to create farmer');
       }
-    } finally { setSaving(false); }
+    } finally { setSaving(false); submitGuardRef.current = false; }
   };
 
   // ── Success screen ────────────────────────────────────────
@@ -859,6 +871,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
 }
 
 function InviteFarmerModal({ onClose, onCreated }) {
+  const submitGuardRef = useRef(false);
   const INVITE_FARMER_INITIAL = {
     fullName: '', phone: '', email: '', password: '', region: '', district: '', village: '',
     countryCode: 'KE', primaryCrop: '', farmSizeAcres: '', landSizeUnit: 'ACRE', preferredLanguage: 'en',
@@ -876,6 +889,8 @@ function InviteFarmerModal({ onClose, onCreated }) {
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (submitGuardRef.current) return;
+    submitGuardRef.current = true;
     setSaving(true);
     setError('');
     try {
@@ -920,7 +935,7 @@ function InviteFarmerModal({ onClose, onCreated }) {
         setInviteDupWarning(null);
         setError(err.response?.data?.error || 'Failed to invite farmer');
       }
-    } finally { setSaving(false); }
+    } finally { setSaving(false); submitGuardRef.current = false; }
   };
 
   if (success) {

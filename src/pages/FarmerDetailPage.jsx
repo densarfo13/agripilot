@@ -527,8 +527,8 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
                 {showCancelInviteConfirm && (
                   <span style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.78rem', color: '#F59E0B' }}>Revoke link?</span>
-                    <button className="btn btn-sm btn-outline-danger" onClick={handleCancelInvite} disabled={processing} style={{ fontSize: '0.75rem' }}>Yes, cancel</button>
-                    <button className="btn btn-sm btn-outline" onClick={() => setShowCancelInviteConfirm(false)} style={{ fontSize: '0.75rem' }}>No</button>
+                    <button className="btn btn-sm btn-outline-danger" onClick={handleCancelInvite} disabled={processing} style={{ fontSize: '0.78rem', minHeight: '44px', padding: '0.4rem 0.75rem' }}>Yes, cancel</button>
+                    <button className="btn btn-sm btn-outline" onClick={() => setShowCancelInviteConfirm(false)} style={{ fontSize: '0.78rem', minHeight: '44px', padding: '0.4rem 0.75rem' }}>No</button>
                   </span>
                 )}
               </>
@@ -559,7 +559,8 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
                 type="button"
                 onClick={() => setResendChannel(opt.value)}
                 style={{
-                  padding: '0.25rem 0.6rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer',
+                  padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: '0.82rem', cursor: 'pointer',
+                  minHeight: '44px',
                   border: `1.5px solid ${resendChannel === opt.value ? '#22C55E' : '#243041'}`,
                   background: resendChannel === opt.value ? '#22C55E' : '#162033',
                   color: resendChannel === opt.value ? '#fff' : '#FFFFFF',

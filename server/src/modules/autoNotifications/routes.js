@@ -14,6 +14,7 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 import { extractOrganization } from '../../middleware/orgScope.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import { requireMfa } from '../../middleware/requireMfa.js';
+import { writeAuditLog } from '../audit/service.js';
 import {
   listNotifications,
   retryNotification,
@@ -64,6 +65,7 @@ router.post('/run',
   authorize('super_admin'),
   asyncHandler(async (req, res) => {
     const result = await runNotificationCycle();
+    writeAuditLog({ userId: req.user.sub, action: 'notification_cycle_triggered', details: { sent: result.sent, failed: result.failed } }).catch(() => {});
     res.json(result);
   }));
 
@@ -78,6 +80,7 @@ router.post('/:id/retry',
       actorRole:  req.user.role,
       actorOrgId: req.organizationId,
     });
+    writeAuditLog({ userId: req.user.sub, action: 'notification_retry', details: { notificationId: req.params.id } }).catch(() => {});
     res.json(notification);
   }));
 

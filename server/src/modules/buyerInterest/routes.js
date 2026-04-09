@@ -4,6 +4,7 @@ import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership 
 import { validateParamUUID } from '../../middleware/validate.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import prisma from '../../config/database.js';
+import { extractOrganization, verifyOrgAccess } from '../../middleware/orgScope.js';
 import * as svc from './service.js';
 import { writeAuditLog } from '../audit/service.js';
 
@@ -12,6 +13,7 @@ const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'rev
 const router = Router();
 router.use(authenticate);
 router.use(requireApprovedFarmer);
+router.use(extractOrganization);
 
 // Crop demand summary (aggregated) — must be before /:id routes
 router.get('/demand/summary',
@@ -44,12 +46,16 @@ router.post('/farmer/:farmerId',
     res.status(201).json(interest);
   }));
 
-// Get single interest (staff only)
+// Get single interest (staff only, org-scoped)
 router.get('/:id',
   validateParamUUID('id'),
   authorize(...STAFF_ROLES),
   asyncHandler(async (req, res) => {
-    res.json(await svc.getInterest(req.params.id));
+    const interest = await svc.getInterest(req.params.id);
+    if (!req.isCrossOrg && interest?.farmer?.organizationId && !verifyOrgAccess(req, interest.farmer.organizationId)) {
+      return res.status(403).json({ error: 'Access denied — interest belongs to a different organization' });
+    }
+    res.json(interest);
   }));
 
 // Update interest status (staff only)

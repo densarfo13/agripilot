@@ -215,8 +215,8 @@ export async function getPortfolioReport(orgScope = {}) {
         `,
   ]);
 
-  // Demographic breakdown for portfolio
-  const farmerWhere = {};
+  // Demographic breakdown for portfolio — filter by approved to align with dashboard/portfolio
+  const farmerWhere = { registrationStatus: 'approved' };
   if (orgScope.farmer) Object.assign(farmerWhere, orgScope.farmer);
 
   const [totalFarmers, womenFarmers, youthFarmers, genderBreakdown] = await Promise.all([

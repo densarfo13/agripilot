@@ -119,11 +119,12 @@ export async function getPilotMetrics({ organizationId } = {}) {
       },
     }),
 
-    // Demographic counts
-    prisma.farmer.count({ where: { ...fFilter, gender: 'female' } }),
+    // Demographic counts — filter by approved to align with dashboard/portfolio/reports
+    prisma.farmer.count({ where: { ...fFilter, registrationStatus: 'approved', gender: 'female' } }),
     prisma.farmer.count({
       where: {
         ...fFilter,
+        registrationStatus: 'approved',
         // Youth: age <= 35 (aligned with impact/service.js isYouth definition)
         dateOfBirth: { gt: new Date(new Date().getFullYear() - 36, new Date().getMonth(), new Date().getDate()) },
       },

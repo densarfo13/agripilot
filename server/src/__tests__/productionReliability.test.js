@@ -815,3 +815,223 @@ describe('Audit Trail — Critical Route Coverage', () => {
     expect(src).toContain("action: 'security_request_revoked'");
   });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// Final Edge-Gap Closure — Phase 2: Duplicate/Report Hardening
+// ═══════════════════════════════════════════════════════════════
+
+describe('Double-Submit Guards — Final Gap Closure', () => {
+  it('CreateFarmerModal has submitGuardRef', () => {
+    const src = readFile('src/pages/FarmersPage.jsx');
+    const createIdx = src.indexOf('function CreateFarmerModal');
+    expect(createIdx).toBeGreaterThan(0);
+    const createBlock = src.substring(createIdx, createIdx + 800);
+    expect(createBlock).toContain('submitGuardRef');
+  });
+
+  it('InviteFarmerModal has submitGuardRef', () => {
+    const src = readFile('src/pages/FarmersPage.jsx');
+    const inviteIdx = src.indexOf('function InviteFarmerModal');
+    expect(inviteIdx).toBeGreaterThan(0);
+    const inviteBlock = src.substring(inviteIdx, inviteIdx + 800);
+    expect(inviteBlock).toContain('submitGuardRef');
+  });
+
+  it('ProfilePhotoUpload has upload guard', () => {
+    const src = readFile('src/components/ProfilePhotoUpload.jsx');
+    expect(src).toContain('uploadGuardRef');
+  });
+
+  it('ProfilePhotoUpload guard covers both upload and remove', () => {
+    const src = readFile('src/components/ProfilePhotoUpload.jsx');
+    const uploadIdx = src.indexOf('handleUpload');
+    const removeIdx = src.indexOf('handleRemove');
+    expect(uploadIdx).toBeGreaterThan(0);
+    expect(removeIdx).toBeGreaterThan(0);
+    // Both handlers reference the guard
+    expect(src.substring(uploadIdx, uploadIdx + 200)).toContain('uploadGuardRef');
+    expect(src.substring(removeIdx, removeIdx + 200)).toContain('uploadGuardRef');
+  });
+});
+
+describe('Report Alignment — Women/Youth Filter Consistency', () => {
+  it('pilotMetrics women count filters by approved', () => {
+    const src = readFile('server/src/modules/pilotMetrics/service.js');
+    // Find the women count line and verify it includes registrationStatus
+    expect(src).toContain("registrationStatus: 'approved', gender: 'female'");
+  });
+
+  it('pilotMetrics youth count filters by approved', () => {
+    const src = readFile('server/src/modules/pilotMetrics/service.js');
+    // Youth query should include registrationStatus before dateOfBirth
+    const youthIdx = src.indexOf('Demographic counts');
+    expect(youthIdx).toBeGreaterThan(0);
+    const block = src.substring(youthIdx, youthIdx + 400);
+    expect(block).toContain("registrationStatus: 'approved'");
+  });
+
+  it('reports service farmerWhere filters by approved', () => {
+    const src = readFile('server/src/modules/reports/service.js');
+    expect(src).toContain("registrationStatus: 'approved'");
+  });
+
+  it('All four services align on approved-only demographics', () => {
+    const files = [
+      'server/src/modules/portfolio/service.js',
+      'server/src/modules/pilotMetrics/service.js',
+      'server/src/modules/reports/service.js',
+    ];
+    for (const f of files) {
+      const src = readFile(f);
+      expect(src).toContain("registrationStatus: 'approved'");
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Final Edge-Gap Closure — Phase 3: Permission/Mobile/Admin
+// ═══════════════════════════════════════════════════════════════
+
+describe('Org-Scoping — Staff Route Hardening', () => {
+  it('Reminders routes use extractOrganization middleware', () => {
+    const src = readFile('server/src/modules/reminders/routes.js');
+    expect(src).toContain("import { extractOrganization, verifyOrgAccess }");
+    expect(src).toContain('extractOrganization');
+  });
+
+  it('Reminders staff mutations verify farmer org', () => {
+    const src = readFile('server/src/modules/reminders/routes.js');
+    expect(src).toContain('verifyFarmerOrg');
+  });
+
+  it('BuyerInterest routes use extractOrganization middleware', () => {
+    const src = readFile('server/src/modules/buyerInterest/routes.js');
+    expect(src).toContain("import { extractOrganization, verifyOrgAccess }");
+    expect(src).toContain('extractOrganization');
+  });
+
+  it('BuyerInterest single-interest GET verifies org access', () => {
+    const src = readFile('server/src/modules/buyerInterest/routes.js');
+    expect(src).toContain('verifyOrgAccess(req, interest.farmer.organizationId)');
+  });
+});
+
+describe('Mobile Touch Targets — Critical Pages', () => {
+  it('FarmerDashboardPage logoutBtn has 44px minimum', () => {
+    const src = readFile('src/pages/FarmerDashboardPage.jsx');
+    const logoutIdx = src.indexOf('logoutBtn:');
+    const block = src.substring(logoutIdx, logoutIdx + 300);
+    expect(block).toContain("minHeight: '44px'");
+  });
+
+  it('FarmerDashboardPage langBtn has 44px minimum', () => {
+    const src = readFile('src/pages/FarmerDashboardPage.jsx');
+    const langIdx = src.indexOf('langBtn:');
+    const block = src.substring(langIdx, langIdx + 200);
+    expect(block).toContain("minHeight: '44px'");
+  });
+
+  it('FarmerDetailPage resend channel buttons have 44px minimum', () => {
+    const src = readFile('src/pages/FarmerDetailPage.jsx');
+    expect(src).toContain("minHeight: '44px'");
+  });
+
+  it('FarmersPage status filter buttons have 44px minimum', () => {
+    const src = readFile('src/pages/FarmersPage.jsx');
+    // Status filter buttons should have minHeight
+    const filterIdx = src.indexOf('STATUS_FILTERS.map');
+    expect(filterIdx).toBeGreaterThan(0);
+    const block = src.substring(filterIdx, filterIdx + 400);
+    expect(block).toContain("minHeight: '44px'");
+  });
+});
+
+describe('Admin Recovery — Stuck Farmer Actions', () => {
+  it('FarmersPage shows Recover button for stuck farmers', () => {
+    const src = readFile('src/pages/FarmersPage.jsx');
+    expect(src).toContain("'EXPIRED'");
+    expect(src).toContain("'NOT_SENT'");
+    expect(src).toContain("'CANCELLED'");
+    expect(src).toContain('>Recover</button>');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Final Edge-Gap Closure — Phase 4: Audit Trail Completeness
+// ═══════════════════════════════════════════════════════════════
+
+describe('Audit Trail — Final Coverage', () => {
+  it('AutoNotifications run has audit logging', () => {
+    const src = readFile('server/src/modules/autoNotifications/routes.js');
+    expect(src).toContain("action: 'notification_cycle_triggered'");
+  });
+
+  it('AutoNotifications retry has audit logging', () => {
+    const src = readFile('server/src/modules/autoNotifications/routes.js');
+    expect(src).toContain("action: 'notification_retry'");
+  });
+
+  it('Admin disable/enable user has audit logging', () => {
+    const src = readFile('server/src/modules/auth/admin-routes.js');
+    expect(src).toContain('writeAuditLog');
+  });
+
+  it('Farmer creation has audit logging', () => {
+    const src = readFile('server/src/modules/farmers/routes.js');
+    expect(src).toContain("action: 'farmer_created'");
+  });
+
+  it('Officer assignment has audit logging', () => {
+    const src = readFile('server/src/modules/farmers/routes.js');
+    expect(src).toContain("action: officerId ? 'farmer_officer_assigned'");
+  });
+});
+
+describe('Final Pilot Readiness — Cross-Cutting Checks', () => {
+  it('useRef imported in FarmersPage for submit guards', () => {
+    const src = readFile('src/pages/FarmersPage.jsx');
+    expect(src).toContain('useRef');
+  });
+
+  it('All critical form modals have double-submit prevention', () => {
+    const farmersPage = readFile('src/pages/FarmersPage.jsx');
+    const onboarding = readFile('src/components/OnboardingWizard.jsx');
+    const photoUpload = readFile('src/components/ProfilePhotoUpload.jsx');
+    const progressTab = readFile('src/pages/FarmerProgressTab.jsx');
+    // All should contain guard refs
+    expect(farmersPage).toContain('submitGuardRef');
+    expect(onboarding).toContain('submitGuardRef');
+    expect(photoUpload).toContain('uploadGuardRef');
+    expect(progressTab).toContain('submitGuardRef');
+  });
+
+  it('All demographic services filter by approved registrationStatus', () => {
+    const services = [
+      'server/src/modules/portfolio/service.js',
+      'server/src/modules/pilotMetrics/service.js',
+      'server/src/modules/reports/service.js',
+    ];
+    for (const f of services) {
+      const src = readFile(f);
+      expect(src).toContain("registrationStatus: 'approved'");
+    }
+  });
+
+  it('SyncStatus shows sync failures to user', () => {
+    const src = readFile('src/components/SyncStatus.jsx');
+    expect(src).toContain('failed to sync');
+    expect(src).toContain('failedBanner');
+  });
+
+  it('Offline queue has max retry limit', () => {
+    const src = readFile('src/utils/offlineQueue.js');
+    expect(src).toContain('MAX_RETRIES');
+    expect(src).toContain('max_retries_exceeded');
+  });
+
+  it('API client handles 429 rate limit with user-friendly message', () => {
+    const src = readFile('src/api/client.js');
+    expect(src).toContain('Too many requests');
+    expect(src).toContain('retry-after');
+  });
+});
