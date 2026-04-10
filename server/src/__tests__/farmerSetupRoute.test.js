@@ -522,7 +522,7 @@ describe('Voice-guided onboarding for low-literacy farmers', () => {
   });
 
   it('uses slower speech rate for comprehension', () => {
-    expect(voiceGuide).toContain('utterance.rate = 0.85');
+    expect(voiceGuide).toContain('utterance.rate = VOICE_RATE');
   });
 
   it('cancels ongoing speech before starting new', () => {
@@ -1217,5 +1217,106 @@ describe('Atomic farm setup — farmStore createProfile', () => {
 
   it('24. offline queue includes idempotency key for dedup on replay', () => {
     expect(store).toContain("queueIfOffline('POST', '/v1/farms', data, { 'X-Idempotency-Key': idempotencyKey })");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// PART 16 — VOICE QUALITY IMPROVEMENTS
+// ═══════════════════════════════════════════════════════════
+
+describe('Voice quality — natural speech settings', () => {
+  const guide = readFile('src/utils/voiceGuide.js');
+
+  it('1. speech rate is 0.82 (slower for clarity)', () => {
+    expect(guide).toContain('VOICE_RATE = 0.82');
+    expect(guide).toContain('utterance.rate = VOICE_RATE');
+  });
+
+  it('2. pitch is 0.92 (slightly lower for warmth)', () => {
+    expect(guide).toContain('VOICE_PITCH = 0.92');
+    expect(guide).toContain('utterance.pitch = VOICE_PITCH');
+  });
+
+  it('3. prompts use commas for natural pauses', () => {
+    // Welcome prompt should have breathing pauses via commas
+    expect(guide).toContain("Tap, Get Started, to begin");
+    // Button names set off with commas for clarity
+    expect(guide).toContain("Tap, Crop Progress, Upload Photo, or, Report Issue");
+    // Action prompts use comma pauses before button names
+    expect(guide).toContain("Tap, Approve, to confirm");
+  });
+
+  it('4. wording is simple and direct (no jargon)', () => {
+    // "Search or scroll" simplified to "Find ... in the list"
+    const country = guide.match(/country:\s*\{[^}]*en:\s*'([^']+)'/)?.[1] || '';
+    expect(country).toContain('Find your country');
+    expect(country).not.toContain('Search or scroll');
+  });
+});
+
+describe('Voice quality — smart voice selection', () => {
+  const guide = readFile('src/utils/voiceGuide.js');
+
+  it('5. prefers natural / neural / enhanced voices', () => {
+    expect(guide).toContain('PREFERRED_VOICE_PATTERNS');
+    expect(guide).toContain('/natural/i');
+    expect(guide).toContain('/neural/i');
+    expect(guide).toContain('/enhanced/i');
+  });
+
+  it('6. penalises low-quality voices (compact, espeak)', () => {
+    expect(guide).toContain('/compact/i');
+    expect(guide).toContain('/espeak/i');
+    expect(guide).toContain('score -= ');
+  });
+
+  it('7. uses selectBestVoice with scoring', () => {
+    expect(guide).toContain('function selectBestVoice');
+    expect(guide).toContain('function scoreVoice');
+    expect(guide).toContain('const bestVoice = selectBestVoice(langTag)');
+  });
+
+  it('8. caches selected voices for performance', () => {
+    expect(guide).toContain('_voiceCache');
+    expect(guide).toContain('_voiceCache.has(langTag)');
+    expect(guide).toContain('_voiceCache.set(langTag, best)');
+  });
+
+  it('9. pre-warms voice list on module load (Chrome fix)', () => {
+    expect(guide).toContain("window.speechSynthesis.getVoices()");
+    expect(guide).toContain('voiceschanged');
+  });
+});
+
+describe('Voice quality — pre-recorded audio support', () => {
+  const guide = readFile('src/utils/voiceGuide.js');
+
+  it('10. has AUDIO_MAP for pre-recorded files', () => {
+    expect(guide).toContain('const AUDIO_MAP');
+    expect(guide).toContain('export { VOICE_MAP, AUDIO_MAP');
+  });
+
+  it('11. tryPlayAudio falls back gracefully', () => {
+    expect(guide).toContain('async function tryPlayAudio');
+    expect(guide).toContain('resolve(false)'); // returns false on failure
+  });
+
+  it('12. speak() tries audio first, then TTS', () => {
+    expect(guide).toContain('tryPlayAudio(stepKey, lang).then');
+    expect(guide).toContain('if (played) return'); // skip TTS if audio worked
+  });
+
+  it('13. stopSpeech stops both audio and TTS', () => {
+    expect(guide).toContain('stopAudio()');
+    expect(guide).toContain('speechSynthesis.cancel()');
+  });
+
+  it('14. audio element is reusable (not recreated each call)', () => {
+    expect(guide).toContain('let _audioEl = null');
+    expect(guide).toContain('function getAudioElement');
+  });
+
+  it('15. audio has 3s load timeout to avoid blocking', () => {
+    expect(guide).toContain('setTimeout(() => resolve(false), 3000)');
   });
 });
