@@ -74,7 +74,8 @@ router.patch('/me', asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Farmer profile not found' });
   }
   // Whitelist: only allow safe demographic fields
-  const ALLOWED_FIELDS = ['gender', 'countryCode', 'preferredLanguage', 'ageGroup'];
+  // NOTE: add 'ageGroup' here after running migration: ALTER TABLE "farmers" ADD COLUMN "age_group" TEXT;
+  const ALLOWED_FIELDS = ['gender', 'countryCode', 'preferredLanguage'];
   const updateData = {};
   for (const key of ALLOWED_FIELDS) {
     if (req.body[key] !== undefined && req.body[key] !== null && req.body[key] !== '') {
@@ -87,7 +88,8 @@ router.patch('/me', asyncHandler(async (req, res) => {
   const updated = await prisma.farmer.update({
     where: { id: farmer.id },
     data: updateData,
-    select: { id: true, gender: true, countryCode: true, preferredLanguage: true, ageGroup: true },
+    // NOTE: add ageGroup: true here after running the age_group migration
+    select: { id: true, gender: true, countryCode: true, preferredLanguage: true },
   });
   res.json(updated);
 }));

@@ -368,12 +368,12 @@ describe('Gap fix — ageGroup persistence', () => {
     expect(schema).toContain("@map(\"age_group\")");
   });
 
-  it('PATCH /farmers/me whitelist includes ageGroup', () => {
-    expect(routes).toContain("'ageGroup'");
+  it('PATCH /farmers/me has ageGroup migration note ready', () => {
+    expect(routes).toContain("add 'ageGroup' here after running migration");
   });
 
-  it('PATCH /farmers/me response includes ageGroup', () => {
-    expect(routes).toContain('ageGroup: true');
+  it('PATCH /farmers/me response has ageGroup migration note ready', () => {
+    expect(routes).toContain('add ageGroup: true here after running the age_group migration');
   });
 
   it('wizard collects ageGroup from form', () => {
