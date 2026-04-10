@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
 import { getCropLabel } from '../utils/crops.js';
+import VoiceBar from '../components/VoiceBar.jsx';
 
 /**
  * Admin Dashboard — decision-focused, action-first.
@@ -217,6 +218,9 @@ export default function DashboardPage() {
       )}
 
       <div style={DS.body}>
+        {/* Voice guide for admins/officers */}
+        <VoiceBar voiceKey="admin_overview" compact />
+
         {/* First-run welcome */}
         {isAdmin && adoption && totalFarmers === 0 && portfolio.totalApplications === 0 && (
           <div style={DS.welcomeCard} data-testid="welcome-card">

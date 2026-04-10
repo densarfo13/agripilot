@@ -22,4 +22,10 @@ router.get('/counts', authorize('super_admin', 'institutional_admin'), asyncHand
   res.json({ counts });
 }));
 
+// GET /api/v1/analytics/voice-summary — admin: voice analytics summary
+router.get('/voice-summary', authorize('super_admin', 'institutional_admin', 'field_officer'), asyncHandler(async (req, res) => {
+  const summary = await service.getVoiceAnalyticsSummary(req.query.since || null);
+  res.json(summary);
+}));
+
 export default router;

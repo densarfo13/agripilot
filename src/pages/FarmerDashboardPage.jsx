@@ -12,6 +12,7 @@ import InlineAlert from '../components/InlineAlert.jsx';
 import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
+import VoiceBar from '../components/VoiceBar.jsx';
 
 /** Collapsible section — keeps secondary content below the fold */
 function ExpandableSection({ title, icon, children, testId }) {
@@ -126,38 +127,47 @@ export default function FarmerDashboardPage() {
   const [onboardingError, setOnboardingError] = useState('');
 
   const handleOnboardingComplete = async (data) => {
-    const { photoFile, gender, ageGroup, countryCode, ...profileData } = data;
+    const { photoFile, ...allFields } = data;
     // CRITICAL: backend requires farmerName — inject from user record
-    profileData.farmerName = user?.fullName || profileData.farmName || 'Farmer';
+    allFields.farmerName = user?.fullName || allFields.farmName || 'Farmer';
     setOnboardingError('');
 
-    // Update farmer record with gender/countryCode collected during onboarding
-    if (gender || countryCode) {
-      api.patch('/farmers/me', {
-        ...(gender ? { gender } : {}),
-        ...(countryCode ? { countryCode } : {}),
-        ...(ageGroup ? { ageGroup } : {}),
-      }).catch(() => {}); // non-blocking — farm profile creation is the critical path
-    }
-
-    let newProfile;
+    // Send everything (including gender, ageGroup, countryCode) in a single
+    // atomic request — the backend handles farmer + farm profile in one transaction.
+    let result;
     try {
-      newProfile = await createProfile(profileData);
+      result = await createProfile(allFields);
     } catch (err) {
       trackPilotEvent('onboarding_failed', { error: err?.message || 'createProfile failed' });
-      const msg = 'Failed to create your farm profile. Please check your connection and try again.';
+      const msg = err?.response?.data?.error || 'Failed to create your farm profile. Please check your connection and try again.';
       setOnboardingError(msg);
       throw new Error(msg); // propagate to wizard so it shows error state
     }
-    if (!newProfile) {
+    if (!result) {
       trackPilotEvent('onboarding_failed', { error: 'createProfile returned null' });
       const msg = 'Something went wrong creating your profile. Please try again.';
       setOnboardingError(msg);
       throw new Error(msg); // propagate to wizard so it shows error state
     }
+
+    // Handle offline queued result
+    if (result._offline) {
+      setShowOnboarding(false);
+      trackPilotEvent('onboarding_queued_offline', { crop: data.crop });
+      return;
+    }
+
+    // Atomic response: { success, farmProfileComplete, nextRoute, profile }
+    const newProfile = result.profile || result;
+    const farmProfileComplete = result.farmProfileComplete ?? true;
+
+    if (!farmProfileComplete) {
+      trackPilotEvent('onboarding_incomplete', { crop: data.crop, reason: 'missing_required_fields' });
+    }
+
     setShowOnboarding(false);
-    trackEvent('onboarding_completed', { crop: data.crop });
-    trackPilotEvent('onboarding_completed', { crop: data.crop });
+    trackEvent('onboarding_completed', { crop: data.crop, farmProfileComplete });
+    trackPilotEvent('onboarding_completed', { crop: data.crop, farmProfileComplete });
 
     // Upload profile photo if provided (non-blocking — but inform user on failure)
     if (photoFile) {
@@ -176,10 +186,13 @@ export default function FarmerDashboardPage() {
     }
 
     // Fetch new data for the created profile
-    fetchRecommendations(newProfile.id);
-    fetchWeather(newProfile.id);
-    fetchWeatherRecs(newProfile.id);
-    fetchFinanceScore(newProfile.id);
+    const profileId = newProfile.id;
+    if (profileId) {
+      fetchRecommendations(profileId);
+      fetchWeather(profileId);
+      fetchWeatherRecs(profileId);
+      fetchFinanceScore(profileId);
+    }
   };
 
   const isPending = user?.registrationStatus === 'pending_approval';
@@ -324,6 +337,9 @@ export default function FarmerDashboardPage() {
         ) : isApproved ? (
           <>
             {/* ─── ACTION-FIRST HOME SCREEN ─── */}
+
+            {/* Voice guide for low-literacy farmers */}
+            <VoiceBar voiceKey="home_welcome" />
 
             {/* 1. Crop Status Hero — crop icon, name, stage, weather at a glance */}
             {(() => {

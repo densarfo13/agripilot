@@ -95,11 +95,140 @@ function AttentionGroup({ group }) {
   );
 }
 
+function VoiceAnalyticsCard({ voiceData }) {
+  if (!voiceData || voiceData.totalEvents === 0) {
+    return (
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <div className="card-header">Voice Guide Analytics</div>
+        <div className="card-body">
+          <div style={{ color: '#A1A1AA', textAlign: 'center', padding: '1rem', fontSize: '0.875rem' }}>
+            No voice analytics data yet. Data will appear as farmers use voice guidance.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { byEvent = {}, topReplayed = [], topAbandoned = [], byLanguage = {}, byScreen = {} } = voiceData;
+  const played = byEvent.VOICE_PROMPT_PLAYED || 0;
+  const replayed = byEvent.VOICE_PROMPT_REPLAYED || 0;
+  const muted = byEvent.VOICE_PROMPT_MUTED || 0;
+  const completed = byEvent.VOICE_STEP_COMPLETED || 0;
+  const abandoned = byEvent.VOICE_STEP_ABANDONED || 0;
+
+  const langEntries = Object.entries(byLanguage).sort((a, b) => b[1] - a[1]);
+  const screenEntries = Object.entries(byScreen).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="card" style={{ marginTop: '1.5rem' }}>
+      <div className="card-header">
+        Voice Guide Analytics
+        <span style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 400, marginLeft: '0.5rem' }}>
+          {voiceData.totalEvents} events
+        </span>
+      </div>
+      <div className="card-body">
+        {/* Overview stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          {[
+            ['Played', played, '#22C55E'],
+            ['Replayed', replayed, '#60A5FA'],
+            ['Muted', muted, '#F59E0B'],
+            ['Completed', completed, '#22C55E'],
+            ['Abandoned', abandoned, '#EF4444'],
+          ].map(([label, count, color]) => (
+            <div key={label} style={{ background: '#1E293B', borderRadius: 8, padding: '0.6rem 0.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color }}>{count}</div>
+              <div style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {/* Top replayed prompts */}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A1A1AA', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+              Top Replayed Prompts
+            </div>
+            {topReplayed.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: '#71717A' }}>No replays yet</div>
+            ) : topReplayed.slice(0, 5).map(r => (
+              <div key={r.promptKey} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', padding: '0.25rem 0', borderBottom: '1px solid #243041' }}>
+                <span style={{ color: '#FFFFFF' }}>{r.promptKey}</span>
+                <span style={{ color: '#60A5FA', fontWeight: 600 }}>{r.replayed}x</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Top abandoned steps */}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A1A1AA', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+              Top Abandoned Steps
+            </div>
+            {topAbandoned.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: '#71717A' }}>No abandons tracked yet</div>
+            ) : topAbandoned.slice(0, 5).map(a => (
+              <div key={a.promptKey} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', padding: '0.25rem 0', borderBottom: '1px solid #243041' }}>
+                <span style={{ color: '#FFFFFF' }}>{a.promptKey}</span>
+                <span style={{ color: '#EF4444', fontWeight: 600 }}>{a.abandoned}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Language + Screen usage row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A1A1AA', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+              Usage by Language
+            </div>
+            {langEntries.map(([lang, count]) => {
+              const maxCount = langEntries[0]?.[1] || 1;
+              return (
+                <div key={lang} style={{ marginBottom: '0.35rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.15rem' }}>
+                    <span style={{ textTransform: 'uppercase', fontWeight: 600 }}>{lang}</span>
+                    <span style={{ color: '#A1A1AA' }}>{count}</span>
+                  </div>
+                  <div style={{ background: '#243041', borderRadius: 3, height: 6 }}>
+                    <div style={{ width: `${(count / maxCount) * 100}%`, background: '#60A5FA', height: 6, borderRadius: 3 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A1A1AA', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+              Usage by Screen
+            </div>
+            {screenEntries.map(([screen, count]) => {
+              const maxCount = screenEntries[0]?.[1] || 1;
+              return (
+                <div key={screen} style={{ marginBottom: '0.35rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.15rem' }}>
+                    <span>{screen.replace(/_/g, ' ')}</span>
+                    <span style={{ color: '#A1A1AA' }}>{count}</span>
+                  </div>
+                  <div style={{ background: '#243041', borderRadius: 3, height: 6 }}>
+                    <div style={{ width: `${(count / maxCount) * 100}%`, background: '#22C55E', height: 6, borderRadius: 3 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PilotMetricsPage() {
   const [metrics, setMetrics] = useState(null);
   const [funnel, setFunnel] = useState(null);
   const [attention, setAttention] = useState(null);
   const [reviewerEff, setReviewerEff] = useState(null);
+  const [voiceData, setVoiceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -126,6 +255,11 @@ export default function PilotMetricsPage() {
       })
       .catch(() => setError('Failed to load pilot metrics'))
       .finally(() => setLoading(false));
+
+    // Voice analytics — supplemental, never blocks main load
+    if (isAdmin) {
+      api.get('/v1/analytics/voice-summary').then(r => setVoiceData(r.data)).catch(() => {});
+    }
   }, [selectedOrgId]);
 
   const handleExport = async () => {
@@ -319,6 +453,9 @@ export default function PilotMetricsPage() {
             </div>
           </div>
         )}
+
+        {/* ── Voice Guide Analytics ── */}
+        {isAdmin && <VoiceAnalyticsCard voiceData={voiceData} />}
       </div>
     </>
   );

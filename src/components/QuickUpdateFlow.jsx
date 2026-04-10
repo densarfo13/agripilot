@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { enqueue, isOnline } from '../utils/offlineQueue.js';
 import api from '../api/client.js';
+import VoiceBar from './VoiceBar.jsx';
+import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 
 /**
  * QuickUpdateFlow — 10–20 second, tap-first "Add Update" wizard.
@@ -43,6 +45,18 @@ const IMAGE_STAGE_MAP = {
   vegetative: 'mid_stage',
   flowering: 'pre_harvest',
   harvest: 'harvest',
+};
+
+// Map QuickUpdateFlow steps to voice guide keys
+const STEP_VOICE_KEY = {
+  action: 'update_start',
+  stage: 'update_stage',
+  condition: 'update_condition',
+  photo: 'update_photo',
+  submitting: 'update_submitting',
+  done: 'update_success',
+  offline: 'update_offline',
+  error: 'update_failed',
 };
 
 // ─── Photo compression ────────────────────────────────────
@@ -100,8 +114,13 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   // ─── Navigation helpers ──────────────────────────────────
 
   const goToStep = useCallback((nextStep) => {
+    // Track voice step completion when moving forward
+    const voiceKey = STEP_VOICE_KEY[step];
+    if (voiceKey) {
+      try { const lang = localStorage.getItem('farroway:voiceLang') || 'en'; trackVoiceStepCompleted(voiceKey, lang); } catch {}
+    }
     setStep(nextStep);
-  }, []);
+  }, [step]);
 
   const handleActionSelect = useCallback((val) => {
     setAction(val);
@@ -286,6 +305,9 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
 
   // ─── Step: Action Selection ──────────────────────────────
 
+  // Current voice key based on step
+  const voiceKey = STEP_VOICE_KEY[step] || null;
+
   if (step === 'action') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
@@ -295,6 +317,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.stepTitle}>What do you want to do?</div>
         <div style={QS.optionGrid} data-testid="action-select">
           {ACTION_OPTIONS.map(opt => (
@@ -325,6 +348,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.stepTitle}>What stage is your crop?</div>
         <div style={QS.stageGrid} data-testid="stage-select">
           {STAGE_OPTIONS.map(opt => (
@@ -358,6 +382,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.stepTitle}>How does your crop look?</div>
         <div style={QS.conditionRow} data-testid="condition-select">
           {CONDITION_OPTIONS.map(opt => (
@@ -395,6 +420,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.stepTitle}>
           {action === 'photo' ? 'Take a photo of your farm' : 'Add a photo (optional)'}
         </div>
@@ -464,6 +490,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     const elapsed = Math.round((Date.now() - startTime.current) / 1000);
     return (
       <div style={QS.container} data-testid="quick-update-flow">
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.feedbackCenter} data-testid="success-feedback">
           <span style={QS.feedbackIcon}>✅</span>
           <div style={QS.feedbackTitle}>Update Saved!</div>
@@ -481,6 +508,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   if (step === 'offline') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.feedbackCenter} data-testid="offline-feedback">
           <span style={QS.feedbackIcon}>📡</span>
           <div style={QS.feedbackTitle}>Saved Offline</div>
@@ -498,6 +526,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   if (step === 'error') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
+        <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.feedbackCenter} data-testid="error-feedback">
           <span style={QS.feedbackIcon}>❌</span>
           <div style={QS.feedbackTitle}>Something went wrong</div>

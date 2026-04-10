@@ -63,14 +63,17 @@ export const useFarmStore = create((set, get) => ({
       const r = await api.post('/v1/farms', data, {
         headers: { 'X-Idempotency-Key': idempotencyKey },
       });
-      const profile = r.data;
+      const body = r.data;
+      // Atomic setup returns { success, farmProfileComplete, nextRoute, profile }
+      const profile = body.profile || body;
       set((s) => ({
         profiles: [profile, ...s.profiles],
         currentProfile: profile,
         loading: false,
         _createInFlight: false,
       }));
-      return profile;
+      // Return the full response so callers can access farmProfileComplete + nextRoute
+      return body.success ? body : profile;
     } catch (err) {
       if (isNetworkError(err)) {
         // Queue for offline sync — include idempotency key for dedup on replay

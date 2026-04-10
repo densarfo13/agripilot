@@ -4,6 +4,7 @@ import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
+import VoiceBar from '../components/VoiceBar.jsx';
 
 /**
  * OfficerValidationPage — fast-flow validation queue.
@@ -203,6 +204,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && queue.length === 0) {
     return (
       <div style={VS.page}>
+        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer_empty" compact /></div>
         <div style={VS.emptyCenter} data-testid="validation-empty">
           <span style={{ fontSize: '3rem' }}>✅</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>Queue Clear</div>
@@ -216,6 +218,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && completedIds.size > 0) {
     return (
       <div style={VS.page}>
+        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer_empty" compact /></div>
         <div style={VS.emptyCenter} data-testid="validation-done">
           <span style={{ fontSize: '3rem' }}>🎉</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>All Done!</div>
@@ -242,6 +245,11 @@ export default function OfficerValidationPage() {
       {/* Progress bar */}
       <div style={VS.progressBar}>
         <div style={{ ...VS.progressFill, width: `${queue.length > 0 ? (completedIds.size / queue.length) * 100 : 0}%` }} />
+      </div>
+
+      {/* Voice guide for officers */}
+      <div style={{ padding: '0.5rem 1rem 0', maxWidth: '600px', width: '100%', margin: '0 auto' }}>
+        <VoiceBar voiceKey="officer_open_item" compact />
       </div>
 
       {current && (

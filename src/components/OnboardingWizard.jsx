@@ -8,6 +8,8 @@ import { compressImage } from '../utils/imageCompress.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 import { getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
+import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
+import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 
 // ─── Step definitions ────────────────────────────────────────
 const STEP_KEYS = ['welcome', 'farmName', 'country', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
@@ -115,10 +117,34 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   const [networkError, setNetworkError] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [showCropSearch, setShowCropSearch] = useState(false);
+  const [voiceLang, setVoiceLang] = useState('en');
+  const [voiceEnabled, setVoiceEnabled] = useState(() => isVoiceAvailable());
+  const voicePlayedRef = useRef({}); // track auto-played steps
   const submitGuardRef = useRef(false);
   const startTimeRef = useRef(Date.now());
 
   const currentStep = STEP_KEYS[step];
+
+  // ─── Voice auto-play on step change ───────────────────────
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    // Stop previous speech on every step change
+    stopSpeech();
+    // Auto-play once per step per session
+    if (!voicePlayedRef.current[currentStep]) {
+      voicePlayedRef.current[currentStep] = true;
+      // Small delay so the UI renders first
+      const t = setTimeout(() => speak(currentStep, voiceLang), 400);
+      return () => clearTimeout(t);
+    }
+  }, [currentStep, voiceEnabled, voiceLang]);
+
+  // Stop speech on unmount (navigation away)
+  useEffect(() => () => stopSpeech(), []);
+
+  const handleReplay = () => {
+    if (voiceEnabled) speak(currentStep, voiceLang);
+  };
 
   // ─── Step / form sync to draft ─────────────────────────────
   const setStep = useCallback((s) => {
@@ -206,7 +232,10 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     : TOP_CROPS.slice(0, 8);
 
   // ─── Navigation helpers ────────────────────────────────────
-  const goNext = () => setStep(s => s + 1);
+  const goNext = () => {
+    if (voiceEnabled) trackVoiceStepCompleted(currentStep, voiceLang);
+    setStep(s => s + 1);
+  };
   const goBack = () => setStep(s => Math.max(0, s - 1));
 
   // ─── Photo handling ────────────────────────────────────────
@@ -232,6 +261,17 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   // ─── Submit ────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (submitGuardRef.current) return;
+
+    // ── Pre-submit validation — catch missing fields before network call ──
+    const missing = [];
+    if (!form.crop) missing.push('crop');
+    if (!form.farmSizeAcres && !form.farmSizeCategory) missing.push('land size');
+    if (!form.countryCode) missing.push('country');
+    if (missing.length > 0) {
+      setError(`Please complete: ${missing.join(', ')}. Go back to fill in missing fields.`);
+      return;
+    }
+
     submitGuardRef.current = true;
 
     const processingIdx = STEP_KEYS.indexOf('processing');
@@ -287,9 +327,13 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
       submitGuardRef.current = false;
       const isNetwork = !err?.response && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !navigator.onLine);
       setNetworkError(isNetwork);
+      const serverError = err?.response?.data?.error;
+      const isValidation = err?.response?.status === 400;
       const msg = isNetwork
         ? 'No internet connection. Your data is saved \u2014 tap "Retry" when you\'re back online.'
-        : err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.';
+        : isValidation && serverError
+          ? `Validation error: ${serverError}`
+          : serverError || err?.message || 'Something went wrong. Please try again.';
       setError(msg);
       logOnboarding('async_save_failed', { step: 'processing', error: msg, isNetwork });
     }
@@ -313,6 +357,50 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   return (
     <div style={S.overlay}>
       <div style={S.modal}>
+        {/* ── Voice controls ── */}
+        {voiceEnabled && (
+          <div style={S.voiceBar}>
+            <button
+              type="button"
+              onClick={handleReplay}
+              style={S.listenBtn}
+              aria-label="Listen again"
+            >
+              {'\uD83D\uDD0A'} Listen
+            </button>
+            <select
+              value={voiceLang}
+              onChange={e => { setVoiceLang(e.target.value); voicePlayedRef.current = {}; }}
+              style={S.voiceLangSelect}
+              aria-label="Voice language"
+            >
+              {VOICE_LANGUAGES.map(l => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => { stopSpeech(); setVoiceEnabled(false); }}
+              style={S.voiceMuteBtn}
+              aria-label="Turn off voice"
+            >
+              {'\uD83D\uDD07'}
+            </button>
+          </div>
+        )}
+        {!voiceEnabled && isVoiceAvailable() && (
+          <div style={S.voiceBar}>
+            <button
+              type="button"
+              onClick={() => { setVoiceEnabled(true); voicePlayedRef.current = {}; }}
+              style={S.listenBtn}
+              aria-label="Turn on voice guide"
+            >
+              {'\uD83D\uDD08'} Enable Voice Guide
+            </button>
+          </div>
+        )}
+
         {/* ── Progress bar + dots ── */}
         {step > 0 && step < STEP_KEYS.indexOf('processing') && (
           <div style={S.progressWrap}>
@@ -818,7 +906,7 @@ const PROCESSING_STEPS = [
   { label: 'Setting up crop tracking', icon: '\uD83C\uDF31' },
   { label: 'Preparing recommendations', icon: '\u2728' },
 ];
-const PROCESSING_TIMEOUT_MS = 30000;
+const PROCESSING_TIMEOUT_MS = 8000;
 
 function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
   const [activeStep, setActiveStep] = useState(0);
@@ -1089,5 +1177,32 @@ const S = {
   spinner: {
     width: '32px', height: '32px', border: '3px solid #243041', borderTop: '3px solid #22C55E',
     borderRadius: '50%', animation: 'spin 1s linear infinite', marginTop: '1rem',
+  },
+  // Voice guide
+  voiceBar: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    marginBottom: '0.75rem', padding: '0.4rem 0.5rem',
+    background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
+    borderRadius: '10px',
+  },
+  listenBtn: {
+    display: 'flex', alignItems: 'center', gap: '0.35rem',
+    padding: '0.5rem 0.85rem', background: 'rgba(59,130,246,0.15)',
+    border: '1.5px solid rgba(59,130,246,0.4)', borderRadius: '8px',
+    color: '#60A5FA', fontWeight: 600, fontSize: '0.88rem',
+    cursor: 'pointer', minHeight: '44px', minWidth: '44px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  voiceLangSelect: {
+    flex: 1, padding: '0.4rem 0.5rem', background: '#1E293B',
+    border: '1.5px solid #374151', borderRadius: '6px',
+    color: '#FFFFFF', fontSize: '0.82rem', minHeight: '44px',
+    cursor: 'pointer',
+  },
+  voiceMuteBtn: {
+    padding: '0.4rem', background: 'transparent', border: 'none',
+    fontSize: '1.1rem', cursor: 'pointer', minHeight: '44px', minWidth: '44px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    WebkitTapHighlightColor: 'transparent', borderRadius: '6px',
   },
 };

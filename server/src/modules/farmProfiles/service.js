@@ -135,6 +135,13 @@ export function validateRecStatus(status) {
   }
 }
 
+// ─── Validation helper — throw 400 with message ──────
+function validationError(message) {
+  const err = new Error(message);
+  err.statusCode = 400;
+  return err;
+}
+
 // ─── Farm Profile CRUD ─────────────────────────────────
 
 export async function createFarmProfile(data, farmerId) {
@@ -142,14 +149,26 @@ export async function createFarmProfile(data, farmerId) {
   if (data.stage) validateStage(data.stage);
 
   if (!data.farmerName) {
-    const err = new Error('farmerName is required');
-    err.statusCode = 400;
-    throw err;
+    throw validationError('farmerName is required');
   }
   if (typeof data.farmerName === 'string' && (data.farmerName.trim().length < 2 || data.farmerName.trim().length > 100)) {
-    const err = new Error('farmerName must be between 2 and 100 characters');
-    err.statusCode = 400;
-    throw err;
+    throw validationError('farmerName must be between 2 and 100 characters');
+  }
+
+  // Land size is required for a complete farm profile
+  const rawSize = data.landSizeValue ?? data.farmSizeAcres;
+  if (rawSize == null || rawSize === '') {
+    throw validationError('Land size is required (landSizeValue or farmSizeAcres)');
+  }
+  const numericSize = typeof rawSize === 'string' ? parseFloat(rawSize) : rawSize;
+  if (isNaN(numericSize) || numericSize <= 0) {
+    throw validationError('Land size must be a positive number');
+  }
+
+  // Land size unit must be valid
+  const unit = data.landSizeUnit || 'ACRE';
+  if (!isValidUnit(unit)) {
+    throw validationError('landSizeUnit must be one of: ACRE, HECTARE, SQUARE_METER');
   }
 
   const normalizedCrop = normalizeCrop(data.crop);
@@ -157,21 +176,15 @@ export async function createFarmProfile(data, farmerId) {
   // Validate coordinates if provided
   if (data.latitude != null || data.longitude != null) {
     if (data.latitude == null || data.longitude == null) {
-      const err = new Error('Both latitude and longitude are required when providing coordinates');
-      err.statusCode = 400;
-      throw err;
+      throw validationError('Both latitude and longitude are required when providing coordinates');
     }
     const lat = parseFloat(data.latitude);
     const lon = parseFloat(data.longitude);
     if (isNaN(lat) || lat < -90 || lat > 90) {
-      const err = new Error('Latitude must be between -90 and 90');
-      err.statusCode = 400;
-      throw err;
+      throw validationError('Latitude must be between -90 and 90');
     }
     if (isNaN(lon) || lon < -180 || lon > 180) {
-      const err = new Error('Longitude must be between -180 and 180');
-      err.statusCode = 400;
-      throw err;
+      throw validationError('Longitude must be between -180 and 180');
     }
   }
 
@@ -197,6 +210,111 @@ export async function createFarmProfile(data, farmerId) {
     },
     include: { recommendations: { take: 3, orderBy: { createdAt: 'desc' } } },
   });
+}
+
+/**
+ * Atomic farm setup — validates everything, creates profile + updates farmer in one transaction.
+ * Returns { profile, farmProfileComplete, farmerUpdated }.
+ * Prevents partial saves: if any step fails, the entire operation rolls back.
+ */
+export async function atomicFarmSetup(data, farmerId, userId) {
+  // ── 1. Validate ALL fields upfront before touching the DB ──
+  validateCrop(data.crop);
+  if (data.stage) validateStage(data.stage);
+
+  if (!data.farmerName || (typeof data.farmerName === 'string' && data.farmerName.trim().length < 2)) {
+    throw validationError('farmerName is required (at least 2 characters)');
+  }
+  if (typeof data.farmerName === 'string' && data.farmerName.trim().length > 100) {
+    throw validationError('farmerName must be at most 100 characters');
+  }
+
+  // Land size: required
+  const rawSize = data.landSizeValue ?? data.farmSizeAcres;
+  if (rawSize == null || rawSize === '') {
+    throw validationError('Land size is required');
+  }
+  const numericSize = typeof rawSize === 'string' ? parseFloat(rawSize) : rawSize;
+  if (isNaN(numericSize) || numericSize <= 0) {
+    throw validationError('Land size must be a positive number');
+  }
+
+  // Land size unit: required + valid
+  const unit = data.landSizeUnit || 'ACRE';
+  if (!isValidUnit(unit)) {
+    throw validationError('landSizeUnit must be one of: ACRE, HECTARE, SQUARE_METER');
+  }
+
+  // Country: required for farmProfileComplete
+  const countryCode = data.countryCode;
+  if (!countryCode || typeof countryCode !== 'string' || countryCode.trim().length < 2) {
+    throw validationError('Country is required');
+  }
+
+  // Coordinates: optional but must be paired
+  if (data.latitude != null || data.longitude != null) {
+    if (data.latitude == null || data.longitude == null) {
+      throw validationError('Both latitude and longitude are required when providing coordinates');
+    }
+    const lat = parseFloat(data.latitude);
+    const lon = parseFloat(data.longitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      throw validationError('Latitude must be between -90 and 90');
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+      throw validationError('Longitude must be between -180 and 180');
+    }
+  }
+
+  // ── 2. Compute derived fields ──
+  const normalizedCrop = normalizeCrop(data.crop);
+  const landSize = computeLandSizeFields(rawSize, unit);
+  const computedAcres = landSize.landSizeHectares != null ? fromHectares(landSize.landSizeHectares, 'ACRE') : null;
+
+  // ── 3. Single atomic transaction: create profile + update farmer ──
+  const result = await prisma.$transaction(async (tx) => {
+    // 3a. Create farm profile
+    const profile = await tx.farmProfile.create({
+      data: {
+        farmerId,
+        farmerName: typeof data.farmerName === 'string' ? data.farmerName.trim() : data.farmerName,
+        farmName: data.farmName || null,
+        locationName: data.locationName || null,
+        latitude: data.latitude != null ? parseFloat(data.latitude) : null,
+        longitude: data.longitude != null ? parseFloat(data.longitude) : null,
+        crop: normalizedCrop,
+        farmSizeAcres: computedAcres,
+        landSizeValue: landSize.landSizeValue,
+        landSizeUnit: landSize.landSizeUnit,
+        landSizeHectares: landSize.landSizeHectares,
+        stage: data.stage || 'planting',
+      },
+      include: { recommendations: { take: 3, orderBy: { createdAt: 'desc' } } },
+    });
+
+    // 3b. Update farmer record: onboarding flag + gender/country/age in same tx
+    const farmerUpdate = {};
+    if (countryCode) farmerUpdate.countryCode = countryCode.trim().toUpperCase();
+    if (data.gender) farmerUpdate.gender = data.gender;
+    if (data.ageGroup) farmerUpdate.ageGroup = data.ageGroup;
+    farmerUpdate.onboardingCompletedAt = new Date();
+
+    await tx.farmer.update({
+      where: { id: farmerId },
+      data: farmerUpdate,
+    });
+
+    return profile;
+  });
+
+  // ── 4. Compute farmProfileComplete ──
+  const farmProfileComplete = !!(
+    result.crop &&
+    (result.landSizeValue != null || result.farmSizeAcres != null) &&
+    countryCode
+  );
+
+  return { profile: result, farmProfileComplete };
 }
 
 export async function getFarmProfile(farmProfileId) {

@@ -50,23 +50,35 @@ async function verifyFarmProfileOwnership(req, farmProfileId) {
 
 // ─── Farm Profile endpoints ────────────────────────────
 
-// POST /api/v1/farms — create farm profile
+// POST /api/v1/farms — create farm profile (atomic setup)
 router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
   const farmerId = await resolveFarmerId(req);
-  const profile = await service.createFarmProfile(req.body, farmerId);
-  writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id } }).catch(() => {});
 
-  // Mark onboarding as completed for the farmer (first farm profile = onboarding done)
-  // Awaited so the completion flag is persisted before the response — prevents re-entry loop
+  // Use atomic setup for farmer-role users (onboarding flow) — validates all
+  // required fields and creates profile + updates farmer in a single transaction.
   if (req.user.role === 'farmer') {
-    await prisma.farmer.updateMany({
-      where: { id: farmerId, onboardingCompletedAt: null },
-      data: { onboardingCompletedAt: new Date() },
-    }).catch((err) => {
-      opsEvent('workflow', 'onboarding_flag_failed', 'warn', { farmerId, error: err?.message });
+    // Inject farmerName if not provided — the onboarding sends it but guard anyway
+    const body = { ...req.body };
+    if (!body.farmerName) {
+      const farmer = await prisma.farmer.findUnique({ where: { id: farmerId }, select: { fullName: true } });
+      body.farmerName = farmer?.fullName || 'Farmer';
+    }
+
+    const { profile, farmProfileComplete } = await service.atomicFarmSetup(body, farmerId, req.user.sub);
+    writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id, atomic: true } }).catch(() => {});
+    opsEvent('workflow', 'atomic_farm_setup_completed', 'info', { farmerId, farmProfileId: profile.id, farmProfileComplete });
+
+    return res.status(201).json({
+      success: true,
+      farmProfileComplete,
+      nextRoute: '/home',
+      profile,
     });
   }
 
+  // Non-farmer (staff) — use standard createFarmProfile without atomic setup
+  const profile = await service.createFarmProfile(req.body, farmerId);
+  writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id } }).catch(() => {});
   res.status(201).json(profile);
 }));
 
