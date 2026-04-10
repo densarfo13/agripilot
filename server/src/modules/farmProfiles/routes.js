@@ -6,6 +6,7 @@ import { idempotencyCheck } from '../../middleware/idempotency.js';
 import { writeAuditLog } from '../audit/service.js';
 import * as service from './service.js';
 import prisma from '../../config/database.js';
+import { opsEvent } from '../../utils/opsLogger.js';
 
 const router = Router();
 router.use(authenticate);
@@ -61,7 +62,9 @@ router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
     await prisma.farmer.updateMany({
       where: { id: farmerId, onboardingCompletedAt: null },
       data: { onboardingCompletedAt: new Date() },
-    }).catch(() => {}); // swallow error — profile already created, this is supplemental
+    }).catch((err) => {
+      opsEvent('workflow', 'onboarding_flag_failed', 'warn', { farmerId, error: err?.message });
+    });
   }
 
   res.status(201).json(profile);

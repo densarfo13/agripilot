@@ -352,3 +352,112 @@ describe('Full payload audit — no field mismatches', () => {
     expect(dashboard).toContain("api.patch('/farmers/me'");
   });
 });
+
+// ═══════════════════════════════════════════════════════════
+// PART 10 — GAP FIXES: ageGroup, validation, dashboard, idempotency
+// ═══════════════════════════════════════════════════════════
+
+describe('Gap fix — ageGroup persistence', () => {
+  const schema = readFile('server/prisma/schema.prisma');
+  const routes = readFile('server/src/modules/farmers/routes.js');
+  const wizard = readFile('src/components/OnboardingWizard.jsx');
+  const dashboard = readFile('src/pages/FarmerDashboardPage.jsx');
+
+  it('Prisma Farmer model has ageGroup field', () => {
+    expect(schema).toContain('ageGroup');
+    expect(schema).toContain("@map(\"age_group\")");
+  });
+
+  it('PATCH /farmers/me whitelist includes ageGroup', () => {
+    expect(routes).toContain("'ageGroup'");
+  });
+
+  it('PATCH /farmers/me response includes ageGroup', () => {
+    expect(routes).toContain('ageGroup: true');
+  });
+
+  it('wizard collects ageGroup from form', () => {
+    expect(wizard).toContain('ageGroup: form.ageGroup');
+  });
+
+  it('dashboard sends ageGroup in PATCH call', () => {
+    expect(dashboard).toContain('ageGroup');
+  });
+});
+
+describe('Gap fix — farmerName length validation', () => {
+  const service = readFile('server/src/modules/farmProfiles/service.js');
+
+  it('validates farmerName minimum length', () => {
+    expect(service).toContain('farmerName must be between 2 and 100 characters');
+  });
+
+  it('trims farmerName before length check', () => {
+    expect(service).toContain('data.farmerName.trim().length < 2');
+  });
+});
+
+describe('Gap fix — dashboard summary returns land size fields', () => {
+  const service = readFile('server/src/modules/farmProfiles/service.js');
+
+  it('summary includes landSizeValue', () => {
+    expect(service).toContain('landSizeValue: profile.landSizeValue');
+  });
+
+  it('summary includes landSizeUnit', () => {
+    expect(service).toContain('landSizeUnit: profile.landSizeUnit');
+  });
+
+  it('summary includes landSizeHectares', () => {
+    expect(service).toContain('landSizeHectares: profile.landSizeHectares');
+  });
+});
+
+describe('Gap fix — onboardingCompletedAt error logging', () => {
+  const routes = readFile('server/src/modules/farmProfiles/routes.js');
+
+  it('imports opsEvent for operational logging', () => {
+    expect(routes).toContain("import { opsEvent }");
+  });
+
+  it('logs onboarding flag failure instead of swallowing', () => {
+    expect(routes).toContain('onboarding_flag_failed');
+  });
+
+  it('does not silently swallow the error', () => {
+    const flagIdx = routes.indexOf('onboardingCompletedAt: new Date()');
+    const chunk = routes.slice(flagIdx, flagIdx + 300);
+    expect(chunk).not.toContain('.catch(() => {})');
+  });
+});
+
+describe('Gap fix — offline queue idempotency', () => {
+  const store = readFile('src/store/farmStore.js');
+  const offlineQueue = readFile('src/utils/offlineQueue.js');
+
+  it('createProfile generates an idempotency key', () => {
+    expect(store).toContain('X-Idempotency-Key');
+    expect(store).toContain('generateIdempotencyKey');
+  });
+
+  it('idempotency key is passed to API call', () => {
+    expect(store).toContain("headers: { 'X-Idempotency-Key': idempotencyKey }");
+  });
+
+  it('idempotency key is included in offline queue', () => {
+    expect(store).toContain("queueIfOffline('POST', '/v1/farms', data, { 'X-Idempotency-Key': idempotencyKey })");
+  });
+
+  it('queueIfOffline accepts headers parameter', () => {
+    expect(store).toContain('function queueIfOffline(method, url, data, headers');
+  });
+
+  it('sync engine replays with stored headers', () => {
+    expect(offlineQueue).toContain('const config = m.headers ? { headers: m.headers } : undefined');
+  });
+
+  it('PATCH /me response includes preferredLanguage', () => {
+    const routes = readFile('server/src/modules/farmers/routes.js');
+    expect(routes).toContain('preferredLanguage: true');
+  });
+});

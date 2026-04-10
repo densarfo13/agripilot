@@ -2,9 +2,14 @@ import { create } from 'zustand';
 import api from '../api/client.js';
 import { enqueue, isOnline } from '../utils/offlineQueue.js';
 
+/** Generate a UUID v4 using browser crypto API */
+function generateIdempotencyKey() {
+  return crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 /** Queue a mutation for later sync if offline */
-async function queueIfOffline(method, url, data) {
-  await enqueue({ method, url, data });
+async function queueIfOffline(method, url, data, headers = null) {
+  await enqueue({ method, url, data, ...(headers ? { headers } : {}) });
 }
 
 function isNetworkError(err) {
@@ -52,8 +57,12 @@ export const useFarmStore = create((set, get) => ({
     // Prevent duplicate submission from rapid taps/retries
     if (get()._createInFlight) return null;
     set({ _createInFlight: true, loading: true, error: null });
+    // Generate idempotency key upfront — reused if queued for offline sync
+    const idempotencyKey = generateIdempotencyKey();
     try {
-      const r = await api.post('/v1/farms', data);
+      const r = await api.post('/v1/farms', data, {
+        headers: { 'X-Idempotency-Key': idempotencyKey },
+      });
       const profile = r.data;
       set((s) => ({
         profiles: [profile, ...s.profiles],
@@ -64,8 +73,8 @@ export const useFarmStore = create((set, get) => ({
       return profile;
     } catch (err) {
       if (isNetworkError(err)) {
-        // Queue for offline sync — don't lose the user's data
-        await queueIfOffline('POST', '/v1/farms', data);
+        // Queue for offline sync — include idempotency key for dedup on replay
+        await queueIfOffline('POST', '/v1/farms', data, { 'X-Idempotency-Key': idempotencyKey });
         set({ loading: false, _createInFlight: false, error: 'Saved offline — will sync when reconnected.' });
         return { _offline: true, ...data };
       }

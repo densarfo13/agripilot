@@ -3,7 +3,8 @@
   "appName": "Farroway",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "url": "https://agripilot-production.up.railway.app"
   },
   "android": {
     "allowMixedContent": true

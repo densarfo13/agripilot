@@ -1,6 +1,7 @@
 // Farroway Service Worker — PWA + offline API caching
-const CACHE_NAME = 'farroway-v3';
-const API_CACHE = 'farroway-api-v2';
+// SW_VERSION: 2026-04-09T1 — bump this on every deploy to invalidate stale caches
+const CACHE_NAME = 'farroway-v4';
+const API_CACHE = 'farroway-api-v3';
 
 // API paths to cache for offline use (GET requests only)
 const CACHEABLE_API = [

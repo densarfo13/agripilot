@@ -146,6 +146,11 @@ export async function createFarmProfile(data, farmerId) {
     err.statusCode = 400;
     throw err;
   }
+  if (typeof data.farmerName === 'string' && (data.farmerName.trim().length < 2 || data.farmerName.trim().length > 100)) {
+    const err = new Error('farmerName must be between 2 and 100 characters');
+    err.statusCode = 400;
+    throw err;
+  }
 
   const normalizedCrop = normalizeCrop(data.crop);
 
@@ -380,6 +385,9 @@ export async function getDashboardSummary(farmProfileId) {
       crop: profile.crop,
       stage: profile.stage,
       farmSizeAcres: profile.farmSizeAcres,
+      landSizeValue: profile.landSizeValue,
+      landSizeUnit: profile.landSizeUnit,
+      landSizeHectares: profile.landSizeHectares,
       locationName: profile.locationName,
     },
     latestRecommendation: profile.recommendations[0] || null,

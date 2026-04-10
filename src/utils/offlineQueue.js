@@ -177,12 +177,13 @@ export async function syncAll(apiClient) {
     }
 
     try {
+      const config = m.headers ? { headers: m.headers } : undefined;
       if (m.method === 'POST') {
-        await apiClient.post(m.url, m.data);
+        await apiClient.post(m.url, m.data, config);
       } else if (m.method === 'PATCH') {
-        await apiClient.patch(m.url, m.data);
+        await apiClient.patch(m.url, m.data, config);
       } else if (m.method === 'PUT') {
-        await apiClient.put(m.url, m.data);
+        await apiClient.put(m.url, m.data, config);
       }
       await remove(m.id);
       synced++;
