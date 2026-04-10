@@ -27,27 +27,37 @@ import api from '../api/client.js';
 
 const SCREEN_MAP = {
   // Onboarding
-  welcome: 'onboarding', farmName: 'onboarding', country: 'onboarding',
-  crop: 'onboarding', farmSize: 'onboarding', gender: 'onboarding',
-  age: 'onboarding', location: 'onboarding', photo: 'onboarding',
-  processing: 'onboarding',
+  'onboarding.welcome': 'onboarding', 'onboarding.language': 'onboarding',
+  'onboarding.farmName': 'onboarding', 'onboarding.country': 'onboarding',
+  'onboarding.crop': 'onboarding', 'onboarding.otherCrop': 'onboarding',
+  'onboarding.landSize': 'onboarding', 'onboarding.landUnit': 'onboarding',
+  'onboarding.gender': 'onboarding', 'onboarding.ageGroup': 'onboarding',
+  'onboarding.region': 'onboarding', 'onboarding.confirmLocation': 'onboarding',
+  'onboarding.photoOptional': 'onboarding', 'onboarding.processing': 'onboarding',
+  'onboarding.success': 'onboarding',
   // Farmer home
-  home_welcome: 'farmer_home', home_status: 'farmer_home',
-  home_action: 'farmer_home', home_next_step: 'farmer_home',
-  home_help: 'farmer_home',
+  'home.welcome': 'farmer_home', 'home.status.onTrack': 'farmer_home',
+  'home.status.needsUpdate': 'farmer_home', 'home.primaryAction.addUpdate': 'farmer_home',
+  'home.nextStep.photo': 'farmer_home', 'home.nextStep.stage': 'farmer_home',
+  'home.help': 'farmer_home',
   // Add update flow
-  update_start: 'update_flow', update_choose_type: 'update_flow',
-  update_stage: 'update_flow', update_condition: 'update_flow',
-  update_photo: 'update_flow', update_note: 'update_flow',
-  update_submitting: 'update_flow', update_success: 'update_flow',
-  update_offline: 'update_flow', update_failed: 'update_flow',
+  'update.start': 'update_flow', 'update.chooseType': 'update_flow',
+  'update.option.progress': 'update_flow', 'update.option.photo': 'update_flow',
+  'update.option.issue': 'update_flow', 'update.takePhoto': 'update_flow',
+  'update.uploadPhoto': 'update_flow', 'update.chooseStage': 'update_flow',
+  'update.condition': 'update_flow', 'update.problemNote': 'update_flow',
+  'update.submit': 'update_flow', 'update.success': 'update_flow',
+  'update.pendingValidation': 'update_flow', 'update.savedOffline': 'update_flow',
+  'update.failed': 'update_flow',
   // Officer validation
-  officer_queue: 'officer_validation', officer_open_item: 'officer_validation',
-  officer_action: 'officer_validation', officer_next_item: 'officer_validation',
-  officer_empty: 'officer_validation',
+  'officer.queue': 'officer_validation', 'officer.openItem': 'officer_validation',
+  'officer.imageFocus': 'officer_validation', 'officer.approve': 'officer_validation',
+  'officer.reject': 'officer_validation', 'officer.flag': 'officer_validation',
+  'officer.next': 'officer_validation', 'officer.empty': 'officer_validation',
   // Admin dashboard
-  admin_overview: 'admin_dashboard', admin_active_farmers: 'admin_dashboard',
-  admin_needs_attention: 'admin_dashboard', admin_actions: 'admin_dashboard',
+  'admin.overview': 'admin_dashboard', 'admin.needsAttention': 'admin_dashboard',
+  'admin.openIssues': 'admin_dashboard', 'admin.invite': 'admin_dashboard',
+  'admin.assign': 'admin_dashboard', 'admin.report': 'admin_dashboard',
 };
 
 function getScreenName(promptKey) {

@@ -125,25 +125,40 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
   const currentStep = STEP_KEYS[step];
 
+  // Map onboarding step names → dot-notation voice keys
+  const ONBOARDING_VOICE_KEY = {
+    welcome: 'onboarding.welcome',
+    farmName: 'onboarding.farmName',
+    country: 'onboarding.country',
+    crop: 'onboarding.crop',
+    farmSize: 'onboarding.landSize',
+    gender: 'onboarding.gender',
+    age: 'onboarding.ageGroup',
+    location: 'onboarding.region',
+    photo: 'onboarding.photoOptional',
+    processing: 'onboarding.processing',
+  };
+  const currentVoiceKey = ONBOARDING_VOICE_KEY[currentStep] || null;
+
   // ─── Voice auto-play on step change ───────────────────────
   useEffect(() => {
-    if (!voiceEnabled) return;
+    if (!voiceEnabled || !currentVoiceKey) return;
     // Stop previous speech on every step change
     stopSpeech();
     // Auto-play once per step per session
-    if (!voicePlayedRef.current[currentStep]) {
-      voicePlayedRef.current[currentStep] = true;
+    if (!voicePlayedRef.current[currentVoiceKey]) {
+      voicePlayedRef.current[currentVoiceKey] = true;
       // Small delay so the UI renders first
-      const t = setTimeout(() => speak(currentStep, voiceLang), 400);
+      const t = setTimeout(() => speak(currentVoiceKey, voiceLang), 400);
       return () => clearTimeout(t);
     }
-  }, [currentStep, voiceEnabled, voiceLang]);
+  }, [currentVoiceKey, voiceEnabled, voiceLang]);
 
   // Stop speech on unmount (navigation away)
   useEffect(() => () => stopSpeech(), []);
 
   const handleReplay = () => {
-    if (voiceEnabled) speak(currentStep, voiceLang);
+    if (voiceEnabled && currentVoiceKey) speak(currentVoiceKey, voiceLang);
   };
 
   // ─── Step / form sync to draft ─────────────────────────────
@@ -233,7 +248,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
   // ─── Navigation helpers ────────────────────────────────────
   const goNext = () => {
-    if (voiceEnabled) trackVoiceStepCompleted(currentStep, voiceLang);
+    if (voiceEnabled && currentVoiceKey) trackVoiceStepCompleted(currentVoiceKey, voiceLang);
     setStep(s => s + 1);
   };
   const goBack = () => setStep(s => Math.max(0, s - 1));

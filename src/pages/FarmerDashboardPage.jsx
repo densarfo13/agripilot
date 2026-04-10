@@ -339,7 +339,7 @@ export default function FarmerDashboardPage() {
             {/* ─── ACTION-FIRST HOME SCREEN ─── */}
 
             {/* Voice guide for low-literacy farmers */}
-            <VoiceBar voiceKey="home_welcome" />
+            <VoiceBar voiceKey="home.welcome" />
 
             {/* 1. Crop Status Hero — crop icon, name, stage, weather at a glance */}
             {(() => {

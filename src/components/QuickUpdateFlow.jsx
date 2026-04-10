@@ -47,16 +47,16 @@ const IMAGE_STAGE_MAP = {
   harvest: 'harvest',
 };
 
-// Map QuickUpdateFlow steps to voice guide keys
+// Map QuickUpdateFlow steps to voice guide keys (dot-notation)
 const STEP_VOICE_KEY = {
-  action: 'update_start',
-  stage: 'update_stage',
-  condition: 'update_condition',
-  photo: 'update_photo',
-  submitting: 'update_submitting',
-  done: 'update_success',
-  offline: 'update_offline',
-  error: 'update_failed',
+  action: 'update.start',
+  stage: 'update.chooseStage',
+  condition: 'update.condition',
+  photo: 'update.takePhoto',
+  submitting: 'update.submit',
+  done: 'update.success',
+  offline: 'update.savedOffline',
+  error: 'update.failed',
 };
 
 // ─── Photo compression ────────────────────────────────────

@@ -204,7 +204,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && queue.length === 0) {
     return (
       <div style={VS.page}>
-        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer_empty" compact /></div>
+        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer.empty" compact /></div>
         <div style={VS.emptyCenter} data-testid="validation-empty">
           <span style={{ fontSize: '3rem' }}>✅</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>Queue Clear</div>
@@ -218,7 +218,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && completedIds.size > 0) {
     return (
       <div style={VS.page}>
-        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer_empty" compact /></div>
+        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer.empty" compact /></div>
         <div style={VS.emptyCenter} data-testid="validation-done">
           <span style={{ fontSize: '3rem' }}>🎉</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>All Done!</div>
@@ -249,7 +249,7 @@ export default function OfficerValidationPage() {
 
       {/* Voice guide for officers */}
       <div style={{ padding: '0.5rem 1rem 0', maxWidth: '600px', width: '100%', margin: '0 auto' }}>
-        <VoiceBar voiceKey="officer_open_item" compact />
+        <VoiceBar voiceKey="officer.openItem" compact />
       </div>
 
       {current && (

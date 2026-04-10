@@ -219,7 +219,7 @@ export default function DashboardPage() {
 
       <div style={DS.body}>
         {/* Voice guide for admins/officers */}
-        <VoiceBar voiceKey="admin_overview" compact />
+        <VoiceBar voiceKey="admin.overview" compact />
 
         {/* First-run welcome */}
         {isAdmin && adoption && totalFarmers === 0 && portfolio.totalApplications === 0 && (

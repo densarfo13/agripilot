@@ -497,13 +497,16 @@ describe('Voice-guided onboarding for low-literacy farmers', () => {
     expect(voiceGuide).toContain('SpeechSynthesisUtterance');
   });
 
-  // ── All 10 step keys have voice map entries ──
+  // ── Onboarding step keys have voice map entries (dot-notation) ──
 
-  const EXPECTED_STEPS = ['welcome', 'farmName', 'country', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
+  const EXPECTED_STEPS = [
+    'onboarding.welcome', 'onboarding.farmName', 'onboarding.country', 'onboarding.crop',
+    'onboarding.landSize', 'onboarding.gender', 'onboarding.ageGroup',
+    'onboarding.region', 'onboarding.photoOptional', 'onboarding.processing',
+  ];
   for (const step of EXPECTED_STEPS) {
     it(`voiceMap includes "${step}" step`, () => {
-      // Each step key should appear as a property in VOICE_MAP
-      expect(voiceGuide).toContain(`${step}:`);
+      expect(voiceGuide).toContain(`'${step}':`);
     });
   }
 
@@ -548,8 +551,8 @@ describe('Voice-guided onboarding for low-literacy farmers', () => {
   });
 
   it('wizard auto-plays voice on step change', () => {
-    // Should call speak(currentStep, voiceLang) in a useEffect
-    expect(wizard).toContain('speak(currentStep, voiceLang)');
+    // Should call speak(currentVoiceKey, voiceLang) in a useEffect
+    expect(wizard).toContain('speak(currentVoiceKey, voiceLang)');
   });
 
   it('wizard stops speech on unmount', () => {
@@ -585,50 +588,49 @@ describe('Voice-guided onboarding for low-literacy farmers', () => {
 // PART 12 — VOICE GUIDE: FARMER HOME + ADD UPDATE FLOW
 // ═══════════════════════════════════════════════════════════
 
-describe('Voice guide — Farmer Home voice keys', () => {
+describe('Voice guide — Farmer Home voice keys (dot-notation)', () => {
   const voiceGuide = readFile('src/utils/voiceGuide.js');
 
-  const HOME_KEYS = ['home_welcome', 'home_status', 'home_action', 'home_next_step', 'home_help'];
+  const HOME_KEYS = ['home.welcome', 'home.status.onTrack', 'home.status.needsUpdate', 'home.primaryAction.addUpdate', 'home.help'];
   for (const key of HOME_KEYS) {
     it(`voiceMap includes "${key}" key`, () => {
-      expect(voiceGuide).toContain(`${key}:`);
+      expect(voiceGuide).toContain(`'${key}':`);
     });
   }
 
   const LANGS = ['en', 'fr', 'sw', 'ha', 'tw'];
   for (const lang of LANGS) {
-    it(`home_welcome has "${lang}" translation`, () => {
-      // Verify at least the welcome key has all 5 languages
-      const homeBlock = voiceGuide.split('home_welcome:')[1]?.split('},')[0];
+    it(`home.welcome has "${lang}" translation`, () => {
+      const homeBlock = voiceGuide.split("'home.welcome':")[1]?.split('},')[0];
       expect(homeBlock).toContain(`${lang}:`);
     });
   }
 });
 
-describe('Voice guide — Add Update flow voice keys', () => {
+describe('Voice guide — Add Update flow voice keys (dot-notation)', () => {
   const voiceGuide = readFile('src/utils/voiceGuide.js');
 
   const UPDATE_KEYS = [
-    'update_start', 'update_choose_type', 'update_stage',
-    'update_condition', 'update_photo', 'update_note',
-    'update_submitting', 'update_success', 'update_offline', 'update_failed',
+    'update.start', 'update.chooseType', 'update.chooseStage',
+    'update.condition', 'update.takePhoto', 'update.problemNote',
+    'update.submit', 'update.success', 'update.savedOffline', 'update.failed',
   ];
   for (const key of UPDATE_KEYS) {
     it(`voiceMap includes "${key}" key`, () => {
-      expect(voiceGuide).toContain(`${key}:`);
+      expect(voiceGuide).toContain(`'${key}':`);
     });
   }
 
   const LANGS = ['en', 'fr', 'sw', 'ha', 'tw'];
   for (const lang of LANGS) {
-    it(`update_start has "${lang}" translation`, () => {
-      const block = voiceGuide.split('update_start:')[1]?.split('},')[0];
+    it(`update.start has "${lang}" translation`, () => {
+      const block = voiceGuide.split("'update.start':")[1]?.split('},')[0];
       expect(block).toContain(`${lang}:`);
     });
   }
 
-  it('update_success has all 5 language translations', () => {
-    const block = voiceGuide.split('update_success:')[1]?.split('},')[0];
+  it('update.success has all 5 language translations', () => {
+    const block = voiceGuide.split("'update.success':")[1]?.split('},')[0];
     for (const lang of LANGS) {
       expect(block).toContain(`${lang}:`);
     }
@@ -689,8 +691,8 @@ describe('Farmer Home integrates VoiceBar', () => {
     expect(dashboard).toContain("import VoiceBar from '../components/VoiceBar.jsx'");
   });
 
-  it('renders VoiceBar with home_welcome key', () => {
-    expect(dashboard).toContain('voiceKey="home_welcome"');
+  it('renders VoiceBar with home.welcome key', () => {
+    expect(dashboard).toContain('voiceKey="home.welcome"');
   });
 });
 
@@ -701,15 +703,15 @@ describe('QuickUpdateFlow integrates VoiceBar', () => {
     expect(quickUpdate).toContain("import VoiceBar from './VoiceBar.jsx'");
   });
 
-  it('maps steps to voice keys via STEP_VOICE_KEY', () => {
+  it('maps steps to voice keys via STEP_VOICE_KEY (dot-notation)', () => {
     expect(quickUpdate).toContain('STEP_VOICE_KEY');
-    expect(quickUpdate).toContain("action: 'update_start'");
-    expect(quickUpdate).toContain("stage: 'update_stage'");
-    expect(quickUpdate).toContain("condition: 'update_condition'");
-    expect(quickUpdate).toContain("photo: 'update_photo'");
-    expect(quickUpdate).toContain("done: 'update_success'");
-    expect(quickUpdate).toContain("offline: 'update_offline'");
-    expect(quickUpdate).toContain("error: 'update_failed'");
+    expect(quickUpdate).toContain("action: 'update.start'");
+    expect(quickUpdate).toContain("stage: 'update.chooseStage'");
+    expect(quickUpdate).toContain("condition: 'update.condition'");
+    expect(quickUpdate).toContain("photo: 'update.takePhoto'");
+    expect(quickUpdate).toContain("done: 'update.success'");
+    expect(quickUpdate).toContain("offline: 'update.savedOffline'");
+    expect(quickUpdate).toContain("error: 'update.failed'");
   });
 
   it('renders VoiceBar in action step', () => {
@@ -732,52 +734,52 @@ describe('QuickUpdateFlow integrates VoiceBar', () => {
 // PART 13 — VOICE GUIDE: OFFICER VALIDATION + ADMIN DASHBOARD
 // ═══════════════════════════════════════════════════════════
 
-describe('Voice guide — Officer Validation voice keys', () => {
+describe('Voice guide — Officer Validation voice keys (dot-notation)', () => {
   const voiceGuide = readFile('src/utils/voiceGuide.js');
 
-  const OFFICER_KEYS = ['officer_queue', 'officer_open_item', 'officer_action', 'officer_next_item', 'officer_empty'];
+  const OFFICER_KEYS = ['officer.queue', 'officer.openItem', 'officer.imageFocus', 'officer.approve', 'officer.reject', 'officer.flag', 'officer.next', 'officer.empty'];
   for (const key of OFFICER_KEYS) {
     it(`voiceMap includes "${key}" key`, () => {
-      expect(voiceGuide).toContain(`${key}:`);
+      expect(voiceGuide).toContain(`'${key}':`);
     });
   }
 
   const LANGS = ['en', 'fr', 'sw', 'ha', 'tw'];
   for (const lang of LANGS) {
-    it(`officer_queue has "${lang}" translation`, () => {
-      const block = voiceGuide.split('officer_queue:')[1]?.split('},')[0];
+    it(`officer.queue has "${lang}" translation`, () => {
+      const block = voiceGuide.split("'officer.queue':")[1]?.split('},')[0];
       expect(block).toContain(`${lang}:`);
     });
   }
 
-  it('officer_empty has all 5 language translations', () => {
-    const block = voiceGuide.split('officer_empty:')[1]?.split('},')[0];
+  it('officer.empty has all 5 language translations', () => {
+    const block = voiceGuide.split("'officer.empty':")[1]?.split('},')[0];
     for (const lang of LANGS) {
       expect(block).toContain(`${lang}:`);
     }
   });
 });
 
-describe('Voice guide — Admin Dashboard voice keys', () => {
+describe('Voice guide — Admin Dashboard voice keys (dot-notation)', () => {
   const voiceGuide = readFile('src/utils/voiceGuide.js');
 
-  const ADMIN_KEYS = ['admin_overview', 'admin_active_farmers', 'admin_needs_attention', 'admin_actions'];
+  const ADMIN_KEYS = ['admin.overview', 'admin.needsAttention', 'admin.openIssues', 'admin.invite', 'admin.assign', 'admin.report'];
   for (const key of ADMIN_KEYS) {
     it(`voiceMap includes "${key}" key`, () => {
-      expect(voiceGuide).toContain(`${key}:`);
+      expect(voiceGuide).toContain(`'${key}':`);
     });
   }
 
   const LANGS = ['en', 'fr', 'sw', 'ha', 'tw'];
   for (const lang of LANGS) {
-    it(`admin_overview has "${lang}" translation`, () => {
-      const block = voiceGuide.split('admin_overview:')[1]?.split('},')[0];
+    it(`admin.overview has "${lang}" translation`, () => {
+      const block = voiceGuide.split("'admin.overview':")[1]?.split('},')[0];
       expect(block).toContain(`${lang}:`);
     });
   }
 
-  it('admin_actions has all 5 language translations', () => {
-    const block = voiceGuide.split('admin_actions:')[1]?.split('},')[0];
+  it('admin.report has all 5 language translations', () => {
+    const block = voiceGuide.split("'admin.report':")[1]?.split('},')[0];
     for (const lang of LANGS) {
       expect(block).toContain(`${lang}:`);
     }
@@ -791,12 +793,12 @@ describe('OfficerValidationPage integrates VoiceBar', () => {
     expect(officer).toContain("import VoiceBar from '../components/VoiceBar.jsx'");
   });
 
-  it('renders VoiceBar with officer_open_item key for active queue', () => {
-    expect(officer).toContain('voiceKey="officer_open_item"');
+  it('renders VoiceBar with officer.openItem key for active queue', () => {
+    expect(officer).toContain('voiceKey="officer.openItem"');
   });
 
-  it('renders VoiceBar with officer_empty key for empty state', () => {
-    expect(officer).toContain('voiceKey="officer_empty"');
+  it('renders VoiceBar with officer.empty key for empty state', () => {
+    expect(officer).toContain('voiceKey="officer.empty"');
   });
 
   it('uses compact mode for VoiceBar', () => {
@@ -816,8 +818,8 @@ describe('Admin DashboardPage integrates VoiceBar', () => {
     expect(dashboard).toContain("import VoiceBar from '../components/VoiceBar.jsx'");
   });
 
-  it('renders VoiceBar with admin_overview key', () => {
-    expect(dashboard).toContain('voiceKey="admin_overview"');
+  it('renders VoiceBar with admin.overview key', () => {
+    expect(dashboard).toContain('voiceKey="admin.overview"');
   });
 
   it('uses compact mode', () => {
@@ -885,14 +887,14 @@ describe('Voice analytics utility — voiceAnalytics.js', () => {
     expect(va).toContain(".catch(() => {})");
   });
 
-  it('maps all voice prompt keys to screen names via SCREEN_MAP', () => {
+  it('maps all voice prompt keys to screen names via SCREEN_MAP (dot-notation)', () => {
     expect(va).toContain('SCREEN_MAP');
-    // Spot check key mappings
-    expect(va).toContain("welcome: 'onboarding'");
-    expect(va).toContain("home_welcome: 'farmer_home'");
-    expect(va).toContain("update_start: 'update_flow'");
-    expect(va).toContain("officer_queue: 'officer_validation'");
-    expect(va).toContain("admin_overview: 'admin_dashboard'");
+    // Spot check dot-notation key mappings
+    expect(va).toContain("'onboarding.welcome': 'onboarding'");
+    expect(va).toContain("'home.welcome': 'farmer_home'");
+    expect(va).toContain("'update.start': 'update_flow'");
+    expect(va).toContain("'officer.queue': 'officer_validation'");
+    expect(va).toContain("'admin.overview': 'admin_dashboard'");
   });
 
   it('debounces SHOWN events within 2s window', () => {
@@ -950,7 +952,7 @@ describe('OnboardingWizard tracks voice step completion', () => {
   });
 
   it('calls trackVoiceStepCompleted on goNext', () => {
-    expect(wizard).toContain('trackVoiceStepCompleted(currentStep, voiceLang)');
+    expect(wizard).toContain('trackVoiceStepCompleted(currentVoiceKey, voiceLang)');
   });
 });
 
@@ -1227,30 +1229,30 @@ describe('Atomic farm setup — farmStore createProfile', () => {
 describe('Voice quality — natural speech settings', () => {
   const guide = readFile('src/utils/voiceGuide.js');
 
-  it('1. speech rate is 0.82 (slower for clarity)', () => {
-    expect(guide).toContain('VOICE_RATE = 0.82');
+  it('1. speech rate is 0.85 (slower for clarity)', () => {
+    expect(guide).toContain('VOICE_RATE = 0.85');
     expect(guide).toContain('utterance.rate = VOICE_RATE');
   });
 
-  it('2. pitch is 0.92 (slightly lower for warmth)', () => {
-    expect(guide).toContain('VOICE_PITCH = 0.92');
+  it('2. pitch is 0.9 (slightly lower for warmth)', () => {
+    expect(guide).toContain('VOICE_PITCH = 0.9');
     expect(guide).toContain('utterance.pitch = VOICE_PITCH');
   });
 
-  it('3. prompts use commas for natural pauses', () => {
-    // Welcome prompt should have breathing pauses via commas
-    expect(guide).toContain("Tap, Get Started, to begin");
-    // Button names set off with commas for clarity
-    expect(guide).toContain("Tap, Crop Progress, Upload Photo, or, Report Issue");
-    // Action prompts use comma pauses before button names
-    expect(guide).toContain("Tap, Approve, to confirm");
+  it('3. prompts use human-friendly script pack wording', () => {
+    // Welcome prompt is clear and simple
+    expect(guide).toContain("Welcome. Let's set up your farm.");
+    // Officer prompt is concise
+    expect(guide).toContain("Tap approve to confirm.");
+    // Update prompt is direct
+    expect(guide).toContain("Your update was sent.");
   });
 
   it('4. wording is simple and direct (no jargon)', () => {
-    // "Search or scroll" simplified to "Find ... in the list"
-    const country = guide.match(/country:\s*\{[^}]*en:\s*'([^']+)'/)?.[1] || '';
-    expect(country).toContain('Find your country');
-    expect(country).not.toContain('Search or scroll');
+    // Country prompt is simple
+    expect(guide).toContain('Choose your country.');
+    // Crop prompt is direct
+    expect(guide).toContain('Tap the crop you are growing.');
   });
 });
 
