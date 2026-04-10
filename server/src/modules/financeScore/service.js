@@ -52,13 +52,14 @@ export async function computeFinanceScore(farmProfileId) {
       { key: 'farmName', label: 'farm name' },
       { key: 'locationName', label: 'location' },
       { key: 'crop', label: 'crop type' },
-      { key: 'farmSizeAcres', label: 'farm size' },
+      { key: 'landSizeValue', label: 'farm size', fallback: 'farmSizeAcres' },
       { key: 'latitude', label: 'GPS coordinates' },
     ];
     let filled = 0;
     const missing = [];
     for (const f of fields) {
-      if (profile[f.key] != null && profile[f.key] !== '') {
+      const val = profile[f.key] ?? (f.fallback ? profile[f.fallback] : undefined);
+      if (val != null && val !== '') {
         filled++;
       } else {
         missing.push(f.label);
@@ -157,7 +158,7 @@ export async function computeFinanceScore(farmProfileId) {
   // ── 4. Farm data quality (up to 10) ─────────────────
   {
     let pts = 0;
-    if (profile.farmSizeAcres && profile.farmSizeAcres > 0) pts += 3;
+    if ((profile.landSizeValue && profile.landSizeValue > 0) || (profile.farmSizeAcres && profile.farmSizeAcres > 0)) pts += 3;
     if (profile.latitude != null && profile.longitude != null) pts += 4;
     if (profile.farmName) pts += 3;
 
@@ -266,16 +267,18 @@ export async function computeFinanceScore(farmProfileId) {
   {
     let pts = 0;
     // Crops with higher market demand get a small boost
-    const highDemand = ['maize', 'rice'];
-    if (highDemand.includes(profile.crop)) pts += 4;
+    const highDemand = ['MAIZE', 'RICE', 'CORN', 'WHEAT', 'SORGHUM', 'BEAN', 'COFFEE', 'TEA'];
+    const cropUpper = (profile.crop || '').toUpperCase();
+    if (highDemand.includes(cropUpper)) pts += 4;
     else pts += 2;
 
     // Harvest stage = closer to revenue
     if (profile.stage === 'harvest') pts += 4;
     else if (profile.stage === 'flowering') pts += 2;
 
-    // Large farms have more opportunity
-    if (profile.farmSizeAcres && profile.farmSizeAcres >= 5) pts += 2;
+    // Large farms have more opportunity (check hectares or acres)
+    const effectiveAcres = profile.farmSizeAcres || (profile.landSizeHectares ? profile.landSizeHectares * 2.47105 : 0);
+    if (effectiveAcres >= 5) pts += 2;
 
     pts = Math.min(10, pts);
 
@@ -285,7 +288,7 @@ export async function computeFinanceScore(farmProfileId) {
       maxPoints: 10,
       reason: pts >= 7
         ? `Strong market position — ${profile.crop} at ${profile.stage} stage.`
-        : `Moderate market positioning. ${profile.crop} has ${highDemand.includes(profile.crop) ? 'strong' : 'steady'} demand.`,
+        : `Moderate market positioning. ${profile.crop} has ${highDemand.includes(cropUpper) ? 'strong' : 'steady'} demand.`,
     });
 
     total += pts;
