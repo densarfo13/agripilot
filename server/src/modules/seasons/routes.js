@@ -470,6 +470,102 @@ router.get('/:id/progress-images',
 //  OFFICER VALIDATION
 // ═══════════════════════════════════════════════════════
 
+// Validation queue — active seasons with recent progress needing officer review
+router.get('/validation-queue',
+  authorize('super_admin', 'institutional_admin', 'field_officer'),
+  extractOrganization,
+  asyncHandler(async (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+    const officerId = req.user.sub;
+    const isAdmin = ['super_admin', 'institutional_admin'].includes(req.user.role);
+
+    // Build where clause: active seasons in caller's org (or assigned to officer)
+    const where = { status: 'active' };
+    if (!isAdmin) {
+      where.farmer = { assignedOfficerId: officerId };
+    } else if (req.organizationId) {
+      where.farmer = { organizationId: req.organizationId };
+    }
+
+    const seasons = await prisma.farmSeason.findMany({
+      where,
+      include: {
+        farmer: { select: { id: true, fullName: true, region: true, district: true, profileImageUrl: true, primaryCrop: true } },
+        progressEntries: {
+          orderBy: { entryDate: 'desc' },
+          take: 5,
+          select: { id: true, entryType: true, activityType: true, cropCondition: true, imageUrl: true, imageStage: true, entryDate: true, description: true, createdAt: true },
+        },
+        officerValidations: {
+          orderBy: { validatedAt: 'desc' },
+          take: 1,
+          select: { id: true, validationType: true, validatedAt: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      skip: offset,
+      take: limit,
+    });
+
+    // Build queue items — each season becomes a queue card
+    const queue = seasons.map(s => {
+      const lastValidation = s.officerValidations[0] || null;
+      const recentEntries = s.progressEntries;
+      const latestEntry = recentEntries[0] || null;
+      const imageEntries = recentEntries.filter(e => e.imageUrl);
+      const daysSinceValidation = lastValidation
+        ? Math.floor((Date.now() - new Date(lastValidation.validatedAt)) / 86400000)
+        : null;
+      const daysSinceEntry = latestEntry
+        ? Math.floor((Date.now() - new Date(latestEntry.entryDate)) / 86400000)
+        : null;
+
+      // Priority: no validation > stale validation > recent validation
+      let priority = 'normal';
+      if (!lastValidation) priority = 'high';
+      else if (daysSinceValidation > 14) priority = 'high';
+      else if (daysSinceValidation > 7) priority = 'medium';
+
+      return {
+        seasonId: s.id,
+        farmerId: s.farmer.id,
+        farmerName: s.farmer.fullName,
+        farmerRegion: s.farmer.region,
+        farmerDistrict: s.farmer.district,
+        farmerImage: s.farmer.profileImageUrl,
+        cropType: s.cropType,
+        currentStage: s.currentStage || null,
+        plantingDate: s.plantingDate,
+        latestEntry: latestEntry ? {
+          id: latestEntry.id,
+          type: latestEntry.entryType,
+          activityType: latestEntry.activityType,
+          condition: latestEntry.cropCondition,
+          imageUrl: latestEntry.imageUrl,
+          imageStage: latestEntry.imageStage,
+          date: latestEntry.entryDate,
+          description: latestEntry.description,
+        } : null,
+        recentImages: imageEntries.map(e => ({ url: e.imageUrl, stage: e.imageStage, date: e.entryDate })),
+        lastValidationDate: lastValidation?.validatedAt || null,
+        daysSinceValidation,
+        daysSinceEntry,
+        entryCount: recentEntries.length,
+        priority,
+      };
+    });
+
+    // Sort: high priority first, then by days since validation desc
+    queue.sort((a, b) => {
+      const pMap = { high: 3, medium: 2, normal: 1 };
+      if (pMap[a.priority] !== pMap[b.priority]) return pMap[b.priority] - pMap[a.priority];
+      return (b.daysSinceValidation || 999) - (a.daysSinceValidation || 999);
+    });
+
+    res.json({ queue, total: queue.length });
+  }));
+
 // Submit officer validation for a season
 router.post('/:id/officer-validate',
   validateParamUUID('id'),

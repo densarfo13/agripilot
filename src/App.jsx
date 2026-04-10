@@ -23,6 +23,7 @@ const AuditPage = lazy(() => import('./pages/AuditPage.jsx'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'));
 const VerificationQueuePage = lazy(() => import('./pages/VerificationQueuePage.jsx'));
 const FraudQueuePage = lazy(() => import('./pages/FraudQueuePage.jsx'));
+const OfficerValidationPage = lazy(() => import('./pages/OfficerValidationPage.jsx'));
 const FarmerHomePage = lazy(() => import('./pages/FarmerHomePage.jsx'));
 const FarmerOverviewTab = lazy(() => import('./pages/FarmerOverviewTab.jsx'));
 const FarmerActivitiesTab = lazy(() => import('./pages/FarmerActivitiesTab.jsx'));
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="farmer-registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
             <Route path="verification-queue" element={<RoleRoute roles={REVIEW_ROLES}><VerificationQueuePage /></RoleRoute>} />
             <Route path="fraud-queue" element={<RoleRoute roles={REVIEW_ROLES}><FraudQueuePage /></RoleRoute>} />
+            <Route path="officer-validation" element={<RoleRoute roles={STAFF_ROLES}><OfficerValidationPage /></RoleRoute>} />
             <Route path="farmer-home/:farmerId" element={<RoleRoute roles={STAFF_ROLES}><FarmerHomePage /></RoleRoute>}>
               <Route index element={<FarmerOverviewTab />} />
               <Route path="activities" element={<FarmerActivitiesTab />} />

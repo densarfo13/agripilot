@@ -21,15 +21,16 @@ describe('Activation Reliability', () => {
     expect(code).toContain('submitGuardRef.current = true');
   });
 
-  it('OnboardingWizard pushes history for all forward steps including step 4', () => {
+  it('OnboardingWizard pushes history for forward steps', () => {
     const code = readFile('src/components/OnboardingWizard.jsx');
-    expect(code).toContain('step <= 4');
+    expect(code).toContain('step > 0');
     expect(code).toContain('pushState');
   });
 
-  it('OnboardingWizard validates land size unit from enum', () => {
+  it('OnboardingWizard uses UNIT_OPTIONS for land size unit selection', () => {
     const code = readFile('src/components/OnboardingWizard.jsx');
-    expect(code).toMatch(/ACRE.*HECTARE.*SQUARE_METER/);
+    expect(code).toContain('UNIT_OPTIONS');
+    expect(code).toContain('landSizeUnit');
   });
 
   it('FarmerDashboardPage shows error on profile fetch failure', () => {

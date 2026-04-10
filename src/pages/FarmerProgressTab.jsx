@@ -4,8 +4,10 @@ import api, { formatApiError } from '../api/client.js';
 import { useDraft } from '../utils/useDraft.js';
 import { useAuthStore } from '../store/authStore.js';
 import CropSelect from '../components/CropSelect.jsx';
+import TapSelector from '../components/TapSelector.jsx';
 import LocationDetect from '../components/LocationDetect.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
+import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import { getCropLabel } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
@@ -23,6 +25,30 @@ const CONDITION_COLORS = { good: '#16a34a', average: '#d97706', poor: '#dc2626' 
 const CLASS_COLORS = { on_track: '#16a34a', slight_delay: '#d97706', at_risk: '#dc2626', critical: '#7f1d1d' };
 const CLASS_LABELS = { on_track: 'On Track', slight_delay: 'Slight Delay', at_risk: 'At Risk', critical: 'Critical' };
 const ACTIVITY_TYPES = ['planting', 'spraying', 'fertilizing', 'irrigation', 'weeding', 'harvesting', 'storage', 'selling', 'other'];
+const ACTIVITY_OPTIONS = [
+  { value: 'planting', label: 'Planting', icon: '\uD83C\uDF31' },
+  { value: 'spraying', label: 'Spraying', icon: '\uD83D\uDCA7' },
+  { value: 'fertilizing', label: 'Fertilizing', icon: '\uD83E\uDEBB' },
+  { value: 'irrigation', label: 'Irrigation', icon: '\uD83D\uDEB0' },
+  { value: 'weeding', label: 'Weeding', icon: '\uD83C\uDF3F' },
+  { value: 'harvesting', label: 'Harvesting', icon: '\uD83C\uDF3E' },
+  { value: 'storage', label: 'Storage', icon: '\uD83C\uDFE0' },
+  { value: 'selling', label: 'Selling', icon: '\uD83D\uDCB0' },
+  { value: 'other', label: 'Other', icon: '\u2699\uFE0F' },
+];
+const IMAGE_STAGE_OPTIONS = [
+  { value: 'early_growth', label: 'Early Growth', icon: '\uD83C\uDF31' },
+  { value: 'mid_stage', label: 'Mid Stage', icon: '\uD83C\uDF3F' },
+  { value: 'pre_harvest', label: 'Pre-Harvest', icon: '\uD83C\uDF3C' },
+  { value: 'harvest', label: 'Harvest', icon: '\uD83C\uDF3E' },
+  { value: 'storage', label: 'Storage', icon: '\uD83C\uDFE0' },
+];
+const ADVICE_OPTIONS = [
+  { value: '', label: 'N/A' },
+  { value: 'yes', label: 'Yes', color: '#22C55E' },
+  { value: 'partial', label: 'Partial', color: '#F59E0B' },
+  { value: 'no', label: 'No', color: '#EF4444' },
+];
 const IMAGE_STAGES = ['early_growth', 'mid_stage', 'pre_harvest', 'harvest', 'storage'];
 
 export default function FarmerProgressTab() {
@@ -44,6 +70,7 @@ export default function FarmerProgressTab() {
   const [showStageConfirm, setShowStageConfirm] = useState(false);
   const [showHarvestForm, setShowHarvestForm] = useState(false);
   const [showImageForm, setShowImageForm] = useState(false);
+  const [showQuickUpdate, setShowQuickUpdate] = useState(false);
   const [credibility, setCredibility] = useState(null);
   const submitGuardRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
@@ -325,6 +352,18 @@ export default function FarmerProgressTab() {
           {pageError}
         </InlineAlert>
       )}
+
+      {/* ─── Quick Update Flow (tap-first wizard) ── */}
+      {showQuickUpdate && activeSeason && (
+        <QuickUpdateFlow
+          seasonId={activeSeason.id}
+          farmerId={farmerId}
+          entries={entries}
+          onComplete={() => { setShowQuickUpdate(false); loadSeasons(); showSuccess('Update saved successfully!'); }}
+          onCancel={() => setShowQuickUpdate(false)}
+        />
+      )}
+
       {/* ─── No active season → prompt setup ─────── */}
       {!activeSeason && !showSeasonForm && (
         <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
@@ -549,9 +588,26 @@ export default function FarmerProgressTab() {
                 return null;
               })()}
 
-              {/* Action buttons */}
+              {/* Quick Update CTA — primary action */}
+              <button
+                onClick={() => setShowQuickUpdate(true)}
+                style={{
+                  width: '100%', padding: '1rem', marginBottom: '0.75rem',
+                  background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                  color: '#FFFFFF', border: 'none', borderRadius: '14px',
+                  fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer',
+                  minHeight: '56px', WebkitTapHighlightColor: 'transparent',
+                  boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                }}
+                data-testid="quick-update-cta"
+              >
+                <span style={{ fontSize: '1.3rem' }}>📝</span> Add Update
+              </button>
+
+              {/* Detailed action buttons — secondary */}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button className="btn btn-sm btn-primary" onClick={() => openForm(setShowProgressForm)}>Log Activity</button>
+                <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowProgressForm)}>Log Activity</button>
                 <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowConditionForm)}>Update Condition</button>
                 <button className="btn btn-sm btn-outline" style={{ borderColor: '#22C55E', color: '#22C55E' }} onClick={() => openForm(setShowImageForm)}>Add Photo</button>
                 <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => openForm(setShowHarvestForm)}>Submit Harvest Report</button>
@@ -598,10 +654,12 @@ export default function FarmerProgressTab() {
                     {STAGES.filter(s => s !== 'pre_planting').map(s => (
                       <label key={s} style={{
                         padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', fontSize: '0.875rem',
+                        minHeight: '44px', display: 'inline-flex', alignItems: 'center',
                         border: stageForm.confirmedStage === s ? `2px solid ${STAGE_COLORS[s]}` : '2px solid #243041',
                         background: stageForm.confirmedStage === s ? STAGE_COLORS[s] + '15' : '#162033',
                         fontWeight: stageForm.confirmedStage === s ? 600 : 400,
                         color: stageForm.confirmedStage === s ? STAGE_COLORS[s] : '#FFFFFF',
+                        WebkitTapHighlightColor: 'transparent',
                       }}>
                         <input type="radio" name="stage" value={s} checked={stageForm.confirmedStage === s} onChange={() => setStageForm(f => ({ ...f, confirmedStage: s }))} style={{ display: 'none' }} />
                         {STAGE_LABELS[s]}
@@ -633,45 +691,49 @@ export default function FarmerProgressTab() {
                   )}
                   {formError && <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>}
                   {/* Required fields first */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div>
-                      <label className="form-label">Activity Type *</label>
-                      <select className="form-input" required value={progressForm.activityType} onChange={e => setProgressForm(f => ({ ...f, activityType: e.target.value }))}>
-                        <option value="">Select...</option>
-                        {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                      </select>
-                    </div>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <TapSelector
+                      label="Activity Type *"
+                      options={ACTIVITY_OPTIONS}
+                      value={progressForm.activityType}
+                      onChange={(v) => setProgressForm(f => ({ ...f, activityType: v }))}
+                      columns={3}
+                      required
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
                     <div>
                       <label className="form-label">Date</label>
                       <input className="form-input" type="date" value={progressForm.entryDate} onChange={e => setProgressForm(f => ({ ...f, entryDate: e.target.value }))} />
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
+                    <div>
                       <label className="form-label">Notes <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
                       <textarea className="form-input" rows={2} placeholder="What did you do? Any issues?" value={progressForm.description} onChange={e => setProgressForm(f => ({ ...f, description: e.target.value }))} />
                     </div>
                   </div>
                   {/* Optional details — collapsed */}
                   <details style={{ marginTop: '0.5rem' }}>
-                    <summary style={{ fontSize: '0.82rem', color: '#A1A1AA', cursor: 'pointer', padding: '0.25rem 0' }}>
+                    <summary style={{ fontSize: '0.82rem', color: '#A1A1AA', cursor: 'pointer', padding: '0.4rem 0', minHeight: '44px', display: 'flex', alignItems: 'center' }}>
                       More details (quantity, unit, advice)
                     </summary>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
                       <div>
                         <label className="form-label">Quantity <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
-                        <input className="form-input" type="number" step="0.1" value={progressForm.quantity} onChange={e => setProgressForm(f => ({ ...f, quantity: e.target.value }))} />
+                        <input className="form-input" type="number" step="0.1" inputMode="decimal" value={progressForm.quantity} onChange={e => setProgressForm(f => ({ ...f, quantity: e.target.value }))} />
                       </div>
                       <div>
                         <label className="form-label">Unit <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
                         <input className="form-input" value={progressForm.unit} onChange={e => setProgressForm(f => ({ ...f, unit: e.target.value }))} placeholder="kg, bags, litres" />
                       </div>
                       <div style={{ gridColumn: '1 / -1' }}>
-                        <label className="form-label">Followed advice? <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
-                        <select className="form-input" value={progressForm.followedAdvice} onChange={e => setProgressForm(f => ({ ...f, followedAdvice: e.target.value }))}>
-                          <option value="">N/A</option>
-                          <option value="yes">Yes</option>
-                          <option value="partial">Partial</option>
-                          <option value="no">No</option>
-                        </select>
+                        <TapSelector
+                          label="Followed advice?"
+                          options={ADVICE_OPTIONS}
+                          value={progressForm.followedAdvice}
+                          onChange={(v) => setProgressForm(f => ({ ...f, followedAdvice: v }))}
+                          columns={4}
+                          compact
+                        />
                       </div>
                     </div>
                   </details>
@@ -695,6 +757,8 @@ export default function FarmerProgressTab() {
                     {['good', 'average', 'poor'].map(c => (
                       <label key={c} style={{
                         flex: 1, textAlign: 'center', padding: '0.75rem', borderRadius: 8, cursor: 'pointer',
+                        minHeight: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        WebkitTapHighlightColor: 'transparent',
                         border: condForm.cropCondition === c ? `2px solid ${CONDITION_COLORS[c]}` : '2px solid #243041',
                         background: condForm.cropCondition === c ? CONDITION_COLORS[c] + '12' : '#162033',
                         fontWeight: condForm.cropCondition === c ? 600 : 400,
@@ -771,12 +835,15 @@ export default function FarmerProgressTab() {
                       <label className="form-label">Image URL *</label>
                       <input className="form-input" required value={imageForm.imageUrl} onChange={e => setImageForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." />
                     </div>
-                    <div>
-                      <label className="form-label">Growth Stage</label>
-                      <select className="form-input" value={imageForm.imageStage} onChange={e => setImageForm(f => ({ ...f, imageStage: e.target.value }))}>
-                        <option value="">Select stage...</option>
-                        {IMAGE_STAGES.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
-                      </select>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <TapSelector
+                        label="Growth Stage"
+                        options={IMAGE_STAGE_OPTIONS}
+                        value={imageForm.imageStage}
+                        onChange={(v) => setImageForm(f => ({ ...f, imageStage: v }))}
+                        columns={3}
+                        compact
+                      />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label className="form-label">Description</label>

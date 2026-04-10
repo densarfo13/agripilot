@@ -9,9 +9,28 @@ import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
+
+/** Collapsible section — keeps secondary content below the fold */
+function ExpandableSection({ title, icon, children, testId }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div style={S.expandCard} data-testid={testId}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={S.expandHeader}
+        aria-expanded={open}
+      >
+        <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{icon}</span>
+        <span style={{ flex: 1, fontWeight: 600, fontSize: '0.95rem', textAlign: 'left' }}>{title}</span>
+        <span style={{ color: '#A1A1AA', fontSize: '1.1rem', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0)' }}>▾</span>
+      </button>
+      {open && <div style={S.expandBody}>{children}</div>}
+    </div>
+  );
+}
 
 export default function FarmerDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -290,7 +309,39 @@ export default function FarmerDashboardPage() {
           </div>
         ) : isApproved ? (
           <>
-            {/* Primary action card — single clear next step */}
+            {/* ─── ACTION-FIRST HOME SCREEN ─── */}
+
+            {/* 1. Crop Status Hero — crop icon, name, stage, weather at a glance */}
+            {(() => {
+              const activeSeason = seasons?.[0];
+              const cropCode = activeSeason?.cropType || farmProfile?.crop;
+              const cropName = cropCode ? getCropLabel(cropCode) : null;
+              const cropIcon = cropCode ? getCropIcon(cropCode) : '🌱';
+              const stage = lifecycle?.currentStage;
+              const stageLabel = stage ? tLifecycleStage(stage) : null;
+              const tempC = weather?.temperatureC != null ? Math.round(weather.temperatureC) : null;
+              const rainMm = weather?.rainForecastMm;
+
+              return (
+                <div style={S.heroCard} data-testid="crop-status-hero">
+                  <div style={S.heroTop}>
+                    <span style={S.heroCropIcon}>{cropIcon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={S.heroCropName}>{cropName || 'My Farm'}</div>
+                      {stageLabel && <span style={S.heroBadge}>{stageLabel}</span>}
+                    </div>
+                    {tempC !== null && (
+                      <div style={S.heroWeather}>
+                        <span style={S.heroTemp}>{tempC}°C</span>
+                        {rainMm != null && <span style={S.heroRain}>{rainMm}mm rain</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 2. Primary Action Button — single big tap target */}
             {(() => {
               const hasActiveSeason = seasons && seasons.length > 0;
               const farmerId = user?.farmerId;
@@ -301,138 +352,204 @@ export default function FarmerDashboardPage() {
                 : null;
               const updateOverdue = daysSinceUpdate !== null && daysSinceUpdate >= 14;
 
-              // Pick the single most relevant action — prefer API-derived task
-              let btnLabel, btnHref, cardTitle, cardDetail;
+              let btnLabel, btnIcon, btnHref, nextStepText;
               if (nextTask?.taskType === 'REPORT_HARVEST') {
-                btnLabel = 'Report Harvest →';
+                btnLabel = 'Report Harvest'; btnIcon = '🌾';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                cardTitle = 'Time to report your harvest';
-                cardDetail = nextTask.reason;
+                nextStepText = nextTask.reason || 'Your crop is ready — submit your harvest report.';
               } else if (nextTask?.taskType === 'START_SEASON') {
-                btnLabel = 'Start Season →';
+                btnLabel = 'Start Season'; btnIcon = '🌱';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                cardTitle = 'Set up your season';
-                cardDetail = nextTask.reason;
+                nextStepText = nextTask.reason || 'Set up a new growing season to start tracking.';
               } else if (!hasActiveSeason) {
-                btnLabel = 'Start Season →';
+                btnLabel = 'Start Season'; btnIcon = '🌱';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                cardTitle = 'Set up your season';
-                cardDetail = 'Your account is active. Start a new season to begin tracking your farm progress.';
+                nextStepText = 'Start a new season to begin tracking your farm.';
               } else if (isHarvestStage) {
-                btnLabel = 'Report Harvest →';
+                btnLabel = 'Report Harvest'; btnIcon = '🌾';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                cardTitle = 'Time to report your harvest';
-                cardDetail = 'Your crop is at harvest stage. Submit your harvest report to close the season.';
+                nextStepText = 'Your crop is at harvest stage — submit your report.';
               } else if (updateOverdue) {
-                btnLabel = 'Log Update →';
+                btnLabel = 'Add Update'; btnIcon = '📝';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                cardTitle = `No update in ${daysSinceUpdate} days`;
-                cardDetail = 'Log a farm activity or update your crop condition to keep your record current.';
+                nextStepText = `No update in ${daysSinceUpdate} days — log an activity now.`;
               } else {
                 const topRec = lifecycle?.recommendations?.[0];
-                btnLabel = 'Log Update →';
+                btnLabel = 'Add Update'; btnIcon = '📝';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                cardTitle = topRec?.title || 'Log your latest activity';
-                cardDetail = topRec?.message || 'Regular updates help build a stronger track record.';
+                nextStepText = topRec?.title || 'Log your latest farm activity.';
               }
 
               return (
-                <div style={{ ...styles.card, marginBottom: '1rem', borderLeft: '4px solid #22C55E' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#22C55E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Your Next Step</div>
-                  <div style={{ fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>{cardTitle}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#A1A1AA', lineHeight: 1.5, marginBottom: '1rem' }}>{cardDetail}</div>
+                <div style={S.actionSection} data-testid="primary-action-section">
                   {farmerId && (
-                    <a href={btnHref} style={{
-                      display: 'inline-block', padding: '0.6rem 1.4rem', background: '#22C55E', color: '#fff',
-                      borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none',
-                      boxShadow: '0 2px 8px rgba(22,163,74,0.18)',
-                    }}>
-                      {btnLabel}
+                    <a href={btnHref} style={S.primaryActionBtn} data-testid="primary-action-btn">
+                      <span style={S.primaryActionIcon}>{btnIcon}</span>
+                      <span>{btnLabel}</span>
                     </a>
                   )}
+                  {/* 3. Next Step — single instruction */}
+                  <div style={S.nextStepText} data-testid="next-step-text">{nextStepText}</div>
                 </div>
               );
             })()}
 
-            {/* Farm Finance Score */}
-            {financeScore && (
-              <div style={{ ...styles.card, marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ margin: 0 }}>Farroway Farm Score</h3>
-                  <span style={{ fontSize: '0.65rem', color: '#71717A', textTransform: 'uppercase' }}>
-                    {financeScore.confidence} confidence
-                  </span>
-                </div>
+            {/* 4. Progress Indicator + Last Activity — compact row */}
+            {(() => {
+              const activeSeason = seasons?.[0];
+              const activityCount = activeSeason?.activityCount || 0;
+              const lastDate = activeSeason?.lastActivityDate;
+              const daysSince = lastDate
+                ? Math.floor((Date.now() - new Date(lastDate)) / 86400000)
+                : null;
 
-                {/* Score gauge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                  <div style={styles.scoreCircle(financeScore.band)}>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>{financeScore.score}</span>
-                    <span style={{ fontSize: '0.6rem', color: '#A1A1AA' }}>/100</span>
+              // Simple progress: map lifecycle stages to % for visual
+              const stageProgress = { land_preparation: 15, planting: 30, germination: 45, vegetative: 55, flowering: 65, fruiting: 75, harvest: 90, post_harvest: 100 };
+              const progressPct = stageProgress[lifecycle?.currentStage] || 0;
+
+              return activeSeason ? (
+                <div style={S.progressCard} data-testid="progress-section">
+                  {/* Progress ring */}
+                  <div style={S.progressRow}>
+                    <svg width="56" height="56" viewBox="0 0 56 56" style={{ flexShrink: 0 }} data-testid="progress-ring">
+                      <circle cx="28" cy="28" r="24" fill="none" stroke="#1E293B" strokeWidth="5" />
+                      <circle cx="28" cy="28" r="24" fill="none" stroke="#22C55E" strokeWidth="5"
+                        strokeDasharray={`${(progressPct / 100) * 150.8} 150.8`}
+                        strokeLinecap="round" transform="rotate(-90 28 28)" />
+                      <text x="28" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="13" fontWeight="700">{progressPct}%</text>
+                    </svg>
+                    <div style={{ flex: 1 }}>
+                      <div style={S.progressLabel}>Season Progress</div>
+                      <div style={S.progressSub}>{activityCount} update{activityCount !== 1 ? 's' : ''} logged</div>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: bandColor(financeScore.band) }}>{financeScore.band}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{financeScore.readiness}</div>
-                  </div>
-                </div>
-
-                {/* Score bar */}
-                <div style={{ background: '#1E293B', borderRadius: '4px', height: '6px', marginBottom: '0.75rem' }}>
-                  <div style={{
-                    width: `${financeScore.score}%`, height: '100%', borderRadius: '4px',
-                    background: bandColor(financeScore.band),
-                    transition: 'width 0.5s ease',
-                  }} />
-                </div>
-
-                {/* Top factors */}
-                {financeScore.factors?.slice(0, 3).map((f, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', fontSize: '0.8rem', borderBottom: '1px solid #243041' }}>
-                    <span style={{ color: '#A1A1AA' }}>{f.label}</span>
-                    <span style={{ fontWeight: 600, color: f.impact.startsWith('-') ? '#EF4444' : '#22C55E' }}>{f.impact}</span>
-                  </div>
-                ))}
-
-                {/* Next steps */}
-                {financeScore.nextSteps?.length > 0 && (
-                  <div style={{ marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#71717A', textTransform: 'uppercase', marginBottom: '0.3rem' }}>To improve</div>
-                    {financeScore.nextSteps.map((step, i) => (
-                      <div key={i} style={{ fontSize: '0.8rem', color: '#A1A1AA', padding: '0.2rem 0', paddingLeft: '0.5rem', borderLeft: '2px solid #243041' }}>
-                        {step}
+                  {/* Last Activity */}
+                  {lastDate && (
+                    <div style={S.lastActivity} data-testid="last-activity">
+                      <span style={S.lastActivityIcon}>📋</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={S.lastActivityLabel}>Last update</div>
+                        <div style={S.lastActivityDate}>
+                          {daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince} days ago`}
+                          {' · '}{new Date(lastDate).toLocaleDateString()}
+                        </div>
                       </div>
-                    ))}
+                      {daysSince >= 14 && <span style={S.staleBadge}>⚠ Overdue</span>}
+                    </div>
+                  )}
+                </div>
+              ) : null;
+            })()}
+
+            {/* No season nudge */}
+            {seasons && seasons.length === 0 && (
+              <div style={S.noSeasonCard} data-testid="no-season-nudge">
+                <span style={{ fontSize: '2rem' }}>🌱</span>
+                <div style={{ fontSize: '1rem', fontWeight: 600, marginTop: '0.5rem' }}>No Active Season</div>
+                <div style={{ fontSize: '0.85rem', color: '#A1A1AA', marginTop: '0.25rem' }}>
+                  Start a season to track your progress
+                </div>
+              </div>
+            )}
+
+            {/* 5. Weather insight — compact inline if available */}
+            {weatherRecs?.recommendations?.length > 0 && (
+              <div style={S.weatherInsightCard} data-testid="weather-insight">
+                <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🌤️</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{weatherRecs.recommendations[0].title}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{weatherRecs.recommendations[0].action}</div>
+                </div>
+              </div>
+            )}
+
+            {/* 6. Farm Score — compact summary */}
+            {financeScore && (
+              <div style={S.scoreCard} data-testid="farm-score-compact">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={S.scoreCircleSmall(financeScore.band)}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>{financeScore.score}</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Farm Score</div>
+                    <div style={{ fontSize: '0.8rem', color: bandColor(financeScore.band) }}>{financeScore.band} · {financeScore.readiness}</div>
+                  </div>
+                </div>
+                {financeScore.nextSteps?.[0] && (
+                  <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid #243041' }}>
+                    {financeScore.nextSteps[0]}
                   </div>
                 )}
-
-                <button
-                  onClick={() => farmProfile && recalculateFinanceScore(farmProfile.id)}
-                  style={{ ...styles.recBtnNote, marginTop: '0.75rem', fontSize: '0.7rem' }}
-                >Recalculate</button>
               </div>
             )}
 
-            {lifecycle && (
-              <div style={styles.card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={styles.statusBadge('rgba(34,197,94,0.15)', '#22C55E')}>Active Account</div>
-                  <span style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>
-                    {tLifecycleStage(lifecycle.currentStage)}{lifecycle.cropType ? ` · ${getCropLabel(lifecycle.cropType)}` : ''}
-                  </span>
+            {/* ─── EXPANDABLE SECONDARY SECTIONS ─── */}
+            {/* Collapsible "More Details" area for secondary content */}
+            <ExpandableSection title="My Farm Details" icon="🏡" testId="details-section">
+              {farmProfile && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={styles.detailRow}><span>Farm:</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
+                  {farmProfile.locationName && <div style={styles.detailRow}><span>Location:</span> <span>{farmProfile.locationName}</span></div>}
+                  {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>Size:</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}
+                  <div style={styles.detailRow}><span>Stage:</span> <span style={{ textTransform: 'capitalize' }}>{farmProfile.stage}</span></div>
                 </div>
-              </div>
+              )}
+              {seasons && seasons.length > 0 && seasons.map(s => (
+                <div key={s.id} style={{ padding: '0.4rem 0', borderBottom: '1px solid #243041', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 600 }}>{getCropLabel(s.cropType)}</span>
+                    <span style={{ color: '#22C55E' }}>{s.status}</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>
+                    {formatLandSize(s.landSizeValue || s.farmSizeAcres, s.landSizeUnit)} · Planted {new Date(s.plantingDate).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </ExpandableSection>
+
+            {recommendations.length > 0 && (
+              <ExpandableSection title="Recommendations" icon="💡" testId="recommendations-section">
+                {recommendations.slice(0, 3).map(rec => (
+                  <div key={rec.id} style={{ padding: '0.6rem 0', borderBottom: '1px solid #243041' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rec.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{rec.action}</div>
+                      </div>
+                      <span style={{
+                        fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '12px',
+                        background: rec.status === 'completed' ? 'rgba(34,197,94,0.15)' : rec.status === 'skipped' ? 'rgba(245,158,11,0.15)' : 'rgba(14,165,233,0.15)',
+                        color: rec.status === 'completed' ? '#22C55E' : rec.status === 'skipped' ? '#F59E0B' : '#0EA5E9',
+                        textTransform: 'capitalize', whiteSpace: 'nowrap', marginLeft: '0.5rem',
+                      }}>{rec.status}</span>
+                    </div>
+                    {rec.status === 'pending' && (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button onClick={() => handleRecAction(rec.id, 'completed')} style={styles.recBtnDone}>Done</button>
+                        <button onClick={() => handleRecAction(rec.id, 'skipped')} style={styles.recBtnSkip}>Skip</button>
+                        <button onClick={() => setRecNoteId(recNoteId === rec.id ? null : rec.id)} style={styles.recBtnNote}>Note</button>
+                      </div>
+                    )}
+                    {recNoteId === rec.id && (
+                      <input value={recNote} onChange={e => setRecNote(e.target.value)} placeholder="Add a note..." style={styles.noteInput} />
+                    )}
+                    {rec.farmerNote && <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.3rem', fontStyle: 'italic' }}>Note: {rec.farmerNote}</div>}
+                    {rec.status !== 'pending' && !feedbackSent[rec.id] && (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#71717A' }}>Helpful?</span>
+                        <button onClick={() => handleFeedback(rec.id, true)} style={styles.feedbackBtn}>Yes</button>
+                        <button onClick={() => handleFeedback(rec.id, false)} style={styles.feedbackBtn}>No</button>
+                      </div>
+                    )}
+                    {feedbackSent[rec.id] && <div style={{ fontSize: '0.7rem', color: '#71717A', marginTop: '0.3rem' }}>Thanks for your feedback</div>}
+                  </div>
+                ))}
+              </ExpandableSection>
             )}
 
-            {/* Weather Card */}
             {weather && weather.temperatureC != null && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <h3 style={{ margin: 0 }}>Weather</h3>
-                  <span style={{ fontSize: '0.7rem', color: '#71717A' }}>
-                    {weather._source === 'live' ? 'Live' : weather._source === 'cached' ? 'Cached' : 'Estimated'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <ExpandableSection title="Weather Details" icon="🌦️" testId="weather-section">
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   <div style={styles.weatherStat}>
                     <span style={styles.weatherValue}>{Math.round(weather.temperatureC)}°C</span>
                     <span style={styles.weatherLabel}>Temp</span>
@@ -454,203 +571,64 @@ export default function FarmerDashboardPage() {
                     </div>
                   )}
                 </div>
-                {weather.condition && (
-                  <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.5rem' }}>{weather.condition}</div>
-                )}
-              </div>
-            )}
-
-            {/* Weather-Based Recommendations */}
-            {weatherRecs?.recommendations?.length > 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem', borderLeft: '4px solid #0EA5E9' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Weather Insights</div>
-                {weatherRecs.recommendations.slice(0, 2).map((rec, i) => (
-                  <div key={i} style={{ padding: '0.5rem 0', borderBottom: i < 1 ? '1px solid #243041' : 'none' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rec.title}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>{rec.action}</div>
-                    {rec.reason && <div style={{ fontSize: '0.75rem', color: '#71717A', marginTop: '0.15rem' }}>{rec.reason}</div>}
-                    <button
-                      onClick={() => handleSaveWeatherRec(rec)}
-                      style={{ ...styles.recBtnNote, marginTop: '0.4rem', fontSize: '0.7rem' }}
-                    >Save to history</button>
+                {weather.condition && <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>{weather.condition}</div>}
+                {weatherRecs?.recommendations?.slice(0, 2).map((rec, i) => (
+                  <div key={i} style={{ padding: '0.4rem 0', borderTop: '1px solid #243041', marginTop: '0.4rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{rec.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{rec.action}</div>
+                    <button onClick={() => handleSaveWeatherRec(rec)} style={{ ...styles.recBtnNote, marginTop: '0.3rem', fontSize: '0.7rem' }}>Save</button>
                   </div>
                 ))}
-              </div>
+              </ExpandableSection>
             )}
 
-            {/* Active Seasons / Progress tracking */}
-            {seasons && seasons.length > 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <h3 style={{ margin: '0 0 0.75rem' }}>My Farm Progress</h3>
-                {seasons.map(s => {
-                  const daysSince = s.lastActivityDate
-                    ? Math.floor((Date.now() - new Date(s.lastActivityDate)) / 86400000)
-                    : null;
-                  const isStale = daysSince !== null && daysSince >= 14;
-                  return (
-                    <div key={s.id} style={{
-                      padding: '0.5rem 0', borderBottom: '1px solid #243041',
-                      borderLeft: isStale ? '3px solid #F59E0B' : 'none',
-                      paddingLeft: isStale ? '0.5rem' : 0,
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                        <span style={{ fontWeight: 600 }}>{s.cropType}</span>
-                        <span style={{ color: '#22C55E', fontWeight: 500 }}>{s.status}</span>
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>
-                        {formatLandSize(s.landSizeValue || s.farmSizeAcres, s.landSizeUnit)} | Planted: {new Date(s.plantingDate).toLocaleDateString()}
-                      </div>
-                      {isStale && (
-                        <div style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600, marginTop: '0.25rem' }}>
-                          {'\u26A0'} No update in {daysSince} days — log an activity to stay on track
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                <p style={{ fontSize: '0.8rem', color: '#71717A', margin: '0.5rem 0 0' }}>
-                  Log activities, confirm stages, and track your harvest through your Farmer Home.
-                </p>
-              </div>
-            )}
-
-            {seasons && seasons.length === 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem', borderLeft: '4px solid #F59E0B' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '1.1rem' }}>{'\uD83C\uDF31'}</span>
-                  <h3 style={{ margin: 0 }}>No Active Season</h3>
-                </div>
-                <p style={{ color: '#A1A1AA', fontSize: '0.9rem', margin: '0 0 0.75rem', lineHeight: 1.5 }}>
-                  You don't have an active growing season yet. Start one to begin tracking your farm progress, get personalized recommendations, and build your credit history.
-                </p>
-                {user?.farmerId && (
-                  <a href={`/farmer-home/${user.farmerId}/progress`} style={{
-                    display: 'inline-block', padding: '0.5rem 1.2rem', background: '#F59E0B', color: '#fff',
-                    borderRadius: '6px', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none',
-                  }}>
-                    Start a Season {'\u2192'}
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Farm Profile Summary */}
-            {farmProfile && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ margin: 0 }}>My Farm</h3>
-                  <span style={{ fontSize: '0.75rem', color: '#22C55E', fontWeight: 600, textTransform: 'uppercase' }}>{farmProfile.crop}</span>
-                </div>
-                <div style={styles.detailRow}><span>Farm:</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
-                {farmProfile.locationName && <div style={styles.detailRow}><span>Location:</span> <span>{farmProfile.locationName}</span></div>}
-                {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>Size:</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}
-                <div style={styles.detailRow}><span>Stage:</span> <span style={{ textTransform: 'capitalize' }}>{farmProfile.stage}</span></div>
-              </div>
-            )}
-
-            {/* Recommendation History */}
-            {recommendations.length > 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <h3 style={{ margin: '0 0 0.75rem' }}>Recent Recommendations</h3>
-                {recommendations.slice(0, 3).map(rec => (
-                  <div key={rec.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid #243041' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rec.title}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.2rem' }}>{rec.action}</div>
-                        {rec.reason && <div style={{ fontSize: '0.75rem', color: '#71717A', marginTop: '0.15rem' }}>{rec.reason}</div>}
-                      </div>
-                      <span style={{
-                        fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '12px',
-                        background: rec.status === 'completed' ? 'rgba(34,197,94,0.15)' : rec.status === 'skipped' ? 'rgba(245,158,11,0.15)' : 'rgba(14,165,233,0.15)',
-                        color: rec.status === 'completed' ? '#22C55E' : rec.status === 'skipped' ? '#F59E0B' : '#0EA5E9',
-                        textTransform: 'capitalize', whiteSpace: 'nowrap', marginLeft: '0.5rem',
-                      }}>{rec.status}</span>
-                    </div>
-                    {rec.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
-                        <button onClick={() => handleRecAction(rec.id, 'completed')} style={styles.recBtnDone}>Done</button>
-                        <button onClick={() => handleRecAction(rec.id, 'skipped')} style={styles.recBtnSkip}>Skip</button>
-                        <button onClick={() => setRecNoteId(recNoteId === rec.id ? null : rec.id)} style={styles.recBtnNote}>Note</button>
-                      </div>
-                    )}
-                    {recNoteId === rec.id && (
-                      <div style={{ marginTop: '0.4rem' }}>
-                        <input
-                          value={recNote} onChange={e => setRecNote(e.target.value)}
-                          placeholder="Add a note..."
-                          style={{ ...styles.noteInput }}
-                        />
-                      </div>
-                    )}
-                    {rec.farmerNote && <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.3rem', fontStyle: 'italic' }}>Note: {rec.farmerNote}</div>}
-                    {rec.status !== 'pending' && !feedbackSent[rec.id] && (
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#71717A' }}>Was this helpful?</span>
-                        <button onClick={() => handleFeedback(rec.id, true)} style={styles.feedbackBtn}>Yes</button>
-                        <button onClick={() => handleFeedback(rec.id, false)} style={styles.feedbackBtn}>No</button>
-                      </div>
-                    )}
-                    {feedbackSent[rec.id] && (
-                      <div style={{ fontSize: '0.7rem', color: '#71717A', marginTop: '0.3rem' }}>Thanks for your feedback</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Referral Card */}
             {referral && (
-              <div style={{ ...styles.card, marginTop: '1rem', borderLeft: '4px solid #8B5CF6' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>Invite a Farmer</div>
-                <p style={{ fontSize: '0.85rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
-                  Share your code with other farmers to help them join Farroway.
-                </p>
+              <ExpandableSection title="Invite a Farmer" icon="🤝" testId="referral-section">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <div style={{
                     flex: 1, padding: '0.5rem 0.75rem', background: '#1E293B', borderRadius: '6px',
                     fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.1em', color: '#FFFFFF', textAlign: 'center',
                   }}>{referral.code}</div>
                   <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(referral.link || referral.code);
-                      trackEvent('referral_shared');
-                    }}
-                    style={{
-                      padding: '0.5rem 1rem', background: '#8B5CF6', color: '#fff', border: 'none',
-                      borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
-                    }}
+                    onClick={() => { navigator.clipboard?.writeText(referral.link || referral.code); trackEvent('referral_shared'); }}
+                    style={{ padding: '0.6rem 1rem', background: '#8B5CF6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', minHeight: '44px' }}
                   >Copy</button>
                 </div>
                 {referral.referralCount > 0 && (
-                  <div style={{ fontSize: '0.75rem', color: '#71717A' }}>{referral.referralCount} farmer{referral.referralCount !== 1 ? 's' : ''} joined with your code</div>
+                  <div style={{ fontSize: '0.8rem', color: '#71717A' }}>{referral.referralCount} farmer{referral.referralCount !== 1 ? 's' : ''} joined</div>
                 )}
-              </div>
+              </ExpandableSection>
             )}
 
-            {profile && profile.applications && profile.applications.length > 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <h3 style={{ margin: '0 0 0.75rem' }}>My Applications</h3>
+            {profile?.applications?.length > 0 && (
+              <ExpandableSection title="My Applications" icon="📄" testId="applications-section">
                 {profile.applications.map(app => (
                   <div key={app.id} style={{ ...styles.detailRow, padding: '0.5rem 0' }}>
                     <span style={{ fontWeight: 500 }}>{app.cropType}</span>
                     <span>{tStatus(app.status)}</span>
                   </div>
                 ))}
-              </div>
+              </ExpandableSection>
             )}
 
-            {profile && profile.notifications && profile.notifications.length > 0 && (
-              <div style={{ ...styles.card, marginTop: '1rem' }}>
-                <h3 style={{ margin: '0 0 0.75rem' }}>Notifications</h3>
+            {profile?.notifications?.length > 0 && (
+              <ExpandableSection title="Notifications" icon="🔔" testId="notifications-section">
                 {profile.notifications.map(n => (
                   <div key={n.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #243041', fontSize: '0.875rem' }}>
                     <strong>{n.title}</strong>
                     <p style={{ margin: '0.25rem 0 0', color: '#A1A1AA' }}>{n.message}</p>
                   </div>
                 ))}
-              </div>
+              </ExpandableSection>
             )}
+
+            {/* Help Button — fixed bottom-right */}
+            <a
+              href={user?.farmerId ? `/farmer-home/${user.farmerId}/notifications` : '#'}
+              style={S.helpFab}
+              data-testid="help-button"
+              aria-label="Get help"
+            >?</a>
           </>
         ) : (
           <div style={styles.card}>
@@ -661,6 +639,115 @@ export default function FarmerDashboardPage() {
     </div>
   );
 }
+
+// ─── Action-first home screen styles ────────────────────
+const S = {
+  heroCard: {
+    background: '#162033', borderRadius: '12px', padding: '1rem 1.25rem',
+    marginBottom: '1rem', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+  },
+  heroTop: {
+    display: 'flex', alignItems: 'center', gap: '0.75rem',
+  },
+  heroCropIcon: { fontSize: '2.2rem', lineHeight: 1 },
+  heroCropName: { fontSize: '1.2rem', fontWeight: 700, color: '#FFFFFF' },
+  heroBadge: {
+    display: 'inline-block', marginTop: '0.25rem', padding: '0.2rem 0.7rem',
+    borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600,
+    background: 'rgba(34,197,94,0.15)', color: '#22C55E', textTransform: 'capitalize',
+  },
+  heroWeather: {
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0,
+  },
+  heroTemp: { fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF' },
+  heroRain: { fontSize: '0.7rem', color: '#0EA5E9', marginTop: '0.1rem' },
+
+  // Primary action
+  actionSection: { textAlign: 'center', marginBottom: '1.25rem' },
+  primaryActionBtn: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    gap: '0.6rem', width: '100%', padding: '1rem 1.5rem',
+    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#FFFFFF',
+    borderRadius: '14px', fontWeight: 800, fontSize: '1.15rem', textDecoration: 'none',
+    boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+    minHeight: '56px', WebkitTapHighlightColor: 'transparent',
+    transition: 'transform 0.1s', cursor: 'pointer',
+  },
+  primaryActionIcon: { fontSize: '1.4rem' },
+  nextStepText: {
+    marginTop: '0.6rem', fontSize: '0.9rem', color: '#A1A1AA', lineHeight: 1.5,
+  },
+
+  // Progress section
+  progressCard: {
+    background: '#162033', borderRadius: '12px', padding: '1rem 1.25rem',
+    marginBottom: '1rem', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+  },
+  progressRow: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
+  progressLabel: { fontWeight: 600, fontSize: '0.95rem', color: '#FFFFFF' },
+  progressSub: { fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.1rem' },
+  lastActivity: {
+    display: 'flex', alignItems: 'center', gap: '0.6rem',
+    marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #243041',
+  },
+  lastActivityIcon: { fontSize: '1.1rem', flexShrink: 0 },
+  lastActivityLabel: { fontSize: '0.75rem', color: '#71717A', textTransform: 'uppercase', fontWeight: 600 },
+  lastActivityDate: { fontSize: '0.85rem', color: '#A1A1AA' },
+  staleBadge: {
+    fontSize: '0.7rem', fontWeight: 700, color: '#F59E0B', whiteSpace: 'nowrap',
+    padding: '0.2rem 0.5rem', borderRadius: '8px', background: 'rgba(245,158,11,0.12)',
+  },
+
+  // No season
+  noSeasonCard: {
+    background: '#162033', borderRadius: '12px', padding: '1.5rem',
+    textAlign: 'center', marginBottom: '1rem',
+    border: '2px dashed #243041',
+  },
+
+  // Weather insight compact
+  weatherInsightCard: {
+    display: 'flex', alignItems: 'flex-start', gap: '0.6rem',
+    background: '#162033', borderRadius: '10px', padding: '0.75rem 1rem',
+    marginBottom: '0.75rem', borderLeft: '3px solid #0EA5E9',
+  },
+
+  // Score compact
+  scoreCard: {
+    background: '#162033', borderRadius: '10px', padding: '0.85rem 1rem',
+    marginBottom: '0.75rem', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+  },
+  scoreCircleSmall: (band) => ({
+    width: '44px', height: '44px', borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#1E293B', flexShrink: 0,
+    border: `3px solid ${band === 'Strong' ? '#22C55E' : band === 'Good' ? '#0EA5E9' : band === 'Fair' ? '#F59E0B' : '#EF4444'}`,
+  }),
+
+  // Expandable sections
+  expandCard: {
+    background: '#162033', borderRadius: '10px', marginBottom: '0.5rem',
+    overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+  },
+  expandHeader: {
+    display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+    padding: '0.85rem 1rem', background: 'transparent', border: 'none',
+    color: '#FFFFFF', cursor: 'pointer', minHeight: '48px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  expandBody: { padding: '0 1rem 1rem' },
+
+  // Help FAB
+  helpFab: {
+    position: 'fixed', bottom: '1.25rem', right: '1.25rem',
+    width: '52px', height: '52px', borderRadius: '50%',
+    background: '#0EA5E9', color: '#FFFFFF', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+    fontSize: '1.5rem', fontWeight: 800, textDecoration: 'none',
+    boxShadow: '0 4px 12px rgba(14,165,233,0.4)',
+    zIndex: 90, WebkitTapHighlightColor: 'transparent',
+  },
+};
 
 const styles = {
   container: { minHeight: '100vh', background: '#0F172A' },

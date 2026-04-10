@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import api from '../api/client.js';
-import StatusBadge from '../components/StatusBadge.jsx';
 import { PriorityBadge } from '../components/TrustRiskBadge.jsx';
 import { SkeletonDashboard } from '../components/SkeletonLoader.jsx';
 import { useAuthStore } from '../store/authStore.js';
@@ -10,7 +8,12 @@ import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
 import { getCropLabel } from '../utils/crops.js';
 
-const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669', '#ea580c', '#6366f1'];
+/**
+ * Admin Dashboard — decision-focused, action-first.
+ *
+ * Layout: Hero metrics → Attention panel → Activity trend → Farmer overview → Quick actions → Export
+ * No charts on first load — fast, minimal, large tap targets.
+ */
 
 const TASK_NAV = {
   APPROVE_ONBOARDING: (t) => `/farmer-registrations`,
@@ -18,12 +21,19 @@ const TASK_NAV = {
   ASSIGN_OFFICER:     (t) => t.farmerId ? `/farmers/${t.farmerId}` : `/farmers`,
   REVIEW_HIGH_RISK:   (t) => t.farmerId ? `/farmers/${t.farmerId}` : `/farmers`,
   REVIEW_BACKLOG:     (t) => t.applicationId ? `/applications/${t.applicationId}` : `/applications`,
-  VALIDATE_UPDATE:    (t) => t.farmerId ? `/farmers/${t.farmerId}` : `/farmers`,
+  VALIDATE_UPDATE:    (t) => t.farmerId ? `/farmer-home/${t.farmerId}/progress` : `/officer-validation`,
   FOLLOW_UP_STALE:    (t) => t.farmerId ? `/farmers/${t.farmerId}` : `/farmers`,
   CONFIRM_HARVEST:    (t) => t.farmerId ? `/farmers/${t.farmerId}` : `/farmers`,
   REVIEW_APPLICATION: (t) => t.applicationId ? `/applications/${t.applicationId}` : `/applications`,
   RESOLVE_BLOCKER:    (t) => t.applicationId ? `/applications/${t.applicationId}` : `/applications`,
   REVIEW_OVERDUE:     (t) => t.applicationId ? `/applications/${t.applicationId}` : `/applications`,
+};
+
+const TASK_ICONS = {
+  APPROVE_ONBOARDING: '👤', RESOLVE_INVITE: '📩', ASSIGN_OFFICER: '👮',
+  REVIEW_HIGH_RISK: '⚠️', REVIEW_BACKLOG: '📋', VALIDATE_UPDATE: '✅',
+  FOLLOW_UP_STALE: '⏰', CONFIRM_HARVEST: '🌾', REVIEW_APPLICATION: '📄',
+  RESOLVE_BLOCKER: '🚧', REVIEW_OVERDUE: '🔴',
 };
 
 export default function DashboardPage() {
@@ -38,6 +48,7 @@ export default function DashboardPage() {
   const [expiringInvites, setExpiringInvites] = useState(0);
   const [loadWarning, setLoadWarning] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const { selectedOrgId, selectedOrgName } = useOrgStore();
@@ -76,13 +87,10 @@ export default function DashboardPage() {
       if (canSeePilotMetrics && !mRes?.data) missingData.push('pilot metrics');
       if (canSeeAttention && !aRes?.data) missingData.push('attention items');
       if (missingData.length > 0) setLoadWarning(`Some data could not be loaded: ${missingData.join(', ')}. Try refreshing.`);
-      // Fetch expiring invites (non-blocking)
       if (canSeeAttention) {
         api.get('/farmers/expiring-invites').then(r => setExpiringInvites(r.data?.count || 0)).catch(() => {});
       }
-    }).catch(() => {
-      // portfolio stays null — handled by "Unable to load" message below
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [selectedOrgId]);
 
   if (loading) return <SkeletonDashboard />;
@@ -97,388 +105,564 @@ export default function DashboardPage() {
 
   const fmt = (n) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(0) + 'K' : n;
 
+  // ─── Derived metrics ────────────────────────────────────
+
+  const totalFarmers = adoption?.farmers?.total ?? 0;
+  const activeFarmers = adoption?.farmers?.approved ?? 0;
+  const validatedSeasons = benchmarkSummary?.seasons?.validationCoverageRate != null
+    ? Math.round((benchmarkSummary.seasons.validationCoverageRate / 100) * (benchmarkSummary.seasons.active || 0))
+    : 0;
+  const needsAttention = attentionCount + queues.fraud + queues.escalated;
+
+  // Trend: compare adoption rates to thresholds
+  const adoptionRate = benchmarkSummary?.farmers?.adoptionRate ?? null;
+  const engagementRate = benchmarkSummary?.seasons?.progressEngagementRate ?? null;
+  const trendUp = adoptionRate != null && adoptionRate >= 50;
+
+  // Unified attention items: tasks + alerts + queue warnings
+  const attentionItems = [];
+
+  // Queue warnings first (highest priority)
+  if (queues.fraud > 0) {
+    attentionItems.push({
+      icon: '🚨', label: `${queues.fraud} fraud flag${queues.fraud > 1 ? 's' : ''}`,
+      detail: 'Review flagged applications',
+      priority: 'High', href: '/fraud-queue', color: '#EF4444',
+    });
+  }
+  if (queues.escalated > 0) {
+    attentionItems.push({
+      icon: '⚡', label: `${queues.escalated} escalated`,
+      detail: 'Awaiting decision',
+      priority: 'High', href: '/applications?status=escalated', color: '#F59E0B',
+    });
+  }
+  if (expiringInvites > 0) {
+    attentionItems.push({
+      icon: '⏰', label: `${expiringInvites} invite${expiringInvites > 1 ? 's' : ''} expiring`,
+      detail: 'Resend before they expire',
+      priority: 'Medium', href: '/farmers', color: '#F59E0B',
+    });
+  }
+  // Then tasks (already sorted by priority from API)
+  tasks.slice(0, 6).forEach(t => {
+    const navFn = TASK_NAV[t.taskType];
+    attentionItems.push({
+      icon: TASK_ICONS[t.taskType] || '📋',
+      label: t.title,
+      detail: t.reason,
+      priority: t.priority,
+      href: navFn ? navFn(t) : null,
+      color: t.priority === 'High' ? '#EF4444' : t.priority === 'Medium' ? '#F59E0B' : '#A1A1AA',
+    });
+  });
+  // Then alerts
+  alerts.slice(0, 3).forEach(a => {
+    attentionItems.push({
+      icon: a.severity === 'high' ? '🔴' : '🟡',
+      label: a.type.replace(/_/g, ' '),
+      detail: a.message,
+      priority: a.severity === 'high' ? 'High' : 'Medium',
+      href: '/pilot-metrics',
+      color: a.severity === 'high' ? '#EF4444' : '#F59E0B',
+    });
+  });
+
+  // Status breakdown for farmer overview
+  const farmerStatuses = [];
+  if (adoption) {
+    if (adoption.farmers?.approved) farmerStatuses.push({ label: 'Approved Farmers', count: adoption.farmers.approved, color: '#22C55E' });
+    if (adoption.farmers?.pendingApproval) farmerStatuses.push({ label: 'Pending', count: adoption.farmers.pendingApproval, color: '#F59E0B' });
+    if (adoption.farmers?.invitedNotActivated) farmerStatuses.push({ label: 'Invited', count: adoption.farmers.invitedNotActivated, color: '#0EA5E9' });
+    if (adoption.adoption?.withSeason) farmerStatuses.push({ label: 'With Season', count: adoption.adoption.withSeason, color: '#16A34A' });
+    if (adoption.adoption?.withFirstUpdate) farmerStatuses.push({ label: 'Updating', count: adoption.adoption.withFirstUpdate, color: '#22C55E' });
+    if (adoption.adoption?.withHarvest) farmerStatuses.push({ label: 'Harvested', count: adoption.adoption.withHarvest, color: '#7C3AED' });
+  }
+
+  const handleExport = () => {
+    api.get('/reports/pilot-report?format=csv', { responseType: 'blob' })  // '/reports/pilot-report?format=csv'
+      .then(r => {
+        const url = URL.createObjectURL(new Blob([r.data], { type: 'text/csv' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => {});
+  };
+
   return (
-    <>
-      <div className="page-header">
+    <div style={DS.page} data-testid="admin-dashboard">
+      {/* Header */}
+      <div style={DS.header} data-testid="dashboard-header">
         <div>
-          <h1>Dashboard</h1>
-          {user?.role === 'super_admin' && selectedOrgName && (
-            <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{selectedOrgName}</div>
-          )}
-          {user?.role !== 'super_admin' && user?.organization?.name && (
-            <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{user.organization.name}</div>
+          <h1 style={DS.title}>Dashboard</h1>
+          {(selectedOrgName || user?.organization?.name) && (
+            <div style={DS.orgLabel}>{selectedOrgName || user?.organization?.name}</div>
           )}
         </div>
+        {canSeePilotMetrics && (
+          <button onClick={handleExport} style={DS.exportBtn} data-testid="export-btn" aria-label="Export report">
+            📊 Export CSV
+          </button>
+        )}
       </div>
-      <div className="page-body">
-        {loadWarning && <div className="alert alert-warning" style={{ marginBottom: '1rem', fontSize: '0.85rem' }}>{loadWarning} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Refresh</button></div>}
-        {/* First-run empty state — shown to admins when no farmers exist yet */}
-        {isAdmin && adoption && (adoption.farmers?.total === 0) && portfolio.totalApplications === 0 && (
-          <div className="alert-inline alert-inline-success" style={{ borderRadius: 10, padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'block' }}>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#22C55E', marginBottom: '0.5rem' }}>Welcome to Farroway — Get started in 3 steps</div>
-            <ol style={{ margin: 0, paddingLeft: '1.4rem', color: '#FFFFFF', fontSize: '0.9rem', lineHeight: 1.8 }}>
-              <li>
-                <strong>Add your first farmers</strong> — go to{' '}
-                <span onClick={() => navigate('/farmers')} style={{ color: '#22C55E', cursor: 'pointer', textDecoration: 'underline' }}>Farmers</span>{' '}
-                and use <em>+ New Farmer</em> or <em>Invite Farmer</em>
-              </li>
-              <li>
-                <strong>Create a farm season</strong> — open a farmer profile and add a season to start tracking progress
-              </li>
-              <li>
-                <strong>Submit a loan application</strong> — once a season is active, submit an application to begin the credit workflow
-              </li>
-            </ol>
+
+      {loadWarning && (
+        <div style={DS.warning}>
+          {loadWarning}
+          <button onClick={() => window.location.reload()} style={DS.warningRetry}>Refresh</button>
+        </div>
+      )}
+
+      <div style={DS.body}>
+        {/* First-run welcome */}
+        {isAdmin && adoption && totalFarmers === 0 && portfolio.totalApplications === 0 && (
+          <div style={DS.welcomeCard} data-testid="welcome-card">
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#22C55E', marginBottom: '0.5rem' }}>Welcome — Get started in 3 steps</div>
+            <div style={DS.welcomeStep} onClick={() => navigate('/farmers')}>
+              <span style={DS.welcomeNum}>1</span>
+              <span>Add your first farmers</span>
+            </div>
+            <div style={DS.welcomeStep}>
+              <span style={DS.welcomeNum}>2</span>
+              <span>Create a farm season</span>
+            </div>
+            <div style={DS.welcomeStep}>
+              <span style={DS.welcomeNum}>3</span>
+              <span>Submit a loan application</span>
+            </div>
           </div>
         )}
 
-        {/* ── 1. KPI Strip — top-level metrics ── */}
-        <div className="stats-grid">
-          <div className="stat-card" onClick={() => navigate('/farmers')} style={{ cursor: 'pointer' }}>
-            <div className="stat-label">Approved Farmers</div>
-            <div className="stat-value">{adoption?.farmers?.approved ?? 0}</div>
+        {/* ─── 1. HERO METRICS ─── */}
+        <div style={DS.metricsGrid} data-testid="hero-metrics">
+          <div style={DS.metricCard} onClick={() => navigate('/farmers')} data-testid="metric-total-farmers">
+            <div style={DS.metricValue}>{totalFarmers}</div>
+            <div style={DS.metricLabel}>Total Farmers</div>
           </div>
-          <div className="stat-card" onClick={canSeeAttention ? () => navigate('/verification-queue') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
-            <div className="stat-label">Pending Validation</div>
-            <div className="stat-value" style={{ color: queues.verification > 0 ? '#F59E0B' : undefined }}>{queues.verification}</div>
+          <div style={DS.metricCard} onClick={() => navigate('/farmers')} data-testid="metric-active">
+            <div style={{ ...DS.metricValue, color: '#22C55E' }}>{activeFarmers}</div>
+            <div style={DS.metricLabel}>Active</div>
           </div>
-          <div className="stat-card" onClick={canSeeAttention ? () => navigate('/farmers?filter=needs_attention') : undefined} style={{ cursor: canSeeAttention ? 'pointer' : 'default' }}>
-            <div className="stat-label">Needs Attention</div>
-            <div className="stat-value" style={{ color: attentionCount > 0 ? '#EF4444' : undefined }}>{attentionCount}</div>
+          <div style={DS.metricCard} onClick={() => navigate('/officer-validation')} data-testid="metric-validated">
+            <div style={{ ...DS.metricValue, color: '#0EA5E9' }}>{validatedSeasons}</div>
+            <div style={DS.metricLabel}>Validated</div>
           </div>
-          <div className="stat-card" onClick={() => navigate('/farmer-registrations')} style={{ cursor: 'pointer' }}>
-            <div className="stat-label">Invite Pending</div>
-            <div className="stat-value" style={{ color: pendingCount > 0 ? '#F59E0B' : undefined }}>{pendingCount}</div>
+          <div
+            style={{ ...DS.metricCard, border: needsAttention > 0 ? '2px solid rgba(239,68,68,0.4)' : undefined }}
+            onClick={canSeeAttention ? () => navigate('/farmers?filter=needs_attention') : undefined}
+            data-testid="metric-attention"
+          >
+            <div style={{ ...DS.metricValue, color: needsAttention > 0 ? '#EF4444' : '#A1A1AA' }}>{needsAttention}</div>
+            <div style={DS.metricLabel}>Needs Attention</div>
           </div>
         </div>
 
-        {/* Expiring invites warning */}
-        {expiringInvites > 0 && (
-          <div
-            onClick={() => navigate('/farmers')}
-            style={{
-              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
-              borderRadius: 8, padding: '0.65rem 1rem', marginBottom: '1rem',
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              cursor: 'pointer', fontSize: '0.85rem', color: '#F59E0B',
-            }}
-          >
-            <span style={{ fontSize: '1rem' }}>⏰</span>
-            <span><strong>{expiringInvites}</strong> invite{expiringInvites !== 1 ? 's' : ''} expiring within 2 days — resend or share the link before they expire.</span>
-          </div>
-        )}
-
-        {/* ── 2. Daily Tasks — role-scoped, derived from workflow state ── */}
-        {canSeeTasks && tasks.length > 0 && (
-          <div className="card" style={{ marginBottom: '1.25rem' }}>
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700 }}>Action Required</span>
-              <span style={{ fontSize: '0.75rem', color: tasks.some(t => t.priority === 'High') ? '#EF4444' : '#A1A1AA', fontWeight: 600 }}>
-                {tasks.filter(t => t.priority === 'High').length > 0
-                  ? `${tasks.filter(t => t.priority === 'High').length} urgent \u00B7 ${tasks.length} total`
-                  : `${tasks.length} open`}
+        {/* ─── 2. ATTENTION PANEL ─── */}
+        {attentionItems.length > 0 ? (
+          <div style={DS.attentionCard} data-testid="attention-panel">
+            <div style={DS.attentionHeader}>
+              <span style={DS.attentionTitle}>Action Required</span>
+              <span style={DS.attentionCount}>
+                {attentionItems.filter(i => i.priority === 'High').length > 0
+                  ? `${attentionItems.filter(i => i.priority === 'High').length} urgent`
+                  : `${attentionItems.length} items`}
               </span>
             </div>
-            <div className="card-body" style={{ padding: 0 }}>
-              {tasks.slice(0, 8).map((t, i) => {
-                const navFn = TASK_NAV[t.taskType];
-                const href = navFn ? navFn(t) : null;
-                return (
-                  <div
-                    key={i}
-                    onClick={href ? () => navigate(href) : undefined}
-                    style={{
-                      display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-                      padding: '0.75rem 1rem', borderBottom: '1px solid #243041',
-                      cursor: href ? 'pointer' : 'default',
-                    }}
-                  >
-                    <span style={{ fontSize: '1rem', marginTop: '0.05rem' }}>
-                      {t.priority === 'High' ? '🔴' : t.priority === 'Medium' ? '🟡' : '⚪'}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.15rem' }}>{t.title}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#A1A1AA', lineHeight: 1.4 }}>{t.reason}</div>
-                    </div>
-                    <PriorityBadge priority={t.priority} />
-                  </div>
-                );
-              })}
-              {tasks.length > 8 && (
-                <div
-                  onClick={() => navigate('/pilot-metrics')}
-                  style={{ padding: '0.6rem 1rem', fontSize: '0.8rem', color: '#3B82F6', textAlign: 'center', cursor: 'pointer', fontWeight: 600 }}
-                >
-                  View all {tasks.length} tasks →
+            {attentionItems.slice(0, 8).map((item, i) => (
+              <div
+                key={i}
+                onClick={item.href ? () => navigate(item.href) : undefined}
+                style={DS.attentionRow}
+                data-testid="attention-item"
+              >
+                <span style={DS.attentionIcon}>{item.icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={DS.attentionLabel}>{item.label}</div>
+                  <div style={DS.attentionDetail}>{item.detail}</div>
                 </div>
-              )}
-            </div>
+                <span style={{ ...DS.attentionArrow, color: item.color }}>→</span>
+              </div>
+            ))}
+            {attentionItems.length > 8 && (
+              <div onClick={() => navigate('/pilot-metrics')} style={DS.attentionMore}>
+                +{attentionItems.length - 8} more →
+              </div>
+            )}
+            {/* Overflow: tasks.length drives "View all" */}
+            {tasks.length > 6 && (
+              <div onClick={() => navigate('/pilot-metrics')} style={DS.attentionMore}>View all →</div>
+            )}
           </div>
-        )}
-
-        {/* Empty tasks state — shown when tasks are supported but none exist */}
-        {canSeeTasks && tasks.length === 0 && !loading && (
-          <div style={{
-            background: 'rgba(34,197,94,0.08)', border: '1px solid #243041', borderRadius: 10,
-            padding: '0.75rem 1rem', marginBottom: '1.25rem',
-            display: 'flex', alignItems: 'center', gap: '0.75rem',
-          }}>
-            <span style={{ fontSize: '1.1rem' }}>{'\u2705'}</span>
+        ) : canSeeTasks && (
+          <div style={DS.allCaughtUp} data-testid="all-caught-up">
+            <span style={{ fontSize: '1.1rem' }}>✅</span>
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#22C55E' }}>All caught up</div>
-              <div style={{ fontSize: '0.78rem', color: '#A1A1AA' }}>No pending tasks right now. New tasks will appear here when action is needed.</div>
+              <div style={{ fontWeight: 600, color: '#22C55E', fontSize: '0.9rem' }}>All caught up</div>
+              <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>No pending tasks right now.</div>
             </div>
           </div>
         )}
 
-        {/* ── 3. Needs Attention — queue banners + alerts ── */}
-        {(queues.fraud > 0 || queues.escalated > 0 || alerts.length > 0) && (
-          <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #243041' }}>
-            <div className="card-header" style={{ background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid #243041' }}>
-              <span style={{ fontWeight: 700, color: '#EF4444' }}>Needs Attention</span>
+        {/* ─── 3. ACTIVITY TREND ─── */}
+        {canSeePilotMetrics && adoption && (
+          <div style={DS.trendCard} data-testid="activity-trend">
+            <div style={DS.trendRow}>
+              <div style={DS.trendItem}>
+                <span style={{ fontSize: '1.25rem' }}>{trendUp ? '📈' : '📉'}</span>
+                <div>
+                  <div style={DS.trendValue}>{adoptionRate != null ? `${adoptionRate}%` : '—'}</div>
+                  <div style={DS.trendLabel}>Adoption</div>
+                </div>
+              </div>
+              <div style={DS.trendItem}>
+                <span style={{ fontSize: '1.25rem' }}>📊</span>
+                <div>
+                  <div style={DS.trendValue}>{engagementRate != null ? `${engagementRate}%` : '—'}</div>
+                  <div style={DS.trendLabel}>Engagement</div>
+                </div>
+              </div>
+              <div style={DS.trendItem}>
+                <span style={{ fontSize: '1.25rem' }}>🌾</span>
+                <div>
+                  <div style={DS.trendValue}>{adoption.seasons?.harvested ?? 0}</div>
+                  <div style={DS.trendLabel}>Harvested</div>
+                </div>
+              </div>
+              <div style={DS.trendItem}>
+                <span style={{ fontSize: '1.25rem' }}>📷</span>
+                <div>
+                  <div style={DS.trendValue}>{adoption.activity?.totalImages ?? 0}</div>
+                  <div style={DS.trendLabel}>Photos</div>
+                </div>
+              </div>
             </div>
-            <div className="card-body" style={{ padding: 0 }}>
-              {queues.fraud > 0 && (
-                <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', borderBottom: '1px solid #243041', background: 'rgba(239,68,68,0.08)' }}>
-                  <span style={{ fontSize: '0.85rem' }}>{'\uD83D\uDEA8'}</span>
-                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.fraud}</strong> application{queues.fraud > 1 ? 's' : ''} flagged for fraud — review required</span>
-                  <span style={{ fontSize: '0.75rem', color: '#EF4444', fontWeight: 600 }}>Review now {'\u2192'}</span>
-                </div>
-              )}
-              {queues.escalated > 0 && (
-                <div onClick={() => navigate('/applications?status=escalated')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 1rem', borderBottom: '1px solid #243041', background: 'rgba(245,158,11,0.08)' }}>
-                  <span style={{ fontSize: '0.85rem' }}>{'\u26A1'}</span>
-                  <span style={{ flex: 1, fontSize: '0.85rem' }}><strong>{queues.escalated}</strong> escalated application{queues.escalated > 1 ? 's' : ''} awaiting decision</span>
-                  <span style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600 }}>Review now {'\u2192'}</span>
-                </div>
-              )}
-              {canSeePilotMetrics && alerts.slice(0, 3).map((alert, i) => (
-                <div key={i} onClick={() => navigate('/pilot-metrics')} style={{
-                  cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-                  padding: '0.7rem 1rem',
-                  borderBottom: i < Math.min(alerts.length, 3) - 1 || (queues.fraud + queues.escalated) > 0 ? '1px solid #243041' : 'none',
-                  background: alert.severity === 'high' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
-                }}>
-                  <span style={{ fontSize: '0.85rem', marginTop: '0.1rem' }}>
-                    {alert.severity === 'high' ? '🔴' : '🟡'}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#FFFFFF', marginBottom: '0.15rem' }}>
-                      {alert.type.replace(/_/g, ' ')}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#A1A1AA' }}>{alert.message}</div>
+          </div>
+        )}
+
+        {/* ─── 4. FARMER STATUS OVERVIEW ─── */}
+        {farmerStatuses.length > 0 && (
+          <div style={DS.statusCard} data-testid="farmer-status-overview">
+            <div style={DS.statusHeader}>
+              <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Farmer Pipeline</span>
+              <button onClick={() => navigate('/farmers')} style={DS.viewAllBtn}>View all →</button>
+            </div>
+            <div style={DS.statusGrid}>
+              {farmerStatuses.map((s, i) => (
+                <div key={i} style={DS.statusItem} onClick={() => navigate('/farmers')}>
+                  <div style={{ ...DS.statusCount, color: s.color }}>{s.count}</div>
+                  <div style={DS.statusLabel}>{s.label}</div>
+                  {/* Mini bar */}
+                  <div style={DS.statusBar}>
+                    <div style={{ ...DS.statusFill, width: `${totalFarmers > 0 ? (s.count / totalFarmers) * 100 : 0}%`, background: s.color }} />
                   </div>
                 </div>
               ))}
-              {alerts.length > 3 && (
-                <div onClick={() => navigate('/pilot-metrics')} style={{ cursor: 'pointer', padding: '0.5rem 1rem', fontSize: '0.78rem', color: '#A1A1AA', textAlign: 'center' }}>
-                  +{alerts.length - 3} more alerts
-                </div>
-              )}
             </div>
-          </div>
-        )}
-
-        {/* ── 4. Operations — portfolio stats + pilot adoption ── */}
-        <div className="stats-grid" style={{ marginBottom: '1.25rem' }}>
-          <div className="stat-card">
-            <div className="stat-label">Total Applications</div>
-            <div className="stat-value">{portfolio.totalApplications}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Total Requested</div>
-            <div className="stat-value">{fmt(portfolio.totalRequestedAmount)}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Total Recommended</div>
-            <div className="stat-value">{fmt(portfolio.totalRecommendedAmount)}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Avg Verification Score</div>
-            <div className="stat-value">{Math.round(portfolio.avgVerificationScore)}/100</div>
-          </div>
-        </div>
-
-        {adoption && canSeePilotMetrics && (
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', flexShrink: 0 }}>
-              Pilot Adoption
-            </span>
-            {[
-              ['Approved', adoption.farmers?.approved, '#22C55E'],
-              ['Women', adoption.farmers?.womenFarmers, '#7c3aed'],
-              ['Youth (<35)', adoption.farmers?.youthFarmers, '#0891b2'],
-              ['Invite Pending', adoption.farmers?.invitedNotActivated, '#F59E0B'],
-              ['Logged In', adoption.adoption?.loggedIn, '#22C55E'],
-              ['1st Update', adoption.adoption?.withFirstUpdate, '#22C55E'],
-              ['Harvest', adoption.adoption?.withHarvest, '#22C55E'],
-            ].map(([label, val, color]) => (
-              <div key={label} style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 8, padding: '0.4rem 0.9rem', textAlign: 'center', minWidth: 72 }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{val ?? '—'}</div>
-                <div style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{label}</div>
+            {/* Demographics */}
+            {adoption?.farmers && (
+              <div style={DS.demoRow}>
+                {adoption.farmers.womenFarmers > 0 && (
+                  <span style={DS.demoTag}>👩‍🌾 {adoption.farmers.womenFarmers} Women</span>
+                )}
+                {adoption.farmers.youthFarmers > 0 && (
+                  <span style={DS.demoTag}>🧑 {adoption.farmers.youthFarmers} Youth</span>
+                )}
               </div>
-            ))}
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-              <button
-                className="btn btn-outline btn-sm"
-                onClick={() => {
-                  const a = document.createElement('a');
-                  a.href = `/api/reports/pilot-report?format=csv`;
-                  a.download = `pilot-report-${new Date().toISOString().split('T')[0]}.csv`;
-                  // Use fetch with auth header instead of direct link
-                  api.get('/reports/pilot-report?format=csv', { responseType: 'blob' })
-                    .then(r => {
-                      const url = URL.createObjectURL(new Blob([r.data], { type: 'text/csv' }));
-                      a.href = url;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    })
-                    .catch(() => alert('Export failed — please try again.'));
-                }}
-              >
-                Export CSV
-              </button>
-              <button className="btn btn-outline btn-sm" onClick={() => navigate('/pilot-metrics')}>
-                Full Metrics →
-              </button>
-            </div>
+            )}
           </div>
         )}
 
-        {/* ── 5. Trust / Risk / Benchmark summary ── */}
-        {canSeePilotMetrics && benchmarkSummary && (
-          <BenchmarkSummaryCard data={benchmarkSummary} onNavigate={() => navigate('/admin/notifications')} />
+        {/* ─── 5. QUICK ACTIONS ─── */}
+        <div style={DS.actionsGrid} data-testid="quick-actions">
+          <button onClick={() => navigate('/farmers')} style={DS.actionBtn} data-testid="action-invite">
+            <span style={{ fontSize: '1.3rem' }}>📩</span>
+            <span style={DS.actionLabel}>Invite Farmer</span>
+          </button>
+          <button onClick={() => navigate('/farmers')} style={DS.actionBtn} data-testid="action-resend">
+            <span style={{ fontSize: '1.3rem' }}>🔄</span>
+            <span style={DS.actionLabel}>Resend Invites</span>
+          </button>
+          <button onClick={() => navigate('/farmers')} style={DS.actionBtn} data-testid="action-assign">
+            <span style={{ fontSize: '1.3rem' }}>👮</span>
+            <span style={DS.actionLabel}>Assign Officer</span>
+          </button>
+          <button onClick={() => navigate('/officer-validation')} style={DS.actionBtn} data-testid="action-validate">
+            <span style={{ fontSize: '1.3rem' }}>✅</span>
+            <span style={DS.actionLabel}>Validate</span>
+          </button>
+        </div>
+
+        {/* ─── 6. EXPANDABLE DETAILS ─── */}
+        <button
+          onClick={() => setShowMoreDetails(d => !d)}
+          style={DS.detailsToggle}
+          aria-expanded={showMoreDetails}
+          data-testid="details-toggle"
+        >
+          <span style={{ fontWeight: 600 }}>Portfolio Details</span>
+          <span style={{ color: '#A1A1AA', transition: 'transform 0.2s', transform: showMoreDetails ? 'rotate(180deg)' : 'rotate(0)' }}>▾</span>
+        </button>
+
+        {showMoreDetails && (
+          <div style={DS.detailsBody} data-testid="portfolio-details">
+            {/* Portfolio metrics */}
+            <div style={DS.detailsGrid}>
+              <div style={DS.detailPill}>
+                <div style={DS.detailPillLabel}>Applications</div>
+                <div style={DS.detailPillValue}>{portfolio.totalApplications}</div>
+              </div>
+              <div style={DS.detailPill}>
+                <div style={DS.detailPillLabel}>Requested</div>
+                <div style={DS.detailPillValue}>{fmt(portfolio.totalRequestedAmount)}</div>
+              </div>
+              <div style={DS.detailPill}>
+                <div style={DS.detailPillLabel}>Recommended</div>
+                <div style={DS.detailPillValue}>{fmt(portfolio.totalRecommendedAmount)}</div>
+              </div>
+              <div style={DS.detailPill}>
+                <div style={DS.detailPillLabel}>Avg Score</div>
+                <div style={DS.detailPillValue}>{Math.round(portfolio.avgVerificationScore)}/100</div>
+              </div>
+            </div>
+
+            {/* Benchmark summary */}
+            {benchmarkSummary && (
+              <div style={DS.detailsGrid}>
+                <div style={DS.detailPill}>
+                  <div style={DS.detailPillLabel}>Season Adoption</div>
+                  <div style={{ ...DS.detailPillValue, color: adoptionRate >= 50 ? '#22C55E' : '#F59E0B' }}>{adoptionRate ?? '—'}%</div>
+                </div>
+                <div style={DS.detailPill}>
+                  <div style={DS.detailPillLabel}>Engagement</div>
+                  <div style={{ ...DS.detailPillValue, color: engagementRate >= 50 ? '#22C55E' : '#F59E0B' }}>{engagementRate ?? '—'}%</div>
+                </div>
+                <div style={DS.detailPill}>
+                  <div style={DS.detailPillLabel}>Validation</div>
+                  <div style={DS.detailPillValue}>{benchmarkSummary.seasons?.validationCoverageRate ?? '—'}%</div>
+                </div>
+                <div style={DS.detailPill}>
+                  <div style={DS.detailPillLabel}>Avg Progress</div>
+                  <div style={DS.detailPillValue}>{benchmarkSummary.performance?.avgProgressScore ?? '—'}/100</div>
+                </div>
+              </div>
+            )}
+
+            {/* Queue counts */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+              <span style={DS.queueTag} onClick={() => navigate('/verification-queue')}>Verification: {queues.verification}</span>
+              <span style={{ ...DS.queueTag, color: queues.fraud > 0 ? '#EF4444' : '#A1A1AA' }} onClick={() => navigate('/fraud-queue')}>Fraud: {queues.fraud}</span>
+              <span style={DS.queueTag} onClick={() => navigate('/farmer-registrations')}>Pending: {pendingCount}</span>
+            </div>
+
+            {/* Recent applications */}
+            {portfolio.recentApplications?.length > 0 && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.4rem' }}>Recent Applications</div>
+                {portfolio.recentApplications.slice(0, 5).map(app => (
+                  <div key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={DS.recentRow}>
+                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{app.farmer.fullName}</span>
+                    <span style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>{getCropLabel(app.cropType)}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#22C55E' }}>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</span>
+                  </div>
+                ))}
+                <button onClick={() => navigate('/applications')} style={DS.viewAllBtn}>All applications →</button>
+              </div>
+            )}
+
+            {/* Full metrics link */}
+            {canSeePilotMetrics && (
+              <button onClick={() => navigate('/pilot-metrics')} style={{ ...DS.viewAllBtn, marginTop: '0.75rem' }}>
+                Full Pilot Metrics →
+              </button>
+            )}
+          </div>
         )}
-
-        {/* ── 6. Charts — application/reporting summaries ── */}
-        <div className="dashboard-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-          <div className="card">
-            <div className="card-header">Applications by Status</div>
-            <div className="card-body">
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={portfolio.statusBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-                  <XAxis dataKey="status" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-header">Crop Distribution</div>
-            <div className="card-body">
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={portfolio.cropBreakdown} dataKey="count" nameKey="crop" cx="50%" cy="50%" outerRadius={90} label={({ crop, count }) => `${crop} (${count})`}>
-                    {portfolio.cropBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-header">
-            Recent Applications
-            <button className="btn btn-outline btn-sm" onClick={() => navigate('/applications')}>View All</button>
-          </div>
-          <div className="card-body" style={{ padding: 0 }}>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Farmer</th>
-                    <th>Region</th>
-                    <th>Crop</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {portfolio.recentApplications.length > 0 ? portfolio.recentApplications.map(app => (
-                    <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                      <td style={{ fontWeight: 500 }}>{app.farmer.fullName}</td>
-                      <td>{app.farmer.region}</td>
-                      <td>{getCropLabel(app.cropType)}</td>
-                      <td>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</td>
-                      <td><StatusBadge value={app.status} /></td>
-                      <td className="text-muted text-sm">{new Date(app.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '1.5rem', color: '#71717A' }}>
-                      No applications yet. Create one from a farmer profile to begin the credit workflow.
-                    </td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Benchmark Summary Card ────────────────────────────────
-
-function BenchmarkSummaryCard({ data }) {
-  const { farmers, seasons, performance } = data;
-  if (!farmers || !seasons) return null;
-
-  const engagementRate = seasons.progressEngagementRate ?? null;
-  const validationRate = seasons.validationCoverageRate ?? null;
-  const avgScore = performance?.avgProgressScore ?? null;
-
-  const engagementColor = engagementRate == null ? '#A1A1AA'
-    : engagementRate >= 70 ? '#22C55E'
-    : engagementRate >= 45 ? '#F59E0B'
-    : '#EF4444';
-
-  const validationColor = validationRate == null ? '#A1A1AA'
-    : validationRate >= 60 ? '#22C55E'
-    : validationRate >= 35 ? '#F59E0B'
-    : '#EF4444';
-
-  const cls = performance?.classDistribution ?? {};
-  const atRisk = (cls.at_risk || 0) + (cls.critical || 0);
-  const onTrack = (cls.on_track || 0) + (cls.slight_delay || 0);
-
-  return (
-    <div className="card" style={{ marginBottom: '1.25rem', border: '1px solid #243041' }}>
-      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>Organization Performance Benchmarks</span>
-        <a href="/reports" style={{ fontSize: '0.78rem', color: '#22C55E', textDecoration: 'none', fontWeight: 500 }}>
-          Full report →
-        </a>
-      </div>
-      <div className="card-body">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.6rem' }}>
-          <MetricPill label="Season adoption" value={`${farmers.adoptionRate}%`} sub={`${farmers.withSeasons} / ${farmers.total} farmers`} color={farmers.adoptionRate >= 60 ? '#22C55E' : '#F59E0B'} />
-          <MetricPill label="Activity engagement" value={engagementRate != null ? `${engagementRate}%` : '—'} sub="seasons with updates" color={engagementColor} />
-          <MetricPill label="Validation coverage" value={validationRate != null ? `${validationRate}%` : '—'} sub="seasons with officer validation" color={validationColor} />
-          <MetricPill label="Avg progress score" value={avgScore != null ? `${avgScore}/100` : '—'} sub="last 12 months" color={avgScore == null ? '#A1A1AA' : avgScore >= 65 ? '#22C55E' : avgScore >= 45 ? '#F59E0B' : '#EF4444'} />
-          {onTrack + atRisk > 0 && (
-            <MetricPill label="On track / at risk" value={`${onTrack} / ${atRisk}`} sub="scored seasons" color={atRisk > onTrack ? '#EF4444' : '#22C55E'} />
-          )}
-          <MetricPill label="Active seasons" value={seasons.active} sub={`${seasons.completed} completed`} color="#16A34A" />
-        </div>
       </div>
     </div>
   );
 }
 
-function MetricPill({ label, value, sub, color }) {
-  return (
-    <div style={{ background: '#1E293B', borderRadius: 8, padding: '0.6rem 0.8rem' }}>
-      <div style={{ fontSize: '0.68rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{value}</div>
-      {sub && <div style={{ fontSize: '0.7rem', color: '#71717A', marginTop: 1 }}>{sub}</div>}
-    </div>
-  );
-}
+// ─── Styles ────────────────────────────────────────────────
+
+const DS = {
+  page: { minHeight: '100vh', background: '#0F172A', color: '#FFFFFF' },
+  header: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '1rem 1.25rem', background: '#162033', borderBottom: '1px solid #243041',
+    position: 'sticky', top: 0, zIndex: 100,
+  },
+  title: { margin: 0, fontSize: '1.25rem', fontWeight: 700 },
+  orgLabel: { fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' },
+  exportBtn: {
+    padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #243041',
+    borderRadius: '8px', color: '#A1A1AA', fontSize: '0.85rem', cursor: 'pointer',
+    minHeight: '44px', WebkitTapHighlightColor: 'transparent',
+  },
+  body: { maxWidth: '700px', margin: '0 auto', padding: '1rem' },
+
+  warning: {
+    background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
+    borderRadius: '8px', padding: '0.6rem 1rem', margin: '0.75rem 1rem',
+    fontSize: '0.85rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '0.5rem',
+  },
+  warningRetry: {
+    marginLeft: 'auto', padding: '0.3rem 0.75rem', background: 'transparent',
+    border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px',
+    color: '#F59E0B', fontSize: '0.8rem', cursor: 'pointer',
+  },
+
+  // Welcome
+  welcomeCard: {
+    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+    borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem',
+  },
+  welcomeStep: {
+    display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 0',
+    fontSize: '0.9rem', cursor: 'pointer',
+  },
+  welcomeNum: {
+    width: '24px', height: '24px', borderRadius: '50%', background: '#22C55E',
+    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
+  },
+
+  // Hero metrics
+  metricsGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem',
+    marginBottom: '1rem',
+  },
+  metricCard: {
+    background: '#162033', borderRadius: '12px', padding: '1rem 0.75rem',
+    textAlign: 'center', cursor: 'pointer', minHeight: '80px',
+    display: 'flex', flexDirection: 'column', justifyContent: 'center',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.15s', border: '2px solid transparent',
+  },
+  metricValue: { fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF' },
+  metricLabel: { fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 600, marginTop: '0.2rem', textTransform: 'uppercase' },
+
+  // Attention panel
+  attentionCard: {
+    background: '#162033', borderRadius: '12px', marginBottom: '1rem',
+    overflow: 'hidden', border: '1px solid #243041',
+  },
+  attentionHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '0.75rem 1rem', borderBottom: '1px solid #243041',
+  },
+  attentionTitle: { fontWeight: 700, fontSize: '0.95rem' },
+  attentionCount: { fontSize: '0.75rem', color: '#EF4444', fontWeight: 600 },
+  attentionRow: {
+    display: 'flex', alignItems: 'center', gap: '0.6rem',
+    padding: '0.65rem 1rem', borderBottom: '1px solid #1E293B',
+    cursor: 'pointer', minHeight: '48px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  attentionIcon: { fontSize: '1rem', flexShrink: 0 },
+  attentionLabel: { fontWeight: 600, fontSize: '0.85rem' },
+  attentionDetail: { fontSize: '0.75rem', color: '#A1A1AA', lineHeight: 1.4 },
+  attentionArrow: { fontSize: '1rem', fontWeight: 700, flexShrink: 0 },
+  attentionMore: {
+    padding: '0.6rem 1rem', fontSize: '0.8rem', color: '#3B82F6',
+    textAlign: 'center', cursor: 'pointer', fontWeight: 600,
+  },
+  allCaughtUp: {
+    display: 'flex', alignItems: 'center', gap: '0.75rem',
+    background: 'rgba(34,197,94,0.08)', border: '1px solid #243041',
+    borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1rem',
+  },
+
+  // Trend
+  trendCard: {
+    background: '#162033', borderRadius: '12px', padding: '0.75rem 1rem',
+    marginBottom: '1rem',
+  },
+  trendRow: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem',
+  },
+  trendItem: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+  },
+  trendValue: { fontWeight: 700, fontSize: '0.95rem' },
+  trendLabel: { fontSize: '0.65rem', color: '#A1A1AA', textTransform: 'uppercase' },
+
+  // Status overview
+  statusCard: {
+    background: '#162033', borderRadius: '12px', padding: '1rem',
+    marginBottom: '1rem', border: '1px solid #243041',
+  },
+  statusHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: '0.75rem',
+  },
+  statusGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem',
+  },
+  statusItem: {
+    textAlign: 'center', cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  statusCount: { fontSize: '1.3rem', fontWeight: 800 },
+  statusLabel: { fontSize: '0.7rem', color: '#A1A1AA', marginTop: '0.1rem' },
+  statusBar: { height: '3px', background: '#243041', borderRadius: '2px', marginTop: '0.3rem' },
+  statusFill: { height: '100%', borderRadius: '2px', transition: 'width 0.3s' },
+  demoRow: {
+    display: 'flex', gap: '0.75rem', marginTop: '0.75rem', paddingTop: '0.5rem',
+    borderTop: '1px solid #243041',
+  },
+  demoTag: { fontSize: '0.8rem', color: '#A1A1AA' },
+
+  // Quick actions
+  actionsGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem',
+    marginBottom: '1rem',
+  },
+  actionBtn: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: '0.25rem',
+    padding: '0.75rem 0.5rem', background: '#162033', border: '1px solid #243041',
+    borderRadius: '12px', color: '#FFFFFF', cursor: 'pointer',
+    minHeight: '64px', fontSize: '0.75rem', fontWeight: 600,
+    WebkitTapHighlightColor: 'transparent',
+  },
+  actionLabel: { fontSize: '0.7rem', color: '#A1A1AA' },
+
+  // Details toggle
+  detailsToggle: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    width: '100%', padding: '0.75rem 1rem', background: '#162033',
+    border: '1px solid #243041', borderRadius: '10px',
+    color: '#FFFFFF', cursor: 'pointer', marginBottom: '0.5rem',
+    minHeight: '48px', WebkitTapHighlightColor: 'transparent',
+  },
+  detailsBody: {
+    background: '#162033', borderRadius: '10px', padding: '1rem',
+    border: '1px solid #243041', marginBottom: '1rem',
+  },
+  detailsGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem',
+    marginBottom: '0.5rem',
+  },
+  detailPill: {
+    background: '#1E293B', borderRadius: '8px', padding: '0.5rem 0.6rem',
+    textAlign: 'center',
+  },
+  detailPillLabel: { fontSize: '0.6rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase' },
+  detailPillValue: { fontSize: '1rem', fontWeight: 700, marginTop: '0.1rem' },
+
+  queueTag: {
+    padding: '0.3rem 0.6rem', background: '#1E293B', borderRadius: '6px',
+    fontSize: '0.75rem', color: '#A1A1AA', cursor: 'pointer',
+  },
+  recentRow: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '0.4rem 0', borderBottom: '1px solid #243041', cursor: 'pointer',
+  },
+  viewAllBtn: {
+    background: 'none', border: 'none', color: '#22C55E', fontSize: '0.8rem',
+    fontWeight: 600, cursor: 'pointer', padding: '0.25rem 0',
+  },
+};

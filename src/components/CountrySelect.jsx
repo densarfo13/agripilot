@@ -62,6 +62,8 @@ export default function CountrySelect({
     display: 'block',
     width: '100%',
     boxSizing: 'border-box',
+    minHeight: '44px',
+    fontSize: '0.9rem',
     ...inputStyle,
   };
 
@@ -81,7 +83,7 @@ export default function CountrySelect({
       <select
         name={name}
         className={className}
-        style={selectStyle}
+        style={{ minHeight: '44px', fontSize: '0.9rem', ...selectStyle }}
         value={value}
         onChange={onChange}
         required={required}

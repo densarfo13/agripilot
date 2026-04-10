@@ -1,20 +1,55 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import CropSelect from './CropSelect.jsx';
+import TapSelector from './TapSelector.jsx';
+import CountrySelect from './CountrySelect.jsx';
 import LocationDetect from './LocationDetect.jsx';
 import { useDraft } from '../utils/useDraft.js';
 import { compressImage } from '../utils/imageCompress.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
+import { getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
 
-const STAGES = [
-  { value: 'planting', label: 'Planting' },
-  { value: 'growing', label: 'Growing' },
-  { value: 'flowering', label: 'Flowering' },
-  { value: 'harvest', label: 'Harvest' },
+// ─── Step definitions ────────────────────────────────────────
+const STEP_KEYS = ['welcome', 'farmName', 'country', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
+const TOTAL_USER_STEPS = 8; // steps the user interacts with (excluding welcome + processing)
+
+// ─── Tap option sets ─────────────────────────────────────────
+const GENDER_OPTIONS = [
+  { value: 'male', label: 'Male', icon: '\uD83D\uDC68\u200D\uD83C\uDF3E' },
+  { value: 'female', label: 'Female', icon: '\uD83D\uDC69\u200D\uD83C\uDF3E' },
+  { value: 'other', label: 'Other', icon: '\uD83E\uDDD1' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say', icon: '\u2014' },
 ];
 
-const STEP_KEYS = ['welcome', 'farm', 'crop', 'photo', 'processing'];
-const STEP_LABELS = ['Welcome', 'Farm Details', 'Crop', 'Photo', 'Creating'];
+const AGE_OPTIONS = [
+  { value: 'under_25', label: 'Under 25' },
+  { value: '25_35', label: '25 \u2013 35' },
+  { value: '36_50', label: '36 \u2013 50' },
+  { value: 'over_50', label: 'Over 50' },
+];
+
+const FARM_SIZE_OPTIONS = [
+  { value: 'small', label: 'Small', icon: '\uD83C\uDF31', subtitle: 'Under 2 acres' },
+  { value: 'medium', label: 'Medium', icon: '\uD83C\uDF3E', subtitle: '2 \u2013 10 acres' },
+  { value: 'large', label: 'Large', icon: '\uD83C\uDFE1', subtitle: 'Over 10 acres' },
+];
+
+const STAGE_OPTIONS = [
+  { value: 'planting', label: 'Planting', icon: '\uD83C\uDF31' },
+  { value: 'growing', label: 'Growing', icon: '\uD83C\uDF3F' },
+  { value: 'flowering', label: 'Flowering', icon: '\uD83C\uDF3C' },
+  { value: 'harvest', label: 'Harvest', icon: '\uD83C\uDF3E' },
+];
+
+// Top crops shown as quick-tap buttons before the full CropSelect
+const TOP_CROPS = [
+  { code: 'MAIZE', label: 'Maize', icon: '\uD83C\uDF3D' },
+  { code: 'RICE', label: 'Rice', icon: '\uD83C\uDF3E' },
+  { code: 'BEAN', label: 'Beans', icon: '\uD83E\uDED8' },
+  { code: 'COFFEE', label: 'Coffee', icon: '\u2615' },
+  { code: 'CASSAVA', label: 'Cassava', icon: '\uD83E\uDD54' },
+  { code: 'BANANA', label: 'Banana', icon: '\uD83C\uDF4C' },
+];
 
 // Inject spinner keyframe once
 if (typeof document !== 'undefined' && !document.getElementById('farroway-spin')) {
@@ -24,36 +59,37 @@ if (typeof document !== 'undefined' && !document.getElementById('farroway-spin')
   document.head.appendChild(style);
 }
 
-// ─── Operational logging (fire-and-forget) ───────────────
+// ─── Operational logging (fire-and-forget) ───────────────────
 function logOnboarding(event, detail = {}) {
   try {
     const entry = { ts: new Date().toISOString(), event, ...detail };
-    // Append to a small in-memory + localStorage ring buffer for debugging
     const LOG_KEY = 'farroway:onboarding_log';
     const prev = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
     prev.push(entry);
-    // Keep last 50 entries
     if (prev.length > 50) prev.splice(0, prev.length - 50);
     localStorage.setItem(LOG_KEY, JSON.stringify(prev));
-  } catch { /* storage full or unavailable — ignore */ }
+  } catch { /* storage full or unavailable */ }
 }
 
 const INITIAL_FORM = {
-  farmName: '', farmSizeAcres: '', landSizeUnit: 'ACRE', locationName: '',
-  crop: '', stage: 'planting',
+  farmName: '', farmSizeAcres: '', farmSizeCategory: '', landSizeUnit: 'ACRE',
+  locationName: '', crop: '', stage: 'planting',
   latitude: null, longitude: null,
+  countryCode: '', gender: '', ageGroup: '',
 };
 
 export default function OnboardingWizard({ userName, countryCode, onComplete }) {
-  // ─── Draft persistence: form data survives refresh/navigation ───
+  // ─── Draft persistence ─────────────────────────────────────
   const { state: draft, setState: setDraft, clearDraft, draftRestored } = useDraft(
     'onboarding-wizard',
-    { step: 0, form: INITIAL_FORM }
+    { step: 0, form: { ...INITIAL_FORM, countryCode: countryCode || '' } }
   );
 
-  // Guard against stale/corrupt drafts: if draft step is beyond valid range, reset
-  const safeDraftStep = (draft.step >= 0 && draft.step <= 3) ? draft.step : 0;
-  const safeDraftForm = draft.form?.farmName !== undefined ? { ...INITIAL_FORM, ...draft.form } : INITIAL_FORM;
+  const maxInteractiveStep = STEP_KEYS.length - 2; // exclude processing
+  const safeDraftStep = (draft.step >= 0 && draft.step <= maxInteractiveStep) ? draft.step : 0;
+  const safeDraftForm = draft.form?.farmName !== undefined
+    ? { ...INITIAL_FORM, countryCode: countryCode || '', ...draft.form }
+    : { ...INITIAL_FORM, countryCode: countryCode || '' };
 
   const [step, setStepRaw] = useState(safeDraftStep);
   const [form, setFormRaw] = useState(safeDraftForm);
@@ -63,14 +99,16 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(draftRestored ? 'restored' : null); // null | 'saving' | 'saved' | 'restored'
+  const [saveStatus, setSaveStatus] = useState(draftRestored ? 'restored' : null);
   const [networkError, setNetworkError] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [showCropSearch, setShowCropSearch] = useState(false);
   const submitGuardRef = useRef(false);
+  const startTimeRef = useRef(Date.now());
 
   const currentStep = STEP_KEYS[step];
 
-  // ─── Sync step + form to draft on every change ───────────
+  // ─── Step / form sync to draft ─────────────────────────────
   const setStep = useCallback((s) => {
     const nextStep = typeof s === 'function' ? s(step) : s;
     setStepRaw(nextStep);
@@ -82,13 +120,12 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     setFormRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       setDraft(d => ({ ...d, form: next }));
-      // Brief "saved" flash
       setSaveStatus('saving');
       return next;
     });
   }, [setDraft]);
 
-  // Show "saved" status briefly after draft writes
+  // Brief saved flash
   useEffect(() => {
     if (saveStatus === 'saving') {
       const t = setTimeout(() => setSaveStatus('saved'), 300);
@@ -97,12 +134,12 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     }
   }, [saveStatus]);
 
-  // Track onboarding started
+  // Track start
   useEffect(() => {
     trackPilotEvent('onboarding_started', { restored: !!draftRestored, step: STEP_KEYS[safeDraftStep] });
   }, []);
 
-  // Show draft-restored banner briefly
+  // Draft restored banner timeout
   useEffect(() => {
     if (draftRestored) {
       logOnboarding('draft_restored', { step: STEP_KEYS[draft.step], form: draft.form });
@@ -111,55 +148,56 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     }
   }, []);
 
-  // ─── Browser back button support ────────────────────────
+  // ─── Browser back button ───────────────────────────────────
   const prevStepRef = useRef(step);
   useEffect(() => {
-    const handlePopState = (e) => {
-      // Go back one step, but never below 0
-      setStep(s => Math.max(0, s - 1));
-    };
+    const handlePopState = () => setStep(s => Math.max(0, s - 1));
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Push history entry only when step increases (forward navigation)
   useEffect(() => {
-    if (step > prevStepRef.current && step > 0 && step <= 4) {
+    if (step > prevStepRef.current && step > 0) {
       window.history.pushState({ onboardingStep: step }, '');
     }
     prevStepRef.current = step;
   }, [step]);
 
-  // ─── Validation ─────────────────────────────────────────
-  const validate = () => {
-    const errs = {};
-    if (currentStep === 'farm') {
-      if (!form.farmName.trim()) errs.farmName = 'Farm name is required.';
-      if (form.farmSizeAcres && (isNaN(Number(form.farmSizeAcres)) || Number(form.farmSizeAcres) < 0)) {
-        errs.farmSizeAcres = 'Enter a valid farm size.';
-      }
-      if (form.farmSizeAcres && !['ACRE', 'HECTARE', 'SQUARE_METER'].includes(form.landSizeUnit)) {
-        errs.farmSizeAcres = 'Please select a valid unit.';
-      }
-    }
-    if (currentStep === 'crop') {
-      if (!form.crop) errs.crop = 'Please select a crop.';
-      // If OTHER is selected, the CropSelect handles the custom name validation
-    }
-    setFieldErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      logOnboarding('validation_failed', { step: currentStep, errors: errs });
-      trackPilotEvent('validation_failed', { context: 'onboarding', step: currentStep, fields: Object.keys(errs) });
-    }
-    return Object.keys(errs).length === 0;
-  };
+  // ─── Country auto-detect on mount ──────────────────────────
+  useEffect(() => {
+    if (form.countryCode) return; // already set via prop or draft
+    // Try timezone-based detection as lightweight fallback
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      const tzLower = tz.toLowerCase();
+      if (tzLower.includes('nairobi')) setForm(f => ({ ...f, countryCode: 'KE' }));
+      else if (tzLower.includes('dar_es_salaam')) setForm(f => ({ ...f, countryCode: 'TZ' }));
+      else if (tzLower.includes('kampala')) setForm(f => ({ ...f, countryCode: 'UG' }));
+      else if (tzLower.includes('lagos')) setForm(f => ({ ...f, countryCode: 'NG' }));
+      else if (tzLower.includes('johannesburg') || tzLower.includes('harare')) setForm(f => ({ ...f, countryCode: 'ZA' }));
+      else if (tzLower.includes('addis_ababa')) setForm(f => ({ ...f, countryCode: 'ET' }));
+      else if (tzLower.includes('accra')) setForm(f => ({ ...f, countryCode: 'GH' }));
+    } catch { /* timezone API unavailable */ }
+  }, []);
 
-  const canProceed = () => {
-    if (currentStep === 'farm') return form.farmName.trim().length > 0;
-    if (currentStep === 'crop') return form.crop.length > 0;
-    return true;
-  };
+  // ─── Computed helpers ──────────────────────────────────────
+  const progressNum = Math.min(step, TOTAL_USER_STEPS); // 0-based, for dots
+  const progressPercent = step <= 0 ? 0 : Math.round((progressNum / TOTAL_USER_STEPS) * 100);
 
+  // Country-specific top crops
+  const countryTopCodes = getCountryRecommendedCodes(form.countryCode);
+  const topCropButtons = countryTopCodes.length > 0
+    ? countryTopCodes.slice(0, 6).map(code => {
+      const found = TOP_CROPS.find(c => c.code === code);
+      return found || { code, label: code.charAt(0) + code.slice(1).toLowerCase(), icon: '\uD83C\uDF3F' };
+    })
+    : TOP_CROPS;
+
+  // ─── Navigation helpers ────────────────────────────────────
+  const goNext = () => setStep(s => s + 1);
+  const goBack = () => setStep(s => Math.max(0, s - 1));
+
+  // ─── Photo handling ────────────────────────────────────────
   const handlePhotoSelect = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -172,7 +210,6 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
       return;
     }
     setError('');
-    // Compress before storing (reduces upload size on mobile)
     const compressed = await compressImage(f, { maxWidth: 800, quality: 0.8 });
     setPhotoFile(compressed);
     const reader = new FileReader();
@@ -180,60 +217,69 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     reader.readAsDataURL(compressed);
   };
 
-  const handleNext = async () => {
+  // ─── Submit ────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (submitGuardRef.current) return;
+    submitGuardRef.current = true;
+
+    const processingIdx = STEP_KEYS.indexOf('processing');
+    setStep(processingIdx);
+    setSubmitting(true);
+    setNetworkError(false);
     setError('');
-    logOnboarding('next_clicked', { step: currentStep });
 
-    if (!validate()) return;
-
-    if (currentStep === 'photo') {
-      // Prevent double-submit
-      if (submitGuardRef.current) return;
-      submitGuardRef.current = true;
-
-      setStep(4); // processing
-      setSubmitting(true);
-      setNetworkError(false);
-      try {
-        const ls = form.farmSizeAcres ? computeLandSizeFields(form.farmSizeAcres, form.landSizeUnit) : {};
-        await onComplete({
-          farmName: form.farmName.trim(),
-          farmSizeAcres: form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : null,
-          landSizeValue: ls.landSizeValue ?? null,
-          landSizeUnit: ls.landSizeUnit ?? null,
-          landSizeHectares: ls.landSizeHectares ?? null,
-          locationName: form.locationName.trim() || null,
-          latitude: form.latitude || null,
-          longitude: form.longitude || null,
-          crop: form.crop,
-          stage: form.stage,
-          photoFile: photoFile || null,
-        });
-        // Success — clear the draft, show confirmation, track completion
-        clearDraft();
-        logOnboarding('onboarding_completed');
-        trackPilotEvent('onboarding_completed', { farmName: form.farmName.trim(), crop: form.crop });
-        setSubmitting(false);
-        setSubmitSuccess(true);
-      } catch (err) {
-        setStep(3); // go back to photo on error
-        setSubmitting(false);
-        submitGuardRef.current = false;
-        const isNetwork = !err?.response && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !navigator.onLine);
-        setNetworkError(isNetwork);
-        const msg = isNetwork
-          ? 'No internet connection. Your data is saved — tap "Retry" when you\'re back online.'
-          : err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.';
-        setError(msg);
-        logOnboarding('async_save_failed', { step: currentStep, error: msg, isNetwork });
+    try {
+      // Derive numeric farm size from category if not entered explicitly
+      let sizeAcres = form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : null;
+      if (!sizeAcres && form.farmSizeCategory) {
+        if (form.farmSizeCategory === 'small') sizeAcres = 1;
+        else if (form.farmSizeCategory === 'medium') sizeAcres = 5;
+        else if (form.farmSizeCategory === 'large') sizeAcres = 15;
       }
-      return;
+      const ls = sizeAcres ? computeLandSizeFields(sizeAcres, form.landSizeUnit) : {};
+
+      const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
+
+      await onComplete({
+        farmName: form.farmName.trim(),
+        farmSizeAcres: sizeAcres,
+        landSizeValue: ls.landSizeValue ?? null,
+        landSizeUnit: ls.landSizeUnit ?? null,
+        landSizeHectares: ls.landSizeHectares ?? null,
+        locationName: form.locationName.trim() || null,
+        latitude: form.latitude || null,
+        longitude: form.longitude || null,
+        crop: form.crop,
+        stage: form.stage,
+        photoFile: photoFile || null,
+        gender: form.gender || null,
+        ageGroup: form.ageGroup || null,
+        countryCode: form.countryCode || null,
+        farmSizeCategory: form.farmSizeCategory || null,
+      });
+
+      clearDraft();
+      logOnboarding('onboarding_completed', { elapsed });
+      trackPilotEvent('onboarding_completed', { farmName: form.farmName.trim(), crop: form.crop, elapsed });
+      setSubmitting(false);
+      setSubmitSuccess(true);
+    } catch (err) {
+      const photoStepIdx = STEP_KEYS.indexOf('photo');
+      setStep(photoStepIdx);
+      setSubmitting(false);
+      submitGuardRef.current = false;
+      const isNetwork = !err?.response && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !navigator.onLine);
+      setNetworkError(isNetwork);
+      const msg = isNetwork
+        ? 'No internet connection. Your data is saved \u2014 tap "Retry" when you\'re back online.'
+        : err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.';
+      setError(msg);
+      logOnboarding('async_save_failed', { step: currentStep, error: msg, isNetwork });
     }
-    setStep(s => s + 1);
   };
 
   const handleReset = () => {
-    setFormRaw({ ...INITIAL_FORM });
+    setFormRaw({ ...INITIAL_FORM, countryCode: countryCode || '' });
     setStepRaw(0);
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -241,123 +287,340 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     setFieldErrors({});
     clearDraft();
     setShowResetConfirm(false);
+    setShowCropSearch(false);
+    startTimeRef.current = Date.now();
     logOnboarding('onboarding_reset');
   };
 
+  // ─── Render ────────────────────────────────────────────────
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        {/* Step indicator with labels */}
-        <div style={styles.stepIndicator}>
-          {STEP_KEYS.slice(0, 4).map((key, i) => (
-            <div key={key} style={styles.stepDot}>
-              <div style={{
-                width: 24, height: 24, borderRadius: '50%',
-                background: i < step ? '#22C55E' : i === step ? '#22C55E' : '#243041',
-                color: i <= step ? '#fff' : '#71717A',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.7rem', fontWeight: 700,
-                transition: 'all 0.3s',
-              }}>
-                {i < step ? '✓' : i + 1}
-              </div>
-              <div style={{
-                fontSize: '0.65rem', color: i <= step ? '#A1A1AA' : '#4A5568',
-                marginTop: 2, textAlign: 'center', fontWeight: i === step ? 600 : 400,
-              }}>
-                {STEP_LABELS[i]}
-              </div>
+    <div style={S.overlay}>
+      <div style={S.modal}>
+        {/* ── Progress bar + dots ── */}
+        {step > 0 && step < STEP_KEYS.indexOf('processing') && (
+          <div style={S.progressWrap}>
+            <div style={S.progressBar}>
+              <div style={{ ...S.progressFill, width: `${progressPercent}%` }} />
             </div>
-          ))}
-        </div>
+            <div style={S.progressLabel}>
+              Step {progressNum} of {TOTAL_USER_STEPS}
+            </div>
+          </div>
+        )}
 
         {/* Draft restored banner */}
         {saveStatus === 'restored' && (
-          <div style={styles.draftBanner}>
-            &#8635; <strong>Draft restored</strong> — your previous progress was saved and has been restored automatically.
-            <button
-              type="button"
-              onClick={() => setSaveStatus(null)}
-              style={{ background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer', fontSize: '0.75rem', marginLeft: '0.5rem', textDecoration: 'underline', padding: '0.5rem', minHeight: '44px', minWidth: '44px' }}
-            >Dismiss</button>
+          <div style={S.draftBanner}>
+            &#8635; <strong>Draft restored</strong> — your previous progress was saved.
+            <button type="button" onClick={() => setSaveStatus(null)} style={S.dismissBtn}>Dismiss</button>
           </div>
         )}
 
-        {/* Save status indicator */}
-        {saveStatus === 'saved' && step > 0 && step < 4 && (
-          <div style={styles.savedIndicator}>✓ Draft saved</div>
+        {/* Save status */}
+        {saveStatus === 'saved' && step > 0 && step < STEP_KEYS.indexOf('processing') && (
+          <div style={S.savedIndicator}>{'\u2713'} Draft saved</div>
         )}
 
+        {/* ═══════════ STEP: Welcome ═══════════ */}
         {currentStep === 'welcome' && (
-          <div style={styles.stepContent}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👋</div>
-            <h2 style={styles.title}>Welcome to Farroway</h2>
-            <p style={styles.subtitle}>
-              Hi {userName || 'there'}! Let's set up your farm in just a few steps so we can give you personalised recommendations.
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83D\uDC4B'}</div>
+            <h2 style={S.title}>Welcome{userName ? `, ${userName}` : ''}!</h2>
+            <p style={S.subtitle}>
+              Set up your farm in under a minute.{'\n'}Just tap to answer each question.
             </p>
-            <button onClick={handleNext} style={styles.primaryBtn}>Get Started</button>
+            <div style={S.timeEstimate}>
+              <span style={S.timeIcon}>{'\u23F1\uFE0F'}</span> Takes about 60 seconds
+            </div>
+            <button onClick={goNext} style={S.primaryBtn}>Get Started</button>
           </div>
         )}
 
-        {currentStep === 'farm' && (
-          <div style={styles.stepContent}>
-            <h2 style={styles.title}>Your Farm</h2>
-            <p style={styles.subtitle}>Tell us about your farm — only the name is required</p>
-            {error && <div style={styles.errorBox}>{error}</div>}
-            <div style={styles.field}>
-              <label style={styles.label}>Farm Name *</label>
+        {/* ═══════════ STEP: Farm Name ═══════════ */}
+        {currentStep === 'farmName' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83C\uDFE1'}</div>
+            <h2 style={S.title}>Name your farm</h2>
+            <p style={S.subtitle}>What do you call your farm?</p>
+            {error && <div style={S.errorBox}>{error}</div>}
+            <div style={S.fieldWide}>
               <input
                 value={form.farmName}
                 onChange={e => { setForm(f => ({ ...f, farmName: e.target.value })); setFieldErrors(fe => ({ ...fe, farmName: undefined })); }}
                 placeholder="e.g. Sunrise Farm"
                 style={{
-                  ...styles.input,
-                  borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim().length > 0 ? '#22C55E' : '#374151',
+                  ...S.input,
+                  borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim() ? '#22C55E' : '#374151',
+                  fontSize: '1.1rem',
+                  textAlign: 'center',
                 }}
                 autoFocus
+                autoComplete="off"
               />
-              {fieldErrors.farmName && (
-                <div style={styles.fieldError}>{fieldErrors.farmName}</div>
-              )}
-              {!fieldErrors.farmName && form.farmName.trim().length === 0 && (
-                <div style={{ fontSize: '0.72rem', color: '#F59E0B', marginTop: '0.25rem' }}>Required — give your farm a name</div>
-              )}
+              {fieldErrors.farmName && <div style={S.fieldError}>{fieldErrors.farmName}</div>}
             </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Farm Size <span style={{ color: '#71717A', fontWeight: 400 }}>optional</span></label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  value={form.farmSizeAcres}
-                  onChange={e => { setForm(f => ({ ...f, farmSizeAcres: e.target.value })); setFieldErrors(fe => ({ ...fe, farmSizeAcres: undefined })); }}
-                  placeholder="e.g. 5"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  style={{
-                    ...styles.input,
-                    flex: 1,
-                    borderColor: fieldErrors.farmSizeAcres ? '#EF4444' : '#243041',
-                  }}
-                />
-                <select
-                  value={form.landSizeUnit}
-                  onChange={e => setForm(f => ({ ...f, landSizeUnit: e.target.value }))}
-                  style={{ ...styles.input, flex: '0 0 auto', width: 'auto', minWidth: '7rem' }}
-                >
-                  {UNIT_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button
+                onClick={() => {
+                  if (!form.farmName.trim()) { setFieldErrors({ farmName: 'Give your farm a name' }); return; }
+                  goNext();
+                }}
+                disabled={!form.farmName.trim()}
+                style={{ ...S.primaryBtn, opacity: form.farmName.trim() ? 1 : 0.5 }}
+              >Next</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Country ═══════════ */}
+        {currentStep === 'country' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83C\uDF0D'}</div>
+            <h2 style={S.title}>Where are you?</h2>
+            <p style={S.subtitle}>Select your country</p>
+            {form.countryCode && (
+              <div style={S.autoDetectBadge}>
+                {'\u2713'} Auto-detected — tap to change
               </div>
-              {fieldErrors.farmSizeAcres && (
-                <div style={styles.fieldError}>{fieldErrors.farmSizeAcres}</div>
-              )}
+            )}
+            <div style={S.fieldWide}>
+              <CountrySelect
+                value={form.countryCode}
+                onChange={(e) => setForm(f => ({ ...f, countryCode: e.target.value }))}
+                className=""
+                selectStyle={S.input}
+                inputStyle={{ ...S.input, marginBottom: '0.5rem' }}
+                wrapperStyle={{ width: '100%' }}
+              />
             </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Location <span style={{ color: '#71717A', fontWeight: 400 }}>optional</span></label>
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goNext} style={S.primaryBtn}>
+                {form.countryCode ? 'Next' : 'Skip'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Crop ═══════════ */}
+        {currentStep === 'crop' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83C\uDF3E'}</div>
+            <h2 style={S.title}>What do you grow?</h2>
+            <p style={S.subtitle}>Tap your main crop</p>
+            {error && <div style={S.errorBox}>{error}</div>}
+
+            {/* Quick-tap top crops */}
+            {!showCropSearch && (
+              <div style={S.fieldWide}>
+                <div style={S.topCropGrid}>
+                  {topCropButtons.map(c => {
+                    const isSelected = form.crop === c.code;
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
+                        style={{
+                          ...S.topCropBtn,
+                          borderColor: isSelected ? '#22C55E' : '#243041',
+                          background: isSelected ? 'rgba(34,197,94,0.18)' : '#1E293B',
+                        }}
+                        aria-pressed={isSelected}
+                      >
+                        <span style={S.topCropIcon}>{c.icon}</span>
+                        <span style={{ fontSize: '0.82rem', color: isSelected ? '#22C55E' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
+                          {c.label}
+                        </span>
+                        {isSelected && <span style={S.topCropCheck}>{'\u2713'}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCropSearch(true)}
+                  style={S.showMoreBtn}
+                >
+                  Other crop? Search all {'\u25BE'}
+                </button>
+              </div>
+            )}
+
+            {/* Full searchable CropSelect */}
+            {showCropSearch && (
+              <div style={S.fieldWide}>
+                <CropSelect
+                  value={form.crop}
+                  onChange={(v) => setForm(f => ({ ...f, crop: v }))}
+                  countryCode={form.countryCode}
+                  placeholder="Search crops..."
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCropSearch(false)}
+                  style={{ ...S.showMoreBtn, marginTop: '0.5rem' }}
+                >
+                  Back to top crops {'\u25B4'}
+                </button>
+              </div>
+            )}
+
+            {/* Crop stage — only when crop is selected */}
+            {form.crop && (
+              <div style={{ ...S.fieldWide, marginTop: '0.75rem' }}>
+                <TapSelector
+                  label="Current stage"
+                  options={STAGE_OPTIONS}
+                  value={form.stage}
+                  onChange={(v) => setForm(f => ({ ...f, stage: v }))}
+                  columns={2}
+                />
+              </div>
+            )}
+
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button
+                onClick={() => {
+                  if (!form.crop) { setFieldErrors({ crop: 'Select a crop' }); return; }
+                  goNext();
+                }}
+                disabled={!form.crop}
+                style={{ ...S.primaryBtn, opacity: form.crop ? 1 : 0.5 }}
+              >Next</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Farm Size ═══════════ */}
+        {currentStep === 'farmSize' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83D\uDCCF'}</div>
+            <h2 style={S.title}>How big is your farm?</h2>
+            <p style={S.subtitle}>Tap the closest size</p>
+
+            <div style={S.fieldWide}>
+              <div style={S.farmSizeGrid}>
+                {FARM_SIZE_OPTIONS.map(opt => {
+                  const isSelected = form.farmSizeCategory === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, farmSizeCategory: opt.value }))}
+                      style={{
+                        ...S.farmSizeCard,
+                        borderColor: isSelected ? '#22C55E' : '#243041',
+                        background: isSelected ? 'rgba(34,197,94,0.15)' : '#1E293B',
+                      }}
+                      aria-pressed={isSelected}
+                    >
+                      <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#22C55E' : '#FFFFFF' }}>
+                        {opt.label}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#A1A1AA' }}>{opt.subtitle}</span>
+                      {isSelected && <span style={{ color: '#22C55E', fontSize: '0.8rem', fontWeight: 700 }}>{'\u2713'}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Exact size toggle */}
+              <details style={S.exactSizeDetails}>
+                <summary style={S.exactSizeSummary}>
+                  Know exact size? Enter it here
+                </summary>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <input
+                    value={form.farmSizeAcres}
+                    onChange={e => setForm(f => ({ ...f, farmSizeAcres: e.target.value }))}
+                    placeholder="e.g. 5"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputMode="decimal"
+                    style={{ ...S.input, flex: 1 }}
+                  />
+                  <TapSelector
+                    options={UNIT_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                    value={form.landSizeUnit}
+                    onChange={(v) => setForm(f => ({ ...f, landSizeUnit: v }))}
+                    columns={3}
+                    compact
+                    style={{ flex: 2 }}
+                  />
+                </div>
+              </details>
+            </div>
+
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goNext} style={S.primaryBtn}>
+                {form.farmSizeCategory || form.farmSizeAcres ? 'Next' : 'Skip'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Gender ═══════════ */}
+        {currentStep === 'gender' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83E\uDDD1\u200D\uD83C\uDF3E'}</div>
+            <h2 style={S.title}>About you</h2>
+            <p style={S.subtitle}>This helps us understand our farmers better</p>
+            <div style={S.fieldWide}>
+              <TapSelector
+                options={GENDER_OPTIONS}
+                value={form.gender}
+                onChange={(v) => setForm(f => ({ ...f, gender: v }))}
+                columns={2}
+              />
+            </div>
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goNext} style={S.primaryBtn}>
+                {form.gender ? 'Next' : 'Skip'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Age Group ═══════════ */}
+        {currentStep === 'age' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83C\uDF82'}</div>
+            <h2 style={S.title}>Your age group</h2>
+            <p style={S.subtitle}>Tap your age range</p>
+            <div style={S.fieldWide}>
+              <TapSelector
+                options={AGE_OPTIONS}
+                value={form.ageGroup}
+                onChange={(v) => setForm(f => ({ ...f, ageGroup: v }))}
+                columns={2}
+              />
+            </div>
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goNext} style={S.primaryBtn}>
+                {form.ageGroup ? 'Next' : 'Skip'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Location ═══════════ */}
+        {currentStep === 'location' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83D\uDCCD'}</div>
+            <h2 style={S.title}>Farm location</h2>
+            <p style={S.subtitle}>Tap to detect or type your location</p>
+            <div style={S.fieldWide}>
               <LocationDetect
-                compact
-                label="Use current location"
+                label={form.latitude ? '\u2713 Location detected \u2014 tap to update' : 'Detect my location'}
                 onDetected={(loc) => {
                   const name = [loc.locality, loc.region, loc.country].filter(Boolean).join(', ');
                   setForm(f => ({
@@ -367,84 +630,44 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                     locationName: name || f.locationName,
                   }));
                 }}
-                style={{ marginBottom: '0.4rem' }}
+                style={{ marginBottom: '0.75rem' }}
               />
+              {form.latitude && (
+                <div style={S.gpsConfirm}>
+                  {'\uD83D\uDCCC'} {form.locationName || `${form.latitude.toFixed(3)}, ${form.longitude.toFixed(3)}`}
+                </div>
+              )}
               <input
                 value={form.locationName}
                 onChange={e => setForm(f => ({ ...f, locationName: e.target.value }))}
-                placeholder="e.g. Nakuru, Kenya"
-                style={styles.input}
+                placeholder="Or type: e.g. Nakuru, Kenya"
+                style={{ ...S.input, marginTop: '0.5rem' }}
               />
-              {form.latitude && (
-                <div style={{ fontSize: '0.68rem', color: '#22C55E', marginTop: '0.2rem' }}>
-                  GPS: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)} — edit the name above if needed
-                </div>
-              )}
             </div>
-            <div style={styles.btnRow}>
-              <button onClick={() => setStep(0)} style={styles.secondaryBtn}>Back</button>
-              <button onClick={handleNext} disabled={!canProceed()} style={{
-                ...styles.primaryBtn, opacity: canProceed() ? 1 : 0.5,
-              }}>Next</button>
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goNext} style={S.primaryBtn}>
+                {form.locationName || form.latitude ? 'Next' : 'Skip'}
+              </button>
             </div>
           </div>
         )}
 
-        {currentStep === 'crop' && (
-          <div style={styles.stepContent}>
-            <h2 style={styles.title}>What are you growing?</h2>
-            <p style={styles.subtitle}>Search and select your primary crop</p>
-            {error && <div style={styles.errorBox}>{error}</div>}
-            <div style={styles.field}>
-              <CropSelect
-                value={form.crop}
-                onChange={(v) => { setForm(f => ({ ...f, crop: v })); setFieldErrors(fe => ({ ...fe, crop: undefined })); }}
-                countryCode={countryCode}
-                placeholder="Search crops..."
-                required
-              />
-              {fieldErrors.crop && (
-                <div style={styles.fieldError}>{fieldErrors.crop}</div>
-              )}
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Current Stage</label>
-              <select
-                value={form.stage}
-                onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}
-                style={styles.input}
-              >
-                {STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </div>
-            <div style={styles.btnRow}>
-              <button onClick={() => setStep(1)} style={styles.secondaryBtn}>Back</button>
-              <button onClick={handleNext} disabled={!canProceed()} style={{
-                ...styles.primaryBtn, opacity: canProceed() ? 1 : 0.5,
-              }}>Next</button>
-            </div>
-          </div>
-        )}
-
+        {/* ═══════════ STEP: Photo ═══════════ */}
         {currentStep === 'photo' && (
-          <div style={styles.stepContent}>
-            <h2 style={styles.title}>Add a Profile Photo</h2>
-            <p style={styles.subtitle}>Optional — helps your field officer recognize you</p>
-            {error && <div style={styles.errorBox}>{error}</div>}
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83D\uDCF7'}</div>
+            <h2 style={S.title}>Profile photo</h2>
+            <p style={S.subtitle}>Optional — helps your field officer recognize you</p>
+            {error && <div style={S.errorBox}>{error}</div>}
 
-            {/* Preview */}
             <div style={{ marginBottom: '1rem' }}>
               {photoPreview ? (
-                <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '3px solid #22C55E', margin: '0 auto' }}>
+                <div style={S.photoPreview}>
                   <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ) : (
-                <div style={{
-                  width: 100, height: 100, borderRadius: '50%', margin: '0 auto',
-                  background: '#1E293B', border: '2px dashed #374151',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '2rem', color: '#374151',
-                }}>
+                <div style={S.photoPlaceholder}>
                   {'\uD83D\uDCF7'}
                 </div>
               )}
@@ -453,6 +676,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              capture="user"
               onChange={handlePhotoSelect}
               id="onboarding-photo-input"
               style={{ display: 'none' }}
@@ -460,9 +684,9 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             <button
               type="button"
               onClick={() => document.getElementById('onboarding-photo-input')?.click()}
-              style={{ ...styles.secondaryBtn, width: '100%', marginBottom: '0.5rem' }}
+              style={{ ...S.secondaryBtn, width: '100%', marginBottom: '0.5rem' }}
             >
-              {photoFile ? 'Choose Different Photo' : 'Choose Photo'}
+              {photoFile ? 'Change Photo' : 'Take or Choose Photo'}
             </button>
             {photoFile && (
               <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginBottom: '0.5rem', textAlign: 'center' }}>
@@ -470,58 +694,64 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               </div>
             )}
 
-            <div style={styles.btnRow}>
-              <button onClick={() => setStep(2)} style={styles.secondaryBtn}>Back</button>
-              <button onClick={handleNext} disabled={submitting} style={{
-                ...styles.primaryBtn,
-                opacity: submitting ? 0.6 : 1,
-              }}>
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                style={{ ...S.primaryBtn, opacity: submitting ? 0.6 : 1, background: '#22C55E' }}
+              >
                 {submitting ? 'Creating...' : networkError ? 'Retry' : photoFile ? 'Create My Farm' : 'Skip & Create Farm'}
               </button>
             </div>
           </div>
         )}
 
+        {/* ═══════════ STEP: Processing ═══════════ */}
         {currentStep === 'processing' && !submitSuccess && (
-          <div style={{ ...styles.stepContent, textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌱</div>
-            <h2 style={styles.title}>Setting up your farm...</h2>
-            <p style={styles.subtitle}>
-              We're creating your farm profile and preparing your first recommendations.
-            </p>
-            <div style={styles.spinner} />
-          </div>
+          <ProcessingStep
+            submitting={submitting}
+            error={error}
+            networkError={networkError}
+            onRetry={() => { setError(''); handleSubmit(); }}
+            onBack={() => { setStep(STEP_KEYS.indexOf('photo')); setError(''); }}
+          />
         )}
 
+        {/* ═══════════ Success ═══════════ */}
         {currentStep === 'processing' && submitSuccess && (
-          <div style={{ ...styles.stepContent, textAlign: 'center' }}>
-            <div style={styles.successIcon}>&#10003;</div>
-            <h2 style={styles.title}>Farm created!</h2>
-            <p style={styles.subtitle}>
-              Your farm <strong>{form.farmName.trim()}</strong> is set up and ready. You'll start receiving personalised recommendations shortly.
+          <div style={{ ...S.stepContent, textAlign: 'center' }}>
+            <div style={S.successIcon}>{'\u2713'}</div>
+            <h2 style={S.title}>Farm created!</h2>
+            <p style={S.subtitle}>
+              <strong>{form.farmName.trim()}</strong> is ready.{'\n'}
+              You'll start receiving personalised recommendations shortly.
             </p>
-            <button onClick={() => window.location.reload()} style={styles.primaryBtn}>
+            <div style={S.completionTime}>
+              Completed in {Math.round((Date.now() - startTimeRef.current) / 1000)}s
+            </div>
+            <button onClick={() => window.location.reload()} style={S.primaryBtn}>
               Continue to Dashboard
             </button>
           </div>
         )}
 
-        {/* Reset onboarding — deliberate user action only */}
-        {step > 0 && step < 4 && !showResetConfirm && (
+        {/* ── Reset link ── */}
+        {step > 0 && step < STEP_KEYS.indexOf('processing') && !showResetConfirm && (
           <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-            <button onClick={() => setShowResetConfirm(true)} style={styles.resetLink}>
+            <button onClick={() => setShowResetConfirm(true)} style={S.resetLink}>
               Start over
             </button>
           </div>
         )}
         {showResetConfirm && (
-          <div style={styles.resetConfirm}>
-            <span style={{ fontSize: '0.82rem', color: '#F59E0B' }}>This will clear all entered data. Are you sure?</span>
+          <div style={S.resetConfirm}>
+            <span style={{ fontSize: '0.82rem', color: '#F59E0B' }}>Clear all data and start over?</span>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button onClick={handleReset} style={{ ...styles.secondaryBtn, color: '#EF4444', borderColor: '#EF4444', padding: '0.6rem 1rem', fontSize: '0.8rem', minHeight: '44px' }}>
+              <button onClick={handleReset} style={{ ...S.secondaryBtn, color: '#EF4444', borderColor: '#EF4444', fontSize: '0.8rem', minHeight: '44px' }}>
                 Yes, start over
               </button>
-              <button onClick={() => setShowResetConfirm(false)} style={{ ...styles.secondaryBtn, padding: '0.6rem 1rem', fontSize: '0.8rem', minHeight: '44px' }}>
+              <button onClick={() => setShowResetConfirm(false)} style={{ ...S.secondaryBtn, fontSize: '0.8rem', minHeight: '44px' }}>
                 Cancel
               </button>
             </div>
@@ -532,44 +762,157 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   );
 }
 
-const styles = {
+// ─── Step-based processing indicator with timeout + retry ────
+const PROCESSING_STEPS = [
+  { label: 'Creating your farm profile', icon: '\uD83C\uDFE1' },
+  { label: 'Setting up crop tracking', icon: '\uD83C\uDF31' },
+  { label: 'Preparing recommendations', icon: '\u2728' },
+];
+const PROCESSING_TIMEOUT_MS = 30000;
+
+function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
+  const [activeStep, setActiveStep] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!submitting) return;
+    const t1 = setTimeout(() => setActiveStep(1), 1200);
+    const t2 = setTimeout(() => setActiveStep(2), 3000);
+    const tTimeout = setTimeout(() => setTimedOut(true), PROCESSING_TIMEOUT_MS);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(tTimeout); };
+  }, [submitting]);
+
+  if (timedOut && submitting && !error) {
+    return (
+      <div style={{ ...S.stepContent, textAlign: 'center' }}>
+        <div style={S.stepIcon}>{'\u23F3'}</div>
+        <h2 style={S.title}>Taking longer than expected</h2>
+        <p style={S.subtitle}>Your data is saved. You can wait or go back and try again.</p>
+        <div style={S.btnRow}>
+          <button onClick={onBack} style={S.secondaryBtn}>Go Back</button>
+          <button onClick={onRetry} style={S.primaryBtn}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !submitting) {
+    return (
+      <div style={{ ...S.stepContent, textAlign: 'center' }}>
+        <div style={S.stepIcon}>{networkError ? '\uD83D\uDCF6' : '\u26A0\uFE0F'}</div>
+        <h2 style={S.title}>{networkError ? 'No connection' : 'Something went wrong'}</h2>
+        <p style={{ ...S.subtitle, color: '#EF4444' }}>{error}</p>
+        <div style={S.btnRow}>
+          <button onClick={onBack} style={S.secondaryBtn}>Go Back</button>
+          <button onClick={onRetry} style={S.primaryBtn}>{networkError ? 'Retry When Online' : 'Retry'}</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...S.stepContent, textAlign: 'center' }}>
+      <div style={S.stepIcon}>{'\uD83C\uDF31'}</div>
+      <h2 style={S.title}>Setting up your farm...</h2>
+      <div style={{ width: '100%', margin: '0.75rem 0 1rem' }}>
+        {PROCESSING_STEPS.map((ps, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              padding: '0.5rem 0.75rem', marginBottom: '0.25rem',
+              borderRadius: '6px',
+              background: i <= activeStep ? 'rgba(34,197,94,0.1)' : 'transparent',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <span style={{
+              width: 24, height: 24, borderRadius: '50%', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem',
+              fontWeight: 700, flexShrink: 0,
+              background: i < activeStep ? '#22C55E' : i === activeStep ? '#22C55E' : '#243041',
+              color: i <= activeStep ? '#fff' : '#71717A',
+              transition: 'all 0.3s ease',
+            }}>
+              {i < activeStep ? '\u2713' : ps.icon}
+            </span>
+            <span style={{
+              fontSize: '0.85rem',
+              color: i <= activeStep ? '#FFFFFF' : '#71717A',
+              fontWeight: i === activeStep ? 600 : 400,
+              transition: 'color 0.3s ease',
+            }}>
+              {ps.label}
+            </span>
+            {i === activeStep && submitting && (
+              <div style={{ ...S.spinner, width: 16, height: 16, borderWidth: 2, marginLeft: 'auto', marginTop: 0 }} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────
+const S = {
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex',
-    alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem',
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex',
+    alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '0.75rem',
+    overflowY: 'auto',
   },
   modal: {
-    background: '#162033', borderRadius: '12px', padding: '2rem',
-    maxWidth: 'min(420px, 92vw)', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    background: '#162033', borderRadius: '16px', padding: '1.5rem',
+    maxWidth: 'min(400px, 94vw)', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    maxHeight: '90vh', overflowY: 'auto',
   },
-  stepIndicator: {
-    display: 'flex', justifyContent: 'center', gap: '1.5rem', marginBottom: '1.5rem',
+  // Progress
+  progressWrap: { marginBottom: '1.25rem' },
+  progressBar: {
+    width: '100%', height: 4, background: '#243041', borderRadius: 2, overflow: 'hidden',
   },
-  stepDot: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+  progressFill: {
+    height: '100%', background: '#22C55E', borderRadius: 2,
+    transition: 'width 0.4s ease',
   },
+  progressLabel: {
+    fontSize: '0.7rem', color: '#71717A', marginTop: '0.3rem', textAlign: 'center',
+  },
+  // Content
   stepContent: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
   },
-  title: { margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 700, textAlign: 'center' },
-  subtitle: { color: '#A1A1AA', fontSize: '0.9rem', textAlign: 'center', margin: '0 0 1.5rem', lineHeight: 1.5 },
-  field: { width: '100%', marginBottom: '1rem' },
-  label: { display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.3rem' },
+  stepIcon: {
+    fontSize: '2.2rem', marginBottom: '0.4rem', lineHeight: 1,
+  },
+  title: {
+    margin: '0 0 0.35rem', fontSize: '1.3rem', fontWeight: 700, textAlign: 'center',
+    color: '#FFFFFF',
+  },
+  subtitle: {
+    color: '#A1A1AA', fontSize: '0.9rem', textAlign: 'center', margin: '0 0 1.25rem',
+    lineHeight: 1.5, whiteSpace: 'pre-line',
+  },
+  timeEstimate: {
+    display: 'flex', alignItems: 'center', gap: '0.3rem',
+    padding: '0.4rem 1rem', borderRadius: 20, marginBottom: '1.5rem',
+    background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
+    fontSize: '0.8rem', color: '#22C55E', fontWeight: 500,
+  },
+  timeIcon: { fontSize: '0.9rem' },
+  completionTime: {
+    fontSize: '0.78rem', color: '#22C55E', marginBottom: '1rem',
+    background: 'rgba(34,197,94,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
+  },
+  // Fields
+  fieldWide: { width: '100%', marginBottom: '0.75rem' },
   input: {
-    width: '100%', padding: '0.6rem 0.75rem', background: '#1E293B', border: '1px solid #243041',
-    borderRadius: '6px', color: '#FFFFFF', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
+    width: '100%', padding: '0.65rem 0.75rem', background: '#1E293B', border: '2px solid #243041',
+    borderRadius: '8px', color: '#FFFFFF', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box',
+    minHeight: '48px',
   },
-  btnRow: { display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.5rem' },
-  primaryBtn: {
-    flex: 1, padding: '0.7rem', background: '#22C55E', color: '#fff', border: 'none',
-    borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-  },
-  secondaryBtn: {
-    padding: '0.7rem 1.2rem', background: 'transparent', color: '#A1A1AA',
-    border: '1px solid #243041', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-  },
-  spinner: {
-    width: '32px', height: '32px', border: '3px solid #243041', borderTop: '3px solid #22C55E',
-    borderRadius: '50%', animation: 'spin 1s linear infinite', marginTop: '1rem',
+  fieldError: {
+    fontSize: '0.75rem', color: '#EF4444', marginTop: '0.3rem', textAlign: 'center',
   },
   errorBox: {
     width: '100%', background: 'rgba(239,68,68,0.12)', color: '#EF4444',
@@ -577,14 +920,89 @@ const styles = {
     padding: '0.6rem 0.75rem', fontSize: '0.82rem', marginBottom: '0.75rem',
     textAlign: 'center', lineHeight: 1.4,
   },
-  fieldError: {
-    fontSize: '0.72rem', color: '#EF4444', marginTop: '0.25rem',
+  autoDetectBadge: {
+    fontSize: '0.78rem', color: '#22C55E', marginBottom: '0.75rem',
+    background: 'rgba(34,197,94,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
   },
+  // Buttons
+  btnRow: { display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.5rem' },
+  primaryBtn: {
+    flex: 1, padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none',
+    borderRadius: '10px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
+    minHeight: '52px', WebkitTapHighlightColor: 'transparent',
+  },
+  secondaryBtn: {
+    padding: '0.75rem 1.2rem', background: 'transparent', color: '#A1A1AA',
+    border: '2px solid #243041', borderRadius: '10px', fontWeight: 600, fontSize: '0.9rem',
+    cursor: 'pointer', minHeight: '52px', WebkitTapHighlightColor: 'transparent',
+  },
+  // Top crops
+  topCropGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem',
+    marginBottom: '0.5rem',
+  },
+  topCropBtn: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
+    padding: '0.7rem 0.4rem', minHeight: '72px',
+    border: '2px solid #243041', borderRadius: '10px', cursor: 'pointer',
+    background: '#1E293B', position: 'relative',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  topCropIcon: { fontSize: '1.4rem', lineHeight: 1 },
+  topCropCheck: {
+    position: 'absolute', top: 4, right: 6,
+    fontSize: '0.7rem', color: '#22C55E', fontWeight: 700,
+  },
+  showMoreBtn: {
+    width: '100%', padding: '0.5rem', background: 'transparent',
+    border: '1px dashed #374151', borderRadius: '8px', color: '#71717A',
+    fontSize: '0.82rem', cursor: 'pointer', minHeight: '44px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  // Farm size
+  farmSizeGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem',
+    marginBottom: '0.5rem',
+  },
+  farmSizeCard: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
+    padding: '0.9rem 0.4rem', minHeight: '90px',
+    border: '2px solid #243041', borderRadius: '10px', cursor: 'pointer',
+    background: '#1E293B', WebkitTapHighlightColor: 'transparent',
+  },
+  exactSizeDetails: { marginTop: '0.25rem' },
+  exactSizeSummary: {
+    fontSize: '0.78rem', color: '#71717A', cursor: 'pointer',
+    padding: '0.4rem 0', minHeight: '44px', display: 'flex', alignItems: 'center',
+  },
+  // Location
+  gpsConfirm: {
+    padding: '0.5rem 0.75rem', background: 'rgba(34,197,94,0.1)',
+    border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px',
+    fontSize: '0.82rem', color: '#22C55E', textAlign: 'center',
+  },
+  // Photo
+  photoPreview: {
+    width: 110, height: 110, borderRadius: '50%', overflow: 'hidden',
+    border: '3px solid #22C55E', margin: '0 auto',
+  },
+  photoPlaceholder: {
+    width: 110, height: 110, borderRadius: '50%', margin: '0 auto',
+    background: '#1E293B', border: '2px dashed #374151',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '2.5rem', color: '#374151',
+  },
+  // Status
   draftBanner: {
     background: 'rgba(34,197,94,0.12)', color: '#22C55E',
     border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px',
     padding: '0.5rem 0.75rem', fontSize: '0.8rem', textAlign: 'center',
     marginBottom: '1rem', lineHeight: 1.4,
+  },
+  dismissBtn: {
+    background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer',
+    fontSize: '0.75rem', marginLeft: '0.5rem', textDecoration: 'underline',
+    padding: '0.5rem', minHeight: '44px', minWidth: '44px',
   },
   savedIndicator: {
     textAlign: 'center', fontSize: '0.7rem', color: '#22C55E',
@@ -601,8 +1019,12 @@ const styles = {
     border: '1px solid rgba(245,158,11,0.2)',
   },
   successIcon: {
-    width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.15)',
+    width: 64, height: 64, borderRadius: '50%', background: 'rgba(34,197,94,0.15)',
     border: '3px solid #22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '1.8rem', color: '#22C55E', margin: '0 auto 0.75rem', fontWeight: 700,
+    fontSize: '2rem', color: '#22C55E', margin: '0 auto 0.75rem', fontWeight: 700,
+  },
+  spinner: {
+    width: '32px', height: '32px', border: '3px solid #243041', borderTop: '3px solid #22C55E',
+    borderRadius: '50%', animation: 'spin 1s linear infinite', marginTop: '1rem',
   },
 };

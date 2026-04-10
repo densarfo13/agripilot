@@ -449,8 +449,8 @@ describe('Mobile UX — tap targets and responsive', () => {
 
   it('OnboardingWizard modal responsive on small screens', () => {
     const src = readFile('src/components/OnboardingWizard.jsx');
-    expect(src).toContain('min(420px');
-    expect(src).toContain('92vw');
+    expect(src).toContain('min(400px');
+    expect(src).toContain('94vw');
   });
 });
 
@@ -734,11 +734,14 @@ describe('Mobile Touch Targets — OnboardingWizard', () => {
 
   it('Dismiss banner button has adequate touch target', () => {
     const src = readFile('src/components/OnboardingWizard.jsx');
-    // Dismiss button should NOT have padding: 0 anymore
-    const dismissMatch = src.indexOf('Dismiss</button>');
-    expect(dismissMatch).toBeGreaterThan(0);
-    const dismissBlock = src.substring(Math.max(0, dismissMatch - 300), dismissMatch);
-    expect(dismissBlock).toContain("minHeight: '44px'");
+    // Dismiss button uses dismissBtn style which has minHeight 44px
+    expect(src).toContain('Dismiss</button>');
+    // The dismissBtn style must include minHeight for adequate touch target
+    const dismissStyle = src.substring(
+      src.indexOf("dismissBtn: {"),
+      src.indexOf('},', src.indexOf("dismissBtn: {")) + 2
+    );
+    expect(dismissStyle).toContain("minHeight: '44px'");
   });
 });
 

@@ -738,7 +738,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
                           type="button"
                           onClick={() => setVal('channel', opt.value)}
                           style={{
-                            padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer',
+                            padding: '0.45rem 0.75rem', borderRadius: 6, fontSize: '0.82rem', cursor: 'pointer',
+                            minHeight: '44px',
                             border: `1.5px solid ${form.channel === opt.value ? '#22C55E' : '#243041'}`,
                             background: form.channel === opt.value ? '#22C55E' : '#162033',
                             color: form.channel === opt.value ? '#fff' : '#FFFFFF',
@@ -1091,7 +1092,8 @@ function InviteFarmerModal({ onClose, onCreated }) {
                       type="button"
                       onClick={() => setVal('channel', opt.value)}
                       style={{
-                        padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer',
+                        padding: '0.45rem 0.75rem', borderRadius: 6, fontSize: '0.82rem', cursor: 'pointer',
+                        minHeight: '44px',
                         border: `1.5px solid ${form.channel === opt.value ? '#22C55E' : '#243041'}`,
                         background: form.channel === opt.value ? '#22C55E' : '#162033',
                         color: form.channel === opt.value ? '#fff' : '#FFFFFF',
