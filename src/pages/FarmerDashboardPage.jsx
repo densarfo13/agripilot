@@ -133,13 +133,15 @@ export default function FarmerDashboardPage() {
       newProfile = await createProfile(profileData);
     } catch (err) {
       trackPilotEvent('onboarding_failed', { error: err?.message || 'createProfile failed' });
-      setOnboardingError('Failed to create your farm profile. Please check your connection and try again.');
-      return; // stay on onboarding — don't dismiss
+      const msg = 'Failed to create your farm profile. Please check your connection and try again.';
+      setOnboardingError(msg);
+      throw new Error(msg); // propagate to wizard so it shows error state
     }
     if (!newProfile) {
       trackPilotEvent('onboarding_failed', { error: 'createProfile returned null' });
-      setOnboardingError('Something went wrong creating your profile. Please try again.');
-      return;
+      const msg = 'Something went wrong creating your profile. Please try again.';
+      setOnboardingError(msg);
+      throw new Error(msg); // propagate to wizard so it shows error state
     }
     setShowOnboarding(false);
     trackEvent('onboarding_completed', { crop: data.crop });

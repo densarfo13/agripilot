@@ -83,12 +83,14 @@ export default function CountrySelect({
       <select
         name={name}
         className={className}
-        style={{ minHeight: '44px', fontSize: '0.9rem', ...selectStyle }}
+        style={{ minHeight: '48px', fontSize: '1rem', padding: '0.5rem', ...selectStyle }}
         value={value}
         onChange={onChange}
         required={required}
         disabled={disabled}
+        data-testid="country-select-dropdown"
       >
+        <option value="">— Tap to choose country —</option>
         {includeEmpty && <option value="">{emptyLabel}</option>}
         {options.map((c) => (
           <option key={c.iso2} value={c.iso2}>

@@ -213,8 +213,10 @@ describe('OnboardingWizard crop step', () => {
     expect(src).toContain('countryTopCodes');
   });
 
-  it('has "Other crop? Search all" button to open CropSelect', () => {
-    expect(src).toContain('Other crop? Search all');
+  it('has "Search all" button and "Other" quick-tap to open CropSelect', () => {
+    expect(src).toContain('Search all 60+ crops');
+    expect(src).toContain('crop-search-all');
+    expect(src).toContain('crop-other-tap');
     expect(src).toContain('showCropSearch');
   });
 
@@ -239,12 +241,14 @@ describe('OnboardingWizard farm size step', () => {
     expect(src).toContain("currentStep === 'farmSize'");
   });
 
-  it('has 3 tap-friendly size categories', () => {
-    expect(src).toContain('FARM_SIZE_OPTIONS');
-    expect(src).toContain("value: 'small'");
-    expect(src).toContain("value: 'medium'");
-    expect(src).toContain("value: 'large'");
+  it('has 3 tap-friendly size categories with unit-aware subtitles', () => {
+    expect(src).toContain('FARM_SIZE_DEFS');
+    expect(src).toContain('FARM_SIZE_KEYS');
+    expect(src).toContain("small:");
+    expect(src).toContain("medium:");
+    expect(src).toContain("large:");
     expect(src).toContain('Under 2 acres');
+    expect(src).toContain('Under 1 hectare');
   });
 
   it('renders size categories as large tap cards', () => {
@@ -253,21 +257,23 @@ describe('OnboardingWizard farm size step', () => {
     expect(src).toContain("minHeight: '90px'");
   });
 
-  it('has collapsible exact-size input as secondary option', () => {
-    expect(src).toContain('Know exact size? Enter it here');
-    expect(src).toContain('exactSizeDetails');
+  it('has visible exact-size input with unit label', () => {
+    expect(src).toContain('Or enter exact size:');
+    expect(src).toContain('exact-size-input');
     expect(src).toContain('inputMode="decimal"');
   });
 
-  it('uses TapSelector for land size unit in exact mode', () => {
-    expect(src).toContain('options={UNIT_OPTIONS.map');
+  it('has visible unit selector with Acres and Hectares', () => {
+    expect(src).toContain('land-unit-selector');
+    expect(src).toContain('UNIT_OPTIONS');
+    expect(src).toContain('TapSelector');
   });
 
-  it('derives numeric size from category for submission', () => {
-    expect(src).toContain("form.farmSizeCategory === 'small'");
-    expect(src).toContain('sizeAcres = 1');
-    expect(src).toContain('sizeAcres = 5');
-    expect(src).toContain('sizeAcres = 15');
+  it('derives numeric size from category for submission (unit-aware)', () => {
+    expect(src).toContain('FARM_SIZE_DEFS[form.farmSizeCategory]');
+    expect(src).toContain('defaultVal');
+    expect(src).toContain('computeLandSizeFields');
+    expect(src).toContain('landSizeHectares');
   });
 });
 
@@ -669,9 +675,9 @@ describe('Cross-cutting touch target compliance', () => {
     expect(src).toMatch(/pill:.*minHeight.*44px/s);
   });
 
-  it('CountrySelect elements meet 44px minimum', () => {
+  it('CountrySelect elements meet 44px+ minimum', () => {
     const src = readFile('src/components/CountrySelect.jsx');
-    const matches = src.match(/minHeight.*44px/g);
+    const matches = src.match(/minHeight.*4[4-9]px/g);
     expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 

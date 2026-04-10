@@ -28,11 +28,13 @@ const AGE_OPTIONS = [
   { value: 'over_50', label: 'Over 50' },
 ];
 
-const FARM_SIZE_OPTIONS = [
-  { value: 'small', label: 'Small', icon: '\uD83C\uDF31', subtitle: 'Under 2 acres' },
-  { value: 'medium', label: 'Medium', icon: '\uD83C\uDF3E', subtitle: '2 \u2013 10 acres' },
-  { value: 'large', label: 'Large', icon: '\uD83C\uDFE1', subtitle: 'Over 10 acres' },
-];
+// Farm size categories — subtitles adapt to selected unit
+const FARM_SIZE_DEFS = {
+  small:  { label: 'Small', icon: '\uD83C\uDF31', acre: 'Under 2 acres', hectare: 'Under 1 hectare', defaultVal: 1 },
+  medium: { label: 'Medium', icon: '\uD83C\uDF3E', acre: '2 \u2013 10 acres', hectare: '1 \u2013 4 hectares', defaultVal: 5 },
+  large:  { label: 'Large', icon: '\uD83C\uDFE1', acre: 'Over 10 acres', hectare: 'Over 4 hectares', defaultVal: 15 },
+};
+const FARM_SIZE_KEYS = ['small', 'medium', 'large'];
 
 const STAGE_OPTIONS = [
   { value: 'planting', label: 'Planting', icon: '\uD83C\uDF31' },
@@ -49,6 +51,16 @@ const TOP_CROPS = [
   { code: 'COFFEE', label: 'Coffee', icon: '\u2615' },
   { code: 'CASSAVA', label: 'Cassava', icon: '\uD83E\uDD54' },
   { code: 'BANANA', label: 'Banana', icon: '\uD83C\uDF4C' },
+  { code: 'WHEAT', label: 'Wheat', icon: '\uD83C\uDF3E' },
+  { code: 'SORGHUM', label: 'Sorghum', icon: '\uD83C\uDF3F' },
+  { code: 'TOMATO', label: 'Tomato', icon: '\uD83C\uDF45' },
+  { code: 'POTATO', label: 'Potato', icon: '\uD83E\uDD54' },
+  { code: 'TEA', label: 'Tea', icon: '\uD83C\uDF3F' },
+  { code: 'SWEET_POTATO', label: 'Sweet Potato', icon: '\uD83C\uDF60' },
+  { code: 'MANGO', label: 'Mango', icon: '\uD83E\uDD6D' },
+  { code: 'GROUNDNUT', label: 'Groundnut', icon: '\uD83E\uDD5C' },
+  { code: 'SUGARCANE', label: 'Sugarcane', icon: '\uD83C\uDF3F' },
+  { code: 'COTTON', label: 'Cotton', icon: '\u2601\uFE0F' },
 ];
 
 // Inject spinner keyframe once
@@ -184,14 +196,14 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   const progressNum = Math.min(step, TOTAL_USER_STEPS); // 0-based, for dots
   const progressPercent = step <= 0 ? 0 : Math.round((progressNum / TOTAL_USER_STEPS) * 100);
 
-  // Country-specific top crops
+  // Country-specific top crops — show 8 for better coverage
   const countryTopCodes = getCountryRecommendedCodes(form.countryCode);
   const topCropButtons = countryTopCodes.length > 0
-    ? countryTopCodes.slice(0, 6).map(code => {
+    ? countryTopCodes.slice(0, 8).map(code => {
       const found = TOP_CROPS.find(c => c.code === code);
       return found || { code, label: code.charAt(0) + code.slice(1).toLowerCase(), icon: '\uD83C\uDF3F' };
     })
-    : TOP_CROPS;
+    : TOP_CROPS.slice(0, 8);
 
   // ─── Navigation helpers ────────────────────────────────────
   const goNext = () => setStep(s => s + 1);
@@ -230,13 +242,19 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
     try {
       // Derive numeric farm size from category if not entered explicitly
-      let sizeAcres = form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : null;
-      if (!sizeAcres && form.farmSizeCategory) {
-        if (form.farmSizeCategory === 'small') sizeAcres = 1;
-        else if (form.farmSizeCategory === 'medium') sizeAcres = 5;
-        else if (form.farmSizeCategory === 'large') sizeAcres = 15;
+      let sizeValue = form.farmSizeAcres ? parseFloat(form.farmSizeAcres) : null;
+      let sizeUnit = form.landSizeUnit || 'ACRE';
+      if (!sizeValue && form.farmSizeCategory) {
+        const def = FARM_SIZE_DEFS[form.farmSizeCategory];
+        if (def) {
+          // Default values are in acres; convert if hectare is selected
+          sizeValue = sizeUnit === 'HECTARE'
+            ? Math.round(def.defaultVal * 0.404686 * 10) / 10
+            : def.defaultVal;
+        }
       }
-      const ls = sizeAcres ? computeLandSizeFields(sizeAcres, form.landSizeUnit) : {};
+      const ls = sizeValue ? computeLandSizeFields(sizeValue, sizeUnit) : {};
+      const sizeAcres = ls.landSizeHectares != null ? Math.round(ls.landSizeHectares / 0.404686 * 10) / 10 : sizeValue;
 
       const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
 
@@ -264,8 +282,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
       setSubmitting(false);
       setSubmitSuccess(true);
     } catch (err) {
-      const photoStepIdx = STEP_KEYS.indexOf('photo');
-      setStep(photoStepIdx);
+      // Stay on processing step so ProcessingStep shows the error UI with retry/back
       setSubmitting(false);
       submitGuardRef.current = false;
       const isNetwork = !err?.response && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !navigator.onLine);
@@ -274,7 +291,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         ? 'No internet connection. Your data is saved \u2014 tap "Retry" when you\'re back online.'
         : err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.';
       setError(msg);
-      logOnboarding('async_save_failed', { step: currentStep, error: msg, isNetwork });
+      logOnboarding('async_save_failed', { step: 'processing', error: msg, isNetwork });
     }
   };
 
@@ -378,10 +395,10 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83C\uDF0D'}</div>
             <h2 style={S.title}>Where are you?</h2>
-            <p style={S.subtitle}>Select your country</p>
+            <p style={S.subtitle}>Search or scroll to find your country</p>
             {form.countryCode && (
-              <div style={S.autoDetectBadge}>
-                {'\u2713'} Auto-detected — tap to change
+              <div style={S.autoDetectBadge} data-testid="country-auto-detected">
+                {'\u2713'} Auto-detected — tap below to change
               </div>
             )}
             <div style={S.fieldWide}>
@@ -389,10 +406,20 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 value={form.countryCode}
                 onChange={(e) => setForm(f => ({ ...f, countryCode: e.target.value }))}
                 className=""
-                selectStyle={S.input}
-                inputStyle={{ ...S.input, marginBottom: '0.5rem' }}
+                selectStyle={{
+                  ...S.input,
+                  fontSize: '1rem',
+                  fontWeight: form.countryCode ? 600 : 400,
+                  color: form.countryCode ? '#22C55E' : '#A1A1AA',
+                }}
+                inputStyle={{ ...S.input, marginBottom: '0.5rem', fontSize: '1rem' }}
                 wrapperStyle={{ width: '100%' }}
               />
+              {!form.countryCode && (
+                <div style={{ fontSize: '0.75rem', color: '#71717A', textAlign: 'center', marginTop: '0.25rem' }}>
+                  You can type to search, or tap the dropdown to scroll
+                </div>
+              )}
             </div>
             <div style={S.btnRow}>
               <button onClick={goBack} style={S.secondaryBtn}>Back</button>
@@ -437,13 +464,29 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                       </button>
                     );
                   })}
+                  {/* "Other" quick-tap — always in the grid */}
+                  <button
+                    type="button"
+                    onClick={() => setShowCropSearch(true)}
+                    style={{
+                      ...S.topCropBtn,
+                      borderColor: '#374151',
+                      background: '#1E293B',
+                      borderStyle: 'dashed',
+                    }}
+                    data-testid="crop-other-tap"
+                  >
+                    <span style={S.topCropIcon}>{'\uD83C\uDF3F'}</span>
+                    <span style={{ fontSize: '0.82rem', color: '#A1A1AA' }}>Other...</span>
+                  </button>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowCropSearch(true)}
-                  style={S.showMoreBtn}
+                  style={S.searchAllBtn}
+                  data-testid="crop-search-all"
                 >
-                  Other crop? Search all {'\u25BE'}
+                  {'\uD83D\uDD0D'} Search all 60+ crops
                 </button>
               </div>
             )}
@@ -500,17 +543,31 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83D\uDCCF'}</div>
             <h2 style={S.title}>How big is your farm?</h2>
-            <p style={S.subtitle}>Tap the closest size</p>
+            <p style={S.subtitle}>Choose your unit, then tap a size or enter exact</p>
 
             <div style={S.fieldWide}>
+              {/* Unit selector — always visible */}
+              <div style={S.unitRow} data-testid="land-unit-selector">
+                <TapSelector
+                  options={UNIT_OPTIONS.filter(o => o.value !== 'SQUARE_METER').map(o => ({ value: o.value, label: o.label }))}
+                  value={form.landSizeUnit}
+                  onChange={(v) => setForm(f => ({ ...f, landSizeUnit: v }))}
+                  columns={2}
+                  compact
+                />
+              </div>
+
+              {/* Quick-tap size categories */}
               <div style={S.farmSizeGrid}>
-                {FARM_SIZE_OPTIONS.map(opt => {
-                  const isSelected = form.farmSizeCategory === opt.value;
+                {FARM_SIZE_KEYS.map(key => {
+                  const opt = FARM_SIZE_DEFS[key];
+                  const isSelected = form.farmSizeCategory === key;
+                  const subtitle = form.landSizeUnit === 'HECTARE' ? opt.hectare : opt.acre;
                   return (
                     <button
-                      key={opt.value}
+                      key={key}
                       type="button"
-                      onClick={() => setForm(f => ({ ...f, farmSizeCategory: opt.value }))}
+                      onClick={() => setForm(f => ({ ...f, farmSizeCategory: key }))}
                       style={{
                         ...S.farmSizeCard,
                         borderColor: isSelected ? '#22C55E' : '#243041',
@@ -522,19 +579,17 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                       <span style={{ fontSize: '0.95rem', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#22C55E' : '#FFFFFF' }}>
                         {opt.label}
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: '#A1A1AA' }}>{opt.subtitle}</span>
+                      <span style={{ fontSize: '0.72rem', color: '#A1A1AA' }}>{subtitle}</span>
                       {isSelected && <span style={{ color: '#22C55E', fontSize: '0.8rem', fontWeight: 700 }}>{'\u2713'}</span>}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Exact size toggle */}
-              <details style={S.exactSizeDetails}>
-                <summary style={S.exactSizeSummary}>
-                  Know exact size? Enter it here
-                </summary>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              {/* Exact size — always visible, not hidden in details */}
+              <div style={S.exactSizeRow} data-testid="exact-size-input">
+                <span style={S.exactSizeLabel}>Or enter exact size:</span>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     value={form.farmSizeAcres}
                     onChange={e => setForm(f => ({ ...f, farmSizeAcres: e.target.value }))}
@@ -543,18 +598,13 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                     min="0"
                     step="0.1"
                     inputMode="decimal"
-                    style={{ ...S.input, flex: 1 }}
+                    style={{ ...S.input, flex: 1, textAlign: 'center', fontSize: '1.1rem' }}
                   />
-                  <TapSelector
-                    options={UNIT_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
-                    value={form.landSizeUnit}
-                    onChange={(v) => setForm(f => ({ ...f, landSizeUnit: v }))}
-                    columns={3}
-                    compact
-                    style={{ flex: 2 }}
-                  />
+                  <span style={{ color: '#A1A1AA', fontSize: '0.85rem', minWidth: '55px' }}>
+                    {form.landSizeUnit === 'HECTARE' ? 'hectares' : 'acres'}
+                  </span>
                 </div>
-              </details>
+              </div>
             </div>
 
             <div style={S.btnRow}>
@@ -713,8 +763,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             submitting={submitting}
             error={error}
             networkError={networkError}
-            onRetry={() => { setError(''); handleSubmit(); }}
-            onBack={() => { setStep(STEP_KEYS.indexOf('photo')); setError(''); }}
+            onRetry={() => { setError(''); setNetworkError(false); submitGuardRef.current = false; handleSubmit(); }}
+            onBack={() => { setStep(STEP_KEYS.indexOf('photo')); setError(''); setNetworkError(false); submitGuardRef.current = false; }}
           />
         )}
 
@@ -773,14 +823,23 @@ const PROCESSING_TIMEOUT_MS = 30000;
 function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
   const [activeStep, setActiveStep] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
+  // Reset animation and timeout each time submitting starts (including retries)
   useEffect(() => {
     if (!submitting) return;
+    setActiveStep(0);
+    setTimedOut(false);
     const t1 = setTimeout(() => setActiveStep(1), 1200);
     const t2 = setTimeout(() => setActiveStep(2), 3000);
     const tTimeout = setTimeout(() => setTimedOut(true), PROCESSING_TIMEOUT_MS);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(tTimeout); };
-  }, [submitting]);
+  }, [submitting, retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount(c => c + 1);
+    onRetry();
+  };
 
   if (timedOut && submitting && !error) {
     return (
@@ -790,7 +849,7 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
         <p style={S.subtitle}>Your data is saved. You can wait or go back and try again.</p>
         <div style={S.btnRow}>
           <button onClick={onBack} style={S.secondaryBtn}>Go Back</button>
-          <button onClick={onRetry} style={S.primaryBtn}>Retry</button>
+          <button onClick={handleRetry} style={S.primaryBtn}>Retry</button>
         </div>
       </div>
     );
@@ -804,7 +863,7 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
         <p style={{ ...S.subtitle, color: '#EF4444' }}>{error}</p>
         <div style={S.btnRow}>
           <button onClick={onBack} style={S.secondaryBtn}>Go Back</button>
-          <button onClick={onRetry} style={S.primaryBtn}>{networkError ? 'Retry When Online' : 'Retry'}</button>
+          <button onClick={handleRetry} style={S.primaryBtn}>{networkError ? 'Retry When Online' : 'Retry'}</button>
         </div>
       </div>
     );
@@ -959,6 +1018,12 @@ const S = {
     fontSize: '0.82rem', cursor: 'pointer', minHeight: '44px',
     WebkitTapHighlightColor: 'transparent',
   },
+  searchAllBtn: {
+    width: '100%', padding: '0.65rem', background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px', color: '#22C55E',
+    fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', minHeight: '48px',
+    WebkitTapHighlightColor: 'transparent', marginTop: '0.25rem',
+  },
   // Farm size
   farmSizeGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem',
@@ -970,11 +1035,9 @@ const S = {
     border: '2px solid #243041', borderRadius: '10px', cursor: 'pointer',
     background: '#1E293B', WebkitTapHighlightColor: 'transparent',
   },
-  exactSizeDetails: { marginTop: '0.25rem' },
-  exactSizeSummary: {
-    fontSize: '0.78rem', color: '#71717A', cursor: 'pointer',
-    padding: '0.4rem 0', minHeight: '44px', display: 'flex', alignItems: 'center',
-  },
+  unitRow: { marginBottom: '0.75rem' },
+  exactSizeRow: { marginTop: '0.5rem', padding: '0.5rem 0' },
+  exactSizeLabel: { fontSize: '0.78rem', color: '#A1A1AA', display: 'block', marginBottom: '0.4rem' },
   // Location
   gpsConfirm: {
     padding: '0.5rem 0.75rem', background: 'rgba(34,197,94,0.1)',
