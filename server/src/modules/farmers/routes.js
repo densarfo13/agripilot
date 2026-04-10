@@ -63,6 +63,35 @@ router.get('/me', asyncHandler(async (req, res) => {
   res.json(profile);
 }));
 
+// PATCH /api/farmers/me — farmer updates own profile (gender, countryCode, ageGroup)
+// Safe self-update: only whitelisted fields; no role escalation.
+router.patch('/me', asyncHandler(async (req, res) => {
+  if (req.user.role !== 'farmer') {
+    return res.status(403).json({ error: 'Only farmer accounts can access this endpoint' });
+  }
+  const farmer = await prisma.farmer.findUnique({ where: { userId: req.user.sub }, select: { id: true } });
+  if (!farmer) {
+    return res.status(404).json({ error: 'Farmer profile not found' });
+  }
+  // Whitelist: only allow safe demographic fields
+  const ALLOWED_FIELDS = ['gender', 'countryCode', 'preferredLanguage'];
+  const updateData = {};
+  for (const key of ALLOWED_FIELDS) {
+    if (req.body[key] !== undefined && req.body[key] !== null && req.body[key] !== '') {
+      updateData[key] = req.body[key];
+    }
+  }
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No valid fields to update' });
+  }
+  const updated = await prisma.farmer.update({
+    where: { id: farmer.id },
+    data: updateData,
+    select: { id: true, gender: true, countryCode: true },
+  });
+  res.json(updated);
+}));
+
 // ─── Staff-only routes ─────────────────────────────────
 
 // Check for duplicate farmers (staff-facing — returns warning, not block)

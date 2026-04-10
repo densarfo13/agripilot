@@ -126,8 +126,20 @@ export default function FarmerDashboardPage() {
   const [onboardingError, setOnboardingError] = useState('');
 
   const handleOnboardingComplete = async (data) => {
-    const { photoFile, ...profileData } = data;
+    const { photoFile, gender, ageGroup, countryCode, ...profileData } = data;
+    // CRITICAL: backend requires farmerName — inject from user record
+    profileData.farmerName = user?.fullName || profileData.farmName || 'Farmer';
     setOnboardingError('');
+
+    // Update farmer record with gender/countryCode collected during onboarding
+    if (gender || countryCode) {
+      api.patch('/farmers/me', {
+        ...(gender ? { gender } : {}),
+        ...(countryCode ? { countryCode } : {}),
+        ...(ageGroup ? { ageGroup } : {}),
+      }).catch(() => {}); // non-blocking — farm profile creation is the critical path
+    }
+
     let newProfile;
     try {
       newProfile = await createProfile(profileData);

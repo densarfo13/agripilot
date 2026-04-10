@@ -56,12 +56,12 @@ router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
   writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id } }).catch(() => {});
 
   // Mark onboarding as completed for the farmer (first farm profile = onboarding done)
+  // Awaited so the completion flag is persisted before the response — prevents re-entry loop
   if (req.user.role === 'farmer') {
-    const prisma = (await import('../../config/database.js')).default;
-    prisma.farmer.updateMany({
+    await prisma.farmer.updateMany({
       where: { id: farmerId, onboardingCompletedAt: null },
       data: { onboardingCompletedAt: new Date() },
-    }).catch(() => {});
+    }).catch(() => {}); // swallow error — profile already created, this is supplemental
   }
 
   res.status(201).json(profile);
