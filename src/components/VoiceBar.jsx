@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceEvent } from '../utils/voiceAnalytics.js';
+import { getLanguage, setLanguage } from '../i18n/index.js';
 
 /**
  * VoiceBar — shared voice controls for low-literacy farmers.
@@ -15,15 +16,26 @@ import { trackVoiceEvent } from '../utils/voiceAnalytics.js';
  *   compact   — if true, shows smaller controls (default: false)
  */
 export default function VoiceBar({ voiceKey, compact = false }) {
-  const [voiceLang, setVoiceLang] = useState(() => {
-    try { return localStorage.getItem('farroway:voiceLang') || 'en'; } catch { return 'en'; }
-  });
+  const [voiceLang, setVoiceLang] = useState(() => getLanguage());
   const [enabled, setEnabled] = useState(() => isVoiceAvailable());
   const playedRef = useRef({});
 
-  // Persist language preference
+  // Persist language preference — uses unified i18n storage
   useEffect(() => {
-    try { localStorage.setItem('farroway:voiceLang', voiceLang); } catch { /* quota */ }
+    setLanguage(voiceLang); // writes to all localStorage keys + dispatches event
+  }, [voiceLang]);
+
+  // Listen for external language changes (e.g. from dashboard language selector)
+  useEffect(() => {
+    const handler = (e) => {
+      const newLang = e.detail || getLanguage();
+      if (newLang !== voiceLang) {
+        setVoiceLang(newLang);
+        playedRef.current = {}; // replay prompts in new language
+      }
+    };
+    window.addEventListener('farroway:langchange', handler);
+    return () => window.removeEventListener('farroway:langchange', handler);
   }, [voiceLang]);
 
   // Auto-play once per voiceKey

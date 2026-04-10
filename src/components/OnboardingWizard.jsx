@@ -10,60 +10,71 @@ import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 import { getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
+import { useTranslation } from '../i18n/index.js';
 
 // ─── Step definitions ────────────────────────────────────────
 const STEP_KEYS = ['welcome', 'farmName', 'country', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
 const TOTAL_USER_STEPS = 8; // steps the user interacts with (excluding welcome + processing)
 
-// ─── Tap option sets ─────────────────────────────────────────
-const GENDER_OPTIONS = [
-  { value: 'male', label: 'Male', icon: '\uD83D\uDC68\u200D\uD83C\uDF3E' },
-  { value: 'female', label: 'Female', icon: '\uD83D\uDC69\u200D\uD83C\uDF3E' },
-  { value: 'other', label: 'Other', icon: '\uD83E\uDDD1' },
-  { value: 'prefer_not_to_say', label: 'Prefer not to say', icon: '\u2014' },
-];
+// ─── Tap option sets (factory functions — accept t for localization) ──
+function getGenderOptions(t) {
+  return [
+    { value: 'male', label: t('gender.male'), icon: '\uD83D\uDC68\u200D\uD83C\uDF3E' },
+    { value: 'female', label: t('gender.female'), icon: '\uD83D\uDC69\u200D\uD83C\uDF3E' },
+    { value: 'other', label: t('gender.other'), icon: '\uD83E\uDDD1' },
+    { value: 'prefer_not_to_say', label: t('gender.preferNotToSay'), icon: '\u2014' },
+  ];
+}
 
-const AGE_OPTIONS = [
-  { value: 'under_25', label: 'Under 25' },
-  { value: '25_35', label: '25 \u2013 35' },
-  { value: '36_50', label: '36 \u2013 50' },
-  { value: 'over_50', label: 'Over 50' },
-];
+function getAgeOptions(t) {
+  return [
+    { value: 'under_25', label: t('age.under25') },
+    { value: '25_35', label: t('age.25to35') },
+    { value: '36_50', label: t('age.36to50') },
+    { value: 'over_50', label: t('age.over50') },
+  ];
+}
 
 // Farm size categories — subtitles adapt to selected unit
-const FARM_SIZE_DEFS = {
-  small:  { label: 'Small', icon: '\uD83C\uDF31', acre: 'Under 2 acres', hectare: 'Under 1 hectare', defaultVal: 1 },
-  medium: { label: 'Medium', icon: '\uD83C\uDF3E', acre: '2 \u2013 10 acres', hectare: '1 \u2013 4 hectares', defaultVal: 5 },
-  large:  { label: 'Large', icon: '\uD83C\uDFE1', acre: 'Over 10 acres', hectare: 'Over 4 hectares', defaultVal: 15 },
-};
+function getFarmSizeDefs(t) {
+  return {
+    small:  { label: t('farmSize.small'), icon: '\uD83C\uDF31', acre: t('farmSize.under2acres'), hectare: t('farmSize.under1hectare'), defaultVal: 1 },
+    medium: { label: t('farmSize.medium'), icon: '\uD83C\uDF3E', acre: t('farmSize.2to10acres'), hectare: t('farmSize.1to4hectares'), defaultVal: 5 },
+    large:  { label: t('farmSize.large'), icon: '\uD83C\uDFE1', acre: t('farmSize.over10acres'), hectare: t('farmSize.over4hectares'), defaultVal: 15 },
+  };
+}
 const FARM_SIZE_KEYS = ['small', 'medium', 'large'];
 
-const STAGE_OPTIONS = [
-  { value: 'planting', label: 'Planting', icon: '\uD83C\uDF31' },
-  { value: 'growing', label: 'Growing', icon: '\uD83C\uDF3F' },
-  { value: 'flowering', label: 'Flowering', icon: '\uD83C\uDF3C' },
-  { value: 'harvest', label: 'Harvest', icon: '\uD83C\uDF3E' },
-];
+function getStageOptions(t) {
+  return [
+    { value: 'planting', label: t('cropStage.planting'), icon: '\uD83C\uDF31' },
+    { value: 'growing', label: t('cropStage.growing'), icon: '\uD83C\uDF3F' },
+    { value: 'flowering', label: t('cropStage.flowering'), icon: '\uD83C\uDF3C' },
+    { value: 'harvest', label: t('cropStage.harvest'), icon: '\uD83C\uDF3E' },
+  ];
+}
 
 // Top crops shown as quick-tap buttons before the full CropSelect
-const TOP_CROPS = [
-  { code: 'MAIZE', label: 'Maize', icon: '\uD83C\uDF3D' },
-  { code: 'RICE', label: 'Rice', icon: '\uD83C\uDF3E' },
-  { code: 'BEAN', label: 'Beans', icon: '\uD83E\uDED8' },
-  { code: 'COFFEE', label: 'Coffee', icon: '\u2615' },
-  { code: 'CASSAVA', label: 'Cassava', icon: '\uD83E\uDD54' },
-  { code: 'BANANA', label: 'Banana', icon: '\uD83C\uDF4C' },
-  { code: 'WHEAT', label: 'Wheat', icon: '\uD83C\uDF3E' },
-  { code: 'SORGHUM', label: 'Sorghum', icon: '\uD83C\uDF3F' },
-  { code: 'TOMATO', label: 'Tomato', icon: '\uD83C\uDF45' },
-  { code: 'POTATO', label: 'Potato', icon: '\uD83E\uDD54' },
-  { code: 'TEA', label: 'Tea', icon: '\uD83C\uDF3F' },
-  { code: 'SWEET_POTATO', label: 'Sweet Potato', icon: '\uD83C\uDF60' },
-  { code: 'MANGO', label: 'Mango', icon: '\uD83E\uDD6D' },
-  { code: 'GROUNDNUT', label: 'Groundnut', icon: '\uD83E\uDD5C' },
-  { code: 'SUGARCANE', label: 'Sugarcane', icon: '\uD83C\uDF3F' },
-  { code: 'COTTON', label: 'Cotton', icon: '\u2601\uFE0F' },
-];
+function getTopCrops(t) {
+  return [
+    { code: 'MAIZE', label: t('crop.maize'), icon: '\uD83C\uDF3D' },
+    { code: 'RICE', label: t('crop.rice'), icon: '\uD83C\uDF3E' },
+    { code: 'BEAN', label: t('crop.beans'), icon: '\uD83E\uDED8' },
+    { code: 'COFFEE', label: t('crop.coffee'), icon: '\u2615' },
+    { code: 'CASSAVA', label: t('crop.cassava'), icon: '\uD83E\uDD54' },
+    { code: 'BANANA', label: t('crop.banana'), icon: '\uD83C\uDF4C' },
+    { code: 'WHEAT', label: t('crop.wheat'), icon: '\uD83C\uDF3E' },
+    { code: 'SORGHUM', label: t('crop.sorghum'), icon: '\uD83C\uDF3F' },
+    { code: 'TOMATO', label: t('crop.tomato'), icon: '\uD83C\uDF45' },
+    { code: 'POTATO', label: t('crop.potato'), icon: '\uD83E\uDD54' },
+    { code: 'TEA', label: t('crop.tea'), icon: '\uD83C\uDF3F' },
+    { code: 'SWEET_POTATO', label: t('crop.sweetPotato'), icon: '\uD83C\uDF60' },
+    { code: 'MANGO', label: t('crop.mango'), icon: '\uD83E\uDD6D' },
+    { code: 'GROUNDNUT', label: t('crop.groundnut'), icon: '\uD83E\uDD5C' },
+    { code: 'SUGARCANE', label: t('crop.sugarcane'), icon: '\uD83C\uDF3F' },
+    { code: 'COTTON', label: t('crop.cotton'), icon: '\u2601\uFE0F' },
+  ];
+}
 
 // Inject spinner keyframe once
 if (typeof document !== 'undefined' && !document.getElementById('farroway-spin')) {
@@ -93,6 +104,15 @@ const INITIAL_FORM = {
 };
 
 export default function OnboardingWizard({ userName, countryCode, onComplete }) {
+  const { t } = useTranslation();
+
+  // ─── Localized option sets (rebuilt on language change) ────
+  const GENDER_OPTIONS = getGenderOptions(t);
+  const AGE_OPTIONS = getAgeOptions(t);
+  const FARM_SIZE_DEFS = getFarmSizeDefs(t);
+  const STAGE_OPTIONS = getStageOptions(t);
+  const TOP_CROPS = getTopCrops(t);
+
   // ─── Draft persistence ─────────────────────────────────────
   const { state: draft, setState: setDraft, clearDraft, draftRestored } = useDraft(
     'onboarding-wizard',
@@ -156,6 +176,25 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
   // Stop speech on unmount (navigation away)
   useEffect(() => () => stopSpeech(), []);
+
+  // ─── Mobile keyboard overlap fix ──────────────────────────
+  // When an input/select receives focus on mobile, the virtual keyboard
+  // can cover it. Scroll the focused element into view after a short delay
+  // (to let the keyboard finish animating).
+  const modalRef = useRef(null);
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 350);
+      }
+    };
+    el.addEventListener('focusin', handler);
+    return () => el.removeEventListener('focusin', handler);
+  }, []);
 
   const handleReplay = () => {
     if (voiceEnabled && currentVoiceKey) speak(currentVoiceKey, voiceLang);
@@ -258,11 +297,11 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     const f = e.target.files?.[0];
     if (!f) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) {
-      setError('Please select a JPEG, PNG, or WebP image.');
+      setError(t('onboarding.selectImage'));
       return;
     }
     if (f.size > 5 * 1024 * 1024) {
-      setError('Image must be under 5 MB.');
+      setError(t('onboarding.imageUnder5MB'));
       return;
     }
     setError('');
@@ -283,7 +322,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     if (!form.farmSizeAcres && !form.farmSizeCategory) missing.push('land size');
     if (!form.countryCode) missing.push('country');
     if (missing.length > 0) {
-      setError(`Please complete: ${missing.join(', ')}. Go back to fill in missing fields.`);
+      setError(t('wizard.pleaseComplete', { fields: missing.join(', ') }));
       return;
     }
 
@@ -371,7 +410,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   // ─── Render ────────────────────────────────────────────────
   return (
     <div style={S.overlay}>
-      <div style={S.modal}>
+      <div style={S.modal} ref={modalRef}>
         {/* ── Voice controls ── */}
         {voiceEnabled && (
           <div style={S.voiceBar}>
@@ -381,7 +420,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               style={S.listenBtn}
               aria-label="Listen again"
             >
-              {'\uD83D\uDD0A'} Listen
+              {'\uD83D\uDD0A'} {t('wizard.listen')}
             </button>
             <select
               value={voiceLang}
@@ -411,7 +450,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               style={S.listenBtn}
               aria-label="Turn on voice guide"
             >
-              {'\uD83D\uDD08'} Enable Voice Guide
+              {'\uD83D\uDD08'} {t('common.enableVoice')}
             </button>
           </div>
         )}
@@ -423,7 +462,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               <div style={{ ...S.progressFill, width: `${progressPercent}%` }} />
             </div>
             <div style={S.progressLabel}>
-              Step {progressNum} of {TOTAL_USER_STEPS}
+              {t('wizard.stepOf', { step: progressNum, total: TOTAL_USER_STEPS })}
             </div>
           </div>
         )}
@@ -431,28 +470,28 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {/* Draft restored banner */}
         {saveStatus === 'restored' && (
           <div style={S.draftBanner}>
-            &#8635; <strong>Draft restored</strong> — your previous progress was saved.
-            <button type="button" onClick={() => setSaveStatus(null)} style={S.dismissBtn}>Dismiss</button>
+            &#8635; <strong>{t('wizard.draftRestored')}</strong> — {t('wizard.prevProgressSaved')}
+            <button type="button" onClick={() => setSaveStatus(null)} style={S.dismissBtn}>{t('wizard.dismiss')}</button>
           </div>
         )}
 
         {/* Save status */}
         {saveStatus === 'saved' && step > 0 && step < STEP_KEYS.indexOf('processing') && (
-          <div style={S.savedIndicator}>{'\u2713'} Draft saved</div>
+          <div style={S.savedIndicator}>{'\u2713'} {t('wizard.draftSaved')}</div>
         )}
 
         {/* ═══════════ STEP: Welcome ═══════════ */}
         {currentStep === 'welcome' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83D\uDC4B'}</div>
-            <h2 style={S.title}>Welcome{userName ? `, ${userName}` : ''}!</h2>
+            <h2 style={S.title}>{t('wizard.welcomeUser')}{userName ? `, ${userName}` : ''}!</h2>
             <p style={S.subtitle}>
-              Set up your farm in under a minute.{'\n'}Just tap to answer each question.
+              {t('wizard.setUpFarm')}{'\n'}Just tap to answer each question.
             </p>
             <div style={S.timeEstimate}>
-              <span style={S.timeIcon}>{'\u23F1\uFE0F'}</span> Takes about 60 seconds
+              <span style={S.timeIcon}>{'\u23F1\uFE0F'}</span> {t('wizard.takesAbout60s')}
             </div>
-            <button onClick={goNext} style={S.primaryBtn}>Get Started</button>
+            <button onClick={goNext} style={S.primaryBtn}>{t('wizard.getStarted')}</button>
           </div>
         )}
 
@@ -460,14 +499,14 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'farmName' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83C\uDFE1'}</div>
-            <h2 style={S.title}>Name your farm</h2>
-            <p style={S.subtitle}>What do you call your farm?</p>
+            <h2 style={S.title}>{t('wizard.nameYourFarm')}</h2>
+            <p style={S.subtitle}>{t('wizard.whatCallFarm')}</p>
             {error && <div style={S.errorBox}>{error}</div>}
             <div style={S.fieldWide}>
               <input
                 value={form.farmName}
                 onChange={e => { setForm(f => ({ ...f, farmName: e.target.value })); setFieldErrors(fe => ({ ...fe, farmName: undefined })); }}
-                placeholder="e.g. Sunrise Farm"
+                placeholder={t('wizard.egSunriseFarm')}
                 style={{
                   ...S.input,
                   borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim() ? '#22C55E' : '#374151',
@@ -480,15 +519,15 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               {fieldErrors.farmName && <div style={S.fieldError}>{fieldErrors.farmName}</div>}
             </div>
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button
                 onClick={() => {
-                  if (!form.farmName.trim()) { setFieldErrors({ farmName: 'Give your farm a name' }); return; }
+                  if (!form.farmName.trim()) { setFieldErrors({ farmName: t('wizard.giveAName') }); return; }
                   goNext();
                 }}
                 disabled={!form.farmName.trim()}
                 style={{ ...S.primaryBtn, opacity: form.farmName.trim() ? 1 : 0.5 }}
-              >Next</button>
+              >{t('common.next')}</button>
             </div>
           </div>
         )}
@@ -497,11 +536,11 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'country' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83C\uDF0D'}</div>
-            <h2 style={S.title}>Where are you?</h2>
-            <p style={S.subtitle}>Search or scroll to find your country</p>
+            <h2 style={S.title}>{t('wizard.whereAreYou')}</h2>
+            <p style={S.subtitle}>{t('wizard.searchCountry')}</p>
             {form.countryCode && (
               <div style={S.autoDetectBadge} data-testid="country-auto-detected">
-                {'\u2713'} Auto-detected — tap below to change
+                {'\u2713'} {t('wizard.autoDetected')}
               </div>
             )}
             <div style={S.fieldWide}>
@@ -520,14 +559,14 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               />
               {!form.countryCode && (
                 <div style={{ fontSize: '0.75rem', color: '#71717A', textAlign: 'center', marginTop: '0.25rem' }}>
-                  You can type to search, or tap the dropdown to scroll
+                  {t('wizard.typeToSearch')}
                 </div>
               )}
             </div>
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button onClick={goNext} style={S.primaryBtn}>
-                {form.countryCode ? 'Next' : 'Skip'}
+                {form.countryCode ? t('common.next') : t('common.skip')}
               </button>
             </div>
           </div>
@@ -537,8 +576,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'crop' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83C\uDF3E'}</div>
-            <h2 style={S.title}>What do you grow?</h2>
-            <p style={S.subtitle}>Tap your main crop</p>
+            <h2 style={S.title}>{t('wizard.whatDoYouGrow')}</h2>
+            <p style={S.subtitle}>{t('wizard.tapMainCrop')}</p>
             {error && <div style={S.errorBox}>{error}</div>}
 
             {/* Quick-tap top crops */}
@@ -580,7 +619,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                     data-testid="crop-other-tap"
                   >
                     <span style={S.topCropIcon}>{'\uD83C\uDF3F'}</span>
-                    <span style={{ fontSize: '0.82rem', color: '#A1A1AA' }}>Other...</span>
+                    <span style={{ fontSize: '0.82rem', color: '#A1A1AA' }}>{t('wizard.otherCrop')}</span>
                   </button>
                 </div>
                 <button
@@ -589,7 +628,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                   style={S.searchAllBtn}
                   data-testid="crop-search-all"
                 >
-                  {'\uD83D\uDD0D'} Search all 60+ crops
+                  {'\uD83D\uDD0D'} {t('wizard.searchAll60')}
                 </button>
               </div>
             )}
@@ -601,7 +640,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                   value={form.crop}
                   onChange={(v) => setForm(f => ({ ...f, crop: v }))}
                   countryCode={form.countryCode}
-                  placeholder="Search crops..."
+                  placeholder={t('onboarding.searchCrops')}
                   required
                 />
                 <button
@@ -609,7 +648,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                   onClick={() => setShowCropSearch(false)}
                   style={{ ...S.showMoreBtn, marginTop: '0.5rem' }}
                 >
-                  Back to top crops {'\u25B4'}
+                  {t('wizard.backToTopCrops')} {'\u25B4'}
                 </button>
               </div>
             )}
@@ -618,7 +657,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             {form.crop && (
               <div style={{ ...S.fieldWide, marginTop: '0.75rem' }}>
                 <TapSelector
-                  label="Current stage"
+                  label={t('onboarding.currentStage')}
                   options={STAGE_OPTIONS}
                   value={form.stage}
                   onChange={(v) => setForm(f => ({ ...f, stage: v }))}
@@ -628,15 +667,15 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             )}
 
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button
                 onClick={() => {
-                  if (!form.crop) { setFieldErrors({ crop: 'Select a crop' }); return; }
+                  if (!form.crop) { setFieldErrors({ crop: t('wizard.selectCrop') }); return; }
                   goNext();
                 }}
                 disabled={!form.crop}
                 style={{ ...S.primaryBtn, opacity: form.crop ? 1 : 0.5 }}
-              >Next</button>
+              >{t('common.next')}</button>
             </div>
           </div>
         )}
@@ -645,8 +684,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'farmSize' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83D\uDCCF'}</div>
-            <h2 style={S.title}>How big is your farm?</h2>
-            <p style={S.subtitle}>Choose your unit, then tap a size or enter exact</p>
+            <h2 style={S.title}>{t('wizard.howBigFarm')}</h2>
+            <p style={S.subtitle}>{t('wizard.chooseUnitThenTap')}</p>
 
             <div style={S.fieldWide}>
               {/* Unit selector — always visible */}
@@ -691,7 +730,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
               {/* Exact size — always visible, not hidden in details */}
               <div style={S.exactSizeRow} data-testid="exact-size-input">
-                <span style={S.exactSizeLabel}>Or enter exact size:</span>
+                <span style={S.exactSizeLabel}>{t('wizard.orEnterExact')}</span>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     value={form.farmSizeAcres}
@@ -704,16 +743,16 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                     style={{ ...S.input, flex: 1, textAlign: 'center', fontSize: '1.1rem' }}
                   />
                   <span style={{ color: '#A1A1AA', fontSize: '0.85rem', minWidth: '55px' }}>
-                    {form.landSizeUnit === 'HECTARE' ? 'hectares' : 'acres'}
+                    {form.landSizeUnit === 'HECTARE' ? t('wizard.hectares') : t('wizard.acres')}
                   </span>
                 </div>
               </div>
             </div>
 
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button onClick={goNext} style={S.primaryBtn}>
-                {form.farmSizeCategory || form.farmSizeAcres ? 'Next' : 'Skip'}
+                {form.farmSizeCategory || form.farmSizeAcres ? t('common.next') : t('common.skip')}
               </button>
             </div>
           </div>
@@ -723,8 +762,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'gender' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83E\uDDD1\u200D\uD83C\uDF3E'}</div>
-            <h2 style={S.title}>About you</h2>
-            <p style={S.subtitle}>This helps us understand our farmers better</p>
+            <h2 style={S.title}>{t('wizard.aboutYou')}</h2>
+            <p style={S.subtitle}>{t('wizard.helpUnderstand')}</p>
             <div style={S.fieldWide}>
               <TapSelector
                 options={GENDER_OPTIONS}
@@ -734,9 +773,9 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               />
             </div>
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button onClick={goNext} style={S.primaryBtn}>
-                {form.gender ? 'Next' : 'Skip'}
+                {form.gender ? t('common.next') : t('common.skip')}
               </button>
             </div>
           </div>
@@ -746,8 +785,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'age' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83C\uDF82'}</div>
-            <h2 style={S.title}>Your age group</h2>
-            <p style={S.subtitle}>Tap your age range</p>
+            <h2 style={S.title}>{t('wizard.yourAgeGroup')}</h2>
+            <p style={S.subtitle}>{t('wizard.tapAgeRange')}</p>
             <div style={S.fieldWide}>
               <TapSelector
                 options={AGE_OPTIONS}
@@ -757,9 +796,9 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               />
             </div>
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button onClick={goNext} style={S.primaryBtn}>
-                {form.ageGroup ? 'Next' : 'Skip'}
+                {form.ageGroup ? t('common.next') : t('common.skip')}
               </button>
             </div>
           </div>
@@ -769,8 +808,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'location' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83D\uDCCD'}</div>
-            <h2 style={S.title}>Farm location</h2>
-            <p style={S.subtitle}>Tap to detect or type your location</p>
+            <h2 style={S.title}>{t('wizard.farmLocation')}</h2>
+            <p style={S.subtitle}>{t('wizard.tapDetectOrType')}</p>
             <div style={S.fieldWide}>
               <LocationDetect
                 label={form.latitude ? '\u2713 Location detected \u2014 tap to update' : 'Detect my location'}
@@ -793,14 +832,14 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               <input
                 value={form.locationName}
                 onChange={e => setForm(f => ({ ...f, locationName: e.target.value }))}
-                placeholder="Or type: e.g. Nakuru, Kenya"
+                placeholder={t('onboarding.typeLocation')}
                 style={{ ...S.input, marginTop: '0.5rem' }}
               />
             </div>
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button onClick={goNext} style={S.primaryBtn}>
-                {form.locationName || form.latitude ? 'Next' : 'Skip'}
+                {form.locationName || form.latitude ? t('common.next') : t('common.skip')}
               </button>
             </div>
           </div>
@@ -810,8 +849,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'photo' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83D\uDCF7'}</div>
-            <h2 style={S.title}>Profile photo</h2>
-            <p style={S.subtitle}>Optional — helps your field officer recognize you</p>
+            <h2 style={S.title}>{t('wizard.profilePhoto')}</h2>
+            <p style={S.subtitle}>{t('wizard.optionalHelpsOfficer')}</p>
             {error && <div style={S.errorBox}>{error}</div>}
 
             <div style={{ marginBottom: '1rem' }}>
@@ -839,7 +878,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               onClick={() => document.getElementById('onboarding-photo-input')?.click()}
               style={{ ...S.secondaryBtn, width: '100%', marginBottom: '0.5rem' }}
             >
-              {photoFile ? 'Change Photo' : 'Take or Choose Photo'}
+              {photoFile ? t('onboarding.changePhoto') : t('onboarding.takePhoto')}
             </button>
             {photoFile && (
               <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginBottom: '0.5rem', textAlign: 'center' }}>
@@ -848,13 +887,13 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             )}
 
             <div style={S.btnRow}>
-              <button onClick={goBack} style={S.secondaryBtn}>Back</button>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
                 style={{ ...S.primaryBtn, opacity: submitting ? 0.6 : 1, background: '#22C55E' }}
               >
-                {submitting ? 'Creating...' : networkError ? 'Retry' : photoFile ? 'Create My Farm' : 'Skip & Create Farm'}
+                {submitting ? t('common.creating') : networkError ? t('common.retry') : photoFile ? t('wizard.createMyFarm') : t('wizard.skipCreateFarm')}
               </button>
             </div>
           </div>
@@ -875,16 +914,16 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {currentStep === 'processing' && submitSuccess && (
           <div style={{ ...S.stepContent, textAlign: 'center' }}>
             <div style={S.successIcon}>{'\u2713'}</div>
-            <h2 style={S.title}>Farm created!</h2>
+            <h2 style={S.title}>{t('wizard.farmCreated')}</h2>
             <p style={S.subtitle}>
-              <strong>{form.farmName.trim()}</strong> is ready.{'\n'}
-              You'll start receiving personalised recommendations shortly.
+              <strong>{form.farmName.trim()}</strong> {t('wizard.isReady')}{'\n'}
+              {t('wizard.willReceiveRecs')}
             </p>
             <div style={S.completionTime}>
-              Completed in {Math.round((Date.now() - startTimeRef.current) / 1000)}s
+              {t('wizard.completedIn', { seconds: Math.round((Date.now() - startTimeRef.current) / 1000) })}
             </div>
             <button onClick={() => window.location.reload()} style={S.primaryBtn}>
-              Continue to Dashboard
+              {t('wizard.continueToDashboard')}
             </button>
           </div>
         )}
@@ -893,19 +932,19 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         {step > 0 && step < STEP_KEYS.indexOf('processing') && !showResetConfirm && (
           <div style={{ textAlign: 'center', marginTop: '1rem' }}>
             <button onClick={() => setShowResetConfirm(true)} style={S.resetLink}>
-              Start over
+              {t('wizard.startOver')}
             </button>
           </div>
         )}
         {showResetConfirm && (
           <div style={S.resetConfirm}>
-            <span style={{ fontSize: '0.82rem', color: '#F59E0B' }}>Clear all data and start over?</span>
+            <span style={{ fontSize: '0.82rem', color: '#F59E0B' }}>{t('wizard.clearAllStartOver')}</span>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
               <button onClick={handleReset} style={{ ...S.secondaryBtn, color: '#EF4444', borderColor: '#EF4444', fontSize: '0.8rem', minHeight: '44px' }}>
-                Yes, start over
+                {t('wizard.yesStartOver')}
               </button>
               <button onClick={() => setShowResetConfirm(false)} style={{ ...S.secondaryBtn, fontSize: '0.8rem', minHeight: '44px' }}>
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -916,14 +955,15 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 }
 
 // ─── Step-based processing indicator with timeout + retry ────
-const PROCESSING_STEPS = [
-  { label: 'Creating your farm profile', icon: '\uD83C\uDFE1' },
-  { label: 'Setting up crop tracking', icon: '\uD83C\uDF31' },
-  { label: 'Preparing recommendations', icon: '\u2728' },
-];
 const PROCESSING_TIMEOUT_MS = 8000;
 
 function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
+  const { t } = useTranslation();
+  const PROCESSING_STEPS = [
+    { label: t('processing.creatingProfile'), icon: '\uD83C\uDFE1' },
+    { label: t('processing.settingUpCrop'), icon: '\uD83C\uDF31' },
+    { label: t('processing.preparingRecs'), icon: '\u2728' },
+  ];
   const [activeStep, setActiveStep] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -948,11 +988,11 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
     return (
       <div style={{ ...S.stepContent, textAlign: 'center' }}>
         <div style={S.stepIcon}>{'\u23F3'}</div>
-        <h2 style={S.title}>Taking longer than expected</h2>
-        <p style={S.subtitle}>Your data is saved. You can wait or go back and try again.</p>
+        <h2 style={S.title}>{t('processing.takingLonger')}</h2>
+        <p style={S.subtitle}>{t('processing.dataSavedWait')}</p>
         <div style={S.btnRow}>
-          <button onClick={onBack} style={S.secondaryBtn}>Go Back</button>
-          <button onClick={handleRetry} style={S.primaryBtn}>Retry</button>
+          <button onClick={onBack} style={S.secondaryBtn}>{t('processing.goBack')}</button>
+          <button onClick={handleRetry} style={S.primaryBtn}>{t('common.retry')}</button>
         </div>
       </div>
     );
@@ -962,11 +1002,11 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
     return (
       <div style={{ ...S.stepContent, textAlign: 'center' }}>
         <div style={S.stepIcon}>{networkError ? '\uD83D\uDCF6' : '\u26A0\uFE0F'}</div>
-        <h2 style={S.title}>{networkError ? 'No connection' : 'Something went wrong'}</h2>
+        <h2 style={S.title}>{networkError ? t('processing.noConnection') : t('processing.somethingWrong')}</h2>
         <p style={{ ...S.subtitle, color: '#EF4444' }}>{error}</p>
         <div style={S.btnRow}>
-          <button onClick={onBack} style={S.secondaryBtn}>Go Back</button>
-          <button onClick={handleRetry} style={S.primaryBtn}>{networkError ? 'Retry When Online' : 'Retry'}</button>
+          <button onClick={onBack} style={S.secondaryBtn}>{t('processing.goBack')}</button>
+          <button onClick={handleRetry} style={S.primaryBtn}>{networkError ? t('processing.retryWhenOnline') : t('common.retry')}</button>
         </div>
       </div>
     );
@@ -975,7 +1015,7 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
   return (
     <div style={{ ...S.stepContent, textAlign: 'center' }}>
       <div style={S.stepIcon}>{'\uD83C\uDF31'}</div>
-      <h2 style={S.title}>Setting up your farm...</h2>
+      <h2 style={S.title}>{t('processing.settingUp')}</h2>
       <div style={{ width: '100%', margin: '0.75rem 0 1rem' }}>
         {PROCESSING_STEPS.map((ps, i) => (
           <div

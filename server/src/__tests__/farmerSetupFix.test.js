@@ -21,9 +21,9 @@ describe('Setup flow — stuck spinner fix (root cause)', () => {
   });
 
   it('parent handler throws when createProfile returns null', () => {
-    expect(parent).toContain('if (!newProfile)');
+    expect(parent).toContain('if (!result)');
     // After the null check, there should be a throw
-    const nullIdx = parent.indexOf('if (!newProfile)');
+    const nullIdx = parent.indexOf('if (!result)');
     const chunk = parent.slice(nullIdx, nullIdx + 300);
     expect(chunk).toContain('throw new Error');
   });
@@ -58,21 +58,21 @@ describe('Setup flow — stuck spinner fix (root cause)', () => {
 describe('Setup flow — ProcessingStep timeout and retry', () => {
   const wizard = readFile('src/components/OnboardingWizard.jsx');
 
-  it('has 30s timeout constant', () => {
+  it('has timeout constant', () => {
     expect(wizard).toContain('PROCESSING_TIMEOUT_MS');
-    expect(wizard).toContain('30000');
+    expect(wizard).toContain('8000');
   });
 
   it('shows timeout UI with retry button', () => {
-    expect(wizard).toContain('Taking longer than expected');
-    expect(wizard).toContain('Retry');
-    expect(wizard).toContain('Go Back');
+    expect(wizard).toContain("t('processing.takingLonger')");
+    expect(wizard).toContain("t('common.retry')");
+    expect(wizard).toContain("t('processing.goBack')");
   });
 
   it('shows error UI with network/general distinction', () => {
-    expect(wizard).toContain('No connection');
-    expect(wizard).toContain('Something went wrong');
-    expect(wizard).toContain('Retry When Online');
+    expect(wizard).toContain("t('processing.noConnection')");
+    expect(wizard).toContain("t('processing.somethingWrong')");
+    expect(wizard).toContain("t('processing.retryWhenOnline')");
   });
 
   it('retry resets submitGuardRef so re-submit works', () => {
@@ -99,7 +99,7 @@ describe('Setup flow — ProcessingStep timeout and retry', () => {
   it('success path clears draft and shows success state', () => {
     expect(wizard).toContain('clearDraft()');
     expect(wizard).toContain('setSubmitSuccess(true)');
-    expect(wizard).toContain('Farm created!');
+    expect(wizard).toContain("t('wizard.farmCreated')");
   });
 });
 
@@ -113,10 +113,9 @@ describe('Crop selector — full dataset, not hardcoded', () => {
   const cropSelect = readFile('src/components/CropSelect.jsx');
 
   it('TOP_CROPS has 16 common crops (expanded from 6)', () => {
-    // Count TOP_CROPS entries
-    const topStart = wizard.indexOf('const TOP_CROPS = [');
-    const topEnd = wizard.indexOf('];', topStart);
-    const block = wizard.slice(topStart, topEnd);
+    // Count TOP_CROPS entries in getTopCrops factory
+    const topStart = wizard.indexOf('function getTopCrops');
+    const block = wizard.slice(topStart, topStart + 1200);
     const entries = (block.match(/code: '/g) || []).length;
     expect(entries).toBeGreaterThanOrEqual(12);
   });
@@ -128,13 +127,13 @@ describe('Crop selector — full dataset, not hardcoded', () => {
 
   it('has an "Other..." quick-tap button directly in the grid', () => {
     expect(wizard).toContain('crop-other-tap');
-    expect(wizard).toContain("Other...");
+    expect(wizard).toContain("t('wizard.otherCrop')");
     expect(wizard).toContain("borderStyle: 'dashed'");
   });
 
   it('has a prominent "Search all 80+ crops" button', () => {
     expect(wizard).toContain('crop-search-all');
-    expect(wizard).toContain('Search all 60+ crops');
+    expect(wizard).toContain("t('wizard.searchAll60')");
     expect(wizard).toContain('searchAllBtn');
   });
 
@@ -193,19 +192,19 @@ describe('Land size — unit selector (acre + hectare)', () => {
 
   it('farm size subtitles adapt to selected unit', () => {
     expect(wizard).toContain('FARM_SIZE_DEFS');
-    expect(wizard).toContain("acre: 'Under 2 acres'");
-    expect(wizard).toContain("hectare: 'Under 1 hectare'");
-    expect(wizard).toContain("acre: '2 \\u2013 10 acres'");
-    expect(wizard).toContain("hectare: '1 \\u2013 4 hectares'");
+    expect(wizard).toContain("t('farmSize.under2acres')");
+    expect(wizard).toContain("t('farmSize.under1hectare')");
+    expect(wizard).toContain("t('farmSize.2to10acres')");
+    expect(wizard).toContain("t('farmSize.1to4hectares')");
   });
 
   it('exact size input is always visible (not in details)', () => {
     expect(wizard).toContain('exact-size-input');
-    expect(wizard).toContain('Or enter exact size:');
+    expect(wizard).toContain("t('wizard.orEnterExact')");
   });
 
   it('exact size shows unit label next to input', () => {
-    expect(wizard).toContain("form.landSizeUnit === 'HECTARE' ? 'hectares' : 'acres'");
+    expect(wizard).toContain("form.landSizeUnit === 'HECTARE' ? t('wizard.hectares') : t('wizard.acres')");
   });
 
   it('normalizes to hectares via computeLandSizeFields', () => {
@@ -250,7 +249,7 @@ describe('Country selection — full dropdown', () => {
 
   it('wizard country step has auto-detect badge', () => {
     expect(wizard).toContain('country-auto-detected');
-    expect(wizard).toContain('Auto-detected');
+    expect(wizard).toContain("t('wizard.autoDetected')");
   });
 
   it('wizard auto-detects country from timezone', () => {
@@ -270,7 +269,7 @@ describe('Country selection — full dropdown', () => {
   it('country step shows search hint when no selection', () => {
     const countryStep = wizard.indexOf("currentStep === 'country'");
     const chunk = wizard.slice(countryStep, countryStep + 1800);
-    expect(chunk).toContain('type to search, or tap the dropdown to scroll');
+    expect(chunk).toContain("t('wizard.typeToSearch')");
   });
 });
 

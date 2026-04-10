@@ -3,6 +3,7 @@ import api, { formatApiError } from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { INSTITUTIONAL_ROLES } from '../utils/roles.js';
 import EmptyState from '../components/EmptyState.jsx';
+import { useTranslation } from '../i18n/index.js';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -40,6 +41,7 @@ export default function AdminUsersPage() {
   const [resetTarget, setResetTarget] = useState(null);
   const [actionError, setActionError] = useState('');
   const [confirmModal, setConfirmModal] = useState(null); // { user, action: 'disable'|'enable' }
+  const { t } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const isInstAdmin = currentUser?.role === 'institutional_admin';
@@ -109,10 +111,10 @@ export default function AdminUsersPage() {
     <>
       <div className="page-header">
         <div>
-          <h1>User Management</h1>
+          <h1>{t('admin.userManagement')}</h1>
           {orgLabel && <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{orgLabel}</div>}
         </div>
-        {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New User</button>}
+        {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{'+ ' + t('admin.newUser')}</button>}
       </div>
       <div className="page-body">
         {/* Status filter tabs */}
@@ -138,20 +140,20 @@ export default function AdminUsersPage() {
             <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={() => load()}>Try again</button>
           </div>
         )}
-        {loading ? <div className="loading">Loading...</div> : (
+        {loading ? <div className="loading">{t('admin.loading')}</div> : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>
               <div className="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Organization</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      {canManage && <th>Actions</th>}
+                      <th>{t('admin.name')}</th>
+                      <th>{t('admin.email')}</th>
+                      <th>{t('admin.role')}</th>
+                      <th>{t('admin.organization')}</th>
+                      <th>{t('progress.status')}</th>
+                      <th>{t('admin.created')}</th>
+                      {canManage && <th>{t('admin.actions')}</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -170,7 +172,7 @@ export default function AdminUsersPage() {
                           <td>
                             <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
                               {canEdit(u) && !u.archivedAt && (
-                                <button className="btn btn-sm btn-outline" onClick={() => setEditTarget(u)}>Edit</button>
+                                <button className="btn btn-sm btn-outline" onClick={() => setEditTarget(u)}>{t('admin.edit')}</button>
                               )}
                               {canDisable(u) && u.active && (
                                 <button
@@ -255,20 +257,22 @@ export default function AdminUsersPage() {
 
 // Compact status badge for user rows
 function UserStatusBadge({ user }) {
-  if (user.archivedAt) return <span className="badge badge-disabled">Archived</span>;
-  if (!user.active) return <span className="badge badge-no-access">Disabled</span>;
-  return <span className="badge badge-active">Active</span>;
+  const { t } = useTranslation();
+  if (user.archivedAt) return <span className="badge badge-disabled">{t('adminUser.archived')}</span>;
+  if (!user.active) return <span className="badge badge-no-access">{t('adminUser.disabled')}</span>;
+  return <span className="badge badge-active">{t('adminUser.active')}</span>;
 }
 
 // Generic confirmation modal
 function ConfirmModal({ title, body, confirmLabel, confirmStyle = {}, onConfirm, onCancel }) {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">{title} <button className="btn btn-outline btn-sm" onClick={onCancel}>✕</button></div>
         <div className="modal-body"><p style={{ margin: 0 }}>{body}</p></div>
         <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-outline" onClick={onCancel}>{t('common.cancel')}</button>
           <button className="btn" style={confirmStyle} onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </div>
@@ -279,6 +283,7 @@ function ConfirmModal({ title, body, confirmLabel, confirmStyle = {}, onConfirm,
 // ─── Edit User Modal ──────────────────────────────────────────────────────────
 
 function EditUserModal({ user, currentUser, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const isInstAdmin = currentUser?.role === 'institutional_admin';
   const isSelf = user.id === currentUser?.id;
@@ -385,7 +390,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          Edit Account: {user.fullName}
+          {t('adminUser.editUser')}: {user.fullName}
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
 
@@ -398,12 +403,12 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
               {profileError && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{profileError}</div>}
               {profileSuccess && successBanner(profileSuccess)}
               <div className="form-group">
-                <label className="form-label">Full Name</label>
+                <label className="form-label">{t('adminUser.fullName')}</label>
                 <input className="form-input" required value={profile.fullName}
                   onChange={e => setProfile(p => ({ ...p, fullName: e.target.value }))} />
               </div>
               <div className="form-group">
-                <label className="form-label">Preferred Language</label>
+                <label className="form-label">{t('adminUser.language')}</label>
                 <select className="form-select" value={profile.preferredLanguage}
                   onChange={e => setProfile(p => ({ ...p, preferredLanguage: e.target.value }))}>
                   <option value="">Not set</option>
@@ -413,7 +418,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
               {isSuperAdmin && (
                 <div className="form-group">
                   <label className="form-label">
-                    Email{' '}
+                    {t('adminUser.email')}{' '}
                     <span style={{ color: '#71717A', fontSize: '0.78rem', fontWeight: 400 }}>(super admin only)</span>
                   </label>
                   <input className="form-input" type="email" value={profile.email}
@@ -422,7 +427,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={profileSaving}>
-                  {profileSaving ? 'Saving...' : 'Save Profile'}
+                  {profileSaving ? t('adminUser.saving') : t('admin.save')}
                 </button>
               </div>
             </form>
@@ -442,7 +447,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
                 {roleError && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{roleError}</div>}
                 {roleSuccess && successBanner(roleSuccess)}
                 <div className="form-group">
-                  <label className="form-label">Role</label>
+                  <label className="form-label">{t('adminUser.role')}</label>
                   <select className="form-select" value={selectedRole}
                     onChange={e => setSelectedRole(e.target.value)}>
                     {roleOptions.map(r => (
@@ -462,7 +467,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={roleSaving}>
-                    {roleSaving ? 'Saving...' : PRIVILEGED_ROLES.has(selectedRole) ? 'Request Role Change' : 'Save Role'}
+                    {roleSaving ? t('adminUser.saving') : PRIVILEGED_ROLES.has(selectedRole) ? 'Request Role Change' : t('admin.save')}
                   </button>
                 </div>
               </form>
@@ -493,7 +498,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
                     ⚠ Organization transfers require SoD approval from a second admin.
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Organization</label>
+                    <label className="form-label">{t('admin.organization')}</label>
                     <select className="form-select" value={selectedOrgId}
                       onChange={e => setSelectedOrgId(e.target.value)}>
                       <option value="">No organization (unassigned)</option>
@@ -502,7 +507,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" className="btn btn-primary btn-sm" disabled={orgSaving}>
-                      {orgSaving ? 'Saving...' : 'Request Org Transfer'}
+                      {orgSaving ? t('adminUser.saving') : 'Request Org Transfer'}
                     </button>
                   </div>
                 </form>
@@ -513,7 +518,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
         </div>
 
         <div className="modal-footer">
-          <button type="button" className="btn btn-outline" onClick={onClose}>Close</button>
+          <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
         </div>
       </div>
 
@@ -559,6 +564,7 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
 // ─── Access & Offboarding Section (inside EditUserModal, super_admin only) ────
 
 function AccessOffboardingSection({ user, onDone }) {
+  const { t } = useTranslation();
   const [confirm, setConfirm] = useState(null); // 'archive' | 'unarchive'
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -607,7 +613,7 @@ function AccessOffboardingSection({ user, onDone }) {
             className="btn btn-sm btn-outline-danger"
             onClick={() => setConfirm('archive')}
           >
-            Archive User
+            {t('adminUser.archiveUser')}
           </button>
         </div>
       ) : (
@@ -617,7 +623,7 @@ function AccessOffboardingSection({ user, onDone }) {
             visibility but does not re-enable login — use the Enable button after unarchiving.
           </p>
           <button className="btn btn-sm btn-success" onClick={() => setConfirm('unarchive')}>
-            Unarchive User
+            {t('adminUser.unarchiveUser')}
           </button>
         </div>
       )}
@@ -626,7 +632,7 @@ function AccessOffboardingSection({ user, onDone }) {
         <ConfirmModal
           title="Archive User"
           body={<>Archive <strong>{user.fullName}</strong>?<br /><br /><span style={{ fontSize: '0.875rem', color: '#FFFFFF' }}>This removes login access and hides the account from normal views. All linked records are preserved. This can be reversed by unarchiving.</span></>}
-          confirmLabel="Archive User"
+          confirmLabel={t('adminUser.archiveUser')}
           confirmStyle={{ background: '#EF4444', color: '#fff' }}
           onConfirm={doArchive}
           onCancel={() => setConfirm(null)}
@@ -636,7 +642,7 @@ function AccessOffboardingSection({ user, onDone }) {
         <ConfirmModal
           title="Unarchive User"
           body={<>Unarchive <strong>{user.fullName}</strong>? Their account will become visible again but login access remains disabled until you explicitly re-enable them.</>}
-          confirmLabel="Unarchive"
+          confirmLabel={t('adminUser.unarchiveUser')}
           confirmStyle={{ background: '#22C55E', color: '#fff' }}
           onConfirm={doUnarchive}
           onCancel={() => setConfirm(null)}
@@ -649,6 +655,7 @@ function AccessOffboardingSection({ user, onDone }) {
 // ─── Reset Password Modal ─────────────────────────────────────────────────────
 
 function ResetPasswordModal({ user, onClose }) {
+  const { t } = useTranslation();
   const isPrivilegedTarget = PRIVILEGED_ROLES.has(user.role);
   const [newPassword, setNewPassword]       = useState('');
   const [error, setError]                   = useState('');
@@ -681,7 +688,7 @@ function ResetPasswordModal({ user, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          Reset Password — {user.fullName}
+          {t('adminUser.resetPassword')} — {user.fullName}
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -694,16 +701,16 @@ function ResetPasswordModal({ user, onClose }) {
             {error && <div className="alert alert-danger">{error}</div>}
             {success && <div className="alert-inline alert-inline-success">{success}</div>}
             <div className="form-group">
-              <label className="form-label">New Password for {user.email}</label>
+              <label className="form-label">{t('adminUser.newPassword')} — {user.email}</label>
               <input className="form-input" type="password" required minLength={8}
                 value={newPassword} onChange={e => setNewPassword(e.target.value)}
                 placeholder="Min 8 chars, 1 upper, 1 lower, 1 number" />
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Resetting...' : isPrivilegedTarget ? 'Request Reset' : 'Reset Password'}
+              {saving ? 'Resetting...' : isPrivilegedTarget ? 'Request Reset' : t('adminUser.resetPassword')}
             </button>
           </div>
         </form>
@@ -733,6 +740,7 @@ function ResetPasswordModal({ user, onClose }) {
 // ─── Create User Modal ────────────────────────────────────────────────────────
 
 function CreateUserModal({ onClose, onCreated }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'field_officer', organizationId: '' });
   const [orgs, setOrgs] = useState([]);
   const [error, setError] = useState('');
@@ -767,25 +775,25 @@ function CreateUserModal({ onClose, onCreated }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">New User <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button></div>
+        <div className="modal-header">{t('adminUser.createUser')} <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button></div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
             <div className="form-group">
-              <label className="form-label">Full Name</label>
+              <label className="form-label">{t('adminUser.fullName')}</label>
               <input className="form-input" required value={form.fullName} onChange={set('fullName')} />
             </div>
             <div className="form-group">
-              <label className="form-label">Email</label>
+              <label className="form-label">{t('adminUser.email')}</label>
               <input className="form-input" type="email" required value={form.email} onChange={set('email')} />
             </div>
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label className="form-label">{t('adminUser.password')}</label>
               <input className="form-input" type="password" required minLength={8} value={form.password} onChange={set('password')} placeholder="Min 8 chars, 1 upper, 1 lower, 1 number" />
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Role</label>
+                <label className="form-label">{t('adminUser.role')}</label>
                 <select className="form-select" value={form.role} onChange={set('role')}>
                   {INSTITUTIONAL_ROLES.map(r => (
                     <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>
@@ -793,7 +801,7 @@ function CreateUserModal({ onClose, onCreated }) {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Organization</label>
+                <label className="form-label">{t('admin.organization')}</label>
                 <select className="form-select" value={form.organizationId} onChange={set('organizationId')}>
                   <option value="">Inherit from creator</option>
                   {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
@@ -802,8 +810,8 @@ function CreateUserModal({ onClose, onCreated }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Creating...' : 'Create User'}</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t('adminUser.creating') : t('adminUser.createUser')}</button>
           </div>
         </form>
       </div>
@@ -822,6 +830,7 @@ function CreateUserModal({ onClose, onCreated }) {
 //   onClose             — called when the modal is closed
 //   onExecute(approvalRequestId) — async fn called to execute the protected action
 function SodActionModal({ title, description, requestType, targetField, targetId, executeLabel, onClose, onExecute }) {
+  const { t } = useTranslation();
   const [mode, setMode]         = useState('request');
   const [reason, setReason]     = useState('');
   const [approvalId, setApprovalId] = useState('');
@@ -925,7 +934,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   {saving ? 'Submitting…' : 'Submit Request'}
                 </button>
@@ -947,7 +956,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
                 Once approved, switch to the <strong>Execute</strong> tab and paste the ID to proceed.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-outline" onClick={onClose}>Close</button>
+                <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
               </div>
             </div>
           )}
@@ -970,7 +979,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
+                <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   {saving ? 'Executing…' : executeLabel}
                 </button>

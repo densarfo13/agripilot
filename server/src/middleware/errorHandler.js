@@ -39,11 +39,27 @@ export function errorHandler(err, req, res, _next) {
     console.error(err.stack);
   }
 
-  // Prisma known-error handling
+  // Prisma known-error handling — unique constraint violations
   if (err.code === 'P2002') {
     const target = err.meta?.target;
-    if (target && (target.includes('phone') || (Array.isArray(target) && target.some(t => t.includes('phone'))))) {
+    const has = (key) => target && (target.includes(key) || (Array.isArray(target) && target.some(t => t.includes(key))));
+    if (has('phone')) {
       return res.status(409).json({ error: 'A farmer with this phone number already exists in this organization.' });
+    }
+    if (has('nationalid') || has('national_id')) {
+      return res.status(409).json({ error: 'A farmer with this national ID already exists in this organization.' });
+    }
+    if (has('referral') && has('code')) {
+      return res.status(409).json({ error: 'This referral code is already in use.' });
+    }
+    if (has('review_assign') || (has('application') && has('reviewer'))) {
+      return res.status(409).json({ error: 'This reviewer is already assigned to this application.' });
+    }
+    if (has('officer_validation')) {
+      return res.status(409).json({ error: 'This officer has already submitted this validation type for this season.' });
+    }
+    if (has('rec_feedback')) {
+      return res.status(409).json({ error: 'You have already submitted feedback for this recommendation.' });
     }
     return res.status(409).json({ error: 'A record with that value already exists.' });
   }

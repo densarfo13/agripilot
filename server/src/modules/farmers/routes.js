@@ -933,6 +933,78 @@ router.delete('/:id/profile-photo',
     res.json({ message: 'Profile photo removed' });
   }));
 
+// ─── Admin Recovery Endpoints ─────────────────────────────
+
+// POST /api/v1/farmers/:id/activate — force-activate a stuck farmer (admin only)
+// Use case: farmer is approved but has no user account and invite expired/failed.
+// This resets the invite flow so admin can resend.
+router.post('/:id/activate', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+  const farmer = await prisma.farmer.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, fullName: true, registrationStatus: true, userId: true },
+  });
+  if (!farmer) return res.status(404).json({ error: 'Farmer not found' });
+
+  // Already has a user account — nothing to force-activate
+  if (farmer.userId) {
+    return res.status(400).json({ error: 'Farmer already has an active user account' });
+  }
+
+  // Reset invite state so a fresh invite can be sent
+  await prisma.farmer.update({
+    where: { id: req.params.id },
+    data: {
+      registrationStatus: 'approved',
+      inviteToken: null,
+      inviteExpiresAt: null,
+      inviteDeliveryStatus: null,
+      invitedAt: null,
+    },
+  });
+
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'farmer_force_activated',
+    details: { farmerId: req.params.id, previousStatus: farmer.registrationStatus },
+  }).catch(() => {});
+  opsEvent('workflow', 'farmer_force_activated', 'info', {
+    farmerId: req.params.id, adminUserId: req.user.sub,
+  });
+
+  res.json({ success: true, message: `Farmer ${farmer.fullName} reset for re-invitation` });
+}));
+
+// POST /api/v1/farmers/:id/reset-profile — delete farm profile for re-onboarding (admin only)
+// Use case: farmer's profile data was entered incorrectly and needs to start over.
+router.post('/:id/reset-profile', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
+  const farmer = await prisma.farmer.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, fullName: true },
+  });
+  if (!farmer) return res.status(404).json({ error: 'Farmer not found' });
+
+  // Delete all farm profiles for this farmer + reset onboarding flag
+  const deleted = await prisma.$transaction(async (tx) => {
+    const profiles = await tx.farmProfile.deleteMany({ where: { farmerId: req.params.id } });
+    await tx.farmer.update({
+      where: { id: req.params.id },
+      data: { onboardingCompletedAt: null },
+    });
+    return profiles.count;
+  });
+
+  writeAuditLog({
+    userId: req.user.sub,
+    action: 'farmer_profile_reset',
+    details: { farmerId: req.params.id, profilesDeleted: deleted },
+  }).catch(() => {});
+  opsEvent('workflow', 'farmer_profile_reset', 'info', {
+    farmerId: req.params.id, adminUserId: req.user.sub, profilesDeleted: deleted,
+  });
+
+  res.json({ success: true, message: `${deleted} farm profile(s) removed. Farmer can re-onboard.`, profilesDeleted: deleted });
+}));
+
 // Delete farmer (admin only)
 router.delete('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   await farmersService.deleteFarmer(req.params.id);

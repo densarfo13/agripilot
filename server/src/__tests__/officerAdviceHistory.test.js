@@ -5,7 +5,7 @@ vi.mock('../config/database.js', () => ({
     farmer: { findUnique: vi.fn() },
     farmSeason: { findUnique: vi.fn(), findMany: vi.fn() },
     seasonProgressEntry: { findMany: vi.fn() },
-    officerValidation: { create: vi.fn(), findMany: vi.fn() },
+    officerValidation: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn() },
     user: { findUnique: vi.fn() },
   },
 }));

@@ -22,6 +22,7 @@ vi.mock('../config/database.js', () => {
     auditLog: { count: vi.fn() },
     credibilityAssessment: { count: vi.fn(), findMany: vi.fn() },
     reviewAssignment: { findMany: vi.fn() },
+    farmProfile: { groupBy: vi.fn(), aggregate: vi.fn() },
   };
   return { default: mockPrisma };
 });
@@ -339,6 +340,16 @@ describe('getPilotReport', () => {
       .mockResolvedValueOnce(3)   // submitted
       .mockResolvedValueOnce(2)   // under_review
       .mockResolvedValueOnce(3);  // approved
+
+    // Crop distribution + land size (Phase 2 additions)
+    prisma.farmProfile.groupBy.mockResolvedValue([
+      { crop: 'maize', _count: { crop: 5 } },
+    ]);
+    prisma.farmProfile.aggregate.mockResolvedValue({
+      _sum: { landSizeHectares: 20.0 },
+      _avg: { landSizeHectares: 2.0 },
+      _count: { landSizeHectares: 10 },
+    });
 
     prisma.organization.findUnique.mockResolvedValue({
       id: 'org-1', name: 'Test Org', type: 'mfi', countryCode: 'KE', createdAt: new Date(),

@@ -5,6 +5,7 @@ import { generateCropLifecycleReminders } from '../reminders/service.js';
 import { isValidFileReference } from '../../utils/uploadHealth.js';
 import { computeLandSizeFields } from '../../utils/landSize.js';
 import { normalizeCrop } from '../farmProfiles/service.js';
+import { getFarmerLifecycleState, FARMER_STATE } from '../../utils/farmerLifecycle.js';
 
 /**
  * Farm Season Service
@@ -25,6 +26,18 @@ export async function createSeason(farmerId, data) {
   if (!farmer) {
     const err = new Error('Farmer not found');
     err.statusCode = 404;
+    throw err;
+  }
+
+  // ── Lifecycle guard: block season creation if setup incomplete ──
+  const farmProfile = await prisma.farmProfile.findFirst({
+    where: { farmerId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const lifecycle = getFarmerLifecycleState({ farmProfile, countryCode: farmer.countryCode });
+  if (lifecycle.state !== FARMER_STATE.ACTIVE) {
+    const err = new Error('Complete your farm profile before starting a season. Missing: ' + lifecycle.missing.join(', '));
+    err.statusCode = 400;
     throw err;
   }
 

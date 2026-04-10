@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import api from '../api/client.js';
 import { enqueue, isOnline } from '../utils/offlineQueue.js';
+import { generateUUID, generateOfflineId } from '../utils/generateId.js';
 
-/** Generate a UUID v4 using browser crypto API */
+/** Generate an idempotency key for safe retry — delegates to shared UUID utility */
 function generateIdempotencyKey() {
-  return crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return generateUUID();
 }
 
 /** Queue a mutation for later sync if offline */
@@ -16,17 +17,40 @@ function isNetworkError(err) {
   return !err.response && (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || !navigator.onLine);
 }
 
+// ─── localStorage cache for offline dashboard rendering ──────
+const CACHE_KEY = 'farroway:farmCache';
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function loadCached() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (Date.now() - cached._ts > CACHE_TTL) { localStorage.removeItem(CACHE_KEY); return null; }
+    return cached;
+  } catch { return null; }
+}
+
+function saveCache(slice) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ...slice, _ts: Date.now() }));
+  } catch { /* quota exceeded — non-critical */ }
+}
+
+const cached = loadCached();
+
 export const useFarmStore = create((set, get) => ({
-  // State
-  profiles: [],
-  currentProfile: null,
-  recommendations: [],
-  dashboardSummary: null,
-  weather: null,
-  weatherRecs: null,
-  financeScore: null,
+  // State — hydrate from localStorage cache for offline rendering
+  profiles: cached?.profiles || [],
+  currentProfile: cached?.currentProfile || null,
+  recommendations: cached?.recommendations || [],
+  dashboardSummary: cached?.dashboardSummary || null,
+  weather: cached?.weather || null,
+  weatherRecs: cached?.weatherRecs || null,
+  financeScore: cached?.financeScore || null,
   loading: false,
   error: null,
+  _fromCache: !!cached, // true if data is stale cache, cleared on first successful fetch
 
   // Actions
   setLoading: (loading) => set({ loading }),
@@ -39,13 +63,20 @@ export const useFarmStore = create((set, get) => ({
     try {
       const r = await api.get('/v1/farms');
       const profiles = r.data.items || [];
-      set({ profiles, loading: false });
+      set({ profiles, loading: false, _fromCache: false });
       // Auto-select first profile if none selected
       if (profiles.length > 0 && !get().currentProfile) {
         set({ currentProfile: profiles[0] });
       }
+      // Persist to cache for offline rendering
+      saveCache({ profiles, currentProfile: get().currentProfile, recommendations: get().recommendations, dashboardSummary: get().dashboardSummary, weather: get().weather, weatherRecs: get().weatherRecs, financeScore: get().financeScore });
       return profiles;
     } catch (err) {
+      // If offline and we have cached data, surface it silently
+      if (isNetworkError(err) && get().profiles.length > 0) {
+        set({ loading: false, _fromCache: true });
+        return get().profiles;
+      }
       set({ error: err.response?.data?.error || 'Failed to load farm profiles', loading: false });
       return [];
     }
@@ -139,8 +170,10 @@ export const useFarmStore = create((set, get) => ({
   fetchRecommendations: async (farmId) => {
     try {
       const r = await api.get(`/v1/farms/${farmId}/recommendations`);
-      set({ recommendations: r.data.items || [] });
-      return r.data.items || [];
+      const recs = r.data.items || [];
+      set({ recommendations: recs });
+      saveCache({ profiles: get().profiles, currentProfile: get().currentProfile, recommendations: recs, dashboardSummary: get().dashboardSummary, weather: get().weather, weatherRecs: get().weatherRecs, financeScore: get().financeScore });
+      return recs;
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load recommendations' });
       return [];
@@ -157,7 +190,7 @@ export const useFarmStore = create((set, get) => ({
       if (isNetworkError(err)) {
         await queueIfOffline('POST', `/v1/farms/${farmId}/recommendations`, data);
         // Optimistic: add a placeholder
-        const placeholder = { ...data, id: `offline-${Date.now()}`, status: 'pending', _offline: true };
+        const placeholder = { ...data, id: generateOfflineId('rec'), status: 'pending', _offline: true };
         set((s) => ({ recommendations: [placeholder, ...s.recommendations] }));
         return placeholder;
       }
@@ -239,6 +272,7 @@ export const useFarmStore = create((set, get) => ({
     try {
       const r = await api.get(`/v1/farms/${farmId}/finance-score`);
       set({ financeScore: r.data });
+      saveCache({ profiles: get().profiles, currentProfile: get().currentProfile, recommendations: get().recommendations, dashboardSummary: get().dashboardSummary, weather: get().weather, weatherRecs: get().weatherRecs, financeScore: r.data });
       return r.data;
     } catch (err) {
       set({ financeScore: null });

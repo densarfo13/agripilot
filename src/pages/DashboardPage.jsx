@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const [benchmarkSummary, setBenchmarkSummary] = useState(null);
   const [expiringInvites, setExpiringInvites] = useState(0);
   const [loadWarning, setLoadWarning] = useState('');
+  const [deliveryStats, setDeliveryStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const navigate = useNavigate();
@@ -90,6 +91,10 @@ export default function DashboardPage() {
       if (missingData.length > 0) setLoadWarning(`Some data could not be loaded: ${missingData.join(', ')}. Try refreshing.`);
       if (canSeeAttention) {
         api.get('/farmers/expiring-invites').then(r => setExpiringInvites(r.data?.count || 0)).catch(() => {});
+      }
+      // Delivery stats — non-blocking, admin-only
+      if (isAdmin) {
+        api.get('/pilot/delivery-stats').then(r => setDeliveryStats(r.data)).catch(() => {});
       }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [selectedOrgId]);
@@ -460,6 +465,59 @@ export default function DashboardPage() {
               <span style={{ ...DS.queueTag, color: queues.fraud > 0 ? '#EF4444' : '#A1A1AA' }} onClick={() => navigate('/fraud-queue')}>Fraud: {queues.fraud}</span>
               <span style={DS.queueTag} onClick={() => navigate('/farmer-registrations')}>Pending: {pendingCount}</span>
             </div>
+
+            {/* Delivery stats */}
+            {deliveryStats?.summary && (
+              <div style={{ marginTop: '0.75rem' }} data-testid="delivery-stats">
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.4rem' }}>Invite Delivery</div>
+                <div style={DS.detailsGrid}>
+                  <div style={DS.detailPill}>
+                    <div style={DS.detailPillLabel}>Invited</div>
+                    <div style={DS.detailPillValue}>{deliveryStats.summary.totalInvited}</div>
+                  </div>
+                  <div style={DS.detailPill}>
+                    <div style={DS.detailPillLabel}>Activated</div>
+                    <div style={DS.detailPillValue}>{deliveryStats.summary.totalActivated}</div>
+                  </div>
+                  <div style={DS.detailPill}>
+                    <div style={DS.detailPillLabel}>Activation Rate</div>
+                    <div style={{ ...DS.detailPillValue, color: deliveryStats.summary.activationRate >= 50 ? '#22C55E' : '#F59E0B' }}>
+                      {deliveryStats.summary.activationRate}%
+                    </div>
+                  </div>
+                  <div style={DS.detailPill}>
+                    <div style={DS.detailPillLabel}>Failed</div>
+                    <div style={{ ...DS.detailPillValue, color: deliveryStats.summary.stalledCount > 0 ? '#EF4444' : '#A1A1AA' }}>
+                      {deliveryStats.summary.stalledCount}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Crop + Land metrics */}
+            {adoption?.cropDistribution?.length > 0 && (
+              <div style={{ marginTop: '0.75rem' }} data-testid="crop-land-stats">
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.4rem' }}>Crop & Land</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {adoption.cropDistribution.slice(0, 6).map(c => (
+                    <span key={c.crop} style={DS.queueTag}>{getCropLabel(c.crop)}: {c.count}</span>
+                  ))}
+                </div>
+                {adoption.landSize && (
+                  <div style={{ ...DS.detailsGrid, marginTop: '0.5rem' }}>
+                    <div style={DS.detailPill}>
+                      <div style={DS.detailPillLabel}>Total Land</div>
+                      <div style={DS.detailPillValue}>{adoption.landSize.totalHectares} ha</div>
+                    </div>
+                    <div style={DS.detailPill}>
+                      <div style={DS.detailPillLabel}>Avg Farm</div>
+                      <div style={DS.detailPillValue}>{adoption.landSize.avgHectares} ha</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Recent applications */}
             {portfolio.recentApplications?.length > 0 && (

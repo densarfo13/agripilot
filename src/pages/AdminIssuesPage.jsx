@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client.js';
+import { useTranslation } from '../i18n/index.js';
 
 const ISSUE_TYPES = [
   { value: '', label: 'All Types' }, { value: 'BUG', label: 'Bug' },
@@ -35,6 +36,7 @@ const TYPE_LABEL = { BUG: 'Bug', DATA_ISSUE: 'Data Issue', ACCESS_ISSUE: 'Access
 const SEL = { background: '#1E293B', color: '#fff', border: '1px solid #243041', borderRadius: 6, padding: '0.45rem 0.75rem', fontSize: '0.85rem' };
 
 export default function AdminIssuesPage() {
+  const { t } = useTranslation();
   const [issues, setIssues] = useState([]);
   const [total, setTotal] = useState(0);
   const [distribution, setDistribution] = useState({});

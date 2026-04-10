@@ -3,6 +3,7 @@ import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import { getCountryName } from '../utils/countries.js';
+import { useTranslation } from '../i18n/index.js';
 
 const ORG_TYPES = ['NGO', 'LENDER', 'COOPERATIVE', 'INVESTOR', 'DEVELOPMENT_PARTNER', 'INTERNAL'];
 
@@ -23,6 +24,7 @@ export default function AdminOrganizationsPage() {
   const [editOrg, setEditOrg] = useState(null);
   const user = useAuthStore(s => s.user);
   const isSuperAdmin = user?.role === 'super_admin';
+  const { t } = useTranslation();
 
   const load = () => {
     setLoading(true);
@@ -38,16 +40,16 @@ export default function AdminOrganizationsPage() {
   return (
     <>
       <div className="page-header">
-        <h1>Organizations</h1>
-        {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New Organization</button>}
+        <h1>{t('admin.organizations')}</h1>
+        {isSuperAdmin && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{'+ ' + t('admin.newOrganization')}</button>}
       </div>
       <div className="page-body">
         {error && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-        {loading ? <div className="loading">Loading organizations...</div> : orgs.length === 0 ? (
+        {loading ? <div className="loading">{t('admin.loading')}</div> : orgs.length === 0 ? (
           <div className="card">
             <div className="card-body empty-state">
-              No organizations found. {isSuperAdmin ? 'Create the first one to get started.' : 'Contact your administrator.'}
+              {t('admin.noResults')} {isSuperAdmin ? 'Create the first one to get started.' : 'Contact your administrator.'}
             </div>
           </div>
         ) : (
@@ -65,34 +67,34 @@ export default function AdminOrganizationsPage() {
                         </span>
                       </div>
                       <span className={`badge ${org.isActive ? 'badge-active' : 'badge-disabled'}`}>
-                        {org.isActive ? 'Active' : 'Inactive'}
+                        {org.isActive ? t('admin.active') : t('admin.inactive')}
                       </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
                       <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
                         <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>{org._count?.users ?? 0}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>Users</div>
+                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>{t('admin.users')}</div>
                       </div>
                       <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
                         <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>{org._count?.farmers ?? 0}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>Farmers</div>
+                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>{t('admin.farmers')}</div>
                       </div>
                       <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
                         <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF' }}>{org._count?.applications ?? 0}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>Applications</div>
+                        <div style={{ fontSize: '0.7rem', color: '#A1A1AA', fontWeight: 500 }}>{t('admin.applications')}</div>
                       </div>
                     </div>
 
                     {org.countryCode && (
                       <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#A1A1AA' }}>
-                        Country: <strong>{getCountryName(org.countryCode)}</strong>
-                        {org.regionCode && <span> | Region: <strong>{org.regionCode}</strong></span>}
+                        {t('admin.country')} <strong>{getCountryName(org.countryCode)}</strong>
+                        {org.regionCode && <span> | {t('admin.region')} <strong>{org.regionCode}</strong></span>}
                       </div>
                     )}
 
                     <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#71717A' }}>
-                      Created {new Date(org.createdAt).toLocaleDateString()}
+                      {t('admin.created')} {new Date(org.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -112,6 +114,7 @@ function CreateOrgModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ name: '', type: 'INTERNAL', countryCode: '', regionCode: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -135,12 +138,12 @@ function CreateOrgModal({ onClose, onCreated }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">New Organization <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
+        <div className="modal-header">{t('admin.newOrganization')} <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
             <div className="form-group">
-              <label className="form-label">Organization Name</label>
+              <label className="form-label">{t('admin.name')}</label>
               <input className="form-input" required value={form.name} onChange={set('name')} placeholder="e.g., CARE Ghana Program" />
             </div>
             <div className="form-group">
@@ -168,8 +171,8 @@ function CreateOrgModal({ onClose, onCreated }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Creating...' : 'Create Organization'}</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t('common.creating') : t('admin.create') + ' ' + t('admin.organization')}</button>
           </div>
         </form>
       </div>
@@ -187,6 +190,7 @@ function EditOrgModal({ org, onClose, onUpdated }) {
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -211,12 +215,12 @@ function EditOrgModal({ org, onClose, onUpdated }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">Edit Organization <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
+        <div className="modal-header">{t('admin.edit') + ' ' + t('admin.organization')} <button className="btn btn-outline btn-sm" onClick={onClose}>X</button></div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
             <div className="form-group">
-              <label className="form-label">Organization Name</label>
+              <label className="form-label">{t('admin.name')}</label>
               <input className="form-input" required value={form.name} onChange={set('name')} />
             </div>
             <div className="form-group">
@@ -253,8 +257,8 @@ function EditOrgModal({ org, onClose, onUpdated }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t('common.saving') : t('admin.save')}</button>
           </div>
         </form>
       </div>

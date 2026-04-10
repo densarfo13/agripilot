@@ -202,7 +202,7 @@ vi.mock('../config/database.js', () => {
     progressScore: { findUnique: vi.fn() },
     harvestReport: { findUnique: vi.fn(), create: vi.fn() },
     application: { findUnique: vi.fn(), updateMany: vi.fn() },
-    reviewAssignment: { create: vi.fn() },
+    reviewAssignment: { create: vi.fn(), findFirst: vi.fn() },
     reviewNote: { create: vi.fn() },
     user: { findUnique: vi.fn() },
     $transaction: vi.fn(),

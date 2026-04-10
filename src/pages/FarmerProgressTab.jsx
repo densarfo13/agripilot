@@ -11,44 +11,56 @@ import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import { getCropLabel } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
+import { useTranslation } from '../i18n/index.js';
+import { getFarmerLifecycleState, canStartSeason, FARMER_STATE } from '../utils/farmerLifecycle.js';
 
 const STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'harvest', 'post_harvest'];
-const STAGE_LABELS = {
-  pre_planting: 'Pre-Planting', planting: 'Planting', vegetative: 'Vegetative',
-  flowering: 'Flowering', harvest: 'Harvest', post_harvest: 'Post-Harvest',
-};
+function getStageLabels(t) {
+  return {
+    pre_planting: t('stageLabel.prePlanting'), planting: t('stageLabel.planting'), vegetative: t('stageLabel.vegetative'),
+    flowering: t('stageLabel.flowering'), harvest: t('stageLabel.harvest'), post_harvest: t('stageLabel.postHarvest'),
+  };
+}
 const STAGE_COLORS = {
   pre_planting: '#6b7280', planting: '#16a34a', vegetative: '#059669',
   flowering: '#d97706', harvest: '#ea580c', post_harvest: '#7c3aed',
 };
 const CONDITION_COLORS = { good: '#16a34a', average: '#d97706', poor: '#dc2626' };
 const CLASS_COLORS = { on_track: '#16a34a', slight_delay: '#d97706', at_risk: '#dc2626', critical: '#7f1d1d' };
-const CLASS_LABELS = { on_track: 'On Track', slight_delay: 'Slight Delay', at_risk: 'At Risk', critical: 'Critical' };
+function getClassLabels(t) {
+  return { on_track: t('classLabel.onTrack'), slight_delay: t('classLabel.slightDelay'), at_risk: t('classLabel.atRisk'), critical: t('classLabel.critical') };
+}
 const ACTIVITY_TYPES = ['planting', 'spraying', 'fertilizing', 'irrigation', 'weeding', 'harvesting', 'storage', 'selling', 'other'];
-const ACTIVITY_OPTIONS = [
-  { value: 'planting', label: 'Planting', icon: '\uD83C\uDF31' },
-  { value: 'spraying', label: 'Spraying', icon: '\uD83D\uDCA7' },
-  { value: 'fertilizing', label: 'Fertilizing', icon: '\uD83E\uDEBB' },
-  { value: 'irrigation', label: 'Irrigation', icon: '\uD83D\uDEB0' },
-  { value: 'weeding', label: 'Weeding', icon: '\uD83C\uDF3F' },
-  { value: 'harvesting', label: 'Harvesting', icon: '\uD83C\uDF3E' },
-  { value: 'storage', label: 'Storage', icon: '\uD83C\uDFE0' },
-  { value: 'selling', label: 'Selling', icon: '\uD83D\uDCB0' },
-  { value: 'other', label: 'Other', icon: '\u2699\uFE0F' },
-];
-const IMAGE_STAGE_OPTIONS = [
-  { value: 'early_growth', label: 'Early Growth', icon: '\uD83C\uDF31' },
-  { value: 'mid_stage', label: 'Mid Stage', icon: '\uD83C\uDF3F' },
-  { value: 'pre_harvest', label: 'Pre-Harvest', icon: '\uD83C\uDF3C' },
-  { value: 'harvest', label: 'Harvest', icon: '\uD83C\uDF3E' },
-  { value: 'storage', label: 'Storage', icon: '\uD83C\uDFE0' },
-];
-const ADVICE_OPTIONS = [
-  { value: '', label: 'N/A' },
-  { value: 'yes', label: 'Yes', color: '#22C55E' },
-  { value: 'partial', label: 'Partial', color: '#F59E0B' },
-  { value: 'no', label: 'No', color: '#EF4444' },
-];
+function getActivityOptions(t) {
+  return [
+    { value: 'planting', label: t('activity.planting'), icon: '\uD83C\uDF31' },
+    { value: 'spraying', label: t('activity.spraying'), icon: '\uD83D\uDCA7' },
+    { value: 'fertilizing', label: t('activity.fertilizing'), icon: '\uD83E\uDEBB' },
+    { value: 'irrigation', label: t('activity.irrigation'), icon: '\uD83D\uDEB0' },
+    { value: 'weeding', label: t('activity.weeding'), icon: '\uD83C\uDF3F' },
+    { value: 'harvesting', label: t('activity.harvesting'), icon: '\uD83C\uDF3E' },
+    { value: 'storage', label: t('activity.storage'), icon: '\uD83C\uDFE0' },
+    { value: 'selling', label: t('activity.selling'), icon: '\uD83D\uDCB0' },
+    { value: 'other', label: t('activity.other'), icon: '\u2699\uFE0F' },
+  ];
+}
+function getImageStageOptions(t) {
+  return [
+    { value: 'early_growth', label: t('imageStage.earlyGrowth'), icon: '\uD83C\uDF31' },
+    { value: 'mid_stage', label: t('imageStage.midStage'), icon: '\uD83C\uDF3F' },
+    { value: 'pre_harvest', label: t('imageStage.preHarvest'), icon: '\uD83C\uDF3C' },
+    { value: 'harvest', label: t('imageStage.harvest'), icon: '\uD83C\uDF3E' },
+    { value: 'storage', label: t('imageStage.storage'), icon: '\uD83C\uDFE0' },
+  ];
+}
+function getAdviceOptions(t) {
+  return [
+    { value: '', label: t('advice.na') },
+    { value: 'yes', label: t('advice.yes'), color: '#22C55E' },
+    { value: 'partial', label: t('advice.partial'), color: '#F59E0B' },
+    { value: 'no', label: t('advice.no'), color: '#EF4444' },
+  ];
+}
 const IMAGE_STAGES = ['early_growth', 'mid_stage', 'pre_harvest', 'harvest', 'storage'];
 
 export default function FarmerProgressTab() {
@@ -62,6 +74,16 @@ export default function FarmerProgressTab() {
   const [comparison, setComparison] = useState(null);
   const [score, setScore] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // ─── Lifecycle guard: block season creation for incomplete profiles ──
+  const [farmProfile, setFarmProfile] = useState(null);
+  useEffect(() => {
+    api.get('/farm-profiles', { params: { farmerId } })
+      .then(r => { const profiles = Array.isArray(r.data) ? r.data : r.data?.profiles || []; setFarmProfile(profiles[0] || null); })
+      .catch(() => setFarmProfile(null));
+  }, [farmerId]);
+  const lifecycle = getFarmerLifecycleState({ farmProfile, countryCode: farmer?.countryCode });
+  const setupComplete = canStartSeason(lifecycle);
 
   // Forms
   const [showSeasonForm, setShowSeasonForm] = useState(false);
@@ -78,6 +100,14 @@ export default function FarmerProgressTab() {
   const [pageError, setPageError] = useState('');
   const [seasonPrefilled, setSeasonPrefilled] = useState(false);
   const [confirmCropFailure, setConfirmCropFailure] = useState(false);
+  const { t } = useTranslation();
+
+  // ─── Localized option sets (rebuilt on language change) ────
+  const STAGE_LABELS = getStageLabels(t);
+  const CLASS_LABELS = getClassLabels(t);
+  const ACTIVITY_OPTIONS = getActivityOptions(t);
+  const IMAGE_STAGE_OPTIONS = getImageStageOptions(t);
+  const ADVICE_OPTIONS = getAdviceOptions(t);
 
   // Close all panels and open exactly one — prevents multi-form bleed
   const openForm = (setter) => {
@@ -118,7 +148,7 @@ export default function FarmerProgressTab() {
           setScore(null);
         }
       })
-      .catch(() => setPageError('Failed to load season data. Check your connection.'))
+      .catch(() => setPageError(t('progress.loadError')))
       .finally(() => setLoading(false));
   };
 
@@ -165,10 +195,10 @@ export default function FarmerProgressTab() {
       setShowSeasonForm(false);
       setSeasonPrefilled(false);
       setSeasonForm(SEASON_FORM_INITIAL);
-      showSuccess('Season created. You can now start logging activities.');
+      showSuccess(t('progress.seasonCreated'));
       loadSeasons();
     } catch (err) {
-      setFormError(formatApiError(err, 'Failed to create season. Please check your details and try again.'));
+      setFormError(formatApiError(err, t('progress.createSeasonError')));
     }
     setSubmitting(false);
     submitGuardRef.current = false;
@@ -200,7 +230,7 @@ export default function FarmerProgressTab() {
     const sameDayEntry = entries.find(en => en.entryDate?.startsWith(today) && en.activityType === progressForm.activityType);
     if (sameDayEntry && !dupWarning) {
       setDupWarning(true);
-      setFormError(`Duplicate check: You already logged "${progressForm.activityType}" today (${new Date(sameDayEntry.entryDate).toLocaleDateString()}). If this is a separate activity, click "Save Activity" again to confirm.`);
+      setFormError(t('progress.duplicateWarning'));
       return;
     }
     setDupWarning(false);
@@ -216,13 +246,13 @@ export default function FarmerProgressTab() {
       setShowProgressForm(false);
       setProgressForm(PROGRESS_DRAFT_INITIAL);
       showSuccess(isFirstUpdate
-        ? 'Update submitted — your first activity is recorded! Your progress tracking has begun.'
-        : 'Update submitted. Activity recorded successfully.');
+        ? t('progress.firstActivityRecorded')
+        : t('progress.activityRecorded'));
       loadSeasons();
     } catch (err) {
       trackPilotEvent('update_failed', { farmerId, type: 'activity', error: err?.response?.data?.error || err.message });
       // Form data is preserved via useDraft — user can retry without re-entering
-      setFormError(formatApiError(err, 'Failed to save activity. Your entry is saved locally — please try again.'));
+      setFormError(formatApiError(err, t('progress.saveActivityError')));
     }
     setSubmitting(false);
     submitGuardRef.current = false;
@@ -241,10 +271,10 @@ export default function FarmerProgressTab() {
       await api.post(`/seasons/${activeSeason.id}/condition`, condForm);
       setShowConditionForm(false);
       setCondForm({ cropCondition: '', conditionNotes: '' });
-      showSuccess('Condition update saved.');
+      showSuccess(t('progress.conditionSaved'));
       loadSeasons();
     } catch (err) {
-      setFormError(formatApiError(err, 'Failed to save condition update. Please check your connection and try again.'));
+      setFormError(formatApiError(err, t('progress.conditionError')));
     }
     setSubmitting(false);
     submitGuardRef.current = false;
@@ -263,10 +293,10 @@ export default function FarmerProgressTab() {
       await api.post(`/seasons/${activeSeason.id}/stage-confirmation`, stageForm);
       setShowStageConfirm(false);
       setStageForm({ confirmedStage: '', note: '' });
-      showSuccess('Stage confirmed.');
+      showSuccess(t('progress.stageConfirmed'));
       loadSeasons();
     } catch (err) {
-      setFormError(formatApiError(err, 'Failed to save stage confirmation. Please check your connection and try again.'));
+      setFormError(formatApiError(err, t('progress.stageError')));
     }
     setSubmitting(false);
     submitGuardRef.current = false;
@@ -286,10 +316,10 @@ export default function FarmerProgressTab() {
       trackPilotEvent('update_submitted', { farmerId, seasonId: activeSeason.id, type: 'harvest' });
       setShowHarvestForm(false);
       setHarvestForm({ totalHarvestKg: '', salesAmount: '', notes: '' });
-      showSuccess('Harvest report submitted.');
+      showSuccess(t('progress.harvestSubmitted'));
       loadSeasons();
     } catch (err) {
-      setFormError(formatApiError(err, 'Failed to submit harvest report. Please check your connection and try again.'));
+      setFormError(formatApiError(err, t('progress.harvestError')));
     }
     setSubmitting(false);
     submitGuardRef.current = false;
@@ -311,11 +341,11 @@ export default function FarmerProgressTab() {
       trackPilotEvent('photo_uploaded', { farmerId, seasonId: activeSeason.id });
       setShowImageForm(false);
       setImageForm({ imageUrl: '', imageStage: '', description: '', latitude: null, longitude: null });
-      showSuccess('Photo uploaded. Your progress photo has been saved to this season.');
+      showSuccess(t('progress.photoUploaded'));
       loadSeasons();
     } catch (err) {
       trackPilotEvent('photo_failed', { farmerId, error: err?.response?.data?.error || err.message });
-      setFormError(formatApiError(err, 'Failed to save photo. Please check the image URL and try again.'));
+      setFormError(formatApiError(err, t('progress.photoError')));
     }
     setSubmitting(false);
     submitGuardRef.current = false;
@@ -332,13 +362,13 @@ export default function FarmerProgressTab() {
       await api.patch(`/seasons/${activeSeason.id}`, { [flag]: true });
       loadSeasons();
     } catch (err) {
-      setPageError(err.response?.data?.error || 'Failed to update season. Please try again.');
+      setPageError(err.response?.data?.error || t('progress.updateError'));
     } finally {
       submitGuardRef.current = false;
     }
   };
 
-  if (loading) return <div className="loading">Loading progress...</div>;
+  if (loading) return <div className="loading">{t('progress.loading')}</div>;
 
   return (
     <div>
@@ -348,7 +378,7 @@ export default function FarmerProgressTab() {
         </InlineAlert>
       )}
       {pageError && (
-        <InlineAlert variant="danger" onDismiss={() => setPageError('')} action={{ label: 'Retry', onClick: loadSeasons }}>
+        <InlineAlert variant="danger" onDismiss={() => setPageError('')} action={{ label: t('common.retry'), onClick: loadSeasons }}>
           {pageError}
         </InlineAlert>
       )}
@@ -359,46 +389,57 @@ export default function FarmerProgressTab() {
           seasonId={activeSeason.id}
           farmerId={farmerId}
           entries={entries}
-          onComplete={() => { setShowQuickUpdate(false); loadSeasons(); showSuccess('Update saved successfully!'); }}
+          onComplete={() => { setShowQuickUpdate(false); loadSeasons(); showSuccess(t('progress.updateSavedOk')); }}
           onCancel={() => setShowQuickUpdate(false)}
         />
       )}
 
-      {/* ─── No active season → prompt setup ─────── */}
+      {/* ─── No active season → prompt setup (lifecycle-gated) ─────── */}
       {!activeSeason && !showSeasonForm && (
         <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌱</div>
-          <h3 style={{ margin: '0 0 0.35rem' }}>No Active Season</h3>
-          <p className="text-muted" style={{ marginBottom: '1rem' }}>Start a new farming season to begin tracking your progress, activities, and harvest.</p>
-          <button className="btn btn-primary" onClick={openSeasonForm}>Start New Season</button>
+          <h3 style={{ margin: '0 0 0.35rem' }}>{t('progress.noActiveSeason')}</h3>
+          {setupComplete ? (
+            <>
+              <p className="text-muted" style={{ marginBottom: '1rem' }}>{t('progress.startNewSeasonDesc')}</p>
+              <button className="btn btn-primary" onClick={openSeasonForm}>{t('progress.startNewSeason')}</button>
+            </>
+          ) : (
+            <div data-testid="setup-required-banner" style={{ padding: '0.75rem', background: '#2D1B00', borderRadius: '8px', marginTop: '0.5rem' }}>
+              <p style={{ color: '#F59E0B', fontWeight: 600, margin: '0 0 0.25rem' }}>{t('progress.setupRequired')}</p>
+              <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>
+                {t('progress.completeSetupFirst')}{lifecycle.missing.length > 0 ? ` ${t('home.missing')} ${lifecycle.missing.join(', ')}.` : ''}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
       {/* ─── Season Setup Form ───────────────────── */}
       {showSeasonForm && (
         <div className="card" style={{ marginBottom: '1rem' }}>
-          <div className="card-header">New Season Setup</div>
+          <div className="card-header">{t('progress.newSeasonSetup')}</div>
           <div className="card-body">
             <form onSubmit={handleCreateSeason}>
               {seasonPrefilled && (
-                <InlineAlert variant="info">ℹ️ Prefilled from your last season — please review before submitting.</InlineAlert>
+                <InlineAlert variant="info">ℹ️ {t('progress.prefilledFromLast')}</InlineAlert>
               )}
               {formError && (
                 <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label className="form-label">Crop Type *</label>
+                  <label className="form-label">{t('progress.cropType') + ' *'}</label>
                   <CropSelect
                     value={seasonForm.cropType}
                     onChange={(v) => setSeasonForm(f => ({ ...f, cropType: v }))}
                     countryCode={farmer?.countryCode}
                     required
-                    placeholder="Search crops..."
+                    placeholder={t('onboarding.searchCrops')}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Farm Size *</label>
+                  <label className="form-label">{t('progress.farmSize') + ' *'}</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input className="form-input" style={{ flex: 1 }} type="number" step="0.1" required value={seasonForm.farmSizeAcres} onChange={e => setSeasonForm(f => ({ ...f, farmSizeAcres: e.target.value }))} />
                     <select className="form-input" style={{ width: 'auto', minWidth: '7rem' }} value={seasonForm.landSizeUnit} onChange={e => setSeasonForm(f => ({ ...f, landSizeUnit: e.target.value }))}>
@@ -407,25 +448,25 @@ export default function FarmerProgressTab() {
                   </div>
                 </div>
                 <div>
-                  <label className="form-label">Planting Date *</label>
+                  <label className="form-label">{t('progress.plantingDate') + ' *'}</label>
                   <input className="form-input" type="date" required value={seasonForm.plantingDate} onChange={e => setSeasonForm(f => ({ ...f, plantingDate: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="form-label">Seed Type</label>
-                  <input className="form-input" value={seasonForm.seedType} onChange={e => setSeasonForm(f => ({ ...f, seedType: e.target.value }))} placeholder="e.g. hybrid, OPV" />
+                  <label className="form-label">{t('progress.seedType')}</label>
+                  <input className="form-input" value={seasonForm.seedType} onChange={e => setSeasonForm(f => ({ ...f, seedType: e.target.value }))} placeholder={t('progress.egHybrid')} />
                 </div>
                 <div>
-                  <label className="form-label">Seed Quantity (kg)</label>
+                  <label className="form-label">{t('progress.seedQuantity')}</label>
                   <input className="form-input" type="number" step="0.1" value={seasonForm.seedQuantity} onChange={e => setSeasonForm(f => ({ ...f, seedQuantity: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="form-label">What I am planting this season</label>
-                  <input className="form-input" value={seasonForm.declaredIntent} onChange={e => setSeasonForm(f => ({ ...f, declaredIntent: e.target.value }))} placeholder="e.g. Maize for food and sale" />
+                  <label className="form-label">{t('progress.plantingIntent')}</label>
+                  <input className="form-input" value={seasonForm.declaredIntent} onChange={e => setSeasonForm(f => ({ ...f, declaredIntent: e.target.value }))} placeholder={t('progress.egMaizeForFood')} />
                 </div>
               </div>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                <button className="btn btn-primary" type="submit" disabled={submitting}>{submitting ? 'Creating...' : 'Start Season'}</button>
-                <button className="btn btn-outline" type="button" onClick={() => setShowSeasonForm(false)}>Cancel</button>
+                <button className="btn btn-primary" type="submit" disabled={submitting}>{submitting ? t('common.creating') : t('progress.startSeason')}</button>
+                <button className="btn btn-outline" type="button" onClick={() => setShowSeasonForm(false)}>{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -438,7 +479,7 @@ export default function FarmerProgressTab() {
           {/* Season header + score */}
           <div className="card" style={{ marginBottom: '1rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Season: {getCropLabel(activeSeason.cropType)} ({activeSeason.landSizeValue ? formatLandSize(activeSeason.landSizeValue, activeSeason.landSizeUnit) : `${activeSeason.farmSizeAcres} ${activeSeason.areaUnit || 'acres'}`})</span>
+              <span>{t('progress.season')} {getCropLabel(activeSeason.cropType)} ({activeSeason.landSizeValue ? formatLandSize(activeSeason.landSizeValue, activeSeason.landSizeUnit) : `${activeSeason.farmSizeAcres} ${activeSeason.areaUnit || 'acres'}`})</span>
               {score?.performanceClassification && (
                 <span style={{ padding: '0.25rem 0.75rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, background: CLASS_COLORS[score.performanceClassification] + '18', color: CLASS_COLORS[score.performanceClassification] }}>
                   {CLASS_LABELS[score.performanceClassification]} — {score.progressScore}/100
@@ -447,19 +488,19 @@ export default function FarmerProgressTab() {
             </div>
             <div className="card-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>Planted</span><div style={{ fontWeight: 600 }}>{new Date(activeSeason.plantingDate).toLocaleDateString()}</div></div>
-                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>Expected Harvest</span><div style={{ fontWeight: 600 }}>{activeSeason.expectedHarvestDate ? new Date(activeSeason.expectedHarvestDate).toLocaleDateString() : '—'}</div></div>
+                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.planted')}</span><div style={{ fontWeight: 600 }}>{new Date(activeSeason.plantingDate).toLocaleDateString()}</div></div>
+                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.expectedHarvest')}</span><div style={{ fontWeight: 600 }}>{activeSeason.expectedHarvestDate ? new Date(activeSeason.expectedHarvestDate).toLocaleDateString() : '—'}</div></div>
                 <div>
-                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>Progress Entries</span>
+                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.progressEntries')}</span>
                   <div style={{ fontWeight: 600 }}>{activeSeason._count?.progressEntries || entries.length}</div>
                   {entries.length > 0 && (
                     <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
-                      Submitted
+                      {t('progress.submitted')}
                     </span>
                   )}
                   {entries.length === 0 && (
                     <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(245,158,11,0.15)', color: '#d97706' }}>
-                      No entries yet
+                      {t('progress.noEntriesYet')}
                     </span>
                   )}
                 </div>
@@ -468,7 +509,7 @@ export default function FarmerProgressTab() {
               {/* Stage timeline bar */}
               {comparison && (
                 <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Growth Stage</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>{t('progress.growthStage')}</div>
                   <div style={{ display: 'flex', gap: 2, marginBottom: '0.3rem' }}>
                     {STAGES.filter(s => s !== 'pre_planting').map(s => {
                       const isExpected = s === comparison.expectedStage;
@@ -482,9 +523,9 @@ export default function FarmerProgressTab() {
                     })}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>
-                    Expected: <strong>{STAGE_LABELS[comparison.expectedStage]}</strong>
+                    {t('progress.expected')} <strong>{STAGE_LABELS[comparison.expectedStage]}</strong>
                     {comparison.dimensions?.stageAlignment?.actualStage && (
-                      <> | Actual: <strong>{STAGE_LABELS[comparison.dimensions.stageAlignment.actualStage]}</strong></>
+                      <> | {t('progress.actual')} <strong>{STAGE_LABELS[comparison.dimensions.stageAlignment.actualStage]}</strong></>
                     )}
                   </div>
                 </div>
@@ -493,8 +534,8 @@ export default function FarmerProgressTab() {
               {/* Stage confirmation prompt */}
               {comparison && !showStageConfirm && (
                 <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.85rem' }}>Does your farm look like it is at the <strong>{STAGE_LABELS[comparison.expectedStage]}</strong> stage?</span>
-                  <button className="btn btn-sm btn-outline" onClick={() => { setStageForm({ confirmedStage: comparison.expectedStage, note: '' }); openForm(setShowStageConfirm); }}>Confirm Stage</button>
+                  <span style={{ fontSize: '0.85rem' }}>{t('progress.doesFarmLookLike')} <strong>{STAGE_LABELS[comparison.expectedStage]}</strong> {t('progress.stageLabel')}</span>
+                  <button className="btn btn-sm btn-outline" onClick={() => { setStageForm({ confirmedStage: comparison.expectedStage, note: '' }); openForm(setShowStageConfirm); }}>{t('progress.confirmStage')}</button>
                 </div>
               )}
 
@@ -506,37 +547,37 @@ export default function FarmerProgressTab() {
                 const borderColor = isHigh ? 'rgba(34,197,94,0.3)' : isMed ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)';
                 const bg = isHigh ? 'rgba(34,197,94,0.15)' : isMed ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)';
                 const labelColor = isHigh ? '#16a34a' : isMed ? '#d97706' : '#dc2626';
-                const label = isHigh ? 'Strong' : isMed ? 'Moderate' : 'Needs Attention';
+                const label = isHigh ? t('progress.strong') : isMed ? t('progress.moderate') : t('progress.needsAttention');
                 const FLAG_LABELS = {
-                  burst_submissions: 'Several entries submitted in a single day — this can look like backfilling.',
-                  update_gap_detected: 'No updates for more than 4 weeks. Log activities regularly.',
-                  no_updates_logged: 'No activities logged yet. Start logging to build your record.',
-                  stage_regression: 'Crop stage went backward — confirm your current stage.',
-                  impossible_fast_progression: 'Stage progression was faster than expected.',
-                  high_stage_mismatch: 'Your confirmed stages often differ from the expected stage.',
-                  entries_before_planting: 'Some entries are dated before your planting date.',
-                  future_dated_entries: 'Entries with future dates were detected.',
-                  harvest_too_early: 'Harvest was logged too early in the season.',
-                  implausible_yield: 'Reported yield is unusually high — please verify the amount.',
-                  very_low_yield: 'Reported yield is unusually low.',
-                  condition_rapid_recovery: 'Crop condition improved from poor to good in less than a week.',
-                  advice_always_yes: 'All advice marked as followed every time — vary your responses if accurate.',
-                  advice_never_followed: 'Advice never marked as followed.',
-                  crop_failure_reported: 'Crop failure was reported for this season.',
-                  partial_harvest_reported: 'Partial harvest was reported.',
-                  season_abandoned: 'This season was abandoned.',
-                  harvest_image_too_early: 'A harvest photo was added too early in the season.',
-                  early_image_in_post_harvest: 'An early-growth photo was added during post-harvest.',
-                  image_stage_incoherent: 'Photo stages are inconsistent with the season timeline.',
+                  burst_submissions: t('flag.burstSubmissions'),
+                  update_gap_detected: t('flag.updateGap'),
+                  no_updates_logged: t('flag.noUpdates'),
+                  stage_regression: t('flag.stageRegression'),
+                  impossible_fast_progression: t('flag.fastProgression'),
+                  high_stage_mismatch: t('flag.highStageMismatch'),
+                  entries_before_planting: t('flag.entriesBeforePlanting'),
+                  future_dated_entries: t('flag.futureDatedEntries'),
+                  harvest_too_early: t('flag.harvestTooEarly'),
+                  implausible_yield: t('flag.implausibleYield'),
+                  very_low_yield: t('flag.veryLowYield'),
+                  condition_rapid_recovery: t('flag.conditionRapidRecovery'),
+                  advice_always_yes: t('flag.adviceAlwaysYes'),
+                  advice_never_followed: t('flag.adviceNeverFollowed'),
+                  crop_failure_reported: t('flag.cropFailure'),
+                  partial_harvest_reported: t('flag.partialHarvest'),
+                  season_abandoned: t('flag.seasonAbandoned'),
+                  harvest_image_too_early: t('flag.harvestImageTooEarly'),
+                  early_image_in_post_harvest: t('flag.earlyImagePostHarvest'),
+                  image_stage_incoherent: t('flag.imageStageIncoherent'),
                 };
                 return (
                   <div style={{ border: `1px solid ${borderColor}`, background: bg, borderRadius: 8, marginBottom: '0.75rem', overflow: 'hidden' }}>
                     <div style={{ padding: '0.5rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: '0.85rem' }}>
-                        <strong>Data Quality:</strong>{' '}
+                        <strong>{t('progress.dataQuality')}</strong>{' '}
                         <span style={{ color: labelColor, fontWeight: 600 }}>{label}</span>
                         <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#A1A1AA' }}>
-                          — how consistent and complete your farm records look
+                          — {t('progress.howConsistent')}
                         </span>
                       </div>
                       {credibility.flags?.length > 0 && (
@@ -555,7 +596,7 @@ export default function FarmerProgressTab() {
                         ))}
                         {!isHigh && (
                           <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#A1A1AA', borderTop: `1px solid ${borderColor}`, paddingTop: '0.35rem' }}>
-                            Tip: Log activities regularly, confirm your growth stage, and add photos to improve your data quality score.
+                            {t('progress.tipImprove')}
                           </div>
                         )}
                       </div>
@@ -569,9 +610,7 @@ export default function FarmerProgressTab() {
                 const daysOverdue = Math.floor((Date.now() - new Date(activeSeason.expectedHarvestDate)) / 86400000);
                 if (daysOverdue > 0) return (
                   <div className="alert-inline alert-inline-danger" style={{ borderRadius: 8 }}>
-                    Your expected harvest date was <strong>{daysOverdue} day{daysOverdue !== 1 ? 's' : ''} ago</strong>.{' '}
-                    If you have harvested, submit a harvest report below.{' '}
-                    If the crop failed or harvest is delayed, use the options below.
+                    {t('progress.harvestOverdue', { days: daysOverdue, s: daysOverdue !== 1 ? 's' : '' })}
                   </div>
                 );
                 return null;
@@ -582,7 +621,7 @@ export default function FarmerProgressTab() {
                 const daysSince = Math.floor((Date.now() - new Date(activeSeason.lastActivityDate)) / 86400000);
                 if (daysSince >= 14) return (
                   <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
-                    It has been <strong>{daysSince} days</strong> since your last update. Regular updates help build a stronger track record.
+                    {t('progress.missingUpdateDays', { days: daysSince })}
                   </div>
                 );
                 return null;
@@ -602,15 +641,15 @@ export default function FarmerProgressTab() {
                 }}
                 data-testid="quick-update-cta"
               >
-                <span style={{ fontSize: '1.3rem' }}>📝</span> Add Update
+                <span style={{ fontSize: '1.3rem' }}>📝</span> {t('progress.addUpdate')}
               </button>
 
               {/* Detailed action buttons — secondary */}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowProgressForm)}>Log Activity</button>
-                <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowConditionForm)}>Update Condition</button>
-                <button className="btn btn-sm btn-outline" style={{ borderColor: '#22C55E', color: '#22C55E' }} onClick={() => openForm(setShowImageForm)}>Add Photo</button>
-                <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => openForm(setShowHarvestForm)}>Submit Harvest Report</button>
+                <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowProgressForm)}>{t('progress.logActivity')}</button>
+                <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowConditionForm)}>{t('progress.updateCondition')}</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#22C55E', color: '#22C55E' }} onClick={() => openForm(setShowImageForm)}>{t('progress.addPhoto')}</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => openForm(setShowHarvestForm)}>{t('progress.submitHarvestReport')}</button>
               </div>
 
               {/* Edge-case flags */}
@@ -618,20 +657,20 @@ export default function FarmerProgressTab() {
                 <div style={{ marginTop: '0.5rem' }}>
                   {!confirmCropFailure ? (
                     <button className="btn btn-sm btn-outline-danger" style={{ fontSize: '0.75rem' }} onClick={() => setConfirmCropFailure(true)}>
-                      Report Crop Failure
+                      {t('progress.reportCropFailure')}
                     </button>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: 'var(--danger-light)', borderRadius: 6, fontSize: '0.85rem', color: 'var(--danger)' }}>
-                      <span>Confirm: report crop failure for this season?</span>
-                      <button className="btn btn-sm btn-outline-danger" style={{ padding: '0.4rem 0.75rem' }} onClick={() => handleEdgeCase('cropFailureReported')}>Yes, Report</button>
-                      <button className="btn btn-sm btn-outline" style={{ padding: '0.4rem 0.75rem' }} onClick={() => setConfirmCropFailure(false)}>Cancel</button>
+                      <span>{t('progress.confirmCropFailure')}</span>
+                      <button className="btn btn-sm btn-outline-danger" style={{ padding: '0.4rem 0.75rem' }} onClick={() => handleEdgeCase('cropFailureReported')}>{t('progress.yesReport')}</button>
+                      <button className="btn btn-sm btn-outline" style={{ padding: '0.4rem 0.75rem' }} onClick={() => setConfirmCropFailure(false)}>{t('common.cancel')}</button>
                     </div>
                   )}
                 </div>
               )}
               {activeSeason.cropFailureReported && (
                 <div className="alert-inline alert-inline-danger" style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>
-                  Crop failure reported for this season
+                  {t('progress.cropFailureReported')}
                 </div>
               )}
             </div>
@@ -640,15 +679,15 @@ export default function FarmerProgressTab() {
           {/* ─── Stage Confirmation Form ───────────── */}
           {showStageConfirm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <div className="card-header">Confirm Growth Stage</div>
+              <div className="card-header">{t('progress.confirmGrowthStage')}</div>
               <div className="card-body">
                 <form onSubmit={handleStageConfirm}>
                   {formError && <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>}
                   <p style={{ fontSize: '0.875rem', color: '#FFFFFF', margin: '0 0 0.5rem' }}>
-                    We expect your crop to be at: <strong style={{ color: STAGE_COLORS[comparison?.expectedStage] }}>{STAGE_LABELS[comparison?.expectedStage]}</strong>
+                    {t('progress.weExpectCropAt')} <strong style={{ color: STAGE_COLORS[comparison?.expectedStage] }}>{STAGE_LABELS[comparison?.expectedStage]}</strong>
                   </p>
                   <p style={{ fontSize: '0.82rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
-                    What stage does your farm actually look like?
+                    {t('progress.whatStageActually')}
                   </p>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
                     {STAGES.filter(s => s !== 'pre_planting').map(s => (
@@ -669,8 +708,8 @@ export default function FarmerProgressTab() {
                   </div>
                   <textarea className="form-input" rows={2} placeholder="Note (optional) — e.g. drought, late start..." value={stageForm.note} onChange={e => setStageForm(f => ({ ...f, note: e.target.value }))} />
                   <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting || !stageForm.confirmedStage}>{submitting ? 'Saving...' : 'Confirm Stage'}</button>
-                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowStageConfirm(false)}>Cancel</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting || !stageForm.confirmedStage}>{submitting ? t('common.saving') : t('progress.confirmStage')}</button>
+                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowStageConfirm(false)}>{t('common.cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -680,20 +719,20 @@ export default function FarmerProgressTab() {
           {/* ─── Progress Entry Form ───────────────── */}
           {showProgressForm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <div className="card-header">Log Activity</div>
+              <div className="card-header">{t('progress.logActivity')}</div>
               <div className="card-body">
                 <form onSubmit={handleLogProgress}>
                   {progressDraftRestored && (
                     <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#0EA5E9', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Draft restored — your previous entry was saved.</span>
-                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0EA5E9', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearProgressDraft(); setProgressForm(PROGRESS_DRAFT_INITIAL); }}>Clear</button>
+                      <span>{t('progress.draftRestored')}</span>
+                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0EA5E9', fontSize: '0.8rem', textDecoration: 'underline', padding: 0 }} onClick={() => { clearProgressDraft(); setProgressForm(PROGRESS_DRAFT_INITIAL); }}>{t('common.clear')}</button>
                     </div>
                   )}
                   {formError && <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>}
                   {/* Required fields first */}
                   <div style={{ marginBottom: '0.75rem' }}>
                     <TapSelector
-                      label="Activity Type *"
+                      label={t('progress.activityType') + ' *'}
                       options={ACTIVITY_OPTIONS}
                       value={progressForm.activityType}
                       onChange={(v) => setProgressForm(f => ({ ...f, activityType: v }))}
@@ -703,31 +742,31 @@ export default function FarmerProgressTab() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
                     <div>
-                      <label className="form-label">Date</label>
+                      <label className="form-label">{t('progress.date')}</label>
                       <input className="form-input" type="date" value={progressForm.entryDate} onChange={e => setProgressForm(f => ({ ...f, entryDate: e.target.value }))} />
                     </div>
                     <div>
-                      <label className="form-label">Notes <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
-                      <textarea className="form-input" rows={2} placeholder="What did you do? Any issues?" value={progressForm.description} onChange={e => setProgressForm(f => ({ ...f, description: e.target.value }))} />
+                      <label className="form-label">{t('progress.notes')} <span style={{ color: '#9ca3af', fontWeight: 400 }}>({t('progress.optional')})</span></label>
+                      <textarea className="form-input" rows={2} placeholder={t('progress.whatDidYouDo')} value={progressForm.description} onChange={e => setProgressForm(f => ({ ...f, description: e.target.value }))} />
                     </div>
                   </div>
                   {/* Optional details — collapsed */}
                   <details style={{ marginTop: '0.5rem' }}>
                     <summary style={{ fontSize: '0.82rem', color: '#A1A1AA', cursor: 'pointer', padding: '0.4rem 0', minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-                      More details (quantity, unit, advice)
+                      {t('progress.moreDetails')}
                     </summary>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
                       <div>
-                        <label className="form-label">Quantity <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+                        <label className="form-label">{t('progress.quantity')} <span style={{ color: '#9ca3af', fontWeight: 400 }}>({t('progress.optional')})</span></label>
                         <input className="form-input" type="number" step="0.1" inputMode="decimal" value={progressForm.quantity} onChange={e => setProgressForm(f => ({ ...f, quantity: e.target.value }))} />
                       </div>
                       <div>
-                        <label className="form-label">Unit <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
-                        <input className="form-input" value={progressForm.unit} onChange={e => setProgressForm(f => ({ ...f, unit: e.target.value }))} placeholder="kg, bags, litres" />
+                        <label className="form-label">{t('progress.unit')} <span style={{ color: '#9ca3af', fontWeight: 400 }}>({t('progress.optional')})</span></label>
+                        <input className="form-input" value={progressForm.unit} onChange={e => setProgressForm(f => ({ ...f, unit: e.target.value }))} placeholder={t('progress.kgBagsLitres')} />
                       </div>
                       <div style={{ gridColumn: '1 / -1' }}>
                         <TapSelector
-                          label="Followed advice?"
+                          label={t('progress.followedAdvice')}
                           options={ADVICE_OPTIONS}
                           value={progressForm.followedAdvice}
                           onChange={(v) => setProgressForm(f => ({ ...f, followedAdvice: v }))}
@@ -738,8 +777,8 @@ export default function FarmerProgressTab() {
                     </div>
                   </details>
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save Activity'}</button>
-                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowProgressForm(false)}>Cancel</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? t('common.saving') : t('progress.saveActivity')}</button>
+                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowProgressForm(false)}>{t('common.cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -749,7 +788,7 @@ export default function FarmerProgressTab() {
           {/* ─── Condition Update Form ────────────── */}
           {showConditionForm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <div className="card-header">Update Crop Condition</div>
+              <div className="card-header">{t('progress.updateCropCondition')}</div>
               <div className="card-body">
                 <form onSubmit={handleCondition}>
                   {formError && <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>}
@@ -764,14 +803,14 @@ export default function FarmerProgressTab() {
                         fontWeight: condForm.cropCondition === c ? 600 : 400,
                       }}>
                         <input type="radio" name="cond" value={c} checked={condForm.cropCondition === c} onChange={() => setCondForm(f => ({ ...f, cropCondition: c }))} style={{ display: 'none' }} />
-                        {c.charAt(0).toUpperCase() + c.slice(1)}
+                        {c === 'good' ? t('progress.good') : c === 'average' ? t('progress.average') : t('progress.poor')}
                       </label>
                     ))}
                   </div>
-                  <textarea className="form-input" rows={2} placeholder="Notes (pests, drought, disease...)" value={condForm.conditionNotes} onChange={e => setCondForm(f => ({ ...f, conditionNotes: e.target.value }))} />
+                  <textarea className="form-input" rows={2} placeholder={t('progress.conditionNotes')} value={condForm.conditionNotes} onChange={e => setCondForm(f => ({ ...f, conditionNotes: e.target.value }))} />
                   <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting || !condForm.cropCondition}>Save</button>
-                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowConditionForm(false)}>Cancel</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting || !condForm.cropCondition}>{t('common.save')}</button>
+                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowConditionForm(false)}>{t('common.cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -781,13 +820,13 @@ export default function FarmerProgressTab() {
           {/* ─── Harvest Report Form ──────────────── */}
           {showHarvestForm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <div className="card-header">Submit Harvest Report</div>
+              <div className="card-header">{t('progress.submitHarvestReport')}</div>
               <div className="card-body">
                 <p style={{ fontSize: '0.85rem', color: '#A1A1AA', margin: '0 0 0.75rem' }}>
-                  This will close the current season.
+                  {t('progress.thisWillCloseSeason')}
                   {activeSeason.cropFailureReported && (
                     <span style={{ display: 'block', marginTop: '0.25rem', color: '#b45309', fontWeight: 500 }}>
-                      Crop failure is recorded — you may enter 0 kg if there was no harvest.
+                      {t('progress.cropFailureRecorded')}
                     </span>
                   )}
                 </p>
@@ -795,7 +834,7 @@ export default function FarmerProgressTab() {
                   {formError && <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
-                      <label className="form-label">Total Harvest (kg) *</label>
+                      <label className="form-label">{t('progress.totalHarvestKg') + ' *'}</label>
                       <input
                         className="form-input" type="number" step="0.1"
                         min={activeSeason.cropFailureReported ? '0' : '0.1'}
@@ -806,17 +845,17 @@ export default function FarmerProgressTab() {
                       />
                     </div>
                     <div>
-                      <label className="form-label">Sales Amount</label>
+                      <label className="form-label">{t('progress.salesAmount')}</label>
                       <input className="form-input" type="number" step="0.01" value={harvestForm.salesAmount} onChange={e => setHarvestForm(f => ({ ...f, salesAmount: e.target.value }))} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="form-label">Notes <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
-                      <textarea className="form-input" rows={2} placeholder="Any notes about quality, storage, buyer..." value={harvestForm.notes} onChange={e => setHarvestForm(f => ({ ...f, notes: e.target.value }))} />
+                      <label className="form-label">{t('progress.notes')} <span style={{ color: '#9ca3af', fontWeight: 400 }}>({t('progress.optional')})</span></label>
+                      <textarea className="form-input" rows={2} placeholder={t('progress.qualityNotes')} value={harvestForm.notes} onChange={e => setHarvestForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
                   </div>
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Harvest Report'}</button>
-                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowHarvestForm(false)}>Cancel</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? t('progress.submitting') : t('progress.submitHarvestReport')}</button>
+                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowHarvestForm(false)}>{t('common.cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -826,18 +865,18 @@ export default function FarmerProgressTab() {
           {/* ─── Image Upload Form ──────────────── */}
           {showImageForm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <div className="card-header">Add Progress Photo</div>
+              <div className="card-header">{t('progress.addProgressPhoto')}</div>
               <div className="card-body">
                 <form onSubmit={handleImageUpload}>
                   {formError && <InlineAlert variant="danger" onDismiss={() => setFormError('')}>{formError}</InlineAlert>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
-                      <label className="form-label">Image URL *</label>
+                      <label className="form-label">{t('progress.imageUrl') + ' *'}</label>
                       <input className="form-input" required value={imageForm.imageUrl} onChange={e => setImageForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <TapSelector
-                        label="Growth Stage"
+                        label={t('progress.growthStage')}
                         options={IMAGE_STAGE_OPTIONS}
                         value={imageForm.imageStage}
                         onChange={(v) => setImageForm(f => ({ ...f, imageStage: v }))}
@@ -846,27 +885,27 @@ export default function FarmerProgressTab() {
                       />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="form-label">Description</label>
-                      <input className="form-input" value={imageForm.description} onChange={e => setImageForm(f => ({ ...f, description: e.target.value }))} placeholder="What does this photo show?" />
+                      <label className="form-label">{t('progress.description')}</label>
+                      <input className="form-input" value={imageForm.description} onChange={e => setImageForm(f => ({ ...f, description: e.target.value }))} placeholder={t('progress.whatPhotoShow')} />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="form-label">Photo Location <span style={{ color: '#71717A', fontWeight: 400 }}>optional</span></label>
+                      <label className="form-label">{t('progress.photoLocation')} <span style={{ color: '#71717A', fontWeight: 400 }}>{t('progress.optional')}</span></label>
                       <LocationDetect
                         compact
-                        label="Tag with current location"
+                        label={t('progress.tagWithLocation')}
                         onDetected={(loc) => setImageForm(f => ({ ...f, latitude: loc.latitude, longitude: loc.longitude }))}
                       />
                       {imageForm.latitude && (
                         <div style={{ fontSize: '0.72rem', color: '#22C55E', marginTop: '0.25rem' }}>
                           GPS: {imageForm.latitude.toFixed(4)}, {imageForm.longitude.toFixed(4)}
-                          <span onClick={() => setImageForm(f => ({ ...f, latitude: null, longitude: null }))} style={{ color: '#71717A', cursor: 'pointer', marginLeft: '0.5rem' }}>clear</span>
+                          <span onClick={() => setImageForm(f => ({ ...f, latitude: null, longitude: null }))} style={{ color: '#71717A', cursor: 'pointer', marginLeft: '0.5rem' }}>{t('common.clear')}</span>
                         </div>
                       )}
                     </div>
                   </div>
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save Photo'}</button>
-                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowImageForm(false)}>Cancel</button>
+                    <button className="btn btn-sm btn-primary" type="submit" disabled={submitting}>{submitting ? t('common.saving') : t('progress.savePhoto')}</button>
+                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setShowImageForm(false)}>{t('common.cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -876,11 +915,11 @@ export default function FarmerProgressTab() {
           {/* ─── Comparison Dimensions ────────────── */}
           {comparison?.dimensions && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <div className="card-header">Progress Comparison</div>
+              <div className="card-header">{t('progress.progressComparison')}</div>
               <div className="card-body" style={{ padding: 0 }}>
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Dimension</th><th>Status</th><th>Details</th></tr></thead>
+                    <thead><tr><th>{t('progress.dimension')}</th><th>{t('progress.status')}</th><th>{t('progress.details')}</th></tr></thead>
                     <tbody>
                       {Object.entries(comparison.dimensions).map(([key, dim]) => (
                         <tr key={key}>
@@ -904,11 +943,11 @@ export default function FarmerProgressTab() {
           {/* ─── Recent Progress Entries ──────────── */}
           {entries.length > 0 && (
             <div className="card">
-              <div className="card-header">Recent Progress Entries</div>
+              <div className="card-header">{t('progress.recentProgressEntries')}</div>
               <div className="card-body" style={{ padding: 0 }}>
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Date</th><th>Type</th><th>Activity</th><th>Condition</th><th>Advice</th></tr></thead>
+                    <thead><tr><th>{t('progress.date')}</th><th>{t('progress.type')}</th><th>{t('progress.activity')}</th><th>{t('progress.condition')}</th><th>{t('progress.advice')}</th></tr></thead>
                     <tbody>
                       {entries.slice(0, 15).map(e => (
                         <tr key={e.id}>
@@ -931,14 +970,14 @@ export default function FarmerProgressTab() {
       {/* ─── Past Seasons ────────────────────────── */}
       {seasons.filter(s => s.status !== 'active').length > 0 && (
         <div className="card" style={{ marginTop: '1rem' }}>
-          <div className="card-header">Past Seasons</div>
+          <div className="card-header">{t('progress.pastSeasons')}</div>
           <div className="card-body" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Crop</th><th>Planted</th><th>Status</th><th>Harvest</th><th>Score</th>
-                    {isAdmin && <th>Admin</th>}
+                    <th>{t('progress.crop')}</th><th>{t('progress.planted')}</th><th>{t('progress.status')}</th><th>{t('progress.harvest')}</th><th>{t('progress.score')}</th>
+                    {isAdmin && <th>{t('progress.admin')}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -960,7 +999,7 @@ export default function FarmerProgressTab() {
                             style={{ fontSize: '0.75rem', color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)' }}
                             onClick={() => setReopenTarget(s)}
                           >
-                            Reopen
+                            {t('progress.reopen')}
                           </button>
                         </td>
                       )}
@@ -982,10 +1021,10 @@ export default function FarmerProgressTab() {
         />
       )}
 
-      {/* New season button at bottom for completed seasons */}
-      {!activeSeason && seasons.length > 0 && !showSeasonForm && (
+      {/* New season button at bottom for completed seasons (lifecycle-gated) */}
+      {!activeSeason && seasons.length > 0 && !showSeasonForm && setupComplete && (
         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <button className="btn btn-primary" onClick={openSeasonForm}>Start New Season</button>
+          <button className="btn btn-primary" onClick={openSeasonForm}>{t('progress.startNewSeason')}</button>
         </div>
       )}
     </div>
@@ -995,6 +1034,7 @@ export default function FarmerProgressTab() {
 // ─── SoD: Reopen Season Modal ────────────────────────────────────────────────
 // Two-phase: (1) create ApprovalRequest, (2) execute reopen with approved ID
 function ReopenSeasonModal({ season, onClose, onReopened }) {
+  const { t } = useTranslation();
   const [mode, setMode]         = useState('request');
   const [reason, setReason]     = useState('');
   const [approvalId, setApprovalId] = useState('');
@@ -1055,12 +1095,12 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          Reopen Season — {getCropLabel(season.cropType)}
+          {t('reopen.title')} — {getCropLabel(season.cropType)}
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
           <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.85rem', color: '#F59E0B', marginBottom: '1rem' }}>
-            <strong>Separation of Duties required.</strong> Reopening a season requires a second admin's approval
+            <strong>{t('reopen.sodRequired')}.</strong> {t('reopen.sodExplain')}
             (4-hour execution window). Submit a request, ask another admin to approve it at{' '}
             <em>Admin → Security Requests</em>, then return here to execute.
           </div>
@@ -1073,14 +1113,14 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
               style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer', minHeight: '36px' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
-              1. Create Request
+              1. {t('reopen.createRequest')}
             </button>
             <button
               type="button"
               style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer', minHeight: '36px' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
-              2. Execute (have ID)
+              2. {t('reopen.executeHaveId')}
             </button>
           </div>
 

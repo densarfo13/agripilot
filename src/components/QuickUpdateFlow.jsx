@@ -4,6 +4,9 @@ import { enqueue, isOnline } from '../utils/offlineQueue.js';
 import api from '../api/client.js';
 import VoiceBar from './VoiceBar.jsx';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
+import useGuaranteedAction, { ACTION_STATE } from '../hooks/useGuaranteedAction.js';
+import ActionFeedback from './ActionFeedback.jsx';
+import { useTranslation } from '../i18n/index.js';
 
 /**
  * QuickUpdateFlow — 10–20 second, tap-first "Add Update" wizard.
@@ -21,24 +24,30 @@ import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 
 // ─── Step options ──────────────────────────────────────────
 
-const ACTION_OPTIONS = [
-  { value: 'progress', label: 'Crop Progress', icon: '🌱', desc: 'Log stage & condition' },
-  { value: 'photo', label: 'Upload Photo', icon: '📷', desc: 'Take a farm photo' },
-  { value: 'issue', label: 'Report Issue', icon: '⚠️', desc: 'Pest, disease, weather' },
-];
+function getActionOptions(t) {
+  return [
+    { value: 'progress', label: t('quickUpdate.cropProgress'), icon: '🌱', desc: t('quickUpdate.logStageCondition') },
+    { value: 'photo', label: t('quickUpdate.uploadPhoto'), icon: '📷', desc: t('quickUpdate.takeAFarmPhoto') },
+    { value: 'issue', label: t('quickUpdate.reportIssue'), icon: '⚠️', desc: t('quickUpdate.pestDiseaseWeather') },
+  ];
+}
 
-const STAGE_OPTIONS = [
-  { value: 'planting', label: 'Planting', icon: '🌱' },
-  { value: 'vegetative', label: 'Growing', icon: '🌿' },
-  { value: 'flowering', label: 'Flowering', icon: '🌼' },
-  { value: 'harvest', label: 'Harvesting', icon: '🌾' },
-];
+function getStageOptions(t) {
+  return [
+    { value: 'planting', label: t('quickUpdate.planting'), icon: '🌱' },
+    { value: 'vegetative', label: t('quickUpdate.growing'), icon: '🌿' },
+    { value: 'flowering', label: t('quickUpdate.flowering'), icon: '🌼' },
+    { value: 'harvest', label: t('quickUpdate.harvesting'), icon: '🌾' },
+  ];
+}
 
-const CONDITION_OPTIONS = [
-  { value: 'good', label: 'Good', icon: '👍', color: '#22C55E' },
-  { value: 'average', label: 'Okay', icon: '👌', color: '#F59E0B' },
-  { value: 'poor', label: 'Problem', icon: '👎', color: '#EF4444' },
-];
+function getConditionOptions(t) {
+  return [
+    { value: 'good', label: t('quickUpdate.good'), icon: '👍', color: '#22C55E' },
+    { value: 'average', label: t('quickUpdate.okay'), icon: '👌', color: '#F59E0B' },
+    { value: 'poor', label: t('quickUpdate.problem'), icon: '👎', color: '#EF4444' },
+  ];
+}
 
 const IMAGE_STAGE_MAP = {
   planting: 'early_growth',
@@ -102,9 +111,33 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [error, setError] = useState('');
-  const submitGuardRef = useRef(false);
   const fileInputRef = useRef(null);
   const startTime = useRef(Date.now());
+  const { t } = useTranslation();
+
+  // ─── Localized option sets (rebuilt on language change) ────
+  const ACTION_OPTIONS = getActionOptions(t);
+  const STAGE_OPTIONS = getStageOptions(t);
+  const CONDITION_OPTIONS = getConditionOptions(t);
+
+  // ─── Guaranteed action for submit ─────────────────────────
+  const submitAction = useGuaranteedAction({
+    timeoutMs: 12000,
+    onOffline: async () => {
+      const offlinePayload = {
+        method: 'POST',
+        url: `/seasons/${seasonId}/progress`,
+        data: {
+          activityType: action === 'issue' ? 'other' : (stage || 'other'),
+          entryType: 'activity',
+          entryDate: new Date().toISOString().split('T')[0],
+          description: action === 'issue' ? 'Issue reported (offline)' : 'Quick update (offline)',
+        },
+      };
+      await enqueue(offlinePayload);
+      trackPilotEvent('quick_update_offline', { farmerId, action });
+    },
+  });
 
   // Cleanup photo preview URL
   useEffect(() => {
@@ -169,22 +202,23 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     setPhotoPreview(null);
   }, [photoPreview]);
 
-  // ─── Submit ──────────────────────────────────────────────
+  // ─── Submit (via guaranteed action) ──────────────────────
 
   const handleSubmit = useCallback(async () => {
-    if (submitGuardRef.current) return;
-    submitGuardRef.current = true;
+    // Photo-only with no file — nothing to submit
+    if (action === 'photo' && !photoFile) {
+      setStep('action');
+      return;
+    }
+
     setStep('submitting');
     setError('');
 
-    const elapsed = Math.round((Date.now() - startTime.current) / 1000);
-
-    try {
-      // Build payload based on action path
+    await submitAction.run(async () => {
+      const elapsed = Math.round((Date.now() - startTime.current) / 1000);
       const isFirstUpdate = entries && entries.length === 0;
 
       if (action === 'progress' || action === 'issue') {
-        // Log activity + condition
         const payload = {
           activityType: action === 'issue' ? 'other' : (stage || 'other'),
           entryType: 'activity',
@@ -193,7 +227,6 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         };
 
         if (condition) {
-          // Submit condition as a separate call, or embed it
           await api.post(`/seasons/${seasonId}/progress`, payload);
           await api.post(`/seasons/${seasonId}/condition`, {
             cropCondition: condition,
@@ -204,11 +237,10 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         }
 
         if (stage) {
-          // Also confirm stage
           await api.post(`/seasons/${seasonId}/stage-confirmation`, {
             confirmedStage: stage,
             note: 'Confirmed via quick update',
-          }).catch(() => {}); // stage confirmation is supplemental
+          }).catch(() => {});
         }
 
         if (isFirstUpdate) {
@@ -217,7 +249,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         trackPilotEvent('update_submitted', { farmerId, seasonId, type: action, elapsed });
       }
 
-      // Upload photo if captured
+      // Upload photo if captured — failure does not fail the whole update
       if (photoFile) {
         const formData = new FormData();
         formData.append('photo', photoFile, 'quick-update.jpg');
@@ -225,7 +257,6 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           const uploadRes = await api.post('/farmers/me/profile-photo', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
-          // Also save as progress image if we have a season
           if (seasonId) {
             const imageUrl = uploadRes.data?.imageUrl || uploadRes.data?.profileImageUrl;
             if (imageUrl) {
@@ -233,57 +264,28 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
                 imageUrl,
                 imageStage: IMAGE_STAGE_MAP[stage] || 'mid_stage',
                 description: action === 'photo' ? 'Quick photo update' : `${action} update photo`,
-              }).catch(() => {}); // progress-image is supplemental
+              }).catch(() => {});
             }
           }
           trackPilotEvent('photo_uploaded', { farmerId, context: 'quick_update' });
         } catch (photoErr) {
-          // Photo upload failed but activity was saved — partial success
           trackPilotEvent('photo_failed', { farmerId, context: 'quick_update', error: photoErr?.message });
-          // Don't fail the whole update
         }
       }
 
-      // For photo-only action with no other data submitted yet
-      if (action === 'photo' && !photoFile) {
-        // User skipped photo — nothing to submit
-        submitGuardRef.current = false;
-        setStep('action');
-        return;
-      }
-
       if (action === 'photo' && photoFile && !condition && !stage) {
-        // Photo-only path — photo was uploaded above
         trackPilotEvent('update_submitted', { farmerId, seasonId, type: 'photo_only', elapsed });
       }
 
       trackPilotEvent('quick_update_completed', { farmerId, elapsed, action });
-      setStep('done');
-    } catch (err) {
-      // Network failure — queue offline
-      if (!err.response && !isOnline()) {
-        const offlinePayload = {
-          method: 'POST',
-          url: `/seasons/${seasonId}/progress`,
-          data: {
-            activityType: action === 'issue' ? 'other' : (stage || 'other'),
-            entryType: 'activity',
-            entryDate: new Date().toISOString().split('T')[0],
-            description: action === 'issue' ? 'Issue reported (offline)' : 'Quick update (offline)',
-          },
-        };
-        await enqueue(offlinePayload);
-        trackPilotEvent('quick_update_offline', { farmerId, action });
-        setStep('offline');
-      } else {
-        setError(err.response?.data?.error || 'Something went wrong. Tap retry.');
-        trackPilotEvent('quick_update_failed', { farmerId, action, error: err?.message });
-        setStep('error');
-      }
-    } finally {
-      submitGuardRef.current = false;
-    }
-  }, [action, stage, condition, photoFile, seasonId, farmerId, entries]);
+    });
+
+    // Map guaranteed action result to step state
+    if (submitAction.isSuccess) setStep('done');
+    else if (submitAction.isSavedOffline) setStep('offline');
+    else if (submitAction.isRetryable) { setError(submitAction.error); setStep('error'); }
+    else if (submitAction.isError) { setError(submitAction.error); setStep('error'); }
+  }, [action, stage, condition, photoFile, seasonId, farmerId, entries, submitAction]);
 
   // ─── Render helpers ──────────────────────────────────────
 
@@ -313,12 +315,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       <div style={QS.container} data-testid="quick-update-flow">
         <div style={QS.header}>
           <button onClick={onCancel} style={QS.backBtn} aria-label="Close">✕</button>
-          <span style={QS.title}>Add Update</span>
+          <span style={QS.title}>{t('update.addUpdate')}</span>
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
         <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>What do you want to do?</div>
+        <div style={QS.stepTitle}>{t('update.whatToDo')}</div>
         <div style={QS.optionGrid} data-testid="action-select">
           {ACTION_OPTIONS.map(opt => (
             <button
@@ -344,12 +346,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       <div style={QS.container} data-testid="quick-update-flow">
         <div style={QS.header}>
           <button onClick={() => goToStep('action')} style={QS.backBtn} aria-label="Back">←</button>
-          <span style={QS.title}>Crop Stage</span>
+          <span style={QS.title}>{t('update.cropStage')}</span>
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
         <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>What stage is your crop?</div>
+        <div style={QS.stepTitle}>{t('update.whatStage')}</div>
         <div style={QS.stageGrid} data-testid="stage-select">
           {STAGE_OPTIONS.map(opt => (
             <button
@@ -378,12 +380,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       <div style={QS.container} data-testid="quick-update-flow">
         <div style={QS.header}>
           <button onClick={() => goToStep('stage')} style={QS.backBtn} aria-label="Back">←</button>
-          <span style={QS.title}>Condition</span>
+          <span style={QS.title}>{t('update.condition')}</span>
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
         <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>How does your crop look?</div>
+        <div style={QS.stepTitle}>{t('update.howLook')}</div>
         <div style={QS.conditionRow} data-testid="condition-select">
           {CONDITION_OPTIONS.map(opt => (
             <button
@@ -416,19 +418,19 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
             else if (action === 'issue') goToStep('action');
             else goToStep('action');
           }} style={QS.backBtn} aria-label="Back">←</button>
-          <span style={QS.title}>Photo</span>
+          <span style={QS.title}>{t('update.photo')}</span>
           <div style={{ width: 44 }} />
         </div>
         {renderStepIndicator()}
         <VoiceBar voiceKey={voiceKey} compact />
         <div style={QS.stepTitle}>
-          {action === 'photo' ? 'Take a photo of your farm' : 'Add a photo (optional)'}
+          {action === 'photo' ? t('update.takePhotoOfFarm') : t('update.addPhotoOptional')}
         </div>
         <div style={QS.photoArea} data-testid="photo-step">
           {photoPreview ? (
             <div style={QS.previewWrap}>
               <img src={photoPreview} alt="Preview" style={QS.previewImg} />
-              <button onClick={clearPhoto} style={QS.removePhotoBtn}>✕ Remove</button>
+              <button onClick={clearPhoto} style={QS.removePhotoBtn}>{'✕ '}{t('update.remove')}</button>
             </div>
           ) : (
             <button
@@ -437,7 +439,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
               data-testid="capture-photo-btn"
             >
               <span style={{ fontSize: '2.5rem' }}>📷</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Tap to take photo</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{t('update.tapToTakePhoto')}</span>
             </button>
           )}
           <input
@@ -460,11 +462,11 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           disabled={action === 'photo' && !photoFile}
           data-testid="submit-update-btn"
         >
-          {action === 'photo' ? 'Save Photo' : photoFile ? 'Submit with Photo' : 'Submit Update'}
+          {action === 'photo' ? t('update.savePhoto') : photoFile ? t('update.submitWithPhoto') : t('update.submitUpdate')}
         </button>
         {action !== 'photo' && !photoFile && (
           <button onClick={handleSubmit} style={QS.skipBtn} data-testid="skip-photo-btn">
-            Skip photo →
+            {t('update.skipPhoto')} →
           </button>
         )}
       </div>
@@ -476,10 +478,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   if (step === 'submitting') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
-        <div style={QS.feedbackCenter}>
-          <div style={QS.spinner} />
-          <div style={QS.feedbackTitle}>Saving your update...</div>
-        </div>
+        <ActionFeedback
+          state={ACTION_STATE.LOADING}
+          stillWorking={submitAction.stillWorking}
+          loadingText={t('update.savingUpdate')}
+          compact
+        />
       </div>
     );
   }
@@ -491,14 +495,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     return (
       <div style={QS.container} data-testid="quick-update-flow">
         <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.feedbackCenter} data-testid="success-feedback">
-          <span style={QS.feedbackIcon}>✅</span>
-          <div style={QS.feedbackTitle}>Update Saved!</div>
-          <div style={QS.feedbackSub}>Completed in {elapsed}s</div>
-          <button onClick={() => onComplete?.()} style={QS.doneBtn} data-testid="done-btn">
-            Done
-          </button>
-        </div>
+        <ActionFeedback
+          state={ACTION_STATE.SUCCESS}
+          successText={t('update.updateSaved')}
+          nextStepText={t('update.completedIn', { seconds: elapsed })}
+          onDone={() => onComplete?.()}
+        />
       </div>
     );
   }
@@ -509,14 +511,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     return (
       <div style={QS.container} data-testid="quick-update-flow">
         <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.feedbackCenter} data-testid="offline-feedback">
-          <span style={QS.feedbackIcon}>📡</span>
-          <div style={QS.feedbackTitle}>Saved Offline</div>
-          <div style={QS.feedbackSub}>Your update will sync when you reconnect.</div>
-          <button onClick={() => onComplete?.()} style={QS.doneBtn}>
-            Okay
-          </button>
-        </div>
+        <ActionFeedback
+          state={ACTION_STATE.SAVED_OFFLINE}
+          offlineText={t('update.savedOffline')}
+          message={t('update.willSyncReconnect')}
+          onDone={() => onComplete?.()}
+        />
       </div>
     );
   }
@@ -527,17 +527,12 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     return (
       <div style={QS.container} data-testid="quick-update-flow">
         <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.feedbackCenter} data-testid="error-feedback">
-          <span style={QS.feedbackIcon}>❌</span>
-          <div style={QS.feedbackTitle}>Something went wrong</div>
-          <div style={QS.feedbackSub}>{error}</div>
-          <button onClick={handleSubmit} style={QS.retryBtn} data-testid="retry-btn">
-            Retry
-          </button>
-          <button onClick={onCancel} style={QS.skipBtn}>
-            Cancel
-          </button>
-        </div>
+        <ActionFeedback
+          state={submitAction.isRetryable ? ACTION_STATE.RETRYABLE : ACTION_STATE.ERROR}
+          error={error}
+          onRetry={handleSubmit}
+          onCancel={onCancel}
+        />
       </div>
     );
   }

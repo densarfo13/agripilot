@@ -133,12 +133,12 @@ describe('OfficerValidationPage — Queue Screen', () => {
 
   it('shows empty state when queue is clear', () => {
     expect(code).toContain('validation-empty');
-    expect(code).toContain('Queue Clear');
+    expect(code).toContain("t('validation.queueClear')");
   });
 
   it('shows done state when all items validated', () => {
     expect(code).toContain('validation-done');
-    expect(code).toContain('All Done');
+    expect(code).toContain("t('validation.allDone')");
   });
 });
 
@@ -154,7 +154,7 @@ describe('OfficerValidationPage — Detail View', () => {
 
   it('handles no-image case with placeholder', () => {
     expect(code).toContain('no-image-placeholder');
-    expect(code).toContain('No photo');
+    expect(code).toContain("t('validation.noPhoto')");
   });
 
   it('shows priority badge on image', () => {
@@ -292,7 +292,7 @@ describe('OfficerValidationPage — Navigation', () => {
   });
 
   it('feedback shows Approved/Rejected/Flagged text', () => {
-    expect(code).toContain("msg: actionType === 'approve' ? 'Approved'");
+    expect(code).toContain("msg: actionType === 'approve' ? 'Approved");
     expect(code).toContain("'Rejected'");
     expect(code).toContain("'Flagged'");
   });

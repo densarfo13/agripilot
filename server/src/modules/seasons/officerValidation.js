@@ -44,6 +44,16 @@ export async function createOfficerValidation(seasonId, officerId, data) {
     }
   }
 
+  // Prevent duplicate validation of same type by same officer for same season
+  const existingValidation = await prisma.officerValidation.findFirst({
+    where: { seasonId, officerId, validationType: data.validationType },
+  });
+  if (existingValidation) {
+    const err = new Error('This officer has already submitted this validation type for this season.');
+    err.statusCode = 409;
+    throw err;
+  }
+
   // Validate type
   if (!data.validationType || !VALID_TYPES.includes(data.validationType)) {
     const err = new Error(`validationType is required and must be one of: ${VALID_TYPES.join(', ')}`);

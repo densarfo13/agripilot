@@ -735,7 +735,7 @@ describe('Mobile Touch Targets — OnboardingWizard', () => {
   it('Dismiss banner button has adequate touch target', () => {
     const src = readFile('src/components/OnboardingWizard.jsx');
     // Dismiss button uses dismissBtn style which has minHeight 44px
-    expect(src).toContain('Dismiss</button>');
+    expect(src).toContain("t('wizard.dismiss')");
     // The dismissBtn style must include minHeight for adequate touch target
     const dismissStyle = src.substring(
       src.indexOf("dismissBtn: {"),
@@ -753,7 +753,7 @@ describe('Sync Status — Failure Visibility', () => {
   it('SyncStatus shows failure count when sync fails', () => {
     const src = readFile('src/components/SyncStatus.jsx');
     expect(src).toContain('syncState.failed > 0');
-    expect(src).toContain('failed to sync');
+    expect(src).toContain("t('sync.failedMany'");
   });
 
   it('SyncStatus has failedBanner style', () => {
@@ -763,7 +763,7 @@ describe('Sync Status — Failure Visibility', () => {
 
   it('SyncStatus shows Retry button on failure when online', () => {
     const src = readFile('src/components/SyncStatus.jsx');
-    expect(src).toContain('Retry');
+    expect(src).toContain("t('common.retry')");
   });
 });
 
@@ -1022,7 +1022,7 @@ describe('Final Pilot Readiness — Cross-Cutting Checks', () => {
 
   it('SyncStatus shows sync failures to user', () => {
     const src = readFile('src/components/SyncStatus.jsx');
-    expect(src).toContain('failed to sync');
+    expect(src).toContain("t('sync.failedMany'");
     expect(src).toContain('failedBanner');
   });
 

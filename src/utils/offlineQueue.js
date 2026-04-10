@@ -39,6 +39,7 @@ function tx(mode) {
 }
 
 const MAX_RETRIES = 5; // After 5 failed syncs, mutation is abandoned and logged
+const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — stale mutations are purged
 
 /** Enqueue a failed mutation (deduplicates by url+method within 10s window) */
 export async function enqueue(mutation) {
@@ -149,11 +150,29 @@ async function incrementRetry(mutation) {
   } catch { /* best-effort */ }
 }
 
+/** Remove mutations older than EXPIRY_MS (7 days) to prevent stale queue buildup */
+export async function purgeExpired() {
+  const now = Date.now();
+  const mutations = await getAll();
+  let purged = 0;
+  for (const m of mutations) {
+    if (m.createdAt && (now - m.createdAt) > EXPIRY_MS) {
+      logSyncFailure('expired_after_7_days', m, { age: now - m.createdAt });
+      await remove(m.id);
+      purged++;
+    }
+  }
+  return purged;
+}
+
 /** Replay all queued mutations in order. Called on reconnect. */
 export async function syncAll(apiClient) {
   if (syncing) return; // Prevents double-sync from rapid online events
   syncing = true;
   notify({ syncing: true });
+
+  // Purge stale mutations before syncing (prevents replaying ancient data)
+  await purgeExpired();
 
   const mutations = await getAll();
   let synced = 0;

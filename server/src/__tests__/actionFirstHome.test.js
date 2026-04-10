@@ -67,23 +67,23 @@ describe('Action-First Home Screen — Layout Structure', () => {
   it('has last activity display', () => {
     expect(code).toContain('last-activity');
     expect(code).toContain('lastActivityIcon');
-    expect(code).toContain('Last update');
+    expect(code).toContain("t('home.lastUpdate')");
   });
 
   it('last activity shows relative time (Today/Yesterday/N days ago)', () => {
-    expect(code).toContain("'Today'");
-    expect(code).toContain("'Yesterday'");
-    expect(code).toContain('days ago');
+    expect(code).toContain("t('home.today')");
+    expect(code).toContain("t('home.yesterday')");
+    expect(code).toContain("t('home.daysAgo')");
   });
 
   it('shows overdue badge when stale', () => {
     expect(code).toContain('staleBadge');
-    expect(code).toContain('Overdue');
+    expect(code).toContain("t('home.overdue')");
   });
 
   it('has no-season nudge card', () => {
     expect(code).toContain('no-season-nudge');
-    expect(code).toContain('No Active Season');
+    expect(code).toContain("t('home.noActiveSeason')");
   });
 
   it('has help floating action button', () => {
@@ -113,9 +113,9 @@ describe('Action-First Home Screen — Next Step Logic', () => {
   });
 
   it('button labels match actions: Start Season / Report Harvest / Add Update', () => {
-    expect(code).toContain("btnLabel = 'Start Season'");
-    expect(code).toContain("btnLabel = 'Report Harvest'");
-    expect(code).toContain("btnLabel = 'Add Update'");
+    expect(code).toContain("btnLabel = t('home.startSeason')");
+    expect(code).toContain("btnLabel = t('home.reportHarvest')");
+    expect(code).toContain("btnLabel = t('home.addUpdate')");
   });
 });
 
@@ -131,7 +131,7 @@ describe('Action-First Home Screen — Compact Secondary Cards', () => {
   it('farm score is shown in compact form', () => {
     expect(code).toContain('farm-score-compact');
     expect(code).toContain('scoreCircleSmall');
-    expect(code).toContain('Farm Score');
+    expect(code).toContain("t('home.farmScore')");
   });
 });
 
@@ -278,8 +278,8 @@ describe('Action-First Home Screen — Data Integrity', () => {
   });
 
   it('preserves pending/rejected status views', () => {
-    expect(code).toContain('Pending Approval');
-    expect(code).toContain('Registration Declined');
+    expect(code).toContain("t('home.pendingApproval')");
+    expect(code).toContain("t('home.registrationDeclined')");
     expect(code).toContain('isPending');
     expect(code).toContain('isRejected');
   });

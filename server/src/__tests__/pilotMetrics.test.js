@@ -6,6 +6,7 @@ vi.mock('../config/database.js', () => {
   const mockPrisma = {
     farmer: { count: vi.fn(), findMany: vi.fn() },
     farmSeason: { count: vi.fn(), findMany: vi.fn() },
+    farmProfile: { groupBy: vi.fn(), aggregate: vi.fn() },
     seasonProgressEntry: { count: vi.fn() },
     harvestReport: { count: vi.fn() },
     credibilityAssessment: { count: vi.fn(), findMany: vi.fn() },
@@ -72,6 +73,17 @@ function mockPilotMetricsCalls({
     .mockResolvedValueOnce(submittedApps)
     .mockResolvedValueOnce(underReviewApps)
     .mockResolvedValueOnce(approvedApps);
+
+  // Crop distribution + land size aggregates (Phase 2 additions)
+  prisma.farmProfile.groupBy.mockResolvedValue([
+    { crop: 'maize', _count: { crop: 5 } },
+    { crop: 'rice', _count: { crop: 3 } },
+  ]);
+  prisma.farmProfile.aggregate.mockResolvedValue({
+    _sum: { landSizeHectares: 42.5 },
+    _avg: { landSizeHectares: 2.65 },
+    _count: { landSizeHectares: 16 },
+  });
 }
 
 // ─── Pilot Metrics Tests ───────────────────────────────────

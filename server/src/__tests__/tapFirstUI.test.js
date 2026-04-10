@@ -108,12 +108,12 @@ describe('OnboardingWizard welcome screen', () => {
   });
 
   it('shows time estimate badge', () => {
-    expect(src).toContain('Takes about 60 seconds');
+    expect(src).toContain("t('wizard.takesAbout60s')");
     expect(src).toContain('timeEstimate');
   });
 
   it('has Get Started button', () => {
-    expect(src).toContain('Get Started');
+    expect(src).toContain("t('wizard.getStarted')");
   });
 });
 
@@ -132,12 +132,12 @@ describe('OnboardingWizard farm name step', () => {
       src.indexOf("currentStep === 'country'")
     );
     expect(stepBlock).toContain('farmName');
-    expect(stepBlock).toContain('Sunrise Farm');
+    expect(stepBlock).toContain("t('wizard.egSunriseFarm')");
     expect(stepBlock).toContain("textAlign: 'center'");
   });
 
   it('validates farm name is required before proceeding', () => {
-    expect(src).toContain("Give your farm a name");
+    expect(src).toContain("t('wizard.giveAName')");
   });
 });
 
@@ -166,7 +166,7 @@ describe('OnboardingWizard country step', () => {
   });
 
   it('shows auto-detected badge when country is set', () => {
-    expect(src).toContain('Auto-detected');
+    expect(src).toContain("t('wizard.autoDetected')");
     expect(src).toContain('autoDetectBadge');
   });
 
@@ -175,7 +175,7 @@ describe('OnboardingWizard country step', () => {
       src.indexOf("currentStep === 'country'"),
       src.indexOf("currentStep === 'crop'")
     );
-    expect(stepBlock).toContain("'Skip'");
+    expect(stepBlock).toContain("t('common.skip')");
   });
 });
 
@@ -195,10 +195,8 @@ describe('OnboardingWizard crop step', () => {
   });
 
   it('has 6 default top crops with icons', () => {
-    const block = src.substring(
-      src.indexOf('const TOP_CROPS'),
-      src.indexOf('];', src.indexOf('const TOP_CROPS')) + 2
-    );
+    const start = src.indexOf('function getTopCrops');
+    const block = src.substring(start, start + 1200);
     expect(block).toContain("code: 'MAIZE'");
     expect(block).toContain("code: 'RICE'");
     expect(block).toContain("code: 'BEAN'");
@@ -214,7 +212,7 @@ describe('OnboardingWizard crop step', () => {
   });
 
   it('has "Search all" button and "Other" quick-tap to open CropSelect', () => {
-    expect(src).toContain('Search all 60+ crops');
+    expect(src).toContain("t('wizard.searchAll60')");
     expect(src).toContain('crop-search-all');
     expect(src).toContain('crop-other-tap');
     expect(src).toContain('showCropSearch');
@@ -227,7 +225,7 @@ describe('OnboardingWizard crop step', () => {
 
   it('shows stage TapSelector only when crop is selected', () => {
     expect(src).toContain('{form.crop && (');
-    expect(src).toContain("label=\"Current stage\"");
+    expect(src).toContain("t('onboarding.currentStage')");
     expect(src).toContain('options={STAGE_OPTIONS}');
   });
 });
@@ -247,8 +245,8 @@ describe('OnboardingWizard farm size step', () => {
     expect(src).toContain("small:");
     expect(src).toContain("medium:");
     expect(src).toContain("large:");
-    expect(src).toContain('Under 2 acres');
-    expect(src).toContain('Under 1 hectare');
+    expect(src).toContain("t('farmSize.under2acres')");
+    expect(src).toContain("t('farmSize.under1hectare')");
   });
 
   it('renders size categories as large tap cards', () => {
@@ -258,7 +256,7 @@ describe('OnboardingWizard farm size step', () => {
   });
 
   it('has visible exact-size input with unit label', () => {
-    expect(src).toContain('Or enter exact size:');
+    expect(src).toContain("t('wizard.orEnterExact')");
     expect(src).toContain('exact-size-input');
     expect(src).toContain('inputMode="decimal"');
   });
@@ -308,7 +306,7 @@ describe('OnboardingWizard gender step', () => {
       src.indexOf("currentStep === 'gender'"),
       src.indexOf("currentStep === 'age'")
     );
-    expect(stepBlock).toContain("'Skip'");
+    expect(stepBlock).toContain("t('common.skip')");
   });
 });
 
@@ -366,8 +364,8 @@ describe('OnboardingWizard location step', () => {
       src.indexOf("currentStep === 'location'"),
       src.indexOf("currentStep === 'photo'")
     );
-    expect(stepBlock).toContain('Or type');
-    expect(stepBlock).toContain('Nakuru, Kenya');
+    expect(stepBlock).toContain("t('onboarding.typeLocation')");
+    expect(stepBlock).toContain("t('wizard.tapDetectOrType')");
   });
 });
 
@@ -390,7 +388,7 @@ describe('OnboardingWizard photo step', () => {
   });
 
   it('allows skip without photo', () => {
-    expect(src).toContain("Skip & Create Farm");
+    expect(src).toContain("t('wizard.skipCreateFarm')");
   });
 });
 
@@ -406,7 +404,7 @@ describe('OnboardingWizard progress indicator', () => {
   });
 
   it('shows step count text', () => {
-    expect(src).toContain('Step {progressNum} of {TOTAL_USER_STEPS}');
+    expect(src).toContain("t('wizard.stepOf'");
   });
 
   it('calculates percent from step count', () => {
@@ -429,32 +427,32 @@ describe('OnboardingWizard processing and success', () => {
   });
 
   it('processing steps show meaningful labels', () => {
-    expect(src).toContain('Creating your farm profile');
-    expect(src).toContain('Setting up crop tracking');
-    expect(src).toContain('Preparing recommendations');
+    expect(src).toContain("t('processing.creatingProfile')");
+    expect(src).toContain("t('processing.settingUpCrop')");
+    expect(src).toContain("t('processing.preparingRecs')");
   });
 
-  it('has 30-second timeout fallback', () => {
+  it('has timeout fallback', () => {
     expect(src).toContain('PROCESSING_TIMEOUT_MS');
-    expect(src).toContain('30000');
+    expect(src).toContain('8000');
     expect(src).toContain('timedOut');
   });
 
   it('timeout state shows retry option', () => {
-    expect(src).toContain('Taking longer than expected');
+    expect(src).toContain("t('processing.takingLonger')");
     expect(src).toContain('onRetry');
     expect(src).toContain('onBack');
   });
 
   it('success screen shows completion time', () => {
-    expect(src).toContain('Completed in');
+    expect(src).toContain("t('wizard.completedIn'");
     expect(src).toContain('completionTime');
     expect(src).toContain('startTimeRef');
   });
 
   it('success screen has continue button', () => {
-    expect(src).toContain('Continue to Dashboard');
-    expect(src).toContain('Farm created!');
+    expect(src).toContain("t('wizard.continueToDashboard')");
+    expect(src).toContain("t('wizard.farmCreated')");
   });
 });
 
@@ -540,7 +538,7 @@ describe('OnboardingWizard draft persistence', () => {
   });
 
   it('shows draft restored banner', () => {
-    expect(src).toContain('Draft restored');
+    expect(src).toContain("t('wizard.draftRestored')");
     expect(src).toContain('draftRestored');
   });
 
@@ -550,7 +548,7 @@ describe('OnboardingWizard draft persistence', () => {
 
   it('has reset/start-over flow', () => {
     expect(src).toContain('handleReset');
-    expect(src).toContain('Start over');
+    expect(src).toContain("t('wizard.startOver')");
     expect(src).toContain('showResetConfirm');
   });
 
@@ -583,32 +581,32 @@ describe('FarmerProgressTab tap-first upgrades', () => {
   });
 
   it('uses TapSelector for activity type', () => {
-    expect(src).toContain("label=\"Activity Type *\"");
+    expect(src).toContain("t('progress.activityType')");
     expect(src).toContain('options={ACTIVITY_OPTIONS}');
   });
 
   it('uses TapSelector for image stage', () => {
-    expect(src).toContain("label=\"Growth Stage\"");
+    expect(src).toContain("t('progress.growthStage')");
     expect(src).toContain('options={IMAGE_STAGE_OPTIONS}');
   });
 
   it('uses TapSelector for followed-advice', () => {
-    expect(src).toContain("label=\"Followed advice?\"");
+    expect(src).toContain("t('progress.followedAdvice')");
     expect(src).toContain('options={ADVICE_OPTIONS}');
   });
 
   it('stage confirmation pills have minHeight 44px', () => {
     const block = src.substring(
-      src.indexOf('Confirm Growth Stage'),
-      src.indexOf('</form>', src.indexOf('Confirm Growth Stage'))
+      src.indexOf("t('progress.confirmGrowthStage')"),
+      src.indexOf('</form>', src.indexOf("t('progress.confirmGrowthStage')"))
     );
     expect(block).toContain("minHeight: '44px'");
   });
 
   it('condition pills have minHeight 48px', () => {
     const block = src.substring(
-      src.indexOf('Update Crop Condition'),
-      src.indexOf('</form>', src.indexOf('Update Crop Condition'))
+      src.indexOf("t('progress.updateCropCondition')"),
+      src.indexOf('</form>', src.indexOf("t('progress.updateCropCondition')"))
     );
     expect(block).toContain("minHeight: '48px'");
   });

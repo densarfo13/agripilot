@@ -3,6 +3,8 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateParamUUID, parsePositiveInt, isValidUUID } from '../../middleware/validate.js';
 import { idempotencyCheck } from '../../middleware/idempotency.js';
+import { dedupGuard } from '../../middleware/dedup.js';
+import { getFarmerLifecycleState } from '../../utils/farmerLifecycle.js';
 import { writeAuditLog } from '../audit/service.js';
 import * as service from './service.js';
 import prisma from '../../config/database.js';
@@ -51,7 +53,7 @@ async function verifyFarmProfileOwnership(req, farmProfileId) {
 // ─── Farm Profile endpoints ────────────────────────────
 
 // POST /api/v1/farms — create farm profile (atomic setup)
-router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
+router.post('/', dedupGuard('farm-setup'), idempotencyCheck, asyncHandler(async (req, res) => {
   const farmerId = await resolveFarmerId(req);
 
   // Use atomic setup for farmer-role users (onboarding flow) — validates all
@@ -64,13 +66,15 @@ router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
       body.farmerName = farmer?.fullName || 'Farmer';
     }
 
-    const { profile, farmProfileComplete } = await service.atomicFarmSetup(body, farmerId, req.user.sub);
+    const { profile, farmProfileComplete, farmerState, missingRequiredFields } = await service.atomicFarmSetup(body, farmerId, req.user.sub);
     writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id, atomic: true } }).catch(() => {});
-    opsEvent('workflow', 'atomic_farm_setup_completed', 'info', { farmerId, farmProfileId: profile.id, farmProfileComplete });
+    opsEvent('workflow', 'atomic_farm_setup_completed', 'info', { farmerId, farmProfileId: profile.id, farmProfileComplete, farmerState });
 
     return res.status(201).json({
       success: true,
       farmProfileComplete,
+      farmerState,
+      missingRequiredFields,
       nextRoute: '/home',
       profile,
     });
@@ -80,6 +84,26 @@ router.post('/', idempotencyCheck, asyncHandler(async (req, res) => {
   const profile = await service.createFarmProfile(req.body, farmerId);
   writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id } }).catch(() => {});
   res.status(201).json(profile);
+}));
+
+// GET /api/v1/farms/state — farmer lifecycle state (NEW / SETUP_INCOMPLETE / ACTIVE)
+router.get('/state', asyncHandler(async (req, res) => {
+  const farmerId = await resolveFarmerId(req);
+  const farmer = await prisma.farmer.findUnique({
+    where: { id: farmerId },
+    select: { countryCode: true },
+  });
+  const profiles = await prisma.farmProfile.findMany({
+    where: { farmerId },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  });
+  const farmProfile = profiles[0] || null;
+  const lifecycle = getFarmerLifecycleState({ farmProfile, countryCode: farmer?.countryCode });
+  res.json({
+    ...lifecycle,
+    farmProfileId: farmProfile?.id || null,
+  });
 }));
 
 // GET /api/v1/farms — list farm profiles for farmer
@@ -153,6 +177,14 @@ router.post('/:farmId/recommendations/:recId/feedback', validateParamUUID('farmI
     select: { id: true },
   });
   if (!rec) return res.status(404).json({ error: 'Recommendation not found' });
+
+  // Prevent duplicate feedback from same user on same recommendation
+  const existingFeedback = await prisma.recommendationFeedback.findFirst({
+    where: { recommendationId: req.params.recId, userId: req.user.sub },
+  });
+  if (existingFeedback) {
+    return res.status(409).json({ error: 'You have already submitted feedback for this recommendation.' });
+  }
 
   const feedback = await prisma.recommendationFeedback.create({
     data: {

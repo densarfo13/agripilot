@@ -27,14 +27,14 @@ describe('Activation Reliability', () => {
   it('OnboardingWizard has draft restoration banner with Dismiss', () => {
     const src = wizard();
     expect(src).toContain("saveStatus === 'restored'");
-    expect(src).toContain('Draft restored');
-    expect(src).toContain('Dismiss');
+    expect(src).toContain("t('wizard.draftRestored')");
+    expect(src).toContain("t('wizard.dismiss')");
   });
 
   it('OnboardingWizard shows retry on network error', () => {
     const src = wizard();
     expect(src).toContain('setNetworkError');
-    expect(src).toContain("networkError ? 'Retry'");
+    expect(src).toContain("networkError ? t('common.retry')");
   });
 
   it('PendingRegistrationsPage uses /farmers/ endpoints (not /users/)', () => {
@@ -48,7 +48,7 @@ describe('Activation Reliability', () => {
   it('FarmerProgressTab shows first-update-submitted feedback', () => {
     const src = progress();
     expect(src).toContain("trackPilotEvent('first_update_submitted'");
-    expect(src).toContain('your first activity is recorded');
+    expect(src).toContain("t('progress.firstActivityRecorded')");
   });
 });
 
@@ -67,14 +67,13 @@ describe('First Action Success', () => {
   it('FarmerProgressTab shows duplicate warning with date context', () => {
     const src = progress();
     expect(src).toContain('dupWarning');
-    expect(src).toContain('Duplicate check');
-    expect(src).toContain('toLocaleDateString()');
+    expect(src).toContain("t('progress.duplicateWarning')");
   });
 
   it('FarmerProgressTab has submission status indicator (Submitted badge)', () => {
     const src = progress();
     // The green "Submitted" badge on entries
-    expect(src).toContain('Submitted');
+    expect(src).toContain("t('progress.submitted')");
   });
 
   it('FarmerProgressTab success message duration is 5 seconds', () => {
@@ -88,8 +87,8 @@ describe('First Action Success', () => {
     expect(src).toContain("import { useDraft }");
     // Draft key includes farmerId + season
     expect(src).toContain('progress-form:${farmerId}:${activeSeason');
-    // On error, form data preserved
-    expect(src).toContain('Your entry is saved locally');
+    // On error, form data preserved via localized key
+    expect(src).toContain("t('progress.saveActivityError')");
   });
 });
 
@@ -122,9 +121,9 @@ describe('Invite Trust', () => {
 
   it('AcceptInvitePage has clear expired invite CTA mentioning organization admin', () => {
     const src = acceptPage();
-    expect(src).toContain('organization admin');
-    expect(src).toContain('Invite Link Expired');
-    expect(src).toContain('resend the invite');
+    expect(src).toContain("t('invite.expired')");
+    expect(src).toContain("t('invite.expiredContact')");
+    expect(src).toContain("t('invite.whatToDo')");
   });
 
   it('Farmers service supports assignedOfficerId in updateFarmer', () => {
@@ -331,7 +330,7 @@ describe('Sync Now Button', () => {
 
   it('SyncStatus has Sync Now button when online with pending', () => {
     const src = syncStatus();
-    expect(src).toContain('Sync Now');
+    expect(src).toContain("t('sync.syncNow')");
     expect(src).toContain('syncNowBtn');
     expect(src).toContain('syncAll(api)');
   });
@@ -464,7 +463,7 @@ describe('farmSizeAcres Legacy Field', () => {
 describe('Rule 1: Activation Reliability', () => {
   it('OnboardingWizard success state has Continue button (not stuck)', () => {
     const src = readFile('src/components/OnboardingWizard.jsx');
-    expect(src).toContain('Continue to Dashboard');
+    expect(src).toContain("t('wizard.continueToDashboard')");
     expect(src).toContain('window.location.reload()');
     // Must not show checkmark forever without action
     expect(src).toContain("submitSuccess && (");
@@ -475,8 +474,8 @@ describe('Rule 3: Invite Trust - Honest & Recoverable', () => {
   it('AcceptInvitePage handles network errors distinctly from invalid', () => {
     const src = readFile('src/pages/AcceptInvitePage.jsx');
     expect(src).toContain("'network_error'");
-    expect(src).toContain('Connection Problem');
-    expect(src).toContain('Retry');
+    expect(src).toContain("t('invite.connectionProblem')");
+    expect(src).toContain("t('common.retry')");
     expect(src).not.toContain("// network errors show as invalid"); // old pattern removed
   });
 

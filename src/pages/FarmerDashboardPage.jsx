@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import { useFarmStore } from '../store/farmStore.js';
 import api from '../api/client.js';
-import { tLifecycleStage, tStatus, getCurrentLang, setLang } from '../utils/i18n.js';
+import { tLifecycleStage, tStatus } from '../utils/i18n.js';
+import { useTranslation, LANGUAGES } from '../i18n/index.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
 import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
@@ -13,6 +14,7 @@ import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
+import { getFarmerLifecycleState, FARMER_STATE, canShowScore, canStartSeason } from '../utils/farmerLifecycle.js';
 
 /** Collapsible section — keeps secondary content below the fold */
 function ExpandableSection({ title, icon, children, testId }) {
@@ -43,7 +45,7 @@ export default function FarmerDashboardPage() {
   // Farm profile + recommendations + weather + finance store
   const {
     profiles: farmProfiles, currentProfile: farmProfile, recommendations,
-    weather, weatherRecs, financeScore, referral,
+    weather, weatherRecs, financeScore, referral, _fromCache,
     fetchProfiles, fetchRecommendations, updateRecommendation,
     fetchWeather, fetchWeatherRecs, saveRecommendation,
     fetchFinanceScore, recalculateFinanceScore,
@@ -59,27 +61,39 @@ export default function FarmerDashboardPage() {
 
   useEffect(() => {
     api.get('/auth/farmer-profile')
-      .then(r => { setProfile(r.data); setProfileError(''); })
-      .catch(() => setProfileError('Could not load your profile. Please check your connection.'))
+      .then(r => {
+        setProfile(r.data); setProfileError('');
+        // Cache for offline rendering
+        try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(r.data)); } catch {}
+      })
+      .catch(() => {
+        // If offline, try cached farmer profile first, then authStore user
+        const cachedProfile = (() => { try { return JSON.parse(localStorage.getItem('farroway:farmerProfile')); } catch { return null; } })();
+        if (cachedProfile) {
+          setProfile(cachedProfile);
+          setProfileError('');
+        } else if (!navigator.onLine && user) {
+          setProfile(user);
+          setProfileError('');
+        } else {
+          setProfileError('Could not load your profile. Please check your connection.');
+        }
+      })
       .finally(() => setLoading(false));
-    // Load farm profiles + referral
+    // Load farm profiles + referral (farmStore now hydrates from cache if offline)
     fetchProfiles().then(profiles => {
-      if (profiles.length === 0) setShowOnboarding(true);
+      if (profiles.length === 0 && !_fromCache) setShowOnboarding(true);
     }).catch(() => {
-      // fetchProfiles failed — do NOT show onboarding, farmer may already be registered
-      setProfileError('Could not load your farm data. Please check your connection and refresh.');
+      // fetchProfiles failed — do NOT show onboarding, farmer may already be registered; if we have cached profiles, don't show error
+      if (!_fromCache) {
+        setProfileError('Could not load your farm data. Please check your connection and refresh.');
+      }
     });
     fetchReferral(); // supplemental — referral card just won't render if this fails
     trackEvent('dashboard_viewed'); // fire-and-forget analytics
   }, []);
 
-  const [lang, setCurrentLang] = useState(getCurrentLang());
-
-  const switchLang = async (newLang) => {
-    await setLang(newLang);
-    setCurrentLang(newLang);
-    window.location.reload(); // reload to apply translations across all components
-  };
+  const { t, lang, setLang: switchLang } = useTranslation();
 
   // Fetch recommendations + weather when farm profile is loaded
   useEffect(() => {
@@ -165,6 +179,14 @@ export default function FarmerDashboardPage() {
       trackPilotEvent('onboarding_incomplete', { crop: data.crop, reason: 'missing_required_fields' });
     }
 
+    // Respect server-provided nextRoute — if it points somewhere other than
+    // the current farmer home, navigate explicitly to avoid stale state.
+    const nextRoute = result.nextRoute;
+    if (nextRoute && nextRoute !== '/home' && nextRoute !== '/') {
+      window.location.href = nextRoute;
+      return;
+    }
+
     setShowOnboarding(false);
     trackEvent('onboarding_completed', { crop: data.crop, farmProfileComplete });
     trackPilotEvent('onboarding_completed', { crop: data.crop, farmProfileComplete });
@@ -198,6 +220,16 @@ export default function FarmerDashboardPage() {
   const isPending = user?.registrationStatus === 'pending_approval';
   const isRejected = user?.registrationStatus === 'rejected';
   const isApproved = user?.registrationStatus === 'approved';
+
+  // ── Farmer lifecycle state — single source of truth ──
+  const farmerLifecycle = getFarmerLifecycleState({
+    farmProfile: farmProfile || null,
+    countryCode: profile?.countryCode || farmProfile?.countryCode,
+  });
+  const isActive = farmerLifecycle.state === FARMER_STATE.ACTIVE;
+  const isSetupIncomplete = farmerLifecycle.state === FARMER_STATE.SETUP_INCOMPLETE;
+  const isNew = farmerLifecycle.state === FARMER_STATE.NEW;
+  const setupComplete = farmerLifecycle.complete;
 
   const [nextTask, setNextTask] = useState(null);
 
@@ -238,21 +270,25 @@ export default function FarmerDashboardPage() {
           <InlineAlert variant="warning" onDismiss={() => setPhotoUploadWarning('')}>{photoUploadWarning}</InlineAlert>
         </div>
       )}
+      {_fromCache && (
+        <div data-testid="offline-cache-banner" style={{ padding: '0.4rem 1rem', background: '#1E293B', textAlign: 'center', fontSize: '0.8rem', color: '#F59E0B', borderBottom: '1px solid #243041' }}>
+          📡 {t('home.showingCached')}
+        </div>
+      )}
       <div style={styles.header}>
         <FarrowayLogo size={28} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
-            <button
-              onClick={() => switchLang('en')}
-              style={{ ...styles.langBtn, fontWeight: lang === 'en' ? 700 : 400, color: lang === 'en' ? '#22C55E' : '#A1A1AA' }}
-            >EN</button>
-            <button
-              onClick={() => switchLang('sw')}
-              style={{ ...styles.langBtn, fontWeight: lang === 'sw' ? 700 : 400, color: lang === 'sw' ? '#22C55E' : '#A1A1AA' }}
-            >SW</button>
+            {LANGUAGES.map(l => (
+              <button
+                key={l.code}
+                onClick={() => switchLang(l.code)}
+                style={{ ...styles.langBtn, fontWeight: lang === l.code ? 700 : 400, color: lang === l.code ? '#22C55E' : '#A1A1AA' }}
+              >{l.short}</button>
+            ))}
           </div>
           <button onClick={() => { logout(); window.location.href = '/login'; }} style={styles.logoutBtn}>
-            Sign Out
+            {t('common.signOut')}
           </button>
         </div>
       </div>
@@ -268,7 +304,7 @@ export default function FarmerDashboardPage() {
               onClick={() => setShowPhotoUpload(true)}
             />
             <div>
-              <h2 style={{ margin: 0 }}>Welcome, {user?.fullName}</h2>
+              <h2 style={{ margin: 0 }}>{t('home.welcome')} {user?.fullName}</h2>
               <p style={{ color: '#A1A1AA', margin: '0.25rem 0 0' }}>{user?.email}</p>
             </div>
           </div>
@@ -289,20 +325,20 @@ export default function FarmerDashboardPage() {
         )}
 
         {profileError && (
-          <InlineAlert variant="danger" onDismiss={() => setProfileError('')} action={{ label: 'Retry', onClick: () => { setLoading(true); setProfileError(''); api.get('/auth/farmer-profile').then(r => { setProfile(r.data); setProfileError(''); }).catch(() => setProfileError('Could not load your profile. Please check your connection.')).finally(() => setLoading(false)); } }}>{profileError}</InlineAlert>
+          <InlineAlert variant="danger" onDismiss={() => setProfileError('')} action={{ label: t('common.retry'), onClick: () => { setLoading(true); setProfileError(''); api.get('/auth/farmer-profile').then(r => { setProfile(r.data); setProfileError(''); }).catch(() => setProfileError(t('error.loadProfile'))).finally(() => setLoading(false)); } }}>{profileError}</InlineAlert>
         )}
         {loading ? (
           <SkeletonFarmerDashboard />
         ) : isPending ? (
           <div style={styles.card}>
-            <div style={styles.statusBadge('rgba(245,158,11,0.15)', '#F59E0B')}>Pending Approval</div>
-            <h3 style={{ marginTop: '1rem' }}>Your Registration is Under Review</h3>
+            <div style={styles.statusBadge('rgba(245,158,11,0.15)', '#F59E0B')}>{t('home.pendingApproval')}</div>
+            <h3 style={{ marginTop: '1rem' }}>{t('home.registrationReview')}</h3>
             <p style={{ color: '#A1A1AA', lineHeight: 1.6 }}>
               Thank you for registering with Farroway. Our team is reviewing your information.
               This usually takes 1-3 business days.
             </p>
             <div style={styles.infoBox}>
-              <h4 style={{ margin: '0 0 0.5rem' }}>What to expect:</h4>
+              <h4 style={{ margin: '0 0 0.5rem' }}>{t('home.whatToExpect')}</h4>
               <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#A1A1AA', lineHeight: 1.8 }}>
                 <li>A field officer may contact you to verify your details</li>
                 <li>You will receive a notification when your account is approved</li>
@@ -311,19 +347,19 @@ export default function FarmerDashboardPage() {
             </div>
             {profile && (
               <div style={styles.profileSummary}>
-                <h4 style={{ margin: '0 0 0.75rem', color: '#FFFFFF' }}>Your Registration Details</h4>
-                <div style={styles.detailRow}><span>Name:</span> <span>{profile.fullName}</span></div>
-                <div style={styles.detailRow}><span>Phone:</span> <span>{profile.phone}</span></div>
-                <div style={styles.detailRow}><span>Region:</span> <span>{profile.region}{profile.district ? `, ${profile.district}` : ''}</span></div>
-                {profile.primaryCrop && <div style={styles.detailRow}><span>Crop:</span> <span>{getCropLabel(profile.primaryCrop)}</span></div>}
-                {(profile.landSizeValue || profile.farmSizeAcres) && <div style={styles.detailRow}><span>Farm Size:</span> <span>{formatLandSize(profile.landSizeValue || profile.farmSizeAcres, profile.landSizeUnit)}</span></div>}
+                <h4 style={{ margin: '0 0 0.75rem', color: '#FFFFFF' }}>{t('home.registrationDetails')}</h4>
+                <div style={styles.detailRow}><span>{t('home.name')}</span> <span>{profile.fullName}</span></div>
+                <div style={styles.detailRow}><span>{t('home.phone')}</span> <span>{profile.phone}</span></div>
+                <div style={styles.detailRow}><span>{t('home.region')}</span> <span>{profile.region}{profile.district ? `, ${profile.district}` : ''}</span></div>
+                {profile.primaryCrop && <div style={styles.detailRow}><span>{t('home.crop')}</span> <span>{getCropLabel(profile.primaryCrop)}</span></div>}
+                {(profile.landSizeValue || profile.farmSizeAcres) && <div style={styles.detailRow}><span>{t('home.farmSize')}</span> <span>{formatLandSize(profile.landSizeValue || profile.farmSizeAcres, profile.landSizeUnit)}</span></div>}
               </div>
             )}
           </div>
         ) : isRejected ? (
           <div style={styles.card}>
-            <div style={styles.statusBadge('rgba(239,68,68,0.15)', '#EF4444')}>Registration Declined</div>
-            <h3 style={{ marginTop: '1rem' }}>Your Registration Was Not Approved</h3>
+            <div style={styles.statusBadge('rgba(239,68,68,0.15)', '#EF4444')}>{t('home.registrationDeclined')}</div>
+            <h3 style={{ marginTop: '1rem' }}>{t('home.registrationDeclined')}</h3>
             <p style={{ color: '#A1A1AA', lineHeight: 1.6 }}>
               Unfortunately, your registration could not be approved at this time.
               {profile?.rejectionReason && (
@@ -357,7 +393,7 @@ export default function FarmerDashboardPage() {
                   <div style={S.heroTop}>
                     <span style={S.heroCropIcon}>{cropIcon}</span>
                     <div style={{ flex: 1 }}>
-                      <div style={S.heroCropName}>{cropName || 'My Farm'}</div>
+                      <div style={S.heroCropName}>{cropName || t('home.myFarm')}</div>
                       {stageLabel && <span style={S.heroBadge}>{stageLabel}</span>}
                     </div>
                     {tempC !== null && (
@@ -371,10 +407,34 @@ export default function FarmerDashboardPage() {
               );
             })()}
 
-            {/* 2. Primary Action Button — single big tap target */}
+            {/* 2. Primary Action Button — state-locked by lifecycle */}
             {(() => {
-              const hasActiveSeason = seasons && seasons.length > 0;
               const farmerId = user?.farmerId;
+
+              // ── Setup-required states: CTA = "Complete Setup" ──
+              if (!setupComplete) {
+                return (
+                  <div style={S.actionSection} data-testid="primary-action-section">
+                    <button
+                      onClick={() => setShowOnboarding(true)}
+                      style={S.primaryActionBtn}
+                      data-testid="primary-action-btn"
+                    >
+                      <span style={S.primaryActionIcon}>📋</span>
+                      <span>{isNew ? t('home.setUpFarm') : t('home.finishSetup')}</span>
+                    </button>
+                    <div style={S.nextStepText} data-testid="next-step-text">
+                      {isNew
+                        ? t('home.createProfileToStart')
+                        : `${t('home.completeProfile')}${farmerLifecycle.missing.length > 0 ? ' ' + t('home.missing') + ' ' + farmerLifecycle.missing.join(', ') + '.' : ''}`
+                      }
+                    </div>
+                  </div>
+                );
+              }
+
+              // ── ACTIVE state: normal CTA logic ──
+              const hasActiveSeason = seasons && seasons.length > 0;
               const stage = lifecycle?.currentStage;
               const isHarvestStage = stage === 'harvest' || stage === 'post_harvest';
               const daysSinceUpdate = seasons?.[0]?.lastActivityDate
@@ -384,30 +444,30 @@ export default function FarmerDashboardPage() {
 
               let btnLabel, btnIcon, btnHref, nextStepText;
               if (nextTask?.taskType === 'REPORT_HARVEST') {
-                btnLabel = 'Report Harvest'; btnIcon = '🌾';
+                btnLabel = t('home.reportHarvest'); btnIcon = '🌾';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                nextStepText = nextTask.reason || 'Your crop is ready — submit your harvest report.';
+                nextStepText = nextTask.reason || t('home.cropReadyHarvest');
               } else if (nextTask?.taskType === 'START_SEASON') {
-                btnLabel = 'Start Season'; btnIcon = '🌱';
+                btnLabel = t('home.startSeason'); btnIcon = '🌱';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                nextStepText = nextTask.reason || 'Set up a new growing season to start tracking.';
+                nextStepText = nextTask.reason || t('home.setUpSeason');
               } else if (!hasActiveSeason) {
-                btnLabel = 'Start Season'; btnIcon = '🌱';
+                btnLabel = t('home.startSeason'); btnIcon = '🌱';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                nextStepText = 'Start a new season to begin tracking your farm.';
+                nextStepText = t('home.startNewSeason');
               } else if (isHarvestStage) {
-                btnLabel = 'Report Harvest'; btnIcon = '🌾';
+                btnLabel = t('home.reportHarvest'); btnIcon = '🌾';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                nextStepText = 'Your crop is at harvest stage — submit your report.';
+                nextStepText = t('home.atHarvestStage');
               } else if (updateOverdue) {
-                btnLabel = 'Add Update'; btnIcon = '📝';
+                btnLabel = t('home.addUpdate'); btnIcon = '📝';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                nextStepText = `No update in ${daysSinceUpdate} days — log an activity now.`;
+                nextStepText = t('home.noUpdateDays', { days: daysSinceUpdate });
               } else {
                 const topRec = lifecycle?.recommendations?.[0];
-                btnLabel = 'Add Update'; btnIcon = '📝';
+                btnLabel = t('home.addUpdate'); btnIcon = '📝';
                 btnHref = `/farmer-home/${farmerId}/progress`;
-                nextStepText = topRec?.title || 'Log your latest farm activity.';
+                nextStepText = topRec?.title || t('home.logActivity');
               }
 
               return (
@@ -449,8 +509,8 @@ export default function FarmerDashboardPage() {
                       <text x="28" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="13" fontWeight="700">{progressPct}%</text>
                     </svg>
                     <div style={{ flex: 1 }}>
-                      <div style={S.progressLabel}>Season Progress</div>
-                      <div style={S.progressSub}>{activityCount} update{activityCount !== 1 ? 's' : ''} logged</div>
+                      <div style={S.progressLabel}>{t('home.seasonProgress')}</div>
+                      <div style={S.progressSub}>{activityCount} {activityCount !== 1 ? t('home.updatesLogged') : t('home.updateLogged')}</div>
                     </div>
                   </div>
                   {/* Last Activity */}
@@ -458,27 +518,43 @@ export default function FarmerDashboardPage() {
                     <div style={S.lastActivity} data-testid="last-activity">
                       <span style={S.lastActivityIcon}>📋</span>
                       <div style={{ flex: 1 }}>
-                        <div style={S.lastActivityLabel}>Last update</div>
+                        <div style={S.lastActivityLabel}>{t('home.lastUpdate')}</div>
                         <div style={S.lastActivityDate}>
-                          {daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince} days ago`}
+                          {daysSince === 0 ? t('home.today') : daysSince === 1 ? t('home.yesterday') : `${daysSince} ${t('home.daysAgo')}`}
                           {' · '}{new Date(lastDate).toLocaleDateString()}
                         </div>
                       </div>
-                      {daysSince >= 14 && <span style={S.staleBadge}>⚠ Overdue</span>}
+                      {daysSince >= 14 && <span style={S.staleBadge}>⚠ {t('home.overdue')}</span>}
                     </div>
                   )}
                 </div>
               ) : null;
             })()}
 
-            {/* No season nudge */}
-            {seasons && seasons.length === 0 && (
+            {/* No season nudge — only for ACTIVE farmers */}
+            {setupComplete && seasons && seasons.length === 0 && (
               <div style={S.noSeasonCard} data-testid="no-season-nudge">
                 <span style={{ fontSize: '2rem' }}>🌱</span>
-                <div style={{ fontSize: '1rem', fontWeight: 600, marginTop: '0.5rem' }}>No Active Season</div>
+                <div style={{ fontSize: '1rem', fontWeight: 600, marginTop: '0.5rem' }}>{t('home.noActiveSeason')}</div>
                 <div style={{ fontSize: '0.85rem', color: '#A1A1AA', marginTop: '0.25rem' }}>
-                  Start a season to track your progress
+                  {t('home.startSeasonToTrack')}
                 </div>
+              </div>
+            )}
+
+            {/* Setup-incomplete banner — show what's missing */}
+            {!setupComplete && farmProfile && (
+              <div style={{ ...S.noSeasonCard, borderColor: '#F59E0B' }} data-testid="setup-incomplete-banner">
+                <span style={{ fontSize: '2rem' }}>📋</span>
+                <div style={{ fontSize: '1rem', fontWeight: 600, marginTop: '0.5rem' }}>{t('home.setupRequired')}</div>
+                <div style={{ fontSize: '0.85rem', color: '#A1A1AA', marginTop: '0.25rem' }}>
+                  {t('home.completeProfile')}
+                </div>
+                {farmerLifecycle.missing.length > 0 && (
+                  <div style={{ fontSize: '0.8rem', color: '#F59E0B', marginTop: '0.5rem' }}>
+                    {t('home.missing')} {farmerLifecycle.missing.join(', ')}
+                  </div>
+                )}
               </div>
             )}
 
@@ -493,15 +569,15 @@ export default function FarmerDashboardPage() {
               </div>
             )}
 
-            {/* 6. Farm Score — compact summary */}
-            {financeScore && (
+            {/* 6. Farm Score — only for ACTIVE farmers with real scores */}
+            {financeScore && setupComplete && !financeScore.setupRequired && (
               <div style={S.scoreCard} data-testid="farm-score-compact">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div style={S.scoreCircleSmall(financeScore.band)}>
                     <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>{financeScore.score}</span>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Farm Score</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t('home.farmScore')}</div>
                     <div style={{ fontSize: '0.8rem', color: bandColor(financeScore.band) }}>{financeScore.band} · {financeScore.readiness}</div>
                   </div>
                 </div>
@@ -515,13 +591,13 @@ export default function FarmerDashboardPage() {
 
             {/* ─── EXPANDABLE SECONDARY SECTIONS ─── */}
             {/* Collapsible "More Details" area for secondary content */}
-            <ExpandableSection title="My Farm Details" icon="🏡" testId="details-section">
+            <ExpandableSection title={t('home.farmDetails')} icon="🏡" testId="details-section">
               {farmProfile && (
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <div style={styles.detailRow}><span>Farm:</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
-                  {farmProfile.locationName && <div style={styles.detailRow}><span>Location:</span> <span>{farmProfile.locationName}</span></div>}
-                  {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>Size:</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}
-                  <div style={styles.detailRow}><span>Stage:</span> <span style={{ textTransform: 'capitalize' }}>{farmProfile.stage}</span></div>
+                  <div style={styles.detailRow}><span>{t('home.farm')}</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
+                  {farmProfile.locationName && <div style={styles.detailRow}><span>{t('home.location')}</span> <span>{farmProfile.locationName}</span></div>}
+                  {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>{t('home.size')}</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}
+                  <div style={styles.detailRow}><span>{t('home.stage')}</span> <span style={{ textTransform: 'capitalize' }}>{farmProfile.stage}</span></div>
                 </div>
               )}
               {seasons && seasons.length > 0 && seasons.map(s => (
@@ -538,7 +614,7 @@ export default function FarmerDashboardPage() {
             </ExpandableSection>
 
             {recommendations.length > 0 && (
-              <ExpandableSection title="Recommendations" icon="💡" testId="recommendations-section">
+              <ExpandableSection title={t('home.recommendations')} icon="💡" testId="recommendations-section">
                 {recommendations.slice(0, 3).map(rec => (
                   <div key={rec.id} style={{ padding: '0.6rem 0', borderBottom: '1px solid #243041' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -555,49 +631,49 @@ export default function FarmerDashboardPage() {
                     </div>
                     {rec.status === 'pending' && (
                       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                        <button onClick={() => handleRecAction(rec.id, 'completed')} style={styles.recBtnDone}>Done</button>
-                        <button onClick={() => handleRecAction(rec.id, 'skipped')} style={styles.recBtnSkip}>Skip</button>
-                        <button onClick={() => setRecNoteId(recNoteId === rec.id ? null : rec.id)} style={styles.recBtnNote}>Note</button>
+                        <button onClick={() => handleRecAction(rec.id, 'completed')} style={styles.recBtnDone}>{t('common.done')}</button>
+                        <button onClick={() => handleRecAction(rec.id, 'skipped')} style={styles.recBtnSkip}>{t('common.skip')}</button>
+                        <button onClick={() => setRecNoteId(recNoteId === rec.id ? null : rec.id)} style={styles.recBtnNote}>{t('home.note')}</button>
                       </div>
                     )}
                     {recNoteId === rec.id && (
-                      <input value={recNote} onChange={e => setRecNote(e.target.value)} placeholder="Add a note..." style={styles.noteInput} />
+                      <input value={recNote} onChange={e => setRecNote(e.target.value)} placeholder={t('home.addNote')} style={styles.noteInput} />
                     )}
                     {rec.farmerNote && <div style={{ fontSize: '0.75rem', color: '#A1A1AA', marginTop: '0.3rem', fontStyle: 'italic' }}>Note: {rec.farmerNote}</div>}
                     {rec.status !== 'pending' && !feedbackSent[rec.id] && (
                       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#71717A' }}>Helpful?</span>
-                        <button onClick={() => handleFeedback(rec.id, true)} style={styles.feedbackBtn}>Yes</button>
-                        <button onClick={() => handleFeedback(rec.id, false)} style={styles.feedbackBtn}>No</button>
+                        <span style={{ fontSize: '0.7rem', color: '#71717A' }}>{t('home.helpful')}</span>
+                        <button onClick={() => handleFeedback(rec.id, true)} style={styles.feedbackBtn}>{t('common.yes')}</button>
+                        <button onClick={() => handleFeedback(rec.id, false)} style={styles.feedbackBtn}>{t('common.no')}</button>
                       </div>
                     )}
-                    {feedbackSent[rec.id] && <div style={{ fontSize: '0.7rem', color: '#71717A', marginTop: '0.3rem' }}>Thanks for your feedback</div>}
+                    {feedbackSent[rec.id] && <div style={{ fontSize: '0.7rem', color: '#71717A', marginTop: '0.3rem' }}>{t('home.thanksForFeedback')}</div>}
                   </div>
                 ))}
               </ExpandableSection>
             )}
 
             {weather && weather.temperatureC != null && (
-              <ExpandableSection title="Weather Details" icon="🌦️" testId="weather-section">
+              <ExpandableSection title={t('home.weatherDetails')} icon="🌦️" testId="weather-section">
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   <div style={styles.weatherStat}>
                     <span style={styles.weatherValue}>{Math.round(weather.temperatureC)}°C</span>
-                    <span style={styles.weatherLabel}>Temp</span>
+                    <span style={styles.weatherLabel}>{t('home.temp')}</span>
                   </div>
                   <div style={styles.weatherStat}>
                     <span style={styles.weatherValue}>{weather.rainForecastMm}mm</span>
-                    <span style={styles.weatherLabel}>Rain (3d)</span>
+                    <span style={styles.weatherLabel}>{t('home.rain3d')}</span>
                   </div>
                   {weather.humidityPct != null && (
                     <div style={styles.weatherStat}>
                       <span style={styles.weatherValue}>{weather.humidityPct}%</span>
-                      <span style={styles.weatherLabel}>Humidity</span>
+                      <span style={styles.weatherLabel}>{t('home.humidity')}</span>
                     </div>
                   )}
                   {weather.windSpeedKmh != null && (
                     <div style={styles.weatherStat}>
                       <span style={styles.weatherValue}>{Math.round(weather.windSpeedKmh)}</span>
-                      <span style={styles.weatherLabel}>Wind km/h</span>
+                      <span style={styles.weatherLabel}>{t('home.windKmh')}</span>
                     </div>
                   )}
                 </div>
@@ -606,14 +682,14 @@ export default function FarmerDashboardPage() {
                   <div key={i} style={{ padding: '0.4rem 0', borderTop: '1px solid #243041', marginTop: '0.4rem' }}>
                     <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{rec.title}</div>
                     <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{rec.action}</div>
-                    <button onClick={() => handleSaveWeatherRec(rec)} style={{ ...styles.recBtnNote, marginTop: '0.3rem', fontSize: '0.7rem' }}>Save</button>
+                    <button onClick={() => handleSaveWeatherRec(rec)} style={{ ...styles.recBtnNote, marginTop: '0.3rem', fontSize: '0.7rem' }}>{t('common.save')}</button>
                   </div>
                 ))}
               </ExpandableSection>
             )}
 
             {referral && (
-              <ExpandableSection title="Invite a Farmer" icon="🤝" testId="referral-section">
+              <ExpandableSection title={t('home.inviteFarmer')} icon="🤝" testId="referral-section">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <div style={{
                     flex: 1, padding: '0.5rem 0.75rem', background: '#1E293B', borderRadius: '6px',
@@ -622,7 +698,7 @@ export default function FarmerDashboardPage() {
                   <button
                     onClick={() => { navigator.clipboard?.writeText(referral.link || referral.code); trackEvent('referral_shared'); }}
                     style={{ padding: '0.6rem 1rem', background: '#8B5CF6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', minHeight: '44px' }}
-                  >Copy</button>
+                  >{t('common.copy')}</button>
                 </div>
                 {referral.referralCount > 0 && (
                   <div style={{ fontSize: '0.8rem', color: '#71717A' }}>{referral.referralCount} farmer{referral.referralCount !== 1 ? 's' : ''} joined</div>
@@ -631,7 +707,7 @@ export default function FarmerDashboardPage() {
             )}
 
             {profile?.applications?.length > 0 && (
-              <ExpandableSection title="My Applications" icon="📄" testId="applications-section">
+              <ExpandableSection title={t('home.myApplications')} icon="📄" testId="applications-section">
                 {profile.applications.map(app => (
                   <div key={app.id} style={{ ...styles.detailRow, padding: '0.5rem 0' }}>
                     <span style={{ fontWeight: 500 }}>{app.cropType}</span>
@@ -642,7 +718,7 @@ export default function FarmerDashboardPage() {
             )}
 
             {profile?.notifications?.length > 0 && (
-              <ExpandableSection title="Notifications" icon="🔔" testId="notifications-section">
+              <ExpandableSection title={t('home.notifications')} icon="🔔" testId="notifications-section">
                 {profile.notifications.map(n => (
                   <div key={n.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #243041', fontSize: '0.875rem' }}>
                     <strong>{n.title}</strong>
@@ -662,7 +738,7 @@ export default function FarmerDashboardPage() {
           </>
         ) : (
           <div style={styles.card}>
-            <p>Loading your account status...</p>
+            <p>{t('home.loadingAccount')}</p>
           </div>
         )}
       </div>

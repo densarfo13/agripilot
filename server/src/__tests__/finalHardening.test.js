@@ -74,7 +74,7 @@ describe('First Action Success', () => {
   it('FarmerProgressTab has same-day duplicate warning', () => {
     const code = readFile('src/pages/FarmerProgressTab.jsx');
     expect(code).toContain('dupWarning');
-    expect(code).toContain('already logged');
+    expect(code).toContain("t('progress.duplicateWarning')");
   });
 });
 

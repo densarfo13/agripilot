@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../config/database.js', () => {
   const mockPrisma = {
     farmer: { findUnique: vi.fn() },
+    farmProfile: { findFirst: vi.fn() },
     farmSeason: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
@@ -56,8 +57,19 @@ import {
 
 const mockFarmer = { id: 'f-1', fullName: 'Test Farmer', countryCode: 'KE' };
 
+// Complete farm profile — needed by lifecycle guard in createSeason
+const mockCompleteFarmProfile = {
+  id: 'fp-1', farmerId: 'f-1', crop: 'MAIZE',
+  landSizeValue: 5, landSizeUnit: 'ACRE', landSizeHectares: 2.02,
+  farmSizeAcres: 5, countryCode: 'KE',
+};
+
 describe('Season Service', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: return a complete farm profile so lifecycle guard passes
+    prisma.farmProfile.findFirst.mockResolvedValue(mockCompleteFarmProfile);
+  });
 
   // ─── Season Creation ────────────────────────────────
   describe('createSeason', () => {

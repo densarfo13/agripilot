@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { count as queueCount, onSyncChange, syncAll } from '../utils/offlineQueue.js';
 import api from '../api/client.js';
+import { useTranslation } from '../i18n/index.js';
 
 /**
  * Floating sync status indicator.
@@ -11,6 +12,7 @@ export default function SyncStatus() {
   const [online, setOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState(0);
   const [syncState, setSyncState] = useState(null); // { syncing, synced, failed, remaining }
+  const { t } = useTranslation();
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -53,19 +55,19 @@ export default function SyncStatus() {
       {!online && (
         <div style={styles.offlineBanner}>
           <span style={styles.dot('#EF4444')} />
-          <span>You are offline — changes will sync when reconnected</span>
+          <span>{t('sync.offline')}</span>
         </div>
       )}
       {pending > 0 && !syncState?.syncing && (
         <div style={styles.pendingBanner}>
           <span style={styles.dot('#F59E0B')} />
-          <span>{pending} update{pending !== 1 ? 's' : ''} waiting to sync</span>
+          <span>{pending === 1 ? t('sync.pendingOne', { count: pending }) : t('sync.pendingMany', { count: pending })}</span>
           {online && (
             <button
               onClick={() => syncAll(api)}
               style={styles.syncNowBtn}
             >
-              Sync Now
+              {t('sync.syncNow')}
             </button>
           )}
         </div>
@@ -73,19 +75,19 @@ export default function SyncStatus() {
       {syncState?.syncing && (
         <div style={styles.syncingBanner}>
           <span style={styles.spinner} />
-          <span>Syncing changes...</span>
+          <span>{t('sync.syncing')}</span>
         </div>
       )}
       {syncState && !syncState.syncing && syncState.failed > 0 && (
         <div style={styles.failedBanner}>
           <span style={styles.dot('#EF4444')} />
-          <span>{syncState.failed} update{syncState.failed !== 1 ? 's' : ''} failed to sync</span>
+          <span>{syncState.failed === 1 ? t('sync.failedOne', { count: syncState.failed }) : t('sync.failedMany', { count: syncState.failed })}</span>
           {syncState.remaining > 0 && online && (
             <button
               onClick={() => syncAll(api)}
               style={styles.syncNowBtn}
             >
-              Retry
+              {t('common.retry')}
             </button>
           )}
         </div>
@@ -93,7 +95,7 @@ export default function SyncStatus() {
       {syncState && !syncState.syncing && syncState.synced > 0 && syncState.failed === 0 && syncState.remaining === 0 && (
         <div style={styles.successBanner}>
           <span style={styles.dot('#22C55E')} />
-          <span>{syncState.synced} update{syncState.synced !== 1 ? 's' : ''} synced</span>
+          <span>{syncState.synced === 1 ? t('sync.syncedOne', { count: syncState.synced }) : t('sync.syncedMany', { count: syncState.synced })}</span>
         </div>
       )}
     </div>

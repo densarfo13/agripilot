@@ -546,7 +546,7 @@ export async function updateFarmer(id, data) {
     }
   }
 
-  return prisma.farmer.update({
+  const result = await prisma.farmer.update({
     where: { id },
     data: {
       ...(data.fullName && { fullName: data.fullName }),
@@ -569,6 +569,16 @@ export async function updateFarmer(id, data) {
       ...(data.assignedOfficerId !== undefined && { assignedOfficerId: data.assignedOfficerId || null }),
     },
   });
+
+  // Sync denormalized farmerName on FarmProfile when fullName changes
+  if (data.fullName) {
+    await prisma.farmProfile.updateMany({
+      where: { farmerId: id },
+      data: { farmerName: data.fullName },
+    }).catch(() => { /* non-critical — profile may not exist yet */ });
+  }
+
+  return result;
 }
 
 export async function deleteFarmer(id) {

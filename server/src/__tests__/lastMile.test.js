@@ -33,6 +33,7 @@ vi.mock('../config/database.js', () => {
     credibilityAssessment: { findUnique: vi.fn(), upsert: vi.fn() },
     progressScore: { findUnique: vi.fn() },
     officerValidation: { findMany: vi.fn() },
+    farmProfile: { findFirst: vi.fn() },
     notification: { create: vi.fn() },
     $transaction: vi.fn(async (arg) => {
       if (typeof arg === 'function') return arg(mockPrisma);
@@ -493,7 +494,15 @@ describe('Registration Approval / Rejection', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('Season — Planting date bounds', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Lifecycle guard requires a complete farm profile
+    prisma.farmProfile.findFirst.mockResolvedValue({
+      id: 'fp-1', farmerId: 'f-1', crop: 'MAIZE',
+      landSizeValue: 2, landSizeUnit: 'ACRE', landSizeHectares: 0.81,
+      farmSizeAcres: 2, countryCode: 'KE',
+    });
+  });
 
   it('rejects planting date more than 1 year in the future', async () => {
     const { createSeason } = await import('../modules/seasons/service.js');

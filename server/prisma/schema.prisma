@@ -257,6 +257,11 @@ model User {
   issueAttachments         IssueAttachment[] @relation("IssueUploader")
   staffNotifications       StaffNotification[] @relation("StaffNotifications")
   notifPreferences         Json?               @map("notif_preferences")
+  // ─── Reverse relations for FK fields that reference User by ID ───
+  farmersAssigned          Farmer[]            @relation("FarmerAssignedOfficer")
+  farmersApproved          Farmer[]            @relation("FarmerApprovedBy")
+  officerValidations       OfficerValidation[] @relation("ValidationOfficer")
+  autoNotifications        AutoNotification[]  @relation("AutoNotifTargetUser")
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -304,7 +309,7 @@ model Farmer {
   id                   String              @id @default(uuid())
   fullName             String              @map("full_name")
   phone                String
-  nationalId           String?             @map("national_id")
+  nationalId           String?             @map("national_id")   // unique per org — see @@unique below
   gender               String?             // male, female, other, prefer_not_to_say
   dateOfBirth          DateTime?           @map("date_of_birth")
   region               String
@@ -351,13 +356,15 @@ model Farmer {
   onboardingCompletedAt DateTime?          @map("onboarding_completed_at")
   profileImageUrl      String?             @map("profile_image_url")
   profileImageUploadedAt DateTime?         @map("profile_image_uploaded_at")
-  profileImageUpdatedBy String?            @map("profile_image_updated_by")
+  profileImageUpdatedBy String?            @map("profile_image_updated_by") // userId — audit trail, no @relation
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
   organization        Organization?       @relation(fields: [organizationId], references: [id])
   createdBy           User                @relation("FarmerCreatedBy", fields: [createdById], references: [id])
   userAccount         User?               @relation("FarmerUserAccount", fields: [userId], references: [id])
+  assignedOfficer     User?               @relation("FarmerAssignedOfficer", fields: [assignedOfficerId], references: [id])
+  approvedBy          User?               @relation("FarmerApprovedBy", fields: [approvedById], references: [id])
   applications        Application[]
   farmActivities      FarmActivity[]
   farmSeasons         FarmSeason[]
@@ -380,6 +387,7 @@ model Farmer {
   @@index([organizationId, gender], map: "idx_farmers_org_gender")
   @@index([phone], map: "idx_farmers_phone")
   @@unique([phone, organizationId], map: "uq_farmers_phone_org")
+  @@unique([nationalId, organizationId], map: "uq_farmers_nationalid_org")
   @@map("farmers")
 }
 
@@ -612,6 +620,7 @@ model ReviewAssignment {
 
   @@index([applicationId], map: "idx_review_assign_app")
   @@index([reviewerId], map: "idx_review_assign_reviewer")
+  @@unique([applicationId, reviewerId], map: "uq_review_assign_app_reviewer")
   @@map("review_assignments")
 }
 
@@ -836,10 +845,10 @@ model FarmSeason {
   partialHarvest      Boolean        @default(false) @map("partial_harvest")
   lastActivityDate    DateTime?      @map("last_activity_date")
   closedAt            DateTime?      @map("closed_at")
-  closedBy            String?        @map("closed_by")
+  closedBy            String?        @map("closed_by")          // userId of closer — audit trail, no @relation (historical integrity)
   closureReason       String?        @map("closure_reason")
   reopenedAt          DateTime?      @map("reopened_at")
-  reopenedBy          String?        @map("reopened_by")
+  reopenedBy          String?        @map("reopened_by")        // userId of reopener — audit trail, no @relation (historical integrity)
   reopenReason        String?        @map("reopen_reason")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
@@ -986,10 +995,12 @@ model OfficerValidation {
   createdAt           DateTime       @default(now()) @map("created_at")
 
   season              FarmSeason     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  officer             User           @relation("ValidationOfficer", fields: [officerId], references: [id])
 
   @@index([seasonId], map: "idx_officer_validation_season")
   @@index([officerId], map: "idx_officer_validation_officer")
   @@index([officerId, completedAt], map: "idx_officer_validation_officer_completed")
+  @@unique([seasonId, officerId, validationType], map: "uq_officer_validation_season_officer_type")
   @@map("officer_validations")
 }
 
@@ -1173,6 +1184,8 @@ model AutoNotification {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
+  targetUser     User?           @relation("AutoNotifTargetUser", fields: [userId], references: [id])
+
   @@index([organizationId], map: "idx_autonotif_org")
   @@index([userId], map: "idx_autonotif_user")
   @@index([farmerId], map: "idx_autonotif_farmer")
@@ -1300,7 +1313,7 @@ model Referral {
   id           String   @id @default(uuid())
   referrerId   String   @map("referrer_id")
   refereeId    String   @map("referee_id")
-  code         String
+  code         String   @unique
   status       String   @default("joined") // joined, active
   createdAt    DateTime @default(now()) @map("created_at")
 
@@ -1310,6 +1323,7 @@ model Referral {
   @@index([referrerId], map: "idx_referral_referrer")
   @@index([refereeId], map: "idx_referral_referee")
   @@index([code], map: "idx_referral_code")
+  @@unique([referrerId, refereeId], map: "uq_referral_pair")
   @@map("referrals")
 }
 
@@ -1326,6 +1340,7 @@ model RecommendationFeedback {
   recommendation     RecommendationRecord @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
 
   @@index([recommendationId], map: "idx_rec_feedback_rec")
+  @@unique([recommendationId, userId], map: "uq_rec_feedback_rec_user")
   @@map("recommendation_feedback")
 }
 

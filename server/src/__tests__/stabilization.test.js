@@ -266,6 +266,10 @@ describe('Recommendation engine — safety checks', () => {
 
 describe('OnboardingWizard — module structure', () => {
   it('exports default component', async () => {
+    // Provide browser globals needed by transitive imports (authStore uses localStorage)
+    if (typeof globalThis.localStorage === 'undefined') {
+      globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} };
+    }
     const mod = await import('../../../src/components/OnboardingWizard.jsx');
     expect(mod.default).toBeDefined();
     expect(typeof mod.default).toBe('function');

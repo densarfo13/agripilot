@@ -19,11 +19,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
+import { useTranslation, LANGUAGES as I18N_LANGUAGES } from '../i18n/index.js';
 
-const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'sw', label: 'Kiswahili' },
-];
+const LANGUAGES = I18N_LANGUAGES;
 
 export default function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
@@ -41,11 +39,13 @@ export default function AcceptInvitePage() {
   const [submitting, setSubmitting] = useState(false);
   const submitGuardRef = useRef(false);
 
+  const { t } = useTranslation();
+
   // Validate the token on page load
   useEffect(() => {
     if (!token) {
       setStatus('invalid');
-      setTokenError('No invite token found in this link. Please use the full link provided by your administrator.');
+      setTokenError('No invite token found in this link.');
       return;
     }
 
@@ -86,24 +86,33 @@ export default function AcceptInvitePage() {
     setFormError('');
 
     if (password !== confirmPassword) {
-      return setFormError('Passwords do not match');
+      return setFormError(t('invite.passwordMismatch'));
     }
     if (password.length < 8) {
-      return setFormError('Password must be at least 8 characters');
+      return setFormError(t('invite.passwordTooShort'));
     }
 
     submitGuardRef.current = true;
     setSubmitting(true);
     try {
-      await api.post(`/invites/${token}/accept`, { email, password });
+      // Timeout-protected invite accept
+      const acceptPromise = api.post(`/invites/${token}/accept`, { email, password });
+      const timeoutPromise = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error('__timeout__')), 15000)
+      );
+      await Promise.race([acceptPromise, timeoutPromise]);
       setStatus('done');
     } catch (err) {
-      const data = err.response?.data;
-      if (data?.expired) {
-        setStatus('expired');
-        setTokenError(data.error);
+      if (err?.message === '__timeout__') {
+        setFormError(t('invite.takingTooLong'));
       } else {
-        setFormError(data?.error || 'Failed to activate account. Please try again.');
+        const data = err.response?.data;
+        if (data?.expired) {
+          setStatus('expired');
+          setTokenError(data.error);
+        } else {
+          setFormError(data?.error || t('invite.failedActivate'));
+        }
       }
     } finally {
       submitGuardRef.current = false;
@@ -117,7 +126,7 @@ export default function AcceptInvitePage() {
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.logo}>Farroway</div>
-          <p style={{ textAlign: 'center', color: '#A1A1AA' }}>Validating your invite link…</p>
+          <p style={{ textAlign: 'center', color: '#A1A1AA' }}>{t('invite.validating')}</p>
         </div>
       </div>
     );
@@ -131,10 +140,10 @@ export default function AcceptInvitePage() {
           <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📡</div>
-            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>Connection Problem</h2>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>{t('invite.connectionProblem')}</h2>
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
           </div>
-          <button onClick={() => { setStatus('loading'); setTokenError(''); window.location.reload(); }} style={styles.button}>Retry</button>
+          <button onClick={() => { setStatus('loading'); setTokenError(''); window.location.reload(); }} style={styles.button}>{t('common.retry')}</button>
         </div>
       </div>
     );
@@ -149,21 +158,21 @@ export default function AcceptInvitePage() {
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>{status === 'expired' ? '⏰' : '🔗'}</div>
             <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>
-              {status === 'expired' ? 'Invite Link Expired' : 'Invalid Invite Link'}
+              {status === 'expired' ? t('invite.expired') : t('invite.invalid')}
             </h2>
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>
               {status === 'expired'
-                ? 'This invite link has expired. Please contact your field officer or organization admin to request a new invite link.'
+                ? t('invite.expiredContact')
                 : tokenError}
             </p>
           </div>
           {status === 'expired' && (
             <div style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid #854d0e', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#FACC15', marginBottom: '1rem' }}>
-              <strong>What to do:</strong> Contact your field officer or organization admin and ask them to resend the invite. A new link will be generated for you. If you do not know who your field officer is, reach out to your organization's support team.
+              <strong>{t('invite.whatToDo')}</strong> Contact your field officer or organization admin and ask them to resend the invite. A new link will be generated for you. If you do not know who your field officer is, reach out to your organization's support team.
             </div>
           )}
           <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', marginBottom: 0 }}>
-            Already have an account? <Link to="/login" style={{ color: '#22C55E' }}>Sign In</Link>
+            {t('invite.alreadyAccount')} <Link to="/login" style={{ color: '#22C55E' }}>{t('invite.signIn')}</Link>
           </p>
         </div>
       </div>
@@ -178,10 +187,10 @@ export default function AcceptInvitePage() {
           <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✅</div>
-            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>Already Activated</h2>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>{t('invite.alreadyActivated')}</h2>
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>{tokenError}</p>
           </div>
-          <button onClick={() => navigate('/login')} style={styles.button}>Go to Login</button>
+          <button onClick={() => navigate('/login')} style={styles.button}>{t('invite.goToLogin')}</button>
         </div>
       </div>
     );
@@ -195,15 +204,15 @@ export default function AcceptInvitePage() {
           <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
             <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', color: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 700, margin: '0 auto 1rem' }}>✓</div>
-            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700, color: '#22C55E' }}>Account Activated!</h2>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700, color: '#22C55E' }}>{t('invite.accountActivated')}</h2>
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>
-              Welcome to Farroway, <strong>{inviteData?.fullName}</strong>. Your account is ready. You can now sign in with your email and password.
+              {t('invite.welcomeTo')} <strong>{inviteData?.fullName}</strong>. Your account is ready. You can now sign in with your email and password.
             </p>
             <div style={{ background: 'var(--info-light, #0c2d48)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.6rem 0.85rem', fontSize: '0.85rem', color: 'var(--info, #0EA5E9)', marginTop: '0.75rem', lineHeight: 1.5 }}>
               <strong>What happens next:</strong> After signing in you'll set up your farm profile — add your farm name, crop, and location. It takes about 2 minutes.
             </div>
           </div>
-          <button onClick={() => navigate('/login')} style={styles.button}>Sign In Now</button>
+          <button onClick={() => navigate('/login')} style={styles.button}>{t('invite.signInNow')}</button>
         </div>
       </div>
     );
@@ -214,12 +223,12 @@ export default function AcceptInvitePage() {
     <div style={styles.container}>
       <div style={{ ...styles.card, maxWidth: '460px' }}>
         <div style={styles.logo}>Farroway</div>
-        <h1 style={styles.title}>Activate Your Account</h1>
+        <h1 style={styles.title}>{t('invite.activateAccount')}</h1>
 
         {inviteData && (
           <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#A1A1AA' }}>
-            <strong>Welcome, {inviteData.fullName}!</strong><br />
-            Your farmer profile has been set up. Choose an email and password to complete your account.
+            <strong>{t('invite.welcome')} {inviteData.fullName}!</strong><br />
+            {t('invite.profileSetUp')}
             {inviteData.expiresAt && (
               <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#22C55E' }}>
                 This link expires on {new Date(inviteData.expiresAt).toLocaleDateString()}.
@@ -232,31 +241,31 @@ export default function AcceptInvitePage() {
           {formError && <div style={styles.error}>{formError}</div>}
 
           {/* Pre-filled, read-only fields from the farmer record */}
-          <div style={styles.sectionLabel}>Your Profile (pre-filled by your institution)</div>
+          <div style={styles.sectionLabel}>{t('invite.yourProfile')}</div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={styles.fieldLabel}>Full Name</label>
+              <label style={styles.fieldLabel}>{t('invite.fullName')}</label>
               <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={inviteData?.fullName || ''} readOnly />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={styles.fieldLabel}>Phone</label>
+              <label style={styles.fieldLabel}>{t('invite.phone')}</label>
               <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={inviteData?.phone || ''} readOnly />
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={styles.fieldLabel}>Region</label>
+              <label style={styles.fieldLabel}>{t('invite.region')}</label>
               <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={inviteData?.region || ''} readOnly />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={styles.fieldLabel}>Language</label>
+              <label style={styles.fieldLabel}>{t('invite.language')}</label>
               <input style={{ ...styles.input, background: '#0F172A', color: '#71717A' }} value={LANGUAGES.find(l => l.code === inviteData?.preferredLanguage)?.label || inviteData?.preferredLanguage || ''} readOnly />
             </div>
           </div>
 
-          <div style={styles.sectionLabel}>Create Login Credentials</div>
+          <div style={styles.sectionLabel}>{t('invite.createCredentials')}</div>
           <div>
-            <label style={styles.fieldLabel}>Email Address *</label>
+            <label style={styles.fieldLabel}>{t('invite.email')} *</label>
             <input
               style={styles.input}
               type="email"
@@ -269,12 +278,12 @@ export default function AcceptInvitePage() {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={styles.fieldLabel}>Password *</label>
+              <label style={styles.fieldLabel}>{t('invite.password')} *</label>
               <input
                 style={styles.input}
                 type="password"
                 required
-                placeholder="Min 8 characters"
+                placeholder={t('invite.min8chars')}
                 minLength={8}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -282,12 +291,12 @@ export default function AcceptInvitePage() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={styles.fieldLabel}>Confirm Password *</label>
+              <label style={styles.fieldLabel}>{t('invite.confirmPassword')} *</label>
               <input
                 style={styles.input}
                 type="password"
                 required
-                placeholder="Repeat password"
+                placeholder={t('invite.repeatPassword')}
                 minLength={8}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
@@ -297,11 +306,11 @@ export default function AcceptInvitePage() {
           </div>
 
           <button type="submit" disabled={submitting} style={styles.button}>
-            {submitting ? 'Activating…' : 'Activate Account'}
+            {submitting ? t('invite.activating') : t('invite.activate')}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
-            Already have an account? <Link to="/login" style={{ color: '#22C55E' }}>Sign In</Link>
+            {t('invite.alreadyAccount')} <Link to="/login" style={{ color: '#22C55E' }}>{t('invite.signIn')}</Link>
           </p>
         </form>
       </div>

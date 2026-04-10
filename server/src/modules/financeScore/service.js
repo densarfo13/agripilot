@@ -6,6 +6,7 @@
  */
 
 import prisma from '../../config/database.js';
+import { isFarmProfileComplete } from '../../utils/farmerLifecycle.js';
 
 // ─── Score bands ───────────────────────────────────────
 
@@ -37,6 +38,26 @@ export async function computeFinanceScore(farmProfileId) {
     const err = new Error('Farm profile not found');
     err.statusCode = 404;
     throw err;
+  }
+
+  // ── Lifecycle guard: don't compute real score for incomplete profiles ──
+  // Fetch farmer's country code for the completeness check
+  const farmer = await prisma.farmer.findUnique({
+    where: { id: profile.farmerId },
+    select: { countryCode: true },
+  });
+  const { complete, missing } = isFarmProfileComplete(profile, { countryCode: farmer?.countryCode });
+  if (!complete) {
+    return {
+      score: null,
+      band: null,
+      readiness: 'Setup Required',
+      setupRequired: true,
+      missingRequiredFields: missing,
+      message: 'Complete your farm profile to unlock scoring and tracking.',
+      factors: [],
+      nextSteps: missing.map(f => `Add ${f.toLowerCase()}`),
+    };
   }
 
   const factors = [];
@@ -334,14 +355,29 @@ export async function computeFinanceScore(farmProfileId) {
 
 export async function getFinanceScore(farmProfileId) {
   // Check for existing profile first
-  const profileExists = await prisma.farmProfile.findUnique({
+  const profile = await prisma.farmProfile.findUnique({
     where: { id: farmProfileId },
-    select: { id: true },
+    include: { farmer: { select: { countryCode: true } } },
   });
-  if (!profileExists) {
+  if (!profile) {
     const err = new Error('Farm profile not found');
     err.statusCode = 404;
     throw err;
+  }
+
+  // ── Lifecycle guard: return setup-required instead of stale cached score ──
+  const { complete, missing } = isFarmProfileComplete(profile, { countryCode: profile.farmer?.countryCode });
+  if (!complete) {
+    return {
+      score: null,
+      band: null,
+      readiness: 'Setup Required',
+      setupRequired: true,
+      missingRequiredFields: missing,
+      message: 'Complete your farm profile to unlock scoring and tracking.',
+      factors: [],
+      nextSteps: missing.map(f => `Add ${f.toLowerCase()}`),
+    };
   }
 
   const latest = await prisma.farmFinanceScore.findFirst({

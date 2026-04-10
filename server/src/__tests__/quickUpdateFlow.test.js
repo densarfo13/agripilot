@@ -37,13 +37,13 @@ describe('QuickUpdateFlow — Action Selection (Step 1)', () => {
     expect(code).toContain("value: 'issue'");
   });
 
-  it('action options have icons and descriptions', () => {
-    expect(code).toContain("label: 'Crop Progress'");
-    expect(code).toContain("label: 'Upload Photo'");
-    expect(code).toContain("label: 'Report Issue'");
-    expect(code).toContain("desc: 'Log stage & condition'");
-    expect(code).toContain("desc: 'Take a farm photo'");
-    expect(code).toContain("desc: 'Pest, disease, weather'");
+  it('action options have icons and descriptions (localized)', () => {
+    expect(code).toContain("t('quickUpdate.cropProgress')");
+    expect(code).toContain("t('quickUpdate.uploadPhoto')");
+    expect(code).toContain("t('quickUpdate.reportIssue')");
+    expect(code).toContain("t('quickUpdate.logStageCondition')");
+    expect(code).toContain("t('quickUpdate.takeAFarmPhoto')");
+    expect(code).toContain("t('quickUpdate.pestDiseaseWeather')");
   });
 
   it('action cards have tap-safe styling', () => {
@@ -55,18 +55,22 @@ describe('QuickUpdateFlow — Action Selection (Step 1)', () => {
   });
 
   it('asks "What do you want to do?"', () => {
-    expect(code).toContain('What do you want to do?');
+    expect(code).toContain("t('update.whatToDo')");
   });
 });
 
 describe('QuickUpdateFlow — Stage Selection (Step 2)', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('has four stage options: planting, vegetative, flowering, harvest', () => {
-    expect(code).toContain("{ value: 'planting', label: 'Planting'");
-    expect(code).toContain("{ value: 'vegetative', label: 'Growing'");
-    expect(code).toContain("{ value: 'flowering', label: 'Flowering'");
-    expect(code).toContain("{ value: 'harvest', label: 'Harvesting'");
+  it('has four stage options: planting, vegetative, flowering, harvest (localized)', () => {
+    expect(code).toContain("value: 'planting'");
+    expect(code).toContain("t('quickUpdate.planting')");
+    expect(code).toContain("value: 'vegetative'");
+    expect(code).toContain("t('quickUpdate.growing')");
+    expect(code).toContain("value: 'flowering'");
+    expect(code).toContain("t('quickUpdate.flowering')");
+    expect(code).toContain("value: 'harvest'");
+    expect(code).toContain("t('quickUpdate.harvesting')");
   });
 
   it('stage options have large icons', () => {
@@ -90,7 +94,7 @@ describe('QuickUpdateFlow — Stage Selection (Step 2)', () => {
   });
 
   it('asks "What stage is your crop?"', () => {
-    expect(code).toContain('What stage is your crop?');
+    expect(code).toContain("t('update.whatStage')");
   });
 });
 
@@ -98,9 +102,12 @@ describe('QuickUpdateFlow — Condition (Step 3)', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
   it('has three condition options: good, average, poor', () => {
-    expect(code).toContain("{ value: 'good', label: 'Good'");
-    expect(code).toContain("{ value: 'average', label: 'Okay'");
-    expect(code).toContain("{ value: 'poor', label: 'Problem'");
+    expect(code).toContain("value: 'good'");
+    expect(code).toContain("t('quickUpdate.good')");
+    expect(code).toContain("value: 'average'");
+    expect(code).toContain("t('quickUpdate.okay')");
+    expect(code).toContain("value: 'poor'");
+    expect(code).toContain("t('quickUpdate.problem')");
   });
 
   it('condition options have thumb icons', () => {
@@ -124,7 +131,7 @@ describe('QuickUpdateFlow — Condition (Step 3)', () => {
   });
 
   it('asks "How does your crop look?"', () => {
-    expect(code).toContain('How does your crop look?');
+    expect(code).toContain("t('update.howLook')");
   });
 });
 
@@ -153,13 +160,13 @@ describe('QuickUpdateFlow — Photo Step', () => {
 
   it('has skip photo option for non-photo actions', () => {
     expect(code).toContain('skip-photo-btn');
-    expect(code).toContain('Skip photo');
+    expect(code).toContain("t('update.skipPhoto')");
   });
 
   it('submit button adapts label: Save Photo / Submit with Photo / Submit Update', () => {
-    expect(code).toContain("'Save Photo'");
-    expect(code).toContain("'Submit with Photo'");
-    expect(code).toContain("'Submit Update'");
+    expect(code).toContain("t('update.savePhoto')");
+    expect(code).toContain("t('update.submitWithPhoto')");
+    expect(code).toContain("t('update.submitUpdate')");
   });
 });
 
@@ -192,8 +199,9 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
   it('has submit guard to prevent double-submit', () => {
-    expect(code).toContain('submitGuardRef');
-    expect(code).toContain('submitGuardRef.current = true');
+    // Guard now lives inside useGuaranteedAction hook
+    expect(code).toContain('useGuaranteedAction');
+    expect(code).toContain('submitAction.run');
   });
 
   it('submits activity to /seasons/{id}/progress', () => {
@@ -213,8 +221,10 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
     expect(code).toContain("from '../utils/offlineQueue.js'");
   });
 
-  it('checks isOnline before queueing', () => {
-    expect(code).toContain('isOnline()');
+  it('checks online status via guaranteed action offline handler', () => {
+    // Online check is now handled by useGuaranteedAction's onOffline callback
+    expect(code).toContain('onOffline');
+    expect(code).toContain('enqueue(offlinePayload)');
   });
 
   it('tracks quick_update_completed event', () => {
@@ -225,8 +235,10 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
     expect(code).toContain("'quick_update_offline'");
   });
 
-  it('tracks quick_update_failed event', () => {
-    expect(code).toContain("'quick_update_failed'");
+  it('tracks update failure via error step', () => {
+    // Error tracking now handled by ActionFeedback + useGuaranteedAction
+    expect(code).toContain("setStep('error')");
+    expect(code).toContain('submitAction.isRetryable');
   });
 
   it('tracks first_update_submitted for new farmers', () => {
@@ -238,30 +250,31 @@ describe('QuickUpdateFlow — Feedback States', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
   it('has success feedback with completion time', () => {
-    expect(code).toContain('success-feedback');
-    expect(code).toContain('Update Saved!');
-    expect(code).toContain('Completed in');
+    // Now uses ActionFeedback component
+    expect(code).toContain('ACTION_STATE.SUCCESS');
+    expect(code).toContain("t('update.updateSaved')");
+    expect(code).toContain("t('update.completedIn'");
   });
 
   it('has offline feedback', () => {
-    expect(code).toContain('offline-feedback');
-    expect(code).toContain('Saved Offline');
-    expect(code).toContain('will sync when you reconnect');
+    expect(code).toContain('ACTION_STATE.SAVED_OFFLINE');
+    expect(code).toContain("t('update.savedOffline')");
+    expect(code).toContain("t('update.willSyncReconnect')");
   });
 
   it('has error feedback with retry', () => {
-    expect(code).toContain('error-feedback');
-    expect(code).toContain('retry-btn');
-    expect(code).toContain('Something went wrong');
+    expect(code).toContain('ACTION_STATE.RETRYABLE');
+    expect(code).toContain('ACTION_STATE.ERROR');
+    expect(code).toContain('onRetry={handleSubmit}');
   });
 
   it('has submitting spinner state', () => {
-    expect(code).toContain('Saving your update');
-    expect(code).toContain('spinner');
+    expect(code).toContain("t('update.savingUpdate')");
+    expect(code).toContain('ACTION_STATE.LOADING');
   });
 
   it('done button calls onComplete', () => {
-    expect(code).toContain('done-btn');
+    expect(code).toContain('onDone=');
     expect(code).toContain('onComplete?.()');
   });
 });
@@ -343,7 +356,7 @@ describe('QuickUpdateFlow — FarmerProgressTab Integration', () => {
   it('has big "Add Update" CTA button with gradient', () => {
     expect(code).toContain('quick-update-cta');
     expect(code).toContain('linear-gradient');
-    expect(code).toContain('Add Update');
+    expect(code).toContain("t('progress.addUpdate')");
   });
 
   it('CTA button is 56px minHeight', () => {
@@ -371,10 +384,10 @@ describe('QuickUpdateFlow — FarmerProgressTab Integration', () => {
   });
 
   it('preserves existing detailed action buttons as secondary', () => {
-    expect(code).toContain('Log Activity');
-    expect(code).toContain('Update Condition');
-    expect(code).toContain('Add Photo');
-    expect(code).toContain('Submit Harvest Report');
+    expect(code).toContain("t('progress.logActivity')");
+    expect(code).toContain("t('progress.updateCondition')");
+    expect(code).toContain("t('progress.addPhoto')");
+    expect(code).toContain("t('progress.submitHarvestReport')");
   });
 });
 

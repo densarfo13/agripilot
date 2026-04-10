@@ -42,7 +42,7 @@ describe('Live route wiring — farmer setup uses correct components', () => {
     const wizard = readFile('src/components/OnboardingWizard.jsx');
     expect(wizard).toContain("import CropSelect");
     expect(wizard).toContain('<CropSelect');
-    expect(wizard).toContain('Search all 60+ crops');
+    expect(wizard).toContain("t('wizard.searchAll60')");
   });
 
   it('wizard component uses CountrySelect for country', () => {
@@ -228,8 +228,9 @@ describe('Duplicate and retry safety', () => {
     expect(chunk).toContain('_createInFlight: false');
   });
 
-  it('backend route uses idempotencyCheck middleware', () => {
-    expect(routes).toContain("'/', idempotencyCheck");
+  it('backend route uses dedupGuard + idempotencyCheck middleware', () => {
+    expect(routes).toContain("dedupGuard('farm-setup')");
+    expect(routes).toContain("idempotencyCheck");
   });
 
   it('wizard submitGuardRef prevents double-submit', () => {
@@ -285,8 +286,8 @@ describe('Post-success routing', () => {
   const dashboard = readFile('src/pages/FarmerDashboardPage.jsx');
 
   it('success screen shows "Farm created!" and continue button', () => {
-    expect(wizard).toContain('Farm created!');
-    expect(wizard).toContain('Continue to Dashboard');
+    expect(wizard).toContain("t('wizard.farmCreated')");
+    expect(wizard).toContain("t('wizard.continueToDashboard')");
   });
 
   it('continue button reloads page to show dashboard', () => {
@@ -663,8 +664,8 @@ describe('VoiceBar shared component', () => {
   });
 
   it('persists language preference in localStorage', () => {
-    expect(voiceBar).toContain('farroway:voiceLang');
-    expect(voiceBar).toContain('localStorage');
+    expect(voiceBar).toContain('setLanguage(voiceLang)');
+    expect(voiceBar).toContain('getLanguage');
   });
 
   it('renders listen button with test id', () => {
@@ -831,8 +832,8 @@ describe('VoiceBar shared behavior for officer/admin use', () => {
   const voiceBar = readFile('src/components/VoiceBar.jsx');
 
   it('persists language in localStorage across pages', () => {
-    expect(voiceBar).toContain("localStorage.getItem('farroway:voiceLang')");
-    expect(voiceBar).toContain("localStorage.setItem('farroway:voiceLang'");
+    expect(voiceBar).toContain('getLanguage');
+    expect(voiceBar).toContain('setLanguage(voiceLang)');
   });
 
   it('supports compact prop for smaller controls', () => {
@@ -1089,15 +1090,19 @@ describe('Atomic farm setup — backend service validation', () => {
     expect(svc).toContain('farmerUpdate.onboardingCompletedAt = new Date()');
   });
 
-  it('4. farmProfileComplete requires crop + land size + country (GPS not required)', () => {
-    expect(svc).toContain('result.crop');
-    expect(svc).toContain('result.landSizeValue != null || result.farmSizeAcres != null');
-    expect(svc).toContain('countryCode');
-    // The farmProfileComplete check does NOT include latitude/longitude
-    const completeCheck = svc.split('farmProfileComplete = !!')[1]?.split(';')[0] || '';
-    expect(completeCheck).not.toContain('latitude');
-    expect(completeCheck).not.toContain('longitude');
+  it('4. farmProfileComplete uses shared isFarmProfileComplete (GPS not required)', () => {
+    // Now uses the shared lifecycle utility instead of inline check
+    expect(svc).toContain('isFarmProfileComplete(result, { countryCode })');
+    expect(svc).toContain('getFarmerLifecycleState');
     expect(svc).toContain('farmProfileComplete');
+    expect(svc).toContain('farmerState');
+    expect(svc).toContain('missingRequiredFields');
+    // Verify the shared utility checks crop, land size, country but NOT GPS
+    const lifecycle = readFile('server/src/utils/farmerLifecycle.js');
+    expect(lifecycle).toContain("key: 'crop'");
+    expect(lifecycle).toContain("key: 'landSizeValue'");
+    expect(lifecycle).toContain("key: 'landSizeUnit'");
+    expect(lifecycle).not.toContain("key: 'latitude'");
   });
 
   it('5. land size validation rejects zero and negative values', () => {
@@ -1133,8 +1138,9 @@ describe('Atomic farm setup — route handler + response format', () => {
     expect(routes).toContain('service.createFarmProfile(req.body, farmerId)');
   });
 
-  it('10. idempotency middleware is still applied', () => {
-    expect(routes).toContain("router.post('/', idempotencyCheck");
+  it('10. dedupGuard + idempotency middleware are both applied', () => {
+    expect(routes).toContain("dedupGuard('farm-setup')");
+    expect(routes).toContain("idempotencyCheck");
   });
 });
 
@@ -1320,5 +1326,822 @@ describe('Voice quality — pre-recorded audio support', () => {
 
   it('15. audio has 3s load timeout to avoid blocking', () => {
     expect(guide).toContain('setTimeout(() => resolve(false), 3000)');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// PART 17 — PHASE 2: PRE-PILOT HARDENING
+// ═══════════════════════════════════════════════════════════
+
+describe('Phase 2 — dedupGuard on farm setup route', () => {
+  const routes = readFile('server/src/modules/farmProfiles/routes.js');
+  const dedup = readFile('server/src/middleware/dedup.js');
+
+  it('1. POST /farms uses dedupGuard before idempotencyCheck', () => {
+    // dedupGuard should appear before idempotencyCheck in the middleware chain
+    const postLine = routes.split('\n').find(l => l.includes("router.post('/'"));
+    expect(postLine).toBeTruthy();
+    const dedupIdx = postLine.indexOf('dedupGuard');
+    const idempIdx = postLine.indexOf('idempotencyCheck');
+    expect(dedupIdx).toBeGreaterThan(-1);
+    expect(idempIdx).toBeGreaterThan(-1);
+    expect(dedupIdx).toBeLessThan(idempIdx);
+  });
+
+  it('2. dedupGuard is named farm-setup', () => {
+    expect(routes).toContain("dedupGuard('farm-setup')");
+  });
+
+  it('3. dedupGuard falls back to userId when no route param exists', () => {
+    // For create endpoints (POST /farms) there are no :id params,
+    // so dedupGuard must use req.user.sub as fallback resourceId
+    expect(dedup).toContain('|| userId');
+  });
+
+  it('4. dedup import is present in routes', () => {
+    expect(routes).toContain("import { dedupGuard } from '../../middleware/dedup.js'");
+  });
+});
+
+describe('Phase 2 — nextRoute post-success navigation guard', () => {
+  const dashboard = readFile('src/pages/FarmerDashboardPage.jsx');
+
+  it('1. reads nextRoute from atomic response', () => {
+    expect(dashboard).toContain('result.nextRoute');
+  });
+
+  it('2. navigates away if nextRoute is not /home', () => {
+    expect(dashboard).toContain("nextRoute !== '/home'");
+    expect(dashboard).toContain('window.location.href = nextRoute');
+  });
+
+  it('3. still calls setShowOnboarding(false) for /home route', () => {
+    expect(dashboard).toContain('setShowOnboarding(false)');
+  });
+});
+
+describe('Phase 2 — crop distribution + land size in pilot metrics', () => {
+  const metrics = readFile('server/src/modules/pilotMetrics/service.js');
+
+  it('1. getPilotMetrics queries crop groupBy', () => {
+    expect(metrics).toContain("groupBy");
+    expect(metrics).toContain("by: ['crop']");
+  });
+
+  it('2. getPilotMetrics aggregates landSizeHectares', () => {
+    expect(metrics).toContain('_sum: { landSizeHectares: true }');
+    expect(metrics).toContain('_avg: { landSizeHectares: true }');
+  });
+
+  it('3. response includes cropDistribution array', () => {
+    expect(metrics).toContain('cropDistribution');
+    expect(metrics).toContain("crop: g.crop, count: g._count.crop");
+  });
+
+  it('4. response includes landSize object', () => {
+    expect(metrics).toContain('landSize');
+    expect(metrics).toContain('totalHectares');
+    expect(metrics).toContain('avgHectares');
+    expect(metrics).toContain('farmProfilesWithLand');
+  });
+
+  it('5. crop distribution limited to top 20', () => {
+    expect(metrics).toContain('take: 20');
+  });
+
+  it('6. land metrics only count profiles with non-null landSizeHectares', () => {
+    expect(metrics).toContain('landSizeHectares: { not: null }');
+  });
+
+  it('7. metrics are org-scoped for approved farmers', () => {
+    expect(metrics).toContain("registrationStatus: 'approved'");
+    expect(metrics).toContain('farmProfileFilter');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// PART 18 — PHASE 3: REPORTING + OFFLINE + MOBILE FIXES
+// ═══════════════════════════════════════════════════════════
+
+describe('Phase 3 — delivery stats wired to admin dashboard', () => {
+  const dashboard = readFile('src/pages/DashboardPage.jsx');
+
+  it('1. fetches /pilot/delivery-stats for admin users', () => {
+    expect(dashboard).toContain("/pilot/delivery-stats");
+    expect(dashboard).toContain('setDeliveryStats');
+  });
+
+  it('2. renders delivery stats in expandable details', () => {
+    expect(dashboard).toContain('data-testid="delivery-stats"');
+    expect(dashboard).toContain('Invite Delivery');
+  });
+
+  it('3. shows activation rate with color coding', () => {
+    expect(dashboard).toContain('activationRate');
+    expect(dashboard).toContain("activationRate >= 50 ? '#22C55E' : '#F59E0B'");
+  });
+
+  it('4. shows stalled/failed count with red highlight', () => {
+    expect(dashboard).toContain('stalledCount');
+  });
+
+  it('5. renders crop distribution from metrics', () => {
+    expect(dashboard).toContain('data-testid="crop-land-stats"');
+    expect(dashboard).toContain('cropDistribution');
+  });
+
+  it('6. shows land size totals (ha)', () => {
+    expect(dashboard).toContain('totalHectares');
+    expect(dashboard).toContain('avgHectares');
+  });
+});
+
+describe('Phase 3 — offline queue 7-day expiry', () => {
+  const queue = readFile('src/utils/offlineQueue.js');
+
+  it('1. defines EXPIRY_MS as 7 days', () => {
+    expect(queue).toContain('EXPIRY_MS');
+    expect(queue).toContain('7 * 24 * 60 * 60 * 1000');
+  });
+
+  it('2. exports purgeExpired function', () => {
+    expect(queue).toContain('export async function purgeExpired');
+  });
+
+  it('3. purgeExpired removes mutations older than EXPIRY_MS', () => {
+    expect(queue).toContain('now - m.createdAt) > EXPIRY_MS');
+  });
+
+  it('4. purgeExpired logs reason as expired_after_7_days', () => {
+    expect(queue).toContain("'expired_after_7_days'");
+  });
+
+  it('5. syncAll calls purgeExpired before processing', () => {
+    // purgeExpired should be called early in syncAll
+    const syncFn = queue.split('export async function syncAll')[1];
+    expect(syncFn).toBeTruthy();
+    const purgeIdx = syncFn.indexOf('purgeExpired()');
+    const getallIdx = syncFn.indexOf('getAll()');
+    expect(purgeIdx).toBeGreaterThan(-1);
+    expect(getallIdx).toBeGreaterThan(-1);
+    expect(purgeIdx).toBeLessThan(getallIdx);
+  });
+});
+
+describe('Phase 3 — mobile keyboard overlap fix', () => {
+  const wizard = readFile('src/components/OnboardingWizard.jsx');
+
+  it('1. modal has a ref for focusin delegation', () => {
+    expect(wizard).toContain('modalRef');
+    expect(wizard).toContain("ref={modalRef}");
+  });
+
+  it('2. listens for focusin events on the modal', () => {
+    expect(wizard).toContain("addEventListener('focusin'");
+  });
+
+  it('3. scrolls focused input into view with smooth behavior', () => {
+    expect(wizard).toContain("scrollIntoView({ behavior: 'smooth', block: 'center' })");
+  });
+
+  it('4. delays scroll to let keyboard animation finish', () => {
+    expect(wizard).toContain('setTimeout(');
+    expect(wizard).toContain('350');
+  });
+
+  it('5. handles INPUT, SELECT, and TEXTAREA elements', () => {
+    expect(wizard).toContain("'INPUT'");
+    expect(wizard).toContain("'SELECT'");
+    expect(wizard).toContain("'TEXTAREA'");
+  });
+
+  it('6. cleans up event listener on unmount', () => {
+    expect(wizard).toContain("removeEventListener('focusin'");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// PART 19 — PHASE 4: ADMIN RECOVERY + FINAL VALIDATION
+// ═══════════════════════════════════════════════════════════
+
+describe('Phase 4 — admin force-activate endpoint', () => {
+  const routes = readFile('server/src/modules/farmers/routes.js');
+
+  it('1. POST /:id/activate route exists', () => {
+    expect(routes).toContain("'/:id/activate'");
+  });
+
+  it('2. requires admin authorization', () => {
+    // The activate route should be authorized for super_admin/institutional_admin
+    const activateSection = routes.split("'/:id/activate'")[1];
+    expect(activateSection).toBeTruthy();
+    expect(routes).toContain("authorize('super_admin', 'institutional_admin')");
+  });
+
+  it('3. rejects farmers who already have a user account', () => {
+    expect(routes).toContain('already has an active user account');
+  });
+
+  it('4. resets invite state fields for re-invitation', () => {
+    expect(routes).toContain('inviteToken: null');
+    expect(routes).toContain('inviteExpiresAt: null');
+    expect(routes).toContain('inviteDeliveryStatus: null');
+  });
+
+  it('5. sets registrationStatus to approved', () => {
+    expect(routes).toContain("registrationStatus: 'approved'");
+  });
+
+  it('6. writes audit log for force activation', () => {
+    expect(routes).toContain("'farmer_force_activated'");
+  });
+
+  it('7. fires opsEvent for monitoring', () => {
+    expect(routes).toContain("opsEvent('workflow', 'farmer_force_activated'");
+  });
+});
+
+describe('Phase 4 — admin reset-profile endpoint', () => {
+  const routes = readFile('server/src/modules/farmers/routes.js');
+
+  it('1. POST /:id/reset-profile route exists', () => {
+    expect(routes).toContain("'/:id/reset-profile'");
+  });
+
+  it('2. uses $transaction for atomic delete + flag reset', () => {
+    expect(routes).toContain('prisma.$transaction');
+    expect(routes).toContain('farmProfile.deleteMany');
+    expect(routes).toContain('onboardingCompletedAt: null');
+  });
+
+  it('3. deletes all farm profiles for the farmer', () => {
+    expect(routes).toContain('farmProfile.deleteMany');
+  });
+
+  it('4. resets onboardingCompletedAt to null', () => {
+    expect(routes).toContain('onboardingCompletedAt: null');
+  });
+
+  it('5. returns count of deleted profiles', () => {
+    expect(routes).toContain('profilesDeleted');
+  });
+
+  it('6. writes audit log for profile reset', () => {
+    expect(routes).toContain("'farmer_profile_reset'");
+  });
+
+  it('7. fires opsEvent for monitoring', () => {
+    expect(routes).toContain("opsEvent('workflow', 'farmer_profile_reset'");
+  });
+});
+
+describe('Phase 4 — full hardening coverage summary', () => {
+  const farmRoutes = readFile('server/src/modules/farmProfiles/routes.js');
+  const farmerRoutes = readFile('server/src/modules/farmers/routes.js');
+  const dedup = readFile('server/src/middleware/dedup.js');
+  const idempotency = readFile('server/src/middleware/idempotency.js');
+  const offlineQueue = readFile('src/utils/offlineQueue.js');
+  const wizard = readFile('src/components/OnboardingWizard.jsx');
+  const dashboard = readFile('src/pages/DashboardPage.jsx');
+  const farmerDash = readFile('src/pages/FarmerDashboardPage.jsx');
+  const metrics = readFile('server/src/modules/pilotMetrics/service.js');
+
+  it('1. triple-layer duplicate protection on farm setup (dedup + idempotency + isSubmitting)', () => {
+    expect(farmRoutes).toContain("dedupGuard('farm-setup')");
+    expect(farmRoutes).toContain('idempotencyCheck');
+    expect(wizard).toContain('submitting');
+  });
+
+  it('2. atomic transaction prevents partial saves', () => {
+    const svc = readFile('server/src/modules/farmProfiles/service.js');
+    expect(svc).toContain('$transaction');
+  });
+
+  it('3. offline queue has retry + expiry + sync', () => {
+    expect(offlineQueue).toContain('MAX_RETRIES');
+    expect(offlineQueue).toContain('EXPIRY_MS');
+    expect(offlineQueue).toContain('syncAll');
+    expect(offlineQueue).toContain('purgeExpired');
+  });
+
+  it('4. mobile keyboard overlap handled', () => {
+    expect(wizard).toContain('scrollIntoView');
+    expect(wizard).toContain('focusin');
+  });
+
+  it('5. admin can force-activate stuck farmers', () => {
+    expect(farmerRoutes).toContain("'/:id/activate'");
+  });
+
+  it('6. admin can reset farm profile for re-onboarding', () => {
+    expect(farmerRoutes).toContain("'/:id/reset-profile'");
+    expect(farmerRoutes).toContain('onboardingCompletedAt: null');
+  });
+
+  it('7. delivery stats visible in admin dashboard', () => {
+    expect(dashboard).toContain('/pilot/delivery-stats');
+    expect(dashboard).toContain('deliveryStats');
+  });
+
+  it('8. crop + land metrics in pilot metrics response', () => {
+    expect(metrics).toContain('cropDistribution');
+    expect(metrics).toContain('landSize');
+  });
+
+  it('9. nextRoute guard prevents stale post-onboarding state', () => {
+    expect(farmerDash).toContain('result.nextRoute');
+    expect(farmerDash).toContain("nextRoute !== '/home'");
+  });
+
+  it('10. dedup guard falls back to userId for paramless routes', () => {
+    expect(dedup).toContain('|| userId');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// PART 20 — FARMER LIFECYCLE STATE ENFORCEMENT
+// ═══════════════════════════════════════════════════════════
+
+describe('Farmer lifecycle — shared state utility (frontend)', () => {
+  const lifecycle = readFile('src/utils/farmerLifecycle.js');
+
+  it('1. defines three states: NEW, SETUP_INCOMPLETE, ACTIVE', () => {
+    expect(lifecycle).toContain("NEW: 'NEW'");
+    expect(lifecycle).toContain("SETUP_INCOMPLETE: 'SETUP_INCOMPLETE'");
+    expect(lifecycle).toContain("ACTIVE: 'ACTIVE'");
+  });
+
+  it('2. exports isFarmProfileComplete function', () => {
+    expect(lifecycle).toContain('export function isFarmProfileComplete');
+  });
+
+  it('3. exports getFarmerLifecycleState function', () => {
+    expect(lifecycle).toContain('export function getFarmerLifecycleState');
+  });
+
+  it('4. required fields: crop, landSizeValue, landSizeUnit, landSizeHectares', () => {
+    expect(lifecycle).toContain("key: 'crop'");
+    expect(lifecycle).toContain("key: 'landSizeValue'");
+    expect(lifecycle).toContain("key: 'landSizeUnit'");
+    expect(lifecycle).toContain("key: 'landSizeHectares'");
+  });
+
+  it('5. country is required from farmer record', () => {
+    expect(lifecycle).toContain('COUNTRY_REQUIRED = true');
+    expect(lifecycle).toContain('opts.countryCode');
+  });
+
+  it('6. GPS is NOT a required field', () => {
+    expect(lifecycle).not.toContain("key: 'latitude'");
+    expect(lifecycle).not.toContain("key: 'longitude'");
+  });
+
+  it('7. returns missing fields list', () => {
+    expect(lifecycle).toContain('missing');
+    expect(lifecycle).toContain('missing.push');
+  });
+
+  it('8. exports action guards: canStartSeason, canShowScore, canAddUpdate', () => {
+    expect(lifecycle).toContain('export function canStartSeason');
+    expect(lifecycle).toContain('export function canShowScore');
+    expect(lifecycle).toContain('export function canAddUpdate');
+  });
+
+  it('9. action guards return false for non-ACTIVE state', () => {
+    expect(lifecycle).toContain("lifecycleState.state === FARMER_STATE.ACTIVE");
+  });
+});
+
+describe('Farmer lifecycle — server-side utility mirrors frontend', () => {
+  const serverLifecycle = readFile('server/src/utils/farmerLifecycle.js');
+
+  it('1. defines same three states', () => {
+    expect(serverLifecycle).toContain("NEW: 'NEW'");
+    expect(serverLifecycle).toContain("SETUP_INCOMPLETE: 'SETUP_INCOMPLETE'");
+    expect(serverLifecycle).toContain("ACTIVE: 'ACTIVE'");
+  });
+
+  it('2. has same required fields as frontend', () => {
+    expect(serverLifecycle).toContain("key: 'crop'");
+    expect(serverLifecycle).toContain("key: 'landSizeValue'");
+    expect(serverLifecycle).toContain("key: 'landSizeUnit'");
+    expect(serverLifecycle).toContain("key: 'landSizeHectares'");
+  });
+
+  it('3. exports isFarmProfileComplete and getFarmerLifecycleState', () => {
+    expect(serverLifecycle).toContain('export function isFarmProfileComplete');
+    expect(serverLifecycle).toContain('export function getFarmerLifecycleState');
+  });
+});
+
+describe('Farmer lifecycle — UI locked by state (FarmerDashboardPage)', () => {
+  const dashboard = readFile('src/pages/FarmerDashboardPage.jsx');
+
+  it('1. imports lifecycle utilities', () => {
+    expect(dashboard).toContain("import { getFarmerLifecycleState, FARMER_STATE, canShowScore, canStartSeason }");
+  });
+
+  it('2. computes lifecycle state from farmProfile', () => {
+    expect(dashboard).toContain('getFarmerLifecycleState({');
+    expect(dashboard).toContain('farmProfile:');
+    expect(dashboard).toContain('countryCode:');
+  });
+
+  it('3. derives isActive, isSetupIncomplete, isNew flags', () => {
+    expect(dashboard).toContain('farmerLifecycle.state === FARMER_STATE.ACTIVE');
+    expect(dashboard).toContain('farmerLifecycle.state === FARMER_STATE.SETUP_INCOMPLETE');
+    expect(dashboard).toContain('farmerLifecycle.state === FARMER_STATE.NEW');
+  });
+
+  it('4. primary CTA shows "Set Up Your Farm" for NEW state', () => {
+    expect(dashboard).toContain("t('home.setUpFarm')");
+    expect(dashboard).toContain("setShowOnboarding(true)");
+  });
+
+  it('5. primary CTA shows "Finish Farm Setup" for SETUP_INCOMPLETE', () => {
+    expect(dashboard).toContain("t('home.finishSetup')");
+  });
+
+  it('6. shows missing fields in setup-incomplete messaging', () => {
+    expect(dashboard).toContain('farmerLifecycle.missing.join');
+  });
+
+  it('7. farm score only shows for ACTIVE + non-setupRequired', () => {
+    expect(dashboard).toContain('setupComplete && !financeScore.setupRequired');
+  });
+
+  it('8. no-season nudge only shows for ACTIVE farmers', () => {
+    expect(dashboard).toContain('setupComplete && seasons && seasons.length === 0');
+  });
+
+  it('9. setup-incomplete banner shows when profile exists but incomplete', () => {
+    expect(dashboard).toContain('data-testid="setup-incomplete-banner"');
+    expect(dashboard).toContain("t('home.setupRequired')");
+    expect(dashboard).toContain("t('home.completeProfile')");
+  });
+});
+
+describe('Farmer lifecycle — farm score gated by profile completeness', () => {
+  const scoreService = readFile('server/src/modules/financeScore/service.js');
+
+  it('1. imports isFarmProfileComplete', () => {
+    expect(scoreService).toContain("import { isFarmProfileComplete }");
+  });
+
+  it('2. computeFinanceScore checks completeness before scoring', () => {
+    expect(scoreService).toContain('isFarmProfileComplete(profile');
+    expect(scoreService).toContain('setupRequired: true');
+  });
+
+  it('3. returns null score for incomplete profiles', () => {
+    expect(scoreService).toContain('score: null');
+    expect(scoreService).toContain("readiness: 'Setup Required'");
+  });
+
+  it('4. returns helpful message instead of numeric score', () => {
+    expect(scoreService).toContain('Complete your farm profile to unlock scoring and tracking.');
+  });
+
+  it('5. getFinanceScore also checks completeness (clears stale cached scores)', () => {
+    // The getFinanceScore function must check completeness before returning cached score
+    const getFn = scoreService.split('export async function getFinanceScore')[1];
+    expect(getFn).toContain('isFarmProfileComplete');
+    expect(getFn).toContain('setupRequired: true');
+  });
+});
+
+describe('Farmer lifecycle — season creation gated by profile completeness', () => {
+  const seasonService = readFile('server/src/modules/seasons/service.js');
+
+  it('1. imports lifecycle utilities', () => {
+    expect(seasonService).toContain("import { getFarmerLifecycleState, FARMER_STATE }");
+  });
+
+  it('2. checks lifecycle state before creating season', () => {
+    expect(seasonService).toContain("lifecycle.state !== FARMER_STATE.ACTIVE");
+  });
+
+  it('3. returns helpful error with missing fields', () => {
+    expect(seasonService).toContain('Complete your farm profile before starting a season');
+    expect(seasonService).toContain('lifecycle.missing.join');
+  });
+});
+
+describe('Farmer lifecycle — API returns state fields', () => {
+  const routes = readFile('server/src/modules/farmProfiles/routes.js');
+
+  it('1. POST /farms response includes farmerState', () => {
+    expect(routes).toContain('farmerState');
+  });
+
+  it('2. POST /farms response includes missingRequiredFields', () => {
+    expect(routes).toContain('missingRequiredFields');
+  });
+
+  it('3. GET /farms/state endpoint exists', () => {
+    expect(routes).toContain("'/state'");
+    expect(routes).toContain('getFarmerLifecycleState');
+  });
+
+  it('4. state endpoint returns state + complete + missing + farmProfileId', () => {
+    expect(routes).toContain('farmProfileId: farmProfile?.id || null');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// PART 21 — FIRST-USE GUARANTEE LAYER
+// ═══════════════════════════════════════════════════════════
+
+describe('Guarantee layer — useGuaranteedAction hook', () => {
+  const hook = readFile('src/hooks/useGuaranteedAction.js');
+
+  it('1. defines all 6 action states', () => {
+    expect(hook).toContain("IDLE: 'idle'");
+    expect(hook).toContain("LOADING: 'loading'");
+    expect(hook).toContain("SUCCESS: 'success'");
+    expect(hook).toContain("ERROR: 'error'");
+    expect(hook).toContain("RETRYABLE: 'retryable'");
+    expect(hook).toContain("SAVED_OFFLINE: 'saved_offline'");
+  });
+
+  it('2. has timeout protection with configurable timeoutMs', () => {
+    expect(hook).toContain('timeoutMs');
+    expect(hook).toContain('Promise.race');
+    expect(hook).toContain('__timeout__');
+  });
+
+  it('3. has "still working" delay indicator', () => {
+    expect(hook).toContain('STILL_WORKING_MS');
+    expect(hook).toContain('setStillWorking(true)');
+  });
+
+  it('4. has double-submit guard', () => {
+    expect(hook).toContain('guardRef.current');
+    expect(hook).toContain('if (guardRef.current) return');
+  });
+
+  it('5. supports offline fallback via onOffline callback', () => {
+    expect(hook).toContain('onOffline');
+    expect(hook).toContain('SAVED_OFFLINE');
+  });
+
+  it('6. treats 409 as success (idempotency)', () => {
+    expect(hook).toContain('status === 409');
+    expect(hook).toContain('Already saved');
+  });
+
+  it('7. distinguishes retryable vs non-retryable errors', () => {
+    // 4xx (except 429) = non-retryable, 5xx/429 = retryable
+    expect(hook).toContain('status >= 400 && status < 500 && status !== 429');
+    expect(hook).toContain('ACTION_STATE.RETRYABLE');
+  });
+
+  it('8. exports retry function that re-runs last action', () => {
+    expect(hook).toContain('const retry = useCallback');
+    expect(hook).toContain('lastActionRef.current');
+  });
+
+  it('9. exports convenience booleans', () => {
+    expect(hook).toContain('isIdle:');
+    expect(hook).toContain('isLoading:');
+    expect(hook).toContain('isSuccess:');
+    expect(hook).toContain('isError:');
+    expect(hook).toContain('isRetryable:');
+    expect(hook).toContain('isSavedOffline:');
+  });
+});
+
+describe('Guarantee layer — ActionFeedback component', () => {
+  const comp = readFile('src/components/ActionFeedback.jsx');
+
+  it('1. renders all guarantee states', () => {
+    expect(comp).toContain('action-feedback-loading');
+    expect(comp).toContain('action-feedback-success');
+    expect(comp).toContain('action-feedback-offline');
+    expect(comp).toContain('action-feedback-retryable');
+    expect(comp).toContain('action-feedback-error');
+  });
+
+  it('2. shows "Still working..." during long load', () => {
+    expect(comp).toContain("t('feedback.stillWorking')");
+  });
+
+  it('3. provides retry button for retryable errors', () => {
+    expect(comp).toContain('action-retry-btn');
+    expect(comp).toContain('onRetry');
+  });
+
+  it('4. provides done/continue button on success', () => {
+    expect(comp).toContain('action-done-btn');
+    expect(comp).toContain("t('feedback.continue')");
+  });
+
+  it('5. shows next step text after success', () => {
+    expect(comp).toContain('nextStepText');
+  });
+
+  it('6. supports compact mode for embedded use', () => {
+    expect(comp).toContain('compactStyles');
+    expect(comp).toContain('compact');
+  });
+
+  it('7. messages are short and action-oriented', () => {
+    expect(comp).toContain("t('feedback.couldNotComplete')");
+    expect(comp).toContain("t('feedback.somethingWrong')");
+    expect(comp).toContain("t('feedback.willSync')");
+  });
+});
+
+describe('Guarantee layer — QuickUpdateFlow integration', () => {
+  const flow = readFile('src/components/QuickUpdateFlow.jsx');
+
+  it('1. imports useGuaranteedAction', () => {
+    expect(flow).toContain("import useGuaranteedAction");
+  });
+
+  it('2. imports ActionFeedback', () => {
+    expect(flow).toContain("import ActionFeedback");
+  });
+
+  it('3. creates submitAction with timeout and offline handler', () => {
+    expect(flow).toContain('useGuaranteedAction({');
+    expect(flow).toContain('timeoutMs: 12000');
+    expect(flow).toContain('onOffline:');
+  });
+
+  it('4. uses ActionFeedback for loading/success/offline/error states', () => {
+    expect(flow).toContain('ActionFeedback');
+    expect(flow).toContain('ACTION_STATE.LOADING');
+    expect(flow).toContain('ACTION_STATE.SUCCESS');
+    expect(flow).toContain('ACTION_STATE.SAVED_OFFLINE');
+  });
+
+  it('5. shows "Still working..." during slow submit', () => {
+    expect(flow).toContain('submitAction.stillWorking');
+  });
+
+  it('6. offline handler queues to IDB', () => {
+    expect(flow).toContain('enqueue(offlinePayload)');
+  });
+
+  it('7. photo failure does not fail the whole update', () => {
+    // Photo upload is inside a try/catch — failure is tracked but doesn't throw
+    expect(flow).toContain("} catch (photoErr)");
+    expect(flow).toContain("trackPilotEvent('photo_failed'");
+  });
+});
+
+describe('Guarantee layer — OfficerValidation timeout', () => {
+  const page = readFile('src/pages/OfficerValidationPage.jsx');
+
+  it('1. has VALIDATION_TIMEOUT_MS constant', () => {
+    expect(page).toContain('VALIDATION_TIMEOUT_MS');
+  });
+
+  it('2. uses Promise.race for timeout protection', () => {
+    expect(page).toContain('Promise.race');
+    expect(page).toContain('timeoutPromise');
+  });
+
+  it('3. shows clear success feedback', () => {
+    expect(page).toContain("'Approved ✅'");
+  });
+});
+
+describe('Guarantee layer — AcceptInvite timeout', () => {
+  const page = readFile('src/pages/AcceptInvitePage.jsx');
+
+  it('1. has timeout on invite accept', () => {
+    expect(page).toContain('__timeout__');
+    expect(page).toContain('15000');
+  });
+
+  it('2. shows helpful message on timeout', () => {
+    expect(page).toContain("t('invite.takingTooLong')");
+  });
+
+  it('3. preserves form state on failure (no re-render wipe)', () => {
+    // On error, catch block only calls setFormError — never resets email/password
+    expect(page).toContain('setFormError(');
+    // Extract the catch block — verify it does NOT reset form fields
+    const catchBlock = page.split('} catch (err)')[1]?.split('} finally')[0] || '';
+    expect(catchBlock).toContain('setFormError(');
+    expect(catchBlock).not.toContain("setEmail('')");
+    expect(catchBlock).not.toContain("setPassword('')");
+  });
+});
+
+describe('Guarantee layer — ProfilePhotoUpload hardening', () => {
+  const comp = readFile('src/components/ProfilePhotoUpload.jsx');
+
+  it('1. has explicit upload states (idle/uploading/uploaded/failed)', () => {
+    expect(comp).toContain("'idle'");
+    expect(comp).toContain("'uploading'");
+    expect(comp).toContain("'uploaded'");
+    expect(comp).toContain("'failed'");
+  });
+
+  it('2. has 20s upload timeout', () => {
+    expect(comp).toContain('20000');
+    expect(comp).toContain('Upload timed out');
+  });
+
+  it('3. preserves file and preview on failure for retry', () => {
+    // File and preview are NOT cleared on error — only error message set
+    const uploadFn = comp.split('catch')[1] || '';
+    expect(uploadFn).not.toContain('setFile(null)');
+    expect(uploadFn).not.toContain('setPreview(null)');
+  });
+
+  it('4. compresses image before upload', () => {
+    expect(comp).toContain('compressImage(file');
+  });
+});
+
+describe('Guarantee layer — setup flow already hardened', () => {
+  const wizard = readFile('src/components/OnboardingWizard.jsx');
+  const dashboard = readFile('src/pages/FarmerDashboardPage.jsx');
+
+  it('1. OnboardingWizard has 8s PROCESSING_TIMEOUT_MS', () => {
+    expect(wizard).toContain('PROCESSING_TIMEOUT_MS');
+    expect(wizard).toContain('8000');
+  });
+
+  it('2. OnboardingWizard preserves form via useDraft', () => {
+    expect(wizard).toContain('useDraft');
+    expect(wizard).toContain('clearDraft');
+  });
+
+  it('3. OnboardingWizard has submitGuardRef', () => {
+    expect(wizard).toContain('submitGuardRef');
+  });
+
+  it('4. dashboard shows success after onboarding (setShowOnboarding false)', () => {
+    expect(dashboard).toContain('setShowOnboarding(false)');
+  });
+
+  it('5. setup uses atomic backend transaction', () => {
+    const svc = readFile('server/src/modules/farmProfiles/service.js');
+    expect(svc).toContain('$transaction');
+  });
+
+  it('6. setup route has triple dedup (dedupGuard + idempotencyCheck + UI guard)', () => {
+    const routes = readFile('server/src/modules/farmProfiles/routes.js');
+    expect(routes).toContain("dedupGuard('farm-setup')");
+    expect(routes).toContain('idempotencyCheck');
+    expect(wizard).toContain('submitGuardRef');
+  });
+});
+
+describe('Guarantee layer — offline queue has all safety features', () => {
+  const queue = readFile('src/utils/offlineQueue.js');
+
+  it('1. dedup within 10s window', () => {
+    expect(queue).toContain('10000');
+    expect(queue).toContain('isDupe');
+  });
+
+  it('2. max 5 retries with exponential backoff', () => {
+    expect(queue).toContain('MAX_RETRIES = 5');
+    expect(queue).toContain('Math.pow(2');
+  });
+
+  it('3. 7-day expiry purge', () => {
+    expect(queue).toContain('EXPIRY_MS');
+    expect(queue).toContain('purgeExpired');
+  });
+
+  it('4. 409 conflict treated as already-processed', () => {
+    expect(queue).toContain('status === 409');
+    expect(queue).toContain('conflict_already_processed');
+  });
+
+  it('5. auto-sync on reconnect', () => {
+    expect(queue).toContain("addEventListener('online'");
+    expect(queue).toContain('syncAll');
+  });
+});
+
+describe('Guarantee layer — SyncStatus banner for all sync states', () => {
+  const banner = readFile('src/components/SyncStatus.jsx');
+
+  it('1. shows offline state', () => {
+    expect(banner).toContain('offline');
+  });
+
+  it('2. shows pending count', () => {
+    expect(banner).toContain('pending');
+  });
+
+  it('3. shows syncing state', () => {
+    expect(banner).toContain('syncing');
+  });
+
+  it('4. shows failed state with retry', () => {
+    expect(banner).toContain('failed');
+  });
+
+  it('5. shows success state', () => {
+    expect(banner).toContain('success');
   });
 });

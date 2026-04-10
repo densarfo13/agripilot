@@ -139,6 +139,35 @@ export async function getPilotMetrics({ organizationId } = {}) {
     }),
   ]);
 
+  // ── Crop distribution + land size aggregates ──────────────
+  // These use FarmProfile data linked through approved farmers.
+  const farmProfileFilter = organizationId
+    ? { farmer: { organizationId, registrationStatus: 'approved' } }
+    : { farmer: { registrationStatus: 'approved' } };
+
+  const [cropGroups, landAgg] = await Promise.all([
+    prisma.farmProfile.groupBy({
+      by: ['crop'],
+      where: farmProfileFilter,
+      _count: { crop: true },
+      orderBy: { _count: { crop: 'desc' } },
+      take: 20, // top 20 crops
+    }),
+    prisma.farmProfile.aggregate({
+      where: { ...farmProfileFilter, landSizeHectares: { not: null } },
+      _sum: { landSizeHectares: true },
+      _avg: { landSizeHectares: true },
+      _count: { landSizeHectares: true },
+    }),
+  ]);
+
+  const cropDistribution = cropGroups.map(g => ({ crop: g.crop, count: g._count.crop }));
+  const landSize = {
+    totalHectares: Math.round((landAgg._sum.landSizeHectares || 0) * 100) / 100,
+    avgHectares: Math.round((landAgg._avg.landSizeHectares || 0) * 100) / 100,
+    farmProfilesWithLand: landAgg._count.landSizeHectares || 0,
+  };
+
   return {
     generatedAt: new Date().toISOString(),
     farmers: {
@@ -172,6 +201,8 @@ export async function getPilotMetrics({ organizationId } = {}) {
       underReview: underReviewApplications,
       approved: approvedApplications,
     },
+    cropDistribution,
+    landSize,
     attention: {
       pendingOfficerValidation,
       lowCredibilitySeasons,

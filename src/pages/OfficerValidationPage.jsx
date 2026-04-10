@@ -5,6 +5,9 @@ import InlineAlert from '../components/InlineAlert.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import VoiceBar from '../components/VoiceBar.jsx';
+import { useTranslation } from '../i18n/index.js';
+
+const VALIDATION_TIMEOUT_MS = 10000;
 
 /**
  * OfficerValidationPage — fast-flow validation queue.
@@ -16,10 +19,12 @@ import VoiceBar from '../components/VoiceBar.jsx';
  * Keyboard shortcuts: A = approve, R = reject, F = flag, → = next, ← = prev.
  */
 
-const STAGE_LABELS = {
-  pre_planting: 'Pre-Planting', planting: 'Planting', vegetative: 'Vegetative',
-  flowering: 'Flowering', harvest: 'Harvest', post_harvest: 'Post-Harvest',
-};
+function getStageLabelsOfficer(t) {
+  return {
+    pre_planting: t('stageLabel.prePlanting'), planting: t('stageLabel.planting'), vegetative: t('stageLabel.vegetative'),
+    flowering: t('stageLabel.flowering'), harvest: t('stageLabel.harvest'), post_harvest: t('stageLabel.postHarvest'),
+  };
+}
 
 const CONDITION_COLORS = { good: '#22C55E', average: '#F59E0B', poor: '#EF4444' };
 const PRIORITY_COLORS = { high: '#EF4444', medium: '#F59E0B', normal: '#22C55E' };
@@ -37,6 +42,8 @@ export default function OfficerValidationPage() {
   const submitGuardRef = useRef(false);
   const noteInputRef = useRef(null);
   const startTimeRef = useRef(null);
+  const { t } = useTranslation();
+  const STAGE_LABELS = getStageLabelsOfficer(t);
 
   // ─── Load queue ─────────────────────────────────────────
 
@@ -132,7 +139,12 @@ export default function OfficerValidationPage() {
         payload.note = `[FLAGGED] ${note.trim()}`;
       }
 
-      await api.post(`/seasons/${current.seasonId}/officer-validate`, payload);
+      // Timeout-protected submission
+      const submitPromise = api.post(`/seasons/${current.seasonId}/officer-validate`, payload);
+      const timeoutPromise = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error('Validation timed out. Tap to retry.')), VALIDATION_TIMEOUT_MS)
+      );
+      await Promise.race([submitPromise, timeoutPromise]);
 
       trackPilotEvent('officer_validation', {
         seasonId: current.seasonId,
@@ -144,7 +156,7 @@ export default function OfficerValidationPage() {
       setCompletedIds(prev => new Set([...prev, current.seasonId]));
       setActionFeedback({
         type: actionType,
-        msg: actionType === 'approve' ? 'Approved' : actionType === 'reject' ? 'Rejected' : 'Flagged',
+        msg: actionType === 'approve' ? 'Approved ✅' : actionType === 'reject' ? 'Rejected' : 'Flagged',
       });
 
       // Auto-advance after brief feedback
@@ -153,9 +165,10 @@ export default function OfficerValidationPage() {
       }, 400);
 
     } catch (err) {
+      const isTimeout = err?.message?.includes('timed out');
       setActionFeedback({
         type: 'error',
-        msg: err.response?.data?.error || 'Failed — tap to retry',
+        msg: isTimeout ? err.message : (err.response?.data?.error || 'Failed — tap to retry'),
       });
     } finally {
       submitGuardRef.current = false;
@@ -185,7 +198,7 @@ export default function OfficerValidationPage() {
       <div style={VS.page}>
         <div style={VS.loadingCenter}>
           <div style={VS.spinner} />
-          <div style={{ color: '#A1A1AA', marginTop: '0.75rem' }}>Loading validation queue...</div>
+          <div style={{ color: '#A1A1AA', marginTop: '0.75rem' }}>{t('validation.loading')}</div>
         </div>
       </div>
     );
@@ -207,9 +220,9 @@ export default function OfficerValidationPage() {
         <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer.empty" compact /></div>
         <div style={VS.emptyCenter} data-testid="validation-empty">
           <span style={{ fontSize: '3rem' }}>✅</span>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>Queue Clear</div>
-          <div style={{ color: '#A1A1AA', marginTop: '0.25rem' }}>No updates need validation right now.</div>
-          <button onClick={loadQueue} style={VS.refreshBtn}>Refresh</button>
+          <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t('validation.queueClear')}</div>
+          <div style={{ color: '#A1A1AA', marginTop: '0.25rem' }}>{t('validation.noUpdatesNow')}</div>
+          <button onClick={loadQueue} style={VS.refreshBtn}>{t('validation.refresh')}</button>
         </div>
       </div>
     );
@@ -221,9 +234,9 @@ export default function OfficerValidationPage() {
         <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer.empty" compact /></div>
         <div style={VS.emptyCenter} data-testid="validation-done">
           <span style={{ fontSize: '3rem' }}>🎉</span>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>All Done!</div>
-          <div style={{ color: '#A1A1AA', marginTop: '0.25rem' }}>{completedIds.size} update{completedIds.size !== 1 ? 's' : ''} validated.</div>
-          <button onClick={loadQueue} style={VS.refreshBtn}>Load More</button>
+          <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t('validation.allDone')}</div>
+          <div style={{ color: '#A1A1AA', marginTop: '0.25rem' }}>{completedIds.size} {t('validation.updatesValidated')}</div>
+          <button onClick={loadQueue} style={VS.refreshBtn}>{t('validation.loadMore')}</button>
         </div>
       </div>
     );
@@ -234,11 +247,11 @@ export default function OfficerValidationPage() {
       {/* Header bar — count + progress */}
       <div style={VS.header} data-testid="validation-header">
         <div style={VS.headerLeft}>
-          <span style={VS.headerTitle}>Validate Updates</span>
+          <span style={VS.headerTitle}>{t('validation.validateUpdates')}</span>
           <span style={VS.headerCount}>{completedIds.size} / {queue.length}</span>
         </div>
         <div style={VS.headerRight}>
-          <span style={VS.counterBadge}>{totalPending} left</span>
+          <span style={VS.counterBadge}>{totalPending} {t('validation.left')}</span>
         </div>
       </div>
 
@@ -266,7 +279,7 @@ export default function OfficerValidationPage() {
             ) : (
               <div style={VS.noImage} data-testid="no-image-placeholder">
                 <span style={{ fontSize: '2.5rem' }}>📷</span>
-                <span style={{ color: '#71717A', fontSize: '0.9rem' }}>No photo</span>
+                <span style={{ color: '#71717A', fontSize: '0.9rem' }}>{t('validation.noPhoto')}</span>
               </div>
             )}
             {/* Priority badge */}
@@ -347,7 +360,7 @@ export default function OfficerValidationPage() {
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && note.trim()) handleAction(actionMode); }}
-                placeholder={actionMode === 'reject' ? 'Reason for rejection...' : 'Why are you flagging this?'}
+                placeholder={actionMode === 'reject' ? t('validation.reasonReject') : t('validation.whyFlag')}
                 style={VS.noteInput}
                 autoFocus
                 data-testid="note-input"
@@ -362,10 +375,10 @@ export default function OfficerValidationPage() {
                 }}
                 data-testid="note-submit-btn"
               >
-                {submitting ? '...' : actionMode === 'reject' ? 'Reject' : 'Flag'}
+                {submitting ? '...' : actionMode === 'reject' ? t('validation.reject') : t('validation.flag')}
               </button>
               <button onClick={() => { setActionMode(null); setNote(''); }} style={VS.noteCancelBtn}>
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           )}
@@ -378,45 +391,45 @@ export default function OfficerValidationPage() {
                 style={VS.rejectBtn}
                 disabled={submitting}
                 data-testid="reject-btn"
-                aria-label="Reject"
+                aria-label={t('validation.reject')}
               >
                 <span style={VS.actionBtnIcon}>✗</span>
-                <span style={VS.actionBtnLabel}>Reject</span>
+                <span style={VS.actionBtnLabel}>{t('validation.reject')}</span>
               </button>
               <button
                 onClick={() => handleAction('flag')}
                 style={VS.flagBtn}
                 disabled={submitting}
                 data-testid="flag-btn"
-                aria-label="Flag"
+                aria-label={t('validation.flag')}
               >
                 <span style={VS.actionBtnIcon}>⚑</span>
-                <span style={VS.actionBtnLabel}>Flag</span>
+                <span style={VS.actionBtnLabel}>{t('validation.flag')}</span>
               </button>
               <button
                 onClick={() => handleAction('approve')}
                 style={VS.approveBtn}
                 disabled={submitting}
                 data-testid="approve-btn"
-                aria-label="Approve"
+                aria-label={t('validation.approve')}
               >
                 <span style={VS.actionBtnIcon}>✓</span>
-                <span style={VS.actionBtnLabel}>Approve</span>
+                <span style={VS.actionBtnLabel}>{t('validation.approve')}</span>
               </button>
             </div>
           )}
 
           {/* Nav arrows */}
           <div style={VS.navBar} data-testid="nav-bar">
-            <button onClick={goPrev} disabled={currentIdx === 0} style={VS.navBtn} data-testid="nav-prev">← Prev</button>
-            <button onClick={goNextManual} disabled={currentIdx >= totalPending - 1} style={VS.navBtn} data-testid="nav-next">Next →</button>
+            <button onClick={goPrev} disabled={currentIdx === 0} style={VS.navBtn} data-testid="nav-prev">{'← ' + t('validation.prev')}</button>
+            <button onClick={goNextManual} disabled={currentIdx >= totalPending - 1} style={VS.navBtn} data-testid="nav-next">{t('validation.next') + ' →'}</button>
           </div>
         </div>
       )}
 
       {/* Keyboard hint — desktop only */}
       <div style={VS.kbHint} data-testid="keyboard-hints">
-        <span>A</span> Approve &nbsp; <span>R</span> Reject &nbsp; <span>F</span> Flag &nbsp; <span>←→</span> Navigate
+        <span>A</span> {t('validation.approve')} &nbsp; <span>R</span> {t('validation.reject')} &nbsp; <span>F</span> {t('validation.flag')} &nbsp; <span>←→</span> Navigate
       </div>
     </div>
   );

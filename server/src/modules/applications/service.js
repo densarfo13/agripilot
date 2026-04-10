@@ -411,6 +411,16 @@ export async function assignReviewer(applicationId, reviewerId) {
     throw err;
   }
 
+  // Prevent duplicate assignment of same reviewer to same application
+  const existingAssignment = await prisma.reviewAssignment.findFirst({
+    where: { applicationId, reviewerId },
+  });
+  if (existingAssignment) {
+    const err = new Error('This reviewer is already assigned to this application.');
+    err.statusCode = 409;
+    throw err;
+  }
+
   const app = await getApplicationById(applicationId);
 
   // Only transition to under_review if the current status allows it

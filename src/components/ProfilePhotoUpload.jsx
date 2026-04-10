@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import api from '../api/client.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 import { compressImage, formatFileSize } from '../utils/imageCompress.js';
+import { useTranslation } from '../i18n/index.js';
 
 /**
  * ProfilePhotoUpload — modal for uploading/updating farmer profile photo.
@@ -25,6 +26,7 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
   const [removing, setRemoving] = useState(false);
   const inputRef = useRef(null);
   const uploadGuardRef = useRef(false);
+  const { t } = useTranslation();
 
   const handleFile = (e) => {
     setError('');
@@ -44,10 +46,13 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
     reader.readAsDataURL(f);
   };
 
+  const [uploadState, setUploadState] = useState('idle'); // idle | uploading | uploaded | failed
+
   const handleUpload = async () => {
     if (!file || uploadGuardRef.current) return;
     uploadGuardRef.current = true;
     setUploading(true);
+    setUploadState('uploading');
     setError('');
     try {
       // Compress image before upload (reduces bandwidth on mobile)
@@ -57,13 +62,25 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
       const endpoint = selfUpload
         ? '/farmers/me/profile-photo'
         : `/farmers/${farmerId}/profile-photo`;
-      const res = await api.post(endpoint, formData, {
+
+      // Timeout-protected upload (20s for photo to handle slow connections)
+      const uploadPromise = api.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      const timeoutPromise = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error('Upload timed out. Please try again.')), 20000)
+      );
+      const res = await Promise.race([uploadPromise, timeoutPromise]);
+
+      setUploadState('uploaded');
       onUploaded?.(res.data);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed. Please try again.');
+      setUploadState('failed');
+      // File and preview are preserved — user can retry without re-selecting
+      setError(err?.message?.includes('timed out')
+        ? err.message
+        : (err.response?.data?.error || 'Upload failed. Please try again.'));
     } finally {
       setUploading(false);
       uploadGuardRef.current = false;
@@ -94,7 +111,7 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="modal-header">
-          <span>Profile Photo</span>
+          <span>{t('photo.profilePhoto')}</span>
           <button className="btn btn-outline btn-sm" onClick={onClose}>X</button>
         </div>
         <div className="modal-body" style={{ textAlign: 'center' }}>
@@ -130,7 +147,7 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
               onClick={() => inputRef.current?.click()}
               style={{ width: '100%', maxWidth: 260 }}
             >
-              {file ? 'Choose Different Photo' : currentImageUrl ? 'Choose New Photo' : 'Choose Photo'}
+              {file ? t('photo.chooseDifferent') : currentImageUrl ? t('photo.chooseNew') : t('photo.choosePhoto')}
             </button>
 
             {file && (
@@ -149,18 +166,18 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
                 onClick={handleRemove}
                 disabled={removing}
               >
-                {removing ? 'Removing...' : 'Remove Photo'}
+                {removing ? t('photo.removing') : t('photo.removePhoto')}
               </button>
             )}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+            <button className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
             <button
               className="btn btn-primary"
               onClick={handleUpload}
               disabled={!file || uploading}
             >
-              {uploading ? 'Uploading...' : 'Upload'}
+              {uploading ? t('photo.uploading') : t('photo.upload')}
             </button>
           </div>
         </div>

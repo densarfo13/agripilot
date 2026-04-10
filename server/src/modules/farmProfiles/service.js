@@ -1,5 +1,6 @@
 import prisma from '../../config/database.js';
 import { computeLandSizeFields, isValidUnit, fromHectares } from '../../utils/landSize.js';
+import { isFarmProfileComplete, getFarmerLifecycleState } from '../../utils/farmerLifecycle.js';
 
 /**
  * Full A-Z crop codes (UPPERCASE). Kept in sync with src/utils/crops.js (frontend).
@@ -307,14 +308,11 @@ export async function atomicFarmSetup(data, farmerId, userId) {
     return profile;
   });
 
-  // ── 4. Compute farmProfileComplete ──
-  const farmProfileComplete = !!(
-    result.crop &&
-    (result.landSizeValue != null || result.farmSizeAcres != null) &&
-    countryCode
-  );
+  // ── 4. Compute farmProfileComplete via shared lifecycle ──
+  const { complete: farmProfileComplete, missing: missingRequiredFields } = isFarmProfileComplete(result, { countryCode });
+  const { state: farmerState } = getFarmerLifecycleState({ farmProfile: result, countryCode });
 
-  return { profile: result, farmProfileComplete };
+  return { profile: result, farmProfileComplete, farmerState, missingRequiredFields };
 }
 
 export async function getFarmProfile(farmProfileId) {

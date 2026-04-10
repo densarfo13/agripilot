@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
+import { generateUUID } from '../utils/generateId.js';
 
 // Detect native platform: Capacitor injects window.Capacitor on native
 // isNativePlatform can be a function (returns bool) or a boolean depending on version
@@ -13,14 +14,6 @@ const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNati
 const API_BASE = isNative
   ? (import.meta.env.VITE_API_URL || 'https://agripilot-production.up.railway.app/api')
   : (import.meta.env.VITE_API_URL || '/api');
-
-// Simple UUID v4 generator for idempotency keys (no crypto dependency needed)
-function generateId() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -37,7 +30,7 @@ api.interceptors.request.use((config) => {
   // Enables safe retry on network failures
   if (['post', 'put', 'patch'].includes(config.method)) {
     if (!config.headers['X-Idempotency-Key']) {
-      config.headers['X-Idempotency-Key'] = generateId();
+      config.headers['X-Idempotency-Key'] = generateUUID();
     }
   }
 

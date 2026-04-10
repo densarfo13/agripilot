@@ -1,0 +1,105 @@
+/**
+ * i18n — centralized UI translation system.
+ *
+ * Single source of truth: language is stored in localStorage as 'farroway:lang'.
+ * Both UI text and voice guidance share the same key.
+ *
+ * Usage:
+ *   import { t, useTranslation, getLanguage, setLanguage, LANGUAGES } from '../i18n';
+ *   const { t, lang, setLang } = useTranslation();
+ *   t('home.startSeason')        → "Anza Msimu" (if lang=sw)
+ *   t('home.noUpdateDays', { days: 5 })  → interpolates {days}
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import T from './translations.js';
+
+// ── Language list (matches VOICE_LANGUAGES in voiceGuide.js) ──
+export const LANGUAGES = [
+  { code: 'en', label: 'English', short: 'EN' },
+  { code: 'fr', label: 'Français', short: 'FR' },
+  { code: 'sw', label: 'Kiswahili', short: 'SW' },
+  { code: 'ha', label: 'Hausa', short: 'HA' },
+  { code: 'tw', label: 'Twi', short: 'TW' },
+];
+
+const STORAGE_KEY = 'farroway:lang';
+// Legacy key used by the old voice-only system — keep in sync
+const LEGACY_VOICE_KEY = 'farroway:voiceLang';
+// Legacy key from old server-based i18n — keep in sync
+const LEGACY_UI_KEY = 'farroway_lang';
+
+/** Read persisted language, defaulting to 'en'. */
+export function getLanguage() {
+  try {
+    return localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem(LEGACY_VOICE_KEY)
+      || localStorage.getItem(LEGACY_UI_KEY)
+      || 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+/** Persist language to all storage keys (so VoiceBar reads the same value). */
+export function setLanguage(code) {
+  try {
+    localStorage.setItem(STORAGE_KEY, code);
+    localStorage.setItem(LEGACY_VOICE_KEY, code); // keeps voice aligned
+    localStorage.setItem(LEGACY_UI_KEY, code);     // keeps legacy i18n aligned
+  } catch { /* quota exceeded — no-op */ }
+  // Dispatch custom event so every useTranslation hook picks it up
+  window.dispatchEvent(new CustomEvent('farroway:langchange', { detail: code }));
+}
+
+/**
+ * Translate a key.
+ *
+ * @param {string} key     — dot-notation key, e.g. 'home.startSeason'
+ * @param {string} lang    — language code, e.g. 'sw'
+ * @param {object} [vars]  — interpolation variables, e.g. { days: 5 }
+ * @returns {string}
+ */
+export function t(key, lang, vars) {
+  const entry = T[key];
+  if (!entry) {
+    if (process.env.NODE_ENV === 'development' || (typeof import.meta !== 'undefined' && import.meta.env?.DEV)) {
+      console.warn(`[i18n] Missing key: "${key}"`);
+    }
+    return key; // last-resort fallback = raw key
+  }
+  let text = entry[lang] || entry.en || key; // target → English → key
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+  }
+  return text;
+}
+
+// ── Convenience: bound translate for a given lang ──
+export function createT(lang) {
+  return (key, vars) => t(key, lang, vars);
+}
+
+// ── React hook — live language state + bound t() ──
+let _listeners = [];
+
+export function useTranslation() {
+  const [lang, _setLang] = useState(getLanguage);
+
+  useEffect(() => {
+    const handler = (e) => _setLang(e.detail || getLanguage());
+    window.addEventListener('farroway:langchange', handler);
+    return () => window.removeEventListener('farroway:langchange', handler);
+  }, []);
+
+  const setLang = useCallback((code) => {
+    setLanguage(code);
+    _setLang(code);
+  }, []);
+
+  const boundT = useCallback((key, vars) => t(key, lang, vars), [lang]);
+
+  return { t: boundT, lang, setLang, languages: LANGUAGES };
+}

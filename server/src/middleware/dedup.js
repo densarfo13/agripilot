@@ -31,7 +31,8 @@ export function dedupGuard(actionName) {
   return (req, res, next) => {
     const userId = req.user?.sub;
     // Support multiple param names: :id, :farmerId, :applicationId, :seasonId
-    const resourceId = req.params.id || req.params.farmerId || req.params.applicationId || req.params.seasonId;
+    // Fall back to userId for create-endpoints with no resource param (e.g. POST /farms)
+    const resourceId = req.params.id || req.params.farmerId || req.params.applicationId || req.params.seasonId || userId;
     if (!userId || !resourceId) return next(); // no dedup without user+resource
 
     const key = `${userId}:${actionName}:${resourceId}`;
