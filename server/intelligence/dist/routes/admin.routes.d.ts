@@ -1,7 +1,7 @@
 /**
  * Farroway Intelligence Module — Admin Routes
  *
- * 8 endpoints for regional risk views, outbreak clusters, high-risk farms,
+ * 10 endpoints for regional risk views, outbreak clusters, high-risk farms,
  * hotspot management, alert oversight, intervention effectiveness,
  * boundary validation, and report review.
  */

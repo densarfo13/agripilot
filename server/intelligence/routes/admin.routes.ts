@@ -549,7 +549,7 @@ router.get('/queues/boundary-review', async (_req: Request, res: Response) => {
 router.post('/boundaries/:id/auto-validate', async (req: Request, res: Response) => {
   try {
     const user = (req as AuthRequest).user;
-    const boundaryId = req.params.id;
+    const boundaryId = req.params.id as string;
 
     const result = await validateBoundary(boundaryId);
 

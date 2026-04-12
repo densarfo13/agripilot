@@ -1,12 +1,10 @@
 /**
  * Farroway Intelligence Module — Types, DTOs, and Constants
  *
- * All interfaces, DTOs, and enum-like constants used across the
- * intelligence system (pest reports, satellite/drone ingestion,
- * scoring, alerting, and admin review).
+ * Component interface names match the product specification EXACTLY.
+ * Scoring weights reference these same keys.
  */
 import type { Request } from 'express';
-/** The kind of image captured for a pest observation. */
 export declare const ImageType: {
     readonly leaf_closeup: "leaf_closeup";
     readonly whole_plant: "whole_plant";
@@ -15,7 +13,6 @@ export declare const ImageType: {
     readonly followup: "followup";
 };
 export type ImageType = (typeof ImageType)[keyof typeof ImageType];
-/** High-level category the system suspects for a pest report. */
 export declare const LikelyIssue: {
     readonly pest: "pest";
     readonly disease: "disease";
@@ -24,7 +21,6 @@ export declare const LikelyIssue: {
     readonly uncertain: "uncertain";
 };
 export type LikelyIssue = (typeof LikelyIssue)[keyof typeof LikelyIssue];
-/** Lifecycle status of a pest report. */
 export declare const ReportStatus: {
     readonly open: "open";
     readonly under_review: "under_review";
@@ -33,7 +29,6 @@ export declare const ReportStatus: {
     readonly false_positive: "false_positive";
 };
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
-/** Guided verification questions presented to the farmer. */
 export declare const VerificationQuestion: {
     readonly leaves_eaten: "leaves_eaten";
     readonly spreading: "spreading";
@@ -43,14 +38,12 @@ export declare const VerificationQuestion: {
     readonly recent_heat: "recent_heat";
 };
 export type VerificationQuestion = (typeof VerificationQuestion)[keyof typeof VerificationQuestion];
-/** Possible answers a farmer can give to a verification question. */
 export declare const AnswerValue: {
     readonly yes: "yes";
     readonly no: "no";
     readonly unsure: "unsure";
 };
 export type AnswerValue = (typeof AnswerValue)[keyof typeof AnswerValue];
-/** Severity level assigned to a satellite/drone hotspot zone. */
 export declare const HotspotSeverity: {
     readonly low: "low";
     readonly moderate: "moderate";
@@ -58,7 +51,6 @@ export declare const HotspotSeverity: {
     readonly critical: "critical";
 };
 export type HotspotSeverity = (typeof HotspotSeverity)[keyof typeof HotspotSeverity];
-/** Lifecycle status of a hotspot zone. */
 export declare const HotspotStatus: {
     readonly active: "active";
     readonly inspected: "inspected";
@@ -66,7 +58,6 @@ export declare const HotspotStatus: {
     readonly false_alarm: "false_alarm";
 };
 export type HotspotStatus = (typeof HotspotStatus)[keyof typeof HotspotStatus];
-/** Alert urgency tier. */
 export declare const AlertLevel: {
     readonly watch: "watch";
     readonly elevated: "elevated";
@@ -74,7 +65,6 @@ export declare const AlertLevel: {
     readonly urgent: "urgent";
 };
 export type AlertLevel = (typeof AlertLevel)[keyof typeof AlertLevel];
-/** Delivery status of a notification/alert. */
 export declare const SentStatus: {
     readonly pending: "pending";
     readonly sent: "sent";
@@ -82,22 +72,20 @@ export declare const SentStatus: {
     readonly expired: "expired";
 };
 export type SentStatus = (typeof SentStatus)[keyof typeof SentStatus];
-/** Outcome observed after a treatment action. */
 export declare const OutcomeStatus: {
     readonly improved: "improved";
     readonly same: "same";
     readonly worse: "worse";
     readonly resolved: "resolved";
+    readonly uncertain: "uncertain";
 };
 export type OutcomeStatus = (typeof OutcomeStatus)[keyof typeof OutcomeStatus];
-/** Farmer feedback on how accurate the system's assessment was. */
 export declare const FeedbackValue: {
     readonly accurate: "accurate";
     readonly partially_accurate: "partially_accurate";
     readonly inaccurate: "inaccurate";
 };
 export type FeedbackValue = (typeof FeedbackValue)[keyof typeof FeedbackValue];
-/** General risk classification used across scoring outputs. */
 export declare const RiskLevel: {
     readonly low: "low";
     readonly moderate: "moderate";
@@ -105,14 +93,12 @@ export declare const RiskLevel: {
     readonly urgent: "urgent";
 };
 export type RiskLevel = (typeof RiskLevel)[keyof typeof RiskLevel];
-/** Direction of a metric trend over time. */
 export declare const TrendDirection: {
     readonly rising: "rising";
     readonly stable: "stable";
     readonly declining: "declining";
 };
 export type TrendDirection = (typeof TrendDirection)[keyof typeof TrendDirection];
-/** Payload for uploading a single pest-related image. */
 export interface CreatePestImageDto {
     profileId: string;
     imageType: ImageType;
@@ -120,16 +106,13 @@ export interface CreatePestImageDto {
     gpsLat?: number;
     gpsLng?: number;
 }
-/** Payload for creating a new pest report (one or more images + answers). */
 export interface CreatePestReportDto {
     profileId: string;
     imageIds: string[];
     cropCycleId?: string;
-    /** Keys are VerificationQuestion values; values are AnswerValue values. */
     verificationAnswers: Record<string, string>;
     notes?: string;
 }
-/** Payload for recording a treatment action against a pest report. */
 export interface CreateTreatmentDto {
     pestReportId: string;
     actionTaken: string;
@@ -137,7 +120,6 @@ export interface CreateTreatmentDto {
     notes?: string;
     actionDate?: string;
 }
-/** Payload for recording the outcome of a treatment action. */
 export interface CreateOutcomeDto {
     treatmentActionId: string;
     outcomeStatus: OutcomeStatus;
@@ -145,14 +127,12 @@ export interface CreateOutcomeDto {
     followupImageUrl?: string;
     followupDate?: string;
 }
-/** Payload for farmer feedback on the system's assessment accuracy. */
 export interface SubmitFeedbackDto {
     userFeedback: FeedbackValue;
     helpfulScore?: number;
     confirmedIssue?: string;
     notes?: string;
 }
-/** Payload for ingesting a satellite scan for a farm profile. */
 export interface IngestSatelliteDto {
     profileId: string;
     scanDate: string;
@@ -160,7 +140,6 @@ export interface IngestSatelliteDto {
     cloudCover?: number;
     rawMetadata?: Record<string, unknown>;
 }
-/** Payload for ingesting drone flight data for a farm profile. */
 export interface IngestDroneDto {
     profileId: string;
     hotspotZoneId?: string;
@@ -168,99 +147,99 @@ export interface IngestDroneDto {
     imageBundleUrl?: string;
     metadata?: Record<string, unknown>;
 }
-/** Payload for an admin reviewing a pest report. */
 export interface ReviewReportDto {
     status: ReportStatus;
     notes?: string;
 }
-/** Payload for validating a farm boundary after satellite ingest. */
 export interface ValidateBoundaryDto {
     validated: boolean;
     notes?: string;
 }
-/** Breakdown of the seven components that produce a farm-level pest risk score. */
+/**
+ * farm_pest_risk =
+ *   (image_score * 0.30) +
+ *   (field_stress_score * 0.20) +
+ *   (crop_stage_vulnerability * 0.10) +
+ *   (weather_suitability * 0.10) +
+ *   (nearby_outbreak_density * 0.15) +
+ *   (farm_history_score * 0.05) +
+ *   (verification_response_score * 0.10)
+ */
 export interface FarmPestRiskComponents {
     image_score: number;
-    verification_score: number;
-    crop_vulnerability_score: number;
-    weather_score: number;
-    historical_score: number;
-    proximity_score: number;
+    field_stress_score: number;
+    crop_stage_vulnerability: number;
+    weather_suitability: number;
+    nearby_outbreak_density: number;
+    farm_history_score: number;
     verification_response_score: number;
 }
-/** Breakdown of the five components that produce a hotspot severity score. */
+/**
+ * hotspot_score =
+ *   (anomaly_intensity * 0.35) +
+ *   (temporal_change * 0.20) +
+ *   (cluster_compactness * 0.15) +
+ *   (crop_sensitivity * 0.10) +
+ *   (local_validation_evidence * 0.20)
+ */
 export interface HotspotScoreComponents {
-    ndvi_deviation: number;
-    area_ratio: number;
-    persistence: number;
-    proximity_to_reports: number;
-    weather_correlation: number;
+    anomaly_intensity: number;
+    temporal_change: number;
+    cluster_compactness: number;
+    crop_sensitivity: number;
+    local_validation_evidence: number;
 }
-/** Breakdown of the six components that produce a regional outbreak score. */
+/**
+ * regional_outbreak_score =
+ *   (confirmed_reports * 0.25) +
+ *   (unconfirmed_signals * 0.10) +
+ *   (satellite_anomalies * 0.20) +
+ *   (weather_favorability * 0.15) +
+ *   (seasonal_baseline_match * 0.15) +
+ *   (intervention_failure_rate * 0.15)
+ */
 export interface RegionalOutbreakComponents {
-    report_density: number;
-    spread_velocity: number;
-    severity_average: number;
-    crop_overlap: number;
+    confirmed_reports: number;
+    unconfirmed_signals: number;
+    satellite_anomalies: number;
     weather_favorability: number;
-    confirmation_rate: number;
+    seasonal_baseline_match: number;
+    intervention_failure_rate: number;
 }
-/** Breakdown of the five components that determine alert confidence. */
+/**
+ * alert_confidence =
+ *   (model_confidence * 0.35) +
+ *   (signal_agreement * 0.25) +
+ *   (data_quality * 0.15) +
+ *   (spatial_relevance * 0.15) +
+ *   (recent_trend_strength * 0.10)
+ */
 export interface AlertConfidenceComponents {
+    model_confidence: number;
+    signal_agreement: number;
     data_quality: number;
-    source_agreement: number;
-    historical_accuracy: number;
-    verification_completeness: number;
-    temporal_consistency: number;
+    spatial_relevance: number;
+    recent_trend_strength: number;
 }
 /** Generic wrapper returned by any scoring function. */
 export interface ScoringResult {
-    /** Final composite score (0-100). */
     score: number;
-    /** Optional risk/severity level derived from the score. */
-    level?: string;
-    /** Individual component scores that were combined. */
+    level: string;
     components: Record<string, number>;
 }
-/** Result of evaluating whether an alert should be created. */
+/** Alert evaluation pipeline result. */
 export interface AlertEvaluationResult {
-    /** Whether a new alert was actually created. */
     created: boolean;
-    /** The alert entity if one was created, otherwise null. */
     alert: any | null;
-    /** Whether creation was suppressed by dedup or noise rules. */
     suppressed: boolean;
-    /** Human-readable reason the alert was suppressed, if applicable. */
     suppressedReason: string | null;
 }
-/** Tunable parameters that control alert creation behaviour. */
-export interface AlertConfig {
-    /** Minimum confidence score (0-100) required to emit an alert. */
-    confidenceThreshold: number;
-    /** Hours within which a duplicate alert for the same entity is suppressed. */
-    duplicateWindowHours: number;
-    /** Hours within which a recent treatment action suppresses a new alert. */
-    recentActionWindowHours: number;
-    /** Minimum noise-filtered score below which alerts are suppressed. */
-    noiseThreshold: number;
-    /** Rolling window (days) used for noise filtering. */
-    noiseWindowDays: number;
-}
-/** Named weight maps for each scoring formula. */
-export interface ScoringWeights {
-    farmPestRisk: Record<string, number>;
-    hotspot: Record<string, number>;
-    regionalOutbreak: Record<string, number>;
-    alertConfidence: Record<string, number>;
-}
-/** Authenticated user attached to every request by the auth middleware. */
 export interface AuthUser {
     id: string;
     email: string;
     role: string;
     emailVerified: boolean;
 }
-/** Express Request extended with the authenticated user context. */
 export interface AuthRequest extends Request {
     user: AuthUser;
 }

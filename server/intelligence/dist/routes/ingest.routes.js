@@ -6,24 +6,21 @@
  */
 import { Router } from 'express';
 // @ts-ignore — JS module
-import { authenticate } from '../../src/middleware/auth.js';
+import { authenticate } from '../lib/auth.js';
 // @ts-ignore — JS module
-import prisma from '../../lib/prisma.js';
+import prisma from '../lib/prisma.js';
 // @ts-ignore — JS module
-import { writeAuditLog } from '../../lib/audit.js';
-// @ts-ignore — JS module
-import { ingestSatelliteScan } from '../../services/intelligence/satelliteService.js';
-// @ts-ignore — JS module
-import { ingestDroneScan } from '../../services/intelligence/droneService.js';
-// @ts-ignore — JS module
-import { computeDistrictRisk } from '../../services/intelligence/outbreakService.js';
-// @ts-ignore — JS module
-import { evaluateAndCreateAlert } from '../../services/intelligence/alertEngine.js';
+import { writeAuditLog } from '../lib/audit.js';
+import { ingestSatelliteScan } from '../services/satellite.service.js';
+import { ingestDroneScan } from '../services/drone.service.js';
+import { computeDistrictRisk } from '../services/outbreak.service.js';
+import { evaluateAndCreateAlert } from '../services/alert.service.js';
+import { computeComponentScores } from '../services/components.service.js';
 import { requireAdmin } from '../guards/roles.guard.js';
-import { validate, ingestSatelliteSchema, ingestDroneSchema, } from '../validation/schemas.js';
-import { computeFarmPestRisk, riskLevelFromScore, computeVerificationSignal, } from '../services/scoring.service.js';
+import { validate, ingestSatelliteSchema, ingestDroneSchema, triggerFarmScoreSchema, triggerRegionScoreSchema, triggerAlertEvaluateSchema, } from '../validation/schemas.js';
+import { computeFarmPestRisk, riskLevelFromScore, } from '../services/scoring.service.js';
+import { computeAlertConfidence } from '../services/scoring.service.js';
 const router = Router();
-// All routes require authentication + admin role
 router.use(authenticate, requireAdmin);
 // ---------------------------------------------------------------------------
 // 1. POST /satellite/ingest — Ingest satellite scan
@@ -38,10 +35,8 @@ router.post('/satellite/ingest', validate(ingestSatelliteSchema), async (req, re
             imagerySource,
             cloudCover,
             rawMetadata,
+            uploadedBy: user.id,
         });
-        if (result.error) {
-            return res.status(400).json({ error: result.error });
-        }
         await writeAuditLog(req, {
             userId: user.id,
             action: 'satellite_scan_ingested',
@@ -71,10 +66,8 @@ router.post('/drone/ingest', validate(ingestDroneSchema), async (req, res) => {
             flightDate,
             imageBundleUrl,
             metadata,
+            uploadedBy: user.id,
         });
-        if (result.error) {
-            return res.status(400).json({ error: result.error });
-        }
         await writeAuditLog(req, {
             userId: user.id,
             action: 'drone_scan_ingested',
@@ -83,7 +76,7 @@ router.post('/drone/ingest', validate(ingestDroneSchema), async (req, res) => {
             metadata: { profileId, flightDate },
         });
         return res.status(201).json({
-            data: { scan: result.scan, validation: result.validation },
+            data: { scan: result.scan, hotspotUpdate: result.hotspotUpdate ?? null },
         });
     }
     catch (err) {
@@ -94,66 +87,30 @@ router.post('/drone/ingest', validate(ingestDroneSchema), async (req, res) => {
 // ---------------------------------------------------------------------------
 // 3. POST /score/farm — Trigger farm pest risk scoring
 // ---------------------------------------------------------------------------
-router.post('/score/farm', async (req, res) => {
+router.post('/score/farm', validate(triggerFarmScoreSchema), async (req, res) => {
     try {
         const user = req.user;
         const { profileId } = req.body;
-        if (!profileId) {
-            return res.status(400).json({ error: 'profileId is required' });
-        }
         const profile = await prisma.farmProfile.findUnique({ where: { id: profileId } });
         if (!profile) {
             return res.status(404).json({ error: 'Farm profile not found' });
         }
-        // Gather scoring components from DB
-        // Latest image detections
-        const recentImages = await prisma.v2PestImage.findMany({
-            where: { profileId },
-            orderBy: { createdAt: 'desc' },
-            take: 10,
-            include: { detections: true },
-        });
-        const imageScores = recentImages.flatMap((img) => (img.detections || []).map((d) => d.confidence || 0));
-        const imageScore = imageScores.length > 0
-            ? Math.round(imageScores.reduce((a, b) => a + b, 0) / imageScores.length)
-            : 0;
-        // Latest verification answers from recent reports
-        const recentReport = await prisma.v2PestReport.findFirst({
-            where: { profileId },
-            orderBy: { createdAt: 'desc' },
-            include: { verificationAnswers: true },
-        });
-        let verificationResponseScore = 0;
-        if (recentReport?.verificationAnswers) {
-            const answerMap = {};
-            for (const a of recentReport.verificationAnswers) {
-                answerMap[a.question] = a.answer;
-            }
-            verificationResponseScore = computeVerificationSignal(answerMap);
-        }
-        // Latest field stress score
-        const latestStress = await prisma.v2FieldStressScore.findFirst({
-            where: { profileId },
-            orderBy: { computedAt: 'desc' },
-        });
-        const components = {
-            image_score: imageScore,
-            verification_score: verificationResponseScore,
-            crop_vulnerability_score: 50, // stub
-            weather_score: latestStress?.weatherCorrelation ?? 50,
-            historical_score: 30, // stub
-            proximity_score: 30, // stub
-            verification_response_score: verificationResponseScore,
-        };
+        // Compute all 7 scoring components from real DB data
+        const components = await computeComponentScores(profileId);
         const scoringResult = computeFarmPestRisk(components);
         const riskLevel = riskLevelFromScore(scoringResult.score);
         const farmRisk = await prisma.v2FarmPestRisk.create({
             data: {
                 profileId,
-                pestReportId: recentReport?.id ?? null,
-                riskScore: scoringResult.score,
+                imageScore: components.image_score,
+                fieldStressScore: components.field_stress_score,
+                cropStageVulnerability: components.crop_stage_vulnerability,
+                weatherSuitability: components.weather_suitability,
+                nearbyOutbreakDensity: components.nearby_outbreak_density,
+                farmHistoryScore: components.farm_history_score,
+                verificationResponseScore: components.verification_response_score,
+                overallRiskScore: scoringResult.score,
                 riskLevel,
-                components: scoringResult.components,
                 computedAt: new Date(),
             },
         });
@@ -181,23 +138,17 @@ router.post('/score/farm', async (req, res) => {
 // ---------------------------------------------------------------------------
 // 4. POST /score/region — Trigger region risk scoring
 // ---------------------------------------------------------------------------
-router.post('/score/region', async (req, res) => {
+router.post('/score/region', validate(triggerRegionScoreSchema), async (req, res) => {
     try {
         const user = req.user;
         const { regionKey } = req.body;
-        if (!regionKey) {
-            return res.status(400).json({ error: 'regionKey is required' });
-        }
         const result = await computeDistrictRisk(regionKey);
-        if (result.error) {
-            return res.status(400).json({ error: result.error });
-        }
         await writeAuditLog(req, {
             userId: user.id,
             action: 'region_risk_scored',
             entityType: 'V2DistrictRiskScore',
-            entityId: result.districtRisk?.id ?? null,
-            metadata: { regionKey, riskScore: result.districtRisk?.riskScore },
+            entityId: result?.id ?? null,
+            metadata: { regionKey, riskScore: result?.overallRiskScore },
         });
         return res.json({ data: result });
     }
@@ -209,14 +160,10 @@ router.post('/score/region', async (req, res) => {
 // ---------------------------------------------------------------------------
 // 5. POST /alerts/evaluate — Trigger alert evaluation for a farm
 // ---------------------------------------------------------------------------
-router.post('/alerts/evaluate', async (req, res) => {
+router.post('/alerts/evaluate', validate(triggerAlertEvaluateSchema), async (req, res) => {
     try {
         const user = req.user;
         const { profileId } = req.body;
-        if (!profileId) {
-            return res.status(400).json({ error: 'profileId is required' });
-        }
-        // Fetch latest risk data for the farm
         const latestRisk = await prisma.v2FarmPestRisk.findFirst({
             where: { profileId },
             orderBy: { computedAt: 'desc' },
@@ -224,13 +171,48 @@ router.post('/alerts/evaluate', async (req, res) => {
         if (!latestRisk) {
             return res.status(404).json({ error: 'No risk data found for this farm. Run scoring first.' });
         }
+        const riskLevel = latestRisk.riskLevel || 'moderate';
+        // Predictive refinement: require multi-signal agreement
+        // Check if there are corroborating signals (satellite stress, recent reports, regional risk)
+        const [recentStress, recentReports, regionalRisk] = await Promise.all([
+            prisma.v2FieldStressScore.findFirst({
+                where: { profileId, createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.v2PestReport.count({
+                where: { profileId, createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+            }),
+            prisma.v2DistrictRiskScore.findFirst({
+                where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+                orderBy: { date: 'desc' },
+            }),
+        ]);
+        // Count agreeing signals
+        let signalCount = 0;
+        if (latestRisk.overallRiskScore > 50)
+            signalCount++;
+        if (recentStress && recentStress.stressScore > 40)
+            signalCount++;
+        if (recentReports > 0)
+            signalCount++;
+        if (regionalRisk && regionalRisk.overallRiskScore > 40)
+            signalCount++;
+        // Compute real confidence using the alert confidence formula
+        const confidenceResult = computeAlertConfidence({
+            model_confidence: latestRisk.overallRiskScore,
+            signal_agreement: signalCount >= 3 ? 80 : signalCount >= 2 ? 55 : 25,
+            data_quality: recentStress ? 70 : 30,
+            spatial_relevance: regionalRisk ? Math.min(100, regionalRisk.overallRiskScore * 1.2) : 20,
+            recent_trend_strength: recentReports > 2 ? 70 : recentReports * 25,
+        });
         const alertResult = await evaluateAndCreateAlert({
             targetType: 'farm',
             targetId: profileId,
-            riskScore: latestRisk.riskScore,
-            reason: 'manual_evaluation',
-            issueType: 'pest',
-            components: latestRisk.components ?? {},
+            alertLevel: riskLevel === 'urgent' ? 'urgent' : riskLevel === 'high' ? 'high_risk' : 'elevated',
+            alertReason: 'manual_alert_evaluation',
+            alertMessage: `Alert evaluation — risk ${Math.round(latestRisk.overallRiskScore)}, confidence ${Math.round(confidenceResult.score)}, ${signalCount} corroborating signals`,
+            confidenceScore: confidenceResult.score,
+            actionGuidance: 'Review farm risk data and determine next steps',
         });
         await writeAuditLog(req, {
             userId: user.id,

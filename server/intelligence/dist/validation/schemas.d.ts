@@ -39,18 +39,17 @@ export declare const createPestReportSchema: z.ZodObject<{
     }>>;
     notes: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
-/** Schema for {@link CreateTreatmentDto}. */
+/** Schema for {@link CreateTreatmentDto}. reportId comes from URL param. */
 export declare const createTreatmentSchema: z.ZodObject<{
-    pestReportId: z.ZodString;
     actionTaken: z.ZodString;
     productUsed: z.ZodOptional<z.ZodString>;
     notes: z.ZodOptional<z.ZodString>;
     actionDate: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
-/** Schema for {@link CreateOutcomeDto}. */
+/** Schema for {@link CreateOutcomeDto}. treatmentId comes from URL param. */
 export declare const createOutcomeSchema: z.ZodObject<{
-    treatmentActionId: z.ZodString;
     outcomeStatus: z.ZodEnum<{
+        uncertain: "uncertain";
         resolved: "resolved";
         improved: "improved";
         same: "same";
@@ -102,6 +101,18 @@ export declare const reviewReportSchema: z.ZodObject<{
 export declare const validateBoundarySchema: z.ZodObject<{
     validated: z.ZodBoolean;
     notes: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+/** Schema for admin trigger: score a farm. */
+export declare const triggerFarmScoreSchema: z.ZodObject<{
+    profileId: z.ZodString;
+}, z.core.$strip>;
+/** Schema for admin trigger: score a region. */
+export declare const triggerRegionScoreSchema: z.ZodObject<{
+    regionKey: z.ZodString;
+}, z.core.$strip>;
+/** Schema for admin trigger: evaluate alert for a farm. */
+export declare const triggerAlertEvaluateSchema: z.ZodObject<{
+    profileId: z.ZodString;
 }, z.core.$strip>;
 /**
  * Express middleware factory that validates `req.body` against the supplied

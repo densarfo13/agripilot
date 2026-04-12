@@ -43,7 +43,9 @@ let shouldSendEmail: any = null;
 let PEST_ALERT_MIN_CONFIDENCE: number = 0.6;
 try {
   // Lazy-load to avoid circular dependency / missing module errors
+  // @ts-ignore — JS modules without declarations
   const emailMod = await import('../../src/modules/email/service.js');
+  // @ts-ignore — JS modules without declarations
   const constMod = await import('../../src/modules/email/constants.js');
   sendPestAlertEmail = emailMod.sendPestAlertEmail;
   shouldSendEmail = emailMod.shouldSendEmail;

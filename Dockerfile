@@ -12,8 +12,9 @@ RUN cd server && npm install --omit=dev
 # Copy all source
 COPY . .
 
-# Generate Prisma client + build frontend
+# Generate Prisma client + build intelligence TS + build frontend
 RUN cd server && npx prisma generate
+RUN cd server/intelligence && npx tsc --project tsconfig.json && cp -r lib dist/lib
 RUN npx vite build
 
 # Uploads directory

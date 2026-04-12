@@ -2,23 +2,8 @@
 // Anti-spam alert orchestration engine for Farroway.
 // Decides whether to create, suppress, or downgrade alerts.
 // @ts-ignore — JS module
-import prisma from '../../lib/prisma.js';
-// ---- Configuration ----------------------------------------------------------
-/** Tunable thresholds governing alert creation and suppression. */
-export const ALERT_CONFIG = {
-    /** Minimum confidence score (0-100) required to create an alert. */
-    confidenceThreshold: 55,
-    /** Suppress duplicate alerts for the same target + level within this window. */
-    duplicateWindowHours: 24,
-    /** Suppress alerts when the target farm has a recent treatment action. */
-    recentActionWindowHours: 48,
-    /** Maximum alerts per target within the noise window before downgrading. */
-    noiseThreshold: 3,
-    /** Rolling window (days) used for noise counting. */
-    noiseWindowDays: 7,
-    /** Alerts auto-expire after this many hours. */
-    defaultExpiryHours: 72,
-};
+import prisma from '../lib/prisma.js';
+import { getAlertConfig } from '../config/thresholds.js';
 // ---- Helpers ----------------------------------------------------------------
 const LOG_PREFIX = '[AlertEngine]';
 /**
@@ -53,8 +38,8 @@ export async function evaluateAndCreateAlert(params) {
     const { targetType, targetId, alertLevel, alertReason, alertMessage, confidenceScore, actionGuidance, } = params;
     try {
         // ---- 1. Confidence check ------------------------------------------------
-        if (confidenceScore < ALERT_CONFIG.confidenceThreshold) {
-            console.log(`${LOG_PREFIX} Suppressed: confidence ${confidenceScore} < threshold ${ALERT_CONFIG.confidenceThreshold}`);
+        if (confidenceScore < getAlertConfig().confidenceThreshold) {
+            console.log(`${LOG_PREFIX} Suppressed: confidence ${confidenceScore} < threshold ${getAlertConfig().confidenceThreshold}`);
             return {
                 created: false,
                 alert: null,
@@ -65,7 +50,7 @@ export async function evaluateAndCreateAlert(params) {
             };
         }
         // ---- 2. Duplicate check -------------------------------------------------
-        const duplicateCutoff = new Date(Date.now() - ALERT_CONFIG.duplicateWindowHours * 60 * 60 * 1000);
+        const duplicateCutoff = new Date(Date.now() - getAlertConfig().duplicateWindowHours * 60 * 60 * 1000);
         const existingDuplicate = await prisma.v2AlertEvent.findFirst({
             where: {
                 targetType,
@@ -77,7 +62,7 @@ export async function evaluateAndCreateAlert(params) {
             orderBy: { createdAt: 'desc' },
         });
         if (existingDuplicate) {
-            console.log(`${LOG_PREFIX} Suppressed: duplicate for ${targetType}/${targetId} level=${alertLevel} within ${ALERT_CONFIG.duplicateWindowHours}h`);
+            console.log(`${LOG_PREFIX} Suppressed: duplicate for ${targetType}/${targetId} level=${alertLevel} within ${getAlertConfig().duplicateWindowHours}h`);
             return {
                 created: false,
                 alert: existingDuplicate,
@@ -89,7 +74,7 @@ export async function evaluateAndCreateAlert(params) {
         }
         // ---- 3. Recent treatment action check (farm targets only) ---------------
         if (targetType === 'farm') {
-            const actionCutoff = new Date(Date.now() - ALERT_CONFIG.recentActionWindowHours * 60 * 60 * 1000);
+            const actionCutoff = new Date(Date.now() - getAlertConfig().recentActionWindowHours * 60 * 60 * 1000);
             const recentAction = await prisma.v2TreatmentAction.findFirst({
                 where: {
                     profileId: targetId,
@@ -110,7 +95,7 @@ export async function evaluateAndCreateAlert(params) {
             }
         }
         // ---- 4. Noise check -----------------------------------------------------
-        const noiseCutoff = new Date(Date.now() - ALERT_CONFIG.noiseWindowDays * 24 * 60 * 60 * 1000);
+        const noiseCutoff = new Date(Date.now() - getAlertConfig().noiseWindowDays * 24 * 60 * 60 * 1000);
         const recentAlertCount = await prisma.v2AlertEvent.count({
             where: {
                 targetType,
@@ -121,11 +106,11 @@ export async function evaluateAndCreateAlert(params) {
         });
         let effectiveLevel = alertLevel;
         let downgraded = false;
-        if (recentAlertCount >= ALERT_CONFIG.noiseThreshold) {
+        if (recentAlertCount >= getAlertConfig().noiseThreshold) {
             const nextLevel = downgradeAlertLevel(effectiveLevel);
             if (nextLevel === null) {
                 // Already at lowest level -- suppress entirely
-                console.log(`${LOG_PREFIX} Suppressed: noise limit reached for ${targetType}/${targetId} (${recentAlertCount} alerts in ${ALERT_CONFIG.noiseWindowDays}d, already at watch)`);
+                console.log(`${LOG_PREFIX} Suppressed: noise limit reached for ${targetType}/${targetId} (${recentAlertCount} alerts in ${getAlertConfig().noiseWindowDays}d, already at watch)`);
                 return {
                     created: false,
                     alert: null,
@@ -135,12 +120,12 @@ export async function evaluateAndCreateAlert(params) {
                     originalLevel: alertLevel,
                 };
             }
-            console.log(`${LOG_PREFIX} Downgrading ${alertLevel} -> ${nextLevel} for ${targetType}/${targetId} (${recentAlertCount} alerts in ${ALERT_CONFIG.noiseWindowDays}d)`);
+            console.log(`${LOG_PREFIX} Downgrading ${alertLevel} -> ${nextLevel} for ${targetType}/${targetId} (${recentAlertCount} alerts in ${getAlertConfig().noiseWindowDays}d)`);
             effectiveLevel = nextLevel;
             downgraded = true;
         }
         // ---- 5. Create the alert ------------------------------------------------
-        const expiresAt = new Date(Date.now() + ALERT_CONFIG.defaultExpiryHours * 60 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + getAlertConfig().defaultExpiryHours * 60 * 60 * 1000);
         const alert = await prisma.v2AlertEvent.create({
             data: {
                 targetType,

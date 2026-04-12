@@ -1,19 +1,4 @@
 type DbAlertLevel = 'watch' | 'elevated' | 'high_risk' | 'urgent';
-/** Tunable thresholds governing alert creation and suppression. */
-export declare const ALERT_CONFIG: {
-    /** Minimum confidence score (0-100) required to create an alert. */
-    readonly confidenceThreshold: 55;
-    /** Suppress duplicate alerts for the same target + level within this window. */
-    readonly duplicateWindowHours: 24;
-    /** Suppress alerts when the target farm has a recent treatment action. */
-    readonly recentActionWindowHours: 48;
-    /** Maximum alerts per target within the noise window before downgrading. */
-    readonly noiseThreshold: 3;
-    /** Rolling window (days) used for noise counting. */
-    readonly noiseWindowDays: 7;
-    /** Alerts auto-expire after this many hours. */
-    readonly defaultExpiryHours: 72;
-};
 export interface EvaluateAlertParams {
     targetType: 'farm' | 'region' | 'farmer';
     targetId: string;
