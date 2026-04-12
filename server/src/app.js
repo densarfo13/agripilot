@@ -69,6 +69,24 @@ import v2MonitoringRoutes from '../routes/monitoring.js';
 import v2WeatherRoutes from '../routes/weather.js';
 import v2SeasonRoutes from '../routes/seasons.js';
 import v2TaskRoutes from '../routes/tasks.js';
+import v2AnalyticsRoutes from '../routes/analytics.js';
+import v2SupportRoutes from '../routes/support.js';
+import v2ExportRoutes from '../routes/exports.js';
+import v2BulkRoutes from '../routes/bulk.js';
+import v2AnalyticsSummaryRoutes from '../routes/analytics-summary.js';
+import v2LandBoundaryRoutes from '../routes/land-boundaries.js';
+import v2SeedScanRoutes from '../routes/seed-scans.js';
+import v2VerificationSignalRoutes from '../routes/verification-signals.js';
+import v2SupplyReadinessRoutes from '../routes/supply-readiness.js';
+import v2BuyerRoutes from '../routes/buyers.js';
+import v2BuyerLinkRoutes from '../routes/buyer-links.js';
+// V1 JS intelligence routes (kept as fallback — replaced by TS module below)
+// import v2PestRiskRoutes from '../routes/pest-risk.js';
+// import v2IntelligenceAdminRoutes from '../routes/intelligence-admin.js';
+// import v2IntelligenceIngestRoutes from '../routes/intelligence-ingest.js';
+
+// V2 TypeScript intelligence module (pest-risk, admin, ingest routes)
+import { intelligenceRouter } from '../intelligence/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -356,6 +374,19 @@ app.use('/api/v2/weather', v2WeatherRoutes);
 app.use('/api/v2/monitoring', v2MonitoringRoutes);
 app.use('/api/v2/seasons', v2SeasonRoutes);
 app.use('/api/v2/tasks', v2TaskRoutes);
+app.use('/api/v2/analytics', v2AnalyticsRoutes);
+app.use('/api/v2/support', v2SupportRoutes);
+app.use('/api/v2/exports', v2ExportRoutes);
+app.use('/api/v2/bulk', v2BulkRoutes);
+app.use('/api/v2/analytics-summary', v2AnalyticsSummaryRoutes);
+app.use('/api/v2/land-boundaries', v2LandBoundaryRoutes);
+app.use('/api/v2/seed-scans', v2SeedScanRoutes);
+app.use('/api/v2/verification-signals', v2VerificationSignalRoutes);
+app.use('/api/v2/supply-readiness', v2SupplyReadinessRoutes);
+app.use('/api/v2/buyers', v2BuyerRoutes);
+app.use('/api/v2/buyer-links', v2BuyerLinkRoutes);
+// TypeScript intelligence module (pest-risk, admin, ingest)
+app.use('/api/v2', intelligenceRouter);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

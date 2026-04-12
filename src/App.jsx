@@ -11,6 +11,9 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 
+// Landing page (marketing homepage)
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+
 // V2 enterprise auth pages (cookie-based, lazy-loaded)
 const V2Login = lazy(() => import('./pages/Login.jsx'));
 const V2Register = lazy(() => import('./pages/Register.jsx'));
@@ -59,7 +62,24 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const AutoNotificationsPage = lazy(() => import('./pages/AutoNotificationsPage.jsx'));
 const ImpactDashboardPage = lazy(() => import('./pages/ImpactDashboardPage.jsx'));
 const AdminIssuesPage = lazy(() => import('./pages/AdminIssuesPage.jsx'));
+const AdminOpsPage = lazy(() => import('./pages/AdminOpsPage.jsx'));
+const SupplyReadinessPage = lazy(() => import('./pages/SupplyReadinessPage.jsx'));
+const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
+
+// Intelligence pages (farmer-facing, V2 cookie auth)
+const PestRiskCheck = lazy(() => import('./pages/PestRiskCheck.jsx'));
+const PestRiskResult = lazy(() => import('./pages/PestRiskResult.jsx'));
+const FieldHotspotAlert = lazy(() => import('./pages/FieldHotspotAlert.jsx'));
+const RegionalWatch = lazy(() => import('./pages/RegionalWatch.jsx'));
+const TreatmentFeedback = lazy(() => import('./pages/TreatmentFeedback.jsx'));
+
+// Intelligence admin pages
+const AdminRegionalRiskMap = lazy(() => import('./pages/admin/RegionalRiskMap.jsx'));
+const AdminHighRiskFarms = lazy(() => import('./pages/admin/HighRiskFarms.jsx'));
+const AdminHotspotInspector = lazy(() => import('./pages/admin/HotspotInspector.jsx'));
+const AdminAlertControlCenter = lazy(() => import('./pages/admin/AlertControlCenter.jsx'));
+const AdminInterventionEffectiveness = lazy(() => import('./pages/admin/InterventionEffectiveness.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 // Legacy profile guard + provider use the old farmStore-based flow (Bearer token auth)
@@ -121,6 +141,9 @@ export default function App() {
       <SyncStatus />
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          {/* Marketing landing page (farroways.com homepage) */}
+          <Route path="/welcome" element={<LandingPage />} />
+
           {/* V2 enterprise auth routes (cookie-based, httpOnly) */}
           <Route path="/login" element={<V2Login />} />
           <Route path="/register" element={<V2Register />} />
@@ -131,6 +154,11 @@ export default function App() {
           <Route element={<V2ProtectedLayout />}>
             <Route path="/dashboard" element={<V2Dashboard />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
+            <Route path="/pest-risk-check" element={<PestRiskCheck />} />
+            <Route path="/pest-risk-result" element={<PestRiskResult />} />
+            <Route path="/field-hotspots" element={<FieldHotspotAlert />} />
+            <Route path="/regional-watch" element={<RegionalWatch />} />
+            <Route path="/treatment-feedback" element={<TreatmentFeedback />} />
           </Route>
 
           {/* V1 legacy routes (Bearer token auth) */}
@@ -170,6 +198,14 @@ export default function App() {
             <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />
             <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="admin/issues" element={<RoleRoute roles={ADMIN_ROLES}><AdminIssuesPage /></RoleRoute>} />
+            <Route path="admin/ops" element={<RoleRoute roles={ADMIN_ROLES}><AdminOpsPage /></RoleRoute>} />
+            <Route path="admin/supply" element={<RoleRoute roles={ADMIN_ROLES}><SupplyReadinessPage /></RoleRoute>} />
+            <Route path="admin/buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerManagementPage /></RoleRoute>} />
+            <Route path="admin/intelligence/regional-risk" element={<RoleRoute roles={ADMIN_ROLES}><AdminRegionalRiskMap /></RoleRoute>} />
+            <Route path="admin/intelligence/high-risk-farms" element={<RoleRoute roles={ADMIN_ROLES}><AdminHighRiskFarms /></RoleRoute>} />
+            <Route path="admin/intelligence/hotspots" element={<RoleRoute roles={ADMIN_ROLES}><AdminHotspotInspector /></RoleRoute>} />
+            <Route path="admin/intelligence/alerts" element={<RoleRoute roles={ADMIN_ROLES}><AdminAlertControlCenter /></RoleRoute>} />
+            <Route path="admin/intelligence/interventions" element={<RoleRoute roles={ADMIN_ROLES}><AdminInterventionEffectiveness /></RoleRoute>} />
             <Route path="pilot-metrics" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer', 'field_officer']}><PilotMetricsPage /></RoleRoute>} />
             <Route path="impact" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer']}><ImpactDashboardPage /></RoleRoute>} />
             <Route path="account" element={<AccountPage />} />

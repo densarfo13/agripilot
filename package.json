@@ -6,11 +6,13 @@
   "scripts": {
     "test": "cd server && npm test",
     "dev": "vite",
-    "build": "vite build && cd server && npx prisma generate",
+    "build": "vite build && cd server && npx prisma generate && npx tsc -p intelligence/tsconfig.json",
+    "build:intelligence": "cd server && npx tsc -p intelligence/tsconfig.json",
     "start": "cd server && npx prisma db push --accept-data-loss --skip-generate && node src/server.js",
     "postinstall": "[ -d server ] && cd server && npm install || true",
     "db:push": "cd server && npx prisma db push",
     "db:seed": "cd server && node prisma/seed.js",
+    "seed:demo": "cd server && node prisma/seed-demo.js",
     "preview": "vite preview",
     "build:android": "vite build && npx cap sync android",
     "android:sync": "npx cap sync android",
@@ -23,6 +25,7 @@
     "@capacitor/android": "^8.3.0",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
+    "@capacitor/geolocation": "^8.2.0",
     "@capacitor/ios": "^8.3.0",
     "axios": "^1.7.9",
     "leaflet": "^1.9.4",
@@ -31,13 +34,18 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^7.1.1",
     "recharts": "^2.15.0",
+    "zod": "^4.3.6",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "sharp": "^0.34.5",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
     "vite": "^6.0.7"
   }
 }

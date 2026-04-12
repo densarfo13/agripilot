@@ -33,6 +33,16 @@ const NAV = [
     { to: '/admin/notifications', label: 'Auto Notifications', icon: 'N', roles: ADMIN_ROLES },
     { to: '/admin/pilot-qa', label: 'Pilot QA', icon: 'Q', roles: ADMIN_ROLES },
     { to: '/admin/issues', label: 'Issues', icon: '!', roles: ADMIN_ROLES },
+    { to: '/admin/ops', label: 'Operations', icon: '⚙', roles: ADMIN_ROLES },
+    { to: '/admin/supply', label: 'Supply Readiness', icon: 'S', roles: ADMIN_ROLES },
+    { to: '/admin/buyers', label: 'Buyers', icon: 'B', roles: ADMIN_ROLES },
+  ] },
+  { section: 'Intelligence', roles: ADMIN_ROLES, items: [
+    { to: '/admin/intelligence/regional-risk', label: 'Regional Risk', icon: 'R', roles: ADMIN_ROLES },
+    { to: '/admin/intelligence/high-risk-farms', label: 'High-Risk Farms', icon: 'H', roles: ADMIN_ROLES },
+    { to: '/admin/intelligence/hotspots', label: 'Hotspot Inspector', icon: 'Z', roles: ADMIN_ROLES },
+    { to: '/admin/intelligence/alerts', label: 'Alert Center', icon: 'A', roles: ADMIN_ROLES },
+    { to: '/admin/intelligence/interventions', label: 'Interventions', icon: 'I', roles: ADMIN_ROLES },
   ] },
 ];
 

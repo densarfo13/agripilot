@@ -269,6 +269,9 @@ model User {
   autoNotifications        AutoNotification[]  @relation("AutoNotifTargetUser")
   // V2 season engine
   v2Seasons                V2Season[]
+  // V2 analytics + support
+  v2AnalyticsEvents        V2AnalyticsEvent[]
+  v2SupportRequests        V2SupportRequest[]
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1280,6 +1283,21 @@ model FarmProfile {
   recommendations RecommendationRecord[]
   weatherSnapshots WeatherSnapshot[]
   financeScores   FarmFinanceScore[]
+  supplyReadiness V2SupplyReadiness[]
+  landBoundaries  V2LandBoundary[]
+  seedScans       V2SeedScan[]
+  landInsights    V2LandInsight[]
+  verificationSignals V2VerificationSignal[]
+  // Intelligence relations
+  cropCycles        V2CropCycle[]
+  pestImages        V2PestImage[]
+  pestReports       V2PestReport[]
+  satelliteScans    V2SatelliteScan[]
+  fieldStressScores V2FieldStressScore[]
+  hotspotZones      V2HotspotZone[]
+  droneScans        V2DroneScan[]
+  treatmentActions  V2TreatmentAction[]
+  farmPestRisks     V2FarmPestRisk[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
   @@index([crop], map: "idx_farm_profiles_crop")
@@ -1566,4 +1584,523 @@ model V2Task {
   @@index([status], map: "idx_v2_tasks_status")
   @@index([dueDate], map: "idx_v2_tasks_due")
   @@map("v2_tasks")
+}
+
+// ─── V2 Analytics ──────────────────────────────────────────
+model V2AnalyticsEvent {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  event     String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_v2_analytics_user")
+  @@index([event], map: "idx_v2_analytics_event")
+  @@index([createdAt], map: "idx_v2_analytics_created")
+  @@map("v2_analytics_events")
+}
+
+// ─── V2 Support Requests ───────────────────────────────────
+model V2SupportRequest {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  subject   String
+  message   String
+  status    String   @default("open")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_v2_support_user")
+  @@index([status], map: "idx_v2_support_status")
+  @@map("v2_support_requests")
+}
+
+// ─── V2 Supply Readiness (lightweight sell-readiness per profile) ────
+
+model V2SupplyReadiness {
+  id                  String    @id @default(uuid())
+  profileId           String    @map("profile_id")
+  readyToSell         Boolean   @default(false) @map("ready_to_sell")
+  crop                String
+  estimatedQuantity   Float?    @map("estimated_quantity")
+  quantityUnit        String    @default("kg") @map("quantity_unit")  // kg | bags | tonnes | crates
+  expectedHarvestDate DateTime? @map("expected_harvest_date")
+  priceExpectation    Float?    @map("price_expectation")
+  currency            String    @default("GHS")
+  qualityNotes        String?   @map("quality_notes")
+  status              String    @default("active")                     // active | connected | withdrawn
+  connectedAt         DateTime? @map("connected_at")
+  connectedBy         String?   @map("connected_by")                  // admin userId who marked connected
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  profile             FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  buyerLinks          V2BuyerLink[]
+
+  @@unique([profileId, crop, status], map: "uq_supply_profile_crop_active")
+  @@index([profileId], map: "idx_v2_supply_profile")
+  @@index([readyToSell], map: "idx_v2_supply_ready")
+  @@index([status], map: "idx_v2_supply_status")
+  @@map("v2_supply_readiness")
+}
+
+// ─── V2 Land Boundary (linked to FarmProfile, not Application) ──────
+
+model V2LandBoundary {
+  id              String              @id @default(uuid())
+  profileId       String              @map("profile_id")
+  captureMethod   String              @map("capture_method")   // manual_pin | gps_walk | officer_assisted | fallback_pin
+  measuredArea    Float?              @map("measured_area_hectares") // normalized hectares
+  perimeterMeters Float?              @map("perimeter_meters")
+  pointCount      Int                 @default(0) @map("point_count")
+  capturedAt      DateTime            @default(now()) @map("captured_at")
+  capturedBy      String?             @map("captured_by")      // userId of capturer (officer or self)
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  profile         FarmProfile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  points          V2BoundaryPoint[]
+
+  @@index([profileId], map: "idx_v2_land_boundaries_profile")
+  @@map("v2_land_boundaries")
+}
+
+model V2BoundaryPoint {
+  id          String          @id @default(uuid())
+  boundaryId  String          @map("boundary_id")
+  pointOrder  Int             @map("point_order")
+  latitude    Float
+  longitude   Float
+  accuracy    Float?          // GPS accuracy in meters
+
+  boundary    V2LandBoundary  @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
+
+  @@index([boundaryId], map: "idx_v2_boundary_points_boundary")
+  @@map("v2_boundary_points")
+}
+
+// ─── V2 Seed Scan ──────────────────────────────────────────────
+
+model V2SeedScan {
+  id              String    @id @default(uuid())
+  profileId       String    @map("profile_id")
+  scanMethod      String    @map("scan_method")       // qr | barcode | manual
+  seedType        String?   @map("seed_type")          // maize, rice, cassava, etc.
+  variety         String?
+  supplier        String?
+  batchNumber     String?   @map("batch_number")
+  expiryDate      DateTime? @map("expiry_date")
+  rawScanData     String?   @map("raw_scan_data")      // raw QR/barcode payload
+  authenticity    String    @default("unknown")         // unknown | verified | warning | failed
+  authenticityMsg String?   @map("authenticity_msg")    // human-readable reason
+  scannedAt       DateTime  @default(now()) @map("scanned_at")
+  scannedBy       String?   @map("scanned_by")          // userId
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  profile         FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId], map: "idx_v2_seed_scans_profile")
+  @@index([authenticity], map: "idx_v2_seed_scans_auth")
+  @@map("v2_seed_scans")
+}
+
+// ─── V2 Land Insight (satellite / remote sensing placeholder) ───
+
+model V2LandInsight {
+  id            String    @id @default(uuid())
+  profileId     String    @map("profile_id")
+  insightType   String    @map("insight_type")    // vegetation_index | land_use | change_detection | soil_moisture
+  source        String    @default("pending")      // pending | sentinel2 | landsat | manual
+  value         Json?                              // structured data (NDVI, classification, etc.)
+  confidence    Float?                             // 0-1
+  observedAt    DateTime? @map("observed_at")      // when satellite captured
+  generatedAt   DateTime  @default(now()) @map("generated_at")
+
+  profile       FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId], map: "idx_v2_land_insights_profile")
+  @@index([insightType], map: "idx_v2_land_insights_type")
+  @@map("v2_land_insights")
+}
+
+// ─── V2 Verification Signal (generic internal signal model) ─────
+
+model V2VerificationSignal {
+  id            String    @id @default(uuid())
+  profileId     String    @map("profile_id")
+  signalType    String    @map("signal_type")     // boundary_mismatch | seed_auth_warning | area_discrepancy | satellite_anomaly
+  severity      String    @default("info")         // info | warning | critical
+  message       String
+  details       Json?                              // structured context
+  resolved      Boolean   @default(false)
+  resolvedAt    DateTime? @map("resolved_at")
+  resolvedBy    String?   @map("resolved_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  profile       FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId], map: "idx_v2_signals_profile")
+  @@index([signalType], map: "idx_v2_signals_type")
+  @@index([resolved], map: "idx_v2_signals_resolved")
+  @@map("v2_verification_signals")
+}
+
+// ─── V2 Buyer (admin-managed buyer records) ───────────────────
+
+model V2Buyer {
+  id              String    @id @default(uuid())
+  buyerName       String    @map("buyer_name")
+  companyName     String?   @map("company_name")
+  contactName     String?   @map("contact_name")
+  phone           String?
+  email           String?
+  cropsInterested String?   @map("crops_interested")       // comma-separated crop list
+  regionsCovered  String?   @map("regions_covered")        // comma-separated region list
+  notes           String?
+  createdBy       String    @map("created_by")             // admin userId
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  buyerLinks      V2BuyerLink[]
+
+  @@index([createdBy], map: "idx_v2_buyer_created_by")
+  @@map("v2_buyers")
+}
+
+// ─── V2 Buyer Link (admin links buyer ↔ sale-ready supply) ────
+
+model V2BuyerLink {
+  id              String    @id @default(uuid())
+  supplyId        String    @map("supply_id")
+  buyerId         String    @map("buyer_id")
+  linkedBy        String    @map("linked_by")              // admin userId
+  linkedAt        DateTime  @default(now()) @map("linked_at")
+  status          String    @default("buyer_linked")       // buyer_linked | buyer_contacted | in_discussion | matched | closed | cancelled
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  supply          V2SupplyReadiness @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+  buyer           V2Buyer           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@unique([supplyId, buyerId], map: "uq_buyer_link_supply_buyer")
+  @@index([supplyId], map: "idx_v2_buyer_link_supply")
+  @@index([buyerId], map: "idx_v2_buyer_link_buyer")
+  @@index([status], map: "idx_v2_buyer_link_status")
+  @@map("v2_buyer_links")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INTELLIGENCE — Crop Threat Detection, Satellite, Drone, Alerts
+// ═══════════════════════════════════════════════════════════════
+
+model V2CropCycle {
+  id                  String    @id @default(uuid())
+  profileId           String    @map("profile_id")
+  cropType            String    @map("crop_type")
+  variety             String?
+  plantingDate        DateTime  @map("planting_date")
+  expectedHarvestDate DateTime? @map("expected_harvest_date")
+  growthStage         String    @default("seedling") @map("growth_stage")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  profile             FarmProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  pestReports         V2PestReport[]
+
+  @@index([profileId], map: "idx_v2_crop_cycle_profile")
+  @@map("v2_crop_cycles")
+}
+
+model V2PestImage {
+  id            String    @id @default(uuid())
+  profileId     String    @map("profile_id")
+  uploadedBy    String    @map("uploaded_by")
+  imageType     String    @map("image_type")         // leaf_closeup | whole_plant | field_wide | hotspot_photo | followup
+  imageUrl      String    @map("image_url")
+  capturedAt    DateTime? @map("captured_at")
+  gpsLat        Float?    @map("gps_lat")
+  gpsLng        Float?    @map("gps_lng")
+  qualityScore  Float?    @map("quality_score")       // 0–100
+  qualityNotes  String?   @map("quality_notes")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  profile       FarmProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  detections    V2ImageDetection[]
+
+  @@index([profileId], map: "idx_v2_pest_image_profile")
+  @@index([uploadedBy], map: "idx_v2_pest_image_uploader")
+  @@map("v2_pest_images")
+}
+
+model V2ImageDetection {
+  id                  String   @id @default(uuid())
+  imageId             String   @map("image_id")
+  likelyIssue         String   @map("likely_issue")       // pest | disease | nutrient_deficiency | water_heat_stress | uncertain
+  alternativeIssue    String?  @map("alternative_issue")
+  confidenceScore     Float    @map("confidence_score")    // 0–100
+  severityScore       Float    @map("severity_score")      // 0–100
+  detectionMetadata   Json?    @map("detection_metadata")  // indicators found: bite_marks, holes, stippling, etc.
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  image               V2PestImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@index([imageId], map: "idx_v2_detection_image")
+  @@index([likelyIssue], map: "idx_v2_detection_issue")
+  @@map("v2_image_detections")
+}
+
+model V2PestReport {
+  id                String   @id @default(uuid())
+  profileId         String   @map("profile_id")
+  reportedBy        String   @map("reported_by")
+  cropCycleId       String?  @map("crop_cycle_id")
+  reportSource      String   @default("farmer_scan") @map("report_source") // farmer_scan | satellite_alert | admin_report | regional_watch
+  suspectedIssue    String?  @map("suspected_issue")
+  reportConfidence  Float?   @map("report_confidence")
+  spreadScope       String?  @map("spread_scope")    // isolated | localized | widespread
+  riskLevel         String?  @map("risk_level")       // low | moderate | high | urgent
+  riskScore         Float?   @map("risk_score")
+  notes             String?
+  imageIds          String[] @map("image_ids")
+  status            String   @default("open")         // open | under_review | confirmed | resolved | false_positive
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  profile               FarmProfile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  cropCycle             V2CropCycle?           @relation(fields: [cropCycleId], references: [id])
+  verificationAnswers   V2VerificationAnswer[]
+  treatmentActions      V2TreatmentAction[]
+  diagnosisFeedback     V2DiagnosisFeedback[]
+
+  @@index([profileId], map: "idx_v2_pest_report_profile")
+  @@index([status], map: "idx_v2_pest_report_status")
+  @@index([riskLevel], map: "idx_v2_pest_report_risk")
+  @@index([createdAt], map: "idx_v2_pest_report_date")
+  @@map("v2_pest_reports")
+}
+
+model V2VerificationAnswer {
+  id            String   @id @default(uuid())
+  pestReportId  String   @map("pest_report_id")
+  questionKey   String   @map("question_key")    // leaves_eaten | spreading | insects_visible | widespread | recent_rain | recent_heat
+  answerValue   String   @map("answer_value")    // yes | no | unsure
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  pestReport    V2PestReport @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
+
+  @@index([pestReportId], map: "idx_v2_verify_report")
+  @@map("v2_verification_answers")
+}
+
+model V2SatelliteScan {
+  id              String   @id @default(uuid())
+  profileId       String   @map("profile_id")
+  scanDate        DateTime @map("scan_date")
+  imagerySource   String   @default("sentinel2") @map("imagery_source")
+  cloudCover      Float?   @map("cloud_cover")
+  scanConfidence  Float?   @map("scan_confidence")
+  rawMetadata     Json?    @map("raw_metadata")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  profile           FarmProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  fieldStressScores V2FieldStressScore[]
+
+  @@index([profileId], map: "idx_v2_sat_scan_profile")
+  @@index([scanDate], map: "idx_v2_sat_scan_date")
+  @@map("v2_satellite_scans")
+}
+
+model V2FieldStressScore {
+  id                  String   @id @default(uuid())
+  profileId           String   @map("profile_id")
+  satelliteScanId     String   @map("satellite_scan_id")
+  stressScore         Float    @map("stress_score")
+  anomalyScore        Float    @map("anomaly_score")
+  temporalChangeScore Float    @map("temporal_change_score")
+  spreadScore         Float    @map("spread_score")
+  hotspotCount        Int      @default(0) @map("hotspot_count")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  profile       FarmProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  satelliteScan V2SatelliteScan @relation(fields: [satelliteScanId], references: [id], onDelete: Cascade)
+
+  @@index([profileId], map: "idx_v2_stress_profile")
+  @@index([createdAt], map: "idx_v2_stress_date")
+  @@map("v2_field_stress_scores")
+}
+
+model V2HotspotZone {
+  id                  String   @id @default(uuid())
+  profileId           String   @map("profile_id")
+  sourceType          String   @map("source_type")       // satellite | drone | manual
+  zoneGeoJson         Json     @map("zone_geojson")
+  hotspotScore        Float    @map("hotspot_score")
+  severity            String                              // low | moderate | high | critical
+  inspectionPriority  Int      @default(0) @map("inspection_priority")
+  status              String   @default("active")         // active | inspected | resolved | false_alarm
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  profile    FarmProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  droneScans V2DroneScan[]
+
+  @@index([profileId], map: "idx_v2_hotspot_profile")
+  @@index([severity], map: "idx_v2_hotspot_severity")
+  @@index([status], map: "idx_v2_hotspot_status")
+  @@map("v2_hotspot_zones")
+}
+
+model V2DroneScan {
+  id              String    @id @default(uuid())
+  profileId       String    @map("profile_id")
+  hotspotZoneId   String?   @map("hotspot_zone_id")
+  flightDate      DateTime  @map("flight_date")
+  imageBundleUrl  String?   @map("image_bundle_url")
+  validationScore Float?    @map("validation_score")
+  metadata        Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  profile     FarmProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  hotspotZone V2HotspotZone? @relation(fields: [hotspotZoneId], references: [id])
+
+  @@index([profileId], map: "idx_v2_drone_profile")
+  @@map("v2_drone_scans")
+}
+
+model V2OutbreakCluster {
+  id              String   @id @default(uuid())
+  regionKey       String   @map("region_key")
+  clusterGeoJson  Json     @map("cluster_geojson")
+  clusterScore    Float    @map("cluster_score")
+  dominantCrop    String?  @map("dominant_crop")
+  likelyIssue     String?  @map("likely_issue")
+  confidenceScore Float?   @map("confidence_score")
+  farmCount       Int      @default(0) @map("farm_count")
+  status          String   @default("active")        // active | monitoring | resolved
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([regionKey], map: "idx_v2_cluster_region")
+  @@index([status], map: "idx_v2_cluster_status")
+  @@index([createdAt], map: "idx_v2_cluster_date")
+  @@map("v2_outbreak_clusters")
+}
+
+model V2DistrictRiskScore {
+  id                  String   @id @default(uuid())
+  regionKey           String   @map("region_key")
+  date                DateTime
+  overallRiskScore    Float    @map("overall_risk_score")
+  outbreakProbability Float    @map("outbreak_probability")
+  dominantRiskType    String?  @map("dominant_risk_type")
+  trendDirection      String   @default("stable") @map("trend_direction") // rising | stable | declining
+  metadata            Json?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@unique([regionKey, date], map: "uq_district_risk_region_date")
+  @@index([regionKey], map: "idx_v2_district_region")
+  @@index([date], map: "idx_v2_district_date")
+  @@map("v2_district_risk_scores")
+}
+
+model V2AlertEvent {
+  id               String    @id @default(uuid())
+  targetType       String    @map("target_type")       // farm | region | farmer
+  targetId         String    @map("target_id")
+  alertLevel       String    @map("alert_level")        // watch | elevated | high_risk | urgent
+  alertReason      String    @map("alert_reason")
+  alertMessage     String    @map("alert_message")
+  confidenceScore  Float     @map("confidence_score")
+  actionGuidance   String?   @map("action_guidance")
+  sentStatus       String    @default("pending") @map("sent_status") // pending | sent | suppressed | expired
+  suppressedReason String?   @map("suppressed_reason")
+  sentAt           DateTime? @map("sent_at")
+  expiresAt        DateTime? @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([targetType, targetId], map: "idx_v2_alert_target")
+  @@index([alertLevel], map: "idx_v2_alert_level")
+  @@index([sentStatus], map: "idx_v2_alert_status")
+  @@index([createdAt], map: "idx_v2_alert_date")
+  @@map("v2_alert_events")
+}
+
+model V2TreatmentAction {
+  id            String   @id @default(uuid())
+  profileId     String   @map("profile_id")
+  pestReportId  String   @map("pest_report_id")
+  actionTaken   String   @map("action_taken")
+  actionDate    DateTime @map("action_date")
+  productUsed   String?  @map("product_used")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  profile    FarmProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  pestReport V2PestReport         @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
+  outcomes   V2TreatmentOutcome[]
+
+  @@index([profileId], map: "idx_v2_treatment_profile")
+  @@index([pestReportId], map: "idx_v2_treatment_report")
+  @@map("v2_treatment_actions")
+}
+
+model V2TreatmentOutcome {
+  id                String   @id @default(uuid())
+  treatmentActionId String   @map("treatment_action_id")
+  outcomeStatus     String   @map("outcome_status")       // improved | same | worse | resolved
+  outcomeScore      Float?   @map("outcome_score")
+  followupNotes     String?  @map("followup_notes")
+  followupImageUrl  String?  @map("followup_image_url")
+  followupDate      DateTime @map("followup_date")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  treatmentAction V2TreatmentAction @relation(fields: [treatmentActionId], references: [id], onDelete: Cascade)
+
+  @@index([treatmentActionId], map: "idx_v2_outcome_treatment")
+  @@map("v2_treatment_outcomes")
+}
+
+model V2DiagnosisFeedback {
+  id              String   @id @default(uuid())
+  pestReportId    String   @map("pest_report_id")
+  userId          String   @map("user_id")
+  userFeedback    String   @map("user_feedback")     // accurate | partially_accurate | inaccurate
+  helpfulScore    Int?     @map("helpful_score")      // 1–5
+  confirmedIssue  String?  @map("confirmed_issue")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  pestReport V2PestReport @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
+
+  @@index([pestReportId], map: "idx_v2_feedback_report")
+  @@map("v2_diagnosis_feedback")
+}
+
+model V2FarmPestRisk {
+  id                        String   @id @default(uuid())
+  profileId                 String   @map("profile_id")
+  imageScore                Float    @default(0) @map("image_score")
+  fieldStressScore          Float    @default(0) @map("field_stress_score")
+  cropStageVulnerability    Float    @default(0) @map("crop_stage_vulnerability")
+  weatherSuitability        Float    @default(0) @map("weather_suitability")
+  nearbyOutbreakDensity     Float    @default(0) @map("nearby_outbreak_density")
+  farmHistoryScore          Float    @default(0) @map("farm_history_score")
+  verificationResponseScore Float    @default(0) @map("verification_response_score")
+  overallRiskScore          Float    @map("overall_risk_score")
+  riskLevel                 String   @map("risk_level")   // low | moderate | high | urgent
+  computedAt                DateTime @default(now()) @map("computed_at")
+
+  profile FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId], map: "idx_v2_farm_risk_profile")
+  @@index([riskLevel], map: "idx_v2_farm_risk_level")
+  @@index([computedAt], map: "idx_v2_farm_risk_date")
+  @@map("v2_farm_pest_risks")
 }
