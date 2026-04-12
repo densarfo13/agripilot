@@ -28,7 +28,7 @@ export const messages = {
     voiceWelcomeProfile:
       'Welcome. Please complete your farm profile. You can use your location button to add GPS coordinates.',
     voiceDashboard:
-      'This is your dashboard. Check your farm score, weather, and missing profile items.',
+      'Welcome to your farmer dashboard. Check your farmer ID, complete your next action, review readiness, weather, recommendations, and farm details.',
     voiceWeather:
       'This section shows your local weather conditions based on your farm coordinates.',
   },
@@ -54,7 +54,7 @@ export const messages = {
     voiceWelcomeProfile:
       'Akwaaba. Y\u025Bsr\u025B wo wie wo farm profile. Wob\u025Btumi de wo beae no ahy\u025B GPS coordinates.',
     voiceDashboard:
-      'Eyi ne wo dashboard. Hw\u025B wo farm score, wim tebea, ne nea aka w\u0254 profile no ho.',
+      'Akwaaba wo farmer dashboard no so. Hw\u025B wo farmer ID, wie anamm\u0254n a edi h\u0254, hw\u025B readiness, weather, recommendations, ne farm details.',
     voiceWeather:
       'Ha ky\u025Br\u025B wo local weather gyinae w\u0254 wo farm coordinates so.',
   },
@@ -80,7 +80,7 @@ export const messages = {
     voiceWelcomeProfile:
       'Bienvenue. Veuillez compl\u00e9ter votre profil agricole. Vous pouvez utiliser votre position pour ajouter les coordonn\u00e9es GPS.',
     voiceDashboard:
-      'Voici votre tableau de bord. V\u00e9rifiez votre score, la m\u00e9t\u00e9o et les \u00e9l\u00e9ments manquants.',
+      'Bienvenue sur votre tableau de bord agriculteur. V\u00e9rifiez votre identifiant, votre prochaine action, votre \u00e9tat de pr\u00e9paration, la m\u00e9t\u00e9o, les recommandations et les d\u00e9tails de votre ferme.',
     voiceWeather:
       'Cette section affiche votre m\u00e9t\u00e9o locale selon les coordonn\u00e9es de votre ferme.',
   },
@@ -106,7 +106,7 @@ export const messages = {
     voiceWelcomeProfile:
       'Barka da zuwa. Da fatan za a kammala bayanin gonarku. Kuna iya amfani da wurinku don saka GPS.',
     voiceDashboard:
-      'Wannan shi ne dashboard dinku. Ku duba makin gona, yanayi, da abubuwan da suka rage.',
+      'Barka da zuwa dashboard dinku. Ku duba farmer ID, mataki na gaba, shirye-shirye, yanayi, shawarwari, da bayanan gona.',
     voiceWeather:
       'Wannan bangaren yana nuna yanayin yankinku bisa ga coordinates na gonarku.',
   },

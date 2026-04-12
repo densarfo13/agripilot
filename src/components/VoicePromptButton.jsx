@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { speakText, stopSpeaking, languageToVoiceCode } from '../lib/voice.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 
-export default function VoicePromptButton({ text }) {
+export default function VoicePromptButton({ text, label }) {
   const { language } = useAppPrefs();
   const [speaking, setSpeaking] = useState(false);
 
@@ -30,7 +30,7 @@ export default function VoicePromptButton({ text }) {
 
   return (
     <button onClick={handleToggle} style={S.btn} aria-label={speaking ? 'Stop voice' : 'Play voice'}>
-      {speaking ? '⏹ Stop' : '▶ Listen'}
+      {speaking ? '⏹ Stop' : label ? `▶ ${label}` : '▶ Listen'}
     </button>
   );
 }
