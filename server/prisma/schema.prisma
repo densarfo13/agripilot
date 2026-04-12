@@ -1284,7 +1284,7 @@ model FarmProfile {
   id              String    @id @default(uuid())
   farmerId        String?   @map("farmer_id")
   userId          String?   @unique @map("user_id_direct")   // direct User relation for cookie-based auth flow
-  farmerUuid      String    @unique @map("farmer_uuid")
+  farmerUuid      String?   @unique @map("farmer_uuid")
   farmerName      String    @map("farmer_name")
   farmName        String?   @map("farm_name")
   country         String?   @map("country")
