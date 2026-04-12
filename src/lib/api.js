@@ -110,6 +110,29 @@ export function getCurrentWeather(lat, lng) {
   return request(`/api/v2/weather/current?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
 }
 
+export function getActiveSeason() {
+  return request('/api/v2/seasons/active');
+}
+
+export function startSeason(payload) {
+  return request('/api/v2/seasons/start', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function completeSeason(seasonId) {
+  return request(`/api/v2/seasons/${seasonId}/complete`, {
+    method: 'POST',
+  });
+}
+
+export function completeTask(taskId) {
+  return request(`/api/v2/tasks/${taskId}/complete`, {
+    method: 'POST',
+  });
+}
+
 export function healthCheck() {
   return request('/api/v2/monitoring/health', { method: 'GET' }, false);
 }

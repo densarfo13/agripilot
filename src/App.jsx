@@ -20,6 +20,7 @@ const V2VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
 const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const V2ProtectedLayout = lazy(() => import('./layouts/ProtectedLayout.jsx'));
+const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
@@ -71,6 +72,7 @@ import { ProfileProvider as V2ProfileProvider } from './context/ProfileContext.j
 import { NetworkProvider } from './context/NetworkContext.jsx';
 import { AppPrefsProvider } from './context/AppPrefsContext.jsx';
 import { WeatherProvider } from './context/WeatherContext.jsx';
+import { SeasonProvider } from './context/SeasonContext.jsx';
 
 const PageLoader = () => <div className="loading">Loading...</div>;
 
@@ -114,6 +116,7 @@ export default function App() {
       <AuthProvider>
       <V2ProfileProvider>
       <WeatherProvider>
+      <SeasonProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
       <Suspense fallback={<PageLoader />}>
@@ -127,7 +130,7 @@ export default function App() {
           <Route path="/profile/setup" element={<V2ProfileSetup />} />
           <Route element={<V2ProtectedLayout />}>
             <Route path="/dashboard" element={<V2Dashboard />} />
-            <Route path="/season/start" element={<div style={{ minHeight: '100vh', background: '#0F172A', color: '#fff', padding: '1.5rem' }}><div style={{ maxWidth: '48rem', margin: '0 auto', borderRadius: '16px', background: '#1B2330', border: '1px solid rgba(255,255,255,0.1)', padding: '1.5rem' }}><h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Season Module</h1><p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>Season flow is not wired yet. This is a production placeholder.</p></div></div>} />
+            <Route path="/season/start" element={<V2SeasonStart />} />
           </Route>
 
           {/* V1 legacy routes (Bearer token auth) */}
@@ -174,6 +177,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      </SeasonProvider>
       </WeatherProvider>
       </V2ProfileProvider>
       </AuthProvider>

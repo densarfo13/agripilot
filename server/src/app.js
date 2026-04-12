@@ -67,6 +67,8 @@ import v2AuthRoutes from '../routes/auth.js';
 import v2FarmProfileRoutes from '../routes/farmProfile.js';
 import v2MonitoringRoutes from '../routes/monitoring.js';
 import v2WeatherRoutes from '../routes/weather.js';
+import v2SeasonRoutes from '../routes/seasons.js';
+import v2TaskRoutes from '../routes/tasks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -352,6 +354,8 @@ app.use('/api/v2/auth', authLimiter, v2AuthRoutes);
 app.use('/api/v2/farm-profile', v2FarmProfileRoutes);
 app.use('/api/v2/weather', v2WeatherRoutes);
 app.use('/api/v2/monitoring', v2MonitoringRoutes);
+app.use('/api/v2/seasons', v2SeasonRoutes);
+app.use('/api/v2/tasks', v2TaskRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

@@ -267,6 +267,8 @@ model User {
   farmersApproved          Farmer[]            @relation("FarmerApprovedBy")
   officerValidations       OfficerValidation[] @relation("ValidationOfficer")
   autoNotifications        AutoNotification[]  @relation("AutoNotifTargetUser")
+  // V2 season engine
+  v2Seasons                V2Season[]
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1526,4 +1528,42 @@ model SystemSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("system_settings")
+}
+
+// ─── V2 Season Engine ─────────────────────────────────
+
+model V2Season {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  cropType   String    @map("crop_type")
+  startDate  DateTime  @map("start_date")
+  stage      String    @default("planting")
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks V2Task[]
+
+  @@index([userId], map: "idx_v2_seasons_user")
+  @@index([isActive], map: "idx_v2_seasons_active")
+  @@map("v2_seasons")
+}
+
+model V2Task {
+  id          String    @id @default(uuid())
+  seasonId    String    @map("season_id")
+  title       String
+  description String?
+  status      String    @default("pending")
+  dueDate     DateTime  @map("due_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  season V2Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@index([seasonId], map: "idx_v2_tasks_season")
+  @@index([status], map: "idx_v2_tasks_status")
+  @@index([dueDate], map: "idx_v2_tasks_due")
+  @@map("v2_tasks")
 }

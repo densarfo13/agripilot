@@ -3,41 +3,79 @@ import { t } from '../lib/i18n.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore } from '../lib/farmScore.js';
+import { useSeason } from '../context/SeasonContext.jsx';
 
 export default function PrimaryFarmActionCard() {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const { language } = useAppPrefs();
+  const { season, beginSeason, seasonLoading } = useSeason();
 
   const score = calculateFarmScore(profile || {});
 
-  if (score.isReady) {
+  async function handleStartSeason() {
+    const cropType = profile?.cropType || '';
+    if (!cropType) {
+      navigate('/profile/setup');
+      return;
+    }
+
+    try {
+      await beginSeason({ cropType, stage: 'planting' });
+      navigate('/season/start');
+    } catch (error) {
+      console.error('Failed to start season:', error);
+    }
+  }
+
+  // State 1: Profile not ready
+  if (!score.isReady) {
     return (
-      <div style={S.card}>
-        <div style={S.readyLabel}>🌱 Ready to begin your season</div>
+      <div style={S.cardWarning}>
+        <div style={S.warningLabel}>⚠️ Your farm is not ready yet</div>
         <p style={S.desc}>
-          Your farm profile is ready. You can now begin season tracking and receive better guidance.
+          Complete your profile to unlock accurate weather, farm scoring, and smart recommendations.
         </p>
-        <button onClick={() => navigate('/season/start')} style={S.ctaBtn}>
-          {t(language, 'startSeason')}
+        <div style={S.benefitsList}>
+          <div>• Accurate weather</div>
+          <div>• Better farm scoring</div>
+          <div>• Smarter recommendations</div>
+        </div>
+        <button onClick={() => navigate('/profile/setup')} style={S.ctaBtn}>
+          {t(language, 'completeProfile')}
         </button>
       </div>
     );
   }
 
-  return (
-    <div style={S.cardWarning}>
-      <div style={S.warningLabel}>⚠️ Your farm is not ready yet</div>
-      <p style={S.desc}>
-        Complete your profile to unlock accurate weather, farm scoring, and smart recommendations.
-      </p>
-      <div style={S.benefitsList}>
-        <div>• Accurate weather</div>
-        <div>• Better farm scoring</div>
-        <div>• Smarter recommendations</div>
+  // State 2: Season already active
+  if (season) {
+    return (
+      <div style={S.card}>
+        <div style={S.readyLabel}>🌱 Season already active</div>
+        <p style={S.desc}>
+          Continue today's farming tasks and keep your season progress updated.
+        </p>
+        <button onClick={() => navigate('/season/start')} style={S.ctaBtn}>
+          Continue Season
+        </button>
       </div>
-      <button onClick={() => navigate('/profile/setup')} style={S.ctaBtn}>
-        {t(language, 'completeProfile')}
+    );
+  }
+
+  // State 3: Ready to start season
+  return (
+    <div style={S.card}>
+      <div style={S.readyLabel}>🌱 Ready to begin your season</div>
+      <p style={S.desc}>
+        Your farm profile is ready. Start your season to unlock daily tasks and better guidance.
+      </p>
+      <button
+        onClick={handleStartSeason}
+        disabled={seasonLoading}
+        style={{ ...S.ctaBtn, ...(seasonLoading ? S.ctaBtnDisabled : {}) }}
+      >
+        {seasonLoading ? 'Starting...' : t(language, 'startSeason')}
       </button>
     </div>
   );
@@ -93,5 +131,9 @@ const S = {
     cursor: 'pointer',
     fontSize: '1rem',
     boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
+  },
+  ctaBtnDisabled: {
+    opacity: 0.6,
+    cursor: 'not-allowed',
   },
 };

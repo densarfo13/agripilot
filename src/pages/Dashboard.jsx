@@ -9,6 +9,7 @@ import FarmReadinessCard from '../components/FarmReadinessCard.jsx';
 import WeatherDecisionCard from '../components/WeatherDecisionCard.jsx';
 import ActionRecommendationsCard from '../components/ActionRecommendationsCard.jsx';
 import FarmSnapshotCard from '../components/FarmSnapshotCard.jsx';
+import SeasonTasksCard from '../components/SeasonTasksCard.jsx';
 import VoicePromptButton from '../components/VoicePromptButton.jsx';
 
 export default function Dashboard() {
@@ -40,6 +41,8 @@ export default function Dashboard() {
         <FarmerIdCard />
 
         <PrimaryFarmActionCard />
+
+        <SeasonTasksCard />
 
         <FarmReadinessCard />
 
