@@ -1215,6 +1215,7 @@ enum RecommendationStatus {
 model FarmProfile {
   id              String    @id @default(uuid())
   farmerId        String    @map("farmer_id")
+  farmerUuid      String    @unique @map("farmer_uuid")
   farmerName      String    @map("farmer_name")
   farmName        String?   @map("farm_name")
   locationName    String?   @map("location_name")

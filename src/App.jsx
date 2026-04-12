@@ -48,17 +48,24 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const AutoNotificationsPage = lazy(() => import('./pages/AutoNotificationsPage.jsx'));
 const ImpactDashboardPage = lazy(() => import('./pages/ImpactDashboardPage.jsx'));
 const AdminIssuesPage = lazy(() => import('./pages/AdminIssuesPage.jsx'));
+const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
+import ProfileGuard from './components/ProfileGuard.jsx';
 
 const PageLoader = () => <div className="loading">Loading...</div>;
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
   const user = useAuthStore(s => s.user);
   if (!token) return <Navigate to="/login" replace />;
   // Farmer-role users get their own limited dashboard
-  if (user?.role === 'farmer') return <Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense>;
+  if (user?.role === 'farmer') {
+    // Allow /profile/setup to render without redirect
+    if (allowSetup) return children;
+    // ProfileGuard redirects to /profile/setup if profile is incomplete
+    return <ProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></ProfileGuard>;
+  }
   return children;
 }
 
@@ -92,6 +99,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/farmer-register" element={<FarmerRegisterPage />} />
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
+          <Route path="/profile/setup" element={<ProtectedRoute allowSetup><ProfileSetupPage /></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<DashboardPage />} />
             <Route path="farmers" element={<RoleRoute roles={STAFF_ROLES}><FarmersPage /></RoleRoute>} />

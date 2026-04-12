@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useFarmStore } from '../store/farmStore.js';
 import api from '../api/client.js';
+import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 import { useTranslation, LANGUAGES } from '../i18n/index.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
@@ -14,6 +16,7 @@ import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
+import FarmerUuidBadge from '../components/FarmerUuidBadge.jsx';
 import { getFarmerLifecycleState, FARMER_STATE, canShowScore, canStartSeason } from '../utils/farmerLifecycle.js';
 
 /** Collapsible section — keeps secondary content below the fold */
@@ -36,6 +39,7 @@ function ExpandableSection({ title, icon, children, testId }) {
 }
 
 export default function FarmerDashboardPage() {
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -377,6 +381,13 @@ export default function FarmerDashboardPage() {
             {/* Voice guide for low-literacy farmers */}
             <VoiceBar voiceKey="home.welcome" />
 
+            {/* Farmer UUID badge — persistent identifier */}
+            {farmProfile?.farmerUuid && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+                <FarmerUuidBadge profile={farmProfile} />
+              </div>
+            )}
+
             {/* 1. Crop Status Hero — crop icon, name, stage, weather at a glance */}
             {(() => {
               const activeSeason = seasons?.[0];
@@ -411,22 +422,38 @@ export default function FarmerDashboardPage() {
             {(() => {
               const farmerId = user?.farmerId;
 
-              // ── Setup-required states: CTA = "Complete Setup" ──
+              // ── Setup-required states: CTA = "Complete Profile" → /profile/setup ──
               if (!setupComplete) {
+                const profileScore = calculateFarmScore(farmProfile, { countryCode: profile?.countryCode || farmProfile?.countryCode });
+                const missingItems = getMissingProfileItems(farmProfile, { countryCode: profile?.countryCode || farmProfile?.countryCode });
                 return (
                   <div style={S.actionSection} data-testid="primary-action-section">
+                    {/* Progress bar */}
+                    {profileScore.score > 0 && (
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <div style={{ height: '6px', borderRadius: '3px', background: '#1E293B', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #22C55E, #16A34A)', width: `${profileScore.score}%`, transition: 'width 0.4s ease' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
+                          <span style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{profileScore.score}% complete</span>
+                          <span style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{profileScore.status}</span>
+                        </div>
+                      </div>
+                    )}
                     <button
-                      onClick={() => setShowOnboarding(true)}
+                      onClick={() => navigate('/profile/setup')}
                       style={S.primaryActionBtn}
                       data-testid="primary-action-btn"
                     >
-                      <span style={S.primaryActionIcon}>📋</span>
+                      <span style={S.primaryActionIcon}>{isNew ? '📋' : '✏️'}</span>
                       <span>{isNew ? t('home.setUpFarm') : t('home.finishSetup')}</span>
                     </button>
                     <div style={S.nextStepText} data-testid="next-step-text">
                       {isNew
                         ? t('home.createProfileToStart')
-                        : `${t('home.completeProfile')}${farmerLifecycle.missing.length > 0 ? ' ' + t('home.missing') + ' ' + farmerLifecycle.missing.join(', ') + '.' : ''}`
+                        : missingItems.length > 0
+                          ? `${t('home.completeProfile')} ${t('home.missing')} ${missingItems.join(', ')}.`
+                          : t('home.completeProfile')
                       }
                     </div>
                   </div>
@@ -594,6 +621,7 @@ export default function FarmerDashboardPage() {
             <ExpandableSection title={t('home.farmDetails')} icon="🏡" testId="details-section">
               {farmProfile && (
                 <div style={{ marginBottom: '0.75rem' }}>
+                  {farmProfile.farmerUuid && <div style={styles.detailRow}><span>Farmer UUID</span> <span style={{ fontFamily: 'monospace', color: '#22C55E' }}>{farmProfile.farmerUuid}</span></div>}
                   <div style={styles.detailRow}><span>{t('home.farm')}</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
                   {farmProfile.locationName && <div style={styles.detailRow}><span>{t('home.location')}</span> <span>{farmProfile.locationName}</span></div>}
                   {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>{t('home.size')}</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}

@@ -1,6 +1,7 @@
 import prisma from '../../config/database.js';
 import { computeLandSizeFields, isValidUnit, fromHectares } from '../../utils/landSize.js';
 import { isFarmProfileComplete, getFarmerLifecycleState } from '../../utils/farmerLifecycle.js';
+import { generateFarmerUuid } from '../../utils/farmerUuid.js';
 
 /**
  * Full A-Z crop codes (UPPERCASE). Kept in sync with src/utils/crops.js (frontend).
@@ -197,6 +198,7 @@ export async function createFarmProfile(data, farmerId) {
   return prisma.farmProfile.create({
     data: {
       farmerId,
+      farmerUuid: generateFarmerUuid(),
       farmerName: data.farmerName,
       farmName: data.farmName || null,
       locationName: data.locationName || null,
@@ -274,10 +276,11 @@ export async function atomicFarmSetup(data, farmerId, userId) {
 
   // ── 3. Single atomic transaction: create profile + update farmer ──
   const result = await prisma.$transaction(async (tx) => {
-    // 3a. Create farm profile
+    // 3a. Create farm profile (farmerUuid generated once, never changes on update)
     const profile = await tx.farmProfile.create({
       data: {
         farmerId,
+        farmerUuid: generateFarmerUuid(),
         farmerName: typeof data.farmerName === 'string' ? data.farmerName.trim() : data.farmerName,
         farmName: data.farmName || null,
         locationName: data.locationName || null,
