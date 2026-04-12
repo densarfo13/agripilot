@@ -1,37 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useFarmStore } from '../store/farmStore.js';
+import { useProfile } from '../context/ProfileContext.jsx';
 import { isProfileComplete } from '../utils/farmScore.js';
 
 /**
  * Profile guard — redirects farmer-role users with incomplete profiles
- * to /profile/setup. Allows /profile/setup itself to render normally.
+ * to /profile/setup. Uses shared ProfileContext (no duplicate fetch).
+ * Allows /profile/setup itself to render normally.
  */
 export default function ProfileGuard({ children }) {
   const location = useLocation();
-  const { fetchProfiles, currentProfile } = useFarmStore();
-  const [loading, setLoading] = useState(true);
-  const [complete, setComplete] = useState(false);
+  const { profile, loading, initialized } = useProfile();
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const profiles = await fetchProfiles();
-        if (!active) return;
-        const profile = profiles?.[0] || currentProfile;
-        setComplete(isProfileComplete(profile || {}));
-      } catch {
-        // On error, allow /profile/setup, redirect others
-        if (active) setComplete(location.pathname === '/profile/setup');
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => { active = false; };
-  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (loading) {
+  // Still loading for the first time — show spinner
+  if (loading && !initialized) {
     return (
       <div style={S.loading}>
         <span style={S.loadingText}>Loading your farm profile...</span>
@@ -39,7 +21,13 @@ export default function ProfileGuard({ children }) {
     );
   }
 
-  if (!complete && location.pathname !== '/profile/setup') {
+  // /profile/setup is always allowed
+  if (location.pathname === '/profile/setup') {
+    return children;
+  }
+
+  // Incomplete profile — redirect to setup
+  if (!isProfileComplete(profile || {})) {
     return <Navigate to="/profile/setup" replace />;
   }
 

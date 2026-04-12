@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
-import { useFarmStore } from '../store/farmStore.js';
+import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { computeLandSizeFields, UNIT_OPTIONS } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
@@ -22,10 +22,15 @@ const TOP_CROPS = [
   { code: 'SORGHUM', label: 'Sorghum', icon: '\uD83C\uDF3F' },
 ];
 
+const INITIAL_FIELD_ERRORS = {
+  farmerName: '', farmName: '', countryCode: '', locationName: '',
+  landSizeValue: '', crop: '', latitude: '', longitude: '',
+};
+
 export default function ProfileSetupPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const { fetchProfiles, createProfile, updateProfile, currentProfile } = useFarmStore();
+  const { profile: ctxProfile, loading: ctxLoading, saveProfile } = useProfile();
 
   const [form, setForm] = useState({
     farmerName: '',
@@ -40,43 +45,40 @@ export default function ProfileSetupPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState(INITIAL_FIELD_ERRORS);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
   const [loaded, setLoaded] = useState(false);
-  const [farmerUuid, setFarmerUuid] = useState(null);
 
-  // Load existing profile on mount
+  // Populate form from ProfileContext once loaded
   useEffect(() => {
-    (async () => {
-      const profiles = await fetchProfiles();
-      const existing = profiles?.[0] || currentProfile;
-      if (existing) {
-        setFarmerUuid(existing.farmerUuid || null);
-        setForm({
-          farmerName: existing.farmerName || user?.fullName || '',
-          farmName: existing.farmName || '',
-          countryCode: existing.countryCode || user?.countryCode || '',
-          locationName: existing.locationName || existing.location || '',
-          landSizeValue: existing.landSizeValue || existing.farmSizeAcres || '',
-          landSizeUnit: existing.landSizeUnit || 'ACRE',
-          crop: existing.crop || existing.cropType || '',
-          latitude: existing.latitude ?? existing.gpsLat ?? null,
-          longitude: existing.longitude ?? existing.gpsLng ?? null,
-        });
-      } else {
-        // Pre-fill from auth user
-        setForm((f) => ({
-          ...f,
-          farmerName: user?.fullName || '',
-          countryCode: user?.countryCode || '',
-        }));
-      }
-      setLoaded(true);
-    })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (ctxLoading) return;
+    const existing = ctxProfile;
+    if (existing) {
+      setForm({
+        farmerName: existing.farmerName || user?.fullName || '',
+        farmName: existing.farmName || '',
+        countryCode: existing.countryCode || user?.countryCode || '',
+        locationName: existing.locationName || existing.location || '',
+        landSizeValue: existing.landSizeValue || existing.farmSizeAcres || '',
+        landSizeUnit: existing.landSizeUnit || 'ACRE',
+        crop: existing.crop || existing.cropType || '',
+        latitude: existing.latitude ?? existing.gpsLat ?? null,
+        longitude: existing.longitude ?? existing.gpsLng ?? null,
+      });
+    } else {
+      setForm((f) => ({
+        ...f,
+        farmerName: user?.fullName || '',
+        countryCode: user?.countryCode || '',
+      }));
+    }
+    setLoaded(true);
+  }, [ctxLoading, ctxProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = useCallback((field, value) => {
     setForm((f) => ({ ...f, [field]: value }));
+    setFieldErrors((prev) => ({ ...prev, [field]: '' }));
     setError('');
   }, []);
 
@@ -113,10 +115,11 @@ export default function ProfileSetupPage() {
   const { score, status } = calculateFarmScore(form, { countryCode: form.countryCode });
   const missingItems = getMissingProfileItems(form, { countryCode: form.countryCode });
 
-  // Save
+  // Save via ProfileContext
   const handleSave = async () => {
     setSaving(true);
     setError('');
+    setFieldErrors(INITIAL_FIELD_ERRORS);
     try {
       const sizeFields = computeLandSizeFields(form.landSizeValue, form.landSizeUnit);
       const payload = {
@@ -130,15 +133,15 @@ export default function ProfileSetupPage() {
         ...sizeFields,
       };
 
-      const existing = currentProfile || (await fetchProfiles())?.[0];
-      if (existing?.id) {
-        await updateProfile(existing.id, payload);
-      } else {
-        await createProfile(payload);
-      }
+      await saveProfile(payload);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.error || 'Failed to save profile. Please try again.');
+      // Handle field-level errors from backend validation
+      const serverFieldErrors = err?.response?.data?.fieldErrors || err?.fieldErrors;
+      if (serverFieldErrors) {
+        setFieldErrors((prev) => ({ ...prev, ...serverFieldErrors }));
+      }
+      setError(err?.response?.data?.error || err?.message || 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -157,10 +160,10 @@ export default function ProfileSetupPage() {
   return (
     <div style={S.page}>
       <div style={S.container}>
-        {/* Farmer UUID badge */}
-        {farmerUuid && (
+        {/* Farmer UUID badge — from shared ProfileContext */}
+        {ctxProfile?.farmerUuid && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
-            <FarmerUuidBadge profile={{ farmerUuid, farmerName: form.farmerName, farmName: form.farmName }} />
+            <FarmerUuidBadge />
           </div>
         )}
 
@@ -201,6 +204,7 @@ export default function ProfileSetupPage() {
               onChange={(e) => handleChange('farmerName', e.target.value)}
               placeholder="Your full name"
             />
+            {fieldErrors.farmerName && <p style={S.fieldError}>{fieldErrors.farmerName}</p>}
           </div>
 
           {/* Farm Name */}
@@ -212,6 +216,7 @@ export default function ProfileSetupPage() {
               onChange={(e) => handleChange('farmName', e.target.value)}
               placeholder="e.g. Green Valley Farm"
             />
+            {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
           </div>
 
           {/* Country */}
@@ -221,6 +226,7 @@ export default function ProfileSetupPage() {
               value={form.countryCode}
               onChange={(code) => handleChange('countryCode', code)}
             />
+            {fieldErrors.countryCode && <p style={S.fieldError}>{fieldErrors.countryCode}</p>}
           </div>
 
           {/* Location */}
@@ -232,6 +238,7 @@ export default function ProfileSetupPage() {
               onChange={(e) => handleChange('locationName', e.target.value)}
               placeholder="e.g. Kitale, Trans-Nzoia"
             />
+            {fieldErrors.locationName && <p style={S.fieldError}>{fieldErrors.locationName}</p>}
           </div>
 
           {/* Farm Size */}
@@ -257,6 +264,7 @@ export default function ProfileSetupPage() {
                 ))}
               </select>
             </div>
+            {fieldErrors.landSizeValue && <p style={S.fieldError}>{fieldErrors.landSizeValue}</p>}
           </div>
 
           {/* Crop Type */}
@@ -283,6 +291,7 @@ export default function ProfileSetupPage() {
               onChange={(code) => handleChange('crop', code)}
               style={{ marginTop: '0.5rem' }}
             />
+            {fieldErrors.crop && <p style={S.fieldError}>{fieldErrors.crop}</p>}
           </div>
 
           {/* GPS Coordinates */}
@@ -313,6 +322,9 @@ export default function ProfileSetupPage() {
               </button>
             )}
             {gpsError && <p style={S.gpsErrorText}>{gpsError}</p>}
+            {(fieldErrors.latitude || fieldErrors.longitude) && (
+              <p style={S.fieldError}>{fieldErrors.latitude || fieldErrors.longitude}</p>
+            )}
           </div>
         </div>
 
@@ -522,6 +534,11 @@ const S = {
     fontSize: '0.8rem',
     color: '#EF4444',
     marginTop: '0.3rem',
+  },
+  fieldError: {
+    fontSize: '0.8rem',
+    color: '#EF4444',
+    margin: '0.3rem 0 0',
   },
   // Save
   saveBtn: {

@@ -1,10 +1,13 @@
 import React from 'react';
+import { useProfile } from '../context/ProfileContext.jsx';
 
 /**
  * Displays the farmer's persistent UUID badge.
- * Receives profile from parent — no independent fetch needed.
+ * Uses shared ProfileContext — no duplicate fetch needed.
  */
-export default function FarmerUuidBadge({ profile, loading }) {
+export default function FarmerUuidBadge() {
+  const { profile, loading } = useProfile();
+
   if (loading) {
     return (
       <div style={S.badge}>

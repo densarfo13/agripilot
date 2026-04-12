@@ -9,6 +9,7 @@ import { writeAuditLog } from '../audit/service.js';
 import * as service from './service.js';
 import prisma from '../../config/database.js';
 import { opsEvent } from '../../utils/opsLogger.js';
+import { validateFarmProfilePayload } from '../../utils/validation.js';
 
 const router = Router();
 router.use(authenticate);
@@ -56,11 +57,14 @@ async function verifyFarmProfileOwnership(req, farmProfileId) {
 router.post('/', dedupGuard('farm-setup'), idempotencyCheck, asyncHandler(async (req, res) => {
   const farmerId = await resolveFarmerId(req);
 
+  // Strip server-controlled fields — never accept from frontend
+  const { userId: _u, farmerUuid: _fu, id: _id, ...safeBody } = req.body || {};
+
   // Use atomic setup for farmer-role users (onboarding flow) — validates all
   // required fields and creates profile + updates farmer in a single transaction.
   if (req.user.role === 'farmer') {
     // Inject farmerName if not provided — the onboarding sends it but guard anyway
-    const body = { ...req.body };
+    const body = { ...safeBody };
     if (!body.farmerName) {
       const farmer = await prisma.farmer.findUnique({ where: { id: farmerId }, select: { fullName: true } });
       body.farmerName = farmer?.fullName || 'Farmer';
@@ -81,7 +85,7 @@ router.post('/', dedupGuard('farm-setup'), idempotencyCheck, asyncHandler(async 
   }
 
   // Non-farmer (staff) — use standard createFarmProfile without atomic setup
-  const profile = await service.createFarmProfile(req.body, farmerId);
+  const profile = await service.createFarmProfile(safeBody, farmerId);
   writeAuditLog({ userId: req.user.sub, action: 'farm_profile_created', details: { farmProfileId: profile.id } }).catch(() => {});
   res.status(201).json(profile);
 }));
@@ -125,7 +129,9 @@ router.get('/:farmId', validateParamUUID('farmId'), asyncHandler(async (req, res
 // PATCH /api/v1/farms/:farmId — update farm profile
 router.patch('/:farmId', validateParamUUID('farmId'), asyncHandler(async (req, res) => {
   await verifyFarmProfileOwnership(req, req.params.farmId);
-  const profile = await service.updateFarmProfile(req.params.farmId, req.body);
+  // Strip server-controlled fields — never accept from frontend
+  const { userId: _u, farmerUuid: _fu, id: _id, ...safeBody } = req.body || {};
+  const profile = await service.updateFarmProfile(req.params.farmId, safeBody);
   writeAuditLog({ userId: req.user.sub, action: 'farm_profile_updated', details: { farmProfileId: profile.id } }).catch(() => {});
   res.json(profile);
 }));

@@ -52,6 +52,7 @@ const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 import ProfileGuard from './components/ProfileGuard.jsx';
+import { ProfileProvider } from './context/ProfileContext.jsx';
 
 const PageLoader = () => <div className="loading">Loading...</div>;
 
@@ -61,10 +62,10 @@ function ProtectedRoute({ children, allowSetup }) {
   if (!token) return <Navigate to="/login" replace />;
   // Farmer-role users get their own limited dashboard
   if (user?.role === 'farmer') {
-    // Allow /profile/setup to render without redirect
-    if (allowSetup) return children;
+    // Wrap farmer routes in ProfileProvider for shared profile state
+    if (allowSetup) return <ProfileProvider>{children}</ProfileProvider>;
     // ProfileGuard redirects to /profile/setup if profile is incomplete
-    return <ProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></ProfileGuard>;
+    return <ProfileProvider><ProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></ProfileGuard></ProfileProvider>;
   }
   return children;
 }

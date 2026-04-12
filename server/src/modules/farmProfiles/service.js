@@ -1,7 +1,7 @@
 import prisma from '../../config/database.js';
 import { computeLandSizeFields, isValidUnit, fromHectares } from '../../utils/landSize.js';
 import { isFarmProfileComplete, getFarmerLifecycleState } from '../../utils/farmerLifecycle.js';
-import { generateFarmerUuid } from '../../utils/farmerUuid.js';
+import { generateUniqueFarmerUuid } from '../../utils/farmerUuid.js';
 
 /**
  * Full A-Z crop codes (UPPERCASE). Kept in sync with src/utils/crops.js (frontend).
@@ -195,10 +195,11 @@ export async function createFarmProfile(data, farmerId) {
   // Always compute farmSizeAcres from hectares for backward compat
   const computedAcres = landSize.landSizeHectares != null ? fromHectares(landSize.landSizeHectares, 'ACRE') : null;
 
+  const farmerUuid = await generateUniqueFarmerUuid(prisma);
   return prisma.farmProfile.create({
     data: {
       farmerId,
-      farmerUuid: generateFarmerUuid(),
+      farmerUuid,
       farmerName: data.farmerName,
       farmName: data.farmName || null,
       locationName: data.locationName || null,
@@ -274,13 +275,16 @@ export async function atomicFarmSetup(data, farmerId, userId) {
   const landSize = computeLandSizeFields(rawSize, unit);
   const computedAcres = landSize.landSizeHectares != null ? fromHectares(landSize.landSizeHectares, 'ACRE') : null;
 
-  // ── 3. Single atomic transaction: create profile + update farmer ──
+  // ── 3. Generate collision-safe UUID before transaction ──
+  const farmerUuid = await generateUniqueFarmerUuid(prisma);
+
+  // ── 4. Single atomic transaction: create profile + update farmer ──
   const result = await prisma.$transaction(async (tx) => {
-    // 3a. Create farm profile (farmerUuid generated once, never changes on update)
+    // 4a. Create farm profile (farmerUuid generated once, never changes on update)
     const profile = await tx.farmProfile.create({
       data: {
         farmerId,
-        farmerUuid: generateFarmerUuid(),
+        farmerUuid,
         farmerName: typeof data.farmerName === 'string' ? data.farmerName.trim() : data.farmerName,
         farmName: data.farmName || null,
         locationName: data.locationName || null,

@@ -384,7 +384,7 @@ export default function FarmerDashboardPage() {
             {/* Farmer UUID badge — persistent identifier */}
             {farmProfile?.farmerUuid && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
-                <FarmerUuidBadge profile={farmProfile} />
+                <FarmerUuidBadge />
               </div>
             )}
 
