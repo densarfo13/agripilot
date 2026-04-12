@@ -61,12 +61,19 @@ export async function computeDiagnosisConfidence(
     (imageIds.length >= 3 ? 40 : imageIds.length * 15) + (verificationScore > 0 ? 30 : 0) + 20,
   );
 
-  // 4. Spatial relevance: whether nearby farms have similar issues
+  // 4. Spatial relevance: whether nearby farms (same region) have similar issues
+  const currentProfile = await prisma.farmProfile.findUnique({
+    where: { id: profileId },
+    select: { locationName: true },
+  });
   const nearbyRisks = await prisma.v2FarmPestRisk.findMany({
     where: {
       profileId: { not: profileId },
       computedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
       riskLevel: { in: ['high', 'urgent'] },
+      ...(currentProfile?.locationName
+        ? { profile: { locationName: currentProfile.locationName } }
+        : {}),
     },
     take: 5,
     select: { overallRiskScore: true },

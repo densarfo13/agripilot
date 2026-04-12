@@ -23,6 +23,44 @@ export interface BoundaryValidationResult {
 }
 
 /**
+ * Detect if any two non-adjacent edges in a polygon cross each other.
+ * Uses the standard line-segment intersection test (CCW orientation).
+ */
+function hasEdgeCrossing(pts: number[][]): boolean {
+  const n = pts.length;
+  if (n < 4) return false;
+
+  function ccw(A: number[], B: number[], C: number[]): number {
+    return (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+  }
+
+  function segmentsIntersect(A: number[], B: number[], C: number[], D: number[]): boolean {
+    const d1 = ccw(C, D, A);
+    const d2 = ccw(C, D, B);
+    const d3 = ccw(A, B, C);
+    const d4 = ccw(A, B, D);
+    if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+        ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+      return true;
+    }
+    return false;
+  }
+
+  // Check all pairs of non-adjacent edges
+  for (let i = 0; i < n; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % n];
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue; // adjacent (first and last edge share a vertex)
+      const c = pts[j];
+      const d = pts[(j + 1) % n];
+      if (segmentsIntersect(a, b, c, d)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Validate a farm boundary and compute confidence score.
  */
 export async function validateBoundary(boundaryId: string): Promise<BoundaryValidationResult> {
@@ -91,11 +129,18 @@ export async function validateBoundary(boundaryId: string): Promise<BoundaryVali
     }
   }
 
-  // Check for self-intersection (simplified: check if any point is duplicated)
+  // Check for duplicate points
   const pointSet = new Set(boundary.points.map((p: any) => `${p.latitude.toFixed(6)},${p.longitude.toFixed(6)}`));
   if (pointSet.size < boundary.points.length) {
     warnings.push('Boundary contains duplicate points.');
     confidence -= 10;
+  }
+
+  // Check for edge self-intersection (two non-adjacent edges crossing)
+  const pts = boundary.points.map((p: any) => [p.latitude, p.longitude]);
+  if (pts.length >= 4 && hasEdgeCrossing(pts)) {
+    warnings.push('Boundary edges cross each other. This usually means a GPS glitch — please redraw.');
+    confidence -= 20;
   }
 
   // Capture method bonus

@@ -289,18 +289,24 @@ export async function computeDistrictRisk(regionKey: string): Promise<any> {
     const scoringResult = computeRegionalOutbreakScore(components);
 
     // Regional confidence: compute signal count and data quality
+    // Weight signal sources by reliability: confirmed reports are worth more than weather snapshots
+    const weightedSignalCount = confirmedCount * 3 + openCount * 1 + stressScores.length * 2 + weatherSnapshots.length * 0.5 + allOutcomes.length * 1;
     const signalCount = confirmedCount + openCount + stressScores.length + weatherSnapshots.length + allOutcomes.length;
+    // Count distinct source types contributing data (max 5)
+    const sourceTypes = (confirmedCount > 0 ? 1 : 0) + (openCount > 0 ? 1 : 0) +
+      (stressScores.length > 0 ? 1 : 0) + (weatherSnapshots.length > 0 ? 1 : 0) + (allOutcomes.length > 0 ? 1 : 0);
     const dataQualityScore = Math.min(100, Math.round(
       (confirmedCount > 0 ? 25 : 0) +
       (stressScores.length > 0 ? 25 : 0) +
       (weatherSnapshots.length > 0 ? 20 : 0) +
       (allOutcomes.length > 0 ? 15 : 0) +
-      Math.min(15, signalCount * 1.5),
+      Math.min(15, sourceTypes * 3),
     ));
-    // Classify: confirmed (20+ signals, 60+ quality), probable (10+, 40+), low_confidence
-    const confidenceLevel = signalCount >= 20 && dataQualityScore >= 60
+    // Classify: "confirmed" requires actual confirmed reports + multiple source types + high data quality.
+    // This prevents weather-only or outcome-only data from being labeled "confirmed".
+    const confidenceLevel = confirmedCount >= 3 && sourceTypes >= 3 && dataQualityScore >= 60 && weightedSignalCount >= 30
       ? 'confirmed'
-      : signalCount >= 10 && dataQualityScore >= 40
+      : sourceTypes >= 2 && dataQualityScore >= 40 && weightedSignalCount >= 10
         ? 'probable'
         : 'low_confidence';
 

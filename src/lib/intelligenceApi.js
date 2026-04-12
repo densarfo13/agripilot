@@ -25,10 +25,10 @@ async function request(path, options = {}) {
 }
 
 // ─── Pest Image Upload ───────────────────────────────────────
-export function uploadPestImage({ profileId, imageType, imageUrl, gpsLat, gpsLng }) {
+export function uploadPestImage({ profileId, imageType, imageUrl, gpsLat, gpsLng, metadata }) {
   return request('/api/v2/pest-risk/images', {
     method: 'POST',
-    body: JSON.stringify({ profileId, imageType, imageUrl, gpsLat, gpsLng }),
+    body: JSON.stringify({ profileId, imageType, imageUrl, gpsLat, gpsLng, metadata }),
   });
 }
 

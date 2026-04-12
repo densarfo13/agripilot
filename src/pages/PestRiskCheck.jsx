@@ -45,8 +45,14 @@ function compressImage(file) {
         ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Compression failed'));
+            if (blob) {
+              // Attach dimensions so backend can use real resolution for quality scoring
+              blob._imgWidth = width;
+              blob._imgHeight = height;
+              resolve(blob);
+            } else {
+              reject(new Error('Compression failed'));
+            }
           },
           'image/jpeg',
           0.8
@@ -115,7 +121,12 @@ export default function PestRiskCheck() {
       setImageQuality(prev => ({ ...prev, [slotKey]: { uploading: true } }));
       try {
         const dataUrl = await readFileAsDataURL(compressed);
-        const res = await uploadPestImage({ profileId, imageType: slotKey, imageUrl: dataUrl });
+        const metadata = {
+          width: compressed._imgWidth || undefined,
+          height: compressed._imgHeight || undefined,
+          fileSize: compressed.size || undefined,
+        };
+        const res = await uploadPestImage({ profileId, imageType: slotKey, imageUrl: dataUrl, metadata });
         const data = res?.data || res;
         setImageQuality(prev => ({
           ...prev,

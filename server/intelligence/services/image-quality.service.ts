@@ -49,23 +49,42 @@ export function assessImageQuality(
   metadata?: { width?: number; height?: number; fileSize?: number },
 ): ImageQualityResult {
   const baseScore = TYPE_QUALITY_BASE[imageType] || 70;
+  const hasRealMetadata = metadata?.width != null && metadata?.height != null;
 
-  // Simulate blur scoring: leaf closeups penalized less for natural variation
-  const blurScore = imageType === 'leaf_closeup'
-    ? Math.min(baseScore + 5, 95)
-    : baseScore;
+  // Resolution from actual metadata (no generous defaults)
+  const width = metadata?.width ?? 0;
+  const height = metadata?.height ?? 0;
+  const resolutionOk = hasRealMetadata ? (width >= 640 && height >= 480) : false;
 
-  // Brightness: derive from type (field_wide tends toward overexposure)
+  // Blur proxy: higher-resolution images with larger file sizes are likely sharper.
+  // Without a vision model, file-size-per-pixel is the best heuristic available.
+  let blurScore: number;
+  if (hasRealMetadata && metadata?.fileSize) {
+    const pixels = width * height;
+    const bytesPerPixel = metadata.fileSize / Math.max(pixels, 1);
+    // JPEG at 0.8 quality: ~0.3-0.8 bytes/pixel for sharp images, <0.15 for very blurry
+    blurScore = Math.min(100, Math.round(bytesPerPixel * 200));
+    // Type bonus for leaf closeups (naturally more detail per pixel)
+    if (imageType === 'leaf_closeup') blurScore = Math.min(blurScore + 5, 100);
+  } else if (hasRealMetadata) {
+    // Has dimensions but no file size — derive from resolution
+    blurScore = width >= 1200 ? baseScore + 5 : width >= 800 ? baseScore : baseScore - 15;
+  } else {
+    // No metadata at all — penalize: we can't verify quality
+    blurScore = Math.max(baseScore - 20, 25);
+  }
+  blurScore = Math.max(0, Math.min(100, blurScore));
+
+  // Brightness: without pixel analysis, use a neutral mid-range.
+  // Field-wide shots are more likely overexposed (open sky), closeups darker (shadow).
   const brightnessScore = imageType === 'field_wide' ? 65 : 55;
 
-  // Resolution check from metadata if available
-  const width = metadata?.width ?? 1200;
-  const height = metadata?.height ?? 900;
-  const resolutionOk = width >= 640 && height >= 480;
-
-  // Compute composite quality
+  // Compute composite quality — weight resolution higher when we have real data
+  const resWeight = hasRealMetadata ? 0.3 : 0.15;
+  const blurWeight = hasRealMetadata ? 0.4 : 0.5;
+  const brightWeight = 1 - resWeight - blurWeight;
   let qualityScore = Math.round(
-    blurScore * 0.4 + brightnessScore * 0.3 + (resolutionOk ? 80 : 20) * 0.3,
+    blurScore * blurWeight + brightnessScore * brightWeight + (resolutionOk ? 80 : 20) * resWeight,
   );
   qualityScore = Math.max(0, Math.min(100, qualityScore));
 
