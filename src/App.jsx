@@ -67,6 +67,10 @@ import { ProfileProvider as LegacyProfileProvider } from './context/ProfileConte
 // V2 enterprise auth context (cookie-based)
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ProfileProvider as V2ProfileProvider } from './context/ProfileContext.jsx';
+// Phase 2: Offline, voice, weather contexts
+import { NetworkProvider } from './context/NetworkContext.jsx';
+import { AppPrefsProvider } from './context/AppPrefsContext.jsx';
+import { WeatherProvider } from './context/WeatherContext.jsx';
 
 const PageLoader = () => <div className="loading">Loading...</div>;
 
@@ -105,8 +109,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <NetworkProvider>
+      <AppPrefsProvider>
       <AuthProvider>
       <V2ProfileProvider>
+      <WeatherProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
       <Suspense fallback={<PageLoader />}>
@@ -167,8 +174,11 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      </WeatherProvider>
       </V2ProfileProvider>
       </AuthProvider>
+      </AppPrefsProvider>
+      </NetworkProvider>
     </BrowserRouter>
   );
 }

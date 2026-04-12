@@ -1,10 +1,18 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
+import { useWeather } from '../context/WeatherContext.jsx';
+import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { calculateFarmScore, getMissingProfileItems } from '../lib/farmScore';
+import { t } from '../lib/i18n.js';
+import { speakText, languageToVoiceCode } from '../lib/voice.js';
+import VoicePromptButton from '../components/VoicePromptButton.jsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { profile, loading } = useProfile();
+  const { weather, weatherLoading } = useWeather();
+  const { language, autoVoice } = useAppPrefs();
 
   if (loading) {
     return (
@@ -15,6 +23,14 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  // Auto-voice on load
+  useEffect(() => {
+    if (autoVoice && !loading) {
+      const voiceCode = languageToVoiceCode(language);
+      speakText(t(language, 'voiceDashboard'), voiceCode);
+    }
+  }, [autoVoice, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { score, status, isReady } = calculateFarmScore(profile || {});
   const missing = getMissingProfileItems(profile || {});
@@ -32,6 +48,7 @@ export default function Dashboard() {
               <span style={S.uuid}>ID: {profile.farmerUuid}</span>
             )}
           </div>
+          <VoicePromptButton text={t(language, 'voiceDashboard')} />
         </div>
 
         {/* Score Card */}
@@ -63,6 +80,47 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Weather Card */}
+        {(weather || weatherLoading) && (
+          <div style={S.card}>
+            <div style={S.weatherHeader}>
+              <h3 style={S.sectionTitle}>Weather</h3>
+              <VoicePromptButton text={t(language, 'voiceWeather')} />
+            </div>
+            {weatherLoading ? (
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem' }}>Loading weather...</p>
+            ) : weather ? (
+              <div style={S.weatherGrid}>
+                <div style={S.weatherItem}>
+                  <span style={S.weatherLabel}>Temp</span>
+                  <span style={S.weatherValue}>{weather.temperature != null ? `${weather.temperature}°C` : '-'}</span>
+                </div>
+                <div style={S.weatherItem}>
+                  <span style={S.weatherLabel}>Humidity</span>
+                  <span style={S.weatherValue}>{weather.humidity != null ? `${weather.humidity}%` : '-'}</span>
+                </div>
+                <div style={S.weatherItem}>
+                  <span style={S.weatherLabel}>Wind</span>
+                  <span style={S.weatherValue}>{weather.windSpeed != null ? `${weather.windSpeed} km/h` : '-'}</span>
+                </div>
+                <div style={S.weatherItem}>
+                  <span style={S.weatherLabel}>Rain</span>
+                  <span style={S.weatherValue}>{weather.precipitation != null ? `${weather.precipitation} mm` : '-'}</span>
+                </div>
+              </div>
+            ) : null}
+            {weather && (
+              <p style={S.weatherSummary}>
+                {weather.precipitation > 0
+                  ? t(language, 'weatherSummaryRain')
+                  : weather.windSpeed > 20
+                    ? t(language, 'weatherSummaryWind')
+                    : t(language, 'weatherSummaryGood')}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Missing Items */}
         {missing.length > 0 && (
@@ -103,7 +161,7 @@ export default function Dashboard() {
           style={S.ctaButton}
           onClick={() => navigate(isReady ? '/season/start' : '/profile/setup')}
         >
-          {isReady ? 'Start Season' : 'Complete Profile'}
+          {isReady ? t(language, 'startSeason') : t(language, 'completeProfile')}
         </button>
       </div>
     </div>
@@ -141,5 +199,11 @@ const S = {
   detailItem: { display: 'flex', flexDirection: 'column', gap: '0.15rem' },
   detailLabel: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' },
   detailValue: { fontSize: '0.875rem' },
+  weatherHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' },
+  weatherGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
+  weatherItem: { display: 'flex', flexDirection: 'column', gap: '0.15rem' },
+  weatherLabel: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' },
+  weatherValue: { fontSize: '1rem', fontWeight: 600 },
+  weatherSummary: { marginTop: '0.75rem', fontSize: '0.85rem', color: '#FDE68A', fontStyle: 'italic' },
   ctaButton: { background: '#22C55E', color: '#000', border: 'none', borderRadius: '12px', padding: '0.85rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%' },
 };

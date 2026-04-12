@@ -2,6 +2,9 @@ import { Outlet } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
 import FarmerUuidBadge from '../components/FarmerUuidBadge.jsx';
+import LanguageSelector from '../components/LanguageSelector.jsx';
+import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
+import OfflineStatusBadge from '../components/OfflineStatusBadge.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function ProtectedLayout() {
@@ -27,6 +30,9 @@ export default function ProtectedLayout() {
               </div>
 
               <div style={S.headerRight}>
+                <OfflineStatusBadge />
+                <LanguageSelector />
+                <AutoVoiceToggle />
                 <FarmerUuidBadge />
                 <button onClick={logout} style={S.logoutBtn}>
                   Logout

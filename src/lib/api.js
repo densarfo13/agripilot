@@ -106,6 +106,10 @@ export function saveFarmProfile(payload) {
   });
 }
 
+export function getCurrentWeather(lat, lng) {
+  return request(`/api/v2/weather/current?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+}
+
 export function healthCheck() {
   return request('/api/v2/monitoring/health', { method: 'GET' }, false);
 }

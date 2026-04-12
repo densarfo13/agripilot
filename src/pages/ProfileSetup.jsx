@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
+import { useAppPrefs } from '../context/AppPrefsContext.jsx';
+import { t } from '../lib/i18n.js';
+import { speakText, languageToVoiceCode } from '../lib/voice.js';
+import VoicePromptButton from '../components/VoicePromptButton.jsx';
 
 const CROP_OPTIONS = ['maize', 'cassava', 'rice', 'tomato', 'pepper', 'cocoa', 'yam', 'plantain'];
 
@@ -16,7 +20,8 @@ function computeCompletion(form) {
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
-  const { profile, saveProfile, loading: profileLoading } = useProfile();
+  const { profile, saveProfile, syncStatus, loading: profileLoading } = useProfile();
+  const { language, autoVoice } = useAppPrefs();
 
   const [form, setForm] = useState({
     farmerName: '',
@@ -29,6 +34,7 @@ export default function ProfileSetup() {
     gpsLng: '',
   });
   const [error, setError] = useState('');
+  const [syncMsg, setSyncMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
 
@@ -46,6 +52,14 @@ export default function ProfileSetup() {
       });
     }
   }, [profile]);
+
+  // Auto-voice welcome on first load
+  useEffect(() => {
+    if (autoVoice && !profileLoading) {
+      const voiceCode = languageToVoiceCode(language);
+      speakText(t(language, 'voiceWelcomeProfile'), voiceCode);
+    }
+  }, [autoVoice, profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -80,6 +94,7 @@ export default function ProfileSetup() {
     if (!form.farmName.trim()) { setError('Farm name is required'); return; }
 
     setSaving(true);
+    setSyncMsg('');
     try {
       const payload = {
         ...form,
@@ -87,8 +102,13 @@ export default function ProfileSetup() {
         gpsLat: form.gpsLat ? Number(form.gpsLat) : null,
         gpsLng: form.gpsLng ? Number(form.gpsLng) : null,
       };
-      await saveProfile(payload);
-      navigate('/dashboard');
+      const result = await saveProfile(payload);
+      if (result?.offline) {
+        setSyncMsg(t(language, 'profileSavedOffline'));
+      } else {
+        setSyncMsg(t(language, 'profileSynced'));
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Failed to save profile');
     } finally {
@@ -114,6 +134,7 @@ export default function ProfileSetup() {
         <div style={S.headerRow}>
           <button type="button" onClick={() => navigate(-1)} style={S.backBtn}>&larr; Back</button>
           <h1 style={S.title}>Farm Profile Setup</h1>
+          <VoicePromptButton text={t(language, 'voiceWelcomeProfile')} />
         </div>
 
         {profile?.farmerUuid && (
@@ -133,6 +154,7 @@ export default function ProfileSetup() {
           </div>
         </div>
 
+        {syncMsg && <div style={S.syncBox}>{syncMsg}</div>}
         {error && <div style={S.errorBox}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={S.form}>
@@ -188,7 +210,7 @@ export default function ProfileSetup() {
             disabled={gpsLoading}
             style={{ ...S.gpsBtn, ...(gpsLoading ? { opacity: 0.6 } : {}) }}
           >
-            {gpsLoading ? 'Getting location...' : 'Use My Location'}
+            {gpsLoading ? t(language, 'gettingGPS') : t(language, 'useMyLocation')}
           </button>
 
           <button
@@ -220,6 +242,7 @@ const S = {
   input: { background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#fff', outline: 'none', width: '100%', fontSize: '0.875rem', boxSizing: 'border-box' },
   gpsRow: { display: 'flex', gap: '0.75rem' },
   gpsBtn: { background: 'none', border: '1px solid #22C55E', borderRadius: '12px', color: '#22C55E', padding: '0.65rem 1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' },
+  syncBox: { background: 'rgba(134,239,172,0.1)', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#86EFAC', fontSize: '0.875rem', marginBottom: '0.5rem' },
   errorBox: { background: 'rgba(252,165,165,0.1)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
   button: { background: '#22C55E', color: '#000', border: 'none', borderRadius: '12px', padding: '0.75rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
