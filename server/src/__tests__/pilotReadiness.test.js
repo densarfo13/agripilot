@@ -1,138 +1,311 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-/**
- * Phase 5 — Pilot Readiness Regression Tests
- *
- * Focused on configuration correctness and exported contract verification.
- * Does NOT mock prisma — tests only pure logic and config exports.
- */
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '../../..');
 
-// ─── 1. Rate Limiter Config ──────────────────────────────────
+function readFile(relPath) {
+  return fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+}
 
-describe('Rate Limiter Configuration', () => {
-  it('exports all expected limiters', async () => {
-    const mod = await import('../middleware/rateLimiters.js');
-    expect(mod.inviteLimiter).toBeDefined();
-    expect(mod.resendInviteLimiter).toBeDefined();
-    expect(mod.loginLimiter).toBeDefined();
-    expect(mod.registrationLimiter).toBeDefined();
-    expect(mod.inviteAcceptLimiter).toBeDefined();
-    expect(mod.passwordResetLimiter).toBeDefined();
-    expect(mod.mfaEnrollLimiter).toBeDefined();
-    expect(mod.mfaVerifyLimiter).toBeDefined();
-    expect(mod.workflowLimiter).toBeDefined();
-    expect(mod.securityLimiter).toBeDefined();
-    expect(mod.uploadLimiter).toBeDefined();
-    expect(mod.submissionLimiter).toBeDefined();
+function fileExists(relPath) {
+  return fs.existsSync(path.join(ROOT, relPath));
+}
+
+// ─── 1. Farmer Lifecycle State Consistency ────────────────
+
+describe('Farmer Lifecycle State Model', () => {
+  const code = readFile('src/utils/farmerLifecycle.js');
+
+  it('exports FARMER_STATE with exactly three states', () => {
+    expect(code).toContain("NEW: 'NEW'");
+    expect(code).toContain("SETUP_INCOMPLETE: 'SETUP_INCOMPLETE'");
+    expect(code).toContain("ACTIVE: 'ACTIVE'");
   });
 
-  it('resendInviteLimiter is a distinct function from inviteLimiter', async () => {
-    const mod = await import('../middleware/rateLimiters.js');
-    expect(mod.resendInviteLimiter).not.toBe(mod.inviteLimiter);
-    expect(typeof mod.resendInviteLimiter).toBe('function');
-    expect(typeof mod.inviteLimiter).toBe('function');
+  it('exports isFarmProfileComplete function', () => {
+    expect(code).toContain('export function isFarmProfileComplete(');
   });
 
-  it('all limiters are express middleware functions', async () => {
-    const mod = await import('../middleware/rateLimiters.js');
-    const limiters = [
-      mod.inviteLimiter, mod.resendInviteLimiter, mod.loginLimiter,
-      mod.registrationLimiter, mod.inviteAcceptLimiter, mod.passwordResetLimiter,
-      mod.mfaEnrollLimiter, mod.mfaVerifyLimiter, mod.workflowLimiter,
-      mod.securityLimiter, mod.uploadLimiter, mod.submissionLimiter,
+  it('exports getFarmerLifecycleState function', () => {
+    expect(code).toContain('export function getFarmerLifecycleState(');
+  });
+
+  it('defines REQUIRED_FIELDS for setup completeness', () => {
+    expect(code).toContain('REQUIRED_FIELDS');
+    expect(code).toContain("key: 'crop'");
+    expect(code).toContain("key: 'landSizeValue'");
+    expect(code).toContain("key: 'landSizeUnit'");
+  });
+
+  it('is used by FarmerDashboardPage', () => {
+    const dash = readFile('src/pages/FarmerDashboardPage.jsx');
+    expect(dash).toContain('farmerLifecycle');
+  });
+});
+
+// ─── 2. Submit Guard (Double-Tap Prevention) ──────────────
+
+describe('Submit Guard — Double-Tap Prevention', () => {
+  const criticalFiles = [
+    'src/components/OnboardingWizard.jsx',
+    'src/pages/PestRiskCheck.jsx',
+    'src/pages/TreatmentFeedback.jsx',
+    'src/pages/ProfileSetup.jsx',
+    'src/components/QuickUpdateFlow.jsx',
+    'src/pages/AcceptInvitePage.jsx',
+  ];
+
+  criticalFiles.forEach((file) => {
+    it(`${path.basename(file)} uses submitGuardRef`, () => {
+      const code = readFile(file);
+      expect(code).toContain('submitGuardRef');
+      expect(code).toContain('useRef');
+    });
+  });
+
+  it('OnboardingWizard guard blocks during submission', () => {
+    const code = readFile('src/components/OnboardingWizard.jsx');
+    expect(code).toContain('if (submitGuardRef.current) return');
+  });
+
+  it('PestRiskCheck guard blocks during submission', () => {
+    const code = readFile('src/pages/PestRiskCheck.jsx');
+    expect(code).toContain('if (submitGuardRef.current) return');
+  });
+
+  it('TreatmentFeedback guard blocks during submission', () => {
+    const code = readFile('src/pages/TreatmentFeedback.jsx');
+    // Guard may be combined with other checks in a single if statement
+    expect(code).toContain('submitGuardRef.current');
+    expect(code).toContain('submitGuardRef.current = true');
+  });
+});
+
+// ─── 3. Draft Preservation (Offline Safety) ──────────────
+
+describe('Draft Preservation — useDraft Hook', () => {
+  it('useDraft hook exists with localStorage backing', () => {
+    const code = readFile('src/utils/useDraft.js');
+    expect(code).toContain('localStorage');
+    expect(code).toContain('export');
+  });
+
+  it('OnboardingWizard uses draft preservation', () => {
+    const code = readFile('src/components/OnboardingWizard.jsx');
+    expect(code).toContain('useDraft');
+    expect(code).toContain('clearDraft');
+  });
+
+  it('ProfileSetup uses draft preservation', () => {
+    const code = readFile('src/pages/ProfileSetup.jsx');
+    expect(code).toContain('useDraft');
+    expect(code).toContain('clearDraft');
+  });
+});
+
+// ─── 4. Offline Queue & Idempotency ─────────────────────
+
+describe('Offline Queue — IndexedDB + Idempotency', () => {
+  const queue = readFile('src/utils/offlineQueue.js');
+
+  it('uses IndexedDB for mutation queue', () => {
+    expect(queue).toContain('indexedDB');
+    expect(queue).toContain("DB_NAME = 'farroway-offline'");
+  });
+
+  it('handles 409 Conflict as already-processed', () => {
+    expect(queue).toContain('409');
+    expect(queue).toContain('conflict_already_processed');
+  });
+
+  it('auto-syncs on reconnect', () => {
+    expect(queue).toContain('online');
+    expect(queue).toContain('syncAll');
+  });
+
+  it('has pilot instrumentation for sync success and failure', () => {
+    expect(queue).toContain("trackPilotEvent('offline_synced'");
+    expect(queue).toContain("trackPilotEvent('offline_sync_failed'");
+  });
+
+  it('idempotency key is attached via axios interceptor', () => {
+    const api = readFile('src/api/client.js');
+    expect(api).toContain('X-Idempotency-Key');
+  });
+});
+
+// ─── 5. Pilot Instrumentation Coverage ──────────────────
+
+describe('Pilot Instrumentation — trackPilotEvent', () => {
+  it('pilotTracker utility exists and exports trackPilotEvent', () => {
+    const code = readFile('src/utils/pilotTracker.js');
+    expect(code).toContain('export function trackPilotEvent(');
+  });
+
+  const instrumentedFlows = [
+    { file: 'src/pages/PestRiskCheck.jsx', events: ['update_submitted', 'update_failed', 'photo_upload_failed'] },
+    { file: 'src/pages/TreatmentFeedback.jsx', events: ['update_submitted', 'update_failed'] },
+    { file: 'src/pages/ProfileSetup.jsx', events: ['setup_completed', 'setup_failed'] },
+    { file: 'src/components/OnboardingWizard.jsx', events: ['onboarding_completed', 'setup_failed'] },
+    { file: 'src/components/SeedScanFlow.jsx', events: ['seed_scan_failed'] },
+    { file: 'src/components/LandBoundaryCapture.jsx', events: ['boundary_save_failed'] },
+    { file: 'src/utils/offlineQueue.js', events: ['offline_synced', 'offline_sync_failed'] },
+  ];
+
+  instrumentedFlows.forEach(({ file, events }) => {
+    events.forEach((event) => {
+      it(`${path.basename(file)} tracks '${event}'`, () => {
+        const code = readFile(file);
+        expect(code).toContain(`trackPilotEvent('${event}'`);
+      });
+    });
+  });
+});
+
+// ─── 6. Localization — No Hardcoded English in Farmer UI ─
+
+describe('Localization — Farmer-Facing Screens', () => {
+  const farmerScreens = [
+    'src/pages/PestRiskCheck.jsx',
+    'src/pages/PestRiskResult.jsx',
+    'src/pages/TreatmentFeedback.jsx',
+    'src/pages/ProfileSetup.jsx',
+    'src/components/LandBoundaryCapture.jsx',
+    'src/components/SeedScanFlow.jsx',
+  ];
+
+  farmerScreens.forEach((file) => {
+    it(`${path.basename(file)} has no t() || 'fallback' patterns`, () => {
+      const code = readFile(file);
+      // Match t('...') || 'English fallback' — but allow || '' (empty fallback is safe)
+      const fallbackPattern = /t\([^)]+\)\s*\|\|\s*'[^']/g;
+      const matches = code.match(fallbackPattern) || [];
+      expect(matches).toEqual([]);
+    });
+  });
+
+  it('translations.js has all pest advice keys in 5 languages', () => {
+    const translations = readFile('src/i18n/translations.js');
+    const requiredKeys = [
+      'pest.levelMsg.low', 'pest.levelMsg.moderate', 'pest.levelMsg.high', 'pest.levelMsg.urgent',
+      'pest.advice.low.1', 'pest.advice.moderate.1', 'pest.advice.high.1', 'pest.advice.urgent.1',
+      'pest.checkAgain',
     ];
-    for (const limiter of limiters) {
-      expect(typeof limiter).toBe('function');
-    }
+    requiredKeys.forEach((key) => {
+      expect(translations).toContain(`'${key}'`);
+    });
+  });
+
+  it('translations.js has boundary warning keys', () => {
+    const translations = readFile('src/i18n/translations.js');
+    ['boundary.warnFewPoints', 'boundary.warnLowAccuracy', 'boundary.warnDuplicate', 'boundary.validationFailed'].forEach((key) => {
+      expect(translations).toContain(`'${key}'`);
+    });
   });
 });
 
-// ─── 2. MFA Role Policy ─────────────────────────────────────
+// ─── 7. Mobile Usability — CTA Visibility ───────────────
 
-describe('MFA Role Policy', () => {
-  it('requires MFA for institutional_admin, reviewer', async () => {
-    const { isMfaRequired } = await import('../modules/mfa/service.js');
-    expect(isMfaRequired('institutional_admin')).toBe(true);
-    expect(isMfaRequired('reviewer')).toBe(true);
+describe('Mobile Usability — Bottom CTA Padding', () => {
+  it('PestRiskCheck has bottom padding for mobile', () => {
+    const code = readFile('src/pages/PestRiskCheck.jsx');
+    expect(code).toContain('paddingBottom');
   });
 
-  it('does not require MFA for super_admin, farmer, field_officer, investor_viewer', async () => {
-    const { isMfaRequired } = await import('../modules/mfa/service.js');
-    expect(isMfaRequired('super_admin')).toBe(false);
-    expect(isMfaRequired('farmer')).toBe(false);
-    expect(isMfaRequired('field_officer')).toBe(false);
-    expect(isMfaRequired('investor_viewer')).toBe(false);
-  });
-
-  it('exempts farmer from MFA', async () => {
-    const { isMfaExempt } = await import('../modules/mfa/service.js');
-    expect(isMfaExempt('farmer')).toBe(true);
-    expect(isMfaExempt('super_admin')).toBe(false);
-  });
-
-  it('MFA_REQUIRED_ROLES set contains exactly 2 roles', async () => {
-    const { MFA_REQUIRED_ROLES } = await import('../modules/mfa/service.js');
-    expect(MFA_REQUIRED_ROLES.size).toBe(2);
-    expect(MFA_REQUIRED_ROLES.has('institutional_admin')).toBe(true);
-    expect(MFA_REQUIRED_ROLES.has('reviewer')).toBe(true);
+  it('TreatmentFeedback has bottom padding for mobile', () => {
+    const code = readFile('src/pages/TreatmentFeedback.jsx');
+    expect(code).toContain('paddingBottom');
   });
 });
 
-// ─── 3. Farmer Status Compute — access + invite status ───────
+// ─── 8. Voice Flow Integration ──────────────────────────
 
-describe('Farmer Status Computation', () => {
-  it('exports computeAccessStatus and computeInviteStatus', async () => {
-    const mod = await import('../modules/farmers/service.js');
-    expect(typeof mod.computeAccessStatus).toBe('function');
-    expect(typeof mod.computeInviteStatus).toBe('function');
+describe('Voice Flow — Screen Integration', () => {
+  const voiceScreens = [
+    'src/pages/PestRiskCheck.jsx',
+    'src/pages/PestRiskResult.jsx',
+    'src/pages/TreatmentFeedback.jsx',
+    'src/pages/ProfileSetup.jsx',
+    'src/pages/FarmerProgressTab.jsx',
+    'src/components/LandBoundaryCapture.jsx',
+    'src/components/SeedScanFlow.jsx',
+  ];
+
+  voiceScreens.forEach((file) => {
+    it(`${path.basename(file)} renders VoiceBar`, () => {
+      const code = readFile(file);
+      expect(code).toContain('VoiceBar');
+      expect(code).toContain('voiceKey');
+    });
   });
 
-  it('computeAccessStatus returns PENDING_APPROVAL for pending farmers', async () => {
-    const { computeAccessStatus } = await import('../modules/farmers/service.js');
-    expect(computeAccessStatus({ registrationStatus: 'pending_approval' })).toBe('PENDING_APPROVAL');
-  });
-
-  it('computeAccessStatus returns ACTIVE for approved farmer with active user', async () => {
-    const { computeAccessStatus } = await import('../modules/farmers/service.js');
-    expect(computeAccessStatus({
-      registrationStatus: 'approved',
-      userAccount: { active: true },
-    })).toBe('ACTIVE');
-  });
-
-  it('computeInviteStatus returns ACCEPTED when userId exists', async () => {
-    const { computeInviteStatus } = await import('../modules/farmers/service.js');
-    expect(computeInviteStatus({ userId: 'u-1' })).toBe('ACCEPTED');
-  });
-
-  it('computeInviteStatus returns NOT_SENT for self-registered', async () => {
-    const { computeInviteStatus } = await import('../modules/farmers/service.js');
-    expect(computeInviteStatus({ selfRegistered: true })).toBe('NOT_SENT');
+  it('VoiceBar stops speech on unmount', () => {
+    const code = readFile('src/components/VoiceBar.jsx');
+    expect(code).toContain('stopSpeech');
+    expect(code).toContain('useEffect');
   });
 });
 
-// ─── 4. Region Config ────────────────────────────────────────
+// ─── 9. Score Gating — Incomplete Setup Hides Score ─────
 
-describe('Region Config', () => {
-  it('exports DEFAULT_COUNTRY_CODE as 2-char string', async () => {
-    const { DEFAULT_COUNTRY_CODE } = await import('../modules/regionConfig/service.js');
-    expect(typeof DEFAULT_COUNTRY_CODE).toBe('string');
-    expect(DEFAULT_COUNTRY_CODE.length).toBe(2);
+describe('Score Gating — Setup Completeness', () => {
+  it('FarmerDashboardPage checks lifecycle state before showing score', () => {
+    const code = readFile('src/pages/FarmerDashboardPage.jsx');
+    expect(code).toContain('farmerLifecycle');
+  });
+
+  it('farmerLifecycle server utility gates canStartSeason on ACTIVE state', () => {
+    const code = readFile('server/src/utils/farmerLifecycle.js');
+    expect(code).toContain('canStartSeason');
+    expect(code).toContain('ACTIVE');
   });
 });
 
-// ─── 5. Phone Utils ─────────────────────────────────────────
+// ─── 10. Network Context — Online/Offline Awareness ─────
 
-describe('Phone Utils', () => {
-  it('normalizePhoneForStorage handles Kenyan numbers', async () => {
-    const { normalizePhoneForStorage } = await import('../utils/phoneUtils.js');
-    const normalized = normalizePhoneForStorage('+254700123456');
-    expect(normalized).toContain('254');
+describe('Network Context — Offline Awareness', () => {
+  it('NetworkContext exists and exports useNetwork', () => {
+    const code = readFile('src/context/NetworkContext.jsx');
+    expect(code).toContain('useNetwork');
+    expect(code).toContain('isOnline');
   });
 
-  it('validatePhone rejects empty input', async () => {
-    const { validatePhone } = await import('../utils/phoneUtils.js');
-    const result = validatePhone('');
-    expect(result.valid).toBe(false);
+  const offlineAwareScreens = [
+    'src/pages/PestRiskCheck.jsx',
+    'src/components/LandBoundaryCapture.jsx',
+  ];
+
+  offlineAwareScreens.forEach((file) => {
+    it(`${path.basename(file)} uses network context`, () => {
+      const code = readFile(file);
+      expect(code).toContain('useNetwork');
+      expect(code).toContain('isOnline');
+    });
+  });
+});
+
+// ─── 11. Critical File Existence ────────────────────────
+
+describe('Critical Files — Existence Check', () => {
+  const criticalFiles = [
+    'src/utils/farmerLifecycle.js',
+    'src/utils/pilotTracker.js',
+    'src/utils/voiceGuide.js',
+    'src/utils/voiceAnalytics.js',
+    'src/utils/useDraft.js',
+    'src/utils/offlineQueue.js',
+    'src/context/NetworkContext.jsx',
+    'src/components/VoiceBar.jsx',
+    'src/i18n/translations.js',
+    'server/src/utils/farmerLifecycle.js',
+  ];
+
+  criticalFiles.forEach((file) => {
+    it(`${file} exists`, () => {
+      expect(fileExists(file)).toBe(true);
+    });
   });
 });

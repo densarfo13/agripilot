@@ -390,6 +390,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           : serverError || err?.message || 'Something went wrong. Please try again.';
       setError(msg);
       logOnboarding('async_save_failed', { step: 'processing', error: msg, isNetwork });
+      trackPilotEvent('setup_failed', { error: msg, isNetwork });
     }
   };
 

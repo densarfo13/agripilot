@@ -9,6 +9,8 @@
  * or fails, which flows to the Railway log drain.
  */
 
+import { trackPilotEvent } from './pilotTracker.js';
+
 const DB_NAME = 'farroway-offline';
 const STORE_NAME = 'mutations';
 const DB_VERSION = 1;
@@ -206,12 +208,14 @@ export async function syncAll(apiClient) {
       }
       await remove(m.id);
       synced++;
+      trackPilotEvent('offline_synced', { url: m.url, method: m.method });
     } catch (err) {
       // If it's still a network error, stop — we're still offline
       if (!err.response) {
         await incrementRetry(m);
         failed++;
         logSyncFailure('network_still_offline', m);
+        trackPilotEvent('offline_sync_failed', { reason: 'network_still_offline', url: m.url });
         break;
       }
       const status = err.response?.status;
@@ -225,6 +229,7 @@ export async function syncAll(apiClient) {
       }
       // Other server rejections (4xx/5xx) — remove from queue, it won't succeed on retry
       logSyncFailure('server_rejected', m, { status, error: err.response?.data?.error });
+      trackPilotEvent('offline_sync_failed', { reason: 'server_rejected', url: m.url, status });
       await remove(m.id);
       failed++;
     }

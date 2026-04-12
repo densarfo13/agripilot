@@ -37,6 +37,19 @@ import {
 
 import type { AuthRequest } from '../types/index.js';
 
+// @ts-ignore — JS module (email service for pest alert notifications)
+let sendPestAlertEmail: any = null;
+let shouldSendEmail: any = null;
+let PEST_ALERT_MIN_CONFIDENCE: number = 0.6;
+try {
+  // Lazy-load to avoid circular dependency / missing module errors
+  const emailMod = await import('../../src/modules/email/service.js');
+  const constMod = await import('../../src/modules/email/constants.js');
+  sendPestAlertEmail = emailMod.sendPestAlertEmail;
+  shouldSendEmail = emailMod.shouldSendEmail;
+  PEST_ALERT_MIN_CONFIDENCE = constMod.PEST_ALERT_MIN_CONFIDENCE ?? 0.6;
+} catch { /* email module not available — alerts disabled */ }
+
 const router = Router();
 
 router.use(authenticate);
@@ -222,6 +235,33 @@ router.post('/report', validate(createPestReportSchema), async (req: Request, re
       });
     } catch (_alertErr) {
       // Alert evaluation is non-critical
+    }
+
+    // Fire-and-forget pest alert email for high-confidence, actionable reports
+    if (
+      sendPestAlertEmail &&
+      (riskLevel === 'high' || riskLevel === 'urgent') &&
+      diagnosis.confidenceScore >= PEST_ALERT_MIN_CONFIDENCE &&
+      actionGuidance
+    ) {
+      (async () => {
+        try {
+          const userRecord = await prisma.user.findUnique({ where: { id: user.id }, select: { email: true, fullName: true } });
+          if (userRecord?.email && (!shouldSendEmail || await shouldSendEmail(user.id, 'pest_alert'))) {
+            sendPestAlertEmail({
+              to: userRecord.email,
+              fullName: userRecord.fullName,
+              riskLevel,
+              likelyIssue: diagnosis.likelyIssue,
+              confidenceScore: diagnosis.confidenceScore,
+              actionGuidance,
+              appUrl: process.env.FRONTEND_BASE_URL,
+              relatedUserId: user.id,
+              relatedReportId: report.id,
+            });
+          }
+        } catch { /* email failure is non-critical */ }
+      })();
     }
 
     await writeAuditLog(req, {

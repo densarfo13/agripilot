@@ -62,6 +62,7 @@ import analyticsRoutes from './modules/analytics/routes.js';
 import impactRoutes from './modules/impact/routes.js';
 import issueRoutes from './modules/issues/routes.js';
 import onboardingRoutes from './modules/onboarding/routes.js';
+import emailRoutes from './modules/email/routes.js';
 
 // ─── V2 enterprise auth routes (cookie-based) ──────────────
 import v2AuthRoutes from '../routes/auth.js';
@@ -360,6 +361,7 @@ app.use('/api/issues', issueRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/auto-notifications', autoNotificationRoutes);
+app.use('/api/email', authenticate, emailRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/v1/farms', farmProfileRoutes);
 app.use('/api/v1/weather', weatherRoutes);

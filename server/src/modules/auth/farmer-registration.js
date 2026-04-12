@@ -7,6 +7,7 @@ import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { computeLandSizeFields, fromHectares } from '../../utils/landSize.js';
 import { normalizeCrop } from '../farmProfiles/service.js';
 import { opsEvent } from '../../utils/opsLogger.js';
+import { sendWelcomeEmail } from '../email/service.js';
 
 /**
  * Crops that allow automatic FarmProfile creation during self-registration.
@@ -163,6 +164,14 @@ export async function farmerSelfRegister({
   });
 
   opsEvent('auth', 'registration_completed', 'info', { userId: user.id, farmerId: farmer.id, email: user.email });
+
+  // Fire-and-forget welcome email — never blocks registration
+  sendWelcomeEmail({
+    to: user.email,
+    fullName: user.fullName,
+    appUrl: process.env.FRONTEND_BASE_URL || 'https://app.farroways.com',
+    relatedUserId: user.id,
+  });
 
   return {
     user: {

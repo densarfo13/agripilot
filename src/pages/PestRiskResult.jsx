@@ -6,6 +6,7 @@ import { useFarmRisk, useFeedbackSubmit } from '../hooks/useIntelligence.js';
 import RiskLevelBadge from '../components/intelligence/RiskLevelBadge.jsx';
 import SeverityBar from '../components/intelligence/SeverityBar.jsx';
 import { COLORS } from '../constants/intelligence.js';
+import VoiceBar from '../components/VoiceBar.jsx';
 
 const LEVEL_COLORS = {
   low: COLORS.green,
@@ -38,24 +39,24 @@ function deriveLevel(score) {
 function buildAdvice(level, t) {
   const adviceMap = {
     low: [
-      { text: t('pest.advice.low.1') || 'Continue regular monitoring', icon: 'monitor' },
-      { text: t('pest.advice.low.2') || 'Maintain crop hygiene', icon: 'clean' },
+      { text: t('pest.advice.low.1'), icon: 'monitor' },
+      { text: t('pest.advice.low.2'), icon: 'clean' },
     ],
     moderate: [
-      { text: t('pest.advice.moderate.1') || 'Increase inspection frequency', icon: 'inspect' },
-      { text: t('pest.advice.moderate.2') || 'Consider preventive treatment', icon: 'treat' },
-      { text: t('pest.advice.moderate.3') || 'Check neighboring fields', icon: 'field' },
+      { text: t('pest.advice.moderate.1'), icon: 'inspect' },
+      { text: t('pest.advice.moderate.2'), icon: 'treat' },
+      { text: t('pest.advice.moderate.3'), icon: 'field' },
     ],
     high: [
-      { text: t('pest.advice.high.1') || 'Apply recommended treatment promptly', icon: 'urgent' },
-      { text: t('pest.advice.high.2') || 'Isolate affected areas if possible', icon: 'isolate' },
-      { text: t('pest.advice.high.3') || 'Document damage for records', icon: 'doc' },
+      { text: t('pest.advice.high.1'), icon: 'urgent' },
+      { text: t('pest.advice.high.2'), icon: 'isolate' },
+      { text: t('pest.advice.high.3'), icon: 'doc' },
     ],
     urgent: [
-      { text: t('pest.advice.urgent.1') || 'Treat immediately - crop at risk', icon: 'alert' },
-      { text: t('pest.advice.urgent.2') || 'Seek expert assistance', icon: 'expert' },
-      { text: t('pest.advice.urgent.3') || 'Consider emergency measures', icon: 'emergency' },
-      { text: t('pest.advice.urgent.4') || 'Report to local agricultural office', icon: 'report' },
+      { text: t('pest.advice.urgent.1'), icon: 'alert' },
+      { text: t('pest.advice.urgent.2'), icon: 'expert' },
+      { text: t('pest.advice.urgent.3'), icon: 'emergency' },
+      { text: t('pest.advice.urgent.4'), icon: 'report' },
     ],
   };
   return adviceMap[level] || adviceMap.moderate;
@@ -115,7 +116,7 @@ export default function PestRiskResult() {
         helpfulScore: helpful ? 80 : 20,
       });
       setFeedbackSent(true);
-      setFeedbackToast(t('pest.feedbackThanks') || 'Thank you for your feedback!');
+      setFeedbackToast(t('pest.feedbackThanks'));
     } catch {
       // Feedback is non-critical, fail silently
     }
@@ -140,7 +141,7 @@ export default function PestRiskResult() {
         <div style={S.container}>
           <div style={S.errorBox}>{error}</div>
           <button style={S.retryBtn} onClick={() => refetch()}>
-            {t('pest.retry') || 'Retry'}
+            {t('pest.retry')}
           </button>
         </div>
       </div>
@@ -159,6 +160,8 @@ export default function PestRiskResult() {
         <button style={S.backLink} onClick={() => navigate(-1)}>
           {'\u2190'} {t('pest.backToScan')}
         </button>
+
+        <VoiceBar voiceKey={isUncertain ? 'pest.result.uncertain' : (level === 'low' ? 'pest.result.low' : 'pest.result.high')} compact />
 
         <h1 style={S.title}>{t('pest.resultTitle')}</h1>
 
@@ -319,7 +322,7 @@ export default function PestRiskResult() {
             style={S.ctaSecondary}
             onClick={() => navigate('/pest-risk-check')}
           >
-            {t('pest.checkAgain') || 'Check Again'}
+            {t('pest.checkAgain')}
           </button>
         </div>
       </div>

@@ -2832,11 +2832,106 @@ const T = {
   'pest.retry': {
     en: 'Try Again', fr: 'Réessayer', sw: 'Jaribu Tena', ha: 'Sake Gwadawa', tw: 'Bɔ Mmɔden Bio',
   },
+  'pest.checkAgain': {
+    en: 'Check Again', fr: 'Vérifier à nouveau', sw: 'Angalia Tena', ha: 'Duba Sake', tw: 'Hwɛ Bio',
+  },
   'pest.loading': {
     en: 'Loading...', fr: 'Chargement...', sw: 'Inapakia...', ha: 'Ana lodawa...', tw: 'Ɛrelode...',
   },
   'pest.likelyDamage': {
     en: 'Possible crop damage detected', fr: 'Dégâts possibles détectés', sw: 'Uharibifu wa mazao umegunduliwa', ha: 'An gano yiwuwar lalacewa', tw: 'Wɔahu sɛ afuom no asɛe',
+  },
+
+  // ─── Pest risk level messages ─────────────────────────────
+  'pest.levelMsg.low': {
+    en: 'Your crops look healthy.', fr: 'Vos cultures semblent saines.', sw: 'Mazao yako yanaonekana mazuri.', ha: 'Amfanin gonarka suna da kyau.', tw: 'Wo nnɔbae no yɛ pa.',
+  },
+  'pest.levelMsg.moderate': {
+    en: 'Some signs to watch. Monitor closely.', fr: 'Quelques signes à surveiller.', sw: 'Dalili za kufuatilia. Endelea kuangalia.', ha: 'Wasu alamun da za a lura. Ci gaba da kula.', tw: 'Nsɛnkyerɛnne bi wɔ hɔ. Hwɛ so yiye.',
+  },
+  'pest.levelMsg.high': {
+    en: 'Problem found. Follow advice below.', fr: 'Problème détecté. Suivez les conseils.', sw: 'Tatizo limepatikana. Fuata ushauri.', ha: 'An sami matsala. Bi shawara.', tw: 'Wɔahu asɛm bi. Di afotu so.',
+  },
+  'pest.levelMsg.urgent': {
+    en: 'Urgent. Act now to protect your crops.', fr: 'Urgent. Agissez maintenant.', sw: 'Dharura. Chukua hatua sasa.', ha: 'Gaggawa. Yi wani abu yanzu.', tw: 'Ntɛm. Yɛ biribi seesei.',
+  },
+
+  // ─── Pest advice ──────────────────────────────────────────
+  'pest.advice.low.1': {
+    en: 'Continue regular monitoring', fr: 'Continuez à surveiller', sw: 'Endelea kufuatilia', ha: 'Ci gaba da lura', tw: 'Kɔ so hwɛ so',
+  },
+  'pest.advice.low.2': {
+    en: 'Maintain crop hygiene', fr: 'Maintenez l\'hygiène des cultures', sw: 'Dumisha usafi wa mazao', ha: 'Kiyaye tsaftar amfani', tw: 'Hwɛ nnɔbae no ho te',
+  },
+  'pest.advice.moderate.1': {
+    en: 'Increase inspection frequency', fr: 'Augmentez la fréquence d\'inspection', sw: 'Ongeza ukaguzi', ha: 'Ƙara dubawa', tw: 'Hwɛ mu mpɛn pii',
+  },
+  'pest.advice.moderate.2': {
+    en: 'Consider preventive treatment', fr: 'Envisagez un traitement préventif', sw: 'Fikiria matibabu ya kuzuia', ha: 'Yi tunani kan maganin rigakafi', tw: 'Susuw ayaresa a edi kan',
+  },
+  'pest.advice.moderate.3': {
+    en: 'Check neighboring fields', fr: 'Vérifiez les champs voisins', sw: 'Kagua mashamba jirani', ha: 'Duba gonakin makwabta', tw: 'Hwɛ mfuw a ɛbɛn ho',
+  },
+  'pest.advice.high.1': {
+    en: 'Apply recommended treatment promptly', fr: 'Appliquez le traitement recommandé', sw: 'Tumia matibabu yaliyopendekezwa', ha: 'Yi amfani da maganin da aka ba da shawara', tw: 'Fa ayaresa a wɔhyɛ aseɛ no ntɛm',
+  },
+  'pest.advice.high.2': {
+    en: 'Isolate affected areas if possible', fr: 'Isolez les zones touchées si possible', sw: 'Tenga maeneo yaliyoathirika', ha: 'Ware yankunan da abin ya shafa', tw: 'Twe beae a ɛasɛe no fi hɔ',
+  },
+  'pest.advice.high.3': {
+    en: 'Document damage for records', fr: 'Documentez les dégâts', sw: 'Andika uharibifu', ha: 'Rubuta lalacewar', tw: 'Kyerɛw ɔsɛe no',
+  },
+  'pest.advice.urgent.1': {
+    en: 'Treat immediately — crop at risk', fr: 'Traitez immédiatement — culture en danger', sw: 'Tibu mara moja — mazao hatarini', ha: 'Yi magani nan da nan', tw: 'Yɛ ayaresa ntɛm — nnɔbae wɔ asiane mu',
+  },
+  'pest.advice.urgent.2': {
+    en: 'Seek expert assistance', fr: 'Demandez l\'aide d\'un expert', sw: 'Tafuta msaada wa mtaalamu', ha: 'Nemi taimakon kwararru', tw: 'Hwehwɛ obi a onim ade mmoa',
+  },
+  'pest.advice.urgent.3': {
+    en: 'Consider emergency measures', fr: 'Envisagez des mesures d\'urgence', sw: 'Fikiria hatua za dharura', ha: 'Yi tunani kan matakin gaggawa', tw: 'Susuw nneɛma a ɛho hia ntɛm',
+  },
+  'pest.advice.urgent.4': {
+    en: 'Report to local agricultural office', fr: 'Signalez au bureau agricole local', sw: 'Ripoti kwa ofisi ya kilimo', ha: 'Kai rahoto ga ofishin noma', tw: 'Ka kyerɛ kurom mu adwumayɛfo',
+  },
+
+  // ─── Pest check flow messages ─────────────────────────────
+  'pest.imageError': {
+    en: 'Failed to process image', fr: 'Échec du traitement de l\'image', sw: 'Imeshindikana kusindika picha', ha: 'Hoto ya kasa', tw: 'Mfonini no anyɛ yiye',
+  },
+  'pest.offlineError': {
+    en: 'No internet connection. Try again when online.', fr: 'Pas de connexion. Réessayez en ligne.', sw: 'Hakuna mtandao. Jaribu unapokuwa mtandaoni.', ha: 'Babu intanet. Sake gwadawa.', tw: 'Wonni intanɛt. Bɔ mmɔden bio.',
+  },
+  'pest.offline': {
+    en: 'No connection — you can fill the form, but submission requires internet.', fr: 'Pas de connexion — vous pouvez remplir, mais l\'envoi nécessite internet.', sw: 'Hakuna mtandao — unaweza kujaza, lakini kutuma kunahitaji mtandao.', ha: 'Babu intanet — za ka iya cikawa, amma aikawa na bukatar intanet.', tw: 'Wonni intanɛt — wubetumi hyɛ mu, nanso wohia intanɛt ansa na woasoma.',
+  },
+  'pest.checking': {
+    en: 'Checking...', fr: 'Vérification...', sw: 'Inakagua...', ha: 'Ana dubawa...', tw: 'Ɛrehwɛ mu...',
+  },
+  'pest.lowQuality': {
+    en: 'Image quality too low', fr: 'Qualité d\'image trop basse', sw: 'Ubora wa picha ni mdogo', ha: 'Ingancin hoto ya yi ƙasa', tw: 'Mfonini no mu nna hɔ',
+  },
+  'pest.retakePhoto': {
+    en: 'Remove and retake this photo.', fr: 'Supprimez et reprenez cette photo.', sw: 'Ondoa na upige picha tena.', ha: 'Cire ka sake ɗaukar hoton.', tw: 'Yi mfonini no fi hɔ na fa bio.',
+  },
+  'pest.morePhotosNeeded': {
+    en: 'More photos needed. All 3 types are required.', fr: 'Plus de photos nécessaires. Les 3 types sont requis.', sw: 'Picha zaidi zinahitajika. Aina 3 zote zinahitajika.', ha: 'Ana bukatar ƙarin hotuna. Duk nau\'ikan 3 ana bukata.', tw: 'Mfonini pii ho hia. Ahorow 3 no nyinaa ho hia.',
+  },
+  'pest.stillWorking': {
+    en: 'Still working...', fr: 'En cours...', sw: 'Bado inafanya kazi...', ha: 'Har yanzu yana aiki...', tw: 'Ɛreyɛ adwuma da...',
+  },
+
+  // ─── Boundary warnings ────────────────────────────────────
+  'boundary.warnFewPoints': {
+    en: 'Too few points — walk more of the boundary for better accuracy.', fr: 'Trop peu de points — marchez plus.', sw: 'Alama chache — tembea zaidi kwa usahihi bora.', ha: 'Maki kaɗan — yi tafiya mai yawa.', tw: 'Tɔnk kakra dodo — nante nkyɛn pii.',
+  },
+  'boundary.warnLowAccuracy': {
+    en: 'Some points have low GPS accuracy. Move to open sky and retry.', fr: 'Certains points ont une faible précision GPS. Allez à ciel ouvert.', sw: 'Baadhi ya alama zina usahihi mdogo wa GPS. Nenda mahali wazi.', ha: 'Wasu maki suna da ƙarancin daidaituwar GPS. Je bude sarari.', tw: 'Tɔnk bi GPS no nna hɔ yiye. Kɔ baabi a wim bue na bɔ mmɔden bio.',
+  },
+  'boundary.warnDuplicate': {
+    en: 'Last point is very close to previous — move further before adding another.', fr: 'Le dernier point est très proche du précédent — éloignez-vous.', sw: 'Alama ya mwisho iko karibu — sogea mbali zaidi.', ha: 'Makin ƙarshe ya yi kusa da na baya — matsa gaba.', tw: 'Tɔnk a etwa to no bɛn paa — kɔ akyire kakra.',
+  },
+  'boundary.validationFailed': {
+    en: 'Boundary validation failed — try redrawing with more points.', fr: 'Validation échouée — réessayez avec plus de points.', sw: 'Uthibitisho umeshindikana — jaribu tena na alama zaidi.', ha: 'Tabbatarwa ya kasa — sake gwadawa da ƙarin maki.', tw: 'Nhwɛso no anni yie — bɔ mmɔden bio ka tɔnk pii ho.',
   },
 
   // ─── Hotspot alerts ───────────────────────────────────────
@@ -2990,6 +3085,18 @@ const T = {
   },
   'treatment.recorded': {
     en: 'Treatment Recorded', fr: 'Traitement Enregistré', sw: 'Tiba Imerekodiwa', ha: 'An Rubuta Magani', tw: 'Wɔakyerɛw Nnuro',
+  },
+  'treatment.viewReport': {
+    en: 'View Report', fr: 'Voir le Rapport', sw: 'Tazama Ripoti', ha: 'Duba Rahoto', tw: 'Hwɛ Amanneɛbɔ',
+  },
+  'treatment.date': {
+    en: 'Date Applied', fr: 'Date d\'Application', sw: 'Tarehe ya Kutumia', ha: 'Ranar Amfani', tw: 'Da a Wɔde Yɛɛ Adwuma',
+  },
+  'treatment.followupPhoto': {
+    en: 'Follow-up Photo (optional)', fr: 'Photo de Suivi (facultatif)', sw: 'Picha ya Ufuatiliaji (si lazima)', ha: 'Hoton Biye (na zaɓi)', tw: 'Mfonini a Edi Akyi (nhyehyɛe)',
+  },
+  'treatment.addPhoto': {
+    en: 'Tap to add photo', fr: 'Appuyez pour ajouter une photo', sw: 'Gonga kuongeza picha', ha: 'Danna don ƙara hoto', tw: 'Tɛ so de mfonini bɛka ho',
   },
   'treatment.recordedDesc': {
     en: 'Your treatment data helps improve advice for all farmers', fr: 'Vos données aident à améliorer les conseils', sw: 'Data yako inasaidia kuboresha ushauri', ha: 'Bayananku na taimaka wajen inganta shawara', tw: 'Wo nsɛm boa afuom fo nyinaa',

@@ -6,6 +6,10 @@ import { useNetwork } from '../context/NetworkContext.jsx';
 import { usePestReportSubmit } from '../hooks/useIntelligence.js';
 import { uploadPestImage, createPestReport } from '../lib/intelligenceApi.js';
 import { COLORS } from '../constants/intelligence.js';
+import { trackPilotEvent } from '../utils/pilotTracker.js';
+import VoiceBar from '../components/VoiceBar.jsx';
+
+const STEP_VOICE_KEYS = { 1: 'pest.chooseCrop', 2: 'pest.takePhotos', 3: 'pest.answerQuestions', 4: 'pest.submit' };
 
 const CROPS = ['maize', 'wheat', 'rice', 'soybean', 'cotton', 'sorghum', 'cassava', 'beans'];
 const STAGES = ['seedling', 'vegetative', 'flowering', 'fruiting', 'harvest'];
@@ -95,6 +99,7 @@ export default function PestRiskCheck() {
   const [localError, setLocalError] = useState('');
   const [slowIndicator, setSlowIndicator] = useState(false);
   const slowTimer = useRef(null);
+  const submitGuardRef = useRef(false);
 
   const error = localError || (submitError ? (typeof submitError === 'string' ? submitError : submitError.message || t('pest.submitError')) : '');
 
@@ -139,12 +144,13 @@ export default function PestRiskCheck() {
             imageId: data.imageId,
           },
         }));
-      } catch {
+      } catch (err) {
         // Upload failed — keep preview, clear quality (will re-upload on submit)
         setImageQuality(prev => ({ ...prev, [slotKey]: { uploading: false, uploadFailed: true } }));
+        trackPilotEvent('photo_upload_failed', { slot: slotKey, error: err?.message });
       }
     } catch {
-      setLocalError(t('pest.imageError') || 'Failed to process image');
+      setLocalError(t('pest.imageError'));
     }
   }, [t, profileId]);
 
@@ -171,10 +177,12 @@ export default function PestRiskCheck() {
   };
 
   const handleSubmit = async () => {
+    if (submitGuardRef.current) return;
     if (!isOnline) {
-      setLocalError(t('pest.offlineError') || 'No internet connection. Please try again when online.');
+      setLocalError(t('pest.offlineError'));
       return;
     }
+    submitGuardRef.current = true;
     setLocalError('');
     setSubmitting(true);
     try {
@@ -210,11 +218,14 @@ export default function PestRiskCheck() {
       // Submit report directly (images already uploaded)
       const raw = await createPestReport(reportData);
       const report = raw?.data || raw;
+      trackPilotEvent('update_submitted', { type: 'pest_report', profileId });
       navigate('/pest-risk-result', { state: { report } });
     } catch (err) {
       setLocalError(err.message || t('pest.submitError'));
+      trackPilotEvent('update_failed', { type: 'pest_report', error: err.message });
     } finally {
       setSubmitting(false);
+      submitGuardRef.current = false;
     }
   };
 
@@ -241,7 +252,7 @@ export default function PestRiskCheck() {
         {/* Offline banner */}
         {!isOnline && (
           <div style={S.offlineBanner}>
-            {t('pest.offline') || 'No connection - you can fill the form, but submission requires internet.'}
+            {t('pest.offline')}
           </div>
         )}
 
@@ -270,13 +281,16 @@ export default function PestRiskCheck() {
           ))}
         </div>
 
+        {/* Voice guide */}
+        <VoiceBar voiceKey={submitLoading ? 'pest.submitting' : (anyQualityFailed ? 'pest.photoRetake' : STEP_VOICE_KEYS[step])} compact />
+
         {/* Error with retry */}
         {error && (
           <div style={S.errorBox}>
             <span>{error}</span>
             {step === TOTAL_STEPS && !submitLoading && (
               <button style={S.retryInlineBtn} onClick={handleRetry}>
-                {t('pest.retry') || 'Retry'}
+                {t('pest.retry')}
               </button>
             )}
           </div>
@@ -366,17 +380,17 @@ export default function PestRiskCheck() {
                         )}
                         {q?.uploading && (
                           <div style={S.qualityBadge}>
-                            {t('pest.checking') || 'Checking...'}
+                            {t('pest.checking')}
                           </div>
                         )}
                       </div>
                       {/* Rejection reason + retry guidance */}
                       {q && !q.uploading && !q.qualityPassed && !q.uploadFailed && (
                         <div style={S.qualityWarning}>
-                          <span style={{ fontWeight: 600 }}>{q.rejectionReason || (t('pest.lowQuality') || 'Image quality too low')}</span>
+                          <span style={{ fontWeight: 600 }}>{q.rejectionReason || t('pest.lowQuality')}</span>
                           {q.retryGuidance && <span style={{ display: 'block', marginTop: '4px', opacity: 0.85 }}>{q.retryGuidance}</span>}
                           <span style={{ display: 'block', marginTop: '4px', fontWeight: 600 }}>
-                            {t('pest.retakePhoto') || 'Remove and retake this photo.'}
+                            {t('pest.retakePhoto')}
                           </span>
                         </div>
                       )}
@@ -400,7 +414,7 @@ export default function PestRiskCheck() {
             {/* Missing images hint */}
             {!allThreeImages && imageCount > 0 && (
               <p style={{ ...S.hint, marginTop: '0.75rem', color: COLORS.amber }}>
-                {t('pest.morePhotosNeeded') || `${3 - imageCount} more photo(s) needed. All 3 types are required.`}
+                {t('pest.morePhotosNeeded')}
               </p>
             )}
           </div>
@@ -478,7 +492,7 @@ export default function PestRiskCheck() {
                 <div style={S.spinner} />
                 <span style={{ color: COLORS.subtext }}>
                   {slowIndicator
-                    ? (t('pest.stillWorking') || 'Still working...')
+                    ? t('pest.stillWorking')
                     : t('pest.analyzing')}
                 </span>
               </div>
@@ -519,6 +533,7 @@ const S = {
   container: {
     maxWidth: '48rem',
     margin: '0 auto',
+    paddingBottom: '80px',
   },
   offlineBanner: {
     background: 'rgba(239,68,68,0.12)',
@@ -755,6 +770,11 @@ const S = {
     display: 'flex',
     gap: '0.75rem',
     marginTop: '1rem',
+    position: 'sticky',
+    bottom: 0,
+    background: COLORS.bg,
+    padding: '0.75rem 0',
+    zIndex: 10,
   },
   backBtn: {
     flex: 1,

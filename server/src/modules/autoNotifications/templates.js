@@ -37,6 +37,16 @@ const templates = {
     subject: `${riskLevel} risk alert — ${farmerName}`,
     message: `${officerName || 'Officer'}: ${farmerName}'s season (${seasonId?.slice(0, 8)}) is flagged ${riskLevel} risk (${riskCategory}). Please follow up immediately.`,
   }),
+
+  onboarding_reminder: ({ fullName, nextStep }) => ({
+    subject: 'Complete your Farroway setup',
+    message: `Hi ${fullName || 'there'}, you started setting up your Farroway account but haven't finished yet. Next step: ${nextStep || 'complete your farm profile'}. Open the app to continue.`,
+  }),
+
+  feedback_followup: ({ fullName, issueDescription }) => ({
+    subject: 'Did your crop issue improve?',
+    message: `Hi ${fullName || 'there'}, a few days ago you reported ${issueDescription || 'a crop issue'}. How is your crop doing? Open Farroway to share your feedback — it helps improve advice for all farmers.`,
+  }),
 };
 
 /**

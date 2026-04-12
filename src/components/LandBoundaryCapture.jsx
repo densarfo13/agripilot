@@ -2,7 +2,9 @@ import { useRef, useState } from 'react';
 import { t } from '../lib/i18n.js';
 import { saveLandBoundary } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
+import VoiceBar from './VoiceBar.jsx';
 
 const S = {
   container: { padding: '12px 0' },
@@ -145,11 +147,11 @@ export default function LandBoundaryCapture({ existingBoundary, onSaved, onSkip 
   const boundaryWarnings = (() => {
     const warns = [];
     if (points.length > 0 && points.length < 4) {
-      warns.push(t('boundary.warnFewPoints') || 'Too few points — walk more of the boundary for better accuracy.');
+      warns.push(t('boundary.warnFewPoints'));
     }
     const lowAccuracy = points.filter(p => p.accuracy && p.accuracy > 30);
     if (lowAccuracy.length > 0) {
-      warns.push(t('boundary.warnLowAccuracy') || `${lowAccuracy.length} point(s) have low GPS accuracy. Move to open sky and retry.`);
+      warns.push(t('boundary.warnLowAccuracy'));
     }
     // Check for duplicate/very-close points
     if (points.length >= 2) {
@@ -157,7 +159,7 @@ export default function LandBoundaryCapture({ existingBoundary, onSaved, onSkip 
       const prev = points[points.length - 2];
       const dist = Math.abs(last.latitude - prev.latitude) + Math.abs(last.longitude - prev.longitude);
       if (dist < 0.00001) {
-        warns.push(t('boundary.warnDuplicate') || 'Last point is very close to previous — move further before adding another.');
+        warns.push(t('boundary.warnDuplicate'));
       }
     }
     return warns;
@@ -179,7 +181,7 @@ export default function LandBoundaryCapture({ existingBoundary, onSaved, onSkip 
       const boundary = data?.boundary || data;
       // Show validation feedback from server if available
       if (boundary?.validationStatus === 'failed' || boundary?.validationStatus === 'review_needed') {
-        setStatus({ type: 'error', msg: boundary.validationReason || t('boundary.validationFailed') || 'Boundary validation failed — try redrawing with more points.' });
+        setStatus({ type: 'error', msg: boundary.validationReason || t('boundary.validationFailed') });
         safeTrackEvent('boundary.validation_warning', { status: boundary.validationStatus });
       } else {
         setStatus({ type: 'success', msg: t('boundary.saved') });
@@ -188,6 +190,7 @@ export default function LandBoundaryCapture({ existingBoundary, onSaved, onSkip 
       if (onSaved) onSaved(boundary);
     } catch (err) {
       setStatus({ type: 'error', msg: err.message || t('boundary.saveFailed') });
+      trackPilotEvent('boundary_save_failed', { error: err?.message, method, pointCount: points.length });
     } finally {
       setSaving(false);
     }
@@ -202,6 +205,7 @@ export default function LandBoundaryCapture({ existingBoundary, onSaved, onSkip 
   return (
     <div style={S.container}>
       <div style={S.title}>{t('boundary.title')}</div>
+      <VoiceBar voiceKey={capturingGPS ? 'boundary.walking' : (status?.type === 'success' ? 'boundary.saved' : (boundaryWarnings.length > 0 ? 'boundary.warning' : 'boundary.chooseMethod'))} compact />
       <div style={S.desc}>{t('boundary.desc')}</div>
 
       {!isOnline && (

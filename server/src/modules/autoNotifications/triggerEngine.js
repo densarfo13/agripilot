@@ -387,6 +387,128 @@ export async function ruleHighRiskAlert() {
   });
 }
 
+// ─── Rule 7: Onboarding reminder ────────────────────────
+
+const ONBOARDING_REMINDER_DAYS = 3; // send after 3 days of inactivity
+
+export async function ruleOnboardingReminder() {
+  const cutoff = new Date(Date.now() - ONBOARDING_REMINDER_DAYS * 24 * 60 * 60 * 1000);
+
+  const users = await prisma.user.findMany({
+    where: {
+      onboardingStatus: 'in_progress',
+      onboardingStartedAt: { lte: cutoff },
+      role: 'farmer',
+      active: true,
+    },
+    take: BATCH_LIMIT,
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      onboardingLastStep: true,
+      organizationId: true,
+    },
+  });
+
+  if (users.length === 0) return [];
+
+  // Map last step to a human-friendly next step description
+  const STEP_LABELS = {
+    welcome: 'Enter your farm name',
+    farmName: 'Select your country',
+    country: 'Choose your primary crop',
+    crop: 'Enter your farm size',
+    farmSize: 'Add your gender (optional)',
+    gender: 'Select your age group',
+    age: 'Confirm your location',
+    location: 'Take a farm photo',
+    photo: 'Submit your profile',
+  };
+
+  return users
+    .filter(u => u.email) // only send to users with email
+    .map(u => ({
+      type: 'onboarding_reminder',
+      organizationId: u.organizationId,
+      userId: u.id,
+      roleTarget: null,
+      farmerId: null,
+      seasonId: null,
+      preferredChannel: 'email',
+      phone: null,
+      email: u.email,
+      templateCtx: {
+        fullName: u.fullName,
+        nextStep: STEP_LABELS[u.onboardingLastStep] || 'Complete your farm profile',
+        lastStep: u.onboardingLastStep,
+      },
+    }));
+}
+
+// ─── Rule 8: Feedback follow-up ─────────────────────────
+
+const FEEDBACK_FOLLOWUP_DAYS = 5; // send 5 days after pest report if no feedback
+
+export async function ruleFeedbackFollowup() {
+  const cutoff = new Date(Date.now() - FEEDBACK_FOLLOWUP_DAYS * 24 * 60 * 60 * 1000);
+
+  // Find pest reports created 5+ days ago that have no feedback yet
+  const reports = await prisma.v2PestReport.findMany({
+    where: {
+      createdAt: { lte: cutoff },
+      riskLevel: { in: ['high', 'urgent', 'moderate'] },
+      diagnosisFeedback: { none: {} },
+    },
+    take: BATCH_LIMIT,
+    select: {
+      id: true,
+      reportedBy: true,
+      likelyIssue: true,
+      riskLevel: true,
+      profile: {
+        select: { userId: true },
+      },
+    },
+  });
+
+  if (reports.length === 0) return [];
+
+  // Batch-fetch user emails
+  const userIds = [...new Set(reports.map(r => r.reportedBy).filter(Boolean))];
+  const userMap = new Map();
+  if (userIds.length > 0) {
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, fullName: true },
+    });
+    for (const u of users) userMap.set(u.id, u);
+  }
+
+  return reports
+    .map(r => {
+      const user = userMap.get(r.reportedBy);
+      if (!user?.email) return null;
+      return {
+        type: 'feedback_followup',
+        organizationId: null,
+        userId: r.reportedBy,
+        roleTarget: null,
+        farmerId: null,
+        seasonId: null,
+        preferredChannel: 'email',
+        phone: null,
+        email: user.email,
+        templateCtx: {
+          fullName: user.fullName,
+          issueDescription: r.likelyIssue || 'a crop issue',
+          reportId: r.id,
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
 // ─── Run all rules ────────────────────────────────────────
 
 export async function collectAllTriggers() {
@@ -397,6 +519,8 @@ export async function collectAllTriggers() {
     validationPending,
     reviewerBacklog,
     highRisk,
+    onboardingReminders,
+    feedbackFollowups,
   ] = await Promise.allSettled([
     ruleInviteReminder(),
     ruleNoFirstUpdate(),
@@ -404,10 +528,12 @@ export async function collectAllTriggers() {
     ruleValidationPending(),
     ruleReviewerBacklog(),
     ruleHighRiskAlert(),
+    ruleOnboardingReminder(),
+    ruleFeedbackFollowup(),
   ]);
 
   const all = [];
-  for (const result of [inviteReminders, noFirstUpdates, staleActivity, validationPending, reviewerBacklog, highRisk]) {
+  for (const result of [inviteReminders, noFirstUpdates, staleActivity, validationPending, reviewerBacklog, highRisk, onboardingReminders, feedbackFollowups]) {
     if (result.status === 'fulfilled') {
       all.push(...result.value);
     } else {

@@ -289,6 +289,8 @@ model User {
   // V2 analytics + support
   v2AnalyticsEvents        V2AnalyticsEvent[]
   v2SupportRequests        V2SupportRequest[]
+  // Email logs
+  emailLogs                EmailLog[]          @relation("EmailLogUser")
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1228,6 +1230,8 @@ enum AutoNotifType {
   validation_pending      // season awaiting officer validation
   reviewer_backlog        // reviewer has too many pending applications
   high_risk_alert         // season risk level is Critical or High
+  onboarding_reminder     // user started onboarding but hasn't completed after N days
+  feedback_followup       // pest report created 5+ days ago with no feedback submitted
 }
 
 model AutoNotification {
@@ -2191,4 +2195,35 @@ model OnboardingEvent {
   @@index([eventType], map: "idx_onboarding_events_type")
   @@index([eventTimestamp], map: "idx_onboarding_events_ts")
   @@map("onboarding_events")
+}
+
+// ─── Email Log ─────────────────────────────────────────────
+
+enum EmailLogStatus {
+  queued
+  sent
+  failed
+}
+
+model EmailLog {
+  id              String         @id @default(uuid())
+  recipient       String
+  sender          String
+  subject         String
+  templateName    String         @map("template_name")
+  status          EmailLogStatus @default(queued)
+  errorMessage    String?        @map("error_message")
+  relatedUserId   String?        @map("related_user_id")
+  relatedReportId String?        @map("related_report_id")
+  metadata        Json?
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  relatedUser     User?          @relation("EmailLogUser", fields: [relatedUserId], references: [id])
+
+  @@index([recipient], map: "idx_email_log_recipient")
+  @@index([templateName], map: "idx_email_log_template")
+  @@index([status], map: "idx_email_log_status")
+  @@index([relatedUserId], map: "idx_email_log_user")
+  @@index([createdAt], map: "idx_email_log_created")
+  @@map("email_logs")
 }
