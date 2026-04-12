@@ -1,18 +1,11 @@
-import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { isProfileComplete } from '../utils/farmScore.js';
+import { isProfileComplete } from '../lib/farmScore.js';
 
-/**
- * Profile guard — redirects farmer-role users with incomplete profiles
- * to /profile/setup. Uses shared ProfileContext (no duplicate fetch).
- * Allows /profile/setup itself to render normally.
- */
 export default function ProfileGuard({ children }) {
   const location = useLocation();
   const { profile, loading, initialized } = useProfile();
 
-  // Still loading for the first time — show spinner
   if (loading && !initialized) {
     return (
       <div style={S.loading}>
@@ -21,12 +14,8 @@ export default function ProfileGuard({ children }) {
     );
   }
 
-  // /profile/setup is always allowed
-  if (location.pathname === '/profile/setup') {
-    return children;
-  }
+  if (location.pathname === '/profile/setup') return children;
 
-  // Incomplete profile — redirect to setup
   if (!isProfileComplete(profile || {})) {
     return <Navigate to="/profile/setup" replace />;
   }

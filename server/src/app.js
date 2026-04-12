@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
@@ -61,6 +62,11 @@ import analyticsRoutes from './modules/analytics/routes.js';
 import impactRoutes from './modules/impact/routes.js';
 import issueRoutes from './modules/issues/routes.js';
 
+// ─── V2 enterprise auth routes (cookie-based) ──────────────
+import v2AuthRoutes from '../routes/auth.js';
+import v2FarmProfileRoutes from '../routes/farmProfile.js';
+import v2MonitoringRoutes from '../routes/monitoring.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -117,6 +123,9 @@ if (config.cors.origins.includes('*')) {
 }
 
 app.use(cors(corsOptions));
+
+// ─── Cookie Parser (for httpOnly cookie auth) ─────────
+app.use(cookieParser());
 
 // ─── Body Parsing ──────────────────────────────────────
 app.use(express.json({ limit: '2mb' }));
@@ -336,6 +345,11 @@ app.use('/api/v1/farms', financeScoreRoutes);
 app.use('/api/v1/referral', referralRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/impact', impactRoutes);
+
+// ─── V2 Enterprise Auth (cookie-based, httpOnly) ────────
+app.use('/api/v2/auth', authLimiter, v2AuthRoutes);
+app.use('/api/v2/farm-profile', v2FarmProfileRoutes);
+app.use('/api/v2/monitoring', v2MonitoringRoutes);
 
 // ─── API 404 (catch unmatched /api routes) ──────────────
 app.use('/api', (req, res) => {

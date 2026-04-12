@@ -1,68 +1,66 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useFarmStore } from '../store/farmStore.js';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { getFarmProfile, saveFarmProfile } from '../lib/api.js';
+import { useAuth } from './AuthContext.jsx';
 
 const ProfileContext = createContext(null);
 
-/**
- * Shared profile context — loads farm profile once, provides it to all
- * children (dashboard, badge, guard) without duplicate fetches.
- * Uses existing farmStore/API under the hood.
- */
 export function ProfileProvider({ children }) {
-  const { fetchProfiles, createProfile, updateProfile, currentProfile } = useFarmStore();
-  const [profile, setProfile] = useState(currentProfile || null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, authLoading } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   const refreshProfile = useCallback(async () => {
+    if (!isAuthenticated) {
+      setProfile(null);
+      setInitialized(true);
+      setLoading(false);
+      return null;
+    }
+
     setLoading(true);
     try {
-      const profiles = await fetchProfiles();
-      const latest = profiles?.[0] || null;
-      setProfile(latest);
-      return latest;
+      const data = await getFarmProfile();
+      setProfile(data.profile || null);
+      return data.profile || null;
     } finally {
       setLoading(false);
       setInitialized(true);
     }
-  }, [fetchProfiles]);
+  }, [isAuthenticated]);
 
   const saveProfile = useCallback(async (payload) => {
-    const existing = profile || currentProfile;
-    let result;
-    if (existing?.id) {
-      result = await updateProfile(existing.id, payload);
-    } else {
-      result = await createProfile(payload);
-    }
-    // Normalize: createProfile returns { success, profile } or the profile directly
-    const updated = result?.profile || result;
-    if (updated) setProfile(updated);
-    return result;
-  }, [profile, currentProfile, createProfile, updateProfile]);
+    const data = await saveFarmProfile(payload);
+    setProfile(data.profile || null);
+    return data;
+  }, []);
 
   useEffect(() => {
-    refreshProfile().catch((err) => {
-      console.error('Failed to initialize profile context:', err);
-      setLoading(false);
-      setInitialized(true);
-    });
-  }, [refreshProfile]);
+    if (!authLoading) {
+      refreshProfile().catch(() => {
+        setLoading(false);
+        setInitialized(true);
+      });
+    }
+  }, [authLoading, refreshProfile]);
 
-  const value = useMemo(() => ({
-    profile,
-    loading,
-    initialized,
-    refreshProfile,
-    saveProfile,
-    setProfile,
-  }), [profile, loading, initialized, refreshProfile, saveProfile]);
+  const value = useMemo(
+    () => ({
+      profile,
+      loading,
+      initialized,
+      refreshProfile,
+      saveProfile,
+      setProfile,
+    }),
+    [profile, loading, initialized, refreshProfile, saveProfile],
+  );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
 
 export function useProfile() {
-  const ctx = useContext(ProfileContext);
-  if (!ctx) throw new Error('useProfile must be used within ProfileProvider');
-  return ctx;
+  const context = useContext(ProfileContext);
+  if (!context) throw new Error('useProfile must be used within ProfileProvider');
+  return context;
 }

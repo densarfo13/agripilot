@@ -11,6 +11,16 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 
+// V2 enterprise auth pages (cookie-based, lazy-loaded)
+const V2Login = lazy(() => import('./pages/Login.jsx'));
+const V2Register = lazy(() => import('./pages/Register.jsx'));
+const V2ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
+const V2ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
+const V2VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
+const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
+const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const V2ProtectedLayout = lazy(() => import('./layouts/ProtectedLayout.jsx'));
+
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
 const FarmerDetailPage = lazy(() => import('./pages/FarmerDetailPage.jsx'));
@@ -51,8 +61,12 @@ const AdminIssuesPage = lazy(() => import('./pages/AdminIssuesPage.jsx'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
-import ProfileGuard from './components/ProfileGuard.jsx';
-import { ProfileProvider } from './context/ProfileContext.jsx';
+// Legacy profile guard + provider use the old farmStore-based flow (Bearer token auth)
+import LegacyProfileGuard from './components/ProfileGuard.jsx';
+import { ProfileProvider as LegacyProfileProvider } from './context/ProfileContextLegacy.jsx';
+// V2 enterprise auth context (cookie-based)
+import { AuthProvider } from './context/AuthContext.jsx';
+import { ProfileProvider as V2ProfileProvider } from './context/ProfileContext.jsx';
 
 const PageLoader = () => <div className="loading">Loading...</div>;
 
@@ -62,10 +76,10 @@ function ProtectedRoute({ children, allowSetup }) {
   if (!token) return <Navigate to="/login" replace />;
   // Farmer-role users get their own limited dashboard
   if (user?.role === 'farmer') {
-    // Wrap farmer routes in ProfileProvider for shared profile state
-    if (allowSetup) return <ProfileProvider>{children}</ProfileProvider>;
+    // Wrap farmer routes in legacy ProfileProvider for shared profile state
+    if (allowSetup) return <LegacyProfileProvider>{children}</LegacyProfileProvider>;
     // ProfileGuard redirects to /profile/setup if profile is incomplete
-    return <ProfileProvider><ProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></ProfileGuard></ProfileProvider>;
+    return <LegacyProfileProvider><LegacyProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></LegacyProfileGuard></LegacyProfileProvider>;
   }
   return children;
 }
@@ -91,16 +105,29 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <AuthProvider>
+      <V2ProfileProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* V2 enterprise auth routes (cookie-based, httpOnly) */}
+          <Route path="/login" element={<V2Login />} />
+          <Route path="/register" element={<V2Register />} />
+          <Route path="/forgot-password" element={<V2ForgotPassword />} />
+          <Route path="/reset-password" element={<V2ResetPassword />} />
+          <Route path="/verify-email" element={<V2VerifyEmail />} />
+          <Route path="/profile/setup" element={<V2ProfileSetup />} />
+          <Route element={<V2ProtectedLayout />}>
+            <Route path="/dashboard" element={<V2Dashboard />} />
+            <Route path="/season/start" element={<div style={{ minHeight: '100vh', background: '#0F172A', color: '#fff', padding: '1.5rem' }}><div style={{ maxWidth: '48rem', margin: '0 auto', borderRadius: '16px', background: '#1B2330', border: '1px solid rgba(255,255,255,0.1)', padding: '1.5rem' }}><h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Season Module</h1><p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>Season flow is not wired yet. This is a production placeholder.</p></div></div>} />
+          </Route>
+
+          {/* V1 legacy routes (Bearer token auth) */}
+          <Route path="/v1/login" element={<LoginPage />} />
           <Route path="/farmer-register" element={<FarmerRegisterPage />} />
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
-          <Route path="/profile/setup" element={<ProtectedRoute allowSetup><ProfileSetupPage /></ProtectedRoute>} />
+          <Route path="/v1/profile/setup" element={<ProtectedRoute allowSetup><ProfileSetupPage /></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<DashboardPage />} />
             <Route path="farmers" element={<RoleRoute roles={STAFF_ROLES}><FarmersPage /></RoleRoute>} />
@@ -140,6 +167,8 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      </V2ProfileProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

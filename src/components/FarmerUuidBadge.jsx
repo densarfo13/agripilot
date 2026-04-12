@@ -1,10 +1,5 @@
-import React from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 
-/**
- * Displays the farmer's persistent UUID badge.
- * Uses shared ProfileContext — no duplicate fetch needed.
- */
 export default function FarmerUuidBadge() {
   const { profile, loading } = useProfile();
 

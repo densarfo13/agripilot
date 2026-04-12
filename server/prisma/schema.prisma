@@ -217,6 +217,8 @@ model User {
   mfaSecret         String?   @map("mfa_secret")         // AES-encrypted TOTP secret
   mfaEnrolledAt     DateTime? @map("mfa_enrolled_at")
   mfaBackupCodes    String[]  @default([]) @map("mfa_backup_codes")  // bcrypt-hashed backup codes
+  // ─── Email verification ─────────────────────────────────
+  emailVerifiedAt   DateTime? @map("email_verified_at")
   // ─── Token revocation ──────────────────────────────────
   tokenVersion      Int       @default(0) @map("token_version")      // bump on logout/disable
   createdAt         DateTime  @default(now()) @map("created_at")
@@ -243,6 +245,9 @@ model User {
   feedback                 UserFeedback[]
   // Auth
   passwordResetTokens      PasswordResetToken[]
+  sessions                 UserSession[]
+  emailVerificationTokens  EmailVerificationToken[]
+  directFarmProfile        FarmProfile?            @relation("DirectFarmProfile")
   // Referral
   referralCode             String?   @unique @map("referral_code")
   referredById             String?   @map("referred_by_id")
@@ -283,6 +288,42 @@ model PasswordResetToken {
 
   @@index([userId], map: "idx_pwd_reset_user")
   @@map("password_reset_tokens")
+}
+
+// ─── User Session (refresh token rotation) ─────────────
+
+model UserSession {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  refreshTokenId String    @unique @map("refresh_token_id")
+  userAgent      String?   @map("user_agent")
+  ipAddress      String?   @map("ip_address")
+  expiresAt      DateTime  @map("expires_at")
+  revokedAt      DateTime? @map("revoked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_sessions_user")
+  @@index([expiresAt], map: "idx_sessions_expires")
+  @@map("user_sessions")
+}
+
+// ─── Email Verification Token ──────────────────────────
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_email_verify_user")
+  @@map("email_verification_tokens")
 }
 
 // ─── Federated Identity ────────────────────────────────
@@ -1214,10 +1255,12 @@ enum RecommendationStatus {
 
 model FarmProfile {
   id              String    @id @default(uuid())
-  farmerId        String    @map("farmer_id")
+  farmerId        String?   @map("farmer_id")
+  userId          String?   @unique @map("user_id_direct")   // direct User relation for cookie-based auth flow
   farmerUuid      String    @unique @map("farmer_uuid")
   farmerName      String    @map("farmer_name")
   farmName        String?   @map("farm_name")
+  country         String?   @map("country")
   locationName    String?   @map("location_name")
   latitude        Float?
   longitude       Float?
@@ -1230,7 +1273,8 @@ model FarmProfile {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  farmer          Farmer    @relation(fields: [farmerId], references: [id])
+  farmer          Farmer?   @relation(fields: [farmerId], references: [id])
+  userDirect      User?     @relation("DirectFarmProfile", fields: [userId], references: [id])
   recommendations RecommendationRecord[]
   weatherSnapshots WeatherSnapshot[]
   financeScores   FarmFinanceScore[]
