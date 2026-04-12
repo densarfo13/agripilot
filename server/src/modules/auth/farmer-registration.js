@@ -169,7 +169,7 @@ export async function farmerSelfRegister({
   sendWelcomeEmail({
     to: user.email,
     fullName: user.fullName,
-    appUrl: process.env.FRONTEND_BASE_URL || 'https://app.farroways.com',
+    appUrl: process.env.FRONTEND_BASE_URL || 'https://farroway.app',
     relatedUserId: user.id,
   });
 

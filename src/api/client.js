@@ -12,7 +12,7 @@ const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNati
 // On web, relative '/api' works via Vite proxy or Express production serving.
 // VITE_API_URL can be set at build time for native or custom deployments.
 const API_BASE = isNative
-  ? (import.meta.env.VITE_API_URL || 'https://agripilot-production.up.railway.app/api')
+  ? (import.meta.env.VITE_API_URL || 'https://farroway.app/api')
   : (import.meta.env.VITE_API_URL || '/api');
 
 const api = axios.create({

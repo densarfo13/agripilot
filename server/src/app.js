@@ -100,6 +100,21 @@ if (config.isProduction) {
   app.set('trust proxy', 1);
 }
 
+// ─── Canonical Domain Redirect ────────────────────────────────────────
+// In production, redirect old/www domains to the canonical https://farroway.app
+if (config.isProduction) {
+  app.use((req, res, next) => {
+    const host = (req.hostname || req.headers.host || '').replace(/:\d+$/, '');
+    const canonicalHost = 'farroway.app';
+    // Redirect www.farroway.app, farroways.com, www.farroways.com, and old railway domain
+    const redirectHosts = ['www.farroway.app', 'farroways.com', 'www.farroways.com', 'agripilot-production.up.railway.app'];
+    if (redirectHosts.includes(host)) {
+      return res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
+    }
+    next();
+  });
+}
+
 // ─── Production Static Assets (served early, before API middleware) ─────
 // Must be registered before API routes so asset requests never hit the API
 // middleware chain. The SPA fallback (app.get('*')) remains at the bottom.

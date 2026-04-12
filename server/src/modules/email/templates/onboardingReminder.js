@@ -3,7 +3,7 @@ import { wrapLayout } from '../templateRenderer.js';
 export function renderOnboardingReminder({ fullName, nextStep, continueUrl }) {
   const name = fullName || 'Farmer';
   const step = nextStep || 'complete your farm profile';
-  const url = continueUrl || process.env.FRONTEND_BASE_URL || 'https://app.farroways.com';
+  const url = continueUrl || process.env.FRONTEND_BASE_URL || 'https://farroway.app';
 
   const subject = 'Complete your Farroway setup';
 

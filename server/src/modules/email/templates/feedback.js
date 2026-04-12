@@ -3,7 +3,7 @@ import { wrapLayout } from '../templateRenderer.js';
 export function renderFeedback({ fullName, issueDescription, feedbackUrl }) {
   const name = fullName || 'Farmer';
   const issue = issueDescription || 'a recent crop issue';
-  const url = feedbackUrl || `${process.env.FRONTEND_BASE_URL || 'https://app.farroways.com'}/treatment-feedback`;
+  const url = feedbackUrl || `${process.env.FRONTEND_BASE_URL || 'https://farroway.app'}/treatment-feedback`;
 
   const subject = 'Did your crop issue improve?';
 

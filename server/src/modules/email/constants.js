@@ -1,7 +1,8 @@
 /**
  * Email Constants — sender identities, template names, and configuration.
  *
- * All public-facing emails use @farroways.com domain.
+ * All public-facing emails use @farroways.com sender domain.
+ * Canonical app domain: farroway.app
  * Environment variables override defaults when set.
  */
 

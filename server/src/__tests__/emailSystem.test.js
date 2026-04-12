@@ -60,8 +60,12 @@ describe('Email Constants — @farroways.com Senders', () => {
     expect(code).toContain("reports@farroways.com");
   });
 
-  it('no sender uses farroway.app', () => {
-    expect(code).not.toContain('farroway.app');
+  it('no sender email uses farroway.app domain', () => {
+    // Sender emails must use @farroways.com, not @farroway.app
+    const senderLines = code.split('\n').filter(l => l.includes("email:"));
+    senderLines.forEach(line => {
+      expect(line).not.toContain('@farroway.app');
+    });
   });
 
   it('defines all 7 template names', () => {

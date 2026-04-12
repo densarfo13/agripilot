@@ -32,7 +32,7 @@ export async function getReferralInfo(userId) {
   const referralCount = await prisma.referral.count({ where: { referrerId: userId } });
   return {
     code,
-    link: `https://farroway.com/register?ref=${code}`,
+    link: `https://farroway.app/register?ref=${code}`,
     referralCount,
   };
 }

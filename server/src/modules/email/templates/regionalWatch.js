@@ -6,7 +6,7 @@ export function renderRegionalWatch({ fullName, regionName, riskSummary, recomme
   const summary = riskSummary || 'Elevated pest activity has been detected in your region.';
   const action = recommendedAction || 'Monitor your crops closely and report any unusual symptoms.';
   const window = inspectionWindow || 'within the next 48 hours';
-  const url = appUrl || process.env.FRONTEND_BASE_URL || 'https://app.farroways.com';
+  const url = appUrl || process.env.FRONTEND_BASE_URL || 'https://farroway.app';
 
   const subject = 'Regional Pest Watch for Your Area';
 

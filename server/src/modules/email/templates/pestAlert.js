@@ -13,7 +13,7 @@ export function renderPestAlert({ fullName, riskLevel, likelyIssue, confidenceSc
   const issue = likelyIssue || 'Potential crop stress detected';
   const confidence = confidenceScore != null ? Math.round(confidenceScore * 100) : null;
   const color = LEVEL_COLORS[level] || LEVEL_COLORS.moderate;
-  const url = appUrl || process.env.FRONTEND_BASE_URL || 'https://app.farroways.com';
+  const url = appUrl || process.env.FRONTEND_BASE_URL || 'https://farroway.app';
 
   // Extract action guidance fields safely
   const whatToDo = actionGuidance?.whatToDoNow || actionGuidance?.recommendation || 'Check your crops and follow the in-app guidance.';

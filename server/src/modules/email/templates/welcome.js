@@ -2,7 +2,7 @@ import { wrapLayout } from '../templateRenderer.js';
 
 export function renderWelcome({ fullName, appUrl, supportEmail }) {
   const name = fullName || 'Farmer';
-  const url = appUrl || process.env.FRONTEND_BASE_URL || 'https://app.farroways.com';
+  const url = appUrl || process.env.FRONTEND_BASE_URL || 'https://farroway.app';
   const support = supportEmail || 'support@farroways.com';
 
   const subject = 'Welcome to Farroway';
