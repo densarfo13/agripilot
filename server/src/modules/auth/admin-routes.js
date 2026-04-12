@@ -34,7 +34,7 @@ router.use(extractOrganization);
 // List all users (scoped to organization)
 // ?status=active|disabled|archived — defaults to excluding archived users
 router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
-  const { status } = req.query;
+  const { status, onboardingStatus } = req.query;
   const base = orgWhereUser(req);
 
   let statusFilter = {};
@@ -49,6 +49,11 @@ router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(as
     statusFilter = { archivedAt: null };
   }
 
+  // Optional onboarding status filter
+  if (onboardingStatus && ['not_started', 'in_progress', 'completed', 'abandoned'].includes(onboardingStatus)) {
+    statusFilter.onboardingStatus = onboardingStatus;
+  }
+
   const page  = Math.max(1, parseInt(req.query.page  || '1',   10));
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit || '100', 10)));
 
@@ -59,6 +64,7 @@ router.get('/', authorize('super_admin', 'institutional_admin'), asyncHandler(as
         id: true, email: true, fullName: true, role: true, active: true, archivedAt: true, createdAt: true,
         organizationId: true,
         organization: { select: { id: true, name: true } },
+        onboardingStatus: true, onboardingStartedAt: true, onboardedAt: true, onboardingLastStep: true, onboardingSource: true,
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,

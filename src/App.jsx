@@ -80,6 +80,7 @@ const AdminHighRiskFarms = lazy(() => import('./pages/admin/HighRiskFarms.jsx'))
 const AdminHotspotInspector = lazy(() => import('./pages/admin/HotspotInspector.jsx'));
 const AdminAlertControlCenter = lazy(() => import('./pages/admin/AlertControlCenter.jsx'));
 const AdminInterventionEffectiveness = lazy(() => import('./pages/admin/InterventionEffectiveness.jsx'));
+const AdminOperationalQueues = lazy(() => import('./pages/admin/OperationalQueues.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 // Legacy profile guard + provider use the old farmStore-based flow (Bearer token auth)
@@ -206,6 +207,7 @@ export default function App() {
             <Route path="admin/intelligence/hotspots" element={<RoleRoute roles={ADMIN_ROLES}><AdminHotspotInspector /></RoleRoute>} />
             <Route path="admin/intelligence/alerts" element={<RoleRoute roles={ADMIN_ROLES}><AdminAlertControlCenter /></RoleRoute>} />
             <Route path="admin/intelligence/interventions" element={<RoleRoute roles={ADMIN_ROLES}><AdminInterventionEffectiveness /></RoleRoute>} />
+            <Route path="admin/intelligence/queues" element={<RoleRoute roles={ADMIN_ROLES}><AdminOperationalQueues /></RoleRoute>} />
             <Route path="pilot-metrics" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer', 'field_officer']}><PilotMetricsPage /></RoleRoute>} />
             <Route path="impact" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer']}><ImpactDashboardPage /></RoleRoute>} />
             <Route path="account" element={<AccountPage />} />

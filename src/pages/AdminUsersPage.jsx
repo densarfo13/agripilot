@@ -32,10 +32,34 @@ const STATUS_FILTERS = [
   { value: 'archived', label: 'Archived' },
 ];
 
+const ONBOARDING_FILTERS = [
+  { value: '', label: 'All Onboarding' },
+  { value: 'not_started', label: 'Not Started' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'abandoned', label: 'Abandoned' },
+];
+
+const ONBOARDING_BADGE_STYLES = {
+  not_started: { background: 'rgba(161,161,170,0.15)', color: '#A1A1AA', border: '1px solid #374151' },
+  in_progress: { background: 'rgba(59,130,246,0.15)', color: '#60A5FA', border: '1px solid #1E3A5F' },
+  completed:   { background: 'rgba(34,197,94,0.15)', color: '#22C55E', border: '1px solid #14532D' },
+  abandoned:   { background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid #7F1D1D' },
+};
+
+const ONBOARDING_LABELS = {
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  abandoned: 'Abandoned',
+};
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [onboardingFilter, setOnboardingFilter] = useState('');
+  const [onboardingStats, setOnboardingStats] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
@@ -47,19 +71,33 @@ export default function AdminUsersPage() {
   const isInstAdmin = currentUser?.role === 'institutional_admin';
   const canManage = isSuperAdmin || isInstAdmin;
 
-  const load = (status = statusFilter) => {
+  const load = (status = statusFilter, obFilter = onboardingFilter) => {
     setLoading(true);
-    api.get('/users', { params: status ? { status } : {} })
+    const params = {};
+    if (status) params.status = status;
+    if (obFilter) params.onboardingStatus = obFilter;
+    api.get('/users', { params })
       .then(r => { setUsers(r.data.users || r.data || []); setActionError(''); })
       .catch(err => setActionError(formatApiError(err, 'Failed to load users')))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  const loadOnboardingStats = () => {
+    api.get('/onboarding/admin/analytics')
+      .then(r => setOnboardingStats(r.data?.data || null))
+      .catch(() => {}); // silent — stats are optional
+  };
+
+  useEffect(() => { load(); loadOnboardingStats(); }, []);
 
   const handleFilterChange = (value) => {
     setStatusFilter(value);
-    load(value);
+    load(value, onboardingFilter);
+  };
+
+  const handleOnboardingFilterChange = (value) => {
+    setOnboardingFilter(value);
+    load(statusFilter, value);
   };
 
   // Can this admin open the edit modal for a given user?
@@ -134,6 +172,33 @@ export default function AdminUsersPage() {
           ))}
         </div>
 
+        {/* Onboarding filter tabs */}
+        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {ONBOARDING_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => handleOnboardingFilterChange(f.value)}
+              style={{
+                padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
+                border: onboardingFilter === f.value ? '1.5px solid #60A5FA' : '1.5px solid #243041',
+                background: onboardingFilter === f.value ? 'rgba(59,130,246,0.15)' : '#162033',
+                color: onboardingFilter === f.value ? '#60A5FA' : '#A1A1AA',
+                fontWeight: onboardingFilter === f.value ? 600 : 400,
+              }}
+            >{f.label}</button>
+          ))}
+        </div>
+
+        {/* Onboarding analytics summary cards */}
+        {onboardingStats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+            <OnboardingCard label="Completion Rate" value={`${onboardingStats.completionRate}%`} sub={`${onboardingStats.statusBreakdown?.completed || 0} of ${onboardingStats.totalFarmers}`} color="#22C55E" />
+            <OnboardingCard label="Avg. Time" value={onboardingStats.avgOnboardingMinutes > 60 ? `${Math.round(onboardingStats.avgOnboardingMinutes / 60)}h` : `${onboardingStats.avgOnboardingMinutes}m`} sub="to complete" color="#60A5FA" />
+            <OnboardingCard label="In Progress" value={onboardingStats.statusBreakdown?.in_progress || 0} color="#F59E0B" />
+            <OnboardingCard label="Abandoned" value={onboardingStats.statusBreakdown?.abandoned || 0} sub={`${onboardingStats.abandonmentRate}% rate`} color="#EF4444" />
+          </div>
+        )}
+
         {actionError && (
           <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{actionError}</span>
@@ -152,6 +217,7 @@ export default function AdminUsersPage() {
                       <th>{t('admin.role')}</th>
                       <th>{t('admin.organization')}</th>
                       <th>{t('progress.status')}</th>
+                      <th>Onboarding</th>
                       <th>{t('admin.created')}</th>
                       {canManage && <th>{t('admin.actions')}</th>}
                     </tr>
@@ -167,6 +233,7 @@ export default function AdminUsersPage() {
                         <td><span className="badge badge-submitted">{ROLE_LABELS[u.role] || u.role}</span></td>
                         <td className="text-sm text-muted">{u.organization?.name || <span style={{ color: '#F59E0B' }}>Unassigned</span>}</td>
                         <td><UserStatusBadge user={u} /></td>
+                        <td><OnboardingStatusBadge status={u.onboardingStatus} lastStep={u.onboardingLastStep} /></td>
                         <td className="text-sm text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                         {canManage && (
                           <td>
@@ -199,12 +266,12 @@ export default function AdminUsersPage() {
                       </tr>
                     ))}
                     {users.length === 0 && (
-                      <tr><td colSpan={canManage ? 7 : 6}>
+                      <tr><td colSpan={canManage ? 8 : 7}>
                         <EmptyState
-                          icon="👤"
+                          icon="👥"
                           title="No users found"
-                          message={statusFilter ? "No users match the current filter." : "No users have been created yet."}
-                          action={statusFilter ? { label: 'Clear filters', onClick: () => handleFilterChange('') } : undefined}
+                          message={statusFilter ? "No users match the selected status filter. Try a different filter or view all users." : "No users have been created yet. Add your first team member to get started."}
+                          action={statusFilter ? { label: 'Show All Users', onClick: () => handleFilterChange('') } : isSuperAdmin ? { label: 'Create User', onClick: () => setShowCreate(true) } : undefined}
                           compact
                         />
                       </td></tr>
@@ -256,6 +323,29 @@ export default function AdminUsersPage() {
 }
 
 // Compact status badge for user rows
+function OnboardingStatusBadge({ status, lastStep }) {
+  const style = ONBOARDING_BADGE_STYLES[status] || ONBOARDING_BADGE_STYLES.not_started;
+  const label = ONBOARDING_LABELS[status] || 'Unknown';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+      <span style={{ ...style, padding: '0.15rem 0.55rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 500 }}>{label}</span>
+      {status === 'in_progress' && lastStep && (
+        <span style={{ fontSize: '0.7rem', color: '#A1A1AA' }}>{lastStep}</span>
+      )}
+    </span>
+  );
+}
+
+function OnboardingCard({ label, value, sub, color = '#A1A1AA' }) {
+  return (
+    <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1rem' }}>
+      <div style={{ fontSize: '0.72rem', color: '#A1A1AA', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</div>
+      <div style={{ fontSize: '1.4rem', fontWeight: 700, color }}>{value}</div>
+      {sub && <div style={{ fontSize: '0.72rem', color: '#A1A1AA', marginTop: '0.1rem' }}>{sub}</div>}
+    </div>
+  );
+}
+
 function UserStatusBadge({ user }) {
   const { t } = useTranslation();
   if (user.archivedAt) return <span className="badge badge-disabled">{t('adminUser.archived')}</span>;

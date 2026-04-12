@@ -198,6 +198,15 @@ enum AuthProvider {
   microsoft
 }
 
+// ─── Onboarding Status ─────────────────────────────────
+
+enum OnboardingStatus {
+  not_started
+  in_progress
+  completed
+  abandoned
+}
+
 // ─── User ───────────────────────────────────────────────
 
 model User {
@@ -221,11 +230,19 @@ model User {
   emailVerifiedAt   DateTime? @map("email_verified_at")
   // ─── Token revocation ──────────────────────────────────
   tokenVersion      Int       @default(0) @map("token_version")      // bump on logout/disable
+  // ─── Onboarding tracking ──────────────────────────────
+  onboardingStatus     OnboardingStatus @default(not_started) @map("onboarding_status")
+  onboardingStartedAt  DateTime?        @map("onboarding_started_at")
+  onboardedAt          DateTime?        @map("onboarded_at")
+  onboardingLastStep   String?          @map("onboarding_last_step")
+  onboardingSource     String?          @map("onboarding_source")   // 'self_register', 'admin_invite', 'field_officer'
+  timezone             String?                                       // e.g. 'Africa/Nairobi'
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
   organization          Organization?       @relation(fields: [organizationId], references: [id])
+  onboardingEvents      OnboardingEvent[]
   farmerProfile         Farmer?             @relation("FarmerUserAccount")
   farmersCreated        Farmer[]            @relation("FarmerCreatedBy")
   applicationsCreated   Application[]       @relation("ApplicationCreatedBy")
@@ -276,6 +293,7 @@ model User {
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
   @@index([active], map: "idx_users_active")
+  @@index([onboardingStatus], map: "idx_users_onboarding_status")
   @@map("users")
 }
 
@@ -1651,22 +1669,27 @@ model V2SupplyReadiness {
 // ─── V2 Land Boundary (linked to FarmProfile, not Application) ──────
 
 model V2LandBoundary {
-  id              String              @id @default(uuid())
-  profileId       String              @map("profile_id")
-  captureMethod   String              @map("capture_method")   // manual_pin | gps_walk | officer_assisted | fallback_pin
-  measuredArea    Float?              @map("measured_area_hectares") // normalized hectares
-  perimeterMeters Float?              @map("perimeter_meters")
-  pointCount      Int                 @default(0) @map("point_count")
-  capturedAt      DateTime            @default(now()) @map("captured_at")
-  capturedBy      String?             @map("captured_by")      // userId of capturer (officer or self)
-  notes           String?
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  id                  String              @id @default(uuid())
+  profileId           String              @map("profile_id")
+  captureMethod       String              @map("capture_method")   // manual_pin | gps_walk | officer_assisted | fallback_pin
+  measuredArea        Float?              @map("measured_area_hectares") // normalized hectares
+  perimeterMeters     Float?              @map("perimeter_meters")
+  pointCount          Int                 @default(0) @map("point_count")
+  capturedAt          DateTime            @default(now()) @map("captured_at")
+  capturedBy          String?             @map("captured_by")      // userId of capturer (officer or self)
+  notes               String?
+  // Boundary validation
+  boundaryConfidence  Float?              @map("boundary_confidence")    // 0–100
+  validationStatus    String              @default("pending") @map("validation_status") // pending | valid | invalid | needs_redraw
+  validationReason    String?             @map("validation_reason")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
 
   profile         FarmProfile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
   points          V2BoundaryPoint[]
 
   @@index([profileId], map: "idx_v2_land_boundaries_profile")
+  @@index([validationStatus], map: "idx_v2_land_boundaries_validation")
   @@map("v2_land_boundaries")
 }
 
@@ -1829,6 +1852,12 @@ model V2PestImage {
   gpsLng        Float?    @map("gps_lng")
   qualityScore  Float?    @map("quality_score")       // 0–100
   qualityNotes  String?   @map("quality_notes")
+  // Image quality enforcement
+  blurScore     Float?    @map("blur_score")           // 0–100 (higher = sharper)
+  brightnessScore Float?  @map("brightness_score")     // 0–100
+  resolutionOk  Boolean   @default(true) @map("resolution_ok")
+  qualityPassed Boolean   @default(true) @map("quality_passed")
+  rejectionReason String? @map("rejection_reason")     // too_blurry | too_dark | too_bright | low_resolution
   createdAt     DateTime  @default(now()) @map("created_at")
 
   profile       FarmProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
@@ -1846,6 +1875,7 @@ model V2ImageDetection {
   alternativeIssue    String?  @map("alternative_issue")
   confidenceScore     Float    @map("confidence_score")    // 0–100
   severityScore       Float    @map("severity_score")      // 0–100
+  isUncertain         Boolean  @default(false) @map("is_uncertain")
   detectionMetadata   Json?    @map("detection_metadata")  // indicators found: bite_marks, holes, stippling, etc.
   createdAt           DateTime @default(now()) @map("created_at")
 
@@ -1867,6 +1897,11 @@ model V2PestReport {
   spreadScope       String?  @map("spread_scope")    // isolated | localized | widespread
   riskLevel         String?  @map("risk_level")       // low | moderate | high | urgent
   riskScore         Float?   @map("risk_score")
+  likelyIssue       String?  @map("likely_issue")     // pest | disease | nutrient_deficiency | water_heat_stress | uncertain
+  alternativeIssue  String?  @map("alternative_issue")
+  confidenceScore   Float?   @map("confidence_score") // 0–100
+  isUncertain       Boolean  @default(false) @map("is_uncertain")
+  actionGuidance    Json?    @map("action_guidance")   // structured action steps
   notes             String?
   imageIds          String[] @map("image_ids")
   status            String   @default("open")         // open | under_review | confirmed | resolved | false_positive
@@ -2001,6 +2036,10 @@ model V2DistrictRiskScore {
   outbreakProbability Float    @map("outbreak_probability")
   dominantRiskType    String?  @map("dominant_risk_type")
   trendDirection      String   @default("stable") @map("trend_direction") // rising | stable | declining
+  // Regional confidence
+  signalCount         Int      @default(0) @map("signal_count")          // total data points behind this score
+  confidenceLevel     String   @default("low_confidence") @map("confidence_level") // confirmed | probable | low_confidence
+  dataQualityScore    Float    @default(0) @map("data_quality_score")    // 0–100
   metadata            Json?
   createdAt           DateTime @default(now()) @map("created_at")
 
@@ -2103,4 +2142,53 @@ model V2FarmPestRisk {
   @@index([riskLevel], map: "idx_v2_farm_risk_level")
   @@index([computedAt], map: "idx_v2_farm_risk_date")
   @@map("v2_farm_pest_risks")
+}
+
+// ── Background job queue (PostgreSQL-backed, no external broker) ──
+
+model V2Job {
+  id          String    @id @default(uuid())
+  queue       String
+  payload     Json      @default("{}")
+  status      String    @default("pending") // pending | running | completed | failed
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3) @map("max_attempts")
+  runAfter    DateTime  @default(now()) @map("run_after")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  error       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([queue, status, runAfter], map: "idx_v2_jobs_queue_status")
+  @@map("v2_jobs")
+}
+
+// ── Hot-reloadable scoring configuration ──
+
+model V2ScoringConfig {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("v2_scoring_config")
+}
+
+// ── Onboarding Events (audit trail) ──
+
+model OnboardingEvent {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  eventType      String   @map("event_type")       // started, step_completed, completed, abandoned, resumed
+  stepName       String?  @map("step_name")         // welcome, farmName, country, crop, farmSize, gender, age, location, photo, processing
+  metadataJson   Json?    @map("metadata_json")     // e.g. { source: 'self_register', device: 'mobile' }
+  eventTimestamp  DateTime @default(now()) @map("event_timestamp")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_onboarding_events_user")
+  @@index([eventType], map: "idx_onboarding_events_type")
+  @@index([eventTimestamp], map: "idx_onboarding_events_ts")
+  @@map("onboarding_events")
 }

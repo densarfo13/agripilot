@@ -115,6 +115,11 @@ router.post('/register', async (req, res) => {
       entityId: user.id,
     });
 
+    // Fire onboarding start event (non-blocking)
+    import('../src/modules/onboarding/service.js')
+      .then(({ startOnboarding }) => startOnboarding(user.id, { source: 'self_register' }))
+      .catch(err => console.error('[onboarding] Failed to start onboarding for new user:', err.message));
+
     return res.status(201).json({
       success: true,
       user,

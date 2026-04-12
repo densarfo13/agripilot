@@ -52,6 +52,33 @@ export function getInterventionEffectiveness() {
   return request('/api/v2/intelligence-admin/interventions/effectiveness');
 }
 
+// ─── Admin Queue Endpoints ──────────────────────────────────
+
+export function getQueueSummary() {
+  return request('/api/v2/intelligence-admin/queues/summary');
+}
+
+export function getFalsePositiveQueue(params = {}) {
+  const q = new URLSearchParams(params).toString();
+  return request(`/api/v2/intelligence-admin/queues/false-positive${q ? `?${q}` : ''}`);
+}
+
+export function getBoundaryReviewQueue(params = {}) {
+  const q = new URLSearchParams(params).toString();
+  return request(`/api/v2/intelligence-admin/queues/boundary-review${q ? `?${q}` : ''}`);
+}
+
+export function getAlertReviewQueue(params = {}) {
+  const q = new URLSearchParams(params).toString();
+  return request(`/api/v2/intelligence-admin/queues/alert-review${q ? `?${q}` : ''}`);
+}
+
+export function autoValidateBoundary(boundaryId) {
+  return request(`/api/v2/intelligence-admin/boundaries/${boundaryId}/auto-validate`, {
+    method: 'POST',
+  });
+}
+
 // ─── Admin Write Endpoints ──────────────────────────────────
 
 export function validateBoundary(profileId, data) {
@@ -65,6 +92,20 @@ export function reviewPestReport(reportId, data) {
   return request(`/api/v2/intelligence-admin/reports/${reportId}/review`, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export function suppressAlert(alertId, reason) {
+  return request(`/api/v2/intelligence-admin/alerts/${alertId}/suppress`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function updateHotspotStatus(hotspotId, status) {
+  return request(`/api/v2/intelligence-admin/hotspots/${hotspotId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
   });
 }
 

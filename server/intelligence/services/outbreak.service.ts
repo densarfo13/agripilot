@@ -7,56 +7,25 @@
  */
 
 // @ts-ignore — JS module
-import prisma from '../../lib/prisma.js';
+import prisma from '../lib/prisma.js';
 import { computeHotspotScore, computeRegionalOutbreakScore, clamp } from './scoring.service.js';
 
-// ── Constants ──
-
-/** Earth radius in kilometres (WGS-84 mean). */
 const EARTH_RADIUS_KM = 6371;
-
-/** Maximum distance in km for two farms to be considered in the same cluster. */
 const CLUSTER_RADIUS_KM = 10;
-
-/** Minimum number of farms required to form a valid cluster. */
 const MIN_CLUSTER_FARMS = 2;
-
-/** Look-back window for recent reports (days). */
 const REPORT_WINDOW_DAYS = 30;
 
-// ── Haversine Distance ──
-
-/**
- * Compute the great-circle distance between two points on Earth using the
- * Haversine formula.
- *
- * @param lat1 - Latitude of point 1 in degrees.
- * @param lon1 - Longitude of point 1 in degrees.
- * @param lat2 - Latitude of point 2 in degrees.
- * @param lon2 - Longitude of point 2 in degrees.
- * @returns Distance in kilometres.
- */
 export function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
+  lat1: number, lon1: number, lat2: number, lon2: number,
 ): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return EARTH_RADIUS_KM * c;
+  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
-// ── Clustering Helpers ──
 
 interface GeoReport {
   reportId: string;
@@ -67,20 +36,12 @@ interface GeoReport {
   crop: string;
 }
 
-/**
- * Single-linkage clustering via BFS. Two reports are linked if any pair in
- * their respective clusters is within `radiusKm`.
- */
-function singleLinkageClusters(
-  reports: GeoReport[],
-  radiusKm: number,
-): GeoReport[][] {
+function singleLinkageClusters(reports: GeoReport[], radiusKm: number): GeoReport[][] {
   const visited = new Set<number>();
   const clusters: GeoReport[][] = [];
 
   for (let i = 0; i < reports.length; i++) {
     if (visited.has(i)) continue;
-
     const cluster: GeoReport[] = [];
     const queue: number[] = [i];
     visited.add(i);
@@ -92,10 +53,7 @@ function singleLinkageClusters(
       for (let j = 0; j < reports.length; j++) {
         if (visited.has(j)) continue;
         const dist = haversineDistance(
-          reports[idx].lat,
-          reports[idx].lng,
-          reports[j].lat,
-          reports[j].lng,
+          reports[idx].lat, reports[idx].lng, reports[j].lat, reports[j].lng,
         );
         if (dist <= radiusKm) {
           visited.add(j);
@@ -103,16 +61,11 @@ function singleLinkageClusters(
         }
       }
     }
-
     clusters.push(cluster);
   }
-
   return clusters;
 }
 
-/**
- * Compute the centroid and bounding radius of a set of geo-located reports.
- */
 function computeClusterGeoJson(
   reports: GeoReport[],
 ): { centroid: [number, number]; radiusKm: number; geoJson: any } {
@@ -130,21 +83,12 @@ function computeClusterGeoJson(
     radiusKm: Math.round(maxDist * 100) / 100,
     geoJson: {
       type: 'Feature',
-      properties: {
-        farmCount: reports.length,
-        radiusKm: Math.round(maxDist * 100) / 100,
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: [avgLng, avgLat],
-      },
+      properties: { farmCount: reports.length, radiusKm: Math.round(maxDist * 100) / 100 },
+      geometry: { type: 'Point', coordinates: [avgLng, avgLat] },
     },
   };
 }
 
-/**
- * Determine the most common value in an array of strings.
- */
 function dominant(values: (string | null)[]): string | null {
   const counts: Record<string, number> = {};
   for (const v of values) {
@@ -153,34 +97,20 @@ function dominant(values: (string | null)[]): string | null {
   let best: string | null = null;
   let bestCount = 0;
   for (const [k, c] of Object.entries(counts)) {
-    if (c > bestCount) {
-      best = k;
-      bestCount = c;
-    }
+    if (c > bestCount) { best = k; bestCount = c; }
   }
   return best;
 }
 
-// ── Public API ──
-
 /**
  * Detect outbreak clusters in a region by clustering confirmed pest reports
  * with GPS data using single-linkage clustering (10 km radius).
- *
- * For each valid cluster (>= 2 farms), a `V2OutbreakCluster` record is
- * upserted with computed GeoJSON, dominant crop, likely issue, and score.
- *
- * @param regionKey - The region identifier (e.g. district/county name).
- * @returns Array of created or updated outbreak cluster records.
  */
-export async function detectOutbreakClusters(
-  regionKey: string,
-): Promise<any[]> {
+export async function detectOutbreakClusters(regionKey: string): Promise<any[]> {
   try {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - REPORT_WINDOW_DAYS);
 
-    // 1. Query confirmed pest reports with GPS data in the region
     const reports = await prisma.v2PestReport.findMany({
       where: {
         status: 'confirmed',
@@ -193,18 +123,11 @@ export async function detectOutbreakClusters(
       },
       include: {
         profile: {
-          select: {
-            id: true,
-            latitude: true,
-            longitude: true,
-            crop: true,
-            locationName: true,
-          },
+          select: { id: true, latitude: true, longitude: true, crop: true, locationName: true },
         },
       },
     });
 
-    // Map to geo-enabled report objects
     const geoReports: GeoReport[] = reports
       .filter((r: any) => r.profile.latitude != null && r.profile.longitude != null)
       .map((r: any) => ({
@@ -217,36 +140,30 @@ export async function detectOutbreakClusters(
       }));
 
     if (geoReports.length < MIN_CLUSTER_FARMS) {
-      console.log(
-        `[Outbreak] Only ${geoReports.length} geo-located reports in ${regionKey} — no clusters possible`,
-      );
+      console.log(`[Outbreak] Only ${geoReports.length} geo-located reports in ${regionKey}`);
       return [];
     }
 
-    // 2. Single-linkage clustering with 10 km radius
     const rawClusters = singleLinkageClusters(geoReports, CLUSTER_RADIUS_KM);
     const validClusters = rawClusters.filter((c) => c.length >= MIN_CLUSTER_FARMS);
+    console.log(`[Outbreak] Found ${validClusters.length} cluster(s) from ${geoReports.length} reports`);
 
-    console.log(
-      `[Outbreak] Found ${validClusters.length} cluster(s) from ${geoReports.length} reports in ${regionKey}`,
-    );
-
-    // 3. Upsert cluster records
     const results: any[] = [];
 
     for (const cluster of validClusters) {
       const { geoJson } = computeClusterGeoJson(cluster);
       const dominantCrop = dominant(cluster.map((r) => r.crop));
       const likelyIssue = dominant(cluster.map((r) => r.suspectedIssue));
-
-      // Compute cluster score via the hotspot scoring formula
       const uniqueFarms = new Set(cluster.map((r) => r.profileId)).size;
+
+      // Deterministic cluster scoring from real data
+      const reportsPerFarm = cluster.length / uniqueFarms;
       const scoringResult = computeHotspotScore({
-        ndvi_deviation: clamp(uniqueFarms * 20, 0, 100),
-        area_ratio: clamp(cluster.length * 10, 0, 100),
-        persistence: 60, // stub — would use actual spatial density
-        proximity_to_reports: 50,    // stub — would use crop vulnerability lookup
-        weather_correlation: clamp(cluster.length * 15, 0, 100),
+        anomaly_intensity: clamp(uniqueFarms * 20, 0, 100),
+        temporal_change: clamp(cluster.length * 10, 0, 100),
+        cluster_compactness: clamp(reportsPerFarm * 30),
+        crop_sensitivity: clamp(uniqueFarms * 15),
+        local_validation_evidence: clamp(cluster.length * 15, 0, 100),
       });
 
       const clusterRecord = await prisma.v2OutbreakCluster.create({
@@ -263,9 +180,7 @@ export async function detectOutbreakClusters(
       });
 
       results.push(clusterRecord);
-      console.log(
-        `[Outbreak] Cluster ${clusterRecord.id} — ${uniqueFarms} farms, score: ${clusterRecord.clusterScore}`,
-      );
+      console.log(`[Outbreak] Cluster ${clusterRecord.id} — ${uniqueFarms} farms, score: ${clusterRecord.clusterScore}`);
     }
 
     return results;
@@ -276,12 +191,8 @@ export async function detectOutbreakClusters(
 }
 
 /**
- * Compute a composite district-level risk score by aggregating multiple
- * signal sources: confirmed reports, open signals, satellite anomalies,
- * weather conditions (stubbed), and intervention outcomes.
- *
- * @param regionKey - The region identifier (e.g. district/county name).
- * @returns The upserted V2DistrictRiskScore record.
+ * Compute district-level risk by aggregating: confirmed reports, open signals,
+ * satellite anomalies, weather conditions, and intervention outcomes.
  */
 export async function computeDistrictRisk(regionKey: string): Promise<any> {
   try {
@@ -290,9 +201,7 @@ export async function computeDistrictRisk(regionKey: string): Promise<any> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Gather signal components
-
-    // Confirmed reports — normalized to 0-100 (10 reports = 100)
+    // Confirmed reports — normalized (10 reports = 100)
     const confirmedCount = await prisma.v2PestReport.count({
       where: {
         status: 'confirmed',
@@ -302,7 +211,7 @@ export async function computeDistrictRisk(regionKey: string): Promise<any> {
     });
     const confirmedReports = clamp(confirmedCount * 10, 0, 100);
 
-    // Unconfirmed (open) signals — normalized to 0-100 (20 open = 100)
+    // Open signals — normalized (20 open = 100)
     const openCount = await prisma.v2PestReport.count({
       where: {
         status: 'open',
@@ -325,47 +234,81 @@ export async function computeDistrictRisk(regionKey: string): Promise<any> {
         ? stressScores.reduce((s: number, r: any) => s + r.anomalyScore, 0) / stressScores.length
         : 0;
 
-    // Weather favorability — stub (would integrate a real weather API)
-    const weatherFavorability = 40 + Math.random() * 20; // 40-60
+    // Weather favorability — real data from WeatherSnapshots in region
+    const weatherSnapshots = await prisma.weatherSnapshot.findMany({
+      where: {
+        farmProfile: { locationName: regionKey },
+        fetchedAt: { gte: cutoff },
+      },
+      select: { humidityPct: true, temperatureC: true, rainForecastMm: true },
+      take: 20,
+    });
+    let weatherFavorability = 30;
+    if (weatherSnapshots.length > 0) {
+      const avgHumidity = weatherSnapshots.reduce((s: number, w: any) => s + (w.humidityPct ?? 50), 0) / weatherSnapshots.length;
+      const avgTemp = weatherSnapshots.reduce((s: number, w: any) => s + w.temperatureC, 0) / weatherSnapshots.length;
+      const avgRain = weatherSnapshots.reduce((s: number, w: any) => s + w.rainForecastMm, 0) / weatherSnapshots.length;
+      weatherFavorability = clamp(
+        (avgHumidity - 40) * 0.8 + (avgTemp >= 20 && avgTemp <= 35 ? 30 : 10) + avgRain * 2,
+      );
+    }
 
-    // Seasonal baseline match — stub (would compare to historical data)
-    const seasonalBaselineMatch = 50;
+    // Historical baseline — compare current density to older data
+    const historicalCount = await prisma.v2PestReport.count({
+      where: {
+        profile: { locationName: regionKey },
+        createdAt: { lt: cutoff },
+      },
+    });
+    const seasonalBaseline = historicalCount > 0
+      ? clamp((confirmedCount / Math.max(historicalCount / 12, 1)) * 30)
+      : 30;
 
-    // Intervention failure rate — count 'worse' outcomes / total outcomes
+    // Intervention failure rate
     const allOutcomes = await prisma.v2TreatmentOutcome.findMany({
       where: {
         createdAt: { gte: cutoff },
-        treatmentAction: {
-          profile: { locationName: regionKey },
-        },
+        treatmentAction: { profile: { locationName: regionKey } },
       },
       select: { outcomeStatus: true },
     });
     const totalOutcomes = allOutcomes.length;
-    const worseOutcomes = allOutcomes.filter(
-      (o: any) => o.outcomeStatus === 'worse',
-    ).length;
+    const worseOutcomes = allOutcomes.filter((o: any) => o.outcomeStatus === 'worse').length;
     const interventionFailureRate =
       totalOutcomes > 0 ? clamp((worseOutcomes / totalOutcomes) * 100, 0, 100) : 0;
 
-    // 2. Compute the regional outbreak score
     const components = {
-      report_density: confirmedReports,
-      spread_velocity: unconfirmedSignals,
-      severity_average: satelliteAnomalies,
-      crop_overlap: weatherFavorability,
-      weather_favorability: seasonalBaselineMatch,
-      confirmation_rate: interventionFailureRate,
+      confirmed_reports: confirmedReports,
+      unconfirmed_signals: unconfirmedSignals,
+      satellite_anomalies: satelliteAnomalies,
+      weather_favorability: weatherFavorability,
+      seasonal_baseline_match: seasonalBaseline,
+      intervention_failure_rate: interventionFailureRate,
     };
 
     const scoringResult = computeRegionalOutbreakScore(components);
 
-    // 3. Determine trend by comparing with the previous score
+    // Regional confidence: compute signal count and data quality
+    const signalCount = confirmedCount + openCount + stressScores.length + weatherSnapshots.length + allOutcomes.length;
+    const dataQualityScore = Math.min(100, Math.round(
+      (confirmedCount > 0 ? 25 : 0) +
+      (stressScores.length > 0 ? 25 : 0) +
+      (weatherSnapshots.length > 0 ? 20 : 0) +
+      (allOutcomes.length > 0 ? 15 : 0) +
+      Math.min(15, signalCount * 1.5),
+    ));
+    // Classify: confirmed (20+ signals, 60+ quality), probable (10+, 40+), low_confidence
+    const confidenceLevel = signalCount >= 20 && dataQualityScore >= 60
+      ? 'confirmed'
+      : signalCount >= 10 && dataQualityScore >= 40
+        ? 'probable'
+        : 'low_confidence';
+
+    // Determine trend
     const previousScore = await prisma.v2DistrictRiskScore.findFirst({
       where: { regionKey },
       orderBy: { date: 'desc' },
     });
-
     let trendDirection = 'stable';
     if (previousScore) {
       const delta = scoringResult.score - previousScore.overallRiskScore;
@@ -373,46 +316,31 @@ export async function computeDistrictRisk(regionKey: string): Promise<any> {
       else if (delta < -5) trendDirection = 'declining';
     }
 
-    // 4. Upsert the district risk score (unique on regionKey + date)
+    const sharedData = {
+      overallRiskScore: Math.round(scoringResult.score * 100) / 100,
+      outbreakProbability: Math.round(scoringResult.score * 0.85 * 100) / 100,
+      dominantRiskType: confirmedReports > satelliteAnomalies ? 'pest_reports' : 'satellite_anomaly',
+      trendDirection,
+      signalCount,
+      confidenceLevel,
+      dataQualityScore,
+      metadata: {
+        components,
+        level: scoringResult.level,
+        componentBreakdown: scoringResult.components,
+        confidenceLevel,
+        signalCount,
+        computedAt: new Date().toISOString(),
+      },
+    };
+
     const riskScore = await prisma.v2DistrictRiskScore.upsert({
-      where: {
-        regionKey_date: {
-          regionKey,
-          date: today,
-        },
-      },
-      update: {
-        overallRiskScore: Math.round(scoringResult.score * 100) / 100,
-        outbreakProbability: Math.round(scoringResult.score * 0.85 * 100) / 100,
-        dominantRiskType: confirmedReports > satelliteAnomalies ? 'pest_reports' : 'satellite_anomaly',
-        trendDirection,
-        metadata: {
-          components,
-          level: scoringResult.level,
-          componentBreakdown: scoringResult.components,
-          computedAt: new Date().toISOString(),
-        },
-      },
-      create: {
-        regionKey,
-        date: today,
-        overallRiskScore: Math.round(scoringResult.score * 100) / 100,
-        outbreakProbability: Math.round(scoringResult.score * 0.85 * 100) / 100,
-        dominantRiskType: confirmedReports > satelliteAnomalies ? 'pest_reports' : 'satellite_anomaly',
-        trendDirection,
-        metadata: {
-          components,
-          level: scoringResult.level,
-          componentBreakdown: scoringResult.components,
-          computedAt: new Date().toISOString(),
-        },
-      },
+      where: { regionKey_date: { regionKey, date: today } },
+      update: sharedData,
+      create: { regionKey, date: today, ...sharedData },
     });
 
-    console.log(
-      `[Outbreak] District risk for ${regionKey}: ${riskScore.overallRiskScore} (${trendDirection})`,
-    );
-
+    console.log(`[Outbreak] District risk for ${regionKey}: ${riskScore.overallRiskScore} (${trendDirection})`);
     return riskScore;
   } catch (error) {
     console.error('[Outbreak] computeDistrictRisk failed:', error);
@@ -420,87 +348,40 @@ export async function computeDistrictRisk(regionKey: string): Promise<any> {
   }
 }
 
-/**
- * Aggregate regional intelligence: latest district risk score, active outbreak
- * clusters, and recent pest reports for a region.
- *
- * @param regionKey - The region identifier.
- * @returns Object with riskScore, clusters, and recentReports arrays.
- */
 export async function getRegionalIntelligence(
   regionKey: string,
 ): Promise<{ riskScore: any; clusters: any[]; recentReports: any[] }> {
-  try {
-    const [riskScore, clusters, recentReports] = await Promise.all([
-      // Latest district risk score
-      prisma.v2DistrictRiskScore.findFirst({
-        where: { regionKey },
-        orderBy: { date: 'desc' },
-      }),
+  const [riskScore, clusters, recentReports] = await Promise.all([
+    prisma.v2DistrictRiskScore.findFirst({
+      where: { regionKey },
+      orderBy: { date: 'desc' },
+    }),
+    prisma.v2OutbreakCluster.findMany({
+      where: { regionKey, status: 'active' },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.v2PestReport.findMany({
+      where: { profile: { locationName: regionKey } },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        profile: { select: { id: true, farmerName: true, crop: true, locationName: true } },
+      },
+    }),
+  ]);
 
-      // Active outbreak clusters
-      prisma.v2OutbreakCluster.findMany({
-        where: { regionKey, status: 'active' },
-        orderBy: { createdAt: 'desc' },
-      }),
-
-      // Recent pest reports in the region
-      prisma.v2PestReport.findMany({
-        where: {
-          profile: { locationName: regionKey },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-        include: {
-          profile: {
-            select: {
-              id: true,
-              farmerName: true,
-              crop: true,
-              locationName: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    return {
-      riskScore: riskScore ?? null,
-      clusters,
-      recentReports,
-    };
-  } catch (error) {
-    console.error('[Outbreak] getRegionalIntelligence failed:', error);
-    throw error;
-  }
+  return { riskScore: riskScore ?? null, clusters, recentReports };
 }
 
-/**
- * Query active outbreak clusters with optional filters for region and status.
- *
- * @param filters - Optional region key and/or status filter.
- * @returns Array of matching outbreak cluster records.
- */
 export async function getActiveOutbreakClusters(
   filters?: { regionKey?: string; status?: string },
 ): Promise<any[]> {
-  try {
-    const where: Record<string, any> = {};
-    if (filters?.regionKey) where.regionKey = filters.regionKey;
-    if (filters?.status) {
-      where.status = filters.status;
-    } else {
-      where.status = 'active';
-    }
+  const where: Record<string, any> = {};
+  if (filters?.regionKey) where.regionKey = filters.regionKey;
+  where.status = filters?.status || 'active';
 
-    const clusters = await prisma.v2OutbreakCluster.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return clusters;
-  } catch (error) {
-    console.error('[Outbreak] getActiveOutbreakClusters failed:', error);
-    throw error;
-  }
+  return prisma.v2OutbreakCluster.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
 }

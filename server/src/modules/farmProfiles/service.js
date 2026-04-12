@@ -319,6 +319,13 @@ export async function atomicFarmSetup(data, farmerId, userId) {
   const { complete: farmProfileComplete, missing: missingRequiredFields } = isFarmProfileComplete(result, { countryCode });
   const { state: farmerState } = getFarmerLifecycleState({ farmProfile: result, countryCode });
 
+  // ── 5. Mark onboarding completed on the User record (non-blocking) ──
+  if (farmProfileComplete && userId) {
+    import('../onboarding/service.js')
+      .then(({ completeOnboarding }) => completeOnboarding(userId))
+      .catch(err => console.error('[onboarding] Failed to complete onboarding:', err.message));
+  }
+
   return { profile: result, farmProfileComplete, farmerState, missingRequiredFields };
 }
 
