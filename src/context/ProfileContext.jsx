@@ -30,24 +30,27 @@ export function ProfileProvider({ children }) {
   const [syncMeta, setSyncMeta] = useState({ lastSyncedAt: null, pendingCount: 0, lastError: null });
   const flushingRef = useRef(false);
   const savingRef = useRef(false);
-  const prevAuthRef = useRef(isAuthenticated);
 
-  // ─── Reset profile state on auth transition (unauth → auth) ───
-  // Prevents ProfileGuard from using stale initialized=true with null profile
-  // which would incorrectly redirect to /profile/setup before fetch completes.
-  useEffect(() => {
-    if (isAuthenticated && !prevAuthRef.current) {
+  // ─── Synchronous auth-transition reset (runs DURING render, not after) ───
+  // useEffect fires after render → ProfileGuard would see stale initialized=true
+  // and redirect to /profile/setup before the reset. This pattern (setState during
+  // render based on changed props) is React's recommended solution — React will
+  // immediately re-render with the new state before committing to the DOM.
+  const [prevAuth, setPrevAuth] = useState(isAuthenticated);
+  if (isAuthenticated !== prevAuth) {
+    setPrevAuth(isAuthenticated);
+    if (isAuthenticated && !prevAuth) {
+      // Just logged in — reset so ProfileGuard shows loading, not stale redirect
       setInitialized(false);
       setProfile(null);
       setLoading(true);
     }
-    if (!isAuthenticated && prevAuthRef.current) {
-      // Logged out — clear profile immediately
+    if (!isAuthenticated && prevAuth) {
+      // Logged out — clear immediately
       setProfile(null);
       setInitialized(false);
     }
-    prevAuthRef.current = isAuthenticated;
-  }, [isAuthenticated]);
+  }
 
   const refreshSyncMeta = useCallback(async () => {
     try {

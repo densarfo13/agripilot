@@ -95,7 +95,14 @@ import { AppPrefsProvider } from './context/AppPrefsContext.jsx';
 import { WeatherProvider } from './context/WeatherContext.jsx';
 import { SeasonProvider } from './context/SeasonContext.jsx';
 
-const PageLoader = () => <div className="loading">Loading...</div>;
+const PageLoader = () => (
+  <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' }} />
+      <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#22C55E' }}>Farroway</span>
+    </div>
+  </div>
+);
 
 function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
