@@ -1,27 +1,15 @@
-import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
-// Inject spinner keyframe once
-let keyframeInjected = false;
-function injectSpinnerKeyframe() {
-  if (keyframeInjected) return;
-  keyframeInjected = true;
-  const style = document.createElement('style');
-  style.textContent = '@keyframes farroway-spin{to{transform:rotate(360deg)}}';
-  document.head.appendChild(style);
-}
-
 export default function AuthGuard({ children }) {
-  useEffect(() => { injectSpinnerKeyframe(); }, []);
   const location = useLocation();
   const { isAuthenticated, authLoading, isOfflineSession } = useAuth();
 
+  // Single auth gate: nothing renders until auth state is known
   if (authLoading) {
     return (
       <div style={S.loading}>
         <div style={S.loadingInner}>
-          {/* Branded spinner dot */}
           <div style={S.spinner} />
           <span style={S.brand}>Farroway</span>
           <span style={S.loadingText}>Loading your farm...</span>

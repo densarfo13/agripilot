@@ -14,15 +14,17 @@ import SyncStatus from './components/SyncStatus.jsx';
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 
-// V2 enterprise auth pages (cookie-based, lazy-loaded)
-const V2Login = lazy(() => import('./pages/Login.jsx'));
+// V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
+import V2Login from './pages/Login.jsx';
 const V2Register = lazy(() => import('./pages/Register.jsx'));
 const V2ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const V2ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 const V2VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
 const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
-const V2ProtectedLayout = lazy(() => import('./layouts/ProtectedLayout.jsx'));
+// ProtectedLayout is NOT lazy — it's the auth/profile gate and must stay mounted
+// while inner lazy children (Dashboard, etc.) load via their own Suspense boundary.
+import V2ProtectedLayout from './layouts/ProtectedLayout.jsx';
 const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load

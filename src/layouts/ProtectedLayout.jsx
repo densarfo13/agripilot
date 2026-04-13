@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
@@ -6,6 +7,15 @@ import LanguageSelector from '../components/LanguageSelector.jsx';
 import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
 import OfflineStatusBadge from '../components/OfflineStatusBadge.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+
+// Inner page loader — shown while lazy child routes load.
+// This Suspense boundary is INSIDE AuthGuard+ProfileGuard so the guards
+// stay mounted while page chunks load (prevents guard remount blink).
+const InnerPageLoader = () => (
+  <div style={S.innerLoader}>
+    <div style={S.spinnerSmall} />
+  </div>
+);
 
 export default function ProtectedLayout() {
   const { logout, user, resendEmailVerification, isOfflineSession } = useAuth();
@@ -41,7 +51,10 @@ export default function ProtectedLayout() {
               </div>
             </div>
           </div>
-          <Outlet />
+          {/* Inner Suspense: lazy child pages load here without unmounting the layout/guards */}
+          <Suspense fallback={<InnerPageLoader />}>
+            <Outlet />
+          </Suspense>
         </div>
       </ProfileGuard>
     </AuthGuard>
@@ -106,5 +119,19 @@ const S = {
     color: '#FFFFFF',
     background: 'transparent',
     cursor: 'pointer',
+  },
+  innerLoader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '4rem 0',
+  },
+  spinnerSmall: {
+    width: '1.5rem',
+    height: '1.5rem',
+    border: '3px solid rgba(255,255,255,0.1)',
+    borderTopColor: '#22C55E',
+    borderRadius: '50%',
+    animation: 'farroway-spin 0.8s linear infinite',
   },
 };
