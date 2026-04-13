@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
@@ -16,17 +16,30 @@ export default function Login() {
   const { t } = useTranslation();
   const [email, setEmail] = useState(getRememberedEmail);
   const [password, setPassword] = useState('');
-
-  // ─── Redirect if already authenticated (no login flash) ───
-  const redirectTo = location.state?.from || '/dashboard';
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate(redirectTo, { replace: true });
-    }
-  }, [authLoading, isAuthenticated]);
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const redirectTo = location.state?.from || '/dashboard';
+
+  // ─── Gate 1: Auth still loading → show nothing (prevents login form flash) ───
+  if (authLoading) {
+    return (
+      <div style={S.page}>
+        <div style={S.loadingInner}>
+          <div style={S.spinner} />
+          <span style={S.brand}>Farroway</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Gate 2: Already authenticated → single declarative redirect ───
+  if (isAuthenticated) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  // ─── Gate 3: Not authenticated → render login form ───
 
   const validate = () => {
     const e = {};
@@ -48,7 +61,9 @@ export default function Login() {
     try {
       await login(email, password);
       safeTrackEvent('auth.login.success', {});
-      navigate(redirectTo, { replace: true });
+      // After login(), isAuthenticated becomes true → component re-renders →
+      // Gate 2 above fires the single declarative <Navigate>.
+      // No manual navigate() needed — eliminates double-redirect.
     } catch (err) {
       safeTrackEvent('auth.login.failed', { hasFieldErrors: !!(err.fieldErrors && Object.keys(err.fieldErrors).length) });
       if (err.fieldErrors && Object.keys(err.fieldErrors).length) {
@@ -118,6 +133,9 @@ export default function Login() {
 
 const S = {
   page: { minHeight: '100vh', background: '#0F172A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
+  loadingInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' },
+  spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
+  brand: { fontSize: '1.25rem', fontWeight: 700, color: '#22C55E', letterSpacing: '0.02em' },
   card: { width: '100%', maxWidth: '28rem', borderRadius: '16px', background: '#1B2330', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', boxShadow: '0 10px 15px rgba(0,0,0,0.3)' },
   title: { fontSize: '1.5rem', fontWeight: 700, margin: 0 },
   subtitle: { color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', marginTop: '0.25rem', marginBottom: '1.5rem' },
