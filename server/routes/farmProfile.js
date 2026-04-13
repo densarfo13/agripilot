@@ -5,6 +5,7 @@ import { generateUniqueFarmerUuid } from '../lib/farmerUuid.js';
 import { validateFarmProfilePayload } from '../lib/validation.js';
 import { writeAuditLog } from '../lib/audit.js';
 import { computeLandSizeFields, fromHectares } from '../src/utils/landSize.js';
+import { recordCropUsage } from './cropSuggestions.js';
 
 const router = express.Router();
 
@@ -181,6 +182,9 @@ router.post('/', authenticate, async (req, res) => {
       metadata: { farmerUuid: profile.farmerUuid },
     });
 
+    // Record crop usage for adaptive suggestions (non-blocking)
+    recordCropUsage(profile.crop, profile.country, profile.locationName);
+
     return res.json({ success: true, profile: mapProfile(profile) });
   } catch (error) {
     console.error('POST /api/v2/farm-profile failed:', error);
@@ -250,6 +254,9 @@ router.post('/new', authenticate, async (req, res) => {
       entityId: profile.id,
       metadata: { farmerUuid: profile.farmerUuid },
     });
+
+    // Record crop usage for adaptive suggestions (non-blocking)
+    recordCropUsage(profile.crop, profile.country, profile.locationName);
 
     return res.status(201).json({ success: true, profile: mapProfile(profile) });
   } catch (error) {

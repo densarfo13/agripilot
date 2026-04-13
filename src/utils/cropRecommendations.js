@@ -126,6 +126,24 @@ export function recommendCrops(ctx = {}) {
     contextUsed.push('altitude');
   }
 
+  // 7. Learned crop usage (from server data passed via learnedCrops param)
+  const learned = ctx.learnedCrops;
+  if (Array.isArray(learned) && learned.length > 0) {
+    for (const lc of learned) {
+      if (lc.cropCode && lc.useCount >= 2) {
+        addCrops([lc.cropCode], `Popular nearby (used ${lc.useCount}×)`);
+      }
+    }
+    contextUsed.push('learnedCrops');
+  }
+
+  // 8. Last-used crop gets a bonus
+  const lastCrop = ctx.lastCropCode;
+  if (lastCrop) {
+    addCrops([lastCrop], 'Your last crop');
+    if (!contextUsed.includes('lastCrop')) contextUsed.push('lastCrop');
+  }
+
   const hasContext = contextUsed.length > 0;
 
   if (!hasContext) {
@@ -141,6 +159,11 @@ export function recommendCrops(ctx = {}) {
   const recommendations = ranked
     .map(({ code, reasons }) => {
       const crop = getCropByCode(code);
+      // For custom crops (OTHER:Name) not in static list, build entry dynamically
+      if (!crop && code.toUpperCase().startsWith('OTHER:')) {
+        const name = code.slice(6).trim();
+        return name ? { code, name, reason: reasons.join('; ') } : null;
+      }
       if (!crop) return null;
       return { code: crop.code, name: crop.name, reason: reasons.join('; ') };
     })

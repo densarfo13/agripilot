@@ -1333,6 +1333,23 @@ model FarmProfile {
   @@map("farm_profiles")
 }
 
+// ─── Learned crop usage (adaptive crop suggestions) ────────
+model CropUsage {
+  id          String   @id @default(uuid())
+  cropCode    String   @map("crop_code")       // "MAIZE" or "OTHER:Teff"
+  cropName    String   @map("crop_name")       // normalized display name: "Maize" or "Teff"
+  country     String?  @map("country")         // country for region-aware suggestions
+  region      String?  @map("region")          // region/county for finer targeting
+  useCount    Int      @default(1) @map("use_count")
+  lastUsedAt  DateTime @default(now()) @map("last_used_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([cropCode, country], map: "uq_crop_usage_code_country")
+  @@index([country], map: "idx_crop_usage_country")
+  @@index([useCount], map: "idx_crop_usage_count")
+  @@map("crop_usage")
+}
+
 model RecommendationRecord {
   id                String               @id @default(uuid())
   farmProfileId     String               @map("farm_profile_id")

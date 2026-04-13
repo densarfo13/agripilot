@@ -4,6 +4,7 @@ import {
   getCropByCode, getCropLabel, getCropIcon, parseCropValue, buildOtherCropValue,
 } from '../utils/crops.js';
 import { recommendCrops, getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
+import { fetchCropSuggestions, saveLastCrop, getLastCrop } from '../utils/cropSuggestionCache.js';
 
 /**
  * CropSelect — searchable crop dropdown with structured "Other" support
@@ -47,13 +48,24 @@ export default function CropSelect({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [highlightIdx, setHighlightIdx] = useState(0);
+  const [learnedCrops, setLearnedCrops] = useState([]);
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
   const parsed = parseCropValue(value);
 
-  // ── Recommendations from the engine ────────────────────
+  // ── Fetch learned crop suggestions (cached, non-blocking) ──
+  useEffect(() => {
+    let cancelled = false;
+    fetchCropSuggestions(countryCode).then(crops => {
+      if (!cancelled) setLearnedCrops(crops);
+    });
+    return () => { cancelled = true; };
+  }, [countryCode]);
+
+  // ── Recommendations from the engine (now includes learned data) ──
+  const lastCrop = useMemo(() => getLastCrop(), []);
   const recResult = useMemo(() => {
     return recommendCrops({
       country: countryCode,
@@ -62,23 +74,40 @@ export default function CropSelect({
       farmSize: farmSize ? Number(farmSize) : undefined,
       soilType,
       landType,
+      learnedCrops,
+      lastCropCode: lastCrop?.code || null,
     });
-  }, [countryCode, region, season, farmSize, soilType, landType]);
+  }, [countryCode, region, season, farmSize, soilType, landType, learnedCrops, lastCrop]);
 
   const recommended = recResult.recommendations;
   const hasRecommendations = recResult.hasContext && recommended.length > 0;
 
+  // ── Build learned custom crops as selectable entries ────
+  const learnedCustomEntries = useMemo(() => {
+    const staticCodes = new Set(ALL_CROPS.map(c => c.code));
+    return learnedCrops
+      .filter(lc => lc.cropCode?.toUpperCase().startsWith('OTHER:') && !staticCodes.has(lc.cropCode))
+      .map(lc => ({
+        code: lc.cropCode,
+        name: lc.cropName || lc.cropCode.slice(6),
+        category: 'other',
+        learned: true,
+        useCount: lc.useCount,
+      }));
+  }, [learnedCrops]);
+
   // ── Search / filter ────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return ALL_CROPS;
-    return ALL_CROPS.filter(c =>
+    const allWithLearned = [...ALL_CROPS, ...learnedCustomEntries];
+    if (!q) return allWithLearned;
+    return allWithLearned.filter(c =>
       c.name.toLowerCase().includes(q) ||
       c.code.toLowerCase().includes(q) ||
       c.category.toLowerCase().includes(q) ||
       (CATEGORY_LABELS[c.category] || '').toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, learnedCustomEntries]);
 
   // "Other" entry with descriptive hint for the dropdown
   const OTHER_DISPLAY = { ...OTHER_CROP, displayName: 'Other (type your crop)' };
@@ -90,8 +119,8 @@ export default function CropSelect({
       const otherMatch = 'other'.includes(q) || 'type your crop'.includes(q);
       return otherMatch ? [...filtered, OTHER_DISPLAY] : filtered;
     }
-    return [...ALL_CROPS, OTHER_DISPLAY];
-  }, [search, filtered]);
+    return [...ALL_CROPS, ...learnedCustomEntries, OTHER_DISPLAY];
+  }, [search, filtered, learnedCustomEntries]);
 
   // ── Close on outside click ─────────────────────────────
   useEffect(() => {
@@ -116,6 +145,7 @@ export default function CropSelect({
       onChange('OTHER');
     } else {
       onChange(code);
+      saveLastCrop(code); // Remember last selection for next time
     }
     setSearch('');
     setOpen(false);
@@ -161,7 +191,11 @@ export default function CropSelect({
           <input
             style={S.otherInput}
             value={parsed.customCropName || ''}
-            onChange={(e) => onChange(buildOtherCropValue(e.target.value))}
+            onChange={(e) => {
+              const built = buildOtherCropValue(e.target.value);
+              onChange(built);
+              if (e.target.value.trim().length >= 2) saveLastCrop(built);
+            }}
             placeholder="Enter your crop"
             required={required}
             disabled={disabled}
@@ -259,7 +293,8 @@ export default function CropSelect({
                   >
                     <span style={S.optionIcon}>{getCropIcon(c.code)}</span>
                     <span style={S.optionName}>{c.displayName || c.name}</span>
-                    {c.category !== 'other' && (
+                    {c.learned && <span style={S.learnedBadge}>Popular</span>}
+                    {!c.learned && c.category !== 'other' && (
                       <span style={S.optionCategory}>{CATEGORY_LABELS[c.category] || c.category}</span>
                     )}
                     {isSelected && <span style={S.check}>✓</span>}
@@ -318,6 +353,10 @@ const S = {
   optionCategory: { fontSize: '0.7rem', color: '#71717A' },
   optionReason: { fontSize: '0.68rem', color: '#A1A1AA', fontStyle: 'italic', maxWidth: '45%', textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   check: { color: '#22C55E', fontWeight: 700, fontSize: '0.9rem' },
+  learnedBadge: {
+    fontSize: '0.65rem', color: '#3B82F6', background: 'rgba(59,130,246,0.1)',
+    borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 600, whiteSpace: 'nowrap',
+  },
   noResults: { padding: '0.75rem', color: '#A1A1AA', fontSize: '0.85rem', textAlign: 'center' },
   otherRow: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
