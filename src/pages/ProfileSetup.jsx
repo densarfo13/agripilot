@@ -150,6 +150,14 @@ export default function ProfileSetup() {
 
   async function handleSave() {
     if (submitGuardRef.current) return;
+
+    // Client-side: block save if "Other" selected but no crop name entered
+    const cropParsed = parseCropValue(form.cropType);
+    if (cropParsed.isCustomCrop && !cropParsed.customCropName) {
+      setFieldErrors((prev) => ({ ...prev, cropType: t('crop.enterYourCrop') }));
+      return;
+    }
+
     submitGuardRef.current = true;
     setSubmitting(true);
     setSaving(true);

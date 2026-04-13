@@ -1675,6 +1675,9 @@ const T = {
   'crop.cotton': {
     en: 'Cotton', fr: 'Coton', sw: 'Pamba', ha: 'Auduga', tw: 'Asaawa',
   },
+  'crop.enterYourCrop': {
+    en: 'Please enter your crop name', fr: 'Veuillez saisir le nom de votre culture', sw: 'Tafadhali andika jina la mazao yako', ha: 'Da fatan za a shigar da sunan amfanin gonarku', tw: 'Yɛsrɛ wo, hyɛ w\'nnɔbae din',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  PROCESSING — OnboardingWizard ProcessingStep labels

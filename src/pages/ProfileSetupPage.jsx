@@ -6,6 +6,7 @@ import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.j
 import { computeLandSizeFields, UNIT_OPTIONS } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
 import { detectAndResolveLocation } from '../utils/geolocation.js';
+import { parseCropValue } from '../utils/crops.js';
 import CropSelect from '../components/CropSelect.jsx';
 import CountrySelect from '../components/CountrySelect.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
@@ -116,6 +117,13 @@ export default function ProfileSetupPage() {
 
   // Save via ProfileContext
   const handleSave = async () => {
+    // Block save if "Other" selected but no crop name entered
+    const cropParsed = parseCropValue(form.crop);
+    if (cropParsed.isCustomCrop && !cropParsed.customCropName) {
+      setFieldErrors((prev) => ({ ...prev, crop: t('crop.enterYourCrop') }));
+      return;
+    }
+
     setSaving(true);
     setError('');
     setFieldErrors(INITIAL_FIELD_ERRORS);
