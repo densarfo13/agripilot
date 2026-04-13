@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { getFarmProfile, saveFarmProfile } from '../lib/api.js';
+import { getFarmProfile, saveFarmProfile, getFarms, switchActiveFarm as apiSwitchFarm, setDefaultFarm as apiSetDefault } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
 import { useNetwork } from './NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
@@ -26,6 +26,7 @@ export function ProfileProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [farms, setFarms] = useState([]);  // all farms for this user
   const [syncStatus, setSyncStatus] = useState('idle'); // idle | syncing | synced | error
   const [syncMeta, setSyncMeta] = useState({ lastSyncedAt: null, pendingCount: 0, lastError: null });
   const flushingRef = useRef(false);
@@ -63,6 +64,18 @@ export function ProfileProvider({ children }) {
       return syncMeta;
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const refreshFarms = useCallback(async () => {
+    if (!isAuthenticated || !isOnline) return [];
+    try {
+      const data = await getFarms();
+      const list = data.farms || [];
+      setFarms(list);
+      return list;
+    } catch {
+      return farms;
+    }
+  }, [isAuthenticated, isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshProfile = useCallback(async () => {
     if (!isAuthenticated) {
@@ -136,6 +149,24 @@ export function ProfileProvider({ children }) {
     }
   }, [isOnline, refreshSyncMeta]);
 
+  const switchFarm = useCallback(async (farmId) => {
+    if (!isOnline) throw new Error('Cannot switch farms while offline');
+    const data = await apiSetDefault(farmId);
+    const switched = data.profile || null;
+    setProfile(switched);
+    if (switched) await saveProfileDraft(switched);
+    // Refresh full farms list to reflect new statuses
+    await refreshFarms();
+    safeTrackEvent('farm.switched', { farmId });
+    return switched;
+  }, [isOnline, refreshFarms]);
+
+  // Computed: active farms only (excludes inactive/archived)
+  const activeFarms = useMemo(
+    () => farms.filter((f) => f.status === 'active'),
+    [farms],
+  );
+
   const flushSyncQueue = useCallback(async () => {
     if (!isOnline) return;
     if (flushingRef.current) return;
@@ -191,12 +222,15 @@ export function ProfileProvider({ children }) {
 
   useEffect(() => {
     if (!authLoading) {
-      refreshProfile().catch(() => {
+      refreshProfile().then(() => {
+        // Non-blocking: load farms list after active profile is set
+        refreshFarms().catch(() => {});
+      }).catch(() => {
         setLoading(false);
         setInitialized(true);
       });
     }
-  }, [authLoading, refreshProfile]);
+  }, [authLoading, refreshProfile, refreshFarms]);
 
   // Load sync meta on init
   useEffect(() => {
@@ -206,16 +240,20 @@ export function ProfileProvider({ children }) {
   const value = useMemo(
     () => ({
       profile,
+      farms,
+      activeFarms,
       loading,
       initialized,
       syncStatus,
       syncMeta,
       refreshProfile,
+      refreshFarms,
       refreshSyncMeta,
       saveProfile: saveProfileOfflineAware,
+      switchFarm,
       setProfile,
     }),
-    [profile, loading, initialized, syncStatus, syncMeta, refreshProfile, refreshSyncMeta, saveProfileOfflineAware],
+    [profile, farms, activeFarms, loading, initialized, syncStatus, syncMeta, refreshProfile, refreshFarms, refreshSyncMeta, saveProfileOfflineAware, switchFarm],
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

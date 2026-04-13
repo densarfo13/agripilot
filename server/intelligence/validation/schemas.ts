@@ -61,21 +61,19 @@ export const createPestReportSchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
-/** Schema for {@link CreateTreatmentDto}. */
+/** Schema for {@link CreateTreatmentDto}. reportId comes from URL param. */
 export const createTreatmentSchema = z.object({
-  pestReportId: uuid,
   actionTaken: z.string().min(1).max(500),
   productUsed: z.string().max(255).optional(),
   notes: z.string().max(2000).optional(),
   actionDate: z.string().datetime().optional(),
 });
 
-/** Schema for {@link CreateOutcomeDto}. */
+/** Schema for {@link CreateOutcomeDto}. treatmentId comes from URL param. */
 export const createOutcomeSchema = z.object({
-  treatmentActionId: uuid,
   outcomeStatus: z.enum(constValues(OutcomeStatus)),
   followupNotes: z.string().max(2000).optional(),
-  followupImageUrl: z.string().url().max(2048).optional(),
+  followupImageUrl: z.string().max(4096).optional(),
   followupDate: z.string().datetime().optional(),
 });
 
@@ -115,6 +113,21 @@ export const reviewReportSchema = z.object({
 export const validateBoundarySchema = z.object({
   validated: z.boolean(),
   notes: z.string().max(2000).optional(),
+});
+
+/** Schema for admin trigger: score a farm. */
+export const triggerFarmScoreSchema = z.object({
+  profileId: uuid,
+});
+
+/** Schema for admin trigger: score a region. */
+export const triggerRegionScoreSchema = z.object({
+  regionKey: z.string().min(1).max(255),
+});
+
+/** Schema for admin trigger: evaluate alert for a farm. */
+export const triggerAlertEvaluateSchema = z.object({
+  profileId: uuid,
 });
 
 // ---------------------------------------------------------------------------

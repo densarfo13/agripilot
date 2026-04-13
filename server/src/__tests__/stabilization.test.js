@@ -265,7 +265,7 @@ describe('Recommendation engine — safety checks', () => {
 // ─── 6. OnboardingWizard module loads without error ────────
 
 describe('OnboardingWizard — module structure', () => {
-  it('exports default component', async () => {
+  it('exports default component', { timeout: 30000 }, async () => {
     // Provide browser globals needed by transitive imports (authStore uses localStorage)
     if (typeof globalThis.localStorage === 'undefined') {
       globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} };

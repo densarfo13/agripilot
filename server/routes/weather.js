@@ -3,16 +3,42 @@ import { authenticate } from '../middleware/authenticate.js';
 
 const router = express.Router();
 
+async function geocodeLocation(locationText) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationText)}&count=1&language=en&format=json`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const result = data.results?.[0];
+  if (!result) return null;
+  return { lat: result.latitude, lng: result.longitude, name: result.name };
+}
+
 router.get('/current', authenticate, async (req, res) => {
   try {
-    const lat = Number(req.query.lat);
-    const lng = Number(req.query.lng);
+    let lat = Number(req.query.lat);
+    let lng = Number(req.query.lng);
+    let resolvedLocation = null;
 
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Valid lat and lng are required',
-      });
+      const locationText = req.query.location;
+      if (!locationText) {
+        return res.status(400).json({
+          success: false,
+          error: 'Valid lat/lng or location text is required',
+        });
+      }
+
+      const geo = await geocodeLocation(locationText);
+      if (!geo) {
+        return res.status(404).json({
+          success: false,
+          error: `Could not geocode location: ${locationText}`,
+        });
+      }
+
+      lat = geo.lat;
+      lng = geo.lng;
+      resolvedLocation = geo.name;
     }
 
     const url =
@@ -32,6 +58,7 @@ router.get('/current', authenticate, async (req, res) => {
 
     return res.json({
       success: true,
+      resolvedLocation,
       weather: {
         temperature: current.temperature_2m ?? null,
         humidity: current.relative_humidity_2m ?? null,

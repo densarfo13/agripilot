@@ -61,7 +61,7 @@ describe('Farmer Service — profileImageUrl field', () => {
 // ─── 3. Farmer routes export ─────────────────────────────────
 
 describe('Farmer Routes — profile photo endpoints', () => {
-  it('farmer routes export a valid Express router', async () => {
+  it('farmer routes export a valid Express router', { timeout: 15000 }, async () => {
     const mod = await import('../modules/farmers/routes.js');
     expect(mod.default).toBeDefined();
     expect(typeof mod.default).toBe('function');

@@ -49,7 +49,7 @@ export default function Register() {
     <div style={S.page}>
       <div style={S.card}>
         <h1 style={S.title}>Create Account</h1>
-        <p style={S.subtitle}>Join AgriPilot to manage your farm</p>
+        <p style={S.subtitle}>Join Farroway to manage your farm</p>
 
         {generalError && <div style={S.errorBox}>{generalError}</div>}
 

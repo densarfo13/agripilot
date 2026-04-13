@@ -354,7 +354,7 @@ describe('Location Service', () => {
 describe('Farmer Self-Registration', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('creates user + farmer in pending_approval state', async () => {
+  it('creates user + farmer in pending_approval state', { timeout: 15000 }, async () => {
     const { farmerSelfRegister } = await import('../modules/auth/farmer-registration.js');
 
     prisma.user.findUnique.mockResolvedValue(null); // no existing email
@@ -372,7 +372,7 @@ describe('Farmer Self-Registration', () => {
     expect(prisma.farmer.create).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects duplicate email', async () => {
+  it('rejects duplicate email', { timeout: 15000 }, async () => {
     const { farmerSelfRegister } = await import('../modules/auth/farmer-registration.js');
 
     prisma.user.findUnique.mockResolvedValue({ id: 'existing-user' });

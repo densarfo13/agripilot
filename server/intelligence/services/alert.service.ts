@@ -3,33 +3,11 @@
 // Decides whether to create, suppress, or downgrade alerts.
 
 // @ts-ignore — JS module
-import prisma from '../../lib/prisma.js';
+import prisma from '../lib/prisma.js';
 import type { AlertLevel } from '../types/index.js';
-
-// ---- Alert-level type aligned to V2AlertEvent schema -----------------------
-// The DB column uses: watch | elevated | high_risk | urgent
-// The shared AlertLevel type may differ, so we define a local union that
-// matches the database and use it throughout this service.
+import { getAlertConfig } from '../config/thresholds.js';
 
 type DbAlertLevel = 'watch' | 'elevated' | 'high_risk' | 'urgent';
-
-// ---- Configuration ----------------------------------------------------------
-
-/** Tunable thresholds governing alert creation and suppression. */
-export const ALERT_CONFIG = {
-  /** Minimum confidence score (0-100) required to create an alert. */
-  confidenceThreshold: 55,
-  /** Suppress duplicate alerts for the same target + level within this window. */
-  duplicateWindowHours: 24,
-  /** Suppress alerts when the target farm has a recent treatment action. */
-  recentActionWindowHours: 48,
-  /** Maximum alerts per target within the noise window before downgrading. */
-  noiseThreshold: 3,
-  /** Rolling window (days) used for noise counting. */
-  noiseWindowDays: 7,
-  /** Alerts auto-expire after this many hours. */
-  defaultExpiryHours: 72,
-} as const;
 
 // ---- Param / Result types ---------------------------------------------------
 
@@ -101,9 +79,9 @@ export async function evaluateAndCreateAlert(
 
   try {
     // ---- 1. Confidence check ------------------------------------------------
-    if (confidenceScore < ALERT_CONFIG.confidenceThreshold) {
+    if (confidenceScore < getAlertConfig().confidenceThreshold) {
       console.log(
-        `${LOG_PREFIX} Suppressed: confidence ${confidenceScore} < threshold ${ALERT_CONFIG.confidenceThreshold}`,
+        `${LOG_PREFIX} Suppressed: confidence ${confidenceScore} < threshold ${getAlertConfig().confidenceThreshold}`,
       );
       return {
         created: false,
@@ -117,7 +95,7 @@ export async function evaluateAndCreateAlert(
 
     // ---- 2. Duplicate check -------------------------------------------------
     const duplicateCutoff = new Date(
-      Date.now() - ALERT_CONFIG.duplicateWindowHours * 60 * 60 * 1000,
+      Date.now() - getAlertConfig().duplicateWindowHours * 60 * 60 * 1000,
     );
 
     const existingDuplicate = await (prisma as any).v2AlertEvent.findFirst({
@@ -133,7 +111,7 @@ export async function evaluateAndCreateAlert(
 
     if (existingDuplicate) {
       console.log(
-        `${LOG_PREFIX} Suppressed: duplicate for ${targetType}/${targetId} level=${alertLevel} within ${ALERT_CONFIG.duplicateWindowHours}h`,
+        `${LOG_PREFIX} Suppressed: duplicate for ${targetType}/${targetId} level=${alertLevel} within ${getAlertConfig().duplicateWindowHours}h`,
       );
       return {
         created: false,
@@ -148,7 +126,7 @@ export async function evaluateAndCreateAlert(
     // ---- 3. Recent treatment action check (farm targets only) ---------------
     if (targetType === 'farm') {
       const actionCutoff = new Date(
-        Date.now() - ALERT_CONFIG.recentActionWindowHours * 60 * 60 * 1000,
+        Date.now() - getAlertConfig().recentActionWindowHours * 60 * 60 * 1000,
       );
 
       const recentAction = await (prisma as any).v2TreatmentAction.findFirst({
@@ -176,7 +154,7 @@ export async function evaluateAndCreateAlert(
 
     // ---- 4. Noise check -----------------------------------------------------
     const noiseCutoff = new Date(
-      Date.now() - ALERT_CONFIG.noiseWindowDays * 24 * 60 * 60 * 1000,
+      Date.now() - getAlertConfig().noiseWindowDays * 24 * 60 * 60 * 1000,
     );
 
     const recentAlertCount: number = await (prisma as any).v2AlertEvent.count({
@@ -191,13 +169,13 @@ export async function evaluateAndCreateAlert(
     let effectiveLevel: DbAlertLevel = alertLevel;
     let downgraded = false;
 
-    if (recentAlertCount >= ALERT_CONFIG.noiseThreshold) {
+    if (recentAlertCount >= getAlertConfig().noiseThreshold) {
       const nextLevel = downgradeAlertLevel(effectiveLevel);
 
       if (nextLevel === null) {
         // Already at lowest level -- suppress entirely
         console.log(
-          `${LOG_PREFIX} Suppressed: noise limit reached for ${targetType}/${targetId} (${recentAlertCount} alerts in ${ALERT_CONFIG.noiseWindowDays}d, already at watch)`,
+          `${LOG_PREFIX} Suppressed: noise limit reached for ${targetType}/${targetId} (${recentAlertCount} alerts in ${getAlertConfig().noiseWindowDays}d, already at watch)`,
         );
         return {
           created: false,
@@ -210,7 +188,7 @@ export async function evaluateAndCreateAlert(
       }
 
       console.log(
-        `${LOG_PREFIX} Downgrading ${alertLevel} -> ${nextLevel} for ${targetType}/${targetId} (${recentAlertCount} alerts in ${ALERT_CONFIG.noiseWindowDays}d)`,
+        `${LOG_PREFIX} Downgrading ${alertLevel} -> ${nextLevel} for ${targetType}/${targetId} (${recentAlertCount} alerts in ${getAlertConfig().noiseWindowDays}d)`,
       );
       effectiveLevel = nextLevel;
       downgraded = true;
@@ -218,7 +196,7 @@ export async function evaluateAndCreateAlert(
 
     // ---- 5. Create the alert ------------------------------------------------
     const expiresAt = new Date(
-      Date.now() + ALERT_CONFIG.defaultExpiryHours * 60 * 60 * 1000,
+      Date.now() + getAlertConfig().defaultExpiryHours * 60 * 60 * 1000,
     );
 
     const alert = await (prisma as any).v2AlertEvent.create({

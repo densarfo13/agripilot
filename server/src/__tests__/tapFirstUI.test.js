@@ -627,7 +627,7 @@ describe('CountrySelect mobile UX', () => {
   });
 
   it('search input has proper font size for mobile', () => {
-    expect(src).toContain("fontSize: '0.9rem'");
+    expect(src).toContain("fontSize: '16px'");
   });
 });
 

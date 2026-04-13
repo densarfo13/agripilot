@@ -1,74 +1,64 @@
-import { t } from '../lib/i18n.js';
-import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
+import { useTranslation } from '../i18n/index.js';
 import VoicePromptButton from './VoicePromptButton.jsx';
 
-function getWeatherSummary(weather, language) {
-  if (!weather) return 'Weather will appear when GPS coordinates are available.';
-
-  if ((weather.rain || 0) > 0 || (weather.showers || 0) > 0 || (weather.precipitation || 0) > 0) {
-    return t(language, 'weatherSummaryRain');
-  }
-  if ((weather.windSpeed || 0) >= 20) {
-    return t(language, 'weatherSummaryWind');
-  }
-  return t(language, 'weatherSummaryGood');
+function getWeatherDecisionKey(weather) {
+  if (!weather) return 'weather.addGps';
+  if ((weather.rain || 0) > 0 || (weather.showers || 0) > 0 || (weather.precipitation || 0) > 0) return 'weather.rainLikely';
+  if ((weather.windSpeed || 0) >= 20) return 'weather.noSpray';
+  return 'weather.safeActivity';
 }
 
-function getWeatherActions(weather) {
-  if (!weather) {
-    return ['Add GPS coordinates to unlock local weather intelligence.'];
-  }
-
-  const actions = [];
-
+function getWeatherActionKeys(weather) {
+  if (!weather) return ['weather.addGpsDetail'];
+  const keys = [];
   if ((weather.rain || 0) > 0 || (weather.showers || 0) > 0) {
-    actions.push('Rain is likely. Protect seeds, inputs, and field activity plans.');
+    keys.push('weather.delayWork');
   } else {
-    actions.push('No rain detected right now. Field movement looks safe.');
+    keys.push('weather.noRain');
   }
-
   if ((weather.windSpeed || 0) >= 20) {
-    actions.push('Avoid spraying in strong wind.');
+    keys.push('weather.noSprayWind');
   } else {
-    actions.push('Wind conditions look acceptable for normal activity.');
+    keys.push('weather.windOk');
   }
-
   if ((weather.temperature || 0) >= 32) {
-    actions.push('Heat is elevated. Water and labor planning should be adjusted.');
+    keys.push('weather.heatHigh');
   }
-
-  return actions;
+  return keys;
 }
 
 export default function WeatherDecisionCard() {
-  const { weather, weatherLoading } = useWeather();
-  const { language } = useAppPrefs();
+  const { weather, weatherLoading, resolvedLocation } = useWeather();
+  const { t } = useTranslation();
 
-  const summary = getWeatherSummary(weather, language);
-  const actions = getWeatherActions(weather);
+  const decisionKey = getWeatherDecisionKey(weather);
+  const actionKeys = getWeatherActionKeys(weather);
 
   return (
     <div style={S.card}>
       <div style={S.headerRow}>
         <div>
-          <h3 style={S.title}>🌤 Weather Today</h3>
+          <h3 style={S.title}>{t('weather.title')}</h3>
           <p style={S.subtitle}>
             {weatherLoading
-              ? 'Loading local weather...'
+              ? t('weather.loading')
               : weather
-                ? `${weather.temperature ?? '-'}°C \u2022 Wind ${weather.windSpeed ?? '-'} km/h \u2022 Humidity ${weather.humidity ?? '-'}%`
-                : 'Weather data is unavailable until GPS is added.'}
+                ? `${weather.temperature ?? '-'}\u00B0C \u2022 Wind ${weather.windSpeed ?? '-'} km/h \u2022 Humidity ${weather.humidity ?? '-'}%`
+                : t('weather.unavailable')}
           </p>
+          {resolvedLocation && (
+            <p style={S.locationNote}>{t('weather.usingLocation')} {resolvedLocation}</p>
+          )}
         </div>
-        <VoicePromptButton text={summary} label="Weather Voice" />
+        <VoicePromptButton text={t(decisionKey)} label={t('common.listen')} />
       </div>
 
       <div style={S.decisionBox}>
-        <div style={S.summaryText}>{summary}</div>
+        <div style={S.decisionText}>{t(decisionKey)}</div>
         <ul style={S.actionList}>
-          {actions.map((item) => (
-            <li key={item} style={S.actionItem}>• {item}</li>
+          {actionKeys.map((key) => (
+            <li key={key} style={S.actionItem}>{t(key)}</li>
           ))}
         </ul>
       </div>
@@ -101,6 +91,11 @@ const S = {
     color: 'rgba(255,255,255,0.7)',
     marginTop: '0.25rem',
   },
+  locationNote: {
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.45)',
+    marginTop: '0.5rem',
+  },
   decisionBox: {
     marginTop: '1rem',
     borderRadius: '12px',
@@ -108,7 +103,7 @@ const S = {
     border: '1px solid rgba(255,255,255,0.1)',
     padding: '1rem',
   },
-  summaryText: {
+  decisionText: {
     fontSize: '0.875rem',
     fontWeight: 600,
     color: '#86EFAC',

@@ -65,6 +65,8 @@ export function validateResetPasswordPayload(body = {}) {
   return { isValid: Object.keys(errors).length === 0, errors, data: { token, password } };
 }
 
+const VALID_SIZE_UNITS = ['ACRE', 'HECTARE', 'SQUARE_METER'];
+
 export function validateFarmProfilePayload(body = {}) {
   const errors = {};
   const farmerName = toNullableString(body.farmerName);
@@ -73,6 +75,10 @@ export function validateFarmProfilePayload(body = {}) {
   const location = toNullableString(body.location);
   const cropType = toNullableString(body.cropType);
   const size = toNullableNumber(body.size);
+  const rawUnit = toNullableString(body.sizeUnit);
+  const sizeUnit = rawUnit && VALID_SIZE_UNITS.includes(rawUnit.toUpperCase())
+    ? rawUnit.toUpperCase()
+    : 'ACRE'; // backward compatible default
   const gpsLat = toNullableNumber(body.gpsLat);
   const gpsLng = toNullableNumber(body.gpsLng);
 
@@ -101,6 +107,7 @@ export function validateFarmProfilePayload(body = {}) {
       location,
       cropType,
       size: Number.isNaN(size) ? null : size,
+      sizeUnit,
       gpsLat: Number.isNaN(gpsLat) ? null : gpsLat,
       gpsLng: Number.isNaN(gpsLng) ? null : gpsLng,
     },

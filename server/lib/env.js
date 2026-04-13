@@ -20,6 +20,7 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_FROM: process.env.SMTP_FROM || 'no-reply@example.com',
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || '',
+  COOKIE_SAMESITE: process.env.COOKIE_SAMESITE || 'lax',
   ALLOWED_ORIGINS: (process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
     .split(',')
     .map((item) => item.trim())

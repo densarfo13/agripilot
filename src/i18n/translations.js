@@ -507,6 +507,39 @@ const T = {
   'update.willSyncReconnect': {
     en: 'Your update will sync when you reconnect.', fr: 'Votre mise à jour sera synchronisée à la reconnexion.', sw: 'Sasishi lako litasawazishwa ukirejea mtandaoni.', ha: 'Sabuntawar ku za ta daidaita idan kun dawo layi.', tw: 'Wo nsɛm bɛyɛ sɛnti wo de intanɛt a.',
   },
+  'update.openingCamera': {
+    en: 'Opening camera...', fr: 'Ouverture de la caméra...', sw: 'Inafungua kamera...', ha: 'Ana buɗe kyamara...', tw: 'Ɛrebue kamera...',
+  },
+  'update.retake': {
+    en: 'Retake', fr: 'Reprendre', sw: 'Piga tena', ha: 'Sake ɗauka', tw: 'San twe',
+  },
+  'update.whatHappened': {
+    en: 'What happened?', fr: 'Que s\'est-il passé ?', sw: 'Nini kimetokea?', ha: 'Me ya faru?', tw: 'Deɛ ɛsii?',
+  },
+  'update.suggested': {
+    en: 'Suggested', fr: 'Suggéré', sw: 'Pendekezo', ha: 'Shawarar', tw: 'Afotu',
+  },
+  'update.updateSavedCheck': {
+    en: 'Update saved ✅', fr: 'Mise à jour enregistrée ✅', sw: 'Sasishi limehifadhiwa ✅', ha: 'An ajiye sabuntawa ✅', tw: 'Wɔakora nsɛm no ✅',
+  },
+  'update.savedOfflineMsg': {
+    en: 'Saved offline. Will send when online.', fr: 'Enregistré hors ligne. Envoi à la reconnexion.', sw: 'Imehifadhiwa. Itatumwa ukiwa mtandaoni.', ha: 'An ajiye. Za a aika idan layi ya dawo.', tw: 'Wɔakora. Wɔde bɛkɔ intanɛt bɛba a.',
+  },
+  'update.activity.progress': {
+    en: 'Progress', fr: 'Progrès', sw: 'Maendeleo', ha: 'Ci gaba', tw: 'Nkɔso',
+  },
+  'update.activity.harvest': {
+    en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Twabɔ',
+  },
+  'update.activity.spray': {
+    en: 'Spray', fr: 'Pulvériser', sw: 'Nyunyizia', ha: 'Fesa', tw: 'Pete aduro',
+  },
+  'update.activity.issue': {
+    en: 'Problem', fr: 'Problème', sw: 'Tatizo', ha: 'Matsala', tw: 'Ɔhaw',
+  },
+  'update.activity.other': {
+    en: 'Other', fr: 'Autre', sw: 'Nyingine', ha: 'Wani', tw: 'Afoforo',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  ACTION FEEDBACK (guarantee layer)
@@ -2293,7 +2326,10 @@ const T = {
     en: 'Village / Region', fr: 'Village / Région', sw: 'Kijiji / Mkoa', ha: 'Ƙauye / Yanki', tw: 'Akuraa / Mantam',
   },
   'setup.farmSize': {
-    en: 'Farm Size (hectares)', fr: 'Taille (hectares)', sw: 'Ukubwa wa shamba (hekta)', ha: 'Girman gona (hekta)', tw: 'Afuo kɛseɛ (hekta)',
+    en: 'Farm Size', fr: 'Taille de la ferme', sw: 'Ukubwa wa shamba', ha: 'Girman gona', tw: 'Afuo kɛseɛ',
+  },
+  'setup.hectares': {
+    en: 'hectares', fr: 'hectares', sw: 'hekta', ha: 'hekta', tw: 'hekta',
   },
   'setup.mainCrop': {
     en: 'Main Crop', fr: 'Culture principale', sw: 'Zao kuu', ha: 'Babban amfanin gona', tw: 'Nnɔbae titiriw',
@@ -2441,6 +2477,9 @@ const T = {
   },
   'action.finishSetupDesc': {
     en: 'Add the missing details below so Farroway can give you more accurate weather, better farming guidance, and stronger daily recommendations.', fr: 'Ajoutez les détails manquants pour que Farroway puisse vous donner des conseils plus précis.', sw: 'Ongeza maelezo yanayokosekana ili Farroway ikupe ushauri bora zaidi.', ha: 'Ƙara bayanan da suka ɓace don Farroway ta ba ka shawarwari mafi kyau.', tw: 'Fa nsɛm a aka no ka ho na Farroway ama wo afutuɔ papa.',
+  },
+  'action.uuidMissing': {
+    en: 'Finish your farm setup to begin tracking your farming season.', fr: 'Terminez la configuration de votre ferme pour commencer à suivre votre saison agricole.', sw: 'Kamilisha usanidi wa shamba lako ili uanze kufuatilia msimu wako wa kilimo.', ha: 'Kammala saita gonar ku don fara bin diddigin lokacin nomar ku.', tw: 'Wie wo afuo nhyehyɛe na hyɛ ase di wo mfuom bere akyi.',
   },
   'action.betterWeather': {
     en: 'Better local weather', fr: 'Meilleure météo locale', sw: 'Hali bora ya hewa', ha: 'Yanayin gida mafi kyau', tw: 'Wim tebea papa',
@@ -2596,6 +2635,29 @@ const T = {
   },
   'farm.gpsNotAdded': {
     en: 'Not added', fr: 'Non ajouté', sw: 'Haijaongezwa', ha: 'Ba a ƙara ba', tw: 'Wɔmfa anka ho',
+  },
+
+  // ─── Location display (farmer-friendly) ───────────────────
+  'location.farmLocation': {
+    en: 'Farm Location', fr: 'Emplacement de la ferme', sw: 'Mahali pa shamba', ha: 'Wurin gona', tw: 'Afuo beae',
+  },
+  'location.captured': {
+    en: 'Location captured', fr: 'Emplacement enregistré', sw: 'Mahali pamehifadhiwa', ha: 'An adana wuri', tw: 'Wɔde beae ahyɛ',
+  },
+  'location.capturedCheck': {
+    en: 'Location saved ✅', fr: 'Emplacement enregistré ✅', sw: 'Mahali pamehifadhiwa ✅', ha: 'An adana wuri ✅', tw: 'Wɔde beae ahyɛ ✅',
+  },
+  'location.detecting': {
+    en: 'Detecting location...', fr: 'Détection en cours...', sw: 'Inatafuta mahali...', ha: 'Ana neman wuri...', tw: 'Rehwehwɛ beae...',
+  },
+  'location.captureGPS': {
+    en: 'Capture Farm Location', fr: "Capturer l'emplacement", sw: 'Nasa mahali pa shamba', ha: 'Ɗauki wurin gona', tw: 'Fa afuo beae',
+  },
+  'location.update': {
+    en: 'Update', fr: 'Mettre à jour', sw: 'Sasisha', ha: 'Sabunta', tw: 'Yi foforo',
+  },
+  'location.updating': {
+    en: 'Updating...', fr: 'Mise à jour...', sw: 'Inasasisha...', ha: 'Ana sabuntawa...', tw: 'Ɛreyɛ foforo...',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -3130,6 +3192,24 @@ const T = {
   'risk.moderate': { en: 'Moderate', fr: 'Modéré', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
   'risk.high': { en: 'High Risk', fr: 'Risque Élevé', sw: 'Hatari Kubwa', ha: 'Haɗari Mai Girma', tw: 'Asiane Kɛse' },
   'risk.urgent': { en: 'Urgent', fr: 'Urgent', sw: 'Dharura', ha: 'Gaggawa', tw: 'Ɛhia Ntɛm' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  FARM SWITCHING — multi-farm support
+  // ═══════════════════════════════════════════════════════════
+
+  'farm.activeFarm': { en: 'My Farm', fr: 'Ma Ferme', sw: 'Shamba Langu', ha: 'Gonar ta', tw: 'Me Afuo' },
+  'farm.unnamed': { en: 'Unnamed Farm', fr: 'Ferme sans nom', sw: 'Shamba bila Jina', ha: 'Gona marar Suna', tw: 'Afuo a enni Din' },
+  'farm.addNew': { en: 'Add New Farm', fr: 'Ajouter une ferme', sw: 'Ongeza Shamba', ha: 'Ƙara Gona', tw: 'Fa Afuo Foforo Ka Ho' },
+  'farm.switchFailed': { en: 'Could not switch farms. Try again.', fr: 'Impossible de changer de ferme.', sw: 'Imeshindikana kubadili shamba.', ha: 'Ba a iya canja gona ba.', tw: 'Yɛantumi ansesa afuo no.' },
+  'farm.offlineSwitch': { en: 'Go online to switch farms', fr: 'Connectez-vous pour changer', sw: 'Ingia mtandaoni kubadilisha', ha: 'Shiga yanar gizo don canjawa', tw: 'Kɔ intanɛt so na sesa' },
+  'farm.switchSuccess': { en: 'Switched to this farm', fr: 'Ferme activée', sw: 'Shamba limebadilishwa', ha: 'An canja zuwa wannan gona', tw: 'Wɔasesa akɔ saa afuo yi so' },
+  'farm.archiveConfirm': { en: 'Archive this farm? History is kept.', fr: 'Archiver cette ferme?', sw: 'Hifadhi shamba hili?', ha: 'Adana wannan gona?', tw: 'Kora saa afuo yi? Nsɛm a atwam da so wɔ hɔ.' },
+  'farm.defaultFarm': { en: 'Default Farm', fr: 'Ferme par défaut', sw: 'Shamba Kuu', ha: 'Babban Gona', tw: 'Afuo Titiriw' },
+  'farm.default': { en: 'Default', fr: 'Par défaut', sw: 'Kuu', ha: 'Babba', tw: 'Titiriw' },
+  'farm.farms': { en: 'farms', fr: 'fermes', sw: 'mashamba', ha: 'gonaki', tw: 'mfuw' },
+  'farm.tapToSetDefault': { en: 'Tap to set as default', fr: 'Appuyer pour définir par défaut', sw: 'Bonyeza kuweka kuu', ha: 'Danna don sanya babba', tw: 'Mia so de yɛ titiriw' },
+  'farm.whichFarm': { en: 'Which farm?', fr: 'Quelle ferme?', sw: 'Shamba lipi?', ha: 'Wace gona?', tw: 'Afuo bɛn?' },
+  'farm.myFarms': { en: 'My Farms', fr: 'Mes Fermes', sw: 'Mashamba Yangu', ha: 'Gonakin a', tw: 'Me Mfuw' },
 };
 
 export default T;

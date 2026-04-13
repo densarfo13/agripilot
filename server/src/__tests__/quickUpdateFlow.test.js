@@ -26,122 +26,97 @@ describe('QuickUpdateFlow — Component Structure', () => {
   it('has data-testid quick-update-flow on container', () => {
     expect(code).toContain('data-testid="quick-update-flow"');
   });
-});
 
-describe('QuickUpdateFlow — Action Selection (Step 1)', () => {
-  const code = readFile('src/components/QuickUpdateFlow.jsx');
-
-  it('has three action options: progress, photo, issue', () => {
-    expect(code).toContain("value: 'progress'");
-    expect(code).toContain("value: 'photo'");
-    expect(code).toContain("value: 'issue'");
-  });
-
-  it('action options have icons and descriptions (localized)', () => {
-    expect(code).toContain("t('quickUpdate.cropProgress')");
-    expect(code).toContain("t('quickUpdate.uploadPhoto')");
-    expect(code).toContain("t('quickUpdate.reportIssue')");
-    expect(code).toContain("t('quickUpdate.logStageCondition')");
-    expect(code).toContain("t('quickUpdate.takeAFarmPhoto')");
-    expect(code).toContain("t('quickUpdate.pestDiseaseWeather')");
-  });
-
-  it('action cards have tap-safe styling', () => {
-    expect(code).toContain("WebkitTapHighlightColor: 'transparent'");
-  });
-
-  it('has action-select test ID', () => {
-    expect(code).toContain('data-testid="action-select"');
-  });
-
-  it('asks "What do you want to do?"', () => {
-    expect(code).toContain("t('update.whatToDo')");
+  it('accepts seasonStage prop for auto-suggest', () => {
+    expect(code).toContain('seasonStage');
+    expect(code).toContain('suggestActivity');
   });
 });
 
-describe('QuickUpdateFlow — Stage Selection (Step 2)', () => {
+describe('QuickUpdateFlow — Camera-First Flow', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('has four stage options: planting, vegetative, flowering, harvest (localized)', () => {
-    expect(code).toContain("value: 'planting'");
-    expect(code).toContain("t('quickUpdate.planting')");
-    expect(code).toContain("value: 'vegetative'");
-    expect(code).toContain("t('quickUpdate.growing')");
-    expect(code).toContain("value: 'flowering'");
-    expect(code).toContain("t('quickUpdate.flowering')");
-    expect(code).toContain("value: 'harvest'");
-    expect(code).toContain("t('quickUpdate.harvesting')");
+  it('opens camera immediately on mount', () => {
+    expect(code).toContain('fileInputRef.current');
+    expect(code).toContain('.click()');
+    // Uses useEffect to trigger camera on mount
+    expect(code).toContain('useEffect');
   });
 
-  it('stage options have large icons', () => {
-    const stageIcons = ['🌱', '🌿', '🌼', '🌾'];
-    for (const icon of stageIcons) {
-      expect(code).toContain(icon);
-    }
+  it('starts on camera step', () => {
+    expect(code).toContain("useState('camera')");
   });
-
-  it('uses a 2x2 grid layout for stages', () => {
-    expect(code).toContain('stageGrid');
-    expect(code).toContain("gridTemplateColumns: '1fr 1fr'");
-  });
-
-  it('has stage-select test ID', () => {
-    expect(code).toContain('data-testid="stage-select"');
-  });
-
-  it('stage cards have 100px+ minHeight', () => {
-    expect(code).toContain("minHeight: '100px'");
-  });
-
-  it('asks "What stage is your crop?"', () => {
-    expect(code).toContain("t('update.whatStage')");
-  });
-});
-
-describe('QuickUpdateFlow — Condition (Step 3)', () => {
-  const code = readFile('src/components/QuickUpdateFlow.jsx');
-
-  it('has three condition options: good, average, poor', () => {
-    expect(code).toContain("value: 'good'");
-    expect(code).toContain("t('quickUpdate.good')");
-    expect(code).toContain("value: 'average'");
-    expect(code).toContain("t('quickUpdate.okay')");
-    expect(code).toContain("value: 'poor'");
-    expect(code).toContain("t('quickUpdate.problem')");
-  });
-
-  it('condition options have thumb icons', () => {
-    expect(code).toContain("icon: '👍'");
-    expect(code).toContain("icon: '👌'");
-    expect(code).toContain("icon: '👎'");
-  });
-
-  it('condition options have color coding', () => {
-    expect(code).toContain("color: '#22C55E'"); // good
-    expect(code).toContain("color: '#F59E0B'"); // okay
-    expect(code).toContain("color: '#EF4444'"); // problem
-  });
-
-  it('has condition-select test ID', () => {
-    expect(code).toContain('data-testid="condition-select"');
-  });
-
-  it('condition cards have 120px+ minHeight', () => {
-    expect(code).toContain("minHeight: '120px'");
-  });
-
-  it('asks "How does your crop look?"', () => {
-    expect(code).toContain("t('update.howLook')");
-  });
-});
-
-describe('QuickUpdateFlow — Photo Step', () => {
-  const code = readFile('src/components/QuickUpdateFlow.jsx');
 
   it('has camera capture input with accept and capture attributes', () => {
     expect(code).toContain('accept="image/*"');
     expect(code).toContain('capture="environment"');
   });
+
+  it('transitions to review after photo capture', () => {
+    expect(code).toContain("setStep('review')");
+  });
+
+  it('allows skipping camera to go to review', () => {
+    expect(code).toContain("t('update.skipPhoto')");
+    expect(code).toContain("setStep('review')");
+  });
+});
+
+describe('QuickUpdateFlow — Activity Selection (Review Screen)', () => {
+  const code = readFile('src/components/QuickUpdateFlow.jsx');
+
+  it('has 5 activity options: progress, harvest, spray, issue, other', () => {
+    expect(code).toContain("value: 'progress'");
+    expect(code).toContain("value: 'harvest'");
+    expect(code).toContain("value: 'spray'");
+    expect(code).toContain("value: 'issue'");
+    expect(code).toContain("value: 'other'");
+  });
+
+  it('activity options use localized labels', () => {
+    expect(code).toContain("t('update.activity.progress')");
+    expect(code).toContain("t('update.activity.harvest')");
+    expect(code).toContain("t('update.activity.spray')");
+    expect(code).toContain("t('update.activity.issue')");
+    expect(code).toContain("t('update.activity.other')");
+  });
+
+  it('activity options have icons', () => {
+    expect(code).toContain("icon: '🌱'");
+    expect(code).toContain("icon: '🌾'");
+    expect(code).toContain("icon: '💧'");
+    expect(code).toContain("icon: '⚠️'");
+    expect(code).toContain("icon: '📋'");
+  });
+
+  it('has activity-select test ID', () => {
+    expect(code).toContain('data-testid="activity-select"');
+  });
+
+  it('shows "What happened?" label', () => {
+    expect(code).toContain("t('update.whatHappened')");
+  });
+
+  it('auto-suggests most likely activity based on season stage', () => {
+    expect(code).toContain('suggestActivity');
+    expect(code).toContain('suggested');
+    expect(code).toContain("t('update.suggested')");
+  });
+
+  it('renders activity buttons not dropdown', () => {
+    expect(code).toContain('activityGrid');
+    expect(code).toContain('activityBtn');
+    // No select dropdown for activities
+    expect(code).not.toContain('<select');
+  });
+
+  it('activity cards have tap-safe styling', () => {
+    expect(code).toContain("WebkitTapHighlightColor: 'transparent'");
+  });
+});
+
+describe('QuickUpdateFlow — Photo Preview', () => {
+  const code = readFile('src/components/QuickUpdateFlow.jsx');
 
   it('has photo-input and capture-photo-btn test IDs', () => {
     expect(code).toContain('data-testid="photo-input"');
@@ -153,20 +128,15 @@ describe('QuickUpdateFlow — Photo Step', () => {
     expect(code).toContain('previewImg');
   });
 
-  it('has remove photo button', () => {
-    expect(code).toContain('removePhotoBtn');
-    expect(code).toContain('clearPhoto');
+  it('has retake photo button', () => {
+    expect(code).toContain('retakeBtn');
+    expect(code).toContain('retakePhoto');
+    expect(code).toContain("t('update.retake')");
   });
 
-  it('has skip photo option for non-photo actions', () => {
-    expect(code).toContain('skip-photo-btn');
-    expect(code).toContain("t('update.skipPhoto')");
-  });
-
-  it('submit button adapts label: Save Photo / Submit with Photo / Submit Update', () => {
-    expect(code).toContain("t('update.savePhoto')");
-    expect(code).toContain("t('update.submitWithPhoto')");
-    expect(code).toContain("t('update.submitUpdate')");
+  it('has optional add photo button when no photo', () => {
+    expect(code).toContain('addPhotoBtn');
+    expect(code).toContain("t('update.addPhotoOptional')");
   });
 });
 
@@ -189,17 +159,12 @@ describe('QuickUpdateFlow — Photo Compression', () => {
     expect(code).toContain("document.createElement('canvas')");
     expect(code).toContain('toBlob');
   });
-
-  it('falls back to original if compression fails', () => {
-    expect(code).toContain('If compression fails, use original');
-  });
 });
 
 describe('QuickUpdateFlow — Submit & Offline Handling', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('has submit guard to prevent double-submit', () => {
-    // Guard now lives inside useGuaranteedAction hook
+  it('has submit guard via useGuaranteedAction', () => {
     expect(code).toContain('useGuaranteedAction');
     expect(code).toContain('submitAction.run');
   });
@@ -212,8 +177,8 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
     expect(code).toContain('/seasons/${seasonId}/condition');
   });
 
-  it('submits stage confirmation to /seasons/{id}/stage-confirmation', () => {
-    expect(code).toContain('/seasons/${seasonId}/stage-confirmation');
+  it('auto-sets condition based on activity type', () => {
+    expect(code).toContain('ACTIVITY_CONDITION_MAP');
   });
 
   it('queues to offline queue on network failure', () => {
@@ -222,7 +187,6 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
   });
 
   it('checks online status via guaranteed action offline handler', () => {
-    // Online check is now handled by useGuaranteedAction's onOffline callback
     expect(code).toContain('onOffline');
     expect(code).toContain('enqueue(offlinePayload)');
   });
@@ -236,7 +200,6 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
   });
 
   it('tracks update failure via error step', () => {
-    // Error tracking now handled by ActionFeedback + useGuaranteedAction
     expect(code).toContain("setStep('error')");
     expect(code).toContain('submitAction.isRetryable');
   });
@@ -244,21 +207,23 @@ describe('QuickUpdateFlow — Submit & Offline Handling', () => {
   it('tracks first_update_submitted for new farmers', () => {
     expect(code).toContain("'first_update_submitted'");
   });
+
+  it('maps activity values to API activityType', () => {
+    expect(code).toContain('ACTIVITY_API_MAP');
+  });
 });
 
-describe('QuickUpdateFlow — Feedback States', () => {
+describe('QuickUpdateFlow — Success & Offline States', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('has success feedback with completion time', () => {
-    // Now uses ActionFeedback component
-    expect(code).toContain('ACTION_STATE.SUCCESS');
-    expect(code).toContain("t('update.updateSaved')");
-    expect(code).toContain("t('update.completedIn'");
+  it('has success screen with checkmark', () => {
+    expect(code).toContain('successScreen');
+    expect(code).toContain("t('update.updateSavedCheck')");
   });
 
-  it('has offline feedback', () => {
-    expect(code).toContain('ACTION_STATE.SAVED_OFFLINE');
-    expect(code).toContain("t('update.savedOffline')");
+  it('has offline screen with sync message', () => {
+    expect(code).toContain('offlineScreen');
+    expect(code).toContain("t('update.savedOfflineMsg')");
     expect(code).toContain("t('update.willSyncReconnect')");
   });
 
@@ -273,38 +238,42 @@ describe('QuickUpdateFlow — Feedback States', () => {
     expect(code).toContain('ACTION_STATE.LOADING');
   });
 
+  it('auto-returns to home after success', () => {
+    expect(code).toContain('AUTO_RETURN_MS');
+    expect(code).toContain('scheduleAutoReturn');
+    expect(code).toContain('onComplete?.()');
+  });
+
   it('done button calls onComplete', () => {
-    expect(code).toContain('onDone=');
     expect(code).toContain('onComplete?.()');
   });
 });
 
-describe('QuickUpdateFlow — Flow Paths', () => {
+describe('QuickUpdateFlow — Single-Screen Flow', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('progress path: action → stage → condition → photo', () => {
-    expect(code).toContain("if (val === 'progress')");
-    expect(code).toContain("goToStep('stage')");
-    expect(code).toContain("goToStep('condition')");
-    expect(code).toContain("goToStep('photo')");
+  it('camera-first: camera → review → submit → done', () => {
+    expect(code).toContain("step === 'camera'");
+    expect(code).toContain("step === 'review'");
+    expect(code).toContain("step === 'submitting'");
+    expect(code).toContain("step === 'done'");
   });
 
-  it('photo path: action → photo directly', () => {
-    expect(code).toContain("if (val === 'photo')");
+  it('review screen shows photo + activity + submit on single screen', () => {
+    // Review step has photo section, activity grid, and submit button together
+    expect(code).toContain('photoSection');
+    expect(code).toContain('activityGrid');
+    expect(code).toContain('submitBtn');
   });
 
-  it('issue path: action → condition pre-set to poor → photo', () => {
-    expect(code).toContain("if (val === 'issue')");
-    expect(code).toContain("setCondition('poor')");
+  it('no multi-step forms — no step indicator dots', () => {
+    // Old flow had stepDot/stepIndicator — new flow is single-screen
+    expect(code).not.toContain('stepDot');
+    expect(code).not.toContain('stepIndicator');
   });
 
-  it('has step indicator dots', () => {
-    expect(code).toContain('quick-step-indicator');
-    expect(code).toContain('stepDot');
-  });
-
-  it('has back navigation on all steps', () => {
-    expect(code).toContain('aria-label="Back"');
+  it('has close button on review (not back)', () => {
+    expect(code).toContain('closeBtn');
     expect(code).toContain('aria-label="Close"');
   });
 });
@@ -313,29 +282,34 @@ describe('QuickUpdateFlow — Mobile UX', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
   it('submit button is 56px minHeight', () => {
-    // Count 56px in submit button
     const submitIdx = code.indexOf('submitBtn:');
     const chunk = code.slice(submitIdx, submitIdx + 300);
     expect(chunk).toContain("minHeight: '56px'");
   });
 
-  it('back buttons are 44px tap targets', () => {
-    const backIdx = code.indexOf('backBtn:');
-    const chunk = code.slice(backIdx, backIdx + 400);
+  it('close button is 44px tap target', () => {
+    const closeIdx = code.indexOf('closeBtn:');
+    const chunk = code.slice(closeIdx, closeIdx + 400);
     expect(chunk).toContain("minHeight: '44px'");
     expect(chunk).toContain("width: '44px'");
     expect(chunk).toContain("height: '44px'");
   });
 
-  it('done/retry buttons are 52px minHeight', () => {
+  it('done button is 52px minHeight', () => {
     const doneIdx = code.indexOf('doneBtn:');
-    const chunk = code.slice(doneIdx, doneIdx + 200);
+    const chunk = code.slice(doneIdx, doneIdx + 400);
     expect(chunk).toContain("minHeight: '52px'");
   });
 
-  it('all interactive elements have WebkitTapHighlightColor transparent', () => {
+  it('activity buttons are 44px minHeight', () => {
+    const idx = code.indexOf('activityBtn:');
+    const chunk = code.slice(idx, idx + 400);
+    expect(chunk).toContain("minHeight: '44px'");
+  });
+
+  it('interactive elements have WebkitTapHighlightColor transparent', () => {
     const matches = (code.match(/WebkitTapHighlightColor:\s*'transparent'/g) || []).length;
-    expect(matches).toBeGreaterThanOrEqual(8);
+    expect(matches).toBeGreaterThanOrEqual(5);
   });
 });
 
@@ -374,6 +348,7 @@ describe('QuickUpdateFlow — FarmerProgressTab Integration', () => {
     expect(code).toContain('seasonId={activeSeason.id}');
     expect(code).toContain('farmerId={farmerId}');
     expect(code).toContain('entries={entries}');
+    expect(code).toContain('seasonStage={activeSeason.stage}');
     expect(code).toContain('onComplete=');
     expect(code).toContain('onCancel=');
   });
@@ -391,15 +366,54 @@ describe('QuickUpdateFlow — FarmerProgressTab Integration', () => {
   });
 });
 
+// ─── Dashboard Integration ─────────────────────────────
+
+describe('QuickUpdateFlow — Dashboard Integration', () => {
+  const code = readFile('src/pages/Dashboard.jsx');
+
+  it('imports QuickUpdateFlow', () => {
+    expect(code).toContain("import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx'");
+  });
+
+  it('has Add Update button on dashboard', () => {
+    expect(code).toContain('data-testid="add-update-btn"');
+    expect(code).toContain("t('update.addUpdate')");
+  });
+
+  it('Add Update button has large green gradient style', () => {
+    expect(code).toContain('addUpdateBtn');
+    expect(code).toContain('linear-gradient');
+  });
+
+  it('shows QuickUpdateFlow in modal overlay', () => {
+    expect(code).toContain('modalOverlay');
+    expect(code).toContain('modalContent');
+    expect(code).toContain('<QuickUpdateFlow');
+  });
+
+  it('passes seasonId and seasonStage to QuickUpdateFlow', () => {
+    expect(code).toContain('seasonId={season?.id}');
+    expect(code).toContain('seasonStage={season?.stage}');
+  });
+
+  it('refreshes season on complete', () => {
+    expect(code).toContain('refreshSeason()');
+  });
+
+  it('only shows button when setup complete and season active', () => {
+    expect(code).toContain('setupComplete && season');
+  });
+});
+
 // ─── Image Stage Mapping ────────────────────────────────
 
 describe('QuickUpdateFlow — Image Stage Mapping', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('maps stages to image stages for progress-image API', () => {
+  it('maps activities to image stages for progress-image API', () => {
     expect(code).toContain('IMAGE_STAGE_MAP');
     expect(code).toContain("planting: 'early_growth'");
-    expect(code).toContain("vegetative: 'mid_stage'");
+    expect(code).toContain("growing: 'mid_stage'");
     expect(code).toContain("flowering: 'pre_harvest'");
     expect(code).toContain("harvest: 'harvest'");
   });

@@ -1,47 +1,45 @@
 import { useMemo } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
+import { useTranslation } from '../i18n/index.js';
 
 export default function ActionRecommendationsCard() {
   const { profile } = useProfile();
   const { weather } = useWeather();
+  const { t } = useTranslation();
 
-  const recommendations = useMemo(() => {
-    const items = [];
+  const recommendationKeys = useMemo(() => {
+    const keys = [];
 
     if (!profile?.gpsLat || !profile?.gpsLng) {
-      items.push('Add GPS coordinates to unlock local weather and risk alerts.');
+      keys.push('recommend.addGps');
     }
-
     if (!profile?.cropType) {
-      items.push('Add crop type to receive crop-specific recommendations.');
+      keys.push('recommend.addCrop');
     }
-
     if (weather) {
       if ((weather.rain || 0) > 0 || (weather.showers || 0) > 0) {
-        items.push('Rain may affect field work. Review today\'s farm plans.');
+        keys.push('recommend.reviewPlans');
       } else {
-        items.push('No immediate rainfall detected. Normal field work can continue.');
+        keys.push('recommend.normalWork');
       }
-
       if ((weather.windSpeed || 0) >= 20) {
-        items.push('Avoid spraying until wind reduces.');
+        keys.push('recommend.noSpray');
       }
     }
-
-    if (!items.length) {
-      items.push('Your farm setup looks good. Start the season and keep records updated.');
+    if (!keys.length) {
+      keys.push('recommend.allGood');
     }
 
-    return items.slice(0, 3);
+    return keys.slice(0, 3);
   }, [profile, weather]);
 
   return (
     <div style={S.card}>
-      <h3 style={S.title}>💡 Today's Recommendations</h3>
+      <h3 style={S.title}>{t('recommend.title')}</h3>
       <ul style={S.list}>
-        {recommendations.map((item) => (
-          <li key={item} style={S.item}>• {item}</li>
+        {recommendationKeys.map((key) => (
+          <li key={key} style={S.item}>{t(key)}</li>
         ))}
       </ul>
     </div>

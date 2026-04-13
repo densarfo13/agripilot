@@ -143,6 +143,20 @@ export default function DashboardPage() {
       priority: 'High', href: '/applications?status=escalated', color: '#F59E0B',
     });
   }
+  if (pendingCount > 0) {
+    attentionItems.push({
+      icon: '📝', label: `${pendingCount} registration${pendingCount > 1 ? 's' : ''} pending approval`,
+      detail: 'Review and approve new farmers',
+      priority: 'High', href: '/farmer-registrations', color: '#0EA5E9',
+    });
+  }
+  if (queues.verification > 0) {
+    attentionItems.push({
+      icon: '🔍', label: `${queues.verification} application${queues.verification > 1 ? 's' : ''} awaiting review`,
+      detail: 'Open verification queue to process',
+      priority: 'Medium', href: '/verification-queue', color: '#F59E0B',
+    });
+  }
   if (expiringInvites > 0) {
     attentionItems.push({
       icon: '⏰', label: `${expiringInvites} invite${expiringInvites > 1 ? 's' : ''} expiring`,

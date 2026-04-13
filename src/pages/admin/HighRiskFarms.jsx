@@ -1,237 +1,288 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { getHighRiskFarms, triggerFarmScoring } from '../../lib/intelligenceAdminApi';
+import React, { useState, useMemo } from 'react';
+import { useHighRiskFarms } from '../../hooks/useIntelligenceAdmin.js';
+import RiskLevelBadge from '../../components/intelligence/RiskLevelBadge.jsx';
+import SeverityBar from '../../components/intelligence/SeverityBar.jsx';
 
 // ─── Helpers ────────────────────────────────────────────────
 
-function riskColor(score) {
-  if (score >= 80) return '#EF4444';
-  if (score >= 65) return '#F97316';
-  if (score >= 40) return '#FBBF24';
-  return '#22C55E';
+function formatDate(d) {
+  if (!d) return '-';
+  try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  catch { return String(d); }
 }
 
-function levelBadge(level) {
-  if (level === 'urgent') return { bg: 'rgba(239,68,68,0.15)', color: '#FCA5A5' };
-  return { bg: 'rgba(249,115,22,0.15)', color: '#F97316' };
+const SCORE_COMPONENTS = [
+  { key: 'boundary', label: 'Boundary Risk' },
+  { key: 'scan', label: 'Scan Analysis' },
+  { key: 'weather', label: 'Weather Impact' },
+  { key: 'historical', label: 'Historical Pattern' },
+  { key: 'crop', label: 'Crop Vulnerability' },
+  { key: 'regional', label: 'Regional Pressure' },
+  { key: 'temporal', label: 'Temporal Risk' },
+];
+
+// ─── Component ──────────────────────────────────────────────
+
+export default function HighRiskFarms() {
+  const { farms, loading, error, refetch, rescore, filters, setFilters, pagination } = useHighRiskFarms();
+  const [expandedId, setExpandedId] = useState(null);
+  const [rescoring, setRescoring] = useState(null);
+  const [localRisk, setLocalRisk] = useState('all');
+  const [localCrop, setLocalCrop] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const farmList = Array.isArray(farms) ? farms : [];
+
+  // ── Crop types derived from data ──
+  const cropTypes = useMemo(() => {
+    const set = new Set();
+    farmList.forEach(f => {
+      const crop = f.crop ?? f.cropType ?? f.crop_type ?? '';
+      if (crop) set.add(crop);
+    });
+    return [...set].sort();
+  }, [farmList]);
+
+  // ── Client-side filtering ──
+  const filtered = useMemo(() => {
+    return farmList.filter(f => {
+      const level = f.riskLevel ?? f.risk_level ?? '';
+      const crop = f.crop ?? f.cropType ?? f.crop_type ?? '';
+      const name = (f.farmName ?? f.farm_name ?? f.name ?? '').toLowerCase();
+      const id = String(f.profileId ?? f.profile_id ?? f.id ?? '').toLowerCase();
+      if (localRisk !== 'all' && level !== localRisk) return false;
+      if (localCrop !== 'all' && crop !== localCrop) return false;
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        if (!name.includes(q) && !id.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [farmList, localRisk, localCrop, searchTerm]);
+
+  // ── Stats ──
+  const totalFarms = pagination?.total ?? farmList.length;
+  const urgentCount = farmList.filter(f => (f.riskLevel ?? f.risk_level) === 'urgent').length;
+  const highCount = farmList.filter(f => (f.riskLevel ?? f.risk_level) === 'high').length;
+  const avgScore = farmList.length > 0
+    ? Math.round(farmList.reduce((s, f) => s + (f.riskScore ?? f.risk_score ?? 0), 0) / farmList.length)
+    : 0;
+
+  // ── Pagination ──
+  const currentPage = pagination?.page ?? filters.page ?? 1;
+  const totalPages = pagination?.totalPages ?? (pagination?.total ? Math.ceil(pagination.total / (filters.limit || 20)) : 1);
+
+  function goPage(p) {
+    setFilters({ page: p });
+  }
+
+  // ── Rescore handler ──
+  async function handleRescore(profileId) {
+    setRescoring(profileId);
+    try { await rescore(profileId); }
+    catch { /* error surfaced by hook */ }
+    finally { setRescoring(null); }
+  }
+
+  // ── Render ──
+  return (
+    <div style={S.page}>
+      <h1 style={S.title}>High-Risk Farms</h1>
+      <p style={S.subtitle}>Monitor and rescore farms with elevated risk levels.</p>
+
+      {error && (
+        <div style={S.errorBanner}>
+          <span>Error: {error}</span>
+          <button style={{ ...S.btn, ...S.btnOutline }} onClick={() => refetch()}>Retry</button>
+        </div>
+      )}
+
+      {loading && (
+        <div style={S.emptyState}>
+          <div style={S.spinner} /><br />Loading farm data...
+        </div>
+      )}
+
+      {!loading && (
+        <>
+          {/* Stats bar */}
+          <div style={S.statsRow}>
+            {[
+              { label: 'Total Farms', value: totalFarms },
+              { label: 'Urgent', value: urgentCount, color: '#EF4444' },
+              { label: 'High', value: highCount, color: '#FB923C' },
+              { label: 'Average Score', value: avgScore, color: avgScore >= 65 ? '#EF4444' : avgScore >= 40 ? '#FBBF24' : '#22C55E' },
+            ].map((s, i) => (
+              <div key={i} style={S.statCard}>
+                <div style={S.statLabel}>{s.label}</div>
+                <div style={{ ...S.statValue, color: s.color || '#fff' }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filter bar */}
+          <div style={S.filterRow}>
+            <select style={S.select} value={localRisk} onChange={e => setLocalRisk(e.target.value)}>
+              <option value="all">All Risk Levels</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <select style={S.select} value={localCrop} onChange={e => setLocalCrop(e.target.value)}>
+              <option value="all">All Crops</option>
+              {cropTypes.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input
+              style={{ ...S.select, minWidth: 180 }}
+              type="text"
+              placeholder="Search farm name or ID..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            <button style={{ ...S.btn, ...S.btnOutline }} onClick={() => refetch()}>&#x21bb; Refresh</button>
+          </div>
+
+          {/* Table */}
+          {filtered.length === 0 ? (
+            <div style={S.emptyState}>No farms match the current filters.</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={S.table}>
+                <thead>
+                  <tr>
+                    <th style={S.th}>Farm Name / ID</th>
+                    <th style={S.th}>Crop</th>
+                    <th style={{ ...S.th, minWidth: 130 }}>Risk Score</th>
+                    <th style={S.th}>Risk Level</th>
+                    <th style={S.th}>Hotspots</th>
+                    <th style={S.th}>Last Scored</th>
+                    <th style={S.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((f, idx) => {
+                    const score = f.riskScore ?? f.risk_score ?? 0;
+                    const level = f.riskLevel ?? f.risk_level ?? 'high';
+                    const profileId = f.profileId ?? f.profile_id ?? f.id;
+                    const hotspots = f.hotspots ?? f.hotspot_count ?? f.hotspotCount ?? 0;
+                    const lastScored = f.lastScored ?? f.last_scored ?? f.lastScan ?? f.last_scan ?? null;
+                    const farmName = f.farmName ?? f.farm_name ?? f.name ?? '-';
+                    const crop = f.crop ?? f.cropType ?? f.crop_type ?? '-';
+                    const isExpanded = expandedId === profileId;
+                    const components = f.scoreComponents ?? f.score_components ?? f.components ?? {};
+
+                    return (
+                      <React.Fragment key={profileId || idx}>
+                        <tr
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setExpandedId(isExpanded ? null : profileId)}
+                        >
+                          <td style={S.td}>
+                            <div style={{ fontWeight: 600 }}>{farmName}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{profileId}</div>
+                          </td>
+                          <td style={S.td}>{crop}</td>
+                          <td style={S.td}><SeverityBar score={score} /></td>
+                          <td style={S.td}><RiskLevelBadge level={level} score={score} size="sm" /></td>
+                          <td style={S.td}>{hotspots}</td>
+                          <td style={S.td}>{formatDate(lastScored)}</td>
+                          <td style={S.td}>
+                            <button
+                              style={{ ...S.btn, ...S.btnGreen }}
+                              disabled={rescoring === profileId}
+                              onClick={e => { e.stopPropagation(); handleRescore(profileId); }}
+                            >
+                              {rescoring === profileId ? <span style={S.spinner} /> : 'Rescore'}
+                            </button>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan={7} style={S.expandedRow}>
+                              <div style={{ fontWeight: 600, marginBottom: '0.75rem', fontSize: '0.9rem' }}>Scoring Components</div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                                {SCORE_COMPONENTS.map(comp => {
+                                  const val = components[comp.key] ?? components[comp.key.replace(/([A-Z])/g, '_$1').toLowerCase()] ?? null;
+                                  return (
+                                    <div key={comp.key}>
+                                      <SeverityBar score={val ?? 0} label={comp.label} />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
+              <button
+                style={{ ...S.btn, ...S.btnOutline, opacity: currentPage <= 1 ? 0.4 : 1 }}
+                disabled={currentPage <= 1}
+                onClick={() => goPage(currentPage - 1)}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                .map((p, i, arr) => (
+                  <React.Fragment key={p}>
+                    {i > 0 && arr[i - 1] !== p - 1 && <span style={{ color: '#64748B' }}>...</span>}
+                    <button
+                      style={{ ...S.btn, ...(p === currentPage ? S.btnGreen : S.btnOutline), minWidth: 36 }}
+                      onClick={() => goPage(p)}
+                    >
+                      {p}
+                    </button>
+                  </React.Fragment>
+                ))
+              }
+              <button
+                style={{ ...S.btn, ...S.btnOutline, opacity: currentPage >= totalPages ? 0.4 : 1 }}
+                disabled={currentPage >= totalPages}
+                onClick={() => goPage(currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 }
 
 // ─── Styles ─────────────────────────────────────────────────
 
 const S = {
-  page: { minHeight: '100vh', background: '#0F172A', color: '#fff', padding: '1.5rem' },
-  container: { maxWidth: '80rem', margin: '0 auto' },
-  header: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' },
-  title: { fontSize: '1.5rem', fontWeight: 700 },
-  countBadge: {
-    display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: '9999px',
-    fontSize: '0.75rem', fontWeight: 600, background: 'rgba(239,68,68,0.15)', color: '#FCA5A5',
-  },
-  filterBar: { display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' },
-  select: {
-    padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)',
-    background: '#1B2330', color: '#fff', fontSize: '0.875rem',
-  },
-  label: { fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' },
-  card: {
-    borderRadius: '16px', background: '#1B2330', padding: 0,
-    border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 15px rgba(0,0,0,0.3)', overflow: 'auto',
-  },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' },
-  th: {
-    textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)',
-    color: 'rgba(255,255,255,0.6)', fontWeight: 600,
-  },
-  td: { padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' },
-  badge: {
-    display: 'inline-block', padding: '0.25rem 0.75rem', borderRadius: '9999px',
-    fontSize: '0.75rem', fontWeight: 600,
-  },
-  actionBtn: {
-    padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)',
-    background: 'transparent', color: '#22C55E', cursor: 'pointer', fontSize: '0.75rem', marginRight: '0.5rem',
-  },
-  rescoreBtn: {
-    padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)',
-    background: 'transparent', color: '#FBBF24', cursor: 'pointer', fontSize: '0.75rem',
-  },
-  pagination: {
-    display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.25rem',
-  },
-  pageBtn: {
-    padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)',
-    background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: '0.875rem',
-  },
-  pageBtnDisabled: {
-    padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)',
-    background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'default', fontSize: '0.875rem',
-  },
-  riskScore: { fontSize: '1.25rem', fontWeight: 700 },
-  farmLink: { color: '#22C55E', cursor: 'pointer', textDecoration: 'none', fontWeight: 500 },
-  error: { color: '#FCA5A5', padding: '2rem', textAlign: 'center' },
-  loading: { color: 'rgba(255,255,255,0.6)', padding: '2rem', textAlign: 'center' },
-  empty: { color: 'rgba(255,255,255,0.6)', padding: '2rem', textAlign: 'center' },
+  page: { padding: '1.5rem', color: '#fff', minHeight: '100vh' },
+  title: { fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' },
+  subtitle: { color: '#94A3B8', fontSize: '0.9rem', marginBottom: '1.5rem' },
+  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' },
+  statCard: { background: '#1E293B', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(255,255,255,0.08)' },
+  statLabel: { fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  statValue: { fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' },
+  filterRow: { display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' },
+  select: { background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' },
+  table: { width: '100%', borderCollapse: 'collapse' },
+  th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
+  td: { padding: '10px 12px', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  btn: { padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', minHeight: '32px' },
+  btnGreen: { background: '#22C55E', color: '#fff' },
+  btnRed: { background: '#EF4444', color: '#fff' },
+  btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
+  badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
+  expandedRow: { background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem' },
+  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
+  emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
+  errorBanner: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '0.75rem 1rem', color: '#FCA5A5', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 };
-
-// ─── Component ──────────────────────────────────────────────
-
-export default function HighRiskFarms() {
-  const [farms, setFarms] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [riskFilter, setRiskFilter] = useState('all');
-  const [cropFilter, setCropFilter] = useState('all');
-  const LIMIT = 20;
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await getHighRiskFarms(page, LIMIT);
-      setFarms(res.farms || res.data || []);
-      setTotal(res.total ?? (res.farms || res.data || []).length);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  // ── Derived ──
-  const cropTypes = [...new Set(farms.map(f => f.crop ?? f.cropType ?? f.crop_type ?? ''))].filter(Boolean);
-
-  const filtered = farms.filter(f => {
-    const score = f.riskScore ?? f.risk_score ?? 0;
-    const level = f.riskLevel ?? f.risk_level ?? '';
-    const crop = f.crop ?? f.cropType ?? f.crop_type ?? '';
-    if (riskFilter === 'high' && level !== 'high' && score < 65) return false;
-    if (riskFilter === 'urgent' && level !== 'urgent' && score < 80) return false;
-    if (cropFilter !== 'all' && crop !== cropFilter) return false;
-    return true;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
-
-  async function handleRescore(profileId) {
-    try {
-      await triggerFarmScoring(profileId);
-      fetchData();
-    } catch (err) {
-      alert('Rescore failed: ' + err.message);
-    }
-  }
-
-  // ── Render ──
-  if (loading) return <div style={S.page}><div style={S.loading}>Loading...</div></div>;
-  if (error) return <div style={S.page}><div style={S.error}>Error: {error}</div></div>;
-
-  return (
-    <div style={S.page}>
-      <div style={S.container}>
-        {/* Header */}
-        <div style={S.header}>
-          <h1 style={S.title}>High-Risk Farms</h1>
-          <span style={S.countBadge}>{total}</span>
-        </div>
-
-        {/* Filter bar */}
-        <div style={S.filterBar}>
-          <span style={S.label}>Risk Level:</span>
-          <select style={S.select} value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
-            <option value="all">All</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-          <span style={S.label}>Crop:</span>
-          <select style={S.select} value={cropFilter} onChange={e => setCropFilter(e.target.value)}>
-            <option value="all">All Crops</option>
-            {cropTypes.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
-        {/* Table */}
-        <div style={S.card}>
-          {filtered.length === 0 ? (
-            <div style={S.empty}>No high-risk farms match the current filters.</div>
-          ) : (
-            <table style={S.table}>
-              <thead>
-                <tr>
-                  <th style={S.th}>Farm Name</th>
-                  <th style={S.th}>Farmer</th>
-                  <th style={S.th}>Crop</th>
-                  <th style={S.th}>Risk Score</th>
-                  <th style={S.th}>Risk Level</th>
-                  <th style={S.th}>Hotspots</th>
-                  <th style={S.th}>Last Scan</th>
-                  <th style={S.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((f, idx) => {
-                  const score = f.riskScore ?? f.risk_score ?? 0;
-                  const level = f.riskLevel ?? f.risk_level ?? 'high';
-                  const lb = levelBadge(level);
-                  const hotspots = f.hotspots ?? f.hotspot_count ?? 0;
-                  const lastScan = f.lastScan ?? f.last_scan ?? '-';
-                  const profileId = f.profileId ?? f.profile_id ?? f.id;
-                  return (
-                    <tr key={f.id || idx}>
-                      <td style={S.td}>
-                        <span style={S.farmLink} onClick={() => console.log('Navigate to farm:', profileId)}>
-                          {f.farmName ?? f.farm_name ?? f.name ?? '-'}
-                        </span>
-                      </td>
-                      <td style={S.td}>{f.farmerName ?? f.farmer_name ?? f.farmer ?? '-'}</td>
-                      <td style={S.td}>{f.crop ?? f.cropType ?? f.crop_type ?? '-'}</td>
-                      <td style={S.td}>
-                        <span style={{ ...S.riskScore, color: riskColor(score) }}>{score}</span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ ...S.badge, background: lb.bg, color: lb.color }}>{level}</span>
-                      </td>
-                      <td style={S.td}>{hotspots}</td>
-                      <td style={S.td}>{lastScan}</td>
-                      <td style={S.td}>
-                        <button style={S.actionBtn} onClick={() => console.log('View details:', profileId)}>
-                          View Details
-                        </button>
-                        <button style={S.rescoreBtn} onClick={() => handleRescore(profileId)}>
-                          Trigger Rescore
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Pagination */}
-        <div style={S.pagination}>
-          <button
-            style={page <= 1 ? S.pageBtnDisabled : S.pageBtn}
-            disabled={page <= 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-          >
-            Previous
-          </button>
-          <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
-            Page {page} of {totalPages}
-          </span>
-          <button
-            style={page >= totalPages ? S.pageBtnDisabled : S.pageBtn}
-            disabled={page >= totalPages}
-            onClick={() => setPage(p => p + 1)}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

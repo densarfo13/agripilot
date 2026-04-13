@@ -1,82 +1,108 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { t } from '../lib/i18n.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore } from '../lib/farmScore.js';
 import { useSeason } from '../context/SeasonContext.jsx';
+import { useTranslation } from '../i18n/index.js';
+import { safeTrackEvent } from '../lib/analytics.js';
 
 export default function PrimaryFarmActionCard() {
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const { beginSeason, season, seasonLoading } = useSeason();
   const { language } = useAppPrefs();
-  const { season, beginSeason, seasonLoading } = useSeason();
+  const { t } = useTranslation();
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState(null);
 
   const score = calculateFarmScore(profile || {});
 
   async function handleStartSeason() {
+    if (starting) return;
+    // Hard gate: block if no UUID (profile not saved / not assigned)
+    if (!profile?.farmerUuid) {
+      navigate('/profile/setup');
+      return;
+    }
     const cropType = profile?.cropType || '';
     if (!cropType) {
       navigate('/profile/setup');
       return;
     }
-
+    setStarting(true);
+    setStartError(null);
     try {
-      await beginSeason({ cropType, stage: 'planting' });
+      await beginSeason({ cropType, stage: 'planting', farmId: profile?.id });
+      safeTrackEvent('season.started', { cropType });
       navigate('/season/start');
     } catch (error) {
       console.error('Failed to start season:', error);
+      safeTrackEvent('season.start_failed', { error: error.message });
+      setStartError(t('season.startFailed'));
+    } finally {
+      setStarting(false);
     }
   }
 
-  // State 1: Profile not ready
+  // Gate: Not ready — either missing fields or missing UUID
   if (!score.isReady) {
+    // Distinguish: fields done but UUID missing vs fields still incomplete
+    const fieldsComplete = score.score >= 75;
     return (
       <div style={S.cardWarning}>
-        <div style={S.warningLabel}>⚠️ Your farm is not ready yet</div>
-        <p style={S.desc}>
-          Complete your profile to unlock accurate weather, farm scoring, and smart recommendations.
-        </p>
-        <div style={S.benefitsList}>
-          <div>• Accurate weather</div>
-          <div>• Better farm scoring</div>
-          <div>• Smarter recommendations</div>
+        <div style={S.warningLabel}>
+          {t('action.finishSetup')}
         </div>
+        <p style={S.desc}>
+          {fieldsComplete && !score.hasUuid
+            ? t('action.uuidMissing')
+            : t('action.finishSetupDesc')}
+        </p>
+        {!fieldsComplete && (
+          <div style={S.benefitsList}>
+            <div>{t('action.betterWeather')}</div>
+            <div>{t('action.betterGuidance')}</div>
+            <div>{t('action.betterPlanning')}</div>
+          </div>
+        )}
         <button onClick={() => navigate('/profile/setup')} style={S.ctaBtn}>
-          {t(language, 'completeProfile')}
+          {t('dashboard.completeSetup')}
         </button>
       </div>
     );
   }
 
-  // State 2: Season already active
   if (season) {
     return (
       <div style={S.card}>
-        <div style={S.readyLabel}>🌱 Season already active</div>
+        <div style={S.readyLabel}>{t('action.seasonActive')}</div>
         <p style={S.desc}>
-          Continue today's farming tasks and keep your season progress updated.
+          {t('action.seasonActiveDesc')}
         </p>
         <button onClick={() => navigate('/season/start')} style={S.ctaBtn}>
-          Continue Season
+          {t('action.continueWork')}
         </button>
       </div>
     );
   }
 
-  // State 3: Ready to start season
   return (
     <div style={S.card}>
-      <div style={S.readyLabel}>🌱 Ready to begin your season</div>
+      <div style={S.readyLabel}>{t('action.readyToStart')}</div>
       <p style={S.desc}>
-        Your farm profile is ready. Start your season to unlock daily tasks and better guidance.
+        {t('action.readyToStartDesc')}
       </p>
       <button
         onClick={handleStartSeason}
-        disabled={seasonLoading}
-        style={{ ...S.ctaBtn, ...(seasonLoading ? S.ctaBtnDisabled : {}) }}
+        disabled={seasonLoading || starting}
+        style={{ ...S.ctaBtn, ...((seasonLoading || starting) ? S.ctaBtnDisabled : {}) }}
       >
-        {seasonLoading ? 'Starting...' : t(language, 'startSeason')}
+        {(seasonLoading || starting) ? t('season.starting') : t('action.startSeason')}
       </button>
+      {startError && (
+        <div style={S.errorMsg}>{startError}</div>
+      )}
     </div>
   );
 }
@@ -135,5 +161,13 @@ const S = {
   ctaBtnDisabled: {
     opacity: 0.6,
     cursor: 'not-allowed',
+  },
+  errorMsg: {
+    marginTop: '0.75rem',
+    fontSize: '0.875rem',
+    color: '#FCA5A5',
+    background: 'rgba(239,68,68,0.1)',
+    borderRadius: '8px',
+    padding: '0.5rem 0.75rem',
   },
 };

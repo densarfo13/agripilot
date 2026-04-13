@@ -58,6 +58,33 @@ const SCREEN_MAP = {
   'admin.overview': 'admin_dashboard', 'admin.needsAttention': 'admin_dashboard',
   'admin.openIssues': 'admin_dashboard', 'admin.invite': 'admin_dashboard',
   'admin.assign': 'admin_dashboard', 'admin.report': 'admin_dashboard',
+  // Pest risk check
+  'pest.start': 'pest_check', 'pest.chooseCrop': 'pest_check',
+  'pest.takePhotos': 'pest_check', 'pest.photoRetake': 'pest_check',
+  'pest.answerQuestions': 'pest_check', 'pest.submit': 'pest_check',
+  'pest.submitting': 'pest_check',
+  // Pest risk result
+  'pest.result': 'pest_result', 'pest.result.low': 'pest_result',
+  'pest.result.high': 'pest_result', 'pest.result.uncertain': 'pest_result',
+  // Land boundary
+  'boundary.start': 'boundary_capture', 'boundary.chooseMethod': 'boundary_capture',
+  'boundary.walking': 'boundary_capture', 'boundary.addPoint': 'boundary_capture',
+  'boundary.saved': 'boundary_capture', 'boundary.warning': 'boundary_capture',
+  // Progress / harvest
+  'progress.start': 'progress_update', 'progress.chooseStage': 'progress_update',
+  'progress.condition': 'progress_update', 'progress.harvest': 'progress_update',
+  'progress.saved': 'progress_update',
+  // Treatment feedback
+  'treatment.start': 'treatment_feedback', 'treatment.chooseType': 'treatment_feedback',
+  'treatment.outcome': 'treatment_feedback', 'treatment.saved': 'treatment_feedback',
+  // Seed scan
+  'seedScan.start': 'seed_scan', 'seedScan.takePhoto': 'seed_scan',
+  'seedScan.result': 'seed_scan',
+  // Error / offline
+  'error.general': 'error_state', 'error.offline': 'error_state',
+  'error.retry': 'error_state',
+  // Profile setup
+  'setup.welcome': 'profile_setup', 'setup.saved': 'profile_setup',
 };
 
 function getScreenName(promptKey) {

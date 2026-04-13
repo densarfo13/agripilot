@@ -1,8 +1,9 @@
 const DB_NAME = 'farm_app_offline_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const PROFILE_STORE = 'profile_drafts';
 const QUEUE_STORE = 'sync_queue';
 const PREFS_STORE = 'user_prefs';
+const META_STORE = 'sync_meta';
 
 function openDb() {
   return new Promise((resolve, reject) => {
@@ -18,6 +19,9 @@ function openDb() {
       }
       if (!db.objectStoreNames.contains(PREFS_STORE)) {
         db.createObjectStore(PREFS_STORE, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(META_STORE)) {
+        db.createObjectStore(META_STORE, { keyPath: 'key' });
       }
     };
 
@@ -75,8 +79,23 @@ export async function getProfileDraft() {
   return record?.profile || null;
 }
 
+function generateId(prefix) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export async function enqueueProfileSync(payload) {
-  return put(QUEUE_STORE, { id: `profile-${Date.now()}`, type: 'SAVE_PROFILE', payload, createdAt: Date.now() });
+  return put(QUEUE_STORE, {
+    id: generateId('profile'),
+    type: 'SAVE_PROFILE',
+    payload,
+    idempotencyKey: generateId('idem'),
+    createdAt: Date.now(),
+    retryCount: 0,
+    nextRetryAt: null,
+  });
 }
 
 export async function getSyncQueue() {
@@ -87,6 +106,13 @@ export async function removeSyncQueueItem(id) {
   return remove(QUEUE_STORE, id);
 }
 
+export async function updateSyncQueueItem(id, updates) {
+  const existing = await get(QUEUE_STORE, id);
+  if (!existing) return null;
+  const updated = { ...existing, ...updates };
+  return put(QUEUE_STORE, updated);
+}
+
 export async function savePreference(key, value) {
   return put(PREFS_STORE, { key, value });
 }
@@ -94,4 +120,13 @@ export async function savePreference(key, value) {
 export async function getPreference(key) {
   const record = await get(PREFS_STORE, key);
   return record?.value ?? null;
+}
+
+export async function saveSyncMeta(data) {
+  return put(META_STORE, { key: 'sync_status', ...data, updatedAt: Date.now() });
+}
+
+export async function getSyncMeta() {
+  const record = await get(META_STORE, 'sync_status');
+  return record || { lastSyncedAt: null, pendingCount: 0, lastError: null };
 }

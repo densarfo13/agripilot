@@ -11,24 +11,37 @@ export function WeatherProvider({ children }) {
 
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [resolvedLocation, setResolvedLocation] = useState(null);
 
   useEffect(() => {
+    if (!isOnline) return;
+
     const lat = profile?.gpsLat;
     const lng = profile?.gpsLng;
+    const location = profile?.location;
 
-    if (!isOnline || lat === null || lat === undefined || lng === null || lng === undefined) {
-      return;
-    }
+    const hasGps = lat != null && lng != null;
+    const hasLocation = location && location.trim().length > 0;
+
+    if (!hasGps && !hasLocation) return;
 
     setWeatherLoading(true);
 
-    getCurrentWeather(lat, lng)
-      .then((data) => { setWeather(data.weather || null); })
+    const params = hasGps ? { lat, lng } : { location };
+
+    getCurrentWeather(params)
+      .then((data) => {
+        setWeather(data.weather || null);
+        setResolvedLocation(data.resolvedLocation || null);
+      })
       .catch((error) => { console.error('Failed to load weather:', error); })
       .finally(() => { setWeatherLoading(false); });
-  }, [profile?.gpsLat, profile?.gpsLng, isOnline]);
+  }, [profile?.gpsLat, profile?.gpsLng, profile?.location, isOnline]);
 
-  const value = useMemo(() => ({ weather, weatherLoading }), [weather, weatherLoading]);
+  const value = useMemo(
+    () => ({ weather, weatherLoading, resolvedLocation }),
+    [weather, weatherLoading, resolvedLocation],
+  );
 
   return <WeatherContext.Provider value={value}>{children}</WeatherContext.Provider>;
 }

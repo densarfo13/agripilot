@@ -1,249 +1,641 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProfile } from '../context/ProfileContext';
+import { safeTrackEvent } from '../lib/analytics.js';
+import { languageToVoiceCode, speakText } from '../lib/voice.js';
+import { useTranslation } from '../i18n/index.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
-import { t } from '../lib/i18n.js';
-import { speakText, languageToVoiceCode } from '../lib/voice.js';
+import { useProfile } from '../context/ProfileContext.jsx';
+import { useDraft } from '../utils/useDraft.js';
+import { trackPilotEvent } from '../utils/pilotTracker.js';
+import { UNIT_OPTIONS, toHectares } from '../utils/landSize.js';
 import VoicePromptButton from '../components/VoicePromptButton.jsx';
+import VoiceBar from '../components/VoiceBar.jsx';
 
 const CROP_OPTIONS = ['maize', 'cassava', 'rice', 'tomato', 'pepper', 'cocoa', 'yam', 'plantain'];
 
-function computeCompletion(form) {
-  const fields = ['farmerName', 'farmName', 'country', 'location', 'size', 'cropType', 'gpsLat', 'gpsLng'];
-  let filled = 0;
-  fields.forEach((f) => {
-    const v = form[f];
-    if (v !== '' && v !== null && v !== undefined) filled++;
-  });
-  return Math.round((filled / fields.length) * 100);
+// Countries where acres are the common unit; everyone else defaults to hectares
+const ACRE_COUNTRIES = ['ghana', 'nigeria', 'kenya', 'uganda', 'tanzania', 'usa', 'uk', 'liberia', 'sierra leone', 'gambia'];
+
+function defaultUnitForCountry(country) {
+  if (!country) return 'HECTARE';
+  return ACRE_COUNTRIES.includes(country.toLowerCase().trim()) ? 'ACRE' : 'HECTARE';
 }
+
+const initialForm = {
+  farmerName: '', farmName: '', country: 'Ghana', location: '',
+  size: '', sizeUnit: 'ACRE', cropType: '', gpsLat: '', gpsLng: '',
+};
+
+const initialErrors = {
+  farmerName: '', farmName: '', country: '', location: '',
+  size: '', cropType: '', gpsLat: '', gpsLng: '',
+};
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
-  const { profile, saveProfile, syncStatus, loading: profileLoading } = useProfile();
+  const { profile, loading, saveProfile, syncStatus } = useProfile();
   const { language, autoVoice } = useAppPrefs();
+  const { t } = useTranslation();
+  const nameInputRef = useRef(null);
+  const submitGuardRef = useRef(false);
 
-  const [form, setForm] = useState({
-    farmerName: '',
-    farmName: '',
-    country: 'Ghana',
-    location: '',
-    size: '',
-    cropType: '',
-    gpsLat: '',
-    gpsLng: '',
-  });
-  const [error, setError] = useState('');
-  const [syncMsg, setSyncMsg] = useState('');
+  const { state: draftForm, setState: setDraftForm, clearDraft, draftRestored } = useDraft('profile-setup', initialForm);
+  const [form, setForm] = useState(draftForm);
+  const [fieldErrors, setFieldErrors] = useState(initialErrors);
+  const [loadingGPS, setLoadingGPS] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [gpsError, setGpsError] = useState('');
+  const [gpsSlowMsg, setGpsSlowMsg] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
 
   useEffect(() => {
-    if (profile) {
+    if (!loading) {
+      const country = profile?.country ?? 'Ghana';
       setForm({
-        farmerName: profile.farmerName || '',
-        farmName: profile.farmName || '',
-        country: profile.country || 'Ghana',
-        location: profile.location || '',
-        size: profile.size != null ? String(profile.size) : '',
-        cropType: profile.cropType || '',
-        gpsLat: profile.gpsLat != null ? String(profile.gpsLat) : '',
-        gpsLng: profile.gpsLng != null ? String(profile.gpsLng) : '',
+        farmerName: profile?.farmerName ?? '',
+        farmName: profile?.farmName ?? '',
+        country,
+        location: profile?.location ?? '',
+        size: profile?.size?.toString() ?? '',
+        sizeUnit: profile?.sizeUnit || defaultUnitForCountry(country),
+        cropType: profile?.cropType ?? '',
+        gpsLat: profile?.gpsLat !== null && profile?.gpsLat !== undefined ? String(profile.gpsLat) : '',
+        gpsLng: profile?.gpsLng !== null && profile?.gpsLng !== undefined ? String(profile.gpsLng) : '',
       });
     }
-  }, [profile]);
+  }, [profile, loading]);
 
-  // Auto-voice welcome on first load
   useEffect(() => {
-    if (autoVoice && !profileLoading) {
-      const voiceCode = languageToVoiceCode(language);
-      speakText(t(language, 'voiceWelcomeProfile'), voiceCode);
+    if (!loading && nameInputRef.current && !form.farmerName) {
+      nameInputRef.current.focus();
     }
-  }, [autoVoice, profileLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loading, form.farmerName]);
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-  };
+  useEffect(() => {
+    if (autoVoice && !loading) {
+      speakText(
+        t('setup.voiceWelcome'),
+        languageToVoiceCode(language),
+      );
+    }
+  }, [autoVoice, language, loading]);
 
-  const handleGps = () => {
+  useEffect(() => {
+    if (syncStatus === 'queued') setInfoMessage(t('setup.savedOffline'));
+    else if (syncStatus === 'synced') setInfoMessage(t('setup.savedSuccess'));
+    else if (syncStatus === 'failed') setInfoMessage(t('setup.syncRetry'));
+  }, [syncStatus, language]);
+
+  const completion = useMemo(() => {
+    const checks = [
+      form.farmerName.trim(),
+      form.farmName.trim(),
+      form.country.trim(),
+      form.location.trim(),
+      form.size.trim(),
+      form.cropType.trim(),
+      form.gpsLat.trim() || form.location.trim(),
+      form.gpsLng.trim() || form.location.trim(),
+    ];
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [form]);
+
+  function updateField(key, value) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      setDraftForm(next);
+      return next;
+    });
+    setFieldErrors((prev) => ({ ...prev, [key]: '' }));
+    setSaveError('');
+  }
+
+  function handleGetGPS() {
+    setGpsError('');
+    setGpsSlowMsg('');
+    setLoadingGPS(true);
+
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
+      setGpsError(t('setup.gpsNotSupported'));
+      setLoadingGPS(false);
+      safeTrackEvent('gps.unsupported', {});
       return;
     }
-    setGpsLoading(true);
+
+    let resolved = false;
+    const slowTimer = setTimeout(() => {
+      if (!resolved) {
+        setGpsSlowMsg(t('setup.gpsSlow'));
+      }
+    }, 10000);
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((prev) => ({
-          ...prev,
-          gpsLat: String(pos.coords.latitude),
-          gpsLng: String(pos.coords.longitude),
-        }));
-        setGpsLoading(false);
+      (position) => {
+        resolved = true;
+        clearTimeout(slowTimer);
+        updateField('gpsLat', String(position.coords.latitude));
+        updateField('gpsLng', String(position.coords.longitude));
+        setLoadingGPS(false);
+        setGpsSlowMsg('');
+        safeTrackEvent('gps.success', {});
       },
-      (err) => {
-        setError('Could not get your location: ' + err.message);
-        setGpsLoading(false);
-      }
+      (error) => {
+        resolved = true;
+        clearTimeout(slowTimer);
+        let message = t('setup.gpsFailed');
+        if (error.code === 1) message = t('setup.gpsPermissionDenied');
+        if (error.code === 2) message = t('setup.gpsSignalWeak');
+        if (error.code === 3) message = t('setup.gpsTimeout');
+        setGpsError(message);
+        setLoadingGPS(false);
+        setGpsSlowMsg('');
+        safeTrackEvent('gps.failed', { code: error.code });
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
-  };
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!form.farmerName.trim()) { setError('Farmer name is required'); return; }
-    if (!form.farmName.trim()) { setError('Farm name is required'); return; }
-
+  async function handleSave() {
+    if (submitGuardRef.current) return;
+    submitGuardRef.current = true;
+    setSubmitting(true);
     setSaving(true);
-    setSyncMsg('');
+    setSaveError('');
+    setFieldErrors(initialErrors);
+
+    let timeoutId;
     try {
-      const payload = {
-        ...form,
-        size: form.size ? Number(form.size) : null,
-        gpsLat: form.gpsLat ? Number(form.gpsLat) : null,
-        gpsLng: form.gpsLng ? Number(form.gpsLng) : null,
-      };
-      const result = await saveProfile(payload);
-      if (result?.offline) {
-        setSyncMsg(t(language, 'profileSavedOffline'));
+      const savePromise = saveProfile(form);
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('__SAVE_TIMEOUT__')), 15000);
+      });
+
+      await Promise.race([savePromise, timeoutPromise]);
+      clearTimeout(timeoutId);
+      clearDraft();
+
+      trackPilotEvent('setup_completed', {
+        hasGps: !!form.gpsLat && !!form.gpsLng,
+        hasLocation: !!form.location,
+        hasCrop: !!form.cropType,
+      });
+      safeTrackEvent('profile.form_saved', {
+        hasGps: !!form.gpsLat && !!form.gpsLng,
+        hasLocation: !!form.location,
+      });
+      navigate('/dashboard');
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.message === '__SAVE_TIMEOUT__') {
+        setSaveError(t('setup.saveTimeout'));
+        trackPilotEvent('setup_failed', { reason: 'timeout' });
+        safeTrackEvent('profile.save_timeout', {});
       } else {
-        setSyncMsg(t(language, 'profileSynced'));
-        navigate('/dashboard');
+        setFieldErrors((prev) => ({ ...prev, ...(error.fieldErrors || {}) }));
+        setSaveError(error.message || t('setup.saveFailed'));
+        trackPilotEvent('setup_failed', { reason: error.message });
+        safeTrackEvent('profile.save_failed', { error: error.message });
       }
-    } catch (err) {
-      setError(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
+      setSubmitting(false);
+      submitGuardRef.current = false;
     }
-  };
+  }
 
-  const completion = computeCompletion(form);
-
-  if (profileLoading) {
+  if (loading) {
     return (
       <div style={S.page}>
-        <div style={S.card}>
-          <p style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>Loading profile...</p>
-        </div>
+        <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)' }}>{t('setup.loading')}</div>
       </div>
     );
   }
 
   return (
     <div style={S.page}>
-      <div style={S.card}>
-        <div style={S.headerRow}>
-          <button type="button" onClick={() => navigate(-1)} style={S.backBtn}>&larr; Back</button>
-          <h1 style={S.title}>Farm Profile Setup</h1>
-          <VoicePromptButton text={t(language, 'voiceWelcomeProfile')} />
+      <div style={S.container}>
+        {/* Voice guide */}
+        <VoiceBar voiceKey="setup.welcome" compact />
+
+        {/* Header card */}
+        <div style={S.card}>
+          <div style={S.headerRow}>
+            <div>
+              <h1 style={S.pageTitle}>{t('setup.title')}</h1>
+              <p style={S.pageSubtitle}>
+                {t('setup.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          <div style={S.progressWrap}>
+            <div style={S.progressTrack}>
+              <div style={{ ...S.progressBar, width: `${completion}%` }} />
+            </div>
+            <p style={S.progressText}>{completion}% {t('setup.completed')}</p>
+          </div>
+
+          {profile?.farmerUuid && (
+            <p style={S.uuidText}>{t('farmerUuid')}: {profile.farmerUuid}</p>
+          )}
+
+          {infoMessage && <p style={S.infoMsg}>{infoMessage}</p>}
         </div>
 
-        {profile?.farmerUuid && (
-          <div style={S.uuidBox}>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>Farmer ID:</span>{' '}
-            <span style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{profile.farmerUuid}</span>
-          </div>
-        )}
-
-        <div style={S.progressWrap}>
-          <div style={S.progressLabel}>
-            <span>Profile Completion</span>
-            <span>{completion}%</span>
-          </div>
-          <div style={S.progressTrack}>
-            <div style={{ ...S.progressBar, width: `${completion}%` }} />
-          </div>
-        </div>
-
-        {syncMsg && <div style={S.syncBox}>{syncMsg}</div>}
-        {error && <div style={S.errorBox}>{error}</div>}
-
-        <form onSubmit={handleSubmit} style={S.form}>
-          <div>
-            <label style={S.label}>Farmer Name *</label>
-            <input type="text" value={form.farmerName} onChange={handleChange('farmerName')} placeholder="Your name" style={S.input} />
+        {/* Form card */}
+        <div style={S.card}>
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('setup.yourName')}</label>
+            <input
+              ref={nameInputRef}
+              value={form.farmerName}
+              onChange={(e) => updateField('farmerName', e.target.value)}
+              placeholder={t('setup.yourName')}
+              style={S.input}
+            />
+            {fieldErrors.farmerName && <p style={S.fieldError}>{fieldErrors.farmerName}</p>}
           </div>
 
-          <div>
-            <label style={S.label}>Farm Name *</label>
-            <input type="text" value={form.farmName} onChange={handleChange('farmName')} placeholder="Name of your farm" style={S.input} />
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('setup.farmName')}</label>
+            <input
+              value={form.farmName}
+              onChange={(e) => updateField('farmName', e.target.value)}
+              placeholder={t('setup.farmName')}
+              style={S.input}
+            />
+            {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
           </div>
 
-          <div>
-            <label style={S.label}>Country</label>
-            <input type="text" value={form.country} onChange={handleChange('country')} placeholder="Country" style={S.input} />
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('setup.country')}</label>
+            <input
+              value={form.country}
+              onChange={(e) => {
+                const newCountry = e.target.value;
+                updateField('country', newCountry);
+                // Auto-switch unit when country changes and user hasn't typed a size yet
+                if (!form.size) {
+                  updateField('sizeUnit', defaultUnitForCountry(newCountry));
+                }
+              }}
+              placeholder={t('setup.country')}
+              style={S.input}
+            />
+            {fieldErrors.country && <p style={S.fieldError}>{fieldErrors.country}</p>}
           </div>
 
-          <div>
-            <label style={S.label}>Location</label>
-            <input type="text" value={form.location} onChange={handleChange('location')} placeholder="Town, Region" style={S.input} />
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('setup.village')}</label>
+            <input
+              value={form.location}
+              onChange={(e) => updateField('location', e.target.value)}
+              placeholder={t('setup.village')}
+              style={S.input}
+            />
+            {fieldErrors.location && <p style={S.fieldError}>{fieldErrors.location}</p>}
           </div>
 
-          <div>
-            <label style={S.label}>Farm Size (acres)</label>
-            <input type="number" value={form.size} onChange={handleChange('size')} placeholder="0" min="0" step="0.1" style={S.input} />
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('setup.farmSize')}</label>
+            <div style={S.sizeRow}>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={form.size}
+                onChange={(e) => updateField('size', e.target.value)}
+                placeholder="e.g. 2"
+                style={{ ...S.input, flex: 1 }}
+              />
+              <select
+                value={form.sizeUnit}
+                onChange={(e) => updateField('sizeUnit', e.target.value)}
+                style={S.unitSelect}
+              >
+                {UNIT_OPTIONS.map((u) => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
+                ))}
+              </select>
+            </div>
+            {form.size && form.sizeUnit !== 'HECTARE' && (
+              <p style={S.conversionHint}>
+                ≈ {toHectares(parseFloat(form.size), form.sizeUnit)?.toFixed(2) || '—'} {t('setup.hectares')}
+              </p>
+            )}
+            {fieldErrors.size && <p style={S.fieldError}>{fieldErrors.size}</p>}
           </div>
 
-          <div>
-            <label style={S.label}>Crop Type</label>
-            <select value={form.cropType} onChange={handleChange('cropType')} style={S.input}>
-              <option value="">Select a crop</option>
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('setup.mainCrop')}</label>
+            <select
+              value={form.cropType}
+              onChange={(e) => updateField('cropType', e.target.value)}
+              style={S.input}
+            >
+              <option value="">{t('setup.selectCrop')}</option>
               {CROP_OPTIONS.map((c) => (
                 <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
               ))}
             </select>
+            {fieldErrors.cropType && <p style={S.fieldError}>{fieldErrors.cropType}</p>}
           </div>
 
-          <div style={S.gpsRow}>
-            <div style={{ flex: 1 }}>
-              <label style={S.label}>GPS Latitude</label>
-              <input type="text" value={form.gpsLat} onChange={handleChange('gpsLat')} placeholder="e.g. 5.6037" style={S.input} />
+          {/* GPS section */}
+          <div style={S.gpsBox}>
+            <div style={S.gpsTopRow}>
+              <div>
+                <h3 style={S.gpsHeading}>{t('setup.exactLocation')}</h3>
+                <p style={S.gpsDesc}>
+                  {t('setup.gpsDesc')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleGetGPS}
+                disabled={loadingGPS}
+                style={{ ...S.gpsBtn, ...(loadingGPS ? { opacity: 0.6 } : {}) }}
+              >
+                {loadingGPS ? t('setup.gettingGPS') : t('setup.getLocation')}
+              </button>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={S.label}>GPS Longitude</label>
-              <input type="text" value={form.gpsLng} onChange={handleChange('gpsLng')} placeholder="e.g. -0.1870" style={S.input} />
+
+            {gpsError && <p style={S.gpsErrorText}>{gpsError}</p>}
+            {gpsSlowMsg && !gpsError && <p style={S.gpsErrorText}>{gpsSlowMsg}</p>}
+
+            <div style={S.gpsRow}>
+              <div style={{ flex: 1 }}>
+                <label style={S.label}>{t('setup.latitude')}</label>
+                <input
+                  value={form.gpsLat}
+                  onChange={(e) => updateField('gpsLat', e.target.value)}
+                  placeholder="Latitude"
+                  style={S.gpsInput}
+                />
+                {fieldErrors.gpsLat && <p style={S.fieldError}>{fieldErrors.gpsLat}</p>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={S.label}>{t('setup.longitude')}</label>
+                <input
+                  value={form.gpsLng}
+                  onChange={(e) => updateField('gpsLng', e.target.value)}
+                  placeholder="Longitude"
+                  style={S.gpsInput}
+                />
+                {fieldErrors.gpsLng && <p style={S.fieldError}>{fieldErrors.gpsLng}</p>}
+              </div>
             </div>
+
+            <p style={S.gpsHint}>
+              {t('setup.gpsHint')}
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleGps}
-            disabled={gpsLoading}
-            style={{ ...S.gpsBtn, ...(gpsLoading ? { opacity: 0.6 } : {}) }}
-          >
-            {gpsLoading ? t(language, 'gettingGPS') : t(language, 'useMyLocation')}
-          </button>
+          {saveError && <p style={S.saveError}>{saveError}</p>}
 
-          <button
-            type="submit"
-            disabled={saving}
-            style={{ ...S.button, ...(saving ? S.buttonDisabled : {}) }}
-          >
-            {saving ? 'Saving...' : 'Save Profile'}
-          </button>
-        </form>
+          <div style={S.btnRow}>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              style={S.backBtn}
+            >
+              {t('common.back')}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={submitting}
+              style={{ ...S.saveBtn, ...(submitting ? { opacity: 0.6 } : {}) }}
+            >
+              {submitting ? t('setup.saving') : t('setup.saveFarm')}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 const S = {
-  page: { minHeight: '100vh', background: '#0F172A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
-  card: { width: '100%', maxWidth: '32rem', borderRadius: '16px', background: '#1B2330', border: '1px solid rgba(255,255,255,0.1)', padding: '2rem', boxShadow: '0 10px 15px rgba(0,0,0,0.3)' },
-  headerRow: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' },
-  backBtn: { background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', padding: '0.4rem 0.75rem', cursor: 'pointer', fontSize: '0.875rem' },
-  title: { fontSize: '1.25rem', fontWeight: 700, margin: 0 },
-  uuidBox: { background: '#111827', borderRadius: '8px', padding: '0.5rem 0.75rem', marginBottom: '1rem' },
-  progressWrap: { marginBottom: '1rem' },
-  progressLabel: { display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginBottom: '0.35rem' },
-  progressTrack: { height: '8px', background: '#111827', borderRadius: '4px', overflow: 'hidden' },
-  progressBar: { height: '100%', background: '#22C55E', borderRadius: '4px', transition: 'width 0.3s ease' },
-  form: { display: 'flex', flexDirection: 'column', gap: '1rem' },
-  label: { fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block' },
-  input: { background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#fff', outline: 'none', width: '100%', fontSize: '0.875rem', boxSizing: 'border-box' },
-  gpsRow: { display: 'flex', gap: '0.75rem' },
-  gpsBtn: { background: 'none', border: '1px solid #22C55E', borderRadius: '12px', color: '#22C55E', padding: '0.65rem 1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' },
-  syncBox: { background: 'rgba(134,239,172,0.1)', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#86EFAC', fontSize: '0.875rem', marginBottom: '0.5rem' },
-  errorBox: { background: 'rgba(252,165,165,0.1)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
-  button: { background: '#22C55E', color: '#000', border: 'none', borderRadius: '12px', padding: '0.75rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%' },
-  buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
+  page: {
+    minHeight: '100vh',
+    background: '#0F172A',
+    color: '#fff',
+    padding: '1rem',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  container: {
+    maxWidth: '42rem',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.25rem',
+    paddingTop: '1rem',
+    paddingBottom: '100px',
+  },
+  card: {
+    borderRadius: '16px',
+    background: '#1B2330',
+    padding: '1.25rem',
+    border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  headerRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '1rem',
+    flexWrap: 'wrap',
+  },
+  pageTitle: {
+    fontSize: '1.5rem',
+    fontWeight: 700,
+    margin: 0,
+  },
+  pageSubtitle: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: '0.25rem',
+  },
+  progressWrap: {
+    marginTop: '0.5rem',
+  },
+  progressTrack: {
+    width: '100%',
+    height: '0.75rem',
+    borderRadius: '9999px',
+    background: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    background: '#22C55E',
+    borderRadius: '9999px',
+    transition: 'width 0.3s ease',
+  },
+  progressText: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: '0.5rem',
+  },
+  uuidText: {
+    fontSize: '0.75rem',
+    color: '#86EFAC',
+    marginTop: '0.25rem',
+  },
+  infoMsg: {
+    fontSize: '0.875rem',
+    color: '#86EFAC',
+    marginTop: '0.25rem',
+  },
+  formGroup: {},
+  label: {
+    display: 'block',
+    fontSize: '0.875rem',
+    marginBottom: '0.25rem',
+  },
+  sizeRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'stretch',
+  },
+  unitSelect: {
+    width: '8.5rem',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '0.75rem',
+    outline: 'none',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    minHeight: '44px',
+    cursor: 'pointer',
+    appearance: 'auto',
+  },
+  conversionHint: {
+    fontSize: '0.75rem',
+    color: '#86EFAC',
+    marginTop: '0.35rem',
+  },
+  input: {
+    width: '100%',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '1rem',
+    outline: 'none',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    minHeight: '44px',
+  },
+  fieldError: {
+    fontSize: '0.875rem',
+    color: '#FCA5A5',
+    marginTop: '0.25rem',
+  },
+  gpsBox: {
+    borderRadius: '12px',
+    background: '#111827',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '1rem',
+  },
+  gpsTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    flexWrap: 'wrap',
+  },
+  gpsHeading: {
+    fontWeight: 600,
+    margin: 0,
+    fontSize: '1rem',
+  },
+  gpsDesc: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: '0.25rem',
+  },
+  gpsBtn: {
+    borderRadius: '12px',
+    background: '#22C55E',
+    padding: '0.75rem 1rem',
+    fontWeight: 600,
+    color: '#000',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    whiteSpace: 'nowrap',
+  },
+  gpsErrorText: {
+    fontSize: '0.875rem',
+    color: '#FDE68A',
+    marginTop: '0.75rem',
+  },
+  gpsRow: {
+    display: 'flex',
+    gap: '0.75rem',
+    marginTop: '1rem',
+  },
+  gpsInput: {
+    width: '100%',
+    borderRadius: '12px',
+    background: '#0B1220',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '1rem',
+    outline: 'none',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    minHeight: '44px',
+  },
+  gpsHint: {
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.45)',
+    marginTop: '0.75rem',
+  },
+  saveError: {
+    fontSize: '0.875rem',
+    color: '#FCA5A5',
+  },
+  btnRow: {
+    display: 'flex',
+    gap: '0.75rem',
+    paddingTop: '0.5rem',
+    position: 'sticky',
+    bottom: 0,
+    background: '#1B2330',
+    padding: '0.75rem 0',
+    zIndex: 10,
+  },
+  backBtn: {
+    flex: 1,
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.15)',
+    padding: '1rem',
+    fontWeight: 600,
+    color: '#fff',
+    background: 'transparent',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+  },
+  saveBtn: {
+    flex: 1,
+    borderRadius: '12px',
+    background: '#22C55E',
+    padding: '1rem',
+    fontWeight: 600,
+    color: '#000',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+  },
 };

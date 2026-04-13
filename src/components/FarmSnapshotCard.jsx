@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+import { useTranslation } from '../i18n/index.js';
 
 export default function FarmSnapshotCard() {
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const { t } = useTranslation();
 
   const hasGps =
     profile?.gpsLat !== null &&
@@ -11,30 +13,36 @@ export default function FarmSnapshotCard() {
     profile?.gpsLng !== null &&
     profile?.gpsLng !== undefined;
 
+  // Build a display location: locationLabel > location > country > fallback
+  const displayLocation = profile?.locationLabel
+    || profile?.location
+    || profile?.country
+    || null;
+
   return (
     <div style={S.card}>
       <div style={S.headerRow}>
-        <h3 style={S.title}>🌾 My Farm</h3>
+        <h3 style={S.title}>{t('farm.myFarm')}</h3>
         <button onClick={() => navigate('/profile/setup')} style={S.editBtn}>
-          Edit
+          {t('farm.edit')}
         </button>
       </div>
 
       <div style={S.grid}>
-        <div style={S.label}>Crop:</div>
+        <div style={S.label}>{t('farm.crop')}</div>
         <div>{profile?.cropType || '-'}</div>
 
-        <div style={S.label}>Size:</div>
-        <div>{profile?.size ? `${profile.size} acres` : '-'}</div>
+        <div style={S.label}>{t('farm.size')}</div>
+        <div>{profile?.size ? `${profile.size} ${t('farm.acres')}` : '-'}</div>
 
-        <div style={S.label}>Location:</div>
-        <div>{profile?.location || '-'}</div>
+        <div style={S.label}>{t('farm.location')}</div>
+        <div>
+          {displayLocation || '-'}
+          {hasGps && <span style={{ color: '#22C55E', marginLeft: '0.35rem', fontSize: '0.75rem' }}>✅</span>}
+        </div>
 
-        <div style={S.label}>Country:</div>
+        <div style={S.label}>{t('farm.country')}</div>
         <div>{profile?.country || '-'}</div>
-
-        <div style={S.label}>GPS:</div>
-        <div>{hasGps ? 'Added ✅' : 'Not added ❌'}</div>
       </div>
     </div>
   );

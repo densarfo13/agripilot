@@ -302,9 +302,9 @@ describe('Farmer-facing screens use i18n', () => {
   it('QuickUpdateFlow uses t() for visible text', () => {
     const src = readFile('src/components/QuickUpdateFlow.jsx');
     expect(src).toContain("t('update.addUpdate')");
-    expect(src).toContain("t('update.whatToDo')");
-    expect(src).toContain("t('update.updateSaved')");
-    expect(src).toContain("t('update.savedOffline')");
+    expect(src).toContain("t('update.whatHappened')");
+    expect(src).toContain("t('update.updateSavedCheck')");
+    expect(src).toContain("t('update.savedOfflineMsg')");
   });
 
   it('ActionFeedback imports useTranslation', () => {
@@ -412,11 +412,10 @@ describe('No hardcoded English leak in localized screens', () => {
 
   it('QuickUpdateFlow does not have hardcoded step titles', () => {
     const src = readFile('src/components/QuickUpdateFlow.jsx');
-    // These should all be t() calls now
-    expect(src).not.toContain(">{`What do you want to do?`}<");
-    expect(src).toContain("t('update.whatToDo')");
-    expect(src).toContain("t('update.whatStage')");
-    expect(src).toContain("t('update.howLook')");
+    // These should all be t() calls now — camera-first flow uses whatHappened
+    expect(src).not.toContain(">{`What happened?`}<");
+    expect(src).toContain("t('update.whatHappened')");
+    expect(src).toContain("t('update.submitUpdate')");
   });
 
   it('SyncStatus does not have hardcoded "Sync Now"', () => {

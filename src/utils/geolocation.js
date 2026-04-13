@@ -65,7 +65,7 @@ export async function reverseGeocode(latitude, longitude) {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=14`;
     const res = await fetch(url, {
-      headers: { 'Accept-Language': 'en', 'User-Agent': 'Farroway-Agripilot/1.0' },
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'Farroway/1.0' },
     });
     if (!res.ok) return fallback;
     const data = await res.json();

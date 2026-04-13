@@ -264,7 +264,7 @@ model User {
   passwordResetTokens      PasswordResetToken[]
   sessions                 UserSession[]
   emailVerificationTokens  EmailVerificationToken[]
-  directFarmProfile        FarmProfile?            @relation("DirectFarmProfile")
+  farmProfiles             FarmProfile[]           @relation("DirectFarmProfile")
   // Referral
   referralCode             String?   @unique @map("referral_code")
   referredById             String?   @map("referred_by_id")
@@ -1283,7 +1283,7 @@ enum RecommendationStatus {
 model FarmProfile {
   id              String    @id @default(uuid())
   farmerId        String?   @map("farmer_id")
-  userId          String?   @unique @map("user_id_direct")   // direct User relation for cookie-based auth flow
+  userId          String?   @map("user_id_direct")   // direct User relation for cookie-based auth flow
   farmerUuid      String?   @unique @map("farmer_uuid")
   farmerName      String    @map("farmer_name")
   farmName        String?   @map("farm_name")
@@ -1291,17 +1291,21 @@ model FarmProfile {
   locationName    String?   @map("location_name")
   latitude        Float?
   longitude       Float?
+  locationLabel   String?   @map("location_label")   // cached reverse-geocoded label e.g. "Accra, Ghana"
   crop            String
   farmSizeAcres   Float?    @map("farm_size_acres")
   landSizeValue   Float?    @map("land_size_value")
   landSizeUnit    String?   @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
   landSizeHectares Float?   @map("land_size_hectares")   // normalized value
   stage           FarmStage @default(planting)
+  status          String    @default("active") @map("status")  // active | inactive | archived
+  isDefault       Boolean   @default(false) @map("is_default")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   farmer          Farmer?   @relation(fields: [farmerId], references: [id])
   userDirect      User?     @relation("DirectFarmProfile", fields: [userId], references: [id])
+  seasons         V2Season[]
   recommendations RecommendationRecord[]
   weatherSnapshots WeatherSnapshot[]
   financeScores   FarmFinanceScore[]
@@ -1322,7 +1326,10 @@ model FarmProfile {
   farmPestRisks     V2FarmPestRisk[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
+  @@index([userId], map: "idx_farm_profiles_user")
   @@index([crop], map: "idx_farm_profiles_crop")
+  @@index([status], map: "idx_farm_profiles_status")
+  @@index([userId, isDefault], map: "idx_farm_profiles_default")
   @@map("farm_profiles")
 }
 
@@ -1573,19 +1580,22 @@ model SystemSetting {
 // ─── V2 Season Engine ─────────────────────────────────
 
 model V2Season {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  cropType   String    @map("crop_type")
-  startDate  DateTime  @map("start_date")
-  stage      String    @default("planting")
-  isActive   Boolean   @default(true) @map("is_active")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  farmProfileId String?   @map("farm_profile_id")
+  cropType      String    @map("crop_type")
+  startDate     DateTime  @map("start_date")
+  stage         String    @default("planting")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tasks V2Task[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farmProfile FarmProfile? @relation(fields: [farmProfileId], references: [id])
+  tasks       V2Task[]
 
   @@index([userId], map: "idx_v2_seasons_user")
+  @@index([farmProfileId], map: "idx_v2_seasons_farm_profile")
   @@index([isActive], map: "idx_v2_seasons_active")
   @@map("v2_seasons")
 }

@@ -9,64 +9,86 @@ import ActionFeedback from './ActionFeedback.jsx';
 import { useTranslation } from '../i18n/index.js';
 
 /**
- * QuickUpdateFlow — 10–20 second, tap-first "Add Update" wizard.
+ * QuickUpdateFlow — frictionless, camera-first "Add Update".
  *
- * Flow paths:
- *   Crop Progress → Stage → Condition → [Photo] → Submit
- *   Upload Photo  → [Stage] → Submit
- *   Report Issue  → Condition(Problem) → [Photo] → Submit
+ * New flow (3 taps max):
+ *   Tap "Add Update" → Camera opens immediately
+ *   → Photo preview + activity buttons (single screen)
+ *   → Tap submit → Done (auto-return)
  *
- * No required typing. Every step is a single tap.
+ * No typing. No multi-step. No confusion.
  * Offline-safe: queues to IndexedDB if network fails.
  * Duplicate-safe: submitGuardRef + timestamp dedup.
- * Retry-safe: preserves state on failure, one-tap retry.
  */
 
-// ─── Step options ──────────────────────────────────────────
-
-function getActionOptions(t) {
-  return [
-    { value: 'progress', label: t('quickUpdate.cropProgress'), icon: '🌱', desc: t('quickUpdate.logStageCondition') },
-    { value: 'photo', label: t('quickUpdate.uploadPhoto'), icon: '📷', desc: t('quickUpdate.takeAFarmPhoto') },
-    { value: 'issue', label: t('quickUpdate.reportIssue'), icon: '⚠️', desc: t('quickUpdate.pestDiseaseWeather') },
-  ];
-}
-
-function getStageOptions(t) {
-  return [
-    { value: 'planting', label: t('quickUpdate.planting'), icon: '🌱' },
-    { value: 'vegetative', label: t('quickUpdate.growing'), icon: '🌿' },
-    { value: 'flowering', label: t('quickUpdate.flowering'), icon: '🌼' },
-    { value: 'harvest', label: t('quickUpdate.harvesting'), icon: '🌾' },
-  ];
-}
-
-function getConditionOptions(t) {
-  return [
-    { value: 'good', label: t('quickUpdate.good'), icon: '👍', color: '#22C55E' },
-    { value: 'average', label: t('quickUpdate.okay'), icon: '👌', color: '#F59E0B' },
-    { value: 'poor', label: t('quickUpdate.problem'), icon: '👎', color: '#EF4444' },
-  ];
-}
+// ─── Activity options (max 5, short labels) ───────────────
+// Auto-suggest order: most likely first based on season stage
 
 const IMAGE_STAGE_MAP = {
   planting: 'early_growth',
-  vegetative: 'mid_stage',
+  growing: 'mid_stage',
   flowering: 'pre_harvest',
   harvest: 'harvest',
 };
 
-// Map QuickUpdateFlow steps to voice guide keys (dot-notation)
-const STEP_VOICE_KEY = {
-  action: 'update.start',
-  stage: 'update.chooseStage',
-  condition: 'update.condition',
-  photo: 'update.takePhoto',
-  submitting: 'update.submit',
-  done: 'update.success',
-  offline: 'update.savedOffline',
-  error: 'update.failed',
+function getActivityOptions(t, suggestedActivity) {
+  const opts = [
+    { value: 'progress', label: t('update.activity.progress'), icon: '🌱' },
+    { value: 'harvest', label: t('update.activity.harvest'), icon: '🌾' },
+    { value: 'spray', label: t('update.activity.spray'), icon: '💧' },
+    { value: 'issue', label: t('update.activity.issue'), icon: '⚠️' },
+    { value: 'other', label: t('update.activity.other'), icon: '📋' },
+  ];
+  // Move suggested to front
+  if (suggestedActivity) {
+    const idx = opts.findIndex(o => o.value === suggestedActivity);
+    if (idx > 0) {
+      const [item] = opts.splice(idx, 1);
+      opts.unshift(item);
+    }
+  }
+  return opts;
+}
+
+// Map activity value → API activityType
+const ACTIVITY_API_MAP = {
+  progress: 'other',
+  harvest: 'harvesting',
+  spray: 'spraying',
+  issue: 'other',
+  other: 'other',
 };
+
+// Map activity → condition (issue = poor, others = good)
+const ACTIVITY_CONDITION_MAP = {
+  progress: 'good',
+  harvest: 'good',
+  spray: 'average',
+  issue: 'poor',
+  other: 'good',
+};
+
+// Map activity → description for API
+function activityDescription(val, t) {
+  const map = {
+    progress: 'Crop progress update',
+    harvest: 'Harvest update',
+    spray: 'Spraying / treatment update',
+    issue: 'Issue reported via quick update',
+    other: 'Farm update',
+  };
+  return map[val] || 'Farm update';
+}
+
+// Guess best activity from season stage
+function suggestActivity(seasonStage) {
+  if (!seasonStage) return 'progress';
+  const s = seasonStage.toLowerCase();
+  if (s.includes('harvest') || s.includes('post')) return 'harvest';
+  if (s.includes('flower') || s.includes('fruit')) return 'progress';
+  if (s.includes('plant') || s.includes('vegetat') || s.includes('grow')) return 'progress';
+  return 'progress';
+}
 
 // ─── Photo compression ────────────────────────────────────
 
@@ -101,24 +123,36 @@ function compressPhoto(file) {
   });
 }
 
+// ─── Auto-return timer ────────────────────────────────────
+const AUTO_RETURN_MS = 2000;
+
 // ─── Main component ────────────────────────────────────────
 
-export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCancel, entries }) {
-  const [step, setStep] = useState('action'); // action | stage | condition | photo | submitting | done | error | offline
-  const [action, setAction] = useState(null);   // progress | photo | issue
-  const [stage, setStage] = useState(null);      // planting | vegetative | flowering | harvest
-  const [condition, setCondition] = useState(null); // good | average | poor
+export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCancel, entries, seasonStage }) {
+  // Steps: camera | review | submitting | done | offline | error
+  const [step, setStep] = useState('camera');
+  const [activity, setActivity] = useState(() => suggestActivity(seasonStage));
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
   const startTime = useRef(Date.now());
+  const autoReturnTimer = useRef(null);
   const { t } = useTranslation();
 
-  // ─── Localized option sets (rebuilt on language change) ────
-  const ACTION_OPTIONS = getActionOptions(t);
-  const STAGE_OPTIONS = getStageOptions(t);
-  const CONDITION_OPTIONS = getConditionOptions(t);
+  const suggested = suggestActivity(seasonStage);
+  const ACTIVITY_OPTIONS = getActivityOptions(t, suggested);
+
+  // ─── Open camera immediately on mount ───────────────────
+  useEffect(() => {
+    // Small delay to ensure DOM is ready on mobile
+    const timer = setTimeout(() => {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ─── Guaranteed action for submit ─────────────────────────
   const submitAction = useGuaranteedAction({
@@ -128,63 +162,41 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         method: 'POST',
         url: `/seasons/${seasonId}/progress`,
         data: {
-          activityType: action === 'issue' ? 'other' : (stage || 'other'),
+          activityType: ACTIVITY_API_MAP[activity] || 'other',
           entryType: 'activity',
           entryDate: new Date().toISOString().split('T')[0],
-          description: action === 'issue' ? 'Issue reported (offline)' : 'Quick update (offline)',
+          description: activityDescription(activity, t),
         },
       };
       await enqueue(offlinePayload);
-      trackPilotEvent('quick_update_offline', { farmerId, action });
+      trackPilotEvent('quick_update_offline', { farmerId, activity });
     },
   });
 
-  // Cleanup photo preview URL
+  // Cleanup
   useEffect(() => {
-    return () => { if (photoPreview) URL.revokeObjectURL(photoPreview); };
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      if (autoReturnTimer.current) clearTimeout(autoReturnTimer.current);
+    };
   }, [photoPreview]);
 
-  // ─── Navigation helpers ──────────────────────────────────
-
-  const goToStep = useCallback((nextStep) => {
-    // Track voice step completion when moving forward
-    const voiceKey = STEP_VOICE_KEY[step];
-    if (voiceKey) {
-      try { const lang = localStorage.getItem('farroway:voiceLang') || 'en'; trackVoiceStepCompleted(voiceKey, lang); } catch {}
-    }
-    setStep(nextStep);
-  }, [step]);
-
-  const handleActionSelect = useCallback((val) => {
-    setAction(val);
-    if (val === 'progress') {
-      goToStep('stage');
-    } else if (val === 'photo') {
-      // Open camera directly
-      goToStep('photo');
-    } else if (val === 'issue') {
-      // Skip to condition with Problem pre-selected, then photo
-      setCondition('poor');
-      goToStep('photo');
-    }
-  }, [goToStep]);
-
-  const handleStageSelect = useCallback((val) => {
-    setStage(val);
-    goToStep('condition');
-  }, [goToStep]);
-
-  const handleConditionSelect = useCallback((val) => {
-    setCondition(val);
-    // Auto-advance to photo step (optional photo)
-    goToStep('photo');
-  }, [goToStep]);
+  // ─── Auto-return on success/offline ─────────────────────
+  const scheduleAutoReturn = useCallback(() => {
+    autoReturnTimer.current = setTimeout(() => {
+      onComplete?.();
+    }, AUTO_RETURN_MS);
+  }, [onComplete]);
 
   // ─── Photo capture ──────────────────────────────────────
 
   const handlePhotoCapture = useCallback(async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      // User cancelled camera — stay on review with no photo
+      setStep('review');
+      return;
+    }
     try {
       const compressed = await compressPhoto(file);
       setPhotoFile(compressed);
@@ -194,23 +206,19 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
     }
+    setStep('review');
   }, []);
 
-  const clearPhoto = useCallback(() => {
+  const retakePhoto = useCallback(() => {
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoFile(null);
     setPhotoPreview(null);
+    fileInputRef.current?.click();
   }, [photoPreview]);
 
-  // ─── Submit (via guaranteed action) ──────────────────────
+  // ─── Submit ─────────────────────────────────────────────
 
   const handleSubmit = useCallback(async () => {
-    // Photo-only with no file — nothing to submit
-    if (action === 'photo' && !photoFile) {
-      setStep('action');
-      return;
-    }
-
     setStep('submitting');
     setError('');
 
@@ -218,38 +226,24 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       const elapsed = Math.round((Date.now() - startTime.current) / 1000);
       const isFirstUpdate = entries && entries.length === 0;
 
-      if (action === 'progress' || action === 'issue') {
-        const payload = {
-          activityType: action === 'issue' ? 'other' : (stage || 'other'),
-          entryType: 'activity',
-          entryDate: new Date().toISOString().split('T')[0],
-          description: action === 'issue' ? 'Issue reported via quick update' : '',
-        };
+      // 1. Submit activity/progress entry
+      const payload = {
+        activityType: ACTIVITY_API_MAP[activity] || 'other',
+        entryType: 'activity',
+        entryDate: new Date().toISOString().split('T')[0],
+        description: activityDescription(activity, t),
+      };
 
-        if (condition) {
-          await api.post(`/seasons/${seasonId}/progress`, payload);
-          await api.post(`/seasons/${seasonId}/condition`, {
-            cropCondition: condition,
-            conditionNotes: action === 'issue' ? 'Reported via quick update' : '',
-          });
-        } else {
-          await api.post(`/seasons/${seasonId}/progress`, payload);
-        }
+      await api.post(`/seasons/${seasonId}/progress`, payload);
 
-        if (stage) {
-          await api.post(`/seasons/${seasonId}/stage-confirmation`, {
-            confirmedStage: stage,
-            note: 'Confirmed via quick update',
-          }).catch(() => {});
-        }
+      // 2. Auto-set condition based on activity type
+      const condition = ACTIVITY_CONDITION_MAP[activity] || 'good';
+      await api.post(`/seasons/${seasonId}/condition`, {
+        cropCondition: condition,
+        conditionNotes: activity === 'issue' ? 'Reported via quick update' : '',
+      }).catch(() => {});
 
-        if (isFirstUpdate) {
-          trackPilotEvent('first_update_submitted', { farmerId, seasonId, via: 'quick_update' });
-        }
-        trackPilotEvent('update_submitted', { farmerId, seasonId, type: action, elapsed });
-      }
-
-      // Upload photo if captured — failure does not fail the whole update
+      // 3. Upload photo if captured — failure does not fail the update
       if (photoFile) {
         const formData = new FormData();
         formData.append('photo', photoFile, 'quick-update.jpg');
@@ -262,8 +256,8 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
             if (imageUrl) {
               await api.post(`/seasons/${seasonId}/progress-image`, {
                 imageUrl,
-                imageStage: IMAGE_STAGE_MAP[stage] || 'mid_stage',
-                description: action === 'photo' ? 'Quick photo update' : `${action} update photo`,
+                imageStage: IMAGE_STAGE_MAP[activity] || 'mid_stage',
+                description: `${activity} update photo`,
               }).catch(() => {});
             }
           }
@@ -273,207 +267,132 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         }
       }
 
-      if (action === 'photo' && photoFile && !condition && !stage) {
-        trackPilotEvent('update_submitted', { farmerId, seasonId, type: 'photo_only', elapsed });
+      if (isFirstUpdate) {
+        trackPilotEvent('first_update_submitted', { farmerId, seasonId, via: 'quick_update' });
       }
-
-      trackPilotEvent('quick_update_completed', { farmerId, elapsed, action });
+      trackPilotEvent('quick_update_completed', { farmerId, elapsed, activity, hasPhoto: !!photoFile });
     });
 
-    // Map guaranteed action result to step state
-    if (submitAction.isSuccess) setStep('done');
-    else if (submitAction.isSavedOffline) setStep('offline');
-    else if (submitAction.isRetryable) { setError(submitAction.error); setStep('error'); }
-    else if (submitAction.isError) { setError(submitAction.error); setStep('error'); }
-  }, [action, stage, condition, photoFile, seasonId, farmerId, entries, submitAction]);
+    // Map result to step
+    if (submitAction.isSuccess) {
+      setStep('done');
+      scheduleAutoReturn();
+    } else if (submitAction.isSavedOffline) {
+      setStep('offline');
+      scheduleAutoReturn();
+    } else if (submitAction.isRetryable || submitAction.isError) {
+      setError(submitAction.error);
+      setStep('error');
+    }
+  }, [activity, photoFile, seasonId, farmerId, entries, submitAction, t, scheduleAutoReturn]);
 
-  // ─── Render helpers ──────────────────────────────────────
+  // ─── Render: Camera (initial) ───────────────────────────
 
-  const renderStepIndicator = () => {
-    const steps = action === 'photo' ? 2 : action === 'issue' ? 3 : 4;
-    const currentMap = { action: 1, stage: 2, condition: 3, photo: action === 'photo' ? 2 : action === 'issue' ? 3 : 4 };
-    const current = currentMap[step] || steps;
-    return (
-      <div style={QS.stepIndicator} data-testid="quick-step-indicator">
-        {Array.from({ length: steps }, (_, i) => (
-          <div key={i} style={{
-            ...QS.stepDot,
-            background: i < current ? '#22C55E' : '#243041',
-          }} />
-        ))}
-      </div>
-    );
-  };
-
-  // ─── Step: Action Selection ──────────────────────────────
-
-  // Current voice key based on step
-  const voiceKey = STEP_VOICE_KEY[step] || null;
-
-  if (step === 'action') {
+  if (step === 'camera') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handlePhotoCapture}
+          style={{ display: 'none' }}
+          data-testid="photo-input"
+        />
+        {/* Fallback UI while camera is opening */}
+        <div style={QS.cameraWaiting}>
+          <div style={QS.spinner} />
+          <p style={QS.waitingText}>{t('update.openingCamera')}</p>
+          <button
+            onClick={() => setStep('review')}
+            style={QS.skipCameraBtn}
+          >
+            {t('update.skipPhoto')} &rarr;
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Render: Review (photo + activity select + submit) ──
+
+  if (step === 'review') {
+    return (
+      <div style={QS.container} data-testid="quick-update-flow">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handlePhotoCapture}
+          style={{ display: 'none' }}
+          data-testid="photo-input"
+        />
+
+        {/* Header */}
         <div style={QS.header}>
-          <button onClick={onCancel} style={QS.backBtn} aria-label="Close">✕</button>
+          <button onClick={onCancel} style={QS.closeBtn} aria-label="Close">&times;</button>
           <span style={QS.title}>{t('update.addUpdate')}</span>
           <div style={{ width: 44 }} />
         </div>
-        {renderStepIndicator()}
-        <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>{t('update.whatToDo')}</div>
-        <div style={QS.optionGrid} data-testid="action-select">
-          {ACTION_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => handleActionSelect(opt.value)}
-              style={QS.actionCard}
-              data-testid={`action-${opt.value}`}
-            >
-              <span style={QS.actionIcon}>{opt.icon}</span>
-              <span style={QS.actionLabel}>{opt.label}</span>
-              <span style={QS.actionDesc}>{opt.desc}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
-  // ─── Step: Stage Selection ───────────────────────────────
-
-  if (step === 'stage') {
-    return (
-      <div style={QS.container} data-testid="quick-update-flow">
-        <div style={QS.header}>
-          <button onClick={() => goToStep('action')} style={QS.backBtn} aria-label="Back">←</button>
-          <span style={QS.title}>{t('update.cropStage')}</span>
-          <div style={{ width: 44 }} />
-        </div>
-        {renderStepIndicator()}
-        <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>{t('update.whatStage')}</div>
-        <div style={QS.stageGrid} data-testid="stage-select">
-          {STAGE_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => handleStageSelect(opt.value)}
-              style={{
-                ...QS.stageCard,
-                border: stage === opt.value ? '3px solid #22C55E' : '2px solid #243041',
-                background: stage === opt.value ? 'rgba(34,197,94,0.1)' : '#162033',
-              }}
-              data-testid={`stage-${opt.value}`}
-            >
-              <span style={QS.stageIcon}>{opt.icon}</span>
-              <span style={QS.stageLabel}>{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Step: Condition ─────────────────────────────────────
-
-  if (step === 'condition') {
-    return (
-      <div style={QS.container} data-testid="quick-update-flow">
-        <div style={QS.header}>
-          <button onClick={() => goToStep('stage')} style={QS.backBtn} aria-label="Back">←</button>
-          <span style={QS.title}>{t('update.condition')}</span>
-          <div style={{ width: 44 }} />
-        </div>
-        {renderStepIndicator()}
-        <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>{t('update.howLook')}</div>
-        <div style={QS.conditionRow} data-testid="condition-select">
-          {CONDITION_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => handleConditionSelect(opt.value)}
-              style={{
-                ...QS.conditionCard,
-                border: condition === opt.value ? `3px solid ${opt.color}` : '2px solid #243041',
-                background: condition === opt.value ? `${opt.color}15` : '#162033',
-              }}
-              data-testid={`condition-${opt.value}`}
-            >
-              <span style={QS.conditionIcon}>{opt.icon}</span>
-              <span style={{ ...QS.conditionLabel, color: opt.color }}>{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Step: Photo (optional) ──────────────────────────────
-
-  if (step === 'photo') {
-    return (
-      <div style={QS.container} data-testid="quick-update-flow">
-        <div style={QS.header}>
-          <button onClick={() => {
-            if (action === 'progress') goToStep('condition');
-            else if (action === 'issue') goToStep('action');
-            else goToStep('action');
-          }} style={QS.backBtn} aria-label="Back">←</button>
-          <span style={QS.title}>{t('update.photo')}</span>
-          <div style={{ width: 44 }} />
-        </div>
-        {renderStepIndicator()}
-        <VoiceBar voiceKey={voiceKey} compact />
-        <div style={QS.stepTitle}>
-          {action === 'photo' ? t('update.takePhotoOfFarm') : t('update.addPhotoOptional')}
-        </div>
-        <div style={QS.photoArea} data-testid="photo-step">
+        {/* Photo preview or retake */}
+        <div style={QS.photoSection}>
           {photoPreview ? (
             <div style={QS.previewWrap}>
               <img src={photoPreview} alt="Preview" style={QS.previewImg} />
-              <button onClick={clearPhoto} style={QS.removePhotoBtn}>{'✕ '}{t('update.remove')}</button>
+              <button onClick={retakePhoto} style={QS.retakeBtn}>
+                {t('update.retake')}
+              </button>
             </div>
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              style={QS.captureBtn}
+              style={QS.addPhotoBtn}
               data-testid="capture-photo-btn"
             >
-              <span style={{ fontSize: '2.5rem' }}>📷</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{t('update.tapToTakePhoto')}</span>
+              <span style={{ fontSize: '1.5rem' }}>📷</span>
+              <span>{t('update.addPhotoOptional')}</span>
             </button>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handlePhotoCapture}
-            style={{ display: 'none' }}
-            data-testid="photo-input"
-          />
         </div>
-        {/* Submit button */}
+
+        {/* Activity selection — tap buttons, not dropdown */}
+        <div style={QS.sectionLabel}>{t('update.whatHappened')}</div>
+        <div style={QS.activityGrid} data-testid="activity-select">
+          {ACTIVITY_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setActivity(opt.value)}
+              style={{
+                ...QS.activityBtn,
+                ...(activity === opt.value ? QS.activityBtnActive : {}),
+              }}
+              data-testid={`activity-${opt.value}`}
+            >
+              <span style={QS.activityIcon}>{opt.icon}</span>
+              <span style={QS.activityLabel}>{opt.label}</span>
+              {opt.value === suggested && activity === opt.value && (
+                <span style={QS.suggestedTag}>{t('update.suggested')}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Submit */}
         <button
           onClick={handleSubmit}
-          style={{
-            ...QS.submitBtn,
-            opacity: (action === 'photo' && !photoFile) ? 0.5 : 1,
-          }}
-          disabled={action === 'photo' && !photoFile}
+          style={QS.submitBtn}
           data-testid="submit-update-btn"
         >
-          {action === 'photo' ? t('update.savePhoto') : photoFile ? t('update.submitWithPhoto') : t('update.submitUpdate')}
+          {t('update.submitUpdate')}
         </button>
-        {action !== 'photo' && !photoFile && (
-          <button onClick={handleSubmit} style={QS.skipBtn} data-testid="skip-photo-btn">
-            {t('update.skipPhoto')} →
-          </button>
-        )}
       </div>
     );
   }
 
-  // ─── Step: Submitting ────────────────────────────────────
+  // ─── Render: Submitting ─────────────────────────────────
 
   if (step === 'submitting') {
     return (
@@ -488,45 +407,45 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     );
   }
 
-  // ─── Step: Success ───────────────────────────────────────
+  // ─── Render: Success ────────────────────────────────────
 
   if (step === 'done') {
-    const elapsed = Math.round((Date.now() - startTime.current) / 1000);
     return (
       <div style={QS.container} data-testid="quick-update-flow">
-        <VoiceBar voiceKey={voiceKey} compact />
-        <ActionFeedback
-          state={ACTION_STATE.SUCCESS}
-          successText={t('update.updateSaved')}
-          nextStepText={t('update.completedIn', { seconds: elapsed })}
-          onDone={() => onComplete?.()}
-        />
+        <div style={QS.successScreen}>
+          <div style={QS.successIcon}>&#x2705;</div>
+          <div style={QS.successTitle}>{t('update.updateSavedCheck')}</div>
+          <button onClick={() => onComplete?.()} style={QS.doneBtn}>
+            {t('common.done')}
+          </button>
+        </div>
       </div>
     );
   }
 
-  // ─── Step: Offline ───────────────────────────────────────
+  // ─── Render: Offline ────────────────────────────────────
 
   if (step === 'offline') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
-        <VoiceBar voiceKey={voiceKey} compact />
-        <ActionFeedback
-          state={ACTION_STATE.SAVED_OFFLINE}
-          offlineText={t('update.savedOffline')}
-          message={t('update.willSyncReconnect')}
-          onDone={() => onComplete?.()}
-        />
+        <div style={QS.offlineScreen}>
+          <div style={QS.offlineIcon}>📡</div>
+          <div style={QS.offlineTitle}>{t('update.savedOfflineMsg')}</div>
+          <div style={QS.offlineSub}>{t('update.willSyncReconnect')}</div>
+          <button onClick={() => onComplete?.()} style={QS.doneBtn}>
+            {t('common.done')}
+          </button>
+        </div>
       </div>
     );
   }
 
-  // ─── Step: Error + Retry ─────────────────────────────────
+  // ─── Render: Error + Retry ──────────────────────────────
 
   if (step === 'error') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
-        <VoiceBar voiceKey={voiceKey} compact />
+        <VoiceBar voiceKey="update.failed" compact />
         <ActionFeedback
           state={submitAction.isRetryable ? ACTION_STATE.RETRYABLE : ACTION_STATE.ERROR}
           error={error}
@@ -545,149 +464,136 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
 const QS = {
   container: {
     minHeight: '400px', display: 'flex', flexDirection: 'column',
-    background: '#0F172A', borderRadius: '12px', padding: '1rem',
+    background: '#0F172A', borderRadius: '16px', padding: '1rem',
   },
+
+  // Camera waiting screen
+  cameraWaiting: {
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: '1rem', minHeight: '300px',
+  },
+  waitingText: {
+    fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', margin: 0,
+  },
+  skipCameraBtn: {
+    marginTop: '1rem', padding: '0.75rem 1.5rem', background: 'transparent',
+    color: '#A1A1AA', border: '1px solid #243041', borderRadius: '12px',
+    fontSize: '0.9rem', cursor: 'pointer', minHeight: '44px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  spinner: {
+    width: '32px', height: '32px', border: '3px solid #243041',
+    borderTopColor: '#22C55E', borderRadius: '50%',
+    animation: 'farroway-spin 0.8s linear infinite',
+  },
+
+  // Header
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: '0.75rem',
   },
-  backBtn: {
+  closeBtn: {
     width: '44px', height: '44px', display: 'flex', alignItems: 'center',
     justifyContent: 'center', background: 'transparent', border: '1px solid #243041',
-    borderRadius: '10px', color: '#FFFFFF', fontSize: '1.1rem', cursor: 'pointer',
+    borderRadius: '10px', color: '#FFFFFF', fontSize: '1.25rem', cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent', minHeight: '44px',
   },
-  title: { fontSize: '1rem', fontWeight: 700, color: '#FFFFFF' },
+  title: { fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF' },
 
-  // Step indicator
-  stepIndicator: {
-    display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '1rem',
-  },
-  stepDot: {
-    width: '8px', height: '8px', borderRadius: '50%', transition: 'background 0.2s',
-  },
-
-  stepTitle: {
-    fontSize: '1.1rem', fontWeight: 600, color: '#FFFFFF', textAlign: 'center',
-    marginBottom: '1.25rem',
-  },
-
-  // Action cards
-  optionGrid: {
-    display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', flex: 1,
-  },
-  actionCard: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', gap: '0.25rem',
-    padding: '1.25rem 1rem', background: '#162033', border: '2px solid #243041',
-    borderRadius: '14px', cursor: 'pointer', color: '#FFFFFF',
-    minHeight: '80px', WebkitTapHighlightColor: 'transparent',
-    transition: 'border-color 0.15s, transform 0.1s',
-  },
-  actionIcon: { fontSize: '2rem' },
-  actionLabel: { fontSize: '1rem', fontWeight: 700 },
-  actionDesc: { fontSize: '0.8rem', color: '#A1A1AA' },
-
-  // Stage cards (2x2 grid)
-  stageGrid: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', flex: 1,
-  },
-  stageCard: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', gap: '0.4rem',
-    padding: '1.5rem 1rem', borderRadius: '14px', cursor: 'pointer',
-    color: '#FFFFFF', minHeight: '100px',
-    WebkitTapHighlightColor: 'transparent',
-    transition: 'border-color 0.15s, transform 0.1s',
-  },
-  stageIcon: { fontSize: '2.5rem' },
-  stageLabel: { fontSize: '1rem', fontWeight: 700 },
-
-  // Condition cards
-  conditionRow: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', flex: 1,
-  },
-  conditionCard: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', gap: '0.5rem',
-    padding: '1.5rem 0.5rem', borderRadius: '14px', cursor: 'pointer',
-    color: '#FFFFFF', minHeight: '120px',
-    WebkitTapHighlightColor: 'transparent',
-    transition: 'border-color 0.15s, transform 0.1s',
-  },
-  conditionIcon: { fontSize: '2.5rem' },
-  conditionLabel: { fontSize: '1rem', fontWeight: 700 },
-
-  // Photo
-  photoArea: {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', minHeight: '200px',
-  },
-  captureBtn: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', gap: '0.5rem',
-    width: '100%', maxWidth: '280px', padding: '2rem',
-    background: '#162033', border: '2px dashed #243041', borderRadius: '14px',
-    color: '#FFFFFF', cursor: 'pointer', minHeight: '140px',
-    WebkitTapHighlightColor: 'transparent',
+  // Photo section
+  photoSection: {
+    marginBottom: '1rem',
   },
   previewWrap: {
-    position: 'relative', width: '100%', maxWidth: '300px',
-    borderRadius: '12px', overflow: 'hidden',
+    position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden',
   },
   previewImg: {
     width: '100%', height: 'auto', display: 'block', borderRadius: '12px',
-    maxHeight: '250px', objectFit: 'cover',
+    maxHeight: '220px', objectFit: 'cover',
   },
-  removePhotoBtn: {
-    position: 'absolute', top: '8px', right: '8px',
-    padding: '0.4rem 0.8rem', background: 'rgba(0,0,0,0.7)', color: '#FFFFFF',
-    border: 'none', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer',
-    minHeight: '36px',
+  retakeBtn: {
+    position: 'absolute', bottom: '8px', right: '8px',
+    padding: '0.5rem 1rem', background: 'rgba(0,0,0,0.7)', color: '#FFFFFF',
+    border: 'none', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600,
+    cursor: 'pointer', minHeight: '36px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  addPhotoBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+    width: '100%', padding: '1rem', background: '#162033',
+    border: '2px dashed #243041', borderRadius: '12px',
+    color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '0.9rem',
+    minHeight: '52px', WebkitTapHighlightColor: 'transparent',
+  },
+
+  // Activity section
+  sectionLabel: {
+    fontSize: '0.9rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)',
+    marginBottom: '0.5rem',
+  },
+  activityGrid: {
+    display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem',
+  },
+  activityBtn: {
+    display: 'flex', alignItems: 'center', gap: '0.4rem', position: 'relative',
+    padding: '0.65rem 1rem', background: '#162033', border: '2px solid #243041',
+    borderRadius: '12px', cursor: 'pointer', color: '#FFFFFF',
+    fontSize: '0.9rem', fontWeight: 600, minHeight: '44px',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.15s, background 0.15s',
+  },
+  activityBtnActive: {
+    border: '2px solid #22C55E', background: 'rgba(34,197,94,0.12)',
+  },
+  activityIcon: { fontSize: '1.1rem' },
+  activityLabel: { fontSize: '0.9rem' },
+  suggestedTag: {
+    fontSize: '0.65rem', fontWeight: 700, color: '#22C55E',
+    background: 'rgba(34,197,94,0.15)', padding: '0.1rem 0.35rem',
+    borderRadius: '4px', marginLeft: '0.15rem',
   },
 
   // Submit
   submitBtn: {
-    width: '100%', padding: '1rem', marginTop: '1rem',
+    width: '100%', padding: '1rem', marginTop: 'auto',
     background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
     color: '#FFFFFF', border: 'none', borderRadius: '14px',
     fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer',
     minHeight: '56px', WebkitTapHighlightColor: 'transparent',
     boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
   },
-  skipBtn: {
-    width: '100%', padding: '0.75rem', marginTop: '0.5rem',
-    background: 'transparent', color: '#A1A1AA', border: 'none',
-    fontSize: '0.9rem', cursor: 'pointer', minHeight: '44px',
-    WebkitTapHighlightColor: 'transparent',
+
+  // Success screen
+  successScreen: {
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: '0.75rem', minHeight: '300px',
+    textAlign: 'center',
+  },
+  successIcon: { fontSize: '3.5rem' },
+  successTitle: {
+    fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF',
   },
 
-  // Feedback states
-  feedbackCenter: {
+  // Offline screen
+  offlineScreen: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', textAlign: 'center', padding: '2rem 1rem',
-    minHeight: '300px',
+    justifyContent: 'center', gap: '0.5rem', minHeight: '300px',
+    textAlign: 'center',
   },
-  feedbackIcon: { fontSize: '3rem', marginBottom: '0.75rem' },
-  feedbackTitle: { fontSize: '1.2rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '0.5rem' },
-  feedbackSub: { fontSize: '0.9rem', color: '#A1A1AA', marginBottom: '1.5rem', lineHeight: 1.5 },
+  offlineIcon: { fontSize: '2.5rem' },
+  offlineTitle: {
+    fontSize: '1.1rem', fontWeight: 700, color: '#FDE68A',
+  },
+  offlineSub: {
+    fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', maxWidth: '280px',
+  },
+
+  // Done button (success/offline)
   doneBtn: {
-    padding: '0.85rem 2.5rem', background: '#22C55E', color: '#FFFFFF',
-    border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
+    marginTop: '0.5rem', padding: '0.85rem 2.5rem',
+    background: '#22C55E', color: '#FFFFFF', border: 'none',
+    borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
     cursor: 'pointer', minHeight: '52px',
     WebkitTapHighlightColor: 'transparent',
-  },
-  retryBtn: {
-    padding: '0.85rem 2.5rem', background: '#F59E0B', color: '#FFFFFF',
-    border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
-    cursor: 'pointer', minHeight: '52px', marginBottom: '0.5rem',
-    WebkitTapHighlightColor: 'transparent',
-  },
-
-  // Spinner
-  spinner: {
-    width: '40px', height: '40px', border: '4px solid #243041',
-    borderTopColor: '#22C55E', borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite', marginBottom: '1rem',
   },
 };

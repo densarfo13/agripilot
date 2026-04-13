@@ -6,11 +6,39 @@ import { getStageStarterTasks } from '../lib/seasonEngine.js';
 
 const router = express.Router();
 
-// Get active season with tasks
+// Get active season with tasks — scoped to a specific farm
+// ?farmId=xxx → explicit farm; otherwise uses default/first active farm
 router.get('/active', authenticate, async (req, res) => {
   try {
+    const farmId = req.query.farmId || null;
+    let targetFarmId = farmId;
+
+    if (!targetFarmId) {
+      // Find default farm, or most recent active
+      const defaultFarm = await prisma.farmProfile.findFirst({
+        where: { userId: req.user.id, isDefault: true, status: 'active' },
+        select: { id: true },
+      });
+      if (defaultFarm) {
+        targetFarmId = defaultFarm.id;
+      } else {
+        const activeFarm = await prisma.farmProfile.findFirst({
+          where: { userId: req.user.id, status: 'active' },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true },
+        });
+        targetFarmId = activeFarm?.id || null;
+      }
+    }
+
+    // Build where clause: always scoped to user, prefer farm-scoped
+    const where = { userId: req.user.id, isActive: true };
+    if (targetFarmId) {
+      where.farmProfileId = targetFarmId;
+    }
+
     const season = await prisma.v2Season.findFirst({
-      where: { userId: req.user.id, isActive: true },
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         tasks: {
@@ -26,22 +54,55 @@ router.get('/active', authenticate, async (req, res) => {
   }
 });
 
-// Start a new season
+// Start a new season — requires farmId
 router.post('/start', authenticate, async (req, res) => {
   try {
+    const farmId = req.body?.farmId || null;
+
+    // Resolve target farm: explicit farmId, or default, or only active farm
+    let profile;
+    if (farmId) {
+      profile = await prisma.farmProfile.findFirst({
+        where: { id: farmId, userId: req.user.id, status: 'active' },
+        select: { id: true, crop: true, farmerUuid: true, farmerName: true },
+      });
+    } else {
+      // Try default farm first
+      profile = await prisma.farmProfile.findFirst({
+        where: { userId: req.user.id, isDefault: true, status: 'active' },
+        select: { id: true, crop: true, farmerUuid: true, farmerName: true },
+      });
+      if (!profile) {
+        profile = await prisma.farmProfile.findFirst({
+          where: { userId: req.user.id, status: 'active' },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, crop: true, farmerUuid: true, farmerName: true },
+        });
+      }
+    }
+
+    if (!profile || !profile.farmerUuid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Farm profile setup must be completed before starting a season',
+        code: 'PROFILE_INCOMPLETE',
+      });
+    }
+
+    // Check for active season on THIS specific farm (not globally)
     const existingActive = await prisma.v2Season.findFirst({
-      where: { userId: req.user.id, isActive: true },
+      where: { userId: req.user.id, farmProfileId: profile.id, isActive: true },
       select: { id: true },
     });
 
     if (existingActive) {
-      return res.status(409).json({ success: false, error: 'An active season already exists' });
+      return res.status(409).json({
+        success: false,
+        error: 'This farm already has an active season',
+        code: 'SEASON_EXISTS',
+        seasonId: existingActive.id,
+      });
     }
-
-    const profile = await prisma.farmProfile.findFirst({
-      where: { userId: req.user.id },
-      select: { crop: true },
-    });
 
     const cropType = String(req.body?.cropType || profile?.crop || '').trim();
     const stage = String(req.body?.stage || 'planting').trim().toLowerCase();
@@ -61,6 +122,7 @@ router.post('/start', authenticate, async (req, res) => {
     const season = await prisma.v2Season.create({
       data: {
         userId: req.user.id,
+        farmProfileId: profile.id,
         cropType,
         startDate,
         stage,
@@ -79,7 +141,7 @@ router.post('/start', authenticate, async (req, res) => {
       action: 'season.started',
       entityType: 'V2Season',
       entityId: season.id,
-      metadata: { cropType, stage },
+      metadata: { cropType, stage, farmProfileId: profile.id },
     });
 
     return res.status(201).json({ success: true, season });

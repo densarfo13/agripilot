@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { t } from '../lib/i18n.js';
-import { useAppPrefs } from '../context/AppPrefsContext.jsx';
+import { useTranslation } from '../i18n/index.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 
 export default function FarmerIdCard() {
-  const { language } = useAppPrefs();
+  const { t } = useTranslation();
   const { profile } = useProfile();
   const [copied, setCopied] = useState(false);
 
@@ -19,11 +18,11 @@ export default function FarmerIdCard() {
 
   return (
     <div style={S.card}>
-      <div style={S.label}>{t(language, 'farmerUuid')}</div>
+      <div style={S.label}>{t('farmerUuid')}</div>
       <div style={S.row}>
-        <div style={S.uuid}>{profile?.farmerUuid || 'Not assigned'}</div>
+        <div style={S.uuid}>{profile?.farmerUuid || t('farmerId.notAssigned')}</div>
         <button type="button" onClick={handleCopy} style={S.copyBtn}>
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('farmerId.copied') : t('common.copy')}
         </button>
       </div>
     </div>

@@ -89,7 +89,7 @@ import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './ut
 import LegacyProfileGuard from './components/ProfileGuard.jsx';
 import { ProfileProvider as LegacyProfileProvider } from './context/ProfileContextLegacy.jsx';
 // V2 enterprise auth context (cookie-based)
-import { AuthProvider } from './context/AuthContext.jsx';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ProfileProvider as V2ProfileProvider } from './context/ProfileContext.jsx';
 // Phase 2: Offline, voice, weather contexts
 import { NetworkProvider } from './context/NetworkContext.jsx';
@@ -109,7 +109,15 @@ const PageLoader = () => (
 function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
   const user = useAuthStore(s => s.user);
-  if (!token) return <Navigate to="/login" replace />;
+  // V2 cookie-auth users have no V1 token — send them to /dashboard (not /login)
+  // so the V2 auth guard handles them correctly without a redirect loop.
+  if (!token) {
+    try {
+      const cached = localStorage.getItem('farroway:session_cache');
+      if (cached && JSON.parse(cached)?.user) return <Navigate to="/dashboard" replace />;
+    } catch { /* ignore */ }
+    return <Navigate to="/login" replace />;
+  }
   // Farmer-role users get their own limited dashboard
   if (user?.role === 'farmer') {
     // Wrap farmer routes in legacy ProfileProvider for shared profile state
@@ -124,6 +132,16 @@ function ProtectedRoute({ children, allowSetup }) {
 function RoleRoute({ roles, children }) {
   const user = useAuthStore(s => s.user);
   if (!roles.includes(user?.role)) return <Navigate to="/" replace />;
+  return children;
+}
+
+// ─── Auth loading gate ─────────────────────────────────────
+// Prevents ANY route from rendering until the V2 auth bootstrap
+// has resolved. This eliminates the blink caused by V1 ProtectedRoute
+// redirecting to /login before the V2 cookie session is verified.
+function AuthLoadingGate({ children }) {
+  const { authLoading } = useAuth();
+  if (authLoading) return <PageLoader />;
   return children;
 }
 
@@ -149,6 +167,7 @@ export default function App() {
       <SeasonProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
+      <AuthLoadingGate>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Marketing landing page (farroways.com homepage) */}
@@ -221,9 +240,10 @@ export default function App() {
             <Route path="impact" element={<RoleRoute roles={[...ADMIN_ROLES, 'investor_viewer']}><ImpactDashboardPage /></RoleRoute>} />
             <Route path="account" element={<AccountPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
+      </AuthLoadingGate>
       </SeasonProvider>
       </WeatherProvider>
       </V2ProfileProvider>

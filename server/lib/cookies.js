@@ -2,11 +2,18 @@ import { env } from './env.js';
 
 const isProd = env.NODE_ENV === 'production';
 
+function normalizedSameSite() {
+  const raw = (env.COOKIE_SAMESITE || 'lax').toLowerCase();
+  if (['strict', 'lax', 'none'].includes(raw)) return raw;
+  return 'lax';
+}
+
 function buildCookieOptions(maxAgeMs) {
+  const sameSite = normalizedSameSite();
   return {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: isProd,
+    sameSite,
+    secure: isProd || sameSite === 'none',
     path: '/',
     maxAge: maxAgeMs,
     ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),

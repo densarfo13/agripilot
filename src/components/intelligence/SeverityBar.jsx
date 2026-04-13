@@ -8,22 +8,28 @@ function barColor(score) {
   return '#EF4444';
 }
 
-export default function SeverityBar({ score, label }) {
+export default function SeverityBar({ score, label, showValue = true, height = 8, animate = true }) {
   const { t } = useTranslation();
   const pct = Math.min(100, Math.max(0, score || 0));
   const color = barColor(pct);
 
   return (
     <div style={S.wrap}>
-      {label && (
+      {(label || showValue) && (
         <div style={S.labelRow}>
-          <span style={S.label}>{label}</span>
-          <span style={{ ...S.value, color }}>{pct}</span>
+          {label && <span style={S.label}>{label}</span>}
+          {showValue && <span style={{ ...S.value, color }}>{pct}</span>}
         </div>
       )}
-      <div style={S.track}>
+      <div style={{ ...S.track, height: `${height}px`, borderRadius: `${height / 2}px` }}>
         <div
-          style={{ ...S.fill, width: `${pct}%`, background: color }}
+          style={{
+            ...S.fill,
+            width: `${pct}%`,
+            background: color,
+            borderRadius: `${height / 2}px`,
+            transition: animate ? 'width 0.4s ease' : 'none',
+          }}
           role="progressbar"
           aria-valuenow={pct}
           aria-valuemin={0}
@@ -54,14 +60,10 @@ const S = {
   },
   track: {
     width: '100%',
-    height: '10px',
-    borderRadius: '5px',
     background: 'rgba(255,255,255,0.1)',
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: '5px',
-    transition: 'width 0.4s ease',
   },
 };

@@ -81,8 +81,21 @@ api.interceptors.response.use(
       if (code === 'MFA_SETUP_REQUIRED' || code === 'MFA_CHALLENGE_REQUIRED') {
         return Promise.reject(error);
       }
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+
+      // Only logout + redirect for V1 (Bearer token) routes.
+      // V2 routes use cookie auth via lib/api.js which handles its own 401→refresh flow.
+      // Hard redirecting here would cause a page-reload blink for V2 users.
+      const path = window.location.pathname;
+      const isV2Route = path.startsWith('/dashboard') || path.startsWith('/login')
+        || path.startsWith('/register') || path.startsWith('/season')
+        || path.startsWith('/profile') || path.startsWith('/pest-')
+        || path.startsWith('/field-') || path.startsWith('/regional-')
+        || path.startsWith('/treatment-') || path.startsWith('/forgot-')
+        || path.startsWith('/reset-') || path.startsWith('/verify-');
+      if (!isV2Route) {
+        useAuthStore.getState().logout();
+        window.location.href = '/login';
+      }
       return Promise.reject(error);
     }
 

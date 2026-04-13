@@ -12,6 +12,7 @@ import { getCropLabel } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
+import VoiceBar from '../components/VoiceBar.jsx';
 import { getFarmerLifecycleState, canStartSeason, FARMER_STATE } from '../utils/farmerLifecycle.js';
 
 const STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'harvest', 'post_harvest'];
@@ -372,6 +373,7 @@ export default function FarmerProgressTab() {
 
   return (
     <div>
+      <VoiceBar voiceKey={showQuickUpdate ? 'progress.chooseStage' : 'progress.start'} compact />
       {successMsg && (
         <InlineAlert variant="success" onDismiss={() => setSuccessMsg('')}>
           &#10003; {successMsg}
@@ -388,6 +390,7 @@ export default function FarmerProgressTab() {
         <QuickUpdateFlow
           seasonId={activeSeason.id}
           farmerId={farmerId}
+          seasonStage={activeSeason.stage}
           entries={entries}
           onComplete={() => { setShowQuickUpdate(false); loadSeasons(); showSuccess(t('progress.updateSavedOk')); }}
           onCancel={() => setShowQuickUpdate(false)}
@@ -897,7 +900,7 @@ export default function FarmerProgressTab() {
                       />
                       {imageForm.latitude && (
                         <div style={{ fontSize: '0.72rem', color: '#22C55E', marginTop: '0.25rem' }}>
-                          GPS: {imageForm.latitude.toFixed(4)}, {imageForm.longitude.toFixed(4)}
+                          {t('location.capturedCheck')}
                           <span onClick={() => setImageForm(f => ({ ...f, latitude: null, longitude: null }))} style={{ color: '#71717A', cursor: 'pointer', marginLeft: '0.5rem' }}>{t('common.clear')}</span>
                         </div>
                       )}

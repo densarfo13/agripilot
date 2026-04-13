@@ -827,7 +827,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               />
               {form.latitude && (
                 <div style={S.gpsConfirm}>
-                  {'\uD83D\uDCCC'} {form.locationName || `${form.latitude.toFixed(3)}, ${form.longitude.toFixed(3)}`}
+                  {'\uD83D\uDCCC'} {form.locationName || t('location.captured')}
                 </div>
               )}
               <input

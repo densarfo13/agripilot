@@ -5,6 +5,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { computeLandSizeFields, UNIT_OPTIONS } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
+import { detectAndResolveLocation } from '../utils/geolocation.js';
 import CropSelect from '../components/CropSelect.jsx';
 import CountrySelect from '../components/CountrySelect.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
@@ -42,6 +43,7 @@ export default function ProfileSetupPage() {
     crop: '',
     latitude: null,
     longitude: null,
+    locationLabel: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -65,6 +67,7 @@ export default function ProfileSetupPage() {
         crop: existing.crop || existing.cropType || '',
         latitude: existing.latitude ?? existing.gpsLat ?? null,
         longitude: existing.longitude ?? existing.gpsLng ?? null,
+        locationLabel: existing.locationLabel || '',
       });
     } else {
       setForm((f) => ({
@@ -82,33 +85,29 @@ export default function ProfileSetupPage() {
     setError('');
   }, []);
 
-  // GPS capture
-  const captureGPS = useCallback(() => {
+  // GPS capture with reverse geocoding for human-readable label
+  const captureGPS = useCallback(async () => {
     if (!navigator.geolocation) {
       setGpsError('Geolocation is not supported by your browser.');
       return;
     }
     setGpsLoading(true);
     setGpsError('');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((f) => ({
-          ...f,
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        }));
-        setGpsLoading(false);
-      },
-      (err) => {
-        setGpsError(
-          err.code === 1
-            ? 'Location permission denied. Please enable GPS.'
-            : 'Could not get location. Try again.'
-        );
-        setGpsLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
+    try {
+      const result = await detectAndResolveLocation();
+      const label = [result.locality, result.region, result.country].filter(Boolean).join(', ');
+      setForm((f) => ({
+        ...f,
+        latitude: result.latitude,
+        longitude: result.longitude,
+        locationLabel: label || f.locationLabel,
+        locationName: f.locationName || label || f.locationName,
+      }));
+    } catch (err) {
+      setGpsError(err.message || 'Could not get location. Try again.');
+    } finally {
+      setGpsLoading(false);
+    }
   }, []);
 
   // Compute score for display
@@ -130,6 +129,7 @@ export default function ProfileSetupPage() {
         crop: form.crop,
         latitude: form.latitude,
         longitude: form.longitude,
+        locationLabel: form.locationLabel?.trim() || null,
         ...sizeFields,
       };
 
@@ -294,21 +294,26 @@ export default function ProfileSetupPage() {
             {fieldErrors.crop && <p style={S.fieldError}>{fieldErrors.crop}</p>}
           </div>
 
-          {/* GPS Coordinates */}
+          {/* Farm Location */}
           <div style={S.field}>
-            <label style={S.label}>GPS Coordinates</label>
+            <label style={S.label}>{t('location.farmLocation')}</label>
             {form.latitude != null && form.longitude != null ? (
               <div style={S.gpsDisplay}>
-                <span style={{ color: '#22C55E', fontWeight: 600 }}>
-                  {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
-                </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#22C55E', fontWeight: 600, fontSize: '0.9rem' }}>
+                    {form.locationLabel || t('location.captured')}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                    {t('location.capturedCheck')}
+                  </div>
+                </div>
                 <button
                   type="button"
                   style={S.gpsBtn}
                   onClick={captureGPS}
                   disabled={gpsLoading}
                 >
-                  {gpsLoading ? 'Updating...' : 'Update'}
+                  {gpsLoading ? t('location.updating') : t('location.update')}
                 </button>
               </div>
             ) : (
@@ -318,7 +323,7 @@ export default function ProfileSetupPage() {
                 onClick={captureGPS}
                 disabled={gpsLoading}
               >
-                {gpsLoading ? 'Detecting location...' : 'Capture GPS Location'}
+                {gpsLoading ? t('location.detecting') : t('location.captureGPS')}
               </button>
             )}
             {gpsError && <p style={S.gpsErrorText}>{gpsError}</p>}

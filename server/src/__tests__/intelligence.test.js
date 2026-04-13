@@ -13,10 +13,10 @@ function readFile(relPath) {
 // ─── 1. Scoring Engine — 4 formulas with correct weights ────────────
 
 describe('Scoring Engine — formulas and weights', () => {
-  const code = readFile('server/services/intelligence/scoringEngine.js');
+  const code = readFile('server/intelligence/services/scoring.service.ts');
 
   it('exports computeFarmPestRisk with 7 components', () => {
-    expect(code).toContain('export async function computeFarmPestRisk');
+    expect(code).toContain('export function computeFarmPestRisk');
     expect(code).toContain('image_score');
     expect(code).toContain('field_stress_score');
     expect(code).toContain('crop_stage_vulnerability');
@@ -33,7 +33,7 @@ describe('Scoring Engine — formulas and weights', () => {
   });
 
   it('exports computeHotspotScore with 5 components', () => {
-    expect(code).toContain('export async function computeHotspotScore');
+    expect(code).toContain('export function computeHotspotScore');
     expect(code).toContain('anomaly_intensity');
     expect(code).toContain('temporal_change');
     expect(code).toContain('cluster_compactness');
@@ -47,7 +47,7 @@ describe('Scoring Engine — formulas and weights', () => {
   });
 
   it('exports computeRegionalOutbreakScore with 6 components', () => {
-    expect(code).toContain('export async function computeRegionalOutbreakScore');
+    expect(code).toContain('export function computeRegionalOutbreakScore');
     expect(code).toContain('confirmed_reports');
     expect(code).toContain('unconfirmed_signals');
     expect(code).toContain('satellite_anomalies');
@@ -62,7 +62,7 @@ describe('Scoring Engine — formulas and weights', () => {
   });
 
   it('exports computeAlertConfidence with 5 components', () => {
-    expect(code).toContain('export async function computeAlertConfidence');
+    expect(code).toContain('export function computeAlertConfidence');
     expect(code).toContain('model_confidence');
     expect(code).toContain('signal_agreement');
     expect(code).toContain('data_quality');
@@ -79,18 +79,25 @@ describe('Scoring Engine — formulas and weights', () => {
     expect(code).toContain('export function riskLevelFromScore');
   });
 
-  it('has risk thresholds: low < 40, moderate < 65, high < 80, urgent >= 80', () => {
-    expect(code).toContain("low: { min: 0, max: 39");
-    expect(code).toContain("moderate: { min: 40, max: 64");
-    expect(code).toContain("high: { min: 65, max: 79");
-    expect(code).toContain("urgent: { min: 80, max: 100");
+  it('uses configurable risk thresholds via getRiskThresholds()', () => {
+    expect(code).toContain('getRiskThresholds');
+    expect(code).toContain('high_max');
+    expect(code).toContain('moderate_max');
+    expect(code).toContain('low_max');
+  });
+
+  it('default thresholds match spec: low < 40, moderate < 65, high < 80', () => {
+    const config = readFile('server/intelligence/config/thresholds.ts');
+    expect(config).toContain('low_max: 39');
+    expect(config).toContain('moderate_max: 64');
+    expect(config).toContain('high_max: 79');
   });
 });
 
 // ─── 2. Alert Engine ────────────────────────────────────────────────
 
 describe('Alert Engine — anti-spam and orchestration', () => {
-  const code = readFile('server/services/intelligence/alertEngine.js');
+  const code = readFile('server/intelligence/services/alert.service.ts');
 
   it('handles alert creation', () => {
     expect(code).toMatch(/createAlert|evaluateAndCreateAlert/);
@@ -108,27 +115,27 @@ describe('Alert Engine — anti-spam and orchestration', () => {
 // ─── 3. Backend services exist and are substantial ──────────────────
 
 describe('Intelligence services — completeness', () => {
-  it('imageAnalysisService exists with detection logic', () => {
-    const code = readFile('server/services/intelligence/imageAnalysisService.js');
-    expect(code).toMatch(/analyzeImage|processImage|detect/i);
+  it('components.service has computeComponentScores', () => {
+    const code = readFile('server/intelligence/services/components.service.ts');
+    expect(code).toContain('computeComponentScores');
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('satelliteService exists with scan processing', () => {
-    const code = readFile('server/services/intelligence/satelliteService.js');
-    expect(code).toMatch(/processScan|ingest|satellite/i);
+  it('satellite.service has ingestSatelliteScan', () => {
+    const code = readFile('server/intelligence/services/satellite.service.ts');
+    expect(code).toContain('ingestSatelliteScan');
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('droneService exists with scan processing', () => {
-    const code = readFile('server/services/intelligence/droneService.js');
-    expect(code).toMatch(/processScan|ingest|drone/i);
+  it('drone.service has ingestDroneScan', () => {
+    const code = readFile('server/intelligence/services/drone.service.ts');
+    expect(code).toContain('ingestDroneScan');
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('outbreakService exists with cluster detection', () => {
-    const code = readFile('server/services/intelligence/outbreakService.js');
-    expect(code).toMatch(/cluster|outbreak|detect/i);
+  it('outbreak.service has detectOutbreakClusters', () => {
+    const code = readFile('server/intelligence/services/outbreak.service.ts');
+    expect(code).toContain('detectOutbreakClusters');
     expect(code.length).toBeGreaterThan(500);
   });
 });
@@ -136,7 +143,7 @@ describe('Intelligence services — completeness', () => {
 // ─── 4. API Routes — pest-risk ──────────────────────────────────────
 
 describe('Pest Risk API routes', () => {
-  const code = readFile('server/routes/pest-risk.js');
+  const code = readFile('server/intelligence/routes/pest-risk.routes.ts');
 
   it('has image upload endpoint', () => {
     expect(code).toMatch(/router\.post.*images/i);
@@ -178,7 +185,7 @@ describe('Pest Risk API routes', () => {
 // ─── 5. API Routes — intelligence-admin ─────────────────────────────
 
 describe('Intelligence Admin API routes', () => {
-  const code = readFile('server/routes/intelligence-admin.js');
+  const code = readFile('server/intelligence/routes/admin.routes.ts');
 
   it('has regional risk endpoint', () => {
     expect(code).toMatch(/router\.get.*region/i);
@@ -213,14 +220,14 @@ describe('Intelligence Admin API routes', () => {
   });
 
   it('enforces admin role check', () => {
-    expect(code).toMatch(/role.*admin|ADMIN_ROLES|super_admin|institutional_admin/i);
+    expect(code).toMatch(/requireAdmin|ADMIN_ROLES|super_admin|institutional_admin/i);
   });
 });
 
 // ─── 6. API Routes — intelligence-ingest ────────────────────────────
 
 describe('Intelligence Ingest API routes', () => {
-  const code = readFile('server/routes/intelligence-ingest.js');
+  const code = readFile('server/intelligence/routes/ingest.routes.ts');
 
   it('has satellite ingest endpoint', () => {
     expect(code).toMatch(/router\.post.*satellite/i);
@@ -258,75 +265,85 @@ describe('Backend wiring', () => {
     expect(barrel).toContain("'/intelligence-admin'");
     expect(barrel).toContain("'/intelligence-ingest'");
   });
+
+  it('server.js starts intelligence workers and loads thresholds', () => {
+    const serverCode = readFile('server/src/server.js');
+    expect(serverCode).toContain('loadThresholdsFromDb');
+    expect(serverCode).toContain("startWorker('satellite_ingest'");
+    expect(serverCode).toContain("startWorker('score_farm'");
+    expect(serverCode).toContain("startWorker('send_alert'");
+    expect(serverCode).toContain('stopAllWorkers');
+    expect(serverCode).toContain('expireStaleAlerts');
+    expect(serverCode).toContain('pruneJobs');
+  });
 });
 
 // ─── 8. Frontend — farmer intelligence pages exist ──────────────────
 
 describe('Farmer intelligence pages', () => {
-  it('PestRiskCheck exists and uses useTranslation', () => {
+  it('PestRiskCheck exists and uses hooks + translation', () => {
     const code = readFile('src/pages/PestRiskCheck.jsx');
     expect(code).toContain('useTranslation');
-    expect(code).toContain('uploadPestImage');
-    expect(code).toContain('createPestReport');
+    expect(code).toMatch(/usePestReportSubmit|uploadPestImage/);
+    expect(code.length).toBeGreaterThan(500);
   });
 
-  it('PestRiskResult exists and uses intelligence API', () => {
+  it('PestRiskResult exists and uses farm risk hook', () => {
     const code = readFile('src/pages/PestRiskResult.jsx');
     expect(code).toContain('useTranslation');
-    expect(code).toContain('getFarmRisk');
-    expect(code).toContain('submitDiagnosisFeedback');
+    expect(code).toMatch(/useFarmRisk|getFarmRisk/);
+    expect(code).toMatch(/useFeedbackSubmit|submitDiagnosisFeedback/);
   });
 
-  it('FieldHotspotAlert exists and uses hotspot API', () => {
+  it('FieldHotspotAlert exists and uses hotspot hook', () => {
     const code = readFile('src/pages/FieldHotspotAlert.jsx');
     expect(code).toContain('useTranslation');
-    expect(code).toContain('getFarmHotspots');
+    expect(code).toMatch(/useFarmHotspots|getFarmHotspots/);
   });
 
-  it('RegionalWatch exists and uses alerts API', () => {
+  it('RegionalWatch exists and uses alerts hook', () => {
     const code = readFile('src/pages/RegionalWatch.jsx');
     expect(code).toContain('useTranslation');
-    expect(code).toContain('getMyAlerts');
+    expect(code).toMatch(/useMyAlerts|getMyAlerts/);
   });
 
   it('TreatmentFeedback exists with treatment + outcome flow', () => {
     const code = readFile('src/pages/TreatmentFeedback.jsx');
     expect(code).toContain('useTranslation');
-    expect(code).toContain('logTreatment');
-    expect(code).toContain('logTreatmentOutcome');
+    expect(code).toMatch(/useTreatmentSubmit|logTreatment/);
   });
 });
 
 // ─── 9. Frontend — admin intelligence pages exist ───────────────────
 
 describe('Admin intelligence pages', () => {
-  it('RegionalRiskMap exists', () => {
+  it('RegionalRiskMap exists and uses hook', () => {
     const code = readFile('src/pages/admin/RegionalRiskMap.jsx');
-    expect(code).toContain('getRegionalRisk');
+    expect(code).toMatch(/useRegionalRisk|getRegionalRisk/);
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('HighRiskFarms exists', () => {
+  it('HighRiskFarms exists and uses hook', () => {
     const code = readFile('src/pages/admin/HighRiskFarms.jsx');
-    expect(code).toContain('getHighRiskFarms');
+    expect(code).toMatch(/useHighRiskFarms|getHighRiskFarms/);
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('HotspotInspector exists', () => {
+  it('HotspotInspector exists and uses hook', () => {
     const code = readFile('src/pages/admin/HotspotInspector.jsx');
-    expect(code).toContain('getAdminHotspots');
+    expect(code).toMatch(/useAdminHotspots|getAdminHotspots/);
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('AlertControlCenter exists', () => {
+  it('AlertControlCenter exists and uses hook', () => {
     const code = readFile('src/pages/admin/AlertControlCenter.jsx');
-    expect(code).toContain('getAdminAlerts');
+    expect(code).toMatch(/useAdminAlerts|getAdminAlerts/);
     expect(code.length).toBeGreaterThan(500);
   });
 
-  it('InterventionEffectiveness exists', () => {
+  it('InterventionEffectiveness exists and uses hook', () => {
     const code = readFile('src/pages/admin/InterventionEffectiveness.jsx');
-    expect(code).toContain('getInterventionEffectiveness');
+    expect(code).toMatch(/useInterventionData|getInterventionEffectiveness/);
     expect(code.length).toBeGreaterThan(500);
   });
 });
@@ -500,6 +517,7 @@ describe('Prisma schema — intelligence models', () => {
     'V2HotspotZone', 'V2DroneScan', 'V2OutbreakCluster',
     'V2DistrictRiskScore', 'V2AlertEvent', 'V2TreatmentAction',
     'V2TreatmentOutcome', 'V2DiagnosisFeedback', 'V2FarmPestRisk',
+    'V2Job', 'V2ScoringConfig',
   ];
 
   for (const model of models) {

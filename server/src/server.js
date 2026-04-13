@@ -5,6 +5,13 @@ import app from './app.js';
 import { config } from './config/index.js';
 import prisma from './config/database.js';
 import { startNotificationCron, stopNotificationCron } from './modules/autoNotifications/cron.js';
+import {
+  loadThresholdsFromDb,
+  startWorker,
+  stopAllWorkers,
+  expireStaleAlerts,
+  pruneJobs,
+} from '../intelligence/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +54,34 @@ async function main() {
     startNotificationCron();
   }
 
+  // ── Intelligence module startup ──
+  // Load configurable scoring thresholds from DB (falls back to defaults)
+  await loadThresholdsFromDb();
+
+  if (config.nodeEnv !== 'test') {
+    // Start background job workers for async intelligence processing
+    startWorker('satellite_ingest', async (payload) => {
+      const { ingestSatelliteScan } = await import('../intelligence/dist/services/satellite.service.js');
+      await ingestSatelliteScan(payload);
+    });
+    startWorker('score_farm', async (payload) => {
+      const { computeComponentScores } = await import('../intelligence/dist/services/components.service.js');
+      const { computeFarmPestRisk } = await import('../intelligence/dist/services/scoring.service.js');
+      const components = await computeComponentScores(payload.profileId);
+      await computeFarmPestRisk(components);
+    });
+    startWorker('send_alert', async (payload) => {
+      // Alert delivery hook — log for now, replace with push/SMS when ready
+      console.log(`[alert-worker] Delivering alert ${payload.alertId} to ${payload.targetId}`);
+    });
+
+    // Expire stale alerts every 15 minutes
+    setInterval(() => expireStaleAlerts().catch(console.error), 15 * 60 * 1000);
+
+    // Prune completed/failed jobs older than 7 days, once per hour
+    setInterval(() => pruneJobs(7).catch(console.error), 60 * 60 * 1000);
+  }
+
   const host = '0.0.0.0';
   const server = app.listen(config.port, host, () => {
     console.log(`[SERVER] Farroway running on http://${host}:${config.port}`);
@@ -61,6 +96,7 @@ async function main() {
     console.log(`\n[SERVER] ${signal} received. Shutting down gracefully...`);
     server.close(async () => {
       stopNotificationCron();
+      stopAllWorkers();
       await prisma.$disconnect();
       console.log('[SERVER] Shut down complete.');
       process.exit(0);

@@ -425,6 +425,260 @@ const VOICE_MAP = {
     ha: 'Sauke rahoton ka.',
     tw: 'Twe wo report no.',
   },
+
+  // ─── Pest Risk Check ─────────────────────────────────────────
+  'pest.start': {
+    en: 'Let us check your crops for problems.',
+    fr: 'Vérifions vos cultures pour détecter des problèmes.',
+    sw: 'Tuangalie mazao yako kwa matatizo.',
+    ha: 'Mu bincika amfanin gonarka don matsaloli.',
+    tw: 'Ma yɛnhwɛ wo nnɔbae mu hɔ sɛ asɛm bi wɔ hɔ.',
+  },
+  'pest.chooseCrop': {
+    en: 'Tap your crop and growth stage.',
+    fr: 'Choisissez votre culture et le stade de croissance.',
+    sw: 'Chagua zao lako na hatua ya ukuaji.',
+    ha: 'Zaɓi amfanin gonarka da matakin girma.',
+    tw: 'Fa wo aduan ne nkɔso gyinabea.',
+  },
+  'pest.takePhotos': {
+    en: 'Take three photos. A leaf close-up, the whole plant, and a wide field view.',
+    fr: 'Prenez trois photos. Un gros plan de feuille, la plante entière, et une vue large du champ.',
+    sw: 'Piga picha tatu. Picha ya karibu ya jani, mmea mzima, na mtazamo mpana wa shamba.',
+    ha: 'Ɗauki hotuna uku. Hoton ganyen da ke kusa, dukan tsiro, da fadin gonar.',
+    tw: 'Fa mfonini mmiɛnsa. Nhahan mu mfonini, dua no nyinaa, ne afuw no mu mfonini tɛtrɛtɛ.',
+  },
+  'pest.photoRetake': {
+    en: 'This photo was not clear. Please take it again.',
+    fr: 'Cette photo n\'est pas nette. Veuillez la reprendre.',
+    sw: 'Picha hii haikuwa wazi. Tafadhali piga tena.',
+    ha: 'Wannan hoton bai bayyana ba. Da fatan za a sake ɗauka.',
+    tw: 'Saa mfonini yi mu nna hɔ. Meserɛ wo fa bio.',
+  },
+  'pest.answerQuestions': {
+    en: 'Answer these questions about your crops. Tap yes, no, or unsure.',
+    fr: 'Répondez à ces questions sur vos cultures. Appuyez oui, non, ou pas sûr.',
+    sw: 'Jibu maswali haya kuhusu mazao yako. Bonyeza ndiyo, hapana, au sina uhakika.',
+    ha: 'Amsa waɗannan tambayoyi game da amfanin gonarka. Danna eh, a\'a, ko ban tabbata ba.',
+    tw: 'Bua nsɛmmisa yi fa wo nnɔbae ho. Fa aane, dabi, anaa mennim.',
+  },
+  'pest.submit': {
+    en: 'Tap submit to send your pest report.',
+    fr: 'Appuyez sur envoyer pour soumettre votre rapport.',
+    sw: 'Bonyeza tuma kutuma ripoti yako ya wadudu.',
+    ha: 'Danna aika don tura rahoton ƙwari.',
+    tw: 'Fa soma de bɛma wo mmoa ho amanneɛ akɔ.',
+  },
+  'pest.submitting': {
+    en: 'Sending your report now. Please wait.',
+    fr: 'Envoi de votre rapport en cours. Veuillez patienter.',
+    sw: 'Inatuma ripoti yako sasa. Tafadhali subiri.',
+    ha: 'Ana tura rahotonka yanzu. Da fatan za a jira.',
+    tw: 'Wɔresoma wo amanneɛ no seesei. Meserɛ wo twɛn kakra.',
+  },
+
+  // ─── Pest Risk Result ────────────────────────────────────────
+  'pest.result': {
+    en: 'Here is what we found on your farm.',
+    fr: 'Voici ce que nous avons trouvé sur votre ferme.',
+    sw: 'Hiki ndicho tulichopata kwenye shamba lako.',
+    ha: 'Ga abin da muka gano a gonarka.',
+    tw: 'Nea yɛhuu wɔ wo kurom no ni.',
+  },
+  'pest.result.low': {
+    en: 'Your crops look healthy. Keep monitoring.',
+    fr: 'Vos cultures semblent saines. Continuez à surveiller.',
+    sw: 'Mazao yako yanaonekana mazuri. Endelea kufuatilia.',
+    ha: 'Amfanin gonarka suna da kyau. Ci gaba da lura.',
+    tw: 'Wo nnɔbae no yɛ pa. Kɔ so hwɛ so.',
+  },
+  'pest.result.high': {
+    en: 'We found a problem. Follow the treatment advice below.',
+    fr: 'Nous avons trouvé un problème. Suivez les conseils de traitement ci-dessous.',
+    sw: 'Tumepata tatizo. Fuata ushauri wa matibabu hapo chini.',
+    ha: 'Mun sami matsala. Bi shawarar magani da ke ƙasa.',
+    tw: 'Yɛahu asɛm bi. Di ayaresa no afotu a ɛwɔ aseɛ no so.',
+  },
+  'pest.result.uncertain': {
+    en: 'We are not sure yet. Please send more photos or wait for a field officer visit.',
+    fr: 'Nous ne sommes pas encore sûrs. Envoyez plus de photos ou attendez la visite d\'un agent.',
+    sw: 'Hatuna uhakika bado. Tafadhali tuma picha zaidi au subiri ziara ya afisa.',
+    ha: 'Ba mu da tabbas ba tukuna. Tura ƙarin hotuna ko ka jira ziyarar jami\'i.',
+    tw: 'Yɛnnim pɛpɛɛpɛ da. Meserɛ wo fa mfonini foforo anaa twɛn ɔfesɛ no.',
+  },
+
+  // ─── Land Boundary Capture ───────────────────────────────────
+  'boundary.start': {
+    en: 'Let us map your farm boundary.',
+    fr: 'Cartographions les limites de votre ferme.',
+    sw: 'Tuandae mpaka wa shamba lako.',
+    ha: 'Mu zana iyakar gonarka.',
+    tw: 'Ma yɛnhyɛ wo kurom ahyeɛ no aseɛ.',
+  },
+  'boundary.chooseMethod': {
+    en: 'Choose GPS walk to trace your farm, or place points on the map.',
+    fr: 'Choisissez la marche GPS pour tracer votre ferme, ou placez des points sur la carte.',
+    sw: 'Chagua kutembea kwa GPS kutambua shamba lako, au weka alama kwenye ramani.',
+    ha: 'Zaɓi tafiya da GPS don bin iyakar gonarka, ko sanya maki a taswira.',
+    tw: 'Fa GPS nantew de bɛhyɛ wo kurom aseɛ, anaa fa tɔnk wo map no so.',
+  },
+  'boundary.walking': {
+    en: 'Walk around your farm boundary now. We are recording your path.',
+    fr: 'Faites le tour de votre ferme maintenant. Nous enregistrons votre chemin.',
+    sw: 'Tembea kuzunguka mpaka wa shamba lako sasa. Tunarekodi njia yako.',
+    ha: 'Yi tafiya a gefen gonarka yanzu. Muna yin rikodin hanyarka.',
+    tw: 'Nante fa wo kurom ahyeɛ no ho seesei. Yɛrekyerɛw wo kwan no.',
+  },
+  'boundary.addPoint': {
+    en: 'Tap to add a point. You need at least three points.',
+    fr: 'Appuyez pour ajouter un point. Il faut au moins trois points.',
+    sw: 'Bonyeza kuongeza alama. Unahitaji angalau alama tatu.',
+    ha: 'Danna don ƙara maki. Kuna bukata aƙalla maki uku.',
+    tw: 'Fa pene so de bɛka tɔnk bi ho. Wohia tɔnk mmiɛnsa pɛ.',
+  },
+  'boundary.saved': {
+    en: 'Your farm boundary has been saved.',
+    fr: 'Les limites de votre ferme ont été enregistrées.',
+    sw: 'Mpaka wa shamba lako umehifadhiwa.',
+    ha: 'An adana iyakar gonarka.',
+    tw: 'Wɔakora wo kurom ahyeɛ no.',
+  },
+  'boundary.warning': {
+    en: 'The boundary has a problem. Please check and try again.',
+    fr: 'La limite a un problème. Veuillez vérifier et réessayer.',
+    sw: 'Mpaka una tatizo. Tafadhali angalia na ujaribu tena.',
+    ha: 'Iyakar tana da matsala. Da fatan za a duba ka sake gwadawa.',
+    tw: 'Ahyeɛ no wɔ asɛm bi. Meserɛ wo hwɛ na bɔ mmɔden bio.',
+  },
+
+  // ─── Progress / Harvest ──────────────────────────────────────
+  'progress.start': {
+    en: 'Update your crop progress.',
+    fr: 'Mettez à jour la progression de votre culture.',
+    sw: 'Sasisha maendeleo ya zao lako.',
+    ha: 'Sabunta ci gaban amfanin gonarka.',
+    tw: 'Sesa wo aduan nkɔso.',
+  },
+  'progress.chooseStage': {
+    en: 'Tap your current crop stage.',
+    fr: 'Appuyez sur le stade actuel de votre culture.',
+    sw: 'Bonyeza hatua ya sasa ya zao lako.',
+    ha: 'Danna matakin amfanin gonarka na yanzu.',
+    tw: 'Fa wo aduan gyinabea a ɛwɔ seesei.',
+  },
+  'progress.condition': {
+    en: 'How is your crop doing? Tap good, average, or poor.',
+    fr: 'Comment va votre culture ? Appuyez bon, moyen ou mauvais.',
+    sw: 'Zao lako likoje? Bonyeza nzuri, wastani, au mbaya.',
+    ha: 'Yaya amfanin gonarka? Danna mai kyau, matsakaici, ko mara kyau.',
+    tw: 'Ɛte sɛn wo aduan no te? Fa eye, ɛyɛ kakra, anaa ɛnyɛ.',
+  },
+  'progress.harvest': {
+    en: 'Record your harvest details.',
+    fr: 'Enregistrez les détails de votre récolte.',
+    sw: 'Rekodi maelezo ya mavuno yako.',
+    ha: 'Yi rikodin cikakken bayanin girbin ka.',
+    tw: 'Kyerɛw wo twabere no mu nsɛm.',
+  },
+  'progress.saved': {
+    en: 'Your crop progress has been saved.',
+    fr: 'La progression de votre culture a été enregistrée.',
+    sw: 'Maendeleo ya zao lako yamehifadhiwa.',
+    ha: 'An adana ci gaban amfanin gonarka.',
+    tw: 'Wɔakora wo aduan nkɔso no.',
+  },
+
+  // ─── Treatment Feedback ──────────────────────────────────────
+  'treatment.start': {
+    en: 'Tell us how the treatment went.',
+    fr: 'Dites-nous comment le traitement s\'est passé.',
+    sw: 'Tuambie matibabu yalikuwaje.',
+    ha: 'Gaya mana yadda maganin ya tafi.',
+    tw: 'Ka kyerɛ yɛn sɛnea ayaresa no kɔeɛ.',
+  },
+  'treatment.chooseType': {
+    en: 'What treatment did you use? Tap to choose.',
+    fr: 'Quel traitement avez-vous utilisé ? Appuyez pour choisir.',
+    sw: 'Ulitumia matibabu gani? Bonyeza kuchagua.',
+    ha: 'Wane magani ka yi amfani da shi? Danna don zaɓa.',
+    tw: 'Ayaresa bɛn na wode diiɛ? Fa pene so de bɛfa.',
+  },
+  'treatment.outcome': {
+    en: 'How did it work? Tap resolved, improved, same, or worse.',
+    fr: 'Comment ça a marché ? Appuyez résolu, amélioré, pareil, ou pire.',
+    sw: 'Ilifanyaje kazi? Bonyeza imetatuliwa, imeboreshwa, sawa, au mbaya zaidi.',
+    ha: 'Yaya ya yi aiki? Danna an warware, ya inganta, iri ɗaya, ko ya tsananta.',
+    tw: 'Ɛyɛɛ dɛn? Fa ewie, ɛyɛɛ yie, ɛyɛ saa ara, anaa ɛyɛɛ bɔne.',
+  },
+  'treatment.saved': {
+    en: 'Your treatment feedback has been saved. Thank you.',
+    fr: 'Votre retour sur le traitement a été enregistré. Merci.',
+    sw: 'Maoni yako ya matibabu yamehifadhiwa. Asante.',
+    ha: 'An adana ra\'ayin ka game da maganin. Na gode.',
+    tw: 'Wɔakora wo ayaresa ho nsɛm. Meda wo ase.',
+  },
+
+  // ─── Seed Scan ───────────────────────────────────────────────
+  'seedScan.start': {
+    en: 'Let us check your seeds.',
+    fr: 'Vérifions vos semences.',
+    sw: 'Tuangalie mbegu zako.',
+    ha: 'Mu bincika iririnku.',
+    tw: 'Ma yɛnhwɛ wo aba no.',
+  },
+  'seedScan.takePhoto': {
+    en: 'Take a photo of the seed packet label.',
+    fr: 'Prenez une photo de l\'étiquette du paquet de semences.',
+    sw: 'Piga picha ya lebo ya pakiti ya mbegu.',
+    ha: 'Ɗauki hoton lakabi a fakitin iri.',
+    tw: 'Fa aba no pakɛt nhyɛsoɔ no mfonini.',
+  },
+  'seedScan.result': {
+    en: 'Here is what we found about your seeds.',
+    fr: 'Voici ce que nous avons trouvé sur vos semences.',
+    sw: 'Hiki ndicho tulichopata kuhusu mbegu zako.',
+    ha: 'Ga abin da muka gano game da iririnku.',
+    tw: 'Nea yɛhuu fa wo aba no ho ni.',
+  },
+
+  // ─── Error / Offline States ──────────────────────────────────
+  'error.general': {
+    en: 'Something went wrong. Please try again.',
+    fr: 'Quelque chose s\'est mal passé. Veuillez réessayer.',
+    sw: 'Kuna tatizo limetokea. Tafadhali jaribu tena.',
+    ha: 'Wani abu ya faru. Da fatan za a sake gwadawa.',
+    tw: 'Biribi akɔ basaa. Meserɛ wo bɔ mmɔden bio.',
+  },
+  'error.offline': {
+    en: 'You are offline. Your data is saved and will send when the network returns.',
+    fr: 'Vous êtes hors ligne. Vos données sont enregistrées et seront envoyées quand le réseau reviendra.',
+    sw: 'Huna mtandao. Data yako imehifadhiwa na itatumwa mtandao ukirudi.',
+    ha: 'Ba ka da intanet. An adana bayananku kuma za a aika idan network ya dawo.',
+    tw: 'Wonni intanɛt. Wɔakora wo data na wɔbɛsoma bere a network aba bio.',
+  },
+  'error.retry': {
+    en: 'That did not work. Tap retry to try again.',
+    fr: 'Cela n\'a pas fonctionné. Appuyez réessayer.',
+    sw: 'Haijafanya kazi. Bonyeza jaribu tena.',
+    ha: 'Bai yi aiki ba. Danna sake gwadawa.',
+    tw: 'Ɛanyɛ adwuma. Fa so bio.',
+  },
+
+  // ─── Profile Setup ───────────────────────────────────────────
+  'setup.welcome': {
+    en: 'Let us set up your profile.',
+    fr: 'Configurons votre profil.',
+    sw: 'Tuandae wasifu wako.',
+    ha: 'Mu shirya bayananku.',
+    tw: 'Ma yɛnhyehyɛ wo ho nsɛm.',
+  },
+  'setup.saved': {
+    en: 'Your profile has been saved.',
+    fr: 'Votre profil a été enregistré.',
+    sw: 'Wasifu wako umehifadhiwa.',
+    ha: 'An adana bayananku.',
+    tw: 'Wɔakora wo ho nsɛm.',
+  },
 };
 
 // ─── BCP-47 language tags ───────────────────────────────────────

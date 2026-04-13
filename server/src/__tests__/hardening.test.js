@@ -263,7 +263,7 @@ describe('Empty States', () => {
   it('AdminUsersPage has Clear filters action on EmptyState', () => {
     const src = adminUsers();
     expect(src).toContain("import EmptyState from '../components/EmptyState.jsx'");
-    expect(src).toContain("'Clear filters'");
+    expect(src).toContain("'Show All Users'");
     expect(src).toContain('<EmptyState');
   });
 });

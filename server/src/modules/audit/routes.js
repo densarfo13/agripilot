@@ -14,8 +14,13 @@ router.get('/application/:applicationId',
   validateParamUUID('applicationId'),
   authorize('super_admin', 'institutional_admin', 'reviewer'),
   asyncHandler(async (req, res) => {
+    const where = { applicationId: req.params.applicationId };
+    // Org-scope: non-super-admins only see audit logs from their own organization
+    if (req.organizationId) {
+      where.organizationId = req.organizationId;
+    }
     const logs = await prisma.auditLog.findMany({
-      where: { applicationId: req.params.applicationId },
+      where,
       include: { user: { select: { id: true, fullName: true, role: true } } },
       orderBy: { createdAt: 'desc' },
       take: 200,

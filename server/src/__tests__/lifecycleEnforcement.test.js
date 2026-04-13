@@ -381,38 +381,23 @@ describe('Atomic farm setup — transaction integrity', () => {
 describe('QuickUpdateFlow — localized option factory functions', () => {
   const code = readFile('src/components/QuickUpdateFlow.jsx');
 
-  it('uses getActionOptions factory function', () => {
-    expect(code).toContain('function getActionOptions(t)');
-    expect(code).toContain('getActionOptions(t)');
+  it('uses getActivityOptions factory function with t()', () => {
+    expect(code).toContain('function getActivityOptions(t');
+    expect(code).toContain('getActivityOptions(t');
   });
 
-  it('uses getStageOptions factory function', () => {
-    expect(code).toContain('function getStageOptions(t)');
-    expect(code).toContain('getStageOptions(t)');
+  it('activity options use t() for labels', () => {
+    expect(code).toContain("t('update.activity.progress')");
+    expect(code).toContain("t('update.activity.harvest')");
+    expect(code).toContain("t('update.activity.spray')");
+    expect(code).toContain("t('update.activity.issue')");
+    expect(code).toContain("t('update.activity.other')");
   });
 
-  it('uses getConditionOptions factory function', () => {
-    expect(code).toContain('function getConditionOptions(t)');
-    expect(code).toContain('getConditionOptions(t)');
-  });
-
-  it('no hardcoded English in action options', () => {
+  it('no hardcoded English in activity options', () => {
     expect(code).not.toContain("label: 'Crop Progress'");
     expect(code).not.toContain("label: 'Upload Photo'");
     expect(code).not.toContain("label: 'Report Issue'");
-  });
-
-  it('no hardcoded English in stage options', () => {
-    expect(code).not.toContain("label: 'Planting'");
-    expect(code).not.toContain("label: 'Growing'");
-    expect(code).not.toContain("label: 'Flowering'");
-    expect(code).not.toContain("label: 'Harvesting'");
-  });
-
-  it('no hardcoded English in condition options', () => {
-    expect(code).not.toContain("label: 'Good'");
-    expect(code).not.toContain("label: 'Okay'");
-    expect(code).not.toContain("label: 'Problem'");
   });
 });
 

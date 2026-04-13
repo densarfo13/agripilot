@@ -292,7 +292,7 @@ const S = {
     padding: '0.6rem 0.75rem', background: '#1E293B', border: '1px solid #243041',
     borderRadius: '6px', cursor: 'pointer', minHeight: '44px', position: 'relative',
   },
-  searchInput: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '0.9rem', padding: 0 },
+  searchInput: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '16px', padding: 0 },
   dropdown: {
     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
     background: '#162033', border: '1px solid #243041', borderRadius: '8px',
@@ -326,5 +326,5 @@ const S = {
     padding: '0.2rem 0.5rem', fontSize: '0.78rem', fontWeight: 600,
     cursor: 'pointer', whiteSpace: 'nowrap', border: '1px solid rgba(34,197,94,0.3)',
   },
-  otherInput: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '0.9rem', padding: '0.2rem 0' },
+  otherInput: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '16px', padding: '0.2rem 0', minHeight: '44px' },
 };

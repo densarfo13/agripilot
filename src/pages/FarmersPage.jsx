@@ -324,9 +324,14 @@ export default function FarmersPage() {
                     {displayFarmers.length === 0 && !quickFilter && (
                       <tr><td colSpan={isSuperAdmin ? 10 : 9}>
                         <EmptyState
-                          icon="🌾"
-                          title="No farmers found"
-                          message="Try adjusting your search or status filter, or add your first farmer."
+                          icon="👨‍🌾"
+                          title={search || statusFilter ? 'No farmers match your search' : 'No farmers yet'}
+                          message={search || statusFilter
+                            ? 'Try broadening your search terms or changing the status filter.'
+                            : 'Start by inviting farmers or importing them from a CSV file.'}
+                          action={search || statusFilter
+                            ? { label: 'Clear Search', onClick: () => { setSearch(''); setStatusFilter(''); load(1, '', ''); } }
+                            : canCreate ? { label: 'Invite Farmer', onClick: () => setShowInvite(true) } : undefined}
                           compact
                         />
                       </td></tr>

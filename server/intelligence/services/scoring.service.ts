@@ -2,8 +2,10 @@
  * Farroway Intelligence — Scoring Service
  *
  * Pure computation module implementing all 4 scoring formulas.
- * NO database access — callers are responsible for fetching data.
- * All functions are synchronous.
+ * NO database access — callers fetch data, this module computes.
+ * All weights are read from config/thresholds (hot-reloadable from DB).
+ *
+ * Formula component names match the product specification EXACTLY.
  */
 
 import type {
@@ -17,231 +19,106 @@ import type {
   AlertLevel,
 } from '../types/index.js';
 
-// ── Configurable Weight Constants ──
-
-export const SCORING_WEIGHTS = Object.freeze({
-  farmPestRisk: Object.freeze({
-    image_score: 0.30,
-    verification_score: 0.20,
-    crop_vulnerability_score: 0.10,
-    weather_score: 0.10,
-    historical_score: 0.05,
-    proximity_score: 0.15,
-    verification_response_score: 0.10,
-  }),
-
-  hotspotScore: Object.freeze({
-    ndvi_deviation: 0.35,
-    area_ratio: 0.20,
-    persistence: 0.15,
-    proximity_to_reports: 0.10,
-    weather_correlation: 0.20,
-  }),
-
-  regionalOutbreak: Object.freeze({
-    report_density: 0.25,
-    spread_velocity: 0.10,
-    severity_average: 0.20,
-    crop_overlap: 0.15,
-    weather_favorability: 0.15,
-    confirmation_rate: 0.15,
-  }),
-
-  alertConfidence: Object.freeze({
-    data_quality: 0.15,
-    source_agreement: 0.25,
-    historical_accuracy: 0.35,
-    verification_completeness: 0.15,
-    temporal_consistency: 0.10,
-  }),
-});
-
-// ── Risk Level Thresholds ──
-
-export const RISK_THRESHOLDS = Object.freeze({
-  low: Object.freeze({ min: 0, max: 39 }),
-  moderate: Object.freeze({ min: 40, max: 64 }),
-  high: Object.freeze({ min: 65, max: 79 }),
-  urgent: Object.freeze({ min: 80, max: 100 }),
-});
+import {
+  getRiskThresholds,
+  getFarmRiskWeights,
+  getHotspotWeights,
+  getOutbreakWeights,
+  getAlertConfidenceWeights,
+} from '../config/thresholds.js';
 
 // ── Crop Stage Vulnerability Lookup ──
 
 const CROP_STAGE_VULNERABILITY: Record<string, Record<string, number>> = {
-  maize: {
-    seedling: 85,
-    vegetative: 50,
-    flowering: 80,
-    grain_fill: 60,
-    maturity: 30,
-  },
-  wheat: {
-    seedling: 80,
-    tillering: 55,
-    flowering: 85,
-    grain_fill: 55,
-    maturity: 25,
-  },
-  rice: {
-    seedling: 90,
-    vegetative: 45,
-    flowering: 80,
-    grain_fill: 50,
-    maturity: 20,
-  },
-  soybean: {
-    seedling: 85,
-    vegetative: 50,
-    flowering: 75,
-    pod_fill: 55,
-    maturity: 25,
-  },
-  cotton: {
-    seedling: 80,
-    vegetative: 45,
-    flowering: 75,
-    boll_development: 60,
-    maturity: 30,
-  },
-  sorghum: {
-    seedling: 80,
-    vegetative: 50,
-    flowering: 75,
-    grain_fill: 55,
-    maturity: 25,
-  },
+  maize:   { seedling: 85, vegetative: 50, flowering: 80, grain_fill: 60, maturity: 30 },
+  wheat:   { seedling: 80, tillering: 55, flowering: 85, grain_fill: 55, maturity: 25 },
+  rice:    { seedling: 90, vegetative: 45, flowering: 80, grain_fill: 50, maturity: 20 },
+  soybean: { seedling: 85, vegetative: 50, flowering: 75, pod_fill: 55, maturity: 25 },
+  cotton:  { seedling: 80, vegetative: 45, flowering: 75, boll_development: 60, maturity: 30 },
+  sorghum: { seedling: 80, vegetative: 50, flowering: 75, grain_fill: 55, maturity: 25 },
+  cassava: { seedling: 75, vegetative: 40, tuber_formation: 55, maturity: 20 },
+  beans:   { seedling: 85, vegetative: 50, flowering: 80, pod_fill: 55, maturity: 25 },
 };
 
 const DEFAULT_VULNERABILITY = 50;
 
-// ── Verification Question Categories ──
+// ── Verification question scoring ──
 
-const PEST_INDICATING_QUESTIONS = new Set([
-  'leaves_eaten',
-  'spreading',
-  'insects_visible',
-  'widespread',
-]);
+const PEST_INDICATING = new Set(['leaves_eaten', 'spreading', 'insects_visible', 'widespread']);
+const ENVIRONMENTAL = new Set(['recent_rain', 'recent_heat']);
 
-const ENVIRONMENTAL_QUESTIONS = new Set([
-  'recent_rain',
-  'recent_heat',
-]);
+// ── Helpers ──
 
-// ── Helper Functions ──
-
-/**
- * Clamp a numeric value between min and max bounds.
- */
 export function clamp(value: number, min: number = 0, max: number = 100): number {
   if (Number.isNaN(value)) return min;
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * Compute a weighted sum from component values and their weights.
- * Missing components default to 0. Result is clamped 0-100.
- */
 export function weightedSum(
   components: Record<string, number>,
   weights: Record<string, number>,
 ): number {
   let sum = 0;
   for (const key of Object.keys(weights)) {
-    const value = components[key] ?? 0;
-    sum += clamp(value, 0, 100) * weights[key];
+    sum += clamp(components[key] ?? 0, 0, 100) * weights[key];
   }
   return clamp(sum);
 }
 
-// ── Risk/Severity/Alert Classification ──
+// ── Risk/Severity/Alert classification (configurable thresholds) ──
 
-/**
- * Map a 0-100 score to a RiskLevel.
- */
 export function riskLevelFromScore(score: number): RiskLevel {
   const s = clamp(score);
-  if (s >= RISK_THRESHOLDS.urgent.min) return 'urgent';
-  if (s >= RISK_THRESHOLDS.high.min) return 'high';
-  if (s >= RISK_THRESHOLDS.moderate.min) return 'moderate';
+  const t = getRiskThresholds();
+  if (s > t.high_max) return 'urgent';
+  if (s > t.moderate_max) return 'high';
+  if (s > t.low_max) return 'moderate';
   return 'low';
 }
 
-/**
- * Map a 0-100 hotspot score to a HotspotSeverity.
- * Uses the same numeric bands as RiskLevel but with domain-specific labels.
- */
 export function severityFromHotspotScore(score: number): HotspotSeverity {
   const s = clamp(score);
-  if (s >= 80) return 'critical';
-  if (s >= 65) return 'high';
-  if (s >= 40) return 'moderate';
+  const t = getRiskThresholds();
+  if (s > t.high_max) return 'critical';
+  if (s > t.moderate_max) return 'high';
+  if (s > t.low_max) return 'moderate';
   return 'low';
 }
 
-/**
- * Map a 0-100 outbreak score to an AlertLevel.
- */
 export function alertLevelFromOutbreakScore(score: number): AlertLevel {
   const s = clamp(score);
-  if (s >= 80) return 'urgent';
-  if (s >= 65) return 'high_risk';
-  if (s >= 40) return 'elevated';
+  const t = getRiskThresholds();
+  if (s > t.high_max) return 'urgent';
+  if (s > t.moderate_max) return 'high_risk';
+  if (s > t.low_max) return 'elevated';
   return 'watch';
 }
 
-// ── Domain Helpers ──
+// ── Domain helpers ──
 
-/**
- * Lookup crop stage vulnerability (0-100) based on crop type and growth stage.
- * Seedling and flowering stages are most vulnerable.
- * Returns a default mid-range value for unknown combinations.
- */
-export function computeCropStageVulnerability(
-  cropType: string,
-  growthStage: string,
-): number {
+export function computeCropStageVulnerability(cropType: string, growthStage: string): number {
   const crop = cropType.toLowerCase().trim();
   const stage = growthStage.toLowerCase().trim();
   return CROP_STAGE_VULNERABILITY[crop]?.[stage] ?? DEFAULT_VULNERABILITY;
 }
 
-/**
- * Convert farmer yes/no/unsure questionnaire answers into a 0-100 risk signal.
- *
- * - "yes" to pest-indicating questions (leaves_eaten, spreading, insects_visible,
- *   widespread) contributes significant risk.
- * - "yes" to environmental questions (recent_rain, recent_heat) adds moderate risk.
- * - "unsure" contributes a small amount.
- * - "no" contributes nothing.
- */
-export function computeVerificationSignal(
-  answers: Record<string, string>,
-): number {
-  const PEST_YES_POINTS = 18;
-  const PEST_UNSURE_POINTS = 6;
-  const ENV_YES_POINTS = 8;
-  const ENV_UNSURE_POINTS = 3;
-
+export function computeVerificationSignal(answers: Record<string, string>): number {
   let score = 0;
-
   for (const [question, answer] of Object.entries(answers)) {
-    const normalised = answer.toLowerCase().trim();
     const key = question.toLowerCase().trim();
-
-    if (PEST_INDICATING_QUESTIONS.has(key)) {
-      if (normalised === 'yes') score += PEST_YES_POINTS;
-      else if (normalised === 'unsure') score += PEST_UNSURE_POINTS;
-    } else if (ENVIRONMENTAL_QUESTIONS.has(key)) {
-      if (normalised === 'yes') score += ENV_YES_POINTS;
-      else if (normalised === 'unsure') score += ENV_UNSURE_POINTS;
+    const val = answer.toLowerCase().trim();
+    if (PEST_INDICATING.has(key)) {
+      if (val === 'yes') score += 18;
+      else if (val === 'unsure') score += 6;
+    } else if (ENVIRONMENTAL.has(key)) {
+      if (val === 'yes') score += 8;
+      else if (val === 'unsure') score += 3;
     }
   }
-
   return clamp(score);
 }
 
-// ── Internal: Build a ScoringResult ──
+// ── Internal builder ──
 
 function buildResult(
   components: Record<string, number>,
@@ -249,7 +126,6 @@ function buildResult(
   levelFn: (score: number) => string,
 ): ScoringResult {
   const score = weightedSum(components, weights);
-
   return {
     score,
     level: levelFn(score),
@@ -259,50 +135,73 @@ function buildResult(
   };
 }
 
-// ── Formula 1: Farm Pest Risk Score ──
+// ── Formula 1: Farm Pest Risk ──
+//
+// farm_pest_risk =
+//   (image_score * 0.30) +
+//   (field_stress_score * 0.20) +
+//   (crop_stage_vulnerability * 0.10) +
+//   (weather_suitability * 0.10) +
+//   (nearby_outbreak_density * 0.15) +
+//   (farm_history_score * 0.05) +
+//   (verification_response_score * 0.10)
 
-export function computeFarmPestRisk(
-  components: FarmPestRiskComponents,
-): ScoringResult {
+export function computeFarmPestRisk(components: FarmPestRiskComponents): ScoringResult {
   return buildResult(
     components as unknown as Record<string, number>,
-    SCORING_WEIGHTS.farmPestRisk as unknown as Record<string, number>,
+    getFarmRiskWeights() as unknown as Record<string, number>,
     riskLevelFromScore,
   );
 }
 
 // ── Formula 2: Hotspot Score ──
+//
+// hotspot_score =
+//   (anomaly_intensity * 0.35) +
+//   (temporal_change * 0.20) +
+//   (cluster_compactness * 0.15) +
+//   (crop_sensitivity * 0.10) +
+//   (local_validation_evidence * 0.20)
 
-export function computeHotspotScore(
-  components: HotspotScoreComponents,
-): ScoringResult {
+export function computeHotspotScore(components: HotspotScoreComponents): ScoringResult {
   return buildResult(
     components as unknown as Record<string, number>,
-    SCORING_WEIGHTS.hotspotScore as unknown as Record<string, number>,
+    getHotspotWeights() as unknown as Record<string, number>,
     severityFromHotspotScore,
   );
 }
 
 // ── Formula 3: Regional Outbreak Score ──
+//
+// regional_outbreak_score =
+//   (confirmed_reports * 0.25) +
+//   (unconfirmed_signals * 0.10) +
+//   (satellite_anomalies * 0.20) +
+//   (weather_favorability * 0.15) +
+//   (seasonal_baseline_match * 0.15) +
+//   (intervention_failure_rate * 0.15)
 
-export function computeRegionalOutbreakScore(
-  components: RegionalOutbreakComponents,
-): ScoringResult {
+export function computeRegionalOutbreakScore(components: RegionalOutbreakComponents): ScoringResult {
   return buildResult(
     components as unknown as Record<string, number>,
-    SCORING_WEIGHTS.regionalOutbreak as unknown as Record<string, number>,
+    getOutbreakWeights() as unknown as Record<string, number>,
     alertLevelFromOutbreakScore,
   );
 }
 
-// ── Formula 4: Alert Confidence Score ──
+// ── Formula 4: Alert Confidence ──
+//
+// alert_confidence =
+//   (model_confidence * 0.35) +
+//   (signal_agreement * 0.25) +
+//   (data_quality * 0.15) +
+//   (spatial_relevance * 0.15) +
+//   (recent_trend_strength * 0.10)
 
-export function computeAlertConfidence(
-  components: AlertConfidenceComponents,
-): ScoringResult {
+export function computeAlertConfidence(components: AlertConfidenceComponents): ScoringResult {
   return buildResult(
     components as unknown as Record<string, number>,
-    SCORING_WEIGHTS.alertConfidence as unknown as Record<string, number>,
+    getAlertConfidenceWeights() as unknown as Record<string, number>,
     riskLevelFromScore,
   );
 }
