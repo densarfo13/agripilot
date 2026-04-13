@@ -86,7 +86,13 @@ export function validateFarmProfilePayload(body = {}) {
   if (!farmName) errors.farmName = 'Farm name is required';
   if (!country) errors.country = 'Country is required';
   if (!location) errors.location = 'Location is required';
-  if (!cropType) errors.cropType = 'Crop type is required';
+  if (!cropType) {
+    errors.cropType = 'Crop type is required';
+  } else if (cropType.toUpperCase() === 'OTHER') {
+    errors.cropType = 'Please enter your crop name';
+  } else if (cropType.toUpperCase().startsWith('OTHER:') && cropType.slice(6).trim().length < 2) {
+    errors.cropType = 'Crop name must be at least 2 characters';
+  }
 
   if (size === null) errors.size = 'Farm size is required';
   else if (Number.isNaN(size) || size <= 0) errors.size = 'Farm size must be greater than 0';

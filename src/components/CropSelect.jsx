@@ -80,14 +80,17 @@ export default function CropSelect({
     );
   }, [search]);
 
+  // "Other" entry with descriptive hint for the dropdown
+  const OTHER_DISPLAY = { ...OTHER_CROP, displayName: 'Other (type your crop)' };
+
   // Build the rendered list: filtered crops + OTHER
   const displayList = useMemo(() => {
     if (search.trim()) {
       const q = search.toLowerCase().trim();
-      const otherMatch = 'other'.includes(q) || OTHER_CROP.name.toLowerCase().includes(q);
-      return otherMatch ? [...filtered, OTHER_CROP] : filtered;
+      const otherMatch = 'other'.includes(q) || 'type your crop'.includes(q);
+      return otherMatch ? [...filtered, OTHER_DISPLAY] : filtered;
     }
-    return [...ALL_CROPS, OTHER_CROP];
+    return [...ALL_CROPS, OTHER_DISPLAY];
   }, [search, filtered]);
 
   // ── Close on outside click ─────────────────────────────
@@ -159,7 +162,7 @@ export default function CropSelect({
             style={S.otherInput}
             value={parsed.customCropName || ''}
             onChange={(e) => onChange(buildOtherCropValue(e.target.value))}
-            placeholder="Enter your crop name"
+            placeholder="Enter your crop"
             required={required}
             disabled={disabled}
             autoFocus
@@ -238,7 +241,7 @@ export default function CropSelect({
                 No crops match "{search}" — select <strong>Other</strong> below
                 <div style={{ ...S.option, marginTop: '0.5rem', background: 'rgba(34,197,94,0.1)' }} onClick={() => selectCrop('OTHER')}>
                   <span style={S.optionIcon}>🌱</span>
-                  <span style={S.optionName}>{OTHER_CROP.name}</span>
+                  <span style={S.optionName}>Other (type your crop)</span>
                 </div>
               </div>
             ) : (
@@ -255,7 +258,7 @@ export default function CropSelect({
                     onMouseEnter={() => setHighlightIdx(i)}
                   >
                     <span style={S.optionIcon}>{getCropIcon(c.code)}</span>
-                    <span style={S.optionName}>{c.name}</span>
+                    <span style={S.optionName}>{c.displayName || c.name}</span>
                     {c.category !== 'other' && (
                       <span style={S.optionCategory}>{CATEGORY_LABELS[c.category] || c.category}</span>
                     )}

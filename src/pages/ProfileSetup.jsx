@@ -8,10 +8,10 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useDraft } from '../utils/useDraft.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, toHectares } from '../utils/landSize.js';
+import { parseCropValue } from '../utils/crops.js';
+import CropSelect from '../components/CropSelect.jsx';
 import VoicePromptButton from '../components/VoicePromptButton.jsx';
 import VoiceBar from '../components/VoiceBar.jsx';
-
-const CROP_OPTIONS = ['maize', 'cassava', 'rice', 'tomato', 'pepper', 'cocoa', 'yam', 'plantain'];
 
 // Countries where acres are the common unit; everyone else defaults to hectares
 const ACRE_COUNTRIES = ['ghana', 'nigeria', 'kenya', 'uganda', 'tanzania', 'usa', 'uk', 'liberia', 'sierra leone', 'gambia'];
@@ -95,7 +95,7 @@ export default function ProfileSetup() {
       form.country.trim(),
       form.location.trim(),
       form.size.trim(),
-      form.cropType.trim(),
+      form.cropType && (form.cropType !== 'OTHER' || parseCropValue(form.cropType).customCropName),
       form.gpsLat.trim() || form.location.trim(),
       form.gpsLng.trim() || form.location.trim(),
     ];
@@ -321,16 +321,13 @@ export default function ProfileSetup() {
 
           <div style={S.formGroup}>
             <label style={S.label}>{t('setup.mainCrop')}</label>
-            <select
+            <CropSelect
               value={form.cropType}
-              onChange={(e) => updateField('cropType', e.target.value)}
-              style={S.input}
-            >
-              <option value="">{t('setup.selectCrop')}</option>
-              {CROP_OPTIONS.map((c) => (
-                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-              ))}
-            </select>
+              onChange={(code) => updateField('cropType', code)}
+              countryCode={form.country}
+              placeholder={t('setup.selectCrop')}
+              required
+            />
             {fieldErrors.cropType && <p style={S.fieldError}>{fieldErrors.cropType}</p>}
           </div>
 

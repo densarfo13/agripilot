@@ -8,9 +8,24 @@ import { computeLandSizeFields, fromHectares } from '../src/utils/landSize.js';
 
 const router = express.Router();
 
+// ─── Helper: parse stored crop value into structured fields ──
+function parseCrop(stored) {
+  if (!stored) return { cropType: null, cropCategory: null, cropName: null };
+  const upper = stored.toUpperCase().trim();
+  if (upper.startsWith('OTHER:')) {
+    const custom = stored.slice(6).trim();
+    return { cropType: stored, cropCategory: 'other', cropName: custom || null };
+  }
+  if (upper === 'OTHER') {
+    return { cropType: 'OTHER', cropCategory: 'other', cropName: null };
+  }
+  return { cropType: stored, cropCategory: 'standard', cropName: stored };
+}
+
 // ─── Helper: map DB row → frontend-friendly object ──────
 function mapProfile(profile) {
   if (!profile) return null;
+  const crop = parseCrop(profile.crop);
   return {
     id: profile.id,
     farmerUuid: profile.farmerUuid,
@@ -21,6 +36,8 @@ function mapProfile(profile) {
     size: profile.landSizeValue ?? profile.farmSizeAcres,
     sizeUnit: profile.landSizeUnit || (profile.farmSizeAcres != null ? 'ACRE' : null),
     cropType: profile.crop,
+    cropCategory: crop.cropCategory,
+    cropName: crop.cropName,
     gpsLat: profile.latitude,
     gpsLng: profile.longitude,
     locationLabel: profile.locationLabel || null,

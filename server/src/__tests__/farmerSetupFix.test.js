@@ -148,7 +148,7 @@ describe('Crop selector — full dataset, not hardcoded', () => {
     expect(cropSelect).toContain('OTHER_CROP');
     expect(cropSelect).toContain('OTHER');
     expect(cropSelect).toContain('otherInput');
-    expect(cropSelect).toContain('Enter your crop name');
+    expect(cropSelect).toContain('Enter your crop');
   });
 
   it('crops.js has 60+ crop entries', () => {
