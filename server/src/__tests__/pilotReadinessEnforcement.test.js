@@ -269,10 +269,11 @@ describe('ProfileSetup — localization', () => {
     expect(setup).toContain("t('setup.title')");
   });
 
-  it('uses t() for GPS messages', () => {
-    expect(setup).toContain("t('setup.gpsNotSupported')");
-    expect(setup).toContain("t('setup.gpsFailed')");
-    expect(setup).toContain("t('setup.gpsPermissionDenied')");
+  it('uses t() for GPS messages (farmer-friendly)', () => {
+    // After GPS cleanup: technical error keys replaced with single calm fallback
+    expect(setup).toContain("t('location.gpsFallback')");
+    expect(setup).toContain("t('location.farmLocation')");
+    expect(setup).toContain("t('location.getMyLocation')");
   });
 
   it('uses t() for save states', () => {

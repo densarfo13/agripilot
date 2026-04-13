@@ -112,49 +112,40 @@ export default function ProfileSetup() {
     setSaveError('');
   }
 
-  function handleGetGPS() {
+  async function handleGetGPS() {
     setGpsError('');
     setGpsSlowMsg('');
     setLoadingGPS(true);
 
     if (!navigator.geolocation) {
-      setGpsError(t('setup.gpsNotSupported'));
+      setGpsError(t('location.gpsFallback'));
       setLoadingGPS(false);
       safeTrackEvent('gps.unsupported', {});
       return;
     }
 
-    let resolved = false;
-    const slowTimer = setTimeout(() => {
-      if (!resolved) {
-        setGpsSlowMsg(t('setup.gpsSlow'));
-      }
+    let slowTimer = setTimeout(() => {
+      setGpsSlowMsg(t('location.gpsSlow'));
     }, 10000);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolved = true;
-        clearTimeout(slowTimer);
-        updateField('gpsLat', String(position.coords.latitude));
-        updateField('gpsLng', String(position.coords.longitude));
-        setLoadingGPS(false);
-        setGpsSlowMsg('');
-        safeTrackEvent('gps.success', {});
-      },
-      (error) => {
-        resolved = true;
-        clearTimeout(slowTimer);
-        let message = t('setup.gpsFailed');
-        if (error.code === 1) message = t('setup.gpsPermissionDenied');
-        if (error.code === 2) message = t('setup.gpsSignalWeak');
-        if (error.code === 3) message = t('setup.gpsTimeout');
-        setGpsError(message);
-        setLoadingGPS(false);
-        setGpsSlowMsg('');
-        safeTrackEvent('gps.failed', { code: error.code });
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
+    try {
+      const { detectAndResolveLocation } = await import('../utils/geolocation.js');
+      const result = await detectAndResolveLocation();
+      clearTimeout(slowTimer);
+      const label = [result.locality, result.region, result.country].filter(Boolean).join(', ');
+      updateField('gpsLat', String(result.latitude));
+      updateField('gpsLng', String(result.longitude));
+      if (label) updateField('location', label);
+      setGpsSlowMsg('');
+      safeTrackEvent('gps.success', {});
+    } catch {
+      clearTimeout(slowTimer);
+      setGpsError(t('location.gpsFallback'));
+      setGpsSlowMsg('');
+      safeTrackEvent('gps.failed', {});
+    } finally {
+      setLoadingGPS(false);
+    }
   }
 
   async function handleSave() {
@@ -343,54 +334,41 @@ export default function ProfileSetup() {
             {fieldErrors.cropType && <p style={S.fieldError}>{fieldErrors.cropType}</p>}
           </div>
 
-          {/* GPS section */}
+          {/* Farm location — GPS optional, farmer-friendly */}
           <div style={S.gpsBox}>
-            <div style={S.gpsTopRow}>
-              <div>
-                <h3 style={S.gpsHeading}>{t('setup.exactLocation')}</h3>
-                <p style={S.gpsDesc}>
-                  {t('setup.gpsDesc')}
-                </p>
+            <h3 style={S.gpsHeading}>{t('location.farmLocation')}</h3>
+            <p style={S.gpsDesc}>{t('location.gpsOptionalDesc')}</p>
+
+            {form.gpsLat ? (
+              <div style={S.gpsSuccess}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#22C55E' }}>
+                  {form.location || t('location.captured')}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.2rem' }}>
+                  {t('location.capturedCheck')}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGetGPS}
+                  disabled={loadingGPS}
+                  style={S.gpsUpdateBtn}
+                >
+                  {loadingGPS ? t('location.updating') : t('location.update')}
+                </button>
               </div>
+            ) : (
               <button
                 type="button"
                 onClick={handleGetGPS}
                 disabled={loadingGPS}
                 style={{ ...S.gpsBtn, ...(loadingGPS ? { opacity: 0.6 } : {}) }}
               >
-                {loadingGPS ? t('setup.gettingGPS') : t('setup.getLocation')}
+                {loadingGPS ? t('location.detecting') : t('location.getMyLocation')}
               </button>
-            </div>
+            )}
 
-            {gpsError && <p style={S.gpsErrorText}>{gpsError}</p>}
-            {gpsSlowMsg && !gpsError && <p style={S.gpsErrorText}>{gpsSlowMsg}</p>}
-
-            <div style={S.gpsRow}>
-              <div style={{ flex: 1 }}>
-                <label style={S.label}>{t('setup.latitude')}</label>
-                <input
-                  value={form.gpsLat}
-                  onChange={(e) => updateField('gpsLat', e.target.value)}
-                  placeholder="Latitude"
-                  style={S.gpsInput}
-                />
-                {fieldErrors.gpsLat && <p style={S.fieldError}>{fieldErrors.gpsLat}</p>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={S.label}>{t('setup.longitude')}</label>
-                <input
-                  value={form.gpsLng}
-                  onChange={(e) => updateField('gpsLng', e.target.value)}
-                  placeholder="Longitude"
-                  style={S.gpsInput}
-                />
-                {fieldErrors.gpsLng && <p style={S.fieldError}>{fieldErrors.gpsLng}</p>}
-              </div>
-            </div>
-
-            <p style={S.gpsHint}>
-              {t('setup.gpsHint')}
-            </p>
+            {gpsError && <p style={S.gpsSoftMsg}>{gpsError}</p>}
+            {gpsSlowMsg && !gpsError && <p style={S.gpsSoftMsg}>{gpsSlowMsg}</p>}
           </div>
 
           {saveError && <p style={S.saveError}>{saveError}</p>}
@@ -575,32 +553,30 @@ const S = {
     fontSize: '0.875rem',
     whiteSpace: 'nowrap',
   },
-  gpsErrorText: {
-    fontSize: '0.875rem',
-    color: '#FDE68A',
+  gpsSoftMsg: {
+    fontSize: '0.8rem',
+    color: 'rgba(255,255,255,0.55)',
     marginTop: '0.75rem',
+    lineHeight: 1.5,
   },
-  gpsRow: {
-    display: 'flex',
-    gap: '0.75rem',
-    marginTop: '1rem',
-  },
-  gpsInput: {
-    width: '100%',
+  gpsSuccess: {
+    marginTop: '0.75rem',
+    padding: '0.75rem',
     borderRadius: '12px',
-    background: '#0B1220',
-    border: '1px solid rgba(255,255,255,0.1)',
-    padding: '1rem',
-    outline: 'none',
-    color: '#fff',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    minHeight: '44px',
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.2)',
   },
-  gpsHint: {
-    fontSize: '0.75rem',
-    color: 'rgba(255,255,255,0.45)',
-    marginTop: '0.75rem',
+  gpsUpdateBtn: {
+    marginTop: '0.5rem',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: '#86EFAC',
+    background: 'transparent',
+    border: '1px solid rgba(134,239,172,0.3)',
+    borderRadius: '8px',
+    padding: '0.35rem 0.75rem',
+    cursor: 'pointer',
+    minHeight: '36px',
   },
   saveError: {
     fontSize: '0.875rem',

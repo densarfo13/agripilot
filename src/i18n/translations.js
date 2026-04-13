@@ -2659,6 +2659,18 @@ const T = {
   'location.updating': {
     en: 'Updating...', fr: 'Mise à jour...', sw: 'Inasasisha...', ha: 'Ana sabuntawa...', tw: 'Ɛreyɛ foforo...',
   },
+  'location.getMyLocation': {
+    en: 'Get My Location', fr: 'Obtenir ma position', sw: 'Pata mahali pangu', ha: 'Samu wurina', tw: 'Nya me beae',
+  },
+  'location.gpsOptionalDesc': {
+    en: 'This is optional. Your village or region is enough.', fr: "C'est facultatif. Votre village suffit.", sw: 'Hiari. Kijiji chako kinatosha.', ha: 'Zaɓi ne. Ƙauyen ka ya isa.', tw: 'Nhyehyɛe. Wo akuraa bɛyɛ.',
+  },
+  'location.gpsFallback': {
+    en: "We couldn't get your exact location. You can continue with your village or region.", fr: "Impossible d'obtenir votre position. Continuez avec votre village.", sw: 'Hatukuweza kupata mahali pako. Endelea na kijiji chako.', ha: 'Ba mu samu wurin ka ba. Ci gaba da ƙauyen ka.', tw: 'Yɛantumi anya wo beae. Toa so fa wo akuraa.',
+  },
+  'location.gpsSlow': {
+    en: 'Still looking for your location...', fr: 'Recherche en cours...', sw: 'Bado inatafuta mahali pako...', ha: 'Har yanzu ana neman wurin ka...', tw: 'Ɛresan ahwehwɛ wo beae...',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  SUPPORT

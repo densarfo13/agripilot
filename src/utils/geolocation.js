@@ -31,19 +31,9 @@ export function getCurrentPosition({ enableHighAccuracy = true, timeout = 15000 
         });
       },
       (err) => {
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            reject(new Error('Location access was denied. You can enter your location manually.'));
-            break;
-          case err.POSITION_UNAVAILABLE:
-            reject(new Error('Could not detect your location. Please enter it manually.'));
-            break;
-          case err.TIMEOUT:
-            reject(new Error('Location detection timed out. Please try again or enter manually.'));
-            break;
-          default:
-            reject(new Error('Could not detect your location. Please enter it manually.'));
-        }
+        // All GPS errors use the same calm, non-technical message.
+        // GPS is optional — farmers can always continue with village/region.
+        reject(new Error("We couldn't get your exact location. You can continue with your village or region."));
       },
       { enableHighAccuracy, timeout, maximumAge: 60000 }
     );

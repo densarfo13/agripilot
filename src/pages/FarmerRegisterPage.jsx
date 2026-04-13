@@ -189,8 +189,8 @@ export default function FarmerRegisterPage() {
             style={{ marginBottom: '0.25rem' }}
           />
           {form.latitude && (
-            <div style={{ fontSize: '0.72rem', color: '#22C55E', marginBottom: '0.5rem' }}>
-              GPS captured — location fields were filled where empty. You can edit them below.
+            <div style={{ fontSize: '0.78rem', color: '#22C55E', marginBottom: '0.5rem' }}>
+              Location found — fields updated below.
             </div>
           )}
 

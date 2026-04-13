@@ -111,6 +111,114 @@ describe('ProfileSetupPage — no raw lat/long display', () => {
   });
 });
 
+// ═══════════════════════════════════════════════════════════
+//  FARMER UI — V2 ProfileSetup (no lat/lng inputs)
+// ═══════════════════════════════════════════════════════════
+
+describe('ProfileSetup (V2) — no lat/lng inputs, farmer-friendly GPS', () => {
+  const src = read('src/pages/ProfileSetup.jsx');
+
+  it('does NOT have latitude text input field', () => {
+    expect(src).not.toContain("placeholder=\"Latitude\"");
+  });
+
+  it('does NOT have longitude text input field', () => {
+    expect(src).not.toContain("placeholder=\"Longitude\"");
+  });
+
+  it('does NOT use setup.latitude i18n key', () => {
+    expect(src).not.toContain("t('setup.latitude')");
+  });
+
+  it('does NOT use setup.longitude i18n key', () => {
+    expect(src).not.toContain("t('setup.longitude')");
+  });
+
+  it('shows Farm Location heading', () => {
+    expect(src).toContain("t('location.farmLocation')");
+  });
+
+  it('shows optional description', () => {
+    expect(src).toContain("t('location.gpsOptionalDesc')");
+  });
+
+  it('shows Get My Location button', () => {
+    expect(src).toContain("t('location.getMyLocation')");
+  });
+
+  it('shows readable location after GPS capture', () => {
+    expect(src).toContain("form.location || t('location.captured')");
+  });
+
+  it('shows location saved confirmation', () => {
+    expect(src).toContain("t('location.capturedCheck')");
+  });
+
+  it('uses farmer-friendly fallback error (not technical)', () => {
+    expect(src).toContain("t('location.gpsFallback')");
+    expect(src).not.toContain("t('setup.gpsPermissionDenied')");
+    expect(src).not.toContain("t('setup.gpsSignalWeak')");
+    expect(src).not.toContain("t('setup.gpsTimeout')");
+  });
+
+  it('uses reverse geocoding via detectAndResolveLocation', () => {
+    expect(src).toContain('detectAndResolveLocation');
+  });
+
+  it('still stores gpsLat/gpsLng in form state', () => {
+    expect(src).toContain("updateField('gpsLat'");
+    expect(src).toContain("updateField('gpsLng'");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  FARMER UI — LocationDetect component (friendly errors)
+// ═══════════════════════════════════════════════════════════
+
+describe('LocationDetect component — farmer-friendly', () => {
+  const src = read('src/components/LocationDetect.jsx');
+
+  it('does NOT show technical error messages', () => {
+    expect(src).not.toContain('Permission denied');
+    expect(src).not.toContain('POSITION_UNAVAILABLE');
+    expect(src).not.toContain('TIMEOUT');
+    expect(src).not.toContain('err.message');
+  });
+
+  it('shows calm fallback message on GPS failure', () => {
+    expect(src).toContain("couldn't get your exact location");
+    expect(src).toContain('continue with your village or region');
+  });
+
+  it('uses non-technical button text', () => {
+    expect(src).toContain('Finding your location...');
+    expect(src).toContain('Location found');
+    expect(src).toContain('Get My Location');
+  });
+
+  it('uses soft message styling (not red error)', () => {
+    expect(src).toContain('softMsgStyle');
+    expect(src).not.toContain('errorStyle');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  GEOLOCATION UTILS — friendly error messages
+// ═══════════════════════════════════════════════════════════
+
+describe('Geolocation utility — friendly errors', () => {
+  const src = read('src/utils/geolocation.js');
+
+  it('does NOT expose technical error codes to users', () => {
+    expect(src).not.toContain('PERMISSION_DENIED');
+    expect(src).not.toContain('POSITION_UNAVAILABLE');
+  });
+
+  it('uses a single calm error message for all GPS failures', () => {
+    expect(src).toContain("couldn't get your exact location");
+  });
+});
+
 describe('OnboardingWizard — no raw coordinate fallback', () => {
   const src = read('src/components/OnboardingWizard.jsx');
 
@@ -265,6 +373,10 @@ describe('i18n — location display keys', () => {
     'location.captureGPS',
     'location.update',
     'location.updating',
+    'location.getMyLocation',
+    'location.gpsOptionalDesc',
+    'location.gpsFallback',
+    'location.gpsSlow',
   ];
 
   for (const key of requiredKeys) {

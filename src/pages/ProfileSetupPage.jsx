@@ -88,7 +88,7 @@ export default function ProfileSetupPage() {
   // GPS capture with reverse geocoding for human-readable label
   const captureGPS = useCallback(async () => {
     if (!navigator.geolocation) {
-      setGpsError('Geolocation is not supported by your browser.');
+      setGpsError(t('location.gpsFallback'));
       return;
     }
     setGpsLoading(true);
@@ -103,12 +103,12 @@ export default function ProfileSetupPage() {
         locationLabel: label || f.locationLabel,
         locationName: f.locationName || label || f.locationName,
       }));
-    } catch (err) {
-      setGpsError(err.message || 'Could not get location. Try again.');
+    } catch {
+      setGpsError(t('location.gpsFallback'));
     } finally {
       setGpsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Compute score for display
   const { score, status } = calculateFarmScore(form, { countryCode: form.countryCode });
@@ -537,8 +537,9 @@ const S = {
   },
   gpsErrorText: {
     fontSize: '0.8rem',
-    color: '#EF4444',
+    color: 'rgba(255,255,255,0.55)',
     marginTop: '0.3rem',
+    lineHeight: 1.5,
   },
   fieldError: {
     fontSize: '0.8rem',

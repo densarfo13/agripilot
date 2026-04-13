@@ -2,32 +2,33 @@ import React, { useState } from 'react';
 import { detectAndResolveLocation } from '../utils/geolocation.js';
 
 /**
- * LocationDetect — reusable "Use current location" button with feedback.
+ * LocationDetect — reusable "Get My Location" button with friendly feedback.
  *
  * Props:
  *   onDetected(result)  — called with { latitude, longitude, accuracy, capturedAt,
  *                          country, countryCode, region, district, locality, displayName }
- *   label               — button text (default: "Use current location")
+ *   label               — button text (default: "Get My Location")
  *   compact             — smaller styling for inline use
  *   disabled            — disable the button externally
  *   style               — additional wrapper styles
  */
 export default function LocationDetect({ onDetected, label, compact, disabled, style }) {
   const [detecting, setDetecting] = useState(false);
-  const [error, setError] = useState('');
+  const [softMsg, setSoftMsg] = useState('');
   const [done, setDone] = useState(false);
 
   const handleClick = async () => {
     setDetecting(true);
-    setError('');
+    setSoftMsg('');
     setDone(false);
     try {
       const result = await detectAndResolveLocation();
       onDetected(result);
       setDone(true);
       setTimeout(() => setDone(false), 3000);
-    } catch (err) {
-      setError(err.message || 'Could not detect location.');
+    } catch {
+      // Calm, non-technical fallback — GPS is optional
+      setSoftMsg("We couldn't get your exact location. You can continue with your village or region.");
     } finally {
       setDetecting(false);
     }
@@ -44,15 +45,15 @@ export default function LocationDetect({ onDetected, label, compact, disabled, s
         style={{ ...btnStyle, opacity: detecting || disabled ? 0.6 : 1 }}
       >
         {detecting ? (
-          <span style={labelStyle}>Detecting...</span>
+          <span style={labelStyle}>Finding your location...</span>
         ) : done ? (
-          <span style={{ ...labelStyle, color: '#22C55E' }}>Location detected</span>
+          <span style={{ ...labelStyle, color: '#22C55E' }}>Location found</span>
         ) : (
-          <span style={labelStyle}>{label || 'Use current location'}</span>
+          <span style={labelStyle}>{label || 'Get My Location'}</span>
         )}
       </button>
-      {error && (
-        <div style={errorStyle}>{error}</div>
+      {softMsg && (
+        <div style={softMsgStyle}>{softMsg}</div>
       )}
     </div>
   );
@@ -75,6 +76,6 @@ const compactBtn = {
 
 const labelStyle = { display: 'flex', alignItems: 'center', gap: '0.3rem' };
 
-const errorStyle = {
-  fontSize: '0.78rem', color: '#F59E0B', marginTop: '0.3rem', lineHeight: 1.4,
+const softMsgStyle = {
+  fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.4rem', lineHeight: 1.5,
 };
