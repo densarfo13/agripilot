@@ -8,7 +8,7 @@ import OfflineStatusBadge from '../components/OfflineStatusBadge.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function ProtectedLayout() {
-  const { logout, user, resendEmailVerification } = useAuth();
+  const { logout, user, resendEmailVerification, isOfflineSession } = useAuth();
 
   return (
     <AuthGuard>
@@ -30,6 +30,7 @@ export default function ProtectedLayout() {
               </div>
 
               <div style={S.headerRight}>
+                {isOfflineSession && <span style={S.offlineTag}>Offline</span>}
                 <OfflineStatusBadge />
                 <LanguageSelector />
                 <AutoVoiceToggle />
@@ -87,6 +88,14 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
+  },
+  offlineTag: {
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: '#FDE68A',
+    background: 'rgba(120,53,15,0.5)',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '6px',
   },
   logoutBtn: {
     borderRadius: '12px',

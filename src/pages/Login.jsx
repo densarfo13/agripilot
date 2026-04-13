@@ -1,20 +1,37 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../i18n/index.js';
+import { safeTrackEvent } from '../lib/analytics.js';
+
+// ─── Remembered email ──────────────────────────────────────
+function getRememberedEmail() {
+  try { return localStorage.getItem('farroway:last_email') || ''; } catch { return ''; }
+}
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, authLoading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const { t } = useTranslation();
+  const [email, setEmail] = useState(getRememberedEmail);
   const [password, setPassword] = useState('');
+
+  // ─── Redirect if already authenticated (no login flash) ───
+  const redirectTo = location.state?.from || '/dashboard';
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [authLoading, isAuthenticated]);
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e = {};
-    if (!email.trim()) e.email = 'Email is required';
-    if (!password) e.password = 'Password is required';
+    if (!email.trim()) e.email = t('auth.emailRequired');
+    if (!password) e.password = t('auth.passwordRequired');
     return e;
   };
 
@@ -30,12 +47,14 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      safeTrackEvent('auth.login.success', {});
+      navigate(redirectTo, { replace: true });
     } catch (err) {
+      safeTrackEvent('auth.login.failed', { hasFieldErrors: !!(err.fieldErrors && Object.keys(err.fieldErrors).length) });
       if (err.fieldErrors && Object.keys(err.fieldErrors).length) {
         setErrors(err.fieldErrors);
       } else {
-        setGeneralError(err.message || 'Login failed. Please try again.');
+        setGeneralError(err.message || t('auth.loginFailed'));
       }
     } finally {
       setLoading(false);
@@ -45,14 +64,14 @@ export default function Login() {
   return (
     <div style={S.page}>
       <div style={S.card}>
-        <h1 style={S.title}>Welcome Back</h1>
-        <p style={S.subtitle}>Sign in to your AgriPilot account</p>
+        <h1 style={S.title}>{t('auth.welcomeBack')}</h1>
+        <p style={S.subtitle}>{t('auth.signInPrompt')}</p>
 
         {generalError && <div style={S.errorBox}>{generalError}</div>}
 
         <form onSubmit={handleSubmit} style={S.form}>
           <div>
-            <label style={S.label}>Email</label>
+            <label style={S.label}>{t('auth.email')}</label>
             <input
               type="email"
               value={email}
@@ -64,7 +83,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label style={S.label}>Password</label>
+            <label style={S.label}>{t('auth.password')}</label>
             <input
               type="password"
               value={password}
@@ -76,7 +95,7 @@ export default function Login() {
           </div>
 
           <div style={S.forgotRow}>
-            <Link to="/forgot-password" style={S.link}>Forgot password?</Link>
+            <Link to="/forgot-password" style={S.link}>{t('auth.forgotPassword')}</Link>
           </div>
 
           <button
@@ -84,13 +103,13 @@ export default function Login() {
             disabled={loading}
             style={{ ...S.button, ...(loading ? S.buttonDisabled : {}) }}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
 
         <p style={S.footerText}>
-          Don't have an account?{' '}
-          <Link to="/register" style={S.link}>Create one</Link>
+          {t('auth.noAccount')}{' '}
+          <Link to="/register" style={S.link}>{t('auth.createOne')}</Link>
         </p>
       </div>
     </div>
