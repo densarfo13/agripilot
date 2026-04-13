@@ -137,13 +137,15 @@ export const inviteAcceptLimiter = rateLimit({
 /**
  * Limiter for the login endpoint.
  * Prevents brute-force credential stuffing attacks.
- * 10 attempts per 15 minutes per IP — strict enough to slow attackers,
- * permissive enough not to frustrate legitimate users who mistype.
+ * 15 attempts per 5 minutes per IP — relaxed for pilot testing while
+ * still blocking automated attacks. Resets on successful login via
+ * skipSuccessfulRequests so legitimate users are never locked out.
  */
 export const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 login attempts per 15 minutes per IP
-  message: { error: 'Too many login attempts. Please try again later.' },
+  windowMs: 5 * 60 * 1000, // 5 minutes (was 15)
+  max: 15, // 15 login attempts per 5 minutes per IP (was 10)
+  message: { error: 'Too many attempts. Please wait a few minutes and try again.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true, // successful login doesn't count toward limit
 });

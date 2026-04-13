@@ -70,19 +70,19 @@ describe('loginLimiter — rate limiter configuration', () => {
     expect(typeof loginLimiter).toBe('function'); // express middleware
   });
 
-  it('has windowMs of 15 minutes', () => {
+  it('has windowMs of 5 minutes', () => {
     // Access internal options via the limiter's store or options property
     const opts = loginLimiter.options ?? loginLimiter._options ?? {};
-    // 15 min = 900,000 ms
+    // 5 min = 300,000 ms
     if (opts.windowMs !== undefined) {
-      expect(opts.windowMs).toBe(15 * 60 * 1000);
+      expect(opts.windowMs).toBe(5 * 60 * 1000);
     }
   });
 
-  it('has max of 10 attempts', () => {
+  it('has max of 15 attempts', () => {
     const opts = loginLimiter.options ?? loginLimiter._options ?? {};
     if (opts.max !== undefined) {
-      expect(opts.max).toBe(10);
+      expect(opts.max).toBe(15);
     }
   });
 });

@@ -175,11 +175,12 @@ app.use(requestLogger);
 
 // ─── Rate Limiters ─────────────────────────────────────
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 attempts per window
-  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  windowMs: 5 * 60 * 1000, // 5 minutes (relaxed for pilot)
+  max: 30, // 30 auth requests per 5 min per IP (covers login + refresh + me)
+  message: { error: 'Too many attempts. Please wait a few minutes and try again.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true, // successful requests don't count toward limit
   // Uses default keyGenerator (request IP via express trust proxy)
 });
 
