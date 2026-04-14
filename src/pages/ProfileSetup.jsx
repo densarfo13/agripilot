@@ -237,9 +237,16 @@ export default function ProfileSetup() {
 
       const result = await Promise.race([savePromise, timeoutPromise]);
       clearTimeout(timeoutId);
-      clearDraft();
 
-      console.log('Farm profile saved:', result);
+      // If save was silently queued offline, don't navigate — show feedback
+      if (result?.offline) {
+        console.log('[ProfileSetup] Save queued for offline sync — staying on page');
+        setSaveError(t('setup.savedOffline') || 'Saved locally. Will sync when back online.');
+        return;
+      }
+
+      clearDraft();
+      console.log('[ProfileSetup] Farm profile saved successfully:', result);
 
       trackPilotEvent('setup_completed', {
         hasGps: !!form.gpsLat && !!form.gpsLng,
@@ -273,16 +280,18 @@ export default function ProfileSetup() {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('Farm profile submission error:', error);
+      console.error('[ProfileSetup] Save failed:', error.status, error.message, error.fieldErrors);
       if (error.message === '__SAVE_TIMEOUT__') {
-        setSaveError(t('setup.saveTimeout'));
+        setSaveError(t('setup.saveTimeout') || 'Save timed out. Please try again.');
         trackPilotEvent('setup_failed', { reason: 'timeout' });
         safeTrackEvent('profile.save_timeout', {});
       } else {
-        setFieldErrors((prev) => ({ ...prev, ...(error.fieldErrors || {}) }));
-        setSaveError(error.message || t('setup.saveFailed'));
-        trackPilotEvent('setup_failed', { reason: error.message });
-        safeTrackEvent('profile.save_failed', { error: error.message });
+        if (error.fieldErrors && Object.keys(error.fieldErrors).length) {
+          setFieldErrors((prev) => ({ ...prev, ...error.fieldErrors }));
+        }
+        setSaveError(error.message || t('setup.saveFailed') || 'Failed to save. Please try again.');
+        trackPilotEvent('setup_failed', { reason: error.message, status: error.status });
+        safeTrackEvent('profile.save_failed', { error: error.message, status: error.status });
       }
     } finally {
       setSaving(false);

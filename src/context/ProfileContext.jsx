@@ -245,13 +245,24 @@ export function ProfileProvider({ children }) {
         safeTrackEvent('profile.save.success', { mode: 'online' });
         return data;
       } catch (err) {
-        await enqueueProfileSync(payload);
+        // Network errors (no status) → queue for offline sync
+        // API errors (400, 500, etc.) → re-throw so caller can show the error
+        const isNetworkError = !err.status && (err.message === 'Failed to fetch' || err.name === 'TypeError');
+        if (isNetworkError) {
+          console.log('[ProfileContext] Network error during save, queuing for offline sync');
+          await enqueueProfileSync(payload);
+          setSyncStatus('error');
+          await saveSyncMeta({ lastError: err.message || 'Save failed' });
+          await refreshSyncMeta();
+          safeTrackEvent('profile.saved', { mode: 'queued' });
+          safeTrackEvent('profile.save.failed', { error: err.message || 'Save failed' });
+          return { profile: payload, offline: true };
+        }
+        // Server returned an actual error (validation, 500, etc.) — propagate it
+        console.error('[ProfileContext] API error during save:', err.status, err.message);
         setSyncStatus('error');
-        await saveSyncMeta({ lastError: err.message || 'Save failed' });
-        await refreshSyncMeta();
-        safeTrackEvent('profile.saved', { mode: 'queued' });
-        safeTrackEvent('profile.save.failed', { error: err.message || 'Save failed' });
-        return { profile: payload, offline: true };
+        safeTrackEvent('profile.save.failed', { error: err.message || 'Save failed', status: err.status });
+        throw err;
       }
     } else {
       await enqueueProfileSync(payload);
