@@ -89,6 +89,11 @@ export default function FarmerDetailPage() {
           <FarmerTrustRiskPanel farmerId={farmer.id} />
         )}
 
+        {/* Pesticide Compliance — staff only */}
+        {(isAdmin || isCreator || user?.role === 'reviewer') && farmer.pesticideCompliance && (
+          <PesticideComplianceCard compliance={farmer.pesticideCompliance} farmerId={farmer.id} />
+        )}
+
         {/* Performance Profile Section — visible to staff & investor_viewer */}
         <PerformanceProfileSection farmerId={farmer.id} />
 
@@ -167,6 +172,126 @@ export default function FarmerDetailPage() {
         />
       )}
     </>
+  );
+}
+
+// ─── Pesticide Compliance Card ────────────────────────
+
+const COMPLIANCE_STYLES = {
+  compliant:      { bg: 'rgba(34,197,94,0.12)',  color: '#22C55E', icon: '✅', label: 'Compliant' },
+  needs_review:   { bg: 'rgba(245,158,11,0.12)', color: '#F59E0B', icon: '⚠️', label: 'Needs Review' },
+  non_compliant:  { bg: 'rgba(239,68,68,0.12)',  color: '#EF4444', icon: '🚫', label: 'Non-Compliant' },
+};
+
+const CONFIDENCE_LABELS = {
+  verified: { label: 'Verified', color: '#22C55E' },
+  self_reported: { label: 'Self-reported', color: '#A1A1AA' },
+};
+
+const TIMELINE_ICONS = {
+  pesticide: '🧴',
+  harvest: '🌾',
+  safe_date: '✅',
+};
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function PesticideComplianceCard({ compliance }) {
+  const style = COMPLIANCE_STYLES[compliance.status] || COMPLIANCE_STYLES.needs_review;
+  const conf = CONFIDENCE_LABELS[compliance.confidence] || CONFIDENCE_LABELS.self_reported;
+  const ctx = compliance.context || {};
+  const timeline = compliance.timeline || [];
+
+  return (
+    <div className="card" style={{ marginBottom: '1rem' }}>
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Pesticide Compliance</span>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <span style={{
+            fontSize: '0.65rem', fontWeight: 600, padding: '0.15rem 0.4rem',
+            borderRadius: '4px', background: 'rgba(255,255,255,0.06)', color: conf.color,
+          }}>
+            {conf.label}
+          </span>
+          <span style={{
+            fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem',
+            borderRadius: '6px', background: style.bg, color: style.color,
+          }}>
+            {style.icon} {compliance.farmerLabel || style.label}
+          </span>
+        </div>
+      </div>
+      <div className="card-body">
+        {/* Farmer-facing action */}
+        {compliance.action && (
+          <div style={{
+            padding: '0.6rem 0.75rem', marginBottom: '0.75rem', borderRadius: '8px',
+            background: style.bg, border: `1px solid ${style.color}22`, fontSize: '0.9rem',
+          }}>
+            <strong style={{ color: style.color }}>{compliance.farmerLabel}:</strong>{' '}
+            <span style={{ color: 'rgba(255,255,255,0.85)' }}>{compliance.action}</span>
+          </div>
+        )}
+
+        <div className="detail-row">
+          <span className="detail-label">Status</span>
+          <span className="detail-value" style={{ color: style.color, fontWeight: 600 }}>{style.label}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label">Reason</span>
+          <span className="detail-value">{compliance.reason}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label">Applications Logged</span>
+          <span className="detail-value">{compliance.totalApplications}</span>
+        </div>
+        {compliance.violationCount > 0 && (
+          <div className="detail-row">
+            <span className="detail-label">Violations</span>
+            <span className="detail-value" style={{ color: '#EF4444', fontWeight: 600 }}>{compliance.violationCount}</span>
+          </div>
+        )}
+
+        {/* Last action context */}
+        <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #243041' }}>
+          <div className="detail-row">
+            <span className="detail-label">Last Pesticide</span>
+            <span className="detail-value">{fmtDate(ctx.lastPesticideDate)}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Last Harvest</span>
+            <span className="detail-value">{fmtDate(ctx.lastHarvestDate)}</span>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        {timeline.length > 0 && (
+          <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #243041' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '0.4rem' }}>
+              Activity Timeline
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+              {timeline.slice(-8).map((ev, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)',
+                  padding: '0.25rem 0',
+                }}>
+                  <span style={{ fontSize: '0.75rem', minWidth: '3.5rem', color: '#A1A1AA' }}>
+                    {fmtDate(ev.date)}
+                  </span>
+                  <span>{TIMELINE_ICONS[ev.type] || '📋'}</span>
+                  <span>{ev.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

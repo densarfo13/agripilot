@@ -3,6 +3,11 @@ import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { generateUniqueFarmerUuid } from '../lib/farmerUuid.js';
 import { validateFarmProfilePayload } from '../lib/validation.js';
+import { farmProfileSchema, farmerTypeSchema, validateWithZod } from '../lib/farmProfileSchema.js';
+import { farmStageSchema } from '../lib/farmStageSchema.js';
+import { seasonalTimingSchema } from '../lib/seasonalTimingSchema.js';
+import { ALL_ACCEPTED_STAGES, CROP_STAGES } from '../lib/cropStages.js';
+import { SEASONAL_FIELDS } from '../lib/seasonalTiming.js';
 import { writeAuditLog } from '../lib/audit.js';
 import { computeLandSizeFields, fromHectares } from '../src/utils/landSize.js';
 import { recordCropUsage } from './cropSuggestions.js';
@@ -42,8 +47,18 @@ function mapProfile(profile) {
     gpsLat: profile.latitude,
     gpsLng: profile.longitude,
     locationLabel: profile.locationLabel || null,
+    cropStage: profile.stage || 'planning',
+    plantedAt: profile.plantedAt || null,
+    seasonStartMonth: profile.seasonStartMonth ?? null,
+    seasonEndMonth: profile.seasonEndMonth ?? null,
+    plantingWindowStartMonth: profile.plantingWindowStartMonth ?? null,
+    plantingWindowEndMonth: profile.plantingWindowEndMonth ?? null,
+    currentSeasonLabel: profile.currentSeasonLabel || null,
+    lastRainySeasonStart: profile.lastRainySeasonStart || null,
+    lastDrySeasonStart: profile.lastDrySeasonStart || null,
     status: profile.status || 'active',
     isDefault: profile.isDefault || false,
+    experienceLevel: profile.experienceLevel || null,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   };
@@ -150,6 +165,22 @@ router.post('/', authenticate, async (req, res) => {
       longitude: validation.data.gpsLng,
     };
 
+    // Experience level — optional, only set if provided
+    if (validation.data.experienceLevel != null) {
+      profileData.experienceLevel = validation.data.experienceLevel;
+    }
+
+    // Crop stage — Zod-validated, optional on save
+    if (req.body?.cropStage) {
+      const stageResult = farmStageSchema.shape.cropStage.safeParse(req.body.cropStage);
+      if (stageResult.success) {
+        profileData.stage = stageResult.data;
+      }
+    }
+    if (req.body?.plantedAt) {
+      profileData.plantedAt = new Date(req.body.plantedAt);
+    }
+
     // Store cached location label if provided by frontend
     if (req.body?.locationLabel != null) {
       profileData.locationLabel = req.body.locationLabel || null;
@@ -173,6 +204,16 @@ router.post('/', authenticate, async (req, res) => {
         },
       });
     }
+
+    // Track onboarding step on user record (non-blocking)
+    prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        onboardingStatus: 'in_progress',
+        onboardingLastStep: 'farm_profile',
+        ...(!existing ? { onboardingStartedAt: new Date() } : {}),
+      },
+    }).catch((e) => console.error('Onboarding tracking update failed:', e));
 
     await writeAuditLog(req, {
       userId: req.user.id,
@@ -205,6 +246,24 @@ router.post('/new', authenticate, async (req, res) => {
       });
     }
 
+    // ─── Duplicate protection: same name + same location + same user ───
+    const dupCheck = await prisma.farmProfile.findFirst({
+      where: {
+        userId: req.user.id,
+        farmName: validation.data.farmName?.trim() || null,
+        locationName: validation.data.location?.trim() || null,
+        status: { not: 'archived' },
+      },
+      select: { id: true, farmName: true },
+    });
+    if (dupCheck) {
+      return res.status(409).json({
+        success: false,
+        error: 'A farm with the same name and location already exists.',
+        duplicateFarmId: dupCheck.id,
+      });
+    }
+
     const farmerUuid = await generateUniqueFarmerUuid(prisma);
 
     const ls = computeLandSizeFields(validation.data.size, validation.data.sizeUnit);
@@ -225,6 +284,22 @@ router.post('/new', authenticate, async (req, res) => {
       latitude: validation.data.gpsLat,
       longitude: validation.data.gpsLng,
     };
+
+    // Experience level — optional, only set if provided
+    if (validation.data.experienceLevel != null) {
+      profileData.experienceLevel = validation.data.experienceLevel;
+    }
+
+    // Crop stage — Zod-validated, optional on new farm
+    if (req.body?.cropStage) {
+      const stageResult = farmStageSchema.shape.cropStage.safeParse(req.body.cropStage);
+      if (stageResult.success) {
+        profileData.stage = stageResult.data;
+      }
+    }
+    if (req.body?.plantedAt) {
+      profileData.plantedAt = new Date(req.body.plantedAt);
+    }
 
     // Store cached location label if provided by frontend
     if (req.body?.locationLabel != null) {
@@ -451,6 +526,389 @@ router.post('/:id/archive', authenticate, async (req, res) => {
   } catch (error) {
     console.error('POST /api/v2/farm-profile/:id/archive failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to archive farm' });
+  }
+});
+
+// ─── Edit an existing farm ─────────────────────────────
+// PATCH /:id — update farm name, location, size, crop, status
+// Ownership enforced: userId must match req.user.id
+router.patch('/:id', authenticate, async (req, res) => {
+  try {
+    const target = await prisma.farmProfile.findFirst({
+      where: { id: req.params.id, userId: req.user.id },
+    });
+
+    if (!target) {
+      return res.status(404).json({ success: false, error: 'Farm not found' });
+    }
+
+    // Only allow updating specific fields — never userId, farmerUuid
+    const allowedFields = [
+      'farmerName', 'farmName', 'country', 'location', 'cropType',
+      'size', 'sizeUnit', 'gpsLat', 'gpsLng', 'locationLabel', 'experienceLevel',
+      'cropStage', 'plantedAt',
+      ...SEASONAL_FIELDS,
+    ];
+    const patch = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) patch[key] = req.body[key];
+    }
+
+    // If size/sizeUnit changed, recompute normalized fields
+    const sizeVal = patch.size ?? target.landSizeValue;
+    const sizeUnit = patch.sizeUnit ?? target.landSizeUnit ?? 'ACRE';
+    if (patch.size !== undefined || patch.sizeUnit !== undefined) {
+      const ls = computeLandSizeFields(sizeVal, sizeUnit);
+      patch.landSizeValue = ls.landSizeValue;
+      patch.landSizeUnit = ls.landSizeUnit;
+      patch.landSizeHectares = ls.landSizeHectares;
+      patch.farmSizeAcres = ls.landSizeHectares != null
+        ? fromHectares(ls.landSizeHectares, 'ACRE')
+        : sizeVal;
+    }
+
+    // Map frontend field names to schema columns
+    const data = {};
+    if (patch.farmerName !== undefined) data.farmerName = patch.farmerName;
+    if (patch.farmName !== undefined) data.farmName = patch.farmName;
+    if (patch.country !== undefined) data.country = patch.country;
+    if (patch.location !== undefined) data.locationName = patch.location;
+    if (patch.cropType !== undefined) data.crop = patch.cropType;
+    if (patch.gpsLat !== undefined) data.latitude = patch.gpsLat;
+    if (patch.gpsLng !== undefined) data.longitude = patch.gpsLng;
+    if (patch.locationLabel !== undefined) data.locationLabel = patch.locationLabel || null;
+    if (patch.experienceLevel !== undefined) data.experienceLevel = patch.experienceLevel;
+    if (patch.landSizeValue !== undefined) data.landSizeValue = patch.landSizeValue;
+    if (patch.landSizeUnit !== undefined) data.landSizeUnit = patch.landSizeUnit;
+    if (patch.landSizeHectares !== undefined) data.landSizeHectares = patch.landSizeHectares;
+    if (patch.farmSizeAcres !== undefined) data.farmSizeAcres = patch.farmSizeAcres;
+
+    // Crop stage — Zod-validated against known stages
+    if (patch.cropStage !== undefined) {
+      const stageResult = farmStageSchema.shape.cropStage.safeParse(patch.cropStage);
+      if (stageResult.success) {
+        data.stage = stageResult.data;
+      }
+    }
+    if (patch.plantedAt !== undefined) {
+      data.plantedAt = patch.plantedAt ? new Date(patch.plantedAt) : null;
+    }
+
+    // Seasonal timing — Zod-validated
+    const seasonalPatch = {};
+    for (const f of SEASONAL_FIELDS) {
+      if (patch[f] !== undefined) seasonalPatch[f] = patch[f];
+    }
+    if (Object.keys(seasonalPatch).length > 0) {
+      const stResult = seasonalTimingSchema.safeParse(seasonalPatch);
+      if (stResult.success) {
+        const sd = stResult.data;
+        if (sd.seasonStartMonth !== undefined) data.seasonStartMonth = sd.seasonStartMonth;
+        if (sd.seasonEndMonth !== undefined) data.seasonEndMonth = sd.seasonEndMonth;
+        if (sd.plantingWindowStartMonth !== undefined) data.plantingWindowStartMonth = sd.plantingWindowStartMonth;
+        if (sd.plantingWindowEndMonth !== undefined) data.plantingWindowEndMonth = sd.plantingWindowEndMonth;
+        if (sd.currentSeasonLabel !== undefined) data.currentSeasonLabel = sd.currentSeasonLabel;
+        if (sd.lastRainySeasonStart !== undefined) {
+          data.lastRainySeasonStart = sd.lastRainySeasonStart ? new Date(sd.lastRainySeasonStart) : null;
+        }
+        if (sd.lastDrySeasonStart !== undefined) {
+          data.lastDrySeasonStart = sd.lastDrySeasonStart ? new Date(sd.lastDrySeasonStart) : null;
+        }
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.json({ success: true, profile: mapProfile(target) });
+    }
+
+    const updated = await prisma.farmProfile.update({
+      where: { id: target.id },
+      data,
+    });
+
+    await writeAuditLog(req, {
+      userId: req.user.id,
+      action: 'farm_profile.edited',
+      entityType: 'FarmProfile',
+      entityId: target.id,
+      metadata: { fields: Object.keys(data) },
+    });
+
+    // Record crop usage if crop changed
+    if (data.crop) {
+      recordCropUsage(data.crop, updated.country, updated.locationName);
+    }
+
+    return res.json({ success: true, profile: mapProfile(updated) });
+  } catch (error) {
+    console.error('PATCH /api/v2/farm-profile/:id failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update farm' });
+  }
+});
+
+// ─── Get seasonal timing for a farm ────────────────────
+// GET /:id/seasonal-timing
+// Ownership enforced: userId must match req.user.id
+router.get('/:id/seasonal-timing', authenticate, async (req, res) => {
+  try {
+    const farm = await prisma.farmProfile.findFirst({
+      where: { id: req.params.id, userId: req.user.id },
+      select: {
+        id: true, farmName: true, status: true,
+        seasonStartMonth: true, seasonEndMonth: true,
+        plantingWindowStartMonth: true, plantingWindowEndMonth: true,
+        currentSeasonLabel: true, lastRainySeasonStart: true, lastDrySeasonStart: true,
+      },
+    });
+
+    if (!farm) {
+      return res.status(404).json({ success: false, error: 'Farm not found' });
+    }
+
+    return res.json({
+      success: true,
+      farmId: farm.id,
+      farmName: farm.farmName,
+      seasonStartMonth: farm.seasonStartMonth,
+      seasonEndMonth: farm.seasonEndMonth,
+      plantingWindowStartMonth: farm.plantingWindowStartMonth,
+      plantingWindowEndMonth: farm.plantingWindowEndMonth,
+      currentSeasonLabel: farm.currentSeasonLabel,
+      lastRainySeasonStart: farm.lastRainySeasonStart,
+      lastDrySeasonStart: farm.lastDrySeasonStart,
+    });
+  } catch (error) {
+    console.error('GET /api/v2/farm-profile/:id/seasonal-timing failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch seasonal timing' });
+  }
+});
+
+// ─── Update seasonal timing for a farm ─────────────────
+// PATCH /:id/seasonal-timing — Zod-validated
+// Ownership enforced: userId must match req.user.id
+router.patch('/:id/seasonal-timing', authenticate, async (req, res) => {
+  try {
+    const farm = await prisma.farmProfile.findFirst({
+      where: { id: req.params.id, userId: req.user.id },
+      select: { id: true, status: true },
+    });
+
+    if (!farm) {
+      return res.status(404).json({ success: false, error: 'Farm not found' });
+    }
+
+    if (farm.status === 'archived') {
+      return res.status(400).json({ success: false, error: 'Cannot update seasonal timing on archived farm' });
+    }
+
+    const zodResult = validateWithZod(seasonalTimingSchema, req.body || {});
+    if (!zodResult.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        fieldErrors: zodResult.errors,
+      });
+    }
+
+    const data = {};
+    const sd = zodResult.data;
+    if (sd.seasonStartMonth !== undefined) data.seasonStartMonth = sd.seasonStartMonth;
+    if (sd.seasonEndMonth !== undefined) data.seasonEndMonth = sd.seasonEndMonth;
+    if (sd.plantingWindowStartMonth !== undefined) data.plantingWindowStartMonth = sd.plantingWindowStartMonth;
+    if (sd.plantingWindowEndMonth !== undefined) data.plantingWindowEndMonth = sd.plantingWindowEndMonth;
+    if (sd.currentSeasonLabel !== undefined) data.currentSeasonLabel = sd.currentSeasonLabel;
+    if (sd.lastRainySeasonStart !== undefined) {
+      data.lastRainySeasonStart = sd.lastRainySeasonStart ? new Date(sd.lastRainySeasonStart) : null;
+    }
+    if (sd.lastDrySeasonStart !== undefined) {
+      data.lastDrySeasonStart = sd.lastDrySeasonStart ? new Date(sd.lastDrySeasonStart) : null;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.json({ success: true, message: 'No changes' });
+    }
+
+    const updated = await prisma.farmProfile.update({
+      where: { id: farm.id },
+      data,
+    });
+
+    await writeAuditLog(req, {
+      userId: req.user.id,
+      action: 'farm_profile.seasonal_timing_updated',
+      entityType: 'FarmProfile',
+      entityId: farm.id,
+      metadata: { fields: Object.keys(data) },
+    });
+
+    return res.json({
+      success: true,
+      farmId: updated.id,
+      seasonStartMonth: updated.seasonStartMonth,
+      seasonEndMonth: updated.seasonEndMonth,
+      plantingWindowStartMonth: updated.plantingWindowStartMonth,
+      plantingWindowEndMonth: updated.plantingWindowEndMonth,
+      currentSeasonLabel: updated.currentSeasonLabel,
+      lastRainySeasonStart: updated.lastRainySeasonStart,
+      lastDrySeasonStart: updated.lastDrySeasonStart,
+    });
+  } catch (error) {
+    console.error('PATCH /api/v2/farm-profile/:id/seasonal-timing failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update seasonal timing' });
+  }
+});
+
+// ─── Get current crop stage for a farm ─────────────────
+// GET /:id/stage — returns cropStage, plantedAt, crop
+// Ownership enforced: userId must match req.user.id
+router.get('/:id/stage', authenticate, async (req, res) => {
+  try {
+    const farm = await prisma.farmProfile.findFirst({
+      where: { id: req.params.id, userId: req.user.id },
+      select: { id: true, stage: true, plantedAt: true, crop: true, farmName: true, status: true },
+    });
+
+    if (!farm) {
+      return res.status(404).json({ success: false, error: 'Farm not found' });
+    }
+
+    return res.json({
+      success: true,
+      farmId: farm.id,
+      farmName: farm.farmName,
+      cropStage: farm.stage || null,
+      plantedAt: farm.plantedAt || null,
+      crop: farm.crop,
+      status: farm.status,
+    });
+  } catch (error) {
+    console.error('GET /api/v2/farm-profile/:id/stage failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch crop stage' });
+  }
+});
+
+// ─── Update crop stage for a farm ──────────────────────
+// PATCH /:id/stage — Zod-validated cropStage + optional plantedAt
+// Ownership enforced: userId must match req.user.id
+router.patch('/:id/stage', authenticate, async (req, res) => {
+  try {
+    const farm = await prisma.farmProfile.findFirst({
+      where: { id: req.params.id, userId: req.user.id },
+      select: { id: true, stage: true, status: true },
+    });
+
+    if (!farm) {
+      return res.status(404).json({ success: false, error: 'Farm not found' });
+    }
+
+    if (farm.status === 'archived') {
+      return res.status(400).json({ success: false, error: 'Cannot update stage on archived farm' });
+    }
+
+    // Zod validation
+    const zodResult = validateWithZod(farmStageSchema, req.body || {});
+    if (!zodResult.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        fieldErrors: zodResult.errors,
+      });
+    }
+
+    const data = { stage: zodResult.data.cropStage };
+    if (zodResult.data.plantedAt) {
+      data.plantedAt = new Date(zodResult.data.plantedAt);
+    } else if (zodResult.data.plantedAt === null) {
+      data.plantedAt = null;
+    }
+
+    const updated = await prisma.farmProfile.update({
+      where: { id: farm.id },
+      data,
+    });
+
+    await writeAuditLog(req, {
+      userId: req.user.id,
+      action: 'farm_profile.stage_updated',
+      entityType: 'FarmProfile',
+      entityId: farm.id,
+      metadata: { from: farm.stage, to: zodResult.data.cropStage },
+    });
+
+    return res.json({
+      success: true,
+      farmId: updated.id,
+      cropStage: updated.stage,
+      plantedAt: updated.plantedAt,
+    });
+  } catch (error) {
+    console.error('PATCH /api/v2/farm-profile/:id/stage failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update crop stage' });
+  }
+});
+
+// ─── Save farmer type (onboarding classification) ─────
+// Validates with Zod, updates experienceLevel on the default farm profile
+router.post('/farmer-type', authenticate, async (req, res) => {
+  try {
+    const zodResult = validateWithZod(farmerTypeSchema, req.body || {});
+    if (!zodResult.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        fieldErrors: zodResult.errors,
+      });
+    }
+
+    const { farmerType } = zodResult.data;
+
+    // Find default or most recent profile
+    let profile = await prisma.farmProfile.findFirst({
+      where: { userId: req.user.id, isDefault: true, status: 'active' },
+    });
+    if (!profile) {
+      profile = await prisma.farmProfile.findFirst({
+        where: { userId: req.user.id, status: 'active' },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: 'No farm profile found. Complete farm profile setup first.',
+      });
+    }
+
+    // Atomic: update profile + mark onboarding step on user
+    const [updated] = await prisma.$transaction([
+      prisma.farmProfile.update({
+        where: { id: profile.id },
+        data: { experienceLevel: farmerType },
+      }),
+      prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          onboardingLastStep: 'farmer_type',
+          onboardingStatus: 'completed',
+          onboardedAt: new Date(),
+        },
+      }),
+    ]);
+
+    await writeAuditLog(req, {
+      userId: req.user.id,
+      action: 'farm_profile.farmer_type_set',
+      entityType: 'FarmProfile',
+      entityId: profile.id,
+      metadata: { farmerType },
+    });
+
+    console.log(`Farmer type set: userId=${req.user.id}, type=${farmerType}`);
+    return res.json({ success: true, profile: mapProfile(updated) });
+  } catch (error) {
+    console.error('POST /api/v2/farm-profile/farmer-type failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to save farmer type' });
   }
 });
 

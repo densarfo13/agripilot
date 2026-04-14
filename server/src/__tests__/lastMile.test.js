@@ -35,6 +35,7 @@ vi.mock('../config/database.js', () => {
     officerValidation: { findMany: vi.fn() },
     farmProfile: { findFirst: vi.fn() },
     notification: { create: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(async (arg) => {
       if (typeof arg === 'function') return arg(mockPrisma);
       return arg; // batched transaction

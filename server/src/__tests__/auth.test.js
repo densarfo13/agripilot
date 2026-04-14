@@ -17,6 +17,8 @@ vi.mock('../config/database.js', () => {
     user: { findUnique: vi.fn() },
     farmer: { findUnique: vi.fn() },
     application: { findUnique: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   };
   return { default: mockPrisma };
 });

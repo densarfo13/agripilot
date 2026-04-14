@@ -19,6 +19,7 @@ vi.mock('../config/database.js', () => {
     harvestReport: { findUnique: vi.fn(), create: vi.fn() },
     application: { findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(),
   };
   return { default: mockPrisma };

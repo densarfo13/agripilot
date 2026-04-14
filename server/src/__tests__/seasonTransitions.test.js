@@ -202,6 +202,8 @@ vi.mock('../config/database.js', () => {
     harvestReport: { create: vi.fn(), findUnique: vi.fn() },
     seasonProgressEntry: { findMany: vi.fn(), create: vi.fn() },
     stageConfirmation: { findMany: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(async (fn) => {
       if (typeof fn === 'function') return fn(mockPrisma);
       return fn; // batched transaction returns the array as-is

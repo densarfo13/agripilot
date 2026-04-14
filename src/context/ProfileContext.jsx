@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { getFarmProfile, saveFarmProfile, getFarms, switchActiveFarm as apiSwitchFarm, setDefaultFarm as apiSetDefault } from '../lib/api.js';
+import { getFarmProfile, saveFarmProfile, getFarms, switchActiveFarm as apiSwitchFarm, setDefaultFarm as apiSetDefault, updateFarm as apiUpdateFarm } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
 import { useNetwork } from './NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
@@ -16,8 +16,71 @@ import {
 
 const ProfileContext = createContext(null);
 
+const CURRENT_FARM_KEY = 'agripilot_currentFarmId';
+
 function nextBackoffMs(retryCount) {
   return Math.min(1000 * Math.pow(2, retryCount), 60000);
+}
+
+/** Read persisted farm selection from localStorage (safe for SSR/errors) */
+function getPersistedFarmId() {
+  try { return localStorage.getItem(CURRENT_FARM_KEY) || null; } catch { return null; }
+}
+
+/** Write persisted farm selection to localStorage */
+function persistFarmId(farmId) {
+  try {
+    if (farmId) localStorage.setItem(CURRENT_FARM_KEY, farmId);
+    else localStorage.removeItem(CURRENT_FARM_KEY);
+  } catch { /* ignore storage errors */ }
+}
+
+/**
+ * Resolve the current farm from the farms list:
+ * 1. Persisted farm ID (if still active)
+ * 2. Default farm (isDefault === true)
+ * 3. First active farm
+ * Returns null if no active farms exist.
+ */
+function resolveCurrentFarm(farms, persistedId) {
+  const active = farms.filter((f) => f.status === 'active');
+  if (active.length === 0) return null;
+
+  // 1. Persisted selection (if still valid & active)
+  if (persistedId) {
+    const persisted = active.find((f) => f.id === persistedId);
+    if (persisted) return persisted;
+  }
+
+  // 2. Default farm
+  const defaultFarm = active.find((f) => f.isDefault);
+  if (defaultFarm) return defaultFarm;
+
+  // 3. First active (most recently updated)
+  return active[0];
+}
+
+/**
+ * Sort farms: active first, default first, then most recently updated.
+ * Archived farms sorted last.
+ */
+function sortFarms(farms) {
+  return [...farms].sort((a, b) => {
+    // Active before inactive/archived
+    const statusOrder = { active: 0, inactive: 1, archived: 2 };
+    const sa = statusOrder[a.status] ?? 1;
+    const sb = statusOrder[b.status] ?? 1;
+    if (sa !== sb) return sa - sb;
+
+    // Default first within same status
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+
+    // Most recently updated first
+    const ua = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const ub = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return ub - ua;
+  });
 }
 
 export function ProfileProvider({ children }) {
@@ -27,6 +90,7 @@ export function ProfileProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [farms, setFarms] = useState([]);  // all farms for this user
+  const [farmSwitching, setFarmSwitching] = useState(false); // true while switching farms
   const [syncStatus, setSyncStatus] = useState('idle'); // idle | syncing | synced | error
   const [syncMeta, setSyncMeta] = useState({ lastSyncedAt: null, pendingCount: 0, lastError: null });
   const flushingRef = useRef(false);
@@ -50,6 +114,7 @@ export function ProfileProvider({ children }) {
       // Logged out — clear immediately
       setProfile(null);
       setInitialized(false);
+      persistFarmId(null);
     }
   }
 
@@ -70,8 +135,9 @@ export function ProfileProvider({ children }) {
     try {
       const data = await getFarms();
       const list = data.farms || [];
-      setFarms(list);
-      return list;
+      const sorted = sortFarms(list);
+      setFarms(sorted);
+      return sorted;
     } catch {
       return farms;
     }
@@ -91,7 +157,10 @@ export function ProfileProvider({ children }) {
         const data = await getFarmProfile();
         const serverProfile = data.profile || null;
         setProfile(serverProfile);
-        if (serverProfile) await saveProfileDraft(serverProfile);
+        if (serverProfile) {
+          await saveProfileDraft(serverProfile);
+          persistFarmId(serverProfile.id);
+        }
         return serverProfile;
       } else {
         const draft = await getProfileDraft();
@@ -108,6 +177,51 @@ export function ProfileProvider({ children }) {
     }
   }, [isAuthenticated, isOnline]);
 
+  /**
+   * Switch to a specific farm by ID.
+   * - Sets as default on backend
+   * - Updates profile to the switched farm
+   * - Persists selection to localStorage
+   * - Sets farmSwitching=true during transition
+   */
+  const switchFarm = useCallback(async (farmId) => {
+    if (!isOnline) throw new Error('Cannot switch farms while offline');
+    setFarmSwitching(true);
+    try {
+      const data = await apiSetDefault(farmId);
+      const switched = data.profile || null;
+      setProfile(switched);
+      if (switched) {
+        await saveProfileDraft(switched);
+        persistFarmId(switched.id);
+      }
+      // Refresh full farms list to reflect new default
+      await refreshFarms();
+      safeTrackEvent('farm.switched', { farmId });
+      return switched;
+    } finally {
+      setFarmSwitching(false);
+    }
+  }, [isOnline, refreshFarms]);
+
+  /**
+   * Edit an existing farm (partial update).
+   * Ownership verified server-side.
+   */
+  const editFarm = useCallback(async (farmId, payload) => {
+    const data = await apiUpdateFarm(farmId, payload);
+    const updated = data.profile || null;
+    // If editing the currently active farm, update profile in context
+    if (updated && updated.id === profile?.id) {
+      setProfile(updated);
+      await saveProfileDraft(updated);
+    }
+    // Refresh farms list to show updated data
+    await refreshFarms();
+    safeTrackEvent('farm.edited', { farmId, fields: Object.keys(payload) });
+    return updated;
+  }, [profile?.id, refreshFarms]);
+
   const saveProfileOfflineAware = useCallback(async (payload) => {
     if (savingRef.current) return { profile: payload, skipped: true };
     savingRef.current = true;
@@ -120,7 +234,10 @@ export function ProfileProvider({ children }) {
         const data = await saveFarmProfile(payload);
         const saved = data.profile || null;
         setProfile(saved);
-        if (saved) await saveProfileDraft(saved);
+        if (saved) {
+          await saveProfileDraft(saved);
+          persistFarmId(saved.id);
+        }
         setSyncStatus('synced');
         await saveSyncMeta({ lastSyncedAt: Date.now(), lastError: null });
         await refreshSyncMeta();
@@ -149,23 +266,14 @@ export function ProfileProvider({ children }) {
     }
   }, [isOnline, refreshSyncMeta]);
 
-  const switchFarm = useCallback(async (farmId) => {
-    if (!isOnline) throw new Error('Cannot switch farms while offline');
-    const data = await apiSetDefault(farmId);
-    const switched = data.profile || null;
-    setProfile(switched);
-    if (switched) await saveProfileDraft(switched);
-    // Refresh full farms list to reflect new statuses
-    await refreshFarms();
-    safeTrackEvent('farm.switched', { farmId });
-    return switched;
-  }, [isOnline, refreshFarms]);
-
   // Computed: active farms only (excludes inactive/archived)
   const activeFarms = useMemo(
     () => farms.filter((f) => f.status === 'active'),
     [farms],
   );
+
+  // Current farm ID (derived from profile)
+  const currentFarmId = profile?.id || null;
 
   const flushSyncQueue = useCallback(async () => {
     if (!isOnline) return;
@@ -222,9 +330,28 @@ export function ProfileProvider({ children }) {
 
   useEffect(() => {
     if (!authLoading) {
-      refreshProfile().then(() => {
+      refreshProfile().then((prof) => {
         // Non-blocking: load farms list after active profile is set
-        refreshFarms().catch(() => {});
+        refreshFarms().then((farmsList) => {
+          // If server returned a profile, check if persisted selection differs
+          if (prof && farmsList.length > 0) {
+            const persistedId = getPersistedFarmId();
+            if (persistedId && persistedId !== prof.id) {
+              // Persisted selection differs from server default — resolve
+              const resolved = resolveCurrentFarm(farmsList, persistedId);
+              if (resolved && resolved.id !== prof.id) {
+                // Switch to persisted farm (non-blocking, don't fail init)
+                apiSetDefault(resolved.id).then((data) => {
+                  const switched = data.profile || null;
+                  if (switched) {
+                    setProfile(switched);
+                    saveProfileDraft(switched);
+                  }
+                }).catch(() => {});
+              }
+            }
+          }
+        }).catch(() => {});
       }).catch(() => {
         setLoading(false);
         setInitialized(true);
@@ -242,8 +369,10 @@ export function ProfileProvider({ children }) {
       profile,
       farms,
       activeFarms,
+      currentFarmId,
       loading,
       initialized,
+      farmSwitching,
       syncStatus,
       syncMeta,
       refreshProfile,
@@ -251,9 +380,10 @@ export function ProfileProvider({ children }) {
       refreshSyncMeta,
       saveProfile: saveProfileOfflineAware,
       switchFarm,
+      editFarm,
       setProfile,
     }),
-    [profile, farms, activeFarms, loading, initialized, syncStatus, syncMeta, refreshProfile, refreshFarms, refreshSyncMeta, saveProfileOfflineAware, switchFarm],
+    [profile, farms, activeFarms, currentFarmId, loading, initialized, farmSwitching, syncStatus, syncMeta, refreshProfile, refreshFarms, refreshSyncMeta, saveProfileOfflineAware, switchFarm, editFarm],
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

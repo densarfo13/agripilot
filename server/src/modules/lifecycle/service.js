@@ -18,6 +18,7 @@ const ACTIVITY_STAGE_MAP = {
   planting:    'planting',
   fertilizing: 'vegetative',
   spraying:    'vegetative',
+  pesticide:   'vegetative',
   irrigation:  'vegetative',
   weeding:     'vegetative',
   harvesting:  'harvest',

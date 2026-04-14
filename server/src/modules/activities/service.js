@@ -19,6 +19,7 @@ const ACTIVITY_VALIDATIONS = {
   harvesting:  { requiredFields: ['cropType', 'quantity'], tipKey: 'harvesting_tip' },
   storage:     { requiredFields: ['cropType', 'quantity'], tipKey: 'storage_tip' },
   selling:     { requiredFields: ['cropType', 'quantity'], tipKey: 'selling_tip' },
+  pesticide:   { requiredFields: [], tipKey: 'pesticide_tip', metadataRequired: ['pesticideName'] },
   other:       { requiredFields: [], tipKey: null },
 };
 
@@ -45,6 +46,18 @@ export async function createActivity(farmerId, data) {
       const err = new Error(`${field} is required for ${data.activityType} activity`);
       err.statusCode = 400;
       throw err;
+    }
+  }
+
+  // Validate metadata-level required fields (e.g. pesticideName for pesticide)
+  if (validation.metadataRequired) {
+    const meta = data.metadata || {};
+    for (const field of validation.metadataRequired) {
+      if (!meta[field] || (typeof meta[field] === 'string' && !meta[field].trim())) {
+        const err = new Error(`${field} is required for ${data.activityType} activity`);
+        err.statusCode = 400;
+        throw err;
+      }
     }
   }
 
@@ -166,6 +179,18 @@ async function generateFollowUpReminders(farmerId, activity, farmer) {
         title: 'Re-spray check',
         message: `Consider follow-up spray for ${activity.cropType || 'crop'} — 14 days since last application.`,
         dueDate: addDays(activity.activityDate, 14),
+      });
+      break;
+    }
+    case 'pesticide': {
+      // Re-check crops in 7 days after pesticide application
+      const pesticideName = activity.metadata?.pesticideName || 'pesticide';
+      reminders.push({
+        farmerId,
+        reminderType: 'spraying',
+        title: 'Check crops after pesticide',
+        message: `Check your ${activity.cropType || 'crop'} for pests — 7 days since ${pesticideName} was applied.`,
+        dueDate: addDays(activity.activityDate, 7),
       });
       break;
     }

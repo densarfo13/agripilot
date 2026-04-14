@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { languageToVoiceCode, speakText } from '../lib/voice.js';
 import { useTranslation } from '../i18n/index.js';
@@ -9,9 +9,20 @@ import { useDraft } from '../utils/useDraft.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, toHectares } from '../utils/landSize.js';
 import { parseCropValue } from '../utils/crops.js';
+import { createNewFarm } from '../lib/api.js';
 import CropSelect from '../components/CropSelect.jsx';
 import VoicePromptButton from '../components/VoicePromptButton.jsx';
 import VoiceBar from '../components/VoiceBar.jsx';
+import countries from 'i18n-iso-countries';
+import enLocale from 'i18n-iso-countries/langs/en.json';
+
+// Register English locale for country names
+countries.registerLocale(enLocale);
+
+// Sorted list of all country names for the dropdown
+const COUNTRY_OPTIONS = Object.values(
+  countries.getNames('en', { select: 'official' })
+).sort((a, b) => a.localeCompare(b));
 
 // Countries where acres are the common unit; everyone else defaults to hectares
 const ACRE_COUNTRIES = ['ghana', 'nigeria', 'kenya', 'uganda', 'tanzania', 'usa', 'uk', 'liberia', 'sierra leone', 'gambia'];
@@ -24,6 +35,7 @@ function defaultUnitForCountry(country) {
 const initialForm = {
   farmerName: '', farmName: '', country: 'Ghana', location: '',
   size: '', sizeUnit: 'ACRE', cropType: '', gpsLat: '', gpsLng: '',
+  locationLabel: '', experienceLevel: '',
 };
 
 const initialErrors = {
@@ -33,7 +45,9 @@ const initialErrors = {
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
-  const { profile, loading, saveProfile, syncStatus } = useProfile();
+  const [searchParams] = useSearchParams();
+  const isNewFarmMode = searchParams.get('newFarm') === '1';
+  const { profile, loading, saveProfile, switchFarm, refreshFarms, syncStatus } = useProfile();
   const { language, autoVoice } = useAppPrefs();
   const { t } = useTranslation();
   const nameInputRef = useRef(null);
@@ -52,20 +66,32 @@ export default function ProfileSetup() {
 
   useEffect(() => {
     if (!loading) {
-      const country = profile?.country ?? 'Ghana';
-      setForm({
-        farmerName: profile?.farmerName ?? '',
-        farmName: profile?.farmName ?? '',
-        country,
-        location: profile?.location ?? '',
-        size: profile?.size?.toString() ?? '',
-        sizeUnit: profile?.sizeUnit || defaultUnitForCountry(country),
-        cropType: profile?.cropType ?? '',
-        gpsLat: profile?.gpsLat !== null && profile?.gpsLat !== undefined ? String(profile.gpsLat) : '',
-        gpsLng: profile?.gpsLng !== null && profile?.gpsLng !== undefined ? String(profile.gpsLng) : '',
-      });
+      // In newFarm mode, start with a blank form (keep farmer name from existing profile)
+      if (isNewFarmMode) {
+        setForm({
+          ...initialForm,
+          farmerName: profile?.farmerName ?? '',
+          country: profile?.country ?? 'Ghana',
+          sizeUnit: defaultUnitForCountry(profile?.country ?? 'Ghana'),
+        });
+      } else {
+        const country = profile?.country ?? 'Ghana';
+        setForm({
+          farmerName: profile?.farmerName ?? '',
+          farmName: profile?.farmName ?? '',
+          country,
+          location: profile?.location ?? '',
+          size: profile?.size?.toString() ?? '',
+          sizeUnit: profile?.sizeUnit || defaultUnitForCountry(country),
+          cropType: profile?.cropType ?? '',
+          gpsLat: profile?.gpsLat !== null && profile?.gpsLat !== undefined ? String(profile.gpsLat) : '',
+          gpsLng: profile?.gpsLng !== null && profile?.gpsLng !== undefined ? String(profile.gpsLng) : '',
+          locationLabel: profile?.locationLabel ?? '',
+          experienceLevel: profile?.experienceLevel ?? '',
+        });
+      }
     }
-  }, [profile, loading]);
+  }, [profile, loading, isNewFarmMode]);
 
   useEffect(() => {
     if (!loading && nameInputRef.current && !form.farmerName) {
@@ -96,8 +122,6 @@ export default function ProfileSetup() {
       form.location.trim(),
       form.size.trim(),
       form.cropType && (form.cropType !== 'OTHER' || parseCropValue(form.cropType).customCropName),
-      form.gpsLat.trim() || form.location.trim(),
-      form.gpsLng.trim() || form.location.trim(),
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [form]);
@@ -132,10 +156,12 @@ export default function ProfileSetup() {
       const { detectAndResolveLocation } = await import('../utils/geolocation.js');
       const result = await detectAndResolveLocation();
       clearTimeout(slowTimer);
-      const label = [result.locality, result.region, result.country].filter(Boolean).join(', ');
+      // GPS only populates coordinates — never overwrites user-entered country or location fields
       updateField('gpsLat', String(result.latitude));
       updateField('gpsLng', String(result.longitude));
-      if (label) updateField('location', label);
+      // Store reverse-geocoded label for optional display (e.g. FarmSnapshotCard)
+      const label = [result.locality, result.region, result.country].filter(Boolean).join(', ');
+      if (label) updateField('locationLabel', label);
       setGpsSlowMsg('');
       safeTrackEvent('gps.success', {});
     } catch {
@@ -148,13 +174,41 @@ export default function ProfileSetup() {
     }
   }
 
+  function validateBeforeSubmit() {
+    const errors = { ...initialErrors };
+    let hasError = false;
+
+    if (!form.farmerName.trim()) { errors.farmerName = t('setup.farmerNameRequired'); hasError = true; }
+    if (!form.farmName.trim()) { errors.farmName = t('setup.farmNameRequired'); hasError = true; }
+    if (!form.country.trim()) { errors.country = t('setup.countryRequired'); hasError = true; }
+    if (!form.location.trim()) { errors.location = t('setup.locationRequired'); hasError = true; }
+    if (!form.size.trim()) { errors.size = t('setup.sizeRequired'); hasError = true; }
+    else {
+      const sizeNum = Number(form.size);
+      if (Number.isNaN(sizeNum) || sizeNum <= 0) { errors.size = t('setup.sizeInvalid'); hasError = true; }
+    }
+    if (!form.cropType) { errors.cropType = t('setup.cropRequired'); hasError = true; }
+    else {
+      const cropParsed = parseCropValue(form.cropType);
+      if (cropParsed.isCustomCrop && !cropParsed.customCropName) {
+        errors.cropType = t('crop.enterYourCrop'); hasError = true;
+      }
+    }
+
+    return { errors, hasError };
+  }
+
   async function handleSave() {
     if (submitGuardRef.current) return;
 
-    // Client-side: block save if "Other" selected but no crop name entered
-    const cropParsed = parseCropValue(form.cropType);
-    if (cropParsed.isCustomCrop && !cropParsed.customCropName) {
-      setFieldErrors((prev) => ({ ...prev, cropType: t('crop.enterYourCrop') }));
+    console.log('Save Farm Profile clicked');
+    console.log('Submitting farm profile:', form);
+
+    // Client-side validation — show all field errors at once
+    const { errors: validationErrors, hasError } = validateBeforeSubmit();
+    if (hasError) {
+      setFieldErrors(validationErrors);
+      console.warn('Validation failed:', validationErrors);
       return;
     }
 
@@ -166,27 +220,50 @@ export default function ProfileSetup() {
 
     let timeoutId;
     try {
-      const savePromise = saveProfile(form);
+      const savePromise = isNewFarmMode ? createNewFarm(form) : saveProfile(form);
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('__SAVE_TIMEOUT__')), 15000);
       });
 
-      await Promise.race([savePromise, timeoutPromise]);
+      const result = await Promise.race([savePromise, timeoutPromise]);
       clearTimeout(timeoutId);
       clearDraft();
+
+      console.log('Farm profile saved:', result);
 
       trackPilotEvent('setup_completed', {
         hasGps: !!form.gpsLat && !!form.gpsLng,
         hasLocation: !!form.location,
         hasCrop: !!form.cropType,
+        isNewFarm: isNewFarmMode,
       });
       safeTrackEvent('profile.form_saved', {
         hasGps: !!form.gpsLat && !!form.gpsLng,
         hasLocation: !!form.location,
+        isNewFarm: isNewFarmMode,
       });
-      navigate('/dashboard');
+
+      if (isNewFarmMode) {
+        // New farm created — switch to it and go back to dashboard
+        const newProfile = result.profile || result;
+        if (newProfile?.id) {
+          try {
+            await switchFarm(newProfile.id);
+          } catch { /* switch is non-blocking — dashboard will show the new farm */ }
+        }
+        await refreshFarms();
+        navigate('/dashboard');
+      } else {
+        // Route to farmer-type selection if not yet classified, otherwise dashboard
+        if (!form.experienceLevel) {
+          navigate('/onboarding/farmer-type');
+        } else {
+          navigate('/dashboard');
+        }
+      }
     } catch (error) {
       clearTimeout(timeoutId);
+      console.error('Farm profile submission error:', error);
       if (error.message === '__SAVE_TIMEOUT__') {
         setSaveError(t('setup.saveTimeout'));
         trackPilotEvent('setup_failed', { reason: 'timeout' });
@@ -268,9 +345,38 @@ export default function ProfileSetup() {
             {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
           </div>
 
+          {/* Experience Level — "Are you new to farming?" */}
+          <div style={S.formGroup}>
+            <label style={S.label}>{t('guided.experienceQuestion')}</label>
+            <div style={S.experienceRow}>
+              <button
+                type="button"
+                onClick={() => updateField('experienceLevel', 'new')}
+                style={{
+                  ...S.experienceBtn,
+                  ...(form.experienceLevel === 'new' ? S.experienceBtnActive : {}),
+                }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🌱</span>
+                <span>{t('guided.newFarmer')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updateField('experienceLevel', 'experienced')}
+                style={{
+                  ...S.experienceBtn,
+                  ...(form.experienceLevel === 'experienced' ? S.experienceBtnActive : {}),
+                }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🧑‍🌾</span>
+                <span>{t('guided.experienced')}</span>
+              </button>
+            </div>
+          </div>
+
           <div style={S.formGroup}>
             <label style={S.label}>{t('setup.country')}</label>
-            <input
+            <select
               value={form.country}
               onChange={(e) => {
                 const newCountry = e.target.value;
@@ -280,18 +386,22 @@ export default function ProfileSetup() {
                   updateField('sizeUnit', defaultUnitForCountry(newCountry));
                 }
               }}
-              placeholder={t('setup.country')}
-              style={S.input}
-            />
+              style={S.select}
+            >
+              <option value="">{t('setup.selectCountry')}</option>
+              {COUNTRY_OPTIONS.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
             {fieldErrors.country && <p style={S.fieldError}>{fieldErrors.country}</p>}
           </div>
 
           <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.village')}</label>
+            <label style={S.label}>{t('setup.location')}</label>
             <input
               value={form.location}
               onChange={(e) => updateField('location', e.target.value)}
-              placeholder={t('setup.village')}
+              placeholder={t('setup.locationPlaceholder')}
               style={S.input}
             />
             {fieldErrors.location && <p style={S.fieldError}>{fieldErrors.location}</p>}
@@ -306,7 +416,7 @@ export default function ProfileSetup() {
                 step="0.1"
                 value={form.size}
                 onChange={(e) => updateField('size', e.target.value)}
-                placeholder="e.g. 2"
+                placeholder={t('setup.farmSizePlaceholder')}
                 style={{ ...S.input, flex: 1 }}
               />
               <select
@@ -339,19 +449,20 @@ export default function ProfileSetup() {
             {fieldErrors.cropType && <p style={S.fieldError}>{fieldErrors.cropType}</p>}
           </div>
 
-          {/* Farm location — GPS optional, farmer-friendly */}
+          {/* GPS — optional, improves weather & recommendations */}
           <div style={S.gpsBox}>
-            <h3 style={S.gpsHeading}>{t('location.farmLocation')}</h3>
-            <p style={S.gpsDesc}>{t('location.gpsOptionalDesc')}</p>
+            <p style={S.gpsDesc}>{t('setup.gpsOptional')}</p>
 
             {form.gpsLat ? (
               <div style={S.gpsSuccess}>
                 <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#22C55E' }}>
-                  {form.location || t('location.captured')}
+                  {t('location.captured')}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.2rem' }}>
-                  {t('location.capturedCheck')}
-                </div>
+                {form.locationLabel && (
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>
+                    {form.locationLabel}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={handleGetGPS}
@@ -478,6 +589,32 @@ const S = {
     marginTop: '0.25rem',
   },
   formGroup: {},
+  experienceRow: {
+    display: 'flex',
+    gap: '0.75rem',
+  },
+  experienceBtn: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.4rem',
+    padding: '1rem 0.5rem',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '2px solid rgba(255,255,255,0.1)',
+    color: 'rgba(255,255,255,0.7)',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    minHeight: '44px',
+    transition: 'border-color 0.2s, background 0.2s',
+  },
+  experienceBtnActive: {
+    borderColor: '#22C55E',
+    background: 'rgba(34,197,94,0.1)',
+    color: '#FFFFFF',
+  },
   label: {
     display: 'block',
     fontSize: '0.875rem',
@@ -518,6 +655,20 @@ const S = {
     fontSize: '16px',
     boxSizing: 'border-box',
     minHeight: '44px',
+  },
+  select: {
+    width: '100%',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '0.75rem 1rem',
+    outline: 'none',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    minHeight: '44px',
+    cursor: 'pointer',
+    appearance: 'auto',
   },
   fieldError: {
     fontSize: '0.875rem',

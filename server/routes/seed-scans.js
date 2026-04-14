@@ -8,11 +8,27 @@ const router = express.Router();
 // ─── GET / — list seed scans for current user's profile ──────────
 router.get('/', authenticate, async (req, res) => {
   try {
-    const profile = await prisma.farmProfile.findFirst({
-      where: { userId: req.user.id, status: 'active' },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    });
+    // Support explicit ?farmId= for farm-scoped queries
+    const farmId = req.query.farmId || null;
+    let profile;
+    if (farmId) {
+      profile = await prisma.farmProfile.findFirst({
+        where: { id: farmId, userId: req.user.id },
+        select: { id: true },
+      });
+    } else {
+      profile = await prisma.farmProfile.findFirst({
+        where: { userId: req.user.id, isDefault: true, status: 'active' },
+        select: { id: true },
+      });
+      if (!profile) {
+        profile = await prisma.farmProfile.findFirst({
+          where: { userId: req.user.id, status: 'active' },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true },
+        });
+      }
+    }
     if (!profile) return res.json({ success: true, scans: [] });
 
     const scans = await prisma.v2SeedScan.findMany({

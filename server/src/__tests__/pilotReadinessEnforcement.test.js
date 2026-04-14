@@ -272,7 +272,7 @@ describe('ProfileSetup — localization', () => {
   it('uses t() for GPS messages (farmer-friendly)', () => {
     // After GPS cleanup: technical error keys replaced with single calm fallback
     expect(setup).toContain("t('location.gpsFallback')");
-    expect(setup).toContain("t('location.farmLocation')");
+    expect(setup).toContain("t('setup.gpsOptional')");
     expect(setup).toContain("t('location.getMyLocation')");
   });
 

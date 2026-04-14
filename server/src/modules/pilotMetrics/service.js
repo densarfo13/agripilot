@@ -15,6 +15,16 @@
  */
 
 import prisma from '../../config/database.js';
+import {
+  buildActivityFilters,
+  buildTimeWindows,
+  summarizeCompleteness,
+  DEFAULT_ACTIVITY_WINDOW_DAYS,
+} from '../../utils/farmerOps.js';
+import {
+  evaluatePesticideCompliance,
+  summarizeCompliance,
+} from '../../utils/pesticideCompliance.js';
 
 // ─── Org filter helpers ────────────────────────────────────
 
@@ -168,7 +178,33 @@ export async function getPilotMetrics({ organizationId } = {}) {
     farmProfilesWithLand: landAgg._count.landSizeHectares || 0,
   };
 
-  return {
+  // ── Time-bound activity status (single source of truth) ──
+  const tw = buildTimeWindows();
+  const { activeFarmerWhere, inactiveFarmerWhere, setupIncompleteWhere } = buildActivityFilters({
+    organizationId,
+  });
+
+  const [activeFarmersTimeBound, inactiveFarmersTimeBound, setupIncompleteFarmers, duplicateFlagged] = await Promise.all([
+    prisma.farmer.count({ where: activeFarmerWhere }),
+    prisma.farmer.count({ where: inactiveFarmerWhere }),
+    prisma.farmer.count({ where: setupIncompleteWhere }),
+    prisma.farmer.count({
+      where: { ...fFilter, duplicateFlag: { in: ['possible_duplicate', 'review_needed'] } },
+    }),
+  ]);
+
+  // ── Profile completeness (sample) ──────────────────────
+  const farmerSample = await prisma.farmer.findMany({
+    where: { ...fFilter, registrationStatus: 'approved' },
+    select: {
+      fullName: true, phone: true, region: true,
+      primaryCrop: true, landSizeHectares: true, countryCode: true,
+    },
+    take: 500,
+  });
+  const completenessResult = summarizeCompleteness(farmerSample);
+
+  const metrics = {
     generatedAt: new Date().toISOString(),
     farmers: {
       total: totalFarmers,
@@ -177,6 +213,13 @@ export async function getPilotMetrics({ organizationId } = {}) {
       invitedNotActivated,
       womenFarmers,
       youthFarmers,
+    },
+    activityStatus: {
+      active: activeFarmersTimeBound,
+      inactive: inactiveFarmersTimeBound,
+      setupIncomplete: setupIncompleteFarmers,
+      windowDays: tw.windowDays,
+      windowLabel: tw.windowLabel,
     },
     adoption: {
       loggedIn: farmersLoggedIn,
@@ -201,14 +244,71 @@ export async function getPilotMetrics({ organizationId } = {}) {
       underReview: underReviewApplications,
       approved: approvedApplications,
     },
+    profileCompleteness: {
+      complete: completenessResult.complete,
+      incomplete: completenessResult.incomplete,
+      completePct: completenessResult.completePct,
+      commonMissing: completenessResult.commonMissing.slice(0, 5),
+    },
     cropDistribution,
     landSize,
     attention: {
       pendingOfficerValidation,
       lowCredibilitySeasons,
       pendingApproval,
+      duplicateFlagged,
     },
   };
+
+  // ── Pesticide compliance (non-blocking, farm-specific) ──
+  try {
+    const farmersWithPesticide = await prisma.farmer.findMany({
+      where: { ...fFilter, farmActivities: { some: { activityType: 'pesticide' } } },
+      select: { id: true },
+      take: 500,
+    });
+
+    if (farmersWithPesticide.length > 0) {
+      const farmerIds = farmersWithPesticide.map(f => f.id);
+      const [allPesticideActs, allHarvestActs] = await Promise.all([
+        prisma.farmActivity.findMany({
+          where: { farmerId: { in: farmerIds }, activityType: 'pesticide' },
+          orderBy: { activityDate: 'desc' },
+          select: { id: true, farmerId: true, activityDate: true, metadata: true },
+        }),
+        prisma.farmActivity.findMany({
+          where: { farmerId: { in: farmerIds }, activityType: 'harvesting' },
+          orderBy: { activityDate: 'desc' },
+          select: { id: true, farmerId: true, activityDate: true, quantity: true, unit: true },
+        }),
+      ]);
+
+      const pestByFarmer = {};
+      for (const act of allPesticideActs) {
+        if (!pestByFarmer[act.farmerId]) pestByFarmer[act.farmerId] = [];
+        pestByFarmer[act.farmerId].push(act);
+      }
+      const harvByFarmer = {};
+      for (const act of allHarvestActs) {
+        if (!harvByFarmer[act.farmerId]) harvByFarmer[act.farmerId] = [];
+        harvByFarmer[act.farmerId].push(act);
+      }
+
+      const results = Object.keys(pestByFarmer).map(fId =>
+        evaluatePesticideCompliance({
+          pesticideActivities: pestByFarmer[fId],
+          harvestActivities: harvByFarmer[fId] || [],
+        })
+      );
+      metrics.pesticideCompliance = summarizeCompliance(results);
+    } else {
+      metrics.pesticideCompliance = { compliant: 0, needsReview: 0, nonCompliant: 0, totalEvaluated: 0 };
+    }
+  } catch {
+    metrics.pesticideCompliance = null;
+  }
+
+  return metrics;
 }
 
 // ─── Completion Funnel ─────────────────────────────────────
@@ -825,6 +925,8 @@ export async function getPilotReport({ organizationId, format = 'json' } = {}) {
       totalApplications:     metrics.applications.total,
       approvedApplications:  metrics.applications.approved,
     },
+    activityStatus: metrics.activityStatus,
+    profileCompleteness: metrics.profileCompleteness,
     inviteActivationRate: delivery.summary.activationRate,
     deliverySuccessRate:  delivery.summary.deliverySuccessRate,
     funnelCompletionRate: funnel.funnel.length > 0
@@ -851,7 +953,10 @@ function buildCSV(report) {
     ['Metric', 'Value'],
     ['Total Farmers', report.summary.totalFarmers],
     ['Approved Farmers', report.summary.approvedFarmers],
-    ['Active Farmers (logged in)', report.summary.activeFarmers],
+    ['Active Farmers (logged in, legacy)', report.summary.activeFarmers],
+    [`Active Farmers (${DEFAULT_ACTIVITY_WINDOW_DAYS}d window)`, report.activityStatus?.active || 'N/A'],
+    [`Inactive Farmers (${DEFAULT_ACTIVITY_WINDOW_DAYS}d window)`, report.activityStatus?.inactive || 'N/A'],
+    ['Setup Incomplete', report.activityStatus?.setupIncomplete || 'N/A'],
     ['Farmers with First Update', report.summary.farmersWithFirstUpdate],
     ['Farmers with Harvest', report.summary.farmersWithHarvest],
     ['Active Seasons', report.summary.activeSeasons],

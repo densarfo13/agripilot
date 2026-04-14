@@ -5,7 +5,7 @@ import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel } from '../utils/crops.js';
 
-const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
+const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'pesticide', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
 export default function FarmerActivitiesTab() {
   const { farmerId, farmer, refresh, activeSeason } = useFarmerContext();
@@ -13,7 +13,7 @@ export default function FarmerActivitiesTab() {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ activityType: 'planting', cropType: '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState({ activityType: 'planting', cropType: '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0], pesticideName: '', pesticideAmount: '' });
   const [submitting, setSubmitting] = useState(false);
   const submitGuardRef = useRef(false);
   const [error, setError] = useState('');
@@ -37,16 +37,23 @@ export default function FarmerActivitiesTab() {
     submitGuardRef.current = true;
     setSubmitting(true);
     try {
-      await api.post(`/activities/farmer/${farmerId}`, {
+      const activityPayload = {
         activityType: form.activityType,
         cropType: form.cropType || undefined,
         description: form.description || undefined,
         quantityKg: form.quantityKg ? parseFloat(form.quantityKg) : undefined,
         activityDate: form.activityDate || undefined,
-      });
+      };
+      if (form.activityType === 'pesticide') {
+        activityPayload.metadata = {
+          pesticideName: form.pesticideName.trim(),
+          ...(form.pesticideAmount.trim() ? { amountUsed: form.pesticideAmount.trim() } : {}),
+        };
+      }
+      await api.post(`/activities/farmer/${farmerId}`, activityPayload);
       setShowForm(false);
       // Reset form but preserve crop prefill for next entry
-      setForm({ activityType: 'planting', cropType: activeSeason?.cropType || '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0] });
+      setForm({ activityType: 'planting', cropType: activeSeason?.cropType || '', description: '', quantityKg: '', activityDate: new Date().toISOString().split('T')[0], pesticideName: '', pesticideAmount: '' });
       loadActivities();
       refresh();
     } catch (err) {
@@ -106,6 +113,18 @@ export default function FarmerActivitiesTab() {
                   <label className="form-label">Quantity (kg)</label>
                   <input className="form-input" type="number" step="0.1" value={form.quantityKg} onChange={e => setForm({ ...form, quantityKg: e.target.value })} placeholder="Optional" />
                 </div>
+                {form.activityType === 'pesticide' && (
+                  <>
+                    <div>
+                      <label className="form-label">Pesticide Name *</label>
+                      <input className="form-input" value={form.pesticideName} onChange={e => setForm({ ...form, pesticideName: e.target.value })} placeholder="e.g. Neem oil, Cypermethrin" />
+                    </div>
+                    <div>
+                      <label className="form-label">Amount Used</label>
+                      <input className="form-input" value={form.pesticideAmount} onChange={e => setForm({ ...form, pesticideAmount: e.target.value })} placeholder="e.g. 2 litres, 500ml" />
+                    </div>
+                  </>
+                )}
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Description</label>
                   <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Optional notes" />
@@ -113,7 +132,7 @@ export default function FarmerActivitiesTab() {
               </div>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                <button type="submit" className="btn btn-primary" disabled={submitting || (form.activityType === 'pesticide' && !form.pesticideName.trim())}>
                   {submitting ? 'Saving...' : 'Log Activity'}
                 </button>
               </div>
@@ -152,7 +171,11 @@ export default function FarmerActivitiesTab() {
                         <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
                         <td>{a.cropType ? getCropLabel(a.cropType) : '-'}</td>
                         <td>{a.quantityKg ? `${a.quantityKg} kg` : '-'}</td>
-                        <td className="text-sm text-muted">{a.description || '-'}</td>
+                        <td className="text-sm text-muted">
+                          {a.activityType === 'pesticide' && a.metadata?.pesticideName
+                            ? `${a.metadata.pesticideName}${a.metadata.amountUsed ? ` (${a.metadata.amountUsed})` : ''}`
+                            : (a.description || '-')}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

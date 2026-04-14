@@ -6,13 +6,13 @@ import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 
 /**
- * FarmSwitcher — shows all active farms, highlights default.
- * Only visible when user has more than one active farm.
- * Tapping a non-default farm sets it as default.
- * Low-literacy friendly: farm name + crop + location, one-tap switch.
+ * FarmSwitcher — always visible. Shows active farm, allows switching.
+ * Single farm: shows farm label + "Add New Farm".
+ * Multiple farms: dropdown with sorted list + switch actions.
+ * Handles missing/archived default gracefully.
  */
 export default function FarmSwitcher() {
-  const { profile, activeFarms, switchFarm, refreshProfile } = useProfile();
+  const { profile, activeFarms, switchFarm, refreshProfile, farmSwitching } = useProfile();
   const { isOnline } = useNetwork();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -20,14 +20,17 @@ export default function FarmSwitcher() {
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState(null);
 
-  // Only show if user has more than 1 active farm
-  if (!activeFarms || activeFarms.length <= 1) return null;
-
-  const defaultFarm = activeFarms.find((f) => f.isDefault) || profile;
-  const otherFarms = activeFarms.filter((f) => f.id !== defaultFarm?.id);
+  const hasFarms = activeFarms && activeFarms.length > 0;
+  const hasMultiple = activeFarms && activeFarms.length > 1;
+  const defaultFarm = hasFarms
+    ? (activeFarms.find((f) => f.isDefault) || activeFarms[0])
+    : profile;
+  const otherFarms = hasMultiple
+    ? activeFarms.filter((f) => f.id !== defaultFarm?.id)
+    : [];
 
   async function handleSetDefault(farmId) {
-    if (switching) return;
+    if (switching || farmSwitching) return;
     setSwitching(true);
     setError(null);
     try {
@@ -56,11 +59,15 @@ export default function FarmSwitcher() {
         data-testid="farm-switcher-btn"
       >
         <div style={S.triggerLeft}>
-          <span style={S.defaultBadge}>{t('farm.defaultFarm')}</span>
+          <span style={S.defaultBadge}>
+            {hasMultiple ? t('farm.defaultFarm') : t('farm.yourFarm')}
+          </span>
           <span style={S.farmName}>{defaultFarm?.farmName || defaultFarm?.location || t('farm.activeFarm')}</span>
         </div>
         <div style={S.triggerRight}>
-          <span style={S.farmCount}>{activeFarms.length} {t('farm.farms')}</span>
+          {hasMultiple && (
+            <span style={S.farmCount}>{activeFarms.length} {t('farm.farms')}</span>
+          )}
           <span style={S.arrow}>{open ? '\u25B2' : '\u25BC'}</span>
         </div>
       </button>
@@ -71,10 +78,10 @@ export default function FarmSwitcher() {
             <button
               key={farm.id}
               onClick={() => handleSetDefault(farm.id)}
-              disabled={switching || !isOnline}
+              disabled={switching || farmSwitching || !isOnline}
               style={{
                 ...S.farmItem,
-                ...(switching ? S.farmItemDisabled : {}),
+                ...((switching || farmSwitching) ? S.farmItemDisabled : {}),
               }}
               data-testid={`farm-item-${farm.id}`}
             >
@@ -89,7 +96,7 @@ export default function FarmSwitcher() {
             + {t('farm.addNew')}
           </button>
 
-          {!isOnline && (
+          {!isOnline && hasMultiple && (
             <div style={S.offlineHint}>{t('farm.offlineSwitch')}</div>
           )}
           {error && <div style={S.errorMsg}>{error}</div>}

@@ -8,6 +8,8 @@ vi.mock('../config/database.js', () => ({
     progressScore: { findUnique: vi.fn(), upsert: vi.fn() },
     seasonProgressEntry: { findMany: vi.fn() },
     stageConfirmation: { findMany: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(),
   },
 }));

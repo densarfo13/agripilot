@@ -21,6 +21,8 @@ vi.mock('../config/database.js', () => {
     reviewAssignment: { create: vi.fn() },
     user: { findUnique: vi.fn() },
     farmer: { findUnique: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     // Interactive transaction: executes the callback passing the prisma client itself
     // so tx.application.updateMany etc. reference the same mocks.
     $transaction: vi.fn(async (fn) => fn(mockPrisma)),

@@ -13,6 +13,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../config/database.js', () => {
   const mockPrisma = {
     farmer: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
     farmProfile: { create: vi.fn(), update: vi.fn() },
   };
   return { default: mockPrisma };

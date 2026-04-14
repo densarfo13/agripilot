@@ -12,6 +12,8 @@ vi.mock('../config/database.js', () => {
     harvestReport:         { count: vi.fn() },
     application:           { count: vi.fn() },
     credibilityAssessment: { count: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     pilotChecklistItem: {
       findMany:  vi.fn(),
       findFirst: vi.fn(),

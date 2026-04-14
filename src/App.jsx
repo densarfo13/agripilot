@@ -21,6 +21,8 @@ const V2ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const V2ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 const V2VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
 const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
+const V2FarmerType = lazy(() => import('./pages/FarmerType.jsx'));
+const V2StarterGuide = lazy(() => import('./pages/StarterGuide.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 // ProtectedLayout is NOT lazy — it's the auth/profile gate and must stay mounted
 // while inner lazy children (Dashboard, etc.) load via their own Suspense boundary.
@@ -181,6 +183,8 @@ export default function App() {
           <Route path="/verify-email" element={<V2VerifyEmail />} />
           <Route path="/profile/setup" element={<V2ProfileSetup />} />
           <Route element={<V2ProtectedLayout />}>
+            <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
+            <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />
             <Route path="/dashboard" element={<V2Dashboard />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/pest-risk-check" element={<PestRiskCheck />} />

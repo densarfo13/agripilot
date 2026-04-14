@@ -18,6 +18,8 @@ vi.mock('../config/database.js', () => ({
     organization: {
       findUnique: vi.fn(),
     },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 

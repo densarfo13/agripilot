@@ -205,6 +205,7 @@ vi.mock('../config/database.js', () => {
     reviewAssignment: { create: vi.fn(), findFirst: vi.fn() },
     reviewNote: { create: vi.fn() },
     user: { findUnique: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(),
   };
   return { default: mockPrisma };

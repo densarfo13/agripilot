@@ -7,6 +7,8 @@ import { normalizePhoneForStorage } from '../../utils/phoneUtils.js';
 import { config } from '../../config/index.js';
 import { computeLandSizeFields, fromHectares } from '../../utils/landSize.js';
 import { normalizeCrop } from '../farmProfiles/service.js';
+import { scoreDuplicateMatch, calculateFarmerCompleteness, classifyFarmerActivity } from '../../utils/farmerOps.js';
+import { evaluatePesticideCompliance } from '../../utils/pesticideCompliance.js';
 
 const VALID_GENDERS = ['male', 'female', 'other', 'prefer_not_to_say'];
 
@@ -61,9 +63,10 @@ import { logWorkflowEvent, opsEvent } from '../../utils/opsLogger.js';
 /**
  * Check for potential duplicate farmers before creation.
  * Returns { hasDuplicate, duplicates[] } — warning-only, never blocks.
+ * Enhanced with scored matching (see utils/farmerOps.js scoreDuplicateMatch).
  * Used by staff-create and invite endpoints.
  */
-export async function checkDuplicateFarmer({ phone, fullName, region, organizationId, email }) {
+export async function checkDuplicateFarmer({ phone, fullName, region, organizationId, email, nationalId, primaryCrop }) {
   const conditions = [];
 
   // Exact phone match (strongest signal)
@@ -79,6 +82,11 @@ export async function checkDuplicateFarmer({ phone, fullName, region, organizati
     });
   }
 
+  // National ID match
+  if (nationalId) {
+    conditions.push({ nationalId: { equals: nationalId.replace(/\s+/g, ''), mode: 'insensitive' } });
+  }
+
   // Name + region match (weaker signal, warn only)
   if (fullName && region) {
     conditions.push({
@@ -87,6 +95,11 @@ export async function checkDuplicateFarmer({ phone, fullName, region, organizati
         { region: { equals: region, mode: 'insensitive' } },
       ],
     });
+  }
+
+  // Name-only match (for fuzzy scoring downstream)
+  if (fullName && !region) {
+    conditions.push({ fullName: { equals: fullName, mode: 'insensitive' } });
   }
 
   if (conditions.length === 0) return { hasDuplicate: false, duplicates: [] };
@@ -101,33 +114,53 @@ export async function checkDuplicateFarmer({ phone, fullName, region, organizati
       id: true,
       fullName: true,
       phone: true,
+      nationalId: true,
       region: true,
+      primaryCrop: true,
       registrationStatus: true,
+      duplicateFlag: true,
       createdAt: true,
     },
-    take: 5,
+    take: 10,
   });
 
-  if (matches.length > 0) {
-    logWorkflowEvent('duplicate_farmer_detected', {
-      inputPhone: phone,
-      inputName: fullName,
-      inputRegion: region,
-      matchCount: matches.length,
-      matchIds: matches.map(m => m.id),
-    });
-  }
-
-  return {
-    hasDuplicate: matches.length > 0,
-    duplicates: matches.map(m => ({
+  // Score each match
+  const input = { phone, fullName, region, nationalId, primaryCrop };
+  const scored = matches.map(m => {
+    const { score, signals, matchLevel } = scoreDuplicateMatch(input, m);
+    return {
       id: m.id,
       fullName: m.fullName,
       phone: m.phone,
       region: m.region,
       status: m.registrationStatus,
+      duplicateFlag: m.duplicateFlag,
       createdAt: m.createdAt,
-    })),
+      matchScore: score,
+      matchSignals: signals,
+      matchLevel,
+    };
+  });
+
+  // Filter out non-matches and sort by score descending
+  const meaningful = scored.filter(s => s.matchLevel !== 'none').sort((a, b) => b.matchScore - a.matchScore);
+
+  if (meaningful.length > 0) {
+    logWorkflowEvent('duplicate_farmer_detected', {
+      inputPhone: phone,
+      inputName: fullName,
+      inputRegion: region,
+      matchCount: meaningful.length,
+      matchIds: meaningful.map(m => m.id),
+      topMatchLevel: meaningful[0].matchLevel,
+      topMatchScore: meaningful[0].matchScore,
+    });
+  }
+
+  return {
+    hasDuplicate: meaningful.length > 0,
+    topMatchLevel: meaningful.length > 0 ? meaningful[0].matchLevel : null,
+    duplicates: meaningful.slice(0, 5),
   };
 }
 
@@ -291,7 +324,38 @@ export async function createFarmer(data, userId, organizationId) {
   return farmer;
 }
 
-export async function listFarmers({ page = 1, limit = 20, search, region, registrationStatus, orgScope = {} }) {
+/**
+ * Persist duplicate flag on a farmer after detection.
+ * Called after creation if duplicates were found and user confirmed.
+ */
+export async function setDuplicateFlag(farmerId, { flag, duplicateOfId, score, signals, reviewedBy }) {
+  return prisma.farmer.update({
+    where: { id: farmerId },
+    data: {
+      duplicateFlag: flag || 'possible_duplicate', // 'possible_duplicate' | 'review_needed' | 'cleared'
+      duplicateOfId: duplicateOfId || null,
+      duplicateScore: score || null,
+      duplicateSignals: signals || null,
+      ...(reviewedBy ? { duplicateReviewedAt: new Date(), duplicateReviewedBy: reviewedBy } : {}),
+    },
+  });
+}
+
+/**
+ * Admin clears a duplicate flag after review.
+ */
+export async function clearDuplicateFlag(farmerId, reviewedBy) {
+  return prisma.farmer.update({
+    where: { id: farmerId },
+    data: {
+      duplicateFlag: 'cleared',
+      duplicateReviewedAt: new Date(),
+      duplicateReviewedBy: reviewedBy,
+    },
+  });
+}
+
+export async function listFarmers({ page = 1, limit = 20, search, region, registrationStatus, programId, cohortId, duplicateFlag, activityStatus, orgScope = {} }) {
   const where = { ...orgScope };
   if (search) {
     where.OR = [
@@ -302,6 +366,9 @@ export async function listFarmers({ page = 1, limit = 20, search, region, regist
   }
   if (region) where.region = region;
   if (registrationStatus) where.registrationStatus = registrationStatus;
+  if (programId) where.programId = programId;
+  if (cohortId) where.cohortId = cohortId;
+  if (duplicateFlag) where.duplicateFlag = duplicateFlag;
 
   const [farmers, total] = await Promise.all([
     prisma.farmer.findMany({
@@ -309,7 +376,10 @@ export async function listFarmers({ page = 1, limit = 20, search, region, regist
       include: {
         createdBy: { select: { id: true, fullName: true } },
         organization: { select: { id: true, name: true, type: true } },
-        userAccount: { select: { id: true, active: true } },
+        program: { select: { id: true, name: true } },
+        cohort: { select: { id: true, name: true } },
+        userAccount: { select: { id: true, active: true, lastLoginAt: true } },
+        farmSeasons: { select: { id: true, status: true, lastActivityDate: true }, take: 5 },
         _count: { select: { applications: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -320,37 +390,96 @@ export async function listFarmers({ page = 1, limit = 20, search, region, regist
   ]);
 
   // Attach computed status fields so the UI doesn't have to re-derive
-  const enriched = farmers.map(f => ({
-    ...f,
-    accessStatus: computeAccessStatus(f),
-    inviteStatus: computeInviteStatus(f),
-  }));
+  const enriched = farmers.map(f => {
+    const activity = classifyFarmerActivity(f);
+    const completeness = calculateFarmerCompleteness(f);
+    return {
+      ...f,
+      accessStatus: computeAccessStatus(f),
+      inviteStatus: computeInviteStatus(f),
+      activityStatus: activity.status,
+      activityReason: activity.reason,
+      lastActivityAt: activity.lastActivityAt,
+      profileComplete: completeness.complete,
+      completionPct: completeness.completionPct,
+      missingFields: completeness.missingFields,
+    };
+  });
 
-  return { farmers: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
+  // Post-filter by activityStatus if requested (computed, not DB-level)
+  let result = enriched;
+  if (activityStatus) {
+    result = enriched.filter(f => f.activityStatus === activityStatus);
+  }
+
+  return { farmers: result, total: activityStatus ? result.length : total, page, limit, totalPages: Math.ceil((activityStatus ? result.length : total) / limit) };
 }
 
 export async function getFarmerById(id) {
-  const farmer = await prisma.farmer.findUnique({
-    where: { id },
-    include: {
-      createdBy: { select: { id: true, fullName: true, email: true } },
-      userAccount: { select: { id: true, email: true, fullName: true, active: true, lastLoginMethod: true, createdAt: true } },
-      organization: { select: { id: true, name: true, type: true } },
-      applications: {
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
+  const [farmer, pesticideActivities, harvestActivities, validationCount] = await Promise.all([
+    prisma.farmer.findUnique({
+      where: { id },
+      include: {
+        createdBy: { select: { id: true, fullName: true, email: true } },
+        userAccount: { select: { id: true, email: true, fullName: true, active: true, lastLoginMethod: true, lastLoginAt: true, createdAt: true } },
+        organization: { select: { id: true, name: true, type: true } },
+        program: { select: { id: true, name: true } },
+        cohort: { select: { id: true, name: true } },
+        farmSeasons: { select: { id: true, status: true, lastActivityDate: true }, orderBy: { createdAt: 'desc' }, take: 5 },
+        applications: {
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.farmActivity.findMany({
+      where: { farmerId: id, activityType: 'pesticide' },
+      orderBy: { activityDate: 'desc' },
+      select: { id: true, activityDate: true, metadata: true },
+    }),
+    prisma.farmActivity.findMany({
+      where: { farmerId: id, activityType: 'harvesting' },
+      orderBy: { activityDate: 'desc' },
+      select: { id: true, activityDate: true, quantity: true, unit: true },
+      take: 10,
+    }),
+    prisma.officerValidation.count({
+      where: { season: { farmerId: id } },
+    }),
+  ]);
   if (!farmer) {
     const err = new Error('Farmer not found');
     err.statusCode = 404;
     throw err;
   }
+  const activity = classifyFarmerActivity(farmer);
+  const completeness = calculateFarmerCompleteness(farmer);
+  const compliance = evaluatePesticideCompliance({
+    pesticideActivities,
+    harvestActivities,
+    hasOfficerValidation: validationCount > 0,
+  });
   return {
     ...farmer,
     accessStatus: computeAccessStatus(farmer),
     inviteStatus: computeInviteStatus(farmer),
+    activityStatus: activity.status,
+    activityReason: activity.reason,
+    lastActivityAt: activity.lastActivityAt,
+    profileComplete: completeness.complete,
+    completionPct: completeness.completionPct,
+    missingFields: completeness.missingFields,
+    pesticideCompliance: {
+      status: compliance.status,
+      reason: compliance.reason,
+      action: compliance.action,
+      farmerLabel: compliance.farmerLabel,
+      confidence: compliance.confidence,
+      violationCount: compliance.violations.length,
+      totalApplications: compliance.summary.totalApplications,
+      context: compliance.context,
+      timeline: compliance.timeline,
+    },
   };
 }
 

@@ -32,6 +32,7 @@ const {
     application:         { count: vi.fn(), groupBy: vi.fn() },
     autoNotification:    { count: vi.fn(), create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn(), groupBy: vi.fn() },
     farmerNotification:  { create: vi.fn() },
+    farmActivity:        { findMany: vi.fn().mockResolvedValue([]) },
   },
   _triggerEngine: { collectAllTriggers: vi.fn() },
   _rateLimiter:   { isAllowed: vi.fn() },

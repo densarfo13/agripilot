@@ -27,6 +27,7 @@ vi.mock('../config/database.js', () => ({
       update:     vi.fn(),
     },
     farmerNotification: { create: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 

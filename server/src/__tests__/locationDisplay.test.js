@@ -134,24 +134,16 @@ describe('ProfileSetup (V2) — no lat/lng inputs, farmer-friendly GPS', () => {
     expect(src).not.toContain("t('setup.longitude')");
   });
 
-  it('shows Farm Location heading', () => {
-    expect(src).toContain("t('location.farmLocation')");
-  });
-
-  it('shows optional description', () => {
-    expect(src).toContain("t('location.gpsOptionalDesc')");
+  it('shows GPS as optional', () => {
+    expect(src).toContain("t('setup.gpsOptional')");
   });
 
   it('shows Get My Location button', () => {
     expect(src).toContain("t('location.getMyLocation')");
   });
 
-  it('shows readable location after GPS capture', () => {
-    expect(src).toContain("form.location || t('location.captured')");
-  });
-
-  it('shows location saved confirmation', () => {
-    expect(src).toContain("t('location.capturedCheck')");
+  it('shows captured confirmation after GPS', () => {
+    expect(src).toContain("t('location.captured')");
   });
 
   it('uses farmer-friendly fallback error (not technical)', () => {

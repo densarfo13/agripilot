@@ -7,6 +7,8 @@ vi.mock('../config/database.js', () => ({
     farmSeason: { findUnique: vi.fn() },
     farmer: { findUnique: vi.fn() },
     application: { findUnique: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 

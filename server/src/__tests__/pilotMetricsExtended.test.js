@@ -23,6 +23,7 @@ vi.mock('../config/database.js', () => {
     credibilityAssessment: { count: vi.fn(), findMany: vi.fn() },
     reviewAssignment: { findMany: vi.fn() },
     farmProfile: { groupBy: vi.fn(), aggregate: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   };
   return { default: mockPrisma };
 });

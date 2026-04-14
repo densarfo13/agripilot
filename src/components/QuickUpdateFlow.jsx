@@ -36,6 +36,7 @@ function getActivityOptions(t, suggestedActivity) {
     { value: 'progress', label: t('update.activity.progress'), icon: '🌱' },
     { value: 'harvest', label: t('update.activity.harvest'), icon: '🌾' },
     { value: 'spray', label: t('update.activity.spray'), icon: '💧' },
+    { value: 'pesticide', label: t('update.activity.pesticide'), icon: '🧴' },
     { value: 'issue', label: t('update.activity.issue'), icon: '⚠️' },
     { value: 'other', label: t('update.activity.other'), icon: '📋' },
   ];
@@ -55,6 +56,7 @@ const ACTIVITY_API_MAP = {
   progress: 'other',
   harvest: 'harvesting',
   spray: 'spraying',
+  pesticide: 'pesticide',
   issue: 'other',
   other: 'other',
 };
@@ -64,6 +66,7 @@ const ACTIVITY_CONDITION_MAP = {
   progress: 'good',
   harvest: 'good',
   spray: 'average',
+  pesticide: 'average',
   issue: 'poor',
   other: 'good',
 };
@@ -74,6 +77,7 @@ function activityDescription(val, t) {
     progress: 'Crop progress update',
     harvest: 'Harvest update',
     spray: 'Spraying / treatment update',
+    pesticide: 'Pesticide applied',
     issue: 'Issue reported via quick update',
     other: 'Farm update',
   };
@@ -132,6 +136,8 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   // Steps: camera | review | submitting | done | offline | error
   const [step, setStep] = useState('camera');
   const [activity, setActivity] = useState(() => suggestActivity(seasonStage));
+  const [pesticideName, setPesticideName] = useState('');
+  const [pesticideAmount, setPesticideAmount] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [error, setError] = useState('');
@@ -158,15 +164,22 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
   const submitAction = useGuaranteedAction({
     timeoutMs: 12000,
     onOffline: async () => {
+      const offlineData = {
+        activityType: ACTIVITY_API_MAP[activity] || 'other',
+        entryType: 'activity',
+        entryDate: new Date().toISOString().split('T')[0],
+        description: activityDescription(activity, t),
+      };
+      if (activity === 'pesticide') {
+        offlineData.metadata = {
+          pesticideName: pesticideName.trim(),
+          ...(pesticideAmount.trim() ? { amountUsed: pesticideAmount.trim() } : {}),
+        };
+      }
       const offlinePayload = {
         method: 'POST',
         url: `/seasons/${seasonId}/progress`,
-        data: {
-          activityType: ACTIVITY_API_MAP[activity] || 'other',
-          entryType: 'activity',
-          entryDate: new Date().toISOString().split('T')[0],
-          description: activityDescription(activity, t),
-        },
+        data: offlineData,
       };
       await enqueue(offlinePayload);
       trackPilotEvent('quick_update_offline', { farmerId, activity });
@@ -233,6 +246,14 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         entryDate: new Date().toISOString().split('T')[0],
         description: activityDescription(activity, t),
       };
+
+      // Attach pesticide metadata when applicable
+      if (activity === 'pesticide') {
+        payload.metadata = {
+          pesticideName: pesticideName.trim(),
+          ...(pesticideAmount.trim() ? { amountUsed: pesticideAmount.trim() } : {}),
+        };
+      }
 
       await api.post(`/seasons/${seasonId}/progress`, payload);
 
@@ -380,10 +401,44 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
           ))}
         </div>
 
+        {/* Pesticide fields — shown only when pesticide selected */}
+        {activity === 'pesticide' && (
+          <div style={QS.pesticideFields} data-testid="pesticide-fields">
+            <div style={QS.fieldWrap}>
+              <label style={QS.fieldLabel}>{t('update.pesticideName')} *</label>
+              <input
+                type="text"
+                value={pesticideName}
+                onChange={e => setPesticideName(e.target.value)}
+                placeholder={t('update.pesticideNameHint')}
+                style={QS.fieldInput}
+                data-testid="pesticide-name-input"
+                autoComplete="off"
+              />
+            </div>
+            <div style={QS.fieldWrap}>
+              <label style={QS.fieldLabel}>{t('update.pesticideAmount')}</label>
+              <input
+                type="text"
+                value={pesticideAmount}
+                onChange={e => setPesticideAmount(e.target.value)}
+                placeholder={t('update.pesticideAmountHint')}
+                style={QS.fieldInput}
+                data-testid="pesticide-amount-input"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          style={QS.submitBtn}
+          style={{
+            ...QS.submitBtn,
+            ...(activity === 'pesticide' && !pesticideName.trim() ? QS.submitBtnDisabled : {}),
+          }}
+          disabled={activity === 'pesticide' && !pesticideName.trim()}
           data-testid="submit-update-btn"
         >
           {t('update.submitUpdate')}
@@ -553,6 +608,22 @@ const QS = {
     borderRadius: '4px', marginLeft: '0.15rem',
   },
 
+  // Pesticide fields
+  pesticideFields: {
+    display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem',
+    padding: '0.75rem', background: '#162033', borderRadius: '12px',
+    border: '1px solid #243041',
+  },
+  fieldWrap: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+  fieldLabel: {
+    fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)',
+  },
+  fieldInput: {
+    padding: '0.7rem 0.75rem', background: '#0F172A', border: '1px solid #334155',
+    borderRadius: '10px', color: '#FFFFFF', fontSize: '1rem',
+    minHeight: '44px', outline: 'none', WebkitAppearance: 'none',
+  },
+
   // Submit
   submitBtn: {
     width: '100%', padding: '1rem', marginTop: 'auto',
@@ -561,6 +632,11 @@ const QS = {
     fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer',
     minHeight: '56px', WebkitTapHighlightColor: 'transparent',
     boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+  },
+  submitBtnDisabled: {
+    opacity: 0.4, cursor: 'not-allowed',
+    background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+    boxShadow: 'none',
   },
 
   // Success screen

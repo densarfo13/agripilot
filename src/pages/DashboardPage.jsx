@@ -176,6 +176,21 @@ export default function DashboardPage() {
       color: t.priority === 'High' ? '#EF4444' : t.priority === 'Medium' ? '#F59E0B' : '#A1A1AA',
     });
   });
+  // Pesticide compliance warnings
+  if (adoption?.pesticideCompliance?.nonCompliant > 0) {
+    attentionItems.push({
+      icon: '🧴', label: `${adoption.pesticideCompliance.nonCompliant} farmer${adoption.pesticideCompliance.nonCompliant > 1 ? 's' : ''} non-compliant (pesticide)`,
+      detail: 'Review pesticide usage violations',
+      priority: 'High', href: '/farmers', color: '#EF4444',
+    });
+  }
+  if (adoption?.pesticideCompliance?.needsReview > 0) {
+    attentionItems.push({
+      icon: '🧴', label: `${adoption.pesticideCompliance.needsReview} farmer${adoption.pesticideCompliance.needsReview > 1 ? 's' : ''} need pesticide review`,
+      detail: 'Missing pesticide data — check records',
+      priority: 'Medium', href: '/farmers', color: '#F59E0B',
+    });
+  }
   // Then alerts
   alerts.slice(0, 3).forEach(a => {
     attentionItems.push({

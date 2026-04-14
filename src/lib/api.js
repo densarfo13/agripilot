@@ -107,6 +107,13 @@ export function saveFarmProfile(payload, { headers } = {}) {
   });
 }
 
+export function saveFarmerType(farmerType) {
+  return request('/api/v2/farm-profile/farmer-type', {
+    method: 'POST',
+    body: JSON.stringify({ farmerType }),
+  });
+}
+
 // ─── Multi-Farm Support ─────────────────────────────────
 export function getFarms() {
   return request('/api/v2/farm-profile/list');
@@ -143,6 +150,42 @@ export function archiveFarm(farmId) {
   });
 }
 
+export function getFarmTasks(farmId, stage) {
+  const qs = stage ? `?stage=${encodeURIComponent(stage)}` : '';
+  return request(`/api/v2/farm-tasks/${farmId}/tasks${qs}`);
+}
+
+export function updateFarm(farmId, payload) {
+  return request(`/api/v2/farm-profile/${farmId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateCropStage(farmId, cropStage, plantedAt) {
+  const body = { cropStage };
+  if (plantedAt !== undefined) body.plantedAt = plantedAt;
+  return request(`/api/v2/farm-profile/${farmId}/stage`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export function getFarmStage(farmId) {
+  return request(`/api/v2/farm-profile/${farmId}/stage`);
+}
+
+export function getSeasonalTiming(farmId) {
+  return request(`/api/v2/farm-profile/${farmId}/seasonal-timing`);
+}
+
+export function updateSeasonalTiming(farmId, payload) {
+  return request(`/api/v2/farm-profile/${farmId}/seasonal-timing`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getCurrentWeather({ lat, lng, location } = {}) {
   const params = new URLSearchParams();
   if (lat != null && lng != null) {
@@ -153,8 +196,90 @@ export function getCurrentWeather({ lat, lng, location } = {}) {
   return request(`/api/v2/weather/current?${params.toString()}`);
 }
 
-export function getActiveSeason() {
-  return request('/api/v2/seasons/active');
+export function getFarmWeather(farmId) {
+  return request(`/api/v2/farm-weather/${encodeURIComponent(farmId)}`);
+}
+
+export function getFarmRisks(farmId) {
+  return request(`/api/v2/farm-risks/${encodeURIComponent(farmId)}`);
+}
+
+export function getFarmInputs(farmId) {
+  return request(`/api/v2/farm-inputs/${encodeURIComponent(farmId)}`);
+}
+
+export function getFarmHarvest(farmId) {
+  return request(`/api/v2/farm-harvest/${encodeURIComponent(farmId)}`);
+}
+
+// ─── Harvest Records (yield logging) ─────────────────────
+export function getHarvestRecords(farmId) {
+  return request(`/api/v2/harvest-records/${encodeURIComponent(farmId)}`);
+}
+
+export function createHarvestRecord(payload) {
+  return request('/api/v2/harvest-records', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateHarvestRecord(id, payload) {
+  return request(`/api/v2/harvest-records/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteHarvestRecord(id) {
+  return request(`/api/v2/harvest-records/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+// ─── Farm Costs (expense tracking) ───────────────────────
+export function getFarmCosts(farmId) {
+  return request(`/api/v2/farm-costs/${encodeURIComponent(farmId)}`);
+}
+
+export function createFarmCost(payload) {
+  return request('/api/v2/farm-costs', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateFarmCost(id, payload) {
+  return request(`/api/v2/farm-costs/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteFarmCost(id) {
+  return request(`/api/v2/farm-costs/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getFarmEconomics(farmId) {
+  return request(`/api/v2/farm-costs/${encodeURIComponent(farmId)}/economics`);
+}
+
+// ─── Weekly Summary (decision digest) ───────────────────
+export function getWeeklySummary(farmId) {
+  return request(`/api/v2/weekly-summary/${encodeURIComponent(farmId)}`);
+}
+
+// ─── Farm Benchmarks (season-over-season) ────────────────
+export function getFarmBenchmarks(farmId, mode = 'season') {
+  const qs = mode ? `?mode=${encodeURIComponent(mode)}` : '';
+  return request(`/api/v2/farm-benchmarks/${encodeURIComponent(farmId)}${qs}`);
+}
+
+export function getActiveSeason(farmId) {
+  const qs = farmId ? `?farmId=${encodeURIComponent(farmId)}` : '';
+  return request(`/api/v2/seasons/active${qs}`);
 }
 
 export function startSeason(payload) {
@@ -210,8 +335,9 @@ export function healthCheck() {
 }
 
 // ─── Land Boundaries ──────────────────────────────────────────
-export function getLandBoundaries() {
-  return request('/api/v2/land-boundaries');
+export function getLandBoundaries(farmId) {
+  const qs = farmId ? `?farmId=${encodeURIComponent(farmId)}` : '';
+  return request(`/api/v2/land-boundaries${qs}`);
 }
 
 export function saveLandBoundary(payload) {
@@ -226,8 +352,9 @@ export function deleteLandBoundary(id) {
 }
 
 // ─── Seed Scans ───────────────────────────────────────────────
-export function getSeedScans() {
-  return request('/api/v2/seed-scans');
+export function getSeedScans(farmId) {
+  const qs = farmId ? `?farmId=${encodeURIComponent(farmId)}` : '';
+  return request(`/api/v2/seed-scans${qs}`);
 }
 
 export function saveSeedScan(payload) {

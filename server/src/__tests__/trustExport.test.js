@@ -10,6 +10,7 @@ vi.mock('../config/database.js', () => ({
     credibilityAssessment: { findUnique: vi.fn(), upsert: vi.fn() },
     progressScore: { findUnique: vi.fn() },
     harvestReport: { findUnique: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 

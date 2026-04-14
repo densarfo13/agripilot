@@ -19,6 +19,8 @@ vi.mock('../config/database.js', () => {
   const mockPrisma = {
     farmer: { findMany: vi.fn() },
     organization: { findMany: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   };
   return { default: mockPrisma };
 });

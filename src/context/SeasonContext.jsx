@@ -1,16 +1,22 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { completeSeason, completeTask, getActiveSeason, startSeason } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
+import { useProfile } from './ProfileContext.jsx';
 
 const SeasonContext = createContext(null);
 
 export function SeasonProvider({ children }) {
   const { isAuthenticated, authLoading } = useAuth();
+  const { profile } = useProfile();
   const [season, setSeason] = useState(null);
   const [seasonLoading, setSeasonLoading] = useState(false);
   const [seasonInitialized, setSeasonInitialized] = useState(false);
 
-  const refreshSeason = useCallback(async () => {
+  // Track the active farm ID so season auto-refreshes on farm switch
+  const currentFarmId = profile?.id || null;
+  const prevFarmIdRef = useRef(currentFarmId);
+
+  const refreshSeason = useCallback(async (farmId) => {
     if (!isAuthenticated) {
       setSeason(null);
       setSeasonInitialized(true);
@@ -20,7 +26,7 @@ export function SeasonProvider({ children }) {
 
     setSeasonLoading(true);
     try {
-      const data = await getActiveSeason();
+      const data = await getActiveSeason(farmId || undefined);
       setSeason(data.season || null);
       return data.season || null;
     } finally {
@@ -58,6 +64,7 @@ export function SeasonProvider({ children }) {
     return data;
   }, []);
 
+  // Initial load
   useEffect(() => {
     if (!authLoading) {
       refreshSeason().catch((error) => {
@@ -67,6 +74,18 @@ export function SeasonProvider({ children }) {
       });
     }
   }, [authLoading, refreshSeason]);
+
+  // Auto-refresh season when active farm changes (farm switch)
+  useEffect(() => {
+    if (currentFarmId && currentFarmId !== prevFarmIdRef.current && seasonInitialized) {
+      prevFarmIdRef.current = currentFarmId;
+      refreshSeason(currentFarmId).catch((error) => {
+        console.error('Failed to refresh season after farm switch:', error);
+      });
+    } else {
+      prevFarmIdRef.current = currentFarmId;
+    }
+  }, [currentFarmId, seasonInitialized, refreshSeason]);
 
   const value = useMemo(
     () => ({

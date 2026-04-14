@@ -21,6 +21,8 @@ vi.mock('../config/database.js', () => {
       count: vi.fn(),
       groupBy: vi.fn(),
     },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   };
   return { default: mockPrisma };
 });

@@ -7,6 +7,7 @@ vi.mock('../config/database.js', () => ({
     seasonProgressEntry: { findMany: vi.fn() },
     officerValidation: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn() },
     user: { findUnique: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 

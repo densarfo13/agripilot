@@ -268,13 +268,17 @@ router.post('/invite', inviteLimiter, authorize('super_admin', 'institutional_ad
 
 // List farmers (staff only — farmers cannot enumerate other farmers)
 router.get('/', authorize('super_admin', 'institutional_admin', 'reviewer', 'field_officer'), asyncHandler(async (req, res) => {
-  const { search, region, registrationStatus } = req.query;
+  const { search, region, registrationStatus, programId, cohortId, duplicateFlag, activityStatus } = req.query;
   const result = await farmersService.listFarmers({
     page: parsePositiveInt(req.query.page, 1, 1000),
     limit: parsePositiveInt(req.query.limit, 20, 100),
     search,
     region,
     registrationStatus,
+    programId,
+    cohortId,
+    duplicateFlag,
+    activityStatus,
     orgScope: orgWhereFarmer(req),
   });
   res.json(result);
@@ -1005,11 +1009,85 @@ router.post('/:id/reset-profile', validateParamUUID('id'), authorize('super_admi
   res.json({ success: true, message: `${deleted} farm profile(s) removed. Farmer can re-onboard.`, profilesDeleted: deleted });
 }));
 
+// ─── Duplicate management (admin) ─────────────────────
+// POST /api/farmers/:id/duplicate-flag — set or update duplicate flag
+router.post('/:id/duplicate-flag',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const { flag, duplicateOfId, score, signals } = req.body;
+    if (flag && !['possible_duplicate', 'review_needed', 'cleared'].includes(flag)) {
+      return res.status(400).json({ error: 'Invalid flag value. Use: possible_duplicate, review_needed, cleared' });
+    }
+    const result = await farmersService.setDuplicateFlag(req.params.id, {
+      flag: flag || 'review_needed',
+      duplicateOfId,
+      score,
+      signals,
+      reviewedBy: req.user.sub,
+    });
+    writeAuditLog({ userId: req.user.sub, action: 'farmer_duplicate_flagged', details: { farmerId: req.params.id, flag } }).catch(() => {});
+    res.json({ success: true, farmer: result });
+  }));
+
+// POST /api/farmers/:id/clear-duplicate — admin clears duplicate flag
+router.post('/:id/clear-duplicate',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    const result = await farmersService.clearDuplicateFlag(req.params.id, req.user.sub);
+    writeAuditLog({ userId: req.user.sub, action: 'farmer_duplicate_cleared', details: { farmerId: req.params.id } }).catch(() => {});
+    res.json({ success: true, farmer: result });
+  }));
+
 // Delete farmer (admin only)
 router.delete('/:id', validateParamUUID('id'), authorize('super_admin', 'institutional_admin'), asyncHandler(async (req, res) => {
   await farmersService.deleteFarmer(req.params.id);
   writeAuditLog({ userId: req.user.sub, action: 'farmer_deleted', details: { farmerId: req.params.id } }).catch(() => {});
   res.json({ message: 'Farmer deleted' });
 }));
+
+// ─── Pesticide compliance (staff + farmer) ──────────────
+// GET /api/farmers/:id/pesticide-compliance — get full compliance status
+router.get('/:id/pesticide-compliance',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin', 'field_officer', 'reviewer', 'farmer'),
+  asyncHandler(async (req, res) => {
+    const { evaluatePesticideCompliance } = await import('../../utils/pesticideCompliance.js');
+
+    const farmer = await prisma.farmer.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, fullName: true, organizationId: true },
+    });
+    if (!farmer) return res.status(404).json({ error: 'Farmer not found' });
+    if (req.organizationId && farmer.organizationId !== req.organizationId) {
+      return res.status(403).json({ error: 'Farmer not in your organization' });
+    }
+
+    const [pesticideActivities, harvestActivities, validationCount] = await Promise.all([
+      prisma.farmActivity.findMany({
+        where: { farmerId: req.params.id, activityType: 'pesticide' },
+        orderBy: { activityDate: 'desc' },
+        select: { id: true, activityDate: true, metadata: true },
+      }),
+      prisma.farmActivity.findMany({
+        where: { farmerId: req.params.id, activityType: 'harvesting' },
+        orderBy: { activityDate: 'desc' },
+        select: { id: true, activityDate: true, quantity: true, unit: true },
+        take: 10,
+      }),
+      prisma.officerValidation.count({
+        where: { season: { farmerId: req.params.id } },
+      }),
+    ]);
+
+    const compliance = evaluatePesticideCompliance({
+      pesticideActivities,
+      harvestActivities,
+      hasOfficerValidation: validationCount > 0,
+    });
+
+    res.json({ farmerId: req.params.id, farmerName: farmer.fullName, ...compliance });
+  }));
 
 export default router;

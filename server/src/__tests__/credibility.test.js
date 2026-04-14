@@ -10,6 +10,7 @@ vi.mock('../config/database.js', () => {
     progressScore: { findUnique: vi.fn() },
     credibilityAssessment: { findUnique: vi.fn(), upsert: vi.fn() },
     officerValidation: { findMany: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(async (fn) => fn(mockPrisma)),
   };
   return { default: mockPrisma };

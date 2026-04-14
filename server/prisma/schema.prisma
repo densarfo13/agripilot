@@ -30,12 +30,56 @@ model Organization {
 
   users                User[]
   farmers              Farmer[]
+  programs             Program[]
   approvalRequests     ApprovalRequest[]
   pilotChecklistItems  PilotChecklistItem[]
   issues               Issue[]
   slaConfig            Json?            @map("sla_config")
 
   @@map("organizations")
+}
+
+// ─── Program (org-level grouping) ───────────────────────
+
+model Program {
+  id              String       @id @default(uuid())
+  organizationId  String       @map("organization_id")
+  name            String
+  description     String?
+  status          String       @default("active")  // active | completed | archived
+  startDate       DateTime?    @map("start_date")
+  endDate         DateTime?    @map("end_date")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  cohorts         Cohort[]
+  farmers         Farmer[]
+
+  @@index([organizationId], map: "idx_programs_org")
+  @@index([status], map: "idx_programs_status")
+  @@map("programs")
+}
+
+// ─── Cohort (program sub-group) ─────────────────────────
+
+model Cohort {
+  id          String   @id @default(uuid())
+  programId   String   @map("program_id")
+  name        String
+  description String?
+  status      String   @default("active")  // active | completed | archived
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  program     Program  @relation(fields: [programId], references: [id])
+  farmers     Farmer[]
+
+  @@index([programId], map: "idx_cohorts_program")
+  @@index([status], map: "idx_cohorts_status")
+  @@map("cohorts")
 }
 
 // ─── Enums ──────────────────────────────────────────────
@@ -114,6 +158,7 @@ enum FarmActivityType {
   harvesting
   storage
   selling
+  pesticide
   other
 }
 
@@ -413,6 +458,14 @@ model Farmer {
   inviteAcceptedAt     DateTime?           @map("invite_accepted_at")
   inviteResendMeta     Json?               @map("invite_resend_meta")    // { timestamps: number[], totalCount: number, lastResentBy: string }
   assignedOfficerId    String?             @map("assigned_officer_id")
+  programId            String?             @map("program_id")
+  cohortId             String?             @map("cohort_id")
+  duplicateFlag        String?             @map("duplicate_flag")           // 'possible_duplicate' | 'review_needed' | 'cleared' | null
+  duplicateOfId        String?             @map("duplicate_of_id")          // farmerId of the suspected original
+  duplicateScore       Int?                @map("duplicate_score")          // 0-100 duplicate confidence score
+  duplicateSignals     Json?               @map("duplicate_signals")        // ['phone_exact', 'name_fuzzy_region_match', ...]
+  duplicateReviewedAt  DateTime?           @map("duplicate_reviewed_at")
+  duplicateReviewedBy  String?             @map("duplicate_reviewed_by")    // userId
   currentStage         LifecycleStage      @default(pre_planting) @map("current_stage")
   stageUpdatedAt       DateTime?           @map("stage_updated_at")
   stageSource          String?             @map("stage_source")   // 'activity', 'manual', 'seeded'
@@ -431,6 +484,8 @@ model Farmer {
   userAccount         User?               @relation("FarmerUserAccount", fields: [userId], references: [id])
   assignedOfficer     User?               @relation("FarmerAssignedOfficer", fields: [assignedOfficerId], references: [id])
   approvedBy          User?               @relation("FarmerApprovedBy", fields: [approvedById], references: [id])
+  program             Program?            @relation(fields: [programId], references: [id])
+  cohort              Cohort?             @relation(fields: [cohortId], references: [id])
   applications        Application[]
   farmActivities      FarmActivity[]
   farmSeasons         FarmSeason[]
@@ -452,6 +507,9 @@ model Farmer {
   @@index([gender], map: "idx_farmers_gender")
   @@index([organizationId, gender], map: "idx_farmers_org_gender")
   @@index([phone], map: "idx_farmers_phone")
+  @@index([programId], map: "idx_farmers_program")
+  @@index([cohortId], map: "idx_farmers_cohort")
+  @@index([duplicateFlag], map: "idx_farmers_duplicate_flag")
   @@unique([phone, organizationId], map: "uq_farmers_phone_org")
   @@unique([nationalId, organizationId], map: "uq_farmers_nationalid_org")
   @@map("farmers")
@@ -1268,10 +1326,17 @@ model AutoNotification {
 // the full A-Z crop list plus "other:CustomName" values.
 
 enum FarmStage {
+  planning
+  land_preparation
   planting
-  growing
+  germination
+  vegetative
   flowering
+  fruiting
   harvest
+  post_harvest
+  // Legacy values kept for migration safety:
+  growing        // maps to vegetative
 }
 
 enum RecommendationStatus {
@@ -1297,9 +1362,19 @@ model FarmProfile {
   landSizeValue   Float?    @map("land_size_value")
   landSizeUnit    String?   @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
   landSizeHectares Float?   @map("land_size_hectares")   // normalized value
-  stage           FarmStage @default(planting)
+  stage           FarmStage @default(planning)
+  plantedAt       DateTime? @map("planted_at")
+  // ─── Seasonal timing (per-farm calendar) ─────────────
+  seasonStartMonth         Int?      @map("season_start_month")          // 1–12
+  seasonEndMonth           Int?      @map("season_end_month")            // 1–12
+  plantingWindowStartMonth Int?      @map("planting_window_start_month") // 1–12
+  plantingWindowEndMonth   Int?      @map("planting_window_end_month")   // 1–12
+  currentSeasonLabel       String?   @map("current_season_label")        // e.g. "Main Season 2026"
+  lastRainySeasonStart     DateTime? @map("last_rainy_season_start")
+  lastDrySeasonStart       DateTime? @map("last_dry_season_start")
   status          String    @default("active") @map("status")  // active | inactive | archived
   isDefault       Boolean   @default(false) @map("is_default")
+  experienceLevel String?   @map("experience_level")   // "new" | "experienced" — null = not answered
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
@@ -1324,6 +1399,8 @@ model FarmProfile {
   droneScans        V2DroneScan[]
   treatmentActions  V2TreatmentAction[]
   farmPestRisks     V2FarmPestRisk[]
+  harvestRecords    V2HarvestRecord[]
+  costRecords       V2FarmCostRecord[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
   @@index([userId], map: "idx_farm_profiles_user")
@@ -1377,18 +1454,22 @@ model RecommendationRecord {
 // ─── Weather Snapshot (lean cache) ─────────────────────
 
 model WeatherSnapshot {
-  id              String   @id @default(uuid())
-  farmProfileId   String   @map("farm_profile_id")
+  id              String    @id @default(uuid())
+  farmProfileId   String    @map("farm_profile_id")
   latitude        Float
   longitude       Float
-  temperatureC    Float    @map("temperature_c")
-  rainForecastMm  Float    @map("rain_forecast_mm")
-  humidityPct     Float?   @map("humidity_pct")
-  windSpeedKmh    Float?   @map("wind_speed_kmh")
+  temperatureC    Float     @map("temperature_c")
+  rainForecastMm  Float     @map("rain_forecast_mm")
+  humidityPct     Float?    @map("humidity_pct")
+  windSpeedKmh    Float?    @map("wind_speed_kmh")
   condition       String?
-  forecastDays    Int      @default(3) @map("forecast_days")
-  source          String   @default("open-meteo")
-  fetchedAt       DateTime @default(now()) @map("fetched_at")
+  forecastDays    Int       @default(3) @map("forecast_days")
+  source          String    @default("open-meteo")
+  rainExpected    Boolean?  @map("rain_expected")
+  heavyRainRisk   Boolean?  @map("heavy_rain_risk")
+  drySpellRisk    Boolean?  @map("dry_spell_risk")
+  forecastDate    DateTime? @map("forecast_date")
+  fetchedAt       DateTime  @default(now()) @map("fetched_at")
 
   farmProfile     FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
 
@@ -2253,4 +2334,52 @@ model EmailLog {
   @@index([relatedUserId], map: "idx_email_log_user")
   @@index([createdAt], map: "idx_email_log_created")
   @@map("email_logs")
+}
+
+// ─── Yield / Harvest Records (per-farm, multiple over time) ─────
+model V2HarvestRecord {
+  id                  String   @id @default(uuid())
+  farmId              String   @map("farm_id")
+  cropId              String   @map("crop_id")
+  cropLabel           String   @map("crop_label")
+  harvestDate         DateTime @map("harvest_date")
+  quantityHarvested   Float    @map("quantity_harvested")
+  quantityUnit        String   @map("quantity_unit")        // kg | bags | tonnes | crates | bundles
+  quantitySold        Float?   @map("quantity_sold")
+  quantityStored      Float?   @map("quantity_stored")
+  quantityLost        Float?   @map("quantity_lost")
+  averageSellingPrice Float?   @map("average_selling_price")
+  currency            String?  @map("currency")             // GHS | NGN | KES | TZS | USD | XOF
+  qualityGrade        String?  @map("quality_grade")        // A | B | C | poor | good | excellent
+  notes               String?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  farm                FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId], map: "idx_harvest_records_farm")
+  @@index([farmId, harvestDate], map: "idx_harvest_records_farm_date")
+  @@index([cropId], map: "idx_harvest_records_crop")
+  @@map("harvest_records")
+}
+
+// ─── Farm Cost Records (per-farm expenses, multiple over time) ──
+model V2FarmCostRecord {
+  id          String   @id @default(uuid())
+  farmId      String   @map("farm_id")
+  date        DateTime
+  category    String                        // seeds | fertilizer | pesticide | herbicide | labor | irrigation | transport | storage | equipment | land_preparation | other
+  description String
+  amount      Float
+  currency    String?                       // GHS | NGN | KES | TZS | USD | XOF
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  farm        FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId], map: "idx_cost_records_farm")
+  @@index([farmId, date], map: "idx_cost_records_farm_date")
+  @@index([category], map: "idx_cost_records_category")
+  @@map("farm_cost_records")
 }

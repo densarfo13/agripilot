@@ -14,6 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../config/database.js', () => ({
   default: {
     farmer: { findUnique: vi.fn() },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
     farmSeason: { findUnique: vi.fn(), updateMany: vi.fn() },
     harvestReport: { create: vi.fn() },
     user: { update: vi.fn() },

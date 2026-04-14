@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { languageToVoiceCode, speakText } from '../lib/voice.js';
@@ -11,6 +11,8 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useSeason } from '../context/SeasonContext.jsx';
 import FarmerIdCard from '../components/FarmerIdCard.jsx';
+import NextActionCard from '../components/NextActionCard.jsx';
+import GuidedFarmingCard from '../components/GuidedFarmingCard.jsx';
 import PrimaryFarmActionCard from '../components/PrimaryFarmActionCard.jsx';
 import FarmReadinessCard from '../components/FarmReadinessCard.jsx';
 import WeatherDecisionCard from '../components/WeatherDecisionCard.jsx';
@@ -21,7 +23,21 @@ import SeasonTasksCard from '../components/SeasonTasksCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
 import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmSwitcher from '../components/FarmSwitcher.jsx';
+import FarmSummaryCard from '../components/FarmSummaryCard.jsx';
+import FarmEditModal from '../components/FarmEditModal.jsx';
+import CropStageModal from '../components/CropStageModal.jsx';
+import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
+import FarmTasksCard from '../components/FarmTasksCard.jsx';
+import FarmWeatherCard from '../components/FarmWeatherCard.jsx';
+import FarmPestRiskCard from '../components/FarmPestRiskCard.jsx';
+import FarmInputTimingCard from '../components/FarmInputTimingCard.jsx';
+import FarmHarvestCard from '../components/FarmHarvestCard.jsx';
+import YieldRecordsCard from '../components/YieldRecordsCard.jsx';
+import FarmEconomicsCard from '../components/FarmEconomicsCard.jsx';
+import FarmBenchmarkCard from '../components/FarmBenchmarkCard.jsx';
+import WeeklySummaryCard from '../components/WeeklySummaryCard.jsx';
+import { isOperationsMode } from '../utils/dashboardMode.js';
 
 // Lazy-load advanced features — keep initial bundle small for low-end devices
 const LandBoundaryCapture = lazy(() => import('../components/LandBoundaryCapture.jsx'));
@@ -31,7 +47,7 @@ const SellReadinessInput = lazy(() => import('../components/SellReadinessInput.j
 export default function Dashboard() {
   const { autoVoice, language } = useAppPrefs();
   const { user, authLoading } = useAuth();
-  const { profile, profileLoading, activeFarms } = useProfile();
+  const { profile, loading: profileLoading, currentFarmId, farmSwitching, activeFarms } = useProfile();
   const { season, refreshSeason } = useSeason();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -43,26 +59,60 @@ export default function Dashboard() {
   const [showUpdateFlow, setShowUpdateFlow] = useState(false);
   const [showFarmPicker, setShowFarmPicker] = useState(false);
   const [selectedUpdateFarm, setSelectedUpdateFarm] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showStageModal, setShowStageModal] = useState(false);
+  const [showSeasonModal, setShowSeasonModal] = useState(false);
   const [boundaries, setBoundaries] = useState([]);
   const [seedScans, setSeedScans] = useState([]);
+  const [farmDataLoading, setFarmDataLoading] = useState(false);
 
   const hasMultipleFarms = activeFarms && activeFarms.length > 1;
 
-  // Non-blocking fetch — only when online and setup complete
-  const loadBoundariesAndScans = useCallback(async () => {
+  // Track previous farm ID to detect switches and clear stale data
+  const prevFarmIdRef = useRef(currentFarmId);
+
+  // ─── Farm-scoped data loading ─────────────────────────────
+  // When currentFarmId changes: clear previous data, show loading, fetch fresh
+  const loadFarmScopedData = useCallback(async (farmId) => {
     if (!setupComplete || !isOnline) return;
+    setFarmDataLoading(true);
     try {
-      const [bData, sData] = await Promise.all([getLandBoundaries(), getSeedScans()]);
+      const [bData, sData] = await Promise.all([
+        getLandBoundaries(farmId),
+        getSeedScans(farmId),
+      ]);
       setBoundaries(bData.boundaries || []);
       setSeedScans(sData.scans || []);
     } catch { /* non-blocking — never affects core flow */ }
+    finally { setFarmDataLoading(false); }
   }, [setupComplete, isOnline]);
 
+  // Clear and reload when farm switches
   useEffect(() => {
-    safeTrackEvent('dashboard.viewed', {});
-  }, []);
+    if (currentFarmId && currentFarmId !== prevFarmIdRef.current) {
+      // Farm changed — clear previous farm data
+      setBoundaries([]);
+      setSeedScans([]);
+      prevFarmIdRef.current = currentFarmId;
+      // Fetch fresh farm-scoped data
+      loadFarmScopedData(currentFarmId);
+    } else if (currentFarmId && !prevFarmIdRef.current) {
+      // First load
+      prevFarmIdRef.current = currentFarmId;
+      loadFarmScopedData(currentFarmId);
+    }
+  }, [currentFarmId, loadFarmScopedData]);
 
-  useEffect(() => { loadBoundariesAndScans(); }, [loadBoundariesAndScans]);
+  // Also load on initial mount if we have a farm
+  useEffect(() => {
+    if (currentFarmId && setupComplete && isOnline) {
+      loadFarmScopedData(currentFarmId);
+    }
+  }, [setupComplete, isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    safeTrackEvent('dashboard.viewed', { farmId: currentFarmId });
+  }, [currentFarmId]);
 
   useEffect(() => {
     if (autoVoice) {
@@ -178,22 +228,119 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ─── Farm switcher — only visible with 2+ farms ──── */}
+        {/* ─── Farm edit modal ────────────────────────────── */}
+        {showEditModal && profile && (
+          <FarmEditModal
+            farm={profile}
+            onClose={() => setShowEditModal(false)}
+            onSaved={() => setShowEditModal(false)}
+          />
+        )}
+
+        {/* ─── Farm switcher — always visible ──── */}
         <FarmSwitcher />
+
+        {/* ─── Farm switching loading state ──── */}
+        {farmSwitching && (
+          <div style={S.farmSwitchLoading}>
+            <div style={S.loadingText}>{t('farm.switchingFarm')}</div>
+          </div>
+        )}
+
+        {/* ─── Empty state: no farms at all ──── */}
+        {!profile && !profileLoading && (
+          <div style={S.emptyState}>
+            <div style={S.emptyIcon}>🌾</div>
+            <div style={S.emptyTitle}>{t('farm.noFarmsTitle')}</div>
+            <div style={S.emptyDesc}>{t('farm.noFarmsDesc')}</div>
+            <button onClick={() => navigate('/profile/setup')} style={S.emptyBtn}>
+              {t('farm.createFirst')}
+            </button>
+          </div>
+        )}
+
+        {/* ─── Farm summary card — shows current farm context ──── */}
+        {profile && !farmSwitching && (
+          <FarmSummaryCard
+            onEdit={() => setShowEditModal(true)}
+            onUpdateStage={() => setShowStageModal(true)}
+            onEditSeason={() => setShowSeasonModal(true)}
+          />
+        )}
+
+        {/* ─── Crop stage modal ──────────────────────────────── */}
+        {showStageModal && profile && (
+          <CropStageModal
+            farm={profile}
+            onClose={() => setShowStageModal(false)}
+            onSaved={() => setShowStageModal(false)}
+          />
+        )}
+
+        {/* ─── Seasonal timing modal ─────────────────────────── */}
+        {showSeasonModal && profile && (
+          <SeasonalTimingModal
+            farm={profile}
+            onClose={() => setShowSeasonModal(false)}
+            onSaved={() => setShowSeasonModal(false)}
+          />
+        )}
+
+        {/* ─── Weekly summary — decision digest, per-farm ──── */}
+        {profile && !farmSwitching && <WeeklySummaryCard />}
+
+        {/* ─── Farm weather — per-farm, compact ──── */}
+        {profile && !farmSwitching && <FarmWeatherCard />}
+
+        {/* ─── Pest & disease risks — per-farm ──── */}
+        {profile && !farmSwitching && <FarmPestRiskCard />}
+
+        {/* ─── Input & fertilizer timing — per-farm ──── */}
+        {profile && !farmSwitching && <FarmInputTimingCard />}
+
+        {/* ─── Harvest & post-harvest — per-farm ──── */}
+        {profile && !farmSwitching && <FarmHarvestCard />}
+
+        {/* ─── Yield records — harvest logging & history ──── */}
+        {profile && !farmSwitching && <YieldRecordsCard />}
+
+        {/* ─── Farm economics — profit tracking ──── */}
+        {profile && !farmSwitching && <FarmEconomicsCard />}
+
+        {/* ─── Performance comparison — benchmarking ──── */}
+        {profile && !farmSwitching && <FarmBenchmarkCard />}
+
+        {/* ─── Farm tasks — rules-based, farm-scoped ──── */}
+        {profile && !farmSwitching && (
+          <FarmTasksCard onSetStage={() => setShowStageModal(true)} />
+        )}
 
         <FarmerIdCard />
 
+        {/* Experienced farmers: operations-first layout */}
+        {isOperationsMode(profile) && setupComplete && <SeasonTasksCard />}
+        {isOperationsMode(profile) && setupComplete && <WeatherDecisionCard />}
+        {isOperationsMode(profile) && setupComplete && <ActionRecommendationsCard />}
+
+        <NextActionCard />
+
+        <GuidedFarmingCard
+          onRecordUpdate={() => {
+            setSelectedUpdateFarm(profile);
+            setShowUpdateFlow(true);
+          }}
+        />
+
         <PrimaryFarmActionCard />
 
-        {setupComplete && <SeasonTasksCard />}
-
-        {setupComplete && <WeatherDecisionCard />}
-
-        {setupComplete && <ActionRecommendationsCard />}
+        {/* Beginner farmers: operations cards come after guided content */}
+        {!isOperationsMode(profile) && setupComplete && <SeasonTasksCard />}
+        {!isOperationsMode(profile) && setupComplete && <WeatherDecisionCard />}
+        {!isOperationsMode(profile) && setupComplete && <ActionRecommendationsCard />}
 
         <FarmReadinessCard />
 
-        {setupComplete && (
+        {setupComplete && !farmDataLoading && (
           <Suspense fallback={null}>
             <div style={S.card}>
               <LandBoundaryCapture
@@ -204,7 +351,7 @@ export default function Dashboard() {
           </Suspense>
         )}
 
-        {setupComplete && (
+        {setupComplete && !farmDataLoading && (
           <Suspense fallback={null}>
             <div style={S.card}>
               <SeedScanFlow
@@ -354,5 +501,46 @@ const S = {
     overflowY: 'auto',
     borderRadius: '16px 16px 0 0',
     WebkitOverflowScrolling: 'touch',
+  },
+  farmSwitchLoading: {
+    borderRadius: '16px',
+    background: '#1B2330',
+    padding: '1.5rem',
+    border: '1px solid rgba(255,255,255,0.1)',
+    textAlign: 'center',
+  },
+  emptyState: {
+    borderRadius: '16px',
+    background: '#1B2330',
+    padding: '2rem 1.5rem',
+    border: '1px solid rgba(255,255,255,0.1)',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  emptyIcon: {
+    fontSize: '2.5rem',
+  },
+  emptyTitle: {
+    fontSize: '1.125rem',
+    fontWeight: 700,
+  },
+  emptyDesc: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.55)',
+    lineHeight: 1.5,
+  },
+  emptyBtn: {
+    marginTop: '0.5rem',
+    borderRadius: '12px',
+    background: '#22C55E',
+    padding: '0.75rem 1.5rem',
+    fontWeight: 700,
+    color: '#fff',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.9375rem',
   },
 };

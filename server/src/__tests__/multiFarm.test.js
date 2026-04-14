@@ -324,9 +324,10 @@ describe('FarmSwitcher component', () => {
     expect(src).toContain('activeFarms');
   });
 
-  it('only shows when user has more than 1 active farm', () => {
-    expect(src).toContain('activeFarms.length <= 1');
-    expect(src).toContain('return null');
+  it('is always visible (no early return for single farm)', () => {
+    expect(src).not.toContain('activeFarms.length <= 1) return null');
+    expect(src).toContain('const hasFarms = activeFarms && activeFarms.length > 0');
+    expect(src).toContain('const hasMultiple = activeFarms && activeFarms.length > 1');
   });
 
   it('finds default farm by isDefault', () => {

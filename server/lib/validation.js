@@ -66,6 +66,7 @@ export function validateResetPasswordPayload(body = {}) {
 }
 
 const VALID_SIZE_UNITS = ['ACRE', 'HECTARE', 'SQUARE_METER'];
+const VALID_EXPERIENCE_LEVELS = ['new', 'experienced'];
 
 export function validateFarmProfilePayload(body = {}) {
   const errors = {};
@@ -81,11 +82,12 @@ export function validateFarmProfilePayload(body = {}) {
     : 'ACRE'; // backward compatible default
   const gpsLat = toNullableNumber(body.gpsLat);
   const gpsLng = toNullableNumber(body.gpsLng);
+  const experienceLevel = toNullableString(body.experienceLevel);
 
   if (!farmerName) errors.farmerName = 'Farmer name is required';
   if (!farmName) errors.farmName = 'Farm name is required';
   if (!country) errors.country = 'Country is required';
-  if (!location) errors.location = 'Location is required';
+  if (!location) errors.location = 'Enter your location';
   if (!cropType) {
     errors.cropType = 'Crop type is required';
   } else if (cropType.toUpperCase() === 'OTHER') {
@@ -97,11 +99,17 @@ export function validateFarmProfilePayload(body = {}) {
   if (size === null) errors.size = 'Farm size is required';
   else if (Number.isNaN(size) || size <= 0) errors.size = 'Farm size must be greater than 0';
 
-  if (gpsLat === null) errors.gpsLat = 'Latitude is required';
-  else if (Number.isNaN(gpsLat) || gpsLat < -90 || gpsLat > 90) errors.gpsLat = 'Latitude must be between -90 and 90';
+  // GPS is optional — only validate format if provided
+  if (gpsLat !== null && (Number.isNaN(gpsLat) || gpsLat < -90 || gpsLat > 90)) {
+    errors.gpsLat = 'Latitude must be between -90 and 90';
+  }
+  if (gpsLng !== null && (Number.isNaN(gpsLng) || gpsLng < -180 || gpsLng > 180)) {
+    errors.gpsLng = 'Longitude must be between -180 and 180';
+  }
 
-  if (gpsLng === null) errors.gpsLng = 'Longitude is required';
-  else if (Number.isNaN(gpsLng) || gpsLng < -180 || gpsLng > 180) errors.gpsLng = 'Longitude must be between -180 and 180';
+  if (experienceLevel && !VALID_EXPERIENCE_LEVELS.includes(experienceLevel.toLowerCase())) {
+    errors.experienceLevel = 'Experience level must be "new" or "experienced"';
+  }
 
   return {
     isValid: Object.keys(errors).length === 0,
@@ -116,6 +124,7 @@ export function validateFarmProfilePayload(body = {}) {
       sizeUnit,
       gpsLat: Number.isNaN(gpsLat) ? null : gpsLat,
       gpsLng: Number.isNaN(gpsLng) ? null : gpsLng,
+      experienceLevel: experienceLevel?.toLowerCase() || null,
     },
   };
 }

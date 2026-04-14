@@ -18,6 +18,8 @@ vi.mock('../config/database.js', () => {
   const mockPrisma = {
     farmer: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
     user: { findUnique: vi.fn(), create: vi.fn() },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(async (fn) => {
       const tx = {
         farmer: { create: mockPrisma.farmer.create, update: mockPrisma.farmer.update, findUnique: mockPrisma.farmer.findUnique },

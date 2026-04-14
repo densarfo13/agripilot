@@ -89,6 +89,8 @@ vi.mock('../config/database.js', () => {
     farmer: { findUnique: vi.fn() },
     farmSeason: { findUnique: vi.fn(), update: vi.fn() },
     seasonProgressEntry: { findMany: vi.fn(), create: vi.fn(), count: vi.fn().mockResolvedValue(0) },
+    officerValidation: { count: vi.fn().mockResolvedValue(0) },
+    farmActivity: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(async (fn) => fn(mockPrisma)),
   };
   return { default: mockPrisma };
