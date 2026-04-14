@@ -202,9 +202,10 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/api/v2/auth/'), // auth has its own limiter
 });
 
-// Apply API-wide rate limiter to all /api routes
+// Apply API-wide rate limiter to all /api routes (auth excluded — has authLimiter)
 app.use('/api', apiLimiter);
 
 // ─── Uploads: authenticated static serving ─────────────

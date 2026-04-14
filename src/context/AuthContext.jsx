@@ -56,13 +56,16 @@ export function AuthProvider({ children }) {
   const [isOfflineSession, setIsOfflineSession] = useState(false);
 
   async function bootstrap() {
+    console.log('[AUTH] Bootstrap start');
     try {
       const data = await getCurrentUser();
       const serverUser = data.user || null;
+      console.log('[AUTH] Bootstrap /me success, role:', serverUser?.role);
       setUser(serverUser);
       setIsOfflineSession(false);
       cacheSession(serverUser);
     } catch (err) {
+      console.warn('[AUTH] Bootstrap /me failed:', err.status, err.message);
       // Network error or server unreachable — try offline cache
       const isNetworkError = !err.status || err.message === 'Failed to fetch';
       if (isNetworkError) {
@@ -87,6 +90,7 @@ export function AuthProvider({ children }) {
         clearSessionCache();
       }
     } finally {
+      console.log('[AUTH] Bootstrap complete, authLoading → false');
       setAuthLoading(false);
     }
   }
@@ -100,6 +104,9 @@ export function AuthProvider({ children }) {
     const loggedInUser = data.user || null;
     setUser(loggedInUser);
     setIsOfflineSession(false);
+    // Login already verified the session — clear authLoading so
+    // AuthLoadingGate opens immediately without waiting for bootstrap's /me call.
+    setAuthLoading(false);
     cacheSession(loggedInUser);
     // Remember email for re-login convenience
     try { localStorage.setItem('farroway:last_email', email); } catch { /* ignore */ }

@@ -19,6 +19,22 @@ async function parseJson(res) {
   return data;
 }
 
+// ─── Refresh lock ─────────────────────────────────────────
+// Prevents multiple concurrent 401 responses from each triggering
+// their own /refresh call. The first 401 acquires the lock, refreshes,
+// and all other waiters reuse the same refresh result.
+let _refreshPromise = null;
+
+async function refreshOnce() {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = fetch(`${API_BASE}/api/v2/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  }).finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
+}
+
 async function request(path, options = {}, allowRefresh = true) {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
@@ -30,11 +46,7 @@ async function request(path, options = {}, allowRefresh = true) {
   });
 
   if (res.status === 401 && allowRefresh) {
-    const refreshRes = await fetch(`${API_BASE}/api/v2/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const refreshRes = await refreshOnce();
 
     if (refreshRes.ok) {
       return request(path, options, false);
@@ -55,7 +67,7 @@ export function loginUser(payload) {
   return request('/api/v2/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
-  });
+  }, false); // login 401 = wrong password, not an expired session
 }
 
 export function logoutUser() {

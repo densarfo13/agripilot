@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
@@ -20,6 +20,7 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false); // prevents double-submit before React state update
 
   const { user } = useAuth();
   // Staff/admin users go to the institutional dashboard (/), farmers go to /dashboard
@@ -54,6 +55,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return; // double-submit guard
     setGeneralError('');
     const fieldErrors = validate();
     if (Object.keys(fieldErrors).length) {
@@ -62,13 +64,17 @@ export default function Login() {
     }
     setErrors({});
     setLoading(true);
+    submittingRef.current = true;
+    console.log('[AUTH] Login submit start');
     try {
-      await login(email, password);
+      const data = await login(email, password);
+      console.log('[AUTH] Login success, user role:', data?.user?.role);
       safeTrackEvent('auth.login.success', {});
       // After login(), isAuthenticated becomes true → component re-renders →
       // Gate 2 above fires the single declarative <Navigate>.
       // No manual navigate() needed — eliminates double-redirect.
     } catch (err) {
+      console.warn('[AUTH] Login failed:', err.status, err.message);
       safeTrackEvent('auth.login.failed', { hasFieldErrors: !!(err.fieldErrors && Object.keys(err.fieldErrors).length) });
       if (err.fieldErrors && Object.keys(err.fieldErrors).length) {
         setErrors(err.fieldErrors);
@@ -77,6 +83,7 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
