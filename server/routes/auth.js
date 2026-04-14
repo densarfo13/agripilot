@@ -149,6 +149,7 @@ router.post('/login', async (req, res) => {
         id: true,
         email: true,
         fullName: true,
+        role: true,
         emailVerifiedAt: true,
         passwordHash: true,
         active: true,
@@ -183,6 +184,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        role: user.role,
         emailVerifiedAt: user.emailVerifiedAt,
       },
     });
@@ -275,6 +277,7 @@ router.get('/me', authenticate, async (req, res) => {
       id: true,
       email: true,
       fullName: true,
+      role: true,
       emailVerifiedAt: true,
     },
   });
