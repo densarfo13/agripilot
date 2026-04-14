@@ -65,10 +65,11 @@ export default function Login() {
     setErrors({});
     setLoading(true);
     submittingRef.current = true;
-    console.log('[AUTH] Login submit start');
+    console.log('[AUTH]', Date.now(), 'Login submit start, authLoading:', authLoading);
     try {
+      console.log('[AUTH]', Date.now(), 'Login request sent');
       const data = await login(email, password);
-      console.log('[AUTH] Login success, user role:', data?.user?.role);
+      console.log('[AUTH]', Date.now(), 'Login response received, role:', data?.user?.role, 'redirectTo:', redirectTo);
       safeTrackEvent('auth.login.success', {});
       // After login(), isAuthenticated becomes true → component re-renders →
       // Gate 2 above fires the single declarative <Navigate>.

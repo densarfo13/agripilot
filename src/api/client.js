@@ -18,6 +18,7 @@ const API_BASE = isNative
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // Send httpOnly cookies for V2 cookie auth
 });
 
 // Attach token + idempotency key to every mutation request
@@ -82,20 +83,29 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // Only logout + redirect for V1 (Bearer token) routes.
-      // V2 routes use cookie auth via lib/api.js which handles its own 401→refresh flow.
-      // Hard redirecting here would cause a page-reload blink for V2 users.
-      const path = window.location.pathname;
-      const isV2Route = path.startsWith('/dashboard') || path.startsWith('/login')
-        || path.startsWith('/register') || path.startsWith('/season')
-        || path.startsWith('/profile') || path.startsWith('/pest-')
-        || path.startsWith('/field-') || path.startsWith('/regional-')
-        || path.startsWith('/treatment-') || path.startsWith('/forgot-')
-        || path.startsWith('/reset-') || path.startsWith('/verify-');
-      if (!isV2Route) {
-        useAuthStore.getState().logout();
-        window.location.href = '/login';
+      // Before hard logout, try V2 cookie refresh — admin users log in via V2
+      // cookies and access V1 API endpoints. If the access_token cookie expired,
+      // refreshing it may restore the session.
+      if (!config._refreshing) {
+        config._refreshing = true;
+        try {
+          const refreshRes = await fetch(
+            `${API_BASE.replace('/api', '')}/api/v2/auth/refresh`,
+            { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' } },
+          );
+          config._refreshing = false;
+          if (refreshRes.ok) {
+            // Refresh succeeded — retry the original request
+            return api(config);
+          }
+        } catch {
+          config._refreshing = false;
+        }
       }
+
+      // Refresh failed or was already attempted — session is truly invalid
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
       return Promise.reject(error);
     }
 

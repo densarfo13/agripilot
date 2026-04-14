@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
+import { env } from '../../lib/env.js';
 import prisma from '../config/database.js';
 import { logAuthEvent, logPermissionEvent } from '../utils/opsLogger.js';
 
@@ -57,18 +58,40 @@ export function clearAuthCache() {
  */
 export function authenticate(req, res, next) {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required' });
+
+  // ─── Strategy 1: Bearer token (V1 JWT) ───
+  if (header && header.startsWith('Bearer ')) {
+    const token = header.slice(7);
+    let payload;
+    try {
+      payload = jwt.verify(token, config.jwt.secret);
+    } catch {
+      logAuthEvent('token_invalid', { ip: req.ip, path: req.originalUrl || req.path });
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    return verifyUserFromPayload(req, res, next, payload);
   }
 
-  const token = header.slice(7);
-  let payload;
-  try {
-    payload = jwt.verify(token, config.jwt.secret);
-  } catch {
-    logAuthEvent('token_invalid', { ip: req.ip, path: req.originalUrl || req.path });
-    return res.status(401).json({ error: 'Invalid or expired token' });
+  // ─── Strategy 2: V2 cookie auth (access_token httpOnly cookie) ───
+  // Allows V2 cookie-authenticated users (e.g. admin login) to access V1 API endpoints.
+  const cookieToken = req.cookies?.access_token;
+  if (cookieToken) {
+    let payload;
+    try {
+      payload = jwt.verify(cookieToken, env.ACCESS_TOKEN_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+    return verifyUserFromPayload(req, res, next, payload);
   }
+
+  return res.status(401).json({ error: 'Authentication required' });
+}
+
+/**
+ * Shared user verification logic for both Bearer and cookie auth strategies.
+ */
+function verifyUserFromPayload(req, res, next, payload) {
 
   // Check cache first
   const cached = getCachedUser(payload.sub);

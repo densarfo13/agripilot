@@ -112,20 +112,27 @@ const PageLoader = () => (
 function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
   const storeUser = useAuthStore(s => s.user);
-  const { user: v2User } = useAuth();
+  const { user: v2User, authLoading } = useAuth();
 
-  // Bridge V2 cookie-auth into the V1 zustand store SYNCHRONOUSLY so
+  console.log('[GUARD]', Date.now(), 'ProtectedRoute:', {
+    v1Token: !!token, v1Role: storeUser?.role, v2Role: v2User?.role,
+    authLoading, path: window.location.pathname,
+  });
+
+  // Bridge V2 cookie-auth user into the V1 zustand store SYNCHRONOUSLY so
   // RoleRoute and DashboardPage see the user on the very first render.
-  // This must happen before any early return.
-  if (!token && v2User && v2User.role && v2User.role !== 'farmer' && !storeUser) {
-    useAuthStore.setState({ user: v2User, token: 'v2-cookie-session' });
+  // Do NOT set a fake token — V1 API calls now use httpOnly cookies directly.
+  if (v2User && v2User.role && v2User.role !== 'farmer' && !storeUser) {
+    console.log('[GUARD]', Date.now(), 'Bridging V2 user to V1 store, role:', v2User.role);
+    useAuthStore.setState({ user: v2User });
   }
 
   // Re-read after potential sync write
   const user = useAuthStore.getState().user || v2User;
-  const hasSession = useAuthStore.getState().token || (v2User && v2User.role && v2User.role !== 'farmer');
+  const hasSession = useAuthStore.getState().token || (v2User && v2User.role);
 
   if (!hasSession) {
+    console.log('[GUARD]', Date.now(), 'No session — redirecting to login');
     // No V1 token and no V2 staff session — check for cached V2 farmer session
     if (v2User?.role === 'farmer') {
       return <Navigate to="/dashboard" replace />;
