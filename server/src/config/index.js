@@ -26,8 +26,11 @@ if (isProduction) {
   // MFA encryption key must be a 64-char hex string (32 bytes) in production.
   // If unset, MFA enrollment will silently produce broken encrypted secrets.
   if (process.env.MFA_SECRET_KEY) {
+    // Trim whitespace that Railway UI may add
+    process.env.MFA_SECRET_KEY = process.env.MFA_SECRET_KEY.trim();
     if (!/^[0-9a-fA-F]{64}$/.test(process.env.MFA_SECRET_KEY)) {
       console.error('[FATAL] MFA_SECRET_KEY must be a 64-character hex string in production.');
+      console.error(`[FATAL] Current value length: ${process.env.MFA_SECRET_KEY.length}, expected: 64`);
       console.error('[FATAL] Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
       process.exit(1);
     }
