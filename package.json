@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build && cd server && npx prisma generate && npx tsc -p intelligence/tsconfig.json",
     "build:intelligence": "cd server && npx tsc -p intelligence/tsconfig.json",
-    "start": "cd server && npx prisma db push --accept-data-loss --skip-generate && node src/server.js",
+    "start": "cd server && npx prisma db push --accept-data-loss --skip-generate && FORCE_ADMIN_RESET=1 node scripts/init-admin.mjs && node src/server.js",
     "postinstall": "[ -d server ] && cd server && npm install || true",
     "db:push": "cd server && npx prisma db push",
     "db:seed": "cd server && node prisma/seed.js",

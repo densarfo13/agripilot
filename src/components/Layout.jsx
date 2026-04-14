@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import api from '../api/client.js';
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
 import FarrowayLogo from './FarrowayLogo.jsx';
@@ -111,6 +112,7 @@ function OrgSwitcher() {
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
+  const { logout: v2Logout } = useAuth();
   const navigate = useNavigate();
   const isSuperAdmin = user?.role === 'super_admin';
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -143,8 +145,11 @@ export default function Layout() {
     return () => clearInterval(interval);
   }, [user?.role]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     useOrgStore.getState().clearSelectedOrg();
+    // Clear V2 httpOnly cookies + server session (revokes refresh token)
+    try { await v2Logout(); } catch { /* best-effort */ }
+    // Clear V1 localStorage state
     logout();
     navigate('/login');
   };

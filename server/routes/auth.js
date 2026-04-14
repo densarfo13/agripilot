@@ -156,6 +156,8 @@ router.post('/login', async (req, res) => {
       },
     });
 
+    console.log('[LOGIN]', validation.data.email, '→ found:', !!user, user ? `role=${user.role} active=${user.active} hasHash=${!!user.passwordHash}` : '');
+
     if (!user || !user.passwordHash) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
@@ -165,6 +167,7 @@ router.post('/login', async (req, res) => {
     }
 
     const validPassword = await bcrypt.compare(validation.data.password, user.passwordHash);
+    console.log('[LOGIN]', validation.data.email, '→ password valid:', validPassword);
     if (!validPassword) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
