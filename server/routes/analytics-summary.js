@@ -5,6 +5,7 @@ import prisma from '../src/config/database.js';
 import { asyncHandler } from '../src/middleware/errorHandler.js';
 import {
   buildActivityFilters,
+  buildFarmerScopeFilter,
   buildTimeWindows,
   summarizeCompleteness,
   DEFAULT_ACTIVITY_WINDOW_DAYS,
@@ -19,15 +20,24 @@ const router = express.Router();
 router.use(authenticate, authorize('super_admin', 'institutional_admin'), extractOrganization);
 
 // ─── GET / ─────────────────────────────────────────────
+// Supports query params: ?windowDays=30&region=X&programId=Y&cohortId=Z&primaryCrop=W&period=month|quarter|week
 router.get('/', asyncHandler(async (req, res) => {
-  const orgFilter = req.organizationId ? { organizationId: req.organizationId } : {};
   const windowDays = parseInt(req.query.windowDays || String(DEFAULT_ACTIVITY_WINDOW_DAYS), 10);
   const tw = buildTimeWindows({ activityWindowDays: windowDays });
 
-  const { activeFarmerWhere, inactiveFarmerWhere, setupIncompleteWhere } = buildActivityFilters({
-    organizationId: req.organizationId,
+  // Build scoped filters from query params
+  const scopeOpts = {
+    organizationId: req.organizationId || undefined,
+    programId: req.query.programId || undefined,
+    cohortId: req.query.cohortId || undefined,
+    region: req.query.region || undefined,
+    primaryCrop: req.query.primaryCrop || undefined,
     windowDays,
-  });
+  };
+
+  const orgFilter = buildFarmerScopeFilter(scopeOpts);
+
+  const { activeFarmerWhere, inactiveFarmerWhere, setupIncompleteWhere } = buildActivityFilters(scopeOpts);
 
   // Base farmer counts
   const [totalFarmers, approvedFarmers] = await Promise.all([
@@ -157,6 +167,25 @@ router.get('/', asyncHandler(async (req, res) => {
     pesticideComplianceSummary = summarizeCompliance(results);
   }
 
+  // ── Period-specific update counts ────────────────────────
+  const [weekUpdates, monthUpdates, quarterUpdates] = await Promise.all([
+    prisma.seasonProgressEntry.count({
+      where: { ...seasonOrgFilter, createdAt: { gte: tw.weekCutoff } },
+    }),
+    prisma.seasonProgressEntry.count({
+      where: { ...seasonOrgFilter, createdAt: { gte: tw.monthCutoff } },
+    }),
+    prisma.seasonProgressEntry.count({
+      where: { ...seasonOrgFilter, createdAt: { gte: tw.quarterCutoff } },
+    }),
+  ]);
+
+  // ── Available filter options (for frontend dropdowns) ───
+  const [regions, crops] = await Promise.all([
+    prisma.farmer.groupBy({ by: ['region'], where: orgFilter, _count: true, orderBy: { _count: { region: 'desc' } }, take: 50 }),
+    prisma.farmer.groupBy({ by: ['primaryCrop'], where: { ...orgFilter, primaryCrop: { not: null } }, _count: true, orderBy: { _count: { primaryCrop: 'desc' } }, take: 50 }),
+  ]);
+
   res.json({
     totalFarmers,
     activeFarmers,
@@ -180,10 +209,27 @@ router.get('/', asyncHandler(async (req, res) => {
       commonMissing: completeness.commonMissing.slice(0, 5),
     },
     pesticideCompliance: pesticideComplianceSummary,
+    periodUpdates: {
+      last7Days: weekUpdates,
+      last30Days: monthUpdates,
+      last90Days: quarterUpdates,
+    },
     timeWindow: {
       windowDays: tw.windowDays,
       label: tw.windowLabel,
       cutoff: tw.activityCutoff.toISOString(),
+    },
+    filters: {
+      applied: {
+        region: req.query.region || null,
+        programId: req.query.programId || null,
+        cohortId: req.query.cohortId || null,
+        primaryCrop: req.query.primaryCrop || null,
+      },
+      available: {
+        regions: regions.map(r => ({ value: r.region, count: r._count })),
+        crops: crops.map(c => ({ value: c.primaryCrop, count: c._count })),
+      },
     },
   });
 }));

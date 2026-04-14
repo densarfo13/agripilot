@@ -26,15 +26,21 @@ function AnalyticsTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
+  const [cropFilter, setCropFilter] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
     setError('');
-    api.get('/v2/analytics-summary')
+    const params = new URLSearchParams();
+    if (regionFilter) params.set('region', regionFilter);
+    if (cropFilter) params.set('primaryCrop', cropFilter);
+    const qs = params.toString();
+    api.get(`/v2/analytics-summary${qs ? '?' + qs : ''}`)
       .then(r => setData(r.data))
       .catch(() => setError('Failed to load analytics summary'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [regionFilter, cropFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -43,38 +49,113 @@ function AnalyticsTab() {
   if (!data) return null;
 
   const pct = (num, den) => den ? ((num / den) * 100).toFixed(1) + '%' : '0%';
+  const tw = data.timeWindow || {};
+  const pc = data.pesticideCompliance || {};
+  const comp = data.profileCompleteness || {};
+  const periods = data.periodUpdates || {};
+  const avail = data.filters?.available || {};
 
   return (
     <>
-      <div className="stats-grid">
-        <div className="stat-card"><div className="stat-label">Total Farmers</div><div className="stat-value">{data.totalFarmers ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Active Farmers</div><div className="stat-value">{data.activeFarmers ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Setup Incomplete</div><div className="stat-value">{data.setupIncomplete ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Total Updates</div><div className="stat-value">{data.totalUpdates ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Validated</div><div className="stat-value">{data.validated ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Pending Validation</div><div className="stat-value">{data.pendingValidation ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Needs Attention</div><div className="stat-value">{data.needsAttention ?? 0}</div></div>
+      {/* ─── Filters ─── */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)} style={AS.select}>
+          <option value="">All regions</option>
+          {(avail.regions || []).map(r => <option key={r.value} value={r.value}>{r.value} ({r.count})</option>)}
+        </select>
+        <select value={cropFilter} onChange={e => setCropFilter(e.target.value)} style={AS.select}>
+          <option value="">All crops</option>
+          {(avail.crops || []).map(c => <option key={c.value} value={c.value}>{c.value} ({c.count})</option>)}
+        </select>
+        {(regionFilter || cropFilter) && (
+          <button style={AS.clearBtn} onClick={() => { setRegionFilter(''); setCropFilter(''); }}>Clear filters</button>
+        )}
+        <span style={{ fontSize: '0.75rem', color: '#71717A', marginLeft: 'auto' }}>
+          Activity window: {tw.label || 'last 30 days'}
+        </span>
       </div>
 
+      {/* ─── Farmer counts ─── */}
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-label">Total Farmers</div><div className="stat-value">{data.totalFarmers ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Active <span style={AS.period}>({tw.label})</span></div><div className="stat-value" style={{ color: '#16A34A' }}>{data.activeFarmers ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Inactive <span style={AS.period}>({tw.label})</span></div><div className="stat-value" style={{ color: '#F59E0B' }}>{data.inactiveFarmers ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Setup Incomplete</div><div className="stat-value">{data.setupIncomplete ?? 0}</div></div>
+      </div>
+
+      {/* ─── Update activity by period ─── */}
+      <div style={{ marginTop: '1rem', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Updates by Period</div>
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-label">Last 7 days</div><div className="stat-value">{periods.last7Days ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Last 30 days</div><div className="stat-value">{periods.last30Days ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Last 90 days</div><div className="stat-value">{periods.last90Days ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">All time</div><div className="stat-value">{data.totalUpdates ?? 0}</div></div>
+      </div>
+
+      {/* ─── Validation + attention ─── */}
+      <div className="stats-grid" style={{ marginTop: '1rem' }}>
+        <div className="stat-card"><div className="stat-label">Validated Updates</div><div className="stat-value">{data.validatedUpdates ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Pending Validation</div><div className="stat-value">{data.pendingValidations ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Needs Attention</div><div className="stat-value" style={{ color: (data.needsAttention ?? 0) > 0 ? '#DC2626' : undefined }}>{data.needsAttention ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Duplicate Flags</div><div className="stat-value" style={{ color: (data.duplicateFlagged ?? 0) > 0 ? '#F59E0B' : undefined }}>{data.duplicateFlagged ?? 0}</div></div>
+      </div>
+
+      {/* ─── Rates ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+        <div className="stat-card" style={S.pctCard}>
+          <div style={S.pctValue}>{data.onboardingRate || '0%'}</div>
+          <div style={S.pctLabel}>Onboarding Rate</div>
+        </div>
+        <div className="stat-card" style={S.pctCard}>
+          <div style={S.pctValue}>{data.firstUpdateRate || '0%'}</div>
+          <div style={S.pctLabel}>First Update Rate</div>
+        </div>
+      </div>
+
+      {/* ─── Profile completeness ─── */}
+      <div style={{ marginTop: '1.5rem', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Profile Completeness</div>
+      <div className="stats-grid">
+        <div className="stat-card" style={S.pctCard}>
+          <div style={S.pctValue}>{comp.completePct ?? 0}%</div>
+          <div style={S.pctLabel}>Complete profiles</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Complete</div><div className="stat-value" style={{ color: '#16A34A' }}>{comp.complete ?? 0}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Incomplete</div><div className="stat-value" style={{ color: '#F59E0B' }}>{comp.incomplete ?? 0}</div>
+        </div>
+      </div>
+      {comp.commonMissing && comp.commonMissing.length > 0 && (
+        <div style={{ fontSize: '0.8125rem', color: '#71717A', marginTop: '0.5rem' }}>
+          Common missing: {comp.commonMissing.map(m => `${m.field} (${m.count})`).join(', ')}
+        </div>
+      )}
+
+      {/* ─── Pesticide compliance ─── */}
+      <div style={{ marginTop: '1.5rem', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Pesticide Compliance</div>
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-label">Compliant</div><div className="stat-value" style={{ color: '#16A34A' }}>{pc.compliant ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Needs Review</div><div className="stat-value" style={{ color: '#F59E0B' }}>{pc.needsReview ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Non-compliant</div><div className="stat-value" style={{ color: '#DC2626' }}>{pc.nonCompliant ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Evaluated</div><div className="stat-value">{pc.totalEvaluated ?? 0}</div></div>
+      </div>
+
+      {/* ─── Intelligence ─── */}
       <div className="stats-grid" style={{ marginTop: '1rem' }}>
         <div className="stat-card"><div className="stat-label">Land Mapped</div><div className="stat-value">{data.landBoundaryCount ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Seed Scans</div><div className="stat-value">{data.seedScanCount ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Seed Warnings</div><div className="stat-value" style={{ color: (data.seedWarningCount ?? 0) > 0 ? '#DC2626' : undefined }}>{data.seedWarningCount ?? 0}</div></div>
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
-        <div className="stat-card" style={S.pctCard}>
-          <div style={S.pctValue}>{pct(data.activeFarmers, data.totalFarmers)}</div>
-          <div style={S.pctLabel}>Onboarding Rate</div>
-        </div>
-        <div className="stat-card" style={S.pctCard}>
-          <div style={S.pctValue}>{pct(data.farmersWithUpdates ?? data.totalUpdates, data.totalFarmers)}</div>
-          <div style={S.pctLabel}>First Update Rate</div>
-        </div>
-      </div>
     </>
   );
 }
+
+const AS = {
+  select: { padding: '6px 10px', borderRadius: '6px', border: '1px solid #D4D4D8', fontSize: '0.8125rem', background: '#fff' },
+  clearBtn: { padding: '6px 12px', borderRadius: '6px', border: '1px solid #D4D4D8', background: '#fff', cursor: 'pointer', fontSize: '0.8125rem', color: '#71717A' },
+  period: { fontSize: '0.6875rem', fontWeight: 400, color: '#A1A1AA' },
+};
 
 /* ------------------------------------------------------------------ */
 /*  Tab 2: Export                                                      */
