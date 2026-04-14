@@ -85,35 +85,24 @@ describe('V1 ProtectedRoute — V2 user detection', () => {
 //  V1 API interceptor — no hard redirect on V2 routes
 // ═══════════════════════════════════════════════════════════
 
-describe('V1 API client — V2 route protection', () => {
+describe('V1 API client — 401 handling with V2 cookie refresh', () => {
   const src = read('src/api/client.js');
 
-  it('detects V2 routes before doing hard redirect', () => {
-    expect(src).toContain('isV2Route');
+  it('attempts V2 cookie refresh before hard logout', () => {
+    expect(src).toContain('/api/v2/auth/refresh');
+    expect(src).toContain('_refreshing');
   });
 
-  it('checks pathname for V2 route prefixes', () => {
-    expect(src).toContain("path.startsWith('/dashboard')");
-    expect(src).toContain("path.startsWith('/login')");
-    expect(src).toContain("path.startsWith('/season')");
-    expect(src).toContain("path.startsWith('/profile')");
+  it('handles MFA and step-up codes without logout', () => {
+    expect(src).toContain('STEP_UP_REQUIRED');
+    expect(src).toContain('MFA_SETUP_REQUIRED');
+    expect(src).toContain('MFA_CHALLENGE_REQUIRED');
   });
 
-  it('only hard-redirects on non-V2 routes', () => {
-    expect(src).toContain('if (!isV2Route)');
-  });
-
-  it('does NOT unconditionally set window.location.href', () => {
-    // The old pattern was: unconditional window.location.href = '/login'
-    // Now it's gated behind !isV2Route check
+  it('falls back to hard logout when refresh fails', () => {
     const interceptorSection = src.split('interceptors.response')[1] || '';
-    const hrefLines = interceptorSection.split('\n')
-      .filter(l => l.includes("window.location.href = '/login'"));
-    // Should only appear inside the !isV2Route block
-    for (const line of hrefLines) {
-      // The line should be inside a conditional block, not at top level
-      expect(interceptorSection).toContain('if (!isV2Route)');
-    }
+    expect(interceptorSection).toContain("window.location.href = '/login'");
+    expect(interceptorSection).toContain('logout()');
   });
 });
 
@@ -194,10 +183,13 @@ describe('Session persistence', () => {
     expect(effectMatch).toBeTruthy();
   });
 
-  it('login() does NOT re-set authLoading', () => {
+  it('login() sets authLoading false only on successful non-MFA login', () => {
     const src = read('src/context/AuthContext.jsx');
     const loginFn = src.split('async function login')[1]?.split('async function')[0] || '';
-    expect(loginFn).not.toContain('setAuthLoading');
+    // login() returns early (without setAuthLoading) for MFA challenge,
+    // but clears authLoading on successful direct login
+    expect(loginFn).toContain('mfaChallengeRequired');
+    expect(loginFn).toContain('setAuthLoading(false)');
   });
 });
 

@@ -11,6 +11,8 @@ import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
+  signMfaChallengeToken,
+  verifyMfaChallengeToken,
 } from '../lib/tokens.js';
 import {
   validateRegisterPayload,
@@ -172,6 +174,36 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
+    // ─── MFA gate ──────────────────────────────────────────
+    // If user has MFA enabled, don't issue session cookies yet.
+    // Return a short-lived challenge token instead.
+    const { isMfaRequired } = await import('../src/modules/mfa/service.js');
+
+    if (isMfaRequired(user.role)) {
+      // Check if user has MFA enrolled
+      const mfaUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { mfaEnabled: true },
+      });
+
+      if (mfaUser?.mfaEnabled) {
+        // MFA enrolled → require TOTP code
+        const mfaToken = signMfaChallengeToken(user);
+        console.log('[LOGIN]', validation.data.email, '→ MFA challenge required');
+        return res.json({
+          success: true,
+          mfaChallengeRequired: true,
+          mfaToken,
+          user: { id: user.id, role: user.role, email: user.email },
+        });
+      }
+
+      // MFA required but NOT enrolled → let them in but signal setup needed
+      // They'll be prompted on the Account page to set up MFA
+      console.log('[LOGIN]', validation.data.email, '→ MFA setup required (not enrolled yet)');
+    }
+
+    // No MFA required or MFA not enrolled → issue session directly
     await createSessionAndCookies(req, res, user);
 
     await writeAuditLog(req, {
@@ -180,6 +212,77 @@ router.post('/login', async (req, res) => {
       entityType: 'User',
       entityId: user.id,
     });
+
+    return res.json({
+      success: true,
+      mfaSetupRequired: isMfaRequired(user.role) ? true : undefined,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt,
+      },
+    });
+  } catch (error) {
+    console.error('POST /api/v2/auth/login failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to login' });
+  }
+});
+
+// ─── MFA Verify (step 2 of login) ─────────────────────────
+router.post('/mfa/verify', async (req, res) => {
+  try {
+    const { mfaToken, code } = req.body || {};
+
+    if (!mfaToken || !code) {
+      return res.status(400).json({ success: false, error: 'MFA token and code are required' });
+    }
+
+    // Verify the challenge token
+    let payload;
+    try {
+      payload = verifyMfaChallengeToken(mfaToken);
+    } catch {
+      return res.status(401).json({ success: false, error: 'MFA session expired. Please log in again.' });
+    }
+
+    // Verify the TOTP code
+    const { verifyMfaCode } = await import('../src/modules/mfa/service.js');
+    const valid = await verifyMfaCode(payload.sub, code);
+
+    if (!valid) {
+      console.log('[MFA]', payload.email, '→ invalid code');
+      return res.status(401).json({ success: false, error: 'Invalid code. Try again.' });
+    }
+
+    // MFA passed — issue full session cookies
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        emailVerifiedAt: true,
+        active: true,
+      },
+    });
+
+    if (!user || !user.active) {
+      return res.status(401).json({ success: false, error: 'Account not found or disabled' });
+    }
+
+    await createSessionAndCookies(req, res, user);
+
+    await writeAuditLog(req, {
+      userId: user.id,
+      action: 'auth.login.mfa_verified',
+      entityType: 'User',
+      entityId: user.id,
+    });
+
+    console.log('[MFA]', user.email, '→ verified, session created');
 
     return res.json({
       success: true,
@@ -192,8 +295,8 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('POST /api/v2/auth/login failed:', error);
-    return res.status(500).json({ success: false, error: 'Failed to login' });
+    console.error('POST /api/v2/auth/mfa/verify failed:', error);
+    return res.status(500).json({ success: false, error: 'MFA verification failed' });
   }
 });
 

@@ -5,6 +5,7 @@ import {
   logoutUser,
   registerUser,
   resendVerification,
+  verifyMfaCode as verifyMfaCodeApi,
 } from '../lib/api.js';
 
 const AuthContext = createContext(null);
@@ -101,6 +102,13 @@ export function AuthProvider({ children }) {
 
   async function login(email, password) {
     const data = await loginUser({ email, password });
+
+    // MFA challenge required — don't set user yet, caller handles step 2
+    if (data.mfaChallengeRequired) {
+      try { localStorage.setItem('farroway:last_email', email); } catch { /* ignore */ }
+      return data;
+    }
+
     const loggedInUser = data.user || null;
     setUser(loggedInUser);
     setIsOfflineSession(false);
@@ -110,6 +118,16 @@ export function AuthProvider({ children }) {
     cacheSession(loggedInUser);
     // Remember email for re-login convenience
     try { localStorage.setItem('farroway:last_email', email); } catch { /* ignore */ }
+    return data;
+  }
+
+  async function completeMfaChallenge(mfaToken, code) {
+    const data = await verifyMfaCodeApi({ mfaToken, code });
+    const loggedInUser = data.user || null;
+    setUser(loggedInUser);
+    setIsOfflineSession(false);
+    setAuthLoading(false);
+    cacheSession(loggedInUser);
     return data;
   }
 
@@ -141,6 +159,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: !!user,
       isOfflineSession,
       login,
+      completeMfaChallenge,
       register,
       logout,
       bootstrap,

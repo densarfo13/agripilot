@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
@@ -11,8 +11,7 @@ function getRememberedEmail() {
 }
 
 export default function Login() {
-  const { login, isAuthenticated, authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { login, completeMfaChallenge, isAuthenticated, authLoading } = useAuth();
   const location = useLocation();
   const { t } = useTranslation();
   const [email, setEmail] = useState(getRememberedEmail);
@@ -20,14 +19,21 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
-  const submittingRef = useRef(false); // prevents double-submit before React state update
+  const submittingRef = useRef(false);
+
+  // ─── MFA challenge state ──────────────────────────────────
+  const [mfaStep, setMfaStep] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const mfaInputRef = useRef(null);
 
   const { user } = useAuth();
-  // Staff/admin users go to the institutional dashboard (/), farmers go to /dashboard
   const defaultRedirect = (user && STAFF_ROLES.includes(user.role)) ? '/' : '/dashboard';
   const redirectTo = location.state?.from || defaultRedirect;
 
-  // ─── Gate 1: Auth still loading → show nothing (prevents login form flash) ───
+  // ─── Gate 1: Auth still loading ───
   if (authLoading) {
     return (
       <div style={S.page}>
@@ -39,13 +45,12 @@ export default function Login() {
     );
   }
 
-  // ─── Gate 2: Already authenticated → single declarative redirect ───
+  // ─── Gate 2: Already authenticated ───
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
   }
 
-  // ─── Gate 3: Not authenticated → render login form ───
-
+  // ─── Password login (step 1) ────────────────────────────
   const validate = () => {
     const e = {};
     if (!email.trim()) e.email = t('auth.emailRequired');
@@ -55,7 +60,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (submittingRef.current) return; // double-submit guard
+    if (submittingRef.current) return;
     setGeneralError('');
     const fieldErrors = validate();
     if (Object.keys(fieldErrors).length) {
@@ -65,18 +70,23 @@ export default function Login() {
     setErrors({});
     setLoading(true);
     submittingRef.current = true;
-    console.log('[AUTH]', Date.now(), 'Login submit start, authLoading:', authLoading);
     try {
-      console.log('[AUTH]', Date.now(), 'Login request sent');
       const data = await login(email, password);
-      console.log('[AUTH]', Date.now(), 'Login response received, role:', data?.user?.role, 'redirectTo:', redirectTo);
+
+      // MFA challenge required — show step 2
+      if (data.mfaChallengeRequired) {
+        setMfaToken(data.mfaToken);
+        setMfaStep(true);
+        setMfaCode('');
+        setMfaError('');
+        safeTrackEvent('auth.mfa.challenge_shown', {});
+        setTimeout(() => mfaInputRef.current?.focus(), 100);
+        return;
+      }
+
       safeTrackEvent('auth.login.success', {});
-      // After login(), isAuthenticated becomes true → component re-renders →
-      // Gate 2 above fires the single declarative <Navigate>.
-      // No manual navigate() needed — eliminates double-redirect.
     } catch (err) {
-      console.warn('[AUTH] Login failed:', err.status, err.message);
-      safeTrackEvent('auth.login.failed', { hasFieldErrors: !!(err.fieldErrors && Object.keys(err.fieldErrors).length) });
+      safeTrackEvent('auth.login.failed', {});
       if (err.fieldErrors && Object.keys(err.fieldErrors).length) {
         setErrors(err.fieldErrors);
       } else {
@@ -88,6 +98,90 @@ export default function Login() {
     }
   };
 
+  // ─── MFA verify (step 2) ────────────────────────────────
+  const handleMfaSubmit = async (e) => {
+    e.preventDefault();
+    const trimmed = mfaCode.trim();
+    if (!trimmed) {
+      setMfaError('Enter your 6-digit code');
+      return;
+    }
+    setMfaError('');
+    setMfaLoading(true);
+    try {
+      await completeMfaChallenge(mfaToken, trimmed);
+      safeTrackEvent('auth.mfa.verified', {});
+    } catch (err) {
+      setMfaError(err.message || 'Invalid code. Try again.');
+      setMfaCode('');
+      safeTrackEvent('auth.mfa.failed', {});
+      setTimeout(() => mfaInputRef.current?.focus(), 50);
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setMfaStep(false);
+    setMfaToken('');
+    setMfaCode('');
+    setMfaError('');
+    setPassword('');
+    setGeneralError('');
+  };
+
+  // ─── MFA step UI ─────────────────────────────────────────
+  if (mfaStep) {
+    return (
+      <div style={S.page}>
+        <div style={S.card}>
+          <div style={S.mfaIconRow}>
+            <span style={S.mfaIcon}>🔐</span>
+          </div>
+          <h1 style={S.title}>Two-Factor Authentication</h1>
+          <p style={S.subtitle}>
+            Enter the 6-digit code from your authenticator app.
+          </p>
+
+          {mfaError && <div style={S.errorBox}>{mfaError}</div>}
+
+          <form onSubmit={handleMfaSubmit} style={S.form}>
+            <div>
+              <label style={S.label}>Verification Code</label>
+              <input
+                ref={mfaInputRef}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={10}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\s/g, ''))}
+                placeholder="000000"
+                style={{ ...S.input, ...S.mfaInput }}
+              />
+              <p style={S.mfaHint}>
+                You can also use a 10-character backup code.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={mfaLoading}
+              style={{ ...S.button, ...(mfaLoading ? S.buttonDisabled : {}) }}
+            >
+              {mfaLoading ? 'Verifying...' : 'Verify'}
+            </button>
+          </form>
+
+          <button onClick={handleBackToLogin} style={S.backBtn}>
+            Back to login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Login form (step 1) ──────────────────────────────────
   return (
     <div style={S.page}>
       <div style={S.card}>
@@ -161,4 +255,10 @@ const S = {
   button: { background: '#22C55E', color: '#000', border: 'none', borderRadius: '12px', padding: '0.75rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   footerText: { textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', marginTop: '1.5rem' },
+  // MFA-specific styles
+  mfaIconRow: { textAlign: 'center', marginBottom: '0.5rem' },
+  mfaIcon: { fontSize: '2.5rem' },
+  mfaInput: { fontSize: '1.5rem', letterSpacing: '0.3em', textAlign: 'center', fontFamily: 'monospace' },
+  mfaHint: { color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginTop: '0.5rem' },
+  backBtn: { marginTop: '1rem', width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', padding: '0.6rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', cursor: 'pointer' },
 };

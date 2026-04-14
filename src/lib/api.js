@@ -72,6 +72,13 @@ export function loginUser(payload) {
   }, false); // login 401 = wrong password, not an expired session
 }
 
+export function verifyMfaCode(payload) {
+  return request('/api/v2/auth/mfa/verify', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, false);
+}
+
 export function logoutUser() {
   return request('/api/v2/auth/logout', {
     method: 'POST',
