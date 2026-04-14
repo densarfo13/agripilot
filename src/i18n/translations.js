@@ -549,6 +549,48 @@ const T = {
   'update.pesticideAmountHint': {
     en: 'e.g. 2 litres', fr: 'ex. 2 litres', sw: 'mf. Lita 2', ha: 'mis. Lita 2', tw: 'ss. Lita 2',
   },
+  'buyer.title': {
+    en: 'Farm Trust Overview', fr: 'Aperçu de confiance des fermes', sw: 'Muhtasari wa Uaminifu wa Mashamba', ha: 'Bayani Amintaccen Gona', tw: 'Afuom Gyidi Nhwɛso',
+  },
+  'buyer.safeToHarvest': {
+    en: 'Safe to harvest', fr: 'Prêt pour la récolte', sw: 'Salama kuvuna', ha: 'Lafiya girbi', tw: 'Ɛyɛ safe sɛ wɔtwa',
+  },
+  'buyer.needsReview': {
+    en: 'Needs review', fr: 'À vérifier', sw: 'Inahitaji ukaguzi', ha: 'Yana buƙatar dubawa', tw: 'Ɛhia nhwɛso',
+  },
+  'buyer.notSafe': {
+    en: 'Not safe', fr: 'Non sûr', sw: 'Si salama', ha: 'Ba lafiya ba', tw: 'Ɛnyɛ safe',
+  },
+  'buyer.allFarms': {
+    en: 'All farms', fr: 'Toutes les fermes', sw: 'Mashamba yote', ha: 'Gonakin duka', tw: 'Afuom nyinaa',
+  },
+  'buyer.safe': {
+    en: 'Safe', fr: 'Sûr', sw: 'Salama', ha: 'Lafiya', tw: 'Safe',
+  },
+  'buyer.lastPesticide': {
+    en: 'Last pesticide', fr: 'Dernier pesticide', sw: 'Dawa ya mwisho', ha: 'Maganin ƙwari na ƙarshe', tw: 'Nnwura a etwa to',
+  },
+  'buyer.safeHarvestDate': {
+    en: 'Safe harvest date', fr: 'Date de récolte sûre', sw: 'Tarehe salama ya kuvuna', ha: 'Ranar girbi lafiya', tw: 'Da a wɔbɛtumi atwa',
+  },
+  'buyer.confidence': {
+    en: 'Confidence', fr: 'Confiance', sw: 'Uhakika', ha: 'Tabbaci', tw: 'Gyidi',
+  },
+  'buyer.verified': {
+    en: 'Verified', fr: 'Vérifié', sw: 'Imethibitishwa', ha: 'An tabbatar', tw: 'Wɔahwɛ so',
+  },
+  'buyer.selfReported': {
+    en: 'Self-reported', fr: 'Auto-déclaré', sw: 'Kujitangaza', ha: 'Rahoto kansa', tw: 'Ɔno ankasa bɔɔ amanneɛ',
+  },
+  'buyer.timeline': {
+    en: 'Activity timeline', fr: 'Chronologie des activités', sw: 'Ratiba ya shughuli', ha: 'Jadawalin ayyuka', tw: 'Dwumadie bere ahyɛnsoɛ',
+  },
+  'buyer.noFarms': {
+    en: 'No farms found', fr: 'Aucune ferme trouvée', sw: 'Hakuna mashamba yaliyopatikana', ha: 'Babu gonaki da aka samu', tw: 'Wɔanhunu afuom biara',
+  },
+  'buyer.violations': {
+    en: 'Violations', fr: 'Violations', sw: 'Ukiukaji', ha: 'Keta doka', tw: 'Mmara so buo',
+  },
   'compliance.safeToHarvest': {
     en: 'Safe to harvest', fr: 'Prêt pour la récolte', sw: 'Salama kuvuna', ha: 'Lafiya girbi', tw: 'Ɛyɛ safe sɛ wɔtwa',
   },

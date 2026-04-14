@@ -430,6 +430,18 @@ export function updateBuyer(id, payload) {
   });
 }
 
+// ─── Buyer Trust (buyer-ready farm view) ────────────────────────
+export function getBuyerTrustFarms(params = {}) {
+  const qs = new URLSearchParams();
+  if (params.status) qs.set('status', params.status);
+  const q = qs.toString();
+  return request(`/api/v2/buyer-trust/farms${q ? '?' + q : ''}`);
+}
+
+export function getBuyerTrustFarm(farmerId) {
+  return request(`/api/v2/buyer-trust/farms/${farmerId}`);
+}
+
 // ─── Buyer Links (admin) ─────────────────────────────────────
 export function getBuyerLinks(params = {}) {
   const qs = new URLSearchParams();

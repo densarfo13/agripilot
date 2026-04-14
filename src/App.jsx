@@ -69,6 +69,7 @@ const AdminIssuesPage = lazy(() => import('./pages/AdminIssuesPage.jsx'));
 const AdminOpsPage = lazy(() => import('./pages/AdminOpsPage.jsx'));
 const SupplyReadinessPage = lazy(() => import('./pages/SupplyReadinessPage.jsx'));
 const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx'));
+const BuyerTrustPage = lazy(() => import('./pages/BuyerTrustPage.jsx'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
 
 // Intelligence pages (farmer-facing, V2 cookie auth)
@@ -234,6 +235,7 @@ export default function App() {
             <Route path="admin/ops" element={<RoleRoute roles={ADMIN_ROLES}><AdminOpsPage /></RoleRoute>} />
             <Route path="admin/supply" element={<RoleRoute roles={ADMIN_ROLES}><SupplyReadinessPage /></RoleRoute>} />
             <Route path="admin/buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerManagementPage /></RoleRoute>} />
+            <Route path="admin/buyer-trust" element={<RoleRoute roles={ADMIN_ROLES}><BuyerTrustPage /></RoleRoute>} />
             <Route path="admin/intelligence/regional-risk" element={<RoleRoute roles={ADMIN_ROLES}><AdminRegionalRiskMap /></RoleRoute>} />
             <Route path="admin/intelligence/high-risk-farms" element={<RoleRoute roles={ADMIN_ROLES}><AdminHighRiskFarms /></RoleRoute>} />
             <Route path="admin/intelligence/hotspots" element={<RoleRoute roles={ADMIN_ROLES}><AdminHotspotInspector /></RoleRoute>} />
