@@ -111,10 +111,30 @@ const PageLoader = () => (
 
 function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
-  const user = useAuthStore(s => s.user);
-  // V2 cookie-auth users have no V1 token — send them to /dashboard (not /login)
-  // so the V2 auth guard handles them correctly without a redirect loop.
-  if (!token) {
+  const storeUser = useAuthStore(s => s.user);
+  const setAuth = useAuthStore(s => s.setAuth);
+  const { user: v2User } = useAuth();
+
+  // Bridge V2 cookie-auth into the V1 zustand store so RoleRoute works.
+  // V2 staff/admin users (logged in via /login with cookies) need access to
+  // the V1 admin routes under ProtectedRoute without a redirect loop.
+  useEffect(() => {
+    if (!token && v2User && v2User.role && v2User.role !== 'farmer') {
+      // Set a synthetic token + user in the V1 store so ProtectedRoute
+      // and RoleRoute recognize the session. The actual auth is still
+      // cookie-based — this token is just a bridge marker.
+      setAuth(v2User, 'v2-cookie-session');
+    }
+  }, [token, v2User, setAuth]);
+
+  const user = storeUser || v2User;
+  const hasSession = token || (v2User && v2User.role && v2User.role !== 'farmer');
+
+  if (!hasSession) {
+    // No V1 token and no V2 staff session — check for cached V2 farmer session
+    if (v2User?.role === 'farmer') {
+      return <Navigate to="/dashboard" replace />;
+    }
     try {
       const cached = localStorage.getItem('farroway:session_cache');
       if (cached && JSON.parse(cached)?.user) return <Navigate to="/dashboard" replace />;

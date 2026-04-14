@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { STAFF_ROLES } from '../utils/roles.js';
 
 // ─── Remembered email ──────────────────────────────────────
 function getRememberedEmail() {
@@ -20,7 +21,10 @@ export default function Login() {
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = location.state?.from || '/dashboard';
+  const { user } = useAuth();
+  // Staff/admin users go to the institutional dashboard (/), farmers go to /dashboard
+  const defaultRedirect = (user && STAFF_ROLES.includes(user.role)) ? '/' : '/dashboard';
+  const redirectTo = location.state?.from || defaultRedirect;
 
   // ─── Gate 1: Auth still loading → show nothing (prevents login form flash) ───
   if (authLoading) {
