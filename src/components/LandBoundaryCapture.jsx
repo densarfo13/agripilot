@@ -104,9 +104,16 @@ export default function LandBoundaryCapture({ existingBoundary, onSaved, onSkip 
         setCapturingGPS(false);
         safeTrackEvent('boundary.point_added', { method });
       },
-      () => {
+      (err) => {
         setCapturingGPS(false);
-        setStatus({ type: 'error', msg: t('boundary.gpsFailed') });
+        if (err.code === 1) {
+          setStatus({ type: 'error', msg: t('setup.gpsPermissionDenied') });
+        } else if (err.code === 3) {
+          setStatus({ type: 'error', msg: t('setup.gpsTimeout') });
+        } else {
+          setStatus({ type: 'error', msg: t('boundary.gpsFailed') });
+        }
+        console.warn('[LandBoundary] GPS point failed:', { code: err.code, message: err.message });
       },
       { enableHighAccuracy: true, timeout: 15000 },
     );

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getBuyerTrustFarms } from '../lib/api.js';
-import { useTranslation } from '../i18n/translations.js';
+import { useTranslation } from '../i18n/index.js';
 
 const FILTERS = [
   { key: '', label: 'buyer.allFarms' },

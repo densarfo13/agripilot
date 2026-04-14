@@ -5,7 +5,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { computeLandSizeFields, UNIT_OPTIONS } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
-import { detectAndResolveLocation } from '../utils/geolocation.js';
+import { detectAndResolveLocation, GPS_ERROR } from '../utils/geolocation.js';
 import { parseCropValue } from '../utils/crops.js';
 import CropSelect from '../components/CropSelect.jsx';
 import CountrySelect from '../components/CountrySelect.jsx';
@@ -104,8 +104,18 @@ export default function ProfileSetupPage() {
         locationLabel: label || f.locationLabel,
         locationName: f.locationName || label || f.locationName,
       }));
-    } catch {
-      setGpsError(t('location.gpsFallback'));
+    } catch (err) {
+      const code = err?.code;
+      if (code === GPS_ERROR.PERMISSION_DENIED) {
+        setGpsError(t('setup.gpsPermissionDenied'));
+      } else if (code === GPS_ERROR.TIMEOUT) {
+        setGpsError(t('setup.gpsTimeout'));
+      } else if (code === GPS_ERROR.UNAVAILABLE) {
+        setGpsError(t('setup.gpsSignalWeak'));
+      } else {
+        setGpsError(t('location.gpsFallback'));
+      }
+      console.warn('[ProfileSetupPage] GPS failed:', { code, message: err?.message });
     } finally {
       setGpsLoading(false);
     }

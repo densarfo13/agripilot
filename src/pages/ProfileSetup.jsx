@@ -164,11 +164,21 @@ export default function ProfileSetup() {
       if (label) updateField('locationLabel', label);
       setGpsSlowMsg('');
       safeTrackEvent('gps.success', {});
-    } catch {
+    } catch (err) {
       clearTimeout(slowTimer);
-      setGpsError(t('location.gpsFallback'));
+      const code = err?.code;
+      if (code === 'permission_denied') {
+        setGpsError(t('setup.gpsPermissionDenied'));
+      } else if (code === 'timeout') {
+        setGpsError(t('setup.gpsTimeout'));
+      } else if (code === 'unavailable') {
+        setGpsError(t('setup.gpsSignalWeak'));
+      } else {
+        setGpsError(t('location.gpsFallback'));
+      }
       setGpsSlowMsg('');
-      safeTrackEvent('gps.failed', {});
+      safeTrackEvent('gps.failed', { code });
+      console.warn('[ProfileSetup] GPS failed:', { code, message: err?.message });
     } finally {
       setLoadingGPS(false);
     }
