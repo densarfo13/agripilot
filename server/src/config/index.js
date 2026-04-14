@@ -29,13 +29,14 @@ if (isProduction) {
     // Trim whitespace that Railway UI may add
     process.env.MFA_SECRET_KEY = process.env.MFA_SECRET_KEY.trim();
     if (!/^[0-9a-fA-F]{64}$/.test(process.env.MFA_SECRET_KEY)) {
-      console.error('[FATAL] MFA_SECRET_KEY must be a 64-character hex string in production.');
-      console.error(`[FATAL] Current value length: ${process.env.MFA_SECRET_KEY.length}, expected: 64`);
-      console.error('[FATAL] Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
-      process.exit(1);
+      console.warn(`[WARN] MFA_SECRET_KEY is not a valid 64-char hex string (got length ${process.env.MFA_SECRET_KEY.length}). MFA enrollment will be unavailable.`);
+      console.warn('[WARN] Generate a valid key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+      // Don't crash the server — MFA enrollment just won't work until fixed
+    } else {
+      console.log('[CONFIG] MFA_SECRET_KEY configured (64-char hex)');
     }
   } else {
-    console.warn('[WARN] MFA_SECRET_KEY not set in production — MFA enrollment will be unavailable.');
+    console.warn('[WARN] MFA_SECRET_KEY not set — MFA enrollment will be unavailable.');
   }
 
   // Warn if communication providers are not configured — delivery will fail silently at cron time.
