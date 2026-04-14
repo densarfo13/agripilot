@@ -168,21 +168,212 @@ export function getCropLabel(value) {
   return crop ? crop.name : value; // fallback to raw for legacy
 }
 
+// ── Crop Icon Registry ──────────────────────────────────────
+// Priority: crop-specific → category fallback → generic 🌱
+
 /**
- * Get a simple icon for a crop category.
+ * Crop-specific icon map. Keyed by crop CODE (uppercase).
+ * Every built-in crop gets the best available emoji.
  */
-const CATEGORY_ICONS = {
-  cereal: '🌾', legume: '🫘', root_tuber: '🥔', cash_crop: '☕',
-  fruit: '🍌', vegetable: '🥬', spice: '🌶️', oilseed: '🌻',
-  forage: '🌿', tree_crop: '🌳', fungi: '🍄', other: '🌱',
+const CROP_ICONS = {
+  // Cereals & Grains
+  BARLEY:       '🌾',
+  CORN:         '🌽',
+  MAIZE:        '🌽',
+  MILLET:       '🌾',
+  RICE:         '🍚',
+  SORGHUM:      '🌾',
+  WHEAT:        '🌾',
+
+  // Legumes & Pulses
+  BEAN:         '🫘',
+  COWPEA:       '🫘',
+  GROUNDNUT:    '🥜',
+  PEA:          '🫛',
+  SOYBEAN:      '🫘',
+
+  // Root & Tuber
+  CASSAVA:      '🥔',
+  POTATO:       '🥔',
+  SWEET_POTATO: '🍠',
+  YAM:          '🍠',
+
+  // Fruits
+  APPLE:        '🍎',
+  APRICOT:      '🍑',
+  AVOCADO:      '🥑',
+  BANANA:       '🍌',
+  BLUEBERRY:    '🫐',
+  DATE:         '🌴',
+  DRAGON_FRUIT: '🐉',
+  FIG:          '🍈',
+  GRAPE:        '🍇',
+  MANGO:        '🥭',
+  ORANGE:       '🍊',
+  PAPAYA:       '🍈',
+  PEACH:        '🍑',
+  PEAR:         '🍐',
+  PINEAPPLE:    '🍍',
+  PLANTAIN:     '🍌',
+  WATERMELON:   '🍉',
+
+  // Vegetables
+  BEETROOT:     '🥬',
+  CABBAGE:      '🥬',
+  CARROT:       '🥕',
+  CAULIFLOWER:  '🥦',
+  CHILI:        '🌶️',
+  CUCUMBER:     '🥒',
+  EGGPLANT:     '🍆',
+  GARLIC:       '🧄',
+  KALE:         '🥬',
+  LETTUCE:      '🥬',
+  OKRA:         '🟢',
+  ONION:        '🧅',
+  PEPPER:       '🫑',
+  SPINACH:      '🥬',
+  TOMATO:       '🍅',
+
+  // Spices
+  BLACK_PEPPER: '🌶️',
+  GINGER:       '🫚',
+
+  // Cash Crops
+  CACAO:        '🍫',
+  COCOA:        '🍫',
+  COFFEE:       '☕',
+  COTTON:       '🏵️',
+  PALM_OIL:     '🌴',
+  SUGARCANE:    '🎋',
+  TEA:          '🍵',
+
+  // Oilseeds
+  SESAME:       '🌻',
+  SUNFLOWER:    '🌻',
+
+  // Tree Crops
+  ALMOND:       '🌰',
+  COCONUT:      '🥥',
+
+  // Forage
+  ALFALFA:      '🌿',
+
+  // Fungi
+  MUSHROOM:     '🍄',
 };
 
-export function getCropIcon(value) {
-  if (!value) return '🌱';
-  if (value.toUpperCase().startsWith('OTHER')) return '🌱';
-  const crop = getCropByValue(value);
-  return crop ? (CATEGORY_ICONS[crop.category] || '🌱') : '🌱';
+/**
+ * Category fallback icons — used when a crop has no specific icon.
+ */
+const CATEGORY_ICONS = {
+  cereal:     '🌾',
+  legume:     '🫘',
+  root_tuber: '🥔',
+  cash_crop:  '☕',
+  fruit:      '🍎',
+  vegetable:  '🥬',
+  spice:      '🌶️',
+  oilseed:    '🌻',
+  forage:     '🌿',
+  tree_crop:  '🌳',
+  fungi:      '🍄',
+  other:      '🌱',
+};
+
+/** Generic fallback when nothing else matches. */
+const GENERIC_ICON = '🌱';
+
+/**
+ * Alias map for common naming variations.
+ * Maps normalized name → crop CODE for icon lookup only.
+ */
+const CROP_ALIASES = {
+  beans:          'BEAN',
+  peanut:         'GROUNDNUT',
+  peanuts:        'GROUNDNUT',
+  groundnuts:     'GROUNDNUT',
+  'chili pepper': 'CHILI',
+  'chilli':       'CHILI',
+  'bell pepper':  'PEPPER',
+  manioc:         'CASSAVA',
+  tapioca:        'CASSAVA',
+  'sweet potatoes': 'SWEET_POTATO',
+  potatoes:       'POTATO',
+  yams:           'YAM',
+  plantains:      'PLANTAIN',
+  tomatoes:       'TOMATO',
+  onions:         'ONION',
+  carrots:        'CARROT',
+  grapes:         'GRAPE',
+  oranges:        'ORANGE',
+  mangoes:        'MANGO',
+  apples:         'APPLE',
+  bananas:        'BANANA',
+  peas:           'PEA',
+  soybeans:       'SOYBEAN',
+  almonds:        'ALMOND',
+  mushrooms:      'MUSHROOM',
+  cucumbers:      'CUCUMBER',
+  dates:          'DATE',
+  figs:           'FIG',
+  peaches:        'PEACH',
+  pears:          'PEAR',
+  cabbages:       'CABBAGE',
+};
+
+/**
+ * Normalize a crop name for icon lookup.
+ * Trims, lowercases, collapses whitespace.
+ */
+export function normalizeCropName(name) {
+  if (!name) return '';
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
+
+/**
+ * Get the icon for a crop value.
+ *
+ * Priority:
+ *   1. Crop-specific icon (by code)
+ *   2. Alias lookup (by normalized name)
+ *   3. Category fallback
+ *   4. Generic plant fallback 🌱
+ */
+export function getCropIcon(value) {
+  if (!value) return GENERIC_ICON;
+
+  const upper = value.toUpperCase().trim();
+
+  // Handle custom crops: "OTHER:Teff" → try alias lookup for "teff"
+  if (upper.startsWith('OTHER:')) {
+    const customName = normalizeCropName(value.slice(6));
+    const aliasCode = CROP_ALIASES[customName];
+    if (aliasCode && CROP_ICONS[aliasCode]) return CROP_ICONS[aliasCode];
+    return GENERIC_ICON;
+  }
+  if (upper === 'OTHER') return GENERIC_ICON;
+
+  // 1. Direct crop-specific icon by code
+  if (CROP_ICONS[upper]) return CROP_ICONS[upper];
+
+  // 2. Lookup by crop object — try code match, then alias
+  const crop = getCropByValue(value);
+  if (crop) {
+    if (CROP_ICONS[crop.code]) return CROP_ICONS[crop.code];
+    // 3. Category fallback
+    return CATEGORY_ICONS[crop.category] || GENERIC_ICON;
+  }
+
+  // 4. Alias lookup for unknown values (e.g. "beans", "peanut")
+  const normalized = normalizeCropName(value);
+  const aliasCode = CROP_ALIASES[normalized];
+  if (aliasCode && CROP_ICONS[aliasCode]) return CROP_ICONS[aliasCode];
+
+  return GENERIC_ICON;
+}
+
+/** Export for testing/external use */
+export { CROP_ICONS, CATEGORY_ICONS };
 
 // ── Validation helpers ───────────────────────────────────────
 
