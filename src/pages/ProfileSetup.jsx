@@ -314,7 +314,7 @@ export default function ProfileSetup() {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('[ProfileSetup] Save failed:', error.status, error.message, error.fieldErrors);
+      console.error('[ProfileSetup] Save failed:', error.status, error.message, JSON.stringify(error.fieldErrors), 'form was:', JSON.stringify(form));
       if (error.message === '__SAVE_TIMEOUT__') {
         setSaveError(t('setup.saveTimeout') || 'Save timed out. Please try again.');
         trackPilotEvent('setup_failed', { reason: 'timeout' });
