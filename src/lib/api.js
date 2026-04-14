@@ -36,13 +36,15 @@ async function refreshOnce() {
 }
 
 async function request(path, options = {}, allowRefresh = true) {
+  // Destructure headers out so ...rest doesn't overwrite the merged headers
+  const { headers: optHeaders, ...rest } = options;
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
+    ...rest,
     headers: {
       'Content-Type': 'application/json',
-      ...(options.headers || {}),
+      ...(optHeaders || {}),
     },
-    ...options,
   });
 
   if (res.status === 401 && allowRefresh) {
