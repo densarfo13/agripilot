@@ -64,19 +64,34 @@ export default function ProfileSetup() {
   const [saveError, setSaveError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
 
+  // Track whether initial population from profile has happened.
+  // This prevents the useEffect from overwriting user edits on every
+  // profile change (background refresh, save response, sync flush, etc.)
+  const formInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !formInitializedRef.current) {
+      formInitializedRef.current = true;
+
+      // If a draft was restored from localStorage and it has real data, prefer it
+      // over the server profile — the user was mid-edit when they left.
+      if (draftRestored && draftForm.farmerName?.trim()) {
+        console.log('[ProfileSetup] Restored draft, skipping profile population');
+        return;
+      }
+
+      let populated;
       // In newFarm mode, start with a blank form (keep farmer name from existing profile)
       if (isNewFarmMode) {
-        setForm({
+        populated = {
           ...initialForm,
           farmerName: profile?.farmerName ?? '',
           country: profile?.country ?? 'Ghana',
           sizeUnit: defaultUnitForCountry(profile?.country ?? 'Ghana'),
-        });
+        };
       } else {
         const country = profile?.country ?? 'Ghana';
-        setForm({
+        populated = {
           farmerName: profile?.farmerName ?? '',
           farmName: profile?.farmName ?? '',
           country,
@@ -88,10 +103,14 @@ export default function ProfileSetup() {
           gpsLng: profile?.gpsLng !== null && profile?.gpsLng !== undefined ? String(profile.gpsLng) : '',
           locationLabel: profile?.locationLabel ?? '',
           experienceLevel: profile?.experienceLevel ?? '',
-        });
+        };
       }
+      setForm(populated);
+      setDraftForm(populated);         // Keep draft in sync
+      setFieldErrors(initialErrors);   // Clear any stale validation errors
+      setSaveError('');
     }
-  }, [profile, loading, isNewFarmMode]);
+  }, [profile, loading, isNewFarmMode, draftRestored, draftForm, setDraftForm]);
 
   useEffect(() => {
     if (!loading && nameInputRef.current && !form.farmerName) {
@@ -114,17 +133,27 @@ export default function ProfileSetup() {
     else if (syncStatus === 'failed') setInfoMessage(t('setup.syncRetry'));
   }, [syncStatus, language]);
 
-  const completion = useMemo(() => {
-    const checks = [
-      form.farmerName.trim(),
-      form.farmName.trim(),
-      form.country.trim(),
-      form.location.trim(),
-      form.size.trim(),
-      form.cropType && (form.cropType !== 'OTHER' || parseCropValue(form.cropType).customCropName),
-    ];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  // ─── Shared field validity checks (single source of truth) ──────
+  // Used by BOTH the progress bar AND validation. If a field is valid
+  // for progress, it must be valid for submit, and vice versa.
+  const fieldChecks = useMemo(() => {
+    const sizeNum = Number(form.size);
+    const cropParsed = parseCropValue(form.cropType);
+    return {
+      farmerName: !!form.farmerName.trim(),
+      farmName:   !!form.farmName.trim(),
+      country:    !!form.country.trim(),
+      location:   !!form.location.trim(),
+      size:       !!form.size.trim() && !Number.isNaN(sizeNum) && sizeNum > 0,
+      cropType:   !!form.cropType && (form.cropType.toUpperCase() !== 'OTHER' || !!cropParsed.customCropName) &&
+                  (!cropParsed.isCustomCrop || !cropParsed.customCropName || cropParsed.customCropName.length >= 2),
+    };
   }, [form]);
+
+  const completion = useMemo(() => {
+    const values = Object.values(fieldChecks);
+    return Math.round((values.filter(Boolean).length / values.length) * 100);
+  }, [fieldChecks]);
 
   function updateField(key, value) {
     setForm((prev) => {
@@ -185,34 +214,39 @@ export default function ProfileSetup() {
   }
 
   function validateBeforeSubmit() {
+    // Uses the same fieldChecks that drive the progress bar — single source of truth.
     const errors = { ...initialErrors };
     let hasError = false;
 
-    if (!form.farmerName.trim()) { errors.farmerName = t('setup.farmerNameRequired'); hasError = true; }
-    if (!form.farmName.trim()) { errors.farmName = t('setup.farmNameRequired'); hasError = true; }
-    if (!form.country.trim()) { errors.country = t('setup.countryRequired'); hasError = true; }
-    if (!form.location.trim()) { errors.location = t('setup.locationRequired'); hasError = true; }
-    if (!form.size.trim()) { errors.size = t('setup.sizeRequired'); hasError = true; }
-    else {
-      const sizeNum = Number(form.size);
-      if (Number.isNaN(sizeNum) || sizeNum <= 0) { errors.size = t('setup.sizeInvalid'); hasError = true; }
+    if (!fieldChecks.farmerName) { errors.farmerName = t('setup.farmerNameRequired'); hasError = true; }
+    if (!fieldChecks.farmName)   { errors.farmName = t('setup.farmNameRequired'); hasError = true; }
+    if (!fieldChecks.country)    { errors.country = t('setup.countryRequired'); hasError = true; }
+    if (!fieldChecks.location)   { errors.location = t('setup.locationRequired'); hasError = true; }
+    if (!fieldChecks.size) {
+      if (!form.size.trim()) { errors.size = t('setup.sizeRequired'); hasError = true; }
+      else { errors.size = t('setup.sizeInvalid'); hasError = true; }
     }
-    if (!form.cropType) { errors.cropType = t('setup.cropRequired'); hasError = true; }
-    else {
-      const cropParsed = parseCropValue(form.cropType);
-      if (cropParsed.isCustomCrop && !cropParsed.customCropName) {
-        errors.cropType = t('crop.enterYourCrop'); hasError = true;
+    if (!fieldChecks.cropType) {
+      if (!form.cropType) { errors.cropType = t('setup.cropRequired'); hasError = true; }
+      else {
+        const cropParsed = parseCropValue(form.cropType);
+        if (cropParsed.isCustomCrop && !cropParsed.customCropName) {
+          errors.cropType = t('crop.enterYourCrop'); hasError = true;
+        } else if (cropParsed.isCustomCrop && cropParsed.customCropName && cropParsed.customCropName.length < 2) {
+          errors.cropType = t('crop.enterYourCrop'); hasError = true;
+        }
       }
     }
 
+    console.log('[ProfileSetup] Validation:', { fieldChecks, hasError, errors: hasError ? errors : 'none' });
     return { errors, hasError };
   }
 
   async function handleSave() {
     if (submitGuardRef.current) return;
 
-    console.log('Save Farm Profile clicked');
-    console.log('Submitting farm profile:', form);
+    console.log('[ProfileSetup] Save clicked, form state:', JSON.stringify(form));
+    console.log('[ProfileSetup] Field checks:', JSON.stringify(fieldChecks));
 
     // Client-side validation — show all field errors at once
     const { errors: validationErrors, hasError } = validateBeforeSubmit();
