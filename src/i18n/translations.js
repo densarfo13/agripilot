@@ -80,7 +80,7 @@ const T = {
     en: 'Sign Out', fr: 'Déconnexion', sw: 'Ondoka', ha: 'Fita', tw: 'Fi mu',
   },
   'common.listen': {
-    en: 'Hear guide', fr: 'Guide vocal', sw: 'Sikia mwongozo', ha: 'Ji jagoranci', tw: 'Tie nkyerɛkyerɛ',
+    en: 'Listen', fr: 'Écouter', sw: 'Sikiliza', ha: 'Saurara', tw: 'Tie',
   },
   'common.listenAgain': {
     en: 'Listen again', fr: 'Réécouter', sw: 'Sikiliza tena', ha: 'Sake saurara', tw: 'San tie',

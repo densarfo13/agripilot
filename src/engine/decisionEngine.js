@@ -23,6 +23,8 @@ import {
   getStage, stageDaysAgo, isPestTask, isAlertTask, farmProgress, daysSinceUpdate,
 } from './decisionHelpers.js';
 import { getWeatherGuidance, getWeatherTaskAdjustment } from './weatherEngine.js';
+import { getLocalizedTaskTitle, shortenDescription } from '../utils/taskTranslations.js';
+import { getCurrentLang } from '../utils/i18n.js';
 
 /**
  * Resolve the primary action for the farmer.
@@ -60,6 +62,10 @@ function cropName(profile) {
 function resolvePrimaryAction(input, t, weatherGuidance) {
   const { profile, setupComplete, primaryTask } = input;
   const crop = cropName(profile);
+  const lang = getCurrentLang();
+  // Localize task title + shorten description for farmer display
+  const taskTitle = primaryTask ? getLocalizedTaskTitle(primaryTask.id, primaryTask.title, lang) : '';
+  const taskDesc = primaryTask ? shortenDescription(primaryTask.description || primaryTask.reason || '', 60) : '';
 
   // 1. No profile at all
   if (!profile) {
@@ -93,8 +99,8 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
   if (primaryTask && isPestTask(primaryTask) && isAlertTask(primaryTask)) {
     return {
       ...makeAction('severe_pest', getTaskIcon(primaryTask), 'rgba(239,68,68,0.15)',
-        primaryTask.title,
-        primaryTask.description || primaryTask.reason || t('guided.pestReason'),
+        taskTitle,
+        taskDesc || t('guided.pestReason'),
         t('guided.alertCta'), t('guided.taskNext'), 'critical', true),
       task: primaryTask,
     };
@@ -118,8 +124,8 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
   if (primaryTask && isAlertTask(primaryTask) && !isPestTask(primaryTask)) {
     return {
       ...makeAction('unread_alert', getTaskIcon(primaryTask), 'rgba(239,68,68,0.15)',
-        primaryTask.title,
-        primaryTask.description || primaryTask.reason || t('guided.alertReason'),
+        taskTitle,
+        taskDesc || t('guided.alertReason'),
         t('guided.alertCta'), t('guided.taskNext'), 'high', true),
       task: primaryTask,
     };
@@ -152,7 +158,7 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     }
 
     // ─── Normal task with optional weather note ───
-    let reason = primaryTask.description || primaryTask.reason;
+    let reason = taskDesc;
     if (!reason) {
       reason = pest
         ? t('guided.pestReason')
@@ -161,13 +167,13 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     if (wxAdj < -3 && weatherGuidance && weatherGuidance.status !== 'safe') {
       const wxNote = t(weatherGuidance.recommendationKey, weatherGuidance.params);
       if (wxNote && wxNote !== weatherGuidance.recommendationKey) {
-        reason = `${reason} ${wxNote}`;
+        reason = wxNote; // replace, don't append — keep it short
       }
     }
 
     return {
       ...makeAction('daily_task', getTaskIcon(primaryTask), getTaskIconBg(primaryTask),
-        primaryTask.title, reason,
+        taskTitle, reason,
         t('guided.taskCta'), t('guided.taskNext'), 'medium', false),
       task: primaryTask,
     };

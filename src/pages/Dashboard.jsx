@@ -257,6 +257,13 @@ export default function Dashboard() {
         <div style={S.container}>
           {/* Header with weather chip */}
           <FarmerHeader user={user} profile={profile} t={t} weather={weather} weatherGuidance={farmDecision.weatherGuidance} />
+          {/* Weather action line (basic mode) */}
+          {profile && farmDecision.weatherGuidance && farmDecision.weatherGuidance.status !== 'safe' && (
+            <div style={S.wxActionLine}>
+              <span>{farmDecision.weatherGuidance.icon}</span>
+              <span>{t(farmDecision.weatherGuidance.recommendationKey, farmDecision.weatherGuidance.params)}</span>
+            </div>
+          )}
           {!profile && !profileLoading && (
             <div style={S.emptyState}>
               <span style={{ fontSize: '3rem' }}>{'\uD83C\uDF3E'}</span>
@@ -356,6 +363,14 @@ export default function Dashboard() {
 
         {/* ═══ 1. HEADER: avatar + name + weather chip ═══ */}
         <FarmerHeader user={user} profile={profile} t={t} weather={weather} weatherGuidance={farmDecision.weatherGuidance} />
+
+        {/* ═══ WEATHER ACTION LINE (one line, below header) ═══ */}
+        {profile && farmDecision.weatherGuidance && farmDecision.weatherGuidance.status !== 'safe' && (
+          <div style={S.wxActionLine}>
+            <span>{farmDecision.weatherGuidance.icon}</span>
+            <span>{t(farmDecision.weatherGuidance.recommendationKey, farmDecision.weatherGuidance.params)}</span>
+          </div>
+        )}
 
         {/* ═══ Empty state ═══ */}
         {!profile && !profileLoading && (
@@ -632,6 +647,18 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   // ─── More section ───────────
+  wxActionLine: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '10px',
+    background: 'rgba(250,204,21,0.06)',
+    border: '1px solid rgba(250,204,21,0.15)',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.7)',
+  },
   quickLinks: {
     display: 'flex',
     gap: '0.5rem',
