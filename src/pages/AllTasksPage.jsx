@@ -11,7 +11,7 @@
  * Optimized for "what should I do now / next".
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
@@ -21,7 +21,10 @@ import { useWeather } from '../context/WeatherContext.jsx';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { buildTaskListViewModels } from '../domain/tasks/index.js';
+import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
+import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 import { NAV_ICONS, getTaskActionIcon } from '../lib/farmerIcons.js';
+import CompletionCard from '../components/farmer/CompletionCard.jsx';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -38,6 +41,8 @@ export default function AllTasksPage() {
   const [error, setError] = useState(null);
   const [completing, setCompleting] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [taskCompletionState, setTaskCompletionState] = useState(null);
+  const completionTimerRef = useRef(null);
 
   const fetchTasks = useCallback(async () => {
     if (!currentFarmId) return;
@@ -60,16 +65,16 @@ export default function AllTasksPage() {
   async function handleComplete(task) {
     if (!currentFarmId || completing) return;
     setCompleting(task.id);
+    setTaskCompletionState(null);
+    let savedOffline = false;
+
     try {
       await completeTask(currentFarmId, task.id, {
         title: task.title,
         priority: task.priority,
         actionType: task.actionType || null,
       });
-      setTasks((prev) => prev.filter((t) => t.id !== task.id));
-      setCompletedTasks((prev) => [...prev, { ...task, completedAt: new Date().toISOString() }]);
-      setCompletedCount((prev) => prev + 1);
-      safeTrackEvent('task_completed', { farmId: currentFarmId, taskId: task.id, source: 'tasks_page' });
+      finishCompletion(task, savedOffline);
     } catch (err) {
       if (!navigator.onLine || !err.status) {
         try {
@@ -79,14 +84,61 @@ export default function AllTasksPage() {
             url: `/api/v2/farm-tasks/${currentFarmId}/tasks/${encodeURIComponent(task.id)}/complete`,
             data: { title: task.title, priority: task.priority, actionType: task.actionType || null },
           });
-          setTasks((prev) => prev.filter((t) => t.id !== task.id));
-          setCompletedTasks((prev) => [...prev, { ...task, completedAt: new Date().toISOString() }]);
-          setCompletedCount((prev) => prev + 1);
+          savedOffline = true;
+          finishCompletion(task, savedOffline);
         } catch { /* queue failed */ }
       }
     } finally {
       setCompleting(null);
     }
+  }
+
+  function finishCompletion(task, savedOffline) {
+    const remainingTasks = tasks.filter((t) => t.id !== task.id);
+    const newCompletedCount = completedCount + 1;
+
+    setTasks(remainingTasks);
+    setCompletedTasks((prev) => [...prev, { ...task, completedAt: new Date().toISOString() }]);
+    setCompletedCount(newCompletedCount);
+
+    safeTrackEvent('task_completed', { farmId: currentFarmId, taskId: task.id, source: 'tasks_page', offline: savedOffline });
+    if (savedOffline) safeTrackEvent('saved_offline_after_completion', { taskId: task.id });
+
+    // Determine next task from remaining
+    const sortedRemaining = [...remainingTasks].sort((a, b) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
+    });
+    const nextTask = sortedRemaining[0] || null;
+    const nextTitle = nextTask ? (vmByTaskId[nextTask.id]?.title || getLocalizedTaskTitle(nextTask.id, nextTask.title, lang)) : null;
+
+    const vm = vmByTaskId[task.id] || null;
+    const cs = buildCompletionState({
+      completedTask: task,
+      taskViewModel: vm,
+      nextTask,
+      completedCount: newCompletedCount,
+      remainingCount: sortedRemaining.length,
+      savedOffline,
+      nextTaskTitle: nextTitle,
+    });
+    setTaskCompletionState(cs);
+
+    // Haptic
+    if (navigator.vibrate) {
+      try { navigator.vibrate(savedOffline ? [30, 30, 30] : 50); } catch {}
+    }
+  }
+
+  function handleCompletionContinue() {
+    safeTrackEvent('continue_clicked', { source: 'tasks_page' });
+    setTaskCompletionState(null);
+  }
+
+  function handleCompletionLater() {
+    safeTrackEvent('later_clicked', { source: 'tasks_page' });
+    setTaskCompletionState(null);
+    navigate('/dashboard');
   }
 
   // Build view models for localized titles + autopilot enrichment
@@ -140,7 +192,7 @@ export default function AllTasksPage() {
       )}
 
       {/* Empty — all caught up */}
-      {!loading && !error && tasks.length === 0 && (
+      {!loading && !error && tasks.length === 0 && !taskCompletionState && (
         <div style={S.emptyWrap}>
           <span style={S.emptyIcon}>{'\u2728'}</span>
           <p style={S.emptyTitle}>{t('tasks.allCaughtUp')}</p>
@@ -151,8 +203,21 @@ export default function AllTasksPage() {
         </div>
       )}
 
+      {/* ═══ COMPLETION CARD (after task completion) ═══ */}
+      {taskCompletionState && (
+        <div style={S.sections}>
+          <CompletionCard
+            completionState={taskCompletionState}
+            t={t}
+            onContinue={handleCompletionContinue}
+            onLater={handleCompletionLater}
+            variant="standard"
+          />
+        </div>
+      )}
+
       {/* Task sections */}
-      {!loading && !error && tasks.length > 0 && (
+      {!loading && !error && tasks.length > 0 && !taskCompletionState && (
         <div style={S.sections}>
 
           {/* ═══ A. CURRENT TASK ═══ */}

@@ -207,6 +207,9 @@ export default function Dashboard() {
                 onGoToSetup={handleGoToSetup}
                 lastSuccessText={loop.lastSuccessText}
                 autopilotNextText={loop.taskViewModel?.nextText}
+                completionState={loop.completionState}
+                onContinue={loop.continueAfterCompletion}
+                onLater={loop.dismissCompletion}
               />
             </Suspense>
           )}
@@ -238,6 +241,9 @@ export default function Dashboard() {
             onAddUpdate={handleAddUpdate}
             lastSuccessText={loop.lastSuccessText}
             autopilotNextText={loop.taskViewModel?.nextText}
+            completionState={loop.completionState}
+            onContinue={loop.continueAfterCompletion}
+            onLater={loop.dismissCompletion}
             t={t}
             language={loop.language}
           />

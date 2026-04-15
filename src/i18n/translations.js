@@ -2639,6 +2639,65 @@ const T = {
     en: 'Create one', fr: 'Créer un compte', sw: 'Tengeneza moja', ha: 'Ƙirƙiri ɗaya', tw: 'Yɛ bi',
   },
 
+  // ─── Farmer-first auth (phone OTP, welcome screen) ────────
+  'auth.welcomeFarmer': {
+    en: 'Welcome, Farmer', fr: 'Bienvenue, Agriculteur', sw: 'Karibu, Mkulima', ha: 'Barka, Manomi', tw: 'Akwaaba, Okuafoɔ',
+  },
+  'auth.welcomeSubtitle': {
+    en: 'Sign in to manage your farm', fr: 'Connectez-vous pour gérer votre ferme', sw: 'Ingia ili kudhibiti shamba lako', ha: 'Shiga don sarrafa gonar ka', tw: 'Hyɛn mu na hwɛ wo afuo',
+  },
+  'auth.phoneLabel': {
+    en: 'Phone number', fr: 'Numéro de téléphone', sw: 'Nambari ya simu', ha: 'Lambar waya', tw: 'Fon nɔma',
+  },
+  'auth.phonePlaceholder': {
+    en: '024 123 4567', fr: '024 123 4567', sw: '024 123 4567', ha: '024 123 4567', tw: '024 123 4567',
+  },
+  'auth.continueWithPhone': {
+    en: 'Continue with Phone', fr: 'Continuer avec le téléphone', sw: 'Endelea na Simu', ha: 'Ci gaba da Waya', tw: 'Kɔ so wɔ Fon so',
+  },
+  'auth.sendingCode': {
+    en: 'Sending code...', fr: 'Envoi du code...', sw: 'Inatuma msimbo...', ha: 'Ana aika lambar...', tw: 'Ɛrebrɛ kood...',
+  },
+  'auth.continueWithGoogle': {
+    en: 'Continue with Google', fr: 'Continuer avec Google', sw: 'Endelea na Google', ha: 'Ci gaba da Google', tw: 'Kɔ so wɔ Google so',
+  },
+  'auth.continueOffline': {
+    en: 'Continue Offline', fr: 'Continuer hors ligne', sw: 'Endelea bila mtandao', ha: 'Ci gaba ba tare da yanar gizo', tw: 'Kɔ so a wonni intanɛt',
+  },
+  'auth.or': {
+    en: 'OR', fr: 'OU', sw: 'AU', ha: 'KO', tw: 'ANAA',
+  },
+  'auth.haveAccount': {
+    en: 'Already have an account?', fr: 'Vous avez déjà un compte ?', sw: 'Tayari una akaunti?', ha: 'Ka riga ka na da asusu?', tw: 'Wowɔ account dada?',
+  },
+  'auth.signInEmail': {
+    en: 'Sign in with email', fr: 'Se connecter par e-mail', sw: 'Ingia kwa barua pepe', ha: 'Shiga da imel', tw: 'Hyɛn mu wɔ email so',
+  },
+  'auth.otpRequestFailed': {
+    en: 'Could not send code. Please try again.', fr: 'Impossible d\'envoyer le code. Réessayez.', sw: 'Imeshindikana kutuma msimbo. Jaribu tena.', ha: 'Ba a iya aika lambar ba. A sake gwadawa.', tw: 'Entumi mfrɛ kood no. Yɛsrɛ wo sɔ hwɛ bio.',
+  },
+  'auth.enterCode': {
+    en: 'Enter Your Code', fr: 'Entrez votre code', sw: 'Ingiza Msimbo Wako', ha: 'Shigar da Lambar Ka', tw: 'Hyɛ Wo Kood',
+  },
+  'auth.codeSentTo': {
+    en: 'Code sent to', fr: 'Code envoyé à', sw: 'Msimbo umetumwa kwa', ha: 'An aika lambar zuwa', tw: 'Wɔabrɛ kood akɔ',
+  },
+  'auth.verifyCode': {
+    en: 'Verify Code', fr: 'Vérifier le code', sw: 'Thibitisha Msimbo', ha: 'Tabbatar da Lambar', tw: 'Hwɛ Kood no',
+  },
+  'auth.verifying': {
+    en: 'Verifying...', fr: 'Vérification...', sw: 'Inathibitisha...', ha: 'Ana tabbatarwa...', tw: 'Ɛrehwɛ...',
+  },
+  'auth.resendCode': {
+    en: 'Resend Code', fr: 'Renvoyer le code', sw: 'Tuma msimbo tena', ha: 'Sake aika lambar', tw: 'San brɛ kood no',
+  },
+  'auth.codeResent': {
+    en: 'Code resent!', fr: 'Code renvoyé !', sw: 'Msimbo umetumwa tena!', ha: 'An sake aika lambar!', tw: 'Wɔasan abrɛ kood no!',
+  },
+  'auth.invalidCode': {
+    en: 'Invalid code. Please try again.', fr: 'Code invalide. Réessayez.', sw: 'Msimbo batili. Jaribu tena.', ha: 'Lambar ba daidai ba. A sake gwadawa.', tw: 'Kood no nyɛ papa. Yɛsrɛ wo sɔ hwɛ bio.',
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  DASHBOARD
   // ═══════════════════════════════════════════════════════════
@@ -4507,6 +4566,85 @@ const T = {
   'loop.onTrack': { en: 'On track', fr: 'En bonne voie', sw: 'Njia nzuri', ha: 'Kan hanya', tw: 'Ɛkwan so' },
   'loop.greatWork': { en: 'Great work!', fr: 'Bravo !', sw: 'Kazi nzuri!', ha: 'Kyakkyawa!', tw: 'Adwuma pa!' },
   'loop.keepGoing': { en: 'Keep going', fr: 'Continuez', sw: 'Endelea', ha: 'Ci gaba', tw: 'Toa so' },
+
+  // ─── Completion flow (task completion card) ────────────────
+  'completion.done': {
+    en: 'Done', fr: 'Fait', sw: 'Imekamilika', ha: 'An gama', tw: 'Awie',
+  },
+  'completion.continue': {
+    en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Kɔ so',
+  },
+  'completion.later': {
+    en: 'Later', fr: 'Plus tard', sw: 'Baadaye', ha: 'Daga baya', tw: 'Akyiri yi',
+  },
+  'completion.backToHome': {
+    en: 'Back to Home', fr: 'Retour à l\'accueil', sw: 'Rudi Nyumbani', ha: 'Koma Gida', tw: 'San kɔ Fie',
+  },
+  'completion.nextStep': {
+    en: 'Next step', fr: 'Prochaine étape', sw: 'Hatua inayofuata', ha: 'Mataki na gaba', tw: 'Anammɔn a edi so',
+  },
+  'completion.greatProgressToday': {
+    en: 'Great progress today!', fr: 'Bon progrès aujourd\'hui !', sw: 'Maendeleo mazuri leo!', ha: 'Ci gaba mai kyau yau!', tw: 'Nkɔso pa ɛnnɛ!',
+  },
+  'completion.doneForNow': {
+    en: 'You\'re all done for now', fr: 'Vous avez tout terminé', sw: 'Umekamilisha kwa sasa', ha: 'Ka gama duka yanzu', tw: 'Woawie ne nyinaa seesei',
+  },
+  'completion.oneLeft': {
+    en: '1 task left', fr: '1 tâche restante', sw: 'Kazi 1 imebaki', ha: 'Aikin 1 ya rage', tw: 'Adwuma 1 aka',
+  },
+  'completion.tasksLeft': {
+    en: '{count} tasks left', fr: '{count} tâches restantes', sw: 'Kazi {count} zimebaki', ha: 'Ayyuka {count} suka rage', tw: 'Adwuma {count} aka',
+  },
+  'completion.returnTomorrow': {
+    en: 'Come back tomorrow — your next task will be ready.', fr: 'Revenez demain — votre prochaine tâche sera prête.', sw: 'Rudi kesho — kazi yako itakuwa tayari.', ha: 'Ku dawo gobe — aikin ka na gaba zai shirya.', tw: 'San bra ɔkyena — wo adwuma a edi so bɛsiesie.',
+  },
+  'completion.returnLater': {
+    en: 'We\'ll show your next farm step when it\'s time.', fr: 'Nous afficherons la prochaine étape le moment venu.', sw: 'Tutaonyesha hatua yako inayofuata wakati utakapofika.', ha: 'Za mu nuna mataki na gaba lokacin da ya yi.', tw: 'Yɛbɛkyerɛ wo anammɔn a edi so bere a ɛsɛ.',
+  },
+
+  // ─── Outcome text (what was achieved) ─────────────────────
+  'outcome.dryHarvest': {
+    en: 'Grain is now safer from mold.', fr: 'Les grains sont protégés de la moisissure.', sw: 'Nafaka sasa iko salama kutokana na ukungu.', ha: 'Hatsi ya fi aminci daga ƙura.', tw: 'Aburow no ho atɔ wɔ afunfuo ho.',
+  },
+  'outcome.waterCrop': {
+    en: 'Your crop has water for today.', fr: 'Votre culture a de l\'eau pour aujourd\'hui.', sw: 'Mazao yako yana maji ya leo.', ha: 'Amfanin gonar ka yana da ruwa na yau.', tw: 'Wo nnɔbae no anya nsuo ɛnnɛ.',
+  },
+  'outcome.checkPests': {
+    en: 'Pest risk is now checked.', fr: 'Le risque de nuisibles est vérifié.', sw: 'Hatari ya wadudu imekaguliwa.', ha: 'An duba haɗarin ƙwari.', tw: 'Wɔahwɛ mmoa a ɛsɛe nnɔbae no.',
+  },
+  'outcome.sprayCrop': {
+    en: 'Crop is now protected.', fr: 'La culture est maintenant protégée.', sw: 'Mazao yako yamelindwa sasa.', ha: 'An kare amfanin gona yanzu.', tw: 'Nnɔbae no ho atɔ seesei.',
+  },
+  'outcome.protectHarvest': {
+    en: 'Harvest is protected from rain.', fr: 'La récolte est protégée de la pluie.', sw: 'Mavuno yamelindwa kutokana na mvua.', ha: 'An kare girbi daga ruwan sama.', tw: 'Wɔabɔ twa adeɛ no ho fi nsuo mu.',
+  },
+  'outcome.logHarvest': {
+    en: 'Harvest data is now saved.', fr: 'Les données de récolte sont enregistrées.', sw: 'Data ya mavuno imehifadhiwa.', ha: 'An ajiye bayanan girbi.', tw: 'Wɔakora twa adeɛ ho nsɛm.',
+  },
+  'outcome.harvest': {
+    en: 'Harvest secured.', fr: 'Récolte sécurisée.', sw: 'Mavuno yamehifadhiwa.', ha: 'An tabbatar da girbi.', tw: 'Wotwa adeɛ no awie yie.',
+  },
+  'outcome.weedField': {
+    en: 'Field is cleaner — crop can grow better.', fr: 'Le champ est plus propre — la culture poussera mieux.', sw: 'Shamba ni safi — mazao yatakua vizuri.', ha: 'Gona ta fi tsabta — amfanin gona zai yi girma.', tw: 'Afuo no ho atɛ — nnɔbae no bɛnyini yie.',
+  },
+  'outcome.fertilize': {
+    en: 'Nutrients added — your crop will benefit.', fr: 'Nutriments ajoutés — votre culture en profitera.', sw: 'Virutubisho vimeongezwa — mazao yatanufaika.', ha: 'An ƙara abinci — amfanin gonar ka zai amfana.', tw: 'Nkɔsoɔ aduro no akɔ mu — wo nnɔbae bɛnya mfasoɔ.',
+  },
+  'outcome.plantCrop': {
+    en: 'Planted — growth starts now.', fr: 'Planté — la croissance commence.', sw: 'Imepandwa — ukuaji unaanza.', ha: 'An shuka — girma ya fara.', tw: 'Woadua — ɛrefi ase anyini.',
+  },
+  'outcome.landPrep': {
+    en: 'Soil is ready for planting.', fr: 'Le sol est prêt pour la plantation.', sw: 'Udongo uko tayari kupanda.', ha: 'Ƙasa ta shirya don shuka.', tw: 'Asase no asiesie ama dua.',
+  },
+  'outcome.sortClean': {
+    en: 'Produce sorted — better market value.', fr: 'Produits triés — meilleure valeur marchande.', sw: 'Mazao yamepangwa — thamani bora sokoni.', ha: 'An tsara kaya — daraja mai kyau a kasuwa.', tw: 'Nneɛma no apae mu — ne bo kɔ soro wɔ dwom.',
+  },
+  'outcome.storeHarvest': {
+    en: 'Stored safely — quality preserved.', fr: 'Stocké en sécurité — qualité préservée.', sw: 'Imehifadhiwa salama — ubora umehifadhiwa.', ha: 'An ajiye lafiya — inganci ya ci gaba.', tw: 'Wɔakora yie — ne su da so yɛ papa.',
+  },
+  'outcome.updateStage': {
+    en: 'Farm stage updated.', fr: 'Étape de la ferme mise à jour.', sw: 'Hatua ya shamba imesasishwa.', ha: 'An sabunta matakin gona.', tw: 'Wɔasakra afuo no dan.',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  PROGRESS PAGE — farmer-friendly motivational copy

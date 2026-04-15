@@ -29,9 +29,11 @@ import {
 } from '../services/farmerLoopService.js';
 import { getAutopilotDecision } from '../engine/autopilot/index.js';
 import { getSuccessTextKey } from '../engine/autopilot/textKeys.js';
+import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 
-// Auto-transition delay after completion feedback (ms)
-const COMPLETION_DISPLAY_MS = 2200;
+// Fallback auto-transition delay — only fires if user doesn't tap Continue/Later.
+// Long enough that it never fires during normal use (user always taps first).
+const COMPLETION_FALLBACK_MS = 30000;
 
 /**
  * @returns {Object} Loop state + actions for Home screen
@@ -55,6 +57,9 @@ export function useFarmerLoop() {
   const [feedbackStatus, setFeedbackStatus] = useState(null); // 'success'|'offline'|'failed'
   const [feedbackMessage, setFeedbackMessage] = useState(null);
   const [lastSuccessText, setLastSuccessText] = useState(null);
+  const [completionState, setCompletionState] = useState(null);
+  // Holds the server-returned next task during completion display (not loaded yet)
+  const pendingNextRef = useRef(null);
 
   const prevFarmIdRef = useRef(null);
   const completionTimerRef = useRef(null);
@@ -146,6 +151,8 @@ export function useFarmerLoop() {
       setLoopState(LOOP_STATE.LOADING);
       setFeedbackStatus(null);
       setFeedbackMessage(null);
+      setCompletionState(null);
+      pendingNextRef.current = null;
       fetchTask(currentFarmId);
     }
   }, [currentFarmId, fetchTask]);
@@ -170,6 +177,7 @@ export function useFarmerLoop() {
     setLoopState(LOOP_STATE.IN_PROGRESS);
     setFeedbackStatus(null);
     setFeedbackMessage(null);
+    setCompletionState(null);
 
     const result = await completeFarmerTask({
       farmId: currentFarmId,
@@ -182,36 +190,50 @@ export function useFarmerLoop() {
       setLoopState(LOOP_STATE.COMPLETED);
 
       // Update counts optimistically
-      setCompletedCount((prev) => prev + 1);
+      const newCompleted = completedCount + 1;
+      setCompletedCount(newCompleted);
+      let newRemaining;
       if (result.nextTask) {
-        setTaskCount((prev) => Math.max(0, prev - 1));
+        newRemaining = Math.max(0, taskCount - 1);
+        setTaskCount(newRemaining);
       } else if (!result.offline) {
         setPrimaryTask(null);
+        newRemaining = 0;
         setTaskCount(0);
       } else {
         setPrimaryTask(null);
-        setTaskCount((prev) => Math.max(0, prev - 1));
+        newRemaining = Math.max(0, taskCount - 1);
+        setTaskCount(newRemaining);
       }
-
-      // Build feedback message with autopilot intelligence
-      const localTitle = getLocalizedTaskTitle(task.id, task.title, lang);
 
       // Resolve success text from autopilot
       const vm = decision.taskViewModel;
       const successLine = vm?.successText || t('success.general');
       setLastSuccessText(successLine);
 
-      // Determine next task: use server response or autopilot's suggested next
-      const effectiveNext = result.nextTask || vm?.nextText;
+      // Store pending next task for user-driven transition
+      pendingNextRef.current = result.nextTask || null;
+
+      // Build localized next task title
       const nextName = result.nextTask
         ? getLocalizedTaskTitle(result.nextTask.id, result.nextTask.title, lang)
         : null;
 
-      const msg = nextName
-        ? `\u2705 ${localTitle}\n${successLine}\n${t('loop.next')}: ${nextName}`
-        : effectiveNext && typeof effectiveNext === 'string'
-          ? `\u2705 ${localTitle}\n${successLine}`
-          : `\u2705 ${localTitle}\n${successLine}`;
+      // Build structured completion state
+      const cs = buildCompletionState({
+        completedTask: task,
+        taskViewModel: vm,
+        nextTask: result.nextTask || null,
+        completedCount: newCompleted,
+        remainingCount: newRemaining,
+        savedOffline: result.offline,
+        nextTaskTitle: nextName,
+      });
+      setCompletionState(cs);
+
+      // Also set feedback for banner (backward compat)
+      const localTitle = getLocalizedTaskTitle(task.id, task.title, lang);
+      const msg = `\u2705 ${localTitle}\n${successLine}`;
       setFeedbackMessage(msg);
       setFeedbackStatus(result.offline ? 'offline' : 'success');
 
@@ -222,7 +244,14 @@ export function useFarmerLoop() {
         });
       }
 
-      // Track autopilot completion
+      // Track completion
+      safeTrackEvent('task_completed', {
+        farmId: currentFarmId,
+        taskId: task?.id,
+        ruleId: vm?.autopilotRuleId || null,
+        hasNext: !!result.nextTask,
+        offline: result.offline,
+      });
       safeTrackEvent('autopilot_task_completed', {
         farmId: currentFarmId,
         taskId: task?.id,
@@ -231,51 +260,77 @@ export function useFarmerLoop() {
         offline: result.offline,
       });
 
-      // Haptic
-      if (navigator.vibrate) {
-        try { navigator.vibrate(result.offline ? [30, 30, 30] : 50); } catch {}
-      }
-
-      // Auto-transition to next state after brief display
+      // Safety fallback: auto-transition after long timeout in case user doesn't tap
       clearTimeout(completionTimerRef.current);
       completionTimerRef.current = setTimeout(() => {
-        const nextState = getNextTaskState({
-          nextTask: result.nextTask,
-          remainingCount: result.nextTask ? taskCount - 1 : 0,
-          offline: result.offline,
-        });
-
-        if (nextState.loopState === LOOP_STATE.NEXT_READY && result.nextTask) {
-          // Load next task directly
-          setPrimaryTask(result.nextTask);
-          setLoopState(LOOP_STATE.READY);
-          safeTrackEvent('loop.next_task_shown', {
-            farmId: currentFarmId,
-            taskId: result.nextTask.id,
-          });
-          safeTrackEvent('autopilot_next_task_ready', {
-            farmId: currentFarmId,
-            taskId: result.nextTask.id,
-          });
-        } else if (nextState.loopState === LOOP_STATE.NEXT_READY) {
-          // Need to refetch
-          fetchTask(currentFarmId);
-        } else {
-          setLoopState(LOOP_STATE.ALL_DONE);
-          safeTrackEvent('loop.all_done_shown', { farmId: currentFarmId });
-        }
-
-        setFeedbackStatus(null);
-        setFeedbackMessage(null);
-      }, COMPLETION_DISPLAY_MS);
+        transitionAfterCompletion(result.nextTask, result.offline);
+      }, COMPLETION_FALLBACK_MS);
     } else {
       setFeedbackStatus('failed');
-      setLoopState(LOOP_STATE.READY); // Return to ready so farmer can retry
+      setLoopState(LOOP_STATE.READY);
     }
 
     setCompleting(false);
     submitGuardRef.current = false;
-  }, [currentFarmId, isOnline, taskCount, lang, t, fetchTask]);
+  }, [currentFarmId, isOnline, taskCount, completedCount, lang, t, fetchTask, decision]);
+
+  // ─── Transition helper (shared by continue + fallback) ──
+  const transitionAfterCompletion = useCallback((nextTask, offline) => {
+    clearTimeout(completionTimerRef.current);
+    setCompletionState(null);
+    setFeedbackStatus(null);
+    setFeedbackMessage(null);
+
+    const nextState = getNextTaskState({
+      nextTask,
+      remainingCount: nextTask ? taskCount - 1 : 0,
+      offline,
+    });
+
+    if (nextState.loopState === LOOP_STATE.NEXT_READY && nextTask) {
+      setPrimaryTask(nextTask);
+      setLoopState(LOOP_STATE.READY);
+      safeTrackEvent('loop.next_task_shown', {
+        farmId: currentFarmId,
+        taskId: nextTask.id,
+      });
+      safeTrackEvent('autopilot_next_task_ready', {
+        farmId: currentFarmId,
+        taskId: nextTask.id,
+      });
+    } else if (nextState.loopState === LOOP_STATE.NEXT_READY) {
+      fetchTask(currentFarmId);
+    } else {
+      setLoopState(LOOP_STATE.ALL_DONE);
+      safeTrackEvent('loop.all_done_shown', { farmId: currentFarmId });
+    }
+  }, [currentFarmId, taskCount, fetchTask]);
+
+  // ─── User taps "Continue" — load next task ──────────────
+  const continueAfterCompletion = useCallback(() => {
+    safeTrackEvent('continue_clicked', { farmId: currentFarmId });
+    const nextTask = pendingNextRef.current;
+    const offline = completionState?.savedOffline || false;
+    pendingNextRef.current = null;
+    transitionAfterCompletion(nextTask, offline);
+  }, [currentFarmId, completionState, transitionAfterCompletion]);
+
+  // ─── User taps "Later" — go to updated home / all done ──
+  const dismissCompletion = useCallback(() => {
+    safeTrackEvent('later_clicked', { farmId: currentFarmId });
+    clearTimeout(completionTimerRef.current);
+    setCompletionState(null);
+    setFeedbackStatus(null);
+    setFeedbackMessage(null);
+    pendingNextRef.current = null;
+
+    // Show all_done or refetch to show updated home
+    if (taskCount <= 0) {
+      setLoopState(LOOP_STATE.ALL_DONE);
+    } else {
+      fetchTask(currentFarmId);
+    }
+  }, [currentFarmId, taskCount, fetchTask]);
 
   // ─── Dismiss feedback ────────────────────────────────────
   const dismissFeedback = useCallback(() => {
@@ -326,6 +381,11 @@ export function useFarmerLoop() {
     // Autopilot intelligence
     autopilot,
     lastSuccessText,
+
+    // Completion flow
+    completionState,
+    continueAfterCompletion,
+    dismissCompletion,
 
     // Feedback
     feedbackStatus,

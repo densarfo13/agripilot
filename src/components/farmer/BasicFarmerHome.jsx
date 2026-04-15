@@ -26,6 +26,7 @@ import { speakText, languageToVoiceCode } from '../../lib/voice.js';
 import { SECTION_ICONS } from '../../lib/farmerIcons.js';
 import { LOOP_STATE } from '../../services/farmerLoopService.js';
 import TaskCard from './TaskCard.jsx';
+import CompletionCard from './CompletionCard.jsx';
 
 const ACTION_ROUTES = {
   onboarding_incomplete: 'setup',
@@ -54,6 +55,9 @@ export default function BasicFarmerHome({
   onGoToSetup,
   lastSuccessText,
   autopilotNextText,
+  completionState,
+  onContinue,
+  onLater,
 }) {
   const { t } = useTranslation();
   const { autoVoice, language } = useAppPrefs();
@@ -121,7 +125,16 @@ export default function BasicFarmerHome({
       )}
 
       {/* ═══ COMPLETION SUCCESS STATE ═══ */}
-      {isCompleted && (
+      {isCompleted && completionState && (
+        <CompletionCard
+          completionState={completionState}
+          t={t}
+          onContinue={onContinue}
+          onLater={onLater}
+          variant="simple"
+        />
+      )}
+      {isCompleted && !completionState && (
         <div style={S.doneCard} data-testid="loop-completed">
           <span style={S.doneIcon}>{'\u2705'}</span>
           <div style={S.doneText}>{t('loop.taskDone')}</div>

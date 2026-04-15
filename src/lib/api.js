@@ -119,6 +119,21 @@ export function resendVerification() {
   });
 }
 
+// ─── Phone + OTP authentication ────────────────────────────
+export function requestPhoneOtp(phone) {
+  return request('/api/v2/auth/otp/request', {
+    method: 'POST',
+    body: JSON.stringify({ phone }),
+  }, false);
+}
+
+export function verifyPhoneOtp(phone, code) {
+  return request('/api/v2/auth/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify({ phone, code }),
+  }, false);
+}
+
 export function forgotPassword(payload) {
   return request('/api/v2/auth/forgot-password', {
     method: 'POST',

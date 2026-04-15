@@ -7,6 +7,8 @@ import {
   resendVerification,
   refreshSession,
   verifyMfaCode as verifyMfaCodeApi,
+  requestPhoneOtp as requestPhoneOtpApi,
+  verifyPhoneOtp as verifyPhoneOtpApi,
 } from '../lib/api.js';
 
 const AuthContext = createContext(null);
@@ -192,6 +194,45 @@ export function AuthProvider({ children }) {
     return resendVerification();
   }
 
+  // ─── Phone + OTP login ─────────────────────────────────────
+  async function requestPhoneOtp(phone) {
+    return requestPhoneOtpApi(phone);
+  }
+
+  async function verifyPhoneOtp(phone, code) {
+    const data = await verifyPhoneOtpApi(phone, code);
+    const loggedInUser = data.user || null;
+    setUser(loggedInUser);
+    setIsOfflineSession(false);
+    setAuthLoading(false);
+    cacheSession(loggedInUser);
+    return data;
+  }
+
+  // ─── Offline entry ─────────────────────────────────────────
+  // Allows farmers to start using the app immediately without network.
+  // Creates a minimal offline session so the UI renders in Home mode.
+  function continueOffline() {
+    const cached = getCachedSession();
+    if (cached) {
+      // Restore last known session
+      setUser(cached);
+      setIsOfflineSession(true);
+    } else {
+      // No prior session — create minimal offline farmer identity
+      const offlineUser = {
+        id: 'offline_' + Date.now(),
+        role: 'farmer',
+        fullName: '',
+        isOfflineOnly: true,
+      };
+      setUser(offlineUser);
+      setIsOfflineSession(true);
+      // Don't cache offline-only users — they need real auth later
+    }
+    setAuthLoading(false);
+  }
+
   const value = useMemo(
     () => ({
       user,
@@ -204,6 +245,9 @@ export function AuthProvider({ children }) {
       logout,
       bootstrap,
       resendEmailVerification,
+      requestPhoneOtp,
+      verifyPhoneOtp,
+      continueOffline,
     }),
     [user, authLoading, isOfflineSession],
   );

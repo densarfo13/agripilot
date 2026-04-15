@@ -12,6 +12,7 @@
 import { useTranslation } from '../i18n/index.js';
 import { LOOP_STATE } from '../services/farmerLoopService.js';
 import TaskCard from './farmer/TaskCard.jsx';
+import CompletionCard from './farmer/CompletionCard.jsx';
 
 const ACTION_ROUTES = {
   onboarding_incomplete: 'setup',
@@ -41,6 +42,9 @@ export default function NextActionCard({
   onAddUpdate,
   lastSuccessText,
   autopilotNextText,
+  completionState,
+  onContinue,
+  onLater,
   t,
   language,
 }) {
@@ -90,7 +94,16 @@ export default function NextActionCard({
       )}
 
       {/* ═══ COMPLETION SUCCESS ═══ */}
-      {isCompleted && (
+      {isCompleted && completionState && (
+        <CompletionCard
+          completionState={completionState}
+          t={t}
+          onContinue={onContinue}
+          onLater={onLater}
+          variant="standard"
+        />
+      )}
+      {isCompleted && !completionState && (
         <div style={S.stateCard} data-testid="loop-completed">
           <span style={S.stateIcon}>{'\u2705'}</span>
           <div>
