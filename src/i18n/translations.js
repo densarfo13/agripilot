@@ -3107,6 +3107,20 @@ const T = {
   'wx.noData': { en: 'No weather alert today', fr: 'Pas d\'alerte météo', sw: 'Hakuna tahadhari ya hewa', ha: 'Babu sanarwar yanayi', tw: 'Wim ho nsɛm biara nni hɔ' },
   'wx.noDataReason': { en: 'Weather data unavailable.', fr: 'Données météo indisponibles.', sw: 'Data ya hewa haipatikani.', ha: 'Bayanin yanayi ba su samu ba.', tw: 'Wim ho nsɛm nni hɔ.' },
   'wx.noDataVoice': { en: 'No weather alert. Continue with your farm tasks.', fr: 'Pas d\'alerte. Continuez vos tâches.', sw: 'Hakuna tahadhari. Endelea na kazi.', ha: 'Babu sanarwa. Ci gaba da aiki.', tw: 'Nsɛm biara nni hɔ. Kɔ so yɛ adwuma.' },
+  'wx.safeAction': { en: 'Safe for farm work today', fr: 'Travaux agricoles sans risque', sw: 'Salama kwa kazi ya shamba leo', ha: 'Lafiya don aikin gona yau', tw: 'Ɛnnɛ afuoyɛ adwuma yɛ' },
+
+  // ─── Weather last-updated timestamps ─────────────
+  'wx.updated.justNow': { en: 'Updated just now', fr: 'Mis à jour maintenant', sw: 'Imesasishwa sasa', ha: 'An sabunta yanzu', tw: 'Wɔayɛ no foforɔ seesei' },
+  'wx.updated.1min': { en: 'Updated 1 min ago', fr: 'Mis à jour il y a 1 min', sw: 'Imesasishwa dakika 1 iliyopita', ha: 'An sabunta minti 1 da ya wuce', tw: 'Wɔayɛ no foforɔ simma 1 a atwam' },
+  'wx.updated.mins': { en: 'Updated {mins} min ago', fr: 'Mis à jour il y a {mins} min', sw: 'Imesasishwa dakika {mins} zilizopita', ha: 'An sabunta minti {mins} da suka wuce', tw: 'Wɔayɛ no foforɔ simma {mins} a atwam' },
+  'wx.updated.1hour': { en: 'Updated 1 hour ago', fr: 'Mis à jour il y a 1 heure', sw: 'Imesasishwa saa 1 iliyopita', ha: 'An sabunta awa 1 da ya wuce', tw: 'Wɔayɛ no foforɔ dɔnhwere 1 a atwam' },
+  'wx.updated.hours': { en: 'Updated {hours} hours ago', fr: 'Mis à jour il y a {hours} heures', sw: 'Imesasishwa masaa {hours} yaliyopita', ha: 'An sabunta awanni {hours} da suka wuce', tw: 'Wɔayɛ no foforɔ dɔnhwere {hours} a atwam' },
+  'wx.updated.never': { en: '', fr: '', sw: '', ha: '', tw: '' },
+
+  // ─── Stale weather indicators ────────────────────
+  'wx.stale': { en: 'Weather may be outdated', fr: 'Météo peut-être obsolète', sw: 'Hali ya hewa inaweza kuwa ya zamani', ha: 'Yanayi na iya zama tsoho', tw: 'Wim tebea ebia ayɛ dada' },
+  'wx.staleVoice': { en: 'Weather information may be outdated. Check before acting.', fr: 'Les informations météo sont peut-être obsolètes.', sw: 'Habari ya hewa inaweza kuwa ya zamani.', ha: 'Bayanan yanayi na iya zama tsoho.', tw: 'Wim ho nsɛm ebia ayɛ dada.' },
+
   'weather.addGpsDetail': {
     en: 'Add GPS coordinates or your village/region to unlock local weather advice.', fr: 'Ajoutez les coordonnées GPS ou votre village pour la météo locale.', sw: 'Weka GPS au kijiji chako kupata ushauri wa hewa.', ha: 'Ƙara GPS ko ƙauyen ka don yanayin gida.', tw: 'Fa GPS anaa wo akuraa nya wim tebea afutuɔ.',
   },

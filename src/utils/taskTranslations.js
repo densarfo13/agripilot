@@ -133,6 +133,287 @@ const TASK_TITLES = {
   },
 };
 
+// ─── Localized short descriptions ─────────────────────────────
+// Farmer-friendly, 1-sentence action descriptions per task.
+// Voice handles full explanation — these are for display only.
+const TASK_DESCRIPTIONS = {
+  // Planning
+  'plan-select-seed': {
+    en: 'Pick the best seeds for your soil and season.',
+    fr: 'Choisissez les meilleures semences pour votre sol.',
+    sw: 'Chagua mbegu bora kwa udongo wako.',
+    ha: 'Zaɓi iri mafi kyau don ƙasarka.',
+    tw: 'Yi aba a eye ma wʼasase.',
+  },
+  'plan-budget': {
+    en: 'Plan how much to spend this season.',
+    fr: 'Planifiez vos dépenses pour la saison.',
+    sw: 'Panga matumizi ya msimu huu.',
+    ha: 'Tsara yadda za ka kashe kuɗi.',
+    tw: 'Hyehyɛ wo sika ma mberɛ yi.',
+  },
+  'plan-soil-test': {
+    en: 'Check if your soil needs nutrients.',
+    fr: 'Vérifiez si votre sol a besoin d\'engrais.',
+    sw: 'Angalia kama udongo wako unahitaji rutuba.',
+    ha: 'Duba ko ƙasarka tana buƙatar taki.',
+    tw: 'Hwɛ sɛ wʼasase hia aduane.',
+  },
+  // Land prep
+  'landprep-clear': {
+    en: 'Remove old plants and debris from the field.',
+    fr: 'Enlevez les vieilles plantes du champ.',
+    sw: 'Ondoa mimea ya zamani shambani.',
+    ha: 'Cire tsofaffin shuke daga gona.',
+    tw: 'Yi nneɛma dada fi afuo no mu.',
+  },
+  'landprep-till-maize': {
+    en: 'Turn the soil to prepare for planting.',
+    fr: 'Retournez le sol pour préparer le semis.',
+    sw: 'Geuza udongo kuandaa kupanda.',
+    ha: 'Juya ƙasa don shirya shuka.',
+    tw: 'Dan asase no yɛ nkrado.',
+  },
+  'landprep-beds-tomato': {
+    en: 'Build raised beds for your seedlings.',
+    fr: 'Préparez des planches surélevées.',
+    sw: 'Andaa vitalu vya juu kwa miche.',
+    ha: 'Shirya gadaje don shuki.',
+    tw: 'Yɛ mfuom a ɛkɔ soro.',
+  },
+  'landprep-mound-cassava': {
+    en: 'Build mounds for cassava cuttings.',
+    fr: 'Faites des buttes pour le manioc.',
+    sw: 'Fanya matuta ya muhogo.',
+    ha: 'Yi tudu don rogo.',
+    tw: 'Yɛ nkoko ma bankye.',
+  },
+  'landprep-shade-cocoa': {
+    en: 'Set up shade trees for young cocoa.',
+    fr: 'Installez des arbres d\'ombrage pour le cacao.',
+    sw: 'Weka miti ya kivuli kwa kakao.',
+    ha: 'Shirya bishiyoyin inuwa don koko.',
+    tw: 'Yɛ suwusiw nnua ma koko.',
+  },
+  'landprep-level-rice': {
+    en: 'Level the paddy field for even water.',
+    fr: 'Nivelez la rizière pour une irrigation égale.',
+    sw: 'Sawazisha shamba la mpunga.',
+    ha: 'Daidaita gonar shinkafa.',
+    tw: 'Tɛ asase no ma nsuo akɔ pɛpɛɛpɛ.',
+  },
+  // Planting
+  'plant-seeds': {
+    en: 'Sow seeds at the right depth and spacing.',
+    fr: 'Semez à la bonne profondeur et distance.',
+    sw: 'Panda mbegu kwa kina na nafasi sahihi.',
+    ha: 'Shuka iri a zurfin da tazarar da ya dace.',
+    tw: 'Dua aba wɔ anamɔn pa mu.',
+  },
+  'plant-first-water': {
+    en: 'Water newly planted seeds gently.',
+    fr: 'Arrosez doucement les graines semées.',
+    sw: 'Mwagilia mbegu mpya kwa upole.',
+    ha: 'Shayar da sabon iri a hankali.',
+    tw: 'Gugu aba foforɔ no brɛoo.',
+  },
+  'plant-cassava-cuttings': {
+    en: 'Plant healthy stem cuttings in mounds.',
+    fr: 'Plantez des boutures saines dans les buttes.',
+    sw: 'Panda vipandikizi vizuri kwenye matuta.',
+    ha: 'Dasa saiwa masu lafiya a tudu.',
+    tw: 'Dua ntwaso pa wɔ nkoko no mu.',
+  },
+  'plant-cocoa-seedlings': {
+    en: 'Plant seedlings in prepared holes.',
+    fr: 'Plantez les plants dans les trous préparés.',
+    sw: 'Panda miche kwenye mashimo yaliyoandaliwa.',
+    ha: 'Dasa shuki cikin ramuka da aka shirya.',
+    tw: 'Dua nhaban wɔ tokuro a wɔayɛ mu.',
+  },
+  'plant-tomato-transplant': {
+    en: 'Move seedlings to the main field.',
+    fr: 'Transplantez les plants au champ.',
+    sw: 'Hamisha miche kwenda shambani.',
+    ha: 'Dasawa shuki zuwa gona.',
+    tw: 'Fa nhaban no kɔ afuo kɛse no mu.',
+  },
+  // Germination
+  'germ-check-emergence': {
+    en: 'Look for new sprouts coming up.',
+    fr: 'Vérifiez la levée des semis.',
+    sw: 'Tazama miche mpya ikiibuka.',
+    ha: 'Duba sabon tsiro yana fitowa.',
+    tw: 'Hwɛ nhyiren foforɔ a ɛrefifiri.',
+  },
+  'germ-moisture': {
+    en: 'Check if soil is moist enough.',
+    fr: 'Vérifiez que le sol est assez humide.',
+    sw: 'Angalia kama udongo una unyevu wa kutosha.',
+    ha: 'Duba ko ƙasa tana da isasshen zafi.',
+    tw: 'Hwɛ sɛ asase no yɛ nsuo.',
+  },
+  'germ-check-cassava': {
+    en: 'Check that cuttings are sprouting.',
+    fr: 'Vérifiez que les boutures germent.',
+    sw: 'Angalia kama vipandikizi vinachipua.',
+    ha: 'Duba ko saiwa suna fitowa.',
+    tw: 'Hwɛ sɛ ntwaso no refifiri.',
+  },
+  // Vegetative
+  'veg-weed': {
+    en: 'Remove weeds around your plants.',
+    fr: 'Enlevez les mauvaises herbes autour des plants.',
+    sw: 'Ondoa magugu karibu na mimea.',
+    ha: 'Cire ciyawa kusa da shuke.',
+    tw: 'Tu wura a ɛwɔ nnɔbae no ho.',
+  },
+  'veg-fertilize-maize': {
+    en: 'Apply fertilizer to boost growth.',
+    fr: 'Appliquez l\'engrais pour stimuler la croissance.',
+    sw: 'Weka mbolea kuongeza ukuaji.',
+    ha: 'Sa taki don haɓaka girma.',
+    tw: 'Gu ayaresa ma ɛnyini yie.',
+  },
+  'veg-fertilize-rice': {
+    en: 'Apply fertilizer to boost growth.',
+    fr: 'Appliquez l\'engrais pour stimuler la croissance.',
+    sw: 'Weka mbolea kuongeza ukuaji.',
+    ha: 'Sa taki don haɓaka girma.',
+    tw: 'Gu ayaresa ma ɛnyini yie.',
+  },
+  'veg-pest-check': {
+    en: 'Look for insects or damage on leaves.',
+    fr: 'Cherchez des insectes ou dégâts sur les feuilles.',
+    sw: 'Tafuta wadudu au uharibifu kwenye majani.',
+    ha: 'Nema ƙwari ko lalacewar ganye.',
+    tw: 'Hwɛ mmoa anaa sɛe wɔ ahaban so.',
+  },
+  'veg-prune-cocoa': {
+    en: 'Cut dead branches for better airflow.',
+    fr: 'Coupez les branches mortes pour l\'aération.',
+    sw: 'Kata matawi yaliyokufa kwa hewa bora.',
+    ha: 'Yanke rassan da suka mutu don iska.',
+    tw: 'Twa mman a awu ama mframa akɔ.',
+  },
+  // Flowering
+  'flower-water': {
+    en: 'Water plants during flowering stage.',
+    fr: 'Arrosez les plants en période de floraison.',
+    sw: 'Mwagilia mimea wakati wa maua.',
+    ha: 'Shayar da shuke lokacin fure.',
+    tw: 'Gugu nnɔbae wɔ nhwiren berɛ mu.',
+  },
+  'flower-second-fert': {
+    en: 'Apply second round of fertilizer.',
+    fr: 'Appliquez la deuxième dose d\'engrais.',
+    sw: 'Weka mbolea ya pili.',
+    ha: 'Sa taki na karo na biyu.',
+    tw: 'Gu ayaresa ne mprenu so.',
+  },
+  'flower-pest-tomato': {
+    en: 'Check flowers for pest damage.',
+    fr: 'Vérifiez les fleurs pour les dégâts d\'insectes.',
+    sw: 'Angalia maua kwa uharibifu wa wadudu.',
+    ha: 'Duba fure don lalacewar ƙwari.',
+    tw: 'Hwɛ nhwiren so ma mmoa sɛe.',
+  },
+  'flower-pollination-cocoa': {
+    en: 'Check that flowers are being pollinated.',
+    fr: 'Vérifiez que les fleurs sont bien pollinisées.',
+    sw: 'Angalia kama maua yanachavushwa.',
+    ha: 'Duba ko fure suna haɗuwa.',
+    tw: 'Hwɛ sɛ nhwiren no yɛ adwuma.',
+  },
+  // Fruiting
+  'fruit-monitor': {
+    en: 'Watch crop health as fruits develop.',
+    fr: 'Surveillez la santé des plants en fructification.',
+    sw: 'Fuatilia afya ya mimea wakati wa matunda.',
+    ha: 'Lura da lafiyar shuke lokacin \'ya\'ya.',
+    tw: 'Hwɛ nnɔbae mu apɔmuden bere a aba ba.',
+  },
+  'fruit-grain-fill': {
+    en: 'Check that grains are filling properly.',
+    fr: 'Vérifiez que les grains se remplissent bien.',
+    sw: 'Angalia kama nafaka zinajaa vizuri.',
+    ha: 'Duba ko hatsi suna cikawa sosai.',
+    tw: 'Hwɛ sɛ aba no reyɛ ma yie.',
+  },
+  'fruit-support-tomato': {
+    en: 'Stake plants to support heavy fruit.',
+    fr: 'Tuteurez les plants pour soutenir les fruits.',
+    sw: 'Weka nguzo kusaidia matunda mazito.',
+    ha: 'Tallafa shuke don ɗaukar \'ya\'ya masu nauyi.',
+    tw: 'Boa nnɔbae no so ma aba no.',
+  },
+  'fruit-cassava-tuber': {
+    en: 'Check tuber size underground.',
+    fr: 'Vérifiez la taille des tubercules sous terre.',
+    sw: 'Angalia ukubwa wa mizizi chini ya ardhi.',
+    ha: 'Duba girman dankali a ƙarƙashin ƙasa.',
+    tw: 'Hwɛ nea ɛwɔ asase ase no kɛse.',
+  },
+  // Harvest
+  'harvest-readiness': {
+    en: 'Check if crop is ready to harvest.',
+    fr: 'Vérifiez si la récolte est prête.',
+    sw: 'Angalia kama mazao yako tayari kuvunwa.',
+    ha: 'Duba ko amfanin gona ya shirya girbi.',
+    tw: 'Hwɛ sɛ ɛberɛ a wobɛtwa no adue.',
+  },
+  'harvest-tools': {
+    en: 'Get your harvest tools ready.',
+    fr: 'Préparez vos outils de récolte.',
+    sw: 'Andaa zana zako za mavuno.',
+    ha: 'Shirya kayan aikin girbi.',
+    tw: 'Yɛ wo nnwinnade a wode bɛtwa no yie.',
+  },
+  'harvest-storage': {
+    en: 'Prepare a clean, dry storage area.',
+    fr: 'Préparez un endroit de stockage propre et sec.',
+    sw: 'Andaa eneo safi na kavu la kuhifadhi.',
+    ha: 'Shirya wurin ajiya mai tsabta.',
+    tw: 'Yɛ baabi a ɛyɛ hyew na ɛso.',
+  },
+  // Post-harvest
+  'post-dry': {
+    en: 'Dry your harvest in the sun safely.',
+    fr: 'Séchez votre récolte au soleil en toute sécurité.',
+    sw: 'Kausha mazao yako juani kwa usalama.',
+    ha: 'Bushe girbi a rana cikin aminci.',
+    tw: 'Hwɛ wo nneɛma no wɔ owia mu yie.',
+  },
+  'post-sort': {
+    en: 'Sort harvest by quality — keep the best.',
+    fr: 'Triez la récolte par qualité — gardez le meilleur.',
+    sw: 'Panga mazao kwa ubora — weka bora.',
+    ha: 'Tantance girbi — ajiye mafi kyau.',
+    tw: 'Paw wo nneɛma no — fa papa no sie.',
+  },
+  'post-market': {
+    en: 'Find the best price and sell your harvest.',
+    fr: 'Trouvez le meilleur prix et vendez votre récolte.',
+    sw: 'Tafuta bei nzuri na uuze mavuno yako.',
+    ha: 'Nemi farashi mafi kyau ka sayar.',
+    tw: 'Hwehwɛ boɔ pa na tɔn wo nneɛma.',
+  },
+  'post-process-cassava': {
+    en: 'Peel and process cassava for storage.',
+    fr: 'Épluchez et transformez le manioc pour le stockage.',
+    sw: 'Menya na usindike muhogo kwa kuhifadhi.',
+    ha: 'Ɓare kuma sarrafa rogo don ajiya.',
+    tw: 'Wɔ na yɛ bankye no ma woasie.',
+  },
+  'post-process-cocoa': {
+    en: 'Ferment and dry cocoa beans properly.',
+    fr: 'Fermentez et séchez les fèves de cacao correctement.',
+    sw: 'Chacha na ukaushe kakao vizuri.',
+    ha: 'Haɗa kuma bushe ƙwayar koko sosai.',
+    tw: 'Yɛ koko no na hwɛ no wɔ owia mu yie.',
+  },
+};
+
 /**
  * Get the localized task title if available, else return original.
  * @param {string} taskId - Server task ID
@@ -145,6 +426,20 @@ export function getLocalizedTaskTitle(taskId, originalTitle, lang) {
   if (entry && entry[lang]) return entry[lang];
   if (entry && entry.en) return entry.en; // fallback to our short English
   return originalTitle || '';
+}
+
+/**
+ * Get the localized task description if available, else shorten original.
+ * @param {string} taskId - Server task ID
+ * @param {string} originalDesc - Original English description from server
+ * @param {string} lang - Current language code (en, fr, sw, ha, tw)
+ * @returns {string} Localized description or shortened original
+ */
+export function getLocalizedTaskDescription(taskId, originalDesc, lang) {
+  const entry = TASK_DESCRIPTIONS[taskId];
+  if (entry && entry[lang]) return entry[lang];
+  if (entry && entry.en) return entry.en;
+  return shortenDescription(originalDesc, 60);
 }
 
 /**

@@ -50,7 +50,7 @@ export default function BasicFarmerHome({
 
   const loading = decision?.loading;
   const action = decision?.primaryAction;
-  const wx = decision?.weatherGuidance;
+  const wx = decision?.weatherDecision;
   const status = decision?.farmStatus;
 
   // Reset completion state when action changes

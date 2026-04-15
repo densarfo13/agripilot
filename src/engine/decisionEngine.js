@@ -23,7 +23,7 @@ import {
   getStage, stageDaysAgo, isPestTask, isAlertTask, farmProgress, daysSinceUpdate,
 } from './decisionHelpers.js';
 import { getWeatherGuidance, getWeatherTaskAdjustment } from './weatherEngine.js';
-import { getLocalizedTaskTitle, shortenDescription } from '../utils/taskTranslations.js';
+import { getLocalizedTaskTitle, getLocalizedTaskDescription, shortenDescription } from '../utils/taskTranslations.js';
 import { getCurrentLang } from '../utils/i18n.js';
 
 /**
@@ -65,7 +65,7 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
   const lang = getCurrentLang();
   // Localize task title + shorten description for farmer display
   const taskTitle = primaryTask ? getLocalizedTaskTitle(primaryTask.id, primaryTask.title, lang) : '';
-  const taskDesc = primaryTask ? shortenDescription(primaryTask.description || primaryTask.reason || '', 60) : '';
+  const taskDesc = primaryTask ? getLocalizedTaskDescription(primaryTask.id, primaryTask.description || primaryTask.reason || '', lang) : '';
 
   // 1. No profile at all
   if (!profile) {
@@ -139,10 +139,11 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     const actionType = primaryTask.actionType || '';
 
     // ─── Weather conflict: rain + drying/watering/spraying task ───
+    const taskId = primaryTask.id || '';
     const isRainConflict = weatherGuidance && weatherGuidance.status !== 'safe'
-      && (weatherGuidance.adjustments?.watering < -3 || weatherGuidance.adjustments?.spraying < -5);
+      && (weatherGuidance.adjustments?.watering < -3 || weatherGuidance.adjustments?.spraying < -5 || weatherGuidance.adjustments?.drying < -3);
     const isWaterTask = actionType === 'watering' || titleLower.includes('water') || titleLower.includes('irrigat');
-    const isDryTask = titleLower.includes('dry') || titleLower.includes('sun') || titleLower.includes('spread');
+    const isDryTask = taskId === 'post-dry' || actionType === 'drying' || titleLower.includes('dry') || titleLower.includes('sun') || titleLower.includes('spread');
     const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
 
     if (isRainConflict && (isWaterTask || isDryTask || isSprayTask)) {

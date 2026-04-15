@@ -57,7 +57,7 @@ export default function Dashboard() {
   const { user, authLoading } = useAuth();
   const { profile, loading: profileLoading, currentFarmId, farmSwitching, activeFarms } = useProfile();
   const { season, refreshSeason } = useSeason();
-  const { weather } = useWeather();
+  const { weather, fetchedAt: weatherFetchedAt, freshness: weatherFreshness, refreshWeather } = useWeather();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -94,7 +94,9 @@ export default function Dashboard() {
 
   // Decision engine hook — provides primaryAction, todaysPlan, farmStatus
   const farmDecision = useFarmDecision({
-    profile, primaryTask, taskCount, completedCount, weather, isOnline, taskLoading,
+    profile, primaryTask, taskCount, completedCount, weather,
+    fetchedAt: weatherFetchedAt, freshness: weatherFreshness,
+    isOnline, taskLoading,
   });
 
   // ─── Farm-scoped data loading (skip in basic mode for perf) ──
@@ -256,12 +258,12 @@ export default function Dashboard() {
       <div style={S.page}>
         <div style={S.container}>
           {/* Header with weather chip */}
-          <FarmerHeader user={user} profile={profile} t={t} weather={weather} weatherGuidance={farmDecision.weatherGuidance} />
+          <FarmerHeader user={user} profile={profile} t={t} weatherDecision={farmDecision.weatherDecision} onRefreshWeather={refreshWeather} />
           {/* Weather action line (basic mode) */}
-          {profile && farmDecision.weatherGuidance && farmDecision.weatherGuidance.status !== 'safe' && (
+          {profile && farmDecision.weatherDecision && farmDecision.weatherDecision.severity !== 'safe' && (
             <div style={S.wxActionLine}>
-              <span>{farmDecision.weatherGuidance.icon}</span>
-              <span>{t(farmDecision.weatherGuidance.recommendationKey, farmDecision.weatherGuidance.params)}</span>
+              <span>{farmDecision.weatherDecision.chipIcon}</span>
+              <span>{farmDecision.weatherDecision.actionLine}</span>
             </div>
           )}
           {!profile && !profileLoading && (
@@ -362,13 +364,13 @@ export default function Dashboard() {
       <div style={S.container}>
 
         {/* ═══ 1. HEADER: avatar + name + weather chip ═══ */}
-        <FarmerHeader user={user} profile={profile} t={t} weather={weather} weatherGuidance={farmDecision.weatherGuidance} />
+        <FarmerHeader user={user} profile={profile} t={t} weatherDecision={farmDecision.weatherDecision} onRefreshWeather={refreshWeather} />
 
         {/* ═══ WEATHER ACTION LINE (one line, below header) ═══ */}
-        {profile && farmDecision.weatherGuidance && farmDecision.weatherGuidance.status !== 'safe' && (
+        {profile && farmDecision.weatherDecision && farmDecision.weatherDecision.severity !== 'safe' && (
           <div style={S.wxActionLine}>
-            <span>{farmDecision.weatherGuidance.icon}</span>
-            <span>{t(farmDecision.weatherGuidance.recommendationKey, farmDecision.weatherGuidance.params)}</span>
+            <span>{farmDecision.weatherDecision.chipIcon}</span>
+            <span>{farmDecision.weatherDecision.actionLine}</span>
           </div>
         )}
 

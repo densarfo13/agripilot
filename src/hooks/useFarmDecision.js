@@ -4,10 +4,14 @@
  * Reads from ProfileContext, task state, and weather context,
  * then returns a resolved DecisionResult that the dashboard renders.
  *
+ * Now also produces a weatherDecision object with chip, action line,
+ * last-updated label, and task override info for direct UI rendering.
+ *
  * Recalculates automatically when any input changes.
  */
 import { useMemo } from 'react';
 import { resolveDecision } from '../engine/decisionEngine.js';
+import { getWeatherDecision } from '../engine/weatherEngine.js';
 import { useTranslation } from '../i18n/index.js';
 import { calculateFarmScore } from '../lib/farmScore.js';
 
@@ -18,11 +22,13 @@ import { calculateFarmScore } from '../lib/farmScore.js';
  * @param {number} params.taskCount - Pending task count
  * @param {number} params.completedCount - Completed tasks count
  * @param {Object|null} params.weather - Weather data
+ * @param {number|null} params.fetchedAt - Epoch ms when weather was fetched
+ * @param {'fresh'|'aging'|'stale'|'none'} params.freshness - Weather staleness
  * @param {boolean} params.isOnline - Network status
  * @param {boolean} params.taskLoading - Whether tasks are still loading
- * @returns {import('../engine/decisionTypes.js').DecisionResult & { loading: boolean }}
+ * @returns {import('../engine/decisionTypes.js').DecisionResult & { loading: boolean, weatherDecision: Object }}
  */
-export function useFarmDecision({ profile, primaryTask, taskCount, completedCount, weather, isOnline, taskLoading }) {
+export function useFarmDecision({ profile, primaryTask, taskCount, completedCount, weather, fetchedAt, freshness, isOnline, taskLoading }) {
   const { t } = useTranslation();
 
   const setupComplete = useMemo(() => {
@@ -45,6 +51,20 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
     }, t);
   }, [profile, setupComplete, primaryTask, taskCount, completedCount, weather, isOnline, taskLoading, t]);
 
+  // Weather decision — display-ready chip + action + timestamp + override
+  const weatherDecision = useMemo(() => {
+    const crop = profile?.cropType || profile?.crop || '';
+    const stage = profile?.cropStage || '';
+    return getWeatherDecision({
+      weather,
+      crop,
+      stage,
+      currentTask: primaryTask,
+      fetchedAt: fetchedAt || null,
+      freshness: freshness || 'none',
+    }, t);
+  }, [weather, profile, primaryTask, fetchedAt, freshness, t]);
+
   return {
     loading: taskLoading || !decision,
     ...(decision || {
@@ -54,5 +74,6 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       secondaryActions: [],
       weatherGuidance: null,
     }),
+    weatherDecision,
   };
 }

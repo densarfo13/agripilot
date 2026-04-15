@@ -79,7 +79,7 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       riskLevel: 'high',
       voiceKey: 'wx.heavyRainVoice',
       icon: '🌧️',
-      adjustments: { watering: -10, spraying: -5, harvest: +3 },
+      adjustments: { watering: -10, spraying: -5, drying: -10, harvest: +3 },
       params: { rain: Math.round(totalRain) },
     };
   }
@@ -93,7 +93,7 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       riskLevel: 'low',
       voiceKey: 'wx.rainExpectedVoice',
       icon: '🌦️',
-      adjustments: { watering: -5 },
+      adjustments: { watering: -5, drying: -5 },
       params: { rain: Math.round(totalRain) },
     };
     // If also windy, add spray warning
@@ -187,6 +187,136 @@ export function getWeatherGuidance({ weather, crop, stage }) {
   };
 }
 
+// ─── Weather Decision (display-ready) ───────────────────────
+
+/**
+ * Produce a display-ready weather decision for the farmer home.
+ *
+ * Combines guidance rules + raw weather + freshness into one object
+ * that the UI can render directly (chip, action line, voice, override).
+ *
+ * @param {Object} params
+ * @param {Object|null} params.weather - Normalized weather from API
+ * @param {string} params.crop - Crop type
+ * @param {string} params.stage - Crop stage key
+ * @param {Object|null} params.currentTask - The primary task before override
+ * @param {number|null} params.fetchedAt - Epoch ms when weather was fetched
+ * @param {'fresh'|'aging'|'stale'|'none'} params.freshness - Staleness category
+ * @param {Function} t - i18n function
+ * @returns {Object} Weather decision for UI
+ */
+export function getWeatherDecision({ weather, crop, stage, currentTask, fetchedAt, freshness }, t) {
+  const guidance = getWeatherGuidance({ weather, crop, stage });
+
+  // ─── Chip fields ──────────────────────────────────
+  const temp = weather?.temperatureC != null ? `${Math.round(weather.temperatureC)}°C` : null;
+  const chipIcon = guidance.icon;
+  const chipTemp = temp;
+
+  // Derive chip label from recommendation key
+  const recKey = guidance.recommendationKey || '';
+  let chipLabelKey = 'wxChip.good';
+  if (recKey.includes('heavyRain') || recKey.includes('rainExpected')) chipLabelKey = 'wxChip.rain';
+  else if (recKey.includes('highWind')) chipLabelKey = 'wxChip.wind';
+  else if (recKey.includes('dry') || recKey.includes('veryDry') || recKey.includes('drySpell')) chipLabelKey = 'wxChip.dry';
+  else if (recKey.includes('hot')) chipLabelKey = 'wxChip.hot';
+  else if (guidance.status === 'warning' || guidance.status === 'caution') chipLabelKey = 'wxChip.care';
+  const chipLabel = t(chipLabelKey);
+
+  // ─── Action line ──────────────────────────────────
+  const actionLine = guidance.status !== 'safe'
+    ? t(guidance.recommendationKey, guidance.params)
+    : t('wx.safeAction');
+
+  // ─── Last updated label ───────────────────────────
+  const lastUpdatedLabel = formatLastUpdated(fetchedAt, t);
+
+  // ─── Severity mapping ─────────────────────────────
+  const severity = guidance.status; // 'safe' | 'caution' | 'warning' | 'danger'
+
+  // ─── Task override check ──────────────────────────
+  let shouldOverrideTask = false;
+  let replacementTaskType = null;
+  let overrideReason = null;
+
+  if (currentTask && guidance.status !== 'safe') {
+    const title = (currentTask.title || '').toLowerCase();
+    const taskId = currentTask.id || '';
+    const actionType = currentTask.actionType || '';
+    const adj = guidance.adjustments || {};
+
+    // Rain + drying task
+    if ((adj.drying < -3 || adj.watering < -3) &&
+        (taskId === 'post-dry' || actionType === 'drying' || title.includes('dry') || title.includes('spread') || title.includes('sun'))) {
+      shouldOverrideTask = true;
+      replacementTaskType = 'protect_harvest_from_rain';
+      overrideReason = t('wxConflict.skipDrying');
+    }
+    // Rain + watering task
+    else if (adj.watering < -3 &&
+        (actionType === 'watering' || title.includes('water') || title.includes('irrigat'))) {
+      shouldOverrideTask = true;
+      replacementTaskType = 'skip_watering';
+      overrideReason = t('wxConflict.skipWatering');
+    }
+    // Wind + spraying task
+    else if (adj.spraying < -5 &&
+        (actionType === 'spraying' || title.includes('spray') || title.includes('pesticide'))) {
+      shouldOverrideTask = true;
+      replacementTaskType = 'delay_spraying';
+      overrideReason = t('wxConflict.skipSpraying');
+    }
+  }
+
+  // ─── Voice text ───────────────────────────────────
+  const voiceText = guidance.voiceKey ? t(guidance.voiceKey) : '';
+
+  // ─── Stale weather handling ───────────────────────
+  const isStale = freshness === 'stale';
+  const isAging = freshness === 'aging';
+
+  return {
+    // Chip display
+    chipIcon,
+    chipTemp,
+    chipLabel,
+    // Action guidance
+    actionLine,
+    lastUpdatedLabel,
+    severity,
+    // Task override
+    shouldOverrideTask,
+    replacementTaskType,
+    overrideReason,
+    // Voice
+    voiceText,
+    // Freshness
+    freshness,
+    isStale,
+    isAging,
+    fetchedAt,
+    // Pass-through for engine internals
+    guidance,
+  };
+}
+
+/**
+ * Format fetchedAt into a localized "Updated X min ago" string.
+ * @param {number|null} fetchedAt - epoch ms
+ * @param {Function} t - i18n function
+ * @returns {string}
+ */
+function formatLastUpdated(fetchedAt, t) {
+  if (!fetchedAt) return t('wx.updated.never') || '';
+  const mins = Math.round((Date.now() - fetchedAt) / 60000);
+  if (mins < 1) return t('wx.updated.justNow');
+  if (mins === 1) return t('wx.updated.1min');
+  if (mins < 60) return t('wx.updated.mins', { mins });
+  const hours = Math.floor(mins / 60);
+  if (hours === 1) return t('wx.updated.1hour');
+  return t('wx.updated.hours', { hours });
+}
+
 /**
  * Apply weather adjustments to a task's effective priority score.
  * Returns a number modifier (negative = lower priority, positive = higher).
@@ -207,6 +337,9 @@ export function getWeatherTaskAdjustment(guidance, task) {
   }
   if (actionType === 'spraying' || title.includes('spray') || title.includes('pesticide')) {
     return guidance.adjustments.spraying || 0;
+  }
+  if (actionType === 'drying' || task.id === 'post-dry' || title.includes('dry') || title.includes('sun') || title.includes('spread')) {
+    return guidance.adjustments.drying || 0;
   }
   if (actionType === 'harvest' || title.includes('harvest') || title.includes('pick')) {
     return guidance.adjustments.harvest || 0;

@@ -1,42 +1,25 @@
 /**
- * FarmerHeader — compact welcome with avatar, name, weather chip.
+ * FarmerHeader — compact welcome with avatar, name, weather chip + trust signal.
  *
  * Layout: [avatar] [name + subtitle] ......... [weather chip]
+ *         [last updated line — small, right-aligned]
  * Tap weather chip → expand inline advice card.
  */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getCropLabel } from '../utils/crops.js';
 import { getAvatar } from '../utils/avatarStorage.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 
-// Map weather guidance status to compact display
-function getWeatherChip(weather, guidance, t) {
-  if (!weather && !guidance) return null;
-
-  const temp = weather?.temperatureC != null ? `${Math.round(weather.temperatureC)}°C` : null;
-
-  // Derive icon + insight from guidance — use condition words, not vague labels
-  if (guidance) {
-    // Map recommendation to a clear condition word
-    const recKey = guidance.recommendationKey || '';
-    let insightKey = 'wxChip.good';
-    if (recKey.includes('heavyRain') || recKey.includes('rainExpected')) insightKey = 'wxChip.rain';
-    else if (recKey.includes('highWind')) insightKey = 'wxChip.wind';
-    else if (recKey.includes('dry') || recKey.includes('veryDry') || recKey.includes('drySpell')) insightKey = 'wxChip.dry';
-    else if (recKey.includes('hot')) insightKey = 'wxChip.hot';
-    else if (guidance.status === 'warning' || guidance.status === 'caution') insightKey = 'wxChip.care';
-    return { icon: guidance.icon, temp, insight: t(insightKey) };
-  }
-
-  // Fallback from raw weather
-  const rain = (weather?.rain || 0) + (weather?.showers || 0) + (weather?.precipitation || 0);
-  if (rain > 0) return { icon: '\uD83C\uDF27\uFE0F', temp, insight: t('wxChip.rain') };
-  if ((weather?.windSpeed || 0) >= 20) return { icon: '\uD83D\uDCA8', temp, insight: t('wxChip.wind') };
-  return { icon: '\u2600\uFE0F', temp, insight: t('wxChip.good') };
-}
-
-export default function FarmerHeader({ user, profile, t, weather, weatherGuidance }) {
+export default function FarmerHeader({ user, profile, t, weatherDecision, onRefreshWeather }) {
   const [expanded, setExpanded] = useState(false);
+
+  // Force re-render every 60s so "Updated X min ago" stays current
+  const [, setTick] = useState(0);
+  const tickRef = useRef(null);
+  useEffect(() => {
+    tickRef.current = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(tickRef.current);
+  }, []);
 
   const name = user?.fullName || profile?.farmerName || '';
   const displayName = name || t('dashboard.welcome') || 'Welcome';
@@ -45,7 +28,9 @@ export default function FarmerHeader({ user, profile, t, weather, weatherGuidanc
   const locationName = profile?.location || profile?.locationLabel || profile?.locationName || '';
   const subtitle = [locationName, cropDisplay].filter(Boolean).join(' \u2022 ');
 
-  const chip = getWeatherChip(weather, weatherGuidance, t);
+  const wd = weatherDecision;
+  const hasChip = wd && (wd.chipIcon || wd.chipTemp);
+  const guidance = wd?.guidance;
 
   return (
     <div>
@@ -58,27 +43,42 @@ export default function FarmerHeader({ user, profile, t, weather, weatherGuidanc
         </div>
 
         {/* Right: weather chip */}
-        {chip && (
+        {hasChip && (
           <button onClick={() => setExpanded(!expanded)} style={S.wxChip} aria-label="Weather">
-            <span style={S.wxIcon}>{chip.icon}</span>
-            {chip.temp && <span style={S.wxTemp}>{chip.temp}</span>}
-            <span style={S.wxInsight}>{chip.insight}</span>
+            <span style={S.wxIcon}>{wd.chipIcon}</span>
+            {wd.chipTemp && <span style={S.wxTemp}>{wd.chipTemp}</span>}
+            <span style={S.wxInsight}>{wd.chipLabel}</span>
           </button>
         )}
       </div>
 
+      {/* Last updated trust line */}
+      {wd && wd.lastUpdatedLabel && (
+        <div style={{
+          ...S.updatedLine,
+          color: wd.isStale ? 'rgba(250,204,21,0.6)' : 'rgba(255,255,255,0.25)',
+        }}>
+          {wd.isStale && <span style={S.staleIcon}>{'\u26A0\uFE0F'}</span>}
+          <span>{wd.isStale ? t('wx.stale') : wd.lastUpdatedLabel}</span>
+          {wd.isAging && <span> \u2022 {wd.lastUpdatedLabel}</span>}
+        </div>
+      )}
+
       {/* Expanded weather advice card */}
-      {expanded && weatherGuidance && (
+      {expanded && guidance && (
         <div style={S.wxCard}>
           <div style={S.wxCardRow}>
-            <span style={S.wxCardIcon}>{weatherGuidance.icon}</span>
+            <span style={S.wxCardIcon}>{guidance.icon}</span>
             <div style={S.wxCardText}>
-              <div style={S.wxCardTitle}>{t(weatherGuidance.recommendationKey, weatherGuidance.params)}</div>
-              {weatherGuidance.reasonKey && (
-                <div style={S.wxCardReason}>{t(weatherGuidance.reasonKey, weatherGuidance.params)}</div>
+              <div style={S.wxCardTitle}>{t(guidance.recommendationKey, guidance.params)}</div>
+              {guidance.reasonKey && (
+                <div style={S.wxCardReason}>{t(guidance.reasonKey, guidance.params)}</div>
               )}
             </div>
           </div>
+          {wd.lastUpdatedLabel && (
+            <div style={S.wxCardUpdated}>{wd.lastUpdatedLabel}</div>
+          )}
           <button onClick={() => setExpanded(false)} style={S.wxClose}>{t('common.close') || 'Close'}</button>
         </div>
       )}
@@ -115,6 +115,17 @@ const S = {
   wxIcon: { fontSize: '1rem' },
   wxTemp: { fontSize: '0.8125rem', fontWeight: 700, color: '#fff' },
   wxInsight: { fontSize: '0.6875rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)' },
+  // Last updated line
+  updatedLine: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    justifyContent: 'flex-end',
+    fontSize: '0.625rem',
+    fontWeight: 500,
+    padding: '0.15rem 0 0',
+  },
+  staleIcon: { fontSize: '0.6875rem' },
   // Expanded card
   wxCard: {
     marginTop: '0.5rem', padding: '0.875rem 1rem',
@@ -126,6 +137,10 @@ const S = {
   wxCardText: { flex: 1 },
   wxCardTitle: { fontSize: '0.9375rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 },
   wxCardReason: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.2rem', lineHeight: 1.4 },
+  wxCardUpdated: {
+    fontSize: '0.625rem', color: 'rgba(255,255,255,0.25)',
+    marginTop: '0.5rem', textAlign: 'right',
+  },
   wxClose: {
     marginTop: '0.625rem', padding: '0.375rem 0.75rem',
     borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
