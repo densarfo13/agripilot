@@ -39,10 +39,10 @@ export default function ProtectedLayout() {
                 </button>
               </div>
             </div>
-            {/* Email verification banner — only when needed, non-intrusive */}
-            {!user?.emailVerifiedAt && user?.email && (
+            {/* Email verification moved to account settings — not on farmer action screen */
+            false && (
               <div style={S.verifyBanner}>
-                <span style={S.verifyText}>Verify your email: {user.email}</span>
+                <span style={S.verifyText}>Verify your email: {user?.email}</span>
                 <button onClick={() => resendEmailVerification()} style={S.verifyBtn}>
                   Resend
                 </button>

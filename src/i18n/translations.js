@@ -4356,6 +4356,9 @@ const T = {
   'feedback.saved': {
     en: 'Saved!', fr: 'Enregistré !', sw: 'Imehifadhiwa!', ha: 'An ajiye!', tw: 'Yɛakora!',
   },
+  'feedback.next': {
+    en: 'Next', fr: 'Suivant', sw: 'Ifuatayo', ha: 'Na gaba', tw: 'Nea edi so',
+  },
   'feedback.savedOffline': {
     en: 'Saved offline', fr: 'Enregistré hors ligne', sw: 'Imehifadhiwa bila mtandao', ha: 'An ajiye ba tare da layi ba', tw: 'Yɛakora a intanɛt nni hɔ',
   },

@@ -134,26 +134,23 @@ export default function NextActionCard({
         </div>
       )}
 
-      {/* ═══ FARM STATUS BAR + LAST UPDATED ═══ */}
-      {!loading && status && (
+      {/* ═══ FARM STATUS CHECKLIST ═══ */}
+      {!loading && status && status.checks.length > 0 && (
         <div style={{ ...S.statusBar, background: RISK_COLORS[status.riskLevel]?.bg || RISK_COLORS.none.bg,
           borderColor: RISK_COLORS[status.riskLevel]?.border || RISK_COLORS.none.border }}>
           <div style={S.statusHeader}>
             <span style={{ ...S.statusLabel, color: RISK_COLORS[status.riskLevel]?.text || '#86EFAC' }}>
               {status.label}
             </span>
-            <span style={S.statusProgress}>{status.progress}%</span>
           </div>
-          <div style={S.statusTrack}>
-            <div style={{ ...S.statusFill, width: `${status.progress}%`,
-              background: RISK_COLORS[status.riskLevel]?.text || '#22C55E' }} />
-          </div>
-          <div style={S.statusChecks}>
+          <div style={S.checklist}>
             {status.checks.map((c, i) => (
-              <span key={i} style={S.statusCheck}>{c.icon} {c.label}</span>
+              <div key={i} style={S.checkItem}>
+                <span style={S.checkIcon}>{c.icon}</span>
+                <span style={{ ...S.checkLabel, ...(c.ok ? S.checkLabelDone : {}) }}>{c.label}</span>
+              </div>
             ))}
           </div>
-          {/* Last updated timestamp */}
           {status.lastUpdate != null && (
             <div style={S.lastUpdated}>
               {status.lastUpdate === 0
@@ -289,7 +286,11 @@ const S = {
   statusChecks: {
     display: 'flex', flexWrap: 'wrap', gap: '0.5rem 0.75rem', marginTop: '0.125rem',
   },
-  statusCheck: { fontSize: '0.6875rem', color: 'rgba(255,255,255,0.5)', fontWeight: 500 },
+  checklist: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  checkItem: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  checkIcon: { fontSize: '0.875rem', flexShrink: 0, width: '1.25rem', textAlign: 'center' },
+  checkLabel: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', fontWeight: 500 },
+  checkLabelDone: { color: 'rgba(255,255,255,0.65)', textDecoration: 'line-through', textDecorationColor: 'rgba(255,255,255,0.2)' },
   lastUpdated: {
     fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.25rem', textAlign: 'right',
   },

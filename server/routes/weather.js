@@ -1,82 +1,88 @@
 import express from 'express';
 import { authenticate } from '../middleware/authenticate.js';
+import { resolveFarmCoordinates, deriveWeatherContext } from '../lib/weatherProvider.js';
 
 const router = express.Router();
 
-async function geocodeLocation(locationText) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationText)}&count=1&language=en&format=json`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json();
-  const result = data.results?.[0];
-  if (!result) return null;
-  return { lat: result.latitude, lng: result.longitude, name: result.name };
-}
-
+/**
+ * GET /api/v2/weather/current
+ *
+ * Returns real weather + derived risk flags for a farm location.
+ * Uses Open-Meteo with 7-day forecast for risk derivation.
+ * Accepts lat/lng or location text (geocodes via Open-Meteo).
+ */
 router.get('/current', authenticate, async (req, res) => {
   try {
     let lat = Number(req.query.lat);
     let lng = Number(req.query.lng);
     let resolvedLocation = null;
 
+    // Resolve coordinates from lat/lng or location text
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       const locationText = req.query.location;
       if (!locationText) {
-        return res.status(400).json({
-          success: false,
-          error: 'Valid lat/lng or location text is required',
-        });
+        return res.status(400).json({ success: false, error: 'Provide lat/lng or location text' });
       }
 
-      const geo = await geocodeLocation(locationText);
-      if (!geo) {
-        return res.status(404).json({
-          success: false,
-          error: `Could not geocode location: ${locationText}`,
-        });
+      const coords = await resolveFarmCoordinates({
+        latitude: null,
+        longitude: null,
+        locationName: locationText,
+        country: locationText,
+      });
+
+      if (!coords) {
+        return res.status(404).json({ success: false, error: `Could not find location: ${locationText}` });
       }
 
-      lat = geo.lat;
-      lng = geo.lng;
-      resolvedLocation = geo.name;
+      lat = coords.lat;
+      lng = coords.lng;
+      resolvedLocation = locationText;
     }
 
+    // Fetch current + 7-day forecast from Open-Meteo
     const url =
-      `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}` +
-      `&longitude=${encodeURIComponent(lng)}` +
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
       `&current=temperature_2m,relative_humidity_2m,precipitation,rain,showers,weather_code,cloud_cover,wind_speed_10m` +
-      `&timezone=auto`;
+      `&daily=precipitation_sum,rain_sum,weather_code` +
+      `&forecast_days=7&timezone=auto`;
 
     const response = await fetch(url);
+    if (!response.ok) throw new Error(`Open-Meteo returned ${response.status}`);
+    const raw = await response.json();
 
-    if (!response.ok) {
-      throw new Error(`Weather upstream failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const current = data.current || {};
+    // Derive normalized weather context with risk flags
+    const context = deriveWeatherContext(raw);
+    const current = raw.current || {};
 
     return res.json({
       success: true,
       resolvedLocation,
       weather: {
+        // Core current conditions (backward-compatible field names)
         temperature: current.temperature_2m ?? null,
+        temperatureC: context.temperatureC,
         humidity: current.relative_humidity_2m ?? null,
+        humidityPct: context.humidityPct,
         precipitation: current.precipitation ?? null,
         rain: current.rain ?? null,
         showers: current.showers ?? null,
+        windSpeed: context.windSpeedKmh ?? current.wind_speed_10m ?? null,
         weatherCode: current.weather_code ?? null,
         cloudCover: current.cloud_cover ?? null,
-        windSpeed: current.wind_speed_10m ?? null,
+        condition: context.condition,
         time: current.time ?? null,
+        // Derived risk flags from 7-day forecast
+        rainForecastMm: context.rainForecastMm,
+        rainExpected: context.rainExpected,
+        heavyRainRisk: context.heavyRainRisk,
+        drySpellRisk: context.drySpellRisk,
+        forecastDate: context.forecastDate,
       },
     });
   } catch (error) {
-    console.error('GET /api/v2/weather/current failed:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to load weather',
-    });
+    console.error('GET /api/v2/weather/current failed:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to load weather' });
   }
 });
 

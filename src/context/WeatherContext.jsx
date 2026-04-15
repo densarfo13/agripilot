@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getCurrentWeather } from '../lib/api.js';
 import { useProfile } from './ProfileContext.jsx';
 import { useNetwork } from './NetworkContext.jsx';
 
 const WeatherContext = createContext(null);
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
 export function WeatherProvider({ children }) {
   const { profile } = useProfile();
@@ -12,6 +13,7 @@ export function WeatherProvider({ children }) {
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [resolvedLocation, setResolvedLocation] = useState(null);
+  const cacheRef = useRef({ data: null, location: null, fetchedAt: 0 });
 
   useEffect(() => {
     if (!isOnline) return;
@@ -22,19 +24,27 @@ export function WeatherProvider({ children }) {
 
     const hasGps = lat != null && lng != null;
     const hasLocation = location && location.trim().length > 0;
-
     if (!hasGps && !hasLocation) return;
 
-    setWeatherLoading(true);
+    // Cache check — reuse if same location and within TTL
+    const cacheKey = hasGps ? `${lat},${lng}` : location;
+    const cache = cacheRef.current;
+    if (cache.data && cache.location === cacheKey && (Date.now() - cache.fetchedAt) < CACHE_TTL) {
+      if (!weather) { setWeather(cache.data); setResolvedLocation(cache.resolvedLocation); }
+      return;
+    }
 
+    setWeatherLoading(true);
     const params = hasGps ? { lat, lng } : { location };
 
     getCurrentWeather(params)
       .then((data) => {
-        setWeather(data.weather || null);
+        const w = data.weather || null;
+        setWeather(w);
         setResolvedLocation(data.resolvedLocation || null);
+        cacheRef.current = { data: w, resolvedLocation: data.resolvedLocation, location: cacheKey, fetchedAt: Date.now() };
       })
-      .catch((error) => { console.error('Failed to load weather:', error); })
+      .catch((error) => { console.error('Weather fetch failed:', error); })
       .finally(() => { setWeatherLoading(false); });
   }, [profile?.gpsLat, profile?.gpsLng, profile?.location, isOnline]);
 

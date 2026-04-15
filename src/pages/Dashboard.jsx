@@ -206,10 +206,15 @@ export default function Dashboard() {
       setCompletedCount((prev) => prev + 1);
       setShowTaskAction(false);
       setTaskSuccess(true);
-      setFeedbackMessage(`\u2705 ${task.title}`);
+      // Show completed task + next task preview
+      const nextName = result.nextTask?.title;
+      const msg = nextName
+        ? `\u2705 ${task.title}\n${t('feedback.next')}: ${nextName}`
+        : `\u2705 ${task.title}`;
+      setFeedbackMessage(msg);
       setFeedbackStatus(result.offline ? 'offline' : 'success');
       if (navigator.vibrate) try { navigator.vibrate(result.offline ? [30, 30, 30] : 50); } catch {}
-      setTimeout(() => { setTaskSuccess(false); setFeedbackMessage(null); }, 3000);
+      setTimeout(() => { setTaskSuccess(false); setFeedbackMessage(null); }, 3500);
     } else {
       setFeedbackStatus('failed');
     }
@@ -250,12 +255,8 @@ export default function Dashboard() {
     return (
       <div style={S.page}>
         <div style={S.container}>
-          {/* Header + mode badge */}
-          <div style={S.headerRow}>
-            <FarmerHeader user={user} profile={profile} t={t} />
-            <ModeIndicator />
-          </div>
-          <FarmSwitcher />
+          {/* Header with weather chip */}
+          <FarmerHeader user={user} profile={profile} t={t} weather={weather} weatherGuidance={farmDecision.weatherGuidance} />
           {!profile && !profileLoading && (
             <div style={S.emptyState}>
               <span style={{ fontSize: '3rem' }}>{'\uD83C\uDF3E'}</span>
@@ -348,39 +349,26 @@ export default function Dashboard() {
     );
   }
 
-  // ─── STANDARD MODE: icon + text, quick actions ────────────
+  // ─── STANDARD MODE: guided farmer home ────────────────────
   return (
     <div style={S.page}>
       <div style={S.container}>
 
-        {/* ═══ 1. Welcome header ═══ */}
-        <FarmerHeader user={user} profile={profile} t={t} />
+        {/* ═══ 1. HEADER: avatar + name + weather chip ═══ */}
+        <FarmerHeader user={user} profile={profile} t={t} weather={weather} weatherGuidance={farmDecision.weatherGuidance} />
 
-        {/* Setup banner removed — NextActionCard now handles the setup state
-           as the primary guided action, avoiding duplicate CTAs. */}
-
-        {/* ═══ Farm switcher (compact) ═══ */}
-        <FarmSwitcher />
-
-        {farmSwitching && (
-          <div style={S.switchLoading}>
-            <div style={S.loadingText}>{t('farm.switchingFarm')}</div>
-          </div>
-        )}
-
-        {/* ═══ Empty state: no farms ═══ */}
+        {/* ═══ Empty state ═══ */}
         {!profile && !profileLoading && (
           <div style={S.emptyState}>
             <span style={{ fontSize: '3rem' }}>{'\uD83C\uDF3E'}</span>
             <div style={S.emptyTitle}>{t('farm.noFarmsTitle')}</div>
-            <div style={S.emptyDesc}>{t('farm.noFarmsDesc')}</div>
             <button onClick={() => navigate('/profile/setup')} style={S.emptyBtn}>
               {t('farm.createFirst')}
             </button>
           </div>
         )}
 
-        {/* ═══ Task feedback (success / offline / failed) ═══ */}
+        {/* ═══ 7. SUCCESS FEEDBACK ═══ */}
         <ActionFeedbackBanner
           status={feedbackStatus}
           message={feedbackMessage}
@@ -388,7 +376,7 @@ export default function Dashboard() {
           onRetry={() => primaryTask && handleCompleteTask(primaryTask)}
         />
 
-        {/* ═══ GUIDED NEXT ACTION (decision engine) ═══ */}
+        {/* ═══ 2. MAIN TASK CARD (one task only) ═══ */}
         {profile && !farmSwitching && (
           <NextActionCard
             decision={farmDecision}
@@ -401,23 +389,23 @@ export default function Dashboard() {
           />
         )}
 
-        {/* ═══ 3. WEATHER GUIDANCE ═══ */}
+        {/* ═══ 3. WEATHER-ACTION STRIP ═══ */}
         {profile && !farmSwitching && setupComplete && (
           <WeatherStatusCard guidance={farmDecision.weatherGuidance} t={t} />
         )}
 
-        {/* ═══ 4. QUICK LINKS (compact, secondary) ═══ */}
+        {/* ═══ 6. QUICK ACTIONS ═══ */}
         {profile && !farmSwitching && setupComplete && (
           <div style={S.quickLinks}>
+            <button onClick={handleStartUpdate} style={S.quickLink}>
+              {'\uD83D\uDCF8'} {t('dashboard.addUpdate')}
+            </button>
             <button onClick={() => navigate('/my-farm')} style={S.quickLink}>
               {'\uD83C\uDFE1'} {t('dashboard.myFarm')}
             </button>
             <button onClick={() => navigate('/tasks')} style={S.quickLink}>
               {'\uD83D\uDCCB'} {t('dashboard.allTasks')}
               {taskCount > 0 && <span style={S.quickBadge}>{taskCount}</span>}
-            </button>
-            <button onClick={() => navigate('/pest-risk-check')} style={S.quickLink}>
-              {'\uD83D\uDC1B'} {t('dashboard.checkPests')}
             </button>
           </div>
         )}
