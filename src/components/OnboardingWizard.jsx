@@ -510,7 +510,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 placeholder={t('wizard.egSunriseFarm')}
                 style={{
                   ...S.input,
-                  borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim() ? '#22C55E' : '#374151',
+                  borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim() ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
                   fontSize: '1.1rem',
                   textAlign: 'center',
                 }}
@@ -594,13 +594,13 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                         onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
                         style={{
                           ...S.topCropBtn,
-                          borderColor: isSelected ? '#22C55E' : '#243041',
-                          background: isSelected ? 'rgba(34,197,94,0.18)' : '#1E293B',
+                          borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                          background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
                         }}
                         aria-pressed={isSelected}
                       >
                         <span style={S.topCropIcon}>{c.icon}</span>
-                        <span style={{ fontSize: '0.82rem', color: isSelected ? '#22C55E' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
+                        <span style={{ fontSize: '0.82rem', color: isSelected ? '#86EFAC' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
                           {c.label}
                         </span>
                         {isSelected && <span style={S.topCropCheck}>{'\u2713'}</span>}
@@ -713,17 +713,17 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                       onClick={() => setForm(f => ({ ...f, farmSizeCategory: key }))}
                       style={{
                         ...S.farmSizeCard,
-                        borderColor: isSelected ? '#22C55E' : '#243041',
-                        background: isSelected ? 'rgba(34,197,94,0.15)' : '#1E293B',
+                        borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                        background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
                       }}
                       aria-pressed={isSelected}
                     >
                       <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
-                      <span style={{ fontSize: '0.95rem', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#22C55E' : '#FFFFFF' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#86EFAC' : '#FFFFFF' }}>
                         {opt.label}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: '#A1A1AA' }}>{subtitle}</span>
-                      {isSelected && <span style={{ color: '#22C55E', fontSize: '0.8rem', fontWeight: 700 }}>{'\u2713'}</span>}
+                      {isSelected && <span style={{ color: '#86EFAC', fontSize: '0.8rem', fontWeight: 700 }}>{'\u2713'}</span>}
                     </button>
                   );
                 })}
@@ -1110,7 +1110,7 @@ const S = {
   // Fields
   fieldWide: { width: '100%', marginBottom: '0.75rem' },
   input: {
-    width: '100%', padding: '0.65rem 0.75rem', background: '#1E293B', border: '2px solid #243041',
+    width: '100%', padding: '0.65rem 0.75rem', background: '#1E293B', border: '1px solid rgba(255,255,255,0.06)',
     borderRadius: '8px', color: '#FFFFFF', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box',
     minHeight: '48px',
   },
@@ -1136,7 +1136,7 @@ const S = {
   },
   secondaryBtn: {
     padding: '0.75rem 1.2rem', background: 'transparent', color: '#A1A1AA',
-    border: '2px solid #243041', borderRadius: '10px', fontWeight: 600, fontSize: '0.9rem',
+    border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', fontWeight: 600, fontSize: '0.9rem',
     cursor: 'pointer', minHeight: '52px', WebkitTapHighlightColor: 'transparent',
   },
   // Top crops
@@ -1147,7 +1147,7 @@ const S = {
   topCropBtn: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
     padding: '0.7rem 0.4rem', minHeight: '72px',
-    border: '2px solid #243041', borderRadius: '10px', cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', cursor: 'pointer',
     background: '#1E293B', position: 'relative',
     WebkitTapHighlightColor: 'transparent',
   },
@@ -1176,7 +1176,7 @@ const S = {
   farmSizeCard: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
     padding: '0.9rem 0.4rem', minHeight: '90px',
-    border: '2px solid #243041', borderRadius: '10px', cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', cursor: 'pointer',
     background: '#1E293B', WebkitTapHighlightColor: 'transparent',
   },
   unitRow: { marginBottom: '0.75rem' },

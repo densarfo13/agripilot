@@ -80,11 +80,11 @@ export const PRIORITY_WEIGHTS = {
   info: 4,
 };
 
-// Risk level colors
+// Risk level colors — red only for high/critical (true danger)
 export const RISK_COLORS = {
-  none: { bg: 'rgba(34,197,94,0.12)', text: '#86EFAC', border: 'rgba(34,197,94,0.3)' },
-  low: { bg: 'rgba(34,197,94,0.12)', text: '#86EFAC', border: 'rgba(34,197,94,0.3)' },
-  moderate: { bg: 'rgba(250,204,21,0.12)', text: '#FCD34D', border: 'rgba(250,204,21,0.3)' },
-  high: { bg: 'rgba(239,68,68,0.12)', text: '#FCA5A5', border: 'rgba(239,68,68,0.3)' },
-  critical: { bg: 'rgba(239,68,68,0.15)', text: '#FCA5A5', border: 'rgba(239,68,68,0.4)' },
+  none:     { bg: 'rgba(34,197,94,0.08)',  text: '#86EFAC', border: 'rgba(34,197,94,0.15)' },
+  low:      { bg: 'rgba(34,197,94,0.08)',  text: '#86EFAC', border: 'rgba(34,197,94,0.15)' },
+  moderate: { bg: 'rgba(250,204,21,0.08)', text: '#FCD34D', border: 'rgba(250,204,21,0.15)' },
+  high:     { bg: 'rgba(239,68,68,0.10)', text: '#FCA5A5', border: 'rgba(239,68,68,0.20)' },
+  critical: { bg: 'rgba(239,68,68,0.12)', text: '#FCA5A5', border: 'rgba(239,68,68,0.25)' },
 };

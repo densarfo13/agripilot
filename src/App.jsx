@@ -30,6 +30,7 @@ import V2ProtectedLayout from './layouts/ProtectedLayout.jsx';
 const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
 const AllTasksPage = lazy(() => import('./pages/AllTasksPage.jsx'));
 const MyFarmPage = lazy(() => import('./pages/MyFarmPage.jsx'));
+const FarmerProgressPage = lazy(() => import('./pages/FarmerProgressPage.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
@@ -217,6 +218,7 @@ export default function App() {
             <Route path="/dashboard" element={<V2Dashboard />} />
             <Route path="/tasks" element={<AllTasksPage />} />
             <Route path="/my-farm" element={<MyFarmPage />} />
+            <Route path="/progress" element={<FarmerProgressPage />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/pest-risk-check" element={<PestRiskCheck />} />
             <Route path="/pest-risk-result" element={<PestRiskResult />} />

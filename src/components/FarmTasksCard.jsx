@@ -13,12 +13,7 @@ import { useTranslation } from '../i18n/index.js';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
-
-const PRIORITY_COLORS = {
-  high: '#EF4444',
-  medium: '#F59E0B',
-  low: '#6B7280',
-};
+import { buildTaskListViewModels, getTaskStateStyle } from '../domain/tasks/index.js';
 
 const PRIORITY_LABELS = {
   high: 'farmTasks.priorityHigh',
@@ -29,10 +24,10 @@ const PRIORITY_LABELS = {
 // Task completion is now server-side via V2FarmTaskCompletion.
 // GET returns only pending tasks; POST /:taskId/complete marks done.
 
-export default function FarmTasksCard({ onSetStage }) {
+export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
   const { currentFarmId, profile } = useProfile();
   const { isOnline } = useNetwork();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true); // start true — fetch fires on mount
   const [fetched, setFetched] = useState(false); // track if we ever fetched successfully
@@ -154,6 +149,10 @@ export default function FarmTasksCard({ onSetStage }) {
     );
   }
 
+  // Build view models for all tasks (centralized localization + severity)
+  const viewModels = buildTaskListViewModels({ tasks, weatherGuidance, language: lang, t, mode: 'standard' });
+  const vmByTaskId = Object.fromEntries(viewModels.map(vm => [vm.taskId, vm]));
+
   // Server returns only pending tasks; sort by priority
   const highTasks = tasks.filter((t) => t.priority === 'high');
   const otherTasks = tasks.filter((t) => t.priority !== 'high');
@@ -197,13 +196,20 @@ export default function FarmTasksCard({ onSetStage }) {
       {/* ─── Pending tasks (high first, then others) ─── */}
       <div style={S.taskList}>
         {[...highTasks, ...otherTasks].map((task) => {
-          const isHigh = task.priority === 'high';
+          // View model — centralized localization + severity + styling
+          const vm = vmByTaskId[task.id];
+          const sty = vm ? vm.stateStyle : getTaskStateStyle('normal');
+          const showAccent = vm ? vm.severity !== 'normal' : false;
+
+          // Notes are server-side English only — hide for non-English users
+          const showNotes = lang === 'en';
+
           return (
             <div
               key={task.id}
               style={{
                 ...S.taskItem,
-                ...(isHigh ? S.taskItemHigh : {}),
+                ...(showAccent ? { borderLeft: sty.accentBorder } : {}),
               }}
             >
               <div style={S.taskHeader}>
@@ -223,64 +229,61 @@ export default function FarmTasksCard({ onSetStage }) {
                       ? <span style={S.doneBtnSpinner} />
                       : <span style={S.doneBtnCircle} />}
                   </button>
-                  <span style={S.taskTitle}>{task.title}</span>
+                  <span style={S.taskTitle}>{vm?.title || task.title}</span>
                 </div>
                 <div style={S.taskMeta}>
-                  <span style={{
-                    ...S.priorityLabel,
-                    color: PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low,
-                  }}>
+                  <span style={{ ...S.priorityLabel, color: sty.priorityColor }}>
                     {t(PRIORITY_LABELS[task.priority] || PRIORITY_LABELS.low)}
                   </span>
                   <span style={S.dueLabel}>{task.dueLabel}</span>
                 </div>
               </div>
-              {task.description && (
-                <div style={S.taskDesc}>{task.description}</div>
+              {vm?.descriptionShort && (
+                <div style={S.taskDesc}>{vm.descriptionShort}</div>
               )}
-              {task.reason && (
+              {showNotes && task.reason && (
                 <div style={S.taskReason}>
                   <span style={S.reasonIcon}>💡</span>
                   <span>{task.reason}</span>
                 </div>
               )}
-              {task.seasonalNote && (
+              {showNotes && task.seasonalNote && (
                 <div style={S.seasonalNote}>
                   <span style={S.reasonIcon}>🗓</span>
                   <span>{task.seasonalNote}</span>
                 </div>
               )}
-              {task.weatherNote && (
+              {showNotes && task.weatherNote && (
                 <div style={S.weatherNote}>
                   <span style={S.reasonIcon}>🌦</span>
                   <span>{task.weatherNote}</span>
                 </div>
               )}
-              {task.riskNote && (
+              {showNotes && task.riskNote && (
                 <div style={S.riskNote}>
                   <span style={S.reasonIcon}>🐛</span>
                   <span>{task.riskNote}</span>
                 </div>
               )}
-              {task.inputNote && (
+              {showNotes && task.inputNote && (
                 <div style={S.inputNote}>
                   <span style={S.reasonIcon}>🧪</span>
                   <span>{task.inputNote}</span>
                 </div>
               )}
-              {task.harvestNote && (
+              {showNotes && task.harvestNote && (
                 <div style={S.harvestNote}>
                   <span style={S.reasonIcon}>🌾</span>
                   <span>{task.harvestNote}</span>
                 </div>
               )}
-              {task.economicsNote && (
+              {showNotes && task.economicsNote && (
                 <div style={S.economicsNote}>
                   <span style={S.reasonIcon}>💰</span>
                   <span>{task.economicsNote}</span>
                 </div>
               )}
-              {task.benchmarkNote && (
+              {showNotes && task.benchmarkNote && (
                 <div style={S.benchmarkNote}>
                   <span style={S.reasonIcon}>📈</span>
                   <span>{task.benchmarkNote}</span>
@@ -311,8 +314,8 @@ const S = {
     borderRadius: '16px',
     background: '#1B2330',
     padding: '1.25rem',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    border: '1px solid rgba(255,255,255,0.08)',
   },
   headerRow: {
     display: 'flex',
@@ -369,17 +372,15 @@ const S = {
     marginTop: '1rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem',
+    gap: '0.875rem',
   },
   taskItem: {
     borderRadius: '12px',
     background: '#111827',
-    border: '1px solid rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.05)',
     padding: '1rem',
   },
-  taskItemHigh: {
-    borderLeft: '3px solid #EF4444',
-  },
+  // taskItemHigh removed — accent border is now computed from PRIORITY_ACCENT
   taskHeader: {
     display: 'flex',
     alignItems: 'flex-start',

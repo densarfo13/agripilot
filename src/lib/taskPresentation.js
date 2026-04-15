@@ -132,10 +132,11 @@ export function getTaskActionKey(task) {
 
 // ─── Task Color Map ────────────────────────────────────────
 // Priority-based colors for badges and accents.
+// High uses amber — red is reserved for block/danger states only.
 export const priorityColors = {
-  high:   { text: '#EF4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
-  medium: { text: '#F59E0B', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
-  low:    { text: '#6B7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
+  high:   { text: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.2)' },
+  medium: { text: '#F59E0B', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.15)' },
+  low:    { text: '#6B7280', bg: 'rgba(107,114,128,0.10)', border: 'rgba(107,114,128,0.15)' },
 };
 
 /**

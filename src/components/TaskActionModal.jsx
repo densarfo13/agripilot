@@ -4,6 +4,8 @@
  * Shows: icon + title + voice + Done + Skip
  * No description paragraphs, no priority badge, no reason text.
  * Explanation lives in voice only.
+ *
+ * ARCHITECTURE: Renders from taskViewModel when available, falls back to raw task.
  */
 import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../lib/taskPresentation.js';
 import VoicePromptButton from './VoicePromptButton.jsx';
@@ -19,13 +21,17 @@ function getActionLabel(actionType, t) {
   }
 }
 
-export default function TaskActionModal({ task, onComplete, onClose, completing, t }) {
-  if (!task) return null;
+export default function TaskActionModal({ task, taskViewModel, onComplete, onClose, completing, t }) {
+  if (!task && !taskViewModel) return null;
 
-  const icon = getTaskIcon(task);
-  const iconBg = getTaskIconBg(task);
-  const voiceKey = getTaskVoiceKey(task);
-  const voiceText = getPromptText(voiceKey, 'en') || task.title;
+  // Prefer view model fields, fall back to raw task for compatibility
+  const vm = taskViewModel;
+  const icon = vm?.icon || getTaskIcon(task);
+  const iconBg = vm?.iconBg || getTaskIconBg(task);
+  const title = vm?.title || task?.title || '';
+  const voiceKey = vm?.voiceKey || getTaskVoiceKey(task);
+  const voiceText = vm?.voiceText || getPromptText(voiceKey, 'en') || title;
+  const actionType = task?.actionType || null;
 
   return (
     <div style={S.overlay} onClick={onClose} data-testid="task-action-modal">
@@ -36,8 +42,8 @@ export default function TaskActionModal({ task, onComplete, onClose, completing,
           <span style={S.iconEmoji}>{icon}</span>
         </div>
 
-        {/* Task title only — no description, no reason */}
-        <h2 style={S.title}>{task.title}</h2>
+        {/* Task title — from view model (localized) */}
+        <h2 style={S.title}>{title}</h2>
 
         {/* Voice — explanation lives here, not as text */}
         <VoicePromptButton promptId={voiceKey} text={voiceText} label={t('common.listen')} />
@@ -56,7 +62,7 @@ export default function TaskActionModal({ task, onComplete, onClose, completing,
               {t('common.saving')}
             </span>
           ) : (
-            getActionLabel(task.actionType, t)
+            getActionLabel(actionType, t)
           )}
         </button>
 

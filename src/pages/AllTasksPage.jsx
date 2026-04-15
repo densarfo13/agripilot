@@ -13,35 +13,33 @@ import { useTranslation } from '../i18n/index.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-
-const PRIORITY_COLORS = {
-  high: '#EF4444',
-  medium: '#F59E0B',
-  low: '#6B7280',
-};
-
-const PRIORITY_BG = {
-  high: 'rgba(239,68,68,0.12)',
-  medium: 'rgba(245,158,11,0.12)',
-  low: 'rgba(107,114,128,0.12)',
-};
+import { buildTaskListViewModels, getTaskStateStyle } from '../domain/tasks/index.js';
+import { NAV_ICONS, getTaskActionIcon } from '../lib/farmerIcons.js';
 
 const SECTIONS = [
-  { key: 'high', labelKey: 'farmTasks.priorityHigh', color: '#EF4444' },
-  { key: 'medium', labelKey: 'farmTasks.priorityMedium', color: '#F59E0B' },
-  { key: 'low', labelKey: 'farmTasks.priorityLow', color: '#6B7280' },
+  { key: 'high', labelKey: 'farmTasks.priorityHigh' },
+  { key: 'medium', labelKey: 'farmTasks.priorityMedium' },
+  { key: 'low', labelKey: 'farmTasks.priorityLow' },
+];
+
+const FILTERS = [
+  { key: 'today', labelKey: 'allTasks.filterToday', fallback: 'Today' },
+  { key: 'upcoming', labelKey: 'allTasks.filterUpcoming', fallback: 'Upcoming' },
+  { key: 'completed', labelKey: 'allTasks.filterCompleted', fallback: 'Completed' },
 ];
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
   const { currentFarmId, profile } = useProfile();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { isOnline } = useNetwork();
 
   const [tasks, setTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [completing, setCompleting] = useState(null);
+  const [filter, setFilter] = useState('today');
 
   const fetchTasks = useCallback(async () => {
     if (!currentFarmId) return;
@@ -50,6 +48,7 @@ export default function AllTasksPage() {
     try {
       const data = await getFarmTasks(currentFarmId);
       setTasks(data.tasks || []);
+      setCompletedTasks([]);
     } catch (err) {
       console.error('AllTasksPage: failed to fetch tasks', err);
       setError(err.message || 'Failed to load tasks');
@@ -71,8 +70,9 @@ export default function AllTasksPage() {
         priority: task.priority,
         actionType: task.actionType || null,
       });
-      // Optimistic removal
+      // Optimistic: move to completed list
       setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setCompletedTasks((prev) => [...prev, { ...task, completedAt: new Date().toISOString() }]);
       safeTrackEvent('task_completed', {
         farmId: currentFarmId,
         taskId: task.id,
@@ -90,6 +90,7 @@ export default function AllTasksPage() {
             data: { title: task.title, priority: task.priority, actionType: task.actionType || null },
           });
           setTasks((prev) => prev.filter((t) => t.id !== task.id));
+          setCompletedTasks((prev) => [...prev, { ...task, completedAt: new Date().toISOString() }]);
           safeTrackEvent('task_completed_offline', {
             farmId: currentFarmId,
             taskId: task.id,
@@ -104,11 +105,27 @@ export default function AllTasksPage() {
     }
   }
 
-  // Group tasks by priority
+  // Build view models for all tasks (centralized localization + severity)
+  const viewModels = buildTaskListViewModels({ tasks, weatherGuidance: null, language: lang, t, mode: 'standard' });
+  const vmByTaskId = Object.fromEntries(viewModels.map(vm => [vm.taskId, vm]));
+
+  // Filter: today = high priority, upcoming = medium+low, completed = locally completed
+  const filteredTasks = filter === 'completed' ? [] : filter === 'today'
+    ? tasks.filter((t) => t.priority === 'high')
+    : tasks.filter((t) => t.priority !== 'high');
+
+  // Group filtered tasks by priority
   const grouped = {
-    high: tasks.filter((t) => t.priority === 'high'),
-    medium: tasks.filter((t) => t.priority === 'medium'),
-    low: tasks.filter((t) => t.priority === 'low'),
+    high: filteredTasks.filter((t) => t.priority === 'high'),
+    medium: filteredTasks.filter((t) => t.priority === 'medium'),
+    low: filteredTasks.filter((t) => t.priority === 'low'),
+  };
+
+  // Filter counts for chips
+  const filterCounts = {
+    today: tasks.filter((t) => t.priority === 'high').length,
+    upcoming: tasks.filter((t) => t.priority !== 'high').length,
+    completed: completedTasks.length,
   };
 
   if (!profile) return null;
@@ -117,11 +134,41 @@ export default function AllTasksPage() {
     <div style={S.page} data-testid="all-tasks-page">
       {/* Header */}
       <div style={S.header}>
-        <button type="button" onClick={() => navigate('/dashboard')} style={S.backBtn}>
-          <span style={S.backArrow}>&larr;</span>
-        </button>
+        <span style={S.pageIcon}>{NAV_ICONS.tasks}</span>
         <h1 style={S.pageTitle}>{t('allTasks.title') || 'All Tasks'}</h1>
       </div>
+
+      {/* Filter row */}
+      {!loading && !error && (tasks.length > 0 || completedTasks.length > 0) && (
+        <div style={S.filterRow}>
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+            const count = filterCounts[f.key];
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                style={{
+                  ...S.filterChip,
+                  ...(active ? S.filterChipActive : {}),
+                }}
+                data-testid={`filter-${f.key}`}
+              >
+                <span>{t(f.labelKey) || f.fallback}</span>
+                {count > 0 && (
+                  <span style={{
+                    ...S.filterCount,
+                    ...(active ? S.filterCountActive : {}),
+                  }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -143,8 +190,8 @@ export default function AllTasksPage() {
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && !error && tasks.length === 0 && (
+      {/* Empty state (only when no tasks at all AND no completed) */}
+      {!loading && !error && tasks.length === 0 && completedTasks.length === 0 && (
         <div style={S.emptyWrap}>
           <div style={S.emptyIcon}>&#9989;</div>
           <p style={S.emptyText}>{t('allTasks.allCaughtUp') || 'All caught up!'}</p>
@@ -158,61 +205,106 @@ export default function AllTasksPage() {
         </div>
       )}
 
+      {/* Completed tasks view */}
+      {!loading && !error && filter === 'completed' && (
+        <div style={S.sections}>
+          {completedTasks.length === 0 ? (
+            <div style={S.emptyFilterWrap}>
+              <p style={S.emptyFilterText}>{t('allTasks.noCompleted') || 'No completed tasks yet'}</p>
+            </div>
+          ) : (
+            completedTasks.map((task) => (
+              <div key={task.id} style={S.completedCard}>
+                <span style={S.completedCheck}>{'\u2705'}</span>
+                <div style={S.taskContent}>
+                  <div style={S.taskTopRow}>
+                    <span style={S.taskIcon}>{getTaskActionIcon(task.actionType)}</span>
+                    <span style={S.completedTitle}>{task.title}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Empty filter state (for today/upcoming with no matching tasks) */}
+      {!loading && !error && filter !== 'completed' && filteredTasks.length === 0 && tasks.length > 0 && (
+        <div style={S.sections}>
+          <div style={S.emptyFilterWrap}>
+            <p style={S.emptyFilterText}>
+              {filter === 'today'
+                ? (t('allTasks.noUrgent') || 'No urgent tasks today')
+                : (t('allTasks.noUpcoming') || 'No upcoming tasks')}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Task sections */}
-      {!loading && !error && tasks.length > 0 && (
+      {!loading && !error && filter !== 'completed' && filteredTasks.length > 0 && (
         <div style={S.sections}>
           {SECTIONS.map((section) => {
             const sectionTasks = grouped[section.key];
             if (sectionTasks.length === 0) return null;
+            // Get severity-based color from first task's view model (section-level)
+            const sampleVm = vmByTaskId[sectionTasks[0]?.id];
+            const sectionStyle = sampleVm ? getTaskStateStyle(sampleVm.severity) : getTaskStateStyle('normal');
+            const sectionColor = sectionStyle.accentColor;
             return (
               <div key={section.key} style={S.section}>
-                <div style={{ ...S.sectionHeader, borderLeftColor: section.color }}>
-                  <span style={{ ...S.sectionDot, background: section.color }} />
-                  <span style={{ ...S.sectionLabel, color: section.color }}>
+                <div style={{ ...S.sectionHeader, borderLeftColor: sectionColor }}>
+                  <span style={{ ...S.sectionDot, background: sectionColor }} />
+                  <span style={{ ...S.sectionLabel, color: sectionColor }}>
                     {t(section.labelKey)} ({sectionTasks.length})
                   </span>
                 </div>
-                {sectionTasks.map((task) => (
-                  <div key={task.id} style={S.taskCard}>
-                    <button
-                      type="button"
-                      onClick={() => handleComplete(task)}
-                      disabled={completing === task.id}
-                      style={{
-                        ...S.doneBtn,
-                        ...(completing === task.id ? { opacity: 0.5 } : {}),
-                      }}
-                      aria-label={t('taskAction.markDone') || 'Mark as done'}
-                      data-testid={`done-btn-${task.id}`}
-                    >
-                      {completing === task.id ? (
-                        <span style={S.doneBtnSpinner} />
-                      ) : (
-                        <span style={S.doneBtnCircle} />
-                      )}
-                    </button>
-                    <div style={S.taskContent}>
-                      <div style={S.taskTopRow}>
-                        <span style={S.taskTitle}>{task.title}</span>
-                        <span
-                          style={{
-                            ...S.priorityBadge,
-                            color: PRIORITY_COLORS[task.priority],
-                            background: PRIORITY_BG[task.priority],
-                          }}
-                        >
-                          {t(SECTIONS.find((s) => s.key === task.priority)?.labelKey || '')}
-                        </span>
+                {sectionTasks.map((task) => {
+                  const vm = vmByTaskId[task.id];
+                  const sty = vm ? vm.stateStyle : getTaskStateStyle('normal');
+                  return (
+                    <div key={task.id} style={S.taskCard}>
+                      <button
+                        type="button"
+                        onClick={() => handleComplete(task)}
+                        disabled={completing === task.id}
+                        style={{
+                          ...S.doneBtn,
+                          ...(completing === task.id ? { opacity: 0.5 } : {}),
+                        }}
+                        aria-label={t('taskAction.markDone') || 'Mark as done'}
+                        data-testid={`done-btn-${task.id}`}
+                      >
+                        {completing === task.id ? (
+                          <span style={S.doneBtnSpinner} />
+                        ) : (
+                          <span style={S.doneBtnCircle} />
+                        )}
+                      </button>
+                      <div style={S.taskContent}>
+                        <div style={S.taskTopRow}>
+                          <span style={S.taskIcon}>{getTaskActionIcon(task.actionType)}</span>
+                          <span style={S.taskTitle}>{vm?.title || task.title}</span>
+                          <span
+                            style={{
+                              ...S.priorityBadge,
+                              color: sty.priorityColor,
+                              background: sty.accentBg,
+                            }}
+                          >
+                            {t(SECTIONS.find((s) => s.key === task.priority)?.labelKey || '')}
+                          </span>
+                        </div>
+                        {vm?.descriptionShort && (
+                          <p style={S.taskDesc}>{vm.descriptionShort}</p>
+                        )}
+                        {task.dueLabel && (
+                          <span style={S.dueLabel}>{task.dueLabel}</span>
+                        )}
                       </div>
-                      {task.description && (
-                        <p style={S.taskDesc}>{task.description}</p>
-                      )}
-                      {task.dueLabel && (
-                        <span style={S.dueLabel}>{task.dueLabel}</span>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
@@ -226,35 +318,18 @@ const S = {
   page: {
     minHeight: '100vh',
     background: '#0F172A',
-    padding: '0 0 2rem 0',
+    padding: '0 0 1rem 0',
+    animation: 'farroway-fade-in 0.3s ease-out',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '0.625rem',
     padding: '1rem 1.25rem',
-    position: 'sticky',
-    top: 0,
-    background: '#0F172A',
-    zIndex: 50,
     borderBottom: '1px solid rgba(255,255,255,0.06)',
   },
-  backBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'transparent',
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-    padding: 0,
-  },
-  backArrow: {
-    color: '#fff',
-    fontSize: '1.125rem',
+  pageIcon: {
+    fontSize: '1.25rem',
   },
   pageTitle: {
     fontSize: '1.25rem',
@@ -372,8 +447,10 @@ const S = {
     gap: '0.75rem',
     padding: '1rem',
     borderRadius: '12px',
-    background: '#1B2330',
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
     border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    animation: 'farroway-fade-in 0.25s ease-out',
   },
   doneBtn: {
     display: 'flex',
@@ -416,10 +493,16 @@ const S = {
     gap: '0.5rem',
     flexWrap: 'wrap',
   },
+  taskIcon: {
+    fontSize: '1rem',
+    flexShrink: 0,
+  },
   taskTitle: {
     fontWeight: 600,
     color: '#fff',
     fontSize: '0.9375rem',
+    flex: 1,
+    minWidth: 0,
   },
   priorityBadge: {
     fontSize: '0.625rem',
@@ -441,5 +524,84 @@ const S = {
     color: 'rgba(255,255,255,0.35)',
     marginTop: '0.25rem',
     display: 'inline-block',
+  },
+  // ─── Filter row ─────────
+  filterRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    padding: '0.75rem 1.25rem 0',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+  },
+  filterChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '0.375rem 0.75rem',
+    borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.04)',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    minHeight: '32px',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+  },
+  filterChipActive: {
+    background: 'rgba(34,197,94,0.12)',
+    borderColor: 'rgba(34,197,94,0.3)',
+    color: '#86EFAC',
+  },
+  filterCount: {
+    fontSize: '0.625rem',
+    fontWeight: 700,
+    background: 'rgba(255,255,255,0.1)',
+    color: 'rgba(255,255,255,0.5)',
+    borderRadius: '6px',
+    padding: '1px 5px',
+    minWidth: '16px',
+    textAlign: 'center',
+  },
+  filterCountActive: {
+    background: 'rgba(34,197,94,0.2)',
+    color: '#86EFAC',
+  },
+  // ─── Completed tasks ────
+  completedCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.875rem 1rem',
+    borderRadius: '12px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  completedCheck: {
+    fontSize: '1rem',
+    flexShrink: 0,
+  },
+  completedTitle: {
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: '0.875rem',
+    flex: 1,
+    textDecoration: 'line-through',
+    textDecorationColor: 'rgba(255,255,255,0.15)',
+  },
+  // ─── Empty filter state ─
+  emptyFilterWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '2.5rem 1rem',
+  },
+  emptyFilterText: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.4)',
+    margin: 0,
+    fontWeight: 500,
   },
 };

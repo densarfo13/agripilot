@@ -1,12 +1,16 @@
 /**
- * NextActionCard — pure presentation component for guided farmer actions.
+ * NextActionCard — guided farmer home primary card.
  *
- * Receives a DecisionResult from useFarmDecision hook.
- * Renders: primary action card + today's plan + farm status bar.
+ * Renders: TaskCard (standard variant) + today's plan + farm status bar.
  * No decision logic — that lives in src/engine/decisionEngine.js.
+ *
+ * ARCHITECTURE: Task rendering delegates to unified TaskCard.
+ * Plan and status remain here (they're not task-specific).
  */
 import { useState } from 'react';
 import { RISK_COLORS } from '../engine/decisionTypes.js';
+import { SECTION_ICONS } from '../lib/farmerIcons.js';
+import TaskCard from './farmer/TaskCard.jsx';
 
 const ACTION_ROUTES = {
   onboarding_incomplete: 'setup',
@@ -20,28 +24,31 @@ const ACTION_ROUTES = {
   stale_activity: 'update',
   needs_checkin: 'update',
   daily_task: 'task',
+  weather_override: 'task',
   all_done: 'update',
 };
 
 export default function NextActionCard({
   decision,
+  taskViewModel,
   loading,
   onDoThisNow,
   onSetStage,
   onGoToSetup,
   onAddUpdate,
   t,
+  language,
 }) {
   const [planOpen, setPlanOpen] = useState(false);
   if (!decision && !loading) return null;
 
-  const action = decision?.primaryAction;
   const plan = decision?.todaysPlan || [];
   const status = decision?.farmStatus;
+  const vm = taskViewModel;
 
   function handleCta() {
-    if (!action) return;
-    const route = ACTION_ROUTES[action.key] || 'task';
+    if (!vm) return;
+    const route = ACTION_ROUTES[vm.actionKey] || 'task';
     switch (route) {
       case 'setup': return onGoToSetup();
       case 'stage': return onSetStage();
@@ -50,59 +57,31 @@ export default function NextActionCard({
     }
   }
 
-  // Urgency detection
-  const isUrgent = action && (action.priority === 'critical' || action.priority === 'high');
-  const isOverdue = action && (action.key === 'stage_outdated' || action.key === 'stale_activity' || action.key === 'needs_checkin');
-
   return (
     <div style={S.wrapper}>
-      {/* ═══ PRIMARY ACTION CARD ═══ */}
-      <div style={{ ...S.card, ...(action?.isAlert ? S.cardAlert : {}), ...(isOverdue && !action?.isAlert ? S.cardOverdue : {}) }}>
-        {loading ? (
+      {/* ═══ PRIMARY ACTION CARD (unified TaskCard, standard variant) ═══ */}
+      {loading ? (
+        <div style={S.loadingCard}>
           <div style={S.loading}>
             <span style={S.spinner} />
             <span>{t('guided.loading')}</span>
           </div>
-        ) : action ? (
-          <>
-            <div style={S.actionRow}>
-              <div style={{ ...S.iconCircle, background: action.iconBg }}>
-                <span style={S.iconEmoji}>{action.icon}</span>
-              </div>
-              <div style={S.actionText}>
-                <div style={S.actionTitle}>{action.title}</div>
-                <div style={S.actionReason}>{action.reason}</div>
-              </div>
-            </div>
+        </div>
+      ) : vm ? (
+        <TaskCard
+          viewModel={vm}
+          variant="standard"
+          language={language}
+          t={t}
+          onCta={handleCta}
+        />
+      ) : null}
 
-            {action.stageInfo && (
-              <div style={S.stageChip}>
-                <span>{action.stageInfo.emoji}</span>
-                <span>{action.stageInfo.label}</span>
-                {action.stageInfo.daysSinceUpdate > 1 && (
-                  <span style={S.stageAge}>
-                    {t('guided.daysAgo', { days: action.stageInfo.daysSinceUpdate })}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <button onClick={handleCta} style={
-              action.key === 'all_done' ? S.ctaSecondary : S.cta
-            } data-testid="next-action-cta">
-              {action.cta}
-            </button>
-
-            {/* "What happens next" removed — verbose, voice can explain */}
-          </>
-        ) : null}
-      </div>
-
-      {/* ═══ TODAY'S PLAN (collapsed by default, tap to expand) ═══ */}
+      {/* ═══ TODAY'S PLAN (collapsed by default) ═══ */}
       {!loading && plan.length > 1 && (
         <div style={S.planSection}>
           <button onClick={() => setPlanOpen(!planOpen)} style={S.planToggle}>
-            <span style={S.planTitle}>{t('guided.todaysPlan')} ({plan.length})</span>
+            <span style={S.planTitle}>{SECTION_ICONS.nextTasks} {t('guided.todaysPlan')} ({plan.length})</span>
             <span style={S.planArrow}>{planOpen ? '\u25B2' : '\u25BC'}</span>
           </button>
           {planOpen && (
@@ -128,7 +107,7 @@ export default function NextActionCard({
           borderColor: RISK_COLORS[status.riskLevel]?.border || RISK_COLORS.none.border }}>
           <div style={S.statusHeader}>
             <span style={{ ...S.statusLabel, color: RISK_COLORS[status.riskLevel]?.text || '#86EFAC' }}>
-              {status.label}
+              {SECTION_ICONS.onTrack} {status.label}
             </span>
           </div>
           <div style={S.checklist}>
@@ -154,66 +133,10 @@ export default function NextActionCard({
 
 const S = {
   wrapper: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  card: {
-    borderRadius: '18px', background: '#1B2330', padding: '1.5rem 1.25rem',
-    border: '2px solid rgba(34,197,94,0.3)', boxShadow: '0 4px 24px rgba(34,197,94,0.08)',
+  loadingCard: {
+    borderRadius: '18px', background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)', padding: '1.5rem 1.25rem',
+    border: '1px solid rgba(34,197,94,0.15)',
   },
-  cardAlert: { border: '2px solid rgba(239,68,68,0.4)', boxShadow: '0 4px 24px rgba(239,68,68,0.1)' },
-  cardOverdue: { border: '2px solid rgba(250,204,21,0.35)', boxShadow: '0 4px 24px rgba(250,204,21,0.06)' },
-  urgentBadge: {
-    display: 'inline-block', fontSize: '0.625rem', fontWeight: 800, textTransform: 'uppercase',
-    letterSpacing: '0.06em', color: '#FCA5A5', background: 'rgba(239,68,68,0.12)',
-    padding: '0.2rem 0.5rem', borderRadius: '6px', marginBottom: '0.625rem',
-  },
-  overdueBadge: {
-    display: 'inline-block', fontSize: '0.625rem', fontWeight: 800, textTransform: 'uppercase',
-    letterSpacing: '0.06em', color: '#FCD34D', background: 'rgba(250,204,21,0.12)',
-    padding: '0.2rem 0.5rem', borderRadius: '6px', marginBottom: '0.625rem',
-  },
-  actionRow: { display: 'flex', alignItems: 'flex-start', gap: '0.875rem' },
-  iconCircle: {
-    width: '56px', height: '56px', borderRadius: '16px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  iconEmoji: { fontSize: '1.75rem', lineHeight: 1 },
-  actionText: { flex: 1, minWidth: 0 },
-  actionTitle: { fontSize: '1.125rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 },
-  actionReason: { fontSize: '0.8125rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5, marginTop: '0.25rem' },
-  stageChip: {
-    display: 'inline-flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.75rem',
-    padding: '0.375rem 0.75rem', borderRadius: '999px',
-    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-    fontSize: '0.8125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600,
-  },
-  stageAge: { fontSize: '0.6875rem', color: '#FCD34D', fontWeight: 500, marginLeft: '0.25rem' },
-  cta: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-    marginTop: '1.25rem', padding: '1rem',
-    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#fff',
-    border: 'none', borderRadius: '14px', fontSize: '1.0625rem', fontWeight: 800,
-    cursor: 'pointer', minHeight: '56px', boxShadow: '0 4px 16px rgba(22,163,74,0.25)',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  ctaAlert: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-    marginTop: '1.25rem', padding: '1rem',
-    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#fff',
-    border: 'none', borderRadius: '14px', fontSize: '1.0625rem', fontWeight: 800,
-    cursor: 'pointer', minHeight: '56px', boxShadow: '0 4px 16px rgba(22,163,74,0.25)',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  ctaSecondary: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-    marginTop: '1.25rem', padding: '0.875rem', background: 'transparent', color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.3)', borderRadius: '14px', fontSize: '0.9375rem',
-    fontWeight: 700, cursor: 'pointer', minHeight: '52px', WebkitTapHighlightColor: 'transparent',
-  },
-  nextHint: {
-    display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem',
-    padding: '0.5rem 0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.03)',
-    fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
-  },
-  nextIcon: { color: '#22C55E', fontWeight: 700, flexShrink: 0 },
   loading: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem',
     padding: '1.5rem 0', fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)',
@@ -234,11 +157,9 @@ const S = {
     fontSize: '0.6875rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)',
     textTransform: 'uppercase', letterSpacing: '0.05em',
   },
-  planArrow: {
-    fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)',
-  },
+  planArrow: { fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)' },
   planList: {
-    borderRadius: '14px', background: '#1B2330',
+    borderRadius: '14px', background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
     border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden',
   },
   planStep: {
@@ -268,14 +189,6 @@ const S = {
   },
   statusHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   statusLabel: { fontSize: '0.8125rem', fontWeight: 700 },
-  statusProgress: { fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)' },
-  statusTrack: {
-    height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
-  },
-  statusFill: { height: '100%', borderRadius: '2px', transition: 'width 0.3s ease', minWidth: '4px' },
-  statusChecks: {
-    display: 'flex', flexWrap: 'wrap', gap: '0.5rem 0.75rem', marginTop: '0.125rem',
-  },
   checklist: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
   checkItem: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
   checkIcon: { fontSize: '0.875rem', flexShrink: 0, width: '1.25rem', textAlign: 'center' },

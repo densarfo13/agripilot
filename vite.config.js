@@ -23,7 +23,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['server/src/**/*.test.js'],
+    include: ['server/src/**/*.test.js', 'src/**/*.test.js'],
     exclude: ['server/tests/**', 'node_modules/**'],
   },
 });

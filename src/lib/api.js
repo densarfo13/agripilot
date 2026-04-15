@@ -171,9 +171,16 @@ export function archiveFarm(farmId) {
   });
 }
 
+// Task engine version — bump to invalidate cached tasks and force regeneration.
+// Incrementing this causes the server to regenerate tasks instead of serving stale cache.
+const TASK_ENGINE_VERSION = 2;
+
 export function getFarmTasks(farmId, stage) {
-  const qs = stage ? `?stage=${encodeURIComponent(stage)}` : '';
-  return request(`/api/v2/farm-tasks/${farmId}/tasks${qs}`);
+  const params = new URLSearchParams();
+  if (stage) params.set('stage', stage);
+  params.set('v', String(TASK_ENGINE_VERSION));
+  const qs = params.toString();
+  return request(`/api/v2/farm-tasks/${farmId}/tasks?${qs}`);
 }
 
 export function completeTask(farmId, taskId, body = {}) {

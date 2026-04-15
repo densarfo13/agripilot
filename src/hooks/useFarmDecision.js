@@ -4,8 +4,9 @@
  * Reads from ProfileContext, task state, and weather context,
  * then returns a resolved DecisionResult that the dashboard renders.
  *
- * Now also produces a weatherDecision object with chip, action line,
- * last-updated label, and task override info for direct UI rendering.
+ * Now also produces:
+ *   - taskViewModel: a normalized, render-ready view model (single source of truth)
+ *   - weatherDecision: chip, action line, last-updated label, task override info
  *
  * Recalculates automatically when any input changes.
  */
@@ -14,6 +15,8 @@ import { resolveDecision } from '../engine/decisionEngine.js';
 import { getWeatherDecision } from '../engine/weatherEngine.js';
 import { useTranslation } from '../i18n/index.js';
 import { calculateFarmScore } from '../lib/farmScore.js';
+import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
+import { useUserMode } from '../context/UserModeContext.jsx';
 
 /**
  * @param {Object} params
@@ -26,10 +29,11 @@ import { calculateFarmScore } from '../lib/farmScore.js';
  * @param {'fresh'|'aging'|'stale'|'none'} params.freshness - Weather staleness
  * @param {boolean} params.isOnline - Network status
  * @param {boolean} params.taskLoading - Whether tasks are still loading
- * @returns {import('../engine/decisionTypes.js').DecisionResult & { loading: boolean, weatherDecision: Object }}
+ * @returns {Object} DecisionResult + taskViewModel + weatherDecision + loading
  */
 export function useFarmDecision({ profile, primaryTask, taskCount, completedCount, weather, fetchedAt, freshness, isOnline, taskLoading }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const { isBasic } = useUserMode();
 
   const setupComplete = useMemo(() => {
     if (!profile) return false;
@@ -65,6 +69,20 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
     }, t);
   }, [weather, profile, primaryTask, fetchedAt, freshness, t]);
 
+  // Task view model — THE single source of truth for rendering
+  const taskViewModel = useMemo(() => {
+    if (!decision?.primaryAction) return null;
+
+    return buildFarmerTaskViewModel({
+      task: decision.primaryAction.task || primaryTask,
+      action: decision.primaryAction,
+      weatherGuidance: decision.weatherGuidance,
+      language: lang,
+      t,
+      mode: isBasic ? 'simple' : 'standard',
+    });
+  }, [decision, primaryTask, lang, t, isBasic]);
+
   return {
     loading: taskLoading || !decision,
     ...(decision || {
@@ -74,6 +92,7 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       secondaryActions: [],
       weatherGuidance: null,
     }),
+    taskViewModel,
     weatherDecision,
   };
 }

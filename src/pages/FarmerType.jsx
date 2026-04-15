@@ -113,9 +113,9 @@ const S = {
   card: {
     borderRadius: '16px',
     background: '#1B2330',
-    padding: '1.5rem',
-    border: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
+    padding: '1.75rem',
+    border: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
   },
   title: {
     fontSize: '1.5rem',
@@ -131,12 +131,13 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
+    marginTop: '0.25rem',
   },
   optionBtn: {
     width: '100%',
     borderRadius: '16px',
     background: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: '1px solid rgba(255,255,255,0.06)',
     padding: '1.25rem',
     textAlign: 'left',
     cursor: 'pointer',

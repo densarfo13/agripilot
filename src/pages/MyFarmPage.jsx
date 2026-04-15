@@ -14,6 +14,7 @@ import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
+import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
@@ -102,9 +103,7 @@ export default function MyFarmPage() {
     return (
       <div style={S.page}>
         <div style={S.header}>
-          <button type="button" onClick={() => navigate('/dashboard')} style={S.backBtn}>
-            <span style={S.backArrow}>&larr;</span>
-          </button>
+          <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
           <h1 style={S.pageTitle}>{t('myFarm.title') || 'My Farm'}</h1>
         </div>
         <div style={S.skeletonWrap}>
@@ -130,17 +129,15 @@ export default function MyFarmPage() {
     <div style={S.page} data-testid="my-farm-page">
       {/* Header */}
       <div style={S.header}>
-        <button type="button" onClick={() => navigate('/dashboard')} style={S.backBtn}>
-          <span style={S.backArrow}>&larr;</span>
-        </button>
+        <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
         <h1 style={S.pageTitle}>{t('myFarm.title') || 'My Farm'}</h1>
       </div>
 
-      {/* Farm card */}
+      {/* Farm details */}
       {farm ? (
-        <div style={S.cardWrap}>
-          <div style={S.card}>
-            {/* Avatar + farm name */}
+        <div style={S.tilesWrap}>
+          {/* Identity card — avatar + farm name */}
+          <div style={S.identityCard}>
             <div style={S.avatarSection}>
               <FarmerAvatar
                 fullName={farmerName}
@@ -157,86 +154,69 @@ export default function MyFarmPage() {
                 onChange={handleAvatarFile}
                 style={{ display: 'none' }}
               />
-              <div style={S.avatarActions}>
-                <button onClick={() => fileInputRef.current?.click()} style={S.avatarBtn} disabled={avatarUploading}>
-                  {avatarUploading ? (t('avatar.uploading') || 'Uploading...') : avatarUrl ? (t('avatar.change') || 'Change photo') : (t('avatar.add') || 'Add photo')}
-                </button>
-                {avatarUrl && (
-                  <button onClick={handleRemoveAvatar} style={S.avatarRemoveBtn}>
-                    {t('avatar.remove') || 'Remove'}
-                  </button>
+              <div>
+                <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm') || 'My Farm'}</h2>
+                {(farm.country || farm.countryCode) && (
+                  <span style={S.farmSubline}>{SECTION_ICONS.country} {farm.country || farm.countryCode}</span>
                 )}
               </div>
-              {avatarError && <div style={S.avatarError}>{avatarError}</div>}
             </div>
-
-            <div style={S.farmNameRow}>
-              <span style={S.farmEmoji}>{'\uD83C\uDFE1'}</span>
-              <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm') || 'My Farm'}</h2>
-            </div>
-
-            <div style={S.detailsList}>
-              {/* Crop */}
-              {(farm.cropType || farm.crop) && (
-                <div style={S.detailRow}>
-                  <span style={S.detailIcon}>{getCropIcon(farm.cropType || farm.crop) || getCropEmoji(farm.cropType || farm.crop)}</span>
-                  <div>
-                    <span style={S.detailLabel}>{t('myFarm.crop')}</span>
-                    <span style={S.detailValue}>{getCropLabel(farm.cropType || farm.crop)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Location */}
-              {(farm.location || farm.locationLabel) && (
-                <div style={S.detailRow}>
-                  <span style={S.detailIcon}>📍</span>
-                  <div>
-                    <span style={S.detailLabel}>{t('myFarm.location')}</span>
-                    <span style={S.detailValue}>{farm.location || farm.locationLabel}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Farm size */}
-              {farm.size && (
-                <div style={S.detailRow}>
-                  <span style={S.detailIcon}>📐</span>
-                  <div>
-                    <span style={S.detailLabel}>{t('myFarm.size')}</span>
-                    <span style={S.detailValue}>
-                      {formatSize(farm.size, farm.sizeUnit)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Stage */}
-              {farm.cropStage && (
-                <div style={S.detailRow}>
-                  <span style={S.detailIcon}>{STAGE_EMOJIS[farm.cropStage] || '📊'}</span>
-                  <div>
-                    <span style={S.detailLabel}>{t('myFarm.stage')}</span>
-                    <span style={S.stageBadge}>
-                      {t(STAGE_KEYS[farm.cropStage]) || farm.cropStage.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Country */}
-              {(farm.country || farm.countryCode) && (
-                <div style={S.detailRow}>
-                  <span style={S.detailIcon}>🌍</span>
-                  <div>
-                    <span style={S.detailLabel}>{t('myFarm.country') || 'Country'}</span>
-                    <span style={S.detailValue}>{farm.country || farm.countryCode}</span>
-                  </div>
-                </div>
+            <div style={S.avatarActions}>
+              <button onClick={() => fileInputRef.current?.click()} style={S.avatarBtn} disabled={avatarUploading}>
+                {avatarUploading ? (t('avatar.uploading') || 'Uploading...') : avatarUrl ? (t('avatar.change') || 'Change photo') : (t('avatar.add') || 'Add photo')}
+              </button>
+              {avatarUrl && (
+                <button onClick={handleRemoveAvatar} style={S.avatarRemoveBtn}>
+                  {t('avatar.remove') || 'Remove'}
+                </button>
               )}
             </div>
+            {avatarError && <div style={S.avatarError}>{avatarError}</div>}
+          </div>
 
-            {/* Edit button */}
+          {/* Detail tiles — 2-column grid */}
+          <div style={S.tileGrid}>
+            {/* Crop tile */}
+            {(farm.cropType || farm.crop) && (
+              <div style={S.tile}>
+                <span style={S.tileIcon}>{getCropIcon(farm.cropType || farm.crop) || getCropEmoji(farm.cropType || farm.crop)}</span>
+                <span style={S.tileLabel}>{t('myFarm.crop')}</span>
+                <span style={S.tileValue}>{getCropLabel(farm.cropType || farm.crop)}</span>
+              </div>
+            )}
+
+            {/* Size tile */}
+            {farm.size && (
+              <div style={S.tile}>
+                <span style={S.tileIcon}>{SECTION_ICONS.size}</span>
+                <span style={S.tileLabel}>{t('myFarm.size')}</span>
+                <span style={S.tileValue}>{formatSize(farm.size, farm.sizeUnit)}</span>
+              </div>
+            )}
+
+            {/* Location tile */}
+            {(farm.location || farm.locationLabel) && (
+              <div style={S.tile}>
+                <span style={S.tileIcon}>{SECTION_ICONS.location}</span>
+                <span style={S.tileLabel}>{t('myFarm.location')}</span>
+                <span style={S.tileValue}>{farm.location || farm.locationLabel}</span>
+              </div>
+            )}
+
+            {/* Stage tile */}
+            {farm.cropStage && (
+              <div style={S.tile}>
+                <span style={S.tileIcon}>{STAGE_EMOJIS[farm.cropStage] || '📊'}</span>
+                <span style={S.tileLabel}>{t('myFarm.stage')}</span>
+                <span style={S.stageBadge}>
+                  {t(STAGE_KEYS[farm.cropStage]) || farm.cropStage.replace(/_/g, ' ')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={S.actionsRow}>
             <button
               type="button"
               onClick={() => navigate('/profile/setup')}
@@ -244,8 +224,6 @@ export default function MyFarmPage() {
             >
               {t('myFarm.edit') || 'Edit Farm'}
             </button>
-
-            {/* Multi-farm switcher */}
             {isMultiFarm && (
               <button
                 type="button"
@@ -285,35 +263,18 @@ const S = {
   page: {
     minHeight: '100vh',
     background: '#0F172A',
-    padding: '0 0 2rem 0',
+    padding: '0 0 1rem 0',
+    animation: 'farroway-fade-in 0.3s ease-out',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '0.625rem',
     padding: '1rem 1.25rem',
-    position: 'sticky',
-    top: 0,
-    background: '#0F172A',
-    zIndex: 50,
     borderBottom: '1px solid rgba(255,255,255,0.06)',
   },
-  backBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'transparent',
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-    padding: 0,
-  },
-  backArrow: {
-    color: '#fff',
-    fontSize: '1.125rem',
+  pageIcon: {
+    fontSize: '1.25rem',
   },
   pageTitle: {
     fontSize: '1.25rem',
@@ -321,24 +282,29 @@ const S = {
     color: '#fff',
     margin: 0,
   },
-  cardWrap: {
-    padding: '1.25rem',
+  tilesWrap: {
+    padding: '1rem 1.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
   },
-  card: {
-    background: '#1B2330',
+  cardWrap: {
+    padding: '0 1.25rem 0.75rem',
+  },
+  identityCard: {
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
     borderRadius: '16px',
-    padding: '1.5rem',
-    border: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
+    padding: '1.25rem',
+    border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
   },
   avatarSection: {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    gap: '0.5rem',
-    marginBottom: '1rem',
-    paddingBottom: '1rem',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    gap: '0.875rem',
   },
   avatarActions: {
     display: 'flex',
@@ -373,53 +339,53 @@ const S = {
     color: '#FCA5A5',
     marginTop: '0.25rem',
   },
-  farmNameRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.625rem',
-    marginBottom: '1.25rem',
-  },
-  farmEmoji: {
-    fontSize: '1.5rem',
-    flexShrink: 0,
-  },
   farmName: {
-    fontSize: '1.375rem',
+    fontSize: '1.25rem',
     fontWeight: 700,
     color: '#fff',
     margin: 0,
     lineHeight: 1.3,
   },
-  detailsList: {
+  farmSubline: {
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.4)',
+    fontWeight: 500,
+    marginTop: '0.125rem',
+    display: 'block',
+  },
+  // ─── Tile grid ──────────
+  tileGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '0.625rem',
+  },
+  tile: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
-    marginBottom: '1.5rem',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '1rem 0.75rem',
+    borderRadius: '14px',
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    textAlign: 'center',
+    animation: 'farroway-fade-in 0.3s ease-out',
   },
-  detailRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '0.75rem',
+  tileIcon: {
+    fontSize: '1.5rem',
+    marginBottom: '0.125rem',
   },
-  detailIcon: {
-    fontSize: '1.125rem',
-    flexShrink: 0,
-    marginTop: '1px',
-  },
-  detailLabel: {
-    display: 'block',
-    fontSize: '0.6875rem',
+  tileLabel: {
+    fontSize: '0.625rem',
     color: 'rgba(255,255,255,0.4)',
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
     fontWeight: 600,
-    marginBottom: '0.125rem',
   },
-  detailValue: {
-    display: 'block',
+  tileValue: {
     fontSize: '0.9375rem',
     color: '#fff',
-    fontWeight: 500,
+    fontWeight: 600,
   },
   stageBadge: {
     display: 'inline-block',
@@ -430,6 +396,11 @@ const S = {
     borderRadius: '999px',
     background: 'rgba(34,197,94,0.12)',
     textTransform: 'capitalize',
+  },
+  actionsRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
   },
   editBtn: {
     width: '100%',
@@ -442,7 +413,7 @@ const S = {
     fontWeight: 700,
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
-    marginBottom: '0.5rem',
+    transition: 'transform 0.1s ease, box-shadow 0.15s ease',
   },
   switchBtn: {
     width: '100%',
@@ -474,10 +445,10 @@ const S = {
     padding: '1.25rem',
   },
   skeletonCard: {
-    background: '#1B2330',
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
     borderRadius: '16px',
     padding: '1.5rem',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: '1px solid rgba(255,255,255,0.08)',
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',

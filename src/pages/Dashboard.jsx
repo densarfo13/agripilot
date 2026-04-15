@@ -35,6 +35,8 @@ import { useUserMode } from '../context/UserModeContext.jsx';
 import ModeIndicator from '../components/ModeIndicator.jsx';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import { useFarmDecision } from '../hooks/useFarmDecision.js';
+import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
+import { SECTION_ICONS } from '../lib/farmerIcons.js';
 
 // Lazy-load mode-specific components
 const BasicFarmerHome = lazy(() => import('../components/farmer/BasicFarmerHome.jsx'));
@@ -59,7 +61,7 @@ export default function Dashboard() {
   const { season, refreshSeason } = useSeason();
   const { weather, fetchedAt: weatherFetchedAt, freshness: weatherFreshness, refreshWeather } = useWeather();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   const { isOnline } = useNetwork();
   const farmScore = calculateFarmScore(profile || {});
@@ -208,11 +210,12 @@ export default function Dashboard() {
       setCompletedCount((prev) => prev + 1);
       setShowTaskAction(false);
       setTaskSuccess(true);
-      // Show completed task + next task preview
-      const nextName = result.nextTask?.title;
+      // Show completed task + next task preview (localized)
+      const localTitle = getLocalizedTaskTitle(task.id, task.title, lang);
+      const nextName = result.nextTask ? getLocalizedTaskTitle(result.nextTask.id, result.nextTask.title, lang) : null;
       const msg = nextName
-        ? `\u2705 ${task.title}\n${t('feedback.next')}: ${nextName}`
-        : `\u2705 ${task.title}`;
+        ? `\u2705 ${localTitle}\n${t('feedback.next')}: ${nextName}`
+        : `\u2705 ${localTitle}`;
       setFeedbackMessage(msg);
       setFeedbackStatus(result.offline ? 'offline' : 'success');
       if (navigator.vibrate) try { navigator.vibrate(result.offline ? [30, 30, 30] : 50); } catch {}
@@ -286,8 +289,7 @@ export default function Dashboard() {
             <Suspense fallback={null}>
               <BasicFarmerHome
                 decision={farmDecision}
-                profile={profile}
-                user={user}
+                taskViewModel={farmDecision.taskViewModel}
                 onDoThisNow={() => primaryTask && setShowTaskAction(true)}
                 onSetStage={() => setShowStageModal(true)}
                 onAddUpdate={handleStartUpdate}
@@ -347,6 +349,7 @@ export default function Dashboard() {
           {showTaskAction && primaryTask && (
             <TaskActionModal
               task={primaryTask}
+              taskViewModel={farmDecision.taskViewModel}
               onComplete={handleCompleteTask}
               onClose={() => setShowTaskAction(false)}
               completing={taskCompleting}
@@ -395,33 +398,54 @@ export default function Dashboard() {
 
         {/* ═══ 2. MAIN TASK CARD (one task only) ═══ */}
         {profile && !farmSwitching && (
-          <NextActionCard
-            decision={farmDecision}
-            loading={farmDecision.loading}
-            onDoThisNow={() => primaryTask && setShowTaskAction(true)}
-            onSetStage={() => setShowStageModal(true)}
-            onGoToSetup={() => navigate('/profile/setup')}
-            onAddUpdate={handleStartUpdate}
-            t={t}
-          />
+          <>
+            {/* Section label: current task */}
+            {!farmDecision.loading && farmDecision.taskViewModel && (
+              <div style={S.sectionLabel}>
+                <span style={S.sectionLabelIcon}>{SECTION_ICONS.currentTask}</span>
+                <span style={S.sectionLabelText}>{t('dashboard.currentTask') || 'Current task'}</span>
+              </div>
+            )}
+            <NextActionCard
+              decision={farmDecision}
+              taskViewModel={farmDecision.taskViewModel}
+              loading={farmDecision.loading}
+              onDoThisNow={() => primaryTask && setShowTaskAction(true)}
+              onSetStage={() => setShowStageModal(true)}
+              onGoToSetup={() => navigate('/profile/setup')}
+              onAddUpdate={handleStartUpdate}
+              t={t}
+              language={language}
+            />
+          </>
         )}
 
-        {/* Weather display is in the header chip only — no separate card */}
-
-        {/* ═══ 6. QUICK ACTIONS ═══ */}
-        {profile && !farmSwitching && setupComplete && (
-          <div style={S.quickLinks}>
-            <button onClick={handleStartUpdate} style={S.quickLink}>
-              {'\uD83D\uDCF8'} {t('dashboard.addUpdate')}
-            </button>
-            <button onClick={() => navigate('/my-farm')} style={S.quickLink}>
-              {'\uD83C\uDFE1'} {t('dashboard.myFarm')}
-            </button>
-            <button onClick={() => navigate('/tasks')} style={S.quickLink}>
-              {'\uD83D\uDCCB'} {t('dashboard.allTasks')}
-              {taskCount > 0 && <span style={S.quickBadge}>{taskCount}</span>}
-            </button>
+        {/* ═══ PROGRESS SUMMARY (compact) ═══ */}
+        {profile && !farmSwitching && setupComplete && weekTotal > 0 && (
+          <div style={S.progressSummary}>
+            <div style={S.sectionLabel}>
+              <span style={S.sectionLabelIcon}>{SECTION_ICONS.onTrack}</span>
+              <span style={S.sectionLabelText}>{t('dashboard.progress') || 'Progress'}</span>
+            </div>
+            <div style={S.progressBar}>
+              <div style={S.progressBarRow}>
+                <span style={S.progressBarText}>
+                  {doneThisWeek} {t('dashboard.of') || 'of'} {weekTotal}
+                </span>
+                <span style={S.progressBarPct}>{Math.round((doneThisWeek / weekTotal) * 100)}%</span>
+              </div>
+              <div style={S.progressTrack}>
+                <div style={{ ...S.progressFill, width: `${Math.min(100, Math.round((doneThisWeek / weekTotal) * 100))}%` }} />
+              </div>
+            </div>
           </div>
+        )}
+
+        {/* ═══ QUICK UPDATE (single action, not full row) ═══ */}
+        {profile && !farmSwitching && setupComplete && (
+          <button onClick={handleStartUpdate} style={S.quickUpdateBtn}>
+            {'\uD83D\uDCF8'} {t('dashboard.addUpdate') || 'Add update'}
+          </button>
         )}
 
         {/* ═══ MODALS (unchanged) ═══ */}
@@ -521,7 +545,7 @@ const S = {
     minHeight: '100vh',
     background: '#0F172A',
     color: '#fff',
-    padding: '0.75rem 0.75rem 2rem',
+    padding: '0.75rem 0.75rem 1rem',
   },
   container: {
     maxWidth: '42rem',
@@ -584,10 +608,10 @@ const S = {
   },
   card: {
     borderRadius: '16px',
-    background: '#1B2330',
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
     padding: '1.25rem',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+    border: '1px solid rgba(255,255,255,0.08)',
   },
   // ─── Success feedback ────────
   successBanner: {
@@ -692,6 +716,83 @@ const S = {
     minWidth: '14px',
     textAlign: 'center',
   },
+  // ─── Section labels ─────────
+  sectionLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '0 0.25rem',
+  },
+  sectionLabelIcon: {
+    fontSize: '0.875rem',
+  },
+  sectionLabelText: {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    color: 'rgba(255,255,255,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  },
+  // ─── Progress summary ───────
+  progressSummary: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  progressBar: {
+    padding: '0.75rem 1rem',
+    borderRadius: '12px',
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+  },
+  progressBarRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '0.5rem',
+  },
+  progressBarText: {
+    fontSize: '0.8125rem',
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: 600,
+  },
+  progressBarPct: {
+    fontSize: '0.8125rem',
+    color: '#86EFAC',
+    fontWeight: 700,
+  },
+  progressTrack: {
+    height: '6px',
+    borderRadius: '3px',
+    background: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: '3px',
+    background: '#22C55E',
+    transition: 'width 0.3s ease',
+    minWidth: '4px',
+  },
+  // ─── Quick update button ────
+  quickUpdateBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.375rem',
+    padding: '0.625rem 1rem',
+    borderRadius: '10px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: '40px',
+    width: '100%',
+    WebkitTapHighlightColor: 'transparent',
+  },
   moreBtn: {
     display: 'flex',
     alignItems: 'center',
@@ -748,9 +849,9 @@ const S = {
   // ─── Empty state ────────────
   emptyState: {
     borderRadius: '16px',
-    background: '#1B2330',
+    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
     padding: '2rem 1.5rem',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: '1px solid rgba(255,255,255,0.08)',
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',

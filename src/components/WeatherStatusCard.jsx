@@ -1,29 +1,32 @@
 /**
- * WeatherStatusCard — tiny weather intelligence block on farmer home.
+ * WeatherStatusCard — tiny weather context bar on farmer home.
  *
  * Shows max 2 lines:
  *   Line 1: icon + short weather status
  *   Line 2: actionable recommendation
  *
- * No charts, no metrics grid, no raw data.
- * Optional voice replay button.
+ * Design rule: weather bar provides CONTEXT, not dominance.
+ * It should be visually lighter than the task card and CTA.
+ * Red only appears for true block/danger states.
+ *
  * Consumes pre-computed WeatherGuidance from the decision engine.
  */
 import VoicePromptButton from './VoicePromptButton.jsx';
 import { resolvePromptId } from '../services/voicePrompts.js';
 
+// Lighter backgrounds — weather bar should NOT dominate
 const STATUS_COLORS = {
-  safe: 'rgba(34,197,94,0.08)',
-  caution: 'rgba(250,204,21,0.08)',
-  warning: 'rgba(239,68,68,0.08)',
-  danger: 'rgba(239,68,68,0.12)',
+  safe:    'rgba(34,197,94,0.05)',
+  caution: 'rgba(250,204,21,0.05)',
+  warning: 'rgba(250,204,21,0.06)',   // amber, not red — only danger uses red
+  danger:  'rgba(239,68,68,0.08)',
 };
 
 const STATUS_BORDERS = {
-  safe: 'rgba(34,197,94,0.15)',
-  caution: 'rgba(250,204,21,0.2)',
-  warning: 'rgba(239,68,68,0.2)',
-  danger: 'rgba(239,68,68,0.3)',
+  safe:    'rgba(34,197,94,0.10)',
+  caution: 'rgba(250,204,21,0.12)',
+  warning: 'rgba(250,204,21,0.15)',   // amber, not red
+  danger:  'rgba(239,68,68,0.20)',
 };
 
 export default function WeatherStatusCard({ guidance, t, isBasic }) {
@@ -69,14 +72,14 @@ const S = {
   bar: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.625rem',
-    padding: '0.75rem 1rem',
-    borderRadius: '14px',
+    gap: '0.5rem',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '10px',
     border: '1px solid',
-    minHeight: '48px',
+    minHeight: '40px',
   },
   icon: {
-    fontSize: '1.25rem',
+    fontSize: '1rem',
     flexShrink: 0,
   },
   textCol: {
@@ -87,31 +90,31 @@ const S = {
     minWidth: 0,
   },
   recommendation: {
-    fontSize: '0.875rem',
-    fontWeight: 700,
-    color: '#fff',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.75)',
     lineHeight: 1.3,
   },
   reason: {
-    fontSize: '0.75rem',
-    color: 'rgba(255,255,255,0.45)',
+    fontSize: '0.6875rem',
+    color: 'rgba(255,255,255,0.38)',
     lineHeight: 1.3,
   },
-  // Basic mode
+  // Basic mode — lighter than standard, context only
   basicWrap: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    padding: '0.625rem 0.875rem',
-    borderRadius: '12px',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '10px',
   },
   basicIcon: {
-    fontSize: '1.25rem',
+    fontSize: '1rem',
     flexShrink: 0,
   },
   basicText: {
-    fontSize: '0.9375rem',
-    fontWeight: 700,
-    color: '#fff',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.65)',
   },
 };

@@ -131,6 +131,20 @@ const TASK_TITLES = {
   'post-process-cocoa': {
     en: 'Ferment cocoa', fr: 'Fermenter cacao', sw: 'Chacha kakao', ha: 'Haɗa koko', tw: 'Yɛ koko',
   },
+  // ─── Regional (East Africa) ───
+  'region-ea-altitude-timing': {
+    en: 'Choose variety', fr: 'Choisir variété', sw: 'Chagua aina', ha: 'Zaɓi iri', tw: 'Yi aba',
+  },
+  'region-ea-terrace': {
+    en: 'Build terraces', fr: 'Construire terrasses', sw: 'Jenga matuta', ha: 'Gina matattara', tw: 'Yɛ ntweri',
+  },
+  // ─── Regional (West Africa) ───
+  'region-wa-fire-prep': {
+    en: 'Fire breaks', fr: 'Pare-feu', sw: 'Kinga moto', ha: 'Katse wuta', tw: 'Si ogya ano',
+  },
+  'region-wa-harmattan-care': {
+    en: 'Harmattan care', fr: 'Soin harmattan', sw: 'Hifadhi upepo', ha: 'Kula da hunturu', tw: 'Hwɛ ahohuru',
+  },
 };
 
 // ─── Localized short descriptions ─────────────────────────────
@@ -411,6 +425,36 @@ const TASK_DESCRIPTIONS = {
     sw: 'Chacha na ukaushe kakao vizuri.',
     ha: 'Haɗa kuma bushe ƙwayar koko sosai.',
     tw: 'Yɛ koko no na hwɛ no wɔ owia mu yie.',
+  },
+  // ─── Regional (East Africa) ───
+  'region-ea-altitude-timing': {
+    en: 'Choose a maize variety for your altitude.',
+    fr: 'Choisissez une variété de maïs pour votre altitude.',
+    sw: 'Chagua aina ya mahindi kwa urefu wako.',
+    ha: 'Zaɓi irin masara don tsayin ƙasarka.',
+    tw: 'Yi aburoɔ aba a eye ma wo soro.',
+  },
+  'region-ea-terrace': {
+    en: 'Build terraces on sloped land to prevent erosion.',
+    fr: 'Construisez des terrasses sur les pentes pour empêcher l\'érosion.',
+    sw: 'Jenga matuta kwenye mteremko kuzuia mmomonyoko.',
+    ha: 'Gina matattara a gangaren ƙasa don hana zaizayar.',
+    tw: 'Yɛ ntweri wɔ asase a ɛkɔ soro so.',
+  },
+  // ─── Regional (West Africa) ───
+  'region-wa-fire-prep': {
+    en: 'Clear fire breaks around your field for dry season.',
+    fr: 'Préparez des pare-feu autour de votre champ pour la saison sèche.',
+    sw: 'Safisha kinga moto kuzunguka shamba lako.',
+    ha: 'Share katse wuta kewaye gonar ka.',
+    tw: 'Si ogya ano wɔ wʼafuo no ho.',
+  },
+  'region-wa-harmattan-care': {
+    en: 'Protect crops from dry Harmattan wind.',
+    fr: 'Protégez les cultures du vent sec de l\'harmattan.',
+    sw: 'Hifadhi mazao dhidi ya upepo mkavu.',
+    ha: 'Kare amfanin gona daga iskar hunturu.',
+    tw: 'Bɔ wo nnɔbae ho ban ma ahohuru mframa.',
   },
 };
 

@@ -4,13 +4,11 @@ import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
+import BottomTabNav from '../components/farmer/BottomTabNav.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
 
-// Inner page loader — shown while lazy child routes load.
-// This Suspense boundary is INSIDE AuthGuard+ProfileGuard so the guards
-// stay mounted while page chunks load (prevents guard remount blink).
 const InnerPageLoader = () => (
   <div style={S.innerLoader}>
     <div style={S.spinnerSmall} />
@@ -28,44 +26,37 @@ export default function ProtectedLayout() {
         <div style={S.page}>
           <div style={S.container}>
             <div style={S.header}>
-              {/* Left: minimal user info */}
+              {/* Left: connectivity + language */}
               <div style={S.headerLeft}>
-                {isOfflineSession && <span style={S.offlineChip}>{t('farmer.offline')}</span>}
-                {!isOfflineSession && <span style={S.onlineChip}>{t('farmer.online')}</span>}
+                <span style={isOfflineSession ? S.offlineChip : S.onlineChip}>
+                  <span style={isOfflineSession ? S.offlineDot : S.onlineDot} />
+                  {isOfflineSession ? t('farmer.offline') : t('farmer.online')}
+                </span>
                 <LanguageSelector />
               </div>
 
-              {/* Right: compact actions */}
+              {/* Right: mode + voice + logout */}
               <div style={S.headerRight}>
-                {/* Mode toggle — farmer only */}
                 {isFarmer && allowedModes.length > 1 && (
                   <button
                     onClick={() => setMode(mode === 'basic' ? 'standard' : 'basic')}
                     style={S.modeToggle}
+                    type="button"
                   >
                     {mode === 'basic' ? t('mode.simple') : t('mode.standard')}
                   </button>
                 )}
                 <AutoVoiceToggle />
-                <button onClick={logout} style={S.logoutBtn}>
+                <button onClick={logout} style={S.logoutBtn} type="button">
                   {t('common.logout')}
                 </button>
               </div>
             </div>
-            {/* Email verification moved to account settings — not on farmer action screen */
-            false && (
-              <div style={S.verifyBanner}>
-                <span style={S.verifyText}>Verify your email: {user?.email}</span>
-                <button onClick={() => resendEmailVerification()} style={S.verifyBtn}>
-                  Resend
-                </button>
-              </div>
-            )}
           </div>
-          {/* Inner Suspense: lazy child pages load here without unmounting the layout/guards */}
           <Suspense fallback={<InnerPageLoader />}>
             <Outlet />
           </Suspense>
+          {isFarmer && <BottomTabNav />}
         </div>
       </ProfileGuard>
     </AuthGuard>
@@ -77,17 +68,19 @@ const S = {
     minHeight: '100vh',
     background: '#0F172A',
     color: '#FFFFFF',
+    paddingBottom: '70px',
   },
   container: {
-    maxWidth: '72rem',
+    maxWidth: '42rem',
     margin: '0 auto',
-    padding: '1rem 1.5rem',
+    padding: '0.625rem 1rem',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '0.75rem',
+    gap: '0.5rem',
+    minHeight: '36px',
   },
   headerLeft: {
     display: 'flex',
@@ -97,73 +90,73 @@ const S = {
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
+    gap: '0.375rem',
   },
   onlineChip: {
-    fontSize: '0.6875rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.3rem',
+    fontSize: '0.625rem',
     fontWeight: 700,
     color: '#86EFAC',
-    background: 'rgba(34,197,94,0.12)',
+    background: 'rgba(34,197,94,0.08)',
     padding: '0.2rem 0.5rem',
     borderRadius: '6px',
+    letterSpacing: '0.02em',
   },
   offlineChip: {
-    fontSize: '0.6875rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.3rem',
+    fontSize: '0.625rem',
     fontWeight: 700,
     color: '#FDE68A',
-    background: 'rgba(120,53,15,0.5)',
+    background: 'rgba(120,53,15,0.35)',
     padding: '0.2rem 0.5rem',
     borderRadius: '6px',
+    letterSpacing: '0.02em',
+  },
+  onlineDot: {
+    display: 'inline-block',
+    width: '5px',
+    height: '5px',
+    borderRadius: '50%',
+    background: '#22C55E',
+    flexShrink: 0,
+  },
+  offlineDot: {
+    display: 'inline-block',
+    width: '5px',
+    height: '5px',
+    borderRadius: '50%',
+    background: '#F59E0B',
+    flexShrink: 0,
   },
   modeToggle: {
-    fontSize: '0.6875rem',
+    fontSize: '0.625rem',
     fontWeight: 600,
-    color: '#86EFAC',
-    background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.2)',
-    borderRadius: '8px',
-    padding: '0.25rem 0.5rem',
-    cursor: 'pointer',
-    minHeight: '28px',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  logoutBtn: {
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.12)',
-    padding: '0.375rem 0.75rem',
-    fontSize: '0.8125rem',
-    fontWeight: 600,
-    color: 'rgba(255,255,255,0.6)',
-    background: 'transparent',
-    cursor: 'pointer',
-    minHeight: '36px',
-  },
-  verifyBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '0.75rem',
-    marginTop: '0.5rem',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '10px',
-    background: 'rgba(250,204,21,0.08)',
-    border: '1px solid rgba(250,204,21,0.2)',
-  },
-  verifyText: {
-    fontSize: '0.75rem',
-    color: '#FDE68A',
-    fontWeight: 500,
-  },
-  verifyBtn: {
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    color: '#FDE68A',
-    background: 'none',
-    border: '1px solid rgba(250,204,21,0.3)',
+    color: 'rgba(255,255,255,0.5)',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: '6px',
     padding: '0.25rem 0.5rem',
     cursor: 'pointer',
-    whiteSpace: 'nowrap',
+    minHeight: '26px',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'background 0.15s',
+  },
+  logoutBtn: {
+    borderRadius: '6px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.625rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.4)',
+    background: 'transparent',
+    cursor: 'pointer',
+    minHeight: '26px',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'color 0.15s',
   },
   innerLoader: {
     display: 'flex',
@@ -174,7 +167,7 @@ const S = {
   spinnerSmall: {
     width: '1.5rem',
     height: '1.5rem',
-    border: '3px solid rgba(255,255,255,0.1)',
+    border: '3px solid rgba(255,255,255,0.08)',
     borderTopColor: '#22C55E',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
