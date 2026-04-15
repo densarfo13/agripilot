@@ -1,7 +1,7 @@
 /**
  * Localization / i18n Service
  * File-backed translation maps for multi-language support.
- * Currently supports: English (en), Swahili (sw)
+ * Supports: English (en), French (fr), Swahili (sw), Hausa (ha), Twi (tw)
  * Extensible to any language by adding a new key to `translations`.
  */
 
@@ -315,6 +315,471 @@ const translations = {
     'common.phone': 'Simu',
     'common.region': 'Mkoa',
   },
+
+  fr: {
+    // App
+    'app.name': 'Farroway',
+    'app.tagline': 'Plateforme de Crédit Institutionnel',
+
+    // Statuses
+    'status.draft': 'Brouillon',
+    'status.submitted': 'Soumis',
+    'status.under_review': 'En cours d\'examen',
+    'status.approved': 'Approuvé',
+    'status.rejected': 'Rejeté',
+    'status.conditional_approved': 'Approbation conditionnelle',
+    'status.needs_more_evidence': 'Preuves requises',
+    'status.field_review_required': 'Visite terrain requise',
+    'status.fraud_hold': 'Suspicion de fraude',
+    'status.escalated': 'Escaladé',
+    'status.disbursed': 'Décaissé',
+
+    // Roles
+    'role.super_admin': 'Super administrateur',
+    'role.institutional_admin': 'Administrateur institutionnel',
+    'role.reviewer': 'Examinateur',
+    'role.field_officer': 'Agent de terrain',
+    'role.investor_viewer': 'Observateur investisseur',
+    'role.farmer': 'Agriculteur',
+
+    // Navigation
+    'nav.dashboard': 'Tableau de bord',
+    'nav.farmers': 'Agriculteurs',
+    'nav.applications': 'Demandes',
+    'nav.portfolio': 'Portefeuille',
+    'nav.reports': 'Rapports',
+    'nav.audit': 'Journal d\'audit',
+    'nav.users': 'Gestion des utilisateurs',
+    'nav.my_farm': 'Ma ferme',
+    'nav.activities': 'Activités',
+    'nav.reminders': 'Rappels',
+    'nav.post_harvest': 'Post-récolte',
+    'nav.notifications': 'Notifications',
+    'nav.lifecycle': 'Cycle de culture',
+    'nav.verification_queue': 'File de vérification',
+    'nav.fraud_queue': 'File de fraude',
+    'nav.control_center': 'Centre de contrôle',
+    'nav.user_management': 'Gestion des utilisateurs',
+    'nav.farmer_registrations': 'Inscriptions agriculteurs',
+    'nav.market': 'Marché',
+    'nav.storage': 'Stockage',
+
+    // Activities
+    'activity.planting': 'Plantation',
+    'activity.spraying': 'Pulvérisation',
+    'activity.fertilizing': 'Fertilisation',
+    'activity.irrigation': 'Irrigation',
+    'activity.weeding': 'Désherbage',
+    'activity.harvesting': 'Récolte',
+    'activity.storage': 'Stockage',
+    'activity.selling': 'Vente',
+    'activity.other': 'Autre',
+
+    // Lifecycle Stages
+    'lifecycle.pre_planting': 'Pré-plantation',
+    'lifecycle.planting': 'Plantation',
+    'lifecycle.vegetative': 'Croissance végétative',
+    'lifecycle.flowering': 'Floraison',
+    'lifecycle.harvest': 'Récolte',
+    'lifecycle.post_harvest': 'Post-récolte',
+
+    // Reminders
+    'reminder.pending': 'En attente',
+    'reminder.done': 'Terminé',
+    'reminder.overdue': 'En retard',
+    'reminder.upcoming': 'À venir',
+
+    // Crops
+    'crop.maize': 'Maïs',
+    'crop.wheat': 'Blé',
+    'crop.rice': 'Riz',
+    'crop.coffee': 'Café',
+    'crop.tea': 'Thé',
+    'crop.beans': 'Haricots',
+    'crop.sorghum': 'Sorgho',
+    'crop.sugarcane': 'Canne à sucre',
+    'crop.cashew': 'Cajou',
+    'crop.cotton': 'Coton',
+    'crop.sisal': 'Sisal',
+    'crop.tobacco': 'Tabac',
+
+    // Verification
+    'engine.verification': 'Vérification',
+    'engine.fraud': 'Analyse de fraude',
+    'engine.decision': 'Décision',
+    'engine.benchmark': 'Benchmarking',
+    'engine.intelligence': 'Intelligence',
+
+    // Actions
+    'action.approve': 'Approuver',
+    'action.reject': 'Rejeter',
+    'action.escalate': 'Escalader',
+    'action.reopen': 'Rouvrir',
+    'action.request_evidence': 'Demander des preuves',
+    'action.submit': 'Soumettre',
+    'action.save': 'Enregistrer',
+    'action.cancel': 'Annuler',
+    'action.sign_out': 'Déconnexion',
+
+    // Post-harvest
+    'post_harvest.storage_guidance': 'Guide de stockage',
+    'post_harvest.market_prices': 'Prix du marché',
+    'post_harvest.buyer_interest': 'Intérêt des acheteurs',
+
+    // Storage
+    'storage.method.sealed_bags': 'Sacs scellés',
+    'storage.method.hermetic_bag': 'Sac hermétique',
+    'storage.method.open_air': 'Plein air',
+    'storage.method.warehouse': 'Entrepôt',
+    'storage.method.silo': 'Silo',
+    'storage.method.traditional': 'Traditionnel',
+    'storage.method.cold_storage': 'Stockage froid',
+    'storage.method.other': 'Autre',
+    'storage.condition.good': 'Bon',
+    'storage.condition.fair': 'Moyen',
+    'storage.condition.poor': 'Mauvais',
+    'storage.condition.deteriorating': 'Se détériore',
+    'storage.condition.unknown': 'Inconnu',
+
+    // Fraud risk levels
+    'fraud.risk.low': 'Risque faible',
+    'fraud.risk.medium': 'Risque moyen',
+    'fraud.risk.high': 'Risque élevé',
+    'fraud.risk.critical': 'Risque critique',
+
+    // Registration
+    'registration.pending_approval': 'En attente d\'approbation',
+    'registration.approved': 'Approuvé',
+    'registration.rejected': 'Rejeté',
+    'registration.disabled': 'Désactivé',
+
+    // Common
+    'common.loading': 'Chargement...',
+    'common.no_data': 'Aucune donnée',
+    'common.error': 'Une erreur est survenue',
+    'common.success': 'Succès',
+    'common.confirm': 'Êtes-vous sûr ?',
+    'common.search': 'Rechercher',
+    'common.filter': 'Filtrer',
+    'common.date': 'Date',
+    'common.amount': 'Montant',
+    'common.status': 'Statut',
+    'common.actions': 'Actions',
+    'common.name': 'Nom',
+    'common.email': 'Email',
+    'common.phone': 'Téléphone',
+    'common.region': 'Région',
+  },
+
+  ha: {
+    // App
+    'app.name': 'Farroway',
+    'app.tagline': 'Dandamali na Bashi na Hukumomi',
+
+    // Statuses
+    'status.draft': 'Daftari',
+    'status.submitted': 'An aika',
+    'status.under_review': 'Ana duba',
+    'status.approved': 'An amince',
+    'status.rejected': 'An ƙi',
+    'status.conditional_approved': 'Amincewar sharadi',
+    'status.needs_more_evidence': 'Ana buƙatar shaida',
+    'status.field_review_required': 'Ana buƙatar duba gona',
+    'status.fraud_hold': 'An dakatar saboda zamba',
+    'status.escalated': 'An ɗaukaka',
+    'status.disbursed': 'An biya',
+
+    // Roles
+    'role.super_admin': 'Babban mai gudanarwa',
+    'role.institutional_admin': 'Mai gudanar da hukuma',
+    'role.reviewer': 'Mai dubawa',
+    'role.field_officer': 'Jami\'in gona',
+    'role.investor_viewer': 'Mai kallo na jarin',
+    'role.farmer': 'Manomi',
+
+    // Navigation
+    'nav.dashboard': 'Allo',
+    'nav.farmers': 'Manoma',
+    'nav.applications': 'Buƙatoci',
+    'nav.portfolio': 'Jaka',
+    'nav.reports': 'Rahotanni',
+    'nav.audit': 'Bincike',
+    'nav.users': 'Gudanar da masu amfani',
+    'nav.my_farm': 'Gona ta',
+    'nav.activities': 'Ayyuka',
+    'nav.reminders': 'Tunatarwa',
+    'nav.post_harvest': 'Bayan girbi',
+    'nav.notifications': 'Sanarwa',
+    'nav.lifecycle': 'Zagayen amfanin gona',
+    'nav.verification_queue': 'Jerin tabbatarwa',
+    'nav.fraud_queue': 'Jerin zamba',
+    'nav.control_center': 'Cibiyar sarrafawa',
+    'nav.user_management': 'Gudanar da masu amfani',
+    'nav.farmer_registrations': 'Rajista manoma',
+    'nav.market': 'Kasuwa',
+    'nav.storage': 'Ajiya',
+
+    // Activities
+    'activity.planting': 'Shuka',
+    'activity.spraying': 'Fesa',
+    'activity.fertilizing': 'Sa taki',
+    'activity.irrigation': 'Ban ruwa',
+    'activity.weeding': 'Cire ciyawa',
+    'activity.harvesting': 'Girbi',
+    'activity.storage': 'Ajiya',
+    'activity.selling': 'Sayarwa',
+    'activity.other': 'Wanin',
+
+    // Lifecycle Stages
+    'lifecycle.pre_planting': 'Kafin shuka',
+    'lifecycle.planting': 'Shuka',
+    'lifecycle.vegetative': 'Girma',
+    'lifecycle.flowering': 'Fure',
+    'lifecycle.harvest': 'Girbi',
+    'lifecycle.post_harvest': 'Bayan girbi',
+
+    // Reminders
+    'reminder.pending': 'Yana jira',
+    'reminder.done': 'An gama',
+    'reminder.overdue': 'Ya wuce lokaci',
+    'reminder.upcoming': 'Mai zuwa',
+
+    // Crops
+    'crop.maize': 'Masara',
+    'crop.wheat': 'Alkama',
+    'crop.rice': 'Shinkafa',
+    'crop.coffee': 'Kofi',
+    'crop.tea': 'Shayi',
+    'crop.beans': 'Wake',
+    'crop.sorghum': 'Dawa',
+    'crop.sugarcane': 'Rake',
+    'crop.cashew': 'Kaju',
+    'crop.cotton': 'Auduga',
+    'crop.sisal': 'Sisal',
+    'crop.tobacco': 'Taba',
+
+    // Verification
+    'engine.verification': 'Tabbatarwa',
+    'engine.fraud': 'Binciken zamba',
+    'engine.decision': 'Yanke shawara',
+    'engine.benchmark': 'Auna misali',
+    'engine.intelligence': 'Hankali',
+
+    // Actions
+    'action.approve': 'Amince',
+    'action.reject': 'Ƙi',
+    'action.escalate': 'Ɗaukaka',
+    'action.reopen': 'Buɗe sake',
+    'action.request_evidence': 'Nema shaida',
+    'action.submit': 'Aika',
+    'action.save': 'Ajiye',
+    'action.cancel': 'Soke',
+    'action.sign_out': 'Fita',
+
+    // Post-harvest
+    'post_harvest.storage_guidance': 'Jagorar ajiya',
+    'post_harvest.market_prices': 'Farashin kasuwa',
+    'post_harvest.buyer_interest': 'Sha\'awar masu saye',
+
+    // Storage
+    'storage.method.sealed_bags': 'Jakunkuna rufaffun',
+    'storage.method.hermetic_bag': 'Jakar hermetic',
+    'storage.method.open_air': 'A sarari',
+    'storage.method.warehouse': 'Rumbu',
+    'storage.method.silo': 'Silo',
+    'storage.method.traditional': 'Na gargajiya',
+    'storage.method.cold_storage': 'Ajiyar sanyi',
+    'storage.method.other': 'Wanin',
+    'storage.condition.good': 'Mai kyau',
+    'storage.condition.fair': 'Matsakaici',
+    'storage.condition.poor': 'Mara kyau',
+    'storage.condition.deteriorating': 'Yana lalacewa',
+    'storage.condition.unknown': 'Ba a sani ba',
+
+    // Fraud risk levels
+    'fraud.risk.low': 'Ƙaramin haɗari',
+    'fraud.risk.medium': 'Matsakaicin haɗari',
+    'fraud.risk.high': 'Babban haɗari',
+    'fraud.risk.critical': 'Haɗari mai tsanani',
+
+    // Registration
+    'registration.pending_approval': 'Yana jiran amincewa',
+    'registration.approved': 'An amince',
+    'registration.rejected': 'An ƙi',
+    'registration.disabled': 'An kashe',
+
+    // Common
+    'common.loading': 'Ana lodi...',
+    'common.no_data': 'Babu bayani',
+    'common.error': 'Kuskure ya faru',
+    'common.success': 'An yi nasara',
+    'common.confirm': 'Ka tabbata?',
+    'common.search': 'Bincika',
+    'common.filter': 'Tace',
+    'common.date': 'Kwanan wata',
+    'common.amount': 'Adadi',
+    'common.status': 'Matsayi',
+    'common.actions': 'Ayyuka',
+    'common.name': 'Suna',
+    'common.email': 'Imel',
+    'common.phone': 'Waya',
+    'common.region': 'Yanki',
+  },
+
+  tw: {
+    // App
+    'app.name': 'Farroway',
+    'app.tagline': 'Sika Bosea Ɔhyɛ',
+
+    // Statuses
+    'status.draft': 'Nhyehyɛe',
+    'status.submitted': 'Wɔde abrɛ',
+    'status.under_review': 'Wɔrehwɛ mu',
+    'status.approved': 'Wɔapene so',
+    'status.rejected': 'Wɔapo',
+    'status.conditional_approved': 'Apene a nhyehyɛe wɔ mu',
+    'status.needs_more_evidence': 'Ɛhia adansedie',
+    'status.field_review_required': 'Ɛhia sɛ wɔhwɛ afuo no',
+    'status.fraud_hold': 'Wɔagyina — nsisie',
+    'status.escalated': 'Wɔde akɔ soro',
+    'status.disbursed': 'Wɔatua',
+
+    // Roles
+    'role.super_admin': 'Ɔpanyin kɛse',
+    'role.institutional_admin': 'Ɔhyɛ ɔpanyin',
+    'role.reviewer': 'Ɔhwɛfo',
+    'role.field_officer': 'Afuo mu dwumayɛfo',
+    'role.investor_viewer': 'Ɔhwɛ sika to mu',
+    'role.farmer': 'Okuafo',
+
+    // Navigation
+    'nav.dashboard': 'Allo',
+    'nav.farmers': 'Akuafo',
+    'nav.applications': 'Abisade',
+    'nav.portfolio': 'Nneɛma',
+    'nav.reports': 'Amanneɛbɔ',
+    'nav.audit': 'Nhwehwɛmu',
+    'nav.users': 'Nipa a wɔde di dwuma',
+    'nav.my_farm': 'Me fuo',
+    'nav.activities': 'Nneɛma a meyɛ',
+    'nav.reminders': 'Nkaeɛ',
+    'nav.post_harvest': 'Otwabere akyi',
+    'nav.notifications': 'Nkra',
+    'nav.lifecycle': 'Aduan nkɔso',
+    'nav.verification_queue': 'Nhwɛso',
+    'nav.fraud_queue': 'Nsisie nhwɛso',
+    'nav.control_center': 'Ahwɛhwɛbea',
+    'nav.user_management': 'Nipa a wɔde di dwuma',
+    'nav.farmer_registrations': 'Akuafo din kyerɛw',
+    'nav.market': 'Dwam',
+    'nav.storage': 'Adekorabea',
+
+    // Activities
+    'activity.planting': 'Dua',
+    'activity.spraying': 'Pete aduro',
+    'activity.fertilizing': 'Gu nsɔhwɛ',
+    'activity.irrigation': 'Gu nsuo',
+    'activity.weeding': 'Tu wura',
+    'activity.harvesting': 'Twa',
+    'activity.storage': 'Sie',
+    'activity.selling': 'Tɔn',
+    'activity.other': 'Nea aka',
+
+    // Lifecycle Stages
+    'lifecycle.pre_planting': 'Ansa na woadua',
+    'lifecycle.planting': 'Dua bere',
+    'lifecycle.vegetative': 'Nyin bere',
+    'lifecycle.flowering': 'Nhwiren bere',
+    'lifecycle.harvest': 'Twa bere',
+    'lifecycle.post_harvest': 'Twa bere akyi',
+
+    // Reminders
+    'reminder.pending': 'Ɛretwɛn',
+    'reminder.done': 'Wɔawie',
+    'reminder.overdue': 'Bere atwam',
+    'reminder.upcoming': 'Ɛreba',
+
+    // Crops
+    'crop.maize': 'Aburow',
+    'crop.wheat': 'Wheat',
+    'crop.rice': 'Ɛmo',
+    'crop.coffee': 'Kɔfe',
+    'crop.tea': 'Tii',
+    'crop.beans': 'Apataa',
+    'crop.sorghum': 'Atooko',
+    'crop.sugarcane': 'Ahwedeɛ',
+    'crop.cashew': 'Cashew',
+    'crop.cotton': 'Asaawa',
+    'crop.sisal': 'Sisal',
+    'crop.tobacco': 'Tawa',
+
+    // Verification
+    'engine.verification': 'Nhwɛso',
+    'engine.fraud': 'Nsisie nhwehwɛmu',
+    'engine.decision': 'Gyinaeɛ',
+    'engine.benchmark': 'Nsusuwii',
+    'engine.intelligence': 'Nimdeɛ',
+
+    // Actions
+    'action.approve': 'Pene so',
+    'action.reject': 'Po',
+    'action.escalate': 'De kɔ soro',
+    'action.reopen': 'Bue bio',
+    'action.request_evidence': 'Bisa adansedie',
+    'action.submit': 'Fa brɛ',
+    'action.save': 'Kora so',
+    'action.cancel': 'Gyae',
+    'action.sign_out': 'Fi mu',
+
+    // Post-harvest
+    'post_harvest.storage_guidance': 'Adekorabea akwankyerɛ',
+    'post_harvest.market_prices': 'Dwam boto',
+    'post_harvest.buyer_interest': 'Atɔfo pɛ',
+
+    // Storage
+    'storage.method.sealed_bags': 'Kotoku a wɔakata so',
+    'storage.method.hermetic_bag': 'Kotoku a mframa nkɔ mu',
+    'storage.method.open_air': 'Wim',
+    'storage.method.warehouse': 'Adekorabea',
+    'storage.method.silo': 'Silo',
+    'storage.method.traditional': 'Amammere mu',
+    'storage.method.cold_storage': 'Awɔw mu adekorabea',
+    'storage.method.other': 'Nea aka',
+    'storage.condition.good': 'Eye',
+    'storage.condition.fair': 'Ɛyɛ kakra',
+    'storage.condition.poor': 'Ɛnyɛ',
+    'storage.condition.deteriorating': 'Ɛresɛe',
+    'storage.condition.unknown': 'Yennim',
+
+    // Fraud risk levels
+    'fraud.risk.low': 'Asiane kakra',
+    'fraud.risk.medium': 'Asiane a ɛda mfinimfini',
+    'fraud.risk.high': 'Asiane kɛse',
+    'fraud.risk.critical': 'Asiane a ɛyɛ den',
+
+    // Registration
+    'registration.pending_approval': 'Ɛretwɛn apene',
+    'registration.approved': 'Wɔapene so',
+    'registration.rejected': 'Wɔapo',
+    'registration.disabled': 'Wɔadumm',
+
+    // Common
+    'common.loading': 'Ɛreloade...',
+    'common.no_data': 'Data biara nni hɔ',
+    'common.error': 'Mfomso bi aba',
+    'common.success': 'Ɛkɔ yiye',
+    'common.confirm': 'Wopɛ sɛ woyɛ?',
+    'common.search': 'Hwehwɛ',
+    'common.filter': 'Yi mu',
+    'common.date': 'Da',
+    'common.amount': 'Dodow',
+    'common.status': 'Gyinabea',
+    'common.actions': 'Nneɛma a woyɛ',
+    'common.name': 'Din',
+    'common.email': 'Email',
+    'common.phone': 'Ahomatrofo',
+    'common.region': 'Ɔman mu',
+  },
 };
 
 export function translate(key, lang = 'en') {
@@ -333,10 +798,12 @@ export function getTranslations(lang = 'en') {
   return translations[lang] || translations.en;
 }
 
+const LANG_NAMES = { en: 'English', fr: 'Français', sw: 'Kiswahili', ha: 'Hausa', tw: 'Twi' };
+
 export function getSupportedLanguages() {
   return Object.keys(translations).map(code => ({
     code,
-    name: code === 'en' ? 'English' : code === 'sw' ? 'Kiswahili' : code,
+    name: LANG_NAMES[code] || code,
     keyCount: Object.keys(translations[code]).length,
   }));
 }
