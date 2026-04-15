@@ -10,27 +10,27 @@ import { getAvatar } from '../utils/avatarStorage.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 
 // Map weather guidance status to compact display
-function getWeatherChip(weather, guidance) {
+function getWeatherChip(weather, guidance, t) {
   if (!weather && !guidance) return null;
 
   const temp = weather?.temperatureC != null ? `${Math.round(weather.temperatureC)}°C` : null;
 
   // Derive icon + insight from guidance or raw weather
   if (guidance) {
-    let insight = '';
+    let insightKey = 'wxChip.good';
     switch (guidance.status) {
-      case 'warning': insight = guidance.riskLevel === 'high' ? 'Risk' : 'Alert'; break;
-      case 'caution': insight = 'Care'; break;
-      default: insight = 'Good'; break;
+      case 'warning': insightKey = guidance.riskLevel === 'high' ? 'wxChip.risk' : 'wxChip.alert'; break;
+      case 'caution': insightKey = 'wxChip.care'; break;
+      default: insightKey = 'wxChip.good'; break;
     }
-    return { icon: guidance.icon, temp, insight };
+    return { icon: guidance.icon, temp, insight: t(insightKey) };
   }
 
   // Fallback from raw weather
   const rain = (weather?.rain || 0) + (weather?.showers || 0) + (weather?.precipitation || 0);
-  if (rain > 0) return { icon: '\uD83C\uDF27\uFE0F', temp, insight: 'Rain' };
-  if ((weather?.windSpeed || 0) >= 20) return { icon: '\uD83D\uDCA8', temp, insight: 'Wind' };
-  return { icon: '\u2600\uFE0F', temp, insight: 'Good' };
+  if (rain > 0) return { icon: '\uD83C\uDF27\uFE0F', temp, insight: t('wxChip.rain') };
+  if ((weather?.windSpeed || 0) >= 20) return { icon: '\uD83D\uDCA8', temp, insight: t('wxChip.wind') };
+  return { icon: '\u2600\uFE0F', temp, insight: t('wxChip.good') };
 }
 
 export default function FarmerHeader({ user, profile, t, weather, weatherGuidance }) {
@@ -43,7 +43,7 @@ export default function FarmerHeader({ user, profile, t, weather, weatherGuidanc
   const locationName = profile?.location || profile?.locationLabel || profile?.locationName || '';
   const subtitle = [locationName, cropDisplay].filter(Boolean).join(' \u2022 ');
 
-  const chip = getWeatherChip(weather, weatherGuidance);
+  const chip = getWeatherChip(weather, weatherGuidance, t);
 
   return (
     <div>

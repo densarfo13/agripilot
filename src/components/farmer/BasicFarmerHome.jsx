@@ -115,13 +115,7 @@ export default function BasicFarmerHome({
         </div>
       </div>
 
-      {/* ═══ 2. WEATHER-TO-ACTION BLOCK ═══ */}
-      {wx && (
-        <div style={S.wxBlock}>
-          <span style={S.wxIcon}>{wx.icon}</span>
-          <span style={S.wxText}>{t(wx.recommendationKey, wx.params)}</span>
-        </div>
-      )}
+      {/* Weather displays in header chip only — no duplicate block */}
 
       {/* ═══ 3. PRIMARY TASK CARD ═══ */}
       {action && !completed && (

@@ -5,6 +5,7 @@
  * Renders: primary action card + today's plan + farm status bar.
  * No decision logic — that lives in src/engine/decisionEngine.js.
  */
+import { useState } from 'react';
 import { RISK_COLORS } from '../engine/decisionTypes.js';
 
 const ACTION_ROUTES = {
@@ -31,6 +32,7 @@ export default function NextActionCard({
   onAddUpdate,
   t,
 }) {
+  const [planOpen, setPlanOpen] = useState(false);
   if (!decision && !loading) return null;
 
   const action = decision?.primaryAction;
@@ -63,13 +65,6 @@ export default function NextActionCard({
           </div>
         ) : action ? (
           <>
-            {/* Urgency badge */}
-            {(isUrgent || isOverdue) && (
-              <div style={isUrgent ? S.urgentBadge : S.overdueBadge}>
-                {isUrgent ? t('retention.urgent') : t('retention.overdue')}
-              </div>
-            )}
-
             <div style={S.actionRow}>
               <div style={{ ...S.iconCircle, background: action.iconBg }}>
                 <span style={S.iconEmoji}>{action.icon}</span>
@@ -93,9 +88,7 @@ export default function NextActionCard({
             )}
 
             <button onClick={handleCta} style={
-              action.key === 'all_done' ? S.ctaSecondary
-              : action.isAlert ? S.ctaAlert
-              : S.cta
+              action.key === 'all_done' ? S.ctaSecondary : S.cta
             } data-testid="next-action-cta">
               {action.cta}
             </button>
@@ -110,15 +103,14 @@ export default function NextActionCard({
         ) : null}
       </div>
 
-      {/* ═══ TODAY'S PLAN + COMPLETION COUNTER ═══ */}
+      {/* ═══ TODAY'S PLAN (collapsed by default, tap to expand) ═══ */}
       {!loading && plan.length > 1 && (
         <div style={S.planSection}>
-          <div style={S.planHeader}>
-            <span style={S.planTitle}>{t('guided.todaysPlan')}</span>
-            {status && status.progress > 0 && (
-              <span style={S.completionBadge}>{status.progress}%</span>
-            )}
-          </div>
+          <button onClick={() => setPlanOpen(!planOpen)} style={S.planToggle}>
+            <span style={S.planTitle}>{t('guided.todaysPlan')} ({plan.length})</span>
+            <span style={S.planArrow}>{planOpen ? '\u25B2' : '\u25BC'}</span>
+          </button>
+          {planOpen && (
           <div style={S.planList}>
             {plan.map((step, i) => (
               <div key={i} style={{ ...S.planStep, ...(step.active ? S.planStepActive : {}) }}>
@@ -131,6 +123,7 @@ export default function NextActionCard({
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
@@ -209,9 +202,9 @@ const S = {
   ctaAlert: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
     marginTop: '1.25rem', padding: '1rem',
-    background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#fff',
+    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#fff',
     border: 'none', borderRadius: '14px', fontSize: '1.0625rem', fontWeight: 800,
-    cursor: 'pointer', minHeight: '56px', boxShadow: '0 4px 16px rgba(239,68,68,0.25)',
+    cursor: 'pointer', minHeight: '56px', boxShadow: '0 4px 16px rgba(22,163,74,0.25)',
     WebkitTapHighlightColor: 'transparent',
   },
   ctaSecondary: {
@@ -236,16 +229,18 @@ const S = {
   },
   // ─── Plan ────────────────
   planSection: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
-  planHeader: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '0.25rem',
+  planToggle: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    width: '100%', padding: '0.5rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+    cursor: 'pointer', WebkitTapHighlightColor: 'transparent', minHeight: '36px',
   },
   planTitle: {
-    fontSize: '0.6875rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)',
-    textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '0.25rem',
+    fontSize: '0.6875rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)',
+    textTransform: 'uppercase', letterSpacing: '0.05em',
   },
-  completionBadge: {
-    fontSize: '0.625rem', fontWeight: 700, color: '#86EFAC',
-    background: 'rgba(34,197,94,0.12)', padding: '0.15rem 0.4rem', borderRadius: '6px',
+  planArrow: {
+    fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)',
   },
   planList: {
     borderRadius: '14px', background: '#1B2330',

@@ -5,6 +5,8 @@ import ProfileGuard from '../components/ProfileGuard.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTranslation } from '../i18n/index.js';
+import { useUserMode } from '../context/UserModeContext.jsx';
 
 // Inner page loader — shown while lazy child routes load.
 // This Suspense boundary is INSIDE AuthGuard+ProfileGuard so the guards
@@ -17,6 +19,8 @@ const InnerPageLoader = () => (
 
 export default function ProtectedLayout() {
   const { logout, user, resendEmailVerification, isOfflineSession } = useAuth();
+  const { t } = useTranslation();
+  const { mode, setMode, allowedModes, isFarmer } = useUserMode();
 
   return (
     <AuthGuard>
@@ -26,16 +30,25 @@ export default function ProtectedLayout() {
             <div style={S.header}>
               {/* Left: minimal user info */}
               <div style={S.headerLeft}>
-                {isOfflineSession && <span style={S.offlineChip}>Offline</span>}
-                {!isOfflineSession && <span style={S.onlineChip}>Online</span>}
+                {isOfflineSession && <span style={S.offlineChip}>{t('farmer.offline')}</span>}
+                {!isOfflineSession && <span style={S.onlineChip}>{t('farmer.online')}</span>}
                 <LanguageSelector />
               </div>
 
               {/* Right: compact actions */}
               <div style={S.headerRight}>
+                {/* Mode toggle — farmer only */}
+                {isFarmer && allowedModes.length > 1 && (
+                  <button
+                    onClick={() => setMode(mode === 'basic' ? 'standard' : 'basic')}
+                    style={S.modeToggle}
+                  >
+                    {mode === 'basic' ? t('mode.simple') : t('mode.standard')}
+                  </button>
+                )}
                 <AutoVoiceToggle />
                 <button onClick={logout} style={S.logoutBtn}>
-                  Logout
+                  {t('common.logout')}
                 </button>
               </div>
             </div>
@@ -101,6 +114,18 @@ const S = {
     background: 'rgba(120,53,15,0.5)',
     padding: '0.2rem 0.5rem',
     borderRadius: '6px',
+  },
+  modeToggle: {
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    color: '#86EFAC',
+    background: 'rgba(34,197,94,0.1)',
+    border: '1px solid rgba(34,197,94,0.2)',
+    borderRadius: '8px',
+    padding: '0.25rem 0.5rem',
+    cursor: 'pointer',
+    minHeight: '28px',
+    WebkitTapHighlightColor: 'transparent',
   },
   logoutBtn: {
     borderRadius: '10px',

@@ -27,7 +27,7 @@ import FarmEconomicsCard from '../components/FarmEconomicsCard.jsx';
 import FarmBenchmarkCard from '../components/FarmBenchmarkCard.jsx';
 import FarmerHeader from '../components/FarmerHeader.jsx';
 import NextActionCard from '../components/NextActionCard.jsx';
-import WeatherStatusCard from '../components/WeatherStatusCard.jsx';
+// WeatherStatusCard removed — weather displays in header chip only
 import QuickActionsRow from '../components/QuickActionsRow.jsx';
 import WeeklyProgressCard from '../components/WeeklyProgressCard.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
@@ -389,10 +389,7 @@ export default function Dashboard() {
           />
         )}
 
-        {/* ═══ 3. WEATHER-ACTION STRIP ═══ */}
-        {profile && !farmSwitching && setupComplete && (
-          <WeatherStatusCard guidance={farmDecision.weatherGuidance} t={t} />
-        )}
+        {/* Weather display is in the header chip only — no separate card */}
 
         {/* ═══ 6. QUICK ACTIONS ═══ */}
         {profile && !farmSwitching && setupComplete && (

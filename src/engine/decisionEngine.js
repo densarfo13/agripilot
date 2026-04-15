@@ -125,20 +125,40 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     };
   }
 
-  // 7. Normal daily task (pest or standard) — weather can modify reason
+  // 7. Normal daily task — weather conflict resolution
   if (primaryTask) {
     const pest = isPestTask(primaryTask);
     const wxAdj = getWeatherTaskAdjustment(weatherGuidance, primaryTask);
+    const titleLower = (primaryTask.title || '').toLowerCase();
+    const actionType = primaryTask.actionType || '';
 
-    // If weather strongly discourages this task, add a weather note to the reason
+    // ─── Weather conflict: rain + drying/watering/spraying task ───
+    const isRainConflict = weatherGuidance && weatherGuidance.status !== 'safe'
+      && (weatherGuidance.adjustments?.watering < -3 || weatherGuidance.adjustments?.spraying < -5);
+    const isWaterTask = actionType === 'watering' || titleLower.includes('water') || titleLower.includes('irrigat');
+    const isDryTask = titleLower.includes('dry') || titleLower.includes('sun') || titleLower.includes('spread');
+    const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
+
+    if (isRainConflict && (isWaterTask || isDryTask || isSprayTask)) {
+      // Replace with weather-safe alternative
+      const altTitle = isWaterTask ? t('wxConflict.skipWatering') : isSprayTask ? t('wxConflict.skipSpraying') : t('wxConflict.skipDrying');
+      const altReason = t(weatherGuidance.recommendationKey, weatherGuidance.params);
+      return {
+        ...makeAction('daily_task', weatherGuidance.icon, 'rgba(14,165,233,0.12)',
+          altTitle, altReason,
+          t('guided.taskCta'), t('guided.taskNext'), 'medium', false),
+        task: primaryTask,
+      };
+    }
+
+    // ─── Normal task with optional weather note ───
     let reason = primaryTask.description || primaryTask.reason;
     if (!reason) {
       reason = pest
         ? t('guided.pestReason')
         : (crop ? t('guided.taskReasonCrop', { crop }) || t('guided.taskReason') : t('guided.taskReason'));
     }
-    // Append weather context if relevant
-    if (wxAdj < -3 && weatherGuidance.status !== 'safe') {
+    if (wxAdj < -3 && weatherGuidance && weatherGuidance.status !== 'safe') {
       const wxNote = t(weatherGuidance.recommendationKey, weatherGuidance.params);
       if (wxNote && wxNote !== weatherGuidance.recommendationKey) {
         reason = `${reason} ${wxNote}`;

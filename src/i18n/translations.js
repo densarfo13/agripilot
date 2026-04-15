@@ -37,6 +37,22 @@ const T = {
   'common.cancel': {
     en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae',
   },
+  'common.logout': {
+    en: 'Logout', fr: 'Déconnexion', sw: 'Ondoka', ha: 'Fita', tw: 'Fi mu',
+  },
+
+  // Weather chip labels (max 2 words)
+  // Weather-task conflict overrides
+  'wxConflict.skipWatering': { en: 'Skip watering — rain expected', fr: 'Pas d\'arrosage — pluie prévue', sw: 'Usimwagilie — mvua inatarajiwa', ha: 'Kada ka shayar — ruwan sama yana zuwa', tw: 'Nnye nsu ngu — nsuo reba' },
+  'wxConflict.skipSpraying': { en: 'Skip spraying — too windy', fr: 'Pas de pulvérisation — trop de vent', sw: 'Usinyunyizie — upepo mkali', ha: 'Kada ka fesa — iska mai ƙarfi', tw: 'Nnye aduro ngu — mframa kɛse' },
+  'wxConflict.skipDrying': { en: 'Move drying indoors — rain expected', fr: 'Séchage à l\'intérieur — pluie prévue', sw: 'Kaushia ndani — mvua inatarajiwa', ha: 'Bushewa a ciki — ruwan sama yana zuwa', tw: 'Fa nneɛma kɔ dan mu — nsuo reba' },
+
+  'wxChip.good': { en: 'Good', fr: 'Bon', sw: 'Nzuri', ha: 'Lafiya', tw: 'Eye' },
+  'wxChip.risk': { en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Haɗari', tw: 'Asiane' },
+  'wxChip.alert': { en: 'Alert', fr: 'Alerte', sw: 'Tahadhari', ha: 'Faɗakarwa', tw: 'Kɔkɔbɔ' },
+  'wxChip.care': { en: 'Care', fr: 'Attention', sw: 'Angalia', ha: 'Hankali', tw: 'Hwɛ yie' },
+  'wxChip.rain': { en: 'Rain', fr: 'Pluie', sw: 'Mvua', ha: 'Ruwa', tw: 'Nsuo' },
+  'wxChip.wind': { en: 'Wind', fr: 'Vent', sw: 'Upepo', ha: 'Iska', tw: 'Mframa' },
   'common.save': {
     en: 'Save', fr: 'Enregistrer', sw: 'Hifadhi', ha: 'Ajiye', tw: 'Kora so',
   },
@@ -4183,6 +4199,9 @@ const T = {
   // ═══════════════════════════════════════════════════════════
 
   'mode.basic': {
+    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Sauƙi', tw: 'Mmerɛw',
+  },
+  'mode.simple': {
     en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Sauƙi', tw: 'Mmerɛw',
   },
   'mode.standard': {
