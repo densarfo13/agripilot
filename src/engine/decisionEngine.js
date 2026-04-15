@@ -140,21 +140,31 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
 
     // ─── Weather conflict: rain + drying/watering/spraying task ───
     const taskId = primaryTask.id || '';
+    const adj = weatherGuidance ? weatherGuidance.adjustments || {} : {};
+
+    // Rain conflict: any rain-related guidance that penalizes watering, spraying, OR drying
     const isRainConflict = weatherGuidance && weatherGuidance.status !== 'safe'
-      && (weatherGuidance.adjustments?.watering < -3 || weatherGuidance.adjustments?.spraying < -5 || weatherGuidance.adjustments?.drying < -3);
+      && (adj.watering < -3 || adj.spraying < -5 || adj.drying < -3);
+
+    // Detect drying tasks: check task ID prefix (server appends farmId), actionType, and title keywords
+    const isDryTask = taskId.startsWith('post-dry') || actionType === 'drying'
+      || titleLower.includes('dry') || titleLower.includes('séch')
+      || titleLower.includes('sun') || titleLower.includes('spread') || titleLower.includes('tarp');
     const isWaterTask = actionType === 'watering' || titleLower.includes('water') || titleLower.includes('irrigat');
-    const isDryTask = taskId === 'post-dry' || actionType === 'drying' || titleLower.includes('dry') || titleLower.includes('sun') || titleLower.includes('spread');
     const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
 
-    if (isRainConflict && (isWaterTask || isDryTask || isSprayTask)) {
-      // Replace with weather-safe alternative
-      const altTitle = isWaterTask ? t('wxConflict.skipWatering') : isSprayTask ? t('wxConflict.skipSpraying') : t('wxConflict.skipDrying');
-      const altReason = t(weatherGuidance.recommendationKey, weatherGuidance.params);
+    if (isRainConflict && (isDryTask || isWaterTask || isSprayTask)) {
+      // Replace with weather-safe alternative — protection language for drying
+      const altTitle = isDryTask ? t('wxConflict.protectHarvest')
+        : isWaterTask ? t('wxConflict.skipWatering')
+        : t('wxConflict.skipSpraying');
+      const altReason = isDryTask ? t('wxConflict.protectHarvestReason') : '';
       return {
-        ...makeAction('daily_task', weatherGuidance.icon, 'rgba(14,165,233,0.12)',
+        ...makeAction('weather_override', weatherGuidance.icon, 'rgba(14,165,233,0.12)',
           altTitle, altReason,
-          t('guided.taskCta'), t('guided.taskNext'), 'medium', false),
+          t('guided.taskCta'), t('guided.taskNext'), 'high', false),
         task: primaryTask,
+        weatherOverride: true,
       };
     }
 
@@ -230,6 +240,7 @@ function buildTodayPlan(action, profile, taskCount, t) {
 
     case 'unread_alert':
     case 'daily_task':
+    case 'weather_override':
       steps.push({ icon: action.icon, label: action.title, active: true });
       if (taskCount > 1) steps.push({ icon: '📋', label: t('guided.planMore', { count: taskCount - 1 }), active: false });
       if (action.task && !isPestTask(action.task)) steps.push({ icon: '🐛', label: t('guided.planPest'), active: false });

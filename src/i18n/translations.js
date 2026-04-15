@@ -46,6 +46,9 @@ const T = {
   'wxConflict.skipWatering': { en: 'Skip watering — rain expected', fr: 'Pas d\'arrosage — pluie prévue', sw: 'Usimwagilie — mvua inatarajiwa', ha: 'Kada ka shayar — ruwan sama yana zuwa', tw: 'Nnye nsu ngu — nsuo reba' },
   'wxConflict.skipSpraying': { en: 'Skip spraying — too windy', fr: 'Pas de pulvérisation — trop de vent', sw: 'Usinyunyizie — upepo mkali', ha: 'Kada ka fesa — iska mai ƙarfi', tw: 'Nnye aduro ngu — mframa kɛse' },
   'wxConflict.skipDrying': { en: 'Move drying indoors — rain expected', fr: 'Séchage à l\'intérieur — pluie prévue', sw: 'Kaushia ndani — mvua inatarajiwa', ha: 'Bushewa a ciki — ruwan sama yana zuwa', tw: 'Fa nneɛma kɔ dan mu — nsuo reba' },
+  'wxConflict.protectHarvest': { en: 'Protect your harvest', fr: 'Protéger la récolte', sw: 'Linda mazao yako', ha: 'Kare girbi', tw: 'Bɔ wo nnɔbae ho ban' },
+  'wxConflict.protectHarvestReason': { en: 'Rain expected — cover or store your crop now.', fr: 'Mettez les grains sous abri avant la pluie.', sw: 'Mvua inatarajiwa — funika au hifadhi mazao yako sasa.', ha: 'Ruwan sama yana zuwa — rufe ko ajiye amfanin ku yanzu.', tw: 'Nsuo reba — kata anaasɛ sie wo nnɔbae no seesei.' },
+  'wxConflict.protectHarvestVoice': { en: 'Rain is expected. Protect your harvest from rain.', fr: 'Il va pleuvoir. Protégez votre récolte de la pluie.', sw: 'Mvua inatarajiwa. Linda mazao yako kutokana na mvua.', ha: 'Ruwan sama yana zuwa. Kare girbi daga ruwan sama.', tw: 'Nsuo reba. Bɔ wo nnɔbae ho ban fi nsuo mu.' },
 
   'wxChip.good': { en: 'Good', fr: 'Bon', sw: 'Nzuri', ha: 'Lafiya', tw: 'Eye' },
   'wxChip.risk': { en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Haɗari', tw: 'Asiane' },

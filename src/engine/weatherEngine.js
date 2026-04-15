@@ -247,10 +247,12 @@ export function getWeatherDecision({ weather, crop, stage, currentTask, fetchedA
 
     // Rain + drying task
     if ((adj.drying < -3 || adj.watering < -3) &&
-        (taskId === 'post-dry' || actionType === 'drying' || title.includes('dry') || title.includes('spread') || title.includes('sun'))) {
+        (taskId.startsWith('post-dry') || actionType === 'drying'
+         || title.includes('dry') || title.includes('séch')
+         || title.includes('spread') || title.includes('sun') || title.includes('tarp'))) {
       shouldOverrideTask = true;
       replacementTaskType = 'protect_harvest_from_rain';
-      overrideReason = t('wxConflict.skipDrying');
+      overrideReason = t('wxConflict.protectHarvest');
     }
     // Rain + watering task
     else if (adj.watering < -3 &&
@@ -338,7 +340,7 @@ export function getWeatherTaskAdjustment(guidance, task) {
   if (actionType === 'spraying' || title.includes('spray') || title.includes('pesticide')) {
     return guidance.adjustments.spraying || 0;
   }
-  if (actionType === 'drying' || task.id === 'post-dry' || title.includes('dry') || title.includes('sun') || title.includes('spread')) {
+  if (actionType === 'drying' || (task.id || '').startsWith('post-dry') || title.includes('dry') || title.includes('séch') || title.includes('sun') || title.includes('spread') || title.includes('tarp')) {
     return guidance.adjustments.drying || 0;
   }
   if (actionType === 'harvest' || title.includes('harvest') || title.includes('pick')) {

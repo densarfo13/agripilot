@@ -30,6 +30,7 @@ const ACTION_ROUTES = {
   stale_activity: 'update',
   needs_checkin: 'update',
   daily_task: 'task',
+  weather_override: 'task',
   all_done: 'update',
 };
 
