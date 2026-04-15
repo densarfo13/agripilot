@@ -1,22 +1,30 @@
 /**
- * BasicFarmerHome — simple mode farmer home screen.
+ * BasicFarmerHome — simple mode farmer home (daily loop view).
  *
  * Structure (top to bottom):
- *   1. Primary task card (via unified TaskCard, simple variant)
- *   2. Completion feedback state
- *   3. Connectivity badge
+ *   1. Section label ("Current task" / "All done" / "Come back later")
+ *   2. Primary task card (via unified TaskCard, simple variant)
+ *   3. Progress signal (lightweight: "2 of 5 done today")
+ *   4. Connectivity badge
  *
- * Design: See → Hear → Tap → Done
+ * Loop states handled:
+ *   ready       — show task card + CTA
+ *   completed   — show success state briefly
+ *   all_done    — show all-done card with come-back message
+ *   come_back   — offline/empty, show come-back message
+ *
+ * Design: See → Hear → Tap → Done → Progress
  * No charts. No clutter. One task only.
  *
  * ARCHITECTURE: Renders ONLY from taskViewModel. No raw task access.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { useAppPrefs } from '../../context/AppPrefsContext.jsx';
 import { useNetwork } from '../../context/NetworkContext.jsx';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';
 import { SECTION_ICONS } from '../../lib/farmerIcons.js';
+import { LOOP_STATE } from '../../services/farmerLoopService.js';
 import TaskCard from './TaskCard.jsx';
 
 const ACTION_ROUTES = {
@@ -38,6 +46,8 @@ const ACTION_ROUTES = {
 export default function BasicFarmerHome({
   decision,
   taskViewModel,
+  loopState,
+  progress,
   onDoThisNow,
   onSetStage,
   onAddUpdate,
@@ -47,13 +57,9 @@ export default function BasicFarmerHome({
   const { autoVoice, language } = useAppPrefs();
   const { isOnline } = useNetwork();
   const lastSpokenRef = useRef(null);
-  const [completed, setCompleted] = useState(false);
 
   const loading = decision?.loading;
   const vm = taskViewModel;
-
-  // Reset completion state when action changes
-  useEffect(() => { setCompleted(false); }, [vm?.id]);
 
   // Voice auto-play once per action
   useEffect(() => {
@@ -85,19 +91,24 @@ export default function BasicFarmerHome({
     );
   }
 
+  const isAllDone = loopState === LOOP_STATE.ALL_DONE;
+  const isComeBack = loopState === LOOP_STATE.COME_BACK;
+  const isCompleted = loopState === LOOP_STATE.COMPLETED;
+  const showTask = vm && !isAllDone && !isComeBack && !isCompleted;
+
   return (
     <div style={S.page} data-testid="basic-farmer-home">
 
       {/* ═══ SECTION LABEL ═══ */}
-      {vm && !completed && (
+      {showTask && (
         <div style={S.sectionLabel}>
           <span style={S.sectionIcon}>{SECTION_ICONS.currentTask}</span>
           <span style={S.sectionText}>{t('dashboard.currentTask') || 'Current task'}</span>
         </div>
       )}
 
-      {/* ═══ PRIMARY TASK CARD (unified TaskCard, simple variant) ═══ */}
-      {vm && !completed && (
+      {/* ═══ PRIMARY TASK CARD ═══ */}
+      {showTask && (
         <TaskCard
           viewModel={vm}
           variant="simple"
@@ -107,11 +118,45 @@ export default function BasicFarmerHome({
         />
       )}
 
-      {/* ═══ COMPLETION FEEDBACK ═══ */}
-      {completed && (
-        <div style={S.doneCard}>
+      {/* ═══ COMPLETION SUCCESS STATE ═══ */}
+      {isCompleted && (
+        <div style={S.doneCard} data-testid="loop-completed">
           <span style={S.doneIcon}>{'\u2705'}</span>
-          <div style={S.doneText}>{t('farmer.taskDone')}</div>
+          <div style={S.doneText}>{t('loop.taskDone')}</div>
+          <div style={S.doneSubtext}>{t('loop.nextReady')}</div>
+        </div>
+      )}
+
+      {/* ═══ ALL DONE STATE ═══ */}
+      {isAllDone && !isCompleted && (
+        <div style={S.allDoneCard} data-testid="loop-all-done">
+          <span style={S.allDoneIcon}>{'\u2728'}</span>
+          <div style={S.allDoneTitle}>{t('loop.allDone')}</div>
+          <div style={S.allDoneSubtext}>
+            {progress.done > 0
+              ? t('loop.greatWork')
+              : t('loop.comeBackTomorrow')}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ COME BACK STATE ═══ */}
+      {isComeBack && (
+        <div style={S.allDoneCard} data-testid="loop-come-back">
+          <span style={S.allDoneIcon}>{'\uD83C\uDF1F'}</span>
+          <div style={S.allDoneTitle}>{t('loop.comeBack')}</div>
+        </div>
+      )}
+
+      {/* ═══ PROGRESS SIGNAL ═══ */}
+      {progress.total > 0 && (
+        <div style={S.progressRow} data-testid="loop-progress">
+          <div style={S.progressTrack}>
+            <div style={{ ...S.progressFill, width: `${progress.percent}%` }} />
+          </div>
+          <div style={S.progressLabel}>
+            {t('loop.progressToday', { done: progress.done, total: progress.total })}
+          </div>
         </div>
       )}
 
@@ -141,24 +186,83 @@ const S = {
     justifyContent: 'center',
     minHeight: '50vh',
   },
-  // ─── Completion ──────────
+  // ─── Completion success ──
   doneCard: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '0.5rem',
     padding: '2rem 1rem',
     borderRadius: '22px',
     background: 'rgba(34,197,94,0.06)',
     border: '1px solid rgba(34,197,94,0.12)',
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     width: '100%',
+    animation: 'farroway-fade-in 0.3s ease-out',
   },
   doneIcon: { fontSize: '3rem' },
   doneText: {
     fontSize: '1.25rem',
     fontWeight: 700,
     color: '#EAF2FF',
+  },
+  doneSubtext: {
+    fontSize: '0.875rem',
+    color: '#9FB3C8',
+    fontWeight: 500,
+  },
+  // ─── All done / come back ──
+  allDoneCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.625rem',
+    padding: '2.5rem 1.25rem',
+    borderRadius: '22px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+    width: '100%',
+    animation: 'farroway-fade-in 0.3s ease-out',
+  },
+  allDoneIcon: { fontSize: '3rem' },
+  allDoneTitle: {
+    fontSize: '1.125rem',
+    fontWeight: 700,
+    color: '#EAF2FF',
+    textAlign: 'center',
+  },
+  allDoneSubtext: {
+    fontSize: '0.875rem',
+    color: '#9FB3C8',
+    fontWeight: 500,
+    textAlign: 'center',
+  },
+  // ─── Progress signal ──────
+  progressRow: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.375rem',
+  },
+  progressTrack: {
+    height: '4px',
+    borderRadius: '2px',
+    background: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: '2px',
+    background: '#22C55E',
+    transition: 'width 0.4s ease',
+    minWidth: '2px',
+  },
+  progressLabel: {
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    color: '#6F8299',
+    textAlign: 'center',
   },
   // ─── Connectivity ────────
   connectivity: {

@@ -4489,6 +4489,57 @@ const T = {
   'allTasks.noCompleted': { en: 'No completed tasks yet', fr: 'Aucune tâche terminée', sw: 'Hakuna kazi zilizokamilika', ha: 'Babu ayyukan da aka gama', tw: 'Adwuma biara nni hɔ a wɔawie' },
   'allTasks.noUrgent': { en: 'No urgent tasks today', fr: 'Aucune tâche urgente aujourd\'hui', sw: 'Hakuna kazi ya haraka leo', ha: 'Babu aikin gaggawa yau', tw: 'Adwuma a ɛhia ɛnnɛ nni hɔ' },
   'allTasks.noUpcoming': { en: 'No upcoming tasks', fr: 'Aucune tâche à venir', sw: 'Hakuna kazi zinazokuja', ha: 'Babu ayyukan da za su zo', tw: 'Adwuma a ɛba nni hɔ' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DAILY LOOP — progress signal, next-task handoff, states
+  // ═══════════════════════════════════════════════════════════
+
+  'loop.next': { en: 'Next', fr: 'Suivant', sw: 'Ifuatayo', ha: 'Na gaba', tw: 'Nea edi so' },
+  'loop.taskDone': { en: 'Task completed', fr: 'Tâche terminée', sw: 'Kazi imekamilika', ha: 'An gama aikin', tw: 'Wɔawie adwuma no' },
+  'loop.nextReady': { en: 'Next task ready', fr: 'Tâche suivante prête', sw: 'Kazi ifuatayo iko tayari', ha: 'Aikin na gaba ya shirya', tw: 'Adwuma a edi so awie' },
+  'loop.allDone': { en: 'All done for now', fr: 'Tout est fait', sw: 'Kazi zote zimekamilika', ha: 'An gama duka', tw: 'Wɔawie ne nyinaa' },
+  'loop.comeBack': { en: 'Come back later for your next task', fr: 'Revenez plus tard', sw: 'Rudi baadaye kwa kazi', ha: 'Ku dawo daga baya', tw: 'San bra akyiri yi' },
+  'loop.comeBackTomorrow': { en: 'Check back tomorrow', fr: 'Revenez demain', sw: 'Rudi kesho', ha: 'Ku dawo gobe', tw: 'San hwɛ ɔkyena' },
+  'loop.savedOffline': { en: 'Saved offline — will sync later', fr: 'Enregistré hors-ligne', sw: 'Imehifadhiwa nje ya mtandao', ha: 'An ajiye a wajen layi', tw: 'Wɔakora no offline' },
+  'loop.progressDone': { en: '{done} done', fr: '{done} terminé(s)', sw: '{done} imekamilika', ha: '{done} an gama', tw: '{done} awie' },
+  'loop.progressLeft': { en: '{left} left', fr: '{left} restant(s)', sw: '{left} imebaki', ha: '{left} ya rage', tw: '{left} aka' },
+  'loop.progressToday': { en: '{done} of {total} done today', fr: '{done} sur {total} aujourd\'hui', sw: '{done} kati ya {total} leo', ha: '{done} daga {total} yau', tw: '{done} a {total} mu ɛnnɛ' },
+  'loop.onTrack': { en: 'On track', fr: 'En bonne voie', sw: 'Njia nzuri', ha: 'Kan hanya', tw: 'Ɛkwan so' },
+  'loop.greatWork': { en: 'Great work!', fr: 'Bravo !', sw: 'Kazi nzuri!', ha: 'Kyakkyawa!', tw: 'Adwuma pa!' },
+  'loop.keepGoing': { en: 'Keep going', fr: 'Continuez', sw: 'Endelea', ha: 'Ci gaba', tw: 'Toa so' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PROGRESS PAGE — farmer-friendly motivational copy
+  // ═══════════════════════════════════════════════════════════
+
+  'progress.title': { en: 'My Progress', fr: 'Mon progrès', sw: 'Maendeleo yangu', ha: 'Ci gaba na', tw: 'Me nkɔso' },
+  'progress.complete': { en: 'complete', fr: 'terminé', sw: 'kamili', ha: 'an gama', tw: 'awie' },
+  'progress.remaining': { en: 'still to do', fr: 'restant', sw: 'bado', ha: 'ya rage', tw: 'aka' },
+  'progress.allDone': { en: 'All caught up!', fr: 'Tout est fait !', sw: 'Kazi zote zimekamilika!', ha: 'An gama duka!', tw: 'Wɔawie ne nyinaa!' },
+  'progress.done': { en: 'Done', fr: 'Fait', sw: 'Imekamilika', ha: 'An gama', tw: 'Awie' },
+  'progress.pending': { en: 'Left today', fr: 'Restant', sw: 'Bado leo', ha: 'Ya rage yau', tw: 'Aka ɛnnɛ' },
+  'progress.rate': { en: 'Rate', fr: 'Taux', sw: 'Kiwango', ha: 'Adadi', tw: 'Dodow' },
+  'progress.cropProgress': { en: 'Crop progress', fr: 'Avancement culture', sw: 'Maendeleo ya mazao', ha: 'Ci gaban amfanin gona', tw: 'Nnɔbae nkɔso' },
+  'progress.offlineNote': { en: 'Some data may be outdated while offline.', fr: 'Certaines données peuvent ne pas être à jour hors ligne.', sw: 'Baadhi ya data inaweza kuwa ya zamani nje ya mtandao.', ha: 'Wasu bayanan na iya zama tsoho a wajen layi.', tw: 'Data bi bɛyɛ dada bere a wo nni intanɛt.' },
+  'progress.statusGood': { en: 'You\'re on track', fr: 'Vous êtes en bonne voie', sw: 'Uko njia nzuri', ha: 'Kuna kan hanya', tw: 'Wowɔ ɛkwan pa so' },
+  'progress.statusGreat': { en: 'Great progress!', fr: 'Excellent progrès !', sw: 'Maendeleo mazuri!', ha: 'Ci gaba nagari!', tw: 'Nkɔso pa!' },
+  'progress.statusStart': { en: 'Good start — keep going', fr: 'Bon début — continuez', sw: 'Mwanzo mzuri — endelea', ha: 'Farawa mai kyau — ci gaba', tw: 'Mfitiaseɛ pa — toa so' },
+  'progress.doneToday': { en: '{count} done today', fr: '{count} fait aujourd\'hui', sw: '{count} leo', ha: '{count} yau', tw: '{count} ɛnnɛ' },
+  'progress.leftToday': { en: '{count} left today', fr: '{count} restant', sw: '{count} bado leo', ha: '{count} ya rage yau', tw: '{count} aka ɛnnɛ' },
+  'progress.updatedToday': { en: 'Updated today', fr: 'Mis à jour aujourd\'hui', sw: 'Imesasishwa leo', ha: 'An sabunta yau', tw: 'Wɔafo ɛnnɛ' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TASKS PAGE — focused execution copy
+  // ═══════════════════════════════════════════════════════════
+
+  'tasks.currentTask': { en: 'Now', fr: 'Maintenant', sw: 'Sasa', ha: 'Yanzu', tw: 'Seesei' },
+  'tasks.nextUp': { en: 'Next up', fr: 'Ensuite', sw: 'Kazi ifuatayo', ha: 'Na gaba', tw: 'Nea edi so' },
+  'tasks.viewAll': { en: 'View all tasks', fr: 'Voir toutes les tâches', sw: 'Angalia kazi zote', ha: 'Duba duk ayyuka', tw: 'Hwɛ adwuma nyinaa' },
+  'tasks.hideAll': { en: 'Hide', fr: 'Masquer', sw: 'Ficha', ha: 'Boye', tw: 'Fa sie' },
+  'tasks.allCaughtUp': { en: 'All caught up!', fr: 'Tout est fait !', sw: 'Kazi zote zimekamilika!', ha: 'An gama duka!', tw: 'Wɔawie ne nyinaa!' },
+  'tasks.noMoreTasks': { en: 'No more tasks for now', fr: 'Plus de tâches pour le moment', sw: 'Hakuna kazi zaidi kwa sasa', ha: 'Babu ƙarin ayyuka yanzu', tw: 'Adwuma nni hɔ mprempren' },
+  'tasks.completed': { en: 'Completed', fr: 'Terminé', sw: 'Imekamilika', ha: 'An gama', tw: 'Awie' },
+  'tasks.backHome': { en: 'Back to Home', fr: 'Retour', sw: 'Rudi nyumbani', ha: 'Koma gida', tw: 'San kɔ fie' },
 };
 
 export default T;
