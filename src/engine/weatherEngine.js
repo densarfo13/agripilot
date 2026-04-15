@@ -4,14 +4,23 @@
  * Pure function: weather data in, guidance out.
  * No React, no API calls, no side effects.
  *
- * Rules (v1 — deterministic, simple, explainable):
- *   1. Heavy rain → don't water, harvest risk
- *   2. Rain expected → don't water, plan indoor work
- *   3. High wind → don't spray
- *   4. Dry + low humidity → water today
- *   5. Dry spell risk flagged by server → water urgently
- *   6. Normal → safe for activity
- *   7. No data → graceful fallback
+ * Rain classification (critical for avoiding false warnings):
+ *   - rainingNow:      current weather code is rain OR current precip >= 0.5mm
+ *   - rainTodayLikely: today's daily forecast >= 2mm but NOT raining now
+ *   - rainExpected:    3-day forecast > 1mm — softer signal, NOT a hard warning
+ *   - heavyRainRisk:   3-day forecast > 30mm
+ *
+ * Rule priority (highest first):
+ *   1. Heavy rain now or imminent     → protect crop, stop outdoor work
+ *   2. Raining now (light/moderate)   → don't water/spray/dry
+ *   3. Rain likely later today        → store before rain, softer warning
+ *   4. High wind                      → don't spray
+ *   5. Dry spell risk                 → water urgently
+ *   6. Dry + low humidity             → water today
+ *   7. Heat stress                    → water morning
+ *   8. 3-day rain forecast only       → NO hard warning (just a note)
+ *   9. Moderate wind                  → safe, noted
+ *  10. All clear                      → safe
  */
 
 // ─── Thresholds ──────────────────────────────────────────────
@@ -20,8 +29,18 @@ const WIND_CAUTION = 15;         // km/h — moderate wind warning
 const HUMIDITY_DRY = 40;         // % — below this, crop stress risk
 const HUMIDITY_VERY_DRY = 25;    // % — severe dry stress
 const TEMP_HIGH = 35;            // °C — heat stress threshold
-const RAIN_LIGHT = 2;            // mm — light rain
-const RAIN_HEAVY = 15;           // mm — heavy rain
+const RAIN_TODAY_THRESHOLD = 2;  // mm — today's forecast must exceed this to count
+const RAIN_NOW_THRESHOLD = 0.5;  // mm — current precipitation to count as "raining"
+const RAIN_HEAVY = 15;           // mm — heavy rain (today)
+const RAIN_HEAVY_3D = 30;       // mm — heavy rain risk across 3-day window
+
+/** WMO weather codes that indicate active rain */
+const RAIN_CODES = new Set([
+  51, 53, 55, 56, 57,            // drizzle
+  61, 63, 65, 66, 67,            // rain
+  80, 81, 82,                    // showers
+  95, 96, 99,                    // thunderstorm
+]);
 
 /**
  * @typedef {Object} WeatherGuidance
@@ -33,14 +52,15 @@ const RAIN_HEAVY = 15;           // mm — heavy rain
  * @property {string} icon - emoji icon
  * @property {Object} adjustments - task priority adjustments
  * @property {Object} params - interpolation params for i18n keys
+ * @property {'none'|'now'|'later'|'forecast_only'} rainTiming - when rain matters
  */
 
 /**
  * Get weather-driven farmer guidance.
  *
  * @param {Object} input
- * @param {Object|null} input.weather - Raw weather data from API
- * @param {string} [input.crop] - Crop type (for future crop-specific rules)
+ * @param {Object|null} input.weather - Normalized weather data from API
+ * @param {string} [input.crop] - Crop type
  * @param {string} [input.stage] - Current crop stage
  * @returns {WeatherGuidance}
  */
@@ -56,22 +76,26 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       icon: '🌤️',
       adjustments: {},
       params: {},
+      rainTiming: 'none',
     };
   }
 
-  // ─── Extract fields (safe defaults) ────────────────
-  const rain = (weather.rain || 0) + (weather.showers || 0) + (weather.precipitation || 0);
-  const rainForecast = weather.rainForecastMm || 0;
-  const totalRain = Math.max(rain, rainForecast);
+  // ─── Extract + classify rain ──────────────────────
+  const currentPrecip = weather.currentPrecipMm ?? ((weather.rain || 0) + (weather.showers || 0) + (weather.precipitation || 0));
+  const weatherCode = weather.weatherCode ?? null;
+  const rainingNow = weather.rainingNow ?? (RAIN_CODES.has(weatherCode) || currentPrecip >= RAIN_NOW_THRESHOLD);
+  const rainTodayMm = weather.rainTodayMm ?? 0;
+  const rainTodayLikely = weather.rainTodayLikely ?? (!rainingNow && rainTodayMm >= RAIN_TODAY_THRESHOLD);
+  const rainForecast3d = weather.rainForecastMm || 0;
+  const heavyRainRisk = weather.heavyRainRisk || rainTodayMm >= RAIN_HEAVY || rainForecast3d >= RAIN_HEAVY_3D;
+
   const wind = weather.windSpeed || 0;
   const humidity = weather.humidityPct ?? weather.humidity ?? null;
   const temp = weather.temperatureC ?? weather.temperature ?? null;
-  const rainExpected = weather.rainExpected || totalRain > 0;
-  const heavyRainRisk = weather.heavyRainRisk || totalRain >= RAIN_HEAVY;
   const drySpellRisk = weather.drySpellRisk || false;
 
-  // ─── Rule 1: Heavy rain ────────────────────────────
-  if (heavyRainRisk || totalRain >= RAIN_HEAVY) {
+  // ─── Rule 1: Heavy rain (now or imminent today) ───
+  if (heavyRainRisk && (rainingNow || rainTodayMm >= RAIN_HEAVY)) {
     return {
       status: 'warning',
       recommendationKey: 'wx.heavyRain',
@@ -80,30 +104,46 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       voiceKey: 'wx.heavyRainVoice',
       icon: '🌧️',
       adjustments: { watering: -10, spraying: -5, drying: -10, harvest: +3 },
-      params: { rain: Math.round(totalRain) },
+      params: { rain: Math.round(rainingNow ? currentPrecip : rainTodayMm) },
+      rainTiming: 'now',
     };
   }
 
-  // ─── Rule 2: Rain expected (light/moderate) ────────
-  if (rainExpected || totalRain >= RAIN_LIGHT) {
+  // ─── Rule 2: Raining now (light/moderate) ─────────
+  if (rainingNow) {
     const guidance = {
       status: 'caution',
-      recommendationKey: 'wx.rainExpected',
-      reasonKey: 'wx.rainExpectedReason',
-      riskLevel: 'low',
-      voiceKey: 'wx.rainExpectedVoice',
-      icon: '🌦️',
-      adjustments: { watering: -5, drying: -5 },
-      params: { rain: Math.round(totalRain) },
+      recommendationKey: 'wx.rainingNow',
+      reasonKey: 'wx.rainingNowReason',
+      riskLevel: 'moderate',
+      voiceKey: 'wx.rainingNowVoice',
+      icon: '🌧️',
+      adjustments: { watering: -10, drying: -8 },
+      params: {},
+      rainTiming: 'now',
     };
-    // If also windy, add spray warning
-    if (wind >= WIND_SPRAY_LIMIT) {
-      guidance.adjustments.spraying = -5;
-    }
+    if (wind >= WIND_SPRAY_LIMIT) guidance.adjustments.spraying = -5;
     return guidance;
   }
 
-  // ─── Rule 3: High wind (no rain) ──────────────────
+  // ─── Rule 3: Rain likely later today ──────────────
+  if (rainTodayLikely) {
+    const guidance = {
+      status: 'caution',
+      recommendationKey: 'wx.rainLater',
+      reasonKey: 'wx.rainLaterReason',
+      riskLevel: 'low',
+      voiceKey: 'wx.rainLaterVoice',
+      icon: '🌦️',
+      adjustments: { watering: -5, drying: -5 },
+      params: { rain: Math.round(rainTodayMm) },
+      rainTiming: 'later',
+    };
+    if (wind >= WIND_SPRAY_LIMIT) guidance.adjustments.spraying = -5;
+    return guidance;
+  }
+
+  // ─── Rule 4: High wind (no rain today) ────────────
   if (wind >= WIND_SPRAY_LIMIT) {
     return {
       status: 'caution',
@@ -114,10 +154,11 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       icon: '💨',
       adjustments: { spraying: -10 },
       params: { wind: Math.round(wind) },
+      rainTiming: 'none',
     };
   }
 
-  // ─── Rule 4: Dry spell risk (server-flagged) ──────
+  // ─── Rule 5: Dry spell risk (server-flagged) ──────
   if (drySpellRisk) {
     return {
       status: 'warning',
@@ -128,11 +169,12 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       icon: '🏜️',
       adjustments: { watering: +5 },
       params: {},
+      rainTiming: 'none',
     };
   }
 
-  // ─── Rule 5: Dry + low humidity ───────────────────
-  if (humidity !== null && humidity <= HUMIDITY_DRY && totalRain === 0) {
+  // ─── Rule 6: Dry + low humidity ───────────────────
+  if (humidity !== null && humidity <= HUMIDITY_DRY && !rainingNow && rainTodayMm < RAIN_TODAY_THRESHOLD) {
     const severe = humidity <= HUMIDITY_VERY_DRY;
     return {
       status: severe ? 'warning' : 'caution',
@@ -143,10 +185,11 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       icon: '☀️',
       adjustments: { watering: severe ? +5 : +3 },
       params: { humidity: Math.round(humidity) },
+      rainTiming: 'none',
     };
   }
 
-  // ─── Rule 6: Heat stress ──────────────────────────
+  // ─── Rule 7: Heat stress ──────────────────────────
   if (temp !== null && temp >= TEMP_HIGH) {
     return {
       status: 'caution',
@@ -157,10 +200,16 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       icon: '🌡️',
       adjustments: { watering: +2 },
       params: { temp: Math.round(temp) },
+      rainTiming: 'none',
     };
   }
 
-  // ─── Rule 7: Moderate wind (not blocking but notable)
+  // ─── Rule 8: 3-day forecast rain (soft note, NOT a hard warning) ──
+  // This does NOT trigger task overrides or caution status.
+  // The 3-day rain signal is informational only.
+  // (Previously this was the source of false "rain today" warnings.)
+
+  // ─── Rule 9: Moderate wind ────────────────────────
   if (wind >= WIND_CAUTION) {
     return {
       status: 'safe',
@@ -171,10 +220,11 @@ export function getWeatherGuidance({ weather, crop, stage }) {
       icon: '🍃',
       adjustments: {},
       params: { wind: Math.round(wind) },
+      rainTiming: 'none',
     };
   }
 
-  // ─── Rule 8: All clear ────────────────────────────
+  // ─── Rule 10: All clear ───────────────────────────
   return {
     status: 'safe',
     recommendationKey: 'wx.safe',
@@ -184,6 +234,7 @@ export function getWeatherGuidance({ weather, crop, stage }) {
     icon: '☀️',
     adjustments: {},
     params: {},
+    rainTiming: 'none',
   };
 }
 
@@ -213,10 +264,11 @@ export function getWeatherDecision({ weather, crop, stage, currentTask, fetchedA
   const chipIcon = guidance.icon;
   const chipTemp = temp;
 
-  // Derive chip label from recommendation key
+  // Derive chip label from rain timing + recommendation key
   const recKey = guidance.recommendationKey || '';
   let chipLabelKey = 'wxChip.good';
-  if (recKey.includes('heavyRain') || recKey.includes('rainExpected')) chipLabelKey = 'wxChip.rain';
+  if (recKey.includes('heavyRain') || recKey.includes('rainingNow')) chipLabelKey = 'wxChip.rain';
+  else if (recKey.includes('rainLater') || recKey.includes('rainExpected')) chipLabelKey = 'wxChip.rainLater';
   else if (recKey.includes('highWind')) chipLabelKey = 'wxChip.wind';
   else if (recKey.includes('dry') || recKey.includes('veryDry') || recKey.includes('drySpell')) chipLabelKey = 'wxChip.dry';
   else if (recKey.includes('hot')) chipLabelKey = 'wxChip.hot';

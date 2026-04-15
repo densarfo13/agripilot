@@ -72,7 +72,12 @@ router.get('/current', authenticate, async (req, res) => {
         cloudCover: current.cloud_cover ?? null,
         condition: context.condition,
         time: current.time ?? null,
-        // Derived risk flags from 7-day forecast
+        // Rain classification (new: distinguishes now vs later vs forecast)
+        currentPrecipMm: context.currentPrecipMm,
+        rainingNow: context.rainingNow,
+        rainTodayMm: context.rainTodayMm,
+        rainTodayLikely: context.rainTodayLikely,
+        // Multi-day derived risk flags
         rainForecastMm: context.rainForecastMm,
         rainExpected: context.rainExpected,
         heavyRainRisk: context.heavyRainRisk,

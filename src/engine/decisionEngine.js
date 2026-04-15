@@ -141,9 +141,12 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     // ─── Weather conflict: rain + drying/watering/spraying task ───
     const taskId = primaryTask.id || '';
     const adj = weatherGuidance ? weatherGuidance.adjustments || {} : {};
+    const rainTiming = weatherGuidance?.rainTiming || 'none'; // 'now' | 'later' | 'forecast_only' | 'none'
 
-    // Rain conflict: any rain-related guidance that penalizes watering, spraying, OR drying
+    // Only override tasks when rain is TODAY (now or later today).
+    // A 3-day-only forecast does NOT trigger hard overrides — that was the false-warning bug.
     const isRainConflict = weatherGuidance && weatherGuidance.status !== 'safe'
+      && (rainTiming === 'now' || rainTiming === 'later')
       && (adj.watering < -3 || adj.spraying < -5 || adj.drying < -3);
 
     // Detect drying tasks: check task ID prefix (server appends farmId), actionType, and title keywords
@@ -154,11 +157,18 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
 
     if (isRainConflict && (isDryTask || isWaterTask || isSprayTask)) {
-      // Replace with weather-safe alternative — protection language for drying
-      const altTitle = isDryTask ? t('wxConflict.protectHarvest')
-        : isWaterTask ? t('wxConflict.skipWatering')
-        : t('wxConflict.skipSpraying');
-      const altReason = isDryTask ? t('wxConflict.protectHarvestReason') : '';
+      // Replace with weather-safe alternative — wording differs by timing
+      let altTitle, altReason;
+      if (isDryTask) {
+        altTitle = rainTiming === 'now' ? t('wxConflict.protectHarvest') : t('wxConflict.storeBefore');
+        altReason = rainTiming === 'now' ? t('wxConflict.protectHarvestReason') : t('wxConflict.storeBeforeReason');
+      } else if (isWaterTask) {
+        altTitle = t('wxConflict.skipWatering');
+        altReason = '';
+      } else {
+        altTitle = t('wxConflict.skipSpraying');
+        altReason = '';
+      }
       return {
         ...makeAction('weather_override', weatherGuidance.icon, 'rgba(14,165,233,0.12)',
           altTitle, altReason,

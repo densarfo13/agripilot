@@ -49,8 +49,11 @@ const T = {
   'wxConflict.protectHarvest': { en: 'Protect your harvest', fr: 'Protéger la récolte', sw: 'Linda mazao yako', ha: 'Kare girbi', tw: 'Bɔ wo nnɔbae ho ban' },
   'wxConflict.protectHarvestReason': { en: 'Rain expected — cover or store your crop now.', fr: 'Mettez les grains sous abri avant la pluie.', sw: 'Mvua inatarajiwa — funika au hifadhi mazao yako sasa.', ha: 'Ruwan sama yana zuwa — rufe ko ajiye amfanin ku yanzu.', tw: 'Nsuo reba — kata anaasɛ sie wo nnɔbae no seesei.' },
   'wxConflict.protectHarvestVoice': { en: 'Rain is expected. Protect your harvest from rain.', fr: 'Il va pleuvoir. Protégez votre récolte de la pluie.', sw: 'Mvua inatarajiwa. Linda mazao yako kutokana na mvua.', ha: 'Ruwan sama yana zuwa. Kare girbi daga ruwan sama.', tw: 'Nsuo reba. Bɔ wo nnɔbae ho ban fi nsuo mu.' },
+  'wxConflict.storeBefore': { en: 'Store harvest before rain', fr: 'Mettre les grains à l\'abri', sw: 'Hifadhi mazao kabla ya mvua', ha: 'Ajiye girbi kafin ruwa', tw: 'Sie wo nneɛma ansa na nsuo atɔ' },
+  'wxConflict.storeBeforeReason': { en: 'Dry now — rain coming later. Finish drying and store.', fr: 'Sec maintenant — pluie après. Finissez le séchage et stockez.', sw: 'Kavu sasa — mvua baadaye. Maliza kukaushia na uhifadhi.', ha: 'Bushe yanzu — ruwa yana zuwa. Gama bushewa ku ajiye.', tw: 'Ɛyɛ hyew seesei — nsuo reba. Wie na sie.' },
 
   'wxChip.good': { en: 'Good', fr: 'Bon', sw: 'Nzuri', ha: 'Lafiya', tw: 'Eye' },
+  'wxChip.rainLater': { en: 'Rain later', fr: 'Pluie après', sw: 'Mvua baadaye', ha: 'Ruwa daga baya', tw: 'Nsuo akyire' },
   'wxChip.risk': { en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Haɗari', tw: 'Asiane' },
   'wxChip.alert': { en: 'Alert', fr: 'Alerte', sw: 'Tahadhari', ha: 'Faɗakarwa', tw: 'Kɔkɔbɔ' },
   'wxChip.care': { en: 'Care', fr: 'Attention', sw: 'Angalia', ha: 'Hankali', tw: 'Hwɛ yie' },
@@ -3087,9 +3090,20 @@ const T = {
   'wx.drySpellReason': { en: 'Extended dry period detected.', fr: 'Période sèche prolongée.', sw: 'Kipindi kirefu cha ukavu.', ha: 'An gano lokacin bushe.', tw: 'Wɔahu sɛ ɛyɛ hyew bere tenten.' },
   'wx.drySpellVoice': { en: 'Dry spell risk. Water your crop urgently.', fr: 'Risque de sécheresse. Arrosez votre culture.', sw: 'Hatari ya ukame. Mwagilia haraka.', ha: 'Haɗarin fari. Shayar da gaggawa.', tw: 'Awɔw bere mu. Gugu wo nnɔbae ntɛm.' },
 
-  'wx.rainExpected': { en: 'Rain expected — skip watering', fr: 'Pluie prévue — pas d\'arrosage', sw: 'Mvua inatarajiwa — usimwagilie', ha: 'Ruwan sama yana zuwa — kada ka shayar', tw: 'Nsuo reba — nnye nsu ngu' },
-  'wx.rainExpectedReason': { en: 'Rain likely today ({rain}mm).', fr: 'Pluie probable ({rain}mm).', sw: 'Mvua inawezekana ({rain}mm).', ha: 'Ruwan sama mai yiwuwa ({rain}mm).', tw: 'Ebia nsuo bɛtɔ ({rain}mm).' },
-  'wx.rainExpectedVoice': { en: 'Rain is coming. Do not water today.', fr: 'Il va pleuvoir. Ne pas arroser.', sw: 'Mvua inakuja. Usimwagilie leo.', ha: 'Ruwan sama yana zuwa. Kada ka shayar.', tw: 'Nsuo reba. Ɛnnɛ nnye nsu ngu.' },
+  // Rain NOW — currently raining (measured precipitation or rain weather code)
+  'wx.rainingNow': { en: 'Raining now — stay indoors', fr: 'Il pleut — restez à l\'abri', sw: 'Mvua sasa — kaa ndani', ha: 'Ruwan sama yana yi — zauna ciki', tw: 'Nsuo retɔ — tra dan mu' },
+  'wx.rainingNowReason': { en: 'Rain detected. Avoid outdoor drying and spraying.', fr: 'Pluie détectée. Pas de séchage ni pulvérisation.', sw: 'Mvua imegunduliwa. Usikaushe nje.', ha: 'An gano ruwan sama. Kada ku bushe waje.', tw: 'Nsuo retɔ. Nnhwɛ nneɛma wɔ abɔnten.' },
+  'wx.rainingNowVoice': { en: 'It is raining now. Protect your harvest.', fr: 'Il pleut maintenant. Protégez votre récolte.', sw: 'Mvua inanyesha sasa. Linda mazao yako.', ha: 'Ruwan sama yana sauka. Kare girbi.', tw: 'Nsuo retɔ seesei. Bɔ wo nnɔbae ho ban.' },
+
+  // Rain LATER — dry now but rain likely later today (today forecast >= 2mm)
+  'wx.rainLater': { en: 'Dry now — rain later today', fr: 'Sec maintenant — pluie prévue aujourd\'hui', sw: 'Kavu sasa — mvua baadaye', ha: 'Bushe yanzu — ruwan sama daga baya', tw: 'Ɛyɛ hyew seesei — nsuo bɛba akyire yi' },
+  'wx.rainLaterReason': { en: 'Expect {rain}mm later. Store crops before rain.', fr: 'Pluie de {rain}mm prévue. Mettez les grains à l\'abri.', sw: 'Tarajia {rain}mm baadaye. Hifadhi mazao kabla ya mvua.', ha: 'Ana sa ran {rain}mm daga baya. Ajiye amfani kafin ruwa.', tw: 'Nsuo bɛtɔ {rain}mm akyire. Sie wo nneɛma ansa na nsuo atɔ.' },
+  'wx.rainLaterVoice': { en: 'Dry now but rain expected later. Store your harvest before rain.', fr: 'Sec maintenant mais pluie prévue. Mettez les grains sous abri.', sw: 'Kavu sasa lakini mvua baadaye. Hifadhi mazao kabla ya mvua.', ha: 'Bushe yanzu amma ruwan sama yana zuwa. Ajiye amfani.', tw: 'Ɛyɛ hyew seesei nanso nsuo reba. Sie wo nneɛma.' },
+
+  // Legacy key kept for backward compat — now points to "rain later" semantics
+  'wx.rainExpected': { en: 'Dry now — rain later today', fr: 'Sec maintenant — pluie prévue aujourd\'hui', sw: 'Kavu sasa — mvua baadaye', ha: 'Bushe yanzu — ruwan sama daga baya', tw: 'Ɛyɛ hyew seesei — nsuo bɛba akyire yi' },
+  'wx.rainExpectedReason': { en: 'Expect {rain}mm later. Store crops before rain.', fr: 'Pluie de {rain}mm prévue. Mettez les grains à l\'abri.', sw: 'Tarajia {rain}mm baadaye. Hifadhi mazao kabla ya mvua.', ha: 'Ana sa ran {rain}mm daga baya. Ajiye amfani kafin ruwa.', tw: 'Nsuo bɛtɔ {rain}mm akyire. Sie wo nneɛma ansa na nsuo atɔ.' },
+  'wx.rainExpectedVoice': { en: 'Dry now but rain expected later. Store your harvest before rain.', fr: 'Sec maintenant mais pluie prévue. Mettez les grains sous abri.', sw: 'Kavu sasa lakini mvua baadaye. Hifadhi mazao kabla ya mvua.', ha: 'Bushe yanzu amma ruwan sama yana zuwa. Ajiye amfani.', tw: 'Ɛyɛ hyew seesei nanso nsuo reba. Sie wo nneɛma.' },
 
   'wx.heavyRain': { en: 'Heavy rain — protect your crop', fr: 'Fortes pluies — protégez vos cultures', sw: 'Mvua kubwa — linda mazao', ha: 'Ruwan sama mai ƙarfi — kare amfani', tw: 'Nsuo bɛtɔ pa — bɔ wo nnɔbae ho ban' },
   'wx.heavyRainReason': { en: 'Heavy rain expected ({rain}mm). Risk of crop damage.', fr: 'Fortes pluies prévues ({rain}mm).', sw: 'Mvua kubwa inatarajiwa ({rain}mm).', ha: 'Ruwan sama mai ƙarfi ({rain}mm).', tw: 'Nsuo bɛtɔ pa ({rain}mm).' },
