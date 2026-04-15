@@ -325,6 +325,31 @@ export default function PestRiskResult() {
             {t('pest.checkAgain')}
           </button>
         </div>
+
+        {/* What happens next — guided return to dashboard */}
+        <div style={S.nextStepsCard}>
+          <h3 style={S.nextStepsTitle}>{t('pest.whatsNext')}</h3>
+          <div style={S.nextStep}>
+            <span style={S.nextStepNum}>1</span>
+            <span>{level === 'urgent' || level === 'high'
+              ? t('pest.nextStep.treatNow')
+              : t('pest.nextStep.monitor')}</span>
+          </div>
+          <div style={S.nextStep}>
+            <span style={S.nextStepNum}>2</span>
+            <span>{t('pest.nextStep.recheck', { days: followUpDays })}</span>
+          </div>
+          <div style={S.nextStep}>
+            <span style={S.nextStepNum}>3</span>
+            <span>{t('pest.nextStep.dashboard')}</span>
+          </div>
+          <button
+            style={S.dashboardBtn}
+            onClick={() => navigate('/dashboard')}
+          >
+            {t('pest.backToDashboard')}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -559,5 +584,56 @@ const S = {
     fontSize: '0.82rem',
     color: COLORS.text,
     lineHeight: 1.4,
+  },
+  // ─── What happens next ───
+  nextStepsCard: {
+    borderRadius: '16px',
+    background: COLORS.card,
+    border: '1px solid ' + COLORS.cardBorder,
+    padding: '1.25rem',
+    marginTop: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+  },
+  nextStepsTitle: {
+    fontSize: '1rem',
+    fontWeight: 700,
+    margin: 0,
+    color: COLORS.text,
+  },
+  nextStep: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  nextStepNum: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    background: 'rgba(34,197,94,0.15)',
+    color: '#86EFAC',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  dashboardBtn: {
+    width: '100%',
+    padding: '0.875rem',
+    borderRadius: '14px',
+    border: 'none',
+    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+    color: '#fff',
+    fontSize: '1rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '52px',
+    marginTop: '0.25rem',
+    WebkitTapHighlightColor: 'transparent',
   },
 };

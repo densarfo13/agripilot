@@ -62,7 +62,7 @@ const T = {
     en: 'Sign Out', fr: 'Déconnexion', sw: 'Ondoka', ha: 'Fita', tw: 'Fi mu',
   },
   'common.listen': {
-    en: 'Listen', fr: 'Écouter', sw: 'Sikiliza', ha: 'Saurara', tw: 'Tie',
+    en: 'Hear guide', fr: 'Guide vocal', sw: 'Sikia mwongozo', ha: 'Ji jagoranci', tw: 'Tie nkyerɛkyerɛ',
   },
   'common.listenAgain': {
     en: 'Listen again', fr: 'Réécouter', sw: 'Sikiliza tena', ha: 'Sake saurara', tw: 'San tie',
@@ -495,6 +495,21 @@ const T = {
   'update.savingUpdate': {
     en: 'Saving your update...', fr: 'Enregistrement en cours...', sw: 'Inahifadhi sasishi lako...', ha: 'Ana ajiye sabuntawar ku...', tw: 'Ɛrekora wo nsɛm...',
   },
+  'update.saving': {
+    en: 'Saving...', fr: 'Enregistrement...', sw: 'Inahifadhi...', ha: 'Ana ajiye...', tw: 'Ɛrekora...',
+  },
+  'update.saved': {
+    en: 'Saved', fr: 'Enregistré', sw: 'Imehifadhiwa', ha: 'An ajiye', tw: 'Wɔakora',
+  },
+  'update.uploadingPhoto': {
+    en: 'Uploading photo...', fr: 'Envoi de la photo...', sw: 'Inapakia picha...', ha: 'Ana ɗora hoto...', tw: 'Ɛreload foto...',
+  },
+  'update.photoUploaded': {
+    en: 'Photo uploaded', fr: 'Photo envoyée', sw: 'Picha imepakiwa', ha: 'An ɗora hoto', tw: 'Wɔaload foto',
+  },
+  'update.photoFailed': {
+    en: 'Photo upload failed', fr: "Échec de l'envoi de la photo", sw: 'Kupakia picha kumeshindwa', ha: 'Ɗora hoto ya gaza', tw: 'Foto load no ankasa',
+  },
   'update.updateSaved': {
     en: 'Update Saved!', fr: 'Mise à jour enregistrée !', sw: 'Sasishi Limehifadhiwa!', ha: 'An ajiye sabuntawa!', tw: 'Wɔakora nsɛm no!',
   },
@@ -653,31 +668,31 @@ const T = {
   // ═══════════════════════════════════════════════════════════
 
   'sync.offline': {
-    en: 'You are offline — changes will sync when reconnected', fr: 'Vous êtes hors ligne — les changements se synchroniseront', sw: 'Uko nje ya mtandao — mabadiliko yatasawazishwa ukirejea', ha: 'Ba ku da layi — canje-canje za su daidaita idan kun dawo', tw: 'Intanɛt nni hɔ — nsɛm no bɛyɛ sɛnti wo de intanɛt a',
+    en: 'No internet — your work is saved here', fr: 'Pas d\'internet — votre travail est sauvegardé ici', sw: 'Hakuna mtandao — kazi yako imehifadhiwa hapa', ha: 'Babu intanet — aikin ku an ajiye a nan', tw: 'Intanɛt nni hɔ — wo adwuma akora ha',
   },
   'sync.pendingOne': {
-    en: '{count} update waiting to sync', fr: '{count} mise à jour en attente', sw: '{count} sasishi linasubiri kusawazishwa', ha: '{count} sabuntawa tana jiran daidaitawa', tw: '{count} nsɛm retwɛn sɛnti',
+    en: '{count} update waiting to send', fr: '{count} mise à jour en attente', sw: '{count} sasishi linasubiri kutumwa', ha: '{count} sabuntawa tana jiran aikawa', tw: '{count} nsɛm retwɛn ade',
   },
   'sync.pendingMany': {
-    en: '{count} updates waiting to sync', fr: '{count} mises à jour en attente', sw: '{count} masasisho yanasubiri kusawazishwa', ha: '{count} sabuntawa suna jiran daidaitawa', tw: '{count} nsɛm retwɛn sɛnti',
+    en: '{count} updates waiting to send', fr: '{count} mises à jour en attente', sw: '{count} masasisho yanasubiri kutumwa', ha: '{count} sabuntawa suna jiran aikawa', tw: '{count} nsɛm retwɛn ade',
   },
   'sync.syncNow': {
-    en: 'Sync Now', fr: 'Synchroniser', sw: 'Sawazisha Sasa', ha: 'Daidaita Yanzu', tw: 'Yɛ sɛnti seesei',
+    en: 'Send Now', fr: 'Envoyer', sw: 'Tuma Sasa', ha: 'Aika Yanzu', tw: 'De kɔ seesei',
   },
   'sync.syncing': {
-    en: 'Syncing changes...', fr: 'Synchronisation en cours...', sw: 'Inasawazisha mabadiliko...', ha: 'Ana daidaita canje-canje...', tw: 'Ɛreyɛ sɛnti...',
+    en: 'Sending...', fr: 'Envoi en cours...', sw: 'Inatuma...', ha: 'Ana aikawa...', tw: 'Ɛrede...',
   },
   'sync.failedOne': {
-    en: '{count} update failed to sync', fr: '{count} mise à jour a échoué', sw: '{count} sasishi limeshindwa kusawazishwa', ha: '{count} sabuntawa ta gaza', tw: '{count} nsɛm antumi anyɛ sɛnti',
+    en: '{count} update not sent — tap to retry', fr: '{count} mise à jour non envoyée — réessayez', sw: '{count} sasishi halijatumwa — bonyeza kujaribu tena', ha: '{count} sabuntawa ba a aika ba — danna don gwadawa', tw: '{count} nsɛm ɛnkɔɛ — mia na san hwehwe',
   },
   'sync.failedMany': {
-    en: '{count} updates failed to sync', fr: '{count} mises à jour ont échoué', sw: '{count} masasisho yameshindwa kusawazishwa', ha: '{count} sabuntawa sun gaza', tw: '{count} nsɛm antumi anyɛ sɛnti',
+    en: '{count} updates not sent — tap to retry', fr: '{count} mises à jour non envoyées — réessayez', sw: '{count} masasisho hayajatumwa — bonyeza kujaribu tena', ha: '{count} sabuntawa ba a aika ba — danna don gwadawa', tw: '{count} nsɛm ɛnkɔɛ — mia na san hwehwe',
   },
   'sync.syncedOne': {
-    en: '{count} update synced', fr: '{count} mise à jour synchronisée', sw: '{count} sasishi limesawazishwa', ha: '{count} sabuntawa an daidaita', tw: '{count} nsɛm ayɛ sɛnti',
+    en: '{count} update sent', fr: '{count} mise à jour envoyée', sw: '{count} sasishi limetumwa', ha: '{count} sabuntawa an aika', tw: '{count} nsɛm akɔ',
   },
   'sync.syncedMany': {
-    en: '{count} updates synced', fr: '{count} mises à jour synchronisées', sw: '{count} masasisho yamesawazishwa', ha: '{count} sabuntawa an daidaita', tw: '{count} nsɛm ayɛ sɛnti',
+    en: '{count} updates sent', fr: '{count} mises à jour envoyées', sw: '{count} masasisho yametumwa', ha: '{count} sabuntawa an aika', tw: '{count} nsɛm akɔ',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -2616,6 +2631,193 @@ const T = {
     en: 'Complete Setup', fr: 'Terminer la configuration', sw: 'Kamilisha usanidi', ha: 'Kammala saita', tw: 'Wie nhyehyɛe',
   },
 
+  // ─── Farmer home — action-first dashboard ──────────────────
+  'dashboard.hello': {
+    en: 'Hello, {name}', fr: 'Bonjour, {name}', sw: 'Habari, {name}', ha: 'Sannu, {name}', tw: 'Maakye, {name}',
+  },
+  'dashboard.todaysTask': {
+    en: "What should you do today?", fr: "Que faire aujourd'hui ?", sw: 'Ufanye nini leo?', ha: 'Me za ka yi yau?', tw: 'Dɛn na ɛsɛ sɛ woyɛ ɛnnɛ?',
+  },
+  'dashboard.doThisNow': {
+    en: 'Do this now', fr: 'Fais-le maintenant', sw: 'Fanya sasa', ha: 'Yi wannan yanzu', tw: 'Yɛ eyi seesei',
+  },
+  'dashboard.todayOnFarm': {
+    en: 'Today on your farm', fr: "Aujourd'hui sur votre ferme", sw: 'Leo shambani kwako', ha: 'Yau a gonar ka', tw: 'Ɛnnɛ wɔ wo afuo so',
+  },
+  'dashboard.addUpdate': {
+    en: 'Add Update', fr: 'Ajouter', sw: 'Ongeza', ha: 'Ƙara sabon', tw: 'Fa nkɔ so',
+  },
+  'dashboard.myFarm': {
+    en: 'My Farm', fr: 'Ma ferme', sw: 'Shamba langu', ha: 'Gonar ta', tw: 'Me afuo',
+  },
+  'dashboard.tasks': {
+    en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma',
+  },
+  'dashboard.allTasks': {
+    en: 'All Tasks', fr: 'Toutes les tâches', sw: 'Kazi Zote', ha: 'Duk Ayyuka', tw: 'Adwuma Nyinaa',
+  },
+  'dashboard.checkPests': {
+    en: 'Check Pests', fr: 'Vérifier ravageurs', sw: 'Angalia Wadudu', ha: 'Duba Ƙwari', tw: 'Hwɛ Mmoa',
+  },
+  'dashboard.tapToUpdateStage': {
+    en: 'Tap to update crop stage', fr: 'Appuyez pour mettre à jour', sw: 'Gusa kubadilisha hatua', ha: 'Taɓa don sabunta mataki', tw: 'Mia sɛ wobɛsesa anammɔn',
+  },
+  'dashboard.whatElse': {
+    en: 'What else can you do?', fr: 'Que pouvez-vous faire aussi ?', sw: 'Nini kingine unaweza kufanya?', ha: 'Me kuma za ka iya yi?', tw: 'Dɛn bio na wubɛtumi ayɛ?',
+  },
+  'dashboard.quickActions': {
+    en: 'Quick actions', fr: 'Actions rapides', sw: 'Vitendo vya haraka', ha: 'Ayyukan gaggawa', tw: 'Nneɛma a wubɛtumi ayɛ ntɛm',
+  },
+
+  // ─── Guided Next Action ─────────────────────────────────
+  'guided.loading': { en: 'Finding your next step...', fr: 'Recherche de la prochaine étape...', sw: 'Inatafuta hatua yako inayofuata...', ha: 'Ana neman matakin ku na gaba...', tw: 'Ɛrehwehwɛ wo anammɔn a edi so...' },
+
+  'guided.setupTitle': { en: 'Finish setting up your farm', fr: 'Terminez la configuration', sw: 'Maliza kusanidi shamba lako', ha: 'Kammala saita gonar ka', tw: 'Wie wo afuo nhyehyɛe' },
+  'guided.setupReason': { en: 'We need your farm details to give you the right advice.', fr: 'Nous avons besoin de vos informations pour vous conseiller.', sw: 'Tunahitaji maelezo ya shamba lako ili kukupa ushauri sahihi.', ha: 'Muna buƙatar bayanan gonar ka don ba ka shawarar da ta dace.', tw: 'Yɛhia wo afuo ho nsɛm na yɛama wo afotu pa.' },
+  'guided.setupCta': { en: 'Start setup', fr: 'Commencer', sw: 'Anza usanidi', ha: 'Fara saita', tw: 'Fi ase nhyehyɛe' },
+  'guided.setupNext': { en: 'After this, Farroway will show your daily farm tasks.', fr: 'Ensuite, Farroway affichera vos tâches quotidiennes.', sw: 'Baada ya hii, Farroway itaonyesha kazi zako za kila siku.', ha: 'Bayan wannan, Farroway zai nuna maka ayyukan yau da kullun.', tw: 'Eyi akyi, Farroway bɛkyerɛ wo adwuma a ɛsɛ sɛ woyɛ da biara.' },
+
+  'guided.stageTitle': { en: 'Update your crop stage', fr: 'Mettez à jour votre culture', sw: 'Sasisha hatua ya mazao yako', ha: 'Sabunta matakin amfanin ku', tw: 'Sesa wo nnɔbae anammɔn' },
+  'guided.stageReason': { en: 'This helps us give you the right tasks and advice for today.', fr: 'Cela nous aide à vous donner les bons conseils.', sw: 'Hii inatusaidia kukupa kazi na ushauri sahihi wa leo.', ha: 'Wannan yana taimaka mana ba ka shawarar da ta dace na yau.', tw: 'Eyi boa yɛn ma yɛma wo afotu pa ɛnnɛ.' },
+  'guided.stageCta': { en: 'Update crop stage', fr: 'Mettre à jour', sw: 'Sasisha hatua', ha: 'Sabunta mataki', tw: 'Sesa anammɔn' },
+  'guided.stageNext': { en: 'After this, you will see today\'s farming advice.', fr: 'Ensuite, vous verrez les conseils du jour.', sw: 'Baada ya hii, utaona ushauri wa kilimo wa leo.', ha: 'Bayan wannan, za ka ga shawarar noma ta yau.', tw: 'Eyi akyi, wobɛhunu afuoyɛ afotu a ɛwɔ ɛnnɛ.' },
+
+  'guided.stageOutdatedTitle': { en: 'Your crop may have changed', fr: 'Votre culture a peut-être changé', sw: 'Mazao yako yanaweza kuwa yamebadilika', ha: 'Amfanin gonar ka na iya canzawa', tw: 'Ebia wo nnɔbae no asesa' },
+  'guided.stageOutdatedReason': { en: 'Last updated {days} days ago. Keeping this current gives you better advice.', fr: 'Dernière mise à jour il y a {days} jours.', sw: 'Ilisasishwa siku {days} zilizopita.', ha: 'An sabunta shi kwanaki {days} da suka wuce.', tw: 'Wɔsesaa no nnansa {days} a atwam\' no mu.' },
+  'guided.stageOutdatedCta': { en: 'Refresh crop stage', fr: 'Actualiser', sw: 'Sasisha hatua', ha: 'Sabunta mataki', tw: 'Sesa anammɔn' },
+  'guided.daysAgo': { en: '{days}d ago', fr: 'il y a {days}j', sw: 'siku {days} zilizopita', ha: 'kwanaki {days} da suka wuce', tw: 'nnansa {days} a atwam\'' },
+
+  'guided.taskReason': { en: 'Based on your crop stage and today\'s conditions.', fr: 'Basé sur votre étape et les conditions du jour.', sw: 'Kulingana na hatua ya mazao yako na hali ya leo.', ha: 'Bisa ga matakin amfanin ku da halin yau.', tw: 'Egyina wo nnɔbae anammɔn ne ɛnnɛ tebea so.' },
+  'guided.taskCta': { en: 'Start now', fr: 'Commencer', sw: 'Anza sasa', ha: 'Fara yanzu', tw: 'Fi ase seesei' },
+  'guided.taskNext': { en: 'After this, Farroway will show your next farm task.', fr: 'Ensuite, Farroway montrera votre prochaine tâche.', sw: 'Baada ya hii, Farroway itaonyesha kazi yako inayofuata.', ha: 'Bayan wannan, Farroway zai nuna maka aikin ku na gaba.', tw: 'Eyi akyi, Farroway bɛkyerɛ wo adwuma a edi so.' },
+
+  'guided.pestReason': { en: 'Pests or disease may be affecting your crop. Act quickly.', fr: 'Des ravageurs pourraient affecter votre culture. Agissez vite.', sw: 'Wadudu au ugonjwa unaweza kuathiri mazao yako. Chukua hatua haraka.', ha: 'Ƙwari ko cuta na iya shafar amfanin ku. Yi gaggawa.', tw: 'Ebia mmoa bɔne resia wo nnɔbae. Yɛ ntɛm.' },
+  'guided.alertReason': { en: 'This needs your attention today.', fr: 'Ceci nécessite votre attention aujourd\'hui.', sw: 'Hii inahitaji umakini wako leo.', ha: 'Wannan yana buƙatar hankalin ku yau.', tw: 'Eyi hia wo adwene ɛnnɛ.' },
+  'guided.alertCta': { en: 'Act now', fr: 'Agir maintenant', sw: 'Chukua hatua sasa', ha: 'Yi aiki yanzu', tw: 'Yɛ seesei' },
+
+  'guided.doneTitle': { en: 'All done for today!', fr: 'Tout est fait !', sw: 'Umekamilisha yote leo!', ha: 'An gama duk na yau!', tw: 'Woawie nyinaa ɛnnɛ!' },
+  'guided.doneReason': { en: 'Great work. Check back tomorrow for new tasks.', fr: 'Bon travail. Revenez demain.', sw: 'Kazi nzuri. Rudi kesho kwa kazi mpya.', ha: 'Aiki nagari. Ka dawo gobe don sabbin ayyuka.', tw: 'Adwuma pa. San ba ɔkyena ma adwuma foforo.' },
+  'guided.doneCta': { en: 'Add farm update', fr: 'Ajouter une mise à jour', sw: 'Ongeza sasishio la shamba', ha: 'Ƙara sabon bayani', tw: 'Fa nsɛm foforo ka ho' },
+
+  // Contextual reason variants (with crop name)
+  'guided.stageReasonCrop': { en: 'Tell us where your {crop} is now so we can give you the right advice.', fr: 'Dites-nous où en est votre {crop} pour recevoir les bons conseils.', sw: 'Tuambie {crop} yako ipo wapi sasa ili tukupe ushauri sahihi.', ha: 'Gaya mana {crop} ku yana ina yanzu don mu ba ka shawara.', tw: 'Ka kyerɛ yɛn wo {crop} wɔ he seesei na yɛma wo afotu pa.' },
+  'guided.stageOutdatedReasonCrop': { en: 'Your {crop} stage was last updated {days} days ago. It may have changed.', fr: 'Le stade de votre {crop} a été mis à jour il y a {days} jours.', sw: 'Hatua ya {crop} yako ilisasishwa siku {days} zilizopita.', ha: '{crop} ku an sabunta shi kwanaki {days} da suka wuce.', tw: 'Wo {crop} anammɔn no wɔsesaa no nnansa {days} a atwam\'.' },
+  'guided.taskReasonCrop': { en: 'Based on your {crop} stage and today\'s conditions.', fr: 'Basé sur l\'étape de votre {crop} et les conditions du jour.', sw: 'Kulingana na hatua ya {crop} yako na hali ya leo.', ha: 'Bisa ga matakin {crop} ku da halin yau.', tw: 'Egyina wo {crop} anammɔn ne ɛnnɛ tebea so.' },
+
+  // Check-in nudge (7-30 day gap)
+  'guided.checkinTitle': { en: 'Time for a quick check-in', fr: 'C\'est le moment de faire le point', sw: 'Wakati wa ukaguzi wa haraka', ha: 'Lokaci ya duba halin gona', tw: 'Bere a ɛsɛ sɛ wohwɛ ntɛm' },
+  'guided.checkinReason': { en: 'It\'s been {days} days since your last update. A quick check keeps things on track.', fr: 'Cela fait {days} jours depuis votre dernière mise à jour.', sw: 'Siku {days} zimepita tangu sasishio lako la mwisho.', ha: 'Kwanaki {days} sun wuce tun sabuntawar ku ta ƙarshe.', tw: 'Nnansa {days} atwam\' fi bere a wosesaa nsɛm no.' },
+  'guided.checkinReasonCrop': { en: 'Your {crop} hasn\'t been updated in {days} days. Let\'s check how it\'s doing.', fr: 'Votre {crop} n\'a pas été mis à jour depuis {days} jours.', sw: '{crop} yako haijasasishwa kwa siku {days}.', ha: 'Ba a sabunta {crop} ku ba tun kwanaki {days}.', tw: 'Wɔnsesaa wo {crop} no nnansa {days}.' },
+  'guided.checkinCta': { en: 'Quick check-in', fr: 'Faire le point', sw: 'Kagua haraka', ha: 'Duba da sauri', tw: 'Hwɛ ntɛm' },
+  'guided.checkinNext': { en: 'After this, your advice will be up to date.', fr: 'Ensuite, vos conseils seront à jour.', sw: 'Baada ya hii, ushauri wako utakuwa wa sasa.', ha: 'Bayan wannan, shawarar ku za ta zama na yanzu.', tw: 'Eyi akyi, wo afotu bɛyɛ foforo.' },
+  'guided.planCheckin': { en: 'Quick check-in', fr: 'Faire le point', sw: 'Kagua haraka', ha: 'Duba da sauri', tw: 'Hwɛ ntɛm' },
+
+  // All-done plan steps
+  'guided.planAllDone': { en: 'Tasks complete', fr: 'Tâches terminées', sw: 'Kazi zimekamilika', ha: 'Ayyuka sun kammala', tw: 'Adwuma awie' },
+  'guided.planCheckTomorrow': { en: 'Check back tomorrow', fr: 'Revenez demain', sw: 'Rudi kesho', ha: 'Ka dawo gobe', tw: 'San ba ɔkyena' },
+
+  'guided.staleTitle': { en: 'Your farm needs attention', fr: 'Votre ferme a besoin d\'attention', sw: 'Shamba lako linahitaji umakini', ha: 'Gonar ka tana buƙatar kulawa', tw: 'Wo afuo hia adwene' },
+  'guided.staleReason': { en: 'No updates in a while. A quick check keeps things on track.', fr: 'Pas de mise à jour depuis un moment.', sw: 'Hakuna masasisho kwa muda. Angalia haraka.', ha: 'Babu sabuntawa tun lokaci. Duba da sauri.', tw: 'Nsɛm foforo nni hɔ bere tiawa yi. Hwɛ ntɛm.' },
+  'guided.staleCta': { en: 'Add update', fr: 'Ajouter', sw: 'Ongeza sasishio', ha: 'Ƙara bayani', tw: 'Fa nkɔ so' },
+  'guided.staleNext': { en: 'After this, your dashboard will refresh with new advice.', fr: 'Ensuite, votre tableau de bord sera actualisé.', sw: 'Baada ya hii, dashibodi yako itasasishwa na ushauri mpya.', ha: 'Bayan wannan, dashbod din ku zai sabunta da sabon shawara.', tw: 'Eyi akyi, wo dashboard bɛsesa ne afotu foforo.' },
+  'guided.planStale': { en: 'Review farm status', fr: 'Vérifier l\'état de la ferme', sw: 'Kagua hali ya shamba', ha: 'Duba halin gona', tw: 'Hwɛ afuo tebea' },
+  'guided.planTreat': { en: 'Apply treatment', fr: 'Appliquer le traitement', sw: 'Tumia dawa', ha: 'Yi magani', tw: 'Fa aduro to so' },
+
+  // ─── Farm Status Labels ──────────────────────────────────
+  'status.profile': { en: 'Profile', fr: 'Profil', sw: 'Wasifu', ha: 'Bayani', tw: 'Nsɛm' },
+  'status.cropStage': { en: 'Crop stage', fr: 'Étape culture', sw: 'Hatua ya mazao', ha: 'Matakin amfani', tw: 'Nnɔbae anammɔn' },
+  'status.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma' },
+  'status.activity': { en: 'Activity', fr: 'Activité', sw: 'Shughuli', ha: 'Aiki', tw: 'Dwumadi' },
+  'status.good': { en: 'Farm healthy', fr: 'Ferme en bonne santé', sw: 'Shamba zuri', ha: 'Gona lafiyayye', tw: 'Afuo apɔ mu yie' },
+
+  // ─── Retention indicators ─────────────────────────────────
+  'retention.urgent': { en: 'URGENT', fr: 'URGENT', sw: 'HARAKA', ha: 'GAGGAWA', tw: 'NTƐM' },
+  'retention.overdue': { en: 'OVERDUE', fr: 'EN RETARD', sw: 'IMECHELEWA', ha: 'AN WUCE LOKACI', tw: 'ATWAM BERE' },
+  'retention.lastUpdated': { en: 'Updated {days}d ago', fr: 'Mis à jour il y a {days}j', sw: 'Ilisasishwa siku {days} zilizopita', ha: 'An sabunta kwanaki {days} da suka wuce', tw: 'Wɔsesaa no nnansa {days} a atwam\'' },
+  'retention.updatedToday': { en: 'Updated today', fr: 'Mis à jour aujourd\'hui', sw: 'Ilisasishwa leo', ha: 'An sabunta yau', tw: 'Wɔsesaa no ɛnnɛ' },
+  'status.goodDesc': { en: 'All systems on track.', fr: 'Tout est en ordre.', sw: 'Kila kitu kiko sawa.', ha: 'Komai yana daidai.', tw: 'Biribiara kɔ yie.' },
+  'status.onTrack': { en: 'On track', fr: 'En bonne voie', sw: 'Inakwenda vizuri', ha: 'Yana tafiya daidai', tw: 'Ɛkɔ yie' },
+  'status.onTrackDesc': { en: 'Almost everything is up to date.', fr: 'Presque tout est à jour.', sw: 'Karibu kila kitu kimesasishwa.', ha: 'Kusan komai an sabunta.', tw: 'Biribiara sua sesa.' },
+  'status.almostReady': { en: 'Almost ready', fr: 'Presque prêt', sw: 'Karibu tayari', ha: 'Kusan shirye', tw: 'Sua ayɛ krado' },
+  'status.almostReadyDesc': { en: 'A few things need your attention.', fr: 'Quelques éléments nécessitent votre attention.', sw: 'Mambo machache yanahitaji umakini wako.', ha: 'Wasu abubuwa suna buƙatar hankalin ku.', tw: 'Nneɛma kakraa bi hia wo adwene.' },
+  'status.needsWork': { en: 'Needs attention', fr: 'Nécessite attention', sw: 'Inahitaji umakini', ha: 'Yana buƙatar kulawa', tw: 'Ɛhia adwene' },
+  'status.needsWorkDesc': { en: 'Several items need updating.', fr: 'Plusieurs éléments doivent être mis à jour.', sw: 'Mambo kadhaa yanahitaji kusasishwa.', ha: 'Abubuwa da yawa suna buƙatar sabuntawa.', tw: 'Nneɛma pii hia sɛ wɔsesa wɔn.' },
+
+  'guided.todaysPlan': { en: "Today's plan", fr: "Plan du jour", sw: 'Mpango wa leo', ha: 'Tsarin yau', tw: 'Ɛnnɛ nhyehyɛe' },
+  'guided.now': { en: 'NOW', fr: 'MAINTENANT', sw: 'SASA', ha: 'YANZU', tw: 'SEESEI' },
+  'guided.planSetup': { en: 'Complete farm setup', fr: 'Terminer la configuration', sw: 'Kamilisha usanidi', ha: 'Kammala saita', tw: 'Wie nhyehyɛe' },
+  'guided.planStage': { en: 'Update crop stage', fr: 'Mettre à jour le stade', sw: 'Sasisha hatua ya mazao', ha: 'Sabunta mataki', tw: 'Sesa anammɔn' },
+  'guided.planTask': { en: 'Do today\'s task', fr: 'Faire la tâche du jour', sw: 'Fanya kazi ya leo', ha: 'Yi aikin yau', tw: 'Yɛ ɛnnɛ adwuma' },
+  'guided.planPest': { en: 'Check for pests', fr: 'Vérifier les ravageurs', sw: 'Angalia wadudu', ha: 'Duba ƙwari', tw: 'Hwɛ mmoa' },
+  'guided.planMore': { en: '{count} more tasks', fr: '{count} autres tâches', sw: 'Kazi {count} zaidi', ha: 'Ayyuka {count} ƙari', tw: 'Adwuma {count} a aka' },
+
+  'dashboard.thisWeek': {
+    en: 'This week', fr: 'Cette semaine', sw: 'Wiki hii', ha: 'Wannan mako', tw: 'Nnawɔtwe yi',
+  },
+  'dashboard.of': {
+    en: 'of', fr: 'sur', sw: 'ya', ha: 'na', tw: 'wɔ mu',
+  },
+  'dashboard.tasksDoneWeek': {
+    en: 'tasks done', fr: 'tâches terminées', sw: 'kazi zilizokamilika', ha: 'ayyuka da aka gama', tw: 'adwuma a wɔawie',
+  },
+  'dashboard.weatherUnknown': {
+    en: 'Add GPS to your farm for weather', fr: 'Ajoutez le GPS pour la météo', sw: 'Ongeza GPS kwa hali ya hewa', ha: 'Ƙara GPS don yanayi', tw: 'Fa GPS ka ho ma wim tebea',
+  },
+  'dashboard.finishSetup': {
+    en: 'Finish your farm setup', fr: 'Terminez la configuration', sw: 'Kamilisha usanidi', ha: 'Kammala saitin gonar ka', tw: 'Wie wo afuo nhyehyɛe',
+  },
+  'dashboard.finishSetupDesc': {
+    en: 'Set up your farm to get daily tasks and advice.', fr: 'Configurez votre ferme pour recevoir tâches et conseils.', sw: 'Sanidi shamba lako kupata kazi na ushauri.', ha: 'Saita gonar ka don samun ayyuka da shawarwari.', tw: 'Hyehyɛ wo afuo na wunya adwuma ne afutuɔ.',
+  },
+  'dashboard.setCropStage': {
+    en: 'Set your crop stage', fr: 'Définissez le stade de culture', sw: 'Weka hatua ya mazao', ha: 'Saita matakin amfanin ka', tw: 'Hyehyɛ wo nnɔbae atentenso',
+  },
+  'dashboard.setCropStageDesc': {
+    en: 'This helps us give you the right tasks.', fr: 'Cela nous aide à vous donner les bonnes tâches.', sw: 'Hii inatusaidia kukupa kazi sahihi.', ha: 'Wannan yana taimaka mana ba ka ayyuka daidai.', tw: 'Eyi boa yɛn na yɛma wo adwuma a ɛfata.',
+  },
+  'dashboard.goToSetup': {
+    en: 'Go to setup', fr: 'Aller à la configuration', sw: 'Nenda kwenye usanidi', ha: 'Je zuwa saita', tw: 'Kɔ nhyehyɛe',
+  },
+  'dashboard.setStage': {
+    en: 'Set stage', fr: 'Définir le stade', sw: 'Weka hatua', ha: 'Saita mataki', tw: 'Hyehyɛ atentenso',
+  },
+  'dashboard.allDoneAddUpdate': {
+    en: 'All tasks done! Add your first farm update', fr: 'Toutes les tâches terminées ! Ajoutez votre première mise à jour', sw: 'Kazi zote zimekamilika! Ongeza sasishio lako la kwanza', ha: 'An gama duk ayyuka! Ƙara sabon bayani', tw: 'Adwuma nyinaa awie! Fa nkɔ so foforo bi ka ho',
+  },
+  'dashboard.allDone': {
+    en: 'All done for today!', fr: 'Tout est fait pour aujourd\'hui !', sw: 'Umekamilisha yote leo!', ha: 'An gama duk na yau!', tw: 'Woawie nyinaa ɛnnɛ!',
+  },
+  'dashboard.allDoneHint': {
+    en: 'You can add a farm update or check back tomorrow.', fr: 'Vous pouvez ajouter une mise à jour ou revenir demain.', sw: 'Unaweza kuongeza sasishio au urudi kesho.', ha: 'Za ka ƙara bayani ko ka dawo gobe.', tw: 'Wobɛtumi de nkɔ so bi aka ho anaasɛ wosan ba ɔkyena.',
+  },
+  'dashboard.updateCropStage': {
+    en: 'Update crop stage', fr: 'Mettre à jour l\'étape', sw: 'Sasisha hatua ya mazao', ha: 'Sabunta matakin amfani', tw: 'Sesa nnɔbae anammɔn',
+  },
+  'dashboard.updateCropStagePrompt': {
+    en: 'Tell us where your crop is now', fr: 'Dites-nous où en est votre culture', sw: 'Tuambie mazao yako yapo wapi sasa', ha: 'Gaya mana amfanin gonar ka yana ina yanzu', tw: 'Ka kyerɛ yɛn wo nnɔbae wɔ he seesei',
+  },
+  'dashboard.harvest': {
+    en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Twabere',
+  },
+  'dashboard.money': {
+    en: 'Money', fr: 'Argent', sw: 'Pesa', ha: 'Kuɗi', tw: 'Sika',
+  },
+  'dashboard.moreTools': {
+    en: 'More tools', fr: 'Plus d\'outils', sw: 'Zana zaidi', ha: 'Ƙarin kayan aiki', tw: 'Nnwinnade pii',
+  },
+  'weather.supportRain': {
+    en: 'Plan indoor work or wait.', fr: 'Prévoyez du travail intérieur.', sw: 'Panga kazi ya ndani au subiri.', ha: 'Tsara aikin gida ko jira.', tw: 'Hyehyɛ efie mu adwuma anaasɛ twɛn.',
+  },
+  'weather.supportWind': {
+    en: 'Skip spraying, do other tasks.', fr: 'Pas de pulvérisation, autres tâches.', sw: 'Acha kupulizia, fanya kazi nyingine.', ha: "Guji fesa, yi wasu ayyuka.", tw: 'Gyae aduru pete, yɛ adwuma foforɔ.',
+  },
+  'weather.supportSafe': {
+    en: 'Good conditions for field work.', fr: 'Bonnes conditions pour le terrain.', sw: 'Hali nzuri kwa kazi ya shambani.', ha: 'Yanayi mai kyau don aikin gona.', tw: 'Tebea papa ma afuo so adwuma.',
+  },
+  'weather.supportNoData': {
+    en: 'Add GPS to your farm for forecasts.', fr: 'Ajoutez le GPS pour les prévisions.', sw: 'Ongeza GPS kwa utabiri wa hewa.', ha: 'Ƙara GPS don hasashen yanayi.', tw: 'Fa GPS ka ho ma nkɔmhyɛ.',
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  PRIMARY FARM ACTION
   // ═══════════════════════════════════════════════════════════
@@ -3154,6 +3356,12 @@ const T = {
   'pest.backToScan': {
     en: 'Back to scan', fr: 'Retour au scan', sw: 'Rudi kwenye ukaguzi', ha: 'Koma zuwa bincike', tw: 'San kɔ nhwehwɛmu',
   },
+  'pest.whatsNext': { en: 'What happens next', fr: 'Et ensuite', sw: 'Nini kinachofuata', ha: 'Me zai biyo baya', tw: 'Dɛn na ɛba so' },
+  'pest.nextStep.treatNow': { en: 'Apply treatment as soon as possible', fr: 'Appliquez le traitement dès que possible', sw: 'Tumia dawa haraka iwezekanavyo', ha: 'Yi magani da wuri-wuri', tw: 'Fa aduro to so ntɛm' },
+  'pest.nextStep.monitor': { en: 'Keep watching your crop for changes', fr: 'Continuez à surveiller votre culture', sw: 'Endelea kufuatilia mazao yako', ha: 'Ka ci gaba da lura da amfanin ku', tw: 'Kɔ so hwɛ wo nnɔbae' },
+  'pest.nextStep.recheck': { en: 'Check again in {days} days', fr: 'Vérifiez de nouveau dans {days} jours', sw: 'Angalia tena baada ya siku {days}', ha: 'Sake dubawa bayan kwanaki {days}', tw: 'San hwɛ bio nnansa {days} akyi' },
+  'pest.nextStep.dashboard': { en: 'Farroway will remind you with your next task', fr: 'Farroway vous rappellera avec votre prochaine tâche', sw: 'Farroway itakukumbusha na kazi yako inayofuata', ha: 'Farroway zai tuna maka da aikin ku na gaba', tw: 'Farroway bɛkae wo ne wo adwuma a edi so' },
+  'pest.backToDashboard': { en: 'Back to dashboard', fr: 'Retour au tableau de bord', sw: 'Rudi kwenye dashibodi', ha: 'Koma zuwa dashbod', tw: 'San kɔ dashboard' },
   'pest.confidence': {
     en: 'Confidence', fr: 'Confiance', sw: 'Uhakika', ha: 'Tabbaci', tw: 'Gyidi',
   },
@@ -3516,6 +3724,7 @@ const T = {
   'farm.default': { en: 'Default', fr: 'Par défaut', sw: 'Kuu', ha: 'Babba', tw: 'Titiriw' },
   'farm.farms': { en: 'farms', fr: 'fermes', sw: 'mashamba', ha: 'gonaki', tw: 'mfuw' },
   'farm.tapToSetDefault': { en: 'Tap to set as default', fr: 'Appuyer pour définir par défaut', sw: 'Bonyeza kuweka kuu', ha: 'Danna don sanya babba', tw: 'Mia so de yɛ titiriw' },
+  'farm.tapToSwitch': { en: 'Tap to switch', fr: 'Appuyez pour changer', sw: 'Bonyeza kubadilisha', ha: 'Danna don sauya', tw: 'Mia so de sesa' },
   'farm.whichFarm': { en: 'Which farm?', fr: 'Quelle ferme?', sw: 'Shamba lipi?', ha: 'Wace gona?', tw: 'Afuo bɛn?' },
   'farm.myFarms': { en: 'My Farms', fr: 'Mes Fermes', sw: 'Mashamba Yangu', ha: 'Gonakin a', tw: 'Me Mfuw' },
   'farm.yourFarm': { en: 'Your Farm', fr: 'Votre Ferme', sw: 'Shamba Lako', ha: 'Gonar ka', tw: 'Wo Afuo' },
@@ -3537,6 +3746,9 @@ const T = {
   'farmTasks.loading': { en: 'Loading tasks...', fr: 'Chargement...', sw: 'Inapakia kazi...', ha: 'Ana lodi ayyuka...', tw: 'Ɛreloade adwuma...' },
   'farmTasks.noTasks': { en: 'No tasks yet for this farm', fr: 'Pas encore de tâches', sw: 'Hakuna kazi bado kwa shamba hili', ha: 'Babu ayyuka tukuna', tw: 'Adwuma biara nni ha' },
   'farmTasks.tasks': { en: 'tasks', fr: 'tâches', sw: 'kazi', ha: 'ayyuka', tw: 'adwuma' },
+  'farmTasks.taskDone': { en: 'task done', fr: 'tâche terminée', sw: 'kazi imekamilika', ha: 'aikin da aka gama', tw: 'adwuma awie' },
+  'farmTasks.tasksDone': { en: 'tasks done', fr: 'tâches terminées', sw: 'kazi zimekamilika', ha: 'ayyukan da aka gama', tw: 'adwuma awie' },
+  'farmTasks.offline': { en: 'Offline — tasks will load when connected', fr: 'Hors ligne — les tâches se chargeront une fois connecté', sw: 'Nje ya mtandao — kazi zitapakia ukiunganishwa', ha: 'Ba kan layi — ayyuka za loda idan an haɗa', tw: 'Ɔffline — adwuma bɛloade sɛ wɔde bɔ ho' },
   'farmTasks.priorityHigh': { en: 'High', fr: 'Haute', sw: 'Juu', ha: 'Mai girma', tw: 'Kɛse' },
   'farmTasks.priorityMedium': { en: 'Medium', fr: 'Moyenne', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
   'farmTasks.priorityLow': { en: 'Low', fr: 'Basse', sw: 'Chini', ha: 'Ƙasa', tw: 'Kakra' },
@@ -3560,6 +3772,19 @@ const T = {
   'cropStage.plantedDate': { en: 'Date Planted (optional)', fr: 'Date de plantation (optionnel)', sw: 'Tarehe ya Kupanda (si lazima)', ha: 'Ranar Shuka (zaɓi)', tw: 'Da a duae (ɛnyɛ dɛ)' },
   'cropStage.plantedDateHint': { en: 'Helps estimate when to move to the next stage', fr: 'Aide à estimer le passage à l\'étape suivante', sw: 'Husaidia kukadirisha hatua inayofuata', ha: 'Yana taimakawa wajen kiyasin mataki na gaba', tw: 'Ɛboa sɛ wobɛhunu bere a wobɛkɔ anammɔn a edi so' },
   'cropStage.saveFailed': { en: 'Could not save stage. Try again.', fr: 'Impossible de sauvegarder.', sw: 'Imeshindikana kuhifadhi hatua.', ha: 'Ba a iya adana mataki ba.', tw: 'Yɛantumi ankora anammɔn no.' },
+  'cropStage.saved': { en: 'Saved!', fr: 'Enregistré !', sw: 'Imehifadhiwa!', ha: 'An adana!', tw: 'Wɔakora!' },
+  'cropStage.savedOffline': { en: 'Saved locally. Will sync when online.', fr: 'Enregistré localement.', sw: 'Imehifadhiwa. Itasawazisha mtandaoni.', ha: 'An adana a gida. Za a daidaita yayin da ake kan layi.', tw: 'Wɔakora ha. Ɛbɛsesa bere a wɔbɛba intanɛt so.' },
+
+  // ─── Season Engine ──────────────────────────────────────
+  'season.title': { en: 'Season Engine', fr: 'Moteur de saison', sw: 'Injini ya Msimu', ha: 'Injin Damina', tw: 'Bere Enjin' },
+  'season.description': { en: 'Track your current season, complete daily tasks, and keep progress moving.', fr: 'Suivez votre saison en cours et accomplissez vos tâches.', sw: 'Fuatilia msimu wako wa sasa na ukamilishe kazi za kila siku.', ha: 'Bi sawun daminar ka kuma ka kammala ayyukan yau da kullun.', tw: 'Di wo bere a ɛkɔ so no akyi na wie wo adwuma.' },
+  'season.crop': { en: 'Crop', fr: 'Culture', sw: 'Mazao', ha: 'Amfani', tw: 'Nnɔbae' },
+  'season.stage': { en: 'Stage', fr: 'Étape', sw: 'Hatua', ha: 'Mataki', tw: 'Anammɔn' },
+  'season.startDate': { en: 'Start Date', fr: 'Date de début', sw: 'Tarehe ya Kuanza', ha: 'Ranar Farawa', tw: 'Mfiase Da' },
+  'season.status': { en: 'Status', fr: 'Statut', sw: 'Hali', ha: 'Matsayi', tw: 'Tebea' },
+  'season.active': { en: 'Active', fr: 'Actif', sw: 'Hai', ha: 'Mai aiki', tw: 'Ɛkɔ so' },
+  'season.completed': { en: 'Completed', fr: 'Terminé', sw: 'Imekamilika', ha: 'An kammala', tw: 'Wɔawie' },
+  'season.completeSeason': { en: 'Complete Season', fr: 'Terminer la saison', sw: 'Maliza Msimu', ha: 'Kammala Damina', tw: 'Wie Bere' },
 
   // ─── Seasonal Timing ────────────────────────────────────
   'seasonal.title': { en: 'Seasonal Timing', fr: 'Calendrier saisonnier', sw: 'Muda wa Msimu', ha: 'Lokacin Damina', tw: 'Bere Nhyehyɛe' },
@@ -3742,6 +3967,378 @@ const T = {
   },
   'weekly.missingData': {
     en: 'To Improve This Summary', fr: 'Pour am\u00E9liorer ce r\u00E9sum\u00E9', sw: 'Kuboresha muhtasari', ha: 'Don inganta ta\u0199aitacce', tw: 'Y\u025B ns\u025Bm yi yie',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING — new farmer setup flow
+  // ═══════════════════════════════════════════════════════════
+
+  'onboarding.newToFarming': {
+    en: 'Are you new to farming?', fr: '\u00CAtes-vous nouveau dans l\'agriculture ?', sw: 'Je, u mpya katika kilimo?', ha: 'Sabon manomi ne kai?', tw: 'Woy\u025Bokuafo\u0254 foforo\u0254?',
+  },
+  'onboarding.yesNew': {
+    en: "Yes, I'm new", fr: 'Oui, je suis nouveau', sw: 'Ndio, mimi ni mpya', ha: 'Eh, sabon zuwa ne', tw: 'Aane, mey\u025B foforo\u0254',
+  },
+  'onboarding.haveExperience': {
+    en: 'I have experience', fr: "J'ai de l'exp\u00E9rience", sw: 'Nina uzoefu', ha: 'Ina da \u0199warewa', tw: 'Mew\u0254 osuahu',
+  },
+  'onboarding.whereIsFarm': {
+    en: 'Where is your farm?', fr: 'O\u00F9 se trouve votre ferme ?', sw: 'Shamba lako liko wapi?', ha: 'Ina gonar ka?', tw: 'Wo afuo no w\u0254 he?',
+  },
+  'onboarding.useMyLocation': {
+    en: 'Use my location', fr: 'Utiliser ma position', sw: 'Tumia eneo langu', ha: 'Yi amfani da wurin da nake', tw: 'Fa me beae\u025B',
+  },
+  'onboarding.detecting': {
+    en: 'Finding your location...', fr: 'Recherche de votre position...', sw: 'Inatafuta eneo lako...', ha: 'Ana neman wurin ka...', tw: 'Rehwehw\u025B wo beae\u025B...',
+  },
+  'onboarding.locationFound': {
+    en: 'Location found!', fr: 'Position trouv\u00E9e !', sw: 'Eneo limepatikana!', ha: 'An sami wurin!', tw: 'Y\u025Bahu beae\u025B no!',
+  },
+  'onboarding.locationFailed': {
+    en: 'Could not detect location', fr: 'Impossible de d\u00E9tecter la position', sw: 'Imeshindwa kupata eneo', ha: 'Ba a iya gano wurin ba', tw: 'Y\u025Bantumi anhu beae\u025B no',
+  },
+  'onboarding.typeLocation': {
+    en: 'Type your location', fr: 'Tapez votre emplacement', sw: 'Andika eneo lako', ha: 'Rubuta wurin ka', tw: 'Twer\u025B wo beae\u025B',
+  },
+  'onboarding.whatGrowing': {
+    en: 'What are you growing?', fr: 'Que cultivez-vous ?', sw: 'Unalima nini?', ha: 'Me kake nomawa?', tw: 'De\u025Bn na wudua?',
+  },
+  'onboarding.other': {
+    en: 'Other', fr: 'Autre', sw: 'Nyingine', ha: 'Wani', tw: 'Ebifoforo\u0254',
+  },
+  'onboarding.howBig': {
+    en: 'How big is your farm?', fr: 'Quelle est la taille de votre ferme ?', sw: 'Shamba lako ni kubwa kiasi gani?', ha: 'Yaya girman gonar ka?', tw: 'Wo afuo no so d\u025Bn?',
+  },
+  'onboarding.small': {
+    en: 'Small', fr: 'Petite', sw: 'Ndogo', ha: '\u0198arama', tw: 'Ketewa',
+  },
+  'onboarding.medium': {
+    en: 'Medium', fr: 'Moyenne', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam',
+  },
+  'onboarding.large': {
+    en: 'Large', fr: 'Grande', sw: 'Kubwa', ha: 'Babba', tw: 'K\u025Bse\u025B',
+  },
+  'onboarding.underAcres': {
+    en: 'Under 2 acres', fr: 'Moins de 2 acres', sw: 'Chini ya ekari 2', ha: '\u0198asa da eka 2', tw: 'Ase\u025B fa eka 2',
+  },
+  'onboarding.mediumAcres': {
+    en: '2\u201310 acres', fr: '2\u201310 acres', sw: 'Ekari 2\u201310', ha: 'Eka 2\u201310', tw: 'Eka 2\u201310',
+  },
+  'onboarding.overAcres': {
+    en: 'Over 10 acres', fr: 'Plus de 10 acres', sw: 'Zaidi ya ekari 10', ha: 'Fiye da eka 10', tw: '\u0190boro eka 10',
+  },
+  'onboarding.nameFarm': {
+    en: 'Name your farm', fr: 'Nommez votre ferme', sw: 'Ipe shamba lako jina', ha: 'Sa wa gonar ka suna', tw: 'To wo afuo no din',
+  },
+  'onboarding.farmNamePlaceholder': {
+    en: 'e.g. My Farm', fr: 'ex. Ma Ferme', sw: 'k.m. Shamba Langu', ha: 'misali. Gonar ta', tw: 's\u025B Me Afuo',
+  },
+  'onboarding.startFarming': {
+    en: 'Start Farming', fr: 'Commencer', sw: 'Anza Kulima', ha: 'Fara Noma', tw: 'Hy\u025B Ase\u025B Adua',
+  },
+  'onboarding.step': {
+    en: 'Step', fr: '\u00C9tape', sw: 'Hatua', ha: 'Mataki', tw: 'Anamm\u0254n',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TASK ACTIONS — quick-complete buttons on task cards
+  // ═══════════════════════════════════════════════════════════
+
+  'taskAction.iWatered': {
+    en: 'I watered \u2705', fr: "J'ai arros\u00E9 \u2705", sw: 'Nimemwagilia \u2705', ha: 'Na shayar \u2705', tw: 'Magugu so \u2705',
+  },
+  'taskAction.iPlanted': {
+    en: 'I planted \u2705', fr: "J'ai plant\u00E9 \u2705", sw: 'Nimepanda \u2705', ha: 'Na shuka \u2705', tw: 'Maduae \u2705',
+  },
+  'taskAction.iSprayed': {
+    en: 'I sprayed \u2705', fr: "J'ai pulv\u00E9ris\u00E9 \u2705", sw: 'Nimenyunyizia \u2705', ha: 'Na fesa \u2705', tw: 'Mapete aduro \u2705',
+  },
+  'taskAction.iHarvested': {
+    en: 'I harvested \u2705', fr: "J'ai r\u00E9colt\u00E9 \u2705", sw: 'Nimevuna \u2705', ha: 'Na girbe \u2705', tw: 'Matwa bere \u2705',
+  },
+  'taskAction.markDone': {
+    en: 'Mark done \u2705', fr: 'Marquer termin\u00E9 \u2705', sw: 'Weka imekamilika \u2705', ha: 'Yi alama an gama \u2705', tw: 'Hy\u025B ns\u0254 \u2705',
+  },
+  'taskAction.skip': {
+    en: 'Skip for now', fr: 'Passer pour le moment', sw: 'Ruka kwa sasa', ha: 'Tsallake yanzu', tw: 'Twam seesei',
+  },
+  'taskAction.saved': {
+    en: 'Saved!', fr: 'Enregistr\u00E9 !', sw: 'Imehifadhiwa!', ha: 'An ajiye!', tw: 'Y\u025Bakora!',
+  },
+  'taskAction.nextReady': {
+    en: 'Next task ready', fr: 'T\u00E2che suivante pr\u00EAte', sw: 'Kazi inayofuata iko tayari', ha: 'Aikin gaba ya shirya', tw: 'Adwuma a \u025Bdi so aboa',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ALL TASKS — full task list page
+  // ═══════════════════════════════════════════════════════════
+
+  'allTasks.title': {
+    en: 'All Tasks', fr: 'Toutes les t\u00E2ches', sw: 'Kazi Zote', ha: 'Duk Ayyuka', tw: 'Adwuma Nyinaa',
+  },
+  'allTasks.high': {
+    en: 'High Priority', fr: 'Priorit\u00E9 haute', sw: 'Kipaumbele cha juu', ha: 'Muhimmanci mai girma', tw: '\u0190ho hia pa',
+  },
+  'allTasks.medium': {
+    en: 'Medium Priority', fr: 'Priorit\u00E9 moyenne', sw: 'Kipaumbele cha kati', ha: 'Muhimmanci matsakaici', tw: '\u0190ho hia kakra',
+  },
+  'allTasks.low': {
+    en: 'Low Priority', fr: 'Priorit\u00E9 basse', sw: 'Kipaumbele cha chini', ha: 'Muhimmanci \u0199arami', tw: '\u0190ho nhia dodo',
+  },
+  'allTasks.allDone': {
+    en: 'All caught up!', fr: 'Tout est \u00E0 jour !', sw: 'Umekamilisha yote!', ha: 'An gama komai!', tw: 'Woawie nyinaa!',
+  },
+  'allTasks.backHome': {
+    en: 'Back to home', fr: "Retour \u00E0 l'accueil", sw: 'Rudi nyumbani', ha: 'Koma gida', tw: 'K\u0254 fie',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  MY FARM — farm profile & management page
+  // ═══════════════════════════════════════════════════════════
+
+  'myFarm.title': {
+    en: 'My Farm', fr: 'Ma Ferme', sw: 'Shamba Langu', ha: 'Gonar Ta', tw: 'Me Afuo',
+  },
+  'myFarm.crop': {
+    en: 'Crop', fr: 'Culture', sw: 'Mazao', ha: 'Amfanin gona', tw: 'Nn\u0254bae\u025B',
+  },
+  'myFarm.location': {
+    en: 'Location', fr: 'Emplacement', sw: 'Eneo', ha: 'Wuri', tw: 'Beae\u025B',
+  },
+  'myFarm.size': {
+    en: 'Farm Size', fr: 'Taille de la ferme', sw: 'Ukubwa wa shamba', ha: 'Girman gona', tw: 'Afuo no k\u025Bse\u025B',
+  },
+  'myFarm.stage': {
+    en: 'Stage', fr: '\u00C9tape', sw: 'Hatua', ha: 'Mataki', tw: 'Anamm\u0254n',
+  },
+  'myFarm.country': {
+    en: 'Country', fr: 'Pays', sw: 'Nchi', ha: '\u0198asa', tw: '\u0186man',
+  },
+  'myFarm.edit': {
+    en: 'Edit Farm', fr: 'Modifier la ferme', sw: 'Hariri shamba', ha: 'Gyara gona', tw: 'Sesa afuo no',
+  },
+  'myFarm.switchFarm': {
+    en: 'Switch Farm', fr: 'Changer de ferme', sw: 'Badilisha shamba', ha: 'Canja gona', tw: 'Sesa afuo',
+  },
+  'myFarm.addFarm': {
+    en: 'Add New Farm', fr: 'Ajouter une ferme', sw: 'Ongeza shamba jipya', ha: '\u0198ara sabuwar gona', tw: 'Fa afuo foforo\u0254 ka ho',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  USER MODE — mode switcher labels
+  // ═══════════════════════════════════════════════════════════
+
+  'mode.basic': {
+    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Sauƙi', tw: 'Mmerɛw',
+  },
+  'mode.standard': {
+    en: 'Standard', fr: 'Standard', sw: 'Kawaida', ha: 'Daidai', tw: 'Nhyehyɛe',
+  },
+  'mode.advanced': {
+    en: 'Advanced', fr: 'Avancé', sw: 'Kwa kina', ha: 'Ci gaba', tw: 'Nea ɛkɔ anim',
+  },
+  'mode.switchToBasic': {
+    en: 'Switch to simple view', fr: 'Vue simple', sw: 'Badilisha kuwa rahisi', ha: 'Canja zuwa sauƙi', tw: 'Sesa kɔ mmerɛw',
+  },
+  'mode.switchToStandard': {
+    en: 'Switch to standard view', fr: 'Vue standard', sw: 'Badilisha kuwa kawaida', ha: 'Canja zuwa daidai', tw: 'Sesa kɔ nhyehyɛe',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TASK PRESENTATION — labels and voice prompts per type
+  // ═══════════════════════════════════════════════════════════
+
+  // Short labels (icon + text in standard mode)
+  'task.label.watering': {
+    en: 'Water crops', fr: 'Arroser', sw: 'Mwagilia', ha: 'Shayar da amfani', tw: 'Pete nnɔbae no nsuo',
+  },
+  'task.label.planting': {
+    en: 'Plant seeds', fr: 'Planter', sw: 'Panda mbegu', ha: 'Shuka iri', tw: 'Dua aba',
+  },
+  'task.label.spraying': {
+    en: 'Spray field', fr: 'Pulvériser', sw: 'Nyunyiza', ha: 'Fesa gona', tw: 'Pete aduro',
+  },
+  'task.label.fertilizing': {
+    en: 'Apply fertilizer', fr: 'Fertiliser', sw: 'Weka mbolea', ha: 'Sa taki', tw: 'Gu nsɔhwɛ',
+  },
+  'task.label.weeding': {
+    en: 'Remove weeds', fr: 'Désherber', sw: 'Ondoa magugu', ha: 'Cire ciyawa', tw: 'Tu wura',
+  },
+  'task.label.harvest': {
+    en: 'Harvest', fr: 'Récolter', sw: 'Vuna', ha: 'Girbi', tw: 'Twa',
+  },
+  'task.label.pruning': {
+    en: 'Prune plants', fr: 'Tailler', sw: 'Pogoa', ha: 'Yanke reshe', tw: 'Twa nnan',
+  },
+  'task.label.mulching': {
+    en: 'Add mulch', fr: 'Pailler', sw: 'Weka matandiko', ha: 'Sa ciyawa', tw: 'De wura kata',
+  },
+  'task.label.scouting': {
+    en: 'Check crops', fr: 'Inspecter', sw: 'Kagua mazao', ha: 'Duba amfani', tw: 'Hwɛ nnɔbae',
+  },
+  'task.label.soilTest': {
+    en: 'Test soil', fr: 'Tester le sol', sw: 'Pima udongo', ha: 'Gwada ƙasa', tw: 'Sɔ asase hwɛ',
+  },
+  'task.label.irrigation': {
+    en: 'Irrigate', fr: 'Irriguer', sw: 'Mwagilia', ha: 'Ban ruwa', tw: 'Pete nsuo',
+  },
+  'task.label.storage': {
+    en: 'Store harvest', fr: 'Stocker', sw: 'Hifadhi mavuno', ha: 'Ajiye girbi', tw: 'Kora otwa',
+  },
+  'task.label.selling': {
+    en: 'Sell produce', fr: 'Vendre', sw: 'Uza mazao', ha: 'Sayar da kayan', tw: 'Tɔn nnɔbae',
+  },
+  'task.label.farmTask': {
+    en: 'Farm task', fr: 'Tâche agricole', sw: 'Kazi ya shamba', ha: 'Aikin gona', tw: 'Afuo adwuma',
+  },
+
+  // Voice prompts — short, spoken aloud by voice system
+  'task.voice.watering': {
+    en: 'Time to water your crops. Tap the button when done.',
+    fr: 'Il est temps d\'arroser. Appuyez quand c\'est fait.',
+    sw: 'Wakati wa kumwagilia. Bonyeza ukimaliza.',
+    ha: 'Lokacin shayar da amfani. Danna idan ka gama.',
+    tw: 'Bere aso sɛ wopete nsuo. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.planting': {
+    en: 'Time to plant. Tap the button when done.',
+    fr: 'Il est temps de planter. Appuyez quand c\'est fait.',
+    sw: 'Wakati wa kupanda. Bonyeza ukimaliza.',
+    ha: 'Lokacin shuka. Danna idan ka gama.',
+    tw: 'Bere aso sɛ wodua. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.spraying': {
+    en: 'Time to spray your field. Tap the button when done.',
+    fr: 'Il est temps de pulvériser. Appuyez quand c\'est fait.',
+    sw: 'Wakati wa kunyunyiza. Bonyeza ukimaliza.',
+    ha: 'Lokacin fesa gona. Danna idan ka gama.',
+    tw: 'Bere aso sɛ wopete aduro. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.fertilizing': {
+    en: 'Time to add fertilizer. Tap the button when done.',
+    fr: 'Il est temps de fertiliser. Appuyez quand c\'est fait.',
+    sw: 'Wakati wa kuweka mbolea. Bonyeza ukimaliza.',
+    ha: 'Lokacin sa taki. Danna idan ka gama.',
+    tw: 'Bere aso sɛ wogu nsɔhwɛ. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.weeding': {
+    en: 'Time to weed your farm. Tap the button when done.',
+    fr: 'Il est temps de désherber. Appuyez quand c\'est fait.',
+    sw: 'Wakati wa kupalilia. Bonyeza ukimaliza.',
+    ha: 'Lokacin cire ciyawa. Danna idan ka gama.',
+    tw: 'Bere aso sɛ wotu wura. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.harvest': {
+    en: 'Your crop is ready to harvest. Tap when done.',
+    fr: 'Votre récolte est prête. Appuyez quand c\'est fait.',
+    sw: 'Mazao yako yako tayari kuvunwa. Bonyeza ukimaliza.',
+    ha: 'Amfanin ku ya shirya don girbi. Danna idan ka gama.',
+    tw: 'Wo nnɔbae aboa sɛ wotwa. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.pruning': {
+    en: 'Time to prune your plants. Tap the button when done.',
+    fr: 'Il est temps de tailler. Appuyez quand c\'est fait.',
+    sw: 'Wakati wa kupogoa. Bonyeza ukimaliza.',
+    ha: 'Lokacin yanke reshe. Danna idan ka gama.',
+    tw: 'Bere aso sɛ wotwa nnan. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.scouting': {
+    en: 'Check your crops for any problems. Tap when done.',
+    fr: 'Vérifiez vos cultures. Appuyez quand c\'est fait.',
+    sw: 'Kagua mazao yako kwa matatizo. Bonyeza ukimaliza.',
+    ha: 'Duba amfanin gona don matsaloli. Danna idan ka gama.',
+    tw: 'Hwɛ wo nnɔbae sɛ asɛm bi wɔ mu. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.default': {
+    en: 'You have a task to do. Tap the button when done.',
+    fr: 'Vous avez une tâche. Appuyez quand c\'est fait.',
+    sw: 'Una kazi ya kufanya. Bonyeza ukimaliza.',
+    ha: 'Kana da aiki. Danna idan ka gama.',
+    tw: 'Wowɔ adwuma bi. Mia bɔtɔn no sɛ woawie.',
+  },
+  'task.voice.finishSetup': {
+    en: 'Set up your farm first. Tap the button to start.',
+    fr: 'Configurez votre ferme d\'abord. Appuyez pour commencer.',
+    sw: 'Weka shamba lako kwanza. Bonyeza kuanza.',
+    ha: 'Shirya gonar ka tukuna. Danna don fara.',
+    tw: 'Hyehyɛ wo afuo kan. Mia bɔtɔn no na hyɛ ase.',
+  },
+  'task.voice.setStage': {
+    en: 'Tell us what stage your crop is at. Tap the button.',
+    fr: 'Dites-nous le stade de votre culture. Appuyez.',
+    sw: 'Tuambie hatua ya mazao yako. Bonyeza.',
+    ha: 'Gaya mana matakin amfanin ku. Danna.',
+    tw: 'Ka kyerɛ yɛn wo nnɔbae anammɔn. Mia bɔtɔn no.',
+  },
+  'task.voice.allDone': {
+    en: 'Great work! All tasks done. You can add a farm update.',
+    fr: 'Bon travail ! Tout est fait. Ajoutez une mise à jour.',
+    sw: 'Kazi nzuri! Kazi zote zimekamilika. Unaweza kuongeza sasishi.',
+    ha: 'Kyakkyawan aiki! An gama komai. Zaka ƙara sabuntawa.',
+    tw: 'Adwuma pa! Woawie nyinaa. Wobɛtumi de nsɛm foforo aka ho.',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  FARMER SETTINGS — mode + voice controls
+  // ═══════════════════════════════════════════════════════════
+
+  'settings.viewMode': {
+    en: 'View', fr: 'Vue', sw: 'Mwonekano', ha: 'Gani', tw: 'Hwɛ',
+  },
+  'settings.voiceGuide': {
+    en: 'Voice', fr: 'Voix', sw: 'Sauti', ha: 'Murya', tw: 'Nne',
+  },
+  'settings.voiceOn': {
+    en: 'On', fr: 'Activé', sw: 'Wazi', ha: 'A kunna', tw: 'Abue',
+  },
+  'settings.voiceOff': {
+    en: 'Off', fr: 'Désactivé', sw: 'Imezimwa', ha: 'A kashe', tw: 'Adum',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ACTION FEEDBACK — farmer-friendly save/sync states
+  // ═══════════════════════════════════════════════════════════
+
+  'feedback.saved': {
+    en: 'Saved!', fr: 'Enregistré !', sw: 'Imehifadhiwa!', ha: 'An ajiye!', tw: 'Yɛakora!',
+  },
+  'feedback.savedOffline': {
+    en: 'Saved offline', fr: 'Enregistré hors ligne', sw: 'Imehifadhiwa bila mtandao', ha: 'An ajiye ba tare da layi ba', tw: 'Yɛakora a intanɛt nni hɔ',
+  },
+  'feedback.syncing': {
+    en: 'Sending...', fr: 'Envoi...', sw: 'Inatuma...', ha: 'Ana aikawa...', tw: 'Ɛrede...',
+  },
+  'feedback.synced': {
+    en: 'Sent!', fr: 'Envoyé !', sw: 'Imetumwa!', ha: 'An aika!', tw: 'Yɛade akɔ!',
+  },
+  'feedback.failed': {
+    en: 'Not sent', fr: 'Non envoyé', sw: 'Haijatumwa', ha: 'Ba a aika ba', tw: 'Ɛnkɔɛ',
+  },
+  'feedback.tapRetry': {
+    en: 'Tap to retry', fr: 'Appuyez pour réessayer', sw: 'Bonyeza kujaribu tena', ha: 'Danna don sake gwadawa', tw: 'Mia na san hwehwe',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  FIRST-TIME HINTS — one-time guidance overlays
+  // ═══════════════════════════════════════════════════════════
+
+  'hint.tapTask': {
+    en: 'Tap here to do your task', fr: 'Appuyez ici pour votre tâche', sw: 'Bonyeza hapa kufanya kazi', ha: 'Danna nan don aikin ku', tw: 'Mia ha na yɛ wo adwuma',
+  },
+  'hint.tapSpeaker': {
+    en: 'Tap to hear instructions', fr: 'Appuyez pour écouter', sw: 'Bonyeza kusikia maelekezo', ha: 'Danna don jin umurni', tw: 'Mia na tie nkyerɛkyerɛ',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  VOICE — welcome message
+  // ═══════════════════════════════════════════════════════════
+
+  'voice.welcome': {
+    en: 'Welcome to your farm. Check your task for today.',
+    fr: 'Bienvenue sur votre ferme. Vérifiez votre tâche du jour.',
+    sw: 'Karibu shambani kwako. Angalia kazi yako ya leo.',
+    ha: 'Barka da zuwa gonar ku. Duba aikin ku na yau.',
+    tw: 'Akwaaba wo afuo so. Hwɛ wo ɛnnɛ adwuma.',
   },
 };
 

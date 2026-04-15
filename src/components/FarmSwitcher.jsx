@@ -58,11 +58,12 @@ export default function FarmSwitcher() {
         aria-expanded={open}
         data-testid="farm-switcher-btn"
       >
+        <span style={S.farmIcon}>{'\uD83C\uDFE1'}</span>
         <div style={S.triggerLeft}>
-          <span style={S.defaultBadge}>
-            {hasMultiple ? t('farm.defaultFarm') : t('farm.yourFarm')}
-          </span>
           <span style={S.farmName}>{defaultFarm?.farmName || defaultFarm?.location || t('farm.activeFarm')}</span>
+          {defaultFarm?.cropType && (
+            <span style={S.farmCrop}>{defaultFarm.cropType}</span>
+          )}
         </div>
         <div style={S.triggerRight}>
           {hasMultiple && (
@@ -86,9 +87,8 @@ export default function FarmSwitcher() {
               data-testid={`farm-item-${farm.id}`}
             >
               <span style={S.itemName}>{farm.farmName || farm.location || t('farm.unnamed')}</span>
-              <span style={S.itemCrop}>{farm.cropType || ''}</span>
-              {farm.location && <span style={S.itemLocation}>{farm.location}</span>}
-              <span style={S.setDefaultHint}>{t('farm.tapToSetDefault')}</span>
+              {farm.cropType && <span style={S.itemCrop}>{farm.cropType}</span>}
+              <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
             </button>
           ))}
 
@@ -113,18 +113,22 @@ const S = {
   trigger: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
-    background: 'rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    borderRadius: '12px',
-    padding: '0.625rem 1rem',
+    gap: '0.75rem',
+    background: '#1B2330',
+    border: '2px solid rgba(34,197,94,0.25)',
+    borderRadius: '14px',
+    padding: '0.75rem 1rem',
     color: '#fff',
     cursor: 'pointer',
     fontSize: '0.9375rem',
     fontWeight: 600,
     width: '100%',
-    justifyContent: 'space-between',
     WebkitTapHighlightColor: 'transparent',
+    minHeight: '56px',
+  },
+  farmIcon: {
+    fontSize: '1.25rem',
+    flexShrink: 0,
   },
   triggerLeft: {
     display: 'flex',
@@ -132,6 +136,7 @@ const S = {
     gap: '0.125rem',
     overflow: 'hidden',
     textAlign: 'left',
+    flex: 1,
   },
   triggerRight: {
     display: 'flex',
@@ -139,18 +144,17 @@ const S = {
     gap: '0.5rem',
     flexShrink: 0,
   },
-  defaultBadge: {
-    fontSize: '0.6875rem',
-    color: '#86EFAC',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.03em',
-  },
   farmName: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    fontSize: '0.9375rem',
+    fontSize: '1rem',
+    fontWeight: 700,
+  },
+  farmCrop: {
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.45)',
+    fontWeight: 500,
   },
   farmCount: {
     fontSize: '0.75rem',
@@ -189,6 +193,7 @@ const S = {
     cursor: 'pointer',
     textAlign: 'left',
     color: '#fff',
+    minHeight: '48px',
     WebkitTapHighlightColor: 'transparent',
   },
   farmItemDisabled: {
@@ -207,9 +212,10 @@ const S = {
     fontSize: '0.75rem',
     color: 'rgba(255,255,255,0.4)',
   },
-  setDefaultHint: {
-    fontSize: '0.6875rem',
+  switchHint: {
+    fontSize: '0.75rem',
     color: '#86EFAC',
+    fontWeight: 600,
     marginTop: '0.25rem',
   },
   addFarmBtn: {
@@ -222,6 +228,7 @@ const S = {
     fontSize: '0.875rem',
     fontWeight: 600,
     textAlign: 'center',
+    minHeight: '48px',
     WebkitTapHighlightColor: 'transparent',
   },
   offlineHint: {

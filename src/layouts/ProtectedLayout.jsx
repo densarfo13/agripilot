@@ -2,10 +2,8 @@ import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
-import FarmerUuidBadge from '../components/FarmerUuidBadge.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
-import OfflineStatusBadge from '../components/OfflineStatusBadge.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 // Inner page loader — shown while lazy child routes load.
@@ -26,30 +24,30 @@ export default function ProtectedLayout() {
         <div style={S.page}>
           <div style={S.container}>
             <div style={S.header}>
-              <div>
-                <div style={S.signedInLabel}>Signed in</div>
-                <div style={S.email}>{user?.email || '-'}</div>
-                {!user?.emailVerifiedAt && (
-                  <button
-                    onClick={() => resendEmailVerification()}
-                    style={S.resendBtn}
-                  >
-                    Resend verification email
-                  </button>
-                )}
+              {/* Left: minimal user info */}
+              <div style={S.headerLeft}>
+                {isOfflineSession && <span style={S.offlineChip}>Offline</span>}
+                {!isOfflineSession && <span style={S.onlineChip}>Online</span>}
+                <LanguageSelector />
               </div>
 
+              {/* Right: compact actions */}
               <div style={S.headerRight}>
-                {isOfflineSession && <span style={S.offlineTag}>Offline</span>}
-                <OfflineStatusBadge />
-                <LanguageSelector />
                 <AutoVoiceToggle />
-                <FarmerUuidBadge />
                 <button onClick={logout} style={S.logoutBtn}>
                   Logout
                 </button>
               </div>
             </div>
+            {/* Email verification banner — only when needed, non-intrusive */}
+            {!user?.emailVerifiedAt && user?.email && (
+              <div style={S.verifyBanner}>
+                <span style={S.verifyText}>Verify your email: {user.email}</span>
+                <button onClick={() => resendEmailVerification()} style={S.verifyBtn}>
+                  Resend
+                </button>
+              </div>
+            )}
           </div>
           {/* Inner Suspense: lazy child pages load here without unmounting the layout/guards */}
           <Suspense fallback={<InnerPageLoader />}>
@@ -74,51 +72,73 @@ const S = {
   },
   header: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '1rem',
-    flexWrap: 'wrap',
+    gap: '0.75rem',
   },
-  signedInLabel: {
-    fontSize: '0.875rem',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  email: {
-    fontSize: '0.875rem',
-    fontWeight: 600,
-  },
-  resendBtn: {
-    marginTop: '0.5rem',
-    fontSize: '0.75rem',
-    color: '#FDE68A',
-    textDecoration: 'underline',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: 0,
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
   },
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '0.5rem',
   },
-  offlineTag: {
-    fontSize: '0.75rem',
-    fontWeight: 600,
+  onlineChip: {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    color: '#86EFAC',
+    background: 'rgba(34,197,94,0.12)',
+    padding: '0.2rem 0.5rem',
+    borderRadius: '6px',
+  },
+  offlineChip: {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
     color: '#FDE68A',
     background: 'rgba(120,53,15,0.5)',
-    padding: '0.25rem 0.5rem',
+    padding: '0.2rem 0.5rem',
     borderRadius: '6px',
   },
   logoutBtn: {
-    borderRadius: '12px',
-    border: '1px solid rgba(255,255,255,0.15)',
-    padding: '0.5rem 1rem',
-    fontSize: '0.875rem',
+    borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.12)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.8125rem',
     fontWeight: 600,
-    color: '#FFFFFF',
+    color: 'rgba(255,255,255,0.6)',
     background: 'transparent',
     cursor: 'pointer',
+    minHeight: '36px',
+  },
+  verifyBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    marginTop: '0.5rem',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '10px',
+    background: 'rgba(250,204,21,0.08)',
+    border: '1px solid rgba(250,204,21,0.2)',
+  },
+  verifyText: {
+    fontSize: '0.75rem',
+    color: '#FDE68A',
+    fontWeight: 500,
+  },
+  verifyBtn: {
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    color: '#FDE68A',
+    background: 'none',
+    border: '1px solid rgba(250,204,21,0.3)',
+    borderRadius: '6px',
+    padding: '0.25rem 0.5rem',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   innerLoader: {
     display: 'flex',

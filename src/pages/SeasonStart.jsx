@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useSeason } from '../context/SeasonContext.jsx';
+import { useTranslation } from '../i18n/index.js';
 import SeasonTasksCard from '../components/SeasonTasksCard.jsx';
 
 export default function SeasonStart() {
   const navigate = useNavigate();
   const { season, finishSeason } = useSeason();
+  const { t } = useTranslation();
 
   async function handleCompleteSeason() {
     try {
@@ -15,34 +17,45 @@ export default function SeasonStart() {
     }
   }
 
+  if (!season) {
+    return (
+      <div style={S.page}>
+        <div style={S.container}>
+          <div style={S.loadingWrap}>
+            <div style={S.spinner} />
+            <div style={S.loadingText}>{t('common.loading') || 'Loading...'}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={S.page}>
       <div style={S.container}>
         <div style={S.card}>
-          <h1 style={S.heading}>Season Engine</h1>
-          <p style={S.desc}>
-            Track your current season, complete daily tasks, and keep progress moving.
-          </p>
+          <h1 style={S.heading}>{t('season.title')}</h1>
+          <p style={S.desc}>{t('season.description')}</p>
 
           {season && (
             <div style={S.detailGrid}>
-              <div style={S.label}>Crop:</div>
+              <div style={S.label}>{t('season.crop')}:</div>
               <div>{season.cropType}</div>
 
-              <div style={S.label}>Stage:</div>
+              <div style={S.label}>{t('season.stage')}:</div>
               <div>{season.stage}</div>
 
-              <div style={S.label}>Start Date:</div>
+              <div style={S.label}>{t('season.startDate')}:</div>
               <div>{new Date(season.startDate).toLocaleDateString()}</div>
 
-              <div style={S.label}>Status:</div>
-              <div>{season.isActive ? 'Active' : 'Completed'}</div>
+              <div style={S.label}>{t('season.status')}:</div>
+              <div>{season.isActive ? t('season.active') : t('season.completed')}</div>
             </div>
           )}
 
           {season?.isActive && (
             <button onClick={handleCompleteSeason} style={S.completeBtn}>
-              Complete Season
+              {t('season.completeSeason')}
             </button>
           )}
         </div>
@@ -104,5 +117,26 @@ const S = {
     background: 'transparent',
     cursor: 'pointer',
     fontSize: '0.875rem',
+    minHeight: '48px',
+  },
+  loadingWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '40vh',
+    gap: '0.75rem',
+  },
+  spinner: {
+    width: '2rem',
+    height: '2rem',
+    border: '3px solid rgba(255,255,255,0.1)',
+    borderTopColor: '#22C55E',
+    borderRadius: '50%',
+    animation: 'farroway-spin 0.8s linear infinite',
+  },
+  loadingText: {
+    fontSize: '0.9rem',
+    color: 'rgba(255,255,255,0.6)',
   },
 };
