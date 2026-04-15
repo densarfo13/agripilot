@@ -49,14 +49,7 @@ const SellReadinessInput = lazy(() => import('../components/SellReadinessInput.j
 // The GET /farm-tasks/:id/tasks endpoint returns only pending tasks.
 
 // ─── Weather one-liner logic ──────────────────────────────────
-function getWeatherLine(weather, t) {
-  if (!weather) return t('dashboard.weatherUnknown');
-  const rain = (weather.rain || 0) + (weather.showers || 0) + (weather.precipitation || 0);
-  const wind = weather.windSpeed || 0;
-  if (rain > 0) return t('weather.rainLikely');
-  if (wind >= 20) return t('weather.noSpray');
-  return t('weather.safeActivity');
-}
+// getWeatherLine removed — weather guidance now comes from the decision engine
 
 export default function Dashboard() {
   const { autoVoice, language } = useAppPrefs();
@@ -250,7 +243,7 @@ export default function Dashboard() {
     );
   }
 
-  const weatherLine = getWeatherLine(weather, t);
+  // Weather guidance from decision engine (computed inside useFarmDecision)
 
   // ─── BASIC MODE: icon-first, voice-guided ─────────────────
   if (isBasic) {
@@ -283,6 +276,8 @@ export default function Dashboard() {
             <Suspense fallback={null}>
               <BasicFarmerHome
                 decision={farmDecision}
+                profile={profile}
+                user={user}
                 onDoThisNow={() => primaryTask && setShowTaskAction(true)}
                 onSetStage={() => setShowStageModal(true)}
                 onAddUpdate={handleStartUpdate}
@@ -406,80 +401,25 @@ export default function Dashboard() {
           />
         )}
 
-        {/* ═══ 3. WEATHER + PROGRESS (compact row) ═══ */}
+        {/* ═══ 3. WEATHER GUIDANCE ═══ */}
         {profile && !farmSwitching && setupComplete && (
-          <div style={S.compactRow}>
-            <WeatherStatusCard weather={weather} weatherLine={weatherLine} t={t} />
-            <WeeklyProgressCard doneThisWeek={doneThisWeek} weekTotal={weekTotal} t={t} />
-          </div>
+          <WeatherStatusCard guidance={farmDecision.weatherGuidance} t={t} />
         )}
 
-        {/* ═══ 4. QUICK ACTIONS ═══ */}
+        {/* ═══ 4. QUICK LINKS (compact, secondary) ═══ */}
         {profile && !farmSwitching && setupComplete && (
-          <QuickActionsRow
-            onAddUpdate={handleStartUpdate}
-            onCheckPests={() => navigate('/pest-risk-check')}
-            onMyFarm={() => navigate('/my-farm')}
-            onAllTasks={() => navigate('/tasks')}
-            taskCount={taskCount}
-            t={t}
-          />
-        )}
-
-        {/* ═══ 6. EXPANDED TOOLS (all advanced features) ═══ */}
-        {expandedSection === 'tools' && profile && !farmSwitching && setupComplete && (
-          <div style={S.expandedSection}>
-            <FarmWeatherCard />
-            <FarmPestRiskCard />
-            <FarmHarvestCard />
-            <YieldRecordsCard />
-            <FarmEconomicsCard />
-            <FarmBenchmarkCard />
-            {!farmDataLoading && (
-              <Suspense fallback={null}>
-                <div style={S.card}>
-                  <LandBoundaryCapture
-                    existingBoundary={boundaries[0] || null}
-                    onSaved={(b) => setBoundaries((prev) => [b, ...prev])}
-                  />
-                </div>
-              </Suspense>
-            )}
-            {!farmDataLoading && (
-              <Suspense fallback={null}>
-                <div style={S.card}>
-                  <SeedScanFlow
-                    existingScans={seedScans}
-                    onSaved={(s) => setSeedScans((prev) => [s, ...prev])}
-                  />
-                </div>
-              </Suspense>
-            )}
-            <Suspense fallback={null}>
-              <div style={S.card}>
-                <SellReadinessInput />
-              </div>
-            </Suspense>
-            <button onClick={() => setExpandedSection(null)} style={S.collapseBtn}>
-              {t('common.close')}
+          <div style={S.quickLinks}>
+            <button onClick={() => navigate('/my-farm')} style={S.quickLink}>
+              {'\uD83C\uDFE1'} {t('dashboard.myFarm')}
+            </button>
+            <button onClick={() => navigate('/tasks')} style={S.quickLink}>
+              {'\uD83D\uDCCB'} {t('dashboard.allTasks')}
+              {taskCount > 0 && <span style={S.quickBadge}>{taskCount}</span>}
+            </button>
+            <button onClick={() => navigate('/pest-risk-check')} style={S.quickLink}>
+              {'\uD83D\uDC1B'} {t('dashboard.checkPests')}
             </button>
           </div>
-        )}
-
-        {/* ═══ 7. MORE — single collapsed section ═══ */}
-        {profile && !farmSwitching && !expandedSection && setupComplete && (
-          <button onClick={() => toggleSection('tools')} style={S.moreBtn}>
-            <span style={{ fontSize: '1rem' }}>{'\uD83D\uDD27'}</span>
-            <span style={S.moreBtnLabel}>{t('dashboard.moreTools')}</span>
-            <span style={S.moreArrow}>{'\u203A'}</span>
-          </button>
-        )}
-
-        {/* ═══ 8. SETTINGS — mode + voice ═══ */}
-        {profile && !farmSwitching && !expandedSection && (
-          <Suspense fallback={null}>
-            <FarmerSettingsPanel />
-          </Suspense>
         )}
 
         {/* ═══ MODALS (unchanged) ═══ */}
@@ -707,6 +647,37 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   // ─── More section ───────────
+  quickLinks: {
+    display: 'flex',
+    gap: '0.5rem',
+    flexWrap: 'wrap',
+  },
+  quickLink: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '10px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: '36px',
+    position: 'relative',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  quickBadge: {
+    fontSize: '0.5625rem',
+    fontWeight: 700,
+    color: '#fff',
+    background: '#EF4444',
+    borderRadius: '6px',
+    padding: '1px 4px',
+    minWidth: '14px',
+    textAlign: 'center',
+  },
   moreBtn: {
     display: 'flex',
     alignItems: 'center',

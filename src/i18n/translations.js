@@ -667,6 +667,19 @@ const T = {
   //  SYNC STATUS
   // ═══════════════════════════════════════════════════════════
 
+  // ─── Farmer Home ────────────────────────────────────────
+  // ─── Avatar ─────────────────────────────────────────────
+  'avatar.add': { en: 'Add photo', fr: 'Ajouter photo', sw: 'Ongeza picha', ha: 'Ƙara hoto', tw: 'Fa mfonini ka ho' },
+  'avatar.change': { en: 'Change photo', fr: 'Changer photo', sw: 'Badilisha picha', ha: 'Canja hoto', tw: 'Sesa mfonini' },
+  'avatar.remove': { en: 'Remove', fr: 'Supprimer', sw: 'Ondoa', ha: 'Cire', tw: 'Yi fi hɔ' },
+  'avatar.uploading': { en: 'Uploading...', fr: 'Envoi...', sw: 'Inapakia...', ha: 'Ana aikawa...', tw: 'Ɛrede kɔ...' },
+  'avatar.uploadFailed': { en: 'Upload failed', fr: 'Échec', sw: 'Imeshindikana', ha: 'Ba a yi nasara ba', tw: 'Ɛnyɛɛ yie' },
+  'avatar.compressFailed': { en: 'Could not process image', fr: 'Image non traitée', sw: 'Haiwezi kusindika picha', ha: 'Ba a iya sarrafa hoto ba', tw: 'Ɛntumi nyɛ mfonini no' },
+
+  'farmer.online': { en: 'Online', fr: 'En ligne', sw: 'Mtandaoni', ha: 'Kan layi', tw: 'Intanɛt wɔ hɔ' },
+  'farmer.offline': { en: 'Offline', fr: 'Hors ligne', sw: 'Nje ya mtandao', ha: 'Babu intanet', tw: 'Intanɛt nni hɔ' },
+  'farmer.taskDone': { en: 'Done!', fr: 'Terminé !', sw: 'Imekamilika!', ha: 'An gama!', tw: 'Awie!' },
+
   'sync.offline': {
     en: 'No internet — your work is saved here', fr: 'Pas d\'internet — votre travail est sauvegardé ici', sw: 'Hakuna mtandao — kazi yako imehifadhiwa hapa', ha: 'Babu intanet — aikin ku an ajiye a nan', tw: 'Intanɛt nni hɔ — wo adwuma akora ha',
   },
@@ -3035,6 +3048,47 @@ const T = {
   'weather.safeActivity': {
     en: 'Today: Safe for normal farm activity.', fr: 'Aujourd\'hui : activité normale sans risque.', sw: 'Leo: Salama kwa shughuli za kawaida.', ha: 'Yau: Lafiya don aikin gona na yau da kullun.', tw: 'Ɛnnɛ: Ɛyɛ sɛ woyɛ afuoyɛ adwuma.',
   },
+
+  // ─── Weather Intelligence (wx.*) ─────────────────────
+  'wx.safe': { en: 'Safe for normal farm work', fr: 'Activité normale sans risque', sw: 'Salama kwa kazi ya shamba', ha: 'Lafiya don aikin gona', tw: 'Ɛyɛ sɛ woyɛ afuoyɛ adwuma' },
+  'wx.safeReason': { en: 'Good conditions today.', fr: 'Bonnes conditions aujourd\'hui.', sw: 'Hali nzuri leo.', ha: 'Yanayi mai kyau yau.', tw: 'Tebea yɛ ɛnnɛ.' },
+  'wx.safeVoice': { en: 'Safe for normal farm activity today.', fr: 'Activité normale sans risque aujourd\'hui.', sw: 'Salama kwa shughuli za shamba leo.', ha: 'Lafiya don aikin gona yau.', tw: 'Ɛnnɛ ɛyɛ sɛ woyɛ afuoyɛ adwuma.' },
+
+  'wx.dry': { en: 'Dry today — water your crop', fr: 'Sec aujourd\'hui — arrosez', sw: 'Kavu leo — mwagilia mazao', ha: 'Bushe yau — shayar da amfani', tw: 'Ɛyɛ hyew ɛnnɛ — gugu wo nnɔbae' },
+  'wx.dryReason': { en: 'Low humidity ({humidity}%). Your crop may need water.', fr: 'Humidité basse ({humidity}%).', sw: 'Unyevu mdogo ({humidity}%).', ha: 'Ƙarancin zafi ({humidity}%).', tw: 'Nsu a ɛwɔ wim no sua ({humidity}%).' },
+  'wx.dryVoice': { en: 'Dry conditions today. Water your crop.', fr: 'Conditions sèches. Arrosez votre culture.', sw: 'Hali kavu leo. Mwagilia mazao yako.', ha: 'Bushe yau. Shayar da amfanin ku.', tw: 'Ɛyɛ hyew ɛnnɛ. Gugu wo nnɔbae.' },
+
+  'wx.veryDry': { en: 'Very dry — water your crop now', fr: 'Très sec — arrosez maintenant', sw: 'Kavu sana — mwagilia sasa', ha: 'Bushe ƙwarai — shayar yanzu', tw: 'Ɛyɛ hyew pa — gugu ntɛm' },
+  'wx.veryDryReason': { en: 'Very low humidity ({humidity}%). Crop stress risk.', fr: 'Humidité très basse ({humidity}%).', sw: 'Unyevu mdogo sana ({humidity}%).', ha: 'Zafi ƙarami ƙwarai ({humidity}%).', tw: 'Nsu a ɛwɔ wim no sua pa ({humidity}%).' },
+  'wx.veryDryVoice': { en: 'Very dry today. Water your crop now.', fr: 'Très sec. Arrosez maintenant.', sw: 'Kavu sana leo. Mwagilia sasa.', ha: 'Bushe ƙwarai yau. Shayar yanzu.', tw: 'Ɛyɛ hyew pa ɛnnɛ. Gugu ntɛm.' },
+
+  'wx.drySpell': { en: 'Dry spell risk — water urgently', fr: 'Risque de sécheresse — arrosez', sw: 'Hatari ya ukame — mwagilia haraka', ha: 'Haɗarin fari — shayar da gaggawa', tw: 'Awɔw bere mu — gugu ntɛm' },
+  'wx.drySpellReason': { en: 'Extended dry period detected.', fr: 'Période sèche prolongée.', sw: 'Kipindi kirefu cha ukavu.', ha: 'An gano lokacin bushe.', tw: 'Wɔahu sɛ ɛyɛ hyew bere tenten.' },
+  'wx.drySpellVoice': { en: 'Dry spell risk. Water your crop urgently.', fr: 'Risque de sécheresse. Arrosez votre culture.', sw: 'Hatari ya ukame. Mwagilia haraka.', ha: 'Haɗarin fari. Shayar da gaggawa.', tw: 'Awɔw bere mu. Gugu wo nnɔbae ntɛm.' },
+
+  'wx.rainExpected': { en: 'Rain expected — skip watering', fr: 'Pluie prévue — pas d\'arrosage', sw: 'Mvua inatarajiwa — usimwagilie', ha: 'Ruwan sama yana zuwa — kada ka shayar', tw: 'Nsuo reba — nnye nsu ngu' },
+  'wx.rainExpectedReason': { en: 'Rain likely today ({rain}mm).', fr: 'Pluie probable ({rain}mm).', sw: 'Mvua inawezekana ({rain}mm).', ha: 'Ruwan sama mai yiwuwa ({rain}mm).', tw: 'Ebia nsuo bɛtɔ ({rain}mm).' },
+  'wx.rainExpectedVoice': { en: 'Rain is coming. Do not water today.', fr: 'Il va pleuvoir. Ne pas arroser.', sw: 'Mvua inakuja. Usimwagilie leo.', ha: 'Ruwan sama yana zuwa. Kada ka shayar.', tw: 'Nsuo reba. Ɛnnɛ nnye nsu ngu.' },
+
+  'wx.heavyRain': { en: 'Heavy rain — protect your crop', fr: 'Fortes pluies — protégez vos cultures', sw: 'Mvua kubwa — linda mazao', ha: 'Ruwan sama mai ƙarfi — kare amfani', tw: 'Nsuo bɛtɔ pa — bɔ wo nnɔbae ho ban' },
+  'wx.heavyRainReason': { en: 'Heavy rain expected ({rain}mm). Risk of crop damage.', fr: 'Fortes pluies prévues ({rain}mm).', sw: 'Mvua kubwa inatarajiwa ({rain}mm).', ha: 'Ruwan sama mai ƙarfi ({rain}mm).', tw: 'Nsuo bɛtɔ pa ({rain}mm).' },
+  'wx.heavyRainVoice': { en: 'Heavy rain coming. Protect your crop and avoid field work.', fr: 'Fortes pluies. Protégez vos cultures.', sw: 'Mvua kubwa inakuja. Linda mazao yako.', ha: 'Ruwan sama mai ƙarfi. Kare amfanin ku.', tw: 'Nsuo bɛtɔ pa. Bɔ wo nnɔbae ho ban.' },
+
+  'wx.highWind': { en: 'High wind — avoid spraying', fr: 'Vent fort — pas de pulvérisation', sw: 'Upepo mkali — usinyunyizie', ha: 'Iska mai ƙarfi — kada ka fesa', tw: 'Mframa kɛse — nnye aduro ngu' },
+  'wx.highWindReason': { en: 'Wind at {wind} km/h. Unsafe for spraying.', fr: 'Vent à {wind} km/h.', sw: 'Upepo wa {wind} km/h.', ha: 'Iska {wind} km/h.', tw: 'Mframa {wind} km/h.' },
+  'wx.highWindVoice': { en: 'Strong wind today. Do not spray.', fr: 'Vent fort. Ne pas pulvériser.', sw: 'Upepo mkali leo. Usinyunyizie.', ha: 'Iska mai ƙarfi yau. Kada ka fesa.', tw: 'Mframa kɛse ɛnnɛ. Nnye aduro ngu.' },
+
+  'wx.hot': { en: 'Hot today — water in the morning', fr: 'Chaud — arrosez le matin', sw: 'Joto leo — mwagilia asubuhi', ha: 'Zafi yau — shayar da safe', tw: 'Ɛyɛ hyew ɛnnɛ — gugu anɔpa' },
+  'wx.hotReason': { en: 'Temperature at {temp}°C. Avoid midday field work.', fr: 'Température de {temp}°C.', sw: 'Joto la {temp}°C.', ha: 'Zafin {temp}°C.', tw: 'Ahohyehye yɛ {temp}°C.' },
+  'wx.hotVoice': { en: 'Hot today. Water early morning. Avoid midday work.', fr: 'Chaud. Arrosez tôt le matin.', sw: 'Joto leo. Mwagilia asubuhi mapema.', ha: 'Zafi yau. Shayar da safe.', tw: 'Ɛyɛ hyew ɛnnɛ. Gugu anɔpa tuatuaa.' },
+
+  'wx.windyButSafe': { en: 'Breezy today — safe for most work', fr: 'Venteux — activité normale', sw: 'Upepo kidogo — kazi ya kawaida', ha: 'Iska kaɗan — aikin yau da kullun', tw: 'Mframa kakra — adwuma nyinaa yɛ' },
+  'wx.windyButSafeReason': { en: 'Wind at {wind} km/h. Normal activity is fine.', fr: 'Vent à {wind} km/h.', sw: 'Upepo wa {wind} km/h.', ha: 'Iska {wind} km/h.', tw: 'Mframa {wind} km/h.' },
+  'wx.windyButSafeVoice': { en: 'A bit windy but safe for farm work.', fr: 'Un peu de vent mais activité normale.', sw: 'Upepo kidogo lakini salama.', ha: 'Iska kaɗan amma lafiya.', tw: 'Mframa kakra nanso ɛyɛ.' },
+
+  'wx.noData': { en: 'No weather alert today', fr: 'Pas d\'alerte météo', sw: 'Hakuna tahadhari ya hewa', ha: 'Babu sanarwar yanayi', tw: 'Wim ho nsɛm biara nni hɔ' },
+  'wx.noDataReason': { en: 'Weather data unavailable.', fr: 'Données météo indisponibles.', sw: 'Data ya hewa haipatikani.', ha: 'Bayanin yanayi ba su samu ba.', tw: 'Wim ho nsɛm nni hɔ.' },
+  'wx.noDataVoice': { en: 'No weather alert. Continue with your farm tasks.', fr: 'Pas d\'alerte. Continuez vos tâches.', sw: 'Hakuna tahadhari. Endelea na kazi.', ha: 'Babu sanarwa. Ci gaba da aiki.', tw: 'Nsɛm biara nni hɔ. Kɔ so yɛ adwuma.' },
   'weather.addGpsDetail': {
     en: 'Add GPS coordinates or your village/region to unlock local weather advice.', fr: 'Ajoutez les coordonnées GPS ou votre village pour la météo locale.', sw: 'Weka GPS au kijiji chako kupata ushauri wa hewa.', ha: 'Ƙara GPS ko ƙauyen ka don yanayin gida.', tw: 'Fa GPS anaa wo akuraa nya wim tebea afutuɔ.',
   },

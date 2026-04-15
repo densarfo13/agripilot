@@ -22,6 +22,7 @@ import {
   isProfileComplete, isStageSet, isStageOutdated, isFarmStale, needsCheckIn,
   getStage, stageDaysAgo, isPestTask, isAlertTask, farmProgress, daysSinceUpdate,
 } from './decisionHelpers.js';
+import { getWeatherGuidance, getWeatherTaskAdjustment } from './weatherEngine.js';
 
 /**
  * Resolve the primary action for the farmer.
@@ -31,14 +32,19 @@ import {
  * @returns {import('./decisionTypes.js').DecisionResult}
  */
 export function resolveDecision(input, t) {
-  const { profile, setupComplete, primaryTask, taskCount, completedCount } = input;
+  const { profile, setupComplete, primaryTask, taskCount, completedCount, weather } = input;
 
-  const primary = resolvePrimaryAction(input, t);
+  // Weather intelligence — runs alongside task resolution
+  const crop = profile?.cropType || profile?.crop || '';
+  const stage = getStage(profile);
+  const weatherGuidance = getWeatherGuidance({ weather, crop, stage });
+
+  const primary = resolvePrimaryAction(input, t, weatherGuidance);
   const plan = buildTodayPlan(primary, profile, taskCount, t);
   const status = buildFarmStatus(input, t);
   const secondary = buildSecondaryActions(input, primary, t);
 
-  return { primaryAction: primary, todaysPlan: plan, farmStatus: status, secondaryActions: secondary };
+  return { primaryAction: primary, todaysPlan: plan, farmStatus: status, secondaryActions: secondary, weatherGuidance };
 }
 
 // ─── Contextual crop name helper ─────────────────────────────
@@ -51,7 +57,7 @@ function cropName(profile) {
 }
 
 // ─── Primary Action Resolution ───────────────────────────────
-function resolvePrimaryAction(input, t) {
+function resolvePrimaryAction(input, t, weatherGuidance) {
   const { profile, setupComplete, primaryTask } = input;
   const crop = cropName(profile);
 
@@ -119,16 +125,29 @@ function resolvePrimaryAction(input, t) {
     };
   }
 
-  // 7. Normal daily task (pest or standard)
+  // 7. Normal daily task (pest or standard) — weather can modify reason
   if (primaryTask) {
     const pest = isPestTask(primaryTask);
-    const fallbackReason = pest
-      ? t('guided.pestReason')
-      : (crop ? t('guided.taskReasonCrop', { crop }) || t('guided.taskReason') : t('guided.taskReason'));
+    const wxAdj = getWeatherTaskAdjustment(weatherGuidance, primaryTask);
+
+    // If weather strongly discourages this task, add a weather note to the reason
+    let reason = primaryTask.description || primaryTask.reason;
+    if (!reason) {
+      reason = pest
+        ? t('guided.pestReason')
+        : (crop ? t('guided.taskReasonCrop', { crop }) || t('guided.taskReason') : t('guided.taskReason'));
+    }
+    // Append weather context if relevant
+    if (wxAdj < -3 && weatherGuidance.status !== 'safe') {
+      const wxNote = t(weatherGuidance.recommendationKey, weatherGuidance.params);
+      if (wxNote && wxNote !== weatherGuidance.recommendationKey) {
+        reason = `${reason} ${wxNote}`;
+      }
+    }
+
     return {
       ...makeAction('daily_task', getTaskIcon(primaryTask), getTaskIconBg(primaryTask),
-        primaryTask.title,
-        primaryTask.description || primaryTask.reason || fallbackReason,
+        primaryTask.title, reason,
         t('guided.taskCta'), t('guided.taskNext'), 'medium', false),
       task: primaryTask,
     };

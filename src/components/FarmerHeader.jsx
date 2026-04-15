@@ -1,23 +1,25 @@
 /**
- * FarmerHeader — compact welcome card with name, location, crop
+ * FarmerHeader — compact welcome with avatar, name, location, crop
  */
 import { getCropLabel } from '../utils/crops.js';
+import { getAvatar } from '../utils/avatarStorage.js';
+import FarmerAvatar from './FarmerAvatar.jsx';
 
 export default function FarmerHeader({ user, profile, t }) {
-  const name = user?.fullName || t('dashboard.welcome') || 'Welcome';
+  const name = user?.fullName || profile?.farmerName || '';
+  const displayName = name || t('dashboard.welcome') || 'Welcome';
 
-  // Use profile.cropType (V2 API shape), fall back to profile.crop (legacy)
   const rawCrop = profile?.cropType || profile?.crop || '';
   const cropDisplay = getCropLabel(rawCrop);
-
   const locationName = profile?.location || profile?.locationLabel || profile?.locationName || '';
   const subtitle = [locationName, cropDisplay].filter(Boolean).join(' \u2022 ');
 
   return (
     <div style={S.welcomeRow}>
+      <FarmerAvatar fullName={name} profileImageUrl={getAvatar()} size={40} />
       <div style={{ flex: 1 }}>
         <h1 style={S.welcomeTitle}>
-          {t('dashboard.hello', { name })}
+          {t('dashboard.hello', { name: displayName })}
         </h1>
         {subtitle && (
           <p style={S.subtitle}>{subtitle}</p>

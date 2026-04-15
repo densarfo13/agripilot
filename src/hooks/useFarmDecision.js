@@ -52,6 +52,7 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       todaysPlan: [],
       farmStatus: null,
       secondaryActions: [],
+      weatherGuidance: null,
     }),
   };
 }

@@ -6,11 +6,15 @@
  * no technical fields. Dark theme, inline styles, all text via useTranslation().
  */
 
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
+import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
+import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
 
@@ -59,7 +63,40 @@ function formatSize(size, unit) {
 export default function MyFarmPage() {
   const navigate = useNavigate();
   const { profile, farms, currentFarmId, loading: profileLoading } = useProfile();
+  const { user } = useAuth();
   const { t } = useTranslation();
+  const fileInputRef = useRef(null);
+  const [avatarUrl, setAvatarUrl] = useState(getAvatar);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
+
+  async function handleAvatarFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      const dataUrl = await compressAvatar(file);
+      if (dataUrl) {
+        saveAvatar(dataUrl);
+        setAvatarUrl(dataUrl);
+      } else {
+        setAvatarError(t('avatar.compressFailed') || 'Could not process image');
+      }
+    } catch {
+      setAvatarError(t('avatar.uploadFailed') || 'Upload failed');
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  function handleRemoveAvatar() {
+    removeAvatar();
+    setAvatarUrl(null);
+  }
+
+  const farmerName = user?.fullName || profile?.farmerName || '';
 
   if (profileLoading) {
     return (
@@ -103,9 +140,38 @@ export default function MyFarmPage() {
       {farm ? (
         <div style={S.cardWrap}>
           <div style={S.card}>
-            {/* Farm name */}
+            {/* Avatar + farm name */}
+            <div style={S.avatarSection}>
+              <FarmerAvatar
+                fullName={farmerName}
+                profileImageUrl={avatarUrl}
+                size={64}
+                onClick={() => fileInputRef.current?.click()}
+                editable
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleAvatarFile}
+                style={{ display: 'none' }}
+              />
+              <div style={S.avatarActions}>
+                <button onClick={() => fileInputRef.current?.click()} style={S.avatarBtn} disabled={avatarUploading}>
+                  {avatarUploading ? (t('avatar.uploading') || 'Uploading...') : avatarUrl ? (t('avatar.change') || 'Change photo') : (t('avatar.add') || 'Add photo')}
+                </button>
+                {avatarUrl && (
+                  <button onClick={handleRemoveAvatar} style={S.avatarRemoveBtn}>
+                    {t('avatar.remove') || 'Remove'}
+                  </button>
+                )}
+              </div>
+              {avatarError && <div style={S.avatarError}>{avatarError}</div>}
+            </div>
+
             <div style={S.farmNameRow}>
-              <span style={S.farmEmoji}>🏡</span>
+              <span style={S.farmEmoji}>{'\uD83C\uDFE1'}</span>
               <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm') || 'My Farm'}</h2>
             </div>
 
@@ -264,6 +330,48 @@ const S = {
     padding: '1.5rem',
     border: '1px solid rgba(255,255,255,0.1)',
     boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
+  },
+  avatarSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '1rem',
+    paddingBottom: '1rem',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+  },
+  avatarActions: {
+    display: 'flex',
+    gap: '0.5rem',
+  },
+  avatarBtn: {
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: '#86EFAC',
+    background: 'none',
+    border: '1px solid rgba(34,197,94,0.3)',
+    borderRadius: '8px',
+    padding: '0.375rem 0.75rem',
+    cursor: 'pointer',
+    minHeight: '32px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  avatarRemoveBtn: {
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.4)',
+    background: 'none',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    padding: '0.375rem 0.75rem',
+    cursor: 'pointer',
+    minHeight: '32px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  avatarError: {
+    fontSize: '0.75rem',
+    color: '#FCA5A5',
+    marginTop: '0.25rem',
   },
   farmNameRow: {
     display: 'flex',
