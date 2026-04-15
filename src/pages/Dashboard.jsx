@@ -205,6 +205,8 @@ export default function Dashboard() {
                 onSetStage={handleSetStage}
                 onAddUpdate={handleAddUpdate}
                 onGoToSetup={handleGoToSetup}
+                lastSuccessText={loop.lastSuccessText}
+                autopilotNextText={loop.taskViewModel?.nextText}
               />
             </Suspense>
           )}
@@ -234,6 +236,8 @@ export default function Dashboard() {
             onSetStage={handleSetStage}
             onGoToSetup={handleGoToSetup}
             onAddUpdate={handleAddUpdate}
+            lastSuccessText={loop.lastSuccessText}
+            autopilotNextText={loop.taskViewModel?.nextText}
             t={t}
             language={loop.language}
           />

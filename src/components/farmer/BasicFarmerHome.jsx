@@ -52,6 +52,8 @@ export default function BasicFarmerHome({
   onSetStage,
   onAddUpdate,
   onGoToSetup,
+  lastSuccessText,
+  autopilotNextText,
 }) {
   const { t } = useTranslation();
   const { autoVoice, language } = useAppPrefs();
@@ -123,7 +125,15 @@ export default function BasicFarmerHome({
         <div style={S.doneCard} data-testid="loop-completed">
           <span style={S.doneIcon}>{'\u2705'}</span>
           <div style={S.doneText}>{t('loop.taskDone')}</div>
-          <div style={S.doneSubtext}>{t('loop.nextReady')}</div>
+          {lastSuccessText && (
+            <div style={S.doneSubtext}>{lastSuccessText}</div>
+          )}
+          {autopilotNextText && (
+            <div style={S.doneNext}>{autopilotNextText}</div>
+          )}
+          {!lastSuccessText && !autopilotNextText && (
+            <div style={S.doneSubtext}>{t('loop.nextReady')}</div>
+          )}
         </div>
       )}
 
@@ -210,6 +220,12 @@ const S = {
     fontSize: '0.875rem',
     color: '#9FB3C8',
     fontWeight: 500,
+  },
+  doneNext: {
+    fontSize: '0.875rem',
+    color: '#22C55E',
+    fontWeight: 600,
+    textAlign: 'center',
   },
   // ─── All done / come back ──
   allDoneCard: {

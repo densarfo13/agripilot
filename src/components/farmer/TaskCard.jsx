@@ -12,11 +12,22 @@
  *   - No component-level translation logic
  *   - No severity computation
  */
+import { useEffect, useRef } from 'react';
 import { assertIsViewModel } from '../../domain/tasks/devAssertions.js';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';
+import { safeTrackEvent } from '../../lib/analytics.js';
 
 export default function TaskCard({ viewModel, variant, language, t, onCta, onVoice, ctaDisabled }) {
   assertIsViewModel({ viewModel }, 'TaskCard');
+
+  // Track autopilot why/risk shown (once per task)
+  const trackedRef = useRef(null);
+  useEffect(() => {
+    if (!viewModel || trackedRef.current === viewModel.id) return;
+    trackedRef.current = viewModel.id;
+    if (viewModel.whyText) safeTrackEvent('autopilot_why_shown', { taskId: viewModel.taskId, ruleId: viewModel.autopilotRuleId });
+    if (viewModel.riskText) safeTrackEvent('autopilot_risk_shown', { taskId: viewModel.taskId, ruleId: viewModel.autopilotRuleId });
+  }, [viewModel]);
 
   if (!viewModel) return null;
 
@@ -43,6 +54,16 @@ export default function TaskCard({ viewModel, variant, language, t, onCta, onVoi
 
         {/* Title */}
         <div style={S.simpleTitle}>{viewModel.title}</div>
+
+        {/* Why line (autopilot) */}
+        {viewModel.whyText && (
+          <div style={S.whyLine}>{viewModel.whyText}</div>
+        )}
+
+        {/* Risk line (autopilot) */}
+        {viewModel.riskText && (
+          <div style={S.riskLine}>{viewModel.riskText}</div>
+        )}
 
         {/* Voice — prominent in simple mode */}
         <button onClick={handleVoice} style={S.voiceBtn} type="button">
@@ -88,6 +109,16 @@ export default function TaskCard({ viewModel, variant, language, t, onCta, onVoi
           )}
         </div>
       </div>
+
+      {/* Why line (autopilot) */}
+      {viewModel.whyText && (
+        <div style={S.whyLineStandard}>{viewModel.whyText}</div>
+      )}
+
+      {/* Risk line (autopilot) */}
+      {viewModel.riskText && (
+        <div style={S.riskLineStandard}>{viewModel.riskText}</div>
+      )}
 
       {/* Stage chip (if stage action) */}
       {viewModel.stageInfo && (
@@ -152,6 +183,24 @@ const S = {
     color: '#EAF2FF',
     lineHeight: 1.3,
     maxWidth: '20rem',
+  },
+  // ═══ Autopilot why/risk (simple) ═══
+  whyLine: {
+    fontSize: '0.875rem',
+    color: '#9FB3C8',
+    fontWeight: 500,
+    lineHeight: 1.4,
+    maxWidth: '20rem',
+    textAlign: 'center',
+  },
+  riskLine: {
+    fontSize: '0.75rem',
+    color: '#F59E0B',
+    fontWeight: 500,
+    lineHeight: 1.3,
+    maxWidth: '20rem',
+    textAlign: 'center',
+    opacity: 0.85,
   },
   voiceBtn: {
     display: 'flex',
@@ -251,6 +300,24 @@ const S = {
     color: '#9FB3C8',
     lineHeight: 1.5,
     marginTop: '0.25rem',
+  },
+  // ═══ Autopilot why/risk (standard) ═══
+  whyLineStandard: {
+    fontSize: '0.8125rem',
+    color: '#9FB3C8',
+    fontWeight: 500,
+    lineHeight: 1.4,
+    marginTop: '0.5rem',
+    paddingLeft: '0.25rem',
+  },
+  riskLineStandard: {
+    fontSize: '0.75rem',
+    color: '#F59E0B',
+    fontWeight: 500,
+    lineHeight: 1.3,
+    marginTop: '0.25rem',
+    paddingLeft: '0.25rem',
+    opacity: 0.85,
   },
   stageChip: {
     display: 'inline-flex',

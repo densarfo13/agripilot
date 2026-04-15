@@ -17,6 +17,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
+import { useWeather } from '../context/WeatherContext.jsx';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { buildTaskListViewModels } from '../domain/tasks/index.js';
@@ -28,6 +29,7 @@ export default function AllTasksPage() {
   const { t, lang } = useTranslation();
   const { isOnline } = useNetwork();
   const { isBasic } = useUserMode();
+  const { weather } = useWeather();
 
   const [tasks, setTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
@@ -87,8 +89,9 @@ export default function AllTasksPage() {
     }
   }
 
-  // Build view models for localized titles
-  const viewModels = buildTaskListViewModels({ tasks, weatherGuidance: null, language: lang, t, mode: isBasic ? 'simple' : 'standard' });
+  // Build view models for localized titles + autopilot enrichment
+  const cropStage = profile?.cropStage || '';
+  const viewModels = buildTaskListViewModels({ tasks, weatherGuidance: null, language: lang, t, mode: isBasic ? 'simple' : 'standard', cropStage, weather });
   const vmByTaskId = Object.fromEntries(viewModels.map(vm => [vm.taskId, vm]));
 
   // Priority-sorted: high → medium → low (same cascade as Home)
@@ -173,7 +176,12 @@ export default function AllTasksPage() {
                 </button>
                 <div style={S.currentContent}>
                   <span style={S.currentIcon}>{getTaskActionIcon(currentTask.actionType)}</span>
-                  <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || currentTask.title}</span>
+                  <div style={S.currentTextWrap}>
+                    <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || currentTask.title}</span>
+                    {vmByTaskId[currentTask.id]?.whyText && (
+                      <span style={S.currentWhy}>{vmByTaskId[currentTask.id].whyText}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </>
@@ -313,9 +321,11 @@ const S = {
     border: '1px solid rgba(255,255,255,0.06)',
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
   },
-  currentContent: { display: 'flex', alignItems: 'center', gap: '0.625rem', flex: 1, minWidth: 0 },
-  currentIcon: { fontSize: '1.375rem', flexShrink: 0 },
-  currentTitle: { fontWeight: 700, color: '#EAF2FF', fontSize: '1rem', flex: 1, minWidth: 0 },
+  currentContent: { display: 'flex', alignItems: 'flex-start', gap: '0.625rem', flex: 1, minWidth: 0 },
+  currentIcon: { fontSize: '1.375rem', flexShrink: 0, marginTop: '0.125rem' },
+  currentTextWrap: { display: 'flex', flexDirection: 'column', gap: '0.125rem', flex: 1, minWidth: 0 },
+  currentTitle: { fontWeight: 700, color: '#EAF2FF', fontSize: '1rem' },
+  currentWhy: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.3 },
 
   // ─── Compact rows (next up / view all) ──
   compactRow: {

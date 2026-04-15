@@ -39,6 +39,8 @@ export default function NextActionCard({
   onSetStage,
   onGoToSetup,
   onAddUpdate,
+  lastSuccessText,
+  autopilotNextText,
   t,
   language,
 }) {
@@ -93,7 +95,15 @@ export default function NextActionCard({
           <span style={S.stateIcon}>{'\u2705'}</span>
           <div>
             <div style={S.stateTitle}>{t('loop.taskDone')}</div>
-            <div style={S.stateSubtext}>{t('loop.nextReady')}</div>
+            {lastSuccessText && (
+              <div style={S.stateSubtext}>{lastSuccessText}</div>
+            )}
+            {autopilotNextText && (
+              <div style={S.stateNext}>{autopilotNextText}</div>
+            )}
+            {!lastSuccessText && !autopilotNextText && (
+              <div style={S.stateSubtext}>{t('loop.nextReady')}</div>
+            )}
           </div>
         </div>
       )}
@@ -189,6 +199,12 @@ const S = {
     fontSize: '0.8125rem',
     color: '#9FB3C8',
     marginTop: '0.125rem',
+  },
+  stateNext: {
+    fontSize: '0.8125rem',
+    color: '#22C55E',
+    fontWeight: 600,
+    marginTop: '0.25rem',
   },
   // ─── Progress signal ──────
   progressRow: {

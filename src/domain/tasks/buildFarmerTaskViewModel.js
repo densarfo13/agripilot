@@ -16,6 +16,8 @@ import { getTaskStateStyle } from './taskStateStyles.js';
 import { resolveFarmerText } from './farmerTextResolver.js';
 import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../../lib/taskPresentation.js';
 import { assertViewModel } from './devAssertions.js';
+import { getAutopilotEnrichment } from '../../engine/autopilot/index.js';
+import { getNextTextKey, getSuccessTextKey } from '../../engine/autopilot/textKeys.js';
 
 /**
  * Schema version — bump to invalidate cached view models.
@@ -33,9 +35,12 @@ export const TASK_VIEWMODEL_SCHEMA_VERSION = 2;
  * @param {string} params.language - Current language code (en, fr, sw, ha, tw)
  * @param {Function} params.t - i18n translation function
  * @param {'simple'|'standard'} params.mode - Rendering mode
+ * @param {Object|null} params.autopilotEnrichment - Pre-computed enrichment (optional, auto-computed if absent)
+ * @param {string} params.cropStage - Current crop stage (for autopilot)
+ * @param {Object|null} params.weather - Raw weather data (for autopilot)
  * @returns {Object} TaskViewModel
  */
-export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode }) {
+export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode, autopilotEnrichment, cropStage, weather }) {
   // ─── 1. Determine effective priority and override status ───
   const priority = action?.priority || task?.priority || 'medium';
   const isWeatherOverride = !!(action?.weatherOverride);
@@ -64,6 +69,18 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
   const icon = action?.icon || getTaskIcon(effectiveTask);
   const iconBg = action?.iconBg || getTaskIconBg(effectiveTask);
   const voiceKey = effectiveTask ? getTaskVoiceKey(effectiveTask) : null;
+
+  // ─── 5b. Autopilot enrichment (why / risk / next) ────────
+  const enrichment = autopilotEnrichment || (effectiveTask
+    ? getAutopilotEnrichment({ task: effectiveTask, cropStage, weather, priority })
+    : null);
+
+  const whyText = enrichment?.whyKey ? t(enrichment.whyKey) : null;
+  const riskText = enrichment?.riskKey ? t(enrichment.riskKey) : null;
+  const nextTextKey = enrichment ? getNextTextKey(enrichment.nextTaskType) : null;
+  const nextText = nextTextKey ? t(nextTextKey) : null;
+  const successKey = enrichment ? getSuccessTextKey(enrichment.ruleId) : 'success.general';
+  const successText = t(successKey);
 
   // ─── 6. Assemble view model ───────────────────────────────
   const viewModel = {
@@ -95,6 +112,15 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
     // Stage info (passthrough for stage actions)
     stageInfo: action?.stageInfo || null,
 
+    // Autopilot intelligence
+    whyText,                              // "Dry grain now to prevent mold."
+    riskText,                             // "Risk: harvest may spoil if left damp."
+    nextText,                             // "Next: Sort and clean your harvest."
+    successText,                          // "Grain is safer now."
+    nextTaskType: enrichment?.nextTaskType || null,
+    autopilotRuleId: enrichment?.ruleId || null,
+    autopilotConfidence: enrichment?.confidence || null,
+
     // Mode hint (layout only, not data)
     mode,
 
@@ -119,7 +145,7 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
  * @param {'simple'|'standard'} params.mode
  * @returns {Array<Object>} Array of TaskViewModels
  */
-export function buildTaskListViewModels({ tasks, weatherGuidance, language, t, mode }) {
+export function buildTaskListViewModels({ tasks, weatherGuidance, language, t, mode, cropStage, weather }) {
   return (tasks || []).map(task => buildFarmerTaskViewModel({
     task,
     action: null,
@@ -127,5 +153,7 @@ export function buildTaskListViewModels({ tasks, weatherGuidance, language, t, m
     language,
     t,
     mode: mode || 'standard',
+    cropStage,
+    weather,
   }));
 }

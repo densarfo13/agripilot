@@ -64,9 +64,9 @@ export async function getCurrentFarmerTask({ farmId, isOnline }) {
       completedCount,
     });
 
-    return { task, taskCount: tasks.length, completedCount, error: null };
+    return { task, tasks, taskCount: tasks.length, completedCount, error: null };
   } catch (err) {
-    return { task: null, taskCount: 0, completedCount: 0, error: err.message || 'fetch_failed' };
+    return { task: null, tasks: [], taskCount: 0, completedCount: 0, error: err.message || 'fetch_failed' };
   }
 }
 

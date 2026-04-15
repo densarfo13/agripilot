@@ -11,7 +11,7 @@
  *
  * Returns everything the Home screen needs to render the loop.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
@@ -27,6 +27,8 @@ import {
   getProgressSignal,
   getNextTaskState,
 } from '../services/farmerLoopService.js';
+import { getAutopilotDecision } from '../engine/autopilot/index.js';
+import { getSuccessTextKey } from '../engine/autopilot/textKeys.js';
 
 // Auto-transition delay after completion feedback (ms)
 const COMPLETION_DISPLAY_MS = 2200;
@@ -44,6 +46,7 @@ export function useFarmerLoop() {
   // ─── Core loop state ─────────────────────────────────────
   const [loopState, setLoopState] = useState(LOOP_STATE.LOADING);
   const [primaryTask, setPrimaryTask] = useState(null);
+  const [allPendingTasks, setAllPendingTasks] = useState([]);
   const [taskCount, setTaskCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [taskLoading, setTaskLoading] = useState(false);
@@ -51,6 +54,7 @@ export function useFarmerLoop() {
   const [lastCompletedTask, setLastCompletedTask] = useState(null);
   const [feedbackStatus, setFeedbackStatus] = useState(null); // 'success'|'offline'|'failed'
   const [feedbackMessage, setFeedbackMessage] = useState(null);
+  const [lastSuccessText, setLastSuccessText] = useState(null);
 
   const prevFarmIdRef = useRef(null);
   const completionTimerRef = useRef(null);
@@ -72,6 +76,22 @@ export function useFarmerLoop() {
   // ─── Progress signal ─────────────────────────────────────
   const progress = getProgressSignal({ completedCount, taskCount });
 
+  // ─── Autopilot decision (enriches primary task) ─────────
+  const autopilot = useMemo(() => {
+    if (!primaryTask) return null;
+    const cropStage = profile?.cropStage || '';
+    const crop = profile?.cropType || profile?.crop || '';
+    return getAutopilotDecision({
+      farm: profile,
+      crop,
+      cropStage,
+      weather,
+      primaryTask,
+      pendingTasks: allPendingTasks,
+      completedCount,
+    });
+  }, [primaryTask, profile, weather, allPendingTasks, completedCount]);
+
   // ─── Fetch primary task ──────────────────────────────────
   const fetchTask = useCallback(async (farmId) => {
     if (!farmId) return;
@@ -80,6 +100,7 @@ export function useFarmerLoop() {
     const result = await getCurrentFarmerTask({ farmId, isOnline });
 
     setPrimaryTask(result.task);
+    setAllPendingTasks(result.tasks || []);
     setTaskCount(result.taskCount);
     setCompletedCount(result.completedCount);
     setTaskLoading(false);
@@ -91,6 +112,19 @@ export function useFarmerLoop() {
         farmId,
         taskId: result.task.id,
         taskCount: result.taskCount,
+      });
+      // Autopilot tracking: task generated
+      const cropStageLocal = profile?.cropStage || '';
+      const cropLocal = profile?.cropType || profile?.crop || '';
+      const ap = getAutopilotDecision({
+        farm: profile, crop: cropLocal, cropStage: cropStageLocal,
+        weather, primaryTask: result.task,
+        pendingTasks: result.tasks || [], completedCount: result.completedCount,
+      });
+      safeTrackEvent('autopilot_task_generated', {
+        farmId, taskId: result.task.id, ruleId: ap.ruleId || null,
+        confidence: ap.confidence, severity: ap.severity,
+        hasWhy: !!ap.whyKey, hasRisk: !!ap.riskKey, hasNext: !!ap.nextTaskType,
       });
     } else if (result.completedCount > 0) {
       setLoopState(LOOP_STATE.ALL_DONE);
@@ -159,16 +193,43 @@ export function useFarmerLoop() {
         setTaskCount((prev) => Math.max(0, prev - 1));
       }
 
-      // Build feedback message
+      // Build feedback message with autopilot intelligence
       const localTitle = getLocalizedTaskTitle(task.id, task.title, lang);
+
+      // Resolve success text from autopilot
+      const vm = decision.taskViewModel;
+      const successLine = vm?.successText || t('success.general');
+      setLastSuccessText(successLine);
+
+      // Determine next task: use server response or autopilot's suggested next
+      const effectiveNext = result.nextTask || vm?.nextText;
       const nextName = result.nextTask
         ? getLocalizedTaskTitle(result.nextTask.id, result.nextTask.title, lang)
         : null;
+
       const msg = nextName
-        ? `\u2705 ${localTitle}\n${t('loop.next')}: ${nextName}`
-        : `\u2705 ${localTitle}`;
+        ? `\u2705 ${localTitle}\n${successLine}\n${t('loop.next')}: ${nextName}`
+        : effectiveNext && typeof effectiveNext === 'string'
+          ? `\u2705 ${localTitle}\n${successLine}`
+          : `\u2705 ${localTitle}\n${successLine}`;
       setFeedbackMessage(msg);
       setFeedbackStatus(result.offline ? 'offline' : 'success');
+
+      if (result.offline) {
+        safeTrackEvent('autopilot_saved_offline', {
+          farmId: currentFarmId,
+          taskId: task?.id,
+        });
+      }
+
+      // Track autopilot completion
+      safeTrackEvent('autopilot_task_completed', {
+        farmId: currentFarmId,
+        taskId: task?.id,
+        ruleId: vm?.autopilotRuleId || null,
+        hasNext: !!result.nextTask,
+        offline: result.offline,
+      });
 
       // Haptic
       if (navigator.vibrate) {
@@ -189,6 +250,10 @@ export function useFarmerLoop() {
           setPrimaryTask(result.nextTask);
           setLoopState(LOOP_STATE.READY);
           safeTrackEvent('loop.next_task_shown', {
+            farmId: currentFarmId,
+            taskId: result.nextTask.id,
+          });
+          safeTrackEvent('autopilot_next_task_ready', {
             farmId: currentFarmId,
             taskId: result.nextTask.id,
           });
@@ -257,6 +322,10 @@ export function useFarmerLoop() {
 
     // Progress
     progress,
+
+    // Autopilot intelligence
+    autopilot,
+    lastSuccessText,
 
     // Feedback
     feedbackStatus,

@@ -4540,6 +4540,77 @@ const T = {
   'tasks.noMoreTasks': { en: 'No more tasks for now', fr: 'Plus de tâches pour le moment', sw: 'Hakuna kazi zaidi kwa sasa', ha: 'Babu ƙarin ayyuka yanzu', tw: 'Adwuma nni hɔ mprempren' },
   'tasks.completed': { en: 'Completed', fr: 'Terminé', sw: 'Imekamilika', ha: 'An gama', tw: 'Awie' },
   'tasks.backHome': { en: 'Back to Home', fr: 'Retour', sw: 'Rudi nyumbani', ha: 'Koma gida', tw: 'San kɔ fie' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  AUTOPILOT — why / risk / next / success text
+  // ═══════════════════════════════════════════════════════════
+
+  // ─── WHY lines (one sentence, practical) ──────────────────
+  'why.drying.preventMold': { en: 'Dry grain now to prevent mold.', fr: 'Séchez les grains pour éviter la moisissure.', sw: 'Kausha nafaka sasa kuzuia ukungu.', ha: 'Bushe hatsi yanzu don hana naman gwari.', tw: 'Hwie aburow no awo seesei na ɛbɛbɔ nkasɛe.' },
+  'why.rain.avoidDamage': { en: 'Protect harvest now before rain.', fr: 'Protégez la récolte avant la pluie.', sw: 'Linda mavuno kabla ya mvua.', ha: 'Kare girbi kafin ruwan sama.', tw: 'Bɔ wotwa adeɛ no ho ban ansa na osu atɔ.' },
+  'why.rain.protectBeforeDry': { en: 'Cover harvest — rain is falling.', fr: 'Couvrez la récolte — il pleut.', sw: 'Funika mavuno — mvua inanyesha.', ha: 'Rufe girbi — ana ruwan sama.', tw: 'Kata wotwa adeɛ no so — osu retɔ.' },
+  'why.water.reduceCropStress': { en: 'Water today to reduce crop stress.', fr: 'Arrosez aujourd\'hui pour réduire le stress.', sw: 'Mwagilia leo kupunguza msongo wa mimea.', ha: 'Ka ruwa yau don rage damuwa ga amfani.', tw: 'Gu nsu ɛnnɛ na ɛbɛma nnɔbae no ayɛ yie.' },
+  'why.water.supportGrowth': { en: 'Water crop to support healthy growth.', fr: 'Arrosez pour une bonne croissance.', sw: 'Mwagilia kwa ukuaji bora.', ha: 'Ka ruwa don tallafin girma.', tw: 'Gu nsu ma nnɔbae no nyini yie.' },
+  'why.pest.catchEarly': { en: 'Check pests early to avoid spread.', fr: 'Vérifiez les ravageurs tôt pour éviter la propagation.', sw: 'Angalia wadudu mapema kuzuia kuenea.', ha: 'Bincika kwari da wuri don hana yaduwa.', tw: 'Hwɛ mmoa a wɔsɛe nnɔbae ntɛm na wɔatrɛw.' },
+  'why.spray.protectCrop': { en: 'Spray to protect your crop.', fr: 'Pulvérisez pour protéger votre culture.', sw: 'Nyunyiza kulinda mazao yako.', ha: 'Fesa don kare amfanin gonarka.', tw: 'Pete aduro so bɔ wo nnɔbae ho ban.' },
+  'why.weed.reduceCompetition': { en: 'Remove weeds to reduce competition.', fr: 'Désherbez pour réduire la concurrence.', sw: 'Ondoa magugu kupunguza ushindani.', ha: 'Cire ciyawa don rage gasa.', tw: 'Yi wura no na ɛremfa nnɔbae no aduan.' },
+  'why.fertilize.boostNutrients': { en: 'Fertilize now to boost nutrients.', fr: 'Fertilisez maintenant pour stimuler les nutriments.', sw: 'Weka mbolea sasa kuongeza virutubisho.', ha: 'Sa taki yanzu don ƙara abinci.', tw: 'Fa nkɔsoɔ aduro gu so seesei.' },
+  'why.harvest.beforeRain': { en: 'Harvest now before rain starts.', fr: 'Récoltez avant la pluie.', sw: 'Vuna sasa kabla ya mvua.', ha: 'Girba yanzu kafin ruwan sama.', tw: 'Twa adeɛ seesei ansa na osu atɔ.' },
+  'why.harvest.preserveQuality': { en: 'Harvest now to preserve quality.', fr: 'Récoltez pour préserver la qualité.', sw: 'Vuna sasa kuhifadhi ubora.', ha: 'Girba yanzu don adana inganci.', tw: 'Twa adeɛ seesei na emu papa akɔ.' },
+  'why.plant.rightTiming': { en: 'Plant now for best timing.', fr: 'Plantez maintenant au bon moment.', sw: 'Panda sasa kwa wakati mzuri.', ha: 'Shuka yanzu a lokaci mai kyau.', tw: 'Dua seesei na bere pa mu.' },
+  'why.landPrep.readySoil': { en: 'Prepare soil for planting.', fr: 'Préparez le sol pour la plantation.', sw: 'Andaa udongo kwa kupanda.', ha: 'Shirya ƙasa don shuka.', tw: 'Siesie asase no ma dua.' },
+  'why.sort.betterPrice': { en: 'Sort produce for a better price.', fr: 'Triez pour un meilleur prix.', sw: 'Panga mazao kwa bei bora.', ha: 'Tsara kayan girbi don samun farashi mai kyau.', tw: 'Pae nneɛma no mu na woanya bo pa.' },
+  'why.store.preventLoss': { en: 'Store properly to prevent loss.', fr: 'Stockez correctement pour éviter les pertes.', sw: 'Hifadhi vizuri kuzuia upotevu.', ha: 'Ajiye daidai don hana asara.', tw: 'Kora yie na biribiara anyane.' },
+
+  // ─── RISK lines (plain language, not scary) ───────────────
+  'risk.drying.spoilageIfDelayed': { en: 'Risk: harvest may spoil if left damp.', fr: 'Risque : la récolte peut pourrir si elle reste humide.', sw: 'Hatari: mavuno yanaweza kuoza yakiachwa unyevu.', ha: 'Haɗari: girbi zai iya lalacewa idan ya kasance a jike.', tw: 'Asiane: wotwa adeɛ no bɛporɔw sɛ ɛtena fũ mu.' },
+  'risk.rain.uncoveredHarvest': { en: 'Risk: rain may damage uncovered grain.', fr: 'Risque : la pluie peut endommager les grains non couverts.', sw: 'Hatari: mvua inaweza kuharibu nafaka zisizofunikwa.', ha: 'Haɗari: ruwan sama zai iya lalata hatsi maras rufi.', tw: 'Asiane: osu bɛsɛe aburow a wɔnkatae so no.' },
+  'risk.rain.dampHarvest': { en: 'Risk: rain will make harvest damp.', fr: 'Risque : la pluie va mouiller la récolte.', sw: 'Hatari: mvua itafanya mavuno kuwa unyevu.', ha: 'Haɗari: ruwan sama zai sa girbi ya yi jike.', tw: 'Asiane: osu bɛma wotwa adeɛ no ayɛ fũ.' },
+  'risk.water.yieldDropIfDry': { en: 'Risk: yield may drop if crop stays dry.', fr: 'Risque : le rendement peut baisser si la culture reste sèche.', sw: 'Hatari: mavuno yanaweza kushuka zao likibaki kavu.', ha: 'Haɗari: amfani zai iya raguwa idan amfanin gona ya bushe.', tw: 'Asiane: nnɔbae no sua bɛte sɛ ɛtena wo mu.' },
+  'risk.water.stuntedGrowth': { en: 'Risk: growth may slow without water.', fr: 'Risque : la croissance peut ralentir sans eau.', sw: 'Hatari: ukuaji unaweza kupungua bila maji.', ha: 'Haɗari: girma zai iya raguwa ba tare da ruwa ba.', tw: 'Asiane: nyini no bɛyɛ brɛoo sɛ wonnya nsu.' },
+  'risk.pest.spreadFast': { en: 'Risk: pests can spread quickly.', fr: 'Risque : les ravageurs peuvent se propager rapidement.', sw: 'Hatari: wadudu wanaweza kuenea haraka.', ha: 'Haɗari: kwari na iya yaɗuwa cikin sauri.', tw: 'Asiane: mmoa a wɔsɛe nnɔbae no bɛtrɛw ntɛm.' },
+  'risk.spray.driftInWind': { en: 'Risk: wind may carry spray off target.', fr: 'Risque : le vent peut emporter le produit.', sw: 'Hatari: upepo unaweza kubeba dawa.', ha: 'Haɗari: iska na iya ɗaukar maganin.', tw: 'Asiane: mframa bɛma aduro no akɔ baabi foforo.' },
+  'risk.spray.damageSpread': { en: 'Risk: damage can spread without treatment.', fr: 'Risque : les dégâts peuvent s\'étendre sans traitement.', sw: 'Hatari: uharibifu unaweza kuenea bila matibabu.', ha: 'Haɗari: lalacewa na iya yaɗuwa ba tare da magani ba.', tw: 'Asiane: sɛe no bɛtrɛw sɛ wɔanhyɛ aduro.' },
+  'risk.weed.yieldReduction': { en: 'Risk: weeds take nutrients from crop.', fr: 'Risque : les mauvaises herbes prennent les nutriments.', sw: 'Hatari: magugu yanachukua virutubisho vya mazao.', ha: 'Haɗari: ciyawa na ɗaukar abincin amfanin gona.', tw: 'Asiane: wura no gye nnɔbae no aduan.' },
+  'risk.fertilize.poorGrowth': { en: 'Risk: poor growth without nutrients.', fr: 'Risque : mauvaise croissance sans nutriments.', sw: 'Hatari: ukuaji duni bila virutubisho.', ha: 'Haɗari: rashin girma ba tare da abinci ba.', tw: 'Asiane: ɛrennyini yie sɛ wonnya nkɔsoɔ aduro.' },
+  'risk.harvest.rainDamage': { en: 'Risk: rain may damage crop in field.', fr: 'Risque : la pluie peut endommager la culture au champ.', sw: 'Hatari: mvua inaweza kuharibu mazao shambani.', ha: 'Haɗari: ruwan sama zai iya lalata amfanin gona a gona.', tw: 'Asiane: osu bɛsɛe nnɔbae a ɛwɔ afuo no so.' },
+  'risk.harvest.overRipening': { en: 'Risk: crop may over-ripen if left.', fr: 'Risque : la culture peut trop mûrir.', sw: 'Hatari: mazao yanaweza kuiva kupita kiasi.', ha: 'Haɗari: amfanin gona zai iya nuna fiye da kima.', tw: 'Asiane: nnɔbae no bɛbere dodo sɛ wɔgyae.' },
+  'risk.plant.missWindow': { en: 'Risk: planting window may close.', fr: 'Risque : la période de plantation peut se terminer.', sw: 'Hatari: wakati wa kupanda unaweza kupita.', ha: 'Haɗari: lokacin shuka na iya wucewa.', tw: 'Asiane: dua bere no bɛtwam.' },
+  'risk.landPrep.delayedPlanting': { en: 'Risk: planting delayed if soil not ready.', fr: 'Risque : plantation retardée si le sol n\'est pas prêt.', sw: 'Hatari: kupanda kuchelewa udongo usipokuwa tayari.', ha: 'Haɗari: shuka zai yi latti idan ƙasa ba ta shirya ba.', tw: 'Asiane: dua no bɛkyɛ sɛ asase no nsiesie.' },
+  'risk.sort.qualityLoss': { en: 'Risk: unsorted produce loses value.', fr: 'Risque : les produits non triés perdent de la valeur.', sw: 'Hatari: mazao yasiyopangwa yanapoteza thamani.', ha: 'Haɗari: kayan da ba a tsara ba na rasa daraja.', tw: 'Asiane: nneɛma a wɔmpae mu no bo bɛte.' },
+  'risk.store.postHarvestLoss': { en: 'Risk: poor storage causes loss.', fr: 'Risque : un mauvais stockage cause des pertes.', sw: 'Hatari: uhifadhi mbaya husababisha upotevu.', ha: 'Haɗari: rashin ajiyar daidai na haifar da asara.', tw: 'Asiane: sɛ wonkora yie a wobɛhwere.' },
+
+  // ─── NEXT task labels (after completion) ──────────────────
+  'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
+  'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },
+  'next.dryHarvest': { en: 'Next: Dry your harvest.', fr: 'Suivant : Séchez votre récolte.', sw: 'Kazi ifuatayo: Kausha mavuno.', ha: 'Na gaba: Bushe girbi.', tw: 'Nea edi so: Hwie wotwa adeɛ no awo.' },
+  'next.checkCrop': { en: 'Next: Check your crop tomorrow.', fr: 'Suivant : Vérifiez demain.', sw: 'Kazi ifuatayo: Angalia mazao kesho.', ha: 'Na gaba: Bincika amfanin gona gobe.', tw: 'Nea edi so: Hwɛ wo nnɔbae ɔkyena.' },
+  'next.updatePestStatus': { en: 'Next: Update pest status.', fr: 'Suivant : Mettez à jour l\'état des ravageurs.', sw: 'Kazi ifuatayo: Sasisha hali ya wadudu.', ha: 'Na gaba: Sabunta yanayin kwari.', tw: 'Nea edi so: Fa mmoa a wɔsɛe nnɔbae tebea foforo bɛka.' },
+  'next.waterCrop': { en: 'Next: Water your crop.', fr: 'Suivant : Arrosez votre culture.', sw: 'Kazi ifuatayo: Mwagilia mazao.', ha: 'Na gaba: Ka ruwa amfanin gona.', tw: 'Nea edi so: Gu nsu wɔ wo nnɔbae so.' },
+  'next.plantCrop': { en: 'Next: Plant your crop.', fr: 'Suivant : Plantez votre culture.', sw: 'Kazi ifuatayo: Panda mazao.', ha: 'Na gaba: Shuka amfanin gona.', tw: 'Nea edi so: Dua wo nnɔbae.' },
+  'next.storeHarvest': { en: 'Next: Store your harvest.', fr: 'Suivant : Stockez votre récolte.', sw: 'Kazi ifuatayo: Hifadhi mavuno.', ha: 'Na gaba: Ajiye girbi.', tw: 'Nea edi so: Kora wotwa adeɛ no.' },
+
+  // ─── SUCCESS lines (after completion) ─────────────────────
+  'success.drying': { en: 'Grain is safer now.', fr: 'Les grains sont protégés.', sw: 'Nafaka iko salama sasa.', ha: 'Hatsi ya fi aminci yanzu.', tw: 'Aburow no ho tɔ seesei.' },
+  'success.rain': { en: 'Harvest is protected.', fr: 'La récolte est protégée.', sw: 'Mavuno yamelindwa.', ha: 'An kare girbi.', tw: 'Wotwa adeɛ no ho atɔ.' },
+  'success.water': { en: 'Crop will grow better now.', fr: 'La culture va mieux pousser.', sw: 'Mazao yatakua vizuri sasa.', ha: 'Amfanin gona zai girma sosai.', tw: 'Nnɔbae no bɛnyini yie seesei.' },
+  'success.pest': { en: 'Good — stay ahead of pests.', fr: 'Bien — gardez une longueur d\'avance.', sw: 'Vizuri — endelea kuwa makini.', ha: 'Da kyau — ci gaba da sa ido.', tw: 'Eye — toa so hwɛ yie.' },
+  'success.spray': { en: 'Crop is protected now.', fr: 'La culture est protégée.', sw: 'Mazao yamelindwa sasa.', ha: 'An kare amfanin gona yanzu.', tw: 'Nnɔbae no ho atɔ seesei.' },
+  'success.weed': { en: 'Field is cleaner now.', fr: 'Le champ est plus propre.', sw: 'Shamba ni safi zaidi sasa.', ha: 'Gona ya fi tsabta yanzu.', tw: 'Afuo no ho atɛ seesei.' },
+  'success.fertilize': { en: 'Nutrients added — crop will benefit.', fr: 'Nutriments ajoutés — la culture en profitera.', sw: 'Virutubisho vimeongezwa — mazao yatanufaika.', ha: 'An ƙara abinci — amfanin gona zai amfana.', tw: 'Nkɔsoɔ aduro no akɔ mu — nnɔbae no bɛnya mfasoɔ.' },
+  'success.harvest': { en: 'Harvest secured.', fr: 'Récolte sécurisée.', sw: 'Mavuno yamehifadhiwa.', ha: 'An tabbatar da girbi.', tw: 'Wotwa adeɛ no awie yie.' },
+  'success.plant': { en: 'Planted — growth starts now.', fr: 'Planté — la croissance commence.', sw: 'Imepandwa — ukuaji unaanza sasa.', ha: 'An shuka — girma ya fara.', tw: 'Woadua — ɛrefi ase anyini.' },
+  'success.landPrep': { en: 'Soil is ready for planting.', fr: 'Le sol est prêt.', sw: 'Udongo uko tayari kupanda.', ha: 'Ƙasa ta shirya don shuka.', tw: 'Asase no asiesie ama dua.' },
+  'success.sort': { en: 'Produce sorted — better value.', fr: 'Produits triés — meilleure valeur.', sw: 'Mazao yamepangwa — thamani bora.', ha: 'An tsara kaya — daraja mai kyau.', tw: 'Nneɛma no apae mu — ɛso bo.' },
+  'success.store': { en: 'Stored safely.', fr: 'Stocké en sécurité.', sw: 'Imehifadhiwa salama.', ha: 'An ajiye lafiya.', tw: 'Wɔakora yie.' },
+  'success.general': { en: 'Done — good work.', fr: 'Fait — bon travail.', sw: 'Imekamilika — kazi nzuri.', ha: 'An gama — aikin kirki.', tw: 'Awie — adwuma pa.' },
+
+  // ─── AUTOPILOT labels ─────────────────────────────────────
+  'autopilot.confidence.high': { en: 'Recommended', fr: 'Recommandé', sw: 'Inapendekezwa', ha: 'An ba da shawara', tw: 'Wɔakamfo' },
+  'autopilot.confidence.medium': { en: 'Suggested', fr: 'Suggéré', sw: 'Inapendekezwa', ha: 'An ba da shawara', tw: 'Wɔakyerɛ' },
+  'autopilot.nextReady': { en: 'Next task ready', fr: 'Tâche suivante prête', sw: 'Kazi ifuatayo iko tayari', ha: 'Aikin gaba ya shirya', tw: 'Adwuma a edi so asiesie' },
+  'autopilot.continue': { en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Toa so' },
+  'autopilot.savedOffline': { en: 'Saved offline', fr: 'Sauvegardé hors ligne', sw: 'Imehifadhiwa nje ya mtandao', ha: 'An adana a wajen layi', tw: 'Wɔakora a intanɛt nni hɔ' },
 };
 
 export default T;

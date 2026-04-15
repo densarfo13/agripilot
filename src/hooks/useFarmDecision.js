@@ -73,6 +73,7 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
   const taskViewModel = useMemo(() => {
     if (!decision?.primaryAction) return null;
 
+    const cropStage = profile?.cropStage || '';
     return buildFarmerTaskViewModel({
       task: decision.primaryAction.task || primaryTask,
       action: decision.primaryAction,
@@ -80,8 +81,10 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       language: lang,
       t,
       mode: isBasic ? 'simple' : 'standard',
+      cropStage,
+      weather,
     });
-  }, [decision, primaryTask, lang, t, isBasic]);
+  }, [decision, primaryTask, lang, t, isBasic, profile, weather]);
 
   return {
     loading: taskLoading || !decision,
