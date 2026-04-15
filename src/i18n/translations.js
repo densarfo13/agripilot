@@ -52,7 +52,9 @@ const T = {
   'wxChip.alert': { en: 'Alert', fr: 'Alerte', sw: 'Tahadhari', ha: 'Faɗakarwa', tw: 'Kɔkɔbɔ' },
   'wxChip.care': { en: 'Care', fr: 'Attention', sw: 'Angalia', ha: 'Hankali', tw: 'Hwɛ yie' },
   'wxChip.rain': { en: 'Rain', fr: 'Pluie', sw: 'Mvua', ha: 'Ruwa', tw: 'Nsuo' },
-  'wxChip.wind': { en: 'Wind', fr: 'Vent', sw: 'Upepo', ha: 'Iska', tw: 'Mframa' },
+  'wxChip.wind': { en: 'Windy', fr: 'Venteux', sw: 'Upepo', ha: 'Iska', tw: 'Mframa' },
+  'wxChip.dry': { en: 'Dry', fr: 'Sec', sw: 'Kavu', ha: 'Bushe', tw: 'Hyew' },
+  'wxChip.hot': { en: 'Hot', fr: 'Chaud', sw: 'Joto', ha: 'Zafi', tw: 'Hyew pa' },
   'common.save': {
     en: 'Save', fr: 'Enregistrer', sw: 'Hifadhi', ha: 'Ajiye', tw: 'Kora so',
   },

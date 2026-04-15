@@ -16,10 +16,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { useAppPrefs } from '../../context/AppPrefsContext.jsx';
 import { useNetwork } from '../../context/NetworkContext.jsx';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';
-import { getCropLabel } from '../../utils/crops.js';
-import { getAvatar } from '../../utils/avatarStorage.js';
-import FarmerAvatar from '../FarmerAvatar.jsx';
-import VoicePromptButton from '../VoicePromptButton.jsx';
+// Identity (avatar + name) is in FarmerHeader only — not duplicated here
 
 const ACTION_ROUTES = {
   onboarding_incomplete: 'setup',
@@ -89,33 +86,12 @@ export default function BasicFarmerHome({
     );
   }
 
-  const farmerName = user?.fullName || profile?.farmerName || '';
-  const cropDisplay = getCropLabel(profile?.cropType || profile?.crop || '');
-  const locationDisplay = profile?.location || '';
+  // Identity is in FarmerHeader — not rendered here
 
   return (
     <div style={S.page} data-testid="basic-farmer-home">
 
-      {/* ═══ 1. FARMER IDENTITY STRIP ═══ */}
-      <div style={S.identityStrip}>
-        <FarmerAvatar
-          fullName={farmerName}
-          profileImageUrl={getAvatar()}
-          size={40}
-        />
-        <div>
-          <div style={S.farmerName}>{farmerName}</div>
-          {(cropDisplay || locationDisplay) && (
-            <div style={S.farmMeta}>
-              {cropDisplay && <span>{cropDisplay}</span>}
-              {cropDisplay && locationDisplay && <span style={S.metaDot}>{'\u2022'}</span>}
-              {locationDisplay && <span>{locationDisplay}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Weather displays in header chip only — no duplicate block */}
+      {/* Identity is in FarmerHeader above — no duplicate here */}
 
       {/* ═══ 3. PRIMARY TASK CARD ═══ */}
       {action && !completed && (
@@ -124,14 +100,21 @@ export default function BasicFarmerHome({
             <span style={S.taskEmoji}>{action.icon}</span>
           </div>
           <div style={S.taskTitle}>{action.title}</div>
-          <div style={S.taskReason}>{action.reason}</div>
 
-          <VoicePromptButton text={action.title} label={t('common.listen')} />
+          {/* Voice is prominent in simple mode — primary explanation tool */}
+          <button
+            onClick={() => {
+              try { speakText(action.reason || action.title, languageToVoiceCode(language)); } catch {}
+            }}
+            style={S.voiceBtn}
+          >
+            {'\uD83D\uDD0A'} {t('common.listen')}
+          </button>
 
           <button
             onClick={handleCta}
             disabled={action.key === 'all_done'}
-            style={action.isAlert ? S.ctaAlert : action.key === 'all_done' ? S.ctaDone : S.cta}
+            style={action.key === 'all_done' ? S.ctaDone : S.cta}
             data-testid="basic-action-btn"
           >
             {action.cta}
@@ -248,6 +231,23 @@ const S = {
     lineHeight: 1.5,
     maxWidth: '20rem',
   },
+  voiceBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    width: '100%',
+    padding: '0.75rem',
+    borderRadius: '14px',
+    border: '2px solid rgba(34,197,94,0.3)',
+    background: 'rgba(34,197,94,0.08)',
+    color: '#86EFAC',
+    fontSize: '1rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '48px',
+    WebkitTapHighlightColor: 'transparent',
+  },
   cta: {
     width: '100%',
     padding: '1rem',
@@ -260,21 +260,6 @@ const S = {
     cursor: 'pointer',
     minHeight: '56px',
     boxShadow: '0 4px 16px rgba(22,163,74,0.3)',
-    WebkitTapHighlightColor: 'transparent',
-    marginTop: '0.25rem',
-  },
-  ctaAlert: {
-    width: '100%',
-    padding: '1rem',
-    background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '16px',
-    fontSize: '1.125rem',
-    fontWeight: 800,
-    cursor: 'pointer',
-    minHeight: '56px',
-    boxShadow: '0 4px 16px rgba(239,68,68,0.3)',
     WebkitTapHighlightColor: 'transparent',
     marginTop: '0.25rem',
   },

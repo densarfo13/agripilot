@@ -93,12 +93,7 @@ export default function NextActionCard({
               {action.cta}
             </button>
 
-            {action.next && (
-              <div style={S.nextHint}>
-                <span style={S.nextIcon}>{'\u2192'}</span>
-                <span>{action.next}</span>
-              </div>
-            )}
+            {/* "What happens next" removed — verbose, voice can explain */}
           </>
         ) : null}
       </div>

@@ -15,14 +15,16 @@ function getWeatherChip(weather, guidance, t) {
 
   const temp = weather?.temperatureC != null ? `${Math.round(weather.temperatureC)}°C` : null;
 
-  // Derive icon + insight from guidance or raw weather
+  // Derive icon + insight from guidance — use condition words, not vague labels
   if (guidance) {
+    // Map recommendation to a clear condition word
+    const recKey = guidance.recommendationKey || '';
     let insightKey = 'wxChip.good';
-    switch (guidance.status) {
-      case 'warning': insightKey = guidance.riskLevel === 'high' ? 'wxChip.risk' : 'wxChip.alert'; break;
-      case 'caution': insightKey = 'wxChip.care'; break;
-      default: insightKey = 'wxChip.good'; break;
-    }
+    if (recKey.includes('heavyRain') || recKey.includes('rainExpected')) insightKey = 'wxChip.rain';
+    else if (recKey.includes('highWind')) insightKey = 'wxChip.wind';
+    else if (recKey.includes('dry') || recKey.includes('veryDry') || recKey.includes('drySpell')) insightKey = 'wxChip.dry';
+    else if (recKey.includes('hot')) insightKey = 'wxChip.hot';
+    else if (guidance.status === 'warning' || guidance.status === 'caution') insightKey = 'wxChip.care';
     return { icon: guidance.icon, temp, insight: t(insightKey) };
   }
 
