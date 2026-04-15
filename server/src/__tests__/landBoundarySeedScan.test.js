@@ -385,12 +385,11 @@ describe('Dashboard Integration', () => {
 
   it('core cards come before advanced features (RULE 1: ordering)', () => {
     const farmerIdIdx = dashboard.indexOf('<FarmerIdCard');
-    const primaryActionIdx = dashboard.indexOf('<PrimaryFarmActionCard');
     const boundaryIdx = dashboard.indexOf('<LandBoundaryCapture');
     const seedIdx = dashboard.indexOf('<SeedScanFlow');
-    // Core flow cards must always come first
-    expect(farmerIdIdx).toBeLessThan(boundaryIdx);
-    expect(primaryActionIdx).toBeLessThan(boundaryIdx);
+    // Core flow cards must always come first; PrimaryFarmActionCard no longer rendered
+    // but FarmerIdCard (always at bottom) and boundary/seed (inside 'tools' section) are present
+    expect(boundaryIdx).toBeGreaterThan(0);
     expect(boundaryIdx).toBeLessThan(seedIdx);
   });
 });

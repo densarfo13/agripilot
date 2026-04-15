@@ -7,6 +7,7 @@
  */
 import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../lib/taskPresentation.js';
 import VoicePromptButton from './VoicePromptButton.jsx';
+import { getPromptText } from '../services/voicePrompts.js';
 
 function getActionLabel(actionType, t) {
   switch (actionType) {
@@ -24,7 +25,7 @@ export default function TaskActionModal({ task, onComplete, onClose, completing,
   const icon = getTaskIcon(task);
   const iconBg = getTaskIconBg(task);
   const voiceKey = getTaskVoiceKey(task);
-  const voiceText = t(voiceKey) !== voiceKey ? t(voiceKey) : task.title;
+  const voiceText = getPromptText(voiceKey, 'en') || task.title;
 
   return (
     <div style={S.overlay} onClick={onClose} data-testid="task-action-modal">
@@ -39,7 +40,7 @@ export default function TaskActionModal({ task, onComplete, onClose, completing,
         <h2 style={S.title}>{task.title}</h2>
 
         {/* Voice — explanation lives here, not as text */}
-        <VoicePromptButton text={voiceText} label={t('common.listen')} />
+        <VoicePromptButton promptId={voiceKey} text={voiceText} label={t('common.listen')} />
 
         {/* Done (green, primary) */}
         <button

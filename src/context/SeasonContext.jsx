@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { completeSeason, completeTask, getActiveSeason, startSeason } from '../lib/api.js';
+import { completeSeason, completeV2Task, getActiveSeason, startSeason } from '../lib/api.js';
 import { useAuth } from './AuthContext.jsx';
 import { useProfile } from './ProfileContext.jsx';
 
@@ -49,7 +49,7 @@ export function SeasonProvider({ children }) {
   }, [season?.id]);
 
   const markTaskComplete = useCallback(async (taskId) => {
-    const data = await completeTask(taskId);
+    const data = await completeV2Task(taskId);
 
     setSeason((prev) => {
       if (!prev) return prev;

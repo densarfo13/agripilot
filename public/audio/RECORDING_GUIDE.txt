@@ -1,0 +1,80 @@
+Twi Voice Recording Guide for Farroway
+========================================
+
+Place native Twi speaker recordings in the tw/ subdirectory.
+Filenames must match the prompt IDs in src/services/voicePrompts.js.
+
+Recording specs:
+  Format:      MP3
+  Sample rate:  16 kHz or higher
+  Channels:    mono
+  Bitrate:     64-128 kbps
+  Duration:    2-5 seconds per clip
+  Style:       clear, warm, unhurried — spoken to a farmer, not read aloud
+
+Required recordings (42 clips):
+
+  TASK PROMPTS (19 clips)
+  tw/task-water.mp3             — "Gugu wo nnɔbae seesei. Fa nsuo a ɛho tew."
+  tw/task-plant.mp3             — "Dua wo aba no seesei."
+  tw/task-spray.mp3             — "Pete aduro gu wo afuo no so seesei."
+  tw/task-fertilize.mp3         — "Gu nsɔhwɛ wo nnɔbae no so."
+  tw/task-weed.mp3              — "Tu wura fi wo afuo no mu."
+  tw/task-harvest.mp3           — "Twa wo nnɔbae no seesei."
+  tw/task-prune.mp3             — "Twa wo nnɔbae no nnan. Twa nnan a awuwu no."
+  tw/task-scout.mp3             — "Hwɛ wo nnɔbae mu sɛ asɛm bi wɔ mu. Hwɛ nhahan no ase."
+  tw/task-clear-field.mp3       — "Twitwa afuo no mu. Yi nwura ne nnɔbae dedaw no."
+  tw/task-dont-water.mp3        — "Ngugu seesei. Nsuo retɔ."
+  tw/task-skip-watering.mp3     — "Ngugu ɛnnɛ. Nsuo bɛtɔ ama nnɔbae no."
+  tw/task-skip-spraying.mp3     — "Mfa aduru mfra seesei. Mframa anaa nsuo dɔɔso."
+  tw/task-protect-harvest.mp3   — "Bɔ wo nnɔbae ho ban firi nsuo mu. Fa aburow no kɔ baabi a ɛwɔ hɔ."
+  tw/task-check-pests.mp3       — "Hwɛ wo nnɔbae so mmoa. Hwɛ nhahan no ase."
+  tw/task-completed.mp3         — "Wɔayɛ adwuma no. Mo!"
+  tw/task-default.mp3           — "Wowɔ adwuma bi. Mia bɔtɔn no sɛ woawie."
+  tw/task-finish-setup.mp3      — "Hyehyɛ wo afuo kan. Mia bɔtɔn no na hyɛ ase."
+  tw/task-set-stage.mp3         — "Ka kyerɛ yɛn wo nnɔbae anammɔn. Mia bɔtɔn no."
+  tw/task-all-done.mp3          — "Woawie nyinaa. Adwuma pa! Wobɛtumi de nsɛm foforo aka ho."
+
+  WEATHER PROMPTS (12 clips)
+  tw/weather-safe.mp3           — "Ewiem yɛ. Wotumi yɛ adwuma biara."
+  tw/weather-raining-now.mp3    — "Nsuo retɔ seesei. Bɔ wo nnɔbae ho ban."
+  tw/weather-rain-later.mp3     — "Ɛyɛ hyew seesei nanso nsuo bɛtɔ. Kora wo nnɔbae."
+  tw/weather-heavy-rain.mp3     — "Nsuo kɛse reba. Bɔ wo nnɔbae ho ban. Yɛ nwanwa."
+  tw/weather-high-wind.mp3      — "Mframa kɛse ɛnnɛ. Mpete aduro."
+  tw/weather-windy-safe.mp3     — "Mframa kakra nanso wotumi yɛ adwuma."
+  tw/weather-dry.mp3            — "Ɛyɛ hyew. Gugu wo nnɔbae ɛnnɛ."
+  tw/weather-very-dry.mp3       — "Ɛyɛ hyew paa. Gugu wo nnɔbae seesei."
+  tw/weather-dry-spell.mp3      — "Ɔpɛ bɛba. Gugu ntɛm."
+  tw/weather-hot.mp3            — "Ɛyɛ hyew ɛnnɛ. Gugu anɔpa ntɛm. Mfa wo ho mma owia mu."
+  tw/weather-no-data.mp3        — "Yɛnni wim ho nsɛm. Kɔ so yɛ wo adwuma."
+  tw/weather-stale.mp3          — "Wim ho nsɛm no ebia atwam. Hwɛ kan ansa na woahyɛ ase."
+
+  STATUS PROMPTS (8 clips)
+  tw/status-on-track.mp3        — "Wo kurom rekɔ yiye. Kɔ so."
+  tw/status-needs-update.mp3    — "Wo kurom hia nsakrae. Fa ka ho nsakrae."
+  tw/status-needs-setup.mp3     — "Hyehyɛ wo afuo na hyɛ ase."
+  tw/status-stage-outdated.mp3  — "Wo nnɔbae anammɔn no atwam. Sesa no seesei."
+  tw/status-saved.mp3           — "Wɔakora so. Wo data no wɔ hɔ yiye."
+  tw/status-saved-offline.mp3   — "Wɔakora so. Wɔbɛsoma bere a network aba bio."
+  tw/status-pending.mp3         — "Wo nsakrae no retwɛn nhwehwɛmu."
+  tw/status-failed.mp3          — "Ɛanyɛ adwuma. Bɔ mmɔden bio."
+
+  NAV PROMPTS (11 clips)
+  tw/nav-welcome.mp3            — "Akwaaba wo kurom."
+  tw/nav-welcome-back.mp3       — "Akwaaba bio."
+  tw/nav-setup-farm.mp3         — "Yɛ wo afuo ho. Ka aduan a woreyɛ kyerɛ yɛn."
+  tw/nav-choose-language.mp3    — "Fa kasa a wopɛ."
+  tw/nav-choose-crop.mp3        — "Fa aduan a woreyɛ."
+  tw/nav-choose-stage.mp3       — "Fa wo aduan no gyinabea."
+  tw/nav-take-photo.mp3         — "Fa wo kurom mfonini."
+  tw/nav-tap-continue.mp3       — "Kɔ so."
+  tw/nav-farm-ready.mp3         — "Wo kurom ayɛ krado."
+  tw/nav-add-update.mp3         — "Fa ka ho nsakrae."
+  tw/nav-send-update.mp3        — "Fa soma wo nsakrae no."
+
+  HELP PROMPTS (5 clips)
+  tw/help-need-support.mp3      — "Fa mmoa so sɛ wohia boafo."
+  tw/help-retry.mp3             — "Ɛanyɛ adwuma. Fa so bio."
+  tw/help-offline.mp3           — "Wonni intanɛt. Wɔakora wo data na wɔbɛsoma akyire."
+  tw/help-error.mp3             — "Biribi akɔ basaa. Meserɛ wo bɔ mmɔden bio."
+  tw/help-photo-tip.mp3         — "Fa mfonini a ɛda hɔ. Sɔ telefon no pintinn."

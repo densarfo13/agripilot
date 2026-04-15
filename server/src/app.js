@@ -85,6 +85,7 @@ import v2SupplyReadinessRoutes from '../routes/supply-readiness.js';
 import v2BuyerRoutes from '../routes/buyers.js';
 import v2BuyerLinkRoutes from '../routes/buyer-links.js';
 import v2BuyerTrustRoutes from '../routes/buyer-trust.js';
+import v2TtsRoutes from '../routes/tts.js';
 import v2FarmTaskRoutes from '../routes/farmTasks.js';
 import v2FarmWeatherRoutes from '../routes/farmWeather.js';
 import v2FarmRiskRoutes from '../routes/farmRisks.js';
@@ -430,6 +431,7 @@ app.use('/api/v2/supply-readiness', v2SupplyReadinessRoutes);
 app.use('/api/v2/buyers', v2BuyerRoutes);
 app.use('/api/v2/buyer-links', v2BuyerLinkRoutes);
 app.use('/api/v2/buyer-trust', v2BuyerTrustRoutes);
+app.use('/api/v2/tts', v2TtsRoutes);
 // TypeScript intelligence module (pest-risk, admin, ingest)
 app.use('/api/v2', intelligenceRouter);
 

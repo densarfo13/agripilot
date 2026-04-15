@@ -11,12 +11,10 @@
  *   - Accessible voice button with aria-label
  */
 import { useEffect, useRef, useState } from 'react';
+import voiceService from '../services/voiceService.js';
 
 function speak(text) {
-  window.speechSynthesis.cancel(); // cancel any ongoing speech
-  const msg = new SpeechSynthesisUtterance(text);
-  msg.lang = 'en-US'; // Twi voices may fallback to default
-  window.speechSynthesis.speak(msg);
+  voiceService.speakText(text, 'tw');
 }
 
 export default function FarmerTask({ onComplete, onNext }) {
@@ -33,7 +31,7 @@ export default function FarmerTask({ onComplete, onNext }) {
     return () => {
       clearTimeout(timer);
       mountedRef.current = false;
-      window.speechSynthesis.cancel();
+      voiceService.stop();
     };
   }, []);
 

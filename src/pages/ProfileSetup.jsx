@@ -12,6 +12,7 @@ import { parseCropValue } from '../utils/crops.js';
 import { createNewFarm } from '../lib/api.js';
 import CropSelect from '../components/CropSelect.jsx';
 import VoicePromptButton from '../components/VoicePromptButton.jsx';
+import OnboardingSteps from '../components/OnboardingSteps.jsx';
 import VoiceBar from '../components/VoiceBar.jsx';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
@@ -31,6 +32,30 @@ function defaultUnitForCountry(country) {
   if (!country) return 'HECTARE';
   return ACRE_COUNTRIES.includes(country.toLowerCase().trim()) ? 'ACRE' : 'HECTARE';
 }
+
+// ─── Top crops for icon-first tap selection ─────────────────
+const TOP_CROPS = [
+  { code: 'MAIZE',   label: 'Maize',   icon: '\uD83C\uDF3D' },
+  { code: 'RICE',    label: 'Rice',    icon: '\uD83C\uDF3E' },
+  { code: 'BEAN',    label: 'Beans',   icon: '\uD83E\uDED8' },
+  { code: 'COFFEE',  label: 'Coffee',  icon: '\u2615' },
+  { code: 'CASSAVA', label: 'Cassava', icon: '\uD83E\uDD54' },
+  { code: 'BANANA',  label: 'Banana',  icon: '\uD83C\uDF4C' },
+  { code: 'WHEAT',   label: 'Wheat',   icon: '\uD83C\uDF3E' },
+  { code: 'SORGHUM', label: 'Sorghum', icon: '\uD83C\uDF3F' },
+  { code: 'COCOA',   label: 'Cocoa',   icon: '\uD83E\uDD65' },
+  { code: 'TOMATO',  label: 'Tomato',  icon: '\uD83C\uDF45' },
+  { code: 'POTATO',  label: 'Potato',  icon: '\uD83E\uDD54' },
+  { code: 'ONION',   label: 'Onion',   icon: '\uD83E\uDDC5' },
+];
+
+// ─── Farm size presets (tap-based) ──────────────────────────
+// Internal values for backend; display is icon + label only
+const SIZE_PRESETS = [
+  { label: 'Small',  icon: '\uD83C\uDF31', acres: 1,  desc: '< 2 acres' },
+  { label: 'Medium', icon: '\uD83C\uDF3E', acres: 5,  desc: '2-10 acres' },
+  { label: 'Large',  icon: '\uD83C\uDF33', acres: 20, desc: '10+ acres' },
+];
 
 const initialForm = {
   farmerName: '', farmName: '', country: 'Ghana', location: '',
@@ -63,25 +88,28 @@ export default function ProfileSetup() {
   const [gpsSlowMsg, setGpsSlowMsg] = useState('');
   const [saveError, setSaveError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [showMoreCrops, setShowMoreCrops] = useState(false);
+  const [showCustomSize, setShowCustomSize] = useState(false);
+  const [sizePreset, setSizePreset] = useState(null); // 'Small' | 'Medium' | 'Large' | null
 
   // Track whether initial population from profile has happened.
-  // This prevents the useEffect from overwriting user edits on every
-  // profile change (background refresh, save response, sync flush, etc.)
   const formInitializedRef = useRef(false);
 
   useEffect(() => {
     if (!loading && !formInitializedRef.current) {
       formInitializedRef.current = true;
 
-      // If a draft was restored from localStorage and it has real data, prefer it
-      // over the server profile — the user was mid-edit when they left.
       if (draftRestored && draftForm.farmerName?.trim()) {
         console.log('[ProfileSetup] Restored draft, skipping profile population');
+        // Restore size preset state if possible
+        const existingSize = Number(draftForm.size);
+        const matchedPreset = SIZE_PRESETS.find(p => p.acres === existingSize);
+        if (matchedPreset) setSizePreset(matchedPreset.label);
+        else if (existingSize > 0) setShowCustomSize(true);
         return;
       }
 
       let populated;
-      // In newFarm mode, start with a blank form (keep farmer name from existing profile)
       if (isNewFarmMode) {
         populated = {
           ...initialForm,
@@ -104,10 +132,15 @@ export default function ProfileSetup() {
           locationLabel: profile?.locationLabel ?? '',
           experienceLevel: profile?.experienceLevel ?? '',
         };
+        // Restore size preset state
+        const existingSize = Number(populated.size);
+        const matchedPreset = SIZE_PRESETS.find(p => p.acres === existingSize);
+        if (matchedPreset) setSizePreset(matchedPreset.label);
+        else if (existingSize > 0) setShowCustomSize(true);
       }
       setForm(populated);
-      setDraftForm(populated);         // Keep draft in sync
-      setFieldErrors(initialErrors);   // Clear any stale validation errors
+      setDraftForm(populated);
+      setFieldErrors(initialErrors);
       setSaveError('');
     }
   }, [profile, loading, isNewFarmMode, draftRestored, draftForm, setDraftForm]);
@@ -120,10 +153,7 @@ export default function ProfileSetup() {
 
   useEffect(() => {
     if (autoVoice && !loading) {
-      speakText(
-        t('setup.voiceWelcome'),
-        languageToVoiceCode(language),
-      );
+      speakText(t('setup.voiceWelcome'), languageToVoiceCode(language));
     }
   }, [autoVoice, language, loading]);
 
@@ -133,9 +163,7 @@ export default function ProfileSetup() {
     else if (syncStatus === 'failed') setInfoMessage(t('setup.syncRetry'));
   }, [syncStatus, language]);
 
-  // ─── Shared field validity checks (single source of truth) ──────
-  // Used by BOTH the progress bar AND validation. If a field is valid
-  // for progress, it must be valid for submit, and vice versa.
+  // ─── Shared field validity checks ─────────────────────────
   const fieldChecks = useMemo(() => {
     const sizeNum = Number(form.size);
     const cropParsed = parseCropValue(form.cropType);
@@ -149,6 +177,10 @@ export default function ProfileSetup() {
                   (!cropParsed.isCustomCrop || !cropParsed.customCropName || cropParsed.customCropName.length >= 2),
     };
   }, [form]);
+
+  // Step-based progress: count completed steps out of total
+  const completedSteps = useMemo(() => Object.values(fieldChecks).filter(Boolean).length, [fieldChecks]);
+  const totalSteps = Object.keys(fieldChecks).length;
 
   const completion = useMemo(() => {
     const values = Object.values(fieldChecks);
@@ -165,6 +197,7 @@ export default function ProfileSetup() {
     setSaveError('');
   }
 
+  // ─── GPS with auto-detect country ─────────────────────────
   async function handleGetGPS() {
     setGpsError('');
     setGpsSlowMsg('');
@@ -185,12 +218,29 @@ export default function ProfileSetup() {
       const { detectAndResolveLocation } = await import('../utils/geolocation.js');
       const result = await detectAndResolveLocation();
       clearTimeout(slowTimer);
-      // GPS only populates coordinates — never overwrites user-entered country or location fields
       updateField('gpsLat', String(result.latitude));
       updateField('gpsLng', String(result.longitude));
-      // Store reverse-geocoded label for optional display (e.g. FarmSnapshotCard)
       const label = [result.locality, result.region, result.country].filter(Boolean).join(', ');
       if (label) updateField('locationLabel', label);
+
+      // Auto-fill country from GPS if not already set or still default
+      if (result.country && (!form.country || form.country === 'Ghana')) {
+        // Match GPS country name to our COUNTRY_OPTIONS list
+        const matched = COUNTRY_OPTIONS.find(
+          (name) => name.toLowerCase() === result.country.toLowerCase()
+        );
+        if (matched) {
+          updateField('country', matched);
+          if (!form.size) updateField('sizeUnit', defaultUnitForCountry(matched));
+        }
+      }
+
+      // Auto-fill location from GPS if empty
+      if (!form.location.trim() && (result.locality || result.region)) {
+        const locLabel = [result.locality, result.region].filter(Boolean).join(', ');
+        if (locLabel) updateField('location', locLabel);
+      }
+
       setGpsSlowMsg('');
       safeTrackEvent('gps.success', {});
     } catch (err) {
@@ -213,8 +263,22 @@ export default function ProfileSetup() {
     }
   }
 
+  // ─── Size preset handlers ─────────────────────────────────
+  function selectSizePreset(preset) {
+    setSizePreset(preset.label);
+    setShowCustomSize(false);
+    updateField('size', String(preset.acres));
+    updateField('sizeUnit', 'ACRE');
+  }
+
+  function enableCustomSize() {
+    setSizePreset(null);
+    setShowCustomSize(true);
+    // Keep current size value if any
+  }
+
+  // ─── Validation (only on submit) ──────────────────────────
   function validateBeforeSubmit() {
-    // Uses the same fieldChecks that drive the progress bar — single source of truth.
     const errors = { ...initialErrors };
     let hasError = false;
 
@@ -242,13 +306,14 @@ export default function ProfileSetup() {
     return { errors, hasError };
   }
 
+  // ─── Save ─────────────────────────────────────────────────
   async function handleSave() {
     if (submitGuardRef.current) return;
 
-    console.log('[ProfileSetup] Save clicked, form state:', JSON.stringify(form));
+    console.log('Save Farm Profile clicked');
+    console.log('Submitting farm profile:', JSON.stringify(form));
     console.log('[ProfileSetup] Field checks:', JSON.stringify(fieldChecks));
 
-    // Client-side validation — show all field errors at once
     const { errors: validationErrors, hasError } = validateBeforeSubmit();
     if (hasError) {
       setFieldErrors(validationErrors);
@@ -272,15 +337,14 @@ export default function ProfileSetup() {
       const result = await Promise.race([savePromise, timeoutPromise]);
       clearTimeout(timeoutId);
 
-      // If save was silently queued offline, don't navigate — show feedback
       if (result?.offline) {
-        console.log('[ProfileSetup] Save queued for offline sync — staying on page');
+        console.log('[ProfileSetup] Save queued for offline sync');
         setSaveError(t('setup.savedOffline') || 'Saved locally. Will sync when back online.');
         return;
       }
 
       clearDraft();
-      console.log('[ProfileSetup] Farm profile saved successfully:', result);
+      console.log('Farm profile saved:', result);
 
       trackPilotEvent('setup_completed', {
         hasGps: !!form.gpsLat && !!form.gpsLng,
@@ -295,17 +359,13 @@ export default function ProfileSetup() {
       });
 
       if (isNewFarmMode) {
-        // New farm created — switch to it and go back to dashboard
         const newProfile = result.profile || result;
         if (newProfile?.id) {
-          try {
-            await switchFarm(newProfile.id);
-          } catch { /* switch is non-blocking — dashboard will show the new farm */ }
+          try { await switchFarm(newProfile.id); } catch { /* non-blocking */ }
         }
         await refreshFarms();
         navigate('/dashboard');
       } else {
-        // Route to farmer-type selection if not yet classified, otherwise dashboard
         if (!form.experienceLevel) {
           navigate('/onboarding/farmer-type');
         } else {
@@ -314,7 +374,7 @@ export default function ProfileSetup() {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('[ProfileSetup] Save failed:', error.status, error.message, JSON.stringify(error.fieldErrors), 'form was:', JSON.stringify(form));
+      console.error('Farm profile submission error:', error.status, error.message, JSON.stringify(error.fieldErrors), 'form was:', JSON.stringify(form));
       if (error.message === '__SAVE_TIMEOUT__') {
         setSaveError(t('setup.saveTimeout') || 'Save timed out. Please try again.');
         trackPilotEvent('setup_failed', { reason: 'timeout' });
@@ -334,11 +394,73 @@ export default function ProfileSetup() {
     }
   }
 
+  // ─── Step-based onboarding for first-time farmers ──────────
+  // Show lightweight 5-step wizard when:
+  // 1. Not loading
+  // 2. No existing profile (truly first-time)
+  // 3. Not in "add new farm" mode (which is for existing users)
+  const [showStepFlow, setShowStepFlow] = useState(true);
+  const isFirstTimeUser = !loading && !profile && !isNewFarmMode;
+
+  async function handleOnboardingComplete(data) {
+    // Map OnboardingSteps output → ProfileSetup form fields
+    const mapped = {
+      ...initialForm,
+      farmerName: data.farmName || '', // farmName used as farmer name in step flow
+      farmName: data.farmName || '',
+      country: data.country || 'Ghana',
+      location: data.locationName || '',
+      size: String(data.farmSizeAcres || 5),
+      sizeUnit: defaultUnitForCountry(data.country || 'Ghana'),
+      cropType: (data.crop || '').toUpperCase(),
+      gpsLat: data.gpsLat ? String(data.gpsLat) : '',
+      gpsLng: data.gpsLng ? String(data.gpsLng) : '',
+      locationLabel: data.locationName || '',
+      experienceLevel: data.experienceLevel || '',
+    };
+    // Populate form and auto-submit
+    setForm(mapped);
+    setDraftForm(mapped);
+    // Switch to form view briefly for submission
+    setShowStepFlow(false);
+
+    // Auto-save via createNewFarm
+    try {
+      setSubmitting(true);
+      setSaving(true);
+      const result = await createNewFarm(mapped);
+      clearDraft();
+      trackPilotEvent('setup_completed', { hasGps: !!mapped.gpsLat, flow: 'onboarding_steps' });
+      safeTrackEvent('profile.onboarding_steps_completed', { crop: mapped.cropType });
+      if (result?.profile?.id) {
+        try { await switchFarm(result.profile.id); } catch {}
+      }
+      await refreshFarms();
+      navigate('/dashboard');
+    } catch (err) {
+      // If auto-save fails, show the full form pre-populated so farmer can retry
+      setSaveError(err.message || t('setup.saveFailed'));
+    } finally {
+      setSubmitting(false);
+      setSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div style={S.page}>
         <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)' }}>{t('setup.loading')}</div>
       </div>
+    );
+  }
+
+  // Show step-based onboarding for first-time users
+  if (isFirstTimeUser && showStepFlow) {
+    return (
+      <OnboardingSteps
+        onComplete={handleOnboardingComplete}
+        onCancel={() => setShowStepFlow(false)}
+      />
     );
   }
 
@@ -348,109 +470,71 @@ export default function ProfileSetup() {
         {/* Voice guide */}
         <VoiceBar voiceKey="setup.welcome" compact />
 
-        {/* Header card */}
+        {/* Header with step progress */}
         <div style={S.card}>
           <div style={S.headerRow}>
             <div>
               <h1 style={S.pageTitle}>{t('setup.title')}</h1>
-              <p style={S.pageSubtitle}>
-                {t('setup.subtitle')}
-              </p>
+              <p style={S.pageSubtitle}>{t('setup.subtitle')}</p>
             </div>
           </div>
 
-          <div style={S.progressWrap}>
-            <div style={S.progressTrack}>
-              <div style={{ ...S.progressBar, width: `${completion}%` }} />
-            </div>
-            <p style={S.progressText}>{completion}% {t('setup.completed')}</p>
+          {/* Step-based progress */}
+          <div style={S.stepRow}>
+            {Object.entries(fieldChecks).map(([key, done], i) => (
+              <div key={key} style={{ ...S.stepDot, background: done ? '#22C55E' : 'rgba(255,255,255,0.15)' }} />
+            ))}
           </div>
+          <p style={S.progressText}>{completedSteps} / {totalSteps} {t('setup.completed')}</p>
 
           {profile?.farmerUuid && (
             <p style={S.uuidText}>{t('farmerUuid')}: {profile.farmerUuid}</p>
           )}
-
           {infoMessage && <p style={S.infoMsg}>{infoMessage}</p>}
         </div>
 
-        {/* Form card */}
+        {/* ─── Location (GPS first) ───────────────────────── */}
         <div style={S.card}>
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.yourName')}</label>
-            <input
-              ref={nameInputRef}
-              value={form.farmerName}
-              onChange={(e) => updateField('farmerName', e.target.value)}
-              placeholder={t('setup.yourName')}
-              style={S.input}
-            />
-            {fieldErrors.farmerName && <p style={S.fieldError}>{fieldErrors.farmerName}</p>}
+          <div style={S.sectionHeader}>
+            <span style={S.sectionIcon}>{'\uD83D\uDCCD'}</span>
+            <span style={S.sectionTitle}>{t('location.farmLocation')}</span>
           </div>
 
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.farmName')}</label>
-            <input
-              value={form.farmName}
-              onChange={(e) => updateField('farmName', e.target.value)}
-              placeholder={t('setup.farmName')}
-              style={S.input}
-            />
-            {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
-          </div>
-
-          {/* Experience Level — "Are you new to farming?" */}
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('guided.experienceQuestion')}</label>
-            <div style={S.experienceRow}>
-              <button
-                type="button"
-                onClick={() => updateField('experienceLevel', 'new')}
-                style={{
-                  ...S.experienceBtn,
-                  ...(form.experienceLevel === 'new' ? S.experienceBtnActive : {}),
-                }}
-              >
-                <span style={{ fontSize: '1.3rem' }}>🌱</span>
-                <span>{t('guided.newFarmer')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => updateField('experienceLevel', 'experienced')}
-                style={{
-                  ...S.experienceBtn,
-                  ...(form.experienceLevel === 'experienced' ? S.experienceBtnActive : {}),
-                }}
-              >
-                <span style={{ fontSize: '1.3rem' }}>🧑‍🌾</span>
-                <span>{t('guided.experienced')}</span>
+          {form.gpsLat ? (
+            <div style={S.gpsSuccess}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>{'\u2705'}</span>
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#22C55E' }}>
+                    {t('location.captured')}
+                  </div>
+                  {form.locationLabel && (
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.15rem', margin: 0 }}>
+                      {form.locationLabel}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button type="button" onClick={handleGetGPS} disabled={loadingGPS} style={S.gpsUpdateBtn}>
+                {loadingGPS ? t('location.updating') : t('location.update')}
               </button>
             </div>
-          </div>
-
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.country')}</label>
-            <select
-              value={form.country}
-              onChange={(e) => {
-                const newCountry = e.target.value;
-                updateField('country', newCountry);
-                // Auto-switch unit when country changes and user hasn't typed a size yet
-                if (!form.size) {
-                  updateField('sizeUnit', defaultUnitForCountry(newCountry));
-                }
-              }}
-              style={S.select}
+          ) : (
+            <button
+              type="button" onClick={handleGetGPS} disabled={loadingGPS}
+              style={{ ...S.gpsBtnLarge, ...(loadingGPS ? { opacity: 0.6 } : {}) }}
             >
-              <option value="">{t('setup.selectCountry')}</option>
-              {COUNTRY_OPTIONS.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-            {fieldErrors.country && <p style={S.fieldError}>{fieldErrors.country}</p>}
-          </div>
+              <span style={{ fontSize: '1.5rem' }}>{'\uD83D\uDCF1'}</span>
+              <span>{loadingGPS ? t('location.detecting') : t('location.getMyLocation')}</span>
+            </button>
+          )}
 
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.location')}</label>
+          {gpsError && <p style={S.gpsSoftMsg}>{gpsError}</p>}
+          {gpsSlowMsg && !gpsError && <p style={S.gpsSoftMsg}>{gpsSlowMsg}</p>}
+
+          {/* Location text fallback */}
+          <div style={{ marginTop: '0.75rem' }}>
+            <label style={S.labelSmall}>{t('setup.location')}</label>
             <input
               value={form.location}
               onChange={(e) => updateField('location', e.target.value)}
@@ -460,111 +544,252 @@ export default function ProfileSetup() {
             {fieldErrors.location && <p style={S.fieldError}>{fieldErrors.location}</p>}
           </div>
 
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.farmSize')}</label>
-            <div style={S.sizeRow}>
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={form.size}
-                onChange={(e) => updateField('size', e.target.value)}
-                placeholder={t('setup.farmSizePlaceholder')}
-                style={{ ...S.input, flex: 1 }}
-              />
-              <select
-                value={form.sizeUnit}
-                onChange={(e) => updateField('sizeUnit', e.target.value)}
-                style={S.unitSelect}
-              >
-                {UNIT_OPTIONS.map((u) => (
-                  <option key={u.value} value={u.value}>{u.label}</option>
-                ))}
-              </select>
-            </div>
-            {form.size && form.sizeUnit !== 'HECTARE' && (
-              <p style={S.conversionHint}>
-                ≈ {toHectares(parseFloat(form.size), form.sizeUnit)?.toFixed(2) || '—'} {t('setup.hectares')}
-              </p>
-            )}
-            {fieldErrors.size && <p style={S.fieldError}>{fieldErrors.size}</p>}
-          </div>
-
-          <div style={S.formGroup}>
-            <label style={S.label}>{t('setup.mainCrop')}</label>
-            <CropSelect
-              value={form.cropType}
-              onChange={(code) => updateField('cropType', code)}
-              countryCode={form.country}
-              placeholder={t('setup.selectCrop')}
-              required
-            />
-            {fieldErrors.cropType && <p style={S.fieldError}>{fieldErrors.cropType}</p>}
-          </div>
-
-          {/* GPS — optional, improves weather & recommendations */}
-          <div style={S.gpsBox}>
-            <p style={S.gpsDesc}>{t('setup.gpsOptional')}</p>
-
-            {form.gpsLat ? (
-              <div style={S.gpsSuccess}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#22C55E' }}>
-                  {t('location.captured')}
-                </div>
-                {form.locationLabel && (
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>
-                    {form.locationLabel}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={handleGetGPS}
-                  disabled={loadingGPS}
-                  style={S.gpsUpdateBtn}
-                >
-                  {loadingGPS ? t('location.updating') : t('location.update')}
-                </button>
-              </div>
-            ) : (
+          {/* Country — auto-detected, shown as small selector */}
+          {form.country ? (
+            <div style={S.countryPill}>
+              <span style={{ fontSize: '0.85rem' }}>{'\uD83C\uDF0D'}</span>
+              <span style={{ flex: 1, fontSize: '0.85rem' }}>{form.country}</span>
               <button
                 type="button"
-                onClick={handleGetGPS}
-                disabled={loadingGPS}
-                style={{ ...S.gpsBtn, ...(loadingGPS ? { opacity: 0.6 } : {}) }}
+                onClick={() => updateField('country', '')}
+                style={S.changeBtn}
               >
-                {loadingGPS ? t('location.detecting') : t('location.getMyLocation')}
+                Change
               </button>
-            )}
+            </div>
+          ) : (
+            <div style={{ marginTop: '0.5rem' }}>
+              <label style={S.labelSmall}>{t('setup.country')}</label>
+              <select
+                value={form.country}
+                onChange={(e) => {
+                  const newCountry = e.target.value;
+                  updateField('country', newCountry);
+                  if (!form.size) updateField('sizeUnit', defaultUnitForCountry(newCountry));
+                }}
+                style={S.select}
+              >
+                <option value="">{t('setup.selectCountry')}</option>
+                {COUNTRY_OPTIONS.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              {fieldErrors.country && <p style={S.fieldError}>{fieldErrors.country}</p>}
+            </div>
+          )}
+        </div>
 
-            {gpsError && <p style={S.gpsSoftMsg}>{gpsError}</p>}
-            {gpsSlowMsg && !gpsError && <p style={S.gpsSoftMsg}>{gpsSlowMsg}</p>}
+        {/* ─── Farmer & Farm Name ─────────────────────────── */}
+        <div style={S.card}>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionIcon}>{'\uD83D\uDE4B'}</span>
+            <span style={S.sectionTitle}>{t('setup.yourName')}</span>
+          </div>
+          <input
+            ref={nameInputRef}
+            value={form.farmerName}
+            onChange={(e) => updateField('farmerName', e.target.value)}
+            placeholder={t('setup.yourName')}
+            style={S.input}
+          />
+          {fieldErrors.farmerName && <p style={S.fieldError}>{fieldErrors.farmerName}</p>}
+
+          <div style={{ marginTop: '0.75rem' }}>
+            <label style={S.labelSmall}>{t('setup.farmName')}</label>
+            <input
+              value={form.farmName}
+              onChange={(e) => updateField('farmName', e.target.value)}
+              placeholder={t('setup.farmName')}
+              style={S.input}
+            />
+            {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
+          </div>
+        </div>
+
+        {/* ─── Crop Selection (icon grid) ─────────────────── */}
+        <div style={S.card}>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionIcon}>{'\uD83C\uDF3E'}</span>
+            <span style={S.sectionTitle}>{t('setup.mainCrop')}</span>
           </div>
 
-          {saveError && <p style={S.saveError}>{saveError}</p>}
+          <div style={S.cropGrid}>
+            {TOP_CROPS.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => { updateField('cropType', c.code); setShowMoreCrops(false); }}
+                style={{
+                  ...S.cropChip,
+                  ...(form.cropType === c.code ? S.cropChipActive : {}),
+                }}
+              >
+                <span style={{ fontSize: '1.5rem' }}>{c.icon}</span>
+                <span style={S.cropLabel}>{c.label}</span>
+              </button>
+            ))}
+          </div>
 
-          <div style={S.btnRow}>
+          {/* Show more crops toggle */}
+          {!showMoreCrops ? (
             <button
               type="button"
-              onClick={() => navigate('/dashboard')}
-              style={S.backBtn}
+              onClick={() => setShowMoreCrops(true)}
+              style={S.moreBtn}
             >
-              {t('common.back')}
+              {form.cropType && !TOP_CROPS.find(c => c.code === form.cropType)
+                ? `Selected: ${parseCropValue(form.cropType).cropName || form.cropType} \u2014 Tap to change`
+                : 'More crops...'}
+            </button>
+          ) : (
+            <div style={{ marginTop: '0.5rem' }}>
+              <CropSelect
+                value={form.cropType}
+                onChange={(code) => { updateField('cropType', code); setShowMoreCrops(false); }}
+                countryCode={form.country}
+                placeholder={t('setup.selectCrop')}
+                required
+              />
+              <button type="button" onClick={() => setShowMoreCrops(false)} style={S.collapseBtnSmall}>
+                Close
+              </button>
+            </div>
+          )}
+          {fieldErrors.cropType && <p style={S.fieldError}>{fieldErrors.cropType}</p>}
+        </div>
+
+        {/* ─── Farm Size (tap presets + custom) ───────────── */}
+        <div style={S.card}>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionIcon}>{'\uD83D\uDCCF'}</span>
+            <span style={S.sectionTitle}>{t('setup.farmSize')}</span>
+          </div>
+
+          <div style={S.sizeGrid}>
+            {SIZE_PRESETS.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => selectSizePreset(p)}
+                style={{
+                  ...S.sizeChip,
+                  ...(sizePreset === p.label ? S.sizeChipActive : {}),
+                }}
+              >
+                <span style={{ fontSize: '1.5rem' }}>{p.icon}</span>
+                <span style={S.sizeChipLabel}>{p.label}</span>
+                <span style={S.sizeChipDesc}>{p.desc}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Custom size option */}
+          {!showCustomSize && !sizePreset && (
+            <button type="button" onClick={enableCustomSize} style={S.moreBtn}>
+              Enter exact size
+            </button>
+          )}
+          {!showCustomSize && sizePreset && (
+            <button type="button" onClick={enableCustomSize} style={S.moreBtn}>
+              Or enter exact size
+            </button>
+          )}
+
+          {showCustomSize && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <div style={S.sizeRow}>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={form.size}
+                  onChange={(e) => { updateField('size', e.target.value); setSizePreset(null); }}
+                  placeholder={t('setup.farmSizePlaceholder')}
+                  style={{ ...S.input, flex: 1 }}
+                />
+                {/* Segmented unit toggle instead of dropdown */}
+                <div style={S.unitToggle}>
+                  {UNIT_OPTIONS.map((u) => (
+                    <button
+                      key={u.value}
+                      type="button"
+                      onClick={() => updateField('sizeUnit', u.value)}
+                      style={{
+                        ...S.unitToggleBtn,
+                        ...(form.sizeUnit === u.value ? S.unitToggleBtnActive : {}),
+                      }}
+                    >
+                      {u.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {form.size && form.sizeUnit !== 'HECTARE' && (
+                <p style={S.conversionHint}>
+                  {'\u2248'} {toHectares(parseFloat(form.size), form.sizeUnit)?.toFixed(2) || '\u2014'} {t('setup.hectares')}
+                </p>
+              )}
+            </div>
+          )}
+          {fieldErrors.size && <p style={S.fieldError}>{fieldErrors.size}</p>}
+        </div>
+
+        {/* ─── Experience Level ────────────────────────────── */}
+        <div style={S.card}>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionIcon}>{'\uD83E\uDDD1\u200D\uD83C\uDF3E'}</span>
+            <span style={S.sectionTitle}>{t('guided.experienceQuestion')}</span>
+          </div>
+          <div style={S.experienceRow}>
+            <button
+              type="button"
+              onClick={() => updateField('experienceLevel', 'new')}
+              style={{
+                ...S.experienceBtn,
+                ...(form.experienceLevel === 'new' ? S.experienceBtnActive : {}),
+              }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>{'\uD83C\uDF31'}</span>
+              <span>{t('guided.newFarmer')}</span>
             </button>
             <button
               type="button"
-              onClick={handleSave}
-              disabled={submitting}
-              style={{ ...S.saveBtn, ...(submitting ? { opacity: 0.6 } : {}) }}
+              onClick={() => updateField('experienceLevel', 'experienced')}
+              style={{
+                ...S.experienceBtn,
+                ...(form.experienceLevel === 'experienced' ? S.experienceBtnActive : {}),
+              }}
             >
-              {submitting ? t('setup.saving') : t('setup.saveFarm')}
+              <span style={{ fontSize: '1.3rem' }}>{'\uD83E\uDDD1\u200D\uD83C\uDF3E'}</span>
+              <span>{t('guided.experienced')}</span>
             </button>
           </div>
+        </div>
+
+        {/* ─── Save bar ───────────────────────────────────── */}
+        {saveError && (
+          <div style={S.saveErrorBox}>
+            <p style={S.saveErrorText}>{saveError}</p>
+          </div>
+        )}
+
+        <div style={S.btnRow}>
+          <button type="button" onClick={() => navigate('/dashboard')} style={S.backBtn}>
+            {t('common.back')}
+          </button>
+          <button
+            type="button" onClick={handleSave} disabled={submitting}
+            style={{ ...S.saveBtn, ...(submitting ? { opacity: 0.6 } : {}) }}
+          >
+            {submitting ? t('setup.saving') : t('setup.saveFarm')}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Styles ─────────────────────────────────────────────────
 const S = {
   page: {
     minHeight: '100vh',
@@ -579,8 +804,8 @@ const S = {
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.25rem',
-    paddingTop: '1rem',
+    gap: '1rem',
+    paddingTop: '0.5rem',
     paddingBottom: '100px',
   },
   card: {
@@ -591,7 +816,7 @@ const S = {
     boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: '0.75rem',
   },
   headerRow: {
     display: 'flex',
@@ -610,26 +835,22 @@ const S = {
     color: 'rgba(255,255,255,0.6)',
     marginTop: '0.25rem',
   },
-  progressWrap: {
-    marginTop: '0.5rem',
+  // Step dots progress
+  stepRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.25rem',
   },
-  progressTrack: {
-    width: '100%',
-    height: '0.75rem',
-    borderRadius: '9999px',
-    background: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    background: '#22C55E',
-    borderRadius: '9999px',
-    transition: 'width 0.3s ease',
+  stepDot: {
+    flex: 1,
+    height: '6px',
+    borderRadius: '3px',
+    transition: 'background 0.3s ease',
   },
   progressText: {
-    fontSize: '0.875rem',
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: '0.5rem',
+    fontSize: '0.85rem',
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: '0.25rem',
   },
   uuidText: {
     fontSize: '0.75rem',
@@ -641,7 +862,180 @@ const S = {
     color: '#86EFAC',
     marginTop: '0.25rem',
   },
-  formGroup: {},
+  // Section headers
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  sectionIcon: {
+    fontSize: '1.2rem',
+  },
+  sectionTitle: {
+    fontSize: '1rem',
+    fontWeight: 700,
+  },
+  labelSmall: {
+    display: 'block',
+    fontSize: '0.8rem',
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: '0.25rem',
+  },
+  input: {
+    width: '100%',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '1rem',
+    outline: 'none',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    minHeight: '48px',
+  },
+  select: {
+    width: '100%',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '0.75rem 1rem',
+    outline: 'none',
+    color: '#fff',
+    fontSize: '16px',
+    boxSizing: 'border-box',
+    minHeight: '48px',
+    cursor: 'pointer',
+    appearance: 'auto',
+  },
+  fieldError: {
+    fontSize: '0.8rem',
+    color: '#FCA5A5',
+    marginTop: '0.25rem',
+    margin: '0.25rem 0 0',
+  },
+  // Crop grid
+  cropGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '0.5rem',
+  },
+  cropChip: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '0.75rem 0.25rem',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '2px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.7)',
+    cursor: 'pointer',
+    minHeight: '64px',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.15s, background 0.15s',
+  },
+  cropChipActive: {
+    borderColor: '#22C55E',
+    background: 'rgba(34,197,94,0.12)',
+    color: '#FFFFFF',
+  },
+  cropLabel: {
+    fontSize: '0.7rem',
+    fontWeight: 600,
+    textAlign: 'center',
+    lineHeight: 1.2,
+  },
+  moreBtn: {
+    marginTop: '0.25rem',
+    padding: '0.6rem 1rem',
+    background: 'transparent',
+    border: '1px dashed rgba(255,255,255,0.15)',
+    borderRadius: '10px',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.8rem',
+    cursor: 'pointer',
+    textAlign: 'center',
+    minHeight: '40px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  collapseBtnSmall: {
+    marginTop: '0.5rem',
+    padding: '0.4rem 0.75rem',
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.75rem',
+    cursor: 'pointer',
+  },
+  // Size presets
+  sizeGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '0.5rem',
+  },
+  sizeChip: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.2rem',
+    padding: '0.75rem 0.5rem',
+    borderRadius: '12px',
+    background: '#111827',
+    border: '2px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.7)',
+    cursor: 'pointer',
+    minHeight: '72px',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.15s, background 0.15s',
+  },
+  sizeChipActive: {
+    borderColor: '#22C55E',
+    background: 'rgba(34,197,94,0.12)',
+    color: '#FFFFFF',
+  },
+  sizeChipLabel: {
+    fontSize: '0.85rem',
+    fontWeight: 700,
+  },
+  sizeChipDesc: {
+    fontSize: '0.65rem',
+    color: 'rgba(255,255,255,0.4)',
+  },
+  sizeRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'stretch',
+  },
+  unitToggle: {
+    display: 'flex',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    border: '1px solid rgba(255,255,255,0.1)',
+    flexShrink: 0,
+  },
+  unitToggleBtn: {
+    padding: '0.75rem 1rem',
+    background: '#111827',
+    border: 'none',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: '48px',
+    transition: 'background 0.15s, color 0.15s',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  unitToggleBtnActive: {
+    background: '#22C55E',
+    color: '#fff',
+  },
+  conversionHint: {
+    fontSize: '0.75rem',
+    color: '#86EFAC',
+    marginTop: '0.35rem',
+  },
+  // Experience
   experienceRow: {
     display: 'flex',
     gap: '0.75rem',
@@ -660,123 +1054,45 @@ const S = {
     cursor: 'pointer',
     fontSize: '0.875rem',
     fontWeight: 600,
-    minHeight: '44px',
+    minHeight: '48px',
     transition: 'border-color 0.2s, background 0.2s',
+    WebkitTapHighlightColor: 'transparent',
   },
   experienceBtnActive: {
     borderColor: '#22C55E',
     background: 'rgba(34,197,94,0.1)',
     color: '#FFFFFF',
   },
-  label: {
-    display: 'block',
-    fontSize: '0.875rem',
-    marginBottom: '0.25rem',
-  },
-  sizeRow: {
-    display: 'flex',
-    gap: '0.5rem',
-    alignItems: 'stretch',
-  },
-  unitSelect: {
-    width: '8.5rem',
-    borderRadius: '12px',
-    background: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
-    padding: '0.75rem',
-    outline: 'none',
-    color: '#fff',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    minHeight: '44px',
-    cursor: 'pointer',
-    appearance: 'auto',
-  },
-  conversionHint: {
-    fontSize: '0.75rem',
-    color: '#86EFAC',
-    marginTop: '0.35rem',
-  },
-  input: {
-    width: '100%',
-    borderRadius: '12px',
-    background: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
-    padding: '1rem',
-    outline: 'none',
-    color: '#fff',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    minHeight: '44px',
-  },
-  select: {
-    width: '100%',
-    borderRadius: '12px',
-    background: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
-    padding: '0.75rem 1rem',
-    outline: 'none',
-    color: '#fff',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    minHeight: '44px',
-    cursor: 'pointer',
-    appearance: 'auto',
-  },
-  fieldError: {
-    fontSize: '0.875rem',
-    color: '#FCA5A5',
-    marginTop: '0.25rem',
-  },
-  gpsBox: {
-    borderRadius: '12px',
-    background: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
-    padding: '1rem',
-  },
-  gpsTopRow: {
+  // GPS
+  gpsBtnLarge: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '0.75rem',
-    flexWrap: 'wrap',
-  },
-  gpsHeading: {
-    fontWeight: 600,
-    margin: 0,
-    fontSize: '1rem',
-  },
-  gpsDesc: {
-    fontSize: '0.875rem',
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: '0.25rem',
-  },
-  gpsBtn: {
+    justifyContent: 'center',
+    gap: '0.6rem',
+    width: '100%',
+    padding: '1rem',
     borderRadius: '12px',
-    background: '#22C55E',
-    padding: '0.75rem 1rem',
-    fontWeight: 600,
-    color: '#000',
+    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
     border: 'none',
+    color: '#fff',
+    fontSize: '1rem',
+    fontWeight: 700,
     cursor: 'pointer',
-    fontSize: '0.875rem',
-    whiteSpace: 'nowrap',
-  },
-  gpsSoftMsg: {
-    fontSize: '0.8rem',
-    color: 'rgba(255,255,255,0.55)',
-    marginTop: '0.75rem',
-    lineHeight: 1.5,
+    minHeight: '56px',
+    boxShadow: '0 4px 12px rgba(14,165,233,0.3)',
+    WebkitTapHighlightColor: 'transparent',
   },
   gpsSuccess: {
-    marginTop: '0.75rem',
     padding: '0.75rem',
     borderRadius: '12px',
     background: 'rgba(34,197,94,0.08)',
     border: '1px solid rgba(34,197,94,0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.5rem',
   },
   gpsUpdateBtn: {
-    marginTop: '0.5rem',
     fontSize: '0.8rem',
     fontWeight: 600,
     color: '#86EFAC',
@@ -786,18 +1102,53 @@ const S = {
     padding: '0.35rem 0.75rem',
     cursor: 'pointer',
     minHeight: '36px',
+    flexShrink: 0,
   },
-  saveError: {
+  gpsSoftMsg: {
+    fontSize: '0.8rem',
+    color: 'rgba(255,255,255,0.55)',
+    marginTop: '0.5rem',
+    lineHeight: 1.5,
+  },
+  // Country pill
+  countryPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.6rem 0.75rem',
+    borderRadius: '10px',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    marginTop: '0.5rem',
+  },
+  changeBtn: {
+    padding: '0.25rem 0.6rem',
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: '6px',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.75rem',
+    cursor: 'pointer',
+    minHeight: '28px',
+  },
+  // Save
+  saveErrorBox: {
+    padding: '0.75rem 1rem',
+    borderRadius: '12px',
+    background: 'rgba(252,165,165,0.08)',
+    border: '1px solid rgba(252,165,165,0.2)',
+  },
+  saveErrorText: {
     fontSize: '0.875rem',
     color: '#FCA5A5',
+    margin: 0,
   },
   btnRow: {
     display: 'flex',
     gap: '0.75rem',
-    paddingTop: '0.5rem',
     position: 'sticky',
     bottom: 0,
-    background: '#1B2330',
+    background: '#0F172A',
     padding: '0.75rem 0',
     zIndex: 10,
   },
@@ -811,16 +1162,21 @@ const S = {
     background: 'transparent',
     cursor: 'pointer',
     fontSize: '0.875rem',
+    minHeight: '52px',
+    WebkitTapHighlightColor: 'transparent',
   },
   saveBtn: {
-    flex: 1,
-    borderRadius: '12px',
-    background: '#22C55E',
+    flex: 2,
+    borderRadius: '14px',
+    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
     padding: '1rem',
-    fontWeight: 600,
-    color: '#000',
+    fontWeight: 700,
+    color: '#fff',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '0.875rem',
+    fontSize: '1rem',
+    minHeight: '52px',
+    boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+    WebkitTapHighlightColor: 'transparent',
   },
 };

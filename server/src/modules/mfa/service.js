@@ -125,11 +125,9 @@ export async function initEnrollment(userId, email) {
   getEncryptionKey(); // validate config early
 
   const rawSecret = totp.generateSecret(); // synchronous in v13
-  const otpauthUrl = await totp.generateURI({
-    secret: rawSecret,
-    label: email,
-    issuer: config.mfa.issuer,
-  });
+
+  // otplib v13: toURI({ secret, label, issuer }) — returns otpauth:// URI
+  const otpauthUrl = totp.toURI({ secret: rawSecret, label: email, issuer: config.mfa.issuer });
 
   // Encrypt the pending secret so it can be passed back to verify without DB storage
   const encryptedPending = encryptSecret(`pending:${userId}:${rawSecret}`);
@@ -176,9 +174,9 @@ export async function completeEnrollment({ userId, pendingToken, totpCode }) {
     throw err;
   }
 
-  // Verify TOTP code — v13 API: verify(token, { secret })
-  const valid = await totp.verify(totpCode, { secret: rawSecret });
-  if (!valid) {
+  // Verify TOTP code — v13 API: verify(token, { secret }) returns { valid: boolean }
+  const result = await totp.verify(totpCode, { secret: rawSecret });
+  if (!result.valid) {
     opsEvent('mfa', 'enrollment_code_invalid', 'warn', { userId });
     const err = new Error('Invalid authenticator code. Please check your app and try again.');
     err.statusCode = 400;
@@ -240,10 +238,11 @@ export async function verifyMfaCode(userId, code) {
     return verifyAndConsumeBackupCode(userId, normalizedCode);
   }
 
-  // TOTP path: 6-digit numeric — v13 API: verify(token, { secret })
+  // TOTP path: 6-digit numeric — v13 API: verify(token, { secret }) returns { valid: boolean }
   try {
     const rawSecret = decryptSecret(user.mfaSecret);
-    return await totp.verify(normalizedCode, { secret: rawSecret });
+    const result = await totp.verify(normalizedCode, { secret: rawSecret });
+    return result.valid === true;
   } catch {
     return false;
   }

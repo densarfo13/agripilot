@@ -147,8 +147,8 @@ describe('QuickUpdateFlow — Photo Compression', () => {
     expect(code).toContain('function compressPhoto');
   });
 
-  it('limits to 1200px max dimension', () => {
-    expect(code).toContain('MAX_PHOTO_DIMENSION = 1200');
+  it('limits to 1024px max dimension', () => {
+    expect(code).toContain('MAX_PHOTO_DIMENSION = 1024');
   });
 
   it('compresses to 0.7 JPEG quality', () => {
@@ -218,7 +218,7 @@ describe('QuickUpdateFlow — Success & Offline States', () => {
 
   it('has success screen with checkmark', () => {
     expect(code).toContain('successScreen');
-    expect(code).toContain("t('update.updateSavedCheck')");
+    expect(code).toContain("t('update.saved')");
   });
 
   it('has offline screen with sync message', () => {
@@ -234,7 +234,7 @@ describe('QuickUpdateFlow — Success & Offline States', () => {
   });
 
   it('has submitting spinner state', () => {
-    expect(code).toContain("t('update.savingUpdate')");
+    expect(code).toContain("t('update.saving')");
     expect(code).toContain('ACTION_STATE.LOADING');
   });
 
@@ -376,13 +376,16 @@ describe('QuickUpdateFlow — Dashboard Integration', () => {
   });
 
   it('has Add Update button on dashboard', () => {
-    expect(code).toContain('data-testid="add-update-btn"');
-    expect(code).toContain("t('update.addUpdate')");
+    const quickActions = readFile('src/components/QuickActionsRow.jsx');
+    expect(quickActions).toContain('data-testid="add-update-btn"');
+    expect(quickActions).toContain("t('dashboard.addUpdate')");
   });
 
-  it('Add Update button has large green gradient style', () => {
-    expect(code).toContain('addUpdateBtn');
-    expect(code).toContain('linear-gradient');
+  it('Add Update button has quickTile style in quick actions', () => {
+    // In the simplified Dashboard, Add Update is a quickTile in the quick actions grid
+    const quickActions = readFile('src/components/QuickActionsRow.jsx');
+    expect(quickActions).toContain('quickTile');
+    expect(quickActions).toContain('data-testid="add-update-btn"');
   });
 
   it('shows QuickUpdateFlow in modal overlay', () => {
@@ -400,8 +403,8 @@ describe('QuickUpdateFlow — Dashboard Integration', () => {
     expect(code).toContain('refreshSeason()');
   });
 
-  it('only shows button when setup complete and season active', () => {
-    expect(code).toContain('setupComplete && season');
+  it('only shows button when setup complete', () => {
+    expect(code).toContain('setupComplete');
   });
 });
 

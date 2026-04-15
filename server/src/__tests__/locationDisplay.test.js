@@ -337,10 +337,11 @@ describe('Data integrity — coordinates preserved', () => {
     expect(schema).toContain('longitude       Float?');
   });
 
-  it('ProfileSetupPage still sends latitude in save payload', () => {
+  it('ProfileSetupPage still sends GPS coordinates in save payload', () => {
     const src = read('src/pages/ProfileSetupPage.jsx');
-    expect(src).toContain('latitude: form.latitude');
-    expect(src).toContain('longitude: form.longitude');
+    // Payload maps form.latitude → gpsLat (backend API convention)
+    expect(src).toContain('gpsLat: form.latitude');
+    expect(src).toContain('gpsLng: form.longitude');
   });
 
   it('backend still stores latitude/longitude in database', () => {

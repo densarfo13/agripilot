@@ -40,9 +40,18 @@ const S = {
     width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db',
     fontSize: '16px', minHeight: '44px', boxSizing: 'border-box',
   },
-  select: {
-    width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db',
-    fontSize: '16px', minHeight: '44px', background: '#fff', boxSizing: 'border-box',
+  seedGrid: {
+    display: 'flex', flexWrap: 'wrap', gap: '6px',
+  },
+  seedChip: {
+    padding: '10px 14px', borderRadius: '10px', border: '2px solid #d1d5db',
+    background: '#f9fafb', color: '#374151', fontSize: '14px', fontWeight: 600,
+    cursor: 'pointer', minHeight: '40px',
+    transition: 'border-color 0.15s, background 0.15s',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  seedChipActive: {
+    borderColor: '#16a34a', background: '#dcfce7', color: '#166534',
   },
   saveBtn: (disabled) => ({
     padding: '12px 20px', borderRadius: '8px', border: 'none',
@@ -216,10 +225,21 @@ export default function SeedScanFlow({ existingScans, onSaved, onSkip }) {
         <>
           <div style={S.fieldGroup}>
             <label style={S.label}>{t('seedScan.seedTypeLabel')}</label>
-            <select style={S.select} value={form.seedType} onChange={(e) => setField('seedType', e.target.value)}>
-              <option value="">{t('seedScan.selectSeed')}</option>
-              {SEED_TYPES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            </select>
+            <div style={S.seedGrid}>
+              {SEED_TYPES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setField('seedType', s)}
+                  style={{
+                    ...S.seedChip,
+                    ...(form.seedType === s ? S.seedChipActive : {}),
+                  }}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={S.fieldGroup}>
             <label style={S.label}>{t('seedScan.varietyLabel')}</label>

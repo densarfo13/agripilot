@@ -336,6 +336,8 @@ model User {
   v2SupportRequests        V2SupportRequest[]
   // Email logs
   emailLogs                EmailLog[]          @relation("EmailLogUser")
+  // Farm task completions
+  farmTaskCompletions      V2FarmTaskCompletion[]
 
   @@index([organizationId], map: "idx_users_org")
   @@index([organizationId, role], map: "idx_users_org_role")
@@ -1401,6 +1403,7 @@ model FarmProfile {
   farmPestRisks     V2FarmPestRisk[]
   harvestRecords    V2HarvestRecord[]
   costRecords       V2FarmCostRecord[]
+  taskCompletions   V2FarmTaskCompletion[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
   @@index([userId], map: "idx_farm_profiles_user")
@@ -1714,6 +1717,30 @@ model V2Task {
   @@index([status], map: "idx_v2_tasks_status")
   @@index([dueDate], map: "idx_v2_tasks_due")
   @@map("v2_tasks")
+}
+
+// ─── V2 Farm Task Completions ──────────────────────────────
+model V2FarmTaskCompletion {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  farmId        String   @map("farm_id")
+  taskRuleId    String   @map("task_rule_id")    // e.g. "stage-planning-choose-seed"
+  taskId        String   @map("task_id")          // e.g. "stage-planning-choose-seed-farmId"
+  title         String
+  priority      String?
+  actionType    String?  @map("action_type")
+  status        String   @default("completed")    // completed | skipped
+  completedAt   DateTime @default(now()) @map("completed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farm FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@unique([farmId, taskRuleId], map: "uq_farm_task_completion")
+  @@index([userId], map: "idx_v2_farm_task_completions_user")
+  @@index([farmId], map: "idx_v2_farm_task_completions_farm")
+  @@index([completedAt], map: "idx_v2_farm_task_completions_date")
+  @@map("v2_farm_task_completions")
 }
 
 // ─── V2 Analytics ──────────────────────────────────────────

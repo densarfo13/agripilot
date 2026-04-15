@@ -1,4 +1,4 @@
-import { LANGUAGES } from '../lib/i18n.js';
+import { LANGUAGES } from '../i18n/index.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 
 export default function LanguageSelector() {

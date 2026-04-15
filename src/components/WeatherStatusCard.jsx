@@ -10,6 +10,7 @@
  * Consumes pre-computed WeatherGuidance from the decision engine.
  */
 import VoicePromptButton from './VoicePromptButton.jsx';
+import { resolvePromptId } from '../services/voicePrompts.js';
 
 const STATUS_COLORS = {
   safe: 'rgba(34,197,94,0.08)',
@@ -58,7 +59,7 @@ export default function WeatherStatusCard({ guidance, t, isBasic }) {
         )}
       </div>
       {voiceText && voiceText !== guidance.voiceKey && (
-        <VoicePromptButton text={voiceText} label={t('common.listen')} compact />
+        <VoicePromptButton promptId={resolvePromptId(guidance.voiceKey)} text={voiceText} label={t('common.listen')} compact />
       )}
     </div>
   );

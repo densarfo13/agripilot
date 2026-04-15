@@ -371,6 +371,71 @@ function formatLastUpdated(fetchedAt, t) {
   return t('wx.updated.hours', { hours });
 }
 
+// ─── Weather Override Pipeline Stage ────────────────────────
+
+/**
+ * Apply weather override to a resolved action — the core pipeline stage.
+ *
+ * This runs AFTER the priority cascade (resolvePrimaryAction) but BEFORE
+ * rendering, so it catches tasks from ALL paths (pest, alert, daily).
+ * If weather conflicts with the action's task, the action is replaced
+ * with a weather-safe alternative. Otherwise the action passes through.
+ *
+ * @param {Object} action - Resolved action from resolvePrimaryAction()
+ * @param {WeatherGuidance|null} weatherGuidance - From getWeatherGuidance()
+ * @param {Function} t - i18n function
+ * @returns {Object} Final action (original or weather-overridden)
+ */
+export function applyWeatherOverride(action, weatherGuidance, t) {
+  // Only override actions that have a task attached
+  if (!action.task || !weatherGuidance || weatherGuidance.status === 'safe') return action;
+
+  const task = action.task;
+  const taskId = task.id || '';
+  const titleLower = (task.title || '').toLowerCase();
+  const actionType = task.actionType || '';
+  const adj = weatherGuidance.adjustments || {};
+  const rainTiming = weatherGuidance.rainTiming || 'none';
+
+  // Only override when rain is TODAY (now or later today).
+  // A 3-day-only forecast does NOT trigger overrides.
+  if (rainTiming !== 'now' && rainTiming !== 'later') return action;
+  if (!(adj.watering < -3 || adj.spraying < -5 || adj.drying < -3)) return action;
+
+  // Detect task category from ID prefix, actionType, and title keywords
+  const isDryTask = taskId.startsWith('post-dry') || actionType === 'drying'
+    || titleLower.includes('dry') || titleLower.includes('séch')
+    || titleLower.includes('sun') || titleLower.includes('spread') || titleLower.includes('tarp');
+  const isWaterTask = actionType === 'watering' || titleLower.includes('water') || titleLower.includes('irrigat');
+  const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
+
+  if (!isDryTask && !isWaterTask && !isSprayTask) return action;
+
+  // Build weather-safe replacement
+  let altTitle, altReason;
+  if (isDryTask) {
+    altTitle = rainTiming === 'now' ? t('wxConflict.protectHarvest') : t('wxConflict.storeBefore');
+    altReason = rainTiming === 'now' ? t('wxConflict.protectHarvestReason') : t('wxConflict.storeBeforeReason');
+  } else if (isWaterTask) {
+    altTitle = t('wxConflict.skipWatering');
+    altReason = '';
+  } else {
+    altTitle = t('wxConflict.skipSpraying');
+    altReason = '';
+  }
+
+  return {
+    ...action,
+    key: 'weather_override',
+    icon: weatherGuidance.icon,
+    iconBg: 'rgba(14,165,233,0.12)',
+    title: altTitle,
+    reason: altReason,
+    priority: 'high',
+    weatherOverride: true,
+  };
+}
+
 /**
  * Apply weather adjustments to a task's effective priority score.
  * Returns a number modifier (negative = lower priority, positive = higher).

@@ -122,9 +122,9 @@ describe('Rate Limiter — resend invite', () => {
 // ─── 5. MFA Role Policy — consistency check ──────────────────
 
 describe('MFA Role Policy (consistency)', () => {
-  it('super_admin is NOT in MFA_REQUIRED_ROLES', async () => {
+  it('super_admin IS in MFA_REQUIRED_ROLES', async () => {
     const { MFA_REQUIRED_ROLES } = await import('../modules/mfa/service.js');
-    expect(MFA_REQUIRED_ROLES.has('super_admin')).toBe(false);
+    expect(MFA_REQUIRED_ROLES.has('super_admin')).toBe(true);
   });
 
   it('farmer is MFA exempt', async () => {

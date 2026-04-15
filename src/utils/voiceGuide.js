@@ -750,14 +750,21 @@ function selectBestVoice(langTag) {
 // ─── Availability check ─────────────────────────────────────────
 
 export function isVoiceAvailable() {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window;
+  return typeof window !== 'undefined' && (
+    'speechSynthesis' in window || typeof Audio !== 'undefined'
+  );
 }
+
+// ─── Voice Service integration ──────────────────────────────────
+// All playback now routes through voiceService.js for the 3-tier
+// fallback: prerecorded clip → provider TTS → browser TTS.
+
+import voiceService from '../services/voiceService.js';
 
 // ─── Stop any current speech ────────────────────────────────────
 
 export function stopSpeech() {
-  stopAudio();
-  if (isVoiceAvailable()) window.speechSynthesis.cancel();
+  voiceService.stop();
 }
 
 // Aliases matching the spec utility names
@@ -768,7 +775,11 @@ export const canUseTTS = isVoiceAvailable;
 
 /**
  * Speak the prompt for a given voice key.
- * Tries pre-recorded audio first, falls back to TTS.
+ *
+ * Routes through voiceService for 3-tier fallback:
+ *   1. Prerecorded clip (if prompt maps to a voicePrompts entry)
+ *   2. Provider TTS (neural, server-side — en, fr, sw)
+ *   3. Browser speechSynthesis (last resort)
  *
  * @param {string} stepKey  — dot-notation key (e.g. 'onboarding.welcome')
  * @param {string} lang     — 'en', 'fr', 'sw', 'ha', 'tw'
@@ -781,53 +792,15 @@ export function speak(stepKey, lang = 'en') {
   const text = stepTexts[lang] || stepTexts.en;
   if (!text) return false;
 
-  stopSpeech();
-
-  tryPlayAudio(stepKey, lang).then((played) => {
-    if (played) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = VOICE_RATE;
-    utterance.pitch = VOICE_PITCH;
-    utterance.volume = VOICE_VOLUME;
-
-    const langTag = LANG_TAGS[lang] || lang;
-    const bestVoice = selectBestVoice(langTag);
-    if (bestVoice) utterance.voice = bestVoice;
-    utterance.lang = langTag;
-
-    if (window.speechSynthesis.getVoices().length === 0) {
-      const retry = () => {
-        window.speechSynthesis.removeEventListener('voiceschanged', retry);
-        const voice = selectBestVoice(langTag);
-        if (voice) utterance.voice = voice;
-        window.speechSynthesis.speak(utterance);
-      };
-      window.speechSynthesis.addEventListener('voiceschanged', retry);
-      setTimeout(() => {
-        window.speechSynthesis.removeEventListener('voiceschanged', retry);
-        if (!window.speechSynthesis.speaking) window.speechSynthesis.speak(utterance);
-      }, 500);
-    } else {
-      window.speechSynthesis.speak(utterance);
-    }
-  });
-
-  return true;
+  // Route through voiceService — it handles prerecorded → provider → browser fallback
+  return voiceService.speakVoiceMapKey(stepKey, lang, stepTexts);
 }
 
 // Alias matching the spec utility name
 export const speakVoicePrompt = speak;
 
-// ─── Pre-warm voice list (Chrome fix) ───────────────────────────
-if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-  window.speechSynthesis.getVoices();
-  if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.addEventListener('voiceschanged', () => {
-      window.speechSynthesis.getVoices();
-    }, { once: true });
-  }
-}
+// ─── Pre-warm voice list + provider status ──────────────────────
+voiceService.warmup();
 
 // ─── Supported languages ────────────────────────────────────────
 

@@ -1,25 +1,30 @@
+/**
+ * Voice utilities — thin wrappers around voiceService.
+ *
+ * Previously called browser speechSynthesis directly.
+ * Now routes through voiceService for 3-tier fallback:
+ *   1. Prerecorded clip
+ *   2. Provider TTS (neural)
+ *   3. Browser TTS (last resort)
+ */
+
+import voiceService from '../services/voiceService.js';
+
 export function speakText(text, lang = 'en-US') {
-  if (!('speechSynthesis' in window) || !text) return;
-
-  window.speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang;
-  utterance.rate = 0.95;
-  utterance.pitch = 1;
-
-  window.speechSynthesis.speak(utterance);
+  if (!text) return;
+  // Convert BCP-47 to short code for voiceService
+  const shortLang = lang.slice(0, 2).toLowerCase();
+  voiceService.speakText(text, shortLang);
 }
 
 export function stopSpeaking() {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-  }
+  voiceService.stop();
 }
 
 export function languageToVoiceCode(language) {
-  if (language === 'fr') return 'fr-FR';
-  if (language === 'ha') return 'en-US';
-  if (language === 'tw') return 'en-US';
-  return 'en-US';
+  if (language === 'fr') return 'fr';
+  if (language === 'sw') return 'sw';
+  if (language === 'ha') return 'ha';
+  if (language === 'tw') return 'tw';
+  return 'en';
 }

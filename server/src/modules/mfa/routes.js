@@ -41,7 +41,7 @@ router.get('/status', asyncHandler(async (req, res) => {
 // The pendingToken is short-lived and must be sent back to /verify.
 
 router.post('/enroll/init', mfaEnrollLimiter, asyncHandler(async (req, res) => {
-  const result = initEnrollment(req.user.sub, req.user.email);
+  const result = await initEnrollment(req.user.sub, req.user.email);
   res.json(result);
 }));
 
@@ -68,12 +68,13 @@ router.post('/enroll/verify', mfaEnrollLimiter, asyncHandler(async (req, res) =>
 // User disables their own MFA. Requires current TOTP code.
 
 router.post('/disable', mfaVerifyLimiter, asyncHandler(async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ error: 'code is required' });
+  const { code, totpCode } = req.body;
+  const resolvedCode = code || totpCode;
+  if (!resolvedCode) return res.status(400).json({ error: 'code is required' });
 
   const result = await disableOwnMfa({
     userId: req.user.sub,
-    totpCode: String(code).trim(),
+    totpCode: String(resolvedCode).trim(),
   });
   res.json(result);
 }));
@@ -82,12 +83,13 @@ router.post('/disable', mfaVerifyLimiter, asyncHandler(async (req, res) => {
 // Regenerate backup codes. Requires TOTP verification.
 
 router.post('/backup-codes/regenerate', mfaVerifyLimiter, asyncHandler(async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ error: 'code is required' });
+  const { code, totpCode } = req.body;
+  const resolvedCode = code || totpCode;
+  if (!resolvedCode) return res.status(400).json({ error: 'code is required' });
 
   const result = await regenerateBackupCodes({
     userId: req.user.sub,
-    totpCode: String(code).trim(),
+    totpCode: String(resolvedCode).trim(),
   });
   res.json(result);
 }));

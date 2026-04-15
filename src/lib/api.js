@@ -176,6 +176,13 @@ export function getFarmTasks(farmId, stage) {
   return request(`/api/v2/farm-tasks/${farmId}/tasks${qs}`);
 }
 
+export function completeTask(farmId, taskId, body = {}) {
+  return request(`/api/v2/farm-tasks/${farmId}/tasks/${encodeURIComponent(taskId)}/complete`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export function updateFarm(farmId, payload) {
   return request(`/api/v2/farm-profile/${farmId}`, {
     method: 'PATCH',
@@ -316,7 +323,8 @@ export function completeSeason(seasonId) {
   });
 }
 
-export function completeTask(taskId) {
+// Legacy completeTask (V2Task model) — kept for backward compat
+export function completeV2Task(taskId) {
   return request(`/api/v2/tasks/${taskId}/complete`, {
     method: 'POST',
   });

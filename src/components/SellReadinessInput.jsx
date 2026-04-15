@@ -115,24 +115,28 @@ export default function SellReadinessInput({ onSkip, onSaved }) {
           {/* Quantity */}
           <div style={S.fieldGroup}>
             <label style={S.label}>{t('supply.quantity')}</label>
-            <div style={S.row}>
-              <input
-                type="number"
-                inputMode="numeric"
-                style={{ ...S.input, flex: 1 }}
-                value={estimatedQuantity}
-                onChange={(e) => setEstimatedQuantity(e.target.value)}
-                placeholder="100"
-              />
-              <select
-                style={S.select}
-                value={quantityUnit}
-                onChange={(e) => setQuantityUnit(e.target.value)}
-              >
-                {UNIT_OPTIONS.map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
+            <input
+              type="number"
+              inputMode="numeric"
+              style={S.input}
+              value={estimatedQuantity}
+              onChange={(e) => setEstimatedQuantity(e.target.value)}
+              placeholder="100"
+            />
+            <div style={S.chipRow}>
+              {UNIT_OPTIONS.map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setQuantityUnit(u)}
+                  style={{
+                    ...S.tapChip,
+                    ...(quantityUnit === u ? S.tapChipActive : {}),
+                  }}
+                >
+                  {u}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -202,9 +206,18 @@ const S = {
     width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db',
     fontSize: '16px', minHeight: '44px', boxSizing: 'border-box',
   },
-  select: {
-    width: '110px', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db',
-    fontSize: '16px', minHeight: '44px', background: '#fff', boxSizing: 'border-box',
+  chipRow: {
+    display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px',
+  },
+  tapChip: {
+    padding: '10px 14px', borderRadius: '8px', border: '2px solid #d1d5db',
+    background: '#f9fafb', color: '#374151', fontSize: '14px', fontWeight: 600,
+    cursor: 'pointer', minHeight: '40px',
+    transition: 'border-color 0.15s, background 0.15s',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  tapChipActive: {
+    borderColor: '#16a34a', background: '#dcfce7', color: '#166534',
   },
   saveBtn: (disabled) => ({
     padding: '12px 20px', borderRadius: '8px', border: 'none',

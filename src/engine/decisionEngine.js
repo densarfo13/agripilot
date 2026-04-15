@@ -22,7 +22,7 @@ import {
   isProfileComplete, isStageSet, isStageOutdated, isFarmStale, needsCheckIn,
   getStage, stageDaysAgo, isPestTask, isAlertTask, farmProgress, daysSinceUpdate,
 } from './decisionHelpers.js';
-import { getWeatherGuidance, getWeatherTaskAdjustment } from './weatherEngine.js';
+import { getWeatherGuidance, getWeatherTaskAdjustment, applyWeatherOverride } from './weatherEngine.js';
 import { getLocalizedTaskTitle, getLocalizedTaskDescription, shortenDescription } from '../utils/taskTranslations.js';
 import { getCurrentLang } from '../utils/i18n.js';
 
@@ -41,7 +41,9 @@ export function resolveDecision(input, t) {
   const stage = getStage(profile);
   const weatherGuidance = getWeatherGuidance({ weather, crop, stage });
 
-  const primary = resolvePrimaryAction(input, t, weatherGuidance);
+  const baseAction = resolvePrimaryAction(input, t, weatherGuidance);
+  // Weather override pipeline stage — runs on cascade output, catches ALL task paths
+  const primary = applyWeatherOverride(baseAction, weatherGuidance, t);
   const plan = buildTodayPlan(primary, profile, taskCount, t);
   const status = buildFarmStatus(input, t);
   const secondary = buildSecondaryActions(input, primary, t);
@@ -131,54 +133,11 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     };
   }
 
-  // 7. Normal daily task — weather conflict resolution
+  // 7. Normal daily task (weather override handled by pipeline stage in resolveDecision)
   if (primaryTask) {
     const pest = isPestTask(primaryTask);
     const wxAdj = getWeatherTaskAdjustment(weatherGuidance, primaryTask);
-    const titleLower = (primaryTask.title || '').toLowerCase();
-    const actionType = primaryTask.actionType || '';
 
-    // ─── Weather conflict: rain + drying/watering/spraying task ───
-    const taskId = primaryTask.id || '';
-    const adj = weatherGuidance ? weatherGuidance.adjustments || {} : {};
-    const rainTiming = weatherGuidance?.rainTiming || 'none'; // 'now' | 'later' | 'forecast_only' | 'none'
-
-    // Only override tasks when rain is TODAY (now or later today).
-    // A 3-day-only forecast does NOT trigger hard overrides — that was the false-warning bug.
-    const isRainConflict = weatherGuidance && weatherGuidance.status !== 'safe'
-      && (rainTiming === 'now' || rainTiming === 'later')
-      && (adj.watering < -3 || adj.spraying < -5 || adj.drying < -3);
-
-    // Detect drying tasks: check task ID prefix (server appends farmId), actionType, and title keywords
-    const isDryTask = taskId.startsWith('post-dry') || actionType === 'drying'
-      || titleLower.includes('dry') || titleLower.includes('séch')
-      || titleLower.includes('sun') || titleLower.includes('spread') || titleLower.includes('tarp');
-    const isWaterTask = actionType === 'watering' || titleLower.includes('water') || titleLower.includes('irrigat');
-    const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
-
-    if (isRainConflict && (isDryTask || isWaterTask || isSprayTask)) {
-      // Replace with weather-safe alternative — wording differs by timing
-      let altTitle, altReason;
-      if (isDryTask) {
-        altTitle = rainTiming === 'now' ? t('wxConflict.protectHarvest') : t('wxConflict.storeBefore');
-        altReason = rainTiming === 'now' ? t('wxConflict.protectHarvestReason') : t('wxConflict.storeBeforeReason');
-      } else if (isWaterTask) {
-        altTitle = t('wxConflict.skipWatering');
-        altReason = '';
-      } else {
-        altTitle = t('wxConflict.skipSpraying');
-        altReason = '';
-      }
-      return {
-        ...makeAction('weather_override', weatherGuidance.icon, 'rgba(14,165,233,0.12)',
-          altTitle, altReason,
-          t('guided.taskCta'), t('guided.taskNext'), 'high', false),
-        task: primaryTask,
-        weatherOverride: true,
-      };
-    }
-
-    // ─── Normal task with optional weather note ───
     let reason = taskDesc;
     if (!reason) {
       reason = pest
@@ -188,7 +147,7 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
     if (wxAdj < -3 && weatherGuidance && weatherGuidance.status !== 'safe') {
       const wxNote = t(weatherGuidance.recommendationKey, weatherGuidance.params);
       if (wxNote && wxNote !== weatherGuidance.recommendationKey) {
-        reason = wxNote; // replace, don't append — keep it short
+        reason = wxNote;
       }
     }
 

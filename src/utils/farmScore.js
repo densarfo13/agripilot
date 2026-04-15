@@ -20,7 +20,7 @@ export function calculateFarmScore(profile, opts = {}) {
   // Core required fields (weighted by importance)
   if (profile.farmerName) score += 10;
   if (profile.farmName) score += 10;
-  if (opts.countryCode || profile.countryCode) score += 10;
+  if (opts.countryCode || profile.countryCode || profile.country) score += 10;
   if (profile.locationName || profile.location) score += 15;
   if ((profile.landSizeValue && profile.landSizeValue > 0) || (profile.farmSizeAcres && profile.farmSizeAcres > 0) || (profile.size && profile.size > 0)) score += 15;
   if (profile.crop || profile.cropType) score += 15;
@@ -48,7 +48,7 @@ export function getMissingProfileItems(profile, opts = {}) {
   const missing = [];
   if (!profile.farmerName) missing.push('Add farmer name');
   if (!profile.farmName) missing.push('Add farm name');
-  if (!(opts.countryCode || profile.countryCode)) missing.push('Add country');
+  if (!(opts.countryCode || profile.countryCode || profile.country)) missing.push('Add country');
   if (!(profile.locationName || profile.location)) missing.push('Add farm location');
   const hasSize = (profile.landSizeValue && profile.landSizeValue > 0) || (profile.farmSizeAcres && profile.farmSizeAcres > 0) || (profile.size && profile.size > 0);
   if (!hasSize) missing.push('Add farm size');

@@ -152,13 +152,13 @@ describe('MFA role policy', () => {
     isMfaExempt = mod.isMfaExempt;
   });
 
-  it('marks institutional_admin, reviewer as required', () => {
+  it('marks super_admin, institutional_admin, reviewer as required', () => {
+    expect(isMfaRequired('super_admin')).toBe(true);
     expect(isMfaRequired('institutional_admin')).toBe(true);
     expect(isMfaRequired('reviewer')).toBe(true);
   });
 
-  it('does not require MFA for super_admin, field_officer and investor_viewer', () => {
-    expect(isMfaRequired('super_admin')).toBe(false);
+  it('does not require MFA for field_officer and investor_viewer', () => {
     expect(isMfaRequired('field_officer')).toBe(false);
     expect(isMfaRequired('investor_viewer')).toBe(false);
   });

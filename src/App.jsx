@@ -28,6 +28,8 @@ const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 // while inner lazy children (Dashboard, etc.) load via their own Suspense boundary.
 import V2ProtectedLayout from './layouts/ProtectedLayout.jsx';
 const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
+const AllTasksPage = lazy(() => import('./pages/AllTasksPage.jsx'));
+const MyFarmPage = lazy(() => import('./pages/MyFarmPage.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
@@ -97,6 +99,7 @@ import { ProfileProvider as V2ProfileProvider } from './context/ProfileContext.j
 // Phase 2: Offline, voice, weather contexts
 import { NetworkProvider } from './context/NetworkContext.jsx';
 import { AppPrefsProvider } from './context/AppPrefsContext.jsx';
+import { UserModeProvider } from './context/UserModeContext.jsx';
 import { WeatherProvider } from './context/WeatherContext.jsx';
 import { SeasonProvider } from './context/SeasonContext.jsx';
 
@@ -190,6 +193,7 @@ export default function App() {
       <AppPrefsProvider>
       <AuthProvider>
       <V2ProfileProvider>
+      <UserModeProvider>
       <WeatherProvider>
       <SeasonProvider>
       {stepUpRequired && <StepUpModal />}
@@ -211,6 +215,8 @@ export default function App() {
             <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
             <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />
             <Route path="/dashboard" element={<V2Dashboard />} />
+            <Route path="/tasks" element={<AllTasksPage />} />
+            <Route path="/my-farm" element={<MyFarmPage />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/pest-risk-check" element={<PestRiskCheck />} />
             <Route path="/pest-risk-result" element={<PestRiskResult />} />
@@ -276,6 +282,7 @@ export default function App() {
       </AuthLoadingGate>
       </SeasonProvider>
       </WeatherProvider>
+      </UserModeProvider>
       </V2ProfileProvider>
       </AuthProvider>
       </AppPrefsProvider>

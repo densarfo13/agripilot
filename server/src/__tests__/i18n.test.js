@@ -303,7 +303,7 @@ describe('Farmer-facing screens use i18n', () => {
     const src = readFile('src/components/QuickUpdateFlow.jsx');
     expect(src).toContain("t('update.addUpdate')");
     expect(src).toContain("t('update.whatHappened')");
-    expect(src).toContain("t('update.updateSavedCheck')");
+    expect(src).toContain("t('update.saved')");
     expect(src).toContain("t('update.savedOfflineMsg')");
   });
 

@@ -129,16 +129,13 @@ describe('Dashboard — localization wiring', () => {
   });
 
   it('uses t() for welcome', () => {
-    expect(dashboard).toContain("t('dashboard.welcome')");
-  });
-
-  it('uses t() for hint', () => {
-    expect(dashboard).toContain("t('dashboard.hint')");
+    const farmerHeader = readFile('src/components/FarmerHeader.jsx');
+    expect(farmerHeader).toContain("t('dashboard.welcome')");
   });
 
   it('uses t() for setup banner', () => {
     expect(dashboard).toContain("t('dashboard.setupBanner')");
-    expect(dashboard).toContain("t('dashboard.completeSetup')");
+    expect(dashboard).toContain("t('dashboard.setupBannerDesc')");
   });
 
   it('no hardcoded English "Welcome" in h1', () => {

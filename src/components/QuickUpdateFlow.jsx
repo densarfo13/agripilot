@@ -96,8 +96,9 @@ function suggestActivity(seasonStage) {
 
 // ─── Photo compression ────────────────────────────────────
 
-const MAX_PHOTO_DIMENSION = 1200;
+const MAX_PHOTO_DIMENSION = 1024;
 const PHOTO_QUALITY = 0.7;
+const UPLOAD_TIMEOUT_MS = 5000;
 
 function compressPhoto(file) {
   return new Promise((resolve, reject) => {
@@ -229,7 +230,54 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     fileInputRef.current?.click();
   }, [photoPreview]);
 
-  // ─── Submit ─────────────────────────────────────────────
+  // ─── Background image upload (decoupled from submit) ─────
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadDone, setPhotoUploadDone] = useState(false);
+  const [photoUploadFailed, setPhotoUploadFailed] = useState(false);
+  const photoUploadRef = useRef(null); // holds the pending upload promise
+
+  const uploadPhotoBackground = useCallback((blob, sid, act, fid) => {
+    setPhotoUploading(true);
+    setPhotoUploadDone(false);
+    setPhotoUploadFailed(false);
+
+    const doUpload = async () => {
+      const formData = new FormData();
+      formData.append('photo', blob, 'quick-update.jpg');
+      try {
+        const uploadRes = await api.post('/farmers/me/profile-photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (sid) {
+          const imageUrl = uploadRes.data?.imageUrl || uploadRes.data?.profileImageUrl;
+          if (imageUrl) {
+            await api.post(`/seasons/${sid}/progress-image`, {
+              imageUrl,
+              imageStage: IMAGE_STAGE_MAP[act] || 'mid_stage',
+              description: `${act} update photo`,
+            }).catch(() => {});
+          }
+        }
+        trackPilotEvent('photo_uploaded', { farmerId: fid, context: 'quick_update' });
+        setPhotoUploadDone(true);
+      } catch (photoErr) {
+        trackPilotEvent('photo_failed', { farmerId: fid, context: 'quick_update', error: photoErr?.message });
+        setPhotoUploadFailed(true);
+      } finally {
+        setPhotoUploading(false);
+      }
+    };
+
+    photoUploadRef.current = doUpload();
+  }, []);
+
+  const retryPhotoUpload = useCallback(() => {
+    if (photoFile && seasonId) {
+      uploadPhotoBackground(photoFile, seasonId, activity, farmerId);
+    }
+  }, [photoFile, seasonId, activity, farmerId, uploadPhotoBackground]);
+
+  // ─── Submit (FAST — text only, then show success) ───────
 
   const handleSubmit = useCallback(async () => {
     setStep('submitting');
@@ -239,7 +287,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       const elapsed = Math.round((Date.now() - startTime.current) / 1000);
       const isFirstUpdate = entries && entries.length === 0;
 
-      // 1. Submit activity/progress entry
+      // 1. Submit activity/progress entry (FAST — text only)
       const payload = {
         activityType: ACTIVITY_API_MAP[activity] || 'other',
         entryType: 'activity',
@@ -257,35 +305,16 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
 
       await api.post(`/seasons/${seasonId}/progress`, payload);
 
-      // 2. Auto-set condition based on activity type
+      // 2. Auto-set condition (non-blocking)
       const condition = ACTIVITY_CONDITION_MAP[activity] || 'good';
-      await api.post(`/seasons/${seasonId}/condition`, {
+      api.post(`/seasons/${seasonId}/condition`, {
         cropCondition: condition,
         conditionNotes: activity === 'issue' ? 'Reported via quick update' : '',
       }).catch(() => {});
 
-      // 3. Upload photo if captured — failure does not fail the update
+      // 3. Kick off photo upload in background — DO NOT AWAIT
       if (photoFile) {
-        const formData = new FormData();
-        formData.append('photo', photoFile, 'quick-update.jpg');
-        try {
-          const uploadRes = await api.post('/farmers/me/profile-photo', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-          if (seasonId) {
-            const imageUrl = uploadRes.data?.imageUrl || uploadRes.data?.profileImageUrl;
-            if (imageUrl) {
-              await api.post(`/seasons/${seasonId}/progress-image`, {
-                imageUrl,
-                imageStage: IMAGE_STAGE_MAP[activity] || 'mid_stage',
-                description: `${activity} update photo`,
-              }).catch(() => {});
-            }
-          }
-          trackPilotEvent('photo_uploaded', { farmerId, context: 'quick_update' });
-        } catch (photoErr) {
-          trackPilotEvent('photo_failed', { farmerId, context: 'quick_update', error: photoErr?.message });
-        }
+        uploadPhotoBackground(photoFile, seasonId, activity, farmerId);
       }
 
       if (isFirstUpdate) {
@@ -294,7 +323,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       trackPilotEvent('quick_update_completed', { farmerId, elapsed, activity, hasPhoto: !!photoFile });
     });
 
-    // Map result to step
+    // Map result to step — happens IMMEDIATELY after text save
     if (submitAction.isSuccess) {
       setStep('done');
       scheduleAutoReturn();
@@ -305,7 +334,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       setError(submitAction.error);
       setStep('error');
     }
-  }, [activity, photoFile, seasonId, farmerId, entries, submitAction, t, scheduleAutoReturn]);
+  }, [activity, photoFile, seasonId, farmerId, entries, submitAction, t, scheduleAutoReturn, uploadPhotoBackground]);
 
   // ─── Render: Camera (initial) ───────────────────────────
 
@@ -447,7 +476,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
     );
   }
 
-  // ─── Render: Submitting ─────────────────────────────────
+  // ─── Render: Submitting (brief — text save only) ────────
 
   if (step === 'submitting') {
     return (
@@ -455,21 +484,44 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         <ActionFeedback
           state={ACTION_STATE.LOADING}
           stillWorking={submitAction.stillWorking}
-          loadingText={t('update.savingUpdate')}
+          loadingText={t('update.saving') || 'Saving...'}
           compact
         />
       </div>
     );
   }
 
-  // ─── Render: Success ────────────────────────────────────
+  // ─── Render: Success (with background upload indicator) ─
 
   if (step === 'done') {
     return (
       <div style={QS.container} data-testid="quick-update-flow">
         <div style={QS.successScreen}>
           <div style={QS.successIcon}>&#x2705;</div>
-          <div style={QS.successTitle}>{t('update.updateSavedCheck')}</div>
+          <div style={QS.successTitle}>{t('update.saved') || 'Saved'}</div>
+
+          {/* Background photo upload status */}
+          {photoUploading && (
+            <div style={QS.uploadIndicator} data-testid="photo-uploading">
+              <div style={QS.uploadSpinner} />
+              <span style={QS.uploadText}>{t('update.uploadingPhoto') || 'Uploading photo...'}</span>
+            </div>
+          )}
+          {photoUploadDone && (
+            <div style={QS.uploadDoneIndicator} data-testid="photo-upload-done">
+              <span>&#x2705;</span>
+              <span style={QS.uploadText}>{t('update.photoUploaded') || 'Photo uploaded'}</span>
+            </div>
+          )}
+          {photoUploadFailed && (
+            <div style={QS.uploadFailIndicator} data-testid="photo-upload-failed">
+              <span style={QS.uploadFailText}>{t('update.photoFailed') || 'Photo upload failed'}</span>
+              <button onClick={retryPhotoUpload} style={QS.retryUploadBtn} data-testid="retry-photo-btn">
+                {t('common.retry') || 'Retry'}
+              </button>
+            </div>
+          )}
+
           <button onClick={() => onComplete?.()} style={QS.doneBtn}>
             {t('common.done')}
           </button>
@@ -670,6 +722,40 @@ const QS = {
     background: '#22C55E', color: '#FFFFFF', border: 'none',
     borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
     cursor: 'pointer', minHeight: '52px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+
+  // Background upload indicators
+  uploadIndicator: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.5rem 0.75rem', borderRadius: '8px',
+    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+  },
+  uploadSpinner: {
+    width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.15)',
+    borderTopColor: '#22C55E', borderRadius: '50%',
+    animation: 'farroway-spin 0.8s linear infinite', flexShrink: 0,
+  },
+  uploadText: {
+    fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)',
+  },
+  uploadDoneIndicator: {
+    display: 'flex', alignItems: 'center', gap: '0.4rem',
+    fontSize: '0.85rem', color: '#86EFAC',
+  },
+  uploadFailIndicator: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.5rem 0.75rem', borderRadius: '8px',
+    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+  },
+  uploadFailText: {
+    fontSize: '0.8rem', color: '#FCA5A5', flex: 1,
+  },
+  retryUploadBtn: {
+    padding: '0.35rem 0.75rem', background: 'rgba(239,68,68,0.15)',
+    border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px',
+    color: '#FCA5A5', fontSize: '0.75rem', fontWeight: 700,
+    cursor: 'pointer', minHeight: '32px',
     WebkitTapHighlightColor: 'transparent',
   },
 };

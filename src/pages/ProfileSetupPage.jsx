@@ -61,10 +61,10 @@ export default function ProfileSetupPage() {
       setForm({
         farmerName: existing.farmerName || user?.fullName || '',
         farmName: existing.farmName || '',
-        countryCode: existing.countryCode || user?.countryCode || '',
+        countryCode: existing.countryCode || existing.country || user?.countryCode || '',
         locationName: existing.locationName || existing.location || '',
-        landSizeValue: existing.landSizeValue || existing.farmSizeAcres || '',
-        landSizeUnit: existing.landSizeUnit || 'ACRE',
+        landSizeValue: existing.landSizeValue || existing.size || existing.farmSizeAcres || '',
+        landSizeUnit: existing.landSizeUnit || existing.sizeUnit || 'ACRE',
         crop: existing.crop || existing.cropType || '',
         latitude: existing.latitude ?? existing.gpsLat ?? null,
         longitude: existing.longitude ?? existing.gpsLng ?? null,
@@ -139,25 +139,33 @@ export default function ProfileSetupPage() {
     setFieldErrors(INITIAL_FIELD_ERRORS);
     try {
       const sizeFields = computeLandSizeFields(form.landSizeValue, form.landSizeUnit);
+      // Map UI field names → backend API contract (validateFarmProfilePayload)
       const payload = {
         farmerName: form.farmerName.trim(),
         farmName: form.farmName.trim(),
-        countryCode: form.countryCode,
-        locationName: form.locationName.trim(),
-        crop: form.crop,
-        latitude: form.latitude,
-        longitude: form.longitude,
+        country: form.countryCode,               // backend expects 'country'
+        location: form.locationName.trim(),       // backend expects 'location'
+        cropType: form.crop,                      // backend expects 'cropType'
+        gpsLat: form.latitude,                    // backend expects 'gpsLat'
+        gpsLng: form.longitude,                   // backend expects 'gpsLng'
         locationLabel: form.locationLabel?.trim() || null,
-        ...sizeFields,
+        size: sizeFields.landSizeValue,           // backend expects 'size'
+        sizeUnit: sizeFields.landSizeUnit,        // backend expects 'sizeUnit'
       };
 
       await saveProfile(payload);
       navigate('/', { replace: true });
     } catch (err) {
       // Handle field-level errors from backend validation
+      // Backend uses API-convention names; map back to form field names
       const serverFieldErrors = err?.response?.data?.fieldErrors || err?.fieldErrors;
       if (serverFieldErrors) {
-        setFieldErrors((prev) => ({ ...prev, ...serverFieldErrors }));
+        const mapped = { ...serverFieldErrors };
+        if (mapped.country) { mapped.countryCode = mapped.country; delete mapped.country; }
+        if (mapped.location) { mapped.locationName = mapped.location; delete mapped.location; }
+        if (mapped.cropType) { mapped.crop = mapped.cropType; delete mapped.cropType; }
+        if (mapped.size) { mapped.landSizeValue = mapped.size; delete mapped.size; }
+        setFieldErrors((prev) => ({ ...prev, ...mapped }));
       }
       setError(err?.response?.data?.error || err?.message || 'Failed to save profile. Please try again.');
     } finally {
