@@ -1,15 +1,9 @@
 /**
- * NextActionCard — guided farmer home primary card.
+ * NextActionCard — single task card for the Home decision screen.
  *
- * Renders: TaskCard (standard variant) + today's plan + farm status bar.
- * No decision logic — that lives in src/engine/decisionEngine.js.
- *
- * ARCHITECTURE: Task rendering delegates to unified TaskCard.
- * Plan and status remain here (they're not task-specific).
+ * Renders ONLY one TaskCard (standard variant). No plan, no status checklist.
+ * Decision logic lives in src/engine/decisionEngine.js.
  */
-import { useState } from 'react';
-import { RISK_COLORS } from '../engine/decisionTypes.js';
-import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import TaskCard from './farmer/TaskCard.jsx';
 
 const ACTION_ROUTES = {
@@ -39,11 +33,8 @@ export default function NextActionCard({
   t,
   language,
 }) {
-  const [planOpen, setPlanOpen] = useState(false);
   if (!decision && !loading) return null;
 
-  const plan = decision?.todaysPlan || [];
-  const status = decision?.farmStatus;
   const vm = taskViewModel;
 
   function handleCta() {
@@ -57,144 +48,44 @@ export default function NextActionCard({
     }
   }
 
+  if (loading) {
+    return (
+      <div style={S.loadingCard}>
+        <div style={S.loading}>
+          <span style={S.spinner} />
+          <span>{t('guided.loading')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!vm) return null;
+
   return (
-    <div style={S.wrapper}>
-      {/* ═══ PRIMARY ACTION CARD (unified TaskCard, standard variant) ═══ */}
-      {loading ? (
-        <div style={S.loadingCard}>
-          <div style={S.loading}>
-            <span style={S.spinner} />
-            <span>{t('guided.loading')}</span>
-          </div>
-        </div>
-      ) : vm ? (
-        <TaskCard
-          viewModel={vm}
-          variant="standard"
-          language={language}
-          t={t}
-          onCta={handleCta}
-        />
-      ) : null}
-
-      {/* ═══ TODAY'S PLAN (collapsed by default) ═══ */}
-      {!loading && plan.length > 1 && (
-        <div style={S.planSection}>
-          <button onClick={() => setPlanOpen(!planOpen)} style={S.planToggle}>
-            <span style={S.planTitle}>{SECTION_ICONS.nextTasks} {t('guided.todaysPlan')} ({plan.length})</span>
-            <span style={S.planArrow}>{planOpen ? '\u25B2' : '\u25BC'}</span>
-          </button>
-          {planOpen && (
-          <div style={S.planList}>
-            {plan.map((step, i) => (
-              <div key={i} style={{ ...S.planStep, ...(step.active ? S.planStepActive : {}) }}>
-                <span style={S.planStepNum}>{i + 1}</span>
-                <span style={S.planStepIcon}>{step.icon}</span>
-                <span style={{ ...S.planStepLabel, ...(step.active ? S.planStepLabelActive : {}) }}>
-                  {step.label}
-                </span>
-                {step.active && <span style={S.planStepNow}>{t('guided.now')}</span>}
-              </div>
-            ))}
-          </div>
-          )}
-        </div>
-      )}
-
-      {/* ═══ FARM STATUS CHECKLIST ═══ */}
-      {!loading && status && status.checks.length > 0 && (
-        <div style={{ ...S.statusBar, background: RISK_COLORS[status.riskLevel]?.bg || RISK_COLORS.none.bg,
-          borderColor: RISK_COLORS[status.riskLevel]?.border || RISK_COLORS.none.border }}>
-          <div style={S.statusHeader}>
-            <span style={{ ...S.statusLabel, color: RISK_COLORS[status.riskLevel]?.text || '#86EFAC' }}>
-              {SECTION_ICONS.onTrack} {status.label}
-            </span>
-          </div>
-          <div style={S.checklist}>
-            {status.checks.map((c, i) => (
-              <div key={i} style={S.checkItem}>
-                <span style={S.checkIcon}>{c.icon}</span>
-                <span style={{ ...S.checkLabel, ...(c.ok ? S.checkLabelDone : {}) }}>{c.label}</span>
-              </div>
-            ))}
-          </div>
-          {status.lastUpdate != null && (
-            <div style={S.lastUpdated}>
-              {status.lastUpdate === 0
-                ? t('retention.updatedToday') || 'Updated today'
-                : t('retention.lastUpdated', { days: status.lastUpdate })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <TaskCard
+      viewModel={vm}
+      variant="standard"
+      language={language}
+      t={t}
+      onCta={handleCta}
+    />
   );
 }
 
 const S = {
-  wrapper: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
   loadingCard: {
-    borderRadius: '18px', background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)', padding: '1.5rem 1.25rem',
-    border: '1px solid rgba(34,197,94,0.15)',
+    borderRadius: '20px',
+    background: 'rgba(255,255,255,0.04)',
+    padding: '1.5rem 1.25rem',
+    border: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
   },
   loading: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem',
-    padding: '1.5rem 0', fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)',
+    padding: '1.5rem 0', fontSize: '0.875rem', color: '#6F8299',
   },
   spinner: {
-    width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.1)',
+    width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.06)',
     borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite',
-  },
-  // ─── Plan ────────────────
-  planSection: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
-  planToggle: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    width: '100%', padding: '0.5rem 0.75rem', borderRadius: '10px',
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-    cursor: 'pointer', WebkitTapHighlightColor: 'transparent', minHeight: '36px',
-  },
-  planTitle: {
-    fontSize: '0.6875rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-  },
-  planArrow: { fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)' },
-  planList: {
-    borderRadius: '14px', background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
-    border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden',
-  },
-  planStep: {
-    display: 'flex', alignItems: 'center', gap: '0.625rem',
-    padding: '0.625rem 0.875rem', borderBottom: '1px solid rgba(255,255,255,0.04)',
-  },
-  planStepActive: { background: 'rgba(34,197,94,0.06)' },
-  planStepNum: {
-    width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '0.6875rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', flexShrink: 0,
-  },
-  planStepIcon: { fontSize: '1rem', flexShrink: 0 },
-  planStepLabel: {
-    flex: 1, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.45)', fontWeight: 500,
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  },
-  planStepLabelActive: { color: '#fff', fontWeight: 700 },
-  planStepNow: {
-    fontSize: '0.625rem', fontWeight: 700, color: '#22C55E',
-    textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0,
-  },
-  // ─── Farm Status ─────────
-  statusBar: {
-    borderRadius: '14px', padding: '0.75rem 1rem',
-    border: '1px solid', display: 'flex', flexDirection: 'column', gap: '0.5rem',
-  },
-  statusHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  statusLabel: { fontSize: '0.8125rem', fontWeight: 700 },
-  checklist: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
-  checkItem: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
-  checkIcon: { fontSize: '0.875rem', flexShrink: 0, width: '1.25rem', textAlign: 'center' },
-  checkLabel: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', fontWeight: 500 },
-  checkLabelDone: { color: 'rgba(255,255,255,0.65)', textDecoration: 'line-through', textDecorationColor: 'rgba(255,255,255,0.2)' },
-  lastUpdated: {
-    fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.25rem', textAlign: 'right',
   },
 };

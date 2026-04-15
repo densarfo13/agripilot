@@ -148,16 +148,17 @@ const S = {
     alignItems: 'center',
     gap: '0.75rem',
     padding: '2rem 1rem',
-    borderRadius: '20px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.2)',
+    borderRadius: '22px',
+    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(34,197,94,0.12)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     width: '100%',
   },
   doneIcon: { fontSize: '3rem' },
   doneText: {
     fontSize: '1.25rem',
     fontWeight: 700,
-    color: '#86EFAC',
+    color: '#EAF2FF',
   },
   // ─── Connectivity ────────
   connectivity: {
@@ -175,7 +176,7 @@ const S = {
   },
   connText: {
     fontSize: '0.6875rem',
-    color: 'rgba(255,255,255,0.3)',
+    color: '#6F8299',
     fontWeight: 500,
   },
   // ─── Section label ──────────
@@ -191,7 +192,7 @@ const S = {
   sectionText: {
     fontSize: '0.6875rem',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.35)',
+    color: '#6F8299',
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
   },
@@ -199,7 +200,7 @@ const S = {
   spinner: {
     width: '2rem',
     height: '2rem',
-    border: '3px solid rgba(255,255,255,0.1)',
+    border: '3px solid rgba(255,255,255,0.06)',
     borderTopColor: '#22C55E',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',

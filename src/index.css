@@ -1,52 +1,58 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── Farroway brand tokens ────────────────────── */
+  /* ── Farroway brand tokens (premium theme) ──── */
   --primary: #22C55E;
   --primary-dark: #16A34A;
   --primary-light: rgba(34,197,94,0.15);
-  --primary-glow: rgba(34,197,94,0.25);
+  --primary-glow: rgba(34,197,94,0.22);
 
   --success: #22C55E;
   --success-light: rgba(34,197,94,0.15);
   --warning: #F59E0B;
-  --warning-light: rgba(245,158,11,0.15);
+  --warning-light: rgba(245,158,11,0.14);
   --danger: #EF4444;
-  --danger-light: rgba(239,68,68,0.15);
+  --danger-light: rgba(239,68,68,0.14);
   --info: #0EA5E9;
-  --info-light: rgba(14,165,233,0.15);
+  --info-light: rgba(14,165,233,0.14);
 
-  /* ── Surfaces ─────────────────────────────────── */
-  --bg: #0F172A;
-  --card: #162033;
-  --card-hover: #1C2A40;
-  --surface: #1E293B;
+  /* ── Surfaces (deep navy) ─────────────────────── */
+  --bg: #0B1D34;
+  --bg-bottom: #081423;
+  --card: rgba(255,255,255,0.04);
+  --card-elevated: rgba(255,255,255,0.06);
+  --card-solid: #111D2E;
+  --card-hover: rgba(255,255,255,0.07);
+  --surface: rgba(255,255,255,0.03);
 
   /* ── Text ─────────────────────────────────────── */
-  --text: #FFFFFF;
-  --subtext: #A1A1AA;
-  --muted: #71717A;
+  --text: #EAF2FF;
+  --subtext: #9FB3C8;
+  --muted: #6F8299;
 
   /* ── Borders ──────────────────────────────────── */
-  --border: #243041;
-  --border-light: #2D3F56;
+  --border: rgba(255,255,255,0.06);
+  --border-light: rgba(255,255,255,0.08);
 
   /* ── Layout ───────────────────────────────────── */
   --sidebar-width: 240px;
   --radius: 8px;
   --radius-lg: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+  --radius-card: 20px;
+  --shadow: 0 4px 16px rgba(0,0,0,0.22);
+  --shadow-md: 0 10px 30px rgba(0,0,0,0.28);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.4);
+  --shadow-cta: 0 10px 24px rgba(34,197,94,0.22);
 }
 
 html, body, #root { height: 100%; }
-body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: var(--text); background: var(--bg); line-height: 1.5; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(180deg, var(--bg) 0%, var(--bg-bottom) 100%); background-attachment: fixed; min-height: 100vh; line-height: 1.5; }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ── Layout ─────────────────────────────────────── */
 .app-layout { display: flex; height: 100vh; }
-.sidebar { width: var(--sidebar-width); background: #0B1120; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; border-right: 1px solid var(--border); }
+.sidebar { width: var(--sidebar-width); background: #07111F; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; border-right: 1px solid var(--border); }
 .sidebar-brand { padding: 1rem 1.25rem; font-size: 1.125rem; font-weight: 700; border-bottom: 1px solid var(--border); color: var(--primary); }
 .sidebar-org { padding: 0.4rem 1.25rem 0.5rem; font-size: 0.75rem; color: var(--subtext); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .org-switcher { position: relative; border-bottom: 1px solid var(--border); }
@@ -68,19 +74,19 @@ a:hover { text-decoration: underline; }
 .sidebar-user-name { font-weight: 600; color: #fff; }
 .sidebar-user-role { color: var(--subtext); font-size: 0.75rem; text-transform: capitalize; }
 
-.main-content { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
-.page-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+.main-content { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; background: transparent; }
+.page-header { background: var(--card-elevated); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .page-header h1 { font-size: 1.25rem; font-weight: 700; color: var(--text); }
 .page-body { flex: 1; padding: 1.5rem; overflow-y: auto; }
 
 /* ── Cards ──────────────────────────────────────── */
-.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
+.card { background: var(--card); border-radius: var(--radius-card); box-shadow: var(--shadow-md); border: 1px solid var(--border); }
 .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.9375rem; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .card-body { padding: 1.25rem; }
 
 /* ── Stats ──────────────────────────────────────── */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.stat-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.25rem; border: 1px solid var(--border); }
+.stat-card { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 1.25rem; border: 1px solid var(--border); }
 .stat-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--subtext); margin-bottom: 0.25rem; }
 .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--text); }
 .stat-sub { font-size: 0.8125rem; color: var(--subtext); margin-top: 0.25rem; }
@@ -137,7 +143,7 @@ tbody tr:hover { background: var(--card-hover); }
 /* ── Forms ──────────────────────────────────────── */
 .form-group { margin-bottom: 1rem; }
 .form-label { display: block; font-size: 0.8125rem; font-weight: 600; color: var(--subtext); margin-bottom: 0.25rem; }
-.form-input, .form-select, .form-textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; color: var(--text); background: var(--surface); transition: border-color 0.15s; }
+.form-input, .form-select, .form-textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.875rem; color: var(--text); background: var(--card); transition: border-color 0.15s; }
 .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(34,197,94,0.15); }
 .form-input::placeholder, .form-textarea::placeholder { color: var(--muted); }
 .form-select { color: var(--text); }
@@ -189,7 +195,7 @@ tbody tr:hover { background: var(--card-hover); }
 
 /* ── Modals ─────────────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+.modal { background: var(--card-solid); border-radius: var(--radius-card); box-shadow: var(--shadow-lg); border: 1px solid var(--border); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
 .modal-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
 .modal-body { padding: 1.25rem; }
 .modal-footer { padding: 0.75rem 1.25rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem; }
@@ -231,7 +237,7 @@ tbody tr:hover { background: var(--card-hover); }
 .alert-inline-info .alert-dismiss { color: var(--info); }
 
 /* ── Skeleton Loader ───────────────────────────────── */
-.skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--card-hover) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius); }
+.skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius); }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes farroway-spin { to { transform: rotate(360deg); } }

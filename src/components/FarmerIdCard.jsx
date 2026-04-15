@@ -31,17 +31,17 @@ export default function FarmerIdCard() {
 
 const S = {
   card: {
-    borderRadius: '16px',
-    background: '#1B2330',
-    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '18px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
     padding: '1rem',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.3)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
   },
   label: {
     fontSize: '0.75rem',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    color: 'rgba(255,255,255,0.5)',
+    color: '#6F8299',
   },
   row: {
     marginTop: '0.5rem',
@@ -54,17 +54,17 @@ const S = {
   uuid: {
     fontSize: '1rem',
     fontWeight: 600,
-    color: '#86EFAC',
+    color: '#9FB3C8',
     fontFamily: 'monospace',
   },
   copyBtn: {
     borderRadius: '12px',
-    border: '1px solid rgba(255,255,255,0.15)',
+    border: '1px solid rgba(255,255,255,0.06)',
     padding: '0.5rem 0.75rem',
     fontSize: '0.875rem',
     fontWeight: 600,
-    color: '#fff',
-    background: 'transparent',
+    color: '#9FB3C8',
+    background: 'rgba(255,255,255,0.03)',
     cursor: 'pointer',
   },
 };

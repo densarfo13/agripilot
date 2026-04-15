@@ -66,9 +66,9 @@ export function t(key, lang, vars) {
     if (process.env.NODE_ENV === 'development' || (typeof import.meta !== 'undefined' && import.meta.env?.DEV)) {
       console.warn(`[i18n] Missing key: "${key}"`);
     }
-    return key; // last-resort fallback = raw key
+    return ''; // never leak raw keys to UI
   }
-  let text = entry[lang] || entry.en || key; // target → English → key
+  let text = entry[lang] || entry.en || ''; // target → English → empty
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));

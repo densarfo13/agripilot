@@ -35,6 +35,20 @@ async function refreshOnce() {
   return _refreshPromise;
 }
 
+/**
+ * Proactively refresh the access token.
+ * Returns true if refresh succeeded, false otherwise.
+ * Used by AuthContext bootstrap to pre-flight before /me.
+ */
+export async function refreshSession() {
+  try {
+    const res = await refreshOnce();
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function request(path, options = {}, allowRefresh = true) {
   // Destructure headers out so ...rest doesn't overwrite the merged headers
   const { headers: optHeaders, ...rest } = options;
@@ -48,10 +62,13 @@ async function request(path, options = {}, allowRefresh = true) {
   });
 
   if (res.status === 401 && allowRefresh) {
-    const refreshRes = await refreshOnce();
-
-    if (refreshRes.ok) {
-      return request(path, options, false);
+    try {
+      const refreshRes = await refreshOnce();
+      if (refreshRes.ok) {
+        return request(path, options, false);
+      }
+    } catch {
+      // Refresh network failure — fall through to original 401
     }
   }
 

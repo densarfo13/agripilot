@@ -4449,6 +4449,46 @@ const T = {
     ha: 'Barka da zuwa gonar ku. Duba aikin ku na yau.',
     tw: 'Akwaaba wo afuo so. Hwɛ wo ɛnnɛ adwuma.',
   },
+
+  // ═══════════════════════════════════════════════════════════
+  //  NAVIGATION — bottom tab labels
+  // ═══════════════════════════════════════════════════════════
+
+  'nav.home': { en: 'Home', fr: 'Accueil', sw: 'Nyumbani', ha: 'Gida', tw: 'Fie' },
+  'nav.myFarm': { en: 'My Farm', fr: 'Ma ferme', sw: 'Shamba', ha: 'Gona', tw: 'Afuo' },
+  'nav.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma' },
+  'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo', ha: 'Ci gaba', tw: 'Nkɔso' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DASHBOARD — section labels (Home decision screen)
+  // ═══════════════════════════════════════════════════════════
+
+  'dashboard.currentTask': { en: 'Current task', fr: 'Tâche en cours', sw: 'Kazi ya sasa', ha: 'Aikin yanzu', tw: 'Adwuma a ɛwɔ hɔ' },
+  'dashboard.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo', ha: 'Ci gaba', tw: 'Nkɔso' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PROGRESS — page labels and insight blocks
+  // ═══════════════════════════════════════════════════════════
+
+  'progress.tasksCompleted': { en: 'Tasks completed', fr: 'Tâches terminées', sw: 'Kazi zilizokamilika', ha: 'Ayyukan da aka gama', tw: 'Adwuma a wɔawie' },
+  'progress.weeklyActivity': { en: 'This week', fr: 'Cette semaine', sw: 'Wiki hii', ha: 'Wannan mako', tw: 'Nnawɔtwe yi' },
+  'progress.insightGreat': { en: 'Great work!', fr: 'Excellent !', sw: 'Kazi nzuri!', ha: 'Aiki nagari!', tw: 'Adwuma pa!' },
+  'progress.insightGood': { en: 'Keep it up!', fr: 'Continuez !', sw: 'Endelea!', ha: 'Ci gaba!', tw: 'Toa so!' },
+  'progress.insightStart': { en: 'Getting started', fr: 'Début', sw: 'Kuanza', ha: 'Farawa', tw: 'Ahyɛase' },
+  'progress.insightGreatDesc': { en: 'You\'re ahead of most farmers this week.', fr: 'Vous êtes en avance cette semaine.', sw: 'Uko mbele ya wakulima wengi wiki hii.', ha: 'Kuna gaban yawancin manoma wannan mako.', tw: 'Wodi kan nnawɔtwe yi.' },
+  'progress.insightGoodDesc': { en: 'You\'re making good progress on your tasks.', fr: 'Vous avancez bien dans vos tâches.', sw: 'Unaendelea vizuri na kazi zako.', ha: 'Kuna ci gaba da kyau a ayyukan ku.', tw: 'Woyɛ adwuma pa.' },
+  'progress.insightStartDesc': { en: 'Complete your tasks to keep your farm on track.', fr: 'Terminez vos tâches pour que tout soit en ordre.', sw: 'Kamilisha kazi zako ili shamba liendelee vizuri.', ha: 'Kammala ayyukan ku don gonar ku ta ci gaba.', tw: 'Wie wo adwuma na wo afuo akɔ so yie.' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ALL TASKS — filter labels and empty states
+  // ═══════════════════════════════════════════════════════════
+
+  'allTasks.filterToday': { en: 'Today', fr: 'Aujourd\'hui', sw: 'Leo', ha: 'Yau', tw: 'Ɛnnɛ' },
+  'allTasks.filterUpcoming': { en: 'Upcoming', fr: 'À venir', sw: 'Zinazokuja', ha: 'Mai zuwa', tw: 'Nea ɛba' },
+  'allTasks.filterCompleted': { en: 'Completed', fr: 'Terminé', sw: 'Zilizokamilika', ha: 'An gama', tw: 'Awie' },
+  'allTasks.noCompleted': { en: 'No completed tasks yet', fr: 'Aucune tâche terminée', sw: 'Hakuna kazi zilizokamilika', ha: 'Babu ayyukan da aka gama', tw: 'Adwuma biara nni hɔ a wɔawie' },
+  'allTasks.noUrgent': { en: 'No urgent tasks today', fr: 'Aucune tâche urgente aujourd\'hui', sw: 'Hakuna kazi ya haraka leo', ha: 'Babu aikin gaggawa yau', tw: 'Adwuma a ɛhia ɛnnɛ nni hɔ' },
+  'allTasks.noUpcoming': { en: 'No upcoming tasks', fr: 'Aucune tâche à venir', sw: 'Hakuna kazi zinazokuja', ha: 'Babu ayyukan da za su zo', tw: 'Adwuma a ɛba nni hɔ' },
 };
 
 export default T;

@@ -96,25 +96,27 @@ const S = {
   nameCol: { flex: 1, minWidth: 0 },
   name: {
     fontSize: '1.25rem', fontWeight: 700, margin: 0, lineHeight: 1.2,
+    color: '#EAF2FF',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   subtitle: {
-    fontSize: '0.8125rem', color: 'rgba(255,255,255,0.45)',
+    fontSize: '0.8125rem', color: '#6F8299',
     margin: 0, marginTop: '0.15rem',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
-  // Weather chip
+  // Weather chip — toned down, secondary
   wxChip: {
-    display: 'flex', alignItems: 'center', gap: '0.25rem',
-    padding: '0.3rem 0.5rem', borderRadius: '10px',
-    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+    display: 'flex', alignItems: 'center', gap: '0.3rem',
+    padding: '0.35rem 0.6rem', borderRadius: '12px',
+    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)',
     cursor: 'pointer', flexShrink: 0,
     WebkitTapHighlightColor: 'transparent',
     minHeight: '36px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
   },
   wxIcon: { fontSize: '1rem' },
-  wxTemp: { fontSize: '0.8125rem', fontWeight: 700, color: '#fff' },
-  wxInsight: { fontSize: '0.6875rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)' },
+  wxTemp: { fontSize: '0.8125rem', fontWeight: 700, color: '#EAF2FF' },
+  wxInsight: { fontSize: '0.6875rem', fontWeight: 600, color: '#6F8299' },
   // Last updated line
   updatedLine: {
     display: 'flex',
@@ -128,23 +130,24 @@ const S = {
   staleIcon: { fontSize: '0.6875rem' },
   // Expanded card
   wxCard: {
-    marginTop: '0.5rem', padding: '0.875rem 1rem',
-    borderRadius: '14px', background: '#1B2330',
-    border: '1px solid rgba(255,255,255,0.08)',
+    marginTop: '0.5rem', padding: '1rem 1.125rem',
+    borderRadius: '16px', background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
   },
   wxCardRow: { display: 'flex', alignItems: 'flex-start', gap: '0.625rem' },
   wxCardIcon: { fontSize: '1.5rem', flexShrink: 0, marginTop: '0.1rem' },
   wxCardText: { flex: 1 },
-  wxCardTitle: { fontSize: '0.9375rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 },
-  wxCardReason: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.2rem', lineHeight: 1.4 },
+  wxCardTitle: { fontSize: '0.9375rem', fontWeight: 700, color: '#EAF2FF', lineHeight: 1.3 },
+  wxCardReason: { fontSize: '0.75rem', color: '#9FB3C8', marginTop: '0.2rem', lineHeight: 1.4 },
   wxCardUpdated: {
-    fontSize: '0.625rem', color: 'rgba(255,255,255,0.25)',
+    fontSize: '0.625rem', color: '#6F8299',
     marginTop: '0.5rem', textAlign: 'right',
   },
   wxClose: {
-    marginTop: '0.625rem', padding: '0.375rem 0.75rem',
-    borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-    background: 'transparent', color: 'rgba(255,255,255,0.4)',
+    marginTop: '0.625rem', padding: '0.4rem 0.85rem',
+    borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.03)', color: '#6F8299',
     fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
   },

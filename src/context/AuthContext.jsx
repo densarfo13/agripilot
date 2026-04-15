@@ -5,6 +5,7 @@ import {
   logoutUser,
   registerUser,
   resendVerification,
+  refreshSession,
   verifyMfaCode as verifyMfaCodeApi,
 } from '../lib/api.js';
 
@@ -57,24 +58,47 @@ export function AuthProvider({ children }) {
   const [isOfflineSession, setIsOfflineSession] = useState(false);
 
   async function bootstrap() {
-    console.log('[AUTH] Bootstrap start');
+    const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
+    if (isDev) console.log('[AUTH] Bootstrap start');
+
+    // ─── Step 0: Instant restore from cache ──────────────────
+    // Show cached user immediately so the UI doesn't flash login.
+    // The actual server validation happens below and corrects if stale.
+    const cached = getCachedSession();
+    if (cached) {
+      if (isDev) console.log('[AUTH] Instant restore from cache, role:', cached.role);
+      setUser(cached);
+      setIsOfflineSession(true); // will flip to false once server confirms
+    }
+
+    // ─── Step 1: Proactive refresh ───────────────────────────
+    // The access_token cookie expires after 15 min (browser deletes it).
+    // Call /refresh first to ensure a fresh access token exists before /me.
+    if (cached) {
+      if (isDev) console.log('[AUTH] Pre-flight refresh (have cached session)');
+      await refreshSession(); // best-effort; /me retry handles failure
+    }
+
+    // ─── Step 2: Validate with /me ───────────────────────────
     try {
       const data = await getCurrentUser();
       const serverUser = data.user || null;
-      console.log('[AUTH] Bootstrap /me success, role:', serverUser?.role);
+      if (isDev) console.log('[AUTH] /me success, role:', serverUser?.role);
       setUser(serverUser);
       setIsOfflineSession(false);
       cacheSession(serverUser);
     } catch (err) {
-      console.warn('[AUTH] Bootstrap /me failed:', err.status, err.message);
-      // Network error or server unreachable — try offline cache
+      if (isDev) console.warn('[AUTH] /me failed:', err.status, err.message);
+
       const isNetworkError = !err.status || err.message === 'Failed to fetch';
+      const isAuthError = err.status === 401 || err.status === 403;
+
       if (isNetworkError) {
-        const cached = getCachedSession();
+        // Offline — keep cached user, re-validate when online
+        if (isDev) console.log('[AUTH] Offline — keeping cached session');
         if (cached) {
           setUser(cached);
           setIsOfflineSession(true);
-          // Re-validate when back online
           const onOnline = () => {
             window.removeEventListener('online', onOnline);
             bootstrap();
@@ -84,14 +108,28 @@ export function AuthProvider({ children }) {
           setUser(null);
           setIsOfflineSession(false);
         }
-      } else {
-        // Server returned a real error (401, 403, etc.) — session is invalid
+      } else if (isAuthError) {
+        // 401/403 after refresh attempt = session truly dead
+        if (isDev) console.log('[AUTH] Session invalid (', err.status, ') — logging out');
         setUser(null);
         setIsOfflineSession(false);
         clearSessionCache();
+      } else {
+        // Server error (500, etc.) — NOT a session problem.
+        // Keep cached user alive; don't kick farmer to login for transient errors.
+        if (isDev) console.log('[AUTH] Server error (', err.status, ') — keeping cached session');
+        if (cached) {
+          setUser(cached);
+          setIsOfflineSession(true);
+          // Retry after a delay
+          setTimeout(() => bootstrap(), 30000);
+        } else {
+          setUser(null);
+          setIsOfflineSession(false);
+        }
       }
     } finally {
-      console.log('[AUTH] Bootstrap complete, authLoading → false');
+      if (isDev) console.log('[AUTH] Bootstrap complete, authLoading → false');
       setAuthLoading(false);
     }
   }
@@ -140,7 +178,9 @@ export function AuthProvider({ children }) {
     return data;
   }
 
-  async function logout() {
+  async function logout(reason) {
+    const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
+    if (isDev) console.log('[AUTH] Logout, reason:', reason || 'explicit');
     await logoutUser().catch(() => {});
     setUser(null);
     setIsOfflineSession(false);

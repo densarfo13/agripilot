@@ -1,10 +1,20 @@
+/**
+ * Dashboard (Home) — farmer decision screen.
+ *
+ * Shows ONLY what the farmer needs to act now:
+ *   1. Identity + weather header
+ *   2. Optional weather insight strip
+ *   3. One main task card with CTA
+ *
+ * All progress, analytics, and farm details live in their respective tabs.
+ */
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { languageToVoiceCode, speakText } from '../lib/voice.js';
 import { useTranslation } from '../i18n/index.js';
 import { calculateFarmScore } from '../lib/farmScore.js';
-import { getLandBoundaries, getSeedScans, getFarmTasks } from '../lib/api.js';
+import { getFarmTasks } from '../lib/api.js';
 import { completeTaskSafe } from '../services/taskService.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -12,40 +22,19 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
-// Advanced cards lazy-loaded inside expanded tools section
 import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
-import FarmSwitcher from '../components/FarmSwitcher.jsx';
-import FarmEditModal from '../components/FarmEditModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
-import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
-import FarmWeatherCard from '../components/FarmWeatherCard.jsx';
-import FarmPestRiskCard from '../components/FarmPestRiskCard.jsx';
-import FarmHarvestCard from '../components/FarmHarvestCard.jsx';
-import YieldRecordsCard from '../components/YieldRecordsCard.jsx';
-import FarmEconomicsCard from '../components/FarmEconomicsCard.jsx';
-import FarmBenchmarkCard from '../components/FarmBenchmarkCard.jsx';
 import FarmerHeader from '../components/FarmerHeader.jsx';
 import NextActionCard from '../components/NextActionCard.jsx';
-// WeatherStatusCard removed — weather displays in header chip only
-import QuickActionsRow from '../components/QuickActionsRow.jsx';
-import WeeklyProgressCard from '../components/WeeklyProgressCard.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
-import ModeIndicator from '../components/ModeIndicator.jsx';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import { useFarmDecision } from '../hooks/useFarmDecision.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
-import { SECTION_ICONS } from '../lib/farmerIcons.js';
 
-// Lazy-load mode-specific components
+// Lazy-load simple mode component
 const BasicFarmerHome = lazy(() => import('../components/farmer/BasicFarmerHome.jsx'));
-const FarmerSettingsPanel = lazy(() => import('../components/FarmerSettingsPanel.jsx'));
-
-// Lazy-load advanced features
-const LandBoundaryCapture = lazy(() => import('../components/LandBoundaryCapture.jsx'));
-const SeedScanFlow = lazy(() => import('../components/SeedScanFlow.jsx'));
-const SellReadinessInput = lazy(() => import('../components/SellReadinessInput.jsx'));
 
 // Note: Task completion is now server-side via V2FarmTaskCompletion.
 // The GET /farm-tasks/:id/tasks endpoint returns only pending tasks.
@@ -72,13 +61,7 @@ export default function Dashboard() {
   const [showUpdateFlow, setShowUpdateFlow] = useState(false);
   const [showFarmPicker, setShowFarmPicker] = useState(false);
   const [selectedUpdateFarm, setSelectedUpdateFarm] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
-  const [showSeasonModal, setShowSeasonModal] = useState(false);
-  const [boundaries, setBoundaries] = useState([]);
-  const [seedScans, setSeedScans] = useState([]);
-  const [farmDataLoading, setFarmDataLoading] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null); // 'tasks' | 'harvest' | 'money' | 'tools' | null
 
   // Primary task state
   const [primaryTask, setPrimaryTask] = useState(null);
@@ -92,7 +75,7 @@ export default function Dashboard() {
   const [feedbackMessage, setFeedbackMessage] = useState(null); // custom message for banner
 
   const hasMultipleFarms = activeFarms && activeFarms.length > 1;
-  const prevFarmIdRef = useRef(null); // null on mount — ensures first load always triggers
+  const prevFarmIdRef = useRef(null);
 
   // Decision engine hook — provides primaryAction, todaysPlan, farmStatus
   const farmDecision = useFarmDecision({
@@ -101,23 +84,7 @@ export default function Dashboard() {
     isOnline, taskLoading,
   });
 
-  // ─── Farm-scoped data loading (skip in basic mode for perf) ──
-  const loadFarmScopedData = useCallback(async (farmId) => {
-    if (!setupComplete || !isOnline || isBasic) return;
-    setFarmDataLoading(true);
-    try {
-      const [bData, sData] = await Promise.all([
-        getLandBoundaries(farmId),
-        getSeedScans(farmId),
-      ]);
-      setBoundaries(bData.boundaries || []);
-      setSeedScans(sData.scans || []);
-    } catch { /* non-blocking */ }
-    finally { setFarmDataLoading(false); }
-  }, [setupComplete, isOnline]);
-
   // ─── Primary task fetch (priority: high > medium > low) ────
-  // Server returns only pending tasks (completed ones filtered out in DB)
   const loadPrimaryTask = useCallback(async (farmId) => {
     if (!farmId || !isOnline) return;
     setTaskLoading(true);
@@ -145,22 +112,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (currentFarmId && currentFarmId !== prevFarmIdRef.current) {
-      setBoundaries([]);
-      setSeedScans([]);
       setPrimaryTask(null);
       prevFarmIdRef.current = currentFarmId;
-      loadFarmScopedData(currentFarmId);
       loadPrimaryTask(currentFarmId);
     } else if (currentFarmId && !prevFarmIdRef.current) {
       prevFarmIdRef.current = currentFarmId;
-      loadFarmScopedData(currentFarmId);
       loadPrimaryTask(currentFarmId);
     }
-  }, [currentFarmId, loadFarmScopedData, loadPrimaryTask]);
+  }, [currentFarmId, loadPrimaryTask]);
 
   useEffect(() => {
     if (currentFarmId && setupComplete && isOnline) {
-      loadFarmScopedData(currentFarmId);
       loadPrimaryTask(currentFarmId);
     }
   }, [setupComplete, isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -179,10 +141,6 @@ export default function Dashboard() {
       } catch { /* voice fail non-blocking */ }
     }
   }, [autoVoice, authLoading, profileLoading, language, t]);
-
-  function toggleSection(name) {
-    setExpandedSection((prev) => (prev === name ? null : name));
-  }
 
   // ─── Complete task via API (optimistic + offline fallback) ──
   const handleCompleteTask = useCallback(async (task) => {
@@ -235,10 +193,6 @@ export default function Dashboard() {
       setShowUpdateFlow(true);
     }
   }
-
-  // Weekly progress: completedCount from server, taskCount = pending
-  const doneThisWeek = completedCount;
-  const weekTotal = taskCount + completedCount;
 
   if (authLoading || profileLoading) {
     return (
@@ -396,56 +350,19 @@ export default function Dashboard() {
           onRetry={() => primaryTask && handleCompleteTask(primaryTask)}
         />
 
-        {/* ═══ 2. MAIN TASK CARD (one task only) ═══ */}
+        {/* ═══ MAIN TASK CARD (one task, one CTA — the decision) ═══ */}
         {profile && !farmSwitching && (
-          <>
-            {/* Section label: current task */}
-            {!farmDecision.loading && farmDecision.taskViewModel && (
-              <div style={S.sectionLabel}>
-                <span style={S.sectionLabelIcon}>{SECTION_ICONS.currentTask}</span>
-                <span style={S.sectionLabelText}>{t('dashboard.currentTask') || 'Current task'}</span>
-              </div>
-            )}
-            <NextActionCard
-              decision={farmDecision}
-              taskViewModel={farmDecision.taskViewModel}
-              loading={farmDecision.loading}
-              onDoThisNow={() => primaryTask && setShowTaskAction(true)}
-              onSetStage={() => setShowStageModal(true)}
-              onGoToSetup={() => navigate('/profile/setup')}
-              onAddUpdate={handleStartUpdate}
-              t={t}
-              language={language}
-            />
-          </>
-        )}
-
-        {/* ═══ PROGRESS SUMMARY (compact) ═══ */}
-        {profile && !farmSwitching && setupComplete && weekTotal > 0 && (
-          <div style={S.progressSummary}>
-            <div style={S.sectionLabel}>
-              <span style={S.sectionLabelIcon}>{SECTION_ICONS.onTrack}</span>
-              <span style={S.sectionLabelText}>{t('dashboard.progress') || 'Progress'}</span>
-            </div>
-            <div style={S.progressBar}>
-              <div style={S.progressBarRow}>
-                <span style={S.progressBarText}>
-                  {doneThisWeek} {t('dashboard.of') || 'of'} {weekTotal}
-                </span>
-                <span style={S.progressBarPct}>{Math.round((doneThisWeek / weekTotal) * 100)}%</span>
-              </div>
-              <div style={S.progressTrack}>
-                <div style={{ ...S.progressFill, width: `${Math.min(100, Math.round((doneThisWeek / weekTotal) * 100))}%` }} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ QUICK UPDATE (single action, not full row) ═══ */}
-        {profile && !farmSwitching && setupComplete && (
-          <button onClick={handleStartUpdate} style={S.quickUpdateBtn}>
-            {'\uD83D\uDCF8'} {t('dashboard.addUpdate') || 'Add update'}
-          </button>
+          <NextActionCard
+            decision={farmDecision}
+            taskViewModel={farmDecision.taskViewModel}
+            loading={farmDecision.loading}
+            onDoThisNow={() => primaryTask && setShowTaskAction(true)}
+            onSetStage={() => setShowStageModal(true)}
+            onGoToSetup={() => navigate('/profile/setup')}
+            onAddUpdate={handleStartUpdate}
+            t={t}
+            language={language}
+          />
         )}
 
         {/* ═══ MODALS (unchanged) ═══ */}
@@ -489,36 +406,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {showEditModal && profile && (
-          <FarmEditModal
-            farm={profile}
-            onClose={() => setShowEditModal(false)}
-            onSaved={() => {
-              setShowEditModal(false);
-              // Re-run engine after farm edit (crop type, name, etc. may affect decisions)
-              if (currentFarmId) loadPrimaryTask(currentFarmId);
-            }}
-          />
-        )}
-
         {showStageModal && profile && (
           <CropStageModal
             farm={profile}
             onClose={() => setShowStageModal(false)}
             onSaved={() => {
               setShowStageModal(false);
-              // Refresh tasks after stage change — new stage may generate new tasks
-              if (currentFarmId) loadPrimaryTask(currentFarmId);
-            }}
-          />
-        )}
-
-        {showSeasonModal && profile && (
-          <SeasonalTimingModal
-            farm={profile}
-            onClose={() => setShowSeasonModal(false)}
-            onSaved={() => {
-              setShowSeasonModal(false);
               if (currentFarmId) loadPrimaryTask(currentFarmId);
             }}
           />
@@ -543,8 +436,8 @@ export default function Dashboard() {
 const S = {
   page: {
     minHeight: '100vh',
-    background: '#0F172A',
-    color: '#fff',
+    background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
+    color: '#EAF2FF',
     padding: '0.75rem 0.75rem 1rem',
   },
   container: {
@@ -552,271 +445,19 @@ const S = {
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem',
+    gap: '0.875rem',
   },
-  // ─── Crop stage status bar ──────
-  stageStatusBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.75rem 1rem',
-    borderRadius: '14px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.2)',
-    cursor: 'pointer',
-    width: '100%',
-    textAlign: 'left',
-    color: '#fff',
-    WebkitTapHighlightColor: 'transparent',
-    minHeight: '52px',
-  },
-  stageStatusIcon: {
-    fontSize: '1.5rem',
-    flexShrink: 0,
-  },
-  stageStatusText: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.1rem',
-  },
-  stageStatusLabel: {
-    fontSize: '0.9375rem',
-    fontWeight: 700,
-    color: '#86EFAC',
-  },
-  stageStatusHint: {
-    fontSize: '0.6875rem',
-    color: 'rgba(255,255,255,0.4)',
-  },
-  stageStatusArrow: {
-    fontSize: '1.5rem',
-    color: 'rgba(34,197,94,0.5)',
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: '0.5rem',
-  },
-  compactRow: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  card: {
-    borderRadius: '16px',
-    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
-    padding: '1.25rem',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-    border: '1px solid rgba(255,255,255,0.08)',
-  },
-  // ─── Success feedback ────────
-  successBanner: {
-    borderRadius: '14px',
-    background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.3)',
-    padding: '0.875rem 1rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    color: '#86EFAC',
-  },
-  // ─── Setup banner ───────────
-  setupBanner: {
-    borderRadius: '14px',
-    background: 'rgba(250,204,21,0.08)',
-    border: '1px solid rgba(250,204,21,0.25)',
-    padding: '0.75rem 1rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    cursor: 'pointer',
-    width: '100%',
-    textAlign: 'left',
-    color: '#fff',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  bannerTitle: {
-    fontSize: '0.9rem',
-    fontWeight: 700,
-    color: '#FDE68A',
-  },
-  bannerDesc: {
-    fontSize: '0.75rem',
-    color: 'rgba(255,255,255,0.55)',
-    marginTop: '0.1rem',
-  },
-  bannerArrow: {
-    fontSize: '1.5rem',
-    color: '#FDE68A',
-    fontWeight: 700,
-  },
-  // ─── Expanded sections ──────
-  expandedSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-  },
-  collapseBtn: {
-    padding: '0.6rem',
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'transparent',
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '0.8rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    textAlign: 'center',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  // ─── More section ───────────
   wxActionLine: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '10px',
-    background: 'rgba(250,204,21,0.06)',
-    border: '1px solid rgba(250,204,21,0.15)',
-    fontSize: '0.8125rem',
-    fontWeight: 600,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  quickLinks: {
-    display: 'flex',
-    gap: '0.5rem',
-    flexWrap: 'wrap',
-  },
-  quickLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.375rem',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '10px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    minHeight: '36px',
-    position: 'relative',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  quickBadge: {
-    fontSize: '0.5625rem',
-    fontWeight: 700,
-    color: '#fff',
-    background: '#EF4444',
-    borderRadius: '6px',
-    padding: '1px 4px',
-    minWidth: '14px',
-    textAlign: 'center',
-  },
-  // ─── Section labels ─────────
-  sectionLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.375rem',
-    padding: '0 0.25rem',
-  },
-  sectionLabelIcon: {
-    fontSize: '0.875rem',
-  },
-  sectionLabelText: {
-    fontSize: '0.6875rem',
-    fontWeight: 700,
-    color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-  },
-  // ─── Progress summary ───────
-  progressSummary: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  progressBar: {
-    padding: '0.75rem 1rem',
-    borderRadius: '12px',
-    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-  },
-  progressBarRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '0.5rem',
-  },
-  progressBarText: {
-    fontSize: '0.8125rem',
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: 600,
-  },
-  progressBarPct: {
-    fontSize: '0.8125rem',
-    color: '#86EFAC',
-    fontWeight: 700,
-  },
-  progressTrack: {
-    height: '6px',
-    borderRadius: '3px',
-    background: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: '3px',
-    background: '#22C55E',
-    transition: 'width 0.3s ease',
-    minWidth: '4px',
-  },
-  // ─── Quick update button ────
-  quickUpdateBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.375rem',
-    padding: '0.625rem 1rem',
-    borderRadius: '10px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '0.8125rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    minHeight: '40px',
-    width: '100%',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  moreBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    width: '100%',
-    padding: '0.875rem 1rem',
-    background: '#1B2330',
-    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '0.625rem 0.875rem',
     borderRadius: '14px',
-    color: 'rgba(255,255,255,0.6)',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-    textAlign: 'left',
-    minHeight: '48px',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  moreBtnLabel: {
-    flex: 1,
+    background: 'rgba(245,158,11,0.06)',
+    border: '1px solid rgba(245,158,11,0.12)',
+    fontSize: '0.8125rem',
     fontWeight: 600,
-  },
-  moreArrow: {
-    fontSize: '1.2rem',
-    color: 'rgba(255,255,255,0.3)',
-    fontWeight: 700,
+    color: '#9FB3C8',
   },
   // ─── Loading ────────────────
   loadingWrap: {
@@ -830,28 +471,22 @@ const S = {
   spinner: {
     width: '2rem',
     height: '2rem',
-    border: '3px solid rgba(255,255,255,0.1)',
+    border: '3px solid rgba(255,255,255,0.06)',
     borderTopColor: '#22C55E',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },
   loadingText: {
     fontSize: '0.9rem',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  switchLoading: {
-    borderRadius: '14px',
-    background: '#1B2330',
-    padding: '1.25rem',
-    border: '1px solid rgba(255,255,255,0.1)',
-    textAlign: 'center',
+    color: '#6F8299',
   },
   // ─── Empty state ────────────
   emptyState: {
-    borderRadius: '16px',
-    background: 'linear-gradient(180deg, #1E293B 0%, #1B2330 100%)',
-    padding: '2rem 1.5rem',
-    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '20px',
+    background: 'rgba(255,255,255,0.04)',
+    padding: '2.25rem 1.5rem',
+    border: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
@@ -861,23 +496,20 @@ const S = {
   emptyTitle: {
     fontSize: '1.1rem',
     fontWeight: 700,
-  },
-  emptyDesc: {
-    fontSize: '0.85rem',
-    color: 'rgba(255,255,255,0.5)',
-    lineHeight: 1.5,
+    color: '#EAF2FF',
   },
   emptyBtn: {
     marginTop: '0.5rem',
-    borderRadius: '12px',
+    borderRadius: '14px',
     background: '#22C55E',
-    padding: '0.75rem 1.5rem',
+    padding: '0.875rem 1.75rem',
     fontWeight: 700,
     color: '#fff',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '0.9rem',
+    fontSize: '0.9375rem',
     minHeight: '48px',
+    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
     WebkitTapHighlightColor: 'transparent',
   },
   // ─── Modals ─────────────────
@@ -896,7 +528,7 @@ const S = {
     maxWidth: '480px',
     maxHeight: '95vh',
     overflowY: 'auto',
-    borderRadius: '16px 16px 0 0',
+    borderRadius: '20px 20px 0 0',
     WebkitOverflowScrolling: 'touch',
   },
 };
