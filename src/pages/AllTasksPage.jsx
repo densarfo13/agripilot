@@ -247,8 +247,16 @@ export default function AllTasksPage() {
                   <span style={S.currentIcon}>{getTaskActionIcon(currentTask.actionType)}</span>
                   <div style={S.currentTextWrap}>
                     <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)}</span>
+                    {vmByTaskId[currentTask.id]?.urgency && vmByTaskId[currentTask.id].urgency !== 'optional' && (
+                      <span style={{ ...S.urgencyBadge, background: vmByTaskId[currentTask.id].urgencyStyle?.bg || 'rgba(34,197,94,0.12)', color: vmByTaskId[currentTask.id].urgencyStyle?.text || '#22C55E' }}>
+                        {t(vmByTaskId[currentTask.id].urgencyStyle?.labelKey || 'urgency.thisWeek')}
+                      </span>
+                    )}
                     {vmByTaskId[currentTask.id]?.whyText && (
                       <span style={S.currentWhy}>{vmByTaskId[currentTask.id].whyText}</span>
+                    )}
+                    {vmByTaskId[currentTask.id]?.timingText && (
+                      <span style={S.currentTiming}>{vmByTaskId[currentTask.id].timingText}</span>
                     )}
                   </div>
                 </div>
@@ -277,6 +285,9 @@ export default function AllTasksPage() {
                       : <span style={S.doneBtnCircleSmall} />}
                   </button>
                   <span style={S.compactIcon}>{getTaskActionIcon(task.actionType)}</span>
+                  {vmByTaskId[task.id]?.urgencyStyle?.dot && (
+                    <span style={{ ...S.urgencyDot, background: vmByTaskId[task.id].urgencyStyle.accent }} />
+                  )}
                   <span style={S.compactTitle}>{vmByTaskId[task.id]?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
               ))}
@@ -309,6 +320,9 @@ export default function AllTasksPage() {
                       : <span style={S.doneBtnCircleSmall} />}
                   </button>
                   <span style={S.compactIcon}>{getTaskActionIcon(task.actionType)}</span>
+                  {vmByTaskId[task.id]?.urgencyStyle?.dot && (
+                    <span style={{ ...S.urgencyDot, background: vmByTaskId[task.id].urgencyStyle.accent }} />
+                  )}
                   <span style={S.compactTitle}>{vmByTaskId[task.id]?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
               ))}
@@ -395,6 +409,15 @@ const S = {
   currentTextWrap: { display: 'flex', flexDirection: 'column', gap: '0.125rem', flex: 1, minWidth: 0 },
   currentTitle: { fontWeight: 700, color: '#EAF2FF', fontSize: '1rem' },
   currentWhy: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.3 },
+  currentTiming: { fontSize: '0.6875rem', color: '#0EA5E9', fontWeight: 500, lineHeight: 1.3 },
+  urgencyBadge: {
+    display: 'inline-block', padding: '0.125rem 0.5rem', borderRadius: '8px',
+    fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
+    alignSelf: 'flex-start',
+  },
+  urgencyDot: {
+    width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+  },
 
   // ─── Compact rows (next up / view all) ──
   compactRow: {

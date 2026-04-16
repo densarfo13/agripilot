@@ -7,6 +7,8 @@
  */
 import { getSuccessTextKey, getNextTextKey } from '../../engine/autopilot/textKeys.js';
 import { getOutcomeKey } from './outcomeKeys.js';
+import { getFollowUpQuestion, COMPLETION_STATUS } from './completionFeedback.js';
+import { assertCompletionState } from './devAssertions.js';
 
 /**
  * @param {Object} params
@@ -59,10 +61,18 @@ export function buildCompletionState({
     ? 'completion.returnTomorrow'
     : null;
 
-  return {
+  // Determine follow-up question (spec §4)
+  const followUp = getFollowUpQuestion({
+    taskViewModel,
+    completedToday: completedCount,
+    urgency: taskViewModel?.urgency || null,
+  });
+
+  const result = {
     // Identity
     completedTaskId: completedTask?.id || null,
     completedTaskType: taskType,
+    completionStatus: COMPLETION_STATUS.DONE, // Default; updated by follow-up response
 
     // Display keys
     successTitleKey,
@@ -83,7 +93,13 @@ export function buildCompletionState({
     // Return habit
     returnCueKey,
 
+    // Follow-up (spec §4 — lightweight learning loop)
+    followUp,
+
     // Offline
     savedOffline: !!savedOffline,
   };
+
+  assertCompletionState(result);
+  return result;
 }

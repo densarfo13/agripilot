@@ -8,13 +8,17 @@ import { compressImage } from '../utils/imageCompress.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 import { getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
+import { getLocalizedCropList } from '../data/cropRegionCatalog.js';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 import { useTranslation } from '../i18n/index.js';
+import NewFarmerRecommendation from './NewFarmerRecommendation.jsx';
+import { assessSeasonProfit } from '../engine/seasonProfitRules.js';
 
 // ─── Step definitions ────────────────────────────────────────
-const STEP_KEYS = ['welcome', 'farmName', 'country', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
-const TOTAL_USER_STEPS = 8; // steps the user interacts with (excluding welcome + processing)
+const STEP_KEYS = ['welcome', 'farmName', 'country', 'experience', 'recommendation', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
+const TOTAL_USER_STEPS_NEW = 10;         // includes recommendation step
+const TOTAL_USER_STEPS_EXPERIENCED = 9;  // skips recommendation step
 
 // ─── Tap option sets (factory functions — accept t for localization) ──
 function getGenderOptions(t) {
@@ -100,7 +104,7 @@ const INITIAL_FORM = {
   farmName: '', farmSizeAcres: '', farmSizeCategory: '', landSizeUnit: 'ACRE',
   locationName: '', crop: '', stage: 'planting',
   latitude: null, longitude: null,
-  countryCode: '', gender: '', ageGroup: '',
+  countryCode: '', gender: '', ageGroup: '', experienceLevel: '',
 };
 
 export default function OnboardingWizard({ userName, countryCode, onComplete }) {
@@ -150,6 +154,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     welcome: 'onboarding.welcome',
     farmName: 'onboarding.farmName',
     country: 'onboarding.country',
+    experience: 'onboarding.experience',
+    recommendation: 'onboarding.recommendation',
     crop: 'onboarding.crop',
     farmSize: 'onboarding.landSize',
     gender: 'onboarding.gender',
@@ -273,24 +279,50 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   }, []);
 
   // ─── Computed helpers ──────────────────────────────────────
+  const isNewFarmer = form.experienceLevel === 'new';
+  const TOTAL_USER_STEPS = isNewFarmer ? TOTAL_USER_STEPS_NEW : TOTAL_USER_STEPS_EXPERIENCED;
   const progressNum = Math.min(step, TOTAL_USER_STEPS); // 0-based, for dots
   const progressPercent = step <= 0 ? 0 : Math.round((progressNum / TOTAL_USER_STEPS) * 100);
 
-  // Country-specific top crops — show 8 for better coverage
-  const countryTopCodes = getCountryRecommendedCodes(form.countryCode);
-  const topCropButtons = countryTopCodes.length > 0
-    ? countryTopCodes.slice(0, 8).map(code => {
-      const found = TOP_CROPS.find(c => c.code === code);
-      return found || { code, label: code.charAt(0) + code.slice(1).toLowerCase(), icon: '\uD83C\uDF3F' };
-    })
-    : TOP_CROPS.slice(0, 8);
+  // Country-specific crop grouping from catalog
+  const cropGroups = form.countryCode ? getLocalizedCropList(form.countryCode) : null;
+  const localCropButtons = cropGroups
+    ? cropGroups.local.slice(0, 10).map(entry => {
+        const found = TOP_CROPS.find(c => c.code === entry.code);
+        return found || { code: entry.code, label: entry.code.charAt(0) + entry.code.slice(1).toLowerCase().replace(/_/g, ' '), icon: '\uD83C\uDF3F' };
+      })
+    : [];
+  const moreCropButtons = cropGroups
+    ? [...cropGroups.regional, ...cropGroups.global].slice(0, 6).map(entry => {
+        const found = TOP_CROPS.find(c => c.code === entry.code);
+        return found || { code: entry.code, label: entry.code.charAt(0) + entry.code.slice(1).toLowerCase().replace(/_/g, ' '), icon: '\uD83C\uDF3F' };
+      })
+    : [];
+  // Fallback when no country is set
+  const topCropButtons = localCropButtons.length > 0 ? localCropButtons : TOP_CROPS.slice(0, 8);
 
   // ─── Navigation helpers ────────────────────────────────────
   const goNext = () => {
     if (voiceEnabled && currentVoiceKey) trackVoiceStepCompleted(currentVoiceKey, voiceLang);
-    setStep(s => s + 1);
+    const nextRaw = step + 1;
+    const nextKey = STEP_KEYS[nextRaw];
+    // Skip recommendation step for experienced farmers
+    if (nextKey === 'recommendation' && form.experienceLevel !== 'new') {
+      setStep(nextRaw + 1);
+      return;
+    }
+    setStep(nextRaw);
   };
-  const goBack = () => setStep(s => Math.max(0, s - 1));
+  const goBack = () => {
+    const prevRaw = step - 1;
+    const prevKey = STEP_KEYS[prevRaw];
+    // Skip recommendation step going backwards for experienced farmers
+    if (prevKey === 'recommendation' && form.experienceLevel !== 'new') {
+      setStep(Math.max(0, prevRaw - 1));
+      return;
+    }
+    setStep(Math.max(0, prevRaw));
+  };
 
   // ─── Photo handling ────────────────────────────────────────
   const handlePhotoSelect = async (e) => {
@@ -368,6 +400,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         ageGroup: form.ageGroup || null,
         countryCode: form.countryCode || null,
         farmSizeCategory: form.farmSizeCategory || null,
+        experienceLevel: form.experienceLevel || null,
       });
 
       clearDraft();
@@ -573,6 +606,86 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           </div>
         )}
 
+        {/* ═══════════ STEP: Experience Level ═══════════ */}
+        {currentStep === 'experience' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83C\uDF31'}</div>
+            <h2 style={S.title}>{t('wizard.whatDescribesYou')}</h2>
+            <p style={S.subtitle}>{t('wizard.experienceSubtitle')}</p>
+
+            <div style={{ ...S.fieldWide, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(f => ({ ...f, experienceLevel: 'new' }));
+                  logOnboarding('experience_selected', { level: 'new' });
+                  // Advance to recommendation step
+                  goNext();
+                }}
+                style={{
+                  ...S.experienceBtn,
+                  borderColor: form.experienceLevel === 'new' ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                  background: form.experienceLevel === 'new' ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                }}
+              >
+                <span style={S.experienceBtnIcon}>{'\uD83C\uDF31'}</span>
+                <div>
+                  <div style={S.experienceBtnTitle}>{t('wizard.imNewToFarming')}</div>
+                  <div style={S.experienceBtnDesc}>{t('wizard.imNewToFarmingDesc')}</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(f => ({ ...f, experienceLevel: 'experienced' }));
+                  logOnboarding('experience_selected', { level: 'experienced' });
+                  // Skip recommendation → go directly to crop step
+                  const cropIdx = STEP_KEYS.indexOf('crop');
+                  setStep(cropIdx);
+                }}
+                style={{
+                  ...S.experienceBtn,
+                  borderColor: form.experienceLevel === 'experienced' ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                  background: form.experienceLevel === 'experienced' ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                }}
+              >
+                <span style={S.experienceBtnIcon}>{'\uD83D\uDCAA'}</span>
+                <div>
+                  <div style={S.experienceBtnTitle}>{t('wizard.iAlreadyFarm')}</div>
+                  <div style={S.experienceBtnDesc}>{t('wizard.iAlreadyFarmDesc')}</div>
+                </div>
+              </button>
+            </div>
+
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: Recommendation (new farmers only) ═══════════ */}
+        {currentStep === 'recommendation' && (
+          <div style={S.stepContent}>
+            <NewFarmerRecommendation
+              t={t}
+              countryCode={form.countryCode}
+              onResult={({ crop, farmSizeCategory }) => {
+                setForm(f => ({ ...f, crop: crop || f.crop, farmSizeCategory: farmSizeCategory || f.farmSizeCategory }));
+                logOnboarding('recommendation_applied', { crop, farmSizeCategory });
+                // Advance to crop step (shows prefilled, farmer can adjust)
+                const cropIdx = STEP_KEYS.indexOf('crop');
+                setStep(cropIdx);
+              }}
+              onSkip={() => {
+                logOnboarding('recommendation_skipped');
+                const cropIdx = STEP_KEYS.indexOf('crop');
+                setStep(cropIdx);
+              }}
+            />
+          </div>
+        )}
+
         {/* ═══════════ STEP: Crop ═══════════ */}
         {currentStep === 'crop' && (
           <div style={S.stepContent}>
@@ -581,33 +694,101 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             <p style={S.subtitle}>{t('wizard.tapMainCrop')}</p>
             {error && <div style={S.errorBox}>{error}</div>}
 
-            {/* Quick-tap top crops */}
+            {/* Quick-tap top crops — grouped by locality when country is known */}
             {!showCropSearch && (
               <div style={S.fieldWide}>
-                <div style={S.topCropGrid}>
-                  {topCropButtons.map(c => {
-                    const isSelected = form.crop === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
-                        style={{
-                          ...S.topCropBtn,
-                          borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                          background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
-                        }}
-                        aria-pressed={isSelected}
-                      >
-                        <span style={S.topCropIcon}>{c.icon}</span>
-                        <span style={{ fontSize: '0.82rem', color: isSelected ? '#86EFAC' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
-                          {c.label}
-                        </span>
-                        {isSelected && <span style={S.topCropCheck}>{'\u2713'}</span>}
-                      </button>
-                    );
-                  })}
-                  {/* "Other" quick-tap — always in the grid */}
+                {/* Section: Popular in your area (only when country is set) */}
+                {localCropButtons.length > 0 && (
+                  <>
+                    <div style={S.cropGroupLabel}>{t('wizard.popularInArea')}</div>
+                    <div style={S.topCropGrid}>
+                      {localCropButtons.map(c => {
+                        const isSelected = form.crop === c.code;
+                        return (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
+                            style={{
+                              ...S.topCropBtn,
+                              borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                              background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                            }}
+                            aria-pressed={isSelected}
+                          >
+                            <span style={S.topCropIcon}>{c.icon}</span>
+                            <span style={{ fontSize: '0.82rem', color: isSelected ? '#86EFAC' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
+                              {c.label}
+                            </span>
+                            {isSelected && <span style={S.topCropCheck}>{'\u2713'}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* Section: More crops (regional/global, or generic fallback) */}
+                {moreCropButtons.length > 0 && (
+                  <>
+                    <div style={{ ...S.cropGroupLabel, marginTop: '0.75rem' }}>{t('wizard.moreCrops')}</div>
+                    <div style={S.topCropGrid}>
+                      {moreCropButtons.map(c => {
+                        const isSelected = form.crop === c.code;
+                        return (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
+                            style={{
+                              ...S.topCropBtn,
+                              borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                              background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                            }}
+                            aria-pressed={isSelected}
+                          >
+                            <span style={S.topCropIcon}>{c.icon}</span>
+                            <span style={{ fontSize: '0.82rem', color: isSelected ? '#86EFAC' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
+                              {c.label}
+                            </span>
+                            {isSelected && <span style={S.topCropCheck}>{'\u2713'}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* Generic fallback when no country is set */}
+                {localCropButtons.length === 0 && (
+                  <div style={S.topCropGrid}>
+                    {topCropButtons.map(c => {
+                      const isSelected = form.crop === c.code;
+                      return (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
+                          style={{
+                            ...S.topCropBtn,
+                            borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                            background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                          }}
+                          aria-pressed={isSelected}
+                        >
+                          <span style={S.topCropIcon}>{c.icon}</span>
+                          <span style={{ fontSize: '0.82rem', color: isSelected ? '#86EFAC' : '#FFFFFF', fontWeight: isSelected ? 600 : 400 }}>
+                            {c.label}
+                          </span>
+                          {isSelected && <span style={S.topCropCheck}>{'\u2713'}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* "Other" quick-tap — always visible */}
+                <div style={{ ...S.topCropGrid, marginTop: '0.5rem' }}>
                   <button
                     type="button"
                     onClick={() => setShowCropSearch(true)}
@@ -653,6 +834,63 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 </button>
               </div>
             )}
+
+            {/* Season & profit advisory — shown for new farmers when crop is selected */}
+            {form.crop && isNewFarmer && form.countryCode && !form.crop.startsWith('OTHER') && (() => {
+              const sa = assessSeasonProfit({
+                cropCode: form.crop,
+                countryCode: form.countryCode,
+                goal: form.experienceLevel === 'new' ? 'profit' : '',
+                isNew: true,
+              });
+              // Only show the card when timing is suboptimal
+              if (sa.seasonFit === 'good') return null;
+              const isOkay = sa.seasonFit === 'okay';
+              const accent = isOkay ? '#EAB308' : '#F97316';
+              const bg = isOkay ? 'rgba(234,179,8,0.06)' : 'rgba(249,115,22,0.06)';
+              const border = isOkay ? 'rgba(234,179,8,0.15)' : 'rgba(249,115,22,0.15)';
+              const icon = isOkay ? '\uD83D\uDFE1' : '\uD83D\uDFE0';
+              return (
+                <div style={{ ...S.fieldWide, marginTop: '0.5rem' }}>
+                  <div style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', background: bg, border: `1px solid ${border}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.9rem' }}>{icon}</span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {t('seasonGuide.timingLabel')}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#E2E8F0', lineHeight: 1.4, marginBottom: '0.3rem' }}>
+                      {t(sa.messageKey)}
+                    </div>
+                    {sa.alternatives.length > 0 && (
+                      <div style={{ marginTop: '0.3rem', paddingTop: '0.3rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#F59E0B', marginBottom: '0.25rem' }}>
+                          {t('seasonGuide.betterNow')}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                          {sa.alternatives.map(alt => (
+                            <button
+                              key={alt.code}
+                              type="button"
+                              onClick={() => { setForm(f => ({ ...f, crop: alt.code })); setShowCropSearch(false); }}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                padding: '0.25rem 0.5rem', background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.08)', borderRadius: '7px',
+                                color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 500,
+                                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                              }}
+                            >
+                              <span>{(TOP_CROPS.find(tc => tc.code === alt.code) || {}).label || alt.code.charAt(0) + alt.code.slice(1).toLowerCase().replace(/_/g, ' ')}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Crop stage — only when crop is selected */}
             {form.crop && (
@@ -1138,6 +1376,22 @@ const S = {
     padding: '0.75rem 1.2rem', background: 'transparent', color: '#A1A1AA',
     border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', fontWeight: 600, fontSize: '0.9rem',
     cursor: 'pointer', minHeight: '52px', WebkitTapHighlightColor: 'transparent',
+  },
+  // Experience level
+  experienceBtn: {
+    display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+    padding: '1.1rem 1rem', minHeight: '72px', width: '100%', textAlign: 'left',
+    border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px',
+    cursor: 'pointer', background: '#1E293B', color: '#fff',
+    WebkitTapHighlightColor: 'transparent', transition: 'background 0.2s, border-color 0.2s',
+  },
+  experienceBtnIcon: { fontSize: '1.75rem', flexShrink: 0, marginTop: '0.1rem' },
+  experienceBtnTitle: { fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.2rem' },
+  experienceBtnDesc: { fontSize: '0.82rem', color: '#A1A1AA', lineHeight: 1.4 },
+  // Crop group labels
+  cropGroupLabel: {
+    fontSize: '0.72rem', fontWeight: 700, color: '#22C55E', textTransform: 'uppercase',
+    letterSpacing: '0.04em', marginBottom: '0.35rem', paddingLeft: '0.15rem',
   },
   // Top crops
   topCropGrid: {

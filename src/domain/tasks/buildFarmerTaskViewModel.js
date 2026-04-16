@@ -15,15 +15,17 @@ import { getTaskSeverity } from './getTaskSeverity.js';
 import { getTaskStateStyle } from './taskStateStyles.js';
 import { resolveFarmerText } from './farmerTextResolver.js';
 import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../../lib/taskPresentation.js';
-import { assertViewModel, assertAllTextLocalized, assertNoWeatherConflict } from './devAssertions.js';
+import { assertViewModel, assertAllTextLocalized, assertNoWeatherConflict, assertUrgencyConsistency } from './devAssertions.js';
 import { getAutopilotEnrichment } from '../../engine/autopilot/index.js';
 import { getNextTextKey, getSuccessTextKey } from '../../engine/autopilot/textKeys.js';
+import { resolveUrgency, getUrgencyStyle } from '../../engine/urgencyResolver.js';
+import { getTaskEconomicTip } from '../../engine/economicsSignal.js';
 
 /**
  * Schema version — bump to invalidate cached view models.
  * Any stored/cached task render data with a lower version should be discarded.
  */
-export const TASK_VIEWMODEL_SCHEMA_VERSION = 3;
+export const TASK_VIEWMODEL_SCHEMA_VERSION = 4;
 
 /**
  * Build a normalized, render-ready view model for a farmer task.
@@ -77,10 +79,29 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
 
   const whyText = enrichment?.whyKey ? t(enrichment.whyKey) : null;
   const riskText = enrichment?.riskKey ? t(enrichment.riskKey) : null;
+  const timingText = enrichment?.timingKey ? t(enrichment.timingKey) : null;
   const nextTextKey = enrichment ? getNextTextKey(enrichment.nextTaskType) : null;
   const nextText = nextTextKey ? t(nextTextKey) : null;
   const successKey = enrichment ? getSuccessTextKey(enrichment.ruleId) : 'success.general';
   const successText = t(successKey);
+
+  // ─── 5c. Urgency (centralized, spec §3) ──────────────────
+  const urgency = resolveUrgency({
+    actionKey,
+    priority,
+    severity,
+    weatherGuidance,
+    autopilotSeverity: enrichment?.severity || null,
+    cropStage,
+    isWeatherOverride: isWeatherOverride,
+  });
+  const urgencyStyle = getUrgencyStyle(urgency);
+
+  // ─── 5d. Economics tip (only if it adds value) ────────────
+  const economicTipKey = effectiveTask
+    ? getTaskEconomicTip(effectiveTask.title, effectiveTask.actionType)
+    : null;
+  const economicTip = economicTipKey ? t(economicTipKey) : null;
 
   // ─── 6. Assemble view model ───────────────────────────────
   const viewModel = {
@@ -115,11 +136,19 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
     // Autopilot intelligence
     whyText,                              // "Dry grain now to prevent mold."
     riskText,                             // "Risk: harvest may spoil if left damp."
+    timingText,                           // "Best done while conditions are dry."
     nextText,                             // "Next: Sort and clean your harvest."
     successText,                          // "Grain is safer now."
     nextTaskType: enrichment?.nextTaskType || null,
     autopilotRuleId: enrichment?.ruleId || null,
     autopilotConfidence: enrichment?.confidence || null,
+
+    // Urgency (centralized, spec §3)
+    urgency,                              // 'critical' | 'today' | 'this_week' | 'optional'
+    urgencyStyle,                         // { bg, border, text, accent, labelKey, dot }
+
+    // Economics (simple signal, spec §6)
+    economicTip,                          // "Drying protects sale quality." or null
 
     // Mode hint (layout only, not data)
     mode,
@@ -132,6 +161,7 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
   assertViewModel(viewModel, language);
   assertAllTextLocalized(viewModel, language);
   assertNoWeatherConflict(viewModel, weather);
+  assertUrgencyConsistency(viewModel);
 
   return viewModel;
 }

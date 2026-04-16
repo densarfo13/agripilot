@@ -3,7 +3,8 @@ import {
   ALL_CROPS, OTHER_CROP, CATEGORY_LABELS,
   getCropByCode, getCropLabel, getCropIcon, parseCropValue, buildOtherCropValue,
 } from '../utils/crops.js';
-import { recommendCrops, getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
+import { recommendCrops } from '../utils/cropRecommendations.js';
+import { getLocalizedCropList } from '../data/cropRegionCatalog.js';
 import { fetchCropSuggestions, saveLastCrop, getLastCrop } from '../utils/cropSuggestionCache.js';
 
 /**
@@ -81,6 +82,13 @@ export default function CropSelect({
 
   const recommended = recResult.recommendations;
   const hasRecommendations = recResult.hasContext && recommended.length > 0;
+
+  // Local crop codes for "Popular in your area" grouping in dropdown
+  const localCropCodes = useMemo(() => {
+    if (!countryCode) return new Set();
+    const { local } = getLocalizedCropList(countryCode);
+    return new Set(local.map(e => e.code));
+  }, [countryCode]);
 
   // ── Build learned custom crops as selectable entries ────
   const learnedCustomEntries = useMemo(() => {
@@ -262,7 +270,30 @@ export default function CropSelect({
               <div style={S.sectionHeader}>All crops</div>
             </>
           )}
-          {!search.trim() && !hasRecommendations && countryCode && (
+          {!search.trim() && !hasRecommendations && countryCode && localCropCodes.size > 0 && (
+            <>
+              <div style={S.sectionHeader}>Popular in your area</div>
+              {ALL_CROPS.filter(c => localCropCodes.has(c.code)).slice(0, 10).map(c => {
+                const isSelected = value?.toUpperCase() === c.code;
+                return (
+                  <div
+                    key={`local-${c.code}`}
+                    style={{ ...S.option, background: isSelected ? 'rgba(34,197,94,0.15)' : undefined }}
+                    onClick={() => selectCrop(c.code)}
+                    onMouseEnter={() => setHighlightIdx(-1)}
+                  >
+                    <span style={S.optionIcon}>{getCropIcon(c.code)}</span>
+                    <span style={S.optionName}>{c.name}</span>
+                    <span style={S.localBadge}>Local</span>
+                    {isSelected && <span style={S.check}>✓</span>}
+                  </div>
+                );
+              })}
+              <div style={S.divider} />
+              <div style={S.sectionHeader}>All crops</div>
+            </>
+          )}
+          {!search.trim() && !hasRecommendations && countryCode && localCropCodes.size === 0 && (
             <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.72rem', color: '#71717A', fontStyle: 'italic' }}>
               Add land details to get crop suggestions
             </div>
@@ -355,6 +386,10 @@ const S = {
   check: { color: '#22C55E', fontWeight: 700, fontSize: '0.9rem' },
   learnedBadge: {
     fontSize: '0.65rem', color: '#3B82F6', background: 'rgba(59,130,246,0.1)',
+    borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 600, whiteSpace: 'nowrap',
+  },
+  localBadge: {
+    fontSize: '0.65rem', color: '#22C55E', background: 'rgba(34,197,94,0.1)',
     borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 600, whiteSpace: 'nowrap',
   },
   noResults: { padding: '0.75rem', color: '#A1A1AA', fontSize: '0.85rem', textAlign: 'center' },

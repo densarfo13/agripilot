@@ -25,9 +25,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.drying.preventMold',
       riskKey: 'risk.drying.spoilageIfDelayed',
+      timingKey: 'timing.whileConditionsDry',
       nextTaskType: 'sort_clean',
       severity: 'caution',
       confidence: 'high',
+      urgency: 'today',
     },
   },
 
@@ -43,10 +45,12 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.rain.avoidDamage',
       riskKey: 'risk.rain.uncoveredHarvest',
+      timingKey: 'timing.beforeRainArrives',
       nextTaskType: 'dry_when_safe',
       severity: 'urgent',
       confidence: 'high',
       weatherReason: 'rain_expected',
+      urgency: 'critical',
     },
   },
 
@@ -59,10 +63,12 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.rain.protectBeforeDry',
       riskKey: 'risk.rain.dampHarvest',
+      timingKey: 'timing.waitForDryWeather',
       nextTaskType: 'dry_when_safe',
       severity: 'urgent',
       confidence: 'high',
       weatherReason: 'rain_now',
+      urgency: 'critical',
     },
   },
 
@@ -78,10 +84,12 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.water.reduceCropStress',
       riskKey: 'risk.water.yieldDropIfDry',
+      timingKey: 'timing.heatIsHighToday',
       nextTaskType: 'check_crop',
       severity: 'caution',
       confidence: 'high',
       weatherReason: 'dry_hot',
+      urgency: 'today',
     },
   },
 
@@ -93,9 +101,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.water.supportGrowth',
       riskKey: 'risk.water.stuntedGrowth',
+      timingKey: 'timing.earlyThisWeek',
       nextTaskType: 'check_crop',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -110,9 +120,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.pest.catchEarly',
       riskKey: 'risk.pest.spreadFast',
+      timingKey: 'timing.actNowBeforeSpread',
       nextTaskType: 'update_pest_status',
       severity: 'urgent',
       confidence: 'high',
+      urgency: 'critical',
     },
   },
   {
@@ -122,9 +134,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.pest.catchEarly',
       riskKey: 'risk.pest.spreadFast',
+      timingKey: 'timing.regularCheckProtects',
       nextTaskType: 'update_pest_status',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -139,10 +153,12 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.spray.protectCrop',
       riskKey: 'risk.spray.driftInWind',
+      timingKey: 'timing.waitForCalmWind',
       nextTaskType: 'check_crop',
       severity: 'caution',
       confidence: 'high',
       weatherReason: 'windy',
+      urgency: 'this_week',
     },
   },
   {
@@ -152,9 +168,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.spray.protectCrop',
       riskKey: 'risk.spray.damageSpread',
+      timingKey: 'timing.bestInCalmConditions',
       nextTaskType: 'check_crop',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -168,9 +186,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.weed.reduceCompetition',
       riskKey: 'risk.weed.yieldReduction',
+      timingKey: 'timing.beforeWeedsGrow',
       nextTaskType: 'check_crop',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -184,9 +204,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.fertilize.boostNutrients',
       riskKey: 'risk.fertilize.poorGrowth',
+      timingKey: 'timing.feedDuringGrowth',
       nextTaskType: 'check_crop',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -201,10 +223,12 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.harvest.beforeRain',
       riskKey: 'risk.harvest.rainDamage',
+      timingKey: 'timing.beforeRainTomorrow',
       nextTaskType: 'dry_harvest',
       severity: 'urgent',
       confidence: 'high',
       weatherReason: 'rain_expected',
+      urgency: 'critical',
     },
   },
   {
@@ -214,9 +238,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.harvest.preserveQuality',
       riskKey: 'risk.harvest.overRipening',
+      timingKey: 'timing.harvestWhenReady',
       nextTaskType: 'dry_harvest',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'today',
     },
   },
 
@@ -231,9 +257,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.plant.rightTiming',
       riskKey: 'risk.plant.missWindow',
+      timingKey: 'timing.beforePlantingWindow',
       nextTaskType: 'water_crop',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -247,9 +275,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.landPrep.readySoil',
       riskKey: 'risk.landPrep.delayedPlanting',
+      timingKey: 'timing.beforePlantingWindow',
       nextTaskType: 'plant_crop',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -263,9 +293,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.sort.betterPrice',
       riskKey: 'risk.sort.qualityLoss',
+      timingKey: 'timing.soonAfterHarvest',
       nextTaskType: 'store_harvest',
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'this_week',
     },
   },
 
@@ -279,9 +311,11 @@ export const AUTOPILOT_RULES = [
     result: {
       whyKey: 'why.store.preventLoss',
       riskKey: 'risk.store.postHarvestLoss',
+      timingKey: 'timing.beforeQualityDrops',
       nextTaskType: null,
       severity: 'normal',
       confidence: 'medium',
+      urgency: 'optional',
     },
   },
 ];

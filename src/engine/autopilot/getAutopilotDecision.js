@@ -20,10 +20,12 @@ const DEFAULT_ENRICHMENT = {
   ruleId: null,
   whyKey: null,
   riskKey: null,
+  timingKey: null,
   nextTaskType: null,
   severity: 'normal',
   confidence: 'medium',
   weatherReason: null,
+  urgency: null,
 };
 
 /**
@@ -48,10 +50,12 @@ export function getAutopilotEnrichment({ task, cropStage, weather, priority }) {
         ruleId: rule.id,
         whyKey: rule.result.whyKey,
         riskKey: rule.result.riskKey,
+        timingKey: rule.result.timingKey || null,
         nextTaskType: rule.result.nextTaskType,
         severity: rule.result.severity || 'normal',
         confidence: rule.result.confidence || 'medium',
         weatherReason: rule.result.weatherReason || null,
+        urgency: rule.result.urgency || null,
       };
     }
   }

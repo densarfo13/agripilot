@@ -22,6 +22,7 @@ export default function CompletionCard({
   t,
   onContinue,
   onLater,
+  onFollowUp,
   variant,
 }) {
   const cs = completionState;
@@ -115,6 +116,28 @@ export default function CompletionCard({
           <div style={S.progressChip}>{progressText}</div>
         )}
 
+        {/* Follow-up question (spec §4) */}
+        {cs.followUp && (
+          <div style={S.followUpWrap} data-testid="follow-up-question">
+            <div style={S.followUpQuestion}>{t(cs.followUp.questionKey)}</div>
+            <div style={S.followUpOptions}>
+              {cs.followUp.options.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    safeTrackEvent('followup_answered', { value: opt.value, type: cs.followUp.type });
+                    onFollowUp?.({ value: opt.value, status: opt.status });
+                  }}
+                  style={S.followUpBtn}
+                >
+                  {t(opt.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* C. Next step preview */}
         {cs.hasNext && cs.nextTaskTitle && (
           <div style={S.nextPreview}>
@@ -190,6 +213,28 @@ export default function CompletionCard({
       {/* G. Progress */}
       {progressText && (
         <div style={S.progressChipCompact}>{progressText}</div>
+      )}
+
+      {/* Follow-up question (spec §4) */}
+      {cs.followUp && (
+        <div style={S.followUpWrap} data-testid="follow-up-question">
+          <div style={S.followUpQuestion}>{t(cs.followUp.questionKey)}</div>
+          <div style={S.followUpOptions}>
+            {cs.followUp.options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  safeTrackEvent('followup_answered', { value: opt.value, type: cs.followUp.type });
+                  onFollowUp?.({ value: opt.value, status: opt.status });
+                }}
+                style={S.followUpBtn}
+              >
+                {t(opt.labelKey)}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* C. Next step preview */}
@@ -361,6 +406,40 @@ const S = {
     fontWeight: 600,
     cursor: 'pointer',
     minHeight: '44px',
+    WebkitTapHighlightColor: 'transparent',
+  },
+
+  // ═══ Follow-up (spec §4) ═══
+  followUpWrap: {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    borderRadius: '14px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  followUpQuestion: {
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: '#EAF2FF',
+    marginBottom: '0.5rem',
+    textAlign: 'center',
+  },
+  followUpOptions: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.375rem',
+    justifyContent: 'center',
+  },
+  followUpBtn: {
+    padding: '0.375rem 0.75rem',
+    borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.03)',
+    color: '#9FB3C8',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: '36px',
     WebkitTapHighlightColor: 'transparent',
   },
 

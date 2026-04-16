@@ -20,6 +20,8 @@ import { getFarmTasks } from '../lib/api.js';
 import { getCropLabel } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
+import { calculateMomentum } from '../engine/momentumCalculator.js';
+import { getStageEconomics } from '../engine/economicsSignal.js';
 
 const STAGE_ORDER = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -62,6 +64,18 @@ export default function FarmerProgressPage() {
   // Pick status headline + icon based on progress
   const statusKey = pct >= 60 ? 'progress.statusGreat' : pct >= 1 ? 'progress.statusGood' : 'progress.statusStart';
   const statusIcon = pct >= 60 ? '\u2728' : pct >= 1 ? '\uD83D\uDCAA' : '\uD83C\uDF31';
+
+  // Momentum signal (spec §7)
+  const momentum = calculateMomentum({
+    completedToday: completedCount,
+    remainingToday: taskCount,
+    totalTasks: totalTasks,
+    cropStage,
+    completionPercent: pct,
+  });
+
+  // Stage economics (spec §6)
+  const stageEcon = cropStage ? getStageEconomics(cropStage) : null;
 
   if (!profile) return null;
 
@@ -188,6 +202,27 @@ export default function FarmerProgressPage() {
               </span>
             </div>
           </div>
+
+          {/* ═══ 6. MOMENTUM / STREAK (spec §7) ═══ */}
+          {momentum.streakDays > 0 && (
+            <div style={S.momentumCard} data-testid="momentum-section">
+              <span style={S.momentumIcon}>{momentum.streakDays >= 3 ? '\uD83D\uDD25' : '\u2B50'}</span>
+              <div style={S.momentumContent}>
+                <div style={S.momentumTitle}>{t(momentum.momentumTextKey)}</div>
+                {momentum.stageEncouragementKey && (
+                  <div style={S.momentumSub}>{t(momentum.stageEncouragementKey)}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ 7. STAGE ECONOMICS (spec §6) ═══ */}
+          {stageEcon && stageEcon.tipKey && (
+            <div style={S.econCard} data-testid="economics-section">
+              <span style={S.econIcon}>{'\uD83D\uDCB0'}</span>
+              <div style={S.econText}>{t(stageEcon.tipKey)}</div>
+            </div>
+          )}
 
           {/* Offline note */}
           {!isOnline && (
@@ -426,6 +461,32 @@ const S = {
     fontWeight: 500,
     lineHeight: 1.4,
   },
+  // ─── Momentum card (spec §7) ───
+  momentumCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '1rem 1.25rem',
+    borderRadius: '16px',
+    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(34,197,94,0.14)',
+  },
+  momentumIcon: { fontSize: '1.5rem', flexShrink: 0 },
+  momentumContent: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
+  momentumTitle: { fontSize: '0.875rem', fontWeight: 700, color: '#22C55E' },
+  momentumSub: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.4 },
+  // ─── Economics card (spec §6) ───
+  econCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.625rem',
+    padding: '0.75rem 1rem',
+    borderRadius: '12px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  econIcon: { fontSize: '1.125rem', flexShrink: 0 },
+  econText: { fontSize: '0.8125rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.4 },
   offlineNote: {
     fontSize: '0.75rem',
     color: 'rgba(245,158,11,0.6)',

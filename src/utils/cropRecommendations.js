@@ -17,11 +17,15 @@
  */
 
 import { getCropByCode } from './crops.js';
+import { getCountryCropCodes, getRegionForCountry, getCropsForRegion } from '../data/cropRegionCatalog.js';
 
-// ── Country-level defaults ──────────────────────────────────
-const COUNTRY_CROPS = {
-  KE: ['MAIZE', 'WHEAT', 'TEA', 'COFFEE', 'SUGARCANE', 'RICE', 'BEAN', 'SORGHUM'],
-  TZ: ['MAIZE', 'RICE', 'COFFEE', 'COTTON', 'TEA', 'CASSAVA', 'BANANA', 'SORGHUM'],
+// ── Country display names (for recommendation reasons) ──────
+const COUNTRY_NAMES = {
+  KE: 'Kenya', TZ: 'Tanzania', UG: 'Uganda', NG: 'Nigeria', GH: 'Ghana',
+  ET: 'Ethiopia', ZA: 'South Africa', ZM: 'Zambia', ZW: 'Zimbabwe',
+  MW: 'Malawi', MZ: 'Mozambique', CM: 'Cameroon', RW: 'Rwanda',
+  SN: 'Senegal', ML: 'Mali', CI: "Côte d'Ivoire", BF: 'Burkina Faso',
+  NE: 'Niger', CD: 'DR Congo', BW: 'Botswana',
 };
 
 // ── Season-crop affinity ────────────────────────────────────
@@ -77,11 +81,20 @@ export function recommendCrops(ctx = {}) {
     }
   }
 
-  // 1. Country
+  // 1. Country (from catalog — supports all African countries)
   const cc = country?.toUpperCase();
-  if (cc && COUNTRY_CROPS[cc]) {
-    addCrops(COUNTRY_CROPS[cc], `Common in ${cc === 'KE' ? 'Kenya' : cc === 'TZ' ? 'Tanzania' : cc}`);
+  const countryCrops = cc ? getCountryCropCodes(cc) : [];
+  if (countryCrops.length > 0) {
+    addCrops(countryCrops, `Common in ${COUNTRY_NAMES[cc] || cc}`);
     contextUsed.push('country');
+    // Also add regional crops with lower implicit weight (added once vs country crops)
+    const regionKey = getRegionForCountry(cc);
+    if (regionKey) {
+      const regionalCodes = getCropsForRegion(regionKey).map(e => e.code).filter(c => !countryCrops.includes(c));
+      if (regionalCodes.length > 0) {
+        addCrops(regionalCodes, `Grown in the region`);
+      }
+    }
   }
 
   // 2. Season
@@ -174,7 +187,8 @@ export function recommendCrops(ctx = {}) {
 
 /**
  * Quick helper: get recommended crop codes for a country.
+ * Now backed by the shared crop region catalog (supports all African countries).
  */
 export function getCountryRecommendedCodes(countryCode) {
-  return COUNTRY_CROPS[countryCode?.toUpperCase()] || [];
+  return getCountryCropCodes(countryCode);
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useFarmStore } from '../store/farmStore.js';
@@ -18,6 +18,8 @@ import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
 import FarmerUuidBadge from '../components/FarmerUuidBadge.jsx';
 import { getFarmerLifecycleState, FARMER_STATE, canShowScore, canStartSeason } from '../utils/farmerLifecycle.js';
+import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
+import { calculateMomentum } from '../engine/momentumCalculator.js';
 
 /** Collapsible section — keeps secondary content below the fold */
 function ExpandableSection({ title, icon, children, testId }) {
@@ -256,6 +258,35 @@ export default function FarmerDashboardPage() {
         .catch(() => {}); // tasks feed is supplemental
     }
   }, [isApproved, user?.farmerId]);
+
+  // Task view model for context-aware display (WHY/TIMING/RISK — spec §8)
+  const taskViewModel = useMemo(() => {
+    if (!nextTask || !setupComplete) return null;
+    const cropStage = farmProfile?.cropStage || farmProfile?.stage || '';
+    return buildFarmerTaskViewModel({
+      task: nextTask,
+      action: null,
+      weatherGuidance: null,
+      language: lang,
+      t,
+      mode: 'simple',
+      cropStage,
+      weather,
+    });
+  }, [nextTask, setupComplete, farmProfile, lang, t, weather]);
+
+  // Momentum signal (spec §7)
+  const momentum = useMemo(() => {
+    if (!setupComplete) return null;
+    const cropStage = farmProfile?.cropStage || farmProfile?.stage || '';
+    return calculateMomentum({
+      completedToday: 0,
+      remainingToday: nextTask ? 1 : 0,
+      totalTasks: 1,
+      cropStage,
+      completionPercent: 0,
+    });
+  }, [setupComplete, farmProfile, nextTask]);
 
   return (
     <div style={styles.container}>
@@ -507,6 +538,25 @@ export default function FarmerDashboardPage() {
                   )}
                   {/* 3. Next Step — single instruction */}
                   <div style={S.nextStepText} data-testid="next-step-text">{nextStepText}</div>
+                  {/* Context lines — WHY / TIMING / RISK (spec §8) */}
+                  {taskViewModel?.whyText && (
+                    <div style={S.contextLine} data-testid="why-line">
+                      <span style={S.contextDot(taskViewModel.urgencyStyle?.accent || '#22C55E')} />
+                      <span>{taskViewModel.whyText}</span>
+                    </div>
+                  )}
+                  {taskViewModel?.timingText && (
+                    <div style={S.contextLine} data-testid="timing-line">
+                      <span style={S.contextDot('#0EA5E9')} />
+                      <span>{taskViewModel.timingText}</span>
+                    </div>
+                  )}
+                  {taskViewModel?.riskText && (
+                    <div style={{ ...S.contextLine, color: '#F59E0B' }} data-testid="risk-line">
+                      <span style={S.contextDot('#F59E0B')} />
+                      <span>{taskViewModel.riskText}</span>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -538,6 +588,9 @@ export default function FarmerDashboardPage() {
                     <div style={{ flex: 1 }}>
                       <div style={S.progressLabel}>{t('home.seasonProgress')}</div>
                       <div style={S.progressSub}>{activityCount} {activityCount !== 1 ? t('home.updatesLogged') : t('home.updateLogged')}</div>
+                      {momentum?.momentumTextKey && (
+                        <div style={S.momentumText} data-testid="momentum-signal">{t(momentum.momentumTextKey)}</div>
+                      )}
                     </div>
                   </div>
                   {/* Last Activity */}
@@ -795,6 +848,21 @@ const S = {
   },
   heroTemp: { fontSize: '1.1rem', fontWeight: 700, color: '#FFFFFF' },
   heroRain: { fontSize: '0.7rem', color: '#0EA5E9', marginTop: '0.1rem' },
+
+  // Context lines (spec §8)
+  contextLine: {
+    display: 'flex', alignItems: 'center', gap: '0.4rem',
+    marginTop: '0.35rem', fontSize: '0.8rem', color: '#9FB3C8', lineHeight: 1.4,
+    textAlign: 'left',
+  },
+  contextDot: (color) => ({
+    width: '6px', height: '6px', borderRadius: '50%',
+    background: color, flexShrink: 0,
+  }),
+  momentumText: {
+    fontSize: '0.8rem', color: '#22C55E', fontWeight: 600,
+    marginTop: '0.35rem',
+  },
 
   // Primary action
   actionSection: { textAlign: 'center', marginBottom: '1.25rem' },

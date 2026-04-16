@@ -1017,6 +1017,12 @@ const T = {
   'wizard.backToTopCrops': {
     en: 'Back to top crops', fr: 'Retour aux cultures principales', sw: 'Rudi kwa mazao bora', ha: 'Koma ga manyan amfani', tw: 'San kɔ nnɔbae a edi kan',
   },
+  'wizard.popularInArea': {
+    en: 'Popular in your area', fr: 'Populaire dans votre région', sw: 'Maarufu katika eneo lako', ha: 'Shahararru a yankinku', tw: 'Ɛyɛ adwuma wɔ wo mpɔtam',
+  },
+  'wizard.moreCrops': {
+    en: 'More crops', fr: 'Plus de cultures', sw: 'Mazao zaidi', ha: 'Ƙarin amfani', tw: 'Nnɔbae pii',
+  },
   'wizard.selectCrop': {
     en: 'Select a crop', fr: 'Choisissez une culture', sw: 'Chagua zao', ha: 'Zaɓi amfani', tw: 'Yi nnɔbae bi',
   },
@@ -1121,6 +1127,327 @@ const T = {
   },
   'wizard.pleaseComplete': {
     en: 'Please complete: {fields}. Go back to fill in missing fields.', fr: 'Veuillez compléter : {fields}. Revenez remplir les champs manquants.', sw: 'Tafadhali kamilisha: {fields}. Rudi ujaze sehemu zinazokosekana.', ha: 'Da fatan ku cika: {fields}. Ku koma ku cika wuraren da suka ɓace.', tw: 'Yɛsrɛ wo wie: {fields}. San kɔ na hyɛ nea aka no ma.',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  EXPERIENCE LEVEL + NEW FARMER RECOMMENDATION
+  // ═══════════════════════════════════════════════════════════
+
+  'wizard.whatDescribesYou': {
+    en: 'What best describes you?', fr: 'Comment vous décrivez-vous ?', sw: 'Nini kinakuelezea vizuri?', ha: 'Mene ne ya fi bayyana ku?', tw: 'Dɛn na ɛkyerɛ wo yiye?',
+  },
+  'wizard.experienceSubtitle': {
+    en: 'This helps us guide you better.', fr: 'Cela nous aide à mieux vous guider.', sw: 'Hii inatusaidia kukuongoza vizuri.', ha: 'Wannan yana taimaka mana mu jagorance ku.', tw: 'Eyi bɛboa yɛn akyerɛ wo kwan pa.',
+  },
+  'wizard.imNewToFarming': {
+    en: "I'm new to farming", fr: 'Je suis nouveau en agriculture', sw: 'Mimi ni mpya katika kilimo', ha: 'Sabon noma ne ni', tw: 'Meyɛ ɔfoforo wɔ adwumayɛ mu',
+  },
+  'wizard.imNewToFarmingDesc': {
+    en: "I'd like help choosing what to grow.", fr: "J'aimerais de l'aide pour choisir quoi cultiver.", sw: 'Ningependa msaada wa kuchagua nini cha kupanda.', ha: 'Ina son taimako wajen zaɓar abinda zan noma.', tw: 'Mepɛ mmoa afa nea mɛdua ho.',
+  },
+  'wizard.iAlreadyFarm': {
+    en: 'I already farm', fr: 'Je cultive déjà', sw: 'Tayari ninalima', ha: 'Ina noma ne', tw: 'Meyɛ adwuma dada',
+  },
+  'wizard.iAlreadyFarmDesc': {
+    en: 'I know what I grow and want to get started.', fr: 'Je sais ce que je cultive et je veux commencer.', sw: 'Ninajua ninachopanda na nataka kuanza.', ha: 'Na san abinda nake noma kuma ina son in fara.', tw: 'Minim nea medua na mepɛ sɛ mehyɛ aseɛ.',
+  },
+
+  // ── New farmer recommendation flow ──
+  'recommend.title': {
+    en: 'Our suggestions for you', fr: 'Nos suggestions pour vous', sw: 'Mapendekezo yetu kwako', ha: 'Shawarwarinmu a gare ku', tw: 'Yɛn nkyerɛase ma wo',
+  },
+  'recommend.subtitle': {
+    en: 'Based on your answers, these crops may work well for you.', fr: 'Selon vos réponses, ces cultures pourraient bien fonctionner pour vous.', sw: 'Kulingana na majibu yako, mazao haya yanaweza kukufaa.', ha: 'Bisa amsoshin ku, waɗannan amfanin gona na iya dacewa da ku.', tw: 'Sɛ wo mmuaeɛ te no, nnɔbaeɛ yi bɛyɛ adwuma ama wo.',
+  },
+  'recommend.bestMatch': {
+    en: 'BEST MATCH', fr: 'MEILLEUR CHOIX', sw: 'BORA ZAIDI', ha: 'MAFI DACEWA', tw: 'EYƐ PAPA',
+  },
+  'recommend.useThisCrop': {
+    en: 'Use this suggestion', fr: 'Utiliser cette suggestion', sw: 'Tumia pendekezo hili', ha: 'Yi amfani da wannan shawara', tw: 'Fa saa nkyerɛase yi di dwuma',
+  },
+  'recommend.chooseMyself': {
+    en: 'I\'ll choose myself', fr: 'Je choisirai moi-même', sw: 'Nitachagua mwenyewe', ha: 'Zan zaɓa kaina', tw: 'Me ankasa na mɛpaw',
+  },
+  'recommend.skipGuide': {
+    en: 'Skip this guide', fr: 'Passer ce guide', sw: 'Ruka mwongozo huu', ha: 'Tsallake wannan jagora', tw: 'Twa saa nkyerɛase yi mu',
+  },
+  'recommend.useThisPlan': {
+    en: 'Use this plan', fr: 'Utiliser ce plan', sw: 'Tumia mpango huu', ha: 'Yi amfani da wannan shiri', tw: 'Fa nhyehyɛe yi di dwuma',
+  },
+  'recommend.recommendedForYou': {
+    en: 'Recommended for you', fr: 'Recommandé pour vous', sw: 'Imependekezwa kwako', ha: 'An ba da shawara a gare ku', tw: 'Wɔakyerɛ wo eyi',
+  },
+  'recommend.alsoGoodOptions': {
+    en: 'Also good options', fr: 'Aussi de bons choix', sw: 'Chaguo nzuri pia', ha: 'Zaɓuɓɓuka masu kyau kuma', tw: 'Nhyehyɛe pa bi nso',
+  },
+  'recommend.suggestedStartingSize': {
+    en: 'Suggested starting size', fr: 'Taille de départ suggérée', sw: 'Ukubwa wa kuanza uliopendekezwa', ha: 'Girman farawa da aka ba da shawara', tw: 'Kɛseɛ a wɔkyerɛ sɛ wode hyɛ aseɛ',
+  },
+
+  // ── Structured recommendation reasons (shown as tags) ──
+  'recommendReason.goalFit.home_food': {
+    en: 'Feeds your family', fr: 'Nourrit votre famille', sw: 'Hulisha familia yako', ha: 'Ya ciyar da iyali', tw: 'Ɛma wo abusua aduane',
+  },
+  'recommendReason.goalFit.local_sales': {
+    en: 'Sells at market', fr: 'Se vend au marché', sw: 'Huuzika sokoni', ha: 'Ana sayuwa a kasuwa', tw: 'Ɛtɔn wɔ dwam',
+  },
+  'recommendReason.goalFit.profit': {
+    en: 'Good for business', fr: 'Bon pour le commerce', sw: 'Nzuri kwa biashara', ha: 'Mai kyau don kasuwanci', tw: 'Ɛyɛ papa ma adwumayɛ',
+  },
+  'recommendReason.sizeFit.small': {
+    en: 'Works on small land', fr: 'Fonctionne sur petit terrain', sw: 'Inafaa kwa ardhi ndogo', ha: 'Ya dace da ƙaramin ƙasa', tw: 'Ɛyɛ adwuma wɔ asase ketewa so',
+  },
+  'recommendReason.sizeFit.medium': {
+    en: 'Fits medium land', fr: 'Convient à un terrain moyen', sw: 'Inafaa ardhi ya wastani', ha: 'Ya dace da matsakaicin ƙasa', tw: 'Ɛfata asase ntam',
+  },
+  'recommendReason.sizeFit.large': {
+    en: 'Good for large land', fr: 'Bon pour grand terrain', sw: 'Nzuri kwa ardhi kubwa', ha: 'Mai kyau don babban ƙasa', tw: 'Ɛyɛ papa ma asase kɛseɛ',
+  },
+  'recommendReason.budgetFit.low': {
+    en: 'Low cost to start', fr: 'Faible coût de départ', sw: 'Gharama ndogo kuanza', ha: 'Ƙaramin farashi don farawa', tw: 'Ne bo nyɛ den',
+  },
+  'recommendReason.budgetFit.medium': {
+    en: 'Moderate investment', fr: 'Investissement modéré', sw: 'Uwekezaji wa wastani', ha: 'Matsakaicin saka jari', tw: 'Sika a wobɛhyɛ mu nyɛ pii',
+  },
+  'recommendReason.budgetFit.high': {
+    en: 'Worth the investment', fr: 'Vaut l\'investissement', sw: 'Inastahili uwekezaji', ha: 'Ya cancanta saka jari', tw: 'Ɛfata sɛ wode sika hyɛ mu',
+  },
+  'recommendReason.localCrop': {
+    en: 'Grown in your area', fr: 'Cultivé dans votre région', sw: 'Hukuzwa eneo lako', ha: 'Ana noma shi a yankin ku', tw: 'Wɔdua no wɔ wo mpɔtam',
+  },
+  'recommendReason.beginnerFriendly': {
+    en: 'Easy for beginners', fr: 'Facile pour débutants', sw: 'Rahisi kwa waanziaji', ha: 'Mai sauƙi ga masu farawa', tw: 'Ɛnyɛ den ma ahyɛasefoɔ',
+  },
+  'recommendReason.complexCrop': {
+    en: 'Needs experience', fr: 'Nécessite de l\'expérience', sw: 'Inahitaji uzoefu', ha: 'Yana buƙatar kwarewa', tw: 'Ɛhia osuanfoɔ',
+  },
+  'recommendReason.preferredCrop': {
+    en: 'Your preference', fr: 'Votre préférence', sw: 'Upendeleo wako', ha: 'Zaɓin ku', tw: 'Wo pɛsɛmenkomiadeɛ',
+  },
+  'recommendReason.stapleCrop': {
+    en: 'Widely grown staple', fr: 'Culture de base répandue', sw: 'Zao kuu linalokuzwa sana', ha: 'Babban amfanin gona', tw: 'Nnɔbae titiriw a wɔdua no pii',
+  },
+  'recommendReason.startSmaller': {
+    en: 'Start with a smaller area — you can expand as you learn.', fr: 'Commencez petit — vous pourrez agrandir en apprenant.', sw: 'Anza na eneo dogo — unaweza kupanua unapojifunza.', ha: 'Fara da ƙaramin ƙasa — za ku iya faɗaɗa yayin da kuke koyo.', tw: 'Hyɛ aseɛ ketewa — wobɛtumi atrɛw sɛ wosua.',
+  },
+  'recommendReason.homeFoodSmall': {
+    en: 'A small plot is plenty to feed your family.', fr: 'Un petit terrain suffit pour nourrir votre famille.', sw: 'Shamba dogo linatosha kulisha familia yako.', ha: 'Ƙaramin gona ya isa don ciyar da iyali.', tw: 'Asase ketewa bɛso ama wo abusua.',
+  },
+  'recommendReason.matchesYourLand': {
+    en: 'Matches the land you have.', fr: 'Correspond à votre terrain.', sw: 'Inalingana na ardhi yako.', ha: 'Ya dace da ƙasar ku.', tw: 'Ɛne wo asase hyia.',
+  },
+  'recommendReason.goodSeason': {
+    en: 'Good time to plant', fr: 'Bon moment pour planter', sw: 'Wakati mzuri wa kupanda', ha: 'Lokaci mai kyau don shuka', tw: 'Bere pa sɛ wobɛdua',
+  },
+  'recommendReason.poorSeason': {
+    en: 'Not the best time to plant', fr: 'Pas le meilleur moment', sw: 'Si wakati bora wa kupanda', ha: 'Ba lokacin da ya fi dacewa ba', tw: 'Ɛnyɛ bere pa sɛ wobɛdua',
+  },
+
+  // ── Season & profit guidance ──
+  'seasonGuide.timingLabel': {
+    en: 'Season timing', fr: 'Saison', sw: 'Msimu', ha: 'Yanayi', tw: 'Bere',
+  },
+  'seasonGuide.goodTimeHighProfit': {
+    en: 'Good time to start this crop — strong profit potential this season.', fr: 'Bon moment pour cette culture — fort potentiel de profit cette saison.', sw: 'Wakati mzuri wa kuanza zao hili — uwezekano mkubwa wa faida msimu huu.', ha: 'Lokaci mai kyau don wannan amfanin gona — babban damar riba wannan yanayi.', tw: 'Bere pa sɛ wobɛhyɛ aseɛ — mfaso kɛseɛ wɔ saa bere yi.',
+  },
+  'seasonGuide.goodTimeMediumProfit': {
+    en: 'Good time to plant — moderate chance of profit if managed well.', fr: 'Bon moment pour planter — chance modérée de profit avec bonne gestion.', sw: 'Wakati mzuri wa kupanda — nafasi ya wastani ya faida ukisimamiwa vizuri.', ha: 'Lokaci mai kyau don shuka — matsakaicin damar riba idan aka kula da shi.', tw: 'Bere pa sɛ wobɛdua — mfaso kakra bi sɛ woyɛ no yiye.',
+  },
+  'seasonGuide.goodTimeLowProfit': {
+    en: 'Good time to plant — mostly for food, not a strong profit crop right now.', fr: 'Bon moment pour planter — surtout pour l\'alimentation, pas très rentable.', sw: 'Wakati mzuri wa kupanda — zaidi kwa chakula, si zao la faida sana sasa.', ha: 'Lokaci mai kyau don shuka — mafi yawa don abinci, ba amfanin gona mai riba sosai ba.', tw: 'Bere pa sɛ wobɛdua — ɛyɛ papa ma aduane, ɛnyɛ mfaso kɛseɛ seesei.',
+  },
+  'seasonGuide.okayTimeSomeProfit': {
+    en: 'You can still plant now, but it is not the ideal season — moderate chance of success.', fr: 'Vous pouvez planter maintenant, mais ce n\'est pas la saison idéale.', sw: 'Unaweza kupanda sasa, lakini si msimu bora — nafasi ya wastani.', ha: 'Har yanzu za ku iya shuka, amma ba lokacin da ya fi dacewa ba.', tw: 'Wobɛtumi adua seesei, nanso ɛnyɛ bere a ɛfata paa.',
+  },
+  'seasonGuide.okayTimeLowProfit': {
+    en: 'Planting now is possible but not ideal — profit may be limited. Consider alternatives below.', fr: 'Planter maintenant est possible mais pas idéal — le profit pourrait être limité.', sw: 'Kupanda sasa kunawezekana lakini si bora — faida inaweza kuwa ndogo.', ha: 'Shuka yanzu yana yiwuwa amma ba mafi kyau ba — riba na iya zama ƙarama.', tw: 'Wobɛtumi adua seesei nanso ɛnyɛ papa — mfaso bɛyɛ ketewa.',
+  },
+  'seasonGuide.poorTime': {
+    en: 'Not the best time for this crop — better options may be available now.', fr: 'Pas le meilleur moment pour cette culture — de meilleures options existent.', sw: 'Si wakati bora kwa zao hili — chaguo bora zinaweza kupatikana sasa.', ha: 'Ba lokacin da ya fi dacewa ba don wannan amfanin gona.', tw: 'Ɛnyɛ bere pa ma nnɔbae yi — nhyehyɛe pa bi wɔ hɔ seesei.',
+  },
+  'seasonGuide.poorTimeNewFarmer': {
+    en: 'Not the best time to start this crop. As a new farmer, starting with a well-timed crop gives you the best chance. Try one of these instead.', fr: 'Pas le meilleur moment pour commencer cette culture. En tant que nouveau fermier, choisir une culture bien synchronisée vous donne les meilleures chances.', sw: 'Si wakati bora wa kuanza zao hili. Kama mkulima mpya, kuanza na zao lenye msimu mzuri kunakupa nafasi bora.', ha: 'Ba lokacin da ya fi dacewa ba don fara wannan amfanin gona. A matsayin sabon manomi, fara da amfanin gona a lokacin da ya dace.', tw: 'Ɛnyɛ bere pa sɛ wobɛhyɛ aseɛ dua nnɔbae yi. Sɛ woyɛ okuafoɔ foforɔ a, hyɛ aseɛ dua nnɔbae a ɛbere fata.',
+  },
+  'seasonGuide.betterNow': {
+    en: 'Better options for now:', fr: 'Meilleures options actuelles :', sw: 'Chaguo bora kwa sasa:', ha: 'Mafi kyawun zaɓuɓɓuka a yanzu:', tw: 'Nhyehyɛe pa a ɛwɔ hɔ seesei:',
+  },
+  'seasonGuide.fit.good': {
+    en: 'Good timing', fr: 'Bon timing', sw: 'Wakati mzuri', ha: 'Lokaci mai kyau', tw: 'Bere pa',
+  },
+  'seasonGuide.fit.okay': {
+    en: 'Moderate timing', fr: 'Timing moyen', sw: 'Wakati wa wastani', ha: 'Matsakaicin lokaci', tw: 'Bere a ɛfata kakra',
+  },
+  'seasonGuide.fit.poor': {
+    en: 'Poor timing', fr: 'Mauvais timing', sw: 'Wakati mbaya', ha: 'Lokaci mara kyau', tw: 'Bere a ɛnfata',
+  },
+  'seasonGuide.profit.high': {
+    en: 'High profit potential', fr: 'Fort potentiel de profit', sw: 'Faida kubwa', ha: 'Babban damar riba', tw: 'Mfaso kɛseɛ',
+  },
+  'seasonGuide.profit.medium': {
+    en: 'Moderate profit', fr: 'Profit modéré', sw: 'Faida ya wastani', ha: 'Matsakaicin riba', tw: 'Mfaso kakra',
+  },
+  'seasonGuide.profit.low': {
+    en: 'Low profit', fr: 'Faible profit', sw: 'Faida ndogo', ha: 'Ƙaramin riba', tw: 'Mfaso ketewa',
+  },
+  'seasonGuide.risk.low': {
+    en: 'Low risk', fr: 'Risque faible', sw: 'Hatari ndogo', ha: 'Ƙaramin haɗari', tw: 'Asiane ketewa',
+  },
+  'seasonGuide.risk.medium': {
+    en: 'Medium risk', fr: 'Risque moyen', sw: 'Hatari ya wastani', ha: 'Matsakaicin haɗari', tw: 'Asiane ntam',
+  },
+  'seasonGuide.risk.high': {
+    en: 'High risk', fr: 'Risque élevé', sw: 'Hatari kubwa', ha: 'Babban haɗari', tw: 'Asiane kɛseɛ',
+  },
+
+  'recommend.suggestedSize': {
+    en: 'Suggested starting size: {size}', fr: 'Taille de départ suggérée : {size}', sw: 'Ukubwa wa kuanza uliopendekezwa: {size}', ha: 'Girman farawa da aka ba da shawara: {size}', tw: 'Kɛseɛ a wɔkyerɛ sɛ wode hyɛ aseɛ: {size}',
+  },
+  'recommend.size.small': {
+    en: 'Small (under 2 acres)', fr: 'Petit (moins de 2 acres)', sw: 'Ndogo (chini ya ekari 2)', ha: 'Ƙarami (ƙasa da eka 2)', tw: 'Ketewa (anka 2 ase)',
+  },
+  'recommend.size.medium': {
+    en: 'Medium (2–10 acres)', fr: 'Moyen (2–10 acres)', sw: 'Wastani (ekari 2–10)', ha: 'Matsakaici (eka 2–10)', tw: 'Ntam (anka 2–10)',
+  },
+  'recommend.size.large': {
+    en: 'Large (over 10 acres)', fr: 'Grand (plus de 10 acres)', sw: 'Kubwa (zaidi ya ekari 10)', ha: 'Babba (fiye da eka 10)', tw: 'Kɛseɛ (boro anka 10)',
+  },
+
+  // ── Recommendation questions ──
+  'recommend.q.goal': {
+    en: 'What is your farming goal?', fr: 'Quel est votre objectif ?', sw: 'Lengo lako la kilimo ni nini?', ha: 'Menene burin noman ku?', tw: 'Dɛn ne wo adwumayɛ botaeɛ?',
+  },
+  'recommend.q.goalHint': {
+    en: 'This helps us suggest the right crop.', fr: 'Cela nous aide à suggérer la bonne culture.', sw: 'Hii inatusaidia kupendekeza zao sahihi.', ha: 'Wannan yana taimaka mana mu ba da shawarar amfanin gona daidai.', tw: 'Eyi boa yɛn kyerɛ nnɔbae a ɛfata.',
+  },
+  'recommend.q.landSize': {
+    en: 'How much land do you have?', fr: 'Quelle surface avez-vous ?', sw: 'Una ardhi kiasi gani?', ha: 'Ƙasa nawa kuke da shi?', tw: 'Asase dodoɔ bɛn na wowɔ?',
+  },
+  'recommend.q.landSizeHint': {
+    en: 'A rough estimate is fine.', fr: 'Une estimation approximative suffit.', sw: 'Makadirio ya takriban ni sawa.', ha: 'Ƙiyasin kusan ya isa.', tw: 'Nsusuwii bɛyɛ adwuma.',
+  },
+  'recommend.q.budget': {
+    en: 'What is your budget level?', fr: 'Quel est votre budget ?', sw: 'Kiwango chako cha bajeti ni kipi?', ha: 'Menene matakin kasafin kuɗin ku?', tw: 'Wo sika dodoɔ bɛn?',
+  },
+  'recommend.q.budgetHint': {
+    en: 'How much can you invest to start?', fr: 'Combien pouvez-vous investir pour commencer ?', sw: 'Unaweza kuwekeza kiasi gani kuanza?', ha: 'Nawa za ku iya saka jari don farawa?', tw: 'Sika dodoɔ bɛn na wobɛtumi de ahyɛ aseɛ?',
+  },
+  'recommend.q.preferredCrop': {
+    en: 'Do you have a crop in mind?', fr: 'Avez-vous une culture en tête ?', sw: 'Una zao lolote akilini?', ha: 'Kuna da wani amfanin gona a cikin hankali?', tw: 'Wowɔ nnɔbae bi a ɛwɔ wo tirim?',
+  },
+  'recommend.q.preferredCropHint': {
+    en: 'If not sure, tap "No preference" and we\'ll suggest one.', fr: 'Si pas sûr, tapez « Pas de préférence » et nous en suggérerons une.', sw: 'Ikiwa hujui, gusa "Hakuna upendeleo" na tutapendekeza.', ha: 'Idan ba ku da tabbas, danna "Babu zaɓi" mu ba da shawara.', tw: 'Sɛ wonnim a, mia "Mempɛ bi" na yɛbɛkyerɛ wo bi.',
+  },
+
+  // ── Recommendation option labels ──
+  'recommend.opt.goal.home_food': {
+    en: 'Grow food for my family', fr: 'Cultiver pour nourrir ma famille', sw: 'Kulima chakula kwa familia', ha: 'Noma abinci don iyali na', tw: 'Dua aduane ma me abusua',
+  },
+  'recommend.opt.goal.local_sales': {
+    en: 'Sell at local market', fr: 'Vendre au marché local', sw: 'Kuuza sokoni', ha: 'Sayar a kasuwa', tw: 'Tɔn wɔ dwam hɔ',
+  },
+  'recommend.opt.goal.profit': {
+    en: 'Build a farming business', fr: 'Créer une entreprise agricole', sw: 'Kujenga biashara ya kilimo', ha: 'Gina harkar noma', tw: 'Si adwumayɛ adwuma',
+  },
+  'recommend.opt.landSize.small': {
+    en: 'Small (under 2 acres)', fr: 'Petit (moins de 2 acres)', sw: 'Ndogo (chini ya ekari 2)', ha: 'Ƙarami (ƙasa da eka 2)', tw: 'Ketewa (anka 2 ase)',
+  },
+  'recommend.opt.landSize.medium': {
+    en: 'Medium (2–10 acres)', fr: 'Moyen (2–10 acres)', sw: 'Wastani (ekari 2–10)', ha: 'Matsakaici (eka 2–10)', tw: 'Ntam (anka 2–10)',
+  },
+  'recommend.opt.landSize.large': {
+    en: 'Large (over 10 acres)', fr: 'Grand (plus de 10 acres)', sw: 'Kubwa (zaidi ya ekari 10)', ha: 'Babba (fiye da eka 10)', tw: 'Kɛseɛ (boro anka 10)',
+  },
+  'recommend.opt.budget.low': {
+    en: 'Low budget', fr: 'Petit budget', sw: 'Bajeti ndogo', ha: 'Ƙaramin kasafi', tw: 'Sika kakra',
+  },
+  'recommend.opt.budget.medium': {
+    en: 'Some to invest', fr: 'Un peu à investir', sw: 'Kiasi cha kuwekeza', ha: 'Wani abu don saka jari', tw: 'Sika kakra bi a wode bɛhyɛ mu',
+  },
+  'recommend.opt.budget.high': {
+    en: 'Ready to invest', fr: 'Prêt à investir', sw: 'Tayari kuwekeza', ha: 'A shirye don saka jari', tw: 'Sika wɔ hɔ a wode bɛhyɛ mu',
+  },
+  'recommend.opt.preferredCrop.none': {
+    en: 'No preference — suggest for me', fr: 'Pas de préférence — suggérez-moi', sw: 'Hakuna upendeleo — nipendekezee', ha: 'Babu zaɓi — ba ni shawara', tw: 'Mempɛ bi — kyerɛ me bi',
+  },
+  'recommend.opt.preferredCrop.MAIZE': {
+    en: 'Maize / Corn', fr: 'Maïs', sw: 'Mahindi', ha: 'Masara', tw: 'Aburoɔ',
+  },
+  'recommend.opt.preferredCrop.BEAN': {
+    en: 'Beans', fr: 'Haricots', sw: 'Maharage', ha: 'Wake', tw: 'Abɔso',
+  },
+  'recommend.opt.preferredCrop.CASSAVA': {
+    en: 'Cassava', fr: 'Manioc', sw: 'Muhogo', ha: 'Rogo', tw: 'Bankye',
+  },
+  'recommend.opt.preferredCrop.TOMATO': {
+    en: 'Tomato', fr: 'Tomate', sw: 'Nyanya', ha: 'Tumatir', tw: 'Ntomato',
+  },
+  'recommend.opt.preferredCrop.RICE': {
+    en: 'Rice', fr: 'Riz', sw: 'Mchele', ha: 'Shinkafa', tw: 'Ɛmo',
+  },
+
+  // ── Crop recommendation reasons ──
+  'recommend.whyMaize': {
+    en: 'Easy to grow, feeds your family, and sells well at local markets.', fr: 'Facile à cultiver, nourrit votre famille et se vend bien au marché.', sw: 'Rahisi kupanda, hulisha familia yako, na huuzika vizuri sokoni.', ha: 'Sauki a noma, ya ciyar da iyali, kuma yana sayuwa a kasuwa.', tw: 'Ɛnyɛ den sɛ wobɛdua, ɛma wo abusua aduane, na ɛtɔn yiye wɔ dwam.',
+  },
+  'recommend.whyBean': {
+    en: 'Grows fast, enriches soil, and pairs well with maize.', fr: 'Pousse vite, enrichit le sol et s\'associe bien au maïs.', sw: 'Inakua haraka, inaboresha udongo, na inafanya vizuri na mahindi.', ha: 'Yana girma cikin sauri, yana ƙara wa ƙasa albarka, kuma yana tafiya da masara.', tw: 'Ɛnyin ntɛm, ɛma asase mu yɛ, na ɛne aburoɔ yɛ adwuma.',
+  },
+  'recommend.whyCassava': {
+    en: 'Very hardy, low cost, and grows even in poor soil.', fr: 'Très résistant, faible coût, et pousse même dans un sol pauvre.', sw: 'Sugu sana, gharama ndogo, na hukua hata kwenye udongo duni.', ha: 'Mai ƙarfin juriya, ƙaramin farashi, kuma yana girma ko a ƙasa mara albarka.', tw: 'Ɛyɛ den, ne bo nyɛ den, na ɛfifi wɔ asase bɔne so mpo.',
+  },
+  'recommend.whyTomato': {
+    en: 'High market value — great for earning income if you have water access.', fr: 'Grande valeur marchande — idéal pour les revenus si vous avez accès à l\'eau.', sw: 'Thamani kubwa sokoni — nzuri kwa mapato ikiwa una maji.', ha: 'Yana da daraja a kasuwa — mai kyau don samun kuɗi idan kuna da ruwa.', tw: 'Ne boɔ yɛ kɛse wɔ dwam — ɛyɛ papa ma sika sɛ wowɔ nsuo.',
+  },
+  'recommend.whyRice': {
+    en: 'Staple crop with steady demand — needs medium land and some water.', fr: 'Culture de base avec demande stable — nécessite un terrain moyen et de l\'eau.', sw: 'Zao kuu lenye mahitaji thabiti — linahitaji ardhi ya wastani na maji.', ha: 'Babban amfanin gona mai buƙata kullum — yana buƙatar matsakaicin ƙasa da ruwa.', tw: 'Nnɔbae titiriw a na ɛho hia daa — ɛhia asase ntam ne nsuo.',
+  },
+  'recommend.whyGroundnut': {
+    en: 'Low maintenance, enriches soil, and easy to sell.', fr: 'Peu d\'entretien, enrichit le sol et facile à vendre.', sw: 'Matunzo kidogo, inaboresha udongo, na rahisi kuuza.', ha: 'Ƙaramin kulawa, yana ƙara wa ƙasa albarka, kuma mai sauƙin sayarwa.', tw: 'Ɛnhia nhwɛso pii, ɛma asase mu yɛ, na ɛtɔn nyɛ den.',
+  },
+  'recommend.whySweetPotato': {
+    en: 'Grows quickly on small land, nutritious, and drought-tolerant.', fr: 'Pousse vite sur petit terrain, nutritif et résistant à la sécheresse.', sw: 'Inakua haraka kwenye ardhi ndogo, yenye lishe, na hustahimili ukame.', ha: 'Yana girma cikin sauri a ƙaramin ƙasa, mai gina jiki, kuma yana jure fari.', tw: 'Ɛnyin ntɛm wɔ asase ketewa so, aduane pa, na ɔpɛ nsuo kakra.',
+  },
+  'recommend.whySorghum': {
+    en: 'Drought-resistant and great for drier regions.', fr: 'Résistant à la sécheresse et idéal pour les régions sèches.', sw: 'Hustahimili ukame na nzuri kwa maeneo kavu.', ha: 'Yana jure fari kuma mai kyau ga yankunan bushe-bushe.', tw: 'Ɔgyina ɔpɛ nsuo kakra mu na ɛyɛ papa ma nwowɔ a ɛyɛ hyew.',
+  },
+  'recommend.whyMillet': {
+    en: 'Very hardy, grows well in poor soils with little rain.', fr: 'Très résistant, pousse bien en sols pauvres avec peu de pluie.', sw: 'Imara sana, hustawi katika udongo duni na mvua kidogo.', ha: 'Mai ƙarfi sosai, yana girma da kyau a ƙasa marar haihuwa.', tw: 'Ɛyɛ den, ɛfifi yiye wɔ asase bɔne so.',
+  },
+  'recommend.whyCowpea': {
+    en: 'Fast-growing, fixes nitrogen, and the leaves are edible too.', fr: 'Croissance rapide, fixe l\'azote et les feuilles sont comestibles.', sw: 'Hukua haraka, hurekebisha nitrojeni, na majani yake yanaliwa.', ha: 'Yana girma da sauri, yana gyara ƙasa.', tw: 'Ɛnyini ntɛm, ɛma asase mu yɛ papa.',
+  },
+  'recommend.whyYam': {
+    en: 'Staple food with good market demand — stores well after harvest.', fr: 'Aliment de base avec bonne demande — se conserve bien.', sw: 'Chakula kikuu chenye soko nzuri — huhifadhika vizuri.', ha: 'Abincin yau da kullun mai kyakkyawan kasuwa.', tw: 'Aduane titire a ɛwɔ aguadi so yiye.',
+  },
+  'recommend.whyPlantain': {
+    en: 'Grows year-round, great for food and local sales.', fr: 'Pousse toute l\'année, idéal pour l\'alimentation et la vente locale.', sw: 'Hustawi mwaka mzima, nzuri kwa chakula na mauzo ya ndani.', ha: 'Yana girma duk shekara, mai kyau don abinci da siyarwa.', tw: 'Ɛfifi afe nyinaa, ɛyɛ papa ma aduane ne aguadi.',
+  },
+  'recommend.whyBanana': {
+    en: 'Easy to grow, provides food and income throughout the year.', fr: 'Facile à cultiver, fournit nourriture et revenu toute l\'année.', sw: 'Rahisi kukuza, hutoa chakula na mapato mwaka mzima.', ha: 'Mai sauƙin shuka, yana ba da abinci da kuɗi.', tw: 'Ɛyɛ mmerɛ sɛ wobɛdua, ɛma aduane ne sika.',
+  },
+  'recommend.whyOkra': {
+    en: 'Quick harvest, easy to grow, popular in local markets.', fr: 'Récolte rapide, facile à cultiver, populaire sur les marchés.', sw: 'Mavuno ya haraka, rahisi kukuza, maarufu sokoni.', ha: 'Girbi mai sauri, mai sauƙin noma, shahararru a kasuwa.', tw: 'Wotwa no ntɛm, na ɛyɛ mmerɛ sɛ wobɛyɛ.',
+  },
+  'recommend.whyPepper': {
+    en: 'High demand, can sell fresh or dried for extra income.', fr: 'Forte demande, se vend frais ou séché.', sw: 'Mahitaji makubwa, unaweza kuuza mbichi au kavu.', ha: 'Buƙata mai yawa, za a iya siyar da shi danshe ko bushe.', tw: 'Atɔ no ntɛm, wobɛtɔn no mmerɛ anaa awɔ.',
+  },
+  'recommend.whyOnion': {
+    en: 'Stores well and sells at good prices year-round.', fr: 'Se conserve bien et se vend à bon prix toute l\'année.', sw: 'Huhifadhika vizuri na huuzwa bei nzuri.', ha: 'Yana ajiye da kyau kuma ana siyar da shi da kyau.', tw: 'Ɛkora yiye na wobɛtɔn no bo pa.',
+  },
+  'recommend.whyPotato': {
+    en: 'High yields and strong market demand in highland areas.', fr: 'Rendements élevés et forte demande en zones d\'altitude.', sw: 'Mazao mengi na soko nzuri katika maeneo ya milima.', ha: 'Amfani mai yawa da buƙata mai kyau a manyan wurare.', tw: 'Ɛma nnɔbae pii na aguadi mu ɛyɛ papa.',
+  },
+  'recommend.whyCabbage': {
+    en: 'Popular vegetable, grows well in cooler conditions.', fr: 'Légume populaire, pousse bien en conditions fraîches.', sw: 'Mboga maarufu, hustawi vizuri katika hali ya baridi.', ha: 'Kayan lambu shahararru, yana girma da kyau a sanyi.', tw: 'Ɛyɛ mfifideɛ a ɛyɛ adwuma wɔ awia mu.',
+  },
+  'recommend.whyKale': {
+    en: 'Fast-growing leafy green, great for home use and local sales.', fr: 'Légume-feuille à croissance rapide.', sw: 'Mboga ya majani inayokua haraka, nzuri kwa matumizi ya nyumbani.', ha: 'Ganyen kayan lambu mai girma da sauri.', tw: 'Ɛfifi ntɛm, ɛyɛ papa ma fie ne aguadi.',
+  },
+  'recommend.whyMango': {
+    en: 'Low maintenance fruit tree with strong local demand.', fr: 'Arbre fruitier facile avec forte demande locale.', sw: 'Mti wa matunda rahisi na mahitaji makubwa.', ha: 'Itacen \'ya\'ya mai sauƙin kulawa da buƙata mai yawa.', tw: 'Ɛyɛ mmerɛ sɛ wobɛhwɛ no na ɛwɔ aguadi.',
+  },
+  'recommend.whyWheat': {
+    en: 'Good returns in highland areas with reliable rainfall.', fr: 'Bons rendements en altitude avec pluies fiables.', sw: 'Faida nzuri katika maeneo ya milima yenye mvua za uhakika.', ha: 'Riba mai kyau a manyan wurare masu ruwan sama.', tw: 'Ɛma mfaso pa wɔ mmepɔw so.',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -3857,6 +4184,26 @@ const T = {
   'crop.cocoa': { en: 'Cocoa', fr: 'Cacao', sw: 'Kakao', ha: 'Koko', tw: 'Kookoo' },
   'crop.yam': { en: 'Yam', fr: 'Igname', sw: 'Viazi', ha: 'Doya', tw: 'Bayerɛ' },
   'crop.plantain': { en: 'Plantain', fr: 'Plantain', sw: 'Ndizi', ha: 'Ayaba', tw: 'Brɔdɛ' },
+  'crop.okra': { en: 'Okra', fr: 'Gombo', sw: 'Bamia', ha: 'Kubewa', tw: 'Nkruma' },
+  'crop.ginger': { en: 'Ginger', fr: 'Gingembre', sw: 'Tangawizi', ha: 'Citta', tw: 'Akakaduro' },
+  'crop.onion': { en: 'Onion', fr: 'Oignon', sw: 'Kitunguu', ha: 'Albasa', tw: 'Gyeene' },
+  'crop.chili': { en: 'Chili', fr: 'Piment', sw: 'Pilipili kali', ha: 'Barkono mai tsami', tw: 'Mako kɔkɔɔ' },
+  'crop.eggplant': { en: 'Eggplant', fr: 'Aubergine', sw: 'Biringanya', ha: 'Gauta', tw: 'Ntɔɔs tuntum' },
+  'crop.spinach': { en: 'Spinach', fr: 'Épinard', sw: 'Mchicha', ha: 'Alayyahu', tw: 'Efre' },
+  'crop.cucumber': { en: 'Cucumber', fr: 'Concombre', sw: 'Tango', ha: 'Kokwamba', tw: 'Ɛfere' },
+  'crop.carrot': { en: 'Carrot', fr: 'Carotte', sw: 'Karoti', ha: 'Karas', tw: 'Karɔt' },
+  'crop.watermelon': { en: 'Watermelon', fr: 'Pastèque', sw: 'Tikiti', ha: 'Kankana', tw: 'Ɛfrɛ' },
+  'crop.papaya': { en: 'Papaya', fr: 'Papaye', sw: 'Papai', ha: 'Gwanda', tw: 'Bɔfrɛ' },
+  'crop.sesame': { en: 'Sesame', fr: 'Sésame', sw: 'Ufuta', ha: 'Ridi', tw: 'Ɛnam' },
+  'crop.soybean': { en: 'Soybean', fr: 'Soja', sw: 'Soya', ha: 'Waken soya', tw: 'Soya' },
+  'crop.millet': { en: 'Millet', fr: 'Mil', sw: 'Uwele', ha: 'Gero', tw: 'Ayuo' },
+  'crop.cowpea': { en: 'Cowpea', fr: 'Niébé', sw: 'Kunde', ha: 'Wake', tw: 'Adua' },
+
+  // ─── Region labels ─────────────────────────────────────────
+  'region.eastAfrica': { en: 'East Africa', fr: 'Afrique de l\'Est', sw: 'Afrika Mashariki', ha: 'Gabashin Afirka', tw: 'Apuei Afrika' },
+  'region.westAfrica': { en: 'West Africa', fr: 'Afrique de l\'Ouest', sw: 'Afrika Magharibi', ha: 'Yammacin Afirka', tw: 'Atɔe Afrika' },
+  'region.southernAfrica': { en: 'Southern Africa', fr: 'Afrique Australe', sw: 'Kusini mwa Afrika', ha: 'Kudancin Afirka', tw: 'Anafo Afrika' },
+  'region.centralAfrica': { en: 'Central Africa', fr: 'Afrique Centrale', sw: 'Afrika ya Kati', ha: 'Tsakiyar Afirka', tw: 'Mfinimfini Afrika' },
 
   // ─── Growth stages ────────────────────────────────────────
   'stage.seedling': { en: 'Seedling', fr: 'Semis', sw: 'Mche', ha: 'Shuka', tw: 'Aba' },
@@ -4949,6 +5296,102 @@ const T = {
   'cropTask.setUpStakes': { en: 'Set up stakes / supports', fr: 'Installer les tuteurs', sw: 'Weka fito / vitegemeo', ha: 'Kafa sanda / goyon baya', tw: 'Si nnua a wɔde si so' },
   'cropTask.floodField': { en: 'Flood the paddy field', fr: 'Inonder la rizière', sw: 'Mwaga maji shambani', ha: 'Tafasa gonar shinkafa da ruwa', tw: 'Fa nsu hyɛ afuo no ma' },
   'cropTask.setUpShade': { en: 'Set up shade trees', fr: 'Planter des arbres d\'ombre', sw: 'Weka miti ya kivuli', ha: 'Kafa itatuwan inuwa', tw: 'Si nnua a ɛyɛ nwini' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TIMING — why this task matters NOW (spec §2)
+  // ═══════════════════════════════════════════════════════════
+  'timing.whileConditionsDry': { en: 'Good time now — conditions are dry.', fr: 'Bon moment — temps sec.', sw: 'Wakati mzuri — hali ni kavu.', ha: 'Lokaci mai kyau — busasshe ne.', tw: 'Bere pa — ewim yɛ hye.' },
+  'timing.beforeRainArrives': { en: 'Do this before rain arrives.', fr: 'À faire avant la pluie.', sw: 'Fanya kabla mvua ifike.', ha: 'Yi wannan kafin ruwan sama.', tw: 'Yɛ eyi ansa na osu aba.' },
+  'timing.waitForDryWeather': { en: 'Wait for dry weather to dry properly.', fr: 'Attendez un temps sec pour sécher.', sw: 'Subiri hali ya hewa kavu.', ha: 'Jira busasshen yanayi.', tw: 'Twɛn ma ewim yɛ hye.' },
+  'timing.heatIsHighToday': { en: 'Heat is high today — watering matters more.', fr: 'Forte chaleur — arrosage important.', sw: 'Joto ni kali leo — kumwagilia ni muhimu.', ha: 'Zafi mai tsanani — shayarwa na da muhimmanci.', tw: 'Ɛhyew nnɛ — nsu guo ho hia pa ara.' },
+  'timing.earlyThisWeek': { en: 'Do this early this week.', fr: 'À faire tôt cette semaine.', sw: 'Fanya mapema wiki hii.', ha: 'Yi da wuri a wannan mako.', tw: 'Yɛ eyi nnawɔtwe yi mfiase.' },
+  'timing.actNowBeforeSpread': { en: 'Act now before it spreads.', fr: 'Agissez vite avant propagation.', sw: 'Fanya sasa kabla kuenea.', ha: 'Yi yanzu kafin ya yaɗu.', tw: 'Yɛ no ntɛm ansa na atrɛw.' },
+  'timing.regularCheckProtects': { en: 'Regular checks protect your crop.', fr: 'Vérifications régulières protègent la culture.', sw: 'Ukaguzi wa kawaida hulinda mazao.', ha: 'Bincike na yau da kullum na kare amfanin.', tw: 'Nhwehwɛmu daa bɔ wo nnɔbae ho ban.' },
+  'timing.waitForCalmWind': { en: 'Wait for calm wind to spray.', fr: 'Attendez un vent calme pour pulvériser.', sw: 'Subiri upepo utulie kunyunyizia.', ha: 'Jira iskar ta kwanta kafin fesa.', tw: 'Twɛn ma mframa dwodwo ansa na wopete aduro.' },
+  'timing.bestInCalmConditions': { en: 'Best done in calm conditions.', fr: 'Mieux par temps calme.', sw: 'Bora katika hali tulivu.', ha: 'Gara a yi a cikin kwanciyar hankali.', tw: 'Eye sɛ woyɛ no bere a ewim yɛ dinn.' },
+  'timing.beforeWeedsGrow': { en: 'Clear before weeds take over.', fr: 'Désherber avant que les mauvaises herbes ne dominent.', sw: 'Safisha kabla magugu yakue.', ha: 'Share kafin ciyayi su rufe.', tw: 'Popa ansa na wura adu.' },
+  'timing.feedDuringGrowth': { en: 'Best time to feed during active growth.', fr: 'Meilleur moment pour nourrir pendant la croissance.', sw: 'Wakati bora wa kulisha wakati wa ukuaji.', ha: 'Lokaci mafi kyau don ciyar da amfani.', tw: 'Bere pa a wobɛma nkwan wɔ nyin bere mu.' },
+  'timing.beforePlantingWindow': { en: 'Do before planting window closes.', fr: 'À faire avant la fin de la saison de semis.', sw: 'Fanya kabla dirisha la kupanda lifungwe.', ha: 'Yi kafin lokacin shuka ya ƙare.', tw: 'Yɛ ansa na dua bere no akɔ.' },
+  'timing.beforeRainTomorrow': { en: 'Best done today before rain tomorrow.', fr: 'À faire aujourd\'hui avant la pluie demain.', sw: 'Bora kufanya leo kabla ya mvua kesho.', ha: 'Gara a yi yau kafin ruwan gobe.', tw: 'Eye sɛ woyɛ nnɛ ansa osu atɔ ɔkyena.' },
+  'timing.harvestWhenReady': { en: 'Harvest when crop is ready.', fr: 'Récoltez quand la culture est prête.', sw: 'Vuna wakati mazao yako tayari.', ha: 'Girbe lokacin amfanin ya nuna.', tw: 'Twa bere a nnɔbae no abɛre.' },
+  'timing.soonAfterHarvest': { en: 'Best done soon after harvest.', fr: 'À faire rapidement après la récolte.', sw: 'Bora kufanya baada ya kuvuna.', ha: 'Gara a yi ba\'an girbe.', tw: 'Eye sɛ woyɛ no ntɛm wɔ twa ase.' },
+  'timing.beforeQualityDrops': { en: 'Store before quality drops.', fr: 'Stocker avant que la qualité ne baisse.', sw: 'Hifadhi kabla ubora kupungua.', ha: 'Ajiye kafin ingancin ya ragu.', tw: 'Kora ansa na ne su abɛhwe ase.' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  URGENCY — labels for urgency levels (spec §3)
+  // ═══════════════════════════════════════════════════════════
+  'urgency.critical': { en: 'Urgent', fr: 'Urgent', sw: 'Haraka', ha: 'Gaggawa', tw: 'Ɛhia ntɛm' },
+  'urgency.today': { en: 'Today', fr: 'Aujourd\'hui', sw: 'Leo', ha: 'Yau', tw: 'Ɛnnɛ' },
+  'urgency.thisWeek': { en: 'This week', fr: 'Cette semaine', sw: 'Wiki hii', ha: 'Wannan mako', tw: 'Nnawɔtwe yi' },
+  'urgency.optional': { en: 'Optional', fr: 'Optionnel', sw: 'Hiari', ha: 'Na so', tw: 'Wopɛ a' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  FOLLOW-UP — lightweight completion feedback (spec §4)
+  // ═══════════════════════════════════════════════════════════
+  'followup.didYouFinish': { en: 'Did you finish this task?', fr: 'Avez-vous terminé cette tâche ?', sw: 'Umekamilisha kazi hii?', ha: 'Kun gama wannan aiki?', tw: 'Woawie adwuma yi?' },
+  'followup.anyIssue': { en: 'Any issue?', fr: 'Un problème ?', sw: 'Tatizo lolote?', ha: 'Wata matsala?', tw: 'Ɔhaw bi wɔ hɔ?' },
+  'followup.yes': { en: 'Yes', fr: 'Oui', sw: 'Ndiyo', ha: 'Eh', tw: 'Aane' },
+  'followup.partly': { en: 'Partly', fr: 'En partie', sw: 'Kwa sehemu', ha: 'Wani ɓangare', tw: 'Fa bi' },
+  'followup.no': { en: 'No', fr: 'Non', sw: 'Hapana', ha: 'A\'a', tw: 'Daabi' },
+  'followup.noIssue': { en: 'No issue', fr: 'Pas de problème', sw: 'Hakuna tatizo', ha: 'Babu matsala', tw: 'Ɔhaw biara nni hɔ' },
+  'followup.needHelp': { en: 'Need help', fr: 'Besoin d\'aide', sw: 'Nahitaji msaada', ha: 'Ina buƙatar taimako', tw: 'Mehia mmoa' },
+  'followup.weatherBlocked': { en: 'Weather blocked', fr: 'Météo défavorable', sw: 'Hali ya hewa ilizuia', ha: 'Yanayi ya hana', tw: 'Ewim tebea asiannɛ' },
+  'followup.noTools': { en: 'No tools / inputs', fr: 'Pas d\'outils', sw: 'Hakuna zana', ha: 'Babu kayan aiki', tw: 'Nnwinnade biara nni hɔ' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  COMPLETION STATUS / OUTCOME — post-completion feedback (spec §5)
+  // ═══════════════════════════════════════════════════════════
+  'completionStatus.done': { en: 'Task completed', fr: 'Tâche terminée', sw: 'Kazi imekamilika', ha: 'An gama aiki', tw: 'Adwuma no awie' },
+  'completionStatus.partial': { en: 'Partly done — we\'ll keep it in mind.', fr: 'Partiellement fait — nous gardons ça en tête.', sw: 'Imefanywa kwa sehemu — tutakumbuka.', ha: 'Wani ɓangare — za mu tuna.', tw: 'Woyɛɛ bi — yɛbɛkae.' },
+  'completionStatus.blocked': { en: 'We\'ll try again when conditions improve.', fr: 'Nous réessaierons quand les conditions s\'amélioreront.', sw: 'Tutajaribu tena hali zitakapokuwa nzuri.', ha: 'Za mu sake gwadawa idan yanayi ya gyaru.', tw: 'Yɛbɛsan ahwɛ bere a nneɛma bɛyɛ yie.' },
+  'completionStatus.rescheduled': { en: 'Rescheduled for better conditions.', fr: 'Reporté pour de meilleures conditions.', sw: 'Imepangwa upya kwa hali bora.', ha: 'An sake tsarawa don yanayi mafi kyau.', tw: 'Wɔasakra bere no ama bere pa.' },
+  'completionStatus.needsResources': { en: 'Noted — you need tools or inputs.', fr: 'Noté — vous avez besoin d\'outils.', sw: 'Tumesikia — unahitaji zana.', ha: 'An lura — kuna buƙatar kayan aiki.', tw: 'Yɛahu — wohia nnwinnade.' },
+  'completionOutcome.weatherBlocked': { en: 'Weather prevented this task. We\'ll adjust.', fr: 'La météo a empêché cette tâche. Nous ajusterons.', sw: 'Hali ya hewa ilizuia kazi hii. Tutarekebisha.', ha: 'Yanayi ta hana wannan aiki. Za mu daidaita.', tw: 'Ewim tebea amma woannyɛ adwuma yi. Yɛbɛsakra.' },
+  'completionOutcome.noTools': { en: 'Missing tools or inputs. Consider getting them ready.', fr: 'Outils ou intrants manquants. Pensez à les préparer.', sw: 'Zana au pembejeo zinakosekana. Ziandae.', ha: 'Kayan aiki sun yi ƙaranci. A yi la\'akari da shirya su.', tw: 'Nnwinnade bi te hɔ. Siesie wɔn.' },
+  'completionOutcome.partial': { en: 'Good progress. Finish when you can.', fr: 'Bon progrès. Terminez quand possible.', sw: 'Maendeleo mazuri. Kamilisha ukiweza.', ha: 'Kyakkyawan ci gaba. Gama idan ka iya.', tw: 'Wokɔ wɔn anim yie. Wie bere a wubetumi.' },
+  'completionOutcome.blocked': { en: 'No worries. We\'ll suggest it again later.', fr: 'Pas de souci. Nous le proposerons plus tard.', sw: 'Usijali. Tutapendekeza tena baadaye.', ha: 'Babu damuwa. Za mu ba da shawarar nan gaba.', tw: 'Ɛnyɛ hwee. Yɛbɛka akyerɛ wo bio akyiri.' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  MOMENTUM — farmer confidence signals (spec §7)
+  // ═══════════════════════════════════════════════════════════
+  'momentum.strongToday': { en: 'Strong start today!', fr: 'Bon début aujourd\'hui !', sw: 'Mwanzo mzuri leo!', ha: 'Fara mai ƙarfi yau!', tw: 'Wohyɛɛ ase yie nnɛ!' },
+  'momentum.streak': { en: '{days}-day activity streak!', fr: 'Série de {days} jours !', sw: 'Mfululizo wa siku {days}!', ha: 'Jerin kwanaki {days}!', tw: 'Nna {days} a wodi so ayɛ adwuma!' },
+  'momentum.onTrack': { en: 'You\'re on track.', fr: 'Vous êtes sur la bonne voie.', sw: 'Uko sawa.', ha: 'Kuna kan hanya.', tw: 'Wowɔ kwan pa so.' },
+  'momentum.allDone': { en: 'All done for today!', fr: 'Tout est fait pour aujourd\'hui !', sw: 'Kazi zote zimekamilika leo!', ha: 'An gama duka na yau!', tw: 'Woawie ne nyinaa nnɛ!' },
+  'momentum.getStarted': { en: 'Ready to get started.', fr: 'Prêt à commencer.', sw: 'Tayari kuanza.', ha: 'A shirye don farawa.', tw: 'Wasiesie wo ho sɛ wobɛhyɛ ase.' },
+  'momentum.idle': { en: 'Check in when you\'re ready.', fr: 'Revenez quand vous êtes prêt.', sw: 'Rudi ukiwa tayari.', ha: 'Dawo idan ka shirya.', tw: 'Bra bere a woasiesie wo ho.' },
+  'momentum.goodProgressForStage': { en: 'Good progress for this stage.', fr: 'Bon progrès pour cette étape.', sw: 'Maendeleo mazuri kwa hatua hii.', ha: 'Kyakkyawan ci gaba a wannan mataki.', tw: 'Wokɔ wɔn anim yie wɔ saa bere yi mu.' },
+  'momentum.keepGoing': { en: 'Keep going!', fr: 'Continuez !', sw: 'Endelea!', ha: 'Ci gaba!', tw: 'Kɔ so!' },
+  'momentum.doneToday': { en: '{count} done today', fr: '{count} terminé(s) aujourd\'hui', sw: '{count} zimekamilika leo', ha: '{count} an gama yau', tw: '{count} awie nnɛ' },
+  'momentum.leftToday': { en: '{count} left today', fr: '{count} restant(s)', sw: '{count} zimebaki leo', ha: '{count} ya rage yau', tw: '{count} aka nnɛ' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ECONOMICS — simple signals (spec §6)
+  // ═══════════════════════════════════════════════════════════
+  'economics.cost.low': { en: 'Low cost', fr: 'Coût faible', sw: 'Gharama ndogo', ha: 'Ƙaramin farashi', tw: 'Ka kakra' },
+  'economics.cost.medium': { en: 'Medium cost', fr: 'Coût moyen', sw: 'Gharama ya wastani', ha: 'Matsakaicin farashi', tw: 'Ka a ɛwɔ mfinimfini' },
+  'economics.cost.high': { en: 'High cost', fr: 'Coût élevé', sw: 'Gharama kubwa', ha: 'Babban farashi', tw: 'Ka kɛse' },
+  'economics.labor.low': { en: 'Low labor', fr: 'Peu de main-d\'œuvre', sw: 'Kazi ndogo', ha: 'Ƙaramin aiki', tw: 'Adwuma kakra' },
+  'economics.labor.medium': { en: 'Medium labor', fr: 'Main-d\'œuvre moyenne', sw: 'Kazi ya wastani', ha: 'Matsakaicin aiki', tw: 'Adwuma a ɛwɔ mfinimfini' },
+  'economics.labor.high': { en: 'High labor', fr: 'Beaucoup de main-d\'œuvre', sw: 'Kazi kubwa', ha: 'Babban aiki', tw: 'Adwuma kɛse' },
+  'economics.market.moderate': { en: 'Moderate market potential', fr: 'Potentiel de marché moyen', sw: 'Fursa ya soko ya wastani', ha: 'Matsakaicin damar kasuwa', tw: 'Gua so kwan a ɛwɔ mfinimfini' },
+  'economics.market.good': { en: 'Good market potential', fr: 'Bon potentiel de marché', sw: 'Fursa nzuri ya soko', ha: 'Kyakkyawan damar kasuwa', tw: 'Gua so kwan pa' },
+  'economics.tip.planAhead': { en: 'Planning saves cost later.', fr: 'Planifier économise plus tard.', sw: 'Kupanga kunapunguza gharama baadaye.', ha: 'Tsarawa na rage farashi nan gaba.', tw: 'Nhyehyɛe tumi gye sika akyiri.' },
+  'economics.tip.clearingInvestment': { en: 'Good clearing helps reduce loss later.', fr: 'Un bon nettoyage réduit les pertes.', sw: 'Usafishaji mzuri hupunguza hasara baadaye.', ha: 'Share mai kyau na rage asara nan gaba.', tw: 'Popa a woyɛ no yie tumi tɔɔ sɛe nkakra.' },
+  'economics.tip.seedInvestment': { en: 'Good seeds are a worthy investment.', fr: 'Les bonnes semences sont un bon investissement.', sw: 'Mbegu nzuri ni uwekezaji mzuri.', ha: 'Iri mai kyau saka ne mai kyau.', tw: 'Aba pa yɛ sika a wode bɔ mu yie.' },
+  'economics.tip.fertilizeForYield': { en: 'Right nutrients boost your harvest.', fr: 'Les bons nutriments augmentent la récolte.', sw: 'Virutubisho sahihi vinaboresha mavuno.', ha: 'Takin da ya dace na ƙara girbi.', tw: 'Nkwan pa ma wo nnɔbae dɔɔso.' },
+  'economics.tip.protectForQuality': { en: 'Protection now preserves crop quality.', fr: 'La protection maintenant préserve la qualité.', sw: 'Kulinda sasa kunahifadhi ubora.', ha: 'Kariya yanzu na kiyaye inganci.', tw: 'Bɔ ho ban seesei na ɛhwɛ su yie so.' },
+  'economics.tip.nearHarvest': { en: 'Your investment is almost ready to pay off.', fr: 'Votre investissement est presque prêt.', sw: 'Uwekezaji wako unakaribia kutoa matunda.', ha: 'Jarin ku na kusa da bayarwa.', tw: 'Wo sika a wode bɔɔ mu no rebɛba mfaso.' },
+  'economics.tip.harvestCarefully': { en: 'Careful harvest protects sale quality.', fr: 'Une récolte soignée protège la qualité.', sw: 'Kuvuna kwa uangalifu hulinda ubora wa kuuza.', ha: 'Girbe da hankali na kare ingancin sayarwa.', tw: 'Twa yie na ɛhwɛ ne su yie ma wuton.' },
+  'economics.tip.dryAndStoreWell': { en: 'Drying well protects your profit.', fr: 'Bien sécher protège vos bénéfices.', sw: 'Kukausha vizuri hulinda faida yako.', ha: 'Bushewa da kyau na kare riba.', tw: 'Hwie yie na ɛhwɛ wo mfaso so.' },
+  'economics.task.clearReducesLoss': { en: 'Good clearing helps reduce loss.', fr: 'Un bon désherbage réduit les pertes.', sw: 'Usafishaji hupunguza hasara.', ha: 'Share na rage asara.', tw: 'Popa yie tumi tɔɔ sɛe nkakra.' },
+  'economics.task.dryProtectsQuality': { en: 'Drying protects sale quality.', fr: 'Le séchage protège la qualité.', sw: 'Kukausha hulinda ubora.', ha: 'Bushewa na kare inganci.', tw: 'Ahwie yie hwɛ ne su so.' },
+  'economics.task.harvestTracksProfit': { en: 'Logging harvest helps track profit.', fr: 'Enregistrer aide à suivre les bénéfices.', sw: 'Kurekodi husaidia kufuatilia faida.', ha: 'Rubuta na taimaka wajen bin diddigin riba.', tw: 'Kyerɛw ma woahu wo mfaso.' },
+  'economics.task.storeReducesWaste': { en: 'Good storage reduces waste.', fr: 'Un bon stockage réduit le gaspillage.', sw: 'Hifadhi nzuri hupunguza upotevu.', ha: 'Ajiyewa mai kyau na rage ɓarnatar.', tw: 'Kora yie na ɛtɔɔ sɛe nkakra.' },
+  'economics.task.protectInvestment': { en: 'Protecting your crop protects your investment.', fr: 'Protéger votre culture protège votre investissement.', sw: 'Kulinda mazao yako hulinda uwekezaji wako.', ha: 'Kare amfanin ku na kare jarin ku.', tw: 'Bɔ wo nnɔbae ho ban na ɛhwɛ wo sika so.' },
+  'economics.task.nutrientsBoostYield': { en: 'Right nutrients boost your yield.', fr: 'Les bons nutriments augmentent le rendement.', sw: 'Virutubisho sahihi vinaboresha mavuno.', ha: 'Takin da ya dace na ƙara amfani.', tw: 'Nkwan pa ma wo nnɔbae dɔɔso.' },
+  'economics.task.qualitySeedMatters': { en: 'Quality seeds give better harvest.', fr: 'Les semences de qualité donnent une meilleure récolte.', sw: 'Mbegu bora hutoa mavuno bora.', ha: 'Iri mai inganci na ba da girbi mafi kyau.', tw: 'Aba pa ma wotwa adeɛ pii.' },
+  'economics.task.sortingRaisesPrice': { en: 'Sorting raises your selling price.', fr: 'Le tri augmente votre prix de vente.', sw: 'Kupanga kunaongeza bei ya kuuza.', ha: 'Tsarawa na ƙara farashin sayarwa.', tw: 'Pae mu ma wo bo kɔ soro.' },
 };
 
 export default T;

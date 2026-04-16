@@ -181,7 +181,7 @@ export function assertCachedSchema(cached, currentVersion) {
 export function assertAllTextLocalized(vm, lang) {
   if (!IS_DEV || !vm || lang === 'en') return;
 
-  const fields = ['title', 'whyText', 'riskText', 'nextText', 'successText', 'ctaLabel'];
+  const fields = ['title', 'whyText', 'riskText', 'nextText', 'successText', 'ctaLabel', 'timingText', 'economicTip'];
   for (const field of fields) {
     const val = vm[field];
     if (!val) continue;
@@ -193,5 +193,58 @@ export function assertAllTextLocalized(vm, lang) {
         break;
       }
     }
+  }
+}
+
+/**
+ * Assert urgency/style consistency (spec §3).
+ * Urgency level must have a matching style, and critical tasks must have urgency set.
+ *
+ * @param {Object} vm - TaskViewModel
+ */
+export function assertUrgencyConsistency(vm) {
+  if (!IS_DEV || !vm) return;
+
+  const validUrgencies = ['critical', 'today', 'this_week', 'optional'];
+  if (vm.urgency && !validUrgencies.includes(vm.urgency)) {
+    console.error(
+      `[TaskVM] Invalid urgency "${vm.urgency}" for task "${vm.id}". ` +
+      `Expected one of: ${validUrgencies.join(', ')}`
+    );
+  }
+
+  if (vm.urgency && !vm.urgencyStyle) {
+    console.error(
+      `[TaskVM] Urgency "${vm.urgency}" set but urgencyStyle is missing for task "${vm.id}"`
+    );
+  }
+
+  if (vm.severity === 'urgent' && (!vm.urgency || vm.urgency === 'optional')) {
+    console.warn(
+      `[TaskVM] Severity "urgent" but urgency is "${vm.urgency || 'null'}" for task "${vm.id}". ` +
+      `Expected "critical" or "today".`
+    );
+  }
+}
+
+/**
+ * Assert completion state is well-formed (spec §5).
+ *
+ * @param {Object} cs - CompletionState from buildCompletionState
+ */
+export function assertCompletionState(cs) {
+  if (!IS_DEV || !cs) return;
+
+  if (!cs.successTitleKey) {
+    console.error('[CompletionState] Missing successTitleKey');
+  }
+  if (!cs.successOutcomeKey) {
+    console.error('[CompletionState] Missing successOutcomeKey');
+  }
+  if (cs.hasNext && !cs.nextTask) {
+    console.warn('[CompletionState] hasNext=true but nextTask is null');
+  }
+  if (cs.followUp && (!cs.followUp.questionKey || !cs.followUp.options?.length)) {
+    console.error('[CompletionState] followUp present but malformed (missing questionKey or options)');
   }
 }

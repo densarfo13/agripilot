@@ -8,4 +8,4 @@ export { buildFarmerTaskViewModel, buildTaskListViewModels, TASK_VIEWMODEL_SCHEM
 export { getTaskSeverity } from './getTaskSeverity.js';
 export { getTaskStateStyle } from './taskStateStyles.js';
 export { resolveFarmerText } from './farmerTextResolver.js';
-export { assertViewModel, assertIsViewModel, assertTranslation, assertWeatherOverrideConsistency } from './devAssertions.js';
+export { assertViewModel, assertIsViewModel, assertTranslation, assertWeatherOverrideConsistency, assertUrgencyConsistency, assertCompletionState } from './devAssertions.js';

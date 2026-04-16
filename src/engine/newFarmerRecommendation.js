@@ -1,0 +1,296 @@
+/**
+ * New Farmer Recommendation Engine
+ *
+ * Deterministic, rule-based scoring engine for new farmer onboarding.
+ * No AI. Every recommendation has an explicit, traceable reason.
+ *
+ * Used by: NewFarmerRecommendation.jsx (onboarding wizard)
+ *
+ * Input:
+ *   { countryCode, goal, landSize, budget, preferredCrop, isNew }
+ *
+ * Output:
+ *   { primary, alternatives[], suggestedSize, sizeReason }
+ *   where each crop entry = { code, score, reasons[] }
+ *   and each reason = { key, weight } (key is an i18n translation key)
+ *
+ * Scoring weights (designed so beginner-friendliness dominates for new farmers):
+ *   Goal match:          +4
+ *   Land size fit:       +3
+ *   Budget fit:          +2
+ *   Country-local crop:  +2
+ *   Beginner-friendly:   +3  (only when isNew)
+ *   Non-beginner penalty: -3  (only when isNew and crop.beginner === false)
+ *   Preferred crop:      +6  (explicit user preference)
+ *   Staple crop bonus:   +1  (priority 1 in catalog)
+ */
+
+import {
+  getBeginnerCropsForCountry,
+  getCropsForCountry,
+  isCropLocalToCountry,
+  getCatalogEntry,
+  getRegionForCountry,
+} from '../data/cropRegionCatalog.js';
+import { getSeasonScore } from './seasonProfitRules.js';
+
+// ─── Budget compatibility ───────────────────────────────────
+// Which budget levels each crop realistically fits.
+const BUDGET_FIT = {
+  MAIZE: ['low', 'medium', 'high'], BEAN: ['low', 'medium'], CASSAVA: ['low', 'medium'],
+  TOMATO: ['medium', 'high'], RICE: ['medium', 'high'], GROUNDNUT: ['low', 'medium'],
+  SWEET_POTATO: ['low', 'medium'], SORGHUM: ['low', 'medium'], MILLET: ['low', 'medium'],
+  COWPEA: ['low', 'medium'], YAM: ['low', 'medium'], PLANTAIN: ['low', 'medium'],
+  BANANA: ['low', 'medium'], OKRA: ['low', 'medium'], PEPPER: ['low', 'medium'],
+  KALE: ['low', 'medium'], CABBAGE: ['medium', 'high'], POTATO: ['medium', 'high'],
+  ONION: ['medium', 'high'], MANGO: ['low', 'medium'], SPINACH: ['low'],
+  CARROT: ['medium'], CUCUMBER: ['low', 'medium'], WATERMELON: ['medium', 'high'],
+  EGGPLANT: ['low', 'medium'], CHILI: ['low', 'medium'], PAPAYA: ['low', 'medium'],
+  SESAME: ['low', 'medium'], SOYBEAN: ['medium', 'high'], WHEAT: ['medium', 'high'],
+  COFFEE: ['high'], TEA: ['high'], COTTON: ['medium', 'high'], SUGARCANE: ['high'],
+  COCOA: ['high'], PALM_OIL: ['high'], SUNFLOWER: ['medium', 'high'],
+  GINGER: ['medium', 'high'], GARLIC: ['medium'], AVOCADO: ['medium', 'high'],
+  PINEAPPLE: ['medium', 'high'], ORANGE: ['medium', 'high'], PEA: ['low', 'medium'],
+};
+
+// ─── Land size compatibility ────────────────────────────────
+// Which land sizes each crop realistically works on.
+const SIZE_FIT = {
+  MAIZE: ['small', 'medium', 'large'], BEAN: ['small', 'medium'], CASSAVA: ['small', 'medium', 'large'],
+  TOMATO: ['small', 'medium'], RICE: ['medium', 'large'], GROUNDNUT: ['small', 'medium'],
+  SWEET_POTATO: ['small', 'medium'], SORGHUM: ['medium', 'large'], MILLET: ['small', 'medium', 'large'],
+  COWPEA: ['small', 'medium'], YAM: ['small', 'medium'], PLANTAIN: ['small', 'medium'],
+  BANANA: ['small', 'medium', 'large'], OKRA: ['small', 'medium'], PEPPER: ['small', 'medium'],
+  KALE: ['small'], CABBAGE: ['small', 'medium'], POTATO: ['small', 'medium'],
+  ONION: ['small', 'medium'], MANGO: ['small', 'medium', 'large'], SPINACH: ['small'],
+  CARROT: ['small', 'medium'], CUCUMBER: ['small', 'medium'], WATERMELON: ['medium', 'large'],
+  EGGPLANT: ['small', 'medium'], CHILI: ['small', 'medium'], PAPAYA: ['small', 'medium'],
+  SESAME: ['medium', 'large'], SOYBEAN: ['medium', 'large'], WHEAT: ['medium', 'large'],
+  COFFEE: ['medium', 'large'], TEA: ['medium', 'large'], COTTON: ['medium', 'large'],
+  SUGARCANE: ['large'], COCOA: ['medium', 'large'], PALM_OIL: ['medium', 'large'],
+  SUNFLOWER: ['medium', 'large'], GINGER: ['small', 'medium'], GARLIC: ['small', 'medium'],
+  AVOCADO: ['small', 'medium', 'large'], PINEAPPLE: ['small', 'medium'],
+  ORANGE: ['medium', 'large'], PEA: ['small', 'medium'],
+};
+
+// ─── Scoring weights ────────────────────────────────────────
+const W = {
+  GOAL:        4,
+  SEASON:      3,   // good season = +3, okay = 0, poor = -2 (from getSeasonScore)
+  SIZE:        3,
+  BUDGET:      2,
+  LOCAL:       2,
+  BEGINNER:    3,
+  NON_BEGINNER_PENALTY: -3,
+  PREFERRED:   6,
+  STAPLE:      1,
+};
+
+// ─── Fallback crops (when no country is known) ─────────────
+const FALLBACK_CODES = [
+  'MAIZE', 'BEAN', 'CASSAVA', 'GROUNDNUT', 'SWEET_POTATO',
+  'SORGHUM', 'TOMATO', 'RICE',
+];
+
+/**
+ * Build the crop pool to score against.
+ * When country is known: uses catalog entries for that country.
+ * When unknown: uses universal fallback staples.
+ */
+function buildPool(countryCode, goal, isNew) {
+  if (countryCode) {
+    // For new farmers: prefer beginner crops; fall back to all country crops if too few
+    if (isNew) {
+      const beginnerCrops = getBeginnerCropsForCountry(countryCode, goal);
+      if (beginnerCrops.length >= 3) return beginnerCrops;
+      // Not enough goal-filtered beginners: try without goal filter
+      const allBeginner = getBeginnerCropsForCountry(countryCode, null);
+      if (allBeginner.length >= 3) return allBeginner;
+    }
+    // Experienced farmer or not enough beginners: full country list
+    return getCropsForCountry(countryCode);
+  }
+  // No country: build minimal entries from fallback codes
+  return FALLBACK_CODES.map(code => getCatalogEntry(code)).filter(Boolean);
+}
+
+/**
+ * Score a single crop entry against the farmer's inputs.
+ *
+ * @param {Object} entry - Catalog entry (code, countries, regions, beginner, goals, priority)
+ * @param {Object} inputs - { goal, landSize, budget, preferredCrop, countryCode, isNew }
+ * @returns {{ code, score, reasons[] }}
+ */
+function scoreCrop(entry, { goal, landSize, budget, preferredCrop, countryCode, isNew }) {
+  let score = 0;
+  const reasons = [];
+
+  // 1. Goal match
+  if (entry.goals && entry.goals.includes(goal)) {
+    score += W.GOAL;
+    reasons.push({ key: `recommendReason.goalFit.${goal}`, weight: W.GOAL });
+  }
+
+  // 2. Season fit (good = +3, okay = 0, poor = -2)
+  if (countryCode) {
+    const seasonPts = getSeasonScore(entry.code, countryCode);
+    if (seasonPts !== 0) {
+      score += seasonPts;
+      const seasonKey = seasonPts > 0 ? 'recommendReason.goodSeason' : 'recommendReason.poorSeason';
+      reasons.push({ key: seasonKey, weight: seasonPts });
+    }
+  }
+
+  // 3. Land size fit
+  const sizes = SIZE_FIT[entry.code];
+  if (sizes && sizes.includes(landSize)) {
+    score += W.SIZE;
+    reasons.push({ key: `recommendReason.sizeFit.${landSize}`, weight: W.SIZE });
+  }
+
+  // 4. Budget fit
+  const budgets = BUDGET_FIT[entry.code];
+  if (budgets && budgets.includes(budget)) {
+    score += W.BUDGET;
+    reasons.push({ key: `recommendReason.budgetFit.${budget}`, weight: W.BUDGET });
+  }
+
+  // 5. Country-local
+  if (countryCode && isCropLocalToCountry(entry.code, countryCode)) {
+    score += W.LOCAL;
+    reasons.push({ key: 'recommendReason.localCrop', weight: W.LOCAL });
+  }
+
+  // 6. Beginner friendliness (key differentiator for new farmers)
+  if (isNew) {
+    if (entry.beginner) {
+      score += W.BEGINNER;
+      reasons.push({ key: 'recommendReason.beginnerFriendly', weight: W.BEGINNER });
+    } else {
+      score += W.NON_BEGINNER_PENALTY;
+      reasons.push({ key: 'recommendReason.complexCrop', weight: W.NON_BEGINNER_PENALTY });
+    }
+  }
+
+  // 7. Preferred crop bonus
+  if (preferredCrop && entry.code === preferredCrop) {
+    score += W.PREFERRED;
+    reasons.push({ key: 'recommendReason.preferredCrop', weight: W.PREFERRED });
+  }
+
+  // 8. Staple crop bonus (priority 1 = widely grown, safer bet)
+  if (entry.priority === 1) {
+    score += W.STAPLE;
+    reasons.push({ key: 'recommendReason.stapleCrop', weight: W.STAPLE });
+  }
+
+  return { code: entry.code, score, reasons };
+}
+
+/**
+ * Compute a suggested starting size for a new farmer.
+ *
+ * Logic:
+ *   - New farmers with large land → suggest medium (don't overextend)
+ *   - Goal is home_food → suggest small regardless
+ *   - Otherwise → echo the farmer's stated land size
+ *
+ * @returns {{ size: string, reasonKey: string }}
+ */
+function computeSuggestedSize({ landSize, goal, isNew }) {
+  // New farmer + large land: recommend starting smaller
+  if (isNew && landSize === 'large') {
+    return { size: 'medium', reasonKey: 'recommendReason.startSmaller' };
+  }
+  // Home food goal: small is enough
+  if (goal === 'home_food' && landSize !== 'small') {
+    return { size: 'small', reasonKey: 'recommendReason.homeFoodSmall' };
+  }
+  // Default: use their stated size
+  return { size: landSize || 'small', reasonKey: 'recommendReason.matchesYourLand' };
+}
+
+/**
+ * Generate a structured recommendation for a new (or returning) farmer.
+ *
+ * @param {Object} inputs
+ * @param {string}  inputs.countryCode     — ISO 2-letter code (optional)
+ * @param {string}  inputs.goal            — 'home_food' | 'local_sales' | 'profit'
+ * @param {string}  inputs.landSize        — 'small' | 'medium' | 'large'
+ * @param {string}  inputs.budget          — 'low' | 'medium' | 'high'
+ * @param {string}  inputs.preferredCrop   — crop code or '' (optional)
+ * @param {boolean} inputs.isNew           — true for first-time farmers
+ *
+ * @returns {{
+ *   primary:       { code, score, reasons[], whyKey },
+ *   alternatives:  { code, score, reasons[], whyKey }[],
+ *   suggestedSize: { size, reasonKey },
+ * }}
+ */
+export function recommendForNewFarmer(inputs) {
+  const {
+    countryCode = '',
+    goal = 'home_food',
+    landSize = 'small',
+    budget = 'low',
+    preferredCrop = '',
+    isNew = true,
+  } = inputs;
+
+  // 1. Build crop pool
+  const pool = buildPool(countryCode, goal, isNew);
+
+  // 2. Score every crop in the pool
+  const scored = pool.map(entry =>
+    scoreCrop(entry, { goal, landSize, budget, preferredCrop, countryCode, isNew })
+  );
+
+  // 3. Deduplicate (pool may have overlaps from beginner + country fallback)
+  const seen = new Set();
+  const unique = [];
+  for (const item of scored) {
+    if (!seen.has(item.code)) {
+      seen.add(item.code);
+      unique.push(item);
+    }
+  }
+
+  // 4. Sort by score descending, then by catalog priority for ties
+  unique.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const pA = getCatalogEntry(a.code)?.priority ?? 9;
+    const pB = getCatalogEntry(b.code)?.priority ?? 9;
+    return pA - pB;
+  });
+
+  // 5. Take top 3 with positive scores
+  const top = unique.filter(c => c.score > 0).slice(0, 3);
+
+  // 6. Add whyKey for backward compatibility with existing i18n keys
+  const withWhy = top.map(c => ({
+    ...c,
+    whyKey: buildWhyKey(c.code),
+  }));
+
+  // 7. Compute suggested size
+  const suggestedSize = computeSuggestedSize({ landSize, goal, isNew });
+
+  return {
+    primary: withWhy[0] || null,
+    alternatives: withWhy.slice(1),
+    suggestedSize,
+  };
+}
+
+/**
+ * Build the i18n key for a crop's "why" text.
+ * Maps SWEET_POTATO → recommend.whySweetPotato, etc.
+ */
+function buildWhyKey(code) {
+  const camel = code.charAt(0).toUpperCase()
+    + code.slice(1).toLowerCase().replace(/_(\w)/g, (_, c) => c.toUpperCase());
+  return `recommend.why${camel}`;
+}
+
+// ─── Exported for testing ───────────────────────────────────
+export { W as SCORING_WEIGHTS, scoreCrop, computeSuggestedSize, buildPool };
