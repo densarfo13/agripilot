@@ -8,15 +8,33 @@
  *   - taskViewModel: a normalized, render-ready view model (single source of truth)
  *   - weatherDecision: chip, action line, last-updated label, task override info
  *
- * Recalculates automatically when any input changes.
+ * Performance: uses structural hashing to prevent redundant decision engine runs
+ * when context objects change reference but not value (e.g., ProfileContext re-renders
+ * due to syncStatus change while profile data is identical).
  */
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { resolveDecision } from '../engine/decisionEngine.js';
 import { getWeatherDecision } from '../engine/weatherEngine.js';
 import { useTranslation } from '../i18n/index.js';
 import { calculateFarmScore } from '../lib/farmScore.js';
 import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
+
+/**
+ * Build a lightweight fingerprint of decision-relevant fields.
+ * Only re-run the engine when these actually change.
+ */
+function inputHash(profile, primaryTask, taskCount, completedCount, weather, isOnline, lang) {
+  const p = profile;
+  const w = weather;
+  return [
+    p?.id, p?.cropType, p?.cropStage, p?.cropStageUpdatedAt, p?.lastActivityDate,
+    primaryTask?.id, primaryTask?.priority,
+    taskCount, completedCount,
+    w?.temp, w?.humidity, w?.windSpeed, w?.rainingNow, w?.rainTodayLikely,
+    isOnline, lang,
+  ].join('|');
+}
 
 /**
  * @param {Object} params
@@ -34,6 +52,8 @@ import { useUserMode } from '../context/UserModeContext.jsx';
 export function useFarmDecision({ profile, primaryTask, taskCount, completedCount, weather, fetchedAt, freshness, isOnline, taskLoading }) {
   const { t, lang } = useTranslation();
   const { isBasic } = useUserMode();
+  const prevHashRef = useRef('');
+  const prevDecisionRef = useRef(null);
 
   const setupComplete = useMemo(() => {
     if (!profile) return false;
@@ -44,7 +64,13 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
     // While tasks are loading, return a loading sentinel
     if (taskLoading) return null;
 
-    return resolveDecision({
+    // Structural comparison: skip re-computation if meaningful inputs unchanged
+    const hash = inputHash(profile, primaryTask, taskCount, completedCount, weather, isOnline, lang);
+    if (hash === prevHashRef.current && prevDecisionRef.current) {
+      return prevDecisionRef.current;
+    }
+
+    const result = resolveDecision({
       profile,
       setupComplete,
       primaryTask,
@@ -53,7 +79,11 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       weather,
       isOnline,
     }, t);
-  }, [profile, setupComplete, primaryTask, taskCount, completedCount, weather, isOnline, taskLoading, t]);
+
+    prevHashRef.current = hash;
+    prevDecisionRef.current = result;
+    return result;
+  }, [profile, setupComplete, primaryTask, taskCount, completedCount, weather, isOnline, taskLoading, t, lang]);
 
   // Weather decision — display-ready chip + action + timestamp + override
   const weatherDecision = useMemo(() => {

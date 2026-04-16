@@ -122,3 +122,76 @@ export function assertWeatherOverrideConsistency(beforeAction, afterAction, weat
     );
   }
 }
+
+/**
+ * Assert that a weather conflict is resolved before render.
+ * Rain + drying, wind + spraying, etc. should never coexist on screen.
+ *
+ * @param {Object} vm - TaskViewModel
+ * @param {Object|null} weather - Current weather
+ */
+export function assertNoWeatherConflict(vm, weather) {
+  if (!IS_DEV || !vm || !weather) return;
+
+  const titleLower = (vm.title || '').toLowerCase();
+  const taskType = (vm.type || '').toLowerCase();
+
+  // Rain + drying conflict
+  if ((weather.rainingNow || weather.rainTodayLikely) &&
+      (titleLower.includes('dry') || taskType.includes('dry'))) {
+    console.error(
+      `[WeatherConflict] Rain active but task is drying: "${vm.title}" (${vm.id}). ` +
+      `Weather override should have replaced this task.`
+    );
+  }
+
+  // Wind + spraying conflict
+  if (weather.isWindy &&
+      (titleLower.includes('spray') || taskType.includes('spray'))) {
+    console.error(
+      `[WeatherConflict] High wind but task is spraying: "${vm.title}" (${vm.id}). ` +
+      `Weather override should have delayed this task.`
+    );
+  }
+}
+
+/**
+ * Assert that a cached view model has a valid schema version.
+ *
+ * @param {Object} cached - Cached view model
+ * @param {number} currentVersion - Current schema version
+ */
+export function assertCachedSchema(cached, currentVersion) {
+  if (!IS_DEV || !cached) return;
+
+  if (cached._schemaVersion && cached._schemaVersion < currentVersion) {
+    console.warn(
+      `[TaskVM] Stale cached view model detected (v${cached._schemaVersion} < v${currentVersion}). ` +
+      `Task "${cached.id}" should be rebuilt.`
+    );
+  }
+}
+
+/**
+ * Assert that all text fields in a view model are properly localized (not raw English in non-English mode).
+ *
+ * @param {Object} vm - TaskViewModel
+ * @param {string} lang - Current language
+ */
+export function assertAllTextLocalized(vm, lang) {
+  if (!IS_DEV || !vm || lang === 'en') return;
+
+  const fields = ['title', 'whyText', 'riskText', 'nextText', 'successText', 'ctaLabel'];
+  for (const field of fields) {
+    const val = vm[field];
+    if (!val) continue;
+    for (const pattern of ENGLISH_PATTERNS) {
+      if (pattern.test(val)) {
+        console.warn(
+          `[TaskVM] English leakage in "${lang}" field "${field}": "${val}" (task "${vm.id}")`
+        );
+        break;
+      }
+    }
+  }
+}

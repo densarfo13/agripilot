@@ -22,6 +22,11 @@ export default function StarterGuide() {
     navigate('/dashboard');
   }
 
+  function handleFindCrop() {
+    safeTrackEvent('onboarding.find_best_crop', {});
+    navigate('/crop-fit');
+  }
+
   return (
     <div style={S.page}>
       <div style={S.container}>
@@ -45,6 +50,14 @@ export default function StarterGuide() {
               </div>
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={handleFindCrop}
+            style={S.findCropBtn}
+          >
+            {'\uD83C\uDF3E'} {t('starterGuide.findBestCrop')}
+          </button>
 
           <button
             type="button"
@@ -129,14 +142,28 @@ const S = {
     color: 'rgba(255,255,255,0.5)',
     lineHeight: 1.5,
   },
-  continueBtn: {
+  findCropBtn: {
     width: '100%',
     borderRadius: '12px',
     background: '#22C55E',
     padding: '1rem',
     fontWeight: 600,
-    color: '#000',
+    color: '#fff',
     border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    minHeight: '48px',
+    marginBottom: '0.5rem',
+    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+  },
+  continueBtn: {
+    width: '100%',
+    borderRadius: '12px',
+    background: 'rgba(255,255,255,0.06)',
+    padding: '1rem',
+    fontWeight: 600,
+    color: '#9FB3C8',
+    border: '1px solid rgba(255,255,255,0.08)',
     cursor: 'pointer',
     fontSize: '0.95rem',
     minHeight: '48px',

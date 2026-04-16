@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { enqueue, isOnline } from '../utils/offlineQueue.js';
+import { getIdempotencyKey } from '../lib/idempotency.js';
 import api from '../api/client.js';
 import VoiceBar from './VoiceBar.jsx';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
@@ -181,6 +182,9 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         method: 'POST',
         url: `/seasons/${seasonId}/progress`,
         data: offlineData,
+        entityType: 'progress',
+        actionType: 'create',
+        idempotencyKey: getIdempotencyKey('progress', `${farmerId}:${seasonId}:${activity}:${Date.now()}`),
       };
       await enqueue(offlinePayload);
       trackPilotEvent('quick_update_offline', { farmerId, activity });

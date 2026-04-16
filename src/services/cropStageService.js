@@ -13,6 +13,8 @@
 import { updateCropStage } from '../lib/api.js';
 import { enqueue } from '../utils/offlineQueue.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { getIdempotencyKey, consumeIdempotencyKey } from '../lib/idempotency.js';
+import { recordStageChange } from '../lib/stageHistory.js';
 
 /**
  * Save a crop stage update with local-first pattern.
@@ -22,16 +24,29 @@ import { safeTrackEvent } from '../lib/analytics.js';
  * @param {Object} options
  * @param {boolean} options.isOnline - Current network status
  * @param {Function} options.refreshProfile - ProfileContext refresh
+ * @param {string} [options.previousStage] - Previous stage (for history tracking)
  * @returns {Promise<{ success: boolean, offline: boolean, error: string|null }>}
  */
-export async function saveCropStage(farmId, stage, { isOnline, refreshProfile }) {
+export async function saveCropStage(farmId, stage, { isOnline, refreshProfile, previousStage = null }) {
   // Track the attempt
   safeTrackEvent('crop_stage.save_attempt', { farmId, stage });
+
+  // Record stage transition in local append-only log
+  recordStageChange({
+    farmId,
+    fromStage: previousStage,
+    toStage: stage,
+    source: 'user',
+    isOnline,
+  });
+
+  const idempotencyKey = getIdempotencyKey('stage', `${farmId}:${stage}`);
 
   try {
     // Attempt API write
     await updateCropStage(farmId, stage, undefined);
 
+    consumeIdempotencyKey('stage', `${farmId}:${stage}`);
     // Refresh profile context so UI reflects the new stage
     if (refreshProfile) {
       await refreshProfile();
@@ -49,6 +64,9 @@ export async function saveCropStage(farmId, stage, { isOnline, refreshProfile })
           method: 'PATCH',
           url: `/api/v2/farm-profile/${farmId}/stage`,
           data: { cropStage: stage },
+          entityType: 'stage',
+          actionType: 'update',
+          idempotencyKey,
         });
         safeTrackEvent('crop_stage.save_queued', { farmId, stage });
         return { success: true, offline: true, error: null };

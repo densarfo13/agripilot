@@ -33,6 +33,9 @@ const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
 const AllTasksPage = lazy(() => import('./pages/AllTasksPage.jsx'));
 const MyFarmPage = lazy(() => import('./pages/MyFarmPage.jsx'));
 const FarmerProgressPage = lazy(() => import('./pages/FarmerProgressPage.jsx'));
+const CropFitIntake = lazy(() => import('./pages/CropFitIntake.jsx'));
+const CropRecommendations = lazy(() => import('./pages/CropRecommendations.jsx'));
+const CropSummary = lazy(() => import('./pages/CropSummary.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
 const FarmersPage = lazy(() => import('./pages/FarmersPage.jsx'));
@@ -226,6 +229,9 @@ export default function App() {
             <Route path="/my-farm" element={<MyFarmPage />} />
             <Route path="/progress" element={<FarmerProgressPage />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
+            <Route path="/crop-fit" element={<CropFitIntake />} />
+            <Route path="/crop-recommendations" element={<CropRecommendations />} />
+            <Route path="/crop-summary" element={<CropSummary />} />
             <Route path="/pest-risk-check" element={<PestRiskCheck />} />
             <Route path="/pest-risk-result" element={<PestRiskResult />} />
             <Route path="/field-hotspots" element={<FieldHotspotAlert />} />

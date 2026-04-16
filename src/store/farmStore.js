@@ -9,8 +9,14 @@ function generateIdempotencyKey() {
 }
 
 /** Queue a mutation for later sync if offline */
-async function queueIfOffline(method, url, data, headers = null) {
-  await enqueue({ method, url, data, ...(headers ? { headers } : {}) });
+async function queueIfOffline(method, url, data, { headers = null, entityType = null, actionType = null, idempotencyKey = null } = {}) {
+  await enqueue({
+    method, url, data,
+    ...(headers ? { headers } : {}),
+    ...(entityType ? { entityType } : {}),
+    ...(actionType ? { actionType } : {}),
+    ...(idempotencyKey ? { idempotencyKey } : {}),
+  });
 }
 
 function isNetworkError(err) {
@@ -108,7 +114,12 @@ export const useFarmStore = create((set, get) => ({
     } catch (err) {
       if (isNetworkError(err)) {
         // Queue for offline sync — include idempotency key for dedup on replay
-        await queueIfOffline('POST', '/v1/farms', data, { 'X-Idempotency-Key': idempotencyKey });
+        await queueIfOffline('POST', '/v1/farms', data, {
+          headers: { 'X-Idempotency-Key': idempotencyKey },
+          entityType: 'profile',
+          actionType: 'create',
+          idempotencyKey,
+        });
         set({ loading: false, _createInFlight: false, error: 'Saved offline — will sync when reconnected.' });
         return { _offline: true, ...data };
       }
@@ -139,7 +150,12 @@ export const useFarmStore = create((set, get) => ({
       return updated;
     } catch (err) {
       if (isNetworkError(err)) {
-        await queueIfOffline('PATCH', `/v1/farms/${farmId}`, data);
+        const key = generateIdempotencyKey();
+        await queueIfOffline('PATCH', `/v1/farms/${farmId}`, data, {
+          entityType: 'profile',
+          actionType: 'update',
+          idempotencyKey: key,
+        });
         return optimistic; // keep optimistic state
       }
       // Revert optimistic on server error
@@ -188,7 +204,12 @@ export const useFarmStore = create((set, get) => ({
       return r.data;
     } catch (err) {
       if (isNetworkError(err)) {
-        await queueIfOffline('POST', `/v1/farms/${farmId}/recommendations`, data);
+        const key = generateIdempotencyKey();
+        await queueIfOffline('POST', `/v1/farms/${farmId}/recommendations`, data, {
+          entityType: 'recommendation',
+          actionType: 'create',
+          idempotencyKey: key,
+        });
         // Optimistic: add a placeholder
         const placeholder = { ...data, id: generateOfflineId('rec'), status: 'pending', _offline: true };
         set((s) => ({ recommendations: [placeholder, ...s.recommendations] }));
@@ -217,7 +238,12 @@ export const useFarmStore = create((set, get) => ({
       return r.data;
     } catch (err) {
       if (isNetworkError(err)) {
-        await queueIfOffline('PATCH', `/v1/farms/${farmId}/recommendations/${recId}`, data);
+        const key = generateIdempotencyKey();
+        await queueIfOffline('PATCH', `/v1/farms/${farmId}/recommendations/${recId}`, data, {
+          entityType: 'recommendation',
+          actionType: 'update',
+          idempotencyKey: key,
+        });
         return optimistic;
       }
       // Revert

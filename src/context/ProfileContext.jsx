@@ -3,6 +3,7 @@ import { getFarmProfile, saveFarmProfile, getFarms, switchActiveFarm as apiSwitc
 import { useAuth } from './AuthContext.jsx';
 import { useNetwork } from './NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { saveProfileLocalFirst, readProfileLocal } from '../services/farmService.js';
 import {
   saveProfileDraft,
   getProfileDraft,
@@ -13,6 +14,7 @@ import {
   saveSyncMeta,
   getSyncMeta,
 } from '../lib/offlineDb.js';
+import { log } from '../lib/logger.js';
 
 const ProfileContext = createContext(null);
 
@@ -163,14 +165,16 @@ export function ProfileProvider({ children }) {
         }
         return serverProfile;
       } else {
-        const draft = await getProfileDraft();
-        setProfile(draft);
-        return draft;
+        // Offline: check recent writes first (local-first), then IndexedDB draft
+        const local = await readProfileLocal();
+        setProfile(local);
+        return local;
       }
     } catch {
-      const draft = await getProfileDraft();
-      if (draft) setProfile(draft);
-      return draft || null;
+      // Network error: serve local data
+      const local = await readProfileLocal();
+      if (local) setProfile(local);
+      return local || null;
     } finally {
       setLoading(false);
       setInitialized(true);
@@ -226,52 +230,31 @@ export function ProfileProvider({ children }) {
     if (savingRef.current) return { profile: payload, skipped: true };
     savingRef.current = true;
     try {
-    await saveProfileDraft(payload);
-    setProfile((prev) => ({ ...prev, ...payload }));
+      // Optimistic UI update — show new data immediately
+      setProfile((prev) => ({ ...prev, ...payload }));
 
-    if (isOnline) {
-      try {
-        const data = await saveFarmProfile(payload);
-        const saved = data.profile || null;
-        setProfile(saved);
-        if (saved) {
-          await saveProfileDraft(saved);
-          persistFarmId(saved.id);
-        }
+      // Delegate to centralized farmService (local-first + background sync)
+      const result = await saveProfileLocalFirst(payload, { isOnline });
+
+      // Update with server-confirmed data if available
+      setProfile(result.profile);
+      if (result.profile?.id) persistFarmId(result.profile.id);
+
+      if (result.offline) {
+        setSyncStatus('idle');
+        log('farm', 'profile_save_offline');
+      } else {
         setSyncStatus('synced');
         await saveSyncMeta({ lastSyncedAt: Date.now(), lastError: null });
-        await refreshSyncMeta();
-        safeTrackEvent('profile.saved', { mode: 'online' });
-        safeTrackEvent('profile.save.success', { mode: 'online' });
-        return data;
-      } catch (err) {
-        // Network errors (no status) → queue for offline sync
-        // API errors (400, 500, etc.) → re-throw so caller can show the error
-        const isNetworkError = !err.status && (err.message === 'Failed to fetch' || err.name === 'TypeError');
-        if (isNetworkError) {
-          console.log('[ProfileContext] Network error during save, queuing for offline sync');
-          await enqueueProfileSync(payload);
-          setSyncStatus('error');
-          await saveSyncMeta({ lastError: err.message || 'Save failed' });
-          await refreshSyncMeta();
-          safeTrackEvent('profile.saved', { mode: 'queued' });
-          safeTrackEvent('profile.save.failed', { error: err.message || 'Save failed' });
-          return { profile: payload, offline: true };
-        }
-        // Server returned an actual error (validation, 500, etc.) — propagate it
-        console.error('[ProfileContext] API error during save:', err.status, err.message);
-        setSyncStatus('error');
-        safeTrackEvent('profile.save.failed', { error: err.message || 'Save failed', status: err.status });
-        throw err;
       }
-    } else {
-      await enqueueProfileSync(payload);
-      setSyncStatus('idle');
       await refreshSyncMeta();
-      safeTrackEvent('profile.saved', { mode: 'offline' });
-      safeTrackEvent('profile.save.offline', {});
-      return { profile: payload, offline: true };
-    }
+      return { profile: result.profile, offline: result.offline };
+    } catch (err) {
+      setSyncStatus('error');
+      await saveSyncMeta({ lastError: err.message || 'Save failed' }).catch(() => {});
+      await refreshSyncMeta();
+      log('farm', 'profile_save_error', { status: err.status, message: err.message });
+      throw err;
     } finally {
       savingRef.current = false;
     }

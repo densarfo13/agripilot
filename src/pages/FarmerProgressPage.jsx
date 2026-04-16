@@ -174,17 +174,17 @@ export default function FarmerProgressPage() {
             <div style={S.insightText}>
               <span style={S.insightTitle}>
                 {pct >= 60
-                  ? (t('progress.insightGreat') || 'Great work!')
+                  ? t('progress.insightGreat')
                   : pct >= 1
-                    ? (t('progress.insightGood') || 'Keep it up!')
-                    : (t('progress.insightStart') || 'Getting started')}
+                    ? t('progress.insightGood')
+                    : t('progress.insightStart')}
               </span>
               <span style={S.insightDesc}>
                 {pct >= 60
-                  ? (t('progress.insightGreatDesc') || 'You\'re ahead of most farmers this week.')
+                  ? t('progress.insightGreatDesc')
                   : pct >= 1
-                    ? (t('progress.insightGoodDesc') || 'You\'re making good progress on your tasks.')
-                    : (t('progress.insightStartDesc') || 'Complete your tasks to keep your farm on track.')}
+                    ? t('progress.insightGoodDesc')
+                    : t('progress.insightStartDesc')}
               </span>
             </div>
           </div>

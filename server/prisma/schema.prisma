@@ -1377,8 +1377,9 @@ model FarmProfile {
   status          String    @default("active") @map("status")  // active | inactive | archived
   isDefault       Boolean   @default(false) @map("is_default")
   experienceLevel String?   @map("experience_level")   // "new" | "experienced" — null = not answered
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  clientUpdatedAt  DateTime? @map("client_updated_at") // Timestamp from client device for conflict ordering
 
   farmer          Farmer?   @relation(fields: [farmerId], references: [id])
   userDirect      User?     @relation("DirectFarmProfile", fields: [userId], references: [id])
@@ -1729,9 +1730,11 @@ model V2FarmTaskCompletion {
   title         String
   priority      String?
   actionType    String?  @map("action_type")
-  status        String   @default("completed")    // completed | skipped
-  completedAt   DateTime @default(now()) @map("completed_at")
-  createdAt     DateTime @default(now()) @map("created_at")
+  status          String   @default("completed")    // completed | skipped
+  completedAt     DateTime @default(now()) @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  idempotencyKey  String?  @map("idempotency_key")  // Client-generated UUID for dedup
+  clientCreatedAt DateTime? @map("client_created_at") // Timestamp from client device
 
   user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   farm FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
@@ -1740,6 +1743,7 @@ model V2FarmTaskCompletion {
   @@index([userId], map: "idx_v2_farm_task_completions_user")
   @@index([farmId], map: "idx_v2_farm_task_completions_farm")
   @@index([completedAt], map: "idx_v2_farm_task_completions_date")
+  @@index([idempotencyKey], map: "idx_v2_farm_task_completions_idem")
   @@map("v2_farm_task_completions")
 }
 
@@ -2381,12 +2385,15 @@ model V2HarvestRecord {
   notes               String?
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
+  idempotencyKey      String?  @map("idempotency_key")  // Client-generated UUID for dedup
+  clientCreatedAt     DateTime? @map("client_created_at") // Timestamp from client device
 
   farm                FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@index([farmId], map: "idx_harvest_records_farm")
   @@index([farmId, harvestDate], map: "idx_harvest_records_farm_date")
   @@index([cropId], map: "idx_harvest_records_crop")
+  @@index([idempotencyKey], map: "idx_harvest_records_idem")
   @@map("harvest_records")
 }
 
@@ -2399,14 +2406,17 @@ model V2FarmCostRecord {
   description String
   amount      Float
   currency    String?                       // GHS | NGN | KES | TZS | USD | XOF
-  notes       String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  idempotencyKey   String?  @map("idempotency_key")  // Client-generated UUID for dedup
+  clientCreatedAt  DateTime? @map("client_created_at") // Timestamp from client device
 
   farm        FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@index([farmId], map: "idx_cost_records_farm")
   @@index([farmId, date], map: "idx_cost_records_farm_date")
   @@index([category], map: "idx_cost_records_category")
+  @@index([idempotencyKey], map: "idx_cost_records_idem")
   @@map("farm_cost_records")
 }

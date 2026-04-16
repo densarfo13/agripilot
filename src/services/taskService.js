@@ -12,6 +12,7 @@
 import { completeTask } from '../lib/api.js';
 import { enqueue } from '../utils/offlineQueue.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { getIdempotencyKey, consumeIdempotencyKey } from '../lib/idempotency.js';
 
 /**
  * Complete a task with local-first pattern.
@@ -29,6 +30,7 @@ export async function completeTaskSafe(farmId, task, { isOnline }) {
 
   safeTrackEvent('task.complete_attempt', { farmId, taskId: task.id, title: task.title });
 
+  const idempotencyKey = getIdempotencyKey('task_completion', `${farmId}:${task.id}`);
   const body = {
     title: task.title,
     priority: task.priority,
@@ -37,6 +39,7 @@ export async function completeTaskSafe(farmId, task, { isOnline }) {
 
   try {
     const data = await completeTask(farmId, task.id, body);
+    consumeIdempotencyKey('task_completion', `${farmId}:${task.id}`);
     safeTrackEvent('task.complete_success', { farmId, taskId: task.id });
     return { success: true, offline: false, nextTask: data.nextTask || null, error: null };
   } catch (err) {
@@ -48,6 +51,9 @@ export async function completeTaskSafe(farmId, task, { isOnline }) {
           method: 'POST',
           url: `/api/v2/farm-tasks/${farmId}/tasks/${encodeURIComponent(task.id)}/complete`,
           data: body,
+          entityType: 'task',
+          actionType: 'complete',
+          idempotencyKey,
         });
         safeTrackEvent('task.complete_queued', { farmId, taskId: task.id });
         return { success: true, offline: true, nextTask: null, error: null };

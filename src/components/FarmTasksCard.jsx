@@ -14,6 +14,7 @@ import { getFarmTasks, completeTask } from '../lib/api.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { buildTaskListViewModels, getTaskStateStyle } from '../domain/tasks/index.js';
+import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 
 const PRIORITY_LABELS = {
   high: 'farmTasks.priorityHigh',
@@ -58,10 +59,14 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
       if (!navigator.onLine || !err.status) {
         try {
           const { enqueue } = await import('../utils/offlineQueue.js');
+          const { getIdempotencyKey } = await import('../lib/idempotency.js');
           await enqueue({
             method: 'POST',
             url: `/api/v2/farm-tasks/${currentFarmId}/tasks/${encodeURIComponent(task.id)}/complete`,
             data: { title: task.title, priority: task.priority, actionType: task.actionType || null },
+            entityType: 'task',
+            actionType: 'complete',
+            idempotencyKey: getIdempotencyKey('task_completion', `${currentFarmId}:${task.id}`),
           });
           setTasks((prev) => prev.filter((t) => t.id !== task.id));
           setCompletedIds((prev) => new Set([...prev, task.id]));
@@ -229,7 +234,7 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
                       ? <span style={S.doneBtnSpinner} />
                       : <span style={S.doneBtnCircle} />}
                   </button>
-                  <span style={S.taskTitle}>{vm?.title || task.title}</span>
+                  <span style={S.taskTitle}>{vm?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
                 <div style={S.taskMeta}>
                   <span style={{ ...S.priorityLabel, color: sty.priorityColor }}>

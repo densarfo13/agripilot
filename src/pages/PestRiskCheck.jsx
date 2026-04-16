@@ -7,6 +7,7 @@ import { usePestReportSubmit } from '../hooks/useIntelligence.js';
 import { uploadPestImage, createPestReport } from '../lib/intelligenceApi.js';
 import { COLORS } from '../constants/intelligence.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
+import { saveImage, markUploading, markUploaded, markFailed, removeImage as removeStoredImage } from '../lib/imageStore.js';
 import VoiceBar from '../components/VoiceBar.jsx';
 
 const STEP_VOICE_KEYS = { 1: 'pest.chooseCrop', 2: 'pest.takePhotos', 3: 'pest.answerQuestions', 4: 'pest.submit' };
@@ -122,9 +123,22 @@ export default function PestRiskCheck() {
       setImageFiles(prev => ({ ...prev, [slotKey]: compressed }));
       setImagePreviews(prev => ({ ...prev, [slotKey]: preview }));
 
-      // Upload immediately for quality feedback
-      setImageQuality(prev => ({ ...prev, [slotKey]: { uploading: true } }));
+      // Persist to IndexedDB BEFORE upload attempt — data is safe even if upload fails
+      let storeId = null;
       try {
+        storeId = await saveImage({
+          blob: compressed,
+          farmId: profileId,
+          context: 'pest_check',
+          fileName: `${slotKey}_${Date.now()}.jpg`,
+          metadata: { slotKey, width: compressed._imgWidth, height: compressed._imgHeight },
+        });
+      } catch { /* imageStore write failed — continue without persistence */ }
+
+      // Upload immediately for quality feedback
+      setImageQuality(prev => ({ ...prev, [slotKey]: { uploading: true, storeId } }));
+      try {
+        if (storeId) await markUploading(storeId);
         const dataUrl = await readFileAsDataURL(compressed);
         const metadata = {
           width: compressed._imgWidth || undefined,
@@ -133,6 +147,8 @@ export default function PestRiskCheck() {
         };
         const res = await uploadPestImage({ profileId, imageType: slotKey, imageUrl: dataUrl, metadata });
         const data = res?.data || res;
+        // Upload succeeded — mark in imageStore, safe to clean up later
+        if (storeId) await markUploaded(storeId, data.imageId || '');
         setImageQuality(prev => ({
           ...prev,
           [slotKey]: {
@@ -142,11 +158,13 @@ export default function PestRiskCheck() {
             rejectionReason: data.rejectionReason,
             retryGuidance: data.retryGuidance,
             imageId: data.imageId,
+            storeId,
           },
         }));
       } catch (err) {
-        // Upload failed — keep preview, clear quality (will re-upload on submit)
-        setImageQuality(prev => ({ ...prev, [slotKey]: { uploading: false, uploadFailed: true } }));
+        // Upload failed — image is safe in IndexedDB for retry
+        if (storeId) await markFailed(storeId);
+        setImageQuality(prev => ({ ...prev, [slotKey]: { uploading: false, uploadFailed: true, storeId } }));
         trackPilotEvent('photo_upload_failed', { slot: slotKey, error: err?.message });
       }
     } catch {
@@ -218,6 +236,12 @@ export default function PestRiskCheck() {
       // Submit report directly (images already uploaded)
       const raw = await createPestReport(reportData);
       const report = raw?.data || raw;
+      // Report submitted successfully — clean up persisted images from IndexedDB
+      for (const q of Object.values(imageQuality)) {
+        if (q?.storeId) {
+          removeStoredImage(q.storeId).catch(() => {});
+        }
+      }
       trackPilotEvent('update_submitted', { type: 'pest_report', profileId });
       navigate('/pest-risk-result', { state: { report } });
     } catch (err) {

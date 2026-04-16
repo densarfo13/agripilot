@@ -397,11 +397,6 @@ export function applyWeatherOverride(action, weatherGuidance, t) {
   const adj = weatherGuidance.adjustments || {};
   const rainTiming = weatherGuidance.rainTiming || 'none';
 
-  // Only override when rain is TODAY (now or later today).
-  // A 3-day-only forecast does NOT trigger overrides.
-  if (rainTiming !== 'now' && rainTiming !== 'later') return action;
-  if (!(adj.watering < -3 || adj.spraying < -5 || adj.drying < -3)) return action;
-
   // Detect task category from ID prefix, actionType, and title keywords
   const isDryTask = taskId.startsWith('post-dry') || actionType === 'drying'
     || titleLower.includes('dry') || titleLower.includes('séch')
@@ -410,6 +405,16 @@ export function applyWeatherOverride(action, weatherGuidance, t) {
   const isSprayTask = actionType === 'spraying' || titleLower.includes('spray') || titleLower.includes('pesticide');
 
   if (!isDryTask && !isWaterTask && !isSprayTask) return action;
+
+  // Wind override: spray tasks should be blocked regardless of rain
+  const hasWindOverride = adj.spraying <= -5 && isSprayTask;
+
+  // Rain override: only when rain is TODAY (now or later today).
+  // A 3-day-only forecast does NOT trigger overrides.
+  const hasRainOverride = (rainTiming === 'now' || rainTiming === 'later') &&
+    (adj.watering < -3 || adj.drying < -3 || adj.spraying < -5);
+
+  if (!hasWindOverride && !hasRainOverride) return action;
 
   // Build weather-safe replacement
   let altTitle, altReason;

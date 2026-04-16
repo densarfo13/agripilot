@@ -61,14 +61,31 @@ export function setLanguage(code) {
  * @returns {string}
  */
 export function t(key, lang, vars) {
+  if (!key) return '';
   const entry = T[key];
+  const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV === 'development';
   if (!entry) {
-    if (process.env.NODE_ENV === 'development' || (typeof import.meta !== 'undefined' && import.meta.env?.DEV)) {
+    if (isDev) {
       console.warn(`[i18n] Missing key: "${key}"`);
     }
     return ''; // never leak raw keys to UI
   }
-  let text = entry[lang] || entry.en || ''; // target → English → empty
+  let text = entry[lang];
+  if (!text && lang !== 'en') {
+    text = entry.en || '';
+    // In dev: warn about English fallback so translators can fix it
+    if (isDev && text) {
+      // Throttle: only warn once per key per session
+      _warnedFallbacks ??= new Set();
+      const warnKey = `${key}:${lang}`;
+      if (!_warnedFallbacks.has(warnKey)) {
+        _warnedFallbacks.add(warnKey);
+        console.warn(`[i18n] Falling back to English for "${key}" (lang="${lang}")`);
+      }
+    }
+  } else if (!text) {
+    text = entry.en || '';
+  }
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
@@ -76,6 +93,8 @@ export function t(key, lang, vars) {
   }
   return text;
 }
+
+let _warnedFallbacks = null;
 
 // ── Convenience: bound translate for a given lang ──
 export function createT(lang) {

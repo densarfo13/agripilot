@@ -4,6 +4,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore } from '../lib/farmScore.js';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useTranslation } from '../i18n/index.js';
+import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 
 function formatDate(value) {
   if (!value) return '-';
@@ -27,7 +28,7 @@ export default function SeasonTasksCard() {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const { season, seasonLoading, markTaskComplete } = useSeason();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [completingId, setCompletingId] = useState(null);
   const [taskError, setTaskError] = useState(null);
 
@@ -90,9 +91,9 @@ export default function SeasonTasksCard() {
               <div style={S.taskContent}>
                 <div>
                   <div style={completed ? S.taskTitleCompleted : S.taskTitle}>
-                    {task.title}
+                    {getLocalizedTaskTitle(task.id, task.title, lang)}
                   </div>
-                  {task.description && (
+                  {lang === 'en' && task.description && (
                     <div style={S.taskDesc}>{task.description}</div>
                   )}
                   <div style={S.taskMeta}>

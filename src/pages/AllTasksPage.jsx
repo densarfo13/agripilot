@@ -79,10 +79,14 @@ export default function AllTasksPage() {
       if (!navigator.onLine || !err.status) {
         try {
           const { enqueue } = await import('../utils/offlineQueue.js');
+          const { getIdempotencyKey } = await import('../lib/idempotency.js');
           await enqueue({
             method: 'POST',
             url: `/api/v2/farm-tasks/${currentFarmId}/tasks/${encodeURIComponent(task.id)}/complete`,
             data: { title: task.title, priority: task.priority, actionType: task.actionType || null },
+            entityType: 'task',
+            actionType: 'complete',
+            idempotencyKey: getIdempotencyKey('task_completion', `${currentFarmId}:${task.id}`),
           });
           savedOffline = true;
           finishCompletion(task, savedOffline);
@@ -242,7 +246,7 @@ export default function AllTasksPage() {
                 <div style={S.currentContent}>
                   <span style={S.currentIcon}>{getTaskActionIcon(currentTask.actionType)}</span>
                   <div style={S.currentTextWrap}>
-                    <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || currentTask.title}</span>
+                    <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)}</span>
                     {vmByTaskId[currentTask.id]?.whyText && (
                       <span style={S.currentWhy}>{vmByTaskId[currentTask.id].whyText}</span>
                     )}
@@ -273,7 +277,7 @@ export default function AllTasksPage() {
                       : <span style={S.doneBtnCircleSmall} />}
                   </button>
                   <span style={S.compactIcon}>{getTaskActionIcon(task.actionType)}</span>
-                  <span style={S.compactTitle}>{vmByTaskId[task.id]?.title || task.title}</span>
+                  <span style={S.compactTitle}>{vmByTaskId[task.id]?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
               ))}
             </>
@@ -305,7 +309,7 @@ export default function AllTasksPage() {
                       : <span style={S.doneBtnCircleSmall} />}
                   </button>
                   <span style={S.compactIcon}>{getTaskActionIcon(task.actionType)}</span>
-                  <span style={S.compactTitle}>{vmByTaskId[task.id]?.title || task.title}</span>
+                  <span style={S.compactTitle}>{vmByTaskId[task.id]?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
               ))}
             </>
@@ -322,7 +326,7 @@ export default function AllTasksPage() {
                 <div key={task.id} style={S.completedRow}>
                   <span style={S.completedCheck}>{'\u2705'}</span>
                   <span style={S.completedIcon}>{getTaskActionIcon(task.actionType)}</span>
-                  <span style={S.completedTitle}>{vmByTaskId[task.id]?.title || task.title}</span>
+                  <span style={S.completedTitle}>{vmByTaskId[task.id]?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
               ))}
             </>

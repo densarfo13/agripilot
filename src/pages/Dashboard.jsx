@@ -32,6 +32,7 @@ import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
 
 const BasicFarmerHome = lazy(() => import('../components/farmer/BasicFarmerHome.jsx'));
+const BeginnerPrompt = lazy(() => import('../components/farmer/BeginnerPrompt.jsx'));
 
 export default function Dashboard() {
   const { user, authLoading } = useAuth();
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const [selectedUpdateFarm, setSelectedUpdateFarm] = useState(null);
 
   const hasMultipleFarms = loop.activeFarms && loop.activeFarms.length > 1;
+  const showBeginnerPrompt = loop.profile && !loop.profile.cropType && loop.loopState !== LOOP_STATE.LOADING;
 
   // ─── CTA handlers (bridge loop → modals) ────────────────
   function handleDoThisNow() {
@@ -194,6 +196,12 @@ export default function Dashboard() {
           {emptyState}
           {feedbackBanner}
 
+          {showBeginnerPrompt && (
+            <Suspense fallback={null}>
+              <BeginnerPrompt />
+            </Suspense>
+          )}
+
           {loop.profile && !loop.farmSwitching && (
             <Suspense fallback={null}>
               <BasicFarmerHome
@@ -227,6 +235,12 @@ export default function Dashboard() {
         {weatherLine}
         {emptyState}
         {feedbackBanner}
+
+        {showBeginnerPrompt && (
+          <Suspense fallback={null}>
+            <BeginnerPrompt />
+          </Suspense>
+        )}
 
         {loop.profile && !loop.farmSwitching && (
           <NextActionCard

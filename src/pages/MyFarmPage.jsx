@@ -219,6 +219,13 @@ export default function MyFarmPage() {
           <div style={S.actionsRow}>
             <button
               type="button"
+              onClick={() => navigate('/crop-fit')}
+              style={S.cropFitBtn}
+            >
+              {'\uD83C\uDF3E'} {t('myFarm.findBestCrop') || 'Find My Best Crop'}
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/profile/setup')}
               style={S.editBtn}
             >
@@ -402,6 +409,18 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
+  },
+  cropFitBtn: {
+    width: '100%',
+    padding: '0.875rem',
+    borderRadius: '14px',
+    border: '1px solid rgba(34,197,94,0.2)',
+    background: 'rgba(34,197,94,0.06)',
+    color: '#22C55E',
+    fontSize: '0.9375rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
   },
   editBtn: {
     width: '100%',

@@ -4749,6 +4749,206 @@ const T = {
   'autopilot.nextReady': { en: 'Next task ready', fr: 'Tâche suivante prête', sw: 'Kazi ifuatayo iko tayari', ha: 'Aikin gaba ya shirya', tw: 'Adwuma a edi so asiesie' },
   'autopilot.continue': { en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Toa so' },
   'autopilot.savedOffline': { en: 'Saved offline', fr: 'Sauvegardé hors ligne', sw: 'Imehifadhiwa nje ya mtandao', ha: 'An adana a wajen layi', tw: 'Wɔakora a intanɛt nni hɔ' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  STARTER GUIDE — crop fit entry point
+  // ═══════════════════════════════════════════════════════════
+  'starterGuide.findBestCrop': { en: 'Find My Best Crop', fr: 'Trouver ma meilleure culture', sw: 'Tafuta Zao Langu Bora', ha: 'Nemo Amfanin Gona na Mafi Kyau', tw: 'Hwehwɛ Me Nnɔbae Pa' },
+  'myFarm.findBestCrop': { en: 'Find My Best Crop', fr: 'Trouver ma meilleure culture', sw: 'Tafuta Zao Langu Bora', ha: 'Nemo Amfanin Gona na Mafi Kyau', tw: 'Hwehwɛ Me Nnɔbae Pa' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  CROP FIT — intake questions
+  // ═══════════════════════════════════════════════════════════
+  'cropFit.q.experience': { en: 'How much farming experience do you have?', fr: 'Quelle est votre expérience agricole ?', sw: 'Una uzoefu kiasi gani wa kilimo?', ha: 'Kana da ƙwarewar noma nawa?', tw: 'Wowɔ adwumayɛ mu nimdeɛ dodoɔ bɛn wɔ afuoyɛ mu?' },
+  'cropFit.q.landSize': { en: 'How much land do you have?', fr: 'Quelle est la taille de votre terrain ?', sw: 'Una ardhi kiasi gani?', ha: 'Kana da filaye nawa?', tw: 'Asase dodoɔ bɛn na wowɔ?' },
+  'cropFit.q.waterAccess': { en: 'What is your water source?', fr: 'Quelle est votre source d\'eau ?', sw: 'Chanzo chako cha maji ni kipi?', ha: 'Menene tushen ruwan ku?', tw: 'Wo nsu fibea ne deɛn?' },
+  'cropFit.q.budget': { en: 'What is your budget level?', fr: 'Quel est votre budget ?', sw: 'Bajeti yako ni kiasi gani?', ha: 'Menene matakin kasafin ku?', tw: 'Wo sika dodoɔ bɛn?' },
+  'cropFit.q.goal': { en: 'What is your main goal?', fr: 'Quel est votre objectif principal ?', sw: 'Lengo lako kuu ni nini?', ha: 'Menene babban burin ku?', tw: 'Wo botaeɛ titiriw ne deɛn?' },
+  'cropFit.q.preferredCrop': { en: 'Do you have a crop preference?', fr: 'Avez-vous une préférence de culture ?', sw: 'Una upendeleo wa zao?', ha: 'Kuna da zaɓin amfanin gona?', tw: 'Wowɔ nnɔbae bi a wopɛ paa?' },
+
+  'cropFit.hint.experience': { en: 'Be honest — we\'ll match you with the right crops.', fr: 'Soyez honnête — on trouvera les bonnes cultures.', sw: 'Kuwa mkweli — tutakupatia mazao yanayofaa.', ha: 'Ka gaskiya — za mu sami amfanin gona masu dacewa.', tw: 'Ka nokorɛ — yɛbɛhwehwɛ nnɔbae a ɛfata wo.' },
+  'cropFit.hint.landSize': { en: 'Estimate is fine.', fr: 'Une estimation suffit.', sw: 'Makadirio yanafaa.', ha: 'Kiyasi ya isa.', tw: 'Nsusuwii bɛyɛ.' },
+  'cropFit.hint.waterAccess': { en: 'This affects which crops will grow well.', fr: 'Cela influence quelles cultures pousseront bien.', sw: 'Hii inaathiri mazao yatakayokua vizuri.', ha: 'Wannan yana tasiri wane amfanin gona za su yi kyau.', tw: 'Eyi bɛhyɛ nnɔbae a ɛbɛyɛ yie no.' },
+  'cropFit.hint.budget': { en: 'Some crops need more investment to start.', fr: 'Certaines cultures demandent plus d\'investissement.', sw: 'Baadhi ya mazao yanahitaji uwekezaji zaidi.', ha: 'Wasu amfanin gona suna buƙatar ƙarin jari.', tw: 'Nnɔbae bi hia sika pii ansa na woahyɛ ase.' },
+  'cropFit.hint.goal': { en: 'This helps us pick the most useful crops for you.', fr: 'Ça nous aide à choisir les meilleures cultures.', sw: 'Hii inatusaidia kuchagua mazao yanayofaa zaidi.', ha: 'Wannan yana taimaka mana zaɓar amfanin gona masu amfani.', tw: 'Eyi boa yɛn hwehwɛ nnɔbae a ɛho wɔ mfasoɔ ma wo.' },
+  'cropFit.hint.preferredCrop': { en: 'Optional — skip if unsure.', fr: 'Facultatif — passez si vous hésitez.', sw: 'Si lazima — ruka kama huna uhakika.', ha: 'Zaɓi ne — tsallake idan ba ka da tabbaci.', tw: 'Ɛnyɛ dɛ ɛsɛ — twa mu sɛ wonnim.' },
+
+  // ─── Experience options ──
+  'cropFit.exp.none': { en: 'I\'m completely new', fr: 'Je suis débutant', sw: 'Mimi ni mpya kabisa', ha: 'Ni sabon shiga ne', tw: 'Meyɛ ɔfoforɔ koraa' },
+  'cropFit.exp.some': { en: 'I\'ve grown something before', fr: 'J\'ai déjà cultivé', sw: 'Nimeshawahi kulima', ha: 'Na taɓa noma', tw: 'Madua biribi bi da' },
+  'cropFit.exp.experienced': { en: 'I farm regularly', fr: 'Je cultive régulièrement', sw: 'Ninalima mara kwa mara', ha: 'Ina noma kullum', tw: 'Meyɛ afuoyɛ daa' },
+
+  // ─── Land size options ──
+  'cropFit.land.small': { en: 'Small (backyard / under 1 acre)', fr: 'Petit (jardin / moins de 0,5 ha)', sw: 'Ndogo (nyumbani / chini ya ekari 1)', ha: 'Ƙarami (bayan gida / ƙasa da eka 1)', tw: 'Ketewa (efie akyi / ɛnsen eka 1)' },
+  'cropFit.land.medium': { en: 'Medium (1–5 acres)', fr: 'Moyen (0,5–2 ha)', sw: 'Wastani (ekari 1–5)', ha: 'Matsakaici (eka 1–5)', tw: 'Ntam (eka 1–5)' },
+  'cropFit.land.large': { en: 'Large (5+ acres)', fr: 'Grand (plus de 2 ha)', sw: 'Kubwa (ekari 5+)', ha: 'Babba (eka 5+)', tw: 'Kɛse (eka 5+)' },
+
+  // ─── Water access options ──
+  'cropFit.water.rainOnly': { en: 'Rain only', fr: 'Pluie uniquement', sw: 'Mvua tu', ha: 'Ruwan sama kaɗai', tw: 'Nsuo a ɛtɔ nko' },
+  'cropFit.water.wellRiver': { en: 'Well or river nearby', fr: 'Puits ou rivière à proximité', sw: 'Kisima au mto karibu', ha: 'Rijiya ko kogi kusa', tw: 'Abura anaa nsu a ɛbɛn' },
+  'cropFit.water.irrigation': { en: 'I have irrigation', fr: 'J\'ai l\'irrigation', sw: 'Nina umwagiliaji', ha: 'Ina ban ruwa', tw: 'Mewɔ nsu a mede gu' },
+
+  // ─── Budget options ──
+  'cropFit.budget.low': { en: 'Low — minimal spending', fr: 'Faible — dépenses minimales', sw: 'Ndogo — matumizi kidogo', ha: 'Ƙarami — ƙaramin kashe kuɗi', tw: 'Kakra — sika kakra' },
+  'cropFit.budget.medium': { en: 'Medium — some investment', fr: 'Moyen — un peu d\'investissement', sw: 'Wastani — uwekezaji kiasi', ha: 'Matsakaici — wasu jari', tw: 'Ntam — sika bi' },
+  'cropFit.budget.high': { en: 'High — ready to invest', fr: 'Élevé — prêt à investir', sw: 'Kubwa — tayari kuwekeza', ha: 'Babba — a shirye jari', tw: 'Kɛse — masiesie ato sika mu' },
+
+  // ─── Goal options ──
+  'cropFit.goal.homeFood': { en: 'Feed my family', fr: 'Nourrir ma famille', sw: 'Kulisha familia yangu', ha: 'Ciyar da iyalina', tw: 'Ma me fifo aduan' },
+  'cropFit.goal.localSales': { en: 'Sell at local market', fr: 'Vendre au marché local', sw: 'Kuuza sokoni', ha: 'Sayar a kasuwa', tw: 'Tɔn wɔ gua so' },
+  'cropFit.goal.profit': { en: 'Maximize profit', fr: 'Maximiser le profit', sw: 'Kuongeza faida', ha: 'Samun riba mai yawa', tw: 'Nya mfasoɔ kɛse' },
+
+  // ─── Preferred crop options ──
+  'cropFit.pref.noPref': { en: 'No preference — suggest for me', fr: 'Pas de préférence — suggérez', sw: 'Sina upendeleo — nipendekezee', ha: 'Babu zaɓi — ba ni shawara', tw: 'Menni nea mepɛ — kyerɛ me bi' },
+  'cropFit.pref.maize': { en: 'Maize (corn)', fr: 'Maïs', sw: 'Mahindi', ha: 'Masara', tw: 'Aburoɔ' },
+  'cropFit.pref.bean': { en: 'Beans', fr: 'Haricots', sw: 'Maharage', ha: 'Wake', tw: 'Abɛmmerɛ' },
+  'cropFit.pref.cassava': { en: 'Cassava', fr: 'Manioc', sw: 'Mihogo', ha: 'Rogo', tw: 'Bankye' },
+  'cropFit.pref.tomato': { en: 'Tomato', fr: 'Tomate', sw: 'Nyanya', ha: 'Tumatir', tw: 'Ntomato' },
+  'cropFit.pref.rice': { en: 'Rice', fr: 'Riz', sw: 'Mpunga', ha: 'Shinkafa', tw: 'Ɛmo' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  CROP FIT — results screen
+  // ═══════════════════════════════════════════════════════════
+  'cropFit.results.title': { en: 'Your Top Crops', fr: 'Vos meilleures cultures', sw: 'Mazao Yako Bora', ha: 'Amfanin Gonan ku Mafi Kyau', tw: 'Wo Nnɔbae Pa' },
+  'cropFit.results.subtitle': { en: 'Based on your answers, here are our recommendations.', fr: 'Voici nos recommandations selon vos réponses.', sw: 'Kulingana na majibu yako, hizi ndizo mapendekezo yetu.', ha: 'Bisa ga amsoshin ku, ga shawarwarinmu.', tw: 'Sɛ wo mmuaeɛ te no, yei ne yɛn nkamfo.' },
+  'cropFit.results.bestFit': { en: 'Best Fit', fr: 'Meilleur choix', sw: 'Bora Zaidi', ha: 'Mafi Dacewa', tw: 'Nea Ɛfata Paa' },
+  'cropFit.results.noResults': { en: 'No crops matched. Try different answers.', fr: 'Aucune culture trouvée. Essayez d\'autres réponses.', sw: 'Hakuna mazao yaliyopatikana. Jaribu majibu tofauti.', ha: 'Babu amfanin gona. Gwada amsoshi daban.', tw: 'Nnɔbae biara anhyia. Sɔ mmuaeɛ foforɔ hwɛ.' },
+  'cropFit.results.tryAgain': { en: 'Try Again', fr: 'Réessayer', sw: 'Jaribu Tena', ha: 'Sake Gwadawa', tw: 'San Hwehwɛ' },
+
+  // ─── Difficulty labels ──
+  'cropFit.diff.beginner': { en: 'Beginner', fr: 'Débutant', sw: 'Anayeanza', ha: 'Sabon farawa', tw: 'Ɔfoforɔ' },
+  'cropFit.diff.moderate': { en: 'Moderate', fr: 'Intermédiaire', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
+  'cropFit.diff.advanced': { en: 'Advanced', fr: 'Avancé', sw: 'Ngumu', ha: 'Mai wahala', tw: 'Ɛyɛ den' },
+
+  // ─── Level labels (water, cost, effort, market) ──
+  'cropFit.level.low': { en: 'Low', fr: 'Faible', sw: 'Chini', ha: 'Ƙarami', tw: 'Kakra' },
+  'cropFit.level.moderate': { en: 'Moderate', fr: 'Moyen', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
+  'cropFit.level.high': { en: 'High', fr: 'Élevé', sw: 'Juu', ha: 'Babba', tw: 'Kɛse' },
+
+  // ─── Weeks label ──
+  'cropFit.weeks': { en: 'weeks', fr: 'semaines', sw: 'wiki', ha: 'makonni', tw: 'nnawɔtwe' },
+
+  // ─── Fit reasons (chips on recommendation cards) ──
+  'cropFit.reason.beginnerFriendly': { en: 'Beginner-friendly', fr: 'Facile pour débutants', sw: 'Rahisi kwa wanaoanza', ha: 'Mai sauƙi ga sabbin farawa', tw: 'Ɛyɛ mmerɛ ma afoforɔ' },
+  'cropFit.reason.lowWater': { en: 'Low water needs', fr: 'Peu d\'eau nécessaire', sw: 'Haitaji maji mengi', ha: 'Ba ta buƙatar ruwa da yawa', tw: 'Ɛnhia nsu pii' },
+  'cropFit.reason.droughtTolerant': { en: 'Drought tolerant', fr: 'Résiste à la sécheresse', sw: 'Inavumilia ukame', ha: 'Tana jure fari', tw: 'Ɛtumi gyina ɔpɛ mu' },
+  'cropFit.reason.lowCost': { en: 'Low cost to start', fr: 'Faible coût de démarrage', sw: 'Gharama ndogo kuanza', ha: 'Ƙaramin farashi don farawa', tw: 'Ɛnhia sika pii' },
+  'cropFit.reason.goodForFood': { en: 'Good for home food', fr: 'Bon pour nourrir la famille', sw: 'Nzuri kwa chakula nyumbani', ha: 'Mai kyau don abinci gida', tw: 'Eye ma efie aduan' },
+  'cropFit.reason.goodForSales': { en: 'Good for local sales', fr: 'Bon pour vente locale', sw: 'Nzuri kwa kuuza sokoni', ha: 'Mai kyau don sayar a kasuwa', tw: 'Eye ma gua so tɔn' },
+  'cropFit.reason.goodForProfit': { en: 'High profit potential', fr: 'Fort potentiel de profit', sw: 'Uwezekano mkubwa wa faida', ha: 'Damar riba mai yawa', tw: 'Mfasoɔ kɛse wɔ mu' },
+  'cropFit.reason.goodTiming': { en: 'Good timing to plant now', fr: 'Bon moment pour planter', sw: 'Wakati mzuri wa kupanda sasa', ha: 'Lokaci mai kyau don shuka yanzu', tw: 'Ɛyɛ bere pa sɛ wuadua seesei' },
+  'cropFit.reason.fitsSmallFarm': { en: 'Fits small farms', fr: 'Adapté aux petites fermes', sw: 'Inafaa mashamba madogo', ha: 'Ya dace da ƙananan gonaki', tw: 'Ɛfata mfuw nketewa' },
+  'cropFit.reason.yourChoice': { en: 'Your preferred crop', fr: 'Votre culture préférée', sw: 'Zao lako unalopendelea', ha: 'Amfanin gonan da kuka zaɓa', tw: 'Nnɔbae a wopɛ' },
+
+  // ─── Warnings ──
+  'cropFit.warning.moderate': { en: 'Needs some care', fr: 'Demande un peu de soin', sw: 'Inahitaji uangalifu kiasi', ha: 'Yana buƙatar wasu kulawa', tw: 'Ɛhia nhwɛsoɔ kakra' },
+  'cropFit.warning.advanced': { en: 'Challenging for beginners', fr: 'Difficile pour débutants', sw: 'Ngumu kwa wanaoanza', ha: 'Mai wahala ga sabbin farawa', tw: 'Ɛyɛ den ma afoforɔ' },
+  'cropFit.warning.needsIrrigation': { en: 'Needs irrigation', fr: 'Nécessite l\'irrigation', sw: 'Inahitaji umwagiliaji', ha: 'Yana buƙatar ban ruwa', tw: 'Ɛhia nsu a wɔde gu' },
+  'cropFit.warning.highCost': { en: 'Higher startup cost', fr: 'Coût de démarrage élevé', sw: 'Gharama kubwa ya kuanza', ha: 'Tsadar farawa mai yawa', tw: 'Ɛhia sika pii ansa na woahyɛ ase' },
+
+  // ─── Timing signals ──
+  'cropFit.timing.goodNow': { en: 'Good time to plant now', fr: 'Bon moment pour planter', sw: 'Wakati mzuri kupanda sasa', ha: 'Lokaci mai kyau don shuka', tw: 'Ɛyɛ bere pa sɛ wuadua' },
+  'cropFit.timing.needsIrrigation': { en: 'Needs irrigation setup', fr: 'Nécessite installation d\'irrigation', sw: 'Inahitaji mfumo wa umwagiliaji', ha: 'Yana buƙatar tsarin ban ruwa', tw: 'Ɛhia nsu a wɔde gu nhyehyɛeɛ' },
+  'cropFit.timing.waitForRains': { en: 'Wait for rainy season', fr: 'Attendez la saison des pluies', sw: 'Subiri msimu wa mvua', ha: 'Jira daminar ruwa', tw: 'Twɛn osu bere' },
+  'cropFit.timing.notIdealNow': { en: 'Not ideal now — plan ahead', fr: 'Pas idéal maintenant — planifiez', sw: 'Si bora sasa — panga mapema', ha: 'Ba shine ba yanzu — shirya gaba', tw: 'Ɛnyɛ bere pa seesei — hyɛ nsa' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  CROP SUMMARY — A-Z crop plan screen
+  // ═══════════════════════════════════════════════════════════
+  'cropSummary.harvestTime': { en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa bere' },
+  'cropSummary.waterNeed': { en: 'Water', fr: 'Eau', sw: 'Maji', ha: 'Ruwa', tw: 'Nsu' },
+  'cropSummary.effort': { en: 'Effort', fr: 'Effort', sw: 'Juhudi', ha: 'Ƙoƙari', tw: 'Mmɔden' },
+  'cropSummary.stages': { en: 'Main Stages', fr: 'Étapes principales', sw: 'Hatua Kuu', ha: 'Matakai Muhimmai', tw: 'Anammɔn Titiriw' },
+  'cropSummary.whatYouNeed': { en: 'What You Need', fr: 'Ce dont vous avez besoin', sw: 'Unachohitaji', ha: 'Abin da kuke buƙata', tw: 'Nea Wohia' },
+  'cropSummary.mainRisks': { en: 'Main Risks', fr: 'Risques principaux', sw: 'Hatari Kuu', ha: 'Haɗurra Muhimmai', tw: 'Asiane Titiriw' },
+  'cropSummary.economics': { en: 'Simple Economics', fr: 'Économie simple', sw: 'Uchumi Rahisi', ha: 'Tattalin Arzikin Sauƙi', tw: 'Sika Ho Nsɛm' },
+  'cropSummary.costLevel': { en: 'Startup cost', fr: 'Coût de démarrage', sw: 'Gharama ya kuanza', ha: 'Kudin farawa', tw: 'Sika a ɛhia' },
+  'cropSummary.laborLevel': { en: 'Labor needed', fr: 'Main d\'oeuvre', sw: 'Kazi inayohitajika', ha: 'Aikin da ake buƙata', tw: 'Adwumayɛfoɔ a ɛhia' },
+  'cropSummary.marketPotential': { en: 'Market potential', fr: 'Potentiel de marché', sw: 'Uwezekano wa soko', ha: 'Damar kasuwa', tw: 'Aguadeɛ mu mfasoɔ' },
+  'cropSummary.whyFits': { en: 'Why This Crop Fits You', fr: 'Pourquoi cette culture vous convient', sw: 'Kwa Nini Zao Hili Linakufaa', ha: 'Me Ya Sa Wannan Amfanin Gona Ya Dace', tw: 'Deɛn Nti na Nnɔbae Yi Fata Wo' },
+  'cropSummary.startPlan': { en: 'Start Growing This Crop', fr: 'Commencer cette culture', sw: 'Anza Kulima Zao Hili', ha: 'Fara Noman Wannan Amfanin Gona', tw: 'Hyɛ Nnɔbae Yi Ase' },
+  'cropSummary.starting': { en: 'Setting up...', fr: 'Configuration...', sw: 'Inasanidi...', ha: 'Ana shirya...', tw: 'Ɛresiesie...' },
+  'cropSummary.startHint': { en: 'This sets your crop and starts daily guidance.', fr: 'Cela configure votre culture et lance le guidage quotidien.', sw: 'Hii inaweka zao lako na kuanza mwongozo wa kila siku.', ha: 'Wannan zai saita amfanin gonan ku kuma fara jagora na yau da kullum.', tw: 'Eyi de wo nnɔbae to hɔ na ɛhyɛ daa nkyerɛkyerɛ ase.' },
+
+  // ─── Stage names ──
+  'cropSummary.stage.land_prep': { en: 'Prepare your land', fr: 'Préparer le terrain', sw: 'Tayarisha ardhi yako', ha: 'Shirya ƙasar ku', tw: 'Siesie wo asase' },
+  'cropSummary.stage.planting': { en: 'Plant your crop', fr: 'Planter votre culture', sw: 'Panda zao lako', ha: 'Shuka amfanin gona', tw: 'Dua wo nnɔbae' },
+  'cropSummary.stage.early_growth': { en: 'Early growth care', fr: 'Soins de début de croissance', sw: 'Utunzaji wa ukuaji wa mapema', ha: 'Kulawa lokacin farkon girma', tw: 'Mfitiaseɛ mu nhwɛsoɔ' },
+  'cropSummary.stage.maintenance': { en: 'Protect and maintain', fr: 'Protéger et entretenir', sw: 'Linda na utunze', ha: 'Kare da kuma kula', tw: 'Bɔ ho ban na hwɛ so' },
+  'cropSummary.stage.harvest': { en: 'Harvest your crop', fr: 'Récolter votre culture', sw: 'Vuna zao lako', ha: 'Girbe amfanin gona', tw: 'Twa wo nnɔbae' },
+  'cropSummary.stage.post_harvest': { en: 'Dry, store, or sell', fr: 'Sécher, stocker ou vendre', sw: 'Kausha, hifadhi, au uza', ha: 'Bushe, ajiye, ko sayar', tw: 'Hwie awo, kora, anaa tɔn' },
+
+  // ─── Need items ──
+  'cropSummary.need.seeds': { en: 'Seeds', fr: 'Semences', sw: 'Mbegu', ha: 'Iri', tw: 'Aba' },
+  'cropSummary.need.cuttings': { en: 'Stem cuttings', fr: 'Boutures', sw: 'Vipandikizi', ha: 'Yankan kara', tw: 'Dua ntwanoo' },
+  'cropSummary.need.vine_cuttings': { en: 'Vine cuttings', fr: 'Boutures de vigne', sw: 'Vipandikizi vya mzabibu', ha: 'Yankan kara', tw: 'Ntwanoo' },
+  'cropSummary.need.suckers': { en: 'Suckers', fr: 'Rejets', sw: 'Machipukizi', ha: 'Keɓaɓɓun itace', tw: 'Nsono' },
+  'cropSummary.need.seedlings': { en: 'Seedlings', fr: 'Plants', sw: 'Miche', ha: 'Shuke-shuke', tw: 'Nfifideɛ' },
+  'cropSummary.need.seed_potatoes': { en: 'Seed potatoes', fr: 'Semences de pomme de terre', sw: 'Mbegu za viazi', ha: 'Irin dankali', tw: 'Aborɔdeɛ aba' },
+  'cropSummary.need.fertilizer': { en: 'Fertilizer', fr: 'Engrais', sw: 'Mbolea', ha: 'Taki', tw: 'Asase aduro' },
+  'cropSummary.need.water': { en: 'Water', fr: 'Eau', sw: 'Maji', ha: 'Ruwa', tw: 'Nsu' },
+  'cropSummary.need.labor': { en: 'Labor / help', fr: 'Main d\'oeuvre', sw: 'Vibarua / msaada', ha: 'Ma\'aikata / taimako', tw: 'Adwumayɛfoɔ / mmoa' },
+  'cropSummary.need.basic_tools': { en: 'Basic tools (hoe, machete)', fr: 'Outils de base (houe, machette)', sw: 'Vifaa vya msingi (jembe, panga)', ha: 'Kayan aiki na farko (fartanya, adda)', tw: 'Nnwinnade (sɔsɔ, sekan)' },
+  'cropSummary.need.pesticide': { en: 'Pesticide / spray', fr: 'Pesticide / pulvérisateur', sw: 'Dawa ya wadudu', ha: 'Maganin kwari', tw: 'Nnɔbae aduro' },
+  'cropSummary.need.stakes': { en: 'Stakes / supports', fr: 'Tuteurs / supports', sw: 'Fito / vitegemeo', ha: 'Sanda / goyon baya', tw: 'Nnua a wɔde si so' },
+  'cropSummary.need.shade_trees': { en: 'Shade trees', fr: 'Arbres d\'ombre', sw: 'Miti ya kivuli', ha: 'Itatuwan inuwa', tw: 'Nnua a ɛyɛ nwini' },
+  'cropSummary.need.transport': { en: 'Transport', fr: 'Transport', sw: 'Usafiri', ha: 'Sufuri', tw: 'Akwantu' },
+
+  // ─── Risk items ──
+  'cropSummary.risk.drought': { en: 'Drought can damage crop', fr: 'La sécheresse peut endommager', sw: 'Ukame unaweza kuharibu zao', ha: 'Fari na iya lalata amfani', tw: 'Ɔpɛ bɛtumi asɛe nnɔbae' },
+  'cropSummary.risk.pests': { en: 'Watch for pests', fr: 'Attention aux ravageurs', sw: 'Angalia wadudu', ha: 'Lura da kwari', tw: 'Hwɛ mmoa a wɔsɛe nnɔbae' },
+  'cropSummary.risk.disease': { en: 'Risk of crop disease', fr: 'Risque de maladie', sw: 'Hatari ya magonjwa ya mazao', ha: 'Haɗarin cutar amfani', tw: 'Nnɔbae yareɛ ho asiane' },
+  'cropSummary.risk.poor_storage': { en: 'Store properly to avoid loss', fr: 'Bien stocker pour éviter les pertes', sw: 'Hifadhi vizuri kuepuka hasara', ha: 'Ajiye da kyau don guje asara', tw: 'Kora yie na woammɔne' },
+  'cropSummary.risk.low_market_price': { en: 'Market price can drop', fr: 'Le prix du marché peut baisser', sw: 'Bei ya soko inaweza kushuka', ha: 'Farashin kasuwa na iya faɗuwa', tw: 'Aguadeɛ bo bɛtumi atɔ fam' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  LOCATION — intake question options
+  // ═══════════════════════════════════════════════════════════
+  'cropFit.q.location': { en: 'Where is your farm?', fr: 'Où est votre ferme ?', sw: 'Shamba lako liko wapi?', ha: 'Ina gonar ku take?', tw: 'Wo afuo wɔ he?' },
+  'cropFit.hint.location': { en: 'This helps us match crops to your climate.', fr: 'Cela aide à trouver les cultures adaptées à votre climat.', sw: 'Hii inasaidia kupata mazao yanayofaa hali ya hewa yako.', ha: 'Wannan yana taimaka mana samun amfanin gona masu dacewa da yanayin ku.', tw: 'Eyi boa yɛn hwehwɛ nnɔbae a ɛfata wo wim tebea.' },
+  'cropFit.loc.eastAfrica': { en: 'East Africa (Kenya, Tanzania, Uganda...)', fr: 'Afrique de l\'Est (Kenya, Tanzanie, Ouganda...)', sw: 'Afrika Mashariki (Kenya, Tanzania, Uganda...)', ha: 'Gabashin Afrika (Kenya, Tanzania, Uganda...)', tw: 'Apueeɛ Afrika (Kenya, Tanzania, Uganda...)' },
+  'cropFit.loc.westAfrica': { en: 'West Africa (Nigeria, Ghana, Senegal...)', fr: 'Afrique de l\'Ouest (Nigéria, Ghana, Sénégal...)', sw: 'Afrika Magharibi (Nigeria, Ghana, Senegal...)', ha: 'Yammacin Afrika (Nijeriya, Ghana, Senegal...)', tw: 'Atɔeɛ Afrika (Nigeria, Ghana, Senegal...)' },
+  'cropFit.loc.southernAfrica': { en: 'Southern Africa (Zambia, Malawi, Zimbabwe...)', fr: 'Afrique australe (Zambie, Malawi, Zimbabwe...)', sw: 'Kusini mwa Afrika (Zambia, Malawi, Zimbabwe...)', ha: 'Kudancin Afrika (Zambia, Malawi, Zimbabwe...)', tw: 'Anafoɔ Afrika (Zambia, Malawi, Zimbabwe...)' },
+  'cropFit.loc.centralAfrica': { en: 'Central Africa (DRC, Cameroon, Congo...)', fr: 'Afrique centrale (RDC, Cameroun, Congo...)', sw: 'Afrika ya Kati (DRC, Kamerun, Kongo...)', ha: 'Tsakiyar Afrika (DRC, Kamaru, Kongo...)', tw: 'Mfinimfini Afrika (DRC, Cameroon, Congo...)' },
+  'cropFit.loc.other': { en: 'Other region', fr: 'Autre région', sw: 'Eneo lingine', ha: 'Wani yanki', tw: 'Beaeɛ foforɔ' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  BEGINNER PROMPT — dashboard entry
+  // ═══════════════════════════════════════════════════════════
+  'beginner.title': { en: 'New to farming?', fr: 'Nouveau en agriculture ?', sw: 'Mpya katika kilimo?', ha: 'Sabon shiga noma?', tw: 'Afuoyɛ yɛ wo foforɔ?' },
+  'beginner.subtitle': { en: 'We\'ll help you choose the right crop and guide you every day.', fr: 'On vous aide à choisir la bonne culture et on vous guide chaque jour.', sw: 'Tutakusaidia kuchagua zao sahihi na kukuongoza kila siku.', ha: 'Za mu taimake ku zaɓi amfanin gona mai kyau kuma mu jagorance ku kowace rana.', tw: 'Yɛbɛboa wo apaw nnɔbae pa na yɛakyerɛ wo kwan daa.' },
+  'beginner.cta': { en: 'Find My Best Crop', fr: 'Trouver ma meilleure culture', sw: 'Tafuta Zao Langu Bora', ha: 'Nemo Amfanin Gona na Mafi Kyau', tw: 'Hwehwɛ Me Nnɔbae Pa' },
+  'beginner.findCrop': { en: 'Find My Best Crop', fr: 'Trouver ma meilleure culture', sw: 'Tafuta Zao Langu Bora', ha: 'Nemo Amfanin Gona na Mafi Kyau', tw: 'Hwehwɛ Me Nnɔbae Pa' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  CROP TASKS — stage-to-task mapping labels
+  // ═══════════════════════════════════════════════════════════
+  'cropTask.gatherInputs': { en: 'Gather seeds, tools, and inputs', fr: 'Rassembler semences, outils et intrants', sw: 'Kusanya mbegu, zana na pembejeo', ha: 'Tattara iri, kayan aiki da abubuwan amfani', tw: 'Boaboa aba, nnwinnade ne nneɛma ano' },
+  'cropTask.prepareLand': { en: 'Prepare your land for planting', fr: 'Préparer votre terrain', sw: 'Tayarisha ardhi yako kwa kupanda', ha: 'Shirya ƙasar ku don shuka', tw: 'Siesie wo asase ma dua' },
+  'cropTask.clearField': { en: 'Clear your field', fr: 'Défricher votre champ', sw: 'Safisha shamba lako', ha: 'Share gonar ku', tw: 'Twitwa wo afuo' },
+  'cropTask.plantSeeds': { en: 'Plant your seeds', fr: 'Planter vos semences', sw: 'Panda mbegu zako', ha: 'Shuka irin ku', tw: 'Dua wo aba' },
+  'cropTask.plantCuttings': { en: 'Plant stem cuttings', fr: 'Planter les boutures', sw: 'Panda vipandikizi', ha: 'Shuka yankan kara', tw: 'Dua ntwanoo' },
+  'cropTask.plantSeedlings': { en: 'Plant your seedlings', fr: 'Planter vos plants', sw: 'Panda miche yako', ha: 'Shuka shuke-shuken ku', tw: 'Dua wo nfifideɛ' },
+  'cropTask.waterAfterPlanting': { en: 'Water after planting', fr: 'Arroser après plantation', sw: 'Mwagilia baada ya kupanda', ha: 'Shayar da ruwa bayan shuka', tw: 'Gu nsu bere a woadua no akyi' },
+  'cropTask.confirmSpacing': { en: 'Check seed spacing', fr: 'Vérifier l\'espacement', sw: 'Angalia nafasi ya mbegu', ha: 'Bincika tazarar iri', tw: 'Hwɛ aba no ntam' },
+  'cropTask.checkGermination': { en: 'Check if seeds are sprouting', fr: 'Vérifier la germination', sw: 'Angalia kama mbegu zinamea', ha: 'Bincika ko irin suna tsirowa', tw: 'Hwɛ sɛ aba no refifiri' },
+  'cropTask.firstWeeding': { en: 'First weeding', fr: 'Premier désherbage', sw: 'Palizi ya kwanza', ha: 'Cire na farko', tw: 'Wura titiriw dotɛ' },
+  'cropTask.monitorWater': { en: 'Check water level', fr: 'Vérifier le niveau d\'eau', sw: 'Angalia kiwango cha maji', ha: 'Bincika matakin ruwa', tw: 'Hwɛ nsu dodow' },
+  'cropTask.applyFertilizer': { en: 'Apply fertilizer', fr: 'Appliquer l\'engrais', sw: 'Weka mbolea', ha: 'Sa taki', tw: 'Fa asase aduro gu so' },
+  'cropTask.weedField': { en: 'Weed your field', fr: 'Désherber votre champ', sw: 'Palilia shamba lako', ha: 'Cire gonar ku', tw: 'Dote wo afuo' },
+  'cropTask.checkPests': { en: 'Check for pests', fr: 'Vérifier les ravageurs', sw: 'Angalia wadudu', ha: 'Bincika kwari', tw: 'Hwɛ mmoa a wɔsɛe nnɔbae' },
+  'cropTask.sprayCrop': { en: 'Spray your crop', fr: 'Pulvériser votre culture', sw: 'Nyunyizia mazao yako', ha: 'Fesa amfanin gona', tw: 'Pete aduro wɔ wo nnɔbae so' },
+  'cropTask.monitorWeatherRisk': { en: 'Check weather risk', fr: 'Vérifier les risques météo', sw: 'Angalia hatari ya hali ya hewa', ha: 'Bincika haɗarin yanayi', tw: 'Hwɛ wim tebea asiane' },
+  'cropTask.harvestCrop': { en: 'Harvest your crop', fr: 'Récolter votre culture', sw: 'Vuna zao lako', ha: 'Girbe amfanin gona', tw: 'Twa wo nnɔbae' },
+  'cropTask.sortHarvest': { en: 'Sort your harvest', fr: 'Trier votre récolte', sw: 'Panga mavuno yako', ha: 'Tsara girbin ku', tw: 'Pae wotwa adeɛ no mu' },
+  'cropTask.protectHarvestFromRain': { en: 'Protect harvest from rain', fr: 'Protéger la récolte de la pluie', sw: 'Linda mavuno dhidi ya mvua', ha: 'Kare girbi daga ruwan sama', tw: 'Bɔ wotwa adeɛ no ho ban fi osu mu' },
+  'cropTask.dryHarvest': { en: 'Dry your harvest', fr: 'Sécher votre récolte', sw: 'Kausha mavuno yako', ha: 'Bushe girbin ku', tw: 'Hwie wotwa adeɛ no awo' },
+  'cropTask.storeHarvest': { en: 'Store your harvest safely', fr: 'Stocker votre récolte en sécurité', sw: 'Hifadhi mavuno yako salama', ha: 'Ajiye girbin ku lafiya', tw: 'Kora wotwa adeɛ no yie' },
+  'cropTask.logHarvest': { en: 'Log your harvest amount', fr: 'Enregistrer la quantité récoltée', sw: 'Andika kiasi cha mavuno', ha: 'Rubuta adadin girbi', tw: 'Kyerɛw wotwa adeɛ dodow' },
+  'cropTask.prepareForSale': { en: 'Prepare for market', fr: 'Préparer pour le marché', sw: 'Andaa kwa soko', ha: 'Shirya don kasuwa', tw: 'Siesie ma gua so' },
+  'cropTask.setUpStakes': { en: 'Set up stakes / supports', fr: 'Installer les tuteurs', sw: 'Weka fito / vitegemeo', ha: 'Kafa sanda / goyon baya', tw: 'Si nnua a wɔde si so' },
+  'cropTask.floodField': { en: 'Flood the paddy field', fr: 'Inonder la rizière', sw: 'Mwaga maji shambani', ha: 'Tafasa gonar shinkafa da ruwa', tw: 'Fa nsu hyɛ afuo no ma' },
+  'cropTask.setUpShade': { en: 'Set up shade trees', fr: 'Planter des arbres d\'ombre', sw: 'Weka miti ya kivuli', ha: 'Kafa itatuwan inuwa', tw: 'Si nnua a ɛyɛ nwini' },
 };
 
 export default T;

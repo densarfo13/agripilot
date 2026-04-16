@@ -15,7 +15,7 @@ import { getTaskSeverity } from './getTaskSeverity.js';
 import { getTaskStateStyle } from './taskStateStyles.js';
 import { resolveFarmerText } from './farmerTextResolver.js';
 import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../../lib/taskPresentation.js';
-import { assertViewModel } from './devAssertions.js';
+import { assertViewModel, assertAllTextLocalized, assertNoWeatherConflict } from './devAssertions.js';
 import { getAutopilotEnrichment } from '../../engine/autopilot/index.js';
 import { getNextTextKey, getSuccessTextKey } from '../../engine/autopilot/textKeys.js';
 
@@ -23,7 +23,7 @@ import { getNextTextKey, getSuccessTextKey } from '../../engine/autopilot/textKe
  * Schema version — bump to invalidate cached view models.
  * Any stored/cached task render data with a lower version should be discarded.
  */
-export const TASK_VIEWMODEL_SCHEMA_VERSION = 2;
+export const TASK_VIEWMODEL_SCHEMA_VERSION = 3;
 
 /**
  * Build a normalized, render-ready view model for a farmer task.
@@ -130,6 +130,8 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
 
   // ─── 7. Dev assertions ────────────────────────────────────
   assertViewModel(viewModel, language);
+  assertAllTextLocalized(viewModel, language);
+  assertNoWeatherConflict(viewModel, weather);
 
   return viewModel;
 }
