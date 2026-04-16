@@ -33,45 +33,18 @@ import {
   getRegionForCountry,
 } from '../data/cropRegionCatalog.js';
 import { getSeasonScore } from './seasonProfitRules.js';
+import { CROPS } from '../data/crops.js';
+import { getRule } from '../data/cropRegionRules.js';
 
-// ─── Budget compatibility ───────────────────────────────────
-// Which budget levels each crop realistically fits.
-const BUDGET_FIT = {
-  MAIZE: ['low', 'medium', 'high'], BEAN: ['low', 'medium'], CASSAVA: ['low', 'medium'],
-  TOMATO: ['medium', 'high'], RICE: ['medium', 'high'], GROUNDNUT: ['low', 'medium'],
-  SWEET_POTATO: ['low', 'medium'], SORGHUM: ['low', 'medium'], MILLET: ['low', 'medium'],
-  COWPEA: ['low', 'medium'], YAM: ['low', 'medium'], PLANTAIN: ['low', 'medium'],
-  BANANA: ['low', 'medium'], OKRA: ['low', 'medium'], PEPPER: ['low', 'medium'],
-  KALE: ['low', 'medium'], CABBAGE: ['medium', 'high'], POTATO: ['medium', 'high'],
-  ONION: ['medium', 'high'], MANGO: ['low', 'medium'], SPINACH: ['low'],
-  CARROT: ['medium'], CUCUMBER: ['low', 'medium'], WATERMELON: ['medium', 'high'],
-  EGGPLANT: ['low', 'medium'], CHILI: ['low', 'medium'], PAPAYA: ['low', 'medium'],
-  SESAME: ['low', 'medium'], SOYBEAN: ['medium', 'high'], WHEAT: ['medium', 'high'],
-  COFFEE: ['high'], TEA: ['high'], COTTON: ['medium', 'high'], SUGARCANE: ['high'],
-  COCOA: ['high'], PALM_OIL: ['high'], SUNFLOWER: ['medium', 'high'],
-  GINGER: ['medium', 'high'], GARLIC: ['medium'], AVOCADO: ['medium', 'high'],
-  PINEAPPLE: ['medium', 'high'], ORANGE: ['medium', 'high'], PEA: ['low', 'medium'],
-};
-
-// ─── Land size compatibility ────────────────────────────────
-// Which land sizes each crop realistically works on.
-const SIZE_FIT = {
-  MAIZE: ['small', 'medium', 'large'], BEAN: ['small', 'medium'], CASSAVA: ['small', 'medium', 'large'],
-  TOMATO: ['small', 'medium'], RICE: ['medium', 'large'], GROUNDNUT: ['small', 'medium'],
-  SWEET_POTATO: ['small', 'medium'], SORGHUM: ['medium', 'large'], MILLET: ['small', 'medium', 'large'],
-  COWPEA: ['small', 'medium'], YAM: ['small', 'medium'], PLANTAIN: ['small', 'medium'],
-  BANANA: ['small', 'medium', 'large'], OKRA: ['small', 'medium'], PEPPER: ['small', 'medium'],
-  KALE: ['small'], CABBAGE: ['small', 'medium'], POTATO: ['small', 'medium'],
-  ONION: ['small', 'medium'], MANGO: ['small', 'medium', 'large'], SPINACH: ['small'],
-  CARROT: ['small', 'medium'], CUCUMBER: ['small', 'medium'], WATERMELON: ['medium', 'large'],
-  EGGPLANT: ['small', 'medium'], CHILI: ['small', 'medium'], PAPAYA: ['small', 'medium'],
-  SESAME: ['medium', 'large'], SOYBEAN: ['medium', 'large'], WHEAT: ['medium', 'large'],
-  COFFEE: ['medium', 'large'], TEA: ['medium', 'large'], COTTON: ['medium', 'large'],
-  SUGARCANE: ['large'], COCOA: ['medium', 'large'], PALM_OIL: ['medium', 'large'],
-  SUNFLOWER: ['medium', 'large'], GINGER: ['small', 'medium'], GARLIC: ['small', 'medium'],
-  AVOCADO: ['small', 'medium', 'large'], PINEAPPLE: ['small', 'medium'],
-  ORANGE: ['medium', 'large'], PEA: ['small', 'medium'],
-};
+// ─── Budget & Size compatibility (derived from crops.js) ────
+// Built at startup from crops.js master data. Falls back to
+// ['low', 'medium'] if a crop has no entry in crops.js.
+const BUDGET_FIT = {};
+const SIZE_FIT = {};
+for (const [key, crop] of Object.entries(CROPS)) {
+  BUDGET_FIT[key] = crop.budgetLevels || ['low', 'medium'];
+  SIZE_FIT[key] = crop.landSizes || ['small', 'medium'];
+}
 
 // ─── Scoring weights ────────────────────────────────────────
 const W = {
@@ -80,6 +53,7 @@ const W = {
   SIZE:        3,
   BUDGET:      2,
   LOCAL:       2,
+  LOCAL_FIT:   2,   // bonus for high local food/profit fit from crop-region rules
   BEGINNER:    3,
   NON_BEGINNER_PENALTY: -3,
   PREFERRED:   6,
@@ -182,6 +156,23 @@ function scoreCrop(entry, { goal, landSize, budget, preferredCrop, countryCode, 
   if (entry.priority === 1) {
     score += W.STAPLE;
     reasons.push({ key: 'recommendReason.stapleCrop', weight: W.STAPLE });
+  }
+
+  // 9. Local food/profit fit bonus (from crop-region rules)
+  if (countryCode) {
+    const localRule = getRule(entry.code, countryCode);
+    if (localRule) {
+      // Bonus for high local food fit when goal is home_food
+      if (goal === 'home_food' && localRule.foodFit === 'high') {
+        score += W.LOCAL_FIT;
+        reasons.push({ key: 'recommendReason.localFoodFit', weight: W.LOCAL_FIT });
+      }
+      // Bonus for high local profit fit when goal is profit
+      if (goal === 'profit' && localRule.profitFit === 'high') {
+        score += W.LOCAL_FIT;
+        reasons.push({ key: 'recommendReason.localProfitFit', weight: W.LOCAL_FIT });
+      }
+    }
   }
 
   return { code: entry.code, score, reasons };

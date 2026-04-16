@@ -142,6 +142,63 @@ export async function reverseGeocode(latitude, longitude) {
   }
 }
 
+// ─── IP-based country detection (fallback) ────────────
+
+/**
+ * Detect country from IP address using free geolocation APIs.
+ * Tries multiple providers for resilience (no API key required).
+ *
+ * Returns best-effort country info — intended as a lightweight fallback
+ * when GPS is unavailable or not yet granted.
+ *
+ * @returns {Promise<{countryCode: string|null, country: string|null, region: string|null, method: 'ip'}>}
+ */
+export async function detectCountryByIP() {
+  const fallback = { countryCode: null, country: null, region: null, method: 'ip' };
+
+  // Provider 1: ip-api.com (free, no key, 45 req/min)
+  try {
+    const res = await fetch('http://ip-api.com/json/?fields=status,countryCode,country,regionName', {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'success' && data.countryCode) {
+        gpsLog('IP detection (ip-api):', { country: data.country, code: data.countryCode });
+        return {
+          countryCode: data.countryCode.toUpperCase(),
+          country: data.country || null,
+          region: data.regionName || null,
+          method: 'ip',
+        };
+      }
+    }
+  } catch { /* try next provider */ }
+
+  // Provider 2: ipapi.co (free tier, 1k/day)
+  try {
+    const res = await fetch('https://ipapi.co/json/', {
+      headers: { 'User-Agent': 'Farroway/1.0' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.country_code) {
+        gpsLog('IP detection (ipapi.co):', { country: data.country_name, code: data.country_code });
+        return {
+          countryCode: data.country_code.toUpperCase(),
+          country: data.country_name || null,
+          region: data.region || null,
+          method: 'ip',
+        };
+      }
+    }
+  } catch { /* exhausted providers */ }
+
+  gpsLog('IP detection failed — all providers exhausted');
+  return fallback;
+}
+
 // ─── Combined: Detect + Reverse Geocode ────────────────
 
 /**

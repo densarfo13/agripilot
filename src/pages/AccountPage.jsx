@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import api, { formatApiError } from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import CountrySelect from '../components/CountrySelect.jsx';
+import { getRegionForCountry, REGIONS } from '../data/cropRegionCatalog.js';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -41,6 +43,13 @@ export default function AccountPage() {
   const [enrollData, setEnrollData] = useState(null); // { otpauthUrl, pendingToken }
   const [mfaCode, setMfaCode] = useState('');
 
+  // Location edit
+  const [locForm, setLocForm] = useState({ countryCode: '', detectedRegion: '' });
+  const [locSaving, setLocSaving] = useState(false);
+  const [locError, setLocError] = useState('');
+  const [locSuccess, setLocSuccess] = useState('');
+  const [locDetecting, setLocDetecting] = useState(false);
+
   // Password change
   const [showPw, setShowPw] = useState(false);
   const [pw, setPw] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -55,6 +64,7 @@ export default function AccountPage() {
       .then(r => {
         setMe(r.data);
         setForm({ fullName: r.data.fullName || '', preferredLanguage: r.data.preferredLanguage || '' });
+        setLocForm({ countryCode: r.data.countryCode || '', detectedRegion: r.data.detectedRegion || '' });
       })
       .catch(err => setLoadError(formatApiError(err, 'Failed to load account details')))
       .finally(() => setLoading(false));
@@ -263,6 +273,90 @@ export default function AccountPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+
+        {/* Location / Country */}
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-header">Location</div>
+          <div className="card-body">
+            {locError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{locError}</div>}
+            {locSuccess && <div className="alert-inline alert-inline-success">{locSuccess}</div>}
+            <p style={{ fontSize: '0.82rem', color: '#A1A1AA', marginBottom: '0.75rem' }}>
+              Your country helps us recommend the best crops and planting times for your area.
+            </p>
+            <div className="form-group">
+              <label className="form-label">Country</label>
+              <CountrySelect
+                value={locForm.countryCode}
+                onChange={(e) => setLocForm(f => ({ ...f, countryCode: e.target.value, detectedRegion: '' }))}
+                className="form-select"
+                searchClassName="form-input"
+                wrapperStyle={{ width: '100%' }}
+              />
+            </div>
+            {locForm.countryCode && (() => {
+              const regionKey = getRegionForCountry(locForm.countryCode);
+              const region = regionKey && REGIONS[regionKey];
+              return region ? (
+                <div style={{ fontSize: '0.82rem', color: '#71717A', marginBottom: '0.75rem' }}>
+                  Region: <span style={{ color: '#FFFFFF', fontWeight: 500 }}>{region.labelKey.replace('region.', '').replace(/([A-Z])/g, ' $1').trim()}</span>
+                  {locForm.detectedRegion && (
+                    <span style={{ marginLeft: '0.5rem', color: '#A1A1AA' }}>({locForm.detectedRegion})</span>
+                  )}
+                </div>
+              ) : null;
+            })()}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                disabled={locDetecting}
+                onClick={async () => {
+                  setLocDetecting(true);
+                  setLocError('');
+                  try {
+                    const { detectCountryByIP } = await import('../utils/geolocation.js');
+                    const result = await detectCountryByIP();
+                    if (result.countryCode) {
+                      setLocForm({ countryCode: result.countryCode, detectedRegion: result.region || '' });
+                    } else {
+                      setLocError('Could not detect location. Please select your country manually.');
+                    }
+                  } catch {
+                    setLocError('Detection failed. Please select manually.');
+                  } finally {
+                    setLocDetecting(false);
+                  }
+                }}
+              >
+                {locDetecting ? 'Detecting...' : 'Auto-detect'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={locSaving || !locForm.countryCode}
+                onClick={async () => {
+                  setLocSaving(true);
+                  setLocError('');
+                  setLocSuccess('');
+                  try {
+                    await api.patch('/auth/me', {
+                      countryCode: locForm.countryCode,
+                      detectedRegion: locForm.detectedRegion || undefined,
+                    });
+                    setLocSuccess('Location updated successfully');
+                    setTimeout(() => setLocSuccess(''), 4000);
+                  } catch (err) {
+                    setLocError(formatApiError(err, 'Failed to update location'));
+                  } finally {
+                    setLocSaving(false);
+                  }
+                }}
+              >
+                {locSaving ? 'Saving...' : 'Save Location'}
+              </button>
+            </div>
           </div>
         </div>
 

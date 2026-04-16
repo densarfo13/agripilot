@@ -999,6 +999,39 @@ const T = {
   'wizard.autoDetected': {
     en: 'Auto-detected — tap below to change', fr: 'Détecté automatiquement — appuyez pour changer', sw: 'Imegunduliwa — bonyeza kubadilisha', ha: 'An gano ta atomatik — matsa don canzawa', tw: 'Wɔahu no — mia ase ha na sesa',
   },
+  'wizard.confirmOrChange': {
+    en: 'We detected your location. Confirm or change it below.', fr: 'Nous avons détecté votre emplacement. Confirmez ou changez ci-dessous.', sw: 'Tumegundua mahali pako. Thibitisha au badilisha hapa chini.', ha: 'Mun gano wurin ku. Tabbatar ko canza a ƙasa.', tw: 'Yɛahu wo beaeɛ. Siesie anaa sesa no ase ha.',
+  },
+  'wizard.detectedViaGPS': {
+    en: 'Detected via GPS', fr: 'Détecté par GPS', sw: 'Imegunduliwa kupitia GPS', ha: 'An gano ta GPS', tw: 'GPS de yɛahu',
+  },
+  'wizard.detectedViaNetwork': {
+    en: 'Detected via network', fr: 'Détecté par réseau', sw: 'Imegunduliwa kupitia mtandao', ha: 'An gano ta hanyar sadarwa', tw: 'Network de yɛahu',
+  },
+  'wizard.confirmLocation': {
+    en: 'Yes, this is correct', fr: 'Oui, c\'est correct', sw: 'Ndiyo, hii ni sahihi', ha: 'Ee, daidai ne', tw: 'Aane, ɛyɛ nokorɛ',
+  },
+  'wizard.changeLocation': {
+    en: 'No, change it', fr: 'Non, changer', sw: 'Hapana, badilisha', ha: 'A\'a, canza shi', tw: 'Daabi, sesa',
+  },
+  'wizard.locationConfirmed': {
+    en: 'Location confirmed', fr: 'Emplacement confirmé', sw: 'Mahali pamethibitishwa', ha: 'An tabbatar da wurin', tw: 'Beaeɛ adi mu dua',
+  },
+  'wizard.detectMyLocation': {
+    en: 'Detect my location', fr: 'Détecter ma position', sw: 'Gundua mahali pangu', ha: 'Gano wurina', tw: 'Hu me beaeɛ',
+  },
+  'wizard.detectingLocation': {
+    en: 'Finding your location...', fr: 'Recherche de votre position...', sw: 'Inatafuta mahali pako...', ha: 'Ana neman wurin ku...', tw: 'Rehwehwɛ wo beaeɛ...',
+  },
+  'wizard.gpsDetectFailed': {
+    en: 'Could not detect location. Please select your country below.', fr: 'Impossible de détecter la position. Sélectionnez votre pays ci-dessous.', sw: 'Haikuweza kugundua mahali. Tafadhali chagua nchi yako hapa chini.', ha: 'Ba a iya gano wurin ba. Da fatan za a zaɓi ƙasar ku a ƙasa.', tw: 'Yɛantumi nhu beaeɛ no. Yɛsrɛ wo paw wo man ase ha.',
+  },
+  'wizard.orSelectManually': {
+    en: 'Or select your country manually', fr: 'Ou sélectionnez votre pays manuellement', sw: 'Au chagua nchi yako mwenyewe', ha: 'Ko zaɓi ƙasar ku da hannu', tw: 'Anaa paw wo man wo ankasa',
+  },
+  'common.change': {
+    en: 'Change', fr: 'Changer', sw: 'Badilisha', ha: 'Canza', tw: 'Sesa',
+  },
   'wizard.typeToSearch': {
     en: 'You can type to search, or tap the dropdown to scroll', fr: 'Tapez pour chercher, ou appuyez sur le menu déroulant', sw: 'Andika kutafuta, au bonyeza orodha', ha: 'Rubuta don nema, ko matsa jerin zaɓi', tw: 'Kyerɛw na hwehwɛ, anaa mia dropdown no',
   },
@@ -4204,6 +4237,22 @@ const T = {
   'region.westAfrica': { en: 'West Africa', fr: 'Afrique de l\'Ouest', sw: 'Afrika Magharibi', ha: 'Yammacin Afirka', tw: 'Atɔe Afrika' },
   'region.southernAfrica': { en: 'Southern Africa', fr: 'Afrique Australe', sw: 'Kusini mwa Afrika', ha: 'Kudancin Afirka', tw: 'Anafo Afrika' },
   'region.centralAfrica': { en: 'Central Africa', fr: 'Afrique Centrale', sw: 'Afrika ya Kati', ha: 'Tsakiyar Afirka', tw: 'Mfinimfini Afrika' },
+  'region.midAtlanticUS': { en: 'Mid-Atlantic US', fr: 'États-Unis (Centre-Atlantique)', sw: 'Marekani ya Kati-Atlantiki', ha: 'Amurka Tsakiyar Atlantika', tw: 'America Mfinimfini' },
+
+  // ─── New crops (US / global additions) ─────────────────────
+  'crop.sweetCorn': { en: 'Sweet Corn', fr: 'Maïs sucré', sw: 'Mahindi tamu', ha: 'Masara mai zaƙi', tw: 'Aburo dɛ' },
+  'crop.lettuce': { en: 'Lettuce', fr: 'Laitue', sw: 'Saladi', ha: 'Lettus', tw: 'Lettuce' },
+  'crop.squash': { en: 'Squash', fr: 'Courge', sw: 'Maboga', ha: 'Kabewa', tw: 'Efere' },
+  'crop.strawberry': { en: 'Strawberry', fr: 'Fraise', sw: 'Stroberi', ha: 'Strawberry', tw: 'Strawberry' },
+  'crop.tobacco': { en: 'Tobacco', fr: 'Tabac', sw: 'Tumbaku', ha: 'Taba', tw: 'Taa' },
+
+  // ─── Recommendation reason: local fit ──────────────────────
+  'recommendReason.localFoodFit': {
+    en: 'Great for feeding your household here', fr: 'Excellent pour nourrir votre famille ici', sw: 'Nzuri kwa kulisha familia yako hapa', ha: 'Mai kyau don ciyar da iyalin ku a nan', tw: 'Eye ma wo fiehyia aduane wɔ ha',
+  },
+  'recommendReason.localProfitFit': {
+    en: 'Strong local market demand', fr: 'Forte demande sur le marché local', sw: 'Mahitaji makubwa ya soko la ndani', ha: 'Buƙata mai ƙarfi a kasuwar gida', tw: 'Aguadeɛ a ɛwɔ ha dwadeɛ mu yɛ den',
+  },
 
   // ─── Growth stages ────────────────────────────────────────
   'stage.seedling': { en: 'Seedling', fr: 'Semis', sw: 'Mche', ha: 'Shuka', tw: 'Aba' },

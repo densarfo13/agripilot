@@ -3,6 +3,7 @@ import CropSelect from './CropSelect.jsx';
 import TapSelector from './TapSelector.jsx';
 import CountrySelect from './CountrySelect.jsx';
 import LocationDetect from './LocationDetect.jsx';
+import COUNTRIES_REF from '../utils/countries.js';
 import { useDraft } from '../utils/useDraft.js';
 import { compressImage } from '../utils/imageCompress.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
@@ -14,6 +15,7 @@ import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 import { useTranslation } from '../i18n/index.js';
 import NewFarmerRecommendation from './NewFarmerRecommendation.jsx';
 import { assessSeasonProfit } from '../engine/seasonProfitRules.js';
+import { detectCountryByIP } from '../utils/geolocation.js';
 
 // ─── Step definitions ────────────────────────────────────────
 const STEP_KEYS = ['welcome', 'farmName', 'country', 'experience', 'recommendation', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
@@ -104,7 +106,8 @@ const INITIAL_FORM = {
   farmName: '', farmSizeAcres: '', farmSizeCategory: '', landSizeUnit: 'ACRE',
   locationName: '', crop: '', stage: 'planting',
   latitude: null, longitude: null,
-  countryCode: '', gender: '', ageGroup: '', experienceLevel: '',
+  countryCode: '', detectedRegion: '', locationMethod: '',
+  gender: '', ageGroup: '', experienceLevel: '',
 };
 
 export default function OnboardingWizard({ userName, countryCode, onComplete }) {
@@ -146,6 +149,10 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   const voicePlayedRef = useRef({}); // track auto-played steps
   const submitGuardRef = useRef(false);
   const startTimeRef = useRef(Date.now());
+  // Location detection state
+  const [detecting, setDetecting] = useState(false);
+  const [detectError, setDetectError] = useState('');
+  const [locationConfirmed, setLocationConfirmed] = useState(!!form.countryCode);
 
   const currentStep = STEP_KEYS[step];
 
@@ -261,21 +268,51 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     prevStepRef.current = step;
   }, [step]);
 
-  // ─── Country auto-detect on mount ──────────────────────────
+  // ─── Country auto-detect on mount: IP → timezone fallback ──
   useEffect(() => {
     if (form.countryCode) return; // already set via prop or draft
-    // Try timezone-based detection as lightweight fallback
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      const tzLower = tz.toLowerCase();
-      if (tzLower.includes('nairobi')) setForm(f => ({ ...f, countryCode: 'KE' }));
-      else if (tzLower.includes('dar_es_salaam')) setForm(f => ({ ...f, countryCode: 'TZ' }));
-      else if (tzLower.includes('kampala')) setForm(f => ({ ...f, countryCode: 'UG' }));
-      else if (tzLower.includes('lagos')) setForm(f => ({ ...f, countryCode: 'NG' }));
-      else if (tzLower.includes('johannesburg') || tzLower.includes('harare')) setForm(f => ({ ...f, countryCode: 'ZA' }));
-      else if (tzLower.includes('addis_ababa')) setForm(f => ({ ...f, countryCode: 'ET' }));
-      else if (tzLower.includes('accra')) setForm(f => ({ ...f, countryCode: 'GH' }));
-    } catch { /* timezone API unavailable */ }
+    let cancelled = false;
+
+    (async () => {
+      // 1. Try IP-based detection first (async, ~1-3s)
+      try {
+        const ip = await detectCountryByIP();
+        if (!cancelled && ip.countryCode) {
+          setForm(f => ({
+            ...f,
+            countryCode: ip.countryCode,
+            detectedRegion: ip.region || '',
+            locationMethod: 'ip',
+          }));
+          logOnboarding('country_auto_detected', { method: 'ip', country: ip.countryCode });
+          return; // success — skip timezone fallback
+        }
+      } catch { /* IP detection failed, continue to timezone fallback */ }
+
+      if (cancelled) return;
+
+      // 2. Timezone fallback (synchronous, limited to known cities)
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        const tzLower = tz.toLowerCase();
+        const TZ_MAP = {
+          nairobi: 'KE', dar_es_salaam: 'TZ', kampala: 'UG', lagos: 'NG',
+          johannesburg: 'ZA', harare: 'ZA', addis_ababa: 'ET', accra: 'GH',
+          lusaka: 'ZM', maputo: 'MZ', kigali: 'RW', bamako: 'ML',
+          dakar: 'SN', abidjan: 'CI', douala: 'CM', kinshasa: 'CD',
+          lilongwe: 'MW', windhoek: 'NA', gaborone: 'BW',
+        };
+        for (const [city, code] of Object.entries(TZ_MAP)) {
+          if (tzLower.includes(city)) {
+            setForm(f => ({ ...f, countryCode: code, locationMethod: 'timezone' }));
+            logOnboarding('country_auto_detected', { method: 'timezone', country: code });
+            break;
+          }
+        }
+      } catch { /* timezone API unavailable */ }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   // ─── Computed helpers ──────────────────────────────────────
@@ -399,6 +436,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         gender: form.gender || null,
         ageGroup: form.ageGroup || null,
         countryCode: form.countryCode || null,
+        detectedRegion: form.detectedRegion || null,
+        locationMethod: form.locationMethod || null,
         farmSizeCategory: form.farmSizeCategory || null,
         experienceLevel: form.experienceLevel || null,
       });
@@ -566,40 +605,155 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
           </div>
         )}
 
-        {/* ═══════════ STEP: Country ═══════════ */}
+        {/* ═══════════ STEP: Country (with detection + confirmation) ═══════════ */}
         {currentStep === 'country' && (
           <div style={S.stepContent}>
             <div style={S.stepIcon}>{'\uD83C\uDF0D'}</div>
             <h2 style={S.title}>{t('wizard.whereAreYou')}</h2>
-            <p style={S.subtitle}>{t('wizard.searchCountry')}</p>
-            {form.countryCode && (
-              <div style={S.autoDetectBadge} data-testid="country-auto-detected">
-                {'\u2713'} {t('wizard.autoDetected')}
+            <p style={S.subtitle}>
+              {form.countryCode ? t('wizard.confirmOrChange') : t('wizard.searchCountry')}
+            </p>
+
+            {/* ── Detected country confirmation card ── */}
+            {form.countryCode && form.locationMethod && !locationConfirmed && (
+              <div style={S.locationConfirmCard} data-testid="country-confirm-card">
+                <div style={S.locationConfirmIcon}>{'\uD83D\uDCCD'}</div>
+                <div style={S.locationConfirmText}>
+                  <span style={{ fontWeight: 600, color: '#22C55E' }}>
+                    {(() => { const c = COUNTRIES_REF.find(c => c.iso2 === form.countryCode); return c ? c.name : form.countryCode; })()}
+                  </span>
+                  {form.detectedRegion && (
+                    <span style={{ color: '#A1A1AA', fontSize: '0.8rem', marginLeft: '0.3rem' }}>
+                      ({form.detectedRegion})
+                    </span>
+                  )}
+                  <div style={{ fontSize: '0.75rem', color: '#71717A', marginTop: '0.15rem' }}>
+                    {form.locationMethod === 'gps' ? t('wizard.detectedViaGPS') :
+                     form.locationMethod === 'ip' ? t('wizard.detectedViaNetwork') :
+                     t('wizard.autoDetected')}
+                  </div>
+                </div>
+                <div style={S.locationConfirmActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationConfirmed(true);
+                      logOnboarding('country_confirmed', { method: form.locationMethod, country: form.countryCode });
+                    }}
+                    style={S.confirmBtn}
+                  >{t('wizard.confirmLocation')}</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm(f => ({ ...f, countryCode: '', detectedRegion: '', locationMethod: '' }));
+                      setLocationConfirmed(false);
+                    }}
+                    style={S.changeBtn}
+                  >{t('wizard.changeLocation')}</button>
+                </div>
               </div>
             )}
-            <div style={S.fieldWide}>
-              <CountrySelect
-                value={form.countryCode}
-                onChange={(e) => setForm(f => ({ ...f, countryCode: e.target.value }))}
-                className=""
-                selectStyle={{
-                  ...S.input,
-                  fontSize: '1rem',
-                  fontWeight: form.countryCode ? 600 : 400,
-                  color: form.countryCode ? '#22C55E' : '#A1A1AA',
-                }}
-                inputStyle={{ ...S.input, marginBottom: '0.5rem', fontSize: '1rem' }}
-                wrapperStyle={{ width: '100%' }}
-              />
-              {!form.countryCode && (
-                <div style={{ fontSize: '0.75rem', color: '#71717A', textAlign: 'center', marginTop: '0.25rem' }}>
-                  {t('wizard.typeToSearch')}
+
+            {/* ── Confirmed badge ── */}
+            {form.countryCode && locationConfirmed && (
+              <div style={S.autoDetectBadge} data-testid="country-auto-detected">
+                {'\u2713'} {form.locationMethod ? t('wizard.locationConfirmed') : t('wizard.autoDetected')}
+                <button
+                  type="button"
+                  onClick={() => { setLocationConfirmed(false); setForm(f => ({ ...f, locationMethod: '' })); }}
+                  style={{ background: 'none', border: 'none', color: '#3B82F6', fontSize: '0.78rem', cursor: 'pointer', marginLeft: '0.5rem', textDecoration: 'underline' }}
+                >{t('common.change')}</button>
+              </div>
+            )}
+
+            {/* ── GPS detect button (when no country or user wants to change) ── */}
+            {(!form.countryCode || (!locationConfirmed && !form.locationMethod)) && (
+              <div style={{ width: '100%', marginBottom: '0.75rem' }}>
+                <button
+                  type="button"
+                  disabled={detecting}
+                  onClick={async () => {
+                    setDetecting(true);
+                    setDetectError('');
+                    try {
+                      const { detectAndResolveLocation } = await import('../utils/geolocation.js');
+                      const result = await detectAndResolveLocation();
+                      if (result.countryCode) {
+                        setForm(f => ({
+                          ...f,
+                          countryCode: result.countryCode,
+                          detectedRegion: result.region || '',
+                          locationMethod: 'gps',
+                          latitude: result.latitude,
+                          longitude: result.longitude,
+                          locationName: [result.locality, result.region, result.country].filter(Boolean).join(', '),
+                        }));
+                        setLocationConfirmed(false); // show confirmation card
+                        logOnboarding('country_gps_detected', { country: result.countryCode, region: result.region });
+                      }
+                    } catch (err) {
+                      setDetectError(t('wizard.gpsDetectFailed'));
+                    } finally {
+                      setDetecting(false);
+                    }
+                  }}
+                  style={{
+                    ...S.primaryBtn,
+                    width: '100%',
+                    background: 'rgba(59,130,246,0.1)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                    color: '#3B82F6',
+                    opacity: detecting ? 0.6 : 1,
+                  }}
+                >
+                  {detecting ? t('wizard.detectingLocation') : t('wizard.detectMyLocation')}
+                </button>
+                {detectError && (
+                  <div style={{ fontSize: '0.78rem', color: '#F59E0B', textAlign: 'center', marginTop: '0.35rem' }}>
+                    {detectError}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Manual country selection (always available as fallback) ── */}
+            {(!form.countryCode || (!locationConfirmed && !form.locationMethod)) && (
+              <div style={S.fieldWide}>
+                <div style={{ fontSize: '0.78rem', color: '#71717A', textAlign: 'center', marginBottom: '0.35rem' }}>
+                  {t('wizard.orSelectManually')}
                 </div>
-              )}
-            </div>
+                <CountrySelect
+                  value={form.countryCode}
+                  onChange={(e) => {
+                    setForm(f => ({ ...f, countryCode: e.target.value, locationMethod: 'manual', detectedRegion: '' }));
+                    setLocationConfirmed(true);
+                  }}
+                  className=""
+                  selectStyle={{
+                    ...S.input,
+                    fontSize: '1rem',
+                    fontWeight: form.countryCode ? 600 : 400,
+                    color: form.countryCode ? '#22C55E' : '#A1A1AA',
+                  }}
+                  inputStyle={{ ...S.input, marginBottom: '0.5rem', fontSize: '1rem' }}
+                  wrapperStyle={{ width: '100%' }}
+                />
+              </div>
+            )}
+
             <div style={S.btnRow}>
               <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
-              <button onClick={goNext} style={S.primaryBtn}>
+              <button
+                onClick={() => {
+                  if (form.countryCode && !locationConfirmed) setLocationConfirmed(true);
+                  goNext();
+                }}
+                disabled={form.countryCode && form.locationMethod && !locationConfirmed}
+                style={{
+                  ...S.primaryBtn,
+                  opacity: (form.countryCode && form.locationMethod && !locationConfirmed) ? 0.5 : 1,
+                }}
+              >
                 {form.countryCode ? t('common.next') : t('common.skip')}
               </button>
             </div>
@@ -1364,6 +1518,28 @@ const S = {
   autoDetectBadge: {
     fontSize: '0.78rem', color: '#22C55E', marginBottom: '0.75rem',
     background: 'rgba(34,197,94,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  // Location confirmation card
+  locationConfirmCard: {
+    width: '100%', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+    borderRadius: 12, padding: '1rem', marginBottom: '0.75rem',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+  },
+  locationConfirmIcon: { fontSize: '1.5rem' },
+  locationConfirmText: { textAlign: 'center', lineHeight: 1.4 },
+  locationConfirmActions: {
+    display: 'flex', gap: '0.5rem', marginTop: '0.25rem', width: '100%',
+  },
+  confirmBtn: {
+    flex: 1, padding: '0.55rem 0.75rem', background: '#22C55E', color: '#fff',
+    border: 'none', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem',
+    cursor: 'pointer', minHeight: 44,
+  },
+  changeBtn: {
+    flex: 1, padding: '0.55rem 0.75rem', background: 'transparent', color: '#A1A1AA',
+    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontWeight: 600,
+    fontSize: '0.85rem', cursor: 'pointer', minHeight: 44,
   },
   // Buttons
   btnRow: { display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.5rem' },
