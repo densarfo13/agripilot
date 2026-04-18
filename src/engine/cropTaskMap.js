@@ -1,4 +1,5 @@
 import { getRegionTaskHint, REGION_PROFILES } from './regionProfiles.js';
+import { getDefinedTasks } from './cropDefinitions.js';
 
 /**
  * Crop-Task Mapping — deterministic stage-to-task mapping for beginner crops.
@@ -229,7 +230,11 @@ export function resolveStage(stage) {
  * @returns {Array} tasks
  */
 export function getContextAwareTaskList({ crop, stage, region, experience }) {
-  const base = getTasksForCropStage(crop, stage);
+  // Prefer the richer canonical definition (stepsKey / tipsKey / finish
+  // variants) when it exists for this crop+stage; otherwise fall back
+  // to the generic STAGE_TASKS so unreferenced crops still work.
+  const defined = crop ? getDefinedTasks(crop, canonicalStage(stage)) : null;
+  const base = defined || getTasksForCropStage(crop, stage);
 
   // Region override — swap titleKey when the profile has a specific hint
   let regionHints = null;
