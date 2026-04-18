@@ -3216,6 +3216,29 @@ const T = {
     tw: 'Ɛyɛ mmerɛw, fon deɛ di kan, krataa tenten biara nni hɔ',
   },
 
+  // ─── Beginner Reassurance screen (§3) ─────────────────────
+  'reassurance.title': {
+    en: 'New to farming?',
+    fr: 'Nouveau dans l\'agriculture ?',
+    sw: 'Mpya katika kilimo?',
+    ha: 'Sabon noma?',
+    tw: 'Woreyɛ kuayɛ foforɔ?',
+  },
+  'reassurance.guide': {
+    en: 'We\'ll guide you step by step.',
+    fr: 'Nous vous guiderons étape par étape.',
+    sw: 'Tutakuongoza hatua kwa hatua.',
+    ha: 'Za mu ja ka matakin-matakin.',
+    tw: 'Yɛbɛkyerɛ wo ɔkwan anammɔn-anammɔn.',
+  },
+  'reassurance.noExperience': {
+    en: 'No experience needed.',
+    fr: 'Aucune expérience requise.',
+    sw: 'Hakuna uzoefu unaohitajika.',
+    ha: 'Babu bukatar ƙwarewa.',
+    tw: 'Ɛho nhia suahu biara.',
+  },
+
   // ─── Farmer-first auth (phone OTP, welcome screen) ────────
   'auth.welcomeFarmer': {
     en: 'Welcome, Farmer', fr: 'Bienvenue, Agriculteur', sw: 'Karibu, Mkulima', ha: 'Barka, Manomi', tw: 'Akwaaba, Okuafoɔ',
@@ -5503,6 +5526,9 @@ const T = {
   'cropFit.results.title': { en: 'Your Top Crops', fr: 'Vos meilleures cultures', sw: 'Mazao Yako Bora', ha: 'Amfanin Gonan ku Mafi Kyau', tw: 'Wo Nnɔbae Pa' },
   'cropFit.results.subtitle': { en: 'Based on your answers, here are our recommendations.', fr: 'Voici nos recommandations selon vos réponses.', sw: 'Kulingana na majibu yako, hizi ndizo mapendekezo yetu.', ha: 'Bisa ga amsoshin ku, ga shawarwarinmu.', tw: 'Sɛ wo mmuaeɛ te no, yei ne yɛn nkamfo.' },
   'cropFit.results.bestFit': { en: 'Best Fit', fr: 'Meilleur choix', sw: 'Bora Zaidi', ha: 'Mafi Dacewa', tw: 'Nea Ɛfata Paa' },
+  'cropFit.results.bestForYou': { en: 'Best for you', fr: 'Idéal pour vous', sw: 'Bora kwako', ha: 'Mafi dacewa a gareka', tw: 'Ɛfata wo paa' },
+  'cropFit.results.viewPlan': { en: 'View plan', fr: 'Voir le plan', sw: 'Angalia mpango', ha: 'Duba shiri', tw: 'Hwɛ nhyehyɛeɛ' },
+  'cropFit.results.alsoConsider': { en: 'Also consider', fr: 'À considérer aussi', sw: 'Pia fikiria', ha: 'Kuma yi la\'akari', tw: 'Hwɛ eyinom nso' },
   'cropFit.results.noResults': { en: 'No crops matched. Try different answers.', fr: 'Aucune culture trouvée. Essayez d\'autres réponses.', sw: 'Hakuna mazao yaliyopatikana. Jaribu majibu tofauti.', ha: 'Babu amfanin gona. Gwada amsoshi daban.', tw: 'Nnɔbae biara anhyia. Sɔ mmuaeɛ foforɔ hwɛ.' },
   'cropFit.results.tryAgain': { en: 'Try Again', fr: 'Réessayer', sw: 'Jaribu Tena', ha: 'Sake Gwadawa', tw: 'San Hwehwɛ' },
 

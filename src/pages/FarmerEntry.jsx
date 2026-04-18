@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { hasSeenReassurance } from './BeginnerReassurance.jsx';
 
 export default function FarmerEntry() {
   const navigate = useNavigate();
@@ -58,8 +59,10 @@ export default function FarmerEntry() {
       // Case A/B: session + farm → Home
       return <Navigate to="/dashboard" replace />;
     }
-    // Case C: authenticated but no farm yet → Start a new crop
-    return <Navigate to="/crop-fit" replace />;
+    // Case C: authenticated but no farm yet → Start-a-new-crop flow.
+    // Send through the reassurance screen the first time this session.
+    const next = hasSeenReassurance() ? '/crop-fit' : '/beginner-reassurance';
+    return <Navigate to={next} replace />;
   }
 
   // ── Anonymous — show the spec's Welcome screen

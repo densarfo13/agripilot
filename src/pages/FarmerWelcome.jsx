@@ -34,7 +34,14 @@ function readIntent() {
 export function postAuthDestination() {
   const intent = readIntent();
   persistIntent(null);
-  if (intent === 'new') return '/crop-fit';
+  if (intent === 'new') {
+    // New farmer flow goes through the reassurance screen first,
+    // unless the farmer has already seen it this session (resume case).
+    try {
+      const seen = sessionStorage.getItem('farroway:reassurance_seen') === '1';
+      return seen ? '/crop-fit' : '/beginner-reassurance';
+    } catch { return '/beginner-reassurance'; }
+  }
   return '/dashboard';
 }
 
