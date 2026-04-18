@@ -14,13 +14,16 @@
  * All progress detail, analytics, and farm details live in their tabs.
  * Loop state managed by useFarmerLoop hook.
  */
-import { lazy, Suspense, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { safeTrackEvent } from '../lib/analytics.js';
 import { useTranslation } from '../i18n/index.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useFarmerLoop } from '../hooks/useFarmerLoop.js';
+import { useDailyNotifications } from '../hooks/useDailyNotifications.js';
+import { useForecast } from '../context/ForecastContext.jsx';
 import { LOOP_STATE } from '../services/farmerLoopService.js';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';
@@ -45,6 +48,21 @@ export default function Dashboard() {
 
   // ─── THE LOOP ────────────────────────────────────────────
   const loop = useFarmerLoop();
+  const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
+
+  // ─── Daily notification engine (pure, gated by prefs + dedupe) ──
+  useDailyNotifications({
+    farm: loop.profile,
+    currentTask: loop.primaryTask,
+    urgency: loop.taskViewModel?.urgency,
+    actionKey: loop.taskViewModel?.actionKey,
+    cropStage: loop.profile?.cropStage,
+    weather: loop.weather,
+    forecast: rainfall,
+    fetchedAt: forecastFetchedAt,
+    completedToday: loop.loopState === LOOP_STATE.COMPLETED || loop.loopState === LOOP_STATE.ALL_DONE,
+    t,
+  });
 
   // ─── Modal state (not part of the loop itself) ──────────
   const [showTaskAction, setShowTaskAction] = useState(false);
@@ -52,6 +70,26 @@ export default function Dashboard() {
   const [showUpdateFlow, setShowUpdateFlow] = useState(false);
   const [showFarmPicker, setShowFarmPicker] = useState(false);
   const [selectedUpdateFarm, setSelectedUpdateFarm] = useState(null);
+
+  // ─── Notification deeplink handler ──────────────────────
+  // A notification click lands here with ?task=<id>. We track that the
+  // deeplink arrived (for retention analytics) and clear the param so
+  // refresh doesn't re-trigger it. Home already leads with the current
+  // task card, so no visual "highlight" is needed to keep the screen calm.
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const deeplinkTaskId = params.get('task');
+    if (!deeplinkTaskId) return;
+    safeTrackEvent('notification.deeplink_landed', {
+      taskId: deeplinkTaskId,
+      matchesCurrent: loop.primaryTask?.id === deeplinkTaskId,
+    });
+    // Clean the URL so a later refresh doesn't re-track
+    try {
+      window.history.replaceState(null, '', location.pathname);
+    } catch { /* ignore */ }
+  }, [location.search, location.pathname, loop.primaryTask?.id]);
 
   const hasMultipleFarms = loop.activeFarms && loop.activeFarms.length > 1;
   const showBeginnerPrompt = loop.profile && !loop.profile.cropType && loop.loopState !== LOOP_STATE.LOADING;

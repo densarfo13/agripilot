@@ -11,6 +11,7 @@
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { useTranslation } from '../i18n/index.js';
+import NotificationSettingsCard from './NotificationSettingsCard.jsx';
 
 export default function FarmerSettingsPanel() {
   const { mode, setMode, allowedModes, isFarmer } = useUserMode();
@@ -62,6 +63,9 @@ export default function FarmerSettingsPanel() {
           {autoVoice ? t('settings.voiceOn') : t('settings.voiceOff')}
         </button>
       </div>
+
+      {/* ─── Notification preferences ─────── */}
+      <NotificationSettingsCard />
     </div>
   );
 }

@@ -5175,6 +5175,105 @@ const T = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  NOTIFICATIONS — smart daily farmer alerts
+  // ═══════════════════════════════════════════════════════════
+
+  // ─── Settings card ─────────────────────────────
+  'notification.settings.title': {
+    en: 'Daily notifications', fr: 'Notifications quotidiennes', sw: 'Taarifa za kila siku', ha: 'Sanarwar yau da kullum', tw: 'Daa nkra',
+  },
+  'notification.settings.subtitle': {
+    en: 'Useful guidance, not spam.', fr: 'Des conseils utiles, pas de spam.', sw: 'Mwongozo wa manufaa, si ghasia.', ha: 'Jagora mai fa\'ida, ba spam ba.', tw: 'Akwankyerɛ a ɛho hia, ɛnyɛ nkwanhyia.',
+  },
+  'notification.settings.daily': {
+    en: 'Daily task reminder', fr: 'Rappel quotidien', sw: 'Kumbusho la kila siku', ha: 'Tunatarwa ta yau da kullum', tw: 'Daa adwuma nkae',
+  },
+  'notification.settings.dailyHint': {
+    en: 'One morning nudge about what to do today', fr: 'Un rappel matinal sur ce qu\'il faut faire aujourd\'hui', sw: 'Ukumbusho mmoja asubuhi kuhusu cha kufanya leo', ha: 'Tunatarwa ɗaya da safe game da abin da za a yi yau', tw: 'Anɔpa nkae baako fa deɛ wobɛyɛ nnɛ ho',
+  },
+  'notification.settings.weather': {
+    en: 'Weather alerts', fr: 'Alertes météo', sw: 'Tahadhari za hali ya hewa', ha: 'Sanarwar yanayi', tw: 'Ewim tebea kɔkɔbɔ',
+  },
+  'notification.settings.weatherHint': {
+    en: 'Only when weather changes your next action', fr: 'Seulement si la météo change votre prochaine action', sw: 'Tu wakati hali ya hewa inabadilisha hatua yako', ha: 'Kawai lokacin da yanayi ya canza mataki na gaba', tw: 'Bere a ewim tebea sesa adeɛ a ɛdi hɔ nko ara',
+  },
+  'notification.settings.critical': {
+    en: 'Critical risk alerts', fr: 'Alertes critiques', sw: 'Tahadhari muhimu', ha: 'Sanarwar haɗari', tw: 'Asiane kɔkɔbɔ',
+  },
+  'notification.settings.criticalHint': {
+    en: 'Rare — only when delay could cause loss', fr: 'Rares — seulement si un retard peut causer une perte', sw: 'Nadra — tu wakati kuchelewa kunaweza kusababisha hasara', ha: 'Ba safai ba — kawai idan jinkiri zai iya haifar da asara', tw: 'Ɛnyɛ daa — bere a akyire-kyire bɛma wɔahwere nneɛma nko',
+  },
+  'notification.settings.time': {
+    en: 'Morning time', fr: 'Heure du matin', sw: 'Wakati wa asubuhi', ha: 'Lokacin safe', tw: 'Anɔpa bere',
+  },
+  'notification.settings.timeHint': {
+    en: 'When to receive your daily reminder', fr: 'Quand recevoir votre rappel quotidien', sw: 'Wakati wa kupokea ukumbusho wako', ha: 'Lokacin da za ku sami tunatarwa', tw: 'Bere a wobɛnya wo daa nkae',
+  },
+  'notification.settings.enableBrowser': {
+    en: 'Enable phone notifications', fr: 'Activer les notifications', sw: 'Wezesha taarifa za simu', ha: 'Kunna sanarwar waya', tw: 'Ma fon nkra nyɛ adwuma',
+  },
+  'notification.settings.deniedHint': {
+    en: 'Phone notifications are off. In-app reminders still work.', fr: 'Les notifications sont désactivées. Les rappels dans l\'app fonctionnent.', sw: 'Taarifa za simu zimezimwa. Vikumbusho vya ndani ya programu bado vinafanya kazi.', ha: 'An kashe sanarwar waya. Tunatarwa a cikin app na ci gaba.', tw: 'Fon nkra no adum. App mu nkae da so yɛ adwuma.',
+  },
+  'notification.settings.unsupportedHint': {
+    en: 'Your phone does not support notifications. In-app reminders still work.', fr: 'Votre téléphone ne prend pas en charge les notifications.', sw: 'Simu yako haitumii taarifa. Vikumbusho vya ndani vinafanya kazi.', ha: 'Wayarku ba ta tallafawa sanarwa. Tunatarwa a app na ci gaba.', tw: 'Wo fon no nsusuw nkra so. App mu nkae da so yɛ adwuma.',
+  },
+
+  // ─── Daily notification copy ───────────────────
+  'notification.daily.today.title': {
+    en: 'Today\'s farm action', fr: 'Action du jour', sw: 'Hatua ya leo shambani', ha: 'Aikin gona na yau', tw: 'Afuo adwuma nnɛ',
+  },
+  'notification.daily.today.body': {
+    en: '{task} — do today.', fr: '{task} — à faire aujourd\'hui.', sw: '{task} — fanya leo.', ha: '{task} — yi yau.', tw: '{task} — yɛ nnɛ.',
+  },
+  'notification.daily.week.title': {
+    en: 'This week on your farm', fr: 'Cette semaine sur votre ferme', sw: 'Wiki hii shambani kwako', ha: 'Wannan mako a gonarka', tw: 'Nnawɔtwe yi wɔ w\'afuo',
+  },
+  'notification.daily.week.body': {
+    en: '{task} — plan for this week.', fr: '{task} — à prévoir cette semaine.', sw: '{task} — panga wiki hii.', ha: '{task} — shirya a wannan mako.', tw: '{task} — siesie ma nnawɔtwe yi.',
+  },
+  'notification.daily.generic.title': {
+    en: 'Next on your farm', fr: 'Prochaine tâche', sw: 'Ifuatayo shambani', ha: 'Na gaba a gonarka', tw: 'Nea ɛdi hɔ wɔ w\'afuo',
+  },
+  'notification.daily.generic.body': {
+    en: '{task}', fr: '{task}', sw: '{task}', ha: '{task}', tw: '{task}',
+  },
+
+  // ─── Weather-triggered copy ────────────────────
+  'notification.weather.water_heat.title': {
+    en: 'Water your crop today', fr: 'Arrosez votre culture aujourd\'hui', sw: 'Mwagilia zao lako leo', ha: 'Shayar da amfanin gona yau', tw: 'Gugu wo nnɔbae nnɛ',
+  },
+  'notification.weather.water_heat.body': {
+    en: 'Heat is high — water before noon.', fr: 'Forte chaleur — arrosez avant midi.', sw: 'Joto ni kali — mwagilia kabla ya mchana.', ha: 'Zafi yana da tsanani — shayar kafin tsakar rana.', tw: 'Ɛhyew ano yɛ den — gugu ansa na awia bedu awiei.',
+  },
+  'notification.weather.protect_harvest.title': {
+    en: 'Protect your harvest today', fr: 'Protégez votre récolte aujourd\'hui', sw: 'Linda mavuno yako leo', ha: 'Kare girbin ku yau', tw: 'Bɔ wo twa no ho ban nnɛ',
+  },
+  'notification.weather.protect_harvest.body': {
+    en: 'Rain is expected tomorrow.', fr: 'Pluie prévue demain.', sw: 'Mvua inatarajiwa kesho.', ha: 'Ana sa ran ruwan sama gobe.', tw: 'Wɔhwɛ kwan ma osu bɛtɔ ɔkyena.',
+  },
+  'notification.weather.delay_spray.title': {
+    en: 'Delay spraying today', fr: 'Retardez la pulvérisation aujourd\'hui', sw: 'Ahirisha kunyunyizia leo', ha: 'Dakata da feshi yau', tw: 'Twɛn mma wonnpete aduro nnɛ',
+  },
+  'notification.weather.delay_spray.body': {
+    en: 'Wind is too strong — try later this week.', fr: 'Vent trop fort — réessayez plus tard.', sw: 'Upepo una nguvu sana — jaribu baadaye wiki hii.', ha: 'Iska na da ƙarfi sosai — sake gwadawa daga baya.', tw: 'Mframa bo — sɔ hwɛ akyire yi.',
+  },
+
+  // ─── Critical copy ─────────────────────────────
+  'notification.critical.rain_harvest.title': {
+    en: 'Move your harvest under cover now', fr: 'Mettez votre récolte à l\'abri maintenant', sw: 'Hamisha mavuno yako chini ya hifadhi sasa', ha: 'Matsar da girbin ka ƙarƙashin rufi yanzu', tw: 'Fa wo twa no hyɛ baabi a ɛbɔ ho ban seesei',
+  },
+  'notification.critical.rain_harvest.body': {
+    en: 'Rain is arriving — act now to avoid loss.', fr: 'La pluie arrive — agissez maintenant.', sw: 'Mvua inakuja — fanya sasa kuepuka hasara.', ha: 'Ruwan sama na zuwa — yi yanzu don guje wa asara.', tw: 'Osu reba — yɛ seesei na ɛhwere nnema.',
+  },
+  'notification.critical.generic.title': {
+    en: 'Urgent — act on your farm now', fr: 'Urgent — agissez maintenant', sw: 'Haraka — fanya sasa shambani', ha: 'Gaggawa — yi aikin gona yanzu', tw: 'Ɛhia ntɛm — yɛ w\'afuo adwuma seesei',
+  },
+  'notification.critical.generic.body': {
+    en: 'This task is time-sensitive today.', fr: 'Cette tâche est urgente aujourd\'hui.', sw: 'Kazi hii ni ya haraka leo.', ha: 'Wannan aiki na gaggawa yau.', tw: 'Adwuma yi hia ntɛm nnɛ.',
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  ACTION FEEDBACK — farmer-friendly save/sync states
   // ═══════════════════════════════════════════════════════════
 
