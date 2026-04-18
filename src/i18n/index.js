@@ -21,6 +21,10 @@ export const LANGUAGES = [
   { code: 'sw', label: 'Kiswahili', short: 'SW' },
   { code: 'ha', label: 'Hausa', short: 'HA' },
   { code: 'tw', label: 'Twi', short: 'TW' },
+  // Starter language — only high-priority shared strings are translated
+  // (see "Starter Hindi set" in translations.js). Other keys fall back
+  // to English via the resolver until Hindi is fully rolled out.
+  { code: 'hi', label: 'हिन्दी', short: 'HI' },
 ];
 
 const STORAGE_KEY = 'farroway:lang';

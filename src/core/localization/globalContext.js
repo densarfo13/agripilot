@@ -267,6 +267,7 @@ export function buildLocalizedTask({ countryCode, cropId, month, baseTask } = {}
       type: 'off_season_planning',
       titleKey: 'offSeason.title',
       whyKey: 'offSeason.why',
+      stepsKey: 'offSeason.steps',
       ctaKey: 'offSeason.cta',
       urgency: 'optional',
       priority: 'low',

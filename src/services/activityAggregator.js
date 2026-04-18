@@ -368,6 +368,37 @@ export function getOnboardingByAgeRange() {
 }
 
 /**
+ * NGO V1 stats — minimal shape for partner reporting (spec §6).
+ * Returns the four numbers a partner admin needs at a glance; no
+ * charts, no heavy analytics. Backed by the same activity log so
+ * no schema change is required.
+ */
+export function getNgoStats() {
+  const log = getActivityLog();
+  const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const registrations = log.filter(e => e.event_type === 'user_registered' && e.user_id);
+  const totalFarmers = new Set(registrations.map(e => e.user_id)).size;
+
+  const activeToday = new Set(
+    log.filter(e => isToday(e.created_at) && e.user_id).map(e => e.user_id)
+  ).size;
+
+  const tasksCompletedToday = log.filter(
+    e => e.event_type === 'action_completed' && isToday(e.created_at)
+  ).length;
+
+  const weekEvents = log.filter(e => e.created_at >= weekAgoIso);
+  const activeWeek = new Set(weekEvents.filter(e => e.user_id).map(e => e.user_id)).size;
+  const completions7d = weekEvents.filter(e => e.event_type === 'action_completed').length;
+  const completionRate7d = activeWeek > 0
+    ? Math.round(Math.min(100, (completions7d / activeWeek) * 100))
+    : 0;
+
+  return { totalFarmers, activeToday, tasksCompletedToday, completionRate7d };
+}
+
+/**
  * Full dashboard — all metrics for the comprehensive admin analytics page.
  * Single call that returns everything the dashboard needs.
  */

@@ -33,6 +33,7 @@ import { getCropDefinition, getDefinedTasks, getNextStage } from './cropDefiniti
 import { getTasksForCropStage, resolveStage } from './cropTaskMap.js';
 import { getRegionTaskHint, REGION_PROFILES, resolveRegionProfile } from './regionProfiles.js';
 import { buildLocalizedTask } from '../core/localization/globalContext.js';
+import { applyWeatherAdjustments } from './applyWeatherAdjustments.js';
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -107,6 +108,7 @@ export function buildContextAwareTaskDecision({
   completionState,
   countryCode,   // spec §7: country + month drive the localization pipeline
   month,
+  weather,       // { rainExpected24h, tempHighC, soilDryProxy, fetchedAt }
 } = {}) {
   if (!crop) return null;
 
@@ -157,19 +159,24 @@ export function buildContextAwareTaskDecision({
     stageAllComplete: allComplete,
   };
 
-  // Spec §7: final pass — pipe through the globalContext localization
-  // layer so country + calendar-aware stage + region overrides can
-  // reshape the task. When countryCode isn't provided, the localizer
-  // is a no-op that just carries the decorated task forward.
+  // Spec §9 pipeline:
+  //   base → localized → weather-adjusted → off-season fallback (handled
+  //   inside buildLocalizedTask) → return.
+  let out = decorated;
   if (countryCode) {
-    return buildLocalizedTask({
+    out = buildLocalizedTask({
       countryCode,
       cropId: crop,
       month,
       baseTask: decorated,
     });
   }
-  return decorated;
+  // Weather adjustments only run on concrete tasks, not on the
+  // off-season fallback shape.
+  if (weather && out && !out.isOffSeason) {
+    out = applyWeatherAdjustments(out, weather);
+  }
+  return out;
 }
 
 /**

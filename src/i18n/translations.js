@@ -16,8 +16,13 @@ const T = {
   //  COMMON — buttons, labels, actions shared across screens
   // ═══════════════════════════════════════════════════════════
 
+  // Starter Hindi set — high-priority shared strings only; other keys
+  // fall back to English until Hindi is rolled out fully.
   'common.continue': {
-    en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Toa so',
+    en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Toa so', hi: 'जारी रखें',
+  },
+  'common.ready': {
+    en: 'Ready', fr: 'Prêt', sw: 'Tayari', ha: 'A shirye', tw: 'Krado', hi: 'तैयार',
   },
   'common.next': {
     en: 'Next', fr: 'Suivant', sw: 'Ifuatayo', ha: 'Na gaba', tw: 'Nea edi so',
@@ -5576,7 +5581,7 @@ const T = {
   'success.landPrep': { en: 'Soil is ready for planting.', fr: 'Le sol est prêt.', sw: 'Udongo uko tayari kupanda.', ha: 'Ƙasa ta shirya don shuka.', tw: 'Asase no asiesie ama dua.' },
   'success.sort': { en: 'Produce sorted — better value.', fr: 'Produits triés — meilleure valeur.', sw: 'Mazao yamepangwa — thamani bora.', ha: 'An tsara kaya — daraja mai kyau.', tw: 'Nneɛma no apae mu — ɛso bo.' },
   'success.store': { en: 'Stored safely.', fr: 'Stocké en sécurité.', sw: 'Imehifadhiwa salama.', ha: 'An ajiye lafiya.', tw: 'Wɔakora yie.' },
-  'success.general': { en: 'Good work — your crop is getting better.', fr: 'Bon travail — votre culture s\'améliore.', sw: 'Kazi nzuri — zao lako linaboreshwa.', ha: 'Aikin kirki — amfaninku yana samun sauƙi.', tw: 'Adwuma pa — wo nnɔbae rekɔ so yie.' },
+  'success.general': { en: 'Good work — your crop is getting better.', fr: 'Bon travail — votre culture s\'améliore.', sw: 'Kazi nzuri — zao lako linaboreshwa.', ha: 'Aikin kirki — amfaninku yana samun sauƙi.', tw: 'Adwuma pa — wo nnɔbae rekɔ so yie.', hi: 'बढ़िया काम — आपकी फसल बेहतर हो रही है।' },
 
   // ─── AUTOPILOT labels ─────────────────────────────────────
   'autopilot.confidence.high': { en: 'Recommended', fr: 'Recommandé', sw: 'Inapendekezwa', ha: 'An ba da shawara', tw: 'Wɔakamfo' },
@@ -6095,7 +6100,7 @@ const T = {
     en: 'Why:', fr: 'Pourquoi :', sw: 'Kwa nini:', ha: 'Me yasa:', tw: 'Adɛn:',
   },
   'home.cta.fixToday': {
-    en: 'Fix this today', fr: 'Réglez ça aujourd\'hui', sw: 'Shughulikia leo', ha: 'Gyara yau', tw: 'Siesie nnɛ',
+    en: 'Fix this today', fr: 'Réglez ça aujourd\'hui', sw: 'Shughulikia leo', ha: 'Gyara yau', tw: 'Siesie nnɛ', hi: 'आज ठीक करें',
   },
   'home.cta.actNow': {
     en: 'Act now', fr: 'Agir maintenant', sw: 'Chukua hatua sasa', ha: 'Yi yanzu', tw: 'Yɛ seesei',
@@ -6118,6 +6123,7 @@ const T = {
     sw: 'Panga zao lako lijalo',
     ha: 'Shirya amfani na gaba',
     tw: 'Siesie wo nnɔbae a ɛdi hɔ',
+    hi: 'अगली फसल की योजना बनाएं',
   },
   'offSeason.why': {
     en: 'This is not the main season now',
@@ -6127,18 +6133,69 @@ const T = {
     tw: 'Ɛnyɛ bere titiriw no seesei',
   },
   'offSeason.cta': {
-    en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Kɔ so',
+    en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Kɔ so', hi: 'जारी रखें',
+  },
+  'offSeason.steps': {
+    en: 'Prepare your land early | Gather seeds and inputs | Watch for upcoming rains',
+    fr: 'Préparez votre terrain tôt | Rassemblez semences et intrants | Surveillez les prochaines pluies',
+    sw: 'Andaa ardhi yako mapema | Kusanya mbegu na pembejeo | Angalia mvua zinazokuja',
+    ha: 'Shirya gonar da wuri | Tattara iri da abubuwan amfani | Duba ruwan sama mai zuwa',
+    tw: 'Siesie w\'asase ntɛm | Boaboa aba ne nneɛma | Hwɛ osu a ɛbɛba',
+  },
+
+  // ─── Weather adjustments (spec §1) ─────────────────────────
+  'weatherAdj.plant.rainSoon.title': {
+    en: 'Plant your crop now',
+    fr: 'Plantez votre culture maintenant',
+    sw: 'Panda zao lako sasa',
+    ha: 'Shuka amfaninku yanzu',
+    tw: 'Dua wo nnɔbae seesei',
+  },
+  'weatherAdj.plant.rainSoon.why': {
+    en: 'Rain is expected soon',
+    fr: 'La pluie arrive bientôt',
+    sw: 'Mvua inatarajiwa hivi karibuni',
+    ha: 'Ana sa ran ruwan sama nan ba da daɗewa ba',
+    tw: 'Osu reba ntɛm',
+  },
+  'weatherAdj.plant.waitDry.title': {
+    en: 'Wait before planting',
+    fr: 'Attendez avant de planter',
+    sw: 'Subiri kabla ya kupanda',
+    ha: 'Dakata kafin shuka',
+    tw: 'Twɛn ansa na woadua',
+  },
+  'weatherAdj.plant.waitDry.why': {
+    en: 'Soil may be too dry',
+    fr: 'Le sol est peut-être trop sec',
+    sw: 'Udongo unaweza kuwa mkavu sana',
+    ha: 'Ƙasa na iya zama busasshe sosai',
+    tw: 'Asase no bɛyɛ kuro dodo',
+  },
+  'weatherAdj.water.heat.title': {
+    en: 'Water your crop today',
+    fr: 'Arrosez votre culture aujourd\'hui',
+    sw: 'Mwagilia zao lako leo',
+    ha: 'Shayar da amfaninku yau',
+    tw: 'Gu wo nnɔbae nsu nnɛ',
+  },
+  'weatherAdj.water.heat.why': {
+    en: 'Heat is high today',
+    fr: 'La chaleur est forte aujourd\'hui',
+    sw: 'Joto ni kali leo',
+    ha: 'Zafi yana da yawa yau',
+    tw: 'Ɛhyew ano yɛ den nnɛ',
   },
 
   // ─── Task correction flow (spec §1, §2, §3) ────────────────
   'correction.undo': {
-    en: 'Undo', fr: 'Annuler', sw: 'Tendua', ha: 'Soke', tw: 'San yi',
+    en: 'Undo', fr: 'Annuler', sw: 'Tendua', ha: 'Soke', tw: 'San yi', hi: 'पूर्ववत करें',
   },
   'correction.somethingWrong': {
-    en: 'Something is wrong', fr: 'Quelque chose ne va pas', sw: 'Kuna tatizo', ha: 'Akwai matsala', tw: 'Biribi nyɛ yie',
+    en: 'Something is wrong', fr: 'Quelque chose ne va pas', sw: 'Kuna tatizo', ha: 'Akwai matsala', tw: 'Biribi nyɛ yie', hi: 'कुछ गलत है',
   },
   'correction.markNotDone': {
-    en: 'Mark as not done', fr: 'Marquer comme non fait', sw: 'Weka kama haijakamilika', ha: 'Sanya ba a gama ba', tw: 'Kyerɛ sɛ wunyɛɛ ɛ',
+    en: 'Mark as not done', fr: 'Marquer comme non fait', sw: 'Weka kama haijakamilika', ha: 'Sanya ba a gama ba', tw: 'Kyerɛ sɛ wunyɛɛ ɛ', hi: 'अधूरा चिह्नित करें',
   },
   'correction.title': {
     en: 'What\'s wrong with this task?',
@@ -6334,7 +6391,7 @@ const T = {
   'camera.result.addToTasks': { en: 'Add to my tasks', fr: 'Ajouter à mes tâches', sw: 'Ongeza kwenye kazi zangu', ha: 'Ƙara cikin ayyukana', tw: 'Fa ka me nnwuma ho' },
   'camera.result.markDone': { en: 'Mark as done', fr: 'Marquer comme fait', sw: 'Weka kama imekamilika', ha: 'Sanya an kammala', tw: 'Kyerɛ sɛ woawie' },
   'camera.result.later': { en: 'Save for later', fr: 'Garder pour plus tard', sw: 'Hifadhi kwa baadaye', ha: 'Ajiye don baya', tw: 'Kora ma akyire' },
-  'camera.result.taskAdded': { en: 'Added — do this today', fr: 'Ajouté — à faire aujourd\'hui', sw: 'Imeongezwa — fanya leo', ha: 'An ƙara — yi yau', tw: 'Woafa — yɛ nnɛ' },
+  'camera.result.taskAdded': { en: 'Added — do this today', fr: 'Ajouté — à faire aujourd\'hui', sw: 'Imeongezwa — fanya leo', ha: 'An ƙara — yi yau', tw: 'Woafa — yɛ nnɛ', hi: 'जोड़ा गया — आज करें' },
   'camera.result.rescan': { en: 'Scan another photo', fr: 'Scanner une autre photo', sw: 'Piga picha nyingine', ha: 'Ɗauki wani hoto', tw: 'Twa mfonini foforɔ' },
 
   // History
