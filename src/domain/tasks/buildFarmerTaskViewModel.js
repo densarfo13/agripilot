@@ -25,8 +25,12 @@ import { getTaskTimingContext } from '../../engine/taskTimingEngine.js';
 /**
  * Schema version — bump to invalidate cached view models.
  * Any stored/cached task render data with a lower version should be discarded.
+ *
+ * v5 adds the `language` field, timing engine integration (timingKind,
+ * timingDayIndex), and tightened localization — any v≤4 blob cached on
+ * a device still carries English-fallback strings and must be dropped.
  */
-export const TASK_VIEWMODEL_SCHEMA_VERSION = 4;
+export const TASK_VIEWMODEL_SCHEMA_VERSION = 5;
 
 /**
  * Build a normalized, render-ready view model for a farmer task.

@@ -54,7 +54,7 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
         onClose();
       }, result.offline ? 1200 : 1500);
     } else {
-      setFeedback({ type: 'error', message: result.error || t('cropStage.saveFailed') || 'Failed to save. Try again.' });
+      setFeedback({ type: 'error', message: result.error || t('cropStage.saveFailed') });
       setSelected(currentStage);
     }
 

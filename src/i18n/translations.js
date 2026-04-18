@@ -4975,6 +4975,16 @@ const T = {
   'myFarm.title': {
     en: 'My Farm', fr: 'Ma Ferme', sw: 'Shamba Langu', ha: 'Gonar Ta', tw: 'Me Afuo',
   },
+  'myFarm.unnamedFarm': {
+    en: 'My Farm', fr: 'Ma Ferme', sw: 'Shamba Langu', ha: 'Gonar Ta', tw: 'Me Afuo',
+  },
+  'myFarm.noFarm': {
+    en: 'No farm yet. Set up your farm to get started.',
+    fr: 'Pas encore de ferme. Configurez votre ferme pour commencer.',
+    sw: 'Bado hakuna shamba. Sanidi shamba lako ili kuanza.',
+    ha: 'Babu gona tukuna. Saita gonar ka don farawa.',
+    tw: 'Afuo biara nni hɔ. Siesie w\'afuo na wohyɛ aseɛ.',
+  },
   'myFarm.crop': {
     en: 'Crop', fr: 'Culture', sw: 'Mazao', ha: 'Amfanin gona', tw: 'Nn\u0254bae\u025B',
   },
@@ -5314,6 +5324,12 @@ const T = {
   //  VOICE — welcome message
   // ═══════════════════════════════════════════════════════════
 
+  'voice.enableGuide': {
+    en: 'Enable voice guide', fr: 'Activer le guide vocal', sw: 'Wezesha mwongozo wa sauti', ha: 'Kunna jagora na murya', tw: 'Ma nne akwankyerɛ nyɛ adwuma',
+  },
+  'voice.turnOn': {
+    en: 'Turn on voice guide', fr: 'Activer le guide vocal', sw: 'Washa mwongozo wa sauti', ha: 'Kunna jagora na murya', tw: 'Sɔ nne akwankyerɛ',
+  },
   'voice.welcome': {
     en: 'Welcome to your farm. Check your task for today.',
     fr: 'Bienvenue sur votre ferme. Vérifiez votre tâche du jour.',

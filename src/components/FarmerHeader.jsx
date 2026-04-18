@@ -79,7 +79,7 @@ export default function FarmerHeader({ user, profile, t, weatherDecision, onRefr
           {wd.lastUpdatedLabel && (
             <div style={S.wxCardUpdated}>{wd.lastUpdatedLabel}</div>
           )}
-          <button onClick={() => setExpanded(false)} style={S.wxClose}>{t('common.close') || 'Close'}</button>
+          <button onClick={() => setExpanded(false)} style={S.wxClose}>{t('common.close')}</button>
         </div>
       )}
     </div>

@@ -82,10 +82,10 @@ export default function MyFarmPage() {
         saveAvatar(dataUrl);
         setAvatarUrl(dataUrl);
       } else {
-        setAvatarError(t('avatar.compressFailed') || 'Could not process image');
+        setAvatarError(t('avatar.compressFailed'));
       }
     } catch {
-      setAvatarError(t('avatar.uploadFailed') || 'Upload failed');
+      setAvatarError(t('avatar.uploadFailed'));
     } finally {
       setAvatarUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -104,7 +104,7 @@ export default function MyFarmPage() {
       <div style={S.page}>
         <div style={S.header}>
           <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
-          <h1 style={S.pageTitle}>{t('myFarm.title') || 'My Farm'}</h1>
+          <h1 style={S.pageTitle}>{t('myFarm.title')}</h1>
         </div>
         <div style={S.skeletonWrap}>
           <div style={S.skeletonCard}>
@@ -130,7 +130,7 @@ export default function MyFarmPage() {
       {/* Header */}
       <div style={S.header}>
         <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
-        <h1 style={S.pageTitle}>{t('myFarm.title') || 'My Farm'}</h1>
+        <h1 style={S.pageTitle}>{t('myFarm.title')}</h1>
       </div>
 
       {/* Farm details */}
@@ -155,7 +155,7 @@ export default function MyFarmPage() {
                 style={{ display: 'none' }}
               />
               <div>
-                <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm') || 'My Farm'}</h2>
+                <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm')}</h2>
                 {(farm.country || farm.countryCode) && (
                   <span style={S.farmSubline}>{SECTION_ICONS.country} {farm.country || farm.countryCode}</span>
                 )}
@@ -244,7 +244,7 @@ export default function MyFarmPage() {
         </div>
       ) : (
         <div style={S.emptyWrap}>
-          <p style={S.emptyText}>{t('myFarm.noFarm') || 'No farm found. Set up your farm to get started.'}</p>
+          <p style={S.emptyText}>{t('myFarm.noFarm')}</p>
           <button
             type="button"
             onClick={() => navigate('/profile/setup')}

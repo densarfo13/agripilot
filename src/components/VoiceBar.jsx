@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceEvent } from '../utils/voiceAnalytics.js';
-import { getLanguage, setLanguage } from '../i18n/index.js';
+import { getLanguage, setLanguage, useTranslation } from '../i18n/index.js';
 
 /**
  * VoiceBar — shared voice controls for low-literacy farmers.
@@ -16,6 +16,7 @@ import { getLanguage, setLanguage } from '../i18n/index.js';
  *   compact   — if true, shows smaller controls (default: false)
  */
 export default function VoiceBar({ voiceKey, compact = false }) {
+  const { t } = useTranslation();
   const [voiceLang, setVoiceLang] = useState(() => getLanguage());
   const [enabled, setEnabled] = useState(() => isVoiceAvailable());
   const playedRef = useRef({});
@@ -81,9 +82,9 @@ export default function VoiceBar({ voiceKey, compact = false }) {
           type="button"
           onClick={() => { setEnabled(true); playedRef.current = {}; trackVoiceEvent('VOICE_PROMPT_PLAYED', { promptKey: voiceKey, language: voiceLang, action: 'unmuted' }); }}
           style={VS.listenBtn}
-          aria-label="Turn on voice guide"
+          aria-label={t('voice.turnOn')}
         >
-          {'\uD83D\uDD08'} {compact ? 'Voice' : 'Enable Voice Guide'}
+          {'\uD83D\uDD08'} {compact ? t('settings.voiceGuide') : t('voice.enableGuide')}
         </button>
       </div>
     );
