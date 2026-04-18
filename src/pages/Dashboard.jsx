@@ -309,31 +309,48 @@ export default function Dashboard() {
           </Suspense>
         )}
 
-        {/* Active camera issue — surfaced above normal task (spec §10) */}
+        {/* ═══ Hero: camera-detected issue takes over as the one
+            dominant task when active (spec §2, §12). Normal crop task
+            is hidden behind a subtle Next-hint to keep Home radically
+            simple — one action, one focus. ═══ */}
         {cameraTask && loop.profile && (
-          <div style={S.cameraTaskCard} data-testid="home-camera-task">
-            <div style={S.cameraTaskHeader}>
-              <span style={S.cameraTaskIcon} aria-hidden="true">{cameraTask.icon || '\uD83D\uDCF7'}</span>
-              <div style={S.cameraTaskInfo}>
-                <div style={S.cameraTaskLabel}>{t('camera.result.todaysAction')}</div>
-                <div style={S.cameraTaskTitle}>{t(cameraTask.titleKey)}</div>
-                {cameraTask.whyKey && (
-                  <div style={S.cameraTaskWhy}>{t(cameraTask.whyKey)}</div>
-                )}
+          <>
+            <div style={S.cameraHero} data-testid="home-camera-task">
+              <div style={S.cameraHeroTopRow}>
+                <span style={S.cameraHeroIcon} aria-hidden="true">{cameraTask.icon || '\uD83D\uDCF7'}</span>
+                <span style={S.cameraHeroLabel}>{t('home.hero.todaysAction')}</span>
               </div>
-            </div>
-            <div style={S.cameraTaskCtas}>
-              <button type="button" onClick={handleCameraDone} style={S.cameraTaskDone}>
-                {t('camera.result.markDone')}
+              <h1 style={S.cameraHeroTitle}>{t(cameraTask.titleKey)}</h1>
+              {cameraTask.contextKey && (
+                <div style={S.cameraHeroContext}>{t(cameraTask.contextKey)}</div>
+              )}
+              {cameraTask.whyKey && (
+                <div style={S.cameraHeroWhy}>
+                  <span style={S.cameraHeroWhyLabel}>{t('home.hero.why')}</span>
+                  {t(cameraTask.whyKey)}
+                </div>
+              )}
+              <button type="button" onClick={handleCameraDone} style={S.cameraHeroCta}>
+                {t('home.cta.fixToday')}
               </button>
-              <button type="button" onClick={() => navigate('/scan-crop')} style={S.cameraTaskView}>
-                {t('camera.result.rescan')}
+              <button type="button" onClick={() => navigate('/scan-crop')} style={S.cameraHeroSecondary}>
+                {'\uD83D\uDCF7'} {t('camera.result.rescan')}
               </button>
             </div>
-          </div>
+
+            {/* Subtle Next-up hint: normal crop task is waiting */}
+            {loop.taskViewModel?.title && (
+              <div style={S.nextHint}>
+                <span style={S.nextHintLabel}>{t('home.nextUp')}</span>
+                <span style={S.nextHintTitle}>{loop.taskViewModel.title}</span>
+              </div>
+            )}
+          </>
         )}
 
-        {loop.profile && !loop.farmSwitching && (
+        {/* Normal task card — hidden while a camera hero is active so
+            Home never shows two dominant tasks at once. */}
+        {!cameraTask && loop.profile && !loop.farmSwitching && (
           <NextActionCard
             decision={loop.decision}
             taskViewModel={loop.taskViewModel}
@@ -402,26 +419,75 @@ const S = {
   scanEntryIcon: { fontSize: '1.125rem', lineHeight: 1 },
   scanEntryChevron: { marginLeft: 'auto', color: '#6F8299', fontSize: '1.25rem' },
 
-  // Active camera-task card above NextActionCard (compact, one-task focus)
-  cameraTaskCard: {
-    borderRadius: '16px',
+  // Camera-hero card — when active, this IS the Home task (spec §2, §12).
+  // Generous spacing and one dominant green CTA; no competing cards.
+  cameraHero: {
+    borderRadius: '22px',
     background: 'rgba(245,158,11,0.06)',
     border: '1px solid rgba(245,158,11,0.28)',
-    padding: '0.875rem 1rem',
+    padding: '1.5rem 1.25rem 1.25rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.625rem',
     marginBottom: '0.5rem',
+    boxShadow: '0 14px 36px rgba(0,0,0,0.3)',
+    animation: 'farroway-fade-in 0.25s ease-out',
   },
-  cameraTaskHeader: { display: 'flex', gap: '0.75rem', alignItems: 'flex-start' },
-  cameraTaskIcon: { fontSize: '1.5rem', lineHeight: 1, flexShrink: 0, marginTop: '0.125rem' },
-  cameraTaskInfo: { flex: 1, minWidth: 0 },
-  cameraTaskLabel: { fontSize: '0.625rem', fontWeight: 800, color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.08em' },
-  cameraTaskTitle: { fontSize: '1rem', fontWeight: 800, color: '#EAF2FF', marginTop: '0.125rem', lineHeight: 1.25 },
-  cameraTaskWhy: { fontSize: '0.8125rem', color: '#9FB3C8', marginTop: '0.25rem', lineHeight: 1.35 },
-  cameraTaskCtas: { display: 'flex', gap: '0.5rem' },
-  cameraTaskDone: { flex: 1, padding: '0.625rem 0.75rem', borderRadius: '10px', border: 'none', background: '#22C55E', color: '#fff', fontSize: '0.8125rem', fontWeight: 800, cursor: 'pointer' },
-  cameraTaskView: { flex: 1, padding: '0.625rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer' },
+  cameraHeroTopRow: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  cameraHeroIcon: { fontSize: '1.375rem', lineHeight: 1 },
+  cameraHeroLabel: {
+    fontSize: '0.625rem', fontWeight: 800,
+    color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em',
+  },
+  cameraHeroTitle: {
+    fontSize: '1.5rem', fontWeight: 800, color: '#EAF2FF',
+    margin: '0.125rem 0 0', lineHeight: 1.2,
+  },
+  cameraHeroContext: {
+    fontSize: '0.75rem', fontWeight: 700, color: '#FCD34D',
+    textTransform: 'uppercase', letterSpacing: '0.06em',
+  },
+  cameraHeroWhy: {
+    fontSize: '0.9375rem', color: '#EAF2FF', lineHeight: 1.4,
+    padding: '0.5rem 0',
+  },
+  cameraHeroWhyLabel: {
+    fontSize: '0.625rem', fontWeight: 800, color: '#6F8299',
+    textTransform: 'uppercase', letterSpacing: '0.08em',
+    marginRight: '0.375rem',
+  },
+  cameraHeroCta: {
+    marginTop: '0.5rem',
+    padding: '1rem', borderRadius: '16px',
+    background: '#22C55E', color: '#fff', border: 'none',
+    fontSize: '1.0625rem', fontWeight: 800, cursor: 'pointer',
+    minHeight: '56px',
+    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  cameraHeroSecondary: {
+    padding: '0.625rem', borderRadius: '12px',
+    border: '1px dashed rgba(255,255,255,0.08)',
+    background: 'transparent', color: '#9FB3C8',
+    fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+    marginTop: '0.25rem',
+  },
+
+  // Subtle "Next up" hint — renders only when a secondary task is
+  // waiting behind the hero. One line, low visual weight.
+  nextHint: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.5rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    fontSize: '0.8125rem', color: '#9FB3C8',
+    marginBottom: '0.5rem',
+  },
+  nextHintLabel: {
+    fontSize: '0.625rem', fontWeight: 800, color: '#6F8299',
+    textTransform: 'uppercase', letterSpacing: '0.08em',
+  },
+  nextHintTitle: { fontWeight: 700, color: '#EAF2FF' },
   container: {
     maxWidth: '42rem',
     margin: '0 auto',

@@ -6082,6 +6082,23 @@ const T = {
   'camera.loading': { en: 'Analyzing your crop...', fr: 'Analyse de votre culture...', sw: 'Inachambua zao lako...', ha: 'Ana bincika amfani...', tw: 'Yɛrehwɛ wo nnɔbae...' },
   'camera.loading.sub': { en: 'This helps you know what to do next', fr: 'Cela vous aide à savoir quoi faire ensuite', sw: 'Hii inakusaidia kujua cha kufanya baadaye', ha: 'Wannan zai taimaka ka san abin da za ka yi na gaba', tw: 'Eyi bɛboa wo na wo ahu deɛ wo bɛyɛ' },
 
+  // ─── Home hero polish (spec §2, §6, §8) ─────────────────────
+  'home.hero.todaysAction': {
+    en: "Today's action", fr: "Action du jour", sw: 'Hatua ya leo', ha: 'Aikin yau', tw: 'Ɛnnɛ adeyɛ',
+  },
+  'home.hero.why': {
+    en: 'Why:', fr: 'Pourquoi :', sw: 'Kwa nini:', ha: 'Me yasa:', tw: 'Adɛn:',
+  },
+  'home.cta.fixToday': {
+    en: 'Fix this today', fr: 'Réglez ça aujourd\'hui', sw: 'Shughulikia leo', ha: 'Gyara yau', tw: 'Siesie nnɛ',
+  },
+  'home.cta.actNow': {
+    en: 'Act now', fr: 'Agir maintenant', sw: 'Chukua hatua sasa', ha: 'Yi yanzu', tw: 'Yɛ seesei',
+  },
+  'home.nextUp': {
+    en: 'Next up', fr: 'Ensuite', sw: 'Inayofuata', ha: 'Na gaba', tw: 'Nea ɛdi hɔ',
+  },
+
   // Result chrome
   'camera.result.todaysAction': { en: "Today's action", fr: "Action du jour", sw: 'Hatua ya leo', ha: 'Aikin yau', tw: 'Ɛnnɛ adeyɛ' },
   'camera.result.why': { en: 'Why', fr: 'Pourquoi', sw: 'Kwa nini', ha: 'Me yasa', tw: 'Adɛn' },
