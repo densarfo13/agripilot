@@ -5576,7 +5576,7 @@ const T = {
   'success.landPrep': { en: 'Soil is ready for planting.', fr: 'Le sol est prêt.', sw: 'Udongo uko tayari kupanda.', ha: 'Ƙasa ta shirya don shuka.', tw: 'Asase no asiesie ama dua.' },
   'success.sort': { en: 'Produce sorted — better value.', fr: 'Produits triés — meilleure valeur.', sw: 'Mazao yamepangwa — thamani bora.', ha: 'An tsara kaya — daraja mai kyau.', tw: 'Nneɛma no apae mu — ɛso bo.' },
   'success.store': { en: 'Stored safely.', fr: 'Stocké en sécurité.', sw: 'Imehifadhiwa salama.', ha: 'An ajiye lafiya.', tw: 'Wɔakora yie.' },
-  'success.general': { en: 'Done — good work.', fr: 'Fait — bon travail.', sw: 'Imekamilika — kazi nzuri.', ha: 'An gama — aikin kirki.', tw: 'Awie — adwuma pa.' },
+  'success.general': { en: 'Good work — your crop is getting better.', fr: 'Bon travail — votre culture s\'améliore.', sw: 'Kazi nzuri — zao lako linaboreshwa.', ha: 'Aikin kirki — amfaninku yana samun sauƙi.', tw: 'Adwuma pa — wo nnɔbae rekɔ so yie.' },
 
   // ─── AUTOPILOT labels ─────────────────────────────────────
   'autopilot.confidence.high': { en: 'Recommended', fr: 'Recommandé', sw: 'Inapendekezwa', ha: 'An ba da shawara', tw: 'Wɔakamfo' },
@@ -5594,7 +5594,7 @@ const T = {
   // ═══════════════════════════════════════════════════════════
   //  CROP FIT — intake questions
   // ═══════════════════════════════════════════════════════════
-  'cropFit.q.experience': { en: 'How much farming experience do you have?', fr: 'Quelle est votre expérience agricole ?', sw: 'Una uzoefu kiasi gani wa kilimo?', ha: 'Kana da ƙwarewar noma nawa?', tw: 'Wowɔ adwumayɛ mu nimdeɛ dodoɔ bɛn wɔ afuoyɛ mu?' },
+  'cropFit.q.experience': { en: 'Have you farmed before?', fr: 'Avez-vous déjà cultivé ?', sw: 'Umewahi kulima hapo awali?', ha: 'Ka taɓa noma a baya?', tw: 'Woayɛ afuo pɛn?' },
   'cropFit.q.landSize': { en: 'How much land do you have?', fr: 'Quelle est la taille de votre terrain ?', sw: 'Una ardhi kiasi gani?', ha: 'Kana da filaye nawa?', tw: 'Asase dodoɔ bɛn na wowɔ?' },
   'cropFit.q.waterAccess': { en: 'What is your water source?', fr: 'Quelle est votre source d\'eau ?', sw: 'Chanzo chako cha maji ni kipi?', ha: 'Menene tushen ruwan ku?', tw: 'Wo nsu fibea ne deɛn?' },
   'cropFit.q.budget': { en: 'What is your budget level?', fr: 'Quel est votre budget ?', sw: 'Bajeti yako ni kiasi gani?', ha: 'Menene matakin kasafin ku?', tw: 'Wo sika dodoɔ bɛn?' },
@@ -5609,9 +5609,9 @@ const T = {
   'cropFit.hint.preferredCrop': { en: 'Optional — skip if unsure.', fr: 'Facultatif — passez si vous hésitez.', sw: 'Si lazima — ruka kama huna uhakika.', ha: 'Zaɓi ne — tsallake idan ba ka da tabbaci.', tw: 'Ɛnyɛ dɛ ɛsɛ — twa mu sɛ wonnim.' },
 
   // ─── Experience options ──
-  'cropFit.exp.none': { en: 'I\'m completely new', fr: 'Je suis débutant', sw: 'Mimi ni mpya kabisa', ha: 'Ni sabon shiga ne', tw: 'Meyɛ ɔfoforɔ koraa' },
-  'cropFit.exp.some': { en: 'I\'ve grown something before', fr: 'J\'ai déjà cultivé', sw: 'Nimeshawahi kulima', ha: 'Na taɓa noma', tw: 'Madua biribi bi da' },
-  'cropFit.exp.experienced': { en: 'I farm regularly', fr: 'Je cultive régulièrement', sw: 'Ninalima mara kwa mara', ha: 'Ina noma kullum', tw: 'Meyɛ afuoyɛ daa' },
+  'cropFit.exp.none': { en: 'No, I\'m just starting', fr: 'Non, je débute', sw: 'Hapana, ninaanza sasa', ha: 'A\'a, ina farawa', tw: 'Dabi, mefiri aseɛ seesei' },
+  'cropFit.exp.some': { en: 'Yes, I already farm', fr: 'Oui, je cultive déjà', sw: 'Ndiyo, tayari ninalima', ha: 'Ee, ina noma', tw: 'Aane, meyɛ afuo dada' },
+  'cropFit.exp.experienced': { en: 'Yes, I farm regularly', fr: 'Oui, je cultive régulièrement', sw: 'Ndiyo, ninalima mara kwa mara', ha: 'Ee, ina noma kullum', tw: 'Aane, meyɛ afuoyɛ daa' },
 
   // ─── Land size options ──
   'cropFit.land.small': { en: 'Small (backyard / under 1 acre)', fr: 'Petit (jardin / moins de 0,5 ha)', sw: 'Ndogo (nyumbani / chini ya ekari 1)', ha: 'Ƙarami (bayan gida / ƙasa da eka 1)', tw: 'Ketewa (efie akyi / ɛnsen eka 1)' },
@@ -5645,7 +5645,7 @@ const T = {
   //  CROP FIT — results screen
   // ═══════════════════════════════════════════════════════════
   'cropFit.results.title': { en: 'Your Top Crops', fr: 'Vos meilleures cultures', sw: 'Mazao Yako Bora', ha: 'Amfanin Gonan ku Mafi Kyau', tw: 'Wo Nnɔbae Pa' },
-  'cropFit.results.subtitle': { en: 'Based on your answers, here are our recommendations.', fr: 'Voici nos recommandations selon vos réponses.', sw: 'Kulingana na majibu yako, hizi ndizo mapendekezo yetu.', ha: 'Bisa ga amsoshin ku, ga shawarwarinmu.', tw: 'Sɛ wo mmuaeɛ te no, yei ne yɛn nkamfo.' },
+  'cropFit.results.subtitle': { en: 'Works well in your area right now.', fr: 'Convient bien à votre région en ce moment.', sw: 'Inafaa vizuri katika eneo lako kwa sasa.', ha: 'Ya dace da yankinku a yanzu.', tw: 'Ɛkɔ yie wɔ wo mantam seesei.' },
   'cropFit.results.bestFit': { en: 'Best Fit', fr: 'Meilleur choix', sw: 'Bora Zaidi', ha: 'Mafi Dacewa', tw: 'Nea Ɛfata Paa' },
   'cropFit.results.bestForYou': { en: 'Best for you', fr: 'Idéal pour vous', sw: 'Bora kwako', ha: 'Mafi dacewa a gareka', tw: 'Ɛfata wo paa' },
   'cropFit.results.viewPlan': { en: 'View plan', fr: 'Voir le plan', sw: 'Angalia mpango', ha: 'Duba shiri', tw: 'Hwɛ nhyehyɛeɛ' },
@@ -6106,7 +6106,7 @@ const T = {
   'camera.result.addToTasks': { en: 'Add to my tasks', fr: 'Ajouter à mes tâches', sw: 'Ongeza kwenye kazi zangu', ha: 'Ƙara cikin ayyukana', tw: 'Fa ka me nnwuma ho' },
   'camera.result.markDone': { en: 'Mark as done', fr: 'Marquer comme fait', sw: 'Weka kama imekamilika', ha: 'Sanya an kammala', tw: 'Kyerɛ sɛ woawie' },
   'camera.result.later': { en: 'Save for later', fr: 'Garder pour plus tard', sw: 'Hifadhi kwa baadaye', ha: 'Ajiye don baya', tw: 'Kora ma akyire' },
-  'camera.result.taskAdded': { en: 'Added to your tasks', fr: 'Ajouté à vos tâches', sw: 'Imeongezwa kwenye kazi zako', ha: 'An ƙara cikin ayyukanku', tw: 'Woafa aka wo nnwuma ho' },
+  'camera.result.taskAdded': { en: 'Added — do this today', fr: 'Ajouté — à faire aujourd\'hui', sw: 'Imeongezwa — fanya leo', ha: 'An ƙara — yi yau', tw: 'Woafa — yɛ nnɛ' },
   'camera.result.rescan': { en: 'Scan another photo', fr: 'Scanner une autre photo', sw: 'Piga picha nyingine', ha: 'Ɗauki wani hoto', tw: 'Twa mfonini foforɔ' },
 
   // History
@@ -6164,7 +6164,7 @@ const T = {
   'camera.action.healthy.tip': { en: 'Healthy crops still need daily care', fr: 'Une culture saine a besoin de soins quotidiens', sw: 'Zao lenye afya linahitaji utunzaji wa kila siku', ha: 'Amfani mai lafiya na buƙatar kulawa ta kullum', tw: 'Nnɔbae a ɛwɔ apɔmuden hia daa nhwɛsoɔ' },
 
   // ─── Camera follow-up (next-day recheck) ─────────────────
-  'camera.followup.title': { en: 'Check your plants again today', fr: 'Vérifier vos plants aujourd\'hui', sw: 'Kagua mimea yako tena leo', ha: 'Sake duba shuke-shuke yau', tw: 'San hwɛ wo nnua no nnɛ' },
+  'camera.followup.title': { en: 'Check the same plants you scanned yesterday', fr: 'Vérifiez les mêmes plants scannés hier', sw: 'Kagua mimea ileile uliyopiga picha jana', ha: 'Duba wadannan shuke-shuken da ka ɗauki hoto jiya', tw: 'San hwɛ nnua korɔ a wo twa wɔn mfonini ɛnnera' },
   'camera.followup.why': { en: 'You had a possible issue yesterday', fr: 'Vous aviez un problème possible hier', sw: 'Ulikuwa na tatizo linaloweza kutokea jana', ha: 'Kana da matsala mai yiwuwa jiya', tw: 'Ɛnnera, na biribi a ɛyɛ haw ba' },
   'camera.followup.lookFor': { en: 'New leaf damage | Insects or pests | Changes in plant color', fr: 'Nouveau dégât sur feuilles | Insectes ou ravageurs | Changements de couleur', sw: 'Uharibifu mpya wa majani | Wadudu | Mabadiliko ya rangi', ha: 'Sabuwar lalacewar ganyaye | Kwari | Canjin launi', tw: 'Nhaban a ɛsɛe foforɔ | Mmoawa | Kɔlɔ nsakraeɛ' },
   'camera.followup.steps': { en: 'Look under leaves | Check for new damage | Remove any pests found', fr: 'Regardez sous les feuilles | Vérifiez les nouveaux dégâts | Retirez les ravageurs trouvés', sw: 'Angalia chini ya majani | Angalia uharibifu mpya | Ondoa wadudu utaokutana nao', ha: 'Duba ƙarƙashin ganyaye | Duba sabuwar lalacewa | Cire kowane kwari da ka gani', tw: 'Hwɛ nhaban no ase | Hwɛ nsɛm foforɔ a asɛe | Yi mmoawa biara a wo hunu' },
