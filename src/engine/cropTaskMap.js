@@ -102,6 +102,27 @@ const CROP_OVERRIDES = {
   },
 };
 
+// ─── Stage alias map ─────────────────────────────────────
+// cropProfiles.js uses farmer-friendly display names (land_prep,
+// early_growth, maintenance) for the summary screen. The decision
+// engine stores the storage-form names (land_preparation, vegetative).
+// If a display-form slips in (legacy profiles, offline-queued writes),
+// resolve it to the storage form so task lookup never dead-ends.
+const STAGE_ALIASES = {
+  land_prep: 'land_preparation',
+  early_growth: 'germination',
+  maintenance: 'vegetative',
+  maintain: 'vegetative',
+  grow: 'vegetative',
+  plant: 'planting',
+  prepare: 'land_preparation',
+};
+
+function canonicalStage(stage) {
+  if (!stage) return 'planning';
+  return STAGE_ALIASES[stage] || stage;
+}
+
 /**
  * Get the task list for a given crop + stage.
  *
@@ -109,20 +130,21 @@ const CROP_OVERRIDES = {
  * the generic stage tasks. Always returns a new array (safe to mutate).
  *
  * @param {string} cropCode - Crop code (e.g. 'MAIZE')
- * @param {string} stage - Crop stage (e.g. 'planting')
+ * @param {string} stage - Crop stage (e.g. 'planting', 'land_prep', 'maintain')
  * @returns {Array<{type: string, titleKey: string, priority: string, icon: string}>}
  */
 export function getTasksForCropStage(cropCode, stage) {
   const code = cropCode?.toUpperCase();
+  const resolved = canonicalStage(stage);
   const overrides = CROP_OVERRIDES[code];
 
   // Use crop-specific override if it exists for this stage
-  if (overrides && overrides[stage]) {
-    return [...overrides[stage]];
+  if (overrides && overrides[resolved]) {
+    return [...overrides[resolved]];
   }
 
   // Generic stage tasks
-  return [...(STAGE_TASKS[stage] || STAGE_TASKS.planning)];
+  return [...(STAGE_TASKS[resolved] || STAGE_TASKS.planning)];
 }
 
 /**
@@ -136,6 +158,15 @@ export function getTasksForCropStage(cropCode, stage) {
 export function getInitialTask(cropCode, stage) {
   const tasks = getTasksForCropStage(cropCode, stage || 'land_preparation');
   return tasks[0] || STAGE_TASKS.planning[0];
+}
+
+/**
+ * Canonicalize any crop-stage value (display form → storage form).
+ * Exposed so other engines (notifications, autopilot) can normalise
+ * stored/display stage names without duplicating the alias table.
+ */
+export function resolveStage(stage) {
+  return canonicalStage(stage);
 }
 
 /**

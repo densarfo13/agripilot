@@ -6,12 +6,14 @@
  * Tap weather chip → expand inline advice card.
  */
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCropLabel } from '../utils/crops.js';
 import { getAvatar } from '../utils/avatarStorage.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 
 export default function FarmerHeader({ user, profile, t, weatherDecision, onRefreshWeather }) {
   const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
 
   // Force re-render every 60s so "Updated X min ago" stays current
   const [, setTick] = useState(0);
@@ -44,12 +46,23 @@ export default function FarmerHeader({ user, profile, t, weatherDecision, onRefr
 
         {/* Right: weather chip */}
         {hasChip && (
-          <button onClick={() => setExpanded(!expanded)} style={S.wxChip} aria-label="Weather">
+          <button onClick={() => setExpanded(!expanded)} style={S.wxChip} aria-label={t('common.weather')}>
             <span style={S.wxIcon}>{wd.chipIcon}</span>
             {wd.chipTemp && <span style={S.wxTemp}>{wd.chipTemp}</span>}
             <span style={S.wxInsight}>{wd.chipLabel}</span>
           </button>
         )}
+
+        {/* Settings gear — tiny, discoverable, one tap to prefs */}
+        <button
+          type="button"
+          onClick={() => navigate('/settings')}
+          aria-label={t('settings.title')}
+          style={S.gearBtn}
+          data-testid="farmer-header-settings"
+        >
+          <span style={S.gearIcon} aria-hidden="true">{'\u2699\uFE0F'}</span>
+        </button>
       </div>
 
       {/* Last updated trust line */}
@@ -117,6 +130,22 @@ const S = {
   wxIcon: { fontSize: '1rem' },
   wxTemp: { fontSize: '0.8125rem', fontWeight: 700, color: '#EAF2FF' },
   wxInsight: { fontSize: '0.6875rem', fontWeight: 600, color: '#6F8299' },
+  // Settings gear — compact, not competing with weather
+  gearBtn: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.03)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
+    WebkitTapHighlightColor: 'transparent',
+    padding: 0,
+  },
+  gearIcon: { fontSize: '1rem', lineHeight: 1, opacity: 0.75 },
   // Last updated line
   updatedLine: {
     display: 'flex',

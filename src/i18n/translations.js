@@ -43,6 +43,12 @@ const T = {
   'common.logout': {
     en: 'Logout', fr: 'Déconnexion', sw: 'Ondoka', ha: 'Fita', tw: 'Fi mu',
   },
+  'common.weather': {
+    en: 'Weather', fr: 'Météo', sw: 'Hali ya hewa', ha: 'Yanayi', tw: 'Ewim tebea',
+  },
+  'settings.title': {
+    en: 'Settings', fr: 'Paramètres', sw: 'Mipangilio', ha: 'Saiti', tw: 'Nhyehyɛeɛ',
+  },
 
   // Weather chip labels (max 2 words)
   // Weather-task conflict overrides
