@@ -5851,11 +5851,11 @@ const T = {
   // ═══════════════════════════════════════════════════════════
   //  BETA CROP LABELS, WARNING + FEEDBACK
   // ═══════════════════════════════════════════════════════════
-  'beta.label': { en: 'Beta', fr: 'Bêta', sw: 'Majaribio', ha: 'Gwaji', tw: 'Sɔhwɛ' },
-  'beta.warning.title': { en: 'This crop is in testing', fr: 'Cette culture est en test', sw: 'Zao hili liko katika majaribio', ha: 'Wannan amfanin gona na gwaji', tw: 'Nnɔbae yi wɔ sɔhwɛ mu' },
-  'beta.warning.body1': { en: 'Daily guidance is available.', fr: 'Des conseils quotidiens sont disponibles.', sw: 'Mwongozo wa kila siku upo.', ha: 'Jagora ta yau da kullum tana nan.', tw: 'Daa akwankyerɛ wɔ hɔ.' },
-  'beta.warning.body2': { en: 'Some advice may still be improving for your area.', fr: 'Certains conseils peuvent encore s\'améliorer pour votre région.', sw: 'Baadhi ya ushauri unaweza kuwa unaboreshwa kwa eneo lako.', ha: 'Wasu shawarwarin na iya ci gaba da ingantawa a yankinku.', tw: 'Afutuo bi da so retu mpɔn ma wo mantam.' },
-  'beta.warning.continue': { en: 'Continue with this crop', fr: 'Continuer avec cette culture', sw: 'Endelea na zao hili', ha: 'Ci gaba da wannan amfanin gona', tw: 'Kɔ so wɔ nnɔbae yi so' },
+  'beta.label': { en: 'Testing', fr: 'Test', sw: 'Majaribio', ha: 'Gwaji', tw: 'Sɔhwɛ' },
+  'beta.warning.title': { en: 'Testing guidance for this crop', fr: 'Conseils en test pour cette culture', sw: 'Mwongozo wa majaribio wa zao hili', ha: 'Jagora a gwaji don wannan amfani', tw: 'Yɛresɔ nnɔbae yi akwankyerɛ' },
+  'beta.warning.body1': { en: 'Daily guidance is available and improving for your area.', fr: 'Des conseils quotidiens sont disponibles et s\'améliorent pour votre région.', sw: 'Mwongozo wa kila siku upo na unaboreshwa kwa eneo lako.', ha: 'Jagora ta yau da kullum tana nan, tana ci gaba da ingantawa a yankinku.', tw: 'Daa akwankyerɛ wɔ hɔ na ɛrekɔ so yɛ yie wɔ wo mantam.' },
+  'beta.warning.body2': { en: 'Help us improve this crop with your feedback.', fr: 'Aidez-nous à améliorer cette culture grâce à vos retours.', sw: 'Tusaidie kuboresha zao hili kwa maoni yako.', ha: 'Ka taimaka mana inganta wannan amfani da ra\'ayinka.', tw: 'Boa yɛn na yɛma nnɔbae yi akɔ so yɛ yie wɔ w\'adwene so.' },
+  'beta.warning.continue': { en: 'Start with this crop', fr: 'Commencer avec cette culture', sw: 'Anza na zao hili', ha: 'Fara da wannan amfani', tw: 'Fi nnɔbae yi ase' },
   'beta.warning.chooseAnother': { en: 'Choose another crop', fr: 'Choisir une autre culture', sw: 'Chagua zao lingine', ha: 'Zaɓi wani amfanin gona', tw: 'Paw nnɔbae foforɔ' },
   'beta.feedback.question': { en: 'Is this guidance helpful?', fr: 'Ces conseils sont-ils utiles ?', sw: 'Je, mwongozo huu unasaidia?', ha: 'Shin wannan jagora tana da taimako?', tw: 'Akwankyerɛ yi ho hia anaa?' },
   'beta.feedback.yes': { en: 'Yes', fr: 'Oui', sw: 'Ndiyo', ha: 'Ee', tw: 'Aane' },
@@ -6102,6 +6102,13 @@ const T = {
   },
   'home.nextUp': {
     en: 'Next up', fr: 'Ensuite', sw: 'Inayofuata', ha: 'Na gaba', tw: 'Nea ɛdi hɔ',
+  },
+  'home.cameraDone.reveal': {
+    en: '✓ Good work — your crop is getting better',
+    fr: '✓ Bon travail — votre culture s\'améliore',
+    sw: '✓ Kazi nzuri — zao lako linaboreshwa',
+    ha: '✓ Aikin kirki — amfaninku yana samun sauƙi',
+    tw: '✓ Adwuma pa — wo nnɔbae rekɔ so yie',
   },
 
   // Result chrome

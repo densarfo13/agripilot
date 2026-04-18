@@ -87,11 +87,18 @@ export default function Dashboard() {
       window.removeEventListener('farroway:camera_task_changed', refresh);
     };
   }, []);
+  const [cameraJustDone, setCameraJustDone] = useState(false);
   function handleCameraDone() {
     if (!cameraTask) return;
     completeTemporaryTask(cameraTask.id);
-    setCameraTask(null);
     safeTrackEvent('camera.task_completed', { issueType: cameraTask.issueType });
+    // Brief reveal before dismiss — the one "signature" moment of
+    // the app (spec §14). Kept short and calm, not celebratory.
+    setCameraJustDone(true);
+    setTimeout(() => {
+      setCameraJustDone(false);
+      setCameraTask(null);
+    }, 1400);
   }
 
   // ─── Notification deeplink handler ──────────────────────
@@ -316,26 +323,35 @@ export default function Dashboard() {
         {cameraTask && loop.profile && (
           <>
             <div style={S.cameraHero} data-testid="home-camera-task">
-              <div style={S.cameraHeroTopRow}>
-                <span style={S.cameraHeroIcon} aria-hidden="true">{cameraTask.icon || '\uD83D\uDCF7'}</span>
-                <span style={S.cameraHeroLabel}>{t('home.hero.todaysAction')}</span>
-              </div>
-              <h1 style={S.cameraHeroTitle}>{t(cameraTask.titleKey)}</h1>
-              {cameraTask.contextKey && (
-                <div style={S.cameraHeroContext}>{t(cameraTask.contextKey)}</div>
-              )}
-              {cameraTask.whyKey && (
-                <div style={S.cameraHeroWhy}>
-                  <span style={S.cameraHeroWhyLabel}>{t('home.hero.why')}</span>
-                  {t(cameraTask.whyKey)}
+              {cameraJustDone ? (
+                <div style={S.cameraHeroDone} data-testid="home-camera-done">
+                  <span style={S.cameraHeroDoneCheck} aria-hidden="true">{'\u2714'}</span>
+                  <span style={S.cameraHeroDoneText}>{t('home.cameraDone.reveal')}</span>
                 </div>
+              ) : (
+                <>
+                  <div style={S.cameraHeroTopRow}>
+                    <span style={S.cameraHeroIcon} aria-hidden="true">{cameraTask.icon || '\uD83D\uDCF7'}</span>
+                    <span style={S.cameraHeroLabel}>{t('home.hero.todaysAction')}</span>
+                  </div>
+                  <h1 style={S.cameraHeroTitle}>{t(cameraTask.titleKey)}</h1>
+                  {cameraTask.contextKey && (
+                    <div style={S.cameraHeroContext}>{t(cameraTask.contextKey)}</div>
+                  )}
+                  {cameraTask.whyKey && (
+                    <div style={S.cameraHeroWhy}>
+                      <span style={S.cameraHeroWhyLabel}>{t('home.hero.why')}</span>
+                      {t(cameraTask.whyKey)}
+                    </div>
+                  )}
+                  <button type="button" onClick={handleCameraDone} style={S.cameraHeroCta}>
+                    {t('home.cta.fixToday')}
+                  </button>
+                  <button type="button" onClick={() => navigate('/scan-crop')} style={S.cameraHeroSecondary}>
+                    {'\uD83D\uDCF7'} {t('camera.result.rescan')}
+                  </button>
+                </>
               )}
-              <button type="button" onClick={handleCameraDone} style={S.cameraHeroCta}>
-                {t('home.cta.fixToday')}
-              </button>
-              <button type="button" onClick={() => navigate('/scan-crop')} style={S.cameraHeroSecondary}>
-                {'\uD83D\uDCF7'} {t('camera.result.rescan')}
-              </button>
             </div>
 
             {/* Subtle Next-up hint: normal crop task is waiting */}
@@ -471,6 +487,30 @@ const S = {
     background: 'transparent', color: '#9FB3C8',
     fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
     marginTop: '0.25rem',
+  },
+
+  // Calm 1.4s success reveal inside the hero — signature interaction.
+  cameraHeroDone: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.625rem',
+    padding: '1.5rem 0.75rem',
+    animation: 'farroway-fade-in 0.25s ease-out',
+  },
+  cameraHeroDoneCheck: {
+    width: '48px', height: '48px',
+    borderRadius: '50%',
+    background: 'rgba(34,197,94,0.16)',
+    border: '1px solid rgba(34,197,94,0.45)',
+    color: '#86EFAC',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '1.5rem', fontWeight: 800,
+  },
+  cameraHeroDoneText: {
+    fontSize: '1rem', fontWeight: 700, color: '#EAF2FF',
+    textAlign: 'center', lineHeight: 1.35, maxWidth: '20rem',
   },
 
   // Subtle "Next up" hint — renders only when a secondary task is
