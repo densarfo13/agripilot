@@ -6070,6 +6070,60 @@ const T = {
   'fallback.tellUs.why': { en: 'We need this to guide you better.', fr: 'Cela nous aide à mieux vous guider.', sw: 'Tunahitaji hii ili kukuongoza vizuri zaidi.', ha: 'Muna buƙatar wannan don jagorarka sosai.', tw: 'Yɛhia eyi na yɛatumi akyerɛ wo kwan yiye.' },
   'fallback.tellUs.cta': { en: 'Continue setup', fr: 'Continuer la configuration', sw: 'Endelea na usanidi', ha: 'Ci gaba da saitawa', tw: 'Toa siesieɛ no so' },
 
+  // ═══════════════════════════════════════════════════════════
+  //  CAMERA DIAGNOSIS
+  // ═══════════════════════════════════════════════════════════
+  'camera.pageTitle': { en: 'Scan your crop', fr: 'Scanner votre culture', sw: 'Chukua picha ya zao', ha: 'Duba amfaninku', tw: 'Twa wo nnɔbae mfonini' },
+  'camera.entry.title': { en: 'Scan your crop', fr: 'Scanner votre culture', sw: 'Piga picha ya zao lako', ha: 'Duba amfanin gonarku', tw: 'Twa wo nnɔbae mfonini' },
+  'camera.entry.body': { en: 'Take a photo to get simple advice on what to do.', fr: 'Prenez une photo pour obtenir des conseils simples.', sw: 'Piga picha kupata ushauri rahisi.', ha: 'Ɗauki hoto don samun shawara mai sauƙi.', tw: 'Twa mfonini na wo bɛnya akwankyerɛ a ɛyɛ mmerɛw.' },
+  'camera.entry.cta': { en: 'Take a photo', fr: 'Prendre une photo', sw: 'Piga picha', ha: 'Ɗauki hoto', tw: 'Twa mfonini' },
+  'camera.entry.homeCta': { en: 'Scan crop issue', fr: 'Scanner un problème', sw: 'Angalia tatizo la zao', ha: 'Duba matsalar amfani', tw: 'Hwɛ nnɔbae asɛm' },
+  'camera.entry.tasksCta': { en: 'Having a problem? Scan', fr: 'Un problème ? Scannez', sw: 'Una tatizo? Piga picha', ha: 'Kana da matsala? Duba', tw: 'Wowɔ ɔhaw? Twa' },
+  'camera.loading': { en: 'Analyzing your crop...', fr: 'Analyse de votre culture...', sw: 'Inachambua zao lako...', ha: 'Ana bincika amfani...', tw: 'Yɛrehwɛ wo nnɔbae...' },
+
+  // Result chrome
+  'camera.result.todaysAction': { en: "Today's action", fr: "Action du jour", sw: 'Hatua ya leo', ha: 'Aikin yau', tw: 'Ɛnnɛ adeyɛ' },
+  'camera.result.why': { en: 'Why', fr: 'Pourquoi', sw: 'Kwa nini', ha: 'Me yasa', tw: 'Adɛn' },
+  'camera.result.steps': { en: 'Steps', fr: 'Étapes', sw: 'Hatua', ha: 'Matakai', tw: 'Anammɔn' },
+  'camera.result.addToTasks': { en: 'Add to my tasks', fr: 'Ajouter à mes tâches', sw: 'Ongeza kwenye kazi zangu', ha: 'Ƙara cikin ayyukana', tw: 'Fa ka me nnwuma ho' },
+  'camera.result.markDone': { en: 'Mark as done', fr: 'Marquer comme fait', sw: 'Weka kama imekamilika', ha: 'Sanya an kammala', tw: 'Kyerɛ sɛ woawie' },
+  'camera.result.later': { en: 'Save for later', fr: 'Garder pour plus tard', sw: 'Hifadhi kwa baadaye', ha: 'Ajiye don baya', tw: 'Kora ma akyire' },
+  'camera.result.taskAdded': { en: 'Added to your tasks', fr: 'Ajouté à vos tâches', sw: 'Imeongezwa kwenye kazi zako', ha: 'An ƙara cikin ayyukanku', tw: 'Woafa aka wo nnwuma ho' },
+  'camera.result.rescan': { en: 'Scan another photo', fr: 'Scanner une autre photo', sw: 'Piga picha nyingine', ha: 'Ɗauki wani hoto', tw: 'Twa mfonini foforɔ' },
+
+  // History
+  'camera.history.title': { en: 'Recent scans', fr: 'Scans récents', sw: 'Picha za hivi karibuni', ha: 'Binciken kwanan nan', tw: 'Mfonini a ɛbɛn' },
+
+  // Action: pest
+  'camera.action.pest.title': { en: 'Remove pests from your crop today', fr: 'Éliminez les ravageurs aujourd\'hui', sw: 'Ondoa wadudu kwenye zao leo', ha: 'Cire kwari daga amfani yau', tw: 'Yi mmoawa fi wo nnɔbae so nnɛ' },
+  'camera.action.pest.why': { en: 'Early control prevents spread', fr: 'Une action rapide empêche la propagation', sw: 'Udhibiti wa mapema huzuia kuenea', ha: 'Magancewa da wuri yana hana yaɗuwa', tw: 'Sɛ woyɛ ntɛm a, ɛnsɛe' },
+  'camera.action.pest.steps': { en: 'Check under leaves | Remove visible pests | Monitor daily', fr: 'Vérifier sous les feuilles | Enlever les ravageurs | Surveiller chaque jour', sw: 'Angalia chini ya majani | Ondoa wadudu wanaoonekana | Angalia kila siku', ha: 'Duba ƙarƙashin ganyaye | Cire kwari | Duba kullum', tw: 'Hwɛ nhaban no ase | Yi mmoawa a woahu | Hwɛ no daa' },
+
+  // Action: leaf damage
+  'camera.action.leaf.title': { en: 'Remove damaged leaves', fr: 'Retirer les feuilles abîmées', sw: 'Ondoa majani yaliyoharibika', ha: 'Cire ganyaye da suka lalace', tw: 'Yi nhaban a asɛe' },
+  'camera.action.leaf.why': { en: 'Prevents further spread', fr: 'Empêche l\'aggravation', sw: 'Inazuia kuenea zaidi', ha: 'Yana hana ƙara yaɗuwa', tw: 'Ɛsi sɛ ɛtrɛ no ano' },
+  'camera.action.leaf.steps': { en: 'Identify affected leaves | Cut and remove them | Dispose away from field', fr: 'Repérer les feuilles touchées | Couper et retirer | Évacuer loin du champ', sw: 'Tambua majani yaliyoathirika | Kata na ondoa | Tupa mbali na shamba', ha: 'Gano ganyayen da abin ya shafa | Yanka ka cire su | Zubar da nesa da gona', tw: 'Hwɛ nhaban a asɛe | Twa na yi | Fa to baabi a ɛnka afuo no ho' },
+
+  // Action: discoloration
+  'camera.action.color.title': { en: 'Check soil and watering', fr: 'Vérifier le sol et l\'arrosage', sw: 'Kagua udongo na umwagiliaji', ha: 'Bincika ƙasa da shayarwa', tw: 'Hwɛ asase ne nsu' },
+  'camera.action.color.why': { en: 'Leaf color may indicate stress', fr: 'La couleur des feuilles peut signaler un stress', sw: 'Rangi ya majani yaweza kuonyesha shida', ha: 'Launin ganye na iya nuna damuwa', tw: 'Nhaban no kɔlɔ betumi akyerɛ haw' },
+  'camera.action.color.steps': { en: 'Check soil moisture | Water if dry | Monitor leaf changes', fr: 'Vérifier l\'humidité du sol | Arroser si sec | Observer les changements', sw: 'Angalia unyevu wa udongo | Mwagilia kama kavu | Fuatilia mabadiliko', ha: 'Bincika danshin ƙasa | Shayar idan busasshe | Duba canje-canjen ganyaye', tw: 'Hwɛ asase fɔmu | Gu nsu sɛ ayɛ kuro a | Hwɛ nhaban no nsakraeɛ' },
+
+  // Action: unknown
+  'camera.action.unknown.title': { en: 'Inspect your crop closely', fr: 'Inspecter votre culture de près', sw: 'Kagua zao lako kwa makini', ha: 'Bincika amfaninku sosai', tw: 'Hwɛ wo nnɔbae no yiye' },
+  'camera.action.unknown.why': { en: 'Issue is not clear yet', fr: 'Le problème n\'est pas clair', sw: 'Tatizo halijabainika', ha: 'Matsalar ba ta bayyana ba tukuna', tw: 'Asɛm no nna adi' },
+  'camera.action.unknown.steps': { en: 'Check leaves and stems | Look for pests or damage | Monitor daily', fr: 'Vérifier feuilles et tiges | Chercher ravageurs et dégâts | Surveiller chaque jour', sw: 'Angalia majani na shina | Tafuta wadudu au uharibifu | Angalia kila siku', ha: 'Duba ganyaye da kara | Nemi kwari ko lalacewa | Duba kullum', tw: 'Hwɛ nhaban ne dua | Hwɛ mmoawa anaa nsɛm a ɛsɛe | Hwɛ no daa' },
+
+  // Action: healthy
+  'camera.action.healthy.title': { en: 'Your crop looks healthy', fr: 'Votre culture semble saine', sw: 'Zao lako linaonekana salama', ha: 'Amfaninku yana lafiya', tw: 'Wo nnɔbae no ho tɔ no' },
+  'camera.action.healthy.why': { en: 'No visible issue detected', fr: 'Aucun problème visible détecté', sw: 'Hakuna tatizo lililoonekana', ha: 'Ba a gane wata matsala ba', tw: 'Yɛanhu ɔhaw biara' },
+  'camera.action.healthy.cta': { en: 'Continue regular care', fr: 'Poursuivre les soins habituels', sw: 'Endelea na utunzaji wa kawaida', ha: 'Ci gaba da kulawa ta yau da kullum', tw: 'Toa daa hwɛ so' },
+
+  // Failure
+  'camera.fail.title': { en: 'Could not analyze image', fr: 'Impossible d\'analyser l\'image', sw: 'Haikuweza kuchambua picha', ha: 'Ba a iya bincika hoton ba', tw: 'Yɛantumi anhwɛ mfonini no' },
+  'camera.fail.why': { en: 'Try again with clearer lighting', fr: 'Réessayez avec un meilleur éclairage', sw: 'Jaribu tena na taa nzuri', ha: 'Sake gwada da kyakkyawan haske', tw: 'Sɔ hwɛ wɔ baabi a hann wɔ ho' },
+  'camera.fail.steps': { en: 'Try again with clearer image | Ensure good lighting | Hold phone steady', fr: 'Réessayez avec une image plus nette | Assurez un bon éclairage | Tenez le téléphone stable', sw: 'Jaribu tena na picha iliyo wazi | Hakikisha taa nzuri | Shika simu imara', ha: 'Sake gwada da hoto mai tsafta | Tabbatar da haske mai kyau | Riƙe wayar sosai', tw: 'Sɔ twa mfonini foforɔ | Ma hann mmra baabi | Sɔ fon no mu yiye' },
+
   // ─── Region-flavoured task title variants (V2 spec §5) ──
   'cropTask.region.clearFieldManual': { en: 'Cut weeds and clear by hand', fr: 'Couper les mauvaises herbes à la main', sw: 'Kata magugu kwa mkono', ha: 'Yanke ciyawa da hannu', tw: 'Twa wura no fi nsa' },
   'cropTask.region.prepareLandManualTropical': { en: 'Loosen the soil with a hoe', fr: 'Ameublir le sol à la houe', sw: 'Laini udongo kwa jembe', ha: 'Sassauta ƙasa da fartanya', tw: 'Dwodwo asase no de asɔsɔ' },

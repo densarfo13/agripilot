@@ -306,6 +306,21 @@ export default function Dashboard() {
             language={loop.language}
           />
         )}
+
+        {/* Scan-crop entry point — compact, single line, non-intrusive */}
+        {loop.profile && (
+          <button
+            type="button"
+            onClick={() => navigate('/scan-crop')}
+            style={S.scanEntry}
+            data-testid="home-scan-crop"
+          >
+            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83D\uDCF7'}</span>
+            <span>{t('camera.entry.homeCta')}</span>
+            <span style={S.scanEntryChevron}>{'\u203A'}</span>
+          </button>
+        )}
+
         {modals}
       </div>
     </div>
@@ -320,6 +335,25 @@ const S = {
     color: '#EAF2FF',
     padding: '0.75rem 0.75rem 1rem',
   },
+  scanEntry: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    width: '100%',
+    padding: '0.75rem 1rem',
+    borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.03)',
+    color: '#EAF2FF',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    marginTop: '0.75rem',
+    WebkitTapHighlightColor: 'transparent',
+    textAlign: 'left',
+  },
+  scanEntryIcon: { fontSize: '1.125rem', lineHeight: 1 },
+  scanEntryChevron: { marginLeft: 'auto', color: '#6F8299', fontSize: '1.25rem' },
   container: {
     maxWidth: '42rem',
     margin: '0 auto',

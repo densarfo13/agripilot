@@ -224,6 +224,18 @@ export default function AllTasksPage() {
       {!loading && !error && tasks.length > 0 && !taskCompletionState && (
         <div style={S.sections}>
 
+          {/* Scan-crop entry — "Having a problem? Scan" */}
+          <button
+            type="button"
+            onClick={() => navigate('/scan-crop')}
+            style={S.scanEntry}
+            data-testid="tasks-scan-crop"
+          >
+            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83D\uDCF7'}</span>
+            <span>{t('camera.entry.tasksCta')}</span>
+            <span style={S.scanEntryChevron}>{'\u203A'}</span>
+          </button>
+
           {/* ═══ A. CURRENT TASK ═══ */}
           {currentTask && (
             <>
@@ -391,6 +403,17 @@ const S = {
 
   // Sections
   sections: { padding: '0.75rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  scanEntry: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
+    padding: '0.625rem 0.875rem', borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.03)', color: '#EAF2FF',
+    fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent', textAlign: 'left',
+    marginBottom: '0.25rem',
+  },
+  scanEntryIcon: { fontSize: '1rem', lineHeight: 1 },
+  scanEntryChevron: { marginLeft: 'auto', color: '#6F8299', fontSize: '1.125rem' },
   sectionLabel: { display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.75rem', marginBottom: '0.125rem' },
   sectionIcon: { fontSize: '0.875rem' },
   sectionText: { fontSize: '0.6875rem', fontWeight: 700, color: '#6F8299', textTransform: 'uppercase', letterSpacing: '0.04em' },

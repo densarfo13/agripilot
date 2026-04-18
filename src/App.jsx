@@ -28,6 +28,7 @@ const FarmerWelcome = lazy(() => import('./pages/FarmerWelcome.jsx'));
 const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
 const BeginnerReassurance = lazy(() => import('./pages/BeginnerReassurance.jsx'));
 const FarmerSettingsPage = lazy(() => import('./pages/FarmerSettingsPage.jsx'));
+const CameraScanPage = lazy(() => import('./pages/CameraScanPage.jsx'));
 const VerifyOtp = lazy(() => import('./pages/VerifyOtp.jsx'));
 // ProtectedLayout is NOT lazy — it's the auth/profile gate and must stay mounted
 // while inner lazy children (Dashboard, etc.) load via their own Suspense boundary.
@@ -244,6 +245,7 @@ export default function App() {
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />
             <Route path="/crop-fit" element={<CropFitIntake />} />
             <Route path="/settings" element={<FarmerSettingsPage />} />
+            <Route path="/scan-crop" element={<CameraScanPage />} />
             <Route path="/crop-recommendations" element={<CropRecommendations />} />
             <Route path="/crop-summary" element={<CropSummary />} />
             <Route path="/pest-risk-check" element={<PestRiskCheck />} />
