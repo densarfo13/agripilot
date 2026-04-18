@@ -507,6 +507,20 @@ export default function Dashboard() {
           </button>
         )}
 
+        {/* Land-check entry point — same style, same hierarchy weight */}
+        {loop.profile && (
+          <button
+            type="button"
+            onClick={() => navigate('/land-check')}
+            style={S.scanEntry}
+            data-testid="home-land-check"
+          >
+            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDF3E'}</span>
+            <span>{t('land.entry.homeCta')}</span>
+            <span style={S.scanEntryChevron}>{'\u203A'}</span>
+          </button>
+        )}
+
         {modals}
 
         {showCorrectionModal && (

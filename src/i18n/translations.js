@@ -6261,6 +6261,257 @@ const T = {
     tw: 'Yɛbɛhwɛ eyi so — ma adwuma no nna adi',
   },
 
+  // ═══════════════════════════════════════════════════════════
+  //  LAND INTELLIGENCE (spec §§1–10)
+  // ═══════════════════════════════════════════════════════════
+
+  // Entry
+  'land.entry.title': {
+    en: 'Check your land', fr: 'Vérifier votre terrain', sw: 'Angalia ardhi yako', ha: 'Duba ƙasarka', tw: 'Hwɛ w\'asase',
+  },
+  'land.entry.body': {
+    en: 'Tell us about your land to get better guidance today.',
+    fr: 'Parlez-nous de votre terrain pour de meilleurs conseils.',
+    sw: 'Tuambie kuhusu ardhi yako ili upate mwongozo bora leo.',
+    ha: 'Gaya mana game da ƙasarka don jagora mafi kyau yau.',
+    tw: 'Ka w\'asase ho asɛm kyerɛ yɛn na wo nya akwankyerɛ pa nnɛ.',
+  },
+  'land.entry.cta': {
+    en: 'Begin', fr: 'Commencer', sw: 'Anza', ha: 'Fara', tw: 'Fi ase',
+  },
+  'land.entry.homeCta': {
+    en: 'Check your land', fr: 'Vérifier votre terrain', sw: 'Angalia ardhi yako', ha: 'Duba ƙasarka', tw: 'Hwɛ w\'asase',
+  },
+
+  // Questions
+  'land.q.cleared': {
+    en: 'Is the land already cleared?',
+    fr: 'Le terrain est-il déjà dégagé ?',
+    sw: 'Je, ardhi imeshasafishwa?',
+    ha: 'Ƙasar ta riga ta tsabtace?',
+    tw: 'Wɔatwitwa asase no dada anaa?',
+  },
+  'land.q.weeds': {
+    en: 'Are weeds present?',
+    fr: 'Y a-t-il des mauvaises herbes ?',
+    sw: 'Je, kuna magugu?',
+    ha: 'Akwai ciyayi?',
+    tw: 'Wura wɔ hɔ anaa?',
+  },
+  'land.q.soilMoisture': {
+    en: 'How does the soil feel?',
+    fr: 'Comment est le sol ?',
+    sw: 'Udongo unaonekanaje?',
+    ha: 'Yaya ƙasa take?',
+    tw: 'Sɛn na asase no teɛ?',
+  },
+  'land.q.drainage': {
+    en: 'Does water stay on the land after rain?',
+    fr: 'L\'eau reste-t-elle sur le terrain après la pluie ?',
+    sw: 'Je, maji hukaa shambani baada ya mvua?',
+    ha: 'Ruwa yakan tsaya a ƙasa bayan ruwan sama?',
+    tw: 'Nsu tena asase no so osu tɔ akyi anaa?',
+  },
+  'land.q.slope': {
+    en: 'Is the land flat or sloped?',
+    fr: 'Le terrain est-il plat ou en pente ?',
+    sw: 'Je, ardhi ni tambarare au ina mteremko?',
+    ha: 'Ƙasar daidai take ko tana gangare?',
+    tw: 'Asase no yɛ tamaa anaa ɛkɔ soro?',
+  },
+  'land.q.irrigation': {
+    en: 'Do you have irrigation?',
+    fr: 'Avez-vous de l\'irrigation ?',
+    sw: 'Je, una umwagiliaji?',
+    ha: 'Kana da banruwa?',
+    tw: 'Wowɔ nsu gu?',
+  },
+
+  // Answer labels (soil moisture, slope)
+  'land.soil.dry':     { en: 'Dry',      fr: 'Sec',     sw: 'Kavu',     ha: 'Busasshe', tw: 'Kuro' },
+  'land.soil.moist':   { en: 'Moist',    fr: 'Humide',  sw: 'Majimaji', ha: 'Mai laima', tw: 'Fɔmu' },
+  'land.soil.wet':     { en: 'Wet',      fr: 'Mouillé', sw: 'Mvua',     ha: 'Jikakke',   tw: 'Nsu ayɛ so' },
+  'land.soil.unknown': { en: 'Not sure', fr: 'Pas sûr', sw: 'Sijui',    ha: 'Ban tabbata ba', tw: 'Minnim' },
+  'land.slope.flat':    { en: 'Flat',           fr: 'Plat',              sw: 'Tambarare',       ha: 'Daidai',       tw: 'Tamaa' },
+  'land.slope.gentle':  { en: 'Slightly sloped', fr: 'Légère pente',      sw: 'Mteremko kidogo', ha: 'Gangare kadan', tw: 'Ɛkɔ soro kakra' },
+  'land.slope.steep':   { en: 'Steep',          fr: 'Forte pente',       sw: 'Mteremko mkali',  ha: 'Mai gangare',  tw: 'Ɛkɔ soro kɛse' },
+  'land.slope.unknown': { en: 'Not sure',       fr: 'Pas sûr',           sw: 'Sijui',           ha: 'Ban tabbata ba', tw: 'Minnim' },
+
+  // Optional extras
+  'land.optional':        { en: 'Optional — add more detail', fr: 'Optionnel — plus de détails', sw: 'Hiari — ongeza taarifa zaidi', ha: 'Ba tilas ba — ƙara cikakken bayani', tw: 'Wopɛ a — fa nsɛm foforɔ ka ho' },
+  'land.addPhoto':        { en: 'Add a photo',                fr: 'Ajouter une photo',          sw: 'Ongeza picha',                ha: 'Ƙara hoto',                     tw: 'Fa mfonini ka ho' },
+  'land.retakePhoto':     { en: 'Retake photo',               fr: 'Reprendre la photo',         sw: 'Chukua picha upya',           ha: 'Sake ɗaukar hoto',              tw: 'San twa mfonini' },
+  'land.saveGps':         { en: 'Save field location',        fr: 'Enregistrer la localisation', sw: 'Hifadhi eneo la shamba',     ha: 'Ajiye wurin filin',             tw: 'Kora afuo baabi' },
+  'land.gpsSaved':        { en: 'Location saved',             fr: 'Localisation enregistrée',   sw: 'Eneo limehifadhiwa',          ha: 'An adana wurin',                tw: 'Woakora baabi' },
+  'land.areaPlaceholder': { en: 'Area (number)',              fr: 'Superficie (nombre)',        sw: 'Eneo (nambari)',              ha: 'Girman (lamba)',                tw: 'Nsase kɛseɛ (nɔma)' },
+  'land.unit.acre':       { en: 'acre',    fr: 'acre',    sw: 'ekari',   ha: 'eka',  tw: 'ekɛ' },
+  'land.unit.hectare':    { en: 'hectare', fr: 'hectare', sw: 'hekta',   ha: 'hekta', tw: 'hekta' },
+
+  // Result screen copy
+  'land.result.noIssueTitle': {
+    en: 'Your field looks ready',
+    fr: 'Votre terrain semble prêt',
+    sw: 'Shamba lako linaonekana tayari',
+    ha: 'Filin ka yana a shirye',
+    tw: 'W\'afuo no ayɛ krado',
+  },
+  'land.result.noIssueBody': {
+    en: 'Keep following your crop plan.',
+    fr: 'Continuez votre plan de culture.',
+    sw: 'Endelea na mpango wako wa kilimo.',
+    ha: 'Ci gaba da shirin amfaninku.',
+    tw: 'Toa wo nnɔbae nhyehyɛeɛ so.',
+  },
+  'land.checkAgain': {
+    en: 'Check the land again', fr: 'Revérifier le terrain', sw: 'Angalia ardhi tena', ha: 'Sake duba ƙasar', tw: 'San hwɛ asase no',
+  },
+
+  // Land-aware tasks (spec §7)
+  'land.task.clearLand.title': {
+    en: 'Clear your field this week',
+    fr: 'Défrichez votre champ cette semaine',
+    sw: 'Safisha shamba lako wiki hii',
+    ha: 'Share gonarka wannan mako',
+    tw: 'Twitwa w\'afuo nnawɔtwe yi',
+  },
+  'land.task.clearLand.why': {
+    en: 'The land is not ready for planting yet',
+    fr: 'Le terrain n\'est pas encore prêt à planter',
+    sw: 'Ardhi bado haijawa tayari kwa kupanda',
+    ha: 'Ƙasar ba a shirye take don shuka ba tukuna',
+    tw: 'Asase no nna ahyɛ da a wodua',
+  },
+  'land.task.clearLand.steps': {
+    en: 'Cut weeds and grasses | Remove stones and debris | Clear dry plants',
+    fr: 'Couper les mauvaises herbes | Enlever pierres et débris | Dégager les plantes sèches',
+    sw: 'Kata magugu na nyasi | Ondoa mawe na taka | Ondoa mimea kavu',
+    ha: 'Yanke ciyayi | Cire duwatsu da datti | Cire busasshen shuke-shuke',
+    tw: 'Twa nwura ne sare | Yi aboɔ ne fi | Yi nnua a awoɔ',
+  },
+  'land.task.clearLand.tip': {
+    en: 'Work early when it is cool',
+    fr: 'Travaillez tôt à la fraîche',
+    sw: 'Fanya kazi mapema wakati ni baridi',
+    ha: 'Yi aiki da safe lokacin yanayi sanyi',
+    tw: 'Yɛ adwuma anɔpa bere a ewim dwodwo',
+  },
+  'land.task.removeWeeds.title': {
+    en: 'Remove weeds from your field today',
+    fr: 'Retirez les mauvaises herbes aujourd\'hui',
+    sw: 'Ondoa magugu shambani leo',
+    ha: 'Cire ciyayi daga gonar yau',
+    tw: 'Yi wura fi w\'afuo no so nnɛ',
+  },
+  'land.task.removeWeeds.why': {
+    en: 'Weeds take water and nutrients from your crop',
+    fr: 'Les mauvaises herbes prennent l\'eau et les nutriments',
+    sw: 'Magugu hunyang\'anya mazao maji na virutubisho',
+    ha: 'Ciyayi suna ɗaukar ruwa da abinci daga amfanin',
+    tw: 'Wura gye nsu ne aduan fi wo nnɔbae hɔ',
+  },
+  'land.task.removeWeeds.steps': {
+    en: 'Pull weeds by hand | Clear between rows | Keep soil loose',
+    fr: 'Arracher à la main | Dégager entre les rangs | Garder le sol meuble',
+    sw: 'Vuta magugu kwa mkono | Safisha kati ya mistari | Weka udongo laini',
+    ha: 'Ciri ciyayi da hannu | Share tsakanin layuka | Kiyaye ƙasa sassauta',
+    tw: 'Twe wura no fi nsa | Popa ntam no mu | Ma asase no ndwodwo',
+  },
+  'land.task.removeWeeds.tip': {
+    en: 'Pull when the soil is slightly moist',
+    fr: 'Arrachez quand le sol est légèrement humide',
+    sw: 'Vuta wakati udongo una unyevu kidogo',
+    ha: 'Ciri lokacin da ƙasa take da ɗan laima',
+    tw: 'Twe bere a asase no yɛ fɔmu kakra',
+  },
+  'land.task.waitTilling.title': {
+    en: 'Wait before tilling',
+    fr: 'Attendez avant de labourer',
+    sw: 'Subiri kabla ya kulima',
+    ha: 'Dakata kafin nomewa',
+    tw: 'Twɛn ansa na woafuntum asase',
+  },
+  'land.task.waitTilling.why': {
+    en: 'Wet soil can be damaged if worked now',
+    fr: 'Un sol mouillé peut être abîmé en le travaillant',
+    sw: 'Udongo mvua unaweza kuharibika ukilimwa sasa',
+    ha: 'Ƙasa mai jiki na iya lalacewa idan aka noma yanzu',
+    tw: 'Sɛ wofuntum asase a nsu ayɛ so seesei a ɛbɛsɛe',
+  },
+  'land.task.waitTilling.steps': {
+    en: 'Let the soil dry | Check again in 1–2 days | Avoid heavy field work for now',
+    fr: 'Laissez sécher le sol | Revérifiez dans 1–2 jours | Évitez les gros travaux',
+    sw: 'Acha udongo ukauke | Angalia tena baada ya siku 1–2 | Epuka kazi nzito shambani',
+    ha: 'Bar ƙasa ta bushe | Sake duba bayan kwanaki 1–2 | Kauce ga aiki mai nauyi yanzu',
+    tw: 'Ma asase no nhyew | San hwɛ nnansa 1–2 akyi | Mma adwuma kɛse nnyɛ afuo seesei',
+  },
+  'land.task.waitTilling.tip': {
+    en: 'Dry soil keeps its structure when worked',
+    fr: 'Un sol sec garde sa structure',
+    sw: 'Udongo kavu huhifadhi muundo wake',
+    ha: 'Ƙasa busasshe na riƙe tsarinta',
+    tw: 'Asase a awoɔ kora ne nhyehyɛeɛ',
+  },
+  'land.task.prepareDrainage.title': {
+    en: 'Prepare drainage before rain',
+    fr: 'Préparez le drainage avant la pluie',
+    sw: 'Andaa mifereji kabla ya mvua',
+    ha: 'Shirya magudanar ruwa kafin ruwan sama',
+    tw: 'Siesie nsu kwan ansa na osu atɔ',
+  },
+  'land.task.prepareDrainage.why': {
+    en: 'Water may stay on your field after rain',
+    fr: 'L\'eau pourrait rester sur le terrain après la pluie',
+    sw: 'Maji yanaweza kubaki shambani baada ya mvua',
+    ha: 'Ruwa na iya tsayawa a gonarka bayan ruwan sama',
+    tw: 'Nsu bɛtena w\'afuo so osu tɔ akyi',
+  },
+  'land.task.prepareDrainage.steps': {
+    en: 'Clear blocked runoff paths | Open shallow drainage lines | Check low areas in the field',
+    fr: 'Déboucher les écoulements | Ouvrir de petits fossés | Vérifier les zones basses',
+    sw: 'Safisha njia za maji | Fungua mifereji midogo | Angalia sehemu za chini shambani',
+    ha: 'Share hanyoyin magudanar ruwa | Buɗe ƙananan layukan ruwa | Duba ƙananan wurare',
+    tw: 'Popa nsu kwan a ayera | Bue nsu kwan nketewa | Hwɛ baabi a ɛwɔ ase',
+  },
+  'land.task.prepareDrainage.tip': {
+    en: 'Start before the rain arrives',
+    fr: 'Commencez avant que la pluie n\'arrive',
+    sw: 'Anza kabla mvua haijafika',
+    ha: 'Fara kafin ruwan sama ya zo',
+    tw: 'Fi ase ansa na osu aba',
+  },
+  'land.task.waitPlanting.title': {
+    en: 'Wait before planting',
+    fr: 'Attendez avant de planter',
+    sw: 'Subiri kabla ya kupanda',
+    ha: 'Dakata kafin shuka',
+    tw: 'Twɛn ansa na woadua',
+  },
+  'land.task.waitPlanting.why': {
+    en: 'Soil is too dry and rain is not expected',
+    fr: 'Le sol est trop sec et aucune pluie prévue',
+    sw: 'Udongo ni mkavu sana na hakuna mvua inayotarajiwa',
+    ha: 'Ƙasa ta bushe sosai kuma ba a sa ran ruwan sama ba',
+    tw: 'Asase awoɔ dodo na osu mma',
+  },
+  'land.task.waitPlanting.steps': {
+    en: 'Gather your seeds and inputs | Check again in 1–2 days | Plant once the soil is moist',
+    fr: 'Préparez semences et intrants | Revérifiez dans 1–2 jours | Semez quand le sol est humide',
+    sw: 'Kusanya mbegu na pembejeo | Angalia tena baada ya siku 1–2 | Panda udongo ukiwa na unyevu',
+    ha: 'Tattara iri da abubuwan amfani | Sake duba bayan kwanaki 1–2 | Shuka lokacin da ƙasa take da laima',
+    tw: 'Boaboa aba ne nneɛma | San hwɛ nnansa 1–2 akyi | Dua bere a asase no yɛ fɔmu',
+  },
+  'land.task.waitPlanting.tip': {
+    en: 'Planting into dry soil hurts germination',
+    fr: 'Semer dans un sol sec nuit à la germination',
+    sw: 'Kupanda katika udongo kavu huathiri kuota',
+    ha: 'Shuka a ƙasa busasshe na lalata tsiro',
+    tw: 'Sɛ wudua wɔ asase a awoɔ so a ɛsɛe afifideɛ',
+  },
+
+  // Common yes/no for the binary steps
+  'common.yes': { en: 'Yes', fr: 'Oui', sw: 'Ndiyo', ha: 'Ee', tw: 'Aane' },
+  'common.no':  { en: 'No',  fr: 'Non', sw: 'Hapana', ha: 'A\'a', tw: 'Dabi' },
+
   // ─── Regional step/tip overrides (spec §10) ────────────────
   // Mechanized temperate tone — no "by hand" wording.
   'region.steps.clearField.mechanized': {
