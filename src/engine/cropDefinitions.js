@@ -55,6 +55,7 @@ const MAIZE = {
       {
         type: 'clear_field', titleKey: 'cropTask.maize.clearField',
         finishTitleKey: 'cropTask.maize.finishClearField',
+        completeNowTitleKey: 'cropTask.maize.completeNowClearField',
         whyKey: 'why.plant.rightTiming', timingKey: 'timing.earlyThisWeek',
         riskKey: 'risk.plant.missWindow', outcomeKey: 'outcome.maize.cleared',
         stepsKey: 'steps.maize.clearField', tipsKey: 'tips.maize.clearField',
@@ -63,6 +64,7 @@ const MAIZE = {
       {
         type: 'loosen_soil', titleKey: 'cropTask.maize.loosenSoil',
         finishTitleKey: 'cropTask.maize.finishLoosenSoil',
+        completeNowTitleKey: 'cropTask.maize.completeNowLoosenSoil',
         whyKey: 'why.landPrep.readySoil', timingKey: 'timing.doToday',
         riskKey: 'risk.landPrep.delayedPlanting', outcomeKey: 'outcome.maize.soilLoose',
         stepsKey: 'steps.maize.loosenSoil', tipsKey: 'tips.maize.loosenSoil',
@@ -71,6 +73,7 @@ const MAIZE = {
       {
         type: 'mark_rows', titleKey: 'cropTask.maize.markRows',
         finishTitleKey: 'cropTask.maize.finishMarkRows',
+        completeNowTitleKey: 'cropTask.maize.completeNowMarkRows',
         whyKey: 'why.plant.rightTiming', timingKey: 'timing.doToday',
         riskKey: 'risk.plant.missWindow', outcomeKey: 'outcome.maize.rowsMarked',
         stepsKey: 'steps.maize.markRows', tipsKey: 'tips.maize.markRows',

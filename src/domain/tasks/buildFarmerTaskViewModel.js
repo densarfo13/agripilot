@@ -22,6 +22,8 @@ import { resolveUrgency, getUrgencyStyle } from '../../engine/urgencyResolver.js
 import { getTaskEconomicTip } from '../../engine/economicsSignal.js';
 import { getTaskTimingContext } from '../../engine/taskTimingEngine.js';
 import { fallbackTaskViewModel } from '../../services/import/importHardening.js';
+import { resolveAdaptiveTitleKey } from '../../engine/adaptiveWording.js';
+import { recordTaskSeen } from '../../services/taskRepetitionMemory.js';
 
 /**
  * Schema version — bump to invalidate cached view models.
@@ -48,7 +50,7 @@ export const TASK_VIEWMODEL_SCHEMA_VERSION = 5;
  * @param {Object|null} params.weather - Raw weather data (for autopilot)
  * @returns {Object} TaskViewModel
  */
-export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode, autopilotEnrichment, cropStage, weather, rainfall }) {
+export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode, autopilotEnrichment, cropStage, weather, rainfall, crop }) {
   // ─── 0. Fallback guard (spec §4: never empty, never wrong) ──
   // If no task and no action reached us, render the safe "Tell us
   // about your farm" card so the farmer always sees something
@@ -109,6 +111,27 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
     t,
   });
 
+  // ─── 4b. Adaptive wording — spec §1
+  // Record that this task surfaced today, then promote the title
+  // to the finish / completeNow variant if the farmer has seen the
+  // same task for enough distinct days without completing it.
+  const taskType = (action?.task || task)?.type || action?.key || null;
+  let adaptiveTitle = null;
+  let repetitionTier = 'base';
+  if (taskType) {
+    recordTaskSeen(taskType);
+    const resolved = resolveAdaptiveTitleKey({
+      type: taskType,
+      cropCode: crop,
+      stage: cropStage,
+      baseKey: null,
+    });
+    if (resolved.key && resolved.tier !== 'base') {
+      adaptiveTitle = t(resolved.key);
+      repetitionTier = resolved.tier;
+    }
+  }
+
   // ─── 5. Icon / visual ─────────────────────────────────────
   const effectiveTask = action?.task || task;
   const icon = action?.icon || getTaskIcon(effectiveTask);
@@ -160,8 +183,10 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
     type: actionKey,
     taskId: effectiveTask?.id || null,
 
-    // Display text (from centralized resolver)
-    title: text.title,
+    // Display text (from centralized resolver; adaptive-wording
+    // overrides title on day 2+ / day 3+ when a variant exists).
+    title: adaptiveTitle || text.title,
+    repetitionTier,
     descriptionShort: text.descriptionShort,
     ctaLabel: text.ctaLabel,
     voiceText: text.voiceText,

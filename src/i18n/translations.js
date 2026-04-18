@@ -5793,6 +5793,11 @@ const T = {
   'cropTask.maize.finishLoosenSoil': { en: 'Finish loosening the soil', fr: 'Terminer l\'ameublissement du sol', sw: 'Maliza kulainisha udongo', ha: 'Gama sassauta ƙasa', tw: 'Wie asase no dwodwoɔ' },
   'cropTask.maize.finishMarkRows': { en: 'Finish marking rows', fr: 'Terminer le traçage des lignes', sw: 'Maliza kuweka alama za mistari', ha: 'Gama alama layuka', tw: 'Wie ntam yɛ' },
 
+  // Adaptive wording — day-3+ urgency tier (spec §1)
+  'cropTask.maize.completeNowClearField': { en: 'Complete your field clearing now', fr: 'Terminez le défrichage maintenant', sw: 'Kamilisha kusafisha shamba sasa', ha: 'Gama share gonar yanzu', tw: 'Wie afuo no mu twitwa seesei' },
+  'cropTask.maize.completeNowLoosenSoil': { en: 'Complete loosening the soil now', fr: 'Terminez l\'ameublissement du sol maintenant', sw: 'Kamilisha kulainisha udongo sasa', ha: 'Gama sassauta ƙasa yanzu', tw: 'Wie asase no dwodwoɔ seesei' },
+  'cropTask.maize.completeNowMarkRows': { en: 'Complete marking your rows now', fr: 'Terminez le traçage des lignes maintenant', sw: 'Kamilisha kuweka alama za mistari sasa', ha: 'Gama alama layuka yanzu', tw: 'Wie ntam yɛ seesei' },
+
   // ─── MAIZE task outcomes (success line after completion) ──
   'outcome.maize.cleared': { en: 'Your field is now clear.', fr: 'Votre champ est dégagé.', sw: 'Shamba lako limesafishwa.', ha: 'Gonarku ta tsaftace.', tw: 'Wo afuo no mu ayɛ krɔnkrɔn.' },
   'outcome.maize.soilLoose': { en: 'Soil is loose and ready.', fr: 'Le sol est meuble et prêt.', sw: 'Udongo umelegea tayari.', ha: 'Ƙasa ta sassauta ta shirya.', tw: 'Asase no adwodwo na ayɛ krado.' },

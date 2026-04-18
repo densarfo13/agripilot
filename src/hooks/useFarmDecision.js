@@ -123,6 +123,7 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       cropStage,
       weather,
       rainfall,
+      crop: profile?.cropType || profile?.crop || null,
     });
   }, [decision, primaryTask, lang, t, isBasic, profile, weather, rainfall]);
 

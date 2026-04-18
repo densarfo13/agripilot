@@ -31,6 +31,7 @@ import { getAutopilotDecision } from '../engine/autopilot/index.js';
 import { getSuccessTextKey } from '../engine/autopilot/textKeys.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { logActivity } from '../services/activityLogger.js';
+import { markTaskCompleted } from '../services/taskRepetitionMemory.js';
 
 // Fallback auto-transition delay — only fires if user doesn't tap Continue/Later.
 // Long enough that it never fires during normal use (user always taps first).
@@ -246,6 +247,10 @@ export function useFarmerLoop() {
         });
       }
 
+      // Adaptive wording — reset repetition memory so the next time
+      // this task type re-surfaces it starts again from the base title.
+      if (task?.type) markTaskCompleted(task.type);
+
       // Track completion
       safeTrackEvent('task_completed', {
         farmId: currentFarmId,
@@ -253,6 +258,7 @@ export function useFarmerLoop() {
         ruleId: vm?.autopilotRuleId || null,
         hasNext: !!result.nextTask,
         offline: result.offline,
+        repetitionTier: vm?.repetitionTier || 'base',
       });
       safeTrackEvent('autopilot_task_completed', {
         farmId: currentFarmId,
