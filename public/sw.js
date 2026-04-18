@@ -1,7 +1,7 @@
 // Farroway Service Worker — PWA + offline API caching
-// SW_VERSION: 2026-04-09T1 — bump this on every deploy to invalidate stale caches
-const CACHE_NAME = 'farroway-v4';
-const API_CACHE = 'farroway-api-v3';
+// SW_VERSION: 2026-04-18T1 — bump this on every deploy to invalidate stale caches
+const CACHE_NAME = 'farroway-v5';
+const API_CACHE = 'farroway-api-v4';
 
 // API paths to cache for offline use (GET requests only)
 const CACHEABLE_API = [
@@ -73,13 +73,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Non-cacheable API calls: network only
+  // Non-cacheable API calls: network only, but guard against raw
+  // FetchEvent errors leaking to the UI when offline.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(fetch(request));
+    event.respondWith(
+      fetch(request).catch(() =>
+        new Response(
+          JSON.stringify({ error: 'Offline', _offline: true }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    );
     return;
   }
 
-  // For navigation and assets: network first, fall back to cache
+  // For navigation and assets: network first, fall back to cache,
+  // then to the cached app shell. Always return a Response so the
+  // browser never surfaces "FetchEvent.respondWith received an error".
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -89,6 +99,21 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        // HTML navigations: serve the app shell so the SPA can boot
+        // and render its own offline-aware fallback state.
+        if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
+          const shell = await caches.match('/');
+          if (shell) return shell;
+        }
+        // Final safety net — an empty 503 is still better than a raw
+        // fetch rejection the UI can't catch.
+        return new Response('', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' },
+        });
+      })
   );
 });

@@ -27,6 +27,69 @@ const T = {
   'common.stepN': {
     en: 'Step {n}', fr: 'Étape {n}', sw: 'Hatua {n}', ha: 'Mataki {n}', tw: 'Anammɔn {n}',
   },
+
+  // ─── Offline safety / Tasks fallback ────────────────────────
+  'offline.showingCached': {
+    en: 'Offline — showing your last saved tasks',
+    fr: 'Hors ligne — affichage de vos dernières tâches enregistrées',
+    sw: 'Nje ya mtandao — inaonyesha kazi zako zilizohifadhiwa mwisho',
+    ha: 'Babu yanar gizo — ana nuna ayyukanku na ƙarshe',
+    tw: 'Wonni intanɛt — yɛrekyerɛ wo nnwuma a etwa toɔ',
+  },
+  'offline.syncOnReconnect': {
+    en: 'Changes will sync when you reconnect',
+    fr: 'Les changements se synchroniseront à la reconnexion',
+    sw: 'Mabadiliko yataoanishwa utakaposimama tena',
+    ha: 'Canje-canje za su daidaita lokacin da za ka sake haɗawa',
+    tw: 'Nsesaeɛ bɛkɔ so bere a wosan ba intanɛt so',
+  },
+  'offline.rightNow': {
+    en: "You're offline right now",
+    fr: 'Vous êtes hors ligne actuellement',
+    sw: 'Uko nje ya mtandao sasa',
+    ha: 'Ba ka cikin yanar gizo a yanzu',
+    tw: 'Wonni intanɛt seesei',
+  },
+  'offline.stillOffline': {
+    en: "You're still offline",
+    fr: 'Vous êtes toujours hors ligne',
+    sw: 'Bado uko nje ya mtandao',
+    ha: 'Har yanzu ba ka cikin yanar gizo ba',
+    tw: 'Woda so nni intanɛt',
+  },
+  'offline.stillOfflineShort': {
+    en: 'Offline', fr: 'Hors ligne', sw: 'Nje', ha: 'Babu', tw: 'Nni intanɛt',
+  },
+  'offline.tryAgain': {
+    en: 'Try again', fr: 'Réessayer', sw: 'Jaribu tena', ha: 'Sake gwadawa', tw: 'San hwehwɛ',
+  },
+  'offline.retrying': {
+    en: 'Trying again…', fr: 'Nouvelle tentative…', sw: 'Inajaribu tena…', ha: 'Ana sake gwadawa…', tw: 'Yɛresan hwehwɛ…',
+  },
+  'offline.lastSaved': {
+    en: 'Last saved tasks', fr: 'Dernières tâches enregistrées', sw: 'Kazi zilizohifadhiwa mwisho', ha: 'Ayyuka na ƙarshe da aka adana', tw: 'Nnwuma a ɛtwa toɔ',
+  },
+  'offline.fallback.title': {
+    en: 'Check your farm today',
+    fr: 'Vérifiez votre ferme aujourd\'hui',
+    sw: 'Kagua shamba lako leo',
+    ha: 'Duba gonarka yau',
+    tw: 'Hwɛ w\'afuo nnɛ',
+  },
+  'offline.fallback.why': {
+    en: 'We could not load your latest tasks',
+    fr: "Nous n'avons pas pu charger vos dernières tâches",
+    sw: 'Hatukuweza kupakia kazi zako za hivi karibuni',
+    ha: 'Ba za mu iya loda ayyukanku na ƙarshe ba',
+    tw: 'Yɛantumi amfa wo nnwuma foforɔ aba',
+  },
+  'offline.fallback.next': {
+    en: 'Reconnect to update your guidance',
+    fr: 'Reconnectez-vous pour mettre à jour vos conseils',
+    sw: 'Unganisha tena ili kusasisha mwongozo',
+    ha: 'Sake haɗawa don sabunta jagora',
+    tw: 'San bɔ intanɛt mu na akwankyerɛ ɛyɛ foforɔ',
+  },
   'common.next': {
     en: 'Next', fr: 'Suivant', sw: 'Ifuatayo', ha: 'Na gaba', tw: 'Nea edi so',
   },

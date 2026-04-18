@@ -25,6 +25,7 @@ import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 import { NAV_ICONS, getTaskActionIcon } from '../lib/farmerIcons.js';
 import CompletionCard from '../components/farmer/CompletionCard.jsx';
+import { loadTasksSafe, getFallbackTodayAction } from '../services/loadTasksSafe.js';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -38,7 +39,9 @@ export default function AllTasksPage() {
   const [completedTasks, setCompletedTasks] = useState([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [mode, setMode] = useState('loading'); // online | offline_with_cache | offline_no_cache_fallback | retrying | loading
+  const [bannerMessageKey, setBannerMessageKey] = useState(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [completing, setCompleting] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [taskCompletionState, setTaskCompletionState] = useState(null);
@@ -47,18 +50,34 @@ export default function AllTasksPage() {
   const fetchTasks = useCallback(async () => {
     if (!currentFarmId) return;
     setLoading(true);
-    setError(null);
-    try {
-      const data = await getFarmTasks(currentFarmId);
-      setTasks(data.tasks || []);
-      setCompletedCount(data.completedCount || 0);
-      setCompletedTasks([]);
-    } catch (err) {
-      setError(err.message || 'Failed to load tasks');
-    } finally {
-      setLoading(false);
+    // Keep previous tasks on screen while retrying so the farmer
+    // doesn't see a blank — spec §7.
+    const result = await loadTasksSafe({
+      farmId: currentFarmId,
+      fetcher: () => getFarmTasks(currentFarmId),
+      isOnline,
+    });
+    setTasks(result.tasks);
+    setCompletedCount(result.completedCount);
+    setCompletedTasks([]);
+    setMode(result.mode);
+    setBannerMessageKey(result.bannerMessageKey);
+    setLastUpdatedAt(result.lastUpdatedAt);
+    setLoading(false);
+    safeTrackEvent('tasks.loadSafeResult', { mode: result.mode, source: result.source });
+  }, [currentFarmId, isOnline]);
+
+  // Retry honours the spec §7 rules: don't spam when offline; keep
+  // the visible state while re-fetching.
+  async function handleRetry() {
+    if (!isOnline) {
+      setBannerMessageKey('offline.stillOffline');
+      safeTrackEvent('tasks.retry_blocked_offline', {});
+      return;
     }
-  }, [currentFarmId]);
+    setMode('retrying');
+    await fetchTasks();
+  }
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
@@ -179,24 +198,51 @@ export default function AllTasksPage() {
       </div>
 
       {/* Loading */}
-      {loading && (
+      {loading && mode !== 'retrying' && (
         <div style={S.loadingWrap}>
           <span style={S.spinner} />
         </div>
       )}
 
-      {/* Error */}
-      {error && !loading && (
-        <div style={S.errorCard}>
-          <p style={S.errorText}>{error}</p>
-          {isOnline && (
-            <button type="button" onClick={fetchTasks} style={S.retryBtn}>{t('common.retry')}</button>
+      {/* Calm offline banner — spec §5. Replaces the raw error card so
+          farmers never see FetchEvent / TypeError strings. */}
+      {bannerMessageKey && (
+        <div style={S.offlineBanner} data-testid="tasks-offline-banner">
+          <span style={S.offlineBannerDot} aria-hidden="true" />
+          <div style={S.offlineBannerText}>
+            <div>{t(bannerMessageKey)}</div>
+            {mode === 'offline_with_cache' && (
+              <div style={S.offlineBannerSub}>{t('offline.syncOnReconnect')}</div>
+            )}
+          </div>
+          {mode !== 'retrying' && (
+            <button type="button" onClick={handleRetry} style={S.offlineRetryBtn} data-testid="tasks-offline-retry">
+              {isOnline ? t('offline.tryAgain') : t('offline.stillOfflineShort')}
+            </button>
           )}
         </div>
       )}
 
-      {/* Empty — all caught up */}
-      {!loading && !error && tasks.length === 0 && !taskCompletionState && (
+      {/* Fallback today-action card when no cached tasks exist —
+          spec §5 second clause. Uses the same task card language as
+          the rest of the app, never a red error panel. */}
+      {!loading && mode === 'offline_no_cache_fallback' && tasks.length === 0 && !taskCompletionState && (
+        <div style={S.fallbackCard} data-testid="tasks-fallback-card">
+          <div style={S.fallbackLabel}>{t('home.hero.todaysAction')}</div>
+          <h2 style={S.fallbackTitle}>{t('offline.fallback.title')}</h2>
+          <div style={S.fallbackWhy}>
+            <span style={S.fallbackWhyLabel}>{t('home.hero.why')}</span>
+            {t('offline.fallback.why')}
+          </div>
+          <div style={S.fallbackNext}>{t('offline.fallback.next')}</div>
+          <button type="button" onClick={handleRetry} style={S.fallbackCta}>
+            {isOnline ? t('offline.tryAgain') : t('offline.stillOfflineShort')}
+          </button>
+        </div>
+      )}
+
+      {/* Empty — all caught up (only in true online/empty state) */}
+      {!loading && mode === 'online' && tasks.length === 0 && !taskCompletionState && (
         <div style={S.emptyWrap}>
           <span style={S.emptyIcon}>{'\u2728'}</span>
           <p style={S.emptyTitle}>{t('tasks.allCaughtUp')}</p>
@@ -221,7 +267,7 @@ export default function AllTasksPage() {
       )}
 
       {/* Task sections */}
-      {!loading && !error && tasks.length > 0 && !taskCompletionState && (
+      {!loading && tasks.length > 0 && !taskCompletionState && (
         <div style={S.sections}>
 
           {/* Scan-crop entry — "Having a problem? Scan" */}
@@ -393,6 +439,62 @@ const S = {
   errorCard: { margin: '1.5rem 1.25rem', padding: '1rem', borderRadius: '14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.14)' },
   errorText: { margin: 0, fontSize: '0.875rem', color: '#FCA5A5' },
   retryBtn: { marginTop: '0.75rem', padding: '0.5rem 1rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: '#9FB3C8', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' },
+  // Calm offline banner — amber, not red. Never looks like a system error.
+  offlineBanner: {
+    margin: '0.75rem 1.25rem', padding: '0.75rem 0.875rem',
+    borderRadius: '12px',
+    background: 'rgba(251,191,36,0.06)',
+    border: '1px solid rgba(251,191,36,0.22)',
+    display: 'flex', alignItems: 'center', gap: '0.625rem',
+  },
+  offlineBannerDot: {
+    width: '8px', height: '8px', borderRadius: '50%',
+    background: '#F59E0B', flexShrink: 0,
+  },
+  offlineBannerText: { flex: 1, minWidth: 0, fontSize: '0.8125rem', color: '#FCD34D', fontWeight: 600, lineHeight: 1.35 },
+  offlineBannerSub: { fontSize: '0.6875rem', color: '#9FB3C8', fontWeight: 500, marginTop: '0.125rem' },
+  offlineRetryBtn: {
+    padding: '0.375rem 0.75rem', borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF', fontSize: '0.75rem', fontWeight: 700,
+    cursor: 'pointer', flexShrink: 0,
+    WebkitTapHighlightColor: 'transparent',
+  },
+  // Safe fallback today-action when no cache exists.
+  fallbackCard: {
+    margin: '0.75rem 1.25rem', padding: '1.5rem 1.25rem',
+    borderRadius: '20px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    display: 'flex', flexDirection: 'column', gap: '0.625rem',
+  },
+  fallbackLabel: {
+    fontSize: '0.6875rem', fontWeight: 800, color: '#6F8299',
+    letterSpacing: '0.08em', textTransform: 'uppercase',
+  },
+  fallbackTitle: { fontSize: '1.25rem', fontWeight: 800, color: '#EAF2FF', margin: 0, lineHeight: 1.3 },
+  fallbackWhy: {
+    fontSize: '0.875rem', color: '#EAF2FF', lineHeight: 1.4,
+    padding: '0.5rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  fallbackWhyLabel: {
+    fontSize: '0.625rem', fontWeight: 800, color: '#6F8299',
+    textTransform: 'uppercase', letterSpacing: '0.08em',
+    marginRight: '0.375rem',
+  },
+  fallbackNext: { fontSize: '0.8125rem', color: '#9FB3C8', lineHeight: 1.4 },
+  fallbackCta: {
+    marginTop: '0.5rem',
+    padding: '0.875rem 1rem',
+    borderRadius: '14px',
+    background: '#22C55E', color: '#fff', border: 'none',
+    fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer',
+    minHeight: '48px',
+    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+  },
 
   // Empty
   emptyWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1.5rem', textAlign: 'center' },
