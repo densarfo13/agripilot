@@ -3617,7 +3617,7 @@ const T = {
     en: 'It has been {days} days since your last update.', fr: 'Cela fait {days} jours depuis la dernière mise à jour.', sw: 'Imekuwa siku {days} tangu taarifa yako ya mwisho.', ha: 'Kwanaki {days} ne tun sabuntawa ta ƙarshe.', tw: 'Nnansa {days} afa fi wo nsɛm foforo a etwa to.',
   },
   'nextAction.monitorPlanting': {
-    en: 'Monitor your planting', fr: 'Surveillez vos semis', sw: 'Fuatilia upanzi wako', ha: 'Lura da shukar ka', tw: 'Hwɛ wo duadua so',
+    en: 'Check your planting', fr: 'Vérifiez vos semis', sw: 'Angalia upanzi wako', ha: 'Duba shukar ka', tw: 'Hwɛ wo duadua so',
   },
   'nextAction.monitorPlantingReason': {
     en: 'Check that seeds are germinating well.', fr: 'Vérifiez la bonne germination.', sw: 'Angalia mbegu zinaota vizuri.', ha: 'Duba tsiron suna tsirowa da kyau.', tw: 'Hwɛ sɛ aba no refifi yiye.',
@@ -3629,7 +3629,7 @@ const T = {
     en: 'Look for pests, weeds, or signs of disease.', fr: 'Recherchez parasites, mauvaises herbes ou maladies.', sw: 'Tafuta wadudu, magugu au dalili za magonjwa.', ha: 'Nemi ƙwari, ciyawa, ko alamun cuta.', tw: 'Hwehwɛ mmoa, wura, anaa yare nsɛnkyerɛnne.',
   },
   'nextAction.monitorFlowering': {
-    en: 'Monitor flowering progress', fr: 'Suivez la floraison', sw: 'Fuatilia maendeleo ya maua', ha: 'Lura da ci gaban fure', tw: 'Hwɛ nhwiren nkɔsoɔ',
+    en: 'Watch your flowering crop', fr: 'Surveillez la floraison de votre culture', sw: 'Angalia maua ya zao lako', ha: 'Duba furen amfaninku', tw: 'Hwɛ wo nnɔbae nhwiren',
   },
   'nextAction.monitorFloweringReason': {
     en: 'Good pollination means better yield.', fr: 'Une bonne pollinisation signifie un meilleur rendement.', sw: 'Uchavushaji mzuri unamaanisha mavuno bora.', ha: 'Kyakkyawan pollination yana nufin ingantaccen amfanin gona.', tw: 'Adua yie kyerɛ sɛ aduane bɛba pii.',
@@ -4227,7 +4227,7 @@ const T = {
     en: 'Your crops look healthy.', fr: 'Vos cultures semblent saines.', sw: 'Mazao yako yanaonekana mazuri.', ha: 'Amfanin gonarka suna da kyau.', tw: 'Wo nnɔbae no yɛ pa.',
   },
   'pest.levelMsg.moderate': {
-    en: 'Some signs to watch. Monitor closely.', fr: 'Quelques signes à surveiller.', sw: 'Dalili za kufuatilia. Endelea kuangalia.', ha: 'Wasu alamun da za a lura. Ci gaba da kula.', tw: 'Nsɛnkyerɛnne bi wɔ hɔ. Hwɛ so yiye.',
+    en: 'Some signs to watch. Keep an eye on it.', fr: 'Quelques signes à surveiller. Restez attentif.', sw: 'Kuna dalili za kuangalia. Endelea kuchunguza.', ha: 'Wasu alamun da za a duba. Ci gaba da kula.', tw: 'Nsɛnkyerɛnne bi wɔ hɔ. Hwɛ so yiye.',
   },
   'pest.levelMsg.high': {
     en: 'Problem found. Follow advice below.', fr: 'Problème détecté. Suivez les conseils.', sw: 'Tatizo limepatikana. Fuata ushauri.', ha: 'An sami matsala. Bi shawara.', tw: 'Wɔahu asɛm bi. Di afotu so.',
@@ -5902,7 +5902,7 @@ const T = {
   'task.tomato.pests.why': { en: 'Early detection prevents loss', fr: 'Une détection précoce évite les pertes', sw: 'Kugundua mapema huzuia hasara', ha: 'Gano da wuri na hana asara', tw: 'Sɛ wuhu ntɛm a, wo nkwasoɔ nnyɛ den' },
   'task.tomato.pests.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
   'task.tomato.pests.risk': { en: 'Pests can spread and damage fruits', fr: 'Les ravageurs peuvent abîmer les fruits', sw: 'Wadudu wanaweza kuharibu matunda', ha: 'Kwari na iya yaɗuwa su lalata \'ya\'yan itace', tw: 'Mmoawa tumi trɛ na ɛsɛe aba' },
-  'task.tomato.pests.steps': { en: 'Inspect leaves closely | Look under leaves | Remove visible pests', fr: 'Examiner les feuilles | Regarder dessous | Retirer les ravageurs', sw: 'Kagua majani vizuri | Angalia chini ya majani | Ondoa wadudu', ha: 'Duba ganyaye sosai | Duba ƙarƙashin ganyaye | Cire kwari', tw: 'Hwɛ nhaban no yiye | Hwɛ nhaban no ase | Yi mmoawa no' },
+  'task.tomato.pests.steps': { en: 'Check leaves closely | Look under leaves | Remove visible pests', fr: 'Regarder les feuilles de près | Regarder dessous | Retirer les ravageurs', sw: 'Angalia majani kwa makini | Angalia chini ya majani | Ondoa wadudu', ha: 'Duba ganyaye a hankali | Duba ƙarƙashin ganyaye | Cire kwari', tw: 'Hwɛ nhaban no yiye | Hwɛ nhaban no ase | Yi mmoawa no' },
   'task.tomato.pests.outcome': { en: 'Pests are under control.', fr: 'Les ravageurs sont maîtrisés.', sw: 'Wadudu wanadhibitiwa.', ha: 'An shawo kan kwari.', tw: 'Mmoawa no wɔ nsa ase.' },
 
   'task.tomato.harvest.title': { en: 'Harvest your tomatoes', fr: 'Récolter vos tomates', sw: 'Vuna nyanya zako', ha: 'Girbe tumatir', tw: 'Twa wo ntoosi' },
