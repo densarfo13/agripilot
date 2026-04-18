@@ -1,3 +1,5 @@
+import { getRegionTaskHint, REGION_PROFILES } from './regionProfiles.js';
+
 /**
  * Crop-Task Mapping — deterministic stage-to-task mapping for beginner crops.
  *
@@ -65,8 +67,49 @@ const STAGE_TASKS = {
 };
 
 // ─── Crop-specific task overrides ────────────────────────
-// Some crops need different priority ordering or extra tasks
+// Some crops need different priority ordering or extra tasks.
+// MAIZE is the V2 launch-standard crop — every stage has an override.
 const CROP_OVERRIDES = {
+  MAIZE: {
+    land_preparation: [
+      { type: 'clear_field', titleKey: 'cropTask.maize.clearField', priority: 'high', icon: '\uD83E\uDE93' },
+      { type: 'prepare_land', titleKey: 'cropTask.maize.prepareLand', priority: 'high', icon: '\uD83D\uDE9C' },
+      { type: 'mark_rows', titleKey: 'cropTask.maize.markRows', priority: 'medium', icon: '\uD83D\uDCCF' },
+      { type: 'gather_inputs', titleKey: 'cropTask.maize.gatherInputs', priority: 'medium', icon: '\uD83D\uDED2' },
+    ],
+    planting: [
+      { type: 'plant_seeds', titleKey: 'cropTask.maize.plantSeeds', priority: 'high', icon: '\uD83C\uDF31' },
+      { type: 'water_after_planting', titleKey: 'cropTask.maize.waterAfterPlanting', priority: 'high', icon: '\uD83D\uDCA7' },
+      { type: 'confirm_spacing', titleKey: 'cropTask.maize.confirmSpacing', priority: 'low', icon: '\uD83D\uDCCF' },
+    ],
+    germination: [
+      { type: 'check_germination', titleKey: 'cropTask.maize.checkGermination', priority: 'high', icon: '\uD83C\uDF3F' },
+      { type: 'first_weeding', titleKey: 'cropTask.maize.firstWeeding', priority: 'medium', icon: '\uD83C\uDF3E' },
+      { type: 'monitor_water', titleKey: 'cropTask.maize.monitorWater', priority: 'medium', icon: '\uD83D\uDCA7' },
+    ],
+    vegetative: [
+      { type: 'apply_fertilizer', titleKey: 'cropTask.maize.applyFertilizer', priority: 'high', icon: '\uD83E\uDDEA' },
+      { type: 'weed_field', titleKey: 'cropTask.maize.weedField', priority: 'medium', icon: '\uD83C\uDF3E' },
+      { type: 'check_pests', titleKey: 'cropTask.maize.checkPests', priority: 'medium', icon: '\uD83D\uDC1B' },
+      { type: 'monitor_water', titleKey: 'cropTask.maize.monitorWater', priority: 'medium', icon: '\uD83D\uDCA7' },
+    ],
+    flowering: [
+      { type: 'monitor_water', titleKey: 'cropTask.maize.monitorWaterFlower', priority: 'high', icon: '\uD83D\uDCA7' },
+      { type: 'check_pests', titleKey: 'cropTask.maize.checkPests', priority: 'high', icon: '\uD83D\uDC1B' },
+      { type: 'apply_fertilizer', titleKey: 'cropTask.maize.topDress', priority: 'medium', icon: '\uD83E\uDDEA' },
+    ],
+    harvest: [
+      { type: 'harvest_crop', titleKey: 'cropTask.maize.harvest', priority: 'high', icon: '\uD83E\uDDFA' },
+      { type: 'sort_harvest', titleKey: 'cropTask.maize.sortHarvest', priority: 'medium', icon: '\uD83D\uDCE6' },
+      { type: 'protect_harvest_from_rain', titleKey: 'cropTask.maize.protectFromRain', priority: 'medium', icon: '\u2602\uFE0F' },
+    ],
+    post_harvest: [
+      { type: 'dry_harvest', titleKey: 'cropTask.maize.dryHarvest', priority: 'high', icon: '\u2600\uFE0F' },
+      { type: 'store_harvest', titleKey: 'cropTask.maize.storeHarvest', priority: 'high', icon: '\uD83D\uDCE6' },
+      { type: 'log_harvest', titleKey: 'cropTask.maize.logHarvest', priority: 'medium', icon: '\uD83D\uDCDD' },
+      { type: 'prepare_for_sale', titleKey: 'cropTask.maize.prepareForSale', priority: 'low', icon: '\uD83D\uDCB0' },
+    ],
+  },
   TOMATO: {
     planting: [
       { type: 'plant_seeds', titleKey: 'cropTask.plantSeeds', priority: 'high', icon: '\uD83C\uDF31' },
@@ -167,6 +210,65 @@ export function getInitialTask(cropCode, stage) {
  */
 export function resolveStage(stage) {
   return canonicalStage(stage);
+}
+
+/**
+ * Context-aware task list: crop override + region modifier + experience
+ * presentation. Returns the same shape as getTasksForCropStage() with
+ * region-flavoured titleKey substitutions applied.
+ *
+ * The base engine still owns priority, order, and icons. Region only
+ * reaches in to swap the localized title when it has a specific hint —
+ * otherwise the base title survives.
+ *
+ * @param {Object} params
+ * @param {string} params.crop              Crop code (e.g. 'MAIZE')
+ * @param {string} params.stage             Storage or display stage name
+ * @param {Object|string} [params.region]   Region profile or id
+ * @param {string} [params.experience]      'none'|'some'|'experienced'
+ * @returns {Array} tasks
+ */
+export function getContextAwareTaskList({ crop, stage, region, experience }) {
+  const base = getTasksForCropStage(crop, stage);
+
+  // Region override — swap titleKey when the profile has a specific hint
+  let regionHints = null;
+  if (region) {
+    const profile = typeof region === 'string' ? REGION_PROFILES[region] : region;
+    if (profile) regionHints = (type) => getRegionTaskHint(profile, type);
+  }
+
+  const withRegion = base.map((task) => {
+    if (!regionHints) return task;
+    const hinted = regionHints(task.type);
+    return hinted ? { ...task, titleKey: hinted, regionHinted: true } : task;
+  });
+
+  // Dev assertion: flag empty mapping so a missing crop stage never
+  // silently falls through to the planning default.
+  const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV
+    : typeof process !== 'undefined' && process.env.NODE_ENV !== 'production';
+  if (isDev && crop && stage && withRegion.length === 0) {
+    console.warn(`[cropTaskMap] No tasks mapped for crop="${crop}" stage="${stage}"`);
+  }
+
+  // Experience currently affects only UI presentation (handled by view
+  // model / TaskCard variants); we pass it through so callers can
+  // trim description length if needed.
+  if (experience) {
+    return withRegion.map(t => ({ ...t, experience }));
+  }
+  return withRegion;
+}
+
+/**
+ * Context-aware first task after crop start — same precedence as
+ * getInitialTask but consults the region profile so the phrasing
+ * the farmer sees on Home matches where they farm.
+ */
+export function getContextAwareInitialTask({ crop, stage, region, experience }) {
+  const list = getContextAwareTaskList({ crop, stage: stage || 'land_preparation', region, experience });
+  return list[0] || STAGE_TASKS.planning[0];
 }
 
 /**

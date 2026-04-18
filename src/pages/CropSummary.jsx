@@ -20,7 +20,8 @@ import { useNetwork } from '../context/NetworkContext.jsx';
 import { getCropProfile } from '../data/cropProfiles.js';
 import { saveFarmProfile, createNewFarm, saveFarmerType, updateCropStage } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { getInitialTask } from '../engine/cropTaskMap.js';
+import { getInitialTask, getContextAwareInitialTask } from '../engine/cropTaskMap.js';
+import { resolveRegionProfile } from '../engine/regionProfiles.js';
 
 const STAGE_ICONS = {
   land_prep: '\uD83D\uDE9C',
@@ -130,9 +131,17 @@ export default function CropSummary() {
       }
 
       // Dev assertion: we must have an initial task for this crop/stage
-      // so Home can render immediately. getInitialTask is a deterministic
-      // lookup — if it returns null we fall back to the first stage task.
-      const initialTask = getInitialTask(crop.code, 'land_preparation');
+      // so Home can render immediately. Region resolution makes the
+      // phrasing match where the farmer is; the base override guarantees
+      // a real task exists for MAIZE and other launch-standard crops.
+      const region = resolveRegionProfile(profile?.country || answers?.country);
+      const experience = answers?.experience || null;
+      const initialTask = getContextAwareInitialTask({
+        crop: crop.code,
+        stage: 'land_preparation',
+        region,
+        experience,
+      }) || getInitialTask(crop.code, 'land_preparation');
       if (import.meta.env?.DEV && !initialTask) {
         console.warn('[CropSummary] No initial task found for', crop.code, 'land_preparation');
       }
@@ -141,6 +150,8 @@ export default function CropSummary() {
         code: crop.code,
         initialTaskType: initialTask?.type || 'fallback',
         stage: 'land_preparation',
+        region: region?.id,
+        regionHinted: !!initialTask?.regionHinted,
         farmSaved,
       });
     } catch (err) {
