@@ -300,6 +300,61 @@ const T = {
   'home.whatToExpect': {
     en: 'What to expect:', fr: 'À quoi vous attendre :', sw: 'Nini cha kutarajia:', ha: 'Me za ka yi tsammani:', tw: 'Deɛ wobɛhwɛ kwan:',
   },
+  'home.pending.thankYou': {
+    en: 'Thank you for registering with Farroway. Our team is reviewing your information.',
+    fr: 'Merci de vous être inscrit chez Farroway. Notre équipe examine vos informations.',
+    sw: 'Asante kwa kujisajili Farroway. Timu yetu inakagua taarifa zako.',
+    ha: 'Godiya da yin rajista da Farroway. Tawagar mu na duba bayananku.',
+    tw: 'Meda wo ase sɛ woakyerɛw wo din wɔ Farroway. Yɛn adwumayɛfoɔ rehwɛ wo nsɛm no.',
+  },
+  'home.pending.timeline': {
+    en: 'This usually takes 1–3 business days.',
+    fr: 'Cela prend généralement 1 à 3 jours ouvrables.',
+    sw: 'Kwa kawaida huchukua siku 1–3 za kazi.',
+    ha: 'Yawanci yana ɗaukar kwanaki 1–3 na aiki.',
+    tw: 'Ɛtaa gye adwumayɛ nna 1–3.',
+  },
+  'home.pending.expect.verify': {
+    en: 'A field officer may contact you to verify your details',
+    fr: 'Un agent de terrain pourra vous contacter pour vérifier vos informations',
+    sw: 'Ofisa wa shambani anaweza kukuuliza ili kuthibitisha taarifa zako',
+    ha: 'Jami\'in filin aiki na iya tuntuɓarka don tabbatar da bayananka',
+    tw: 'Afuo so adwumayɛfoɔ bi bɛfrɛ wo ahwɛ sɛ wo nsɛm yɛ nokware',
+  },
+  'home.pending.expect.notify': {
+    en: 'You will receive a notification when your account is approved',
+    fr: 'Vous recevrez une notification lorsque votre compte sera approuvé',
+    sw: 'Utapokea taarifa wakati akaunti yako itakapoidhinishwa',
+    ha: 'Za ka sami sanarwa lokacin da aka amince da asusunka',
+    tw: 'Wobɛnya bɔ bere a wɔapene w\'akawnt so',
+  },
+  'home.pending.expect.unlock': {
+    en: 'Once approved, you can submit applications and access all farmer services',
+    fr: 'Une fois approuvé, vous pouvez soumettre des demandes et accéder à tous les services',
+    sw: 'Ukishaidhinishwa, unaweza kutuma maombi na kupata huduma zote za wakulima',
+    ha: 'Da zarar an amince, za ka iya gabatar da aikace-aikace da samun duk hidimomin manoma',
+    tw: 'Sɛ wɔpene so a, wobɛtumi de abisade ama na woanya akuafoɔ som adwuma nyinaa',
+  },
+  'home.rejected.explanation': {
+    en: 'Unfortunately, your registration could not be approved at this time.',
+    fr: 'Malheureusement, votre inscription n\'a pas pu être approuvée pour le moment.',
+    sw: 'Kwa bahati mbaya, usajili wako haujaidhinishwa kwa wakati huu.',
+    ha: 'Da sauri, rajistarka ba ta yi nasara ba a yanzu.',
+    tw: 'Yɛn kɛ no, yɛantumi ampene wo din kyerɛw no so seesei.',
+  },
+  'home.rejected.reasonLabel': {
+    en: 'Reason:', fr: 'Raison :', sw: 'Sababu:', ha: 'Dalili:', tw: 'Nnyinasoɔ:',
+  },
+  'home.rejected.contactHint': {
+    en: 'If you believe this is an error, please contact your local Farroway office or field officer.',
+    fr: 'Si vous pensez que c\'est une erreur, veuillez contacter votre bureau Farroway local ou un agent de terrain.',
+    sw: 'Ikiwa unaamini hii ni hitilafu, tafadhali wasiliana na ofisi yako ya Farroway au ofisa wa shambani.',
+    ha: 'Idan kun yi imanin wannan kuskure ne, don Allah a tuntuɓi ofishin Farroway na gida ko jami\'in filin aiki.',
+    tw: 'Sɛ wugye di sɛ mfomsoɔ na ayɛ a, yɛsrɛ wo, frɛ wo mpɔtam Farroway asoɛeɛ anaa afuo so adwumayɛfoɔ.',
+  },
+  'home.farmerId': {
+    en: 'Farmer ID', fr: 'ID agriculteur', sw: 'Kitambulisho cha Mkulima', ha: 'ID Manomi', tw: 'Okuafoɔ ID',
+  },
   'home.registrationDetails': {
     en: 'Your Registration Details', fr: 'Détails de votre inscription', sw: 'Maelezo ya Usajili Wako', ha: 'Bayanan Rajistar ku', tw: 'Wo Din Kyerɛw ho nsɛm',
   },

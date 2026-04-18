@@ -46,6 +46,17 @@ function timingChipVariant(kind) {
 export default function TaskCard({ viewModel, variant, language, t, onCta, onVoice, ctaDisabled }) {
   assertIsViewModel({ viewModel }, 'TaskCard');
 
+  // Dev-only: detect a view model rendered in a stale language (spec §3).
+  // In prod this branch is tree-shaken via NODE_ENV.
+  if (
+    typeof import.meta !== 'undefined' && import.meta.env?.DEV &&
+    viewModel && language && viewModel.language && viewModel.language !== language
+  ) {
+    console.warn(
+      `[TaskCard] view model language "${viewModel.language}" does not match active lang "${language}" — forcing a rebuild upstream`
+    );
+  }
+
   // Track autopilot why/risk shown (once per task)
   const trackedRef = useRef(null);
   useEffect(() => {

@@ -369,15 +369,14 @@ export default function FarmerDashboardPage() {
             <div style={styles.statusBadge('rgba(245,158,11,0.15)', '#F59E0B')}>{t('home.pendingApproval')}</div>
             <h3 style={{ marginTop: '1rem' }}>{t('home.registrationReview')}</h3>
             <p style={{ color: '#A1A1AA', lineHeight: 1.6 }}>
-              Thank you for registering with Farroway. Our team is reviewing your information.
-              This usually takes 1-3 business days.
+              {t('home.pending.thankYou')} {t('home.pending.timeline')}
             </p>
             <div style={styles.infoBox}>
               <h4 style={{ margin: '0 0 0.5rem' }}>{t('home.whatToExpect')}</h4>
               <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#A1A1AA', lineHeight: 1.8 }}>
-                <li>A field officer may contact you to verify your details</li>
-                <li>You will receive a notification when your account is approved</li>
-                <li>Once approved, you can submit credit applications and access all farmer services</li>
+                <li>{t('home.pending.expect.verify')}</li>
+                <li>{t('home.pending.expect.notify')}</li>
+                <li>{t('home.pending.expect.unlock')}</li>
               </ul>
             </div>
             {profile && (
@@ -396,13 +395,13 @@ export default function FarmerDashboardPage() {
             <div style={styles.statusBadge('rgba(239,68,68,0.15)', '#EF4444')}>{t('home.registrationDeclined')}</div>
             <h3 style={{ marginTop: '1rem' }}>{t('home.registrationDeclined')}</h3>
             <p style={{ color: '#A1A1AA', lineHeight: 1.6 }}>
-              Unfortunately, your registration could not be approved at this time.
+              {t('home.rejected.explanation')}
               {profile?.rejectionReason && (
-                <><br /><strong>Reason:</strong> {profile.rejectionReason}</>
+                <><br /><strong>{t('home.rejected.reasonLabel')}</strong> {profile.rejectionReason}</>
               )}
             </p>
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem' }}>
-              If you believe this is an error, please contact your local Farroway office or field officer.
+              {t('home.rejected.contactHint')}
             </p>
           </div>
         ) : isApproved ? (
@@ -674,7 +673,7 @@ export default function FarmerDashboardPage() {
             <ExpandableSection title={t('home.farmDetails')} icon="🏡" testId="details-section">
               {farmProfile && (
                 <div style={{ marginBottom: '0.75rem' }}>
-                  {farmProfile.farmerUuid && <div style={styles.detailRow}><span>Farmer UUID</span> <span style={{ fontFamily: 'monospace', color: '#22C55E' }}>{farmProfile.farmerUuid}</span></div>}
+                  {farmProfile.farmerUuid && <div style={styles.detailRow}><span>{t('home.farmerId')}</span> <span style={{ fontFamily: 'monospace', color: '#22C55E' }}>{farmProfile.farmerUuid}</span></div>}
                   <div style={styles.detailRow}><span>{t('home.farm')}</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
                   {farmProfile.locationName && <div style={styles.detailRow}><span>{t('home.location')}</span> <span>{farmProfile.locationName}</span></div>}
                   {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>{t('home.size')}</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}

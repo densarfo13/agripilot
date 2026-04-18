@@ -163,6 +163,10 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
     // Mode hint (layout only, not data)
     mode,
 
+    // Language the view model was built in — lets consumers detect stale
+    // copies after a language switch (spec §3: invalidate cached English).
+    language,
+
     // Schema version for cache invalidation
     _schemaVersion: TASK_VIEWMODEL_SCHEMA_VERSION,
   };
