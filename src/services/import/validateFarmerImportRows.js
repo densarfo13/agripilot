@@ -6,6 +6,7 @@
  */
 
 import { getCropDefinition } from '../../engine/cropDefinitions.js';
+import { computeImportConfidence } from './importHardening.js';
 
 const SUPPORTED_LANGUAGES = new Set(['en', 'fr', 'sw', 'ha', 'tw']);
 
@@ -47,10 +48,12 @@ export function validateRow(row) {
  * and external_farmer_id within the uploaded file itself.
  */
 export function validateFarmerImportRows(rows = []) {
-  // Per-row validation
+  // Per-row validation — confidence is attached early so downstream
+  // executor / UI can use it even if matching isn't run.
   const results = rows.map(row => {
     const { status, issues } = validateRow(row);
-    return { row, status, issues };
+    const confidence = computeImportConfidence(row);
+    return { row, status, issues, confidence };
   });
 
   // In-file duplicates — priority 1: external_farmer_id, 2: phone

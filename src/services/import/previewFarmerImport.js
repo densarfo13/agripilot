@@ -50,9 +50,13 @@ export async function previewFarmerImport(file, {
     total: matched.length,
     newCount: matched.filter(r => r.importStatus === 'NEW').length,
     updateCount: matched.filter(r => r.importStatus === 'UPDATE_EXISTING').length,
+    possibleDuplicate: matched.filter(r => r.importStatus === 'POSSIBLE_DUPLICATE').length,
     duplicateInFile: matched.filter(r => r.importStatus === 'DUPLICATE_IN_FILE').length,
     invalid: matched.filter(r => r.importStatus === 'INVALID').length,
     warnings: matched.filter(r => r.status === 'warning').length,
+    highConfidence: matched.filter(r => r.confidence === 'HIGH').length,
+    mediumConfidence: matched.filter(r => r.confidence === 'MEDIUM').length,
+    lowConfidence: matched.filter(r => r.confidence === 'LOW').length,
   };
 
   return {

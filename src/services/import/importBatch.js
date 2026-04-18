@@ -85,3 +85,65 @@ export function getImportBatch(id) {
 export function clearImportBatches() {
   try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
 }
+
+/**
+ * Attach rollback metadata to a batch (created ids + per-update
+ * before/patch pairs). Called by executeFarmerImport at the end of a
+ * run so rollbackLastImportBatch can invert the work later.
+ */
+export function recordBatchAction(batchId, { createdFarmerIds = [], updatedFarmers = [] } = {}) {
+  return updateImportBatch(batchId, {
+    created_farmer_ids: createdFarmerIds,
+    updated_farmers: updatedFarmers,
+  });
+}
+
+/**
+ * Roll back the most recent batch (spec §6, V2 scope = last batch only).
+ *
+ * Behaviour:
+ *   - delete every farmer in created_farmer_ids via deleteFarmer()
+ *   - restore every updated farmer to its saved `before` snapshot via
+ *     updateFarmer()
+ *
+ * Callers inject `deleteFarmer` and `updateFarmer` so the rollback works
+ * across transport choices (direct API, queue, mock).
+ *
+ * Returns { batchId, deleted, reverted, errors, status }.
+ */
+export async function rollbackLastImportBatch({ deleteFarmer, updateFarmer } = {}) {
+  const all = readAll();
+  const sorted = [...all].sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+  const last = sorted.find(b => b.status === 'completed' && !b.rolledBackAt);
+
+  if (!last) {
+    return { batchId: null, deleted: 0, reverted: 0, errors: [], status: 'no_batch_to_rollback' };
+  }
+  if (typeof deleteFarmer !== 'function' || typeof updateFarmer !== 'function') {
+    return { batchId: last.id, deleted: 0, reverted: 0, errors: ['missing_adapters'], status: 'adapters_missing' };
+  }
+
+  const errors = [];
+  let deleted = 0;
+  let reverted = 0;
+
+  for (const id of last.created_farmer_ids || []) {
+    try { await deleteFarmer(id); deleted++; }
+    catch (err) { errors.push({ id, stage: 'delete', message: err?.message }); }
+  }
+
+  for (const entry of last.updated_farmers || []) {
+    try { await updateFarmer(entry.id, entry.before); reverted++; }
+    catch (err) { errors.push({ id: entry.id, stage: 'revert', message: err?.message }); }
+  }
+
+  updateImportBatch(last.id, {
+    rolledBackAt: new Date().toISOString(),
+    rollbackDeleted: deleted,
+    rollbackReverted: reverted,
+    rollbackErrors: errors,
+    status: 'rolled_back',
+  });
+
+  return { batchId: last.id, deleted, reverted, errors, status: 'completed' };
+}

@@ -21,6 +21,7 @@ import { getNextTextKey, getSuccessTextKey } from '../../engine/autopilot/textKe
 import { resolveUrgency, getUrgencyStyle } from '../../engine/urgencyResolver.js';
 import { getTaskEconomicTip } from '../../engine/economicsSignal.js';
 import { getTaskTimingContext } from '../../engine/taskTimingEngine.js';
+import { fallbackTaskViewModel } from '../../services/import/importHardening.js';
 
 /**
  * Schema version — bump to invalidate cached view models.
@@ -48,6 +49,43 @@ export const TASK_VIEWMODEL_SCHEMA_VERSION = 5;
  * @returns {Object} TaskViewModel
  */
 export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode, autopilotEnrichment, cropStage, weather, rainfall }) {
+  // ─── 0. Fallback guard (spec §4: never empty, never wrong) ──
+  // If no task and no action reached us, render the safe "Tell us
+  // about your farm" card so the farmer always sees something
+  // actionable. Still localized; still carries a language field.
+  if (!task && !action) {
+    const fallback = fallbackTaskViewModel({ t });
+    return {
+      id: fallback.id,
+      type: fallback.type,
+      title: fallback.title || '',
+      descriptionShort: fallback.descriptionShort || '',
+      ctaLabel: fallback.ctaLabel || '',
+      voiceText: '',
+      icon: '\uD83D\uDCDD',
+      iconBg: 'rgba(34,197,94,0.12)',
+      severity: 'normal',
+      stateStyle: getTaskStateStyle('normal'),
+      isWeatherOverridden: false,
+      isAlert: false,
+      priority: 'medium',
+      actionKey: fallback.type,
+      whyText: fallback.whyText || '',
+      riskText: null,
+      timingText: null,
+      timingKind: 'generic',
+      timingDayIndex: null,
+      nextText: null,
+      successText: '',
+      urgency: 'optional',
+      urgencyStyle: getUrgencyStyle('optional'),
+      isFallback: true,
+      language,
+      mode,
+      _schemaVersion: TASK_VIEWMODEL_SCHEMA_VERSION,
+    };
+  }
+
   // ─── 1. Determine effective priority and override status ───
   const priority = action?.priority || task?.priority || 'medium';
   const isWeatherOverride = !!(action?.weatherOverride);

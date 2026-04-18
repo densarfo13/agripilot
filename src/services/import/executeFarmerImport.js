@@ -15,8 +15,16 @@
  * orchestrator serves both the manual file-upload path and a future
  * automated API-ingestion path without duplication.
  */
-import { createImportBatch, updateImportBatch } from './importBatch.js';
+import { createImportBatch, updateImportBatch, recordBatchAction } from './importBatch.js';
 import { triggerImportedFarmerOnboarding } from './onboardingImportedFarmers.js';
+import {
+  buildSafeUpdatePayload,
+  deriveFarmerState,
+  resolveCropForImport,
+  assertNoSilentMerge,
+  assertFarmerStateValid,
+} from './importHardening.js';
+import { resolveRegionProfile } from '../../engine/regionProfiles.js';
 import { safeTrackEvent } from '../../lib/analytics.js';
 
 const IMPORT_MODES = {
@@ -26,9 +34,22 @@ const IMPORT_MODES = {
 
 /**
  * Build the minimal safe payload for a new farmer record. Only fields
- * we actually received and validated land on the server.
+ * we actually received and validated land on the server. Also stamps:
+ *   - import_confidence
+ *   - farmer_state
+ *   - crop_needs_confirmation (when region-suggested)
  */
-function payloadForCreate(row, { organizationId, batchId, consentState }) {
+function payloadForCreate(row, { organizationId, batchId, consentState, confidence }) {
+  const regionProfile = resolveRegionProfile(row.country);
+  const { crop, needsConfirmation } = resolveCropForImport({
+    incomingCrop: row.crop, regionId: regionProfile?.id,
+  });
+  const farmerState = deriveFarmerState({
+    consentState: consentState || 'imported_pending_activation',
+    hasCrop: !!crop,
+  });
+  assertFarmerStateValid(farmerState);
+
   return {
     full_name: row.full_name,
     phone_number: row.phone_number,
@@ -37,38 +58,36 @@ function payloadForCreate(row, { organizationId, batchId, consentState }) {
     district: row.district || undefined,
     village: row.village || undefined,
     preferred_language: row.preferred_language || undefined,
-    crop: row.crop || undefined,
+    crop: crop || undefined,
+    crop_needs_confirmation: needsConfirmation || undefined,
     land_size: row.land_size || undefined,
     gender: row.gender || undefined,
     age_range: row.age_range || undefined,
     external_farmer_id: row.external_farmer_id || undefined,
     organization_id: row.organization_id || organizationId || undefined,
     import_batch_id: batchId,
+    import_confidence: confidence || undefined,
+    region_profile_id: regionProfile?.id || undefined,
     consent_state: consentState || 'imported_pending_activation',
+    farmer_state: farmerState,
+    allow_sms: true, // partner may override later via consent capture
     source: 'partner_import',
   };
 }
 
 /**
- * Safe-merge payload — never blank out an existing value. Partners
- * sometimes re-send partial rows (e.g. only crop + land_size updates).
+ * Safe-merge payload — never blank out an existing value, never silently
+ * overwrite a protected field (phone / region / country / crop). Any
+ * collision becomes a `conflict` in the per-row result so the operator
+ * can resolve it manually.
  */
-function payloadForUpdate(row, existing, { batchId }) {
-  const patch = {};
-  const fields = [
-    'full_name', 'phone_number', 'country', 'region_or_state', 'district',
-    'village', 'preferred_language', 'crop', 'land_size', 'gender',
-    'age_range', 'external_farmer_id',
-  ];
-  for (const f of fields) {
-    const incoming = row[f];
-    if (incoming && String(incoming).trim() !== '') {
-      patch[f] = incoming;
-    }
-  }
+function payloadForUpdate(row, existing, { batchId, confidence }) {
+  const { patch, conflicts } = buildSafeUpdatePayload(row, existing);
+  assertNoSilentMerge(conflicts);
   patch.import_batch_id = batchId;
   patch.last_partner_update_at = new Date().toISOString();
-  return { id: existing.id, patch };
+  if (confidence) patch.import_confidence = confidence;
+  return { id: existing.id, patch, conflicts };
 }
 
 // ─── Public API ────────────────────────────────────────────
@@ -103,13 +122,21 @@ export async function executeFarmerImport(previewResults = [], {
   });
   safeTrackEvent('import.batch_started', { batchId: batch.id, total: previewResults.length, mode });
 
-  const summary = { created: 0, updated: 0, skipped: 0, invalid: 0, onboardingSent: 0 };
+  const summary = {
+    created: 0, updated: 0, skipped: 0, invalid: 0,
+    onboardingSent: 0, possibleDuplicate: 0, conflictsDetected: 0,
+  };
   const errors = [];
   const perRow = [];
+  // Rollback trackers — kept on the batch record so rollbackLastImportBatch
+  // can invert the work later without needing to re-parse the source file.
+  const createdFarmerIds = [];
+  const updatedFarmers = [];
 
   for (const result of previewResults) {
     const row = result.row;
     const rowNumber = row._rowNumber;
+    const confidence = result.confidence || null;
 
     // Skip invalid and in-file dupes outright
     if (result.importStatus === 'INVALID') {
@@ -122,6 +149,16 @@ export async function executeFarmerImport(previewResults = [], {
       perRow.push({ rowNumber, action: 'skipped', reason: 'duplicate_in_file' });
       continue;
     }
+    // Never auto-merge a fuzzy candidate (spec §1) — operator decides.
+    if (result.importStatus === 'POSSIBLE_DUPLICATE') {
+      summary.possibleDuplicate++;
+      summary.skipped++;
+      perRow.push({
+        rowNumber, action: 'skipped', reason: 'possible_duplicate',
+        matchScore: result.matchScore, matchedId: result.matched?.id,
+      });
+      continue;
+    }
 
     // CREATE_ONLY mode bypasses updates
     if (result.importStatus === 'UPDATE_EXISTING' && mode === IMPORT_MODES.CREATE_ONLY) {
@@ -132,11 +169,14 @@ export async function executeFarmerImport(previewResults = [], {
 
     try {
       if (result.importStatus === 'NEW') {
-        const payload = payloadForCreate(row, { organizationId, batchId: batch.id, consentState });
+        const payload = payloadForCreate(row, {
+          organizationId, batchId: batch.id, consentState, confidence,
+        });
         const saveResult = await saveFarmer({ mode: 'create', payload });
         if (!saveResult?.ok) throw new Error(saveResult?.error || 'create_failed');
         summary.created++;
-        perRow.push({ rowNumber, action: 'created', farmerId: saveResult.id });
+        createdFarmerIds.push(saveResult.id);
+        perRow.push({ rowNumber, action: 'created', farmerId: saveResult.id, confidence });
 
         if (typeof sendOnboarding === 'function') {
           try {
@@ -150,11 +190,24 @@ export async function executeFarmerImport(previewResults = [], {
           }
         }
       } else if (result.importStatus === 'UPDATE_EXISTING') {
-        const { id, patch } = payloadForUpdate(row, result.matched, { batchId: batch.id });
+        const { id, patch, conflicts } = payloadForUpdate(row, result.matched, {
+          batchId: batch.id, confidence,
+        });
+        if (conflicts.length > 0) {
+          summary.conflictsDetected += conflicts.length;
+          errors.push({ rowNumber, stage: 'conflict', message: 'field_conflict', conflicts });
+        }
+        // Capture the pre-update snapshot so rollback can invert the patch.
+        const before = {};
+        for (const f of Object.keys(patch)) {
+          before[f] = result.matched?.[f] ?? null;
+        }
         const saveResult = await saveFarmer({ mode: 'update', payload: { id, ...patch } });
         if (!saveResult?.ok) throw new Error(saveResult?.error || 'update_failed');
         summary.updated++;
-        perRow.push({ rowNumber, action: 'updated', farmerId: id });
+        updatedFarmers.push({ id, before, patch });
+        perRow.push({ rowNumber, action: 'updated', farmerId: id, confidence,
+          conflicts: conflicts.length ? conflicts : undefined });
       }
     } catch (err) {
       summary.invalid++;
@@ -162,6 +215,9 @@ export async function executeFarmerImport(previewResults = [], {
       perRow.push({ rowNumber, action: 'failed', reason: err.message });
     }
   }
+
+  // Stamp rollback data on the batch record
+  recordBatchAction(batch.id, { createdFarmerIds, updatedFarmers });
 
   const finalBatch = updateImportBatch(batch.id, {
     status: 'completed',

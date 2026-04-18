@@ -6060,6 +6060,16 @@ const T = {
   'import.error.noErrorsToExport': { en: 'No errors to export', fr: 'Aucune erreur à exporter', sw: 'Hakuna makosa ya kuhamisha', ha: 'Babu kurakurai don fitarwa', tw: 'Mfomsoɔ biara nni hɔ' },
   'import.error.missingSaver': { en: 'Import is not configured — contact support', fr: 'Importation non configurée — contactez le support', sw: 'Uingizaji haujawekwa — wasiliana na msaada', ha: 'Ba a saita shigo da ba — tuntuɓi goyon baya', tw: 'Wɔnsiesie ɔdebra — frɛ boafoɔ' },
 
+  // ─── Hardening labels (confidence, possible dup, fallback) ──
+  'import.status.possible_duplicate': { en: 'Possible duplicate', fr: 'Doublon possible', sw: 'Huenda ni marudio', ha: 'Mai yiwuwa kwafi', tw: 'Ebia mprɛnu' },
+  'import.confidence.high': { en: 'High', fr: 'Élevée', sw: 'Juu', ha: 'Babba', tw: 'Kɛse' },
+  'import.confidence.medium': { en: 'Medium', fr: 'Moyenne', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
+  'import.confidence.low': { en: 'Low', fr: 'Faible', sw: 'Chini', ha: 'Ƙaramin', tw: 'Ketewa' },
+  'import.issue.fieldConflict': { en: 'Existing value differs — import will not overwrite', fr: 'Valeur existante différente — non écrasée', sw: 'Thamani iliyopo inatofautiana — haitabadilishwa', ha: 'Wanda ke can ya bambanta — ba za a canza ba', tw: 'Nea ɛwɔ hɔ no sesa — yɛrensesa' },
+  'fallback.tellUs.title': { en: 'Tell us about your farm', fr: 'Parlez-nous de votre ferme', sw: 'Tuambie kuhusu shamba lako', ha: 'Gaya mana game da gonarka', tw: 'Ka wo afuo ho asɛm kyerɛ yɛn' },
+  'fallback.tellUs.why': { en: 'We need this to guide you better.', fr: 'Cela nous aide à mieux vous guider.', sw: 'Tunahitaji hii ili kukuongoza vizuri zaidi.', ha: 'Muna buƙatar wannan don jagorarka sosai.', tw: 'Yɛhia eyi na yɛatumi akyerɛ wo kwan yiye.' },
+  'fallback.tellUs.cta': { en: 'Continue setup', fr: 'Continuer la configuration', sw: 'Endelea na usanidi', ha: 'Ci gaba da saitawa', tw: 'Toa siesieɛ no so' },
+
   // ─── Region-flavoured task title variants (V2 spec §5) ──
   'cropTask.region.clearFieldManual': { en: 'Cut weeds and clear by hand', fr: 'Couper les mauvaises herbes à la main', sw: 'Kata magugu kwa mkono', ha: 'Yanke ciyawa da hannu', tw: 'Twa wura no fi nsa' },
   'cropTask.region.prepareLandManualTropical': { en: 'Loosen the soil with a hoe', fr: 'Ameublir le sol à la houe', sw: 'Laini udongo kwa jembe', ha: 'Sassauta ƙasa da fartanya', tw: 'Dwodwo asase no de asɔsɔ' },

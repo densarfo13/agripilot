@@ -2,20 +2,22 @@
  * matchExistingFarmers — decide whether each parsed row should
  * create a new farmer record, update an existing one, or be skipped.
  *
- * Match priority (spec §7):
- *   1. external_farmer_id (if provided and matched)
- *   2. phone_number
- *   3. fallback heuristic: full_name + region_or_state
+ * Match priority (hardened — identity spec §1):
+ *   1. external_farmer_id (exact)         → UPDATE_EXISTING
+ *   2. phone_number      (exact)         → UPDATE_EXISTING
+ *   3. fuzzy full_name + region_or_state → POSSIBLE_DUPLICATE (operator resolves)
  *
  * Row statuses after matching:
- *   NEW              — no existing farmer matched; create one
- *   UPDATE_EXISTING  — matched a farmer; safe-merge on import
- *   DUPLICATE_IN_FILE — handled by validator already (not overwritten)
- *   INVALID          — row was error at validation; do not import
+ *   NEW                — no existing farmer matched; create one
+ *   UPDATE_EXISTING    — confident exact-identifier match; safe-merge on import
+ *   POSSIBLE_DUPLICATE — fuzzy candidate; DO NOT auto-merge
+ *   DUPLICATE_IN_FILE  — handled by validator already (not overwritten)
+ *   INVALID            — row was error at validation; do not import
  *
  * The existingFarmers loader is injected so tests and future API
  * callers can pass their own source without reaching into fetch code.
  */
+import { fuzzyNameRegionScore, FUZZY_MATCH_THRESHOLD } from './importHardening.js';
 
 /**
  * Build an indexed view of existing farmers once, then look up by
@@ -41,20 +43,27 @@ function indexFarmers(existing = []) {
   return { byExternalId, byPhone, byNameRegion };
 }
 
-function matchOne(row, idx) {
+function matchOne(row, idx, existingList) {
   const eid = row.external_farmer_id;
   if (eid && idx.byExternalId.has(eid)) {
-    return { matched: idx.byExternalId.get(eid), reason: 'external_farmer_id' };
+    return { matched: idx.byExternalId.get(eid), reason: 'external_farmer_id', fuzzy: false };
   }
   const phone = row.phone_number;
   if (phone && idx.byPhone.has(phone)) {
-    return { matched: idx.byPhone.get(phone), reason: 'phone_number' };
+    return { matched: idx.byPhone.get(phone), reason: 'phone_number', fuzzy: false };
   }
-  const key = `${(row.full_name || '').trim().toLowerCase()}|${(row.region_or_state || '').trim().toLowerCase()}`;
-  if (key !== '|' && idx.byNameRegion.has(key)) {
-    return { matched: idx.byNameRegion.get(key), reason: 'name_region' };
+
+  // Fuzzy name+region — flag only, never auto-merge (spec §1).
+  let bestScore = 0;
+  let bestCandidate = null;
+  for (const candidate of existingList) {
+    const score = fuzzyNameRegionScore(row, candidate);
+    if (score > bestScore) { bestScore = score; bestCandidate = candidate; }
   }
-  return { matched: null, reason: null };
+  if (bestCandidate && bestScore >= FUZZY_MATCH_THRESHOLD) {
+    return { matched: bestCandidate, reason: 'fuzzy_name_region', fuzzy: true, score: bestScore };
+  }
+  return { matched: null, reason: null, fuzzy: false };
 }
 
 /**
@@ -75,7 +84,17 @@ export function matchExistingFarmers(validatorResults = [], existingFarmers = []
       return { ...result, importStatus: 'DUPLICATE_IN_FILE', matched: null, matchReason: null };
     }
 
-    const { matched, reason } = matchOne(result.row, idx);
+    const { matched, reason, fuzzy, score } = matchOne(result.row, idx, existingFarmers);
+    if (matched && fuzzy) {
+      // Spec §1: fuzzy hits surface for operator review. Never silent merge.
+      return {
+        ...result,
+        importStatus: 'POSSIBLE_DUPLICATE',
+        matched,
+        matchReason: reason,
+        matchScore: score,
+      };
+    }
     if (matched) {
       return { ...result, importStatus: 'UPDATE_EXISTING', matched, matchReason: reason };
     }
