@@ -4,11 +4,33 @@
  * 6 quick questions, one at a time, mobile-first.
  * Navigates to /crop-recommendations with answers in route state.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
+
+// Resume state — intake progress survives app refresh / network loss.
+const RESUME_KEY = 'farroway:cropfit_draft';
+function saveDraft(step, answers) {
+  try {
+    sessionStorage.setItem(RESUME_KEY, JSON.stringify({ step, answers, ts: Date.now() }));
+  } catch { /* ignore */ }
+}
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(RESUME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Expire drafts older than 1h to avoid stale state
+    if (!parsed || Date.now() - (parsed.ts || 0) > 60 * 60 * 1000) return null;
+    if (typeof parsed.step !== 'number' || !parsed.answers) return null;
+    return parsed;
+  } catch { return null; }
+}
+function clearDraft() {
+  try { sessionStorage.removeItem(RESUME_KEY); } catch { /* ignore */ }
+}
 
 const STEPS = [
   { key: 'location',   icon: '\uD83D\uDCCD' },
@@ -70,10 +92,32 @@ export default function CropFitIntake() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
 
+  // Restore partial intake if the user refreshed or lost network mid-flow.
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      // Clamp step to valid range (STEPS length can change in later versions)
+      const clamped = Math.max(0, Math.min(draft.step, STEPS.length - 1));
+      setStep(clamped);
+      setAnswers(draft.answers || {});
+      safeTrackEvent('cropFit.intake_resumed', { step: clamped });
+    }
+  }, []);
+
   const current = STEPS[step];
   const options = OPTIONS[current.key];
   const isLast = step === STEPS.length - 1;
+  // preferredCrop is optional — allow skip on that step
+  const canSkip = current.key === 'preferredCrop';
   const progress = ((step + 1) / STEPS.length) * 100;
+
+  function completeIntake(final) {
+    clearDraft();
+    safeTrackEvent('cropFit.intake_complete', final);
+    navigate('/crop-recommendations', {
+      state: { ...final, country: profile?.country || '' },
+    });
+  }
 
   function select(value) {
     const next = { ...answers, [current.key]: value };
@@ -82,18 +126,37 @@ export default function CropFitIntake() {
     safeTrackEvent('cropFit.answer', { step: current.key, value });
 
     if (isLast) {
-      safeTrackEvent('cropFit.intake_complete', next);
-      navigate('/crop-recommendations', {
-        state: { ...next, country: profile?.country || '' },
-      });
+      completeIntake(next);
     } else {
-      setStep(step + 1);
+      const nextStep = step + 1;
+      saveDraft(nextStep, next);
+      setStep(nextStep);
+    }
+  }
+
+  function skipCurrent() {
+    if (!canSkip) return;
+    const next = { ...answers, [current.key]: '' };
+    safeTrackEvent('cropFit.skip', { step: current.key });
+    if (isLast) {
+      completeIntake(next);
+    } else {
+      const nextStep = step + 1;
+      saveDraft(nextStep, next);
+      setStep(nextStep);
+      setAnswers(next);
     }
   }
 
   function goBack() {
-    if (step > 0) setStep(step - 1);
-    else navigate(-1);
+    if (step > 0) {
+      const prev = step - 1;
+      setStep(prev);
+      saveDraft(prev, answers);
+    } else {
+      clearDraft();
+      navigate(-1);
+    }
   }
 
   return (
@@ -140,6 +203,13 @@ export default function CropFitIntake() {
             );
           })}
         </div>
+
+        {/* Skip (only for optional questions) */}
+        {canSkip && (
+          <button type="button" onClick={skipCurrent} style={S.skipBtn}>
+            {t('common.skipForNow')}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -246,5 +316,18 @@ const S = {
     background: 'rgba(34,197,94,0.1)',
     borderColor: '#22C55E',
     color: '#22C55E',
+  },
+  skipBtn: {
+    width: '100%',
+    marginTop: '0.625rem',
+    padding: '0.625rem',
+    borderRadius: '12px',
+    border: '1px dashed rgba(255,255,255,0.08)',
+    background: 'transparent',
+    color: '#6F8299',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
   },
 };

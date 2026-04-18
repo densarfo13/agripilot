@@ -25,6 +25,7 @@ const V2FarmerType = lazy(() => import('./pages/FarmerType.jsx'));
 const V2StarterGuide = lazy(() => import('./pages/StarterGuide.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const FarmerWelcome = lazy(() => import('./pages/FarmerWelcome.jsx'));
+const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
 const VerifyOtp = lazy(() => import('./pages/VerifyOtp.jsx'));
 // ProtectedLayout is NOT lazy — it's the auth/profile gate and must stay mounted
 // while inner lazy children (Dashboard, etc.) load via their own Suspense boundary.
@@ -214,6 +215,9 @@ export default function App() {
         <Routes>
           {/* Marketing landing page (farroways.com homepage) */}
           <Route path="/welcome" element={<LandingPage />} />
+
+          {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
+          <Route path="/start" element={<FarmerEntry />} />
 
           {/* Farmer-first entry (phone OTP, Google, offline) */}
           <Route path="/farmer-welcome" element={<FarmerWelcome />} />

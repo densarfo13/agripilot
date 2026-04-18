@@ -69,14 +69,19 @@ export default function CropSummary() {
   if (!cp) return <Navigate to="/crop-recommendations" replace />;
 
   // ─── Start crop plan ────────────────────────────────────
+  // Spec §8: saving the crop, setting the stage, generating the first task,
+  // and routing to Home must feel like one atomic step. Spec §11: if any
+  // optional step fails we still land the farmer on Home with a safe
+  // fallback task so the flow never dead-ends.
   async function handleStart() {
     if (starting) return;
     setStarting(true);
     setError('');
     safeTrackEvent('cropFit.start_plan', { code: crop.code });
 
+    let farmSaved = false;
     try {
-      // 1. Save crop to farm profile
+      // 1. Save crop to farm profile — this is the critical step that must succeed
       if (profile?.id) {
         await saveFarmProfile({
           farmerName: profile.farmerName || profile.fullName || '',
@@ -88,7 +93,6 @@ export default function CropSummary() {
           cropType: crop.code,
         });
       } else {
-        // No existing profile — create one with minimal info
         await createNewFarm({
           farmerName: '',
           farmName: 'My Farm',
@@ -99,38 +103,55 @@ export default function CropSummary() {
           cropType: crop.code,
         });
       }
+      farmSaved = true;
+    } catch (err) {
+      // The crop couldn't be saved at all — offer retry, stay on screen.
+      safeTrackEvent('cropFit.start_plan_failed', { code: crop.code, phase: 'save_profile' });
+      setError(err.message || t('cropSummary.startError'));
+      setStarting(false);
+      return;
+    }
 
-      // 2. Save experience level
+    // From here on: farm is saved. All downstream errors are non-blocking —
+    // we still route to Home and let the task loop recover on its own.
+    try {
       if (answers?.experience) {
         const farmerType = answers.experience === 'none' ? 'new' : 'experienced';
         await saveFarmerType(farmerType).catch(() => {});
       }
 
-      // 3. Refresh profile to get new farm ID
-      const freshProfile = await refreshProfile();
-      await refreshFarms?.();
+      const freshProfile = await refreshProfile().catch(() => null);
+      await refreshFarms?.().catch(() => {});
 
-      // 4. Set initial crop stage to land_preparation (first active stage)
       const farmId = freshProfile?.id || profile?.id;
       if (farmId) {
         await updateCropStage(farmId, 'land_preparation').catch(() => {});
-        await refreshProfile();
+        await refreshProfile().catch(() => {});
       }
 
-      // 5. Get the initial task for tracking/analytics
+      // Dev assertion: we must have an initial task for this crop/stage
+      // so Home can render immediately. getInitialTask is a deterministic
+      // lookup — if it returns null we fall back to the first stage task.
       const initialTask = getInitialTask(crop.code, 'land_preparation');
+      if (import.meta.env?.DEV && !initialTask) {
+        console.warn('[CropSummary] No initial task found for', crop.code, 'land_preparation');
+      }
+
       safeTrackEvent('cropFit.plan_started', {
         code: crop.code,
-        initialTaskType: initialTask.type,
+        initialTaskType: initialTask?.type || 'fallback',
         stage: 'land_preparation',
+        farmSaved,
       });
-
-      // 6. Navigate to Home — daily guidance begins immediately
-      navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.message || t('common.error'));
-      setStarting(false);
+      // Non-fatal — still continue to Home.
+      safeTrackEvent('cropFit.start_plan_partial', { code: crop.code, message: err?.message });
     }
+
+    // Always route to Home on success — Home is the single source of
+    // truth for the task loop and will render either the real task or
+    // a safe fallback for land_preparation.
+    navigate('/dashboard', { replace: true });
   }
 
   return (
@@ -166,6 +187,11 @@ export default function CropSummary() {
               <span style={{ ...S.oStatValue, color: LEVEL_COLORS[cp.effortLevel] }}>{t(`cropFit.level.${cp.effortLevel}`)}</span>
             </div>
           </div>
+
+          {/* Timing fit — e.g. "Good to start now", "Wait for rains" */}
+          {crop.timingSignal && (
+            <div style={S.timingFit}>{t(crop.timingSignal)}</div>
+          )}
         </div>
 
         {/* ═══ B. MAIN STAGES ═══ */}
@@ -311,6 +337,13 @@ const S = {
   diffBadge: {
     fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase',
     letterSpacing: '0.04em', padding: '0.25rem 0.75rem', borderRadius: '999px',
+  },
+  timingFit: {
+    fontSize: '0.75rem', fontWeight: 700, color: '#22C55E',
+    padding: '0.375rem 0.75rem', borderRadius: '999px',
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.18)',
+    marginTop: '0.5rem',
   },
   overviewStats: {
     display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap',

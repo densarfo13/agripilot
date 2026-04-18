@@ -34,6 +34,9 @@ const T = {
   'common.skip': {
     en: 'Skip', fr: 'Passer', sw: 'Ruka', ha: 'Tsallake', tw: 'Twa mu',
   },
+  'common.skipForNow': {
+    en: 'Skip for now', fr: 'Passer pour l\'instant', sw: 'Ruka kwa sasa', ha: 'Tsallake a yanzu', tw: 'Twa mu seesei',
+  },
   'common.cancel': {
     en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae',
   },
@@ -3128,6 +3131,36 @@ const T = {
     en: 'Create one', fr: 'Créer un compte', sw: 'Tengeneza moja', ha: 'Ƙirƙiri ɗaya', tw: 'Yɛ bi',
   },
 
+  // ─── Farmer Entry (Welcome gate — §2) ─────────────────────
+  'entry.valueLine': {
+    en: 'Know what to do on your farm every day',
+    fr: 'Sachez quoi faire chaque jour sur votre ferme',
+    sw: 'Jua cha kufanya shambani kwako kila siku',
+    ha: 'San abin da za ka yi a gonarka kowace rana',
+    tw: 'Hu nea wobɛyɛ wɔ w\'afuo so da biara',
+  },
+  'entry.startNewCrop': {
+    en: 'Start a new crop',
+    fr: 'Démarrer une culture',
+    sw: 'Anza zao jipya',
+    ha: 'Fara sabon amfani',
+    tw: 'Fi foforɔ ase',
+  },
+  'entry.continueFarm': {
+    en: 'Continue my farm',
+    fr: 'Continuer ma ferme',
+    sw: 'Endelea na shamba langu',
+    ha: 'Ci gaba da gonata',
+    tw: 'Toa m\'afuo so',
+  },
+  'entry.reassurance': {
+    en: 'Simple, mobile-first, no long forms',
+    fr: 'Simple, mobile, sans formulaires longs',
+    sw: 'Rahisi, simu kwanza, hakuna fomu ndefu',
+    ha: 'Mai sauƙi, wayar hannu da farko, babu dogayen fom',
+    tw: 'Ɛyɛ mmerɛw, fon deɛ di kan, krataa tenten biara nni hɔ',
+  },
+
   // ─── Farmer-first auth (phone OTP, welcome screen) ────────
   'auth.welcomeFarmer': {
     en: 'Welcome, Farmer', fr: 'Bienvenue, Agriculteur', sw: 'Karibu, Mkulima', ha: 'Barka, Manomi', tw: 'Akwaaba, Okuafoɔ',
@@ -5472,6 +5505,7 @@ const T = {
   'cropSummary.startPlan': { en: 'Start Growing This Crop', fr: 'Commencer cette culture', sw: 'Anza Kulima Zao Hili', ha: 'Fara Noman Wannan Amfanin Gona', tw: 'Hyɛ Nnɔbae Yi Ase' },
   'cropSummary.starting': { en: 'Setting up...', fr: 'Configuration...', sw: 'Inasanidi...', ha: 'Ana shirya...', tw: 'Ɛresiesie...' },
   'cropSummary.startHint': { en: 'This sets your crop and starts daily guidance.', fr: 'Cela configure votre culture et lance le guidage quotidien.', sw: 'Hii inaweka zao lako na kuanza mwongozo wa kila siku.', ha: 'Wannan zai saita amfanin gonan ku kuma fara jagora na yau da kullum.', tw: 'Eyi de wo nnɔbae to hɔ na ɛhyɛ daa nkyerɛkyerɛ ase.' },
+  'cropSummary.startError': { en: 'Could not start the plan. Please try again.', fr: 'Impossible de démarrer le plan. Veuillez réessayer.', sw: 'Haikuweza kuanza mpango. Tafadhali jaribu tena.', ha: 'Ba a iya fara shirin ba. Don Allah sake gwadawa.', tw: 'Yɛantumi amfi adwuma no ase. Yɛsrɛ wo, san hwehwe.' },
 
   // ─── Stage names ──
   'cropSummary.stage.land_prep': { en: 'Prepare your land', fr: 'Préparer le terrain', sw: 'Tayarisha ardhi yako', ha: 'Shirya ƙasar ku', tw: 'Siesie wo asase' },

@@ -10,13 +10,33 @@
  * If already authenticated, redirects straight to Home.
  */
 import { useState, useRef } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { getDialCode } from '../utils/countries.js';
 import { normalizePhone } from '../components/PhoneInput.jsx';
+
+// ── Entry-intent helpers ─────────────────────────────────
+// Intent flows from FarmerEntry: 'new' (Start a new crop) or 'continue' (Continue my farm).
+// Persisted to sessionStorage so OTP verify / SSO redirect keeps the hint.
+const INTENT_KEY = 'farroway:entry_intent';
+function persistIntent(intent) {
+  try {
+    if (intent) sessionStorage.setItem(INTENT_KEY, intent);
+    else sessionStorage.removeItem(INTENT_KEY);
+  } catch { /* ignore */ }
+}
+function readIntent() {
+  try { return sessionStorage.getItem(INTENT_KEY) || ''; } catch { return ''; }
+}
+export function postAuthDestination() {
+  const intent = readIntent();
+  persistIntent(null);
+  if (intent === 'new') return '/crop-fit';
+  return '/dashboard';
+}
 
 // SSO popup helper (reused from existing V1 login)
 const SSO_PROVIDERS_URL = '/api/auth/providers';
@@ -26,7 +46,12 @@ export default function FarmerWelcome() {
   const { isAuthenticated, authLoading, requestPhoneOtp, continueOffline } = useAuth();
   const { isOnline } = useNetwork();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  // Capture intent from FarmerEntry if present
+  const incomingIntent = location.state?.intent;
+  if (incomingIntent) persistIntent(incomingIntent);
 
   const [phone, setPhone] = useState('');
   const [countryCode] = useState(() => {
@@ -52,7 +77,7 @@ export default function FarmerWelcome() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={postAuthDestination()} replace />;
   }
 
   // ─── Phone submit → request OTP ─────────────────────────
@@ -97,7 +122,7 @@ export default function FarmerWelcome() {
       if (event.data.user) {
         // SSO success — bootstrap will pick up the cookie session
         safeTrackEvent('auth.sso.success', { provider: 'google' });
-        window.location.href = '/dashboard';
+        window.location.href = postAuthDestination();
       } else if (event.data.error) {
         setError(event.data.error);
       }
@@ -117,7 +142,7 @@ export default function FarmerWelcome() {
   function handleOffline() {
     safeTrackEvent('auth.offline.started', {});
     continueOffline();
-    navigate('/dashboard', { replace: true });
+    navigate(postAuthDestination(), { replace: true });
   }
 
   return (

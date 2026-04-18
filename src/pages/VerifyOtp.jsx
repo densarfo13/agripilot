@@ -9,6 +9,7 @@ import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { postAuthDestination } from './FarmerWelcome.jsx';
 
 const CODE_LENGTH = 6;
 
@@ -102,7 +103,7 @@ export default function VerifyOtp() {
     try {
       await verifyPhoneOtp(phone, code);
       safeTrackEvent('auth.otp.verified', { method: 'phone' });
-      navigate('/dashboard', { replace: true });
+      navigate(postAuthDestination(), { replace: true });
     } catch (err) {
       setError(err.message || t('auth.invalidCode'));
       safeTrackEvent('auth.otp.verify_failed', {});
