@@ -6111,6 +6111,148 @@ const T = {
     tw: '✓ Adwuma pa — wo nnɔbae rekɔ so yie',
   },
 
+  // ─── Off-season fallback (spec §9) ─────────────────────────
+  'offSeason.title': {
+    en: 'Plan your next crop',
+    fr: 'Planifiez votre prochaine culture',
+    sw: 'Panga zao lako lijalo',
+    ha: 'Shirya amfani na gaba',
+    tw: 'Siesie wo nnɔbae a ɛdi hɔ',
+  },
+  'offSeason.why': {
+    en: 'This is not the main season now',
+    fr: 'Ce n\'est pas la saison principale',
+    sw: 'Hii sio msimu mkuu kwa sasa',
+    ha: 'Wannan ba babban lokaci bane yanzu',
+    tw: 'Ɛnyɛ bere titiriw no seesei',
+  },
+  'offSeason.cta': {
+    en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Kɔ so',
+  },
+
+  // ─── Regional step/tip overrides (spec §10) ────────────────
+  // Mechanized temperate tone — no "by hand" wording.
+  'region.steps.clearField.mechanized': {
+    en: 'Clear vegetation from the field | Remove stones and stubble | Open access for equipment',
+    fr: 'Dégager la végétation | Enlever pierres et chaumes | Ouvrir l\'accès pour les engins',
+    sw: 'Safisha mimea shambani | Ondoa mawe na mabaki | Fungua njia kwa mashine',
+    ha: 'Share ciyayi daga gona | Cire duwatsu da ragowar amfani | Buɗe hanyar injina',
+    tw: 'Yi wura no wɔ afuo no mu | Yi aboɔ ne mfuo ase | Bue kwan ma mfidie',
+  },
+  'region.tip.clearField.mechanized': {
+    en: 'Work when soil is firm — not waterlogged',
+    fr: 'Travaillez quand le sol est ferme, pas détrempé',
+    sw: 'Fanya kazi udongo ukiwa imara, siyo umelowa',
+    ha: 'Yi aiki lokacin da ƙasa ta ƙanƙanta, ba lokacin da ta jiƙe ba',
+    tw: 'Yɛ adwuma bere a asase no awoɔ, ɛnyɛ bere a nsu ayɛ so',
+  },
+  'region.steps.prepareLand.mechanized': {
+    en: 'Prepare the field with equipment | Set up straight rows | Check drainage is clear',
+    fr: 'Préparer le champ avec des engins | Tracer des rangs droits | Vérifier le drainage',
+    sw: 'Andaa shamba kwa mashine | Weka mistari iliyonyooka | Hakikisha mifereji iko wazi',
+    ha: 'Shirya gona da injin noma | Kafa layuka masu mike | Tabbatar magudanar ruwa tana buɗe',
+    tw: 'Fa mfidie siesie afuo no | Yɛ ntam a ɛte tee | Hwɛ sɛ nsu kwan mu yɛ krɔnkrɔn',
+  },
+  'region.tip.prepareLand.mechanized': {
+    en: 'Avoid heavy equipment on wet soil',
+    fr: 'Évitez les engins lourds sur sol humide',
+    sw: 'Epuka mashine nzito kwenye udongo mvua',
+    ha: 'Kauce injina masu nauyi a ƙasa mai jiki',
+    tw: 'Mma mfidie a emu yɛ duru nnka asase a ɛmu yɛ fɔmu so',
+  },
+  'region.steps.plantSeeds.mechanized': {
+    en: 'Calibrate the seed drill | Plant in even rows | Check seed depth',
+    fr: 'Calibrer le semoir | Semer en rangs réguliers | Vérifier la profondeur',
+    sw: 'Sanidi mashine ya kupanda | Panda kwa mistari sawa | Angalia kina cha mbegu',
+    ha: 'Saita injin shuka | Shuka a layuka daidai | Duba zurfin iri',
+    tw: 'Hyehyɛ aba dua mfidie | Dua wɔ ntam a ɛpɛpɛ | Hwɛ aba no mu tenten',
+  },
+  'region.tip.weedField.mechanized': {
+    en: 'Use equipment when rows are dry and firm',
+    fr: 'Utilisez l\'équipement quand les rangs sont secs et fermes',
+    sw: 'Tumia mashine wakati mistari imekauka na imara',
+    ha: 'Yi amfani da injin lokacin da layuka suka bushe',
+    tw: 'Fa mfidie no bere a ntam no awoɔ na emu yɛ den',
+  },
+
+  // Tropical manual tone.
+  'region.steps.clearField.manual': {
+    en: 'Cut weeds and grasses by hand | Pick out stones and debris | Clear old plant roots',
+    fr: 'Couper herbes et mauvaises herbes à la main | Enlever pierres et débris | Retirer les vieilles racines',
+    sw: 'Kata magugu na nyasi kwa mkono | Okota mawe na taka | Ondoa mizizi ya zamani',
+    ha: 'Yanke ciyayi da hannu | Cire duwatsu da datti | Cire tsoffin saiwoyi',
+    tw: 'Twa nwura ne sare fi nsa | Yi aboɔ ne fi | Yi nhini dada',
+  },
+  'region.tip.clearField.manual': {
+    en: 'Work early in the morning when it is cool',
+    fr: 'Travaillez tôt le matin à la fraîche',
+    sw: 'Fanya kazi asubuhi mapema wakati kuna baridi',
+    ha: 'Yi aiki da safe lokacin da yanayi ke sanyi',
+    tw: 'Yɛ adwuma anɔpatuutuu bere a ewim dwodwo',
+  },
+  'region.steps.prepareLand.manual': {
+    en: 'Loosen the soil with a hoe | Break up big soil clumps | Level the bed evenly',
+    fr: 'Ameublir le sol à la houe | Casser les grosses mottes | Niveler la planche',
+    sw: 'Lainisha udongo kwa jembe | Vunja madongo makubwa | Sawazisha kitalu vizuri',
+    ha: 'Sassauta ƙasa da fartanya | Fasa manyan kulli | Daidaita gadon',
+    tw: 'Dwodwo asase de asɔsɔ | Paapae kulli akɛseɛ | Siesie mpie no so pɛ',
+  },
+  'region.tip.prepareLand.manual': {
+    en: 'Do not work waterlogged soil',
+    fr: 'Ne travaillez pas un sol gorgé d\'eau',
+    sw: 'Usilime udongo uliolowa',
+    ha: 'Kada ka yi aiki ƙasa mai ruwa',
+    tw: 'Nyɛ asase a nsu ayɛ so mu adwuma',
+  },
+
+  // Tropical mixed tone.
+  'region.steps.prepareLand.mixed': {
+    en: 'Till the soil | Mark planting rows | Remove any remaining roots',
+    fr: 'Travailler le sol | Tracer les rangs | Retirer les racines restantes',
+    sw: 'Lima udongo | Weka alama za mistari | Ondoa mizizi iliyobaki',
+    ha: 'Nome ƙasa | Yi alama layuka | Cire saiwoyin da suka rage',
+    tw: 'Funtum asase | Yɛ ntam a wobɛdua | Yi nhini a aka',
+  },
+
+  // Monsoon mixed tone.
+  'region.steps.prepareLand.monsoon': {
+    en: 'Build drainage bunds | Level the planting area | Align with rain timing',
+    fr: 'Monter les diguettes | Niveler la zone | Aligner avec les pluies',
+    sw: 'Tengeneza tuta la kumwaga maji | Sawazisha eneo | Linganisha na mvua',
+    ha: 'Gina tungar magudanar ruwa | Daidaita wurin shuka | Daidaita da lokacin ruwan sama',
+    tw: 'Yɛ nsu kwan ntrɛmu | Siesie baabi a wobɛdua | Fa ne osutɔ bere to mu',
+  },
+  'region.tip.prepareLand.monsoon': {
+    en: 'Start before the monsoon sets in',
+    fr: 'Commencez avant la mousson',
+    sw: 'Anza kabla ya monsuni',
+    ha: 'Fara kafin lokacin damina',
+    tw: 'Fi ase ansa na osutɔ kɛseɛ mmra',
+  },
+  'region.tip.plantSeeds.monsoon': {
+    en: 'Plant once the rains are steady',
+    fr: 'Semez quand les pluies sont régulières',
+    sw: 'Panda wakati mvua zimetulia',
+    ha: 'Shuka lokacin da ruwan sama ya yi tsayin daka',
+    tw: 'Dua bere a osu retɔ daa',
+  },
+
+  // Dry / irrigated tone.
+  'region.steps.prepareLand.dry': {
+    en: 'Shape ridges or basins to hold water | Loosen the soil | Check the irrigation line',
+    fr: 'Former des billons ou cuvettes pour retenir l\'eau | Ameublir | Vérifier l\'irrigation',
+    sw: 'Tengeneza matuta au mabonde kuhifadhi maji | Lainisha udongo | Angalia mfereji',
+    ha: 'Yi kududdufai ko manyan matsugunan ruwa | Sassauta ƙasa | Duba bututun ruwa',
+    tw: 'Yɛ ntrɛmu anaa amena a ɛbɛkora nsu | Dwodwo asase | Hwɛ nsu kwan no',
+  },
+  'region.tip.waterAfterPlanting.dry': {
+    en: 'Irrigate soon after planting — rainfall is sparse',
+    fr: 'Irriguez peu après le semis — les pluies sont rares',
+    sw: 'Nyunyizia mbegu baada ya kupanda — mvua ni chache',
+    ha: 'Ba da ruwa jim kaɗan bayan shuka — ruwan sama kaɗan ne',
+    tw: 'Gu nsu ntɛm bere a woadua wie — osu nni hɔ pii',
+  },
+
   // Result chrome
   'camera.result.todaysAction': { en: "Today's action", fr: "Action du jour", sw: 'Hatua ya leo', ha: 'Aikin yau', tw: 'Ɛnnɛ adeyɛ' },
   'camera.result.why': { en: 'Why', fr: 'Pourquoi', sw: 'Kwa nini', ha: 'Me yasa', tw: 'Adɛn' },

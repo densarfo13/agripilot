@@ -32,6 +32,7 @@
 import { getCropDefinition, getDefinedTasks, getNextStage } from './cropDefinitions.js';
 import { getTasksForCropStage, resolveStage } from './cropTaskMap.js';
 import { getRegionTaskHint, REGION_PROFILES, resolveRegionProfile } from './regionProfiles.js';
+import { buildLocalizedTask } from '../core/localization/globalContext.js';
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -104,6 +105,8 @@ export function buildContextAwareTaskDecision({
   region,
   farmerExperience,
   completionState,
+  countryCode,   // spec §7: country + month drive the localization pipeline
+  month,
 } = {}) {
   if (!crop) return null;
 
@@ -144,7 +147,7 @@ export function buildContextAwareTaskDecision({
     }
   }
 
-  return {
+  const decorated = {
     ...withRepetition,
     stage,
     cropId: crop,
@@ -153,6 +156,20 @@ export function buildContextAwareTaskDecision({
     stageIndex: index,
     stageAllComplete: allComplete,
   };
+
+  // Spec §7: final pass — pipe through the globalContext localization
+  // layer so country + calendar-aware stage + region overrides can
+  // reshape the task. When countryCode isn't provided, the localizer
+  // is a no-op that just carries the decorated task forward.
+  if (countryCode) {
+    return buildLocalizedTask({
+      countryCode,
+      cropId: crop,
+      month,
+      baseTask: decorated,
+    });
+  }
+  return decorated;
 }
 
 /**
