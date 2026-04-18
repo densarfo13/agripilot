@@ -35,19 +35,24 @@ function prune(entries) {
 
 export function addTemporaryTask({
   source = 'camera_diagnosis',
-  titleKey, whyKey, stepsKey,
+  issueType,                           // e.g. 'pest_detected'
+  titleKey, whyKey, stepsKey, lookForKey, tipKey,
+  followupTaskType,
   urgency = 'today', priority = 'high',
   icon = '\uD83C\uDF3E', iconBg,
+  expiresInHours,                       // overrides the default 7-day TTL
 } = {}) {
   const all = prune(read());
   const now = Date.now();
+  const ttl = Number.isFinite(expiresInHours) ? expiresInHours * 60 * 60 * 1000 : TTL_MS;
   const task = {
     id: `tmp_${now.toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-    source, titleKey, whyKey, stepsKey,
+    source, issueType, followupTaskType,
+    titleKey, whyKey, stepsKey, lookForKey, tipKey,
     urgency, priority, icon, iconBg,
     createdAt: now,
     completedAt: null,
-    expiresAt: now + TTL_MS,
+    expiresAt: now + ttl,
   };
   all.push(task);
   write(all);

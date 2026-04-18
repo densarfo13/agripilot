@@ -17,6 +17,7 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import { diagnoseCropImage, DIAGNOSIS_CATEGORY, SCAN_FAILED_ACTION } from '../engine/cameraDiagnosis.js';
 import { addScanEntry, getScanHistory } from '../services/cameraDiagnosisHistory.js';
 import { addTemporaryTask } from '../services/temporaryTasks.js';
+import { maybeScheduleFollowup } from '../services/cameraFollowup.js';
 
 const PHASE = { ENTRY: 'entry', LOADING: 'loading', RESULT: 'result' };
 
@@ -32,6 +33,12 @@ export default function CameraScanPage() {
 
   useEffect(() => {
     safeTrackEvent('camera.scan_shown', {});
+    // Spec §7: opportunistically drop a recheck task when a scan from
+    // yesterday is still open. Pure no-op if nothing qualifies.
+    try {
+      const recheck = maybeScheduleFollowup();
+      if (recheck) safeTrackEvent('camera.followup_scheduled', { issueType: recheck.issueType });
+    } catch { /* ignore */ }
   }, []);
 
   function triggerPicker() {
@@ -70,17 +77,24 @@ export default function CameraScanPage() {
   function handleAddToTasks() {
     if (!action) return;
     addTemporaryTask({
-      source: 'camera_diagnosis',
+      source: 'camera',
+      issueType: action.issueType,
+      followupTaskType: action.followupTaskType || null,
       titleKey: action.titleKey,
       whyKey: action.whyKey,
       stepsKey: action.stepsKey,
+      lookForKey: action.lookForKey,
+      tipKey: action.tipKey,
       urgency: action.urgency || 'today',
       priority: action.priority || 'high',
       icon: action.icon,
       iconBg: action.iconBg,
+      expiresInHours: 48,
     });
     setTaskAdded(true);
-    safeTrackEvent('camera.scan_task_added', { category: action.category });
+    safeTrackEvent('camera.scan_task_added', {
+      category: action.category, issueType: action.issueType,
+    });
   }
 
   function handleMarkDone() {
@@ -198,6 +212,8 @@ function ResultPhase({ t, action, thumb, taskAdded, onAddToTasks, onMarkDone, on
   const isHealthy = action.category === DIAGNOSIS_CATEGORY.NO_ISSUE_DETECTED;
   const isFailure = !!action.isFailure;
   const steps = action.stepsKey ? t(action.stepsKey).split('|').map(s => s.trim()).filter(Boolean) : [];
+  const lookForItems = action.lookForKey ? t(action.lookForKey).split('|').map(s => s.trim()).filter(Boolean) : [];
+  const primaryCtaKey = action.primaryCtaKey || (isHealthy ? 'camera.cta.continueCare' : 'camera.cta.addToToday');
 
   return (
     <>
@@ -219,12 +235,32 @@ function ResultPhase({ t, action, thumb, taskAdded, onAddToTasks, onMarkDone, on
           </div>
         )}
 
+        {lookForItems.length > 0 && (
+          <div style={S.stepsSection}>
+            <span style={S.whyLabel}>
+              {isHealthy ? t('camera.result.whatToDo') : t('camera.result.lookFor')}
+            </span>
+            <ul style={S.lookForList}>
+              {lookForItems.map((item, i) => (
+                <li key={i} style={S.stepItem}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {steps.length > 0 && (
           <div style={S.stepsSection}>
             <span style={S.whyLabel}>{t('camera.result.steps')}</span>
             <ol style={S.stepsList}>
               {steps.map((s, i) => <li key={i} style={S.stepItem}>{s}</li>)}
             </ol>
+          </div>
+        )}
+
+        {action.tipKey && (
+          <div style={S.tipRow}>
+            <span style={S.tipIcon}>{'\uD83D\uDCA1'}</span>
+            <span style={S.tipText}>{t(action.tipKey)}</span>
           </div>
         )}
 
@@ -235,13 +271,13 @@ function ResultPhase({ t, action, thumb, taskAdded, onAddToTasks, onMarkDone, on
         {/* CTAs */}
         {isHealthy ? (
           <button type="button" onClick={onMarkDone} style={S.primaryBtn}>
-            {t('camera.action.healthy.cta')}
+            {t(primaryCtaKey)}
           </button>
         ) : (
           <>
             {!taskAdded && !isFailure && (
               <button type="button" onClick={onAddToTasks} style={S.primaryBtn} data-testid="camera-add-task">
-                {t('camera.result.addToTasks')}
+                {t(primaryCtaKey)}
               </button>
             )}
             <div style={S.actionRow}>
@@ -322,7 +358,16 @@ const S = {
 
   stepsSection: { display: 'flex', flexDirection: 'column', gap: '0.375rem', padding: '0.75rem', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' },
   stepsList: { margin: '0.375rem 0 0', paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  lookForList: { margin: '0.375rem 0 0', paddingLeft: '1.125rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' },
   stepItem: { fontSize: '0.875rem', color: '#EAF2FF', lineHeight: 1.4 },
+  tipRow: {
+    display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
+    padding: '0.625rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(251,191,36,0.06)',
+    border: '1px solid rgba(251,191,36,0.18)',
+  },
+  tipIcon: { fontSize: '0.875rem', flexShrink: 0, lineHeight: 1.4 },
+  tipText: { fontSize: '0.8125rem', color: '#FCD34D', lineHeight: 1.4, fontWeight: 500 },
 
   addedBadge: { display: 'inline-block', alignSelf: 'center', padding: '0.375rem 0.75rem', borderRadius: '999px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.28)', color: '#86EFAC', fontSize: '0.75rem', fontWeight: 700 },
 
