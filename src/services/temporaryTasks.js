@@ -119,16 +119,32 @@ export function addTemporaryTask({
 }
 
 /**
+ * Does this temporary task count as an "issue" task that should take
+ * over the Home hero slot? Camera scans AND land-check results
+ * qualify — both are high-priority parallel-assist tasks created by
+ * the farmer outside the normal crop flow.
+ */
+function isIssueSource(t) {
+  return isCameraSource(t) || t.source === 'land_check';
+}
+
+/**
  * Return the single most recent active camera task, or null.
- * Used by Home to surface an active camera issue above the normal
- * task loop without cluttering the feed.
+ * Kept as the original name for backwards compatibility with existing
+ * call sites; widened to also cover land_check results so the one-
+ * dominant-task contract holds across both assist paths.
  */
 export function getActiveCameraTask() {
   const now = Date.now();
-  const cameraActive = read()
-    .filter(t => isCameraSource(t) && isActive(t, now))
+  const active = read()
+    .filter(t => isIssueSource(t) && isActive(t, now))
     .sort((a, b) => b.createdAt - a.createdAt);
-  return cameraActive[0] || null;
+  return active[0] || null;
+}
+
+/** Explicit alias for callers that want the source-agnostic intent. */
+export function getActiveIssueTask() {
+  return getActiveCameraTask();
 }
 
 export function listTemporaryTasks() {
