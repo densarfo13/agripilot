@@ -23,6 +23,9 @@ export default function CompletionCard({
   onContinue,
   onLater,
   onFollowUp,
+  onUndo,           // spec §1 — short-window undo
+  onReportIssue,    // spec §3 — Something is wrong
+  canUndo,          // true while the undo window is open
   variant,
 }) {
   const cs = completionState;
@@ -172,6 +175,14 @@ export default function CompletionCard({
             {t('completion.later')}
           </button>
         )}
+
+        {/* F. Correction row (spec §1 + §3) */}
+        <CorrectionRow
+          t={t}
+          canUndo={canUndo}
+          onUndo={onUndo}
+          onReportIssue={onReportIssue}
+        />
       </div>
     );
   }
@@ -271,9 +282,72 @@ export default function CompletionCard({
           </button>
         )}
       </div>
+      <CorrectionRow
+        t={t}
+        canUndo={canUndo}
+        onUndo={onUndo}
+        onReportIssue={onReportIssue}
+      />
     </div>
   );
 }
+
+// ─── Correction row (spec §1 + §3 + §10) ───────────────────
+// Undo is primary short-term; Something is wrong is secondary.
+// Both are muted, never competing with the main Continue/Later CTAs.
+function CorrectionRow({ t, canUndo, onUndo, onReportIssue }) {
+  const showUndo = canUndo && typeof onUndo === 'function';
+  const showReport = typeof onReportIssue === 'function';
+  if (!showUndo && !showReport) return null;
+
+  return (
+    <div style={CR.row} data-testid="correction-row">
+      {showUndo && (
+        <button type="button" onClick={onUndo} style={CR.undoBtn} data-testid="completion-undo">
+          {t('correction.undo')}
+        </button>
+      )}
+      {showReport && (
+        <button type="button" onClick={onReportIssue} style={CR.reportBtn} data-testid="completion-report-issue">
+          {t('correction.somethingWrong')}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const CR = {
+  row: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    marginTop: '0.5rem',
+  },
+  undoBtn: {
+    padding: '0.375rem 0.75rem',
+    borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  reportBtn: {
+    padding: '0.375rem 0.75rem',
+    borderRadius: '999px',
+    border: '1px dashed rgba(255,255,255,0.08)',
+    background: 'transparent',
+    color: '#6F8299',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+  },
+};
 
 // ─── Styles ─────────────────────────────────────────────────
 const S = {

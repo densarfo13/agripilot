@@ -6130,6 +6130,80 @@ const T = {
     en: 'Continue', fr: 'Continuer', sw: 'Endelea', ha: 'Ci gaba', tw: 'Kɔ so',
   },
 
+  // ─── Task correction flow (spec §1, §2, §3) ────────────────
+  'correction.undo': {
+    en: 'Undo', fr: 'Annuler', sw: 'Tendua', ha: 'Soke', tw: 'San yi',
+  },
+  'correction.somethingWrong': {
+    en: 'Something is wrong', fr: 'Quelque chose ne va pas', sw: 'Kuna tatizo', ha: 'Akwai matsala', tw: 'Biribi nyɛ yie',
+  },
+  'correction.markNotDone': {
+    en: 'Mark as not done', fr: 'Marquer comme non fait', sw: 'Weka kama haijakamilika', ha: 'Sanya ba a gama ba', tw: 'Kyerɛ sɛ wunyɛɛ ɛ',
+  },
+  'correction.title': {
+    en: 'What\'s wrong with this task?',
+    fr: 'Quel est le problème avec cette tâche ?',
+    sw: 'Shida ni nini kwenye kazi hii?',
+    ha: 'Mene ne matsalar wannan aiki?',
+    tw: 'Dɛn na ɛnyɛ yie wɔ adwuma yi ho?',
+  },
+  'correction.subtitle': {
+    en: 'Pick one — we\'ll fix it safely.',
+    fr: 'Choisissez une option — on corrige sans risque.',
+    sw: 'Chagua moja — tutarekebisha kwa usalama.',
+    ha: 'Zaɓi ɗaya — za mu gyara da aminci.',
+    tw: 'Paw baako — yɛbɛsiesie no dwoodwoo.',
+  },
+  'correction.reason.didntDo': {
+    en: "I didn't do this yet",
+    fr: "Je ne l'ai pas encore fait",
+    sw: 'Bado sijafanya hii',
+    ha: 'Ban yi wannan ba tukuna',
+    tw: 'Minyɛɛ yei ɛ',
+  },
+  'correction.reason.tapByMistake': {
+    en: 'I tapped by mistake',
+    fr: "J'ai appuyé par erreur",
+    sw: 'Niligusa kwa bahati mbaya',
+    ha: 'Na danna kuskure',
+    tw: 'Mekaa no mfomsoɔ mu',
+  },
+  'correction.reason.notApplicable': {
+    en: 'This does not apply to me',
+    fr: 'Cela ne me concerne pas',
+    sw: 'Hii haitumiki kwangu',
+    ha: 'Wannan bai shafe ni ba',
+    tw: 'Eyi mfa me ho',
+  },
+  'correction.reason.needHelp': {
+    en: 'I need help',
+    fr: "J'ai besoin d'aide",
+    sw: 'Ninahitaji msaada',
+    ha: 'Ina buƙatar taimako',
+    tw: 'Mehia mmoa',
+  },
+  'correction.restored': {
+    en: 'Restored — you can continue this task',
+    fr: 'Restauré — vous pouvez continuer cette tâche',
+    sw: 'Imerejeshwa — unaweza kuendelea na kazi hii',
+    ha: 'An maido — za ka iya ci gaba da wannan aiki',
+    tw: 'Wɔasan de aba — wobɛtumi atoa adwuma yi so',
+  },
+  'correction.flagged': {
+    en: 'Thanks — we\'ll use this to improve guidance',
+    fr: 'Merci — nous améliorerons les conseils',
+    sw: 'Asante — tutatumia kuboresha mwongozo',
+    ha: 'Godiya — za mu yi amfani da wannan don inganta jagora',
+    tw: 'Yɛda wo ase — yɛde eyi bɛyɛ akwankyerɛ no yiye',
+  },
+  'correction.helpMarked': {
+    en: 'We\'ll note this — keep the task visible',
+    fr: 'Nous notons cela — gardez la tâche visible',
+    sw: 'Tutaona — hifadhi kazi ionekane',
+    ha: 'Za mu lura — sa aikin ya bayyana',
+    tw: 'Yɛbɛhwɛ eyi so — ma adwuma no nna adi',
+  },
+
   // ─── Regional step/tip overrides (spec §10) ────────────────
   // Mechanized temperate tone — no "by hand" wording.
   'region.steps.clearField.mechanized': {

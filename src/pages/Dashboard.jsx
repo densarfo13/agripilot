@@ -25,7 +25,12 @@ import { useFarmerLoop } from '../hooks/useFarmerLoop.js';
 import { useDailyNotifications } from '../hooks/useDailyNotifications.js';
 import { useForecast } from '../context/ForecastContext.jsx';
 import { LOOP_STATE } from '../services/farmerLoopService.js';
-import { getActiveCameraTask, completeTemporaryTask } from '../services/temporaryTasks.js';
+import { getActiveCameraTask, completeTemporaryTask, addTemporaryTask } from '../services/temporaryTasks.js';
+import {
+  startUndoWindow, clearUndoWindow, canUndo, getActiveUndo, recordCorrection,
+  CORRECTION_REASON, statusForReason,
+} from '../services/taskCorrection.js';
+import TaskCorrectionModal from '../components/farmer/TaskCorrectionModal.jsx';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';
 import NextActionCard from '../components/NextActionCard.jsx';
@@ -88,9 +93,32 @@ export default function Dashboard() {
     };
   }, []);
   const [cameraJustDone, setCameraJustDone] = useState(false);
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [correctionTargetSource, setCorrectionTargetSource] = useState(null); // 'camera' | 'normal'
   function handleCameraDone() {
     if (!cameraTask) return;
+    // Keep a snapshot first so Undo can rebuild the task exactly.
+    const snapshot = {
+      id: cameraTask.id,
+      issueType: cameraTask.issueType,
+      followupTaskType: cameraTask.followupTaskType || null,
+      titleKey: cameraTask.titleKey,
+      whyKey: cameraTask.whyKey,
+      stepsKey: cameraTask.stepsKey,
+      lookForKey: cameraTask.lookForKey,
+      tipKey: cameraTask.tipKey,
+      urgency: cameraTask.urgency,
+      priority: cameraTask.priority,
+      icon: cameraTask.icon,
+      iconBg: cameraTask.iconBg,
+    };
     completeTemporaryTask(cameraTask.id);
+    startUndoWindow({
+      taskId: cameraTask.id,
+      source: 'camera',
+      metadata: snapshot,
+      previousStatus: 'active',
+    });
     safeTrackEvent('camera.task_completed', { issueType: cameraTask.issueType });
     // Brief reveal before dismiss — the one "signature" moment of
     // the app (spec §14). Kept short and calm, not celebratory.
@@ -99,6 +127,64 @@ export default function Dashboard() {
       setCameraJustDone(false);
       setCameraTask(null);
     }, 1400);
+  }
+
+  // ─── Correction handlers (spec §1 + §3 + §7) ────────────
+  function handleUndoCamera() {
+    const record = getActiveUndo();
+    if (!record || record.source !== 'camera' || !record.metadata) return;
+    // Restore the original camera task via the same add pipeline so
+    // clutter guards still apply. Merge-by-issueType keeps this a
+    // no-duplicate operation.
+    addTemporaryTask({
+      source: 'camera',
+      issueType: record.metadata.issueType,
+      followupTaskType: record.metadata.followupTaskType,
+      titleKey: record.metadata.titleKey,
+      whyKey: record.metadata.whyKey,
+      stepsKey: record.metadata.stepsKey,
+      lookForKey: record.metadata.lookForKey,
+      tipKey: record.metadata.tipKey,
+      urgency: record.metadata.urgency || 'today',
+      priority: record.metadata.priority || 'high',
+      icon: record.metadata.icon,
+      iconBg: record.metadata.iconBg,
+      expiresInHours: 48,
+    });
+    clearUndoWindow();
+    setCameraJustDone(false);
+    setCameraTask(getActiveCameraTask());
+    safeTrackEvent('camera.task_undone', { issueType: record.metadata.issueType });
+  }
+
+  function openCorrection(source) {
+    setCorrectionTargetSource(source);
+    setShowCorrectionModal(true);
+  }
+
+  function handleCorrectionPicked(reason) {
+    const record = getActiveUndo();
+    if (record && correctionTargetSource === 'camera' && record.source === 'camera') {
+      const nextStatus = statusForReason(reason);
+      recordCorrection({
+        taskId: record.taskId, reason, source: 'camera',
+        previousStatus: 'completed', nextStatus,
+      });
+      // For ACTIVE / HELP_REQUESTED reasons, re-open the task so the
+      // farmer sees it again. FLAGGED_FOR_REVIEW keeps it dismissed.
+      if (reason === CORRECTION_REASON.DIDNT_DO
+          || reason === CORRECTION_REASON.TAP_BY_MISTAKE
+          || reason === CORRECTION_REASON.NEED_HELP) {
+        handleUndoCamera();
+      } else {
+        clearUndoWindow();
+        setCameraJustDone(false);
+        setCameraTask(null);
+      }
+      safeTrackEvent('camera.task_corrected', { reason, issueType: record.metadata?.issueType });
+    }
+    setShowCorrectionModal(false);
+    setCorrectionTargetSource(null);
   }
 
   // ─── Notification deeplink handler ──────────────────────
@@ -327,6 +413,26 @@ export default function Dashboard() {
                 <div style={S.cameraHeroDone} data-testid="home-camera-done">
                   <span style={S.cameraHeroDoneCheck} aria-hidden="true">{'\u2714'}</span>
                   <span style={S.cameraHeroDoneText}>{t('home.cameraDone.reveal')}</span>
+                  {canUndo(cameraTask.id) && (
+                    <div style={S.cameraHeroCorrectionRow}>
+                      <button
+                        type="button"
+                        onClick={handleUndoCamera}
+                        style={S.cameraHeroUndoBtn}
+                        data-testid="camera-undo"
+                      >
+                        {t('correction.undo')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openCorrection('camera')}
+                        style={S.cameraHeroReportBtn}
+                        data-testid="camera-report-issue"
+                      >
+                        {t('correction.somethingWrong')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -402,6 +508,13 @@ export default function Dashboard() {
         )}
 
         {modals}
+
+        {showCorrectionModal && (
+          <TaskCorrectionModal
+            onPick={handleCorrectionPicked}
+            onCancel={() => { setShowCorrectionModal(false); setCorrectionTargetSource(null); }}
+          />
+        )}
       </div>
     </div>
   );
@@ -511,6 +624,24 @@ const S = {
   cameraHeroDoneText: {
     fontSize: '1rem', fontWeight: 700, color: '#EAF2FF',
     textAlign: 'center', lineHeight: 1.35, maxWidth: '20rem',
+  },
+  cameraHeroCorrectionRow: {
+    display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center',
+    flexWrap: 'wrap', marginTop: '0.5rem',
+  },
+  cameraHeroUndoBtn: {
+    padding: '0.375rem 0.875rem', borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.06)',
+    color: '#EAF2FF', fontSize: '0.75rem', fontWeight: 700,
+    cursor: 'pointer',
+  },
+  cameraHeroReportBtn: {
+    padding: '0.375rem 0.875rem', borderRadius: '999px',
+    border: '1px dashed rgba(255,255,255,0.1)',
+    background: 'transparent',
+    color: '#9FB3C8', fontSize: '0.75rem', fontWeight: 600,
+    cursor: 'pointer',
   },
 
   // Subtle "Next up" hint — renders only when a secondary task is
