@@ -95,6 +95,8 @@ export default function CameraScanPage() {
     safeTrackEvent('camera.scan_task_added', {
       category: action.category, issueType: action.issueType,
     });
+    // Home listens for this to re-read the active camera task in-place.
+    try { window.dispatchEvent(new CustomEvent('farroway:camera_task_changed')); } catch {}
   }
 
   function handleMarkDone() {
@@ -203,6 +205,7 @@ function LoadingPhase({ t, thumb }) {
         {thumb && <img src={thumb} alt="" style={S.thumbLarge} />}
         <div style={S.spinner} />
         <span style={S.loadingLabel}>{t('camera.loading')}</span>
+        <span style={S.loadingSub}>{t('camera.loading.sub')}</span>
       </div>
     </div>
   );
@@ -343,6 +346,7 @@ const S = {
   loadingWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.875rem', padding: '1.25rem' },
   spinner: { width: '2.5rem', height: '2.5rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
   loadingLabel: { fontSize: '0.9375rem', color: '#9FB3C8', fontWeight: 600 },
+  loadingSub: { fontSize: '0.8125rem', color: '#6F8299', fontWeight: 500, marginTop: '0.125rem', textAlign: 'center' },
   thumbLarge: { width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', marginBottom: '0.25rem' },
 
   resultHeader: { display: 'flex', alignItems: 'center', gap: '0.875rem', justifyContent: 'center' },

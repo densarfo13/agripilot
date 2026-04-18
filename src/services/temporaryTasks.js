@@ -14,6 +14,23 @@ const KEY = 'farroway:temporary_tasks';
 const MAX = 10;
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Clutter guard: at most N active (un-completed, un-expired) tasks
+// from the 'camera' source on Home at once. Spec §6.
+const MAX_ACTIVE_CAMERA = 2;
+
+function isCameraSource(t) {
+  return t.source === 'camera' || t.source === 'camera_diagnosis';
+}
+
+function isActive(t, now = Date.now()) {
+  return !t.completedAt && (t.expiresAt || 0) > now;
+}
+
+function isDev() {
+  try { if (typeof import.meta !== 'undefined') return !!import.meta.env?.DEV; } catch { /* ignore */ }
+  return typeof process !== 'undefined' && process.env.NODE_ENV !== 'production';
+}
+
 function read() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -42,9 +59,34 @@ export function addTemporaryTask({
   icon = '\uD83C\uDF3E', iconBg,
   expiresInHours,                       // overrides the default 7-day TTL
 } = {}) {
-  const all = prune(read());
+  let all = prune(read());
   const now = Date.now();
   const ttl = Number.isFinite(expiresInHours) ? expiresInHours * 60 * 60 * 1000 : TTL_MS;
+
+  // ─── Merge-by-issueType for camera source (spec §5, §6) ───
+  // If the same camera issueType is already active, refresh it in
+  // place instead of creating a duplicate. Keeps Home clutter-free
+  // and preserves the original id so any UI state pinned to that id
+  // survives the re-scan.
+  if (isCameraSource({ source }) && issueType) {
+    const existingIdx = all.findIndex(t =>
+      isCameraSource(t) && t.issueType === issueType && isActive(t, now)
+    );
+    if (existingIdx >= 0) {
+      all[existingIdx] = {
+        ...all[existingIdx],
+        titleKey, whyKey, stepsKey, lookForKey, tipKey,
+        urgency, priority, icon, iconBg,
+        followupTaskType,
+        createdAt: now,
+        expiresAt: now + ttl,
+        mergedCount: (all[existingIdx].mergedCount || 0) + 1,
+      };
+      write(all);
+      return all[existingIdx];
+    }
+  }
+
   const task = {
     id: `tmp_${now.toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     source, issueType, followupTaskType,
@@ -54,9 +96,39 @@ export function addTemporaryTask({
     completedAt: null,
     expiresAt: now + ttl,
   };
+
+  // ─── Max-active camera guard (spec §6) ────────────────────
+  // If adding this task would push the camera-source count past
+  // MAX_ACTIVE_CAMERA, evict the oldest active camera task first.
+  if (isCameraSource(task)) {
+    const activeCamera = all
+      .filter(t => isCameraSource(t) && isActive(t, now))
+      .sort((a, b) => a.createdAt - b.createdAt);
+    while (activeCamera.length >= MAX_ACTIVE_CAMERA) {
+      const oldest = activeCamera.shift();
+      if (isDev()) {
+        console.warn('[temporaryTasks] evicting oldest camera task to respect max-active cap', oldest.id);
+      }
+      all = all.filter(t => t.id !== oldest.id);
+    }
+  }
+
   all.push(task);
   write(all);
   return task;
+}
+
+/**
+ * Return the single most recent active camera task, or null.
+ * Used by Home to surface an active camera issue above the normal
+ * task loop without cluttering the feed.
+ */
+export function getActiveCameraTask() {
+  const now = Date.now();
+  const cameraActive = read()
+    .filter(t => isCameraSource(t) && isActive(t, now))
+    .sort((a, b) => b.createdAt - a.createdAt);
+  return cameraActive[0] || null;
 }
 
 export function listTemporaryTasks() {

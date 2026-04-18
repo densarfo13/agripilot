@@ -25,6 +25,7 @@ import { useFarmerLoop } from '../hooks/useFarmerLoop.js';
 import { useDailyNotifications } from '../hooks/useDailyNotifications.js';
 import { useForecast } from '../context/ForecastContext.jsx';
 import { LOOP_STATE } from '../services/farmerLoopService.js';
+import { getActiveCameraTask, completeTemporaryTask } from '../services/temporaryTasks.js';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';
 import NextActionCard from '../components/NextActionCard.jsx';
@@ -70,6 +71,28 @@ export default function Dashboard() {
   const [showUpdateFlow, setShowUpdateFlow] = useState(false);
   const [showFarmPicker, setShowFarmPicker] = useState(false);
   const [selectedUpdateFarm, setSelectedUpdateFarm] = useState(null);
+
+  // ─── Active camera task (spec §10: camera task sits above normal) ──
+  // Keep a local snapshot that refreshes when the farmer returns from
+  // the scan page so newly added issue tasks land immediately on Home
+  // without a full reload.
+  const [cameraTask, setCameraTask] = useState(() => getActiveCameraTask());
+  useEffect(() => {
+    const refresh = () => setCameraTask(getActiveCameraTask());
+    refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('farroway:camera_task_changed', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('farroway:camera_task_changed', refresh);
+    };
+  }, []);
+  function handleCameraDone() {
+    if (!cameraTask) return;
+    completeTemporaryTask(cameraTask.id);
+    setCameraTask(null);
+    safeTrackEvent('camera.task_completed', { issueType: cameraTask.issueType });
+  }
 
   // ─── Notification deeplink handler ──────────────────────
   // A notification click lands here with ?task=<id>. We track that the
@@ -286,6 +309,30 @@ export default function Dashboard() {
           </Suspense>
         )}
 
+        {/* Active camera issue — surfaced above normal task (spec §10) */}
+        {cameraTask && loop.profile && (
+          <div style={S.cameraTaskCard} data-testid="home-camera-task">
+            <div style={S.cameraTaskHeader}>
+              <span style={S.cameraTaskIcon} aria-hidden="true">{cameraTask.icon || '\uD83D\uDCF7'}</span>
+              <div style={S.cameraTaskInfo}>
+                <div style={S.cameraTaskLabel}>{t('camera.result.todaysAction')}</div>
+                <div style={S.cameraTaskTitle}>{t(cameraTask.titleKey)}</div>
+                {cameraTask.whyKey && (
+                  <div style={S.cameraTaskWhy}>{t(cameraTask.whyKey)}</div>
+                )}
+              </div>
+            </div>
+            <div style={S.cameraTaskCtas}>
+              <button type="button" onClick={handleCameraDone} style={S.cameraTaskDone}>
+                {t('camera.result.markDone')}
+              </button>
+              <button type="button" onClick={() => navigate('/scan-crop')} style={S.cameraTaskView}>
+                {t('camera.result.rescan')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {loop.profile && !loop.farmSwitching && (
           <NextActionCard
             decision={loop.decision}
@@ -354,6 +401,27 @@ const S = {
   },
   scanEntryIcon: { fontSize: '1.125rem', lineHeight: 1 },
   scanEntryChevron: { marginLeft: 'auto', color: '#6F8299', fontSize: '1.25rem' },
+
+  // Active camera-task card above NextActionCard (compact, one-task focus)
+  cameraTaskCard: {
+    borderRadius: '16px',
+    background: 'rgba(245,158,11,0.06)',
+    border: '1px solid rgba(245,158,11,0.28)',
+    padding: '0.875rem 1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.625rem',
+    marginBottom: '0.5rem',
+  },
+  cameraTaskHeader: { display: 'flex', gap: '0.75rem', alignItems: 'flex-start' },
+  cameraTaskIcon: { fontSize: '1.5rem', lineHeight: 1, flexShrink: 0, marginTop: '0.125rem' },
+  cameraTaskInfo: { flex: 1, minWidth: 0 },
+  cameraTaskLabel: { fontSize: '0.625rem', fontWeight: 800, color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.08em' },
+  cameraTaskTitle: { fontSize: '1rem', fontWeight: 800, color: '#EAF2FF', marginTop: '0.125rem', lineHeight: 1.25 },
+  cameraTaskWhy: { fontSize: '0.8125rem', color: '#9FB3C8', marginTop: '0.25rem', lineHeight: 1.35 },
+  cameraTaskCtas: { display: 'flex', gap: '0.5rem' },
+  cameraTaskDone: { flex: 1, padding: '0.625rem 0.75rem', borderRadius: '10px', border: 'none', background: '#22C55E', color: '#fff', fontSize: '0.8125rem', fontWeight: 800, cursor: 'pointer' },
+  cameraTaskView: { flex: 1, padding: '0.625rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer' },
   container: {
     maxWidth: '42rem',
     margin: '0 auto',
