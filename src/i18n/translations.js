@@ -24,6 +24,9 @@ const T = {
   'common.ready': {
     en: 'Ready', fr: 'Prêt', sw: 'Tayari', ha: 'A shirye', tw: 'Krado', hi: 'तैयार',
   },
+  'common.stepN': {
+    en: 'Step {n}', fr: 'Étape {n}', sw: 'Hatua {n}', ha: 'Mataki {n}', tw: 'Anammɔn {n}',
+  },
   'common.next': {
     en: 'Next', fr: 'Suivant', sw: 'Ifuatayo', ha: 'Na gaba', tw: 'Nea edi so',
   },
@@ -5749,12 +5752,18 @@ const T = {
   //  LOCATION — intake question options
   // ═══════════════════════════════════════════════════════════
   'cropFit.q.location': { en: 'Where is your farm?', fr: 'Où est votre ferme ?', sw: 'Shamba lako liko wapi?', ha: 'Ina gonar ku take?', tw: 'Wo afuo wɔ he?' },
-  'cropFit.hint.location': { en: 'This helps us match crops to your climate.', fr: 'Cela aide à trouver les cultures adaptées à votre climat.', sw: 'Hii inasaidia kupata mazao yanayofaa hali ya hewa yako.', ha: 'Wannan yana taimaka mana samun amfanin gona masu dacewa da yanayin ku.', tw: 'Eyi boa yɛn hwehwɛ nnɔbae a ɛfata wo wim tebea.' },
+  'cropFit.hint.location': { en: 'This helps us give you the right daily tasks.', fr: 'Cela nous aide à vous donner les bonnes tâches quotidiennes.', sw: 'Hii inasaidia kukupa kazi sahihi za kila siku.', ha: 'Wannan zai taimaka mana ba ka aikin yau da kullum daidai.', tw: 'Eyi boa yɛn ma yɛma wo daa adwuma a ɛfata.' },
+  'cropFit.q.country': { en: 'Select your country', fr: 'Sélectionnez votre pays', sw: 'Chagua nchi yako', ha: 'Zaɓi ƙasarka', tw: 'Paw wo ɔman' },
+  'cropFit.hint.country': { en: 'Pick the country your farm is in.', fr: 'Choisissez le pays de votre ferme.', sw: 'Chagua nchi ambapo shamba lako liko.', ha: 'Zaɓi ƙasar da gonarka take.', tw: 'Paw ɔman a w\'afuo wɔ mu.' },
+  'cropFit.q.land': { en: 'Tell us about your land', fr: 'Parlez-nous de votre terrain', sw: 'Tuambie kuhusu ardhi yako', ha: 'Gaya mana game da ƙasarka', tw: 'Ka w\'asase ho asɛm kyerɛ yɛn' },
+  'cropFit.hint.land': { en: 'This helps us guide you better. You can skip this.', fr: 'Cela nous aide à mieux vous guider. Vous pouvez passer.', sw: 'Hii inatusaidia kukuongoza vizuri zaidi. Unaweza kuruka.', ha: 'Wannan zai taimaka mana jagorarka sosai. Za ka iya tsallake.', tw: 'Eyi boa yɛn ma yɛkyerɛ wo ɔkwan yiye. Wobɛtumi atwa mu.' },
+  'cropFit.land.cleared':    { en: 'Already cleared', fr: 'Déjà dégagé', sw: 'Imesafishwa', ha: 'An tsabtace', tw: 'Atwitwa ho dada' },
+  'cropFit.land.notCleared': { en: 'Not cleared yet', fr: 'Pas encore dégagé', sw: 'Bado haijasafishwa', ha: 'Ba a tsabtace ba tukuna', tw: 'Wontwitwaa ho' },
   'cropFit.loc.eastAfrica': { en: 'East Africa (Kenya, Tanzania, Uganda...)', fr: 'Afrique de l\'Est (Kenya, Tanzanie, Ouganda...)', sw: 'Afrika Mashariki (Kenya, Tanzania, Uganda...)', ha: 'Gabashin Afrika (Kenya, Tanzania, Uganda...)', tw: 'Apueeɛ Afrika (Kenya, Tanzania, Uganda...)' },
   'cropFit.loc.westAfrica': { en: 'West Africa (Nigeria, Ghana, Senegal...)', fr: 'Afrique de l\'Ouest (Nigéria, Ghana, Sénégal...)', sw: 'Afrika Magharibi (Nigeria, Ghana, Senegal...)', ha: 'Yammacin Afrika (Nijeriya, Ghana, Senegal...)', tw: 'Atɔeɛ Afrika (Nigeria, Ghana, Senegal...)' },
   'cropFit.loc.southernAfrica': { en: 'Southern Africa (Zambia, Malawi, Zimbabwe...)', fr: 'Afrique australe (Zambie, Malawi, Zimbabwe...)', sw: 'Kusini mwa Afrika (Zambia, Malawi, Zimbabwe...)', ha: 'Kudancin Afrika (Zambia, Malawi, Zimbabwe...)', tw: 'Anafoɔ Afrika (Zambia, Malawi, Zimbabwe...)' },
   'cropFit.loc.centralAfrica': { en: 'Central Africa (DRC, Cameroon, Congo...)', fr: 'Afrique centrale (RDC, Cameroun, Congo...)', sw: 'Afrika ya Kati (DRC, Kamerun, Kongo...)', ha: 'Tsakiyar Afrika (DRC, Kamaru, Kongo...)', tw: 'Mfinimfini Afrika (DRC, Cameroon, Congo...)' },
-  'cropFit.loc.other': { en: 'Other region', fr: 'Autre région', sw: 'Eneo lingine', ha: 'Wani yanki', tw: 'Beaeɛ foforɔ' },
+  'cropFit.loc.other': { en: 'My country is not listed', fr: 'Mon pays n\'est pas listé', sw: 'Nchi yangu haijaorodheshwa', ha: 'Ƙasata ba ta cikin jerin', tw: 'Me ɔman nni nkyerɛmu yi mu' },
 
   // ═══════════════════════════════════════════════════════════
   //  BEGINNER PROMPT — dashboard entry
