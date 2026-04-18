@@ -5983,6 +5983,83 @@ const T = {
   'task.onion.dry.tips': { en: 'Keep out of rain', fr: 'Garder à l\'abri de la pluie', sw: 'Weka mbali na mvua', ha: 'Kiyaye daga ruwan sama', tw: 'Mma osu nntɔ so' },
   'task.onion.dry.outcome': { en: 'Onions are drying.', fr: 'Les oignons sèchent.', sw: 'Vitunguu vinakauka.', ha: 'Albasa na bushewa.', tw: 'Gyeene no rehyew.' },
 
+  // ═══════════════════════════════════════════════════════════
+  //  NGO / PARTNER FARMER IMPORT
+  // ═══════════════════════════════════════════════════════════
+  'import.title': { en: 'Import farmers', fr: 'Importer des agriculteurs', sw: 'Leta wakulima', ha: 'Shigo da manoma', tw: 'De akuafoɔ bra' },
+  'import.subtitle': { en: 'Upload a CSV from your system. We\'ll validate, preview, and confirm before creating records.', fr: 'Téléchargez un CSV. Nous validerons et demanderons confirmation avant de créer les enregistrements.', sw: 'Pakia CSV kutoka mfumo wako. Tutathibitisha na kuhakikisha kabla ya kuunda rekodi.', ha: 'Loda CSV daga tsarin ku. Za mu tabbatar kafin ƙirƙirar bayanai.', tw: 'Fa CSV fi wo system mu. Yɛbɛhwɛ na yɛama wo hwɛ ansa na yɛakyerɛw nsɛm no.' },
+  'import.validating': { en: 'Checking your file...', fr: 'Vérification du fichier...', sw: 'Inakagua faili yako...', ha: 'Ana duba fayil...', tw: 'Yɛrehwɛ wo fayel no...' },
+  'import.importing': { en: 'Importing farmers...', fr: 'Importation en cours...', sw: 'Inaleta wakulima...', ha: 'Ana shigo da manoma...', tw: 'Yɛde akuafoɔ reba...' },
+
+  // Entry phase
+  'import.entry.title': { en: 'Upload farmer file', fr: 'Envoyer le fichier', sw: 'Pakia faili ya wakulima', ha: 'Loda fayil na manoma', tw: 'Fa akuafoɔ fayel bra' },
+  'import.entry.body': { en: 'Supported: CSV. XLSX support is coming soon.', fr: 'Formats pris en charge : CSV. XLSX bientôt.', sw: 'Zinazotumika: CSV. XLSX itapatikana hivi karibuni.', ha: 'Ana tallafawa: CSV. XLSX za ta zo nan ba da daɗewa ba.', tw: 'Ɛsɛ: CSV. XLSX reba.' },
+  'import.entry.organizationId': { en: 'Organization ID', fr: 'ID de l\'organisation', sw: 'Kitambulisho cha shirika', ha: 'ID na Ƙungiya', tw: 'Kuo ID' },
+  'import.entry.organizationIdHint': { en: 'Optional — tags the batch to your org', fr: 'Optionnel — lie le lot à votre organisation', sw: 'Si lazima — huunganisha kundi na shirika lako', ha: 'Ba dole ba — tana alaƙar batch da ƙungiyar ku', tw: 'Ɛho nhia — ɛde batch ka wo kuo ho' },
+  'import.entry.mode': { en: 'Import mode', fr: 'Mode d\'importation', sw: 'Hali ya kuleta', ha: 'Yanayin shigo da', tw: 'Shigiri kwan' },
+  'import.entry.modeCreateUpdate': { en: 'Create new + update matched farmers', fr: 'Créer + mettre à jour les correspondances', sw: 'Unda wapya + sasisha wanaoendana', ha: 'Ƙirƙira sabbin + sabunta daidai-daiye', tw: 'Yɛ foforɔ + sesa deɛ ɛhyia' },
+  'import.entry.modeCreateOnly': { en: 'Create new only (skip matches)', fr: 'Créer uniquement (ignorer les correspondances)', sw: 'Unda wapya tu (ruka wanaoendana)', ha: 'Kawai ƙirƙira sabbin (tsallake daidai)', tw: 'Yɛ foforɔ nkoaa (twa mu deɛ ɛhyia)' },
+  'import.entry.downloadTemplate': { en: 'Download template', fr: 'Télécharger le modèle', sw: 'Pakua kiolezo', ha: 'Sauke samfuri', tw: 'Yi template' },
+  'import.entry.uploadFile': { en: 'Upload file', fr: 'Envoyer un fichier', sw: 'Pakia faili', ha: 'Loda fayil', tw: 'Fa fayel bra' },
+  'import.entry.formatHint': { en: 'CSV up to 5 MB / 10,000 rows.', fr: 'CSV jusqu\'à 5 Mo / 10 000 lignes.', sw: 'CSV hadi MB 5 / safu 10,000.', ha: 'CSV har 5 MB / layuka 10,000.', tw: 'CSV kɔsi 5 MB / nkyerɛmu 10,000.' },
+
+  // Preview phase counts
+  'import.preview.title': { en: 'Validation summary', fr: 'Résumé de validation', sw: 'Muhtasari wa uthibitishaji', ha: 'Taƙaitaccen tantancewa', tw: 'Nhwehwɛmu nsɛm tiaa' },
+  'import.preview.total': { en: 'Total rows', fr: 'Lignes totales', sw: 'Jumla ya safu', ha: 'Jimlar layuka', tw: 'Nkyerɛmu nyinaa' },
+  'import.preview.newCount': { en: 'New', fr: 'Nouveaux', sw: 'Wapya', ha: 'Sabbin', tw: 'Foforɔ' },
+  'import.preview.updateCount': { en: 'Update', fr: 'Mise à jour', sw: 'Sasisha', ha: 'Sabunta', tw: 'Sesa' },
+  'import.preview.duplicateInFile': { en: 'Duplicates', fr: 'Doublons', sw: 'Marudiwa', ha: 'Kwafin', tw: 'Mprɛnu' },
+  'import.preview.invalid': { en: 'Invalid', fr: 'Invalides', sw: 'Batili', ha: 'Ba su da inganci', tw: 'Ɛntu' },
+  'import.preview.warnings': { en: 'Warnings', fr: 'Avertissements', sw: 'Onyo', ha: 'Gargaɗi', tw: 'Kɔkɔbɔ' },
+  'import.preview.tableTitle': { en: 'Preview', fr: 'Aperçu', sw: 'Onyesho la awali', ha: 'Misali', tw: 'Hwɛ di kan' },
+  'import.preview.col.row': { en: 'Row', fr: 'Ligne', sw: 'Safu', ha: 'Layi', tw: 'Nkyerɛmu' },
+  'import.preview.col.name': { en: 'Name', fr: 'Nom', sw: 'Jina', ha: 'Suna', tw: 'Din' },
+  'import.preview.col.phone': { en: 'Phone', fr: 'Téléphone', sw: 'Simu', ha: 'Waya', tw: 'Fon' },
+  'import.preview.col.location': { en: 'Location', fr: 'Lieu', sw: 'Mahali', ha: 'Wuri', tw: 'Baabi' },
+  'import.preview.col.crop': { en: 'Crop', fr: 'Culture', sw: 'Zao', ha: 'Amfanin gona', tw: 'Nnɔbae' },
+  'import.preview.col.status': { en: 'Status', fr: 'Statut', sw: 'Hali', ha: 'Yanayi', tw: 'Tebea' },
+  'import.preview.truncated': { en: 'Showing {shown} of {total} rows', fr: 'Affichage de {shown} sur {total} lignes', sw: 'Inaonyesha {shown} kati ya {total}', ha: 'Ana nuna {shown} cikin {total}', tw: 'Yɛrekyerɛ {shown} wɔ {total} mu' },
+  'import.preview.confirm': { en: 'Import {count} farmers', fr: 'Importer {count} agriculteurs', sw: 'Leta wakulima {count}', ha: 'Shigo da manoma {count}', tw: 'De akuafoɔ {count} bra' },
+  'import.preview.exportErrors': { en: 'Export errors', fr: 'Exporter les erreurs', sw: 'Hamisha makosa', ha: 'Fitar da kurakurai', tw: 'Yi mfomsoɔ' },
+
+  // Row import statuses
+  'import.status.new': { en: 'New', fr: 'Nouveau', sw: 'Mpya', ha: 'Sabo', tw: 'Foforɔ' },
+  'import.status.update_existing': { en: 'Update', fr: 'Mise à jour', sw: 'Sasisha', ha: 'Sabunta', tw: 'Sesa' },
+  'import.status.duplicate_in_file': { en: 'Duplicate', fr: 'Doublon', sw: 'Marudio', ha: 'Kwafi', tw: 'Mprɛnu' },
+  'import.status.invalid': { en: 'Invalid', fr: 'Invalide', sw: 'Batili', ha: 'Ba shi da inganci', tw: 'Ɛntu' },
+
+  // Issue messages
+  'import.issue.missingName': { en: 'Missing full name', fr: 'Nom complet manquant', sw: 'Jina kamili halipo', ha: 'Babu cikakken suna', tw: 'Din anhye' },
+  'import.issue.missingPhone': { en: 'Missing phone number', fr: 'Numéro manquant', sw: 'Nambari ya simu haipo', ha: 'Babu lambar waya', tw: 'Fon nɔma anhye' },
+  'import.issue.invalidPhone': { en: 'Phone number looks too short', fr: 'Numéro trop court', sw: 'Nambari ni fupi mno', ha: 'Lambar waya ta yi gajeru', tw: 'Fon nɔma tia dodo' },
+  'import.issue.missingCountry': { en: 'Missing country', fr: 'Pays manquant', sw: 'Nchi haipo', ha: 'Babu ƙasa', tw: 'Ɔman anhye' },
+  'import.issue.missingRegion': { en: 'Missing region/state', fr: 'Région/État manquant', sw: 'Mkoa haupo', ha: 'Babu yanki', tw: 'Mantam anhye' },
+  'import.issue.unknownCrop': { en: 'Crop not recognized', fr: 'Culture non reconnue', sw: 'Zao halitambuliki', ha: 'Amfanin gonar ba a gane ba', tw: 'Yɛnhu nnɔbae no' },
+  'import.issue.unknownLanguage': { en: 'Language not supported', fr: 'Langue non prise en charge', sw: 'Lugha haitumiki', ha: 'Ba a tallafawa harshen ba', tw: 'Yɛmma kasa yi ho kwan' },
+  'import.issue.duplicateInFile': { en: 'Already in this file', fr: 'Déjà dans le fichier', sw: 'Tayari kwenye faili', ha: 'Tuni a cikin fayil', tw: 'Ɛwɔ fayel yi mu dada' },
+
+  // Result phase
+  'import.result.title': { en: 'Import complete', fr: 'Importation terminée', sw: 'Kuleta kumekamilika', ha: 'An gama shigo da', tw: 'Ɔdebra no awie' },
+  'import.result.created': { en: 'Created', fr: 'Créés', sw: 'Imeundwa', ha: 'An ƙirƙira', tw: 'Woayɛ' },
+  'import.result.updated': { en: 'Updated', fr: 'Mises à jour', sw: 'Imesasishwa', ha: 'An sabunta', tw: 'Woasesa' },
+  'import.result.skipped': { en: 'Skipped', fr: 'Ignorés', sw: 'Yameachwa', ha: 'An tsallake', tw: 'Woatwa mu' },
+  'import.result.invalid': { en: 'Rejected', fr: 'Rejetés', sw: 'Yamekataliwa', ha: 'An ƙi', tw: 'Woapo' },
+  'import.result.batchId': { en: 'Batch ID: {id}', fr: 'ID de lot : {id}', sw: 'Kitambulisho cha kundi: {id}', ha: 'ID na batch: {id}', tw: 'Batch ID: {id}' },
+  'import.result.errorsTitle': { en: 'Issues to review', fr: 'Problèmes à examiner', sw: 'Masuala ya kukagua', ha: 'Al\'amura don bita', tw: 'Nsɛm a ɛsɛ sɛ wohwɛ' },
+  'import.result.rowLabel': { en: 'Row', fr: 'Ligne', sw: 'Safu', ha: 'Layi', tw: 'Nkyerɛmu' },
+  'import.result.done': { en: 'Done', fr: 'Terminé', sw: 'Imeisha', ha: 'An gama', tw: 'Awie' },
+
+  // File-level errors
+  'import.error.noFile': { en: 'No file selected', fr: 'Aucun fichier sélectionné', sw: 'Hakuna faili lililochaguliwa', ha: 'Ba a zaɓi fayil ba', tw: 'Wonpaw fayel biara' },
+  'import.error.fileTooLarge': { en: 'File is too large (max 5 MB)', fr: 'Fichier trop grand (5 Mo max)', sw: 'Faili ni kubwa mno (kiwango 5 MB)', ha: 'Fayil ya yi girma sosai (iyakar 5 MB)', tw: 'Fayel no sõ dodo (5 MB)' },
+  'import.error.unsupportedFormat': { en: 'Unsupported file format', fr: 'Format non supporté', sw: 'Muundo wa faili hautumiki', ha: 'Tsarin fayil ba a tallafawa ba', tw: 'Fayel format no nnyɛ' },
+  'import.error.xlsxNotYet': { en: 'XLSX is coming soon — please upload CSV for now', fr: 'XLSX bientôt — veuillez envoyer un CSV', sw: 'XLSX inakuja hivi karibuni — tafadhali tuma CSV kwa sasa', ha: 'XLSX za ta zo nan ba da daɗewa ba — don Allah aika CSV a yanzu', tw: 'XLSX reba — fa CSV bra seesei' },
+  'import.error.emptyFile': { en: 'File is empty', fr: 'Fichier vide', sw: 'Faili liko tupu', ha: 'Fayil yana fanko', tw: 'Fayel no mu da mpan' },
+  'import.error.tooManyRows': { en: 'File has too many rows (max 10,000)', fr: 'Trop de lignes (max 10 000)', sw: 'Faili lina safu nyingi mno (10,000)', ha: 'Fayil yana da layuka da yawa (iyakar 10,000)', tw: 'Fayel no nkyerɛmu dɔɔso (10,000)' },
+  'import.error.generic': { en: 'Something went wrong', fr: 'Une erreur est survenue', sw: 'Kuna tatizo limetokea', ha: 'Wani kuskure ya faru', tw: 'Biribi akɔ mfomso' },
+  'import.error.noErrorsToExport': { en: 'No errors to export', fr: 'Aucune erreur à exporter', sw: 'Hakuna makosa ya kuhamisha', ha: 'Babu kurakurai don fitarwa', tw: 'Mfomsoɔ biara nni hɔ' },
+  'import.error.missingSaver': { en: 'Import is not configured — contact support', fr: 'Importation non configurée — contactez le support', sw: 'Uingizaji haujawekwa — wasiliana na msaada', ha: 'Ba a saita shigo da ba — tuntuɓi goyon baya', tw: 'Wɔnsiesie ɔdebra — frɛ boafoɔ' },
+
   // ─── Region-flavoured task title variants (V2 spec §5) ──
   'cropTask.region.clearFieldManual': { en: 'Cut weeds and clear by hand', fr: 'Couper les mauvaises herbes à la main', sw: 'Kata magugu kwa mkono', ha: 'Yanke ciyawa da hannu', tw: 'Twa wura no fi nsa' },
   'cropTask.region.prepareLandManualTropical': { en: 'Loosen the soil with a hoe', fr: 'Ameublir le sol à la houe', sw: 'Laini udongo kwa jembe', ha: 'Sassauta ƙasa da fartanya', tw: 'Dwodwo asase no de asɔsɔ' },
