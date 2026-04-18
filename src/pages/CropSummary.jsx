@@ -23,6 +23,7 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import { getInitialTask, getContextAwareInitialTask } from '../engine/cropTaskMap.js';
 import { resolveRegionProfile } from '../engine/regionProfiles.js';
 import { isBetaCrop } from '../engine/cropDefinitions.js';
+import { resolveCropStage } from '../engine/cropCalendar.js';
 import BetaWarningModal from '../components/BetaWarningModal.jsx';
 
 const STAGE_ICONS = {
@@ -140,9 +141,17 @@ export default function CropSummary() {
       const freshProfile = await refreshProfile().catch(() => null);
       await refreshFarms?.().catch(() => {});
 
+      // Calendar-aware initial stage: MAIZE in GH started in March
+      // begins at land_preparation; started in August it begins at
+      // harvest. Falls back to 'land_preparation' when we have no
+      // calendar data for this country + crop.
+      const country = profile?.country || answers?.country || null;
+      const calendarStage = resolveCropStage({ country, crop: crop.code });
+      const initialStage = calendarStage || 'land_preparation';
+
       const farmId = freshProfile?.id || profile?.id;
       if (farmId) {
-        await updateCropStage(farmId, 'land_preparation').catch(() => {});
+        await updateCropStage(farmId, initialStage).catch(() => {});
         await refreshProfile().catch(() => {});
       }
 
@@ -150,22 +159,24 @@ export default function CropSummary() {
       // so Home can render immediately. Region resolution makes the
       // phrasing match where the farmer is; the base override guarantees
       // a real task exists for MAIZE and other launch-standard crops.
-      const region = resolveRegionProfile(profile?.country || answers?.country);
+      const region = resolveRegionProfile(country);
       const experience = answers?.experience || null;
       const initialTask = getContextAwareInitialTask({
         crop: crop.code,
-        stage: 'land_preparation',
+        stage: initialStage,
         region,
         experience,
-      }) || getInitialTask(crop.code, 'land_preparation');
+      }) || getInitialTask(crop.code, initialStage);
       if (import.meta.env?.DEV && !initialTask) {
-        console.warn('[CropSummary] No initial task found for', crop.code, 'land_preparation');
+        console.warn('[CropSummary] No initial task found for', crop.code, initialStage);
       }
 
       safeTrackEvent('cropFit.plan_started', {
         code: crop.code,
         initialTaskType: initialTask?.type || 'fallback',
-        stage: 'land_preparation',
+        stage: initialStage,
+        stageFromCalendar: calendarStage,
+        country,
         region: region?.id,
         regionHinted: !!initialTask?.regionHinted,
         farmSaved,
