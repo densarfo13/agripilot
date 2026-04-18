@@ -19,6 +19,7 @@ import { useTranslation } from '../i18n/index.js';
 import { calculateFarmScore } from '../lib/farmScore.js';
 import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
+import { useForecast } from '../context/ForecastContext.jsx';
 
 /**
  * Build a lightweight fingerprint of decision-relevant fields.
@@ -52,6 +53,7 @@ function inputHash(profile, primaryTask, taskCount, completedCount, weather, isO
 export function useFarmDecision({ profile, primaryTask, taskCount, completedCount, weather, fetchedAt, freshness, isOnline, taskLoading }) {
   const { t, lang } = useTranslation();
   const { isBasic } = useUserMode();
+  const { rainfall } = useForecast();
   const prevHashRef = useRef('');
   const prevDecisionRef = useRef(null);
 
@@ -85,19 +87,26 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
     return result;
   }, [profile, setupComplete, primaryTask, taskCount, completedCount, weather, isOnline, taskLoading, t, lang]);
 
+  // Enrich weather with 7-day forecast total when available
+  const enrichedWeather = useMemo(() => {
+    if (!weather) return weather;
+    if (!rainfall || !rainfall.totalRainMm) return weather;
+    return { ...weather, forecastRainWeekMm: rainfall.totalRainMm };
+  }, [weather, rainfall]);
+
   // Weather decision — display-ready chip + action + timestamp + override
   const weatherDecision = useMemo(() => {
     const crop = profile?.cropType || profile?.crop || '';
     const stage = profile?.cropStage || '';
     return getWeatherDecision({
-      weather,
+      weather: enrichedWeather,
       crop,
       stage,
       currentTask: primaryTask,
       fetchedAt: fetchedAt || null,
       freshness: freshness || 'none',
     }, t);
-  }, [weather, profile, primaryTask, fetchedAt, freshness, t]);
+  }, [enrichedWeather, profile, primaryTask, fetchedAt, freshness, t]);
 
   // Task view model — THE single source of truth for rendering
   const taskViewModel = useMemo(() => {
@@ -113,8 +122,9 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       mode: isBasic ? 'simple' : 'standard',
       cropStage,
       weather,
+      rainfall,
     });
-  }, [decision, primaryTask, lang, t, isBasic, profile, weather]);
+  }, [decision, primaryTask, lang, t, isBasic, profile, weather, rainfall]);
 
   return {
     loading: taskLoading || !decision,

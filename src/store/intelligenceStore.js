@@ -12,6 +12,7 @@ import {
   reviewPestReport as apiReviewPestReport,
   triggerFarmScoring, triggerRegionScoring,
 } from '../lib/intelligenceAdminApi.js';
+import { logActivity } from '../services/activityLogger.js';
 
 // ─── localStorage cache ──────────────────────────────
 const CACHE_KEY = 'farroway:intel';
@@ -105,6 +106,7 @@ export const useIntelligenceStore = create((set, get) => ({
     const raw = await createPestReport({ ...reportData, imageIds });
     const report = raw?.data || raw;
     set({ pestReportResult: report });
+    logActivity('pest_report_submitted', { reportId: report?.reportId || report?.id }, { farmId: reportData?.farmId });
     return report;
   }),
 

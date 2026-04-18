@@ -78,6 +78,7 @@ const AdminOpsPage = lazy(() => import('./pages/AdminOpsPage.jsx'));
 const SupplyReadinessPage = lazy(() => import('./pages/SupplyReadinessPage.jsx'));
 const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx'));
 const BuyerTrustPage = lazy(() => import('./pages/BuyerTrustPage.jsx'));
+const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage.jsx'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
 
 // Intelligence pages (farmer-facing, V2 cookie auth)
@@ -107,6 +108,8 @@ import { NetworkProvider } from './context/NetworkContext.jsx';
 import { AppPrefsProvider } from './context/AppPrefsContext.jsx';
 import { UserModeProvider } from './context/UserModeContext.jsx';
 import { WeatherProvider } from './context/WeatherContext.jsx';
+import { ForecastProvider } from './context/ForecastContext.jsx';
+import { MarketProvider } from './context/MarketContext.jsx';
 import { SeasonProvider } from './context/SeasonContext.jsx';
 
 const PageLoader = () => (
@@ -201,6 +204,8 @@ export default function App() {
       <V2ProfileProvider>
       <UserModeProvider>
       <WeatherProvider>
+      <ForecastProvider>
+      <MarketProvider>
       <SeasonProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
@@ -280,6 +285,7 @@ export default function App() {
             <Route path="admin/supply" element={<RoleRoute roles={ADMIN_ROLES}><SupplyReadinessPage /></RoleRoute>} />
             <Route path="admin/buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerManagementPage /></RoleRoute>} />
             <Route path="admin/buyer-trust" element={<RoleRoute roles={ADMIN_ROLES}><BuyerTrustPage /></RoleRoute>} />
+            <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
             <Route path="admin/intelligence/regional-risk" element={<RoleRoute roles={ADMIN_ROLES}><AdminRegionalRiskMap /></RoleRoute>} />
             <Route path="admin/intelligence/high-risk-farms" element={<RoleRoute roles={ADMIN_ROLES}><AdminHighRiskFarms /></RoleRoute>} />
             <Route path="admin/intelligence/hotspots" element={<RoleRoute roles={ADMIN_ROLES}><AdminHotspotInspector /></RoleRoute>} />
@@ -295,6 +301,8 @@ export default function App() {
       </Suspense>
       </AuthLoadingGate>
       </SeasonProvider>
+      </MarketProvider>
+      </ForecastProvider>
       </WeatherProvider>
       </UserModeProvider>
       </V2ProfileProvider>

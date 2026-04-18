@@ -15,6 +15,7 @@ import { enqueue } from '../utils/offlineQueue.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { getIdempotencyKey, consumeIdempotencyKey } from '../lib/idempotency.js';
 import { recordStageChange } from '../lib/stageHistory.js';
+import { logActivity } from './activityLogger.js';
 
 /**
  * Save a crop stage update with local-first pattern.
@@ -53,6 +54,7 @@ export async function saveCropStage(farmId, stage, { isOnline, refreshProfile, p
     }
 
     safeTrackEvent('crop_stage.save_success', { farmId, stage });
+    logActivity('crop_stage_updated', { stage, previousStage }, { farmId });
     return { success: true, offline: false, error: null };
   } catch (err) {
     // Network error → queue for offline sync

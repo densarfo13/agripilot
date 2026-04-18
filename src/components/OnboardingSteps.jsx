@@ -27,7 +27,24 @@ const TOP_CROPS = [
   { code: 'ONION',   icon: '\uD83E\uDDC5' },
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
+
+// ── Gender & age options for optional demographics step ──────
+const GENDER_OPTIONS = [
+  { value: 'male',              icon: '\uD83D\uDC68\u200D\uD83C\uDF3E' },
+  { value: 'female',            icon: '\uD83D\uDC69\u200D\uD83C\uDF3E' },
+  { value: 'other',             icon: '\uD83E\uDDD1\u200D\uD83C\uDF3E' },
+  { value: 'prefer_not_to_say', icon: '\u2014'                         },
+];
+
+const AGE_OPTIONS = [
+  { value: 'under_25' },
+  { value: '25_34'    },
+  { value: '35_44'    },
+  { value: '45_54'    },
+  { value: '55_plus'  },
+  { value: 'prefer_not_to_say' },
+];
 
 const FARM_SIZES = [
   { key: 'small',  acres: 1,  icon: '\uD83C\uDF31' },
@@ -68,6 +85,8 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
     farmSizeCategory: '',
     farmSizeAcres: 0,
     farmName: '',
+    gender: '',
+    ageGroup: '',
   });
 
   // Location-detection state
@@ -311,16 +330,78 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
       />
       <button
         style={{ ...S.primaryBtn, marginTop: '1.5rem' }}
-        onClick={handleSubmit}
+        onClick={next}
         disabled={!formData.farmName.trim()}
       >
+        {t('onboarding.next')}
+      </button>
+    </div>
+  );
+
+  // ── Step 6 — Optional Demographics ────────────────────────
+  const renderStep6 = () => (
+    <div style={S.stepBody}>
+      <h2 style={S.heading}>{t('onboarding.demographics.title')}</h2>
+      <p style={S.demoSubtitle}>{t('onboarding.demographics.subtitle')}</p>
+
+      {/* Gender */}
+      <div style={S.demoSection}>
+        <div style={S.demoLabel}>{t('onboarding.demographics.gender')}</div>
+        <div style={S.demoRow}>
+          {GENDER_OPTIONS.map((g) => (
+            <button
+              key={g.value}
+              style={{
+                ...S.demoChip,
+                borderColor: formData.gender === g.value ? '#22C55E' : 'rgba(255,255,255,0.1)',
+                background: formData.gender === g.value ? 'rgba(34,197,94,0.12)' : '#1B2330',
+              }}
+              onClick={() => update({ gender: formData.gender === g.value ? '' : g.value })}
+            >
+              <span style={S.demoChipIcon}>{g.icon}</span>
+              <span style={S.demoChipLabel}>{t(`gender.${g.value === 'prefer_not_to_say' ? 'preferNotToSay' : g.value}`)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Age range */}
+      <div style={S.demoSection}>
+        <div style={S.demoLabel}>{t('onboarding.demographics.ageRange')}</div>
+        <div style={S.demoRow}>
+          {AGE_OPTIONS.map((a) => (
+            <button
+              key={a.value}
+              style={{
+                ...S.ageChip,
+                borderColor: formData.ageGroup === a.value ? '#22C55E' : 'rgba(255,255,255,0.1)',
+                background: formData.ageGroup === a.value ? 'rgba(34,197,94,0.12)' : '#1B2330',
+              }}
+              onClick={() => update({ ageGroup: formData.ageGroup === a.value ? '' : a.value })}
+            >
+              {t(`age.${a.value}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button
+        style={{ ...S.primaryBtn, marginTop: '1.5rem' }}
+        onClick={handleSubmit}
+      >
         {t('onboarding.startFarming')}
+      </button>
+      <button
+        style={S.skipBtn}
+        onClick={handleSubmit}
+      >
+        {t('onboarding.demographics.skip')}
       </button>
     </div>
   );
 
   // ── Render ────────────────────────────────────────────────
-  const stepRenderers = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5];
+  const stepRenderers = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6];
 
   return (
     <div style={S.container}>
@@ -577,5 +658,77 @@ const S = {
   sizeRange: {
     fontSize: '0.7rem',
     color: 'rgba(255,255,255,0.5)',
+  },
+
+  // ── Demographics step (Step 6) ──
+  demoSubtitle: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    marginTop: '-0.75rem',
+    marginBottom: '1.25rem',
+    maxWidth: 320,
+    lineHeight: 1.4,
+  },
+  demoSection: {
+    width: '100%',
+    maxWidth: 360,
+    marginBottom: '1.25rem',
+  },
+  demoLabel: {
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: '0.5rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+  },
+  demoRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.5rem',
+  },
+  demoChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    padding: '0.6rem 0.85rem',
+    borderRadius: '10px',
+    border: '2px solid rgba(255,255,255,0.1)',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.15s, background 0.15s',
+    background: '#1B2330',
+  },
+  demoChipIcon: {
+    fontSize: '1.1rem',
+  },
+  demoChipLabel: {
+    fontSize: '0.85rem',
+  },
+  ageChip: {
+    padding: '0.55rem 0.75rem',
+    borderRadius: '10px',
+    border: '2px solid rgba(255,255,255,0.1)',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontWeight: 500,
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.15s, background 0.15s',
+    background: '#1B2330',
+  },
+  skipBtn: {
+    marginTop: '0.75rem',
+    background: 'none',
+    border: 'none',
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    padding: '0.5rem',
+    WebkitTapHighlightColor: 'transparent',
   },
 };

@@ -10,6 +10,7 @@ import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, toHectares } from '../utils/landSize.js';
 import { parseCropValue } from '../utils/crops.js';
 import { createNewFarm } from '../lib/api.js';
+import { logActivity } from '../services/activityLogger.js';
 import CropSelect from '../components/CropSelect.jsx';
 import VoicePromptButton from '../components/VoicePromptButton.jsx';
 import OnboardingSteps from '../components/OnboardingSteps.jsx';
@@ -417,6 +418,8 @@ export default function ProfileSetup() {
       gpsLng: data.gpsLng ? String(data.gpsLng) : '',
       locationLabel: data.locationName || '',
       experienceLevel: data.experienceLevel || '',
+      gender: data.gender || '',
+      ageGroup: data.ageGroup || '',
     };
     // Populate form and auto-submit
     setForm(mapped);
@@ -432,6 +435,8 @@ export default function ProfileSetup() {
       clearDraft();
       trackPilotEvent('setup_completed', { hasGps: !!mapped.gpsLat, flow: 'onboarding_steps' });
       safeTrackEvent('profile.onboarding_steps_completed', { crop: mapped.cropType });
+      logActivity('farm_created', { crop: mapped.cropType, flow: 'onboarding_steps', gender: mapped.gender, ageGroup: mapped.ageGroup }, { farmId: result?.profile?.id });
+      logActivity('onboarding_completed', { flow: 'onboarding_steps', gender: mapped.gender, ageGroup: mapped.ageGroup }, { farmId: result?.profile?.id });
       if (result?.profile?.id) {
         try { await switchFarm(result.profile.id); } catch {}
       }

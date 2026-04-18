@@ -2018,6 +2018,116 @@ const T = {
     en: 'Clear filters', fr: 'Effacer les filtres', sw: 'Futa vichujio', ha: 'Share tace', tw: 'Pepa nhwehwɛmu',
   },
 
+  // ─── Admin Analytics ─────────────────────────────────────
+  'admin.analytics': {
+    en: 'Farmer Analytics', fr: 'Analytique agriculteurs', sw: 'Uchambuzi wa Wakulima', ha: 'Nazarin Manoma', tw: 'Akuafo Nsɛm Nhwehwɛmu',
+  },
+  'admin.totalFarmers': {
+    en: 'Total Farmers', fr: 'Total agriculteurs', sw: 'Jumla ya Wakulima', ha: 'Jimlar Manoma', tw: 'Akuafo Nyinaa',
+  },
+  'admin.newToday': {
+    en: 'New Today', fr: 'Nouveaux aujourd\'hui', sw: 'Wapya Leo', ha: 'Sabbin Yau', tw: 'Foforo Ɛnnɛ',
+  },
+  'admin.activeToday': {
+    en: 'Active Today', fr: 'Actifs aujourd\'hui', sw: 'Hai Leo', ha: 'Masu Aiki Yau', tw: 'Wɔyɛ Adwuma Ɛnnɛ',
+  },
+  'admin.activeWeek': {
+    en: 'Active This Week', fr: 'Actifs cette semaine', sw: 'Hai Wiki Hii', ha: 'Masu Aiki Wannan Mako', tw: 'Wɔyɛ Adwuma Dapɛn Yi',
+  },
+  'admin.onboardingRate': {
+    en: 'Onboarding Rate', fr: 'Taux d\'intégration', sw: 'Kiwango cha Uandikishaji', ha: 'Adadin Shigarwa', tw: 'Ahyɛaseɛ Dodow',
+  },
+  'admin.newFarmersByDay': {
+    en: 'New Farmers by Day', fr: 'Nouveaux agriculteurs par jour', sw: 'Wakulima Wapya kwa Siku', ha: 'Sabbin Manoma ta Rana', tw: 'Akuafo Foforo Da Biara',
+  },
+  'admin.eventCounts': {
+    en: 'Event Counts', fr: 'Nombre d\'événements', sw: 'Hesabu za Matukio', ha: 'Ƙidayar Abubuwa', tw: 'Nsɛm Dodow',
+  },
+  'admin.recentActivity': {
+    en: 'Recent Activity', fr: 'Activité récente', sw: 'Shughuli za Hivi Karibuni', ha: 'Ayyukan Kwanan nan', tw: 'Adwuma a Ɛyɛɛ Nnaansa Yi',
+  },
+  'admin.evtRegistered': {
+    en: 'Registered', fr: 'Inscrit', sw: 'Amesajiliwa', ha: 'Ya yi rijista', tw: 'Wɔakyerɛw din',
+  },
+  'admin.evtOnboarded': {
+    en: 'Onboarding Done', fr: 'Intégration terminée', sw: 'Uandikishaji Umekamilika', ha: 'Shigarwa ta Cika', tw: 'Ahyɛaseɛ Awie',
+  },
+  'admin.evtFarmCreated': {
+    en: 'Farm Created', fr: 'Ferme créée', sw: 'Shamba Limeundwa', ha: 'An ƙirƙiri Gona', tw: 'Wɔayɛ Afuo',
+  },
+  'admin.evtStageUpdate': {
+    en: 'Stage Updated', fr: 'Étape mise à jour', sw: 'Hatua Imesasishwa', ha: 'An sabunta Mataki', tw: 'Wɔasakra Anamɔntuo',
+  },
+  'admin.evtPestReport': {
+    en: 'Pest Report', fr: 'Rapport ravageur', sw: 'Ripoti ya Wadudu', ha: 'Rahoton Ƙwari', tw: 'Nsusuananmu Ho Amanneɛ',
+  },
+  'admin.evtActionDone': {
+    en: 'Action Completed', fr: 'Action terminée', sw: 'Kitendo Kimekamilika', ha: 'Aiki Ya Cika', tw: 'Adwuma Awie',
+  },
+  'admin.evtSeasonStart': {
+    en: 'Season Started', fr: 'Saison commencée', sw: 'Msimu Umeanza', ha: 'Lokaci Ya Fara', tw: 'Bere Ahyɛ Aseɛ',
+  },
+  'admin.evtLogin': {
+    en: 'Login', fr: 'Connexion', sw: 'Kuingia', ha: 'Shiga', tw: 'Bra mu',
+  },
+  // Section titles
+  'admin.farmerGrowth': {
+    en: 'Farmer Growth', fr: 'Croissance agriculteurs', sw: 'Ukuaji wa Wakulima', ha: 'Haɓakar Manoma', tw: 'Akuafo Nkɔso',
+  },
+  'admin.onboardingFunnel': {
+    en: 'Onboarding Funnel', fr: 'Entonnoir d\'intégration', sw: 'Mfereji wa Uandikishaji', ha: 'Tsarin Shigarwa', tw: 'Ahyɛaseɛ Fanel',
+  },
+  'admin.activityOverview': {
+    en: 'Activity Today', fr: 'Activité aujourd\'hui', sw: 'Shughuli za Leo', ha: 'Ayyukan Yau', tw: 'Ɛnnɛ Adwuma',
+  },
+  'admin.alertsRisk': {
+    en: 'Alerts / Risk', fr: 'Alertes / Risques', sw: 'Tahadhari / Hatari', ha: 'Faɗakarwa / Haɗari', tw: 'Kɔkɔbɔ / Asiane',
+  },
+  'admin.cropBreakdown': {
+    en: 'Farms by Crop', fr: 'Fermes par culture', sw: 'Mashamba kwa Mazao', ha: 'Gonaki ta Amfanin', tw: 'Mfuo Nnɔbaeɛ Mu',
+  },
+  'admin.actionsToday': {
+    en: 'Actions Today', fr: 'Actions aujourd\'hui', sw: 'Vitendo Leo', ha: 'Ayyuka Yau', tw: 'Ɛnnɛ Adwuma',
+  },
+  // Growth periods
+  'admin.periodToday': {
+    en: 'Today', fr: 'Aujourd\'hui', sw: 'Leo', ha: 'Yau', tw: 'Ɛnnɛ',
+  },
+  'admin.periodWeek': {
+    en: '7 Days', fr: '7 jours', sw: 'Siku 7', ha: 'Kwana 7', tw: 'Nnawɔtwe 7',
+  },
+  'admin.periodMonth': {
+    en: '30 Days', fr: '30 jours', sw: 'Siku 30', ha: 'Kwana 30', tw: 'Nnawɔtwe 30',
+  },
+  // Risk labels
+  'admin.riskNoFarm': {
+    en: 'No Farm Created', fr: 'Pas de ferme', sw: 'Hakuna Shamba', ha: 'Babu Gona', tw: 'Afuo Biara Nni Hɔ',
+  },
+  'admin.riskNotOnboarded': {
+    en: 'Not Onboarded', fr: 'Pas intégrés', sw: 'Hajaandikishwa', ha: 'Ba a Shigar ba', tw: 'Wɔnhyɛɛ Aseɛ',
+  },
+  'admin.riskNoPestCheck': {
+    en: 'No Pest Check', fr: 'Pas de contrôle', sw: 'Hakuna Ukaguzi', ha: 'Babu Dubawa', tw: 'Wɔnhwɛɛ Nsusuananmu',
+  },
+  'admin.riskInactive': {
+    en: 'Inactive (7d)', fr: 'Inactifs (7j)', sw: 'Haifanyi kazi (7s)', ha: 'Ba aiki (7k)', tw: 'Ɛnyɛ adwuma (7d)',
+  },
+  'admin.noRiskIssues': {
+    en: 'No risk issues detected', fr: 'Aucun problème détecté', sw: 'Hakuna matatizo', ha: 'Babu matsala', tw: 'Asiane biara nni hɔ',
+  },
+  'admin.byGender': {
+    en: 'Farmers by Gender', fr: 'Agriculteurs par genre', sw: 'Wakulima kwa Jinsia', ha: 'Manoma ta Jinsi', tw: 'Akuafo Nnipasuo Mu',
+  },
+  'admin.byAgeRange': {
+    en: 'Farmers by Age Range', fr: 'Agriculteurs par âge', sw: 'Wakulima kwa Umri', ha: 'Manoma ta Shekaru', tw: 'Akuafo Mfeɛ Mu',
+  },
+  'admin.newByGender': {
+    en: 'New Farmers by Gender', fr: 'Nouveaux par genre', sw: 'Wapya kwa Jinsia', ha: 'Sabbin ta Jinsi', tw: 'Foforo Nnipasuo Mu',
+  },
+  'admin.onboardingByAge': {
+    en: 'Onboarding by Age Range', fr: 'Intégration par âge', sw: 'Uandikishaji kwa Umri', ha: 'Shigarwa ta Shekaru', tw: 'Ahyɛaseɛ Mfeɛ Mu',
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  GENDER — gender options (OnboardingWizard)
   // ═══════════════════════════════════════════════════════════
@@ -2050,6 +2160,25 @@ const T = {
   },
   'age.over50': {
     en: 'Over 50', fr: 'Plus de 50', sw: 'Zaidi ya 50', ha: 'Sama da 50', tw: 'Boro 50',
+  },
+  // Extended age ranges (OnboardingSteps demographics)
+  'age.under_25': {
+    en: 'Under 25', fr: 'Moins de 25', sw: 'Chini ya 25', ha: 'Ƙasa da 25', tw: 'Ase 25',
+  },
+  'age.25_34': {
+    en: '25 – 34', fr: '25 – 34', sw: '25 – 34', ha: '25 – 34', tw: '25 – 34',
+  },
+  'age.35_44': {
+    en: '35 – 44', fr: '35 – 44', sw: '35 – 44', ha: '35 – 44', tw: '35 – 44',
+  },
+  'age.45_54': {
+    en: '45 – 54', fr: '45 – 54', sw: '45 – 54', ha: '45 – 54', tw: '45 – 54',
+  },
+  'age.55_plus': {
+    en: '55+', fr: '55+', sw: '55+', ha: '55+', tw: '55+',
+  },
+  'age.prefer_not_to_say': {
+    en: 'Prefer not to say', fr: 'Pr\u00E9f\u00E8re ne pas dire', sw: 'Sipendelei kusema', ha: 'Ban fi fadi ba', tw: 'Memp\u025B s\u025B meka',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -3557,6 +3686,40 @@ const T = {
   'wx.stale': { en: 'Weather may be outdated', fr: 'Météo peut-être obsolète', sw: 'Hali ya hewa inaweza kuwa ya zamani', ha: 'Yanayi na iya zama tsoho', tw: 'Wim tebea ebia ayɛ dada' },
   'wx.staleVoice': { en: 'Weather information may be outdated. Check before acting.', fr: 'Les informations météo sont peut-être obsolètes.', sw: 'Habari ya hewa inaweza kuwa ya zamani.', ha: 'Bayanan yanayi na iya zama tsoho.', tw: 'Wim ho nsɛm ebia ayɛ dada.' },
 
+  // ─── 7-day forecast signals (from Open-Meteo) ───────
+  'wx.rainWeekHeavy': { en: 'Heavy rain expected this week ({mm}mm)', fr: 'Forte pluie prévue cette semaine ({mm}mm)', sw: 'Mvua kubwa inatarajiwa wiki hii ({mm}mm)', ha: 'Ana sa ran ruwan sama mai yawa a wannan mako ({mm}mm)', tw: 'Nsuo bɛtɔ pii nnawɔtwe yi mu ({mm}mm)' },
+  'wx.rainWeekHeavyReason': { en: 'Plan around wet days. Protect stored crops.', fr: 'Planifiez autour des jours humides.', sw: 'Panga kuzunguka siku za mvua.', ha: 'Tsara aiki tare da ranakun ruwa.', tw: 'Yɛ nhyehyɛe wɔ nsuo nna ho.' },
+  'wx.rainWeekHeavyVoice': { en: 'Heavy rain expected this week. Plan your work around wet days.', fr: 'Forte pluie prévue. Planifiez vos travaux.', sw: 'Mvua kubwa inatarajiwa. Panga kazi zako.', ha: 'Ana sa ran ruwan sama mai yawa. Tsara aikin ku.', tw: 'Nsuo bɛtɔ pii. Yɛ nhyehyɛe.' },
+  'wx.rainWeekSome': { en: 'Some rain expected this week ({mm}mm)', fr: 'Pluie modérée prévue ({mm}mm)', sw: 'Mvua kidogo inatarajiwa ({mm}mm)', ha: 'Ana sa ran ruwan sama kaɗan ({mm}mm)', tw: 'Nsuo kakra bɛtɔ ({mm}mm)' },
+  'wx.rainWeekSomeReason': { en: 'Good for planted crops. Check irrigation needs.', fr: 'Bon pour les cultures. Vérifiez l\'irrigation.', sw: 'Nzuri kwa mazao. Angalia umwagiliaji.', ha: 'Mai kyau ga amfanin gona. Duba ban ruwa.', tw: 'Ɛyɛ nnɔbae. Hwɛ nsuo a ɛhia.' },
+  'wx.rainWeekSomeVoice': { en: 'Some rain expected this week. Good for your crops.', fr: 'Pluie modérée prévue. Bon pour vos cultures.', sw: 'Mvua kidogo inatarajiwa. Nzuri kwa mazao yako.', ha: 'Ruwan sama kaɗan ana sa ran shi. Mai kyau ga amfanin ku.', tw: 'Nsuo kakra bɛtɔ. Ɛyɛ ma wo nnɔbae.' },
+
+  // ─── Rainfall forecast card ──────────────────────────
+  'rainfall.title': { en: '7-Day Rain Forecast', fr: 'Prévision pluie 7 jours', sw: 'Utabiri wa mvua siku 7', ha: 'Hasashen ruwan sama kwana 7', tw: 'Nsuo a ɛbɛtɔ nnanson mu' },
+  'rainfall.thisWeek': { en: 'this week', fr: 'cette semaine', sw: 'wiki hii', ha: 'wannan mako', tw: 'nnawɔtwe yi' },
+  'rainfall.today': { en: 'Today', fr: 'Auj.', sw: 'Leo', ha: 'Yau', tw: 'Ɛnnɛ' },
+  'rainfall.loading': { en: 'Loading forecast...', fr: 'Chargement des prévisions...', sw: 'Inapakia utabiri...', ha: 'Ana ɗaukar hasashe...', tw: 'Ɛreloadi...' },
+  'rainfall.showMore': { en: 'Show daily detail', fr: 'Détail journalier', sw: 'Onyesha kwa siku', ha: 'Nuna daki-daki', tw: 'Kyerɛ nna mu nsɛm' },
+  'rainfall.showLess': { en: 'Hide detail', fr: 'Masquer', sw: 'Ficha', ha: 'Ɓoye', tw: 'Fa sie' },
+  'rainfall.noData': { en: 'No forecast data available', fr: 'Pas de prévision disponible', sw: 'Hakuna data ya utabiri', ha: 'Babu bayanan hasashe', tw: 'Nkɔmhyɛ nsɛm nni hɔ' },
+
+  // ─── Rainfall summaries ──────────────────────────────
+  'rainfall.summaryDry': { en: 'Mostly dry week ahead', fr: 'Semaine sèche à venir', sw: 'Wiki kavu mbele', ha: 'Mako bushe a gaba', tw: 'Nnawɔtwe a ɛreba no hyew' },
+  'rainfall.summaryWet': { en: 'Rainy week ahead', fr: 'Semaine pluvieuse à venir', sw: 'Wiki ya mvua mbele', ha: 'Makon ruwan sama a gaba', tw: 'Nsuo bɛtɔ nnawɔtwe a ɛreba no' },
+  'rainfall.summaryMixed': { en: 'Mixed week — some rain, some sun', fr: 'Semaine mixte — pluie et soleil', sw: 'Wiki changamano — mvua na jua', ha: 'Makon gauraya — ruwa da rana', tw: 'Nnawɔtwe a ɛrefra — nsuo ne awia' },
+
+  // ─── Rainfall alerts ─────────────────────────────────
+  'rainfall.heavyWeek': { en: 'Heavy rain this week ({totalMm}mm total). Protect your harvest and stored crops.', fr: 'Forte pluie cette semaine ({totalMm}mm). Protégez votre récolte.', sw: 'Mvua kubwa wiki hii ({totalMm}mm). Linda mazao yako.', ha: 'Ruwan sama mai yawa wannan mako ({totalMm}mm). Kare amfanin ku.', tw: 'Nsuo bɛtɔ pii nnawɔtwe yi ({totalMm}mm). Bɔ wo nnɔbae ho ban.' },
+  'rainfall.rainTomorrow': { en: 'Rain expected tomorrow ({chance}% chance, ~{mm}mm). Plan indoor work.', fr: 'Pluie prévue demain ({chance}%, ~{mm}mm).', sw: 'Mvua inatarajiwa kesho ({chance}%, ~{mm}mm).', ha: 'Ana sa ran ruwan sama gobe ({chance}%, ~{mm}mm).', tw: 'Nsuo bɛtɔ ɔkyena ({chance}%, ~{mm}mm).' },
+  'rainfall.rainLikelyTomorrow': { en: 'Rain likely tomorrow ({chance}% chance). Consider finishing outdoor tasks today.', fr: 'Pluie probable demain ({chance}%).', sw: 'Mvua inawezekana kesho ({chance}%).', ha: 'Ruwan sama mai yiwuwa gobe ({chance}%).', tw: 'Nsuo bɛtɔ ɔkyena ({chance}%).' },
+  'rainfall.dryStretch': { en: 'Dry days ahead — plan irrigation or watering.', fr: 'Jours secs à venir — prévoyez l\'irrigation.', sw: 'Siku kavu mbele — panga umwagiliaji.', ha: 'Ranaku bushe a gaba — tsara ban ruwa.', tw: 'Nna a hyew reba — yɛ nsuo ho nhyehyɛe.' },
+  'rainfall.droughtRisk': { en: '{days} dry days ahead — water your crops regularly.', fr: '{days} jours secs — arrosez régulièrement.', sw: 'Siku {days} kavu — mwagilia mara kwa mara.', ha: 'Ranaku {days} bushe — shayar da amfani kullum.', tw: 'Nna {days} a hyew — gugu wo nnɔbae daa.' },
+  'rainfall.plantingWindow': { en: 'Rain expected in {day} days — good planting window coming.', fr: 'Pluie dans {day} jours — bon moment pour planter.', sw: 'Mvua siku {day} — wakati mzuri wa kupanda.', ha: 'Ruwan sama cikin kwana {day} — lokaci mai kyau na shuka.', tw: 'Nsuo bɛtɔ da {day} mu — bere pa a wɔbɛdua.' },
+  'rainfall.delayPlanting': { en: 'Heavy rain tomorrow — delay planting to avoid seed washout.', fr: 'Forte pluie demain — reportez le semis.', sw: 'Mvua kubwa kesho — ahirisha kupanda.', ha: 'Ruwan sama mai yawa gobe — jinkirta shuka.', tw: 'Nsuo bɛtɔ pii ɔkyena — twɛn ansa na woadua.' },
+  'rainfall.skipIrrigation': { en: 'Rain likely soon — skip irrigation to save water.', fr: 'Pluie prévue — reportez l\'irrigation.', sw: 'Mvua inakuja — ruka umwagiliaji.', ha: 'Ruwan sama yana zuwa — tsallake ban ruwa.', tw: 'Nsuo bɛtɔ ntɛm — gyae nsuo gu.' },
+  'rainfall.goodToPlant': { en: 'Good weather this week for planting. Mixed rain and sun.', fr: 'Bon temps pour planter. Pluie et soleil.', sw: 'Hali nzuri ya kupanda. Mvua na jua.', ha: 'Yanayi mai kyau don shuka. Ruwa da rana.', tw: 'Wim tebea yɛ ma duane. Nsuo ne awia.' },
+  'rainfall.harvestRainRisk': { en: 'Frequent rain this week — dry and store harvested crops quickly.', fr: 'Pluie fréquente — séchez et stockez rapidement.', sw: 'Mvua mara kwa mara — kausha na hifadhi haraka.', ha: 'Ruwan sama akai-akai — bushe da ajiye da sauri.', tw: 'Nsuo tɔ mpɛn pii — hwie na kora ntɛm.' },
+
   'weather.addGpsDetail': {
     en: 'Add GPS coordinates or your village/region to unlock local weather advice.', fr: 'Ajoutez les coordonnées GPS ou votre village pour la météo locale.', sw: 'Weka GPS au kijiji chako kupata ushauri wa hewa.', ha: 'Ƙara GPS ko ƙauyen ka don yanayin gida.', tw: 'Fa GPS anaa wo akuraa nya wim tebea afutuɔ.',
   },
@@ -4253,6 +4416,34 @@ const T = {
   'recommendReason.localProfitFit': {
     en: 'Strong local market demand', fr: 'Forte demande sur le marché local', sw: 'Mahitaji makubwa ya soko la ndani', ha: 'Buƙata mai ƙarfi a kasuwar gida', tw: 'Aguadeɛ a ɛwɔ ha dwadeɛ mu yɛ den',
   },
+  'recommendReason.priceRising': {
+    en: 'Prices trending up this season', fr: 'Prix en hausse cette saison', sw: 'Bei zinapanda msimu huu', ha: 'Farashin yana hauhawa a wannan lokaci', tw: 'Boɔ rekɔ soro bere yi mu',
+  },
+
+  // ─── Market price signals ─────────────────────────────────
+  'market.title': { en: 'Market Signals', fr: 'Signaux du marché', sw: 'Ishara za soko', ha: 'Alamun kasuwa', tw: 'Dwadeɛ nsɛnkyerɛnne' },
+  'market.seasonal': { en: 'Seasonal', fr: 'Saisonnier', sw: 'Msimu', ha: 'Lokaci', tw: 'Bere mu' },
+  'market.disclaimer': { en: 'Based on seasonal patterns, not live prices. Farming always carries risk.', fr: 'Basé sur des tendances saisonnières, pas des prix en temps réel.', sw: 'Kulingana na mifumo ya msimu, si bei za sasa.', ha: 'Dangane da yanayin lokaci, ba farashin yanzu ba.', tw: 'Egyina bere mu nhyehyɛe so, ɛnyɛ seesei boɔ.' },
+  'market.trend.rising': { en: 'Rising', fr: 'En hausse', sw: 'Inapanda', ha: 'Yana hauhawa', tw: 'Ɛrekɔ soro' },
+  'market.trend.stable': { en: 'Stable', fr: 'Stable', sw: 'Imara', ha: 'Daidai', tw: 'Ɛtim hɔ' },
+  'market.trend.falling': { en: 'Falling', fr: 'En baisse', sw: 'Inashuka', ha: 'Yana sauka', tw: 'Ɛresian' },
+
+  // ─── Market signal notes ──────────────────────────────────
+  'market.note.leanSeasonRise': { en: 'Prices typically rise before harvest', fr: 'Les prix montent avant la récolte', sw: 'Bei huongezeka kabla ya mavuno', ha: 'Farashi yakan tashi kafin girbi', tw: 'Boɔ kɔ soro ansa twaberɛ' },
+  'market.note.harvestGlut': { en: 'Harvest season — prices typically drop', fr: 'Saison de récolte — prix en baisse', sw: 'Msimu wa mavuno — bei hushuka', ha: 'Lokacin girbi — farashi yana sauka', tw: 'Twaberɛ — boɔ tɔ fam' },
+  'market.note.stablePrices': { en: 'Prices steady this time of year', fr: 'Prix stables en ce moment', sw: 'Bei imara wakati huu', ha: 'Farashi daidai a wannan lokaci', tw: 'Boɔ yɛ pɛ bere yi mu' },
+  'market.note.shortageRise': { en: 'Supply low — prices typically higher', fr: 'Offre faible — prix plus élevés', sw: 'Ugavi mdogo — bei juu', ha: 'Kayayyaki kaɗan — farashi ya yi yawa', tw: 'Nneɛma sua — boɔ kɔ soro' },
+  'market.note.importBaseline': { en: 'Imported supply keeps prices steady', fr: 'Les importations stabilisent les prix', sw: 'Uagizaji hudumisha bei imara', ha: 'Shigo da kaya yana kiyaye farashi', tw: 'Aguadeɛ a ɛfiri abɔnten ma boɔ yɛ pɛ' },
+  'market.note.stapleDemand': { en: 'Staple food — steady demand all year', fr: 'Aliment de base — demande stable', sw: 'Chakula kikuu — mahitaji imara', ha: 'Abincin yau da kullum — buƙata daidai', tw: 'Aduane titire — nhia daa' },
+  'market.note.exportDemand': { en: 'Export demand supporting prices', fr: 'La demande d\'exportation soutient les prix', sw: 'Mahitaji ya usafirishaji yanaunga bei', ha: 'Buƙatar fitar da kaya tana tallafa farashi', tw: 'Amannɔne dwadeɛ boa boɔ' },
+  'market.note.regulatedPrice': { en: 'Prices set by market board', fr: 'Prix fixés par le conseil du marché', sw: 'Bei zinawekwa na bodi ya soko', ha: 'Hukumar kasuwa ta saita farashi', tw: 'Dwadeɛ badwa na wɔhyɛ boɔ' },
+  'market.note.seasonalShortage': { en: 'Seasonal shortage — prices higher than usual', fr: 'Pénurie saisonnière — prix élevés', sw: 'Uhaba wa msimu — bei juu kuliko kawaida', ha: 'Ƙarancin lokaci — farashi ya fi na yadda ake saba', tw: 'Bere mu hia — boɔ kɔ soro' },
+  'market.note.drySeasonDemand': { en: 'High demand in dry season', fr: 'Forte demande en saison sèche', sw: 'Mahitaji makubwa katika kiangazi', ha: 'Buƙata mai yawa a lokacin rani', tw: 'Nhia pii wɔ awɔw bere mu' },
+  'market.note.earlySeasonPremium': { en: 'Early season — premium prices at market', fr: 'Début de saison — prix premium', sw: 'Mwanzo wa msimu — bei ya juu', ha: 'Farkon lokaci — farashi mai tsada', tw: 'Bere mfiase — boɔ kɔ soro' },
+  'market.note.peakSupply': { en: 'Peak supply season — prices moderate', fr: 'Haute saison — prix modérés', sw: 'Msimu wa wingi — bei wastani', ha: 'Lokacin kayan yawa — farashi matsakaici', tw: 'Nneɛma pii bere — boɔ yɛ pɛ' },
+  'market.note.seasonalDemand': { en: 'Seasonal demand peak — good selling time', fr: 'Pic de demande — bon moment pour vendre', sw: 'Kilele cha mahitaji — wakati mzuri wa kuuza', ha: 'Kololuwar buƙata — lokaci mai kyau na sayarwa', tw: 'Nhia pii bere — bere pa a wɔtɔn' },
+  'market.note.specialtyPremium': { en: 'Specialty crop — premium niche market', fr: 'Culture spécialisée — marché de niche', sw: 'Zao maalum — soko la kipekee', ha: 'Amfanin musamman — kasuwar musamman', tw: 'Nkɔsoɔ nnɔbae — dwadeɛ soronko' },
+  'market.note.fallDemand': { en: 'Fall demand rising — fresh greens popular', fr: 'Demande d\'automne en hausse', sw: 'Mahitaji ya vuli yanaongezeka', ha: 'Buƙatar kaka tana ƙaruwa', tw: 'Bere a ɛresa no nhia rekɔ soro' },
 
   // ─── Growth stages ────────────────────────────────────────
   'stage.seedling': { en: 'Seedling', fr: 'Semis', sw: 'Mche', ha: 'Shuka', tw: 'Aba' },
@@ -4593,6 +4784,22 @@ const T = {
   },
   'onboarding.startFarming': {
     en: 'Start Farming', fr: 'Commencer', sw: 'Anza Kulima', ha: 'Fara Noma', tw: 'Hy\u025B Ase\u025B Adua',
+  },
+  // Demographics step (optional)
+  'onboarding.demographics.title': {
+    en: 'Help us support farmers better', fr: 'Aidez-nous \u00E0 mieux soutenir', sw: 'Tusaidie kusaidia wakulima', ha: 'Taimaka mana tallafin manoma', tw: 'Boa y\u025Bn na y\u025Bmmoa akuafo',
+  },
+  'onboarding.demographics.subtitle': {
+    en: 'Optional — you can skip this', fr: 'Facultatif — vous pouvez passer', sw: 'Si lazima — unaweza ruka', ha: 'Na za\u0253i — za ka iya tsallakewa', tw: '\u0190ny\u025B dea \u025Bho h\u0129a — wobetumi ahur\u025B',
+  },
+  'onboarding.demographics.gender': {
+    en: 'Gender', fr: 'Genre', sw: 'Jinsia', ha: 'Jinsi', tw: 'Nnipasuo',
+  },
+  'onboarding.demographics.ageRange': {
+    en: 'Age range', fr: 'Tranche d\u2019\u00E2ge', sw: 'Kiwango cha umri', ha: 'Rukunin shekaru', tw: 'Mfe\u025B mu',
+  },
+  'onboarding.demographics.skip': {
+    en: 'Skip for now', fr: 'Passer', sw: 'Ruka kwa sasa', ha: 'Tsallake yanzu', tw: 'Twa mu s\u025Bsei\u025B',
   },
   'onboarding.step': {
     en: 'Step', fr: '\u00C9tape', sw: 'Hatua', ha: 'Mataki', tw: 'Anamm\u0254n',
@@ -5365,6 +5572,39 @@ const T = {
   'timing.harvestWhenReady': { en: 'Harvest when crop is ready.', fr: 'Récoltez quand la culture est prête.', sw: 'Vuna wakati mazao yako tayari.', ha: 'Girbe lokacin amfanin ya nuna.', tw: 'Twa bere a nnɔbae no abɛre.' },
   'timing.soonAfterHarvest': { en: 'Best done soon after harvest.', fr: 'À faire rapidement après la récolte.', sw: 'Bora kufanya baada ya kuvuna.', ha: 'Gara a yi ba\'an girbe.', tw: 'Eye sɛ woyɛ no ntɛm wɔ twa ase.' },
   'timing.beforeQualityDrops': { en: 'Store before quality drops.', fr: 'Stocker avant que la qualité ne baisse.', sw: 'Hifadhi kabla ubora kupungua.', ha: 'Ajiye kafin ingancin ya ragu.', tw: 'Kora ansa na ne su abɛhwe ase.' },
+
+  // ─── Smart timing (weather-aware) — day/date phrases ───
+  'timing.doNow': { en: 'Do now.', fr: 'À faire maintenant.', sw: 'Fanya sasa.', ha: 'Yi yanzu.', tw: 'Yɛ no seesei.' },
+  'timing.doToday': { en: 'Do today.', fr: 'À faire aujourd\'hui.', sw: 'Fanya leo.', ha: 'Yi yau.', tw: 'Yɛ no nnɛ.' },
+  'timing.doThisWeek': { en: 'Do this week.', fr: 'À faire cette semaine.', sw: 'Fanya wiki hii.', ha: 'Yi a wannan mako.', tw: 'Yɛ no nnawɔtwe yi.' },
+  'timing.beforeRainOnDay': { en: 'Before rain on {day}.', fr: 'Avant la pluie de {day}.', sw: 'Kabla mvua ya {day}.', ha: 'Kafin ruwan sama na {day}.', tw: 'Ansa osu atɔ {day}.' },
+  'timing.doBeforeRainOnDay': { en: 'Finish before rain on {day}.', fr: 'Finir avant la pluie de {day}.', sw: 'Maliza kabla mvua ya {day}.', ha: 'Gama kafin ruwan sama na {day}.', tw: 'Wie ansa osu atɔ {day}.' },
+  'timing.dryStartsTomorrow': { en: 'Dry weather starts tomorrow.', fr: 'Temps sec à partir de demain.', sw: 'Hali ya hewa kavu itaanza kesho.', ha: 'Busasshen yanayi zai fara gobe.', tw: 'Ewim bɛyɛ hye ɔkyena.' },
+  'timing.dryStartsOnDay': { en: 'Dry weather returns {day}.', fr: 'Temps sec de retour {day}.', sw: 'Hali ya hewa kavu itarudi {day}.', ha: 'Busasshen yanayi zai dawo {day}.', tw: 'Ewim bɛyɛ hye {day}.' },
+
+  // ─── Date / day names (short) ──────────────────────────
+  'date.day.sun': { en: 'Sun', fr: 'Dim', sw: 'Jpi', ha: 'Lah', tw: 'Kwa' },
+  'date.day.mon': { en: 'Mon', fr: 'Lun', sw: 'Jtt', ha: 'Lit', tw: 'Dwo' },
+  'date.day.tue': { en: 'Tue', fr: 'Mar', sw: 'Jnn', ha: 'Tal', tw: 'Ben' },
+  'date.day.wed': { en: 'Wed', fr: 'Mer', sw: 'Jtn', ha: 'Lar', tw: 'Wuk' },
+  'date.day.thu': { en: 'Thu', fr: 'Jeu', sw: 'Alh', ha: 'Alh', tw: 'Yaw' },
+  'date.day.fri': { en: 'Fri', fr: 'Ven', sw: 'Iju', ha: 'Jum', tw: 'Fi' },
+  'date.day.sat': { en: 'Sat', fr: 'Sam', sw: 'Jms', ha: 'Asa', tw: 'Mem' },
+  'date.month.jan': { en: 'Jan', fr: 'janv.', sw: 'Jan', ha: 'Jan', tw: 'Ɔpɛ' },
+  'date.month.feb': { en: 'Feb', fr: 'févr.', sw: 'Feb', ha: 'Fab', tw: 'Ogya' },
+  'date.month.mar': { en: 'Mar', fr: 'mars', sw: 'Mac', ha: 'Mar', tw: 'Bɛn' },
+  'date.month.apr': { en: 'Apr', fr: 'avr.', sw: 'Apr', ha: 'Afi', tw: 'Oforisuo' },
+  'date.month.may': { en: 'May', fr: 'mai', sw: 'Mei', ha: 'May', tw: 'Kɔt' },
+  'date.month.jun': { en: 'Jun', fr: 'juin', sw: 'Jun', ha: 'Yun', tw: 'Ayɛ' },
+  'date.month.jul': { en: 'Jul', fr: 'juil.', sw: 'Jul', ha: 'Yul', tw: 'Kit' },
+  'date.month.aug': { en: 'Aug', fr: 'août', sw: 'Ago', ha: 'Agu', tw: 'Ɔsa' },
+  'date.month.sep': { en: 'Sep', fr: 'sept.', sw: 'Sep', ha: 'Sat', tw: 'Ɛbɔ' },
+  'date.month.oct': { en: 'Oct', fr: 'oct.', sw: 'Okt', ha: 'Okt', tw: 'Ahi' },
+  'date.month.nov': { en: 'Nov', fr: 'nov.', sw: 'Nov', ha: 'Nuw', tw: 'Obu' },
+  'date.month.dec': { en: 'Dec', fr: 'déc.', sw: 'Des', ha: 'Dis', tw: 'Ɔpɛ' },
+  'date.today': { en: 'Today', fr: 'Aujourd\'hui', sw: 'Leo', ha: 'Yau', tw: 'Ɛnnɛ' },
+  'date.tomorrow': { en: 'Tomorrow', fr: 'Demain', sw: 'Kesho', ha: 'Gobe', tw: 'Ɔkyena' },
+  'date.yesterday': { en: 'Yesterday', fr: 'Hier', sw: 'Jana', ha: 'Jiya', tw: 'Nnɛra' },
 
   // ═══════════════════════════════════════════════════════════
   //  URGENCY — labels for urgency levels (spec §3)

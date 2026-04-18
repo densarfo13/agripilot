@@ -17,6 +17,32 @@ import { assertIsViewModel } from '../../domain/tasks/devAssertions.js';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';
 import { safeTrackEvent } from '../../lib/analytics.js';
 
+// ─── Timing chip helpers ──────────────────────────────────
+function timingChipIcon(kind) {
+  switch (kind) {
+    case 'rain_deadline': return '\uD83C\uDF27\uFE0F'; // 🌧️
+    case 'dry_window': return '\u2600\uFE0F';          // ☀️
+    case 'today': return '\u26A1';                     // ⚡
+    case 'this_week': return '\uD83D\uDCC5';           // 📅
+    default: return '\u23F0';                          // ⏰
+  }
+}
+
+function timingChipVariant(kind) {
+  switch (kind) {
+    case 'rain_deadline':
+      return { background: 'rgba(59,130,246,0.12)', borderColor: 'rgba(59,130,246,0.35)', color: '#93C5FD' };
+    case 'dry_window':
+      return { background: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.35)', color: '#FCD34D' };
+    case 'today':
+      return { background: 'rgba(248,113,113,0.12)', borderColor: 'rgba(248,113,113,0.35)', color: '#FCA5A5' };
+    case 'this_week':
+      return { background: 'rgba(34,197,94,0.10)', borderColor: 'rgba(34,197,94,0.30)', color: '#86EFAC' };
+    default:
+      return { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: '#B8C6D6' };
+  }
+}
+
 export default function TaskCard({ viewModel, variant, language, t, onCta, onVoice, ctaDisabled }) {
   assertIsViewModel({ viewModel }, 'TaskCard');
 
@@ -54,6 +80,16 @@ export default function TaskCard({ viewModel, variant, language, t, onCta, onVoi
 
         {/* Title */}
         <div style={S.simpleTitle}>{viewModel.title}</div>
+
+        {/* Timing chip (smart, weather-aware) */}
+        {viewModel.timingText && (
+          <div style={{ ...S.timingChip, ...timingChipVariant(viewModel.timingKind) }}>
+            <span style={S.timingChipIcon} aria-hidden="true">
+              {timingChipIcon(viewModel.timingKind)}
+            </span>
+            <span>{viewModel.timingText}</span>
+          </div>
+        )}
 
         {/* Why line (autopilot) */}
         {viewModel.whyText && (
@@ -109,6 +145,16 @@ export default function TaskCard({ viewModel, variant, language, t, onCta, onVoi
           )}
         </div>
       </div>
+
+      {/* Timing chip (smart, weather-aware) */}
+      {viewModel.timingText && (
+        <div style={{ ...S.timingChipStandard, ...timingChipVariant(viewModel.timingKind) }}>
+          <span style={S.timingChipIcon} aria-hidden="true">
+            {timingChipIcon(viewModel.timingKind)}
+          </span>
+          <span>{viewModel.timingText}</span>
+        </div>
+      )}
 
       {/* Why line (autopilot) */}
       {viewModel.whyText && (
@@ -184,6 +230,34 @@ const S = {
     lineHeight: 1.3,
     maxWidth: '20rem',
   },
+  // ═══ Timing chip ═══
+  timingChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '0.375rem 0.75rem',
+    borderRadius: '999px',
+    border: '1px solid',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    lineHeight: 1.2,
+    maxWidth: '20rem',
+  },
+  timingChipStandard: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '0.375rem 0.75rem',
+    borderRadius: '999px',
+    border: '1px solid',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    lineHeight: 1.2,
+    marginTop: '0.625rem',
+    alignSelf: 'flex-start',
+  },
+  timingChipIcon: { fontSize: '0.875rem', lineHeight: 1 },
+
   // ═══ Autopilot why/risk (simple) ═══
   whyLine: {
     fontSize: '0.875rem',

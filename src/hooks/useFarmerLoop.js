@@ -30,6 +30,7 @@ import {
 import { getAutopilotDecision } from '../engine/autopilot/index.js';
 import { getSuccessTextKey } from '../engine/autopilot/textKeys.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
+import { logActivity } from '../services/activityLogger.js';
 
 // Fallback auto-transition delay — only fires if user doesn't tap Continue/Later.
 // Long enough that it never fires during normal use (user always taps first).
@@ -186,6 +187,7 @@ export function useFarmerLoop() {
     });
 
     if (result.success) {
+      logActivity('action_completed', { taskType: task?.type, taskId: task?.id }, { farmId: currentFarmId });
       setLastCompletedTask(task);
       setLoopState(LOOP_STATE.COMPLETED);
 

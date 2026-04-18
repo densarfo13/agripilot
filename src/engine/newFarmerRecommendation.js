@@ -23,6 +23,7 @@
  *   Non-beginner penalty: -3  (only when isNew and crop.beginner === false)
  *   Preferred crop:      +6  (explicit user preference)
  *   Staple crop bonus:   +1  (priority 1 in catalog)
+ *   Price trend bonus:   +1  (rising price signal when goal is profit/local_sales)
  */
 
 import {
@@ -35,6 +36,7 @@ import {
 import { getSeasonScore } from './seasonProfitRules.js';
 import { CROPS } from '../data/crops.js';
 import { getRule } from '../data/cropRegionRules.js';
+import { getPriceTrendScore } from '../services/marketDataService.js';
 
 // ─── Budget & Size compatibility (derived from crops.js) ────
 // Built at startup from crops.js master data. Falls back to
@@ -58,6 +60,7 @@ const W = {
   NON_BEGINNER_PENALTY: -3,
   PREFERRED:   6,
   STAPLE:      1,
+  PRICE_TREND: 1,   // bonus for rising price when goal is profit/local_sales
 };
 
 // ─── Fallback crops (when no country is known) ─────────────
@@ -173,6 +176,16 @@ function scoreCrop(entry, { goal, landSize, budget, preferredCrop, countryCode, 
         reasons.push({ key: 'recommendReason.localProfitFit', weight: W.LOCAL_FIT });
       }
     }
+  }
+
+  // 10. Market price trend bonus (small signal, not dominant)
+  if (countryCode && (goal === 'profit' || goal === 'local_sales')) {
+    const trendScore = getPriceTrendScore(entry.code, countryCode);
+    if (trendScore > 0) {
+      score += W.PRICE_TREND;
+      reasons.push({ key: 'recommendReason.priceRising', weight: W.PRICE_TREND });
+    }
+    // Note: falling prices don't penalize — we don't discourage planting
   }
 
   return { code: entry.code, score, reasons };

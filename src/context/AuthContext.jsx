@@ -10,6 +10,7 @@ import {
   requestPhoneOtp as requestPhoneOtpApi,
   verifyPhoneOtp as verifyPhoneOtpApi,
 } from '../lib/api.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const AuthContext = createContext(null);
 
@@ -158,6 +159,7 @@ export function AuthProvider({ children }) {
     cacheSession(loggedInUser);
     // Remember email for re-login convenience
     try { localStorage.setItem('farroway:last_email', email); } catch { /* ignore */ }
+    logActivity('login', { method: 'email' }, { userId: loggedInUser?.id });
     return data;
   }
 
@@ -177,6 +179,8 @@ export function AuthProvider({ children }) {
     setUser(registeredUser);
     setIsOfflineSession(false);
     cacheSession(registeredUser);
+    // Track registration for admin analytics
+    logActivity('user_registered', { method: 'email' }, { userId: registeredUser?.id });
     return data;
   }
 
@@ -206,6 +210,7 @@ export function AuthProvider({ children }) {
     setIsOfflineSession(false);
     setAuthLoading(false);
     cacheSession(loggedInUser);
+    logActivity('login', { method: 'phone_otp' }, { userId: loggedInUser?.id });
     return data;
   }
 

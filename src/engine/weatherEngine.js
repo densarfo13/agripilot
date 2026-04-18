@@ -204,10 +204,38 @@ export function getWeatherGuidance({ weather, crop, stage }) {
     };
   }
 
-  // ─── Rule 8: 3-day forecast rain (soft note, NOT a hard warning) ──
-  // This does NOT trigger task overrides or caution status.
-  // The 3-day rain signal is informational only.
-  // (Previously this was the source of false "rain today" warnings.)
+  // ─── Rule 8: 7-day forecast rain signal (from Open-Meteo) ──
+  // When forecast data is available, provide an informational note
+  // about upcoming rain. NOT a hard warning — just farmer awareness.
+  if (weather.forecastRainWeekMm > 0 && !rainingNow && !rainTodayLikely) {
+    const weekMm = weather.forecastRainWeekMm;
+    if (weekMm >= 30) {
+      return {
+        status: 'safe',
+        recommendationKey: 'wx.rainWeekHeavy',
+        reasonKey: 'wx.rainWeekHeavyReason',
+        riskLevel: 'low',
+        voiceKey: 'wx.rainWeekHeavyVoice',
+        icon: '\u{1F327}\u{FE0F}',
+        adjustments: {},
+        params: { mm: Math.round(weekMm) },
+        rainTiming: 'forecast_only',
+      };
+    }
+    if (weekMm >= 10) {
+      return {
+        status: 'safe',
+        recommendationKey: 'wx.rainWeekSome',
+        reasonKey: 'wx.rainWeekSomeReason',
+        riskLevel: 'none',
+        voiceKey: 'wx.rainWeekSomeVoice',
+        icon: '\u{1F326}\u{FE0F}',
+        adjustments: {},
+        params: { mm: Math.round(weekMm) },
+        rainTiming: 'forecast_only',
+      };
+    }
+  }
 
   // ─── Rule 9: Moderate wind ────────────────────────
   if (wind >= WIND_CAUTION) {

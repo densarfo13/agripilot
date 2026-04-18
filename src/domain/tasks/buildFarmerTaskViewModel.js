@@ -20,6 +20,7 @@ import { getAutopilotEnrichment } from '../../engine/autopilot/index.js';
 import { getNextTextKey, getSuccessTextKey } from '../../engine/autopilot/textKeys.js';
 import { resolveUrgency, getUrgencyStyle } from '../../engine/urgencyResolver.js';
 import { getTaskEconomicTip } from '../../engine/economicsSignal.js';
+import { getTaskTimingContext } from '../../engine/taskTimingEngine.js';
 
 /**
  * Schema version — bump to invalidate cached view models.
@@ -42,7 +43,7 @@ export const TASK_VIEWMODEL_SCHEMA_VERSION = 4;
  * @param {Object|null} params.weather - Raw weather data (for autopilot)
  * @returns {Object} TaskViewModel
  */
-export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode, autopilotEnrichment, cropStage, weather }) {
+export function buildFarmerTaskViewModel({ task, action, weatherGuidance, language, t, mode, autopilotEnrichment, cropStage, weather, rainfall }) {
   // ─── 1. Determine effective priority and override status ───
   const priority = action?.priority || task?.priority || 'medium';
   const isWeatherOverride = !!(action?.weatherOverride);
@@ -79,7 +80,14 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
 
   const whyText = enrichment?.whyKey ? t(enrichment.whyKey) : null;
   const riskText = enrichment?.riskKey ? t(enrichment.riskKey) : null;
-  const timingText = enrichment?.timingKey ? t(enrichment.timingKey) : null;
+
+  // Smart timing — weather-aware, falls back to rule's static timingKey
+  const timingContext = enrichment
+    ? getTaskTimingContext({ enrichment, rainfall, t, language })
+    : { text: null, kind: 'generic', dayIndex: null };
+  const timingText = timingContext.text;
+  const timingKind = timingContext.kind;
+  const timingDayIndex = timingContext.dayIndex;
   const nextTextKey = enrichment ? getNextTextKey(enrichment.nextTaskType) : null;
   const nextText = nextTextKey ? t(nextTextKey) : null;
   const successKey = enrichment ? getSuccessTextKey(enrichment.ruleId) : 'success.general';
@@ -136,7 +144,9 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
     // Autopilot intelligence
     whyText,                              // "Dry grain now to prevent mold."
     riskText,                             // "Risk: harvest may spoil if left damp."
-    timingText,                           // "Best done while conditions are dry."
+    timingText,                           // "Before rain on Thu." (weather-aware)
+    timingKind,                           // 'today' | 'this_week' | 'rain_deadline' | 'dry_window' | 'generic'
+    timingDayIndex,                       // 0..6 when a specific day drives the phrase
     nextText,                             // "Next: Sort and clean your harvest."
     successText,                          // "Grain is safer now."
     nextTaskType: enrichment?.nextTaskType || null,
@@ -177,7 +187,7 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
  * @param {'simple'|'standard'} params.mode
  * @returns {Array<Object>} Array of TaskViewModels
  */
-export function buildTaskListViewModels({ tasks, weatherGuidance, language, t, mode, cropStage, weather }) {
+export function buildTaskListViewModels({ tasks, weatherGuidance, language, t, mode, cropStage, weather, rainfall }) {
   return (tasks || []).map(task => buildFarmerTaskViewModel({
     task,
     action: null,
@@ -187,5 +197,6 @@ export function buildTaskListViewModels({ tasks, weatherGuidance, language, t, m
     mode: mode || 'standard',
     cropStage,
     weather,
+    rainfall,
   }));
 }

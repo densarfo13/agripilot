@@ -30,6 +30,8 @@ import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
 import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
+import RainfallForecastCard from '../components/RainfallForecastCard.jsx';
+import MarketSignalCard from '../components/MarketSignalCard.jsx';
 
 const BasicFarmerHome = lazy(() => import('../components/farmer/BasicFarmerHome.jsx'));
 const BeginnerPrompt = lazy(() => import('../components/farmer/BeginnerPrompt.jsx'));
@@ -193,6 +195,8 @@ export default function Dashboard() {
         <div style={S.container}>
           <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
           {weatherLine}
+          <RainfallForecastCard />
+          <MarketSignalCard />
           {emptyState}
           {feedbackBanner}
 
@@ -233,6 +237,8 @@ export default function Dashboard() {
       <div style={S.container}>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
         {weatherLine}
+        <RainfallForecastCard />
+        <MarketSignalCard />
         {emptyState}
         {feedbackBanner}
 
