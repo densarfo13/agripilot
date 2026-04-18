@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { getRecommendedCrops } from '../engine/cropFit.js';
+import { isBetaCrop } from '../engine/cropDefinitions.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 
 export default function CropRecommendations() {
@@ -53,7 +54,12 @@ export default function CropRecommendations() {
                 <div style={S.featuredHeader}>
                   <span style={S.featuredIcon}>{crops[0].icon}</span>
                   <div style={S.featuredInfo}>
-                    <div style={S.featuredName}>{crops[0].name}</div>
+                    <div style={S.featuredName}>
+                      {crops[0].name}
+                      {isBetaCrop(crops[0].code) && (
+                        <span style={S.betaChip}>{t('beta.label')}</span>
+                      )}
+                    </div>
                     <div style={{ ...S.diffBadge, color: difficultyColors[crops[0].difficulty] }}>
                       {t(`cropFit.diff.${crops[0].difficulty}`)}
                     </div>
@@ -119,7 +125,12 @@ export default function CropRecommendations() {
                 >
                   <span style={S.compactIcon}>{crop.icon}</span>
                   <div style={S.compactInfo}>
-                    <div style={S.compactName}>{crop.name}</div>
+                    <div style={S.compactName}>
+                      {crop.name}
+                      {isBetaCrop(crop.code) && (
+                        <span style={S.betaChipSmall}>{t('beta.label')}</span>
+                      )}
+                    </div>
                     <div style={S.compactMeta}>
                       <span style={{ color: difficultyColors[crop.difficulty] }}>
                         {t(`cropFit.diff.${crop.difficulty}`)}
@@ -250,6 +261,34 @@ const S = {
     fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 600,
   },
   compactDot: { color: '#4B5C70' },
+
+  // Beta/testing chip — amber, subtle, inline with crop name
+  betaChip: {
+    display: 'inline-block',
+    marginLeft: '0.5rem',
+    padding: '0.125rem 0.5rem',
+    borderRadius: '999px',
+    background: 'rgba(251,191,36,0.12)',
+    border: '1px solid rgba(251,191,36,0.35)',
+    color: '#FCD34D',
+    fontSize: '0.625rem', fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    verticalAlign: 'middle',
+  },
+  betaChipSmall: {
+    display: 'inline-block',
+    marginLeft: '0.375rem',
+    padding: '0.0625rem 0.375rem',
+    borderRadius: '999px',
+    background: 'rgba(251,191,36,0.12)',
+    border: '1px solid rgba(251,191,36,0.35)',
+    color: '#FCD34D',
+    fontSize: '0.5625rem', fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    verticalAlign: 'middle',
+  },
 
   topBadge: {
     position: 'absolute', top: 0, left: '1rem',

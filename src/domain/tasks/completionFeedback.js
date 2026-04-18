@@ -25,6 +25,7 @@ export const COMPLETION_STATUS = {
 const FOLLOWUP_TYPE = {
   STATUS: 'status',     // Did you finish? [Yes] [Partly] [No]
   ISSUE: 'issue',       // Any issue? [No issue] [Need help] [Weather blocked] [No input/tools]
+  BETA: 'beta',         // Is this guidance helpful? — beta crop quality signal
 };
 
 /**
@@ -36,12 +37,27 @@ const FOLLOWUP_TYPE = {
  * @param {string|null} params.urgency - Task urgency level
  * @returns {Object|null} Follow-up config or null (no follow-up needed)
  */
-export function getFollowUpQuestion({ taskViewModel, completedToday, urgency }) {
+export function getFollowUpQuestion({ taskViewModel, completedToday, urgency, isBetaCrop, betaTasksDone }) {
   if (!taskViewModel) return null;
 
   // Don't ask follow-up on every task — only on important ones
   // Skip if this is the 3rd+ task today (don't create fatigue)
   if (completedToday >= 3) return null;
+
+  // Beta crops: after a few completed tasks, collect a quick quality
+  // signal so we know where guidance needs work (spec §9). We only ask
+  // once every ~3 completions to keep the prompt light.
+  if (isBetaCrop && typeof betaTasksDone === 'number' && betaTasksDone > 0 && betaTasksDone % 3 === 0) {
+    return {
+      type: FOLLOWUP_TYPE.BETA,
+      questionKey: 'beta.feedback.question',
+      options: [
+        { value: 'yes', labelKey: 'beta.feedback.yes', status: COMPLETION_STATUS.DONE },
+        { value: 'partly', labelKey: 'beta.feedback.partly', status: COMPLETION_STATUS.PARTIAL },
+        { value: 'no', labelKey: 'beta.feedback.no', status: COMPLETION_STATUS.PARTIAL },
+      ],
+    };
+  }
 
   const isHighUrgency = urgency === 'critical' || urgency === 'today';
   const isWeatherSensitive = !!taskViewModel.isWeatherOverridden;

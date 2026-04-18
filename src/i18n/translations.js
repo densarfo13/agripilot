@@ -5843,6 +5843,146 @@ const T = {
   'tips.maize.harvest': { en: 'Harvest in the dry part of the day.', fr: 'Récolter pendant le sec.', sw: 'Vuna wakati wa kavu wa siku.', ha: 'Girbe lokacin bushewar yini.', tw: 'Twa wɔ bere a ewim yɛ hye.' },
   'tips.maize.dryHarvest': { en: 'Well-dried grain stores longer and sells for more.', fr: 'Un grain bien sec se conserve et se vend mieux.', sw: 'Nafaka kavu huhifadhiwa vizuri na huuzwa zaidi.', ha: 'Hatsi mai kyau bushewa yana jimawa kuma yana biya sosai.', tw: 'Aburo a ahyew yiye no kora kyɛ na ne boɔ yɛ den.' },
 
+  // ═══════════════════════════════════════════════════════════
+  //  BETA CROP LABELS, WARNING + FEEDBACK
+  // ═══════════════════════════════════════════════════════════
+  'beta.label': { en: 'Beta', fr: 'Bêta', sw: 'Majaribio', ha: 'Gwaji', tw: 'Sɔhwɛ' },
+  'beta.warning.title': { en: 'This crop is in testing', fr: 'Cette culture est en test', sw: 'Zao hili liko katika majaribio', ha: 'Wannan amfanin gona na gwaji', tw: 'Nnɔbae yi wɔ sɔhwɛ mu' },
+  'beta.warning.body1': { en: 'Daily guidance is available.', fr: 'Des conseils quotidiens sont disponibles.', sw: 'Mwongozo wa kila siku upo.', ha: 'Jagora ta yau da kullum tana nan.', tw: 'Daa akwankyerɛ wɔ hɔ.' },
+  'beta.warning.body2': { en: 'Some advice may still be improving for your area.', fr: 'Certains conseils peuvent encore s\'améliorer pour votre région.', sw: 'Baadhi ya ushauri unaweza kuwa unaboreshwa kwa eneo lako.', ha: 'Wasu shawarwarin na iya ci gaba da ingantawa a yankinku.', tw: 'Afutuo bi da so retu mpɔn ma wo mantam.' },
+  'beta.warning.continue': { en: 'Continue with this crop', fr: 'Continuer avec cette culture', sw: 'Endelea na zao hili', ha: 'Ci gaba da wannan amfanin gona', tw: 'Kɔ so wɔ nnɔbae yi so' },
+  'beta.warning.chooseAnother': { en: 'Choose another crop', fr: 'Choisir une autre culture', sw: 'Chagua zao lingine', ha: 'Zaɓi wani amfanin gona', tw: 'Paw nnɔbae foforɔ' },
+  'beta.feedback.question': { en: 'Is this guidance helpful?', fr: 'Ces conseils sont-ils utiles ?', sw: 'Je, mwongozo huu unasaidia?', ha: 'Shin wannan jagora tana da taimako?', tw: 'Akwankyerɛ yi ho hia anaa?' },
+  'beta.feedback.yes': { en: 'Yes', fr: 'Oui', sw: 'Ndiyo', ha: 'Ee', tw: 'Aane' },
+  'beta.feedback.partly': { en: 'Partly', fr: 'En partie', sw: 'Sehemu', ha: 'Ɗan kaɗan', tw: 'Kakraa' },
+  'beta.feedback.no': { en: 'No', fr: 'Non', sw: 'Hapana', ha: 'A\'a', tw: 'Dabi' },
+
+  // ─── Crop labels for beta crops ─────────────────────────
+  'crop.tomato': { en: 'Tomato', fr: 'Tomate', sw: 'Nyanya', ha: 'Tumatir', tw: 'Ntoosi' },
+  'crop.pepper': { en: 'Pepper', fr: 'Piment', sw: 'Pilipili', ha: 'Barkono', tw: 'Mako' },
+  'crop.onion': { en: 'Onion', fr: 'Oignon', sw: 'Kitunguu', ha: 'Albasa', tw: 'Gyeene' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TOMATO beta task library
+  // ═══════════════════════════════════════════════════════════
+  'task.tomato.clear_land.title': { en: 'Clear your tomato plot', fr: 'Défricher votre parcelle de tomates', sw: 'Safisha kiwanja cha nyanya', ha: 'Share filin tumatir', tw: 'Twitwa wo ntoosi afuo' },
+  'task.tomato.clear_land.why': { en: 'A clean plot helps seedlings settle', fr: 'Un terrain propre aide les plants', sw: 'Kiwanja safi husaidia miche', ha: 'Filin mai tsafta na taimaka wa tsirrai', tw: 'Afuo a ɛho te boa nnua no' },
+  'task.tomato.clear_land.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.tomato.clear_land.steps': { en: 'Cut weeds and grasses | Remove stones and debris | Clear old plant roots', fr: 'Couper mauvaises herbes | Enlever pierres et débris | Retirer vieilles racines', sw: 'Kata magugu na nyasi | Ondoa mawe na taka | Ondoa mizizi ya zamani', ha: 'Yanke ciyayi | Cire duwatsu da datti | Cire tsofaffin saiwoyi', tw: 'Twa nwura | Yi aboɔ ne fi | Yi nhini dada' },
+  'task.tomato.clear_land.tips': { en: 'Clear when soil is dry', fr: 'Défricher quand le sol est sec', sw: 'Safisha udongo ukiwa kavu', ha: 'Share lokacin ƙasa ta bushe', tw: 'Twitwa bere a asase awoɔ' },
+  'task.tomato.clear_land.outcome': { en: 'Your plot is ready.', fr: 'Votre parcelle est prête.', sw: 'Kiwanja kiko tayari.', ha: 'Filin ya shirya.', tw: 'Wo afuo asiesie.' },
+
+  'task.tomato.prepare_soil.title': { en: 'Prepare the soil', fr: 'Préparer le sol', sw: 'Tayarisha udongo', ha: 'Shirya ƙasa', tw: 'Siesie asase' },
+  'task.tomato.prepare_soil.why': { en: 'Loose soil helps roots grow', fr: 'Un sol meuble aide les racines', sw: 'Udongo mwepesi husaidia mizizi', ha: 'Ƙasa sassauta na taimakon saiwa', tw: 'Asase a ɛdwodwoɔ boa nhini' },
+  'task.tomato.prepare_soil.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.tomato.prepare_soil.steps': { en: 'Loosen the soil | Break large soil clumps | Mix in compost if available', fr: 'Ameublir le sol | Casser les mottes | Ajouter du compost si possible', sw: 'Lainisha udongo | Vunja madongo | Ongeza mboji ikiwezekana', ha: 'Sassauta ƙasa | Fasa manyan kulli | Haɗa takin ƙwayoyi idan akwai', tw: 'Dwodwo asase | Paapae asase bu den | Fa compost bɔ mu sɛ ɛwɔ hɔ a' },
+  'task.tomato.prepare_soil.tips': { en: 'Do not work very wet soil', fr: 'Ne pas travailler un sol gorgé', sw: 'Usilime udongo uliolowa sana', ha: 'Kada ka yi aiki ƙasa mai ruwa sosai', tw: 'Nyɛ asase a nsu ayɛ so' },
+  'task.tomato.prepare_soil.outcome': { en: 'Soil is ready.', fr: 'Le sol est prêt.', sw: 'Udongo tayari.', ha: 'Ƙasa ta shirya.', tw: 'Asase asiesie.' },
+
+  'task.tomato.plant_seedlings.title': { en: 'Plant your tomato seedlings', fr: 'Repiquer vos plants de tomate', sw: 'Panda miche ya nyanya', ha: 'Dasa shuke-shuken tumatir', tw: 'Dua wo ntoosi nfifideɛ' },
+  'task.tomato.plant_seedlings.why': { en: 'Seedlings establish best in prepared soil', fr: 'Les plants s\'installent mieux en sol préparé', sw: 'Miche hukaa vizuri katika udongo uliotayarishwa', ha: 'Tsirrai na daidaitawa a ƙasar da aka shirya', tw: 'Nnua no te ase yiye wɔ asase a wɔasiesie' },
+  'task.tomato.plant_seedlings.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.tomato.plant_seedlings.steps': { en: 'Dig small holes | Place seedlings gently | Cover roots with soil | Press soil lightly', fr: 'Creuser petits trous | Placer les plants | Couvrir les racines | Tasser légèrement', sw: 'Chimba mashimo madogo | Weka miche | Funika mizizi | Bonyeza udongo kidogo', ha: 'Huda ƙananan ramuka | Sa tsirrai | Rufe saiwa | Latse ƙasa kaɗan', tw: 'Tu ntokuro nketewa | Fa nfifideɛ no to mu | Kata nhini no so | Mia asase no so kakra' },
+  'task.tomato.plant_seedlings.tips': { en: 'Leave space between plants', fr: 'Laisser de l\'espace entre les plants', sw: 'Acha nafasi kati ya mimea', ha: 'Bar tazara tsakanin tsirrai', tw: 'Gyae ntam wɔ nnua no ntam' },
+  'task.tomato.plant_seedlings.outcome': { en: 'Seedlings are planted.', fr: 'Les plants sont en place.', sw: 'Miche imepandwa.', ha: 'An dasa tsirrai.', tw: 'Woadua nfifideɛ.' },
+
+  'task.tomato.water.title': { en: 'Water your tomato plants', fr: 'Arroser vos tomates', sw: 'Mwagilia nyanya zako', ha: 'Shayar da tumatir', tw: 'Gu nsu gu wo ntoosi so' },
+  'task.tomato.water.why': { en: 'Tomatoes need steady moisture', fr: 'Les tomates ont besoin d\'humidité régulière', sw: 'Nyanya zinahitaji unyevu wa mara kwa mara', ha: 'Tumatir na buƙatar danshi akai-akai', tw: 'Ntoosi hia nsu daa' },
+  'task.tomato.water.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.tomato.water.steps': { en: 'Water at the base of the plant | Avoid wetting leaves | Keep soil moist', fr: 'Arroser à la base | Éviter de mouiller les feuilles | Garder le sol humide', sw: 'Mwagilia chini ya mmea | Epuka kulowesha majani | Weka udongo unyevu', ha: 'Shayar a gindin shuka | Kauce danye ganyaye | Kiyaye danshin ƙasa', tw: 'Gu nsu gu dua no ase | Mma nhaban no nnɔ | Ma asase no nyɛ fɔmu' },
+  'task.tomato.water.tips': { en: 'Water early morning or evening', fr: 'Arroser tôt ou en soirée', sw: 'Mwagilia asubuhi au jioni', ha: 'Shayar da safe ko yamma', tw: 'Gu nsu anɔpahan anaa anwummere' },
+  'task.tomato.water.outcome': { en: 'Plants are watered.', fr: 'Les plants sont arrosés.', sw: 'Mimea imemwagiliwa.', ha: 'An shayar tsirrai.', tw: 'Woagu nnua no nsu.' },
+
+  'task.tomato.pests.title': { en: 'Check tomato plants for pests', fr: 'Vérifier les ravageurs sur les tomates', sw: 'Kagua wadudu kwenye nyanya', ha: 'Bincika kwari a tumatir', tw: 'Hwɛ ntoosi so hwehwɛ mmoawa' },
+  'task.tomato.pests.why': { en: 'Early detection prevents loss', fr: 'Une détection précoce évite les pertes', sw: 'Kugundua mapema huzuia hasara', ha: 'Gano da wuri na hana asara', tw: 'Sɛ wuhu ntɛm a, wo nkwasoɔ nnyɛ den' },
+  'task.tomato.pests.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.tomato.pests.risk': { en: 'Pests can spread and damage fruits', fr: 'Les ravageurs peuvent abîmer les fruits', sw: 'Wadudu wanaweza kuharibu matunda', ha: 'Kwari na iya yaɗuwa su lalata \'ya\'yan itace', tw: 'Mmoawa tumi trɛ na ɛsɛe aba' },
+  'task.tomato.pests.steps': { en: 'Inspect leaves closely | Look under leaves | Remove visible pests', fr: 'Examiner les feuilles | Regarder dessous | Retirer les ravageurs', sw: 'Kagua majani vizuri | Angalia chini ya majani | Ondoa wadudu', ha: 'Duba ganyaye sosai | Duba ƙarƙashin ganyaye | Cire kwari', tw: 'Hwɛ nhaban no yiye | Hwɛ nhaban no ase | Yi mmoawa no' },
+  'task.tomato.pests.outcome': { en: 'Pests are under control.', fr: 'Les ravageurs sont maîtrisés.', sw: 'Wadudu wanadhibitiwa.', ha: 'An shawo kan kwari.', tw: 'Mmoawa no wɔ nsa ase.' },
+
+  'task.tomato.harvest.title': { en: 'Harvest your tomatoes', fr: 'Récolter vos tomates', sw: 'Vuna nyanya zako', ha: 'Girbe tumatir', tw: 'Twa wo ntoosi' },
+  'task.tomato.harvest.why': { en: 'Ripe tomatoes sell best', fr: 'Les tomates mûres se vendent mieux', sw: 'Nyanya zilizoiva zinauzwa vizuri', ha: 'Tumatir da suka nuna na sayarwa mafi kyau', tw: 'Ntoosi a abere tɔn ye paa' },
+  'task.tomato.harvest.timing': { en: 'When ripe', fr: 'Quand mûres', sw: 'Zikishaiva', ha: 'Lokacin da suka nuna', tw: 'Sɛ abere a' },
+  'task.tomato.harvest.steps': { en: 'Pick ripe tomatoes gently | Avoid damaging the plant | Store in a container', fr: 'Cueillir délicatement | Éviter d\'abîmer la plante | Mettre en caisse', sw: 'Chuma nyanya zilizoiva kwa upole | Usiharibu mmea | Hifadhi kwenye chombo', ha: 'Tara tumatir da suka nuna a hankali | Kauce lalata shuka | Ajiye a akwati', tw: 'Twa ntoosi a abere brɛoo | Nyɛ dua no ho asɛm | Kora wɔ biribi mu' },
+  'task.tomato.harvest.tips': { en: 'Harvest regularly', fr: 'Récolter régulièrement', sw: 'Vuna mara kwa mara', ha: 'Girbe akai-akai', tw: 'Twa no daa' },
+  'task.tomato.harvest.outcome': { en: 'Harvest is done.', fr: 'La récolte est faite.', sw: 'Mavuno yamekwisha.', ha: 'An girbi.', tw: 'Wɔatwa no.' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PEPPER beta task library
+  // ═══════════════════════════════════════════════════════════
+  'task.pepper.clear_land.title': { en: 'Clear your pepper plot', fr: 'Défricher votre parcelle de piments', sw: 'Safisha kiwanja cha pilipili', ha: 'Share filin barkono', tw: 'Twitwa wo mako afuo' },
+  'task.pepper.clear_land.why': { en: 'A clean plot helps young plants', fr: 'Un terrain propre aide les jeunes plants', sw: 'Kiwanja safi husaidia mimea michanga', ha: 'Filin mai tsafta na taimaka wa sabbin tsirrai', tw: 'Afuo krɔnkrɔn boa nnua foforɔ' },
+  'task.pepper.clear_land.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.pepper.clear_land.steps': { en: 'Remove weeds and grasses | Clear stones and debris | Prepare a clean planting area', fr: 'Enlever mauvaises herbes | Déblayer pierres et débris | Préparer une zone propre', sw: 'Ondoa magugu | Ondoa mawe na taka | Andaa eneo safi la kupanda', ha: 'Cire ciyayi | Share duwatsu da datti | Shirya wurin shuka mai tsafta', tw: 'Yi wura | Yi aboɔ ne fi | Siesie baabi a ɛyɛ krɔnkrɔn' },
+  'task.pepper.clear_land.outcome': { en: 'Your plot is ready.', fr: 'Votre parcelle est prête.', sw: 'Kiwanja tayari.', ha: 'Filin ya shirya.', tw: 'Wo afuo asiesie.' },
+
+  'task.pepper.plant.title': { en: 'Plant your pepper seedlings', fr: 'Repiquer vos plants de piment', sw: 'Panda miche ya pilipili', ha: 'Dasa shuke-shuken barkono', tw: 'Dua mako nfifideɛ' },
+  'task.pepper.plant.why': { en: 'Proper planting sets up strong growth', fr: 'Une bonne plantation favorise la croissance', sw: 'Kupanda vizuri husaidia ukuaji', ha: 'Dasa mai kyau na taimakon girma', tw: 'Dua pa ma nnyineɛ' },
+  'task.pepper.plant.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.pepper.plant.steps': { en: 'Dig small holes | Place seedlings carefully | Cover roots with soil', fr: 'Creuser des trous | Placer les plants | Couvrir les racines', sw: 'Chimba mashimo | Weka miche | Funika mizizi', ha: 'Huda ramuka | Sa tsirrai | Rufe saiwa', tw: 'Tu ntokuro | Fa nfifideɛ no to mu | Kata nhini no so' },
+  'task.pepper.plant.tips': { en: 'Leave enough space between plants', fr: 'Laisser assez d\'espace', sw: 'Acha nafasi kati ya mimea', ha: 'Bar isasshen tazara', tw: 'Gyae ntam pii' },
+  'task.pepper.plant.outcome': { en: 'Seedlings are planted.', fr: 'Les plants sont en place.', sw: 'Miche imepandwa.', ha: 'An dasa tsirrai.', tw: 'Woadua nfifideɛ.' },
+
+  'task.pepper.water.title': { en: 'Water your pepper plants', fr: 'Arroser vos piments', sw: 'Mwagilia pilipili zako', ha: 'Shayar da barkono', tw: 'Gu nsu gu mako so' },
+  'task.pepper.water.why': { en: 'Peppers need steady moisture', fr: 'Les piments ont besoin d\'humidité', sw: 'Pilipili zinahitaji unyevu', ha: 'Barkono na buƙatar danshi', tw: 'Mako hia nsu' },
+  'task.pepper.water.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.pepper.water.steps': { en: 'Water near the base | Avoid overwatering | Keep soil moist', fr: 'Arroser près de la base | Éviter l\'excès | Garder le sol humide', sw: 'Mwagilia karibu na chini | Usipitishe maji | Weka udongo unyevu', ha: 'Shayar kusa da gindi | Kauce wa yawan ruwa | Kiyaye danshin ƙasa', tw: 'Gu nsu bɛn dua no ase | Mma nsu nnɔso | Ma asase no nyɛ fɔmu' },
+  'task.pepper.water.outcome': { en: 'Plants are watered.', fr: 'Les plants sont arrosés.', sw: 'Mimea imemwagiliwa.', ha: 'An shayar tsirrai.', tw: 'Woagu nnua no nsu.' },
+
+  'task.pepper.weed.title': { en: 'Weed around your peppers', fr: 'Désherber autour des piments', sw: 'Palilia karibu na pilipili', ha: 'Cire ciyawa kusa da barkono', tw: 'Popa mako no ho' },
+  'task.pepper.weed.why': { en: 'Weeds steal water and nutrients', fr: 'Les mauvaises herbes volent eau et nutriments', sw: 'Magugu huchukua maji na virutubisho', ha: 'Ciyayi na cin ruwa da abinci', tw: 'Wura gye nsu ne aduan' },
+  'task.pepper.weed.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.pepper.weed.steps': { en: 'Pull weeds by hand | Clear around plant base | Keep soil loose', fr: 'Arracher à la main | Dégager autour de la base | Garder le sol meuble', sw: 'Vuta magugu kwa mkono | Safisha karibu na shina | Weka udongo laini', ha: 'Ciri ciyayi da hannu | Share kusa da gindi | Kiyaye ƙasa sassauta', tw: 'Twe wura no fi nsa | Popa dua no ho | Ma asase no ndwodwo' },
+  'task.pepper.weed.outcome': { en: 'Plot is weeded.', fr: 'La parcelle est désherbée.', sw: 'Kiwanja kimepaliliwa.', ha: 'An cire ciyawa.', tw: 'Woapopa afuo no.' },
+
+  'task.pepper.harvest.title': { en: 'Harvest your peppers', fr: 'Récolter vos piments', sw: 'Vuna pilipili zako', ha: 'Girbe barkono', tw: 'Twa wo mako' },
+  'task.pepper.harvest.why': { en: 'Timely harvest keeps plants producing', fr: 'Une récolte à temps maintient la production', sw: 'Kuvuna kwa wakati huhimiza uzalishaji', ha: 'Girbin lokaci na ci gaba da samar', tw: 'Twa bere mu ma adɔe kɔ so' },
+  'task.pepper.harvest.timing': { en: 'When ripe', fr: 'Quand mûrs', sw: 'Zikishaiva', ha: 'Lokacin da suka nuna', tw: 'Sɛ abere a' },
+  'task.pepper.harvest.steps': { en: 'Pick peppers carefully | Avoid pulling the plant | Store in a cool place', fr: 'Cueillir avec soin | Éviter d\'arracher la plante | Stocker au frais', sw: 'Chuma pilipili kwa uangalifu | Usinyunyue mmea | Hifadhi mahali pa baridi', ha: 'Tara barkono a hankali | Kada ka ja shukar | Ajiye a wuri mai sanyi', tw: 'Twa mako brɛoo | Mma dua no nntwe | Kora wɔ beaeɛ a ɛyɛ nwunu' },
+  'task.pepper.harvest.outcome': { en: 'Peppers are harvested.', fr: 'Les piments sont récoltés.', sw: 'Pilipili zimevunwa.', ha: 'An girbi barkono.', tw: 'Wɔatwa mako no.' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONION beta task library
+  // ═══════════════════════════════════════════════════════════
+  'task.onion.prepare_soil.title': { en: 'Prepare the onion bed', fr: 'Préparer le lit d\'oignon', sw: 'Tayarisha kitalu cha kitunguu', ha: 'Shirya gadon albasa', tw: 'Siesie gyeene mpie' },
+  'task.onion.prepare_soil.why': { en: 'Fine soil helps bulbs form well', fr: 'Un sol fin aide la formation des bulbes', sw: 'Udongo laini husaidia mizizi', ha: 'Ƙasa mai laushi na taimakon ƙwai', tw: 'Asase a ɛyɛ fɛ boa dua no' },
+  'task.onion.prepare_soil.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.onion.prepare_soil.steps': { en: 'Loosen the soil well | Break all soil clumps | Level the surface evenly', fr: 'Bien ameublir | Casser les mottes | Niveler la surface', sw: 'Lainisha udongo vizuri | Vunja madongo yote | Sawazisha uso', ha: 'Sassauta ƙasa sosai | Fasa dukkan kulli | Daidaita saman ƙasa', tw: 'Dwodwo asase yiye | Paapae kulli nyinaa | Siesie asase no so pɛ' },
+  'task.onion.prepare_soil.tips': { en: 'Soil should be soft and fine', fr: 'Le sol doit être fin', sw: 'Udongo uwe laini na mwembamba', ha: 'Ƙasa ta zama mai laushi', tw: 'Asase no nyɛ brɛoo' },
+  'task.onion.prepare_soil.outcome': { en: 'Bed is ready.', fr: 'Le lit est prêt.', sw: 'Kitalu tayari.', ha: 'Gadon ya shirya.', tw: 'Mpie no asiesie.' },
+
+  'task.onion.plant.title': { en: 'Plant your onions', fr: 'Planter vos oignons', sw: 'Panda kitunguu', ha: 'Shuka albasa', tw: 'Dua gyeene' },
+  'task.onion.plant.why': { en: 'Good spacing gives larger bulbs', fr: 'Un bon espacement donne des bulbes plus gros', sw: 'Nafasi nzuri hutoa mizizi mikubwa', ha: 'Tazara mai kyau na ba ƙwai manya', tw: 'Ntam pa ma gyeene kɛseɛ' },
+  'task.onion.plant.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.onion.plant.steps': { en: 'Place bulbs or seeds | Cover lightly with soil | Keep spacing even', fr: 'Placer bulbes ou graines | Couvrir légèrement | Maintenir l\'espacement', sw: 'Weka mbegu au balbu | Funika kwa udongo | Weka nafasi sawa', ha: 'Sa ƙwai ko iri | Rufe kaɗan da ƙasa | Riƙe tazara daidai', tw: 'Fa aba anaa dua | Kata so kakra | Ma ntam no nyɛ pɛ' },
+  'task.onion.plant.tips': { en: 'Do not plant too deep', fr: 'Ne pas planter trop profond', sw: 'Usipande kirefu sana', ha: 'Kada ka shuka da zurfi sosai', tw: 'Nnua ne mu nnɔ' },
+  'task.onion.plant.outcome': { en: 'Onions are planted.', fr: 'Les oignons sont plantés.', sw: 'Vitunguu vimepandwa.', ha: 'An shuka albasa.', tw: 'Woadua gyeene.' },
+
+  'task.onion.water.title': { en: 'Water your onions', fr: 'Arroser vos oignons', sw: 'Mwagilia kitunguu', ha: 'Shayar da albasa', tw: 'Gu nsu gu gyeene so' },
+  'task.onion.water.why': { en: 'Steady moisture forms good bulbs', fr: 'Une humidité régulière forme de bons bulbes', sw: 'Unyevu wa kawaida huunda mizizi', ha: 'Danshi akai-akai na kafa ƙwai', tw: 'Nsu daa ma gyeene yɛ yiye' },
+  'task.onion.water.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.onion.water.steps': { en: 'Water lightly | Keep soil moist | Avoid waterlogging', fr: 'Arroser légèrement | Garder humide | Éviter l\'excès', sw: 'Mwagilia kidogo | Weka udongo unyevu | Usifurike', ha: 'Shayar kaɗan | Kiyaye danshi | Kauce wa ruwa mai yawa', tw: 'Gu nsu kakra | Ma asase no nyɛ fɔmu | Mma nsu nnɔso' },
+  'task.onion.water.outcome': { en: 'Onions are watered.', fr: 'Les oignons sont arrosés.', sw: 'Kitunguu kimemwagiliwa.', ha: 'An shayar albasa.', tw: 'Woagu gyeene nsu.' },
+
+  'task.onion.weed.title': { en: 'Weed the onion bed', fr: 'Désherber le lit d\'oignon', sw: 'Palilia kitalu cha kitunguu', ha: 'Cire ciyawa daga gadon albasa', tw: 'Popa gyeene mpie no' },
+  'task.onion.weed.why': { en: 'Onions compete poorly with weeds', fr: 'Les oignons supportent mal la concurrence', sw: 'Vitunguu haviendani na magugu', ha: 'Albasa bai iya fafatawa da ciyayi ba', tw: 'Gyeene ne wura ntumi goru' },
+  'task.onion.weed.timing': { en: 'Do this week', fr: 'À faire cette semaine', sw: 'Fanya wiki hii', ha: 'Yi a wannan mako', tw: 'Yɛ nnawɔtwe yi' },
+  'task.onion.weed.steps': { en: 'Pull weeds carefully | Avoid disturbing roots | Keep the bed clean', fr: 'Arracher avec soin | Ne pas déranger les racines | Garder le lit propre', sw: 'Vuta magugu kwa uangalifu | Usisumbue mizizi | Weka kitalu safi', ha: 'Ciri ciyayi a hankali | Kada ka tayar da saiwa | Kiyaye gadon tsafta', tw: 'Twe wura brɛoo | Mma nhini no nhirim | Ma mpie no ho nte' },
+  'task.onion.weed.outcome': { en: 'Bed is weeded.', fr: 'Le lit est désherbé.', sw: 'Kitalu kimepaliliwa.', ha: 'An cire ciyawa.', tw: 'Woapopa mpie no.' },
+
+  'task.onion.harvest.title': { en: 'Harvest your onions', fr: 'Récolter vos oignons', sw: 'Vuna kitunguu', ha: 'Girbe albasa', tw: 'Twa wo gyeene' },
+  'task.onion.harvest.why': { en: 'Pulled onions need to dry before storage', fr: 'Les oignons doivent sécher avant stockage', sw: 'Vitunguu vinahitaji kukauka kabla ya kuhifadhi', ha: 'Albasa na buƙatar bushewa kafin adanawa', tw: 'Gyeene hia sɛ ɛhyew ansa na yɛakora' },
+  'task.onion.harvest.timing': { en: 'When tops fall over', fr: 'Quand les tiges se couchent', sw: 'Wakati vichwa vinaanguka', ha: 'Lokacin da saman ya fadi', tw: 'Sɛ atifi no hwe fam a' },
+  'task.onion.harvest.steps': { en: 'Loosen soil around onions | Pull gently | Shake off dirt', fr: 'Ameublir autour des oignons | Tirer doucement | Secouer la terre', sw: 'Lainisha udongo karibu nao | Vuta taratibu | Tikisa udongo', ha: 'Sassauta ƙasa kusa da albasa | Ciro a hankali | Girgiza ƙasa', tw: 'Dwodwo asase wɔ gyeene no ho | Twe brɛoo | Woso fi no' },
+  'task.onion.harvest.outcome': { en: 'Onions are harvested.', fr: 'Les oignons sont récoltés.', sw: 'Vitunguu vimevunwa.', ha: 'An girbi albasa.', tw: 'Wɔatwa gyeene no.' },
+
+  'task.onion.dry.title': { en: 'Dry your onions', fr: 'Sécher vos oignons', sw: 'Kausha vitunguu vyako', ha: 'Bushe albasa', tw: 'Hyew wo gyeene' },
+  'task.onion.dry.why': { en: 'Dry onions store much longer', fr: 'Bien secs, ils se conservent longtemps', sw: 'Vitunguu vikavu huhifadhiwa kwa muda mrefu', ha: 'Albasa bushe na jimawa', tw: 'Gyeene a ahyew kora kyɛ' },
+  'task.onion.dry.timing': { en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ' },
+  'task.onion.dry.steps': { en: 'Spread onions in a dry place | Allow airflow | Let skins dry fully', fr: 'Étaler au sec | Laisser l\'air circuler | Sécher les pelures', sw: 'Tawanya mahali pakavu | Ruhusu hewa kupita | Acha ngozi zikauke', ha: 'Baza albasa a busasshen wuri | Bari iska ta shiga | Bari fatar ta bushe', tw: 'Trɛ gyeene wɔ beaeɛ a ɛyɛ hye | Ma mframa nfa mu | Ma ne ho nhonam nhyew' },
+  'task.onion.dry.tips': { en: 'Keep out of rain', fr: 'Garder à l\'abri de la pluie', sw: 'Weka mbali na mvua', ha: 'Kiyaye daga ruwan sama', tw: 'Mma osu nntɔ so' },
+  'task.onion.dry.outcome': { en: 'Onions are drying.', fr: 'Les oignons sèchent.', sw: 'Vitunguu vinakauka.', ha: 'Albasa na bushewa.', tw: 'Gyeene no rehyew.' },
+
   // ─── Region-flavoured task title variants (V2 spec §5) ──
   'cropTask.region.clearFieldManual': { en: 'Cut weeds and clear by hand', fr: 'Couper les mauvaises herbes à la main', sw: 'Kata magugu kwa mkono', ha: 'Yanke ciyawa da hannu', tw: 'Twa wura no fi nsa' },
   'cropTask.region.prepareLandManualTropical': { en: 'Loosen the soil with a hoe', fr: 'Ameublir le sol à la houe', sw: 'Laini udongo kwa jembe', ha: 'Sassauta ƙasa da fartanya', tw: 'Dwodwo asase no de asɔsɔ' },

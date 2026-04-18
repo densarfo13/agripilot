@@ -22,6 +22,8 @@ import { saveFarmProfile, createNewFarm, saveFarmerType, updateCropStage } from 
 import { safeTrackEvent } from '../lib/analytics.js';
 import { getInitialTask, getContextAwareInitialTask } from '../engine/cropTaskMap.js';
 import { resolveRegionProfile } from '../engine/regionProfiles.js';
+import { isBetaCrop } from '../engine/cropDefinitions.js';
+import BetaWarningModal from '../components/BetaWarningModal.jsx';
 
 const STAGE_ICONS = {
   land_prep: '\uD83D\uDE9C',
@@ -61,6 +63,7 @@ export default function CropSummary() {
 
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
+  const [showBetaWarning, setShowBetaWarning] = useState(false);
 
   const crop = location.state?.crop;
   const answers = location.state?.answers;
@@ -68,6 +71,19 @@ export default function CropSummary() {
 
   const cp = getCropProfile(crop.code);
   if (!cp) return <Navigate to="/crop-recommendations" replace />;
+
+  // ─── Beta confirmation gate ─────────────────────────────
+  // Beta-flagged crops surface a short confirmation (spec §2) before
+  // the start-crop pipeline runs. Supported crops skip the gate.
+  function requestStart() {
+    if (starting) return;
+    if (isBetaCrop(crop.code)) {
+      safeTrackEvent('beta.crop_warning_shown', { crop: crop.code });
+      setShowBetaWarning(true);
+      return;
+    }
+    handleStart();
+  }
 
   // ─── Start crop plan ────────────────────────────────────
   // Spec §8: saving the crop, setting the stage, generating the first task,
@@ -177,6 +193,9 @@ export default function CropSummary() {
         <div style={S.overviewCard}>
           <span style={S.overviewIcon}>{cp.icon}</span>
           <h1 style={S.cropName}>{crop.name}</h1>
+          {isBetaCrop(crop.code) && (
+            <div style={S.betaChip}>{t('beta.label')}</div>
+          )}
           <div style={{ ...S.diffBadge, background: DIFF_COLORS[cp.difficulty] + '18', color: DIFF_COLORS[cp.difficulty] }}>
             {t(`cropFit.diff.${cp.difficulty}`)}
           </div>
@@ -271,7 +290,7 @@ export default function CropSummary() {
         {/* ═══ G. START CTA ═══ */}
         <button
           type="button"
-          onClick={handleStart}
+          onClick={requestStart}
           disabled={starting}
           style={{
             ...S.startBtn,
@@ -283,6 +302,16 @@ export default function CropSummary() {
 
         <p style={S.startHint}>{t('cropSummary.startHint')}</p>
       </div>
+
+      {/* Beta confirmation modal (spec §2) */}
+      {showBetaWarning && (
+        <BetaWarningModal
+          cropName={crop.name}
+          cropIcon={cp.icon}
+          onConfirm={() => { setShowBetaWarning(false); handleStart(); }}
+          onCancel={() => { setShowBetaWarning(false); navigate(-1); }}
+        />
+      )}
     </div>
   );
 }
@@ -348,6 +377,15 @@ const S = {
   diffBadge: {
     fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase',
     letterSpacing: '0.04em', padding: '0.25rem 0.75rem', borderRadius: '999px',
+  },
+  betaChip: {
+    fontSize: '0.625rem', fontWeight: 800, textTransform: 'uppercase',
+    letterSpacing: '0.08em', padding: '0.25rem 0.625rem',
+    borderRadius: '999px',
+    background: 'rgba(251,191,36,0.12)',
+    border: '1px solid rgba(251,191,36,0.35)',
+    color: '#FCD34D',
+    marginTop: '0.125rem',
   },
   timingFit: {
     fontSize: '0.75rem', fontWeight: 700, color: '#22C55E',

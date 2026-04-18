@@ -39,6 +39,7 @@ const MAIZE = {
   cropId: 'MAIZE',
   nameKey: 'crop.maize',
   icon: '\uD83C\uDF3D',
+  status: 'supported',
   difficulty: 'beginner',
   durationDays: 112, // ~16 weeks
   waterNeed: 'moderate',
@@ -237,6 +238,211 @@ const MAIZE = {
   },
 };
 
+// ─── TOMATO — beta crop ────────────────────────────────────
+// Smaller task library than MAIZE. status='beta' lights up the
+// Testing / Beta badge in the UI and triggers the beta confirm modal.
+const TOMATO = {
+  cropId: 'TOMATO',
+  nameKey: 'crop.tomato',
+  icon: '\uD83C\uDF45',
+  status: 'beta',
+  difficulty: 'moderate',
+  durationDays: 90,
+  waterNeed: 'high',
+  costLevel: 'moderate',
+  laborLevel: 'moderate',
+  marketPotential: 'good',
+  stages: ['land_preparation', 'planting', 'vegetative', 'harvest'],
+  needs: ['seedlings', 'fertilizer', 'water', 'labor', 'basic_tools'],
+  risks: ['pests', 'disease', 'drought', 'low_market_price'],
+  stageTaskMap: {
+    land_preparation: [
+      {
+        type: 'clear_land', titleKey: 'task.tomato.clear_land.title',
+        whyKey: 'task.tomato.clear_land.why', timingKey: 'task.tomato.clear_land.timing',
+        outcomeKey: 'task.tomato.clear_land.outcome',
+        stepsKey: 'task.tomato.clear_land.steps', tipsKey: 'task.tomato.clear_land.tips',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83E\uDE93',
+      },
+      {
+        type: 'prepare_soil', titleKey: 'task.tomato.prepare_soil.title',
+        whyKey: 'task.tomato.prepare_soil.why', timingKey: 'task.tomato.prepare_soil.timing',
+        outcomeKey: 'task.tomato.prepare_soil.outcome',
+        stepsKey: 'task.tomato.prepare_soil.steps', tipsKey: 'task.tomato.prepare_soil.tips',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83D\uDE9C',
+      },
+    ],
+    planting: [
+      {
+        type: 'plant_seedlings', titleKey: 'task.tomato.plant_seedlings.title',
+        whyKey: 'task.tomato.plant_seedlings.why', timingKey: 'task.tomato.plant_seedlings.timing',
+        outcomeKey: 'task.tomato.plant_seedlings.outcome',
+        stepsKey: 'task.tomato.plant_seedlings.steps', tipsKey: 'task.tomato.plant_seedlings.tips',
+        urgency: 'this_week', priority: 'high', icon: '\uD83C\uDF31',
+      },
+    ],
+    vegetative: [
+      {
+        type: 'water_plants', titleKey: 'task.tomato.water.title',
+        whyKey: 'task.tomato.water.why', timingKey: 'task.tomato.water.timing',
+        outcomeKey: 'task.tomato.water.outcome',
+        stepsKey: 'task.tomato.water.steps', tipsKey: 'task.tomato.water.tips',
+        urgency: 'today', priority: 'high', icon: '\uD83D\uDCA7',
+      },
+      {
+        type: 'check_pests', titleKey: 'task.tomato.pests.title',
+        whyKey: 'task.tomato.pests.why', timingKey: 'task.tomato.pests.timing',
+        riskKey: 'task.tomato.pests.risk',
+        outcomeKey: 'task.tomato.pests.outcome',
+        stepsKey: 'task.tomato.pests.steps',
+        urgency: 'today', priority: 'medium', icon: '\uD83D\uDC1B',
+      },
+    ],
+    harvest: [
+      {
+        type: 'harvest', titleKey: 'task.tomato.harvest.title',
+        whyKey: 'task.tomato.harvest.why', timingKey: 'task.tomato.harvest.timing',
+        outcomeKey: 'task.tomato.harvest.outcome',
+        stepsKey: 'task.tomato.harvest.steps', tipsKey: 'task.tomato.harvest.tips',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83E\uDDFA',
+      },
+    ],
+  },
+};
+
+// ─── PEPPER — beta crop ────────────────────────────────────
+const PEPPER = {
+  cropId: 'PEPPER',
+  nameKey: 'crop.pepper',
+  icon: '\uD83C\uDF36\uFE0F',
+  status: 'beta',
+  difficulty: 'moderate',
+  durationDays: 90,
+  waterNeed: 'moderate',
+  costLevel: 'moderate',
+  laborLevel: 'moderate',
+  marketPotential: 'good',
+  stages: ['land_preparation', 'planting', 'vegetative', 'harvest'],
+  needs: ['seedlings', 'fertilizer', 'water', 'labor', 'basic_tools'],
+  risks: ['pests', 'disease', 'drought', 'low_market_price'],
+  stageTaskMap: {
+    land_preparation: [
+      {
+        type: 'clear_land', titleKey: 'task.pepper.clear_land.title',
+        whyKey: 'task.pepper.clear_land.why', timingKey: 'task.pepper.clear_land.timing',
+        outcomeKey: 'task.pepper.clear_land.outcome',
+        stepsKey: 'task.pepper.clear_land.steps',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83E\uDE93',
+      },
+    ],
+    planting: [
+      {
+        type: 'plant_seedlings', titleKey: 'task.pepper.plant.title',
+        whyKey: 'task.pepper.plant.why', timingKey: 'task.pepper.plant.timing',
+        outcomeKey: 'task.pepper.plant.outcome',
+        stepsKey: 'task.pepper.plant.steps', tipsKey: 'task.pepper.plant.tips',
+        urgency: 'this_week', priority: 'high', icon: '\uD83C\uDF31',
+      },
+    ],
+    vegetative: [
+      {
+        type: 'water', titleKey: 'task.pepper.water.title',
+        whyKey: 'task.pepper.water.why', timingKey: 'task.pepper.water.timing',
+        outcomeKey: 'task.pepper.water.outcome',
+        stepsKey: 'task.pepper.water.steps',
+        urgency: 'today', priority: 'high', icon: '\uD83D\uDCA7',
+      },
+      {
+        type: 'weed', titleKey: 'task.pepper.weed.title',
+        whyKey: 'task.pepper.weed.why', timingKey: 'task.pepper.weed.timing',
+        outcomeKey: 'task.pepper.weed.outcome',
+        stepsKey: 'task.pepper.weed.steps',
+        urgency: 'today', priority: 'medium', icon: '\uD83C\uDF3E',
+      },
+    ],
+    harvest: [
+      {
+        type: 'harvest', titleKey: 'task.pepper.harvest.title',
+        whyKey: 'task.pepper.harvest.why', timingKey: 'task.pepper.harvest.timing',
+        outcomeKey: 'task.pepper.harvest.outcome',
+        stepsKey: 'task.pepper.harvest.steps',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83E\uDDFA',
+      },
+    ],
+  },
+};
+
+// ─── ONION — beta crop ─────────────────────────────────────
+const ONION = {
+  cropId: 'ONION',
+  nameKey: 'crop.onion',
+  icon: '\uD83E\uDDC5',
+  status: 'beta',
+  difficulty: 'moderate',
+  durationDays: 120,
+  waterNeed: 'moderate',
+  costLevel: 'low',
+  laborLevel: 'moderate',
+  marketPotential: 'good',
+  stages: ['land_preparation', 'planting', 'vegetative', 'harvest', 'post_harvest'],
+  needs: ['seeds', 'water', 'labor', 'basic_tools'],
+  risks: ['pests', 'disease', 'poor_storage', 'low_market_price'],
+  stageTaskMap: {
+    land_preparation: [
+      {
+        type: 'prepare_soil', titleKey: 'task.onion.prepare_soil.title',
+        whyKey: 'task.onion.prepare_soil.why', timingKey: 'task.onion.prepare_soil.timing',
+        outcomeKey: 'task.onion.prepare_soil.outcome',
+        stepsKey: 'task.onion.prepare_soil.steps', tipsKey: 'task.onion.prepare_soil.tips',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83D\uDE9C',
+      },
+    ],
+    planting: [
+      {
+        type: 'plant', titleKey: 'task.onion.plant.title',
+        whyKey: 'task.onion.plant.why', timingKey: 'task.onion.plant.timing',
+        outcomeKey: 'task.onion.plant.outcome',
+        stepsKey: 'task.onion.plant.steps', tipsKey: 'task.onion.plant.tips',
+        urgency: 'this_week', priority: 'high', icon: '\uD83C\uDF31',
+      },
+    ],
+    vegetative: [
+      {
+        type: 'water', titleKey: 'task.onion.water.title',
+        whyKey: 'task.onion.water.why', timingKey: 'task.onion.water.timing',
+        outcomeKey: 'task.onion.water.outcome',
+        stepsKey: 'task.onion.water.steps',
+        urgency: 'today', priority: 'medium', icon: '\uD83D\uDCA7',
+      },
+      {
+        type: 'weed', titleKey: 'task.onion.weed.title',
+        whyKey: 'task.onion.weed.why', timingKey: 'task.onion.weed.timing',
+        outcomeKey: 'task.onion.weed.outcome',
+        stepsKey: 'task.onion.weed.steps',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83C\uDF3E',
+      },
+    ],
+    harvest: [
+      {
+        type: 'harvest', titleKey: 'task.onion.harvest.title',
+        whyKey: 'task.onion.harvest.why', timingKey: 'task.onion.harvest.timing',
+        outcomeKey: 'task.onion.harvest.outcome',
+        stepsKey: 'task.onion.harvest.steps',
+        urgency: 'this_week', priority: 'medium', icon: '\uD83E\uDDFA',
+      },
+    ],
+    post_harvest: [
+      {
+        type: 'dry', titleKey: 'task.onion.dry.title',
+        whyKey: 'task.onion.dry.why', timingKey: 'task.onion.dry.timing',
+        outcomeKey: 'task.onion.dry.outcome',
+        stepsKey: 'task.onion.dry.steps', tipsKey: 'task.onion.dry.tips',
+        urgency: 'today', priority: 'medium', icon: '\u2600\uFE0F',
+      },
+    ],
+  },
+};
+
 // ─── Registry ──────────────────────────────────────────────
 // Add new crops by pushing into this map. The engine never
 // branches on `cropId` — it just reads whichever definition
@@ -244,6 +450,9 @@ const MAIZE = {
 
 const CROP_DEFINITIONS = {
   MAIZE,
+  TOMATO,
+  PEPPER,
+  ONION,
 };
 
 export function getCropDefinition(cropCode) {
@@ -251,6 +460,27 @@ export function getCropDefinition(cropCode) {
   const code = String(cropCode).toUpperCase();
   return CROP_DEFINITIONS[code] || null;
 }
+
+/**
+ * Returns true when the crop is flagged status:'beta'. Callers
+ * use this to branch on UI labels and the beta warning flow —
+ * engine behaviour is identical for supported and beta crops.
+ */
+export function isBetaCrop(cropCode) {
+  const def = getCropDefinition(cropCode);
+  return !!def && def.status === 'beta';
+}
+
+/**
+ * Flat view of the registry keyed by lowercase crop id, matching
+ * the `taskLibrary` export shape the product spec calls out.
+ */
+export const taskLibrary = {
+  maize: MAIZE.stageTaskMap,
+  tomato: TOMATO.stageTaskMap,
+  pepper: PEPPER.stageTaskMap,
+  onion: ONION.stageTaskMap,
+};
 
 export function listCropDefinitions() {
   return Object.values(CROP_DEFINITIONS);
