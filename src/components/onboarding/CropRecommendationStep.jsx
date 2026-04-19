@@ -17,6 +17,16 @@ import {
 } from '../../utils/onboardingCropFilter.js';
 import { getRecommendationReasons } from '../../utils/getRecommendationReasons.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { getCountrySupportTier, TIER_I18N_KEY, SUPPORT_TIER } from '../../utils/countrySupport.js';
+import { getCropSupportDepth, DEPTH_I18N_KEY, CROP_SUPPORT_DEPTH } from '../../utils/cropSupport.js';
+import { getRecommendationConfidence, CONFIDENCE_I18N_KEY } from '../../utils/getRecommendationConfidence.js';
+
+const CONFIDENCE_COLOR = { high: '#22C55E', medium: '#F59E0B', low: '#9FB3C8' };
+const DEPTH_COLOR = {
+  FULLY_GUIDED:     '#22C55E',
+  PARTIAL_GUIDANCE: '#0EA5E9',
+  BROWSE_ONLY:      '#9FB3C8',
+};
 
 const BEGINNER_FRIENDLY = new Set([
   'tomato', 'pepper', 'lettuce', 'beans', 'bush_beans',
@@ -140,8 +150,43 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
             </div>
           )}
 
-          <Section title={t('onboarding.crops.best')} crops={visibleBest} isBeginner={isBeginner}
-                   onboarding={onboarding} language={language} onPick={handlePick} t={t} accent="#22C55E" />
+          {(() => {
+            // Derive overall confidence once per render so the
+            // section heading stops promising "Best for you" when
+            // the data underneath is thin.
+            const countrySupportTier = getCountrySupportTier(onboarding?.location?.country);
+            const locationCompleteness =
+              (onboarding?.location?.country ? 0.5 : 0) +
+              (onboarding?.location?.stateCode ? 0.4 : 0) +
+              (onboarding?.location?.city ? 0.1 : 0);
+            const topCrop = visibleBest[0];
+            const overallConfidence = getRecommendationConfidence({
+              countrySupportTier,
+              stateSupported: !!onboarding?.location?.stateCode,
+              cropSupportDepth: getCropSupportDepth(topCrop?.crop),
+              locationCompleteness,
+              fitLevel: topCrop?.fitLevel,
+            });
+            const bestTitleKey = overallConfidence.level === 'high'
+              ? 'onboarding.crops.best'
+              : overallConfidence.level === 'medium'
+                ? 'recConfidence.wording.suggested'
+                : 'recConfidence.wording.limited';
+            return (
+              <>
+                {overallConfidence.level !== 'high' && (
+                  <div style={S.confidenceBanner} data-testid="confidence-banner">
+                    <span style={S.confidenceIcon}>{'\u2139\uFE0F'}</span>
+                    <span>{t('recConfidence.bannerBody')}</span>
+                  </div>
+                )}
+                <Section title={t(bestTitleKey)} crops={visibleBest} isBeginner={isBeginner}
+                         onboarding={onboarding} language={language}
+                         confidence={overallConfidence} onPick={handlePick} t={t}
+                         accent={CONFIDENCE_COLOR[overallConfidence.level]} />
+              </>
+            );
+          })()}
           {hasMoreAdvanced && (
             <button type="button" onClick={() => setShowAdvanced(true)} style={S.seeMore}>
               {t('onboarding.crops.seeMore')}
@@ -181,7 +226,7 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
   );
 }
 
-function Section({ title, crops, isBeginner, onboarding, language, onPick, t, accent, muted }) {
+function Section({ title, crops, isBeginner, onboarding, language, confidence, onPick, t, accent, muted }) {
   if (!crops || crops.length === 0) return null;
   return (
     <section style={S.section}>
@@ -194,6 +239,7 @@ function Section({ title, crops, isBeginner, onboarding, language, onPick, t, ac
             isBeginner={isBeginner}
             onboarding={onboarding}
             language={language}
+            confidence={confidence}
             onPick={onPick}
             t={t}
             muted={muted}
@@ -204,12 +250,15 @@ function Section({ title, crops, isBeginner, onboarding, language, onPick, t, ac
   );
 }
 
-function CropCard({ crop, isBeginner, onboarding, language, onPick, t, muted }) {
+function CropCard({ crop, isBeginner, onboarding, language, confidence, onPick, t, muted }) {
   const beginnerFriendly = BEGINNER_FRIENDLY.has(crop.crop);
   const badge = BADGE_LABEL_KEY[crop.fitLevel] || BADGE_LABEL_KEY.low;
   const statusLabel = crop.plantingStatus && STATUS_LABEL_KEY[crop.plantingStatus]
     ? t(STATUS_LABEL_KEY[crop.plantingStatus]) : null;
   const displayName = getCropDisplayName(crop.crop, language);
+  const supportDepth = getCropSupportDepth(crop.crop);
+  const depthKey = DEPTH_I18N_KEY[supportDepth];
+  const confidenceKey = confidence ? CONFIDENCE_I18N_KEY[confidence.level] : null;
   const reasons = getRecommendationReasons({
     crop,
     region: {
@@ -242,6 +291,16 @@ function CropCard({ crop, isBeginner, onboarding, language, onPick, t, muted }) 
         {statusLabel && <span style={S.status}>{statusLabel}</span>}
         {crop.fitLevel === 'low' && (
           <span style={S.lowFitTag}>{t('onboarding.fit.lowFitLabel')}</span>
+        )}
+        {supportDepth !== CROP_SUPPORT_DEPTH.FULLY_GUIDED && (
+          <span style={{ ...S.depthTag, color: DEPTH_COLOR[supportDepth], borderColor: DEPTH_COLOR[supportDepth] }}>
+            {t(depthKey)}
+          </span>
+        )}
+        {confidence && confidence.level !== 'high' && confidenceKey && (
+          <span style={{ ...S.confidenceTag, color: CONFIDENCE_COLOR[confidence.level], borderColor: CONFIDENCE_COLOR[confidence.level] }}>
+            {t(confidenceKey)}
+          </span>
         )}
       </div>
       {reasons.length > 0 ? (
@@ -318,6 +377,24 @@ const S = {
     fontSize: '0.6875rem', fontWeight: 700,
     background: 'rgba(239,68,68,0.12)', color: '#FCA5A5',
   },
+  depthTag: {
+    padding: '0.125rem 0.5rem', borderRadius: '999px',
+    fontSize: '0.625rem', fontWeight: 700,
+    border: '1px solid', background: 'rgba(255,255,255,0.02)',
+    textTransform: 'uppercase', letterSpacing: '0.04em',
+  },
+  confidenceTag: {
+    padding: '0.125rem 0.5rem', borderRadius: '999px',
+    fontSize: '0.625rem', fontWeight: 700,
+    border: '1px solid', background: 'rgba(255,255,255,0.02)',
+  },
+  confidenceBanner: {
+    display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
+    padding: '0.625rem 0.75rem', borderRadius: '12px',
+    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.22)',
+    color: '#EAF2FF', fontSize: '0.8125rem', lineHeight: 1.4,
+  },
+  confidenceIcon: { fontSize: '1rem' },
   fallback: {
     padding: '0.875rem 1rem', borderRadius: '14px',
     background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',

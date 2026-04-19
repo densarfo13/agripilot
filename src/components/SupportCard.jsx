@@ -51,7 +51,9 @@ export default function SupportCard({ context }) {
 
   function buildContextPayload(ctx) {
     if (!ctx || typeof ctx !== 'object') return null;
-    // Shape mirrors what a reviewer dashboard wants to display.
+    // Shape mirrors what a reviewer dashboard wants to display,
+    // including the trust-layer metadata (support tier, crop support
+    // depth, recommendation confidence) so admins can prioritize.
     return {
       farmerUuid: ctx.farmerUuid || null,
       location: ctx.location ? {
@@ -70,6 +72,9 @@ export default function SupportCard({ context }) {
         status: ctx.lastIssue.status || null,
         id: ctx.lastIssue.id || null,
       } : null,
+      countrySupportTier: ctx.countrySupportTier || null,
+      cropSupportDepth: ctx.cropSupportDepth || null,
+      recommendationConfidence: ctx.recommendationConfidence || null,
       capturedAt: new Date().toISOString(),
     };
   }

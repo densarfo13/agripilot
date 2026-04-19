@@ -487,6 +487,30 @@ const T = {
   'location.currentlySelected':          { en: 'Currently selected',             fr: 'Sélectionné',                sw: 'Umechagua sasa',              ha: 'An zaɓa',                      tw: 'Woayi',                      hi: 'वर्तमान में चयनित' },
   'location.noStateList':                { en: "We don't have a state list for this country yet — city is enough.", fr: "Pas de liste d'états — la ville suffit.", sw: 'Hakuna orodha ya majimbo — mji unatosha.', ha: 'Babu jerin jihohi — gari ya isa.', tw: 'Man mu si nni hɔ — kuro no dɔɔso.', hi: 'इस देश के लिए राज्य सूची नहीं — शहर पर्याप्त है।' },
 
+  // ─── Country support tier + crop support depth ────────────
+  'countrySupport.tier.full':            { en: 'Full',     fr: 'Complet',    sw: 'Kamili',     ha: 'Cikakke',     tw: 'Nyinaa',      hi: 'पूर्ण' },
+  'countrySupport.tier.basic':           { en: 'Basic',    fr: 'Basique',    sw: 'Msingi',     ha: 'Asali',       tw: 'Titiriw',     hi: 'बुनियादी' },
+  'countrySupport.tier.limited':         { en: 'Limited',  fr: 'Limité',     sw: 'Mdogo',      ha: 'Ƙarami',      tw: 'Kakra',       hi: 'सीमित' },
+  'countrySupport.tier.comingSoon':      { en: 'Coming soon', fr: 'Bientôt', sw: 'Inakuja',    ha: 'Yana zuwa',   tw: 'Ɛreba',       hi: 'जल्द आ रहा' },
+
+  'countrySupport.group.full':           { en: 'Fully supported',    fr: 'Entièrement pris en charge', sw: 'Imeungwa mkono kikamilifu', ha: 'An tallafa cikakke',    tw: 'Yɛsesa yie',  hi: 'पूरी तरह समर्थित' },
+  'countrySupport.group.basic':          { en: 'Basic support',      fr: 'Support basique',            sw: 'Msaada wa msingi',           ha: 'Tallafi na asali',       tw: 'Titiriw',      hi: 'बुनियादी समर्थन' },
+  'countrySupport.group.limited':        { en: 'Limited support',    fr: 'Support limité',             sw: 'Msaada mdogo',                ha: 'Tallafi ƙaramin',         tw: 'Boa kakra',    hi: 'सीमित समर्थन' },
+  'countrySupport.group.comingSoon':     { en: 'Coming soon',        fr: 'Bientôt',                    sw: 'Inakuja',                    ha: 'Yana zuwa',              tw: 'Ɛreba',        hi: 'जल्द आ रहा' },
+
+  'cropSupport.depth.fullyGuided':       { en: 'Fully guided',     fr: 'Guidage complet',   sw: 'Mwongozo kamili',   ha: 'Cikakken jagora',  tw: 'Akwankyerɛ nyinaa', hi: 'पूर्ण मार्गदर्शन' },
+  'cropSupport.depth.partial':           { en: 'Partial guidance', fr: 'Guidage partiel',   sw: 'Mwongozo wa kiasi', ha: 'Jagora na ɓangare', tw: 'Akwankyerɛ fa',      hi: 'आंशिक मार्गदर्शन' },
+  'cropSupport.depth.browseOnly':        { en: 'Browse only',      fr: 'Consultation',      sw: 'Kutazama tu',       ha: 'Duba kawai',        tw: 'Hwɛ pɛ',             hi: 'केवल देखें' },
+
+  // Recommendation confidence
+  'recConfidence.level.high':            { en: 'High confidence',    fr: 'Confiance élevée',  sw: 'Imani kubwa',      ha: 'Tabbas mai girma',   tw: 'Gyidie kɛse',      hi: 'उच्च विश्वास' },
+  'recConfidence.level.medium':          { en: 'Medium confidence',  fr: 'Confiance moyenne', sw: 'Imani ya wastani', ha: 'Tabbas matsakaici',  tw: 'Gyidie mfinimfini', hi: 'मध्यम विश्वास' },
+  'recConfidence.level.low':             { en: 'Limited confidence', fr: 'Confiance limitée', sw: 'Imani chache',     ha: 'Tabbas ƙarami',       tw: 'Gyidie kakra',      hi: 'सीमित विश्वास' },
+
+  'recConfidence.wording.suggested':     { en: 'Suggested crops',     fr: 'Cultures suggérées', sw: 'Mazao yaliyopendekezwa', ha: 'Amfanin gona da aka ba da shawara', tw: 'Afudeɛ a yɛrebɔ ho kɔkɔ', hi: 'सुझाई गई फसलें' },
+  'recConfidence.wording.limited':       { en: 'Limited confidence for your region', fr: 'Confiance limitée pour votre région', sw: 'Imani chache kwa eneo lako', ha: 'Tabbas ƙarami a yankinku', tw: 'Gyidie kakra wɔ wo man', hi: 'आपके क्षेत्र के लिए सीमित विश्वास' },
+  'recConfidence.bannerBody':            { en: "These suggestions are less certain for your region. You can still browse all crops manually.", fr: "Suggestions moins sûres. Parcourez toutes les cultures.", sw: 'Mapendekezo haya si ya hakika sana kwa eneo lako.', ha: 'Waɗannan shawarwari ba su da tabbas sosai.', tw: 'Saa nhyehyɛeɛ yi nyɛ tebea koro.', hi: 'ये सुझाव आपके क्षेत्र के लिए कम निश्चित हैं। आप सभी फसलें देख सकते हैं।' },
+
   // Crop stage labels (used by getCropStage)
   'stage.planned':           { en: 'Planned',           fr: 'Planifié',     sw: 'Imepangwa',       ha: 'Tsara',         tw: 'Nhyehyɛe',      hi: 'योजना' },
   'stage.land_preparation':  { en: 'Land preparation',  fr: 'Préparation',  sw: 'Kuandaa ardhi',   ha: 'Shirya ƙasa',   tw: 'Asase siesieɛ', hi: 'भूमि तैयारी' },
