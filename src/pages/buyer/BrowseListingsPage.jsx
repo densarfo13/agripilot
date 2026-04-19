@@ -1,30 +1,77 @@
 /**
  * BrowseListingsPage — buyer browse + filter view.
  *
- * Renders BuyerFiltersBar + a list of ListingCard rows. The server
- * applies `status = active` already; this page never shows sold /
- * reserved / closed listings, matching the trust-first spec.
+ * Loads the buyer's preferred regions from /api/buyer/profile on
+ * mount, pre-fills the location filter from preferredRegions[0],
+ * and auto-refreshes the listings feed when the filter changes
+ * (300ms debounce so typing in the crop box doesn't hammer the API).
+ *
+ * Actions exposed:
+ *   - "Reset to default region" → snaps back to preferredRegions[0]
+ *   - "Expand to more regions"  → clears country + state so the
+ *     server returns listings regardless of region and sorts by
+ *     relevance; flags the choice on the buyer profile so the
+ *     server / future matching can respect the preference.
  *
  * Route: /market/browse
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
-import { searchListings } from '../../hooks/useMarket.js';
+import {
+  searchListings, getBuyerProfile, updateBuyerProfile,
+} from '../../hooks/useMarket.js';
 import ListingCard from '../../components/market/ListingCard.jsx';
 import BuyerFiltersBar from '../../components/market/BuyerFiltersBar.jsx';
+
+const EMPTY_FILTERS = {
+  crop: '', country: '', stateCode: '', quantity: '', minQuality: '', deliveryMode: '',
+};
 
 export default function BrowseListingsPage() {
   const { t } = useAppSettings();
   const navigate = useNavigate();
-  const [filters, setFilters] = useState({
-    crop: '', country: '', stateCode: '',
-    quantity: '', minQuality: '', deliveryMode: '',
-  });
+
+  const [profile, setProfile] = useState(null); // null = still loading
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [state, setState] = useState({ loading: false, listings: [], error: null });
 
+  // ─── Initial prefill from the buyer profile ──────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await getBuyerProfile();
+        if (cancelled) return;
+        const p = r?.profile || { preferredRegions: [], preferredCountries: [] };
+        setProfile(p);
+        const seed = p.preferredRegions?.[0];
+        if (seed) {
+          setFilters((f) => ({
+            ...f,
+            country: seed.country || '',
+            stateCode: seed.stateCode || '',
+          }));
+        }
+      } catch {
+        if (!cancelled) setProfile({ preferredRegions: [], preferredCountries: [] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ─── Debounced auto-refresh on filter change ─────────────
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    if (profile === null) return; // wait for initial prefill
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => runSearch(), 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, filters.crop, filters.country, filters.stateCode, filters.quantity, filters.minQuality, filters.deliveryMode]);
+
   async function runSearch() {
-    setState({ loading: true, listings: [], error: null });
+    setState((s) => ({ ...s, loading: true, error: null }));
     try {
       const r = await searchListings({
         crop: filters.crop || undefined,
@@ -40,7 +87,21 @@ export default function BrowseListingsPage() {
     }
   }
 
-  useEffect(() => { runSearch(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  function handleResetLocation() {
+    const seed = profile?.preferredRegions?.[0];
+    setFilters((f) => ({
+      ...f,
+      country: seed?.country || '',
+      stateCode: seed?.stateCode || '',
+    }));
+  }
+
+  async function handleExpandLocation() {
+    setFilters((f) => ({ ...f, country: '', stateCode: '' }));
+    try {
+      await updateBuyerProfile({ expandSearch: true });
+    } catch { /* non-fatal */ }
+  }
 
   const resultCount = state.listings.length;
   const resultHeader = useMemo(() => {
@@ -68,8 +129,11 @@ export default function BrowseListingsPage() {
 
         <BuyerFiltersBar
           filters={filters}
+          preferredRegions={profile?.preferredRegions || []}
           onChange={setFilters}
           onSubmit={runSearch}
+          onResetLocation={handleResetLocation}
+          onExpandLocation={handleExpandLocation}
           busy={state.loading}
         />
 

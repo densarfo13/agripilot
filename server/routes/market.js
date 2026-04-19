@@ -32,6 +32,9 @@ import {
   expressInterest, listMyInterests, listBuyerInterests, respondToInterest,
   listNotifications, markNotificationRead,
 } from '../src/services/market/marketService.js';
+import {
+  getBuyerProfile, updateBuyerProfile,
+} from '../src/services/market/buyerProfileService.js';
 
 const prisma = new PrismaClient();
 const AUTH = [authenticate, requireAuth];
@@ -118,6 +121,20 @@ router.get('/farmer/interests', ...AUTH, async (req, res) => {
 router.get('/buyer/interests', ...AUTH, async (req, res) => {
   try { res.json(await listBuyerInterests(prisma, { user: req.user })); }
   catch (err) { handleErr(res, err); }
+});
+
+// Buyer preference store (preferredCountries + preferredRegions).
+router.get('/buyer/profile', ...AUTH, async (req, res) => {
+  try { res.json(await getBuyerProfile(prisma, { user: req.user })); }
+  catch (err) { handleErr(res, err); }
+});
+
+router.patch('/buyer/profile', ...AUTH, express.json(), async (req, res) => {
+  try {
+    res.json(await updateBuyerProfile(prisma, {
+      user: req.user, patch: req.body || {},
+    }));
+  } catch (err) { handleErr(res, err); }
 });
 
 router.post('/interests/:id/accept', ...AUTH, express.json(), async (req, res) => {

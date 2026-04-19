@@ -82,6 +82,17 @@ export async function listMyInterests() {
 export async function listBuyerInterests() {
   return handle(await fetch('/api/buyer/interests', { credentials: 'include' }));
 }
+
+// ─── Buyer preference store ─────────────────────────────
+export async function getBuyerProfile() {
+  return handle(await fetch('/api/buyer/profile', { credentials: 'include' }));
+}
+
+export async function updateBuyerProfile(patch) {
+  return handle(await fetch('/api/buyer/profile', {
+    ...JSON_PATCH, body: JSON.stringify(patch),
+  }));
+}
 export async function acceptInterest(id, note) {
   return handle(await fetch(`/api/interests/${encodeURIComponent(id)}/accept`, {
     ...JSON_POST, body: JSON.stringify({ note: note || null }),

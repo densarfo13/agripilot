@@ -2338,6 +2338,24 @@ model Notification {
   @@map("notifications")
 }
 
+// Buyer-side preferences. One row per user. Preferred regions are
+// a small JSON array of {country, stateCode?} so the buyer can
+// bookmark either a whole country or specific states within it.
+// When browse filters launch, preferredRegions[0] is the default
+// and the filter is pre-filled from it.
+model BuyerProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  preferredCountries String[] @default([]) @map("preferred_countries")   // ['US','GH']
+  preferredRegions   Json     @default("[]") @map("preferred_regions")   // [{country:'US', stateCode:'MD'}, …]
+  expandSearch       Boolean  @default(false) @map("expand_search")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([userId], map: "idx_buyer_profile_user")
+  @@map("buyer_profiles")
+}
+
 model V2PestImage {
   id            String    @id @default(uuid())
   profileId     String    @map("profile_id")

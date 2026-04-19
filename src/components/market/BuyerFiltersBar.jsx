@@ -1,18 +1,30 @@
 /**
- * BuyerFiltersBar — compact, fast filters for the buyer browse
- * page. Controlled; the parent owns filter state and triggers
- * search on submit.
+ * BuyerFiltersBar — compact 3-field filter row:
+ *   crop  ·  location  ·  quantity
  *
- * Fields: crop, country, state/region, minimum quantity,
- * minimum quality, delivery mode. Kept lean on purpose — the
- * trust-first spec calls for "fewer, more relevant listings", so
- * we don't pile on advanced filters.
+ * Location is driven by the LocationSelector (searchable, preferred
+ * regions first). Changes are reported up through onChange; the
+ * parent debounces and triggers a search. A user who wants to
+ * refresh manually can still tap Search.
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import LocationSelector from './LocationSelector.jsx';
 
-export default function BuyerFiltersBar({ filters, onChange, onSubmit, busy = false }) {
+export default function BuyerFiltersBar({
+  filters,
+  preferredRegions = [],
+  onChange,
+  onSubmit,
+  onResetLocation,
+  onExpandLocation,
+  busy = false,
+}) {
   const { t } = useAppSettings();
   const set = (k) => (e) => onChange?.({ ...filters, [k]: e.target.value });
+
+  const selectedLocation = filters.country
+    ? { country: filters.country, stateCode: filters.stateCode || null }
+    : null;
 
   return (
     <form
@@ -20,47 +32,42 @@ export default function BuyerFiltersBar({ filters, onChange, onSubmit, busy = fa
       onSubmit={(e) => { e.preventDefault(); onSubmit?.(); }}
       data-testid="buyer-filters-bar"
     >
-      <Field label={t('market.field.crop')}>
+      <label style={S.field}>
+        <span style={S.label}>{t('market.field.crop')}</span>
         <input
           value={filters.crop || ''}
           onChange={set('crop')}
-          placeholder="tomato"
+          placeholder={t('market.field.cropPlaceholder') || 'tomato'}
           style={S.input}
           data-testid="filter-crop"
         />
-      </Field>
+      </label>
 
-      <div style={S.row}>
-        <Field label={t('market.field.country')} flex={1}>
-          <input value={filters.country || ''} onChange={set('country')} placeholder="US" style={S.input} data-testid="filter-country" />
-        </Field>
-        <Field label={t('market.field.state')} flex={1}>
-          <input value={filters.stateCode || ''} onChange={set('stateCode')} placeholder="MD" style={S.input} data-testid="filter-state" />
-        </Field>
-      </div>
+      <label style={S.field}>
+        <span style={S.label}>{t('market.field.location') || 'Location'}</span>
+        <LocationSelector
+          value={selectedLocation}
+          preferredRegions={preferredRegions}
+          onChange={(r) => onChange?.({
+            ...filters,
+            country: r?.country || '',
+            stateCode: r?.stateCode || '',
+          })}
+          onReset={onResetLocation}
+          onExpand={onExpandLocation}
+        />
+      </label>
 
-      <div style={S.row}>
-        <Field label={t('market.field.quantity')} flex={1}>
-          <input type="number" min="0" value={filters.quantity || ''} onChange={set('quantity')} style={S.input} data-testid="filter-quantity" />
-        </Field>
-        <Field label={t('market.field.minQuality') || 'Min quality'} flex={1}>
-          <select value={filters.minQuality || ''} onChange={set('minQuality')} style={S.select} data-testid="filter-min-quality">
-            <option value="">—</option>
-            <option value="low">{t('market.quality.low')}</option>
-            <option value="medium">{t('market.quality.medium')}</option>
-            <option value="high">{t('market.quality.high')}</option>
-          </select>
-        </Field>
-      </div>
-
-      <Field label={t('market.field.deliveryMode')}>
-        <select value={filters.deliveryMode || ''} onChange={set('deliveryMode')} style={S.select} data-testid="filter-delivery">
-          <option value="">—</option>
-          <option value="pickup">{t('market.delivery.pickup')}</option>
-          <option value="delivery">{t('market.delivery.delivery')}</option>
-          <option value="either">{t('market.delivery.either')}</option>
-        </select>
-      </Field>
+      <label style={S.field}>
+        <span style={S.label}>{t('market.field.quantity')}</span>
+        <input
+          type="number" min="0" step="0.1"
+          value={filters.quantity || ''}
+          onChange={set('quantity')}
+          style={S.input}
+          data-testid="filter-quantity"
+        />
+      </label>
 
       <button type="submit" style={S.searchBtn} disabled={busy}>
         {busy ? t('common.loading') : (t('market.browse.search') || 'Search')}
@@ -69,26 +76,11 @@ export default function BuyerFiltersBar({ filters, onChange, onSubmit, busy = fa
   );
 }
 
-function Field({ label, children, flex }) {
-  return (
-    <label style={{ ...S.field, ...(flex ? { flex } : {}) }}>
-      <span style={S.label}>{label}</span>
-      {children}
-    </label>
-  );
-}
-
 const S = {
   form: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
-  row: { display: 'flex', gap: '0.5rem' },
   field: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
   label: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 600 },
   input: {
-    padding: '0.625rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem',
-  },
-  select: {
     padding: '0.625rem', borderRadius: '10px',
     border: '1px solid rgba(255,255,255,0.1)',
     background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem',
