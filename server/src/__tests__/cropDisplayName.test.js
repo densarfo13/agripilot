@@ -15,7 +15,7 @@
  *       sweet_potato→शकरकंद
  */
 import { describe, it, expect } from 'vitest';
-import { getCropDisplayName, _internal } from '../../../src/utils/getCropDisplayName.js';
+import { getCropDisplayName, BILINGUAL_HINTED } from '../../../src/utils/getCropDisplayName.js';
 
 describe('getCropDisplayName — English', () => {
   it('returns canonical English names', () => {
@@ -92,7 +92,7 @@ describe('getCropDisplayName — Hindi with bilingual:"auto"', () => {
 
 describe('BILINGUAL_HINTED config is curated, not global', () => {
   it('keeps the list short enough to stay useful', () => {
-    expect(_internal.BILINGUAL_HINTED.hi.size).toBeLessThan(15);
+    expect(BILINGUAL_HINTED.hi.size).toBeLessThan(15);
   });
 });
 
@@ -102,5 +102,112 @@ describe('Twi fallback', () => {
   });
   it('falls back to English when Twi is missing', () => {
     expect(getCropDisplayName('strawberry', 'tw')).toBe('Strawberry');
+  });
+});
+
+// ─── Multi-language rollout ───────────────────────────────
+describe('Spanish (es) staple coverage', () => {
+  it.each([
+    ['tomato', 'Tomate'],
+    ['rice', 'Arroz'],
+    ['maize', 'Maíz'],
+    ['cassava', 'Yuca'],
+    ['peanut', 'Cacahuete'],
+  ])('%s → %s', (k, v) => {
+    expect(getCropDisplayName(k, 'es')).toBe(v);
+  });
+  it('falls back to English for niche crops', () => {
+    expect(getCropDisplayName('blueberry', 'es')).toBe('Blueberry');
+  });
+});
+
+describe('Portuguese (pt) staple coverage', () => {
+  it.each([
+    ['tomato', 'Tomate'],
+    ['maize', 'Milho'],
+    ['cassava', 'Mandioca'],
+    ['peanut', 'Amendoim'],
+  ])('%s → %s', (k, v) => {
+    expect(getCropDisplayName(k, 'pt')).toBe(v);
+  });
+});
+
+describe('French (fr) staple coverage', () => {
+  it.each([
+    ['tomato', 'Tomate'],
+    ['maize', 'Maïs'],
+    ['cassava', 'Manioc'],
+    ['peanut', 'Arachide'],
+    ['wheat', 'Blé'],
+  ])('%s → %s', (k, v) => {
+    expect(getCropDisplayName(k, 'fr')).toBe(v);
+  });
+});
+
+describe('Arabic (ar) staple coverage', () => {
+  it.each([
+    ['tomato', 'طماطم'],
+    ['rice', 'أرز'],
+    ['cassava', 'كسافا'],
+  ])('%s → %s', (k, v) => {
+    expect(getCropDisplayName(k, 'ar')).toBe(v);
+  });
+  it('falls back to English for unsupported Arabic crops', () => {
+    expect(getCropDisplayName('blueberry', 'ar')).toBe('Blueberry');
+  });
+});
+
+describe('Swahili (sw) staple coverage', () => {
+  it.each([
+    ['tomato', 'Nyanya'],
+    ['maize', 'Mahindi'],
+    ['cassava', 'Muhogo'],
+    ['peanut', 'Karanga'],
+  ])('%s → %s', (k, v) => {
+    expect(getCropDisplayName(k, 'sw')).toBe(v);
+  });
+});
+
+describe('Indonesian (id) staple coverage', () => {
+  it.each([
+    ['tomato', 'Tomat'],
+    ['rice', 'Beras'],
+    ['maize', 'Jagung'],
+    ['cassava', 'Singkong'],
+  ])('%s → %s', (k, v) => {
+    expect(getCropDisplayName(k, 'id')).toBe(v);
+  });
+});
+
+describe('Unknown language codes fall back to English', () => {
+  it.each(['', 'zz', 'klingon'])('%p → English', (lang) => {
+    expect(getCropDisplayName('tomato', lang)).toBe('Tomato');
+    expect(getCropDisplayName('cassava', lang)).toBe('Cassava');
+  });
+});
+
+describe('LANGUAGE_COVERAGE is honest', () => {
+  it('declares Hindi as full coverage', async () => {
+    const { LANGUAGE_COVERAGE } = await import('../../../src/utils/cropNames.js');
+    expect(LANGUAGE_COVERAGE.hi.tier).toBe('full');
+  });
+
+  it('declares Twi + other rollout languages as partial', async () => {
+    const { LANGUAGE_COVERAGE } = await import('../../../src/utils/cropNames.js');
+    for (const lang of ['tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id']) {
+      expect(['partial', 'full']).toContain(LANGUAGE_COVERAGE[lang].tier);
+    }
+  });
+});
+
+describe('Switching language immediately changes names', () => {
+  it('same crop key produces different labels per language', () => {
+    const key = 'cassava';
+    expect(getCropDisplayName(key, 'en')).toBe('Cassava');
+    expect(getCropDisplayName(key, 'hi')).toBe('कसावा');
+    expect(getCropDisplayName(key, 'tw')).toBe('Bankye');
+    expect(getCropDisplayName(key, 'es')).toBe('Yuca');
+    expect(getCropDisplayName(key, 'fr')).toBe('Manioc');
+    expect(getCropDisplayName(key, 'sw')).toBe('Muhogo');
   });
 });
