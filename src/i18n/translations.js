@@ -320,6 +320,54 @@ const T = {
   'ngoV2.funding.notYet':        { en: 'Not yet eligible',   fr: 'Pas encore',        sw: 'Bado haistahili',   ha: 'Ba tukuna',        tw: 'Ɛnnyɛ',              hi: 'अभी योग्य नहीं' },
   'ngoV2.funding.empty':         { en: 'No decisions yet. Run Recompute.', fr: 'Aucune décision.', sw: 'Hakuna maamuzi.', ha: 'Babu yanke hukunci.', tw: 'Wɔnyɛɛ gyinaeɛ.', hi: 'अभी कोई निर्णय नहीं। पुनर्गणना चलाएँ।' },
 
+  // ─── Action-first home layout ──────────────────────
+  'actionHome.primary.title':        { en: "Today's main action",     fr: 'Action principale', sw: 'Kazi kuu ya leo',    ha: 'Babban aikin yau',     tw: 'Nnɛ dwumadi titiriw',   hi: 'आज का मुख्य कार्य' },
+  'actionHome.primary.why':          { en: 'Why this matters',        fr: 'Pourquoi',          sw: 'Kwa nini ni muhimu', ha: 'Me ya sa',             tw: 'Deɛ enti',              hi: 'क्यों यह ज़रूरी है' },
+  'actionHome.primary.eta':          { en: 'Estimated time',          fr: 'Temps estimé',      sw: 'Muda uliokadiriwa',  ha: 'Lokacin da aka kiyasta',tw: 'Berɛ a ɛbɛfa',           hi: 'अनुमानित समय' },
+  'actionHome.primary.minutes':      { en: '{n} min',                  fr: '{n} min',            sw: 'Dakika {n}',          ha: 'Minti {n}',             tw: 'Simma {n}',              hi: '{n} मिनट' },
+  'actionHome.primary.markComplete': { en: 'Mark complete',            fr: 'Marquer terminé',    sw: 'Weka kama imekamilika', ha: 'Alama cikakke',      tw: 'Fa sɛ yɛawie',           hi: 'पूरा चिह्नित करें' },
+  'actionHome.primary.markingDone':  { en: 'Marking done...',          fr: 'Marquage...',        sw: 'Inaweka...',           ha: 'Ana yin alama...',     tw: 'Yɛrehwɛ...',             hi: 'पूरा किया जा रहा है...' },
+  'actionHome.primary.noTask':       { en: 'No task right now',        fr: 'Aucune tâche',       sw: 'Hakuna kazi sasa',     ha: 'Babu aiki yanzu',      tw: 'Adwuma biara nni hɔ',    hi: 'अभी कोई कार्य नहीं' },
+  'actionHome.primary.noTaskHint':   { en: "You're all caught up for now.", fr: 'Tout est à jour.', sw: 'Uko sawa kwa sasa.',  ha: 'Duk an gama.',          tw: 'Wɔawie ne nyinaa mprempren.', hi: 'अभी के लिए सब ठीक है।' },
+  'actionHome.secondary.title':      { en: 'Up next',                  fr: 'À venir',            sw: 'Inayofuata',           ha: 'Na gaba',               tw: 'Nea edi so',             hi: 'आगे के कार्य' },
+  'actionHome.secondary.empty':      { en: 'Nothing else scheduled.',  fr: 'Rien d\'autre.',     sw: 'Hakuna zaidi.',        ha: 'Babu sauran.',          tw: 'Biribi nso nni hɔ.',     hi: 'आगे कोई कार्य नहीं' },
+  'actionHome.risks.title':          { en: 'Risk alerts',              fr: 'Alertes risque',     sw: 'Tahadhari za hatari',  ha: 'Faɗakarwar haɗari',     tw: 'Asiane nkra',            hi: 'जोखिम सूचनाएँ' },
+  'actionHome.risks.none':           { en: 'No active risks.',          fr: 'Aucun risque actif.', sw: 'Hakuna hatari.',      ha: 'Babu haɗari.',          tw: 'Asiane biara nni hɔ.',  hi: 'कोई सक्रिय जोखिम नहीं' },
+  'actionHome.progress.title':       { en: 'Your progress',            fr: 'Votre progrès',      sw: 'Maendeleo yako',       ha: 'Ci gaban ku',           tw: 'Wo nkɔso',               hi: 'आपकी प्रगति' },
+  'actionHome.progress.tasksDone':   { en: 'Tasks done',               fr: 'Tâches faites',      sw: 'Kazi zilizofanyika',    ha: 'Ayyukan da aka gama',  tw: 'Adwuma a wɔawie',        hi: 'पूरे कार्य' },
+  'actionHome.progress.cyclesActive':{ en: 'Active crop cycles',       fr: 'Cycles actifs',      sw: 'Mizunguko hai',         ha: 'Ayyukan da suke gudana',tw: 'Afudeɛ adwuma',          hi: 'सक्रिय फसल चक्र' },
+  'actionHome.progress.seeMore':     { en: 'See full progress',        fr: 'Voir plus',          sw: 'Tazama zaidi',          ha: 'Duba ƙari',             tw: 'Hwɛ pii',                hi: 'और देखें' },
+  'actionHome.stage.title':          { en: 'Crop stage',               fr: 'Stade',              sw: 'Hatua ya zao',          ha: 'Matakin amfani',        tw: 'Afudeɛ mu berɛ',         hi: 'फसल की अवस्था' },
+  'actionHome.stage.none':           { en: 'No active crop cycle',     fr: 'Aucun cycle actif',  sw: 'Hakuna mzunguko',       ha: 'Babu aiki',             tw: 'Afudeɛ adwuma nni hɔ',   hi: 'अभी कोई फसल चक्र नहीं' },
+  'actionHome.motivation.title':     { en: "You're doing well",        fr: 'Bon travail',        sw: 'Unafanya vizuri',       ha: 'Kuna yi da kyau',       tw: 'Woreyɛ yie',             hi: 'आप अच्छा कर रहे हैं' },
+  'actionHome.motivation.body':      { en: 'Every small step makes your farm stronger.', fr: 'Chaque petit pas compte.', sw: 'Kila hatua ndogo hufanya shamba lako kuwa imara.', ha: 'Kowane mataki yana ƙara ƙarfin gonar ku.', tw: 'Anammɔn biara ma w\'afuo mu yɛ den.', hi: 'हर छोटा कदम आपके खेत को मजबूत बनाता है।' },
+
+  // Risk-alert one-liners (feed from buildRiskAlerts)
+  'actionHome.risks.overdueCount':       { en: '{n} overdue tasks',           fr: '{n} tâches en retard',       sw: 'Kazi {n} zimechelewa',    ha: 'Ayyuka {n} sun makara',     tw: 'Adwuma {n} a atwam',         hi: '{n} कार्य समय से पीछे' },
+  'actionHome.risks.overdue':            { en: 'You have overdue tasks',      fr: 'Tâches en retard',           sw: 'Una kazi zilizochelewa',  ha: 'Kuna da ayyukan da suka makara', tw: 'Adwuma bi atwam',       hi: 'आपके कुछ कार्य समय से पीछे हैं' },
+  'actionHome.risks.inactive':           { en: "You haven't logged activity in a while", fr: 'Pas d\'activité récente.', sw: 'Haujasasisha kwa muda.', ha: 'Ba ku yi rajistar ayyuka ba na ɗan lokaci.', tw: 'Wontɔɔ adwuma biara wɔ berɛ tiaa.', hi: 'आपने कुछ समय से कोई गतिविधि दर्ज नहीं की' },
+  'actionHome.risks.highSeverityIssue':  { en: 'You have an open serious issue', fr: 'Problème sérieux en cours', sw: 'Una tatizo zito linaloendelea', ha: 'Kuna da babbar matsala', tw: 'Wowɔ ɔhaw kɛseɛ bi a ahunahuna', hi: 'आपके पास एक गंभीर खुली समस्या है' },
+  'actionHome.risks.missedWindow':       { en: 'You may have missed your planting window', fr: 'Fenêtre de plantation ratée', sw: 'Huenda umekosa dirisha la kupanda', ha: 'Kila ku kuskure lokacin shuka', tw: 'Ebia woatwa dua berɛ akyi', hi: 'आपने बोवाई की अवधि शायद गवां दी है' },
+
+  // Task title translations used by TITLE_KEY_MAP
+  'actionHome.task.prepBed':       { en: 'Prep the bed or container',  fr: 'Préparer le lit ou le pot',  sw: 'Tayarisha kitanda au chombo', ha: 'Shirya gado ko tulu',      tw: 'Siesie mpa anaa asenaa',      hi: 'क्यारी या कंटेनर तैयार करें' },
+  'actionHome.task.plantSeeds':    { en: 'Plant seeds or seedlings',   fr: 'Planter les graines',        sw: 'Panda mbegu au miche',         ha: 'Shuka iri ko tsirrai',     tw: 'Dua aba anaa mfifire',        hi: 'बीज या पौधे लगाएँ' },
+  'actionHome.task.checkMoisture': { en: 'Check moisture daily',       fr: 'Vérifier l\'humidité',       sw: 'Angalia unyevu kila siku',     ha: 'Duba laima kowace rana',   tw: 'Hwɛ asase nsuo da biara',     hi: 'रोज़ नमी जाँचें' },
+  'actionHome.task.thinSeedlings': { en: 'Thin seedlings if crowded',  fr: 'Éclaircir les semis',        sw: 'Ng\'oa miche iliyozidi',       ha: 'Rage tsirrai',              tw: 'Te mfifire a ɛyɛ pii no',     hi: 'अगर भीड़ हो तो पौधों को कम करें' },
+  'actionHome.task.pestScout':     { en: 'First pest scouting pass',   fr: 'Inspection des ravageurs',   sw: 'Ukaguzi wa kwanza wa wadudu',  ha: 'Binciken farko na kwari',  tw: 'Mmoawa ho nhwehwɛmu a edi kan', hi: 'पहली कीट जाँच' },
+  'actionHome.task.feedMulch':     { en: 'Feed and mulch',             fr: 'Fertiliser et pailler',      sw: 'Weka mbolea na matandazo',     ha: 'Shayarwa da matsi',         tw: 'Mema aduane na katasoɔ',       hi: 'खाद और मल्च डालें' },
+  'actionHome.task.weekWeeds':     { en: 'Weekly weed pass',           fr: 'Désherbage hebdo',           sw: 'Ng\'oa magugu kila wiki',      ha: 'Tsaftace ciyawa kowane mako', tw: 'Yi nwura fi hɔ dapɛn biara', hi: 'साप्ताहिक खरपतवार सफ़ाई' },
+  'actionHome.task.harvestPrep':   { en: 'Prepare to harvest',         fr: 'Se préparer à la récolte',   sw: 'Jiandae kuvuna',               ha: 'Shirya don girbi',         tw: 'Siesie wo ho ma otwa',         hi: 'कटाई की तैयारी करें' },
+
+  // ─── Farmer ID + copy button ───────────────────────
+  'farmerId.copy':   { en: 'Copy',    fr: 'Copier',     sw: 'Nakili',      ha: 'Kwafi',         tw: 'Kɔpi',            hi: 'कॉपी करें' },
+  'farmerId.copied': { en: 'Copied',  fr: 'Copié',      sw: 'Imenakiliwa', ha: 'An kwafa',      tw: 'Yɛakɔpi',         hi: 'कॉपी किया गया' },
+
+  // ─── Crop-fit trust warning ────────────────────────
+  'cropFit.warning.lowFit':   { en: "This crop isn't a strong fit for your area.", fr: 'Cette culture ne convient pas à votre région.', sw: 'Zao hili halifai eneo lako.', ha: 'Wannan amfani bai dace da yankinku ba.', tw: 'Saa afudeɛ yi mfa wo man ho.', hi: 'यह फसल आपके क्षेत्र के लिए उपयुक्त नहीं है' },
+  'cropFit.warning.consider': { en: 'Consider these instead:', fr: 'Considérez plutôt :', sw: 'Zingatia haya badala yake:', ha: 'Ku yi tunanin waɗannan:', tw: 'Susuw wɔ yeinom ho:', hi: 'इसके बजाय ये फसलें देखें:' },
+  'cropFit.warning.reason':   { en: 'Your climate is a weak match for this crop.', fr: 'Votre climat ne convient pas bien à cette culture.', sw: 'Hali ya hewa yako haifai zao hili.', ha: 'Yanayinku bai dace da wannan amfani ba.', tw: 'Wo mu ewim tebea mfa saa afudeɛ yi ho.', hi: 'आपकी जलवायु इस फसल के लिए कम अनुकूल है।' },
+
   // Onboarding — U.S. farm-type step
   'wizard.usStep.title': {
     en: 'Tell us about your U.S. farm',
@@ -4470,28 +4518,28 @@ const T = {
   // ═══════════════════════════════════════════════════════════
 
   'support.title': {
-    en: 'Need Help?', fr: 'Besoin d\'aide ?', sw: 'Unahitaji msaada?', ha: 'Kana buƙatar taimako?', tw: 'Wohia mmoa?',
+    en: 'Need Help?', fr: 'Besoin d\'aide ?', sw: 'Unahitaji msaada?', ha: 'Kana buƙatar taimako?', tw: 'Wohia mmoa?', hi: 'मदद चाहिए?',
   },
   'support.desc': {
-    en: 'Send us a message and our team will respond as soon as possible.', fr: 'Envoyez-nous un message et notre équipe répondra rapidement.', sw: 'Tutumie ujumbe na timu yetu itajibu haraka.', ha: 'Aiko mana saƙo ƙungiyar mu za ta amsa da wuri.', tw: 'Fa nkra brɛ yɛn na yɛn kuw bɛyi ano ntɛm.',
+    en: 'Send us a message and our team will respond as soon as possible.', fr: 'Envoyez-nous un message et notre équipe répondra rapidement.', sw: 'Tutumie ujumbe na timu yetu itajibu haraka.', ha: 'Aiko mana saƙo ƙungiyar mu za ta amsa da wuri.', tw: 'Fa nkra brɛ yɛn na yɛn kuw bɛyi ano ntɛm.', hi: 'हमें संदेश भेजें और हमारी टीम जल्द जवाब देगी।',
   },
   'support.sent': {
-    en: 'Support request sent. We will get back to you soon.', fr: 'Demande envoyée. Nous reviendrons vers vous bientôt.', sw: 'Ombi la msaada limetumwa. Tutakujibu hivi karibuni.', ha: 'An aika buƙatun taimako. Za mu dawo maka ba da jimawa ba.', tw: 'Wɔde mmoa abisadeɛ akɔ. Yɛbɛsan wo nkyɛn ntɛm.',
+    en: 'Support request sent. We will get back to you soon.', fr: 'Demande envoyée. Nous reviendrons vers vous bientôt.', sw: 'Ombi la msaada limetumwa. Tutakujibu hivi karibuni.', ha: 'An aika buƙatun taimako. Za mu dawo maka ba da jimawa ba.', tw: 'Wɔde mmoa abisadeɛ akɔ. Yɛbɛsan wo nkyɛn ntɛm.', hi: 'अनुरोध भेज दिया गया। हम जल्द ही संपर्क करेंगे।',
   },
   'support.failed': {
-    en: 'Failed to send request', fr: 'Échec de l\'envoi', sw: 'Imeshindikana kutuma ombi', ha: 'An kasa aika buƙata', tw: 'Entumi amfa abisadeɛ ankɔ',
+    en: 'Failed to send request', fr: 'Échec de l\'envoi', sw: 'Imeshindikana kutuma ombi', ha: 'An kasa aika buƙata', tw: 'Entumi amfa abisadeɛ ankɔ', hi: 'अनुरोध भेजने में विफल',
   },
   'support.subject': {
-    en: 'Subject', fr: 'Sujet', sw: 'Mada', ha: 'Batu', tw: 'Asɛm tiawa',
+    en: 'Subject', fr: 'Sujet', sw: 'Mada', ha: 'Batu', tw: 'Asɛm tiawa', hi: 'विषय',
   },
   'support.describe': {
-    en: 'Describe your issue...', fr: 'Décrivez votre problème...', sw: 'Eleza tatizo lako...', ha: 'Bayyana matsalar ka...', tw: 'Ka wo ɔhaw ho nsɛm...',
+    en: 'Describe your issue...', fr: 'Décrivez votre problème...', sw: 'Eleza tatizo lako...', ha: 'Bayyana matsalar ka...', tw: 'Ka wo ɔhaw ho nsɛm...', hi: 'अपनी समस्या बताएँ...',
   },
   'support.sending': {
-    en: 'Sending...', fr: 'Envoi en cours...', sw: 'Inatuma...', ha: 'Ana aikawa...', tw: 'Ɛrede kɔ...',
+    en: 'Sending...', fr: 'Envoi en cours...', sw: 'Inatuma...', ha: 'Ana aikawa...', tw: 'Ɛrede kɔ...', hi: 'भेजा जा रहा है...',
   },
   'support.sendRequest': {
-    en: 'Send Request', fr: 'Envoyer', sw: 'Tuma ombi', ha: 'Aika buƙata', tw: 'Fa abisadeɛ kɔ',
+    en: 'Send Request', fr: 'Envoyer', sw: 'Tuma ombi', ha: 'Aika buƙata', tw: 'Fa abisadeɛ kɔ', hi: 'अनुरोध भेजें',
   },
 
   // ═══════════════════════════════════════════════════════════

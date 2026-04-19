@@ -285,6 +285,48 @@ const HI = {
   'unit.bags': 'बोरे',
   'unit.litres': 'लीटर',
 
+  // ─── Support form ──────────────────────────────────
+  'support.title': 'मदद चाहिए?',
+  'support.desc': 'हमें संदेश भेजें और हमारी टीम जल्द जवाब देगी।',
+  'support.sent': 'अनुरोध भेज दिया गया। हम जल्द ही संपर्क करेंगे।',
+  'support.failed': 'अनुरोध भेजने में विफल',
+  'support.subject': 'विषय',
+  'support.describe': 'अपनी समस्या बताएँ...',
+  'support.sending': 'भेजा जा रहा है...',
+  'support.sendRequest': 'अनुरोध भेजें',
+
+  // ─── Farmer ID card ────────────────────────────────
+  'farmerUuid': 'किसान आईडी',
+  'farmerId.copy': 'कॉपी करें',
+  'farmerId.copied': 'कॉपी किया गया',
+
+  // ─── Action-first home layout ──────────────────────
+  'actionHome.primary.title': 'आज का मुख्य कार्य',
+  'actionHome.primary.why': 'क्यों यह ज़रूरी है',
+  'actionHome.primary.eta': 'अनुमानित समय',
+  'actionHome.primary.minutes': '{n} मिनट',
+  'actionHome.primary.markComplete': 'पूरा चिह्नित करें',
+  'actionHome.primary.markingDone': 'पूरा किया जा रहा है...',
+  'actionHome.primary.noTask': 'अभी कोई कार्य नहीं',
+  'actionHome.primary.noTaskHint': 'अभी के लिए सब ठीक है।',
+  'actionHome.secondary.title': 'आगे के कार्य',
+  'actionHome.secondary.empty': 'आगे कोई कार्य नहीं',
+  'actionHome.risks.title': 'जोखिम सूचनाएँ',
+  'actionHome.risks.none': 'कोई सक्रिय जोखिम नहीं',
+  'actionHome.progress.title': 'आपकी प्रगति',
+  'actionHome.progress.tasksDone': 'पूरे कार्य',
+  'actionHome.progress.cyclesActive': 'सक्रिय फसल चक्र',
+  'actionHome.progress.seeMore': 'और देखें',
+  'actionHome.stage.title': 'फसल की अवस्था',
+  'actionHome.stage.none': 'अभी कोई फसल चक्र नहीं',
+  'actionHome.motivation.title': 'आप अच्छा कर रहे हैं',
+  'actionHome.motivation.body': 'हर छोटा कदम आपके खेत को मजबूत बनाता है।',
+
+  // ─── Crop-fit trust warning ────────────────────────
+  'cropFit.warning.lowFit': 'यह फसल आपके क्षेत्र के लिए उपयुक्त नहीं है',
+  'cropFit.warning.consider': 'इसके बजाय ये फसलें देखें:',
+  'cropFit.warning.reason': 'आपकी जलवायु इस फसल के लिए कम अनुकूल है।',
+
   // ─── Counts / done today patterns ──────────────────
   'count.xOfYDoneToday': 'आज {done} में से {total} पूरे',
   'count.tasksLeft_one': '1 कार्य बाकी',

@@ -24,6 +24,7 @@ import { evaluateTiming } from './timeEngine.js';
 import { assessRisks } from './riskEngine.js';
 import { buildActionPlan } from './actionEngine.js';
 import { assessMarket } from './marketEngine.js';
+import { evaluateCropFit } from './cropFitWarning.js';
 
 const VIABILITY_CUTOFF = 55;
 const BEST_MATCH_FLOOR = 75;
@@ -218,10 +219,21 @@ export function scoreCrop({ rule, stateProfile, ctx }) {
   });
   const market = assessMarket({ rule: effectiveRule, farmType: ctx.farmType });
 
+  const finalScore = clamp(Math.round(score), 0, 100);
+  const fitWarning = evaluateCropFit({
+    crop: { key: rule.crop },
+    stateProfile,
+    score: finalScore,
+  });
+
   return {
     key: rule.crop,
     name: profile.name,
-    score: clamp(Math.round(score), 0, 100),
+    score: finalScore,
+    warning: fitWarning.show ? {
+      reasonKey: fitWarning.reasonKey,
+      reasons: fitWarning.reasons,
+    } : null,
     difficulty: profile.difficulty,
     waterNeed: waterLabel(profile.waterNeed),
     growthWeeksMin: profile.growthWeeksMin,
