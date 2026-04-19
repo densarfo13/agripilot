@@ -156,6 +156,70 @@ describe('Backyard scoring', () => {
   });
 });
 
+describe('Spec seed coverage (commercial)', () => {
+  it('Oregon commercial surfaces berry/potato/wheat', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'OR', farmType: 'commercial', currentMonth: 4 }));
+    const names = nameSet([...out.bestMatch, ...out.alsoConsider]);
+    const hits = ['Potato', 'Blueberry', 'Wheat'].filter((n) => names.has(n));
+    expect(hits.length).toBeGreaterThanOrEqual(2);
+  });
+  it('Arizona commercial surfaces cotton / lettuce / alfalfa', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'AZ', farmType: 'commercial', currentMonth: 3 }));
+    const names = nameSet([...out.bestMatch, ...out.alsoConsider]);
+    const hits = ['Cotton', 'Lettuce', 'Alfalfa'].filter((n) => names.has(n));
+    expect(hits.length).toBeGreaterThanOrEqual(2);
+  });
+  it('Nevada commercial surfaces alfalfa', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'NV', farmType: 'commercial', currentMonth: 4 }));
+    const names = nameSet([...out.bestMatch, ...out.alsoConsider]);
+    expect(names.has('Alfalfa')).toBe(true);
+  });
+  it('Louisiana commercial surfaces rice / sugarcane', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'LA', farmType: 'commercial', currentMonth: 4 }));
+    const names = nameSet([...out.bestMatch, ...out.alsoConsider]);
+    expect(names.has('Rice') || names.has('Sugarcane')).toBe(true);
+  });
+  it('Hawaii commercial surfaces taro / sweet potato / banana / papaya / pineapple', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'HI', farmType: 'commercial', currentMonth: 6 }));
+    const names = nameSet([...out.bestMatch, ...out.alsoConsider]);
+    const hits = ['Taro', 'Sweet Potato', 'Banana', 'Papaya', 'Pineapple'].filter((n) => names.has(n));
+    expect(hits.length).toBeGreaterThanOrEqual(3);
+  });
+  it('Alaska commercial is potato / cabbage / kale only', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'AK', farmType: 'commercial', currentMonth: 6 }));
+    const names = nameSet([...out.bestMatch, ...out.alsoConsider]);
+    expect(names.has('Potato') || names.has('Cabbage') || names.has('Kale')).toBe(true);
+    expect(names.has('Cotton')).toBe(false);
+    expect(names.has('Sugarcane')).toBe(false);
+  });
+});
+
+describe('Subregion mapping corrections from spec', () => {
+  it('Alabama is LOWER_MISSISSIPPI_HUMID', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'AL', farmType: 'commercial' }));
+    expect(out.location.climateSubregion).toBe('LOWER_MISSISSIPPI_HUMID');
+  });
+  it('Tennessee is SOUTH_CENTRAL_MIXED', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'TN', farmType: 'commercial' }));
+    expect(out.location.climateSubregion).toBe('SOUTH_CENTRAL_MIXED');
+  });
+  it('New York is MID_ATLANTIC', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'NY', farmType: 'commercial' }));
+    expect(out.location.climateSubregion).toBe('MID_ATLANTIC');
+  });
+  it('Oklahoma is GREAT_PLAINS (display) + GREAT_PLAINS_DRY (climate)', () => {
+    const out = recommendCropsForUSFarm(ctx({ state: 'OK', farmType: 'commercial' }));
+    expect(out.location.displayRegion).toBe('GREAT_PLAINS');
+    expect(out.location.climateSubregion).toBe('GREAT_PLAINS_DRY');
+  });
+  it('Alaska + Hawaii use dedicated subregions, not subarctic/tropical pacific aliases', () => {
+    const ak = recommendCropsForUSFarm(ctx({ state: 'AK', farmType: 'commercial' }));
+    const hi = recommendCropsForUSFarm(ctx({ state: 'HI', farmType: 'commercial' }));
+    expect(ak.location.climateSubregion).toBe('ALASKA_SHORT_SEASON');
+    expect(hi.location.climateSubregion).toBe('HAWAII_TROPICAL');
+  });
+});
+
 describe('Negative logic', () => {
   it('Cassava does NOT appear as a best match in continental U.S.', () => {
     const checkStates = ['IA', 'KS', 'TX', 'CA', 'GA', 'FL', 'MD', 'NY'];
@@ -194,7 +258,8 @@ describe('Output shape', () => {
       country: 'USA',
       state: 'Texas',
       stateCode: 'TX',
-      displayRegion: 'Southwest',
+      displayRegion: 'SOUTHWEST',
+      displayRegionLabel: 'Southwest',
       climateSubregion: 'SOUTH_CENTRAL_MIXED',
     });
     expect(Array.isArray(out.bestMatch)).toBe(true);

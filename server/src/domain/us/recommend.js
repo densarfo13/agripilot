@@ -133,6 +133,7 @@ export function recommendCropsForUSFarm(input) {
       state: ctx.stateProfile.name,
       stateCode: ctx.stateProfile.code,
       displayRegion: ctx.stateProfile.displayRegion,
+      displayRegionLabel: ctx.stateProfile.displayRegionLabel,
       climateSubregion: ctx.stateProfile.climateSubregion,
     },
     farmType: ctx.farmType,

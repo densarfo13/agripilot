@@ -1,16 +1,21 @@
 /**
- * scoringEngine.js — pure functions that score a single crop for a
- * given (state × farmType × month × style × purpose × beginnerLevel)
+ * scoringEngine.js — pure functions that score a candidate crop for
+ * a given (state × farmType × month × style × purpose × beginnerLevel)
  * context and bucket the results.
  *
- * Every function here is deterministic and has no I/O — they compose
- * the core prior (suitability base from cropRules) with contextual
- * adjustments (season, frost, style, beginner) and clamp to 0..100.
+ * Factor weights (section-by-section from the spec):
+ *   - suitabilityBaseScore  from cropRules (subregion or override)
+ *   - season / month        (±12) — in-window / out-of-window
+ *   - frost sensitivity     ( −8) high-frost zone × frost-sensitive crop
+ *   - heat tolerance        (±10) state heatBand × crop heatTolerance
+ *   - growing style         (±10) backyard only — container / raised_bed / in_ground
+ *   - beginner level        (±10) beginner × difficulty
+ *   - purpose               (+4..+6) backyard only — home_food / sell_locally / learning
+ *   - market strength       (−4..+8) commercial / small_farm
+ *   - water vs rainfall     ( −8)
  *
- * The output is a ranked list you can slice into:
- *   bestMatch          — top scores, stable and clearly applicable
- *   alsoConsider       — mid tier, viable with caveats
- *   notRecommendedNow  — below the viability cutoff (seasonal, arid, etc.)
+ * Final score clamped 0..100 and bucketed:
+ *   bestMatch ≥ 75, alsoConsider 55–74, notRecommendedNow <55 or out-of-window.
  */
 
 import { CROP_PROFILES } from './cropProfiles.js';
@@ -19,32 +24,54 @@ import { STATE_OVERRIDES } from './cropRules.js';
 const VIABILITY_CUTOFF = 55;
 const BEST_MATCH_FLOOR = 75;
 
-function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+/* ─── Growing-style boost / penalty tables (spec §I) ─────── */
+const CONTAINER_BOOST = new Set([
+  'tomato', 'pepper', 'herbs', 'lettuce', 'strawberry', 'green_onion', 'eggplant',
+]);
+const RAISED_BED_BOOST = new Set([
+  'tomato', 'pepper', 'lettuce', 'kale', 'beans', 'bush_beans', 'pole_beans',
+  'carrot', 'cucumber', 'onion',
+]);
+const IN_GROUND_BOOST = new Set([
+  'squash', 'sweet_potato', 'pumpkin', 'okra', 'potato', 'corn', 'sweet_corn', 'melon',
+]);
+const CONTAINER_PENALTY = new Set([
+  'corn', 'sweet_corn', 'sorghum', 'cotton', 'rice', 'sugarcane', 'pumpkin', 'melon',
+]);
 
+/* ─── Purpose boost tables (spec §J) ───────────────────── */
+const HOME_FOOD_BOOST = new Set([
+  'tomato', 'lettuce', 'pepper', 'herbs', 'beans', 'bush_beans', 'pole_beans',
+  'cucumber', 'sweet_potato', 'kale',
+]);
+const LEARNING_BOOST = new Set([
+  'lettuce', 'beans', 'herbs', 'radish', 'tomato', 'pepper',
+]);
+const SELL_LOCALLY_BOOST = new Set([
+  'tomato', 'pepper', 'herbs', 'strawberry', 'lettuce', 'cucumber',
+]);
+
+function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 function waterLabel(wn) { return wn === 'low' ? 'low' : wn === 'high' ? 'high' : 'medium'; }
 
-/** True when `month` falls inside [start..end] (supports wrap, e.g. 10..2). */
+/** True when `month` ∈ [start..end], supporting year-wrap (e.g. 10..2). */
 function monthInWindow(month, start, end) {
   if (!Number.isFinite(month) || !Number.isFinite(start) || !Number.isFinite(end)) return false;
   if (start <= end) return month >= start && month <= end;
   return month >= start || month <= end;
 }
 
-/**
- * Core score factors returned for introspection + UI badges.
- */
 function buildFactors({
-  rule, profile, month, beginnerLevel, growingStyle, purpose, farmType,
-  stateProfile,
+  rule, profile, month, beginnerLevel, growingStyle, purpose, farmType, stateProfile,
 }) {
   const reasons = [];
   const riskNotes = [];
 
-  // 1) Base suitability (already weighted per subregion in cropRules).
+  // 1) Base suitability (already subregion/state-weighted).
   let score = rule.suitabilityBaseScore;
-  reasons.push(`Known to grow well in ${stateProfile.displayRegion}`);
+  reasons.push(`Known to grow well in ${stateProfile.displayRegionLabel || stateProfile.displayRegion}`);
 
-  // 2) Season / planting window
+  // 2) Season / planting window.
   let inWindow = false;
   if (Number.isFinite(month)) {
     inWindow = monthInWindow(month, rule.plantingStartMonth, rule.plantingEndMonth);
@@ -57,7 +84,7 @@ function buildFactors({
     }
   }
 
-  // 3) Frost risk / cool-season fit
+  // 3) Frost risk vs frost sensitivity.
   if (profile.frostSensitive && stateProfile.frostRisk === 'high') {
     score -= 8;
     riskNotes.push('Frost-sensitive — plant after last frost');
@@ -66,7 +93,7 @@ function buildFactors({
     reasons.push('Hardy — handles cool spring mornings');
   }
 
-  // 4) Heat tolerance vs state heat band
+  // 4) Heat tolerance vs heatBand.
   if (stateProfile.heatBand === 'high' && profile.heatTolerance === 'low') {
     score -= 10;
     riskNotes.push('Bolts or stresses in peak heat — prefer shoulder season');
@@ -75,49 +102,68 @@ function buildFactors({
     score += 4;
   }
 
-  // 5) Growing style (backyard only matters)
+  // 5) Growing style (backyard only).
   if (farmType === 'backyard' && growingStyle) {
     if (growingStyle === 'container') {
-      if (profile.containerFriendly) { score += 6; reasons.push('Great in containers'); }
-      else { score -= 10; riskNotes.push('Not ideal for containers'); }
+      if (CONTAINER_PENALTY.has(rule.crop)) {
+        score -= 20;
+        riskNotes.push('Needs more space than a container');
+      } else if (CONTAINER_BOOST.has(rule.crop) && profile.containerFriendly) {
+        score += 8;
+        reasons.push('Great in containers');
+      } else if (!profile.containerFriendly) {
+        score -= 10;
+        riskNotes.push('Not ideal for containers');
+      }
     } else if (growingStyle === 'raised_bed') {
-      if (profile.raisedBedFriendly) { score += 4; reasons.push('Fits a raised bed'); }
+      if (RAISED_BED_BOOST.has(rule.crop) && profile.raisedBedFriendly) {
+        score += 6;
+        reasons.push('Fits a raised bed');
+      } else if (profile.raisedBedFriendly) {
+        score += 3;
+      } else if (CONTAINER_PENALTY.has(rule.crop)) {
+        score -= 12;
+      }
     } else if (growingStyle === 'in_ground') {
-      if (profile.inGroundFriendly) { score += 3; reasons.push('Suits in-ground planting'); }
+      if (IN_GROUND_BOOST.has(rule.crop) && profile.inGroundFriendly) {
+        score += 6;
+        reasons.push('Suits in-ground planting');
+      } else if (profile.inGroundFriendly) {
+        score += 3;
+      }
     }
-    // mixed: no adjustment either way
   }
 
-  // 6) Beginner level × difficulty
+  // 6) Beginner level × difficulty.
   if (beginnerLevel === 'beginner') {
-    if (profile.difficulty === 'easy' || rule.beginnerFriendly) {
+    if (profile.difficulty === 'beginner' || rule.beginnerFriendly) {
       score += 6;
       reasons.push('Beginner-friendly');
-    } else if (profile.difficulty === 'hard') {
+    } else if (profile.difficulty === 'advanced') {
       score -= 10;
-      riskNotes.push('Harder to grow — consider once you have one season under your belt');
+      riskNotes.push('Harder to grow — try after one easier season');
     }
   }
 
-  // 7) Purpose (backyard only)
+  // 7) Purpose (backyard only) — spec §J.
   if (farmType === 'backyard' && purpose) {
-    if (purpose === 'home_food' && rule.homeUseValue === 'high') {
+    if (purpose === 'home_food' && HOME_FOOD_BOOST.has(rule.crop)) {
       score += 4; reasons.push('Good yield for home eating');
     }
-    if (purpose === 'sell_locally' && (rule.localSellValue === 'high' || rule.localSellValue === 'very_high')) {
+    if (purpose === 'sell_locally' && (SELL_LOCALLY_BOOST.has(rule.crop) || rule.localSellValue === 'high')) {
       score += 6; reasons.push('Sells well at local markets');
     }
-    if (purpose === 'learning' && (profile.difficulty === 'easy' || rule.beginnerFriendly)) {
+    if (purpose === 'learning' && LEARNING_BOOST.has(rule.crop)) {
       score += 4; reasons.push('Forgiving crop — good to learn on');
     }
   }
 
-  // 8) Market strength (commercial / small_farm only)
+  // 8) Market strength (commercial / small_farm only).
   if (farmType !== 'backyard') {
     const ms = rule.marketStrength;
-    if (ms === 'very_high') { score += 8; reasons.push('Strong market demand in this region'); }
-    else if (ms === 'high') { score += 4; reasons.push('Solid market in this region'); }
-    else if (ms === 'low')  { score -= 4; }
+    if (ms === 'high') { score += 8; reasons.push('Strong market demand in this region'); }
+    else if (ms === 'medium') { score += 3; }
+    else if (ms === 'low') { score -= 4; }
   }
 
   // 9) Water need vs rainfall band — penalize thirsty crops in dry zones.
@@ -129,25 +175,19 @@ function buildFactors({
   return { score, reasons, riskNotes, inWindow };
 }
 
-/** Apply optional per-state override onto a rule row. */
 function applyStateOverride(rule, stateCode) {
   const ovr = STATE_OVERRIDES[stateCode]?.[rule.crop]?.[rule.farmType];
   if (!ovr) return rule;
   return { ...rule, ...ovr };
 }
 
-/**
- * Given a matching rule + inputs, produce a recommendation card.
- */
 export function scoreCrop({ rule, stateProfile, ctx }) {
   const profile = CROP_PROFILES[rule.crop];
   if (!profile) return null;
-
   const effectiveRule = applyStateOverride(rule, stateProfile.code);
 
   const { score, reasons, riskNotes, inWindow } = buildFactors({
-    rule: effectiveRule,
-    profile,
+    rule: effectiveRule, profile,
     month: ctx.currentMonth,
     beginnerLevel: ctx.beginnerLevel,
     growingStyle: ctx.growingStyle,
@@ -166,7 +206,7 @@ export function scoreCrop({ rule, stateProfile, ctx }) {
     growthWeeksMax: profile.growthWeeksMax,
     reasons,
     riskNotes,
-    marketStrength: effectiveRule.marketStrength || 'unknown',
+    marketStrength: effectiveRule.marketStrength || 'medium',
     plantingWindow: {
       startMonth: effectiveRule.plantingStartMonth,
       endMonth: effectiveRule.plantingEndMonth,
@@ -190,21 +230,14 @@ function buildTags(profile, rule, stateProfile, ctx) {
   const tags = new Set(profile.defaultTags || []);
   if (rule.beginnerFriendly) tags.add('beginner_friendly');
   if (profile.containerFriendly && ctx.growingStyle === 'container') tags.add('container_friendly');
-  if (rule.marketStrength === 'very_high' || rule.localSellValue === 'very_high') tags.add('strong_local_market');
+  if (rule.marketStrength === 'high' || rule.localSellValue === 'high') tags.add('strong_local_market');
   if (profile.heatTolerance === 'high') tags.add('heat_tolerant');
   if (profile.frostSensitive && stateProfile.frostRisk === 'high') tags.add('frost_risk');
   return Array.from(tags);
 }
 
-/** Normalize a score so the callers can swap scales later if needed. */
 export function normalizeScore(n) { return clamp(Math.round(n), 0, 100); }
 
-/**
- * Bucket ranked recommendations into the three UI-ready sections.
- *   bestMatch         score >= BEST_MATCH_FLOOR
- *   alsoConsider      score >= VIABILITY_CUTOFF
- *   notRecommendedNow below cutoff OR out of planting window
- */
 export function buildRecommendationBuckets(recs, { maxBest = 6, maxAlso = 6, maxNot = 4 } = {}) {
   const best = [];
   const also = [];

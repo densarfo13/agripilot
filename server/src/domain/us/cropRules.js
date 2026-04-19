@@ -1,313 +1,378 @@
 /**
- * cropRules.js — per (farmType × climateSubregion × crop) rules that
- * seed the scoring engine with agronomic priors.
+ * cropRules.js — rule tables generated from the spec's seed
+ * templates (sections C, D, E, F).
  *
- * The shape intentionally mirrors what a DB-backed CropRule row would
- * look like, so we can later persist these to Prisma without changing
- * the scoring engine signature.
+ * Rather than hand-authoring hundreds of rows, we:
+ *   1. Start from subregion defaults (commercial + backyard).
+ *   2. Apply state-specific overrides that boost the stronger crops.
+ *   3. Derive small-farm rules from commercial + a direct-market tilt.
  *
+ * Each generated row has the shape:
  *   {
  *     crop, farmType, climateSubregion,
  *     suitabilityBaseScore: 0..100,
- *     marketStrength:       'low' | 'medium' | 'high' | 'very_high',
+ *     marketStrength:       'low' | 'medium' | 'high',
  *     beginnerFriendly:     boolean,
- *     homeUseValue:         'low' | 'medium' | 'high' | null,     // backyard
- *     localSellValue:       'low' | 'medium' | 'high' | null,     // small/backyard
+ *     homeUseValue:         'low' | 'medium' | 'high' | null,
+ *     localSellValue:       'low' | 'medium' | 'high' | null,
  *     plantingStartMonth:   1..12,
  *     plantingEndMonth:     1..12,
- *     notes:                string,
  *   }
  *
- * If a state has an entry in STATE_OVERRIDES the override is merged
- * on top of the subregion row for that (crop, farmType).
+ * stateCode on a row is optional; when present it means the row was
+ * produced by an override and should outrank a generic subregion row.
+ * The scoring engine keeps the higher base.
  */
 
-import { CLIMATE_SUBREGIONS as C } from './usStates.js';
-
-/** Common planting windows reused by many rules to keep tables terse. */
-const W = Object.freeze({
-  WARM_SEASON_N: [4, 6],     // Apr–Jun (cool / temperate)
-  WARM_SEASON_S: [3, 5],     // Mar–May (warm south)
-  WARM_SEASON_HOT: [2, 4],   // Feb–Apr (very hot / subtropical)
-  COOL_SEASON_SPRING: [2, 4],
-  COOL_SEASON_FALL:   [8, 10],
-  YEAR_ROUND_TROPICAL: [1, 12],
-  WINTER_CITRUS:       [2, 4],
-  GRAIN_SPRING:        [3, 5],
-  GRAIN_FALL:          [9, 11],
-});
-
-/* ─────────────────────────────────────────────────────────────
- * BACKYARD RULES
- * Focus: ease of growing, home use, container/raised-bed fit.
- * ───────────────────────────────────────────────────────────── */
-
-const BACKYARD_RULES = [
-  // Northeast / Mid-Atlantic — short hot summer, long shoulder seasons.
-  r('tomato',  'backyard', C.NORTHEAST_COASTAL, 85, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('pepper',  'backyard', C.NORTHEAST_COASTAL, 78, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('lettuce', 'backyard', C.NORTHEAST_COASTAL, 88, 'medium', true,  'high',   'medium', W.COOL_SEASON_SPRING),
-  r('kale',    'backyard', C.NORTHEAST_COASTAL, 90, 'medium', true,  'high',   'medium', W.COOL_SEASON_SPRING),
-  r('beans',   'backyard', C.NORTHEAST_COASTAL, 82, 'medium', true,  'high',   'low',    W.WARM_SEASON_N),
-  r('cucumber','backyard', C.NORTHEAST_COASTAL, 80, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('zucchini','backyard', C.NORTHEAST_COASTAL, 86, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('herbs',   'backyard', C.NORTHEAST_COASTAL, 92, 'low',    true,  'high',   'medium', [3, 9]),
-  r('carrot',  'backyard', C.NORTHEAST_COASTAL, 80, 'low',    true,  'high',   'low',    W.COOL_SEASON_SPRING),
-  r('radish',  'backyard', C.NORTHEAST_COASTAL, 86, 'low',    true,  'high',   'low',    [3, 10]),
-  r('peas',    'backyard', C.NORTHEAST_COASTAL, 82, 'medium', true,  'high',   'low',    [3, 5]),
-  r('strawberry','backyard',C.NORTHEAST_COASTAL,76, 'medium', false, 'high',   'high',   [4, 6]),
-
-  r('tomato',  'backyard', C.MID_ATLANTIC, 90, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('pepper',  'backyard', C.MID_ATLANTIC, 85, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('lettuce', 'backyard', C.MID_ATLANTIC, 84, 'medium', true,  'high',   'medium', W.COOL_SEASON_SPRING),
-  r('herbs',   'backyard', C.MID_ATLANTIC, 92, 'low',    true,  'high',   'medium', [3, 10]),
-  r('cucumber','backyard', C.MID_ATLANTIC, 82, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('zucchini','backyard', C.MID_ATLANTIC, 82, 'medium', true,  'high',   'medium', W.WARM_SEASON_N),
-  r('kale',    'backyard', C.MID_ATLANTIC, 85, 'medium', true,  'high',   'medium', W.COOL_SEASON_SPRING),
-  r('strawberry','backyard',C.MID_ATLANTIC,  80, 'medium', false, 'high',   'high',   [4, 6]),
-  r('beans',   'backyard', C.MID_ATLANTIC, 80, 'medium', true,  'high',   'low',    W.WARM_SEASON_N),
-
-  // Southeast / Florida — hot + humid, skew toward heat-tolerant picks.
-  r('okra',       'backyard', C.SOUTHEAST_COASTAL, 92, 'medium', true,  'high',   'medium', W.WARM_SEASON_S),
-  r('sweet_potato','backyard',C.SOUTHEAST_COASTAL, 90, 'medium', true,  'high',   'medium', [4, 6]),
-  r('pepper',     'backyard', C.SOUTHEAST_COASTAL, 88, 'medium', true,  'high',   'medium', W.WARM_SEASON_S),
-  r('tomato',     'backyard', C.SOUTHEAST_COASTAL, 82, 'medium', true,  'high',   'medium', W.WARM_SEASON_S),
-  r('collards',   'backyard', C.SOUTHEAST_COASTAL, 88, 'medium', true,  'high',   'medium', [8, 10]),
-  r('herbs',      'backyard', C.SOUTHEAST_COASTAL, 88, 'low',    true,  'high',   'medium', [1, 12]),
-  r('eggplant',   'backyard', C.SOUTHEAST_COASTAL, 84, 'medium', false, 'high',   'medium', W.WARM_SEASON_S),
-
-  r('okra',       'backyard', C.FLORIDA_SUBTROPICAL, 95, 'medium', true,  'high',   'medium', W.WARM_SEASON_HOT),
-  r('sweet_potato','backyard',C.FLORIDA_SUBTROPICAL, 92, 'medium', true,  'high',   'medium', [3, 6]),
-  r('pepper',     'backyard', C.FLORIDA_SUBTROPICAL, 90, 'medium', true,  'high',   'medium', W.WARM_SEASON_HOT),
-  r('tomato',     'backyard', C.FLORIDA_SUBTROPICAL, 82, 'medium', true,  'high',   'medium', W.WARM_SEASON_HOT),
-  r('collards',   'backyard', C.FLORIDA_SUBTROPICAL, 86, 'medium', true,  'high',   'medium', [9, 11]),
-  r('herbs',      'backyard', C.FLORIDA_SUBTROPICAL, 92, 'low',    true,  'high',   'medium', [1, 12]),
-  r('eggplant',   'backyard', C.FLORIDA_SUBTROPICAL, 86, 'medium', false, 'high',   'medium', W.WARM_SEASON_HOT),
-
-  // Midwest — standard home-garden set.
-  r('tomato',  'backyard', C.MIDWEST_HUMID, 88, 'medium', true, 'high', 'medium', W.WARM_SEASON_N),
-  r('beans',   'backyard', C.MIDWEST_HUMID, 88, 'medium', true, 'high', 'low',    W.WARM_SEASON_N),
-  r('kale',    'backyard', C.MIDWEST_HUMID, 88, 'medium', true, 'high', 'medium', W.COOL_SEASON_SPRING),
-  r('lettuce', 'backyard', C.MIDWEST_HUMID, 88, 'medium', true, 'high', 'medium', [3, 5]),
-  r('zucchini','backyard', C.MIDWEST_HUMID, 90, 'medium', true, 'high', 'medium', W.WARM_SEASON_N),
-  r('peas',    'backyard', C.MIDWEST_HUMID, 82, 'medium', true, 'high', 'low',    [3, 5]),
-  r('herbs',   'backyard', C.MIDWEST_HUMID, 90, 'low',    true, 'high', 'low',    [4, 9]),
-  r('strawberry','backyard',C.MIDWEST_HUMID, 80, 'medium', false,'high', 'medium', [4, 6]),
-
-  // Great Plains — drier, wind, heat.
-  r('tomato','backyard', C.GREAT_PLAINS_DRY, 78, 'medium', true, 'medium', 'medium', W.WARM_SEASON_N),
-  r('pepper','backyard', C.GREAT_PLAINS_DRY, 80, 'medium', true, 'medium', 'medium', W.WARM_SEASON_N),
-  r('okra',  'backyard', C.GREAT_PLAINS_DRY, 80, 'medium', true, 'medium', 'medium', W.WARM_SEASON_S),
-  r('herbs', 'backyard', C.GREAT_PLAINS_DRY, 86, 'low',    true, 'high',   'medium', [4, 9]),
-  r('beans', 'backyard', C.GREAT_PLAINS_DRY, 76, 'low',    true, 'high',   'low',    W.WARM_SEASON_N),
-
-  // South Central — hot, long season.
-  r('tomato','backyard', C.SOUTH_CENTRAL_MIXED, 86, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('pepper','backyard', C.SOUTH_CENTRAL_MIXED, 92, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('okra',  'backyard', C.SOUTH_CENTRAL_MIXED, 92, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('herbs', 'backyard', C.SOUTH_CENTRAL_MIXED, 90, 'low',    true, 'high', 'medium', [2, 11]),
-  r('eggplant','backyard',C.SOUTH_CENTRAL_MIXED,86, 'medium', false,'high', 'medium', W.WARM_SEASON_S),
-  r('sweet_potato','backyard',C.SOUTH_CENTRAL_MIXED,84, 'medium', true,'high','medium',[3, 6]),
-
-  // Southwest arid / Desert irrigated.
-  r('pepper','backyard', C.SOUTHWEST_ARID, 88, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('herbs', 'backyard', C.SOUTHWEST_ARID, 84, 'low',    true, 'high', 'medium', [3, 11]),
-  r('okra',  'backyard', C.SOUTHWEST_ARID, 82, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('tomato','backyard', C.SOUTHWEST_ARID, 74, 'medium', true, 'medium', 'medium', W.WARM_SEASON_S),
-
-  r('pepper','backyard', C.DESERT_IRRIGATED, 86, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('herbs', 'backyard', C.DESERT_IRRIGATED, 82, 'low',    true, 'high', 'medium', [3, 11]),
-  r('tomato','backyard', C.DESERT_IRRIGATED, 74, 'medium', true, 'medium', 'medium', W.WARM_SEASON_S),
-
-  // West Coast / PNW / Mountain / Subarctic / Tropical Pacific.
-  r('tomato', 'backyard', C.WEST_COAST_MEDITERRANEAN, 90, 'medium', true, 'high', 'medium', [3, 5]),
-  r('lettuce','backyard', C.WEST_COAST_MEDITERRANEAN, 90, 'medium', true, 'high', 'high',   [2, 10]),
-  r('strawberry','backyard',C.WEST_COAST_MEDITERRANEAN, 88, 'medium', false,'high','high',  [3, 5]),
-  r('herbs',  'backyard', C.WEST_COAST_MEDITERRANEAN, 92, 'low',    true, 'high', 'medium', [2, 11]),
-  r('pepper', 'backyard', C.WEST_COAST_MEDITERRANEAN, 84, 'medium', true, 'high', 'medium', [3, 5]),
-  r('peas',   'backyard', C.WEST_COAST_MEDITERRANEAN, 82, 'medium', true, 'high', 'low',    [2, 4]),
-
-  r('lettuce','backyard', C.PACIFIC_NORTHWEST_COOL, 92, 'medium', true, 'high', 'medium', [3, 9]),
-  r('kale',   'backyard', C.PACIFIC_NORTHWEST_COOL, 92, 'medium', true, 'high', 'medium', [3, 9]),
-  r('peas',   'backyard', C.PACIFIC_NORTHWEST_COOL, 90, 'medium', true, 'high', 'low',    [3, 5]),
-  r('herbs',  'backyard', C.PACIFIC_NORTHWEST_COOL, 86, 'low',    true, 'high', 'medium', [4, 9]),
-  r('potato', 'backyard', C.PACIFIC_NORTHWEST_COOL, 88, 'medium', true, 'high', 'low',    [3, 5]),
-  r('strawberry','backyard',C.PACIFIC_NORTHWEST_COOL, 86, 'medium', false,'high','high',  [4, 6]),
-
-  r('lettuce','backyard', C.MOUNTAIN_COOL_DRY, 86, 'low',    true, 'high', 'low',   [4, 7]),
-  r('kale',   'backyard', C.MOUNTAIN_COOL_DRY, 84, 'low',    true, 'high', 'low',   [4, 7]),
-  r('peas',   'backyard', C.MOUNTAIN_COOL_DRY, 82, 'medium', true, 'high', 'low',   [4, 6]),
-  r('herbs',  'backyard', C.MOUNTAIN_COOL_DRY, 82, 'low',    true, 'high', 'low',   [5, 8]),
-  r('potato', 'backyard', C.MOUNTAIN_COOL_DRY, 84, 'low',    true, 'high', 'low',   [4, 6]),
-
-  r('lettuce','backyard', C.SUBARCTIC_SHORT_SEASON, 88, 'low',    true, 'high', 'low', [5, 7]),
-  r('kale',   'backyard', C.SUBARCTIC_SHORT_SEASON, 86, 'low',    true, 'high', 'low', [5, 7]),
-  r('cabbage','backyard', C.SUBARCTIC_SHORT_SEASON, 82, 'medium', true, 'high', 'low', [5, 6]),
-  r('potato', 'backyard', C.SUBARCTIC_SHORT_SEASON, 88, 'low',    true, 'high', 'low', [5, 6]),
-  r('radish', 'backyard', C.SUBARCTIC_SHORT_SEASON, 82, 'low',    true, 'high', 'low', [5, 7]),
-
-  r('sweet_potato','backyard',C.TROPICAL_PACIFIC, 92, 'medium', true, 'high', 'medium', [1, 12]),
-  r('taro',       'backyard', C.TROPICAL_PACIFIC, 88, 'medium', false,'high', 'medium', [1, 12]),
-  r('herbs',      'backyard', C.TROPICAL_PACIFIC, 90, 'low',    true, 'high', 'medium', [1, 12]),
-  r('pepper',     'backyard', C.TROPICAL_PACIFIC, 88, 'medium', true, 'high', 'medium', [1, 12]),
-  r('eggplant',   'backyard', C.TROPICAL_PACIFIC, 84, 'medium', false,'high', 'medium', [1, 12]),
-  r('okra',       'backyard', C.TROPICAL_PACIFIC, 86, 'medium', true, 'high', 'medium', [1, 12]),
-
-  r('lower_miss_tomato', 'backyard', C.LOWER_MISSISSIPPI_HUMID, 0, 'low', false, null, null, [1, 12]), // placeholder
-];
-
-// Replace placeholder stub above with explicit LOWER_MISS rows.
-BACKYARD_RULES.pop();
-BACKYARD_RULES.push(
-  r('tomato',  'backyard', C.LOWER_MISSISSIPPI_HUMID, 88, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('okra',    'backyard', C.LOWER_MISSISSIPPI_HUMID, 90, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('pepper',  'backyard', C.LOWER_MISSISSIPPI_HUMID, 88, 'medium', true, 'high', 'medium', W.WARM_SEASON_S),
-  r('sweet_potato','backyard',C.LOWER_MISSISSIPPI_HUMID, 88,'medium', true,'high','medium',[4, 6]),
-  r('collards','backyard', C.LOWER_MISSISSIPPI_HUMID, 86, 'medium', true, 'high', 'medium', [8, 10]),
-  r('herbs',   'backyard', C.LOWER_MISSISSIPPI_HUMID, 88, 'low',    true, 'high', 'medium', [2, 11]),
-);
-
-/* ─────────────────────────────────────────────────────────────
- * SMALL FARM and COMMERCIAL RULES
- * Focus: state agronomic staples, market strength, scale-friendly.
- * ───────────────────────────────────────────────────────────── */
-
-const COMMERCIAL_RULES = [
-  // Southeast coastal (GA / NC / SC / AL).
-  c('peanut',       'commercial', C.SOUTHEAST_COASTAL, 92, 'very_high', false, [4, 6]),
-  c('cotton',       'commercial', C.SOUTHEAST_COASTAL, 88, 'very_high', false, [4, 6]),
-  c('soybean',      'commercial', C.SOUTHEAST_COASTAL, 82, 'high',      false, [4, 6]),
-  c('corn',         'commercial', C.SOUTHEAST_COASTAL, 82, 'high',      false, [3, 5]),
-  c('sweet_potato', 'commercial', C.SOUTHEAST_COASTAL, 80, 'high',      false, [5, 6]),
-
-  // Florida subtropical.
-  c('peanut',    'commercial', C.FLORIDA_SUBTROPICAL, 84, 'high',      false, [3, 5]),
-  c('citrus',    'commercial', C.FLORIDA_SUBTROPICAL, 92, 'very_high', false, W.WINTER_CITRUS),
-  c('sugarcane', 'commercial', C.FLORIDA_SUBTROPICAL, 82, 'high',      false, [10, 2]),
-  c('tomato',    'commercial', C.FLORIDA_SUBTROPICAL, 80, 'high',      false, [9, 11]),
-  c('pepper',    'commercial', C.FLORIDA_SUBTROPICAL, 80, 'high',      false, [9, 11]),
-
-  // Midwest humid (IA / IL / IN / OH).
-  c('corn',    'commercial', C.MIDWEST_HUMID, 95, 'very_high', false, [4, 5]),
-  c('soybean', 'commercial', C.MIDWEST_HUMID, 92, 'very_high', false, [5, 6]),
-  c('oats',    'commercial', C.MIDWEST_HUMID, 78, 'medium',    false, [3, 5]),
-  c('alfalfa', 'commercial', C.MIDWEST_HUMID, 80, 'medium',    false, [4, 5]),
-
-  // Great Plains dry.
-  c('sorghum', 'commercial', C.GREAT_PLAINS_DRY, 94, 'very_high', false, [5, 6]),
-  c('wheat',   'commercial', C.GREAT_PLAINS_DRY, 92, 'very_high', false, [9, 10]),
-  c('corn',    'commercial', C.GREAT_PLAINS_DRY, 80, 'high',      false, [4, 5]),
-  c('soybean', 'commercial', C.GREAT_PLAINS_DRY, 74, 'medium',    false, [5, 6]),
-
-  // South Central mixed (TX / OK).
-  c('sorghum', 'commercial', C.SOUTH_CENTRAL_MIXED, 94, 'very_high', false, [3, 5]),
-  c('cotton',  'commercial', C.SOUTH_CENTRAL_MIXED, 92, 'very_high', false, [3, 5]),
-  c('peanut',  'commercial', C.SOUTH_CENTRAL_MIXED, 88, 'very_high', false, [4, 6]),
-  c('corn',    'commercial', C.SOUTH_CENTRAL_MIXED, 80, 'high',      false, [3, 4]),
-  c('wheat',   'commercial', C.SOUTH_CENTRAL_MIXED, 78, 'high',      false, [9, 11]),
-
-  // Southwest arid / Desert irrigated.
-  c('cotton',  'commercial', C.SOUTHWEST_ARID, 80, 'high',      false, [3, 5]),
-  c('sorghum', 'commercial', C.SOUTHWEST_ARID, 78, 'high',      false, [4, 6]),
-  c('alfalfa', 'commercial', C.SOUTHWEST_ARID, 82, 'high',      false, [3, 4]),
-  c('alfalfa', 'commercial', C.DESERT_IRRIGATED, 86, 'high',    false, [3, 4]),
-  c('cotton',  'commercial', C.DESERT_IRRIGATED, 80, 'high',    false, [3, 5]),
-
-  // West Coast Mediterranean (California).
-  c('tomato',     'commercial', C.WEST_COAST_MEDITERRANEAN, 92, 'very_high', false, [3, 5]),
-  c('lettuce',    'commercial', C.WEST_COAST_MEDITERRANEAN, 92, 'very_high', false, [2, 10]),
-  c('strawberry', 'commercial', C.WEST_COAST_MEDITERRANEAN, 90, 'very_high', false, [2, 4]),
-  c('almonds',    'commercial', C.WEST_COAST_MEDITERRANEAN, 88, 'very_high', false, [12, 2]),
-  c('grapes',     'commercial', C.WEST_COAST_MEDITERRANEAN, 88, 'very_high', false, [12, 2]),
-  c('citrus',     'commercial', C.WEST_COAST_MEDITERRANEAN, 80, 'high',      false, W.WINTER_CITRUS),
-
-  // Pacific Northwest cool (WA / OR).
-  c('apple',  'commercial', C.PACIFIC_NORTHWEST_COOL, 92, 'very_high', false, [3, 4]),
-  c('potato', 'commercial', C.PACIFIC_NORTHWEST_COOL, 90, 'very_high', false, [3, 5]),
-  c('wheat',  'commercial', C.PACIFIC_NORTHWEST_COOL, 84, 'high',      false, [9, 11]),
-  c('berry',  'commercial', C.PACIFIC_NORTHWEST_COOL, 84, 'high',      false, [3, 5]),
-
-  // Mountain cool dry (ID / CO / MT / WY / UT).
-  c('barley',  'commercial', C.MOUNTAIN_COOL_DRY, 86, 'high',      false, [4, 5]),
-  c('wheat',   'commercial', C.MOUNTAIN_COOL_DRY, 84, 'high',      false, [9, 10]),
-  c('potato',  'commercial', C.MOUNTAIN_COOL_DRY, 88, 'very_high', false, [4, 5]),
-  c('alfalfa', 'commercial', C.MOUNTAIN_COOL_DRY, 82, 'high',      false, [4, 5]),
-
-  // Subarctic — very limited commercial, greenhouse-heavy.
-  c('potato',  'commercial', C.SUBARCTIC_SHORT_SEASON, 78, 'medium', false, [5, 6]),
-  c('cabbage', 'commercial', C.SUBARCTIC_SHORT_SEASON, 72, 'medium', false, [5, 6]),
-  c('kale',    'commercial', C.SUBARCTIC_SHORT_SEASON, 70, 'medium', false, [5, 6]),
-
-  // Tropical Pacific — Hawaii.
-  c('sweet_potato','commercial', C.TROPICAL_PACIFIC, 86, 'high', false, [1, 12]),
-  c('taro',        'commercial', C.TROPICAL_PACIFIC, 86, 'high', false, [1, 12]),
-  c('sugarcane',   'commercial', C.TROPICAL_PACIFIC, 82, 'high', false, [1, 12]),
-  c('citrus',      'commercial', C.TROPICAL_PACIFIC, 80, 'high', false, [1, 12]),
-
-  // Mid-Atlantic (PA / MD / DE / NJ / VA / DC / WV).
-  c('corn',    'commercial', C.MID_ATLANTIC, 88, 'very_high', false, [4, 5]),
-  c('soybean', 'commercial', C.MID_ATLANTIC, 88, 'very_high', false, [5, 6]),
-  c('tomato',  'commercial', C.MID_ATLANTIC, 76, 'high',      false, [4, 6]),
-  c('wheat',   'commercial', C.MID_ATLANTIC, 78, 'high',      false, [9, 11]),
-
-  // Lower Mississippi humid (LA / MS / AR / TN).
-  c('cotton',  'commercial', C.LOWER_MISSISSIPPI_HUMID, 90, 'very_high', false, [4, 5]),
-  c('soybean', 'commercial', C.LOWER_MISSISSIPPI_HUMID, 90, 'very_high', false, [5, 6]),
-  c('corn',    'commercial', C.LOWER_MISSISSIPPI_HUMID, 84, 'high',      false, [3, 5]),
-  c('sugarcane','commercial',C.LOWER_MISSISSIPPI_HUMID, 80, 'high',      false, [1, 3]),
-  c('sweet_potato','commercial',C.LOWER_MISSISSIPPI_HUMID, 80,'high',   false, [4, 6]),
-
-  // Northeast coastal — small-scale focus, limited large-scale commodity.
-  c('corn',    'commercial', C.NORTHEAST_COASTAL, 72, 'medium', false, [4, 6]),
-  c('apple',   'commercial', C.NORTHEAST_COASTAL, 82, 'high',   false, [3, 5]),
-  c('berry',   'commercial', C.NORTHEAST_COASTAL, 80, 'high',   false, [4, 6]),
-  c('potato',  'commercial', C.NORTHEAST_COASTAL, 78, 'medium', false, [4, 6]),
-];
-
-// Small-farm rules cover the same staples as commercial, but with a
-// slight premium on beginner/diverse picks and direct-market crops
-// (berries, strawberries, vegetables, herbs).
-const SMALL_FARM_RULES = [
-  ...COMMERCIAL_RULES.map((row) => ({
-    ...row,
-    farmType: 'small_farm',
-    beginnerFriendly: ['peanut', 'sorghum', 'tomato', 'soybean', 'sweet_potato', 'potato', 'berry'].includes(row.crop)
-      ? true
-      : row.beginnerFriendly,
-    localSellValue: 'high',
-  })),
-  // Small-farm specific additions — direct-market vegetables & berries.
-  c('strawberry','small_farm', C.MID_ATLANTIC,            86, 'high', true, [4, 5], { localSellValue: 'very_high' }),
-  c('berry',     'small_farm', C.MID_ATLANTIC,            82, 'high', true, [4, 6], { localSellValue: 'very_high' }),
-  c('tomato',    'small_farm', C.NORTHEAST_COASTAL,       82, 'high', true, [4, 6], { localSellValue: 'very_high' }),
-  c('berry',     'small_farm', C.NORTHEAST_COASTAL,       84, 'high', true, [4, 6], { localSellValue: 'very_high' }),
-  c('strawberry','small_farm', C.NORTHEAST_COASTAL,       84, 'high', true, [4, 5], { localSellValue: 'very_high' }),
-  c('tomato',    'small_farm', C.MIDWEST_HUMID,           84, 'high', true, [4, 6], { localSellValue: 'high' }),
-  c('strawberry','small_farm', C.MIDWEST_HUMID,           80, 'high', true, [4, 5], { localSellValue: 'high' }),
-];
+import { CLIMATE_SUBREGIONS as C, US_STATES } from './usStates.js';
+import { CROP_PROFILES } from './cropProfiles.js';
 
 /**
- * STATE_OVERRIDES — narrow adjustments keyed by (state, crop, farmType).
- * Rare; most logic lives at the climate subregion level.
+ * Map the spec's human crop names to our CROP_PROFILES keys.
+ * Adding aliases here keeps the spec templates human-readable while
+ * preserving a single canonical key space in cropProfiles.js.
  */
+const CROP_NAME_TO_KEY = {
+  'Tomato': 'tomato', 'Pepper': 'pepper', 'Chili Pepper': 'chili_pepper',
+  'Lettuce': 'lettuce', 'Spinach': 'spinach', 'Kale': 'kale',
+  'Onion': 'onion', 'Garlic': 'garlic', 'Beans': 'beans',
+  'Bush Beans': 'bush_beans', 'Pole Beans': 'pole_beans',
+  'Cucumber': 'cucumber', 'Squash': 'squash', 'Zucchini': 'zucchini',
+  'Herbs': 'herbs', 'Okra': 'okra', 'Sweet Potato': 'sweet_potato',
+  'Strawberry': 'strawberry', 'Eggplant': 'eggplant', 'Carrot': 'carrot',
+  'Radish': 'radish', 'Beets': 'beets', 'Cabbage': 'cabbage',
+  'Broccoli': 'broccoli', 'Peas': 'peas', 'Green Onion': 'green_onion',
+  'Collards': 'collards', 'Swiss Chard': 'swiss_chard', 'Pumpkin': 'pumpkin',
+  'Peppers': 'pepper', 'Sweet Corn': 'sweet_corn',
+  'Peanut': 'peanut', 'Cotton': 'cotton', 'Soybean': 'soybean',
+  'Corn': 'corn', 'Wheat': 'wheat', 'Sorghum': 'sorghum',
+  'Oats': 'oats', 'Alfalfa': 'alfalfa', 'Rice': 'rice',
+  'Citrus': 'citrus', 'Sugarcane': 'sugarcane', 'Grapes': 'grapes',
+  'Almonds': 'almonds', 'Potato': 'potato', 'Apple': 'apple',
+  'Blueberry': 'blueberry', 'Raspberry': 'raspberry',
+  'Sunflower': 'sunflower', 'Barley': 'barley',
+  'Taro': 'taro', 'Banana': 'banana', 'Papaya': 'papaya',
+  'Pineapple': 'pineapple', 'Melon': 'melon', 'Pecan': 'pecan',
+  'Cassava': 'cassava',
+  // Collective labels from spec — mapped to a representative crop so
+  // they still produce a real card. They're kept as strong-market
+  // signals rather than separate profiles.
+  'Vegetables': 'tomato',
+  'Berry Crops': 'blueberry',
+};
+
+/** Turn a spec crop label into the canonical profile key. */
+function key(label) { return CROP_NAME_TO_KEY[label] || null; }
+
+/* ─── C) Commercial defaults by subregion (from spec) ────── */
+const COMMERCIAL_DEFAULTS = {
+  [C.NORTHEAST_COASTAL]:        ['Tomato', 'Lettuce', 'Potato', 'Apple', 'Cabbage', 'Blueberry', 'Corn', 'Soybean'],
+  [C.MID_ATLANTIC]:              ['Corn', 'Soybean', 'Tomato', 'Lettuce', 'Wheat', 'Peppers', 'Sweet Corn', 'Cucumber'],
+  [C.SOUTHEAST_COASTAL]:         ['Peanut', 'Cotton', 'Soybean', 'Corn', 'Sweet Potato', 'Tomato', 'Pepper', 'Okra'],
+  [C.FLORIDA_SUBTROPICAL]:       ['Peanut', 'Citrus', 'Tomato', 'Pepper', 'Sugarcane', 'Vegetables', 'Sweet Potato'],
+  [C.MIDWEST_HUMID]:             ['Corn', 'Soybean', 'Oats', 'Alfalfa', 'Wheat', 'Potato', 'Tomato'],
+  [C.GREAT_PLAINS_DRY]:          ['Sorghum', 'Wheat', 'Corn', 'Soybean', 'Alfalfa', 'Sunflower'],
+  [C.SOUTH_CENTRAL_MIXED]:       ['Sorghum', 'Cotton', 'Peanut', 'Corn', 'Wheat', 'Soybean', 'Okra', 'Sweet Potato'],
+  [C.SOUTHWEST_ARID]:            ['Cotton', 'Alfalfa', 'Sorghum', 'Chili Pepper', 'Onion', 'Pecan'],
+  [C.WEST_COAST_MEDITERRANEAN]:  ['Tomato', 'Lettuce', 'Strawberry', 'Grapes', 'Almonds', 'Citrus', 'Vegetables'],
+  [C.PACIFIC_NORTHWEST_COOL]:    ['Potato', 'Wheat', 'Apple', 'Blueberry', 'Raspberry', 'Lettuce', 'Cabbage'],
+  [C.MOUNTAIN_COOL_DRY]:         ['Barley', 'Wheat', 'Potato', 'Alfalfa', 'Cabbage', 'Carrot'],
+  [C.DESERT_IRRIGATED]:          ['Alfalfa', 'Cotton', 'Lettuce', 'Onion', 'Melon', 'Tomato'],
+  [C.LOWER_MISSISSIPPI_HUMID]:   ['Soybean', 'Rice', 'Corn', 'Cotton', 'Sweet Potato', 'Tomato', 'Pepper'],
+  [C.ALASKA_SHORT_SEASON]:       ['Potato', 'Cabbage', 'Kale', 'Carrot', 'Lettuce'],
+  [C.HAWAII_TROPICAL]:           ['Sweet Potato', 'Taro', 'Tomato', 'Pepper', 'Banana', 'Papaya', 'Pineapple'],
+};
+
+/* ─── D) Backyard defaults by subregion (from spec) ────── */
+const BACKYARD_DEFAULTS = {
+  [C.NORTHEAST_COASTAL]:        ['Tomato', 'Lettuce', 'Spinach', 'Kale', 'Carrot', 'Beans', 'Cucumber', 'Herbs', 'Peas', 'Cabbage'],
+  [C.MID_ATLANTIC]:              ['Tomato', 'Pepper', 'Lettuce', 'Beans', 'Cucumber', 'Squash', 'Herbs', 'Kale', 'Carrot'],
+  [C.SOUTHEAST_COASTAL]:         ['Tomato', 'Pepper', 'Okra', 'Beans', 'Cucumber', 'Squash', 'Sweet Potato', 'Herbs', 'Collards'],
+  [C.FLORIDA_SUBTROPICAL]:       ['Tomato', 'Pepper', 'Okra', 'Sweet Potato', 'Eggplant', 'Herbs', 'Beans', 'Cucumber'],
+  [C.MIDWEST_HUMID]:             ['Tomato', 'Lettuce', 'Kale', 'Beans', 'Cucumber', 'Carrot', 'Onion', 'Zucchini', 'Herbs'],
+  [C.GREAT_PLAINS_DRY]:          ['Tomato', 'Pepper', 'Beans', 'Onion', 'Squash', 'Cucumber', 'Herbs', 'Kale'],
+  [C.SOUTH_CENTRAL_MIXED]:       ['Tomato', 'Pepper', 'Okra', 'Beans', 'Cucumber', 'Squash', 'Herbs', 'Sweet Potato'],
+  [C.SOUTHWEST_ARID]:            ['Pepper', 'Tomato', 'Onion', 'Beans', 'Herbs', 'Squash', 'Melon'],
+  [C.WEST_COAST_MEDITERRANEAN]:  ['Tomato', 'Pepper', 'Lettuce', 'Strawberry', 'Beans', 'Cucumber', 'Herbs', 'Zucchini'],
+  [C.PACIFIC_NORTHWEST_COOL]:    ['Lettuce', 'Kale', 'Cabbage', 'Peas', 'Carrot', 'Potato', 'Herbs', 'Strawberry'],
+  [C.MOUNTAIN_COOL_DRY]:         ['Lettuce', 'Kale', 'Carrot', 'Beans', 'Potato', 'Cabbage', 'Herbs'],
+  [C.DESERT_IRRIGATED]:          ['Pepper', 'Tomato', 'Herbs', 'Onion', 'Beans', 'Melon'],
+  [C.LOWER_MISSISSIPPI_HUMID]:   ['Tomato', 'Pepper', 'Okra', 'Beans', 'Sweet Potato', 'Herbs', 'Squash'],
+  [C.ALASKA_SHORT_SEASON]:       ['Lettuce', 'Kale', 'Cabbage', 'Potato', 'Carrot', 'Herbs'],
+  [C.HAWAII_TROPICAL]:           ['Sweet Potato', 'Tomato', 'Pepper', 'Eggplant', 'Herbs', 'Taro'],
+};
+
+/* ─── E) State-specific commercial overrides ────────────── */
+const STATE_COMMERCIAL_OVERRIDES = {
+  'Georgia':       ['Peanut', 'Cotton', 'Soybean', 'Corn', 'Sweet Potato'],
+  'Florida':       ['Peanut', 'Citrus', 'Tomato', 'Pepper', 'Sugarcane', 'Vegetables'],
+  'Texas':         ['Sorghum', 'Cotton', 'Peanut', 'Corn', 'Wheat'],
+  'Kansas':        ['Sorghum', 'Wheat', 'Corn', 'Soybean'],
+  'Iowa':          ['Corn', 'Soybean', 'Oats', 'Alfalfa'],
+  'California':    ['Tomato', 'Lettuce', 'Strawberry', 'Grapes', 'Almonds', 'Citrus'],
+  'Washington':    ['Apple', 'Potato', 'Wheat', 'Blueberry'],
+  'Oregon':        ['Potato', 'Berry Crops', 'Wheat', 'Vegetables'],
+  'Maryland':      ['Corn', 'Soybean', 'Tomato', 'Vegetables'],
+  'Pennsylvania':  ['Corn', 'Soybean', 'Apple', 'Potato'],
+  'Louisiana':     ['Rice', 'Soybean', 'Sugarcane', 'Cotton'],
+  'Mississippi':   ['Soybean', 'Rice', 'Cotton', 'Corn'],
+  'Arkansas':      ['Rice', 'Soybean', 'Cotton', 'Corn'],
+  'Nebraska':      ['Corn', 'Soybean', 'Alfalfa', 'Wheat'],
+  'North Dakota':  ['Wheat', 'Barley', 'Sunflower', 'Soybean'],
+  'South Dakota':  ['Corn', 'Soybean', 'Wheat', 'Sunflower'],
+  'Arizona':       ['Cotton', 'Lettuce', 'Alfalfa', 'Onion'],
+  'Nevada':        ['Alfalfa', 'Onion', 'Melon'],
+  'Alaska':        ['Potato', 'Cabbage', 'Kale'],
+  'Hawaii':        ['Taro', 'Sweet Potato', 'Banana', 'Papaya', 'Pineapple'],
+};
+
+/* ─── F) State-specific backyard overrides ──────────────── */
+const STATE_BACKYARD_OVERRIDES = {
+  'Texas':       ['Tomato', 'Pepper', 'Okra', 'Herbs', 'Bush Beans', 'Squash', 'Cucumber', 'Sweet Potato'],
+  'Florida':     ['Tomato', 'Pepper', 'Okra', 'Sweet Potato', 'Eggplant', 'Herbs'],
+  'Georgia':     ['Tomato', 'Pepper', 'Okra', 'Bush Beans', 'Squash', 'Sweet Potato', 'Herbs'],
+  'Iowa':        ['Tomato', 'Lettuce', 'Kale', 'Beans', 'Carrot', 'Onion', 'Cucumber'],
+  'California':  ['Tomato', 'Pepper', 'Lettuce', 'Strawberry', 'Herbs', 'Beans', 'Cucumber'],
+  'Maryland':    ['Tomato', 'Pepper', 'Lettuce', 'Herbs', 'Beans', 'Kale', 'Cucumber'],
+  'Washington':  ['Lettuce', 'Kale', 'Herbs', 'Peas', 'Strawberry', 'Potato'],
+  'Alaska':      ['Lettuce', 'Kale', 'Cabbage', 'Potato', 'Carrot'],
+  'Hawaii':      ['Sweet Potato', 'Tomato', 'Pepper', 'Eggplant', 'Herbs', 'Taro'],
+};
+
+/* ─── Planting window heuristics by subregion ─────────────
+ * Spec section H maps months 3–5 / 6–8 / 9–11 / 12–2 to
+ * spring / summer / fall / winter. These windows approximate the
+ * primary outdoor planting window for a crop family in each climate.
+ * The scoring engine uses them to give in-window +8 / out-of-window -12. */
+const COOL_SEASON_WINDOW_N  = [3, 5];   // Mar–May cool zones
+const COOL_SEASON_WINDOW_S  = [2, 4];   // Feb–Apr shoulder
+const WARM_SEASON_WINDOW_N  = [4, 6];   // Apr–Jun cool/temperate
+const WARM_SEASON_WINDOW_S  = [3, 5];   // Mar–May warm south
+const WARM_SEASON_WINDOW_HS = [2, 5];   // Feb–May very hot subtropical
+const YEAR_ROUND_TROPICAL   = [1, 12];
+const YEAR_ROUND_SUBTROPICAL_VEG = [9, 4]; // Sep–Apr (wrap) for FL veg winter
+const WINTER_CITRUS         = [2, 4];
+const GRAIN_FALL            = [9, 11];
+const GRAIN_SPRING          = [4, 5];
+const ORCHARD_PREP          = [3, 4];
+
+/** Heuristic picker: given a subregion + crop, return its planting window. */
+function pickWindow(subregion, cropKey) {
+  const p = CROP_PROFILES[cropKey];
+  if (!p) return [3, 5];
+  const isCool = p.heatTolerance === 'low';
+  const isWarm = p.heatTolerance === 'high' || p.frostSensitive;
+
+  switch (subregion) {
+    case C.ALASKA_SHORT_SEASON:
+      return [5, 6]; // only a short summer window works outdoors
+    case C.HAWAII_TROPICAL:
+      return YEAR_ROUND_TROPICAL;
+    case C.FLORIDA_SUBTROPICAL:
+      if (['citrus'].includes(cropKey)) return WINTER_CITRUS;
+      if (['tomato', 'pepper', 'eggplant', 'lettuce'].includes(cropKey)) return YEAR_ROUND_SUBTROPICAL_VEG;
+      if (['sugarcane', 'peanut'].includes(cropKey)) return [3, 5];
+      return WARM_SEASON_WINDOW_HS;
+    case C.SOUTHEAST_COASTAL:
+    case C.SOUTH_CENTRAL_MIXED:
+    case C.LOWER_MISSISSIPPI_HUMID:
+      if (isCool) return COOL_SEASON_WINDOW_S;
+      return WARM_SEASON_WINDOW_S;
+    case C.SOUTHWEST_ARID:
+    case C.DESERT_IRRIGATED:
+      if (['wheat', 'barley'].includes(cropKey)) return GRAIN_FALL;
+      if (isCool) return COOL_SEASON_WINDOW_S;
+      return WARM_SEASON_WINDOW_S;
+    case C.WEST_COAST_MEDITERRANEAN:
+      if (['citrus', 'grapes', 'almonds', 'pecan'].includes(cropKey)) return ORCHARD_PREP;
+      if (isCool) return [2, 4];
+      return WARM_SEASON_WINDOW_S;
+    case C.PACIFIC_NORTHWEST_COOL:
+    case C.MOUNTAIN_COOL_DRY:
+      if (['wheat', 'barley'].includes(cropKey)) return GRAIN_FALL;
+      if (isCool) return [3, 5];
+      return WARM_SEASON_WINDOW_N;
+    case C.GREAT_PLAINS_DRY:
+      if (['wheat'].includes(cropKey)) return GRAIN_FALL;
+      if (['barley', 'oats'].includes(cropKey)) return GRAIN_SPRING;
+      return WARM_SEASON_WINDOW_N;
+    case C.MIDWEST_HUMID:
+      if (['wheat'].includes(cropKey)) return GRAIN_FALL;
+      if (isCool) return [3, 5];
+      return WARM_SEASON_WINDOW_N;
+    case C.MID_ATLANTIC:
+    case C.NORTHEAST_COASTAL:
+    default:
+      if (isCool) return [3, 5];
+      if (isWarm) return WARM_SEASON_WINDOW_N;
+      return [4, 6];
+  }
+}
+
+/** Commercial-only crops are never emitted into the backyard table. */
+const COMMERCIAL_ONLY = new Set(['cotton', 'rice', 'sugarcane', 'almonds', 'pecan', 'alfalfa', 'sorghum']);
+
+/** Strong market signal used when a state override boosts a crop. */
+function marketFor(crop, isOverridden) {
+  const p = CROP_PROFILES[crop] || {};
+  if (isOverridden) return 'high';
+  if (p.defaultTags?.includes('commercial')) return 'medium';
+  return 'medium';
+}
+
+/** Home-use value for backyard rules. */
+function homeUseFor(crop) {
+  const p = CROP_PROFILES[crop];
+  if (!p) return null;
+  if (['tomato', 'pepper', 'lettuce', 'herbs', 'beans', 'bush_beans', 'pole_beans',
+       'cucumber', 'sweet_potato', 'kale', 'okra'].includes(crop)) return 'high';
+  return 'medium';
+}
+
+/** Seasonal sell-market value for backyard rules. */
+function localSellFor(crop) {
+  if (['tomato', 'pepper', 'herbs', 'strawberry', 'lettuce', 'cucumber', 'blueberry', 'raspberry'].includes(crop)) {
+    return 'high';
+  }
+  return 'medium';
+}
+
+function isBeginnerFriendly(crop) {
+  const p = CROP_PROFILES[crop];
+  return !!p && p.difficulty === 'beginner';
+}
+
+// ─── Rule builders ────────────────────────────────────────────
+
+function buildBackyardRow({ cropLabel, climateSubregion, stateCode, override }) {
+  const crop = key(cropLabel);
+  if (!crop) return null;
+  if (COMMERCIAL_ONLY.has(crop)) return null;
+  if (!CROP_PROFILES[crop].containerFriendly && !CROP_PROFILES[crop].raisedBedFriendly && !CROP_PROFILES[crop].inGroundFriendly) {
+    return null;
+  }
+  const base = override ? 90 : 82;
+  const [plantingStartMonth, plantingEndMonth] = pickWindow(climateSubregion, crop);
+  return {
+    crop, farmType: 'backyard', climateSubregion,
+    stateCode: stateCode || null,
+    suitabilityBaseScore: base,
+    marketStrength: 'medium',
+    beginnerFriendly: isBeginnerFriendly(crop),
+    homeUseValue: homeUseFor(crop),
+    localSellValue: localSellFor(crop),
+    plantingStartMonth, plantingEndMonth,
+  };
+}
+
+function buildCommercialRow({ cropLabel, climateSubregion, stateCode, override }) {
+  const crop = key(cropLabel);
+  if (!crop) return null;
+  const base = override ? 93 : 84;
+  const [plantingStartMonth, plantingEndMonth] = pickWindow(climateSubregion, crop);
+  return {
+    crop, farmType: 'commercial', climateSubregion,
+    stateCode: stateCode || null,
+    suitabilityBaseScore: base,
+    marketStrength: marketFor(crop, !!override),
+    beginnerFriendly: false,
+    homeUseValue: null,
+    localSellValue: null,
+    plantingStartMonth, plantingEndMonth,
+  };
+}
+
+function buildSmallFarmRowFromCommercial(row) {
+  return {
+    ...row,
+    farmType: 'small_farm',
+    // Small farms lean into direct-market. Strawberries, berries,
+    // tomatoes, peppers, herbs score better on local sell value.
+    beginnerFriendly: ['tomato', 'strawberry', 'sweet_potato', 'potato', 'blueberry', 'raspberry'].includes(row.crop),
+    localSellValue: ['tomato', 'strawberry', 'blueberry', 'raspberry', 'pepper', 'herbs'].includes(row.crop) ? 'high' : 'medium',
+  };
+}
+
+// ─── Build the default rule tables from seed templates ────────
+
+const ALL_RULES_RAW = [];
+
+// 1) Commercial defaults by subregion.
+for (const [subregion, cropList] of Object.entries(COMMERCIAL_DEFAULTS)) {
+  for (const label of cropList) {
+    const row = buildCommercialRow({ cropLabel: label, climateSubregion: subregion, override: false });
+    if (row) ALL_RULES_RAW.push(row);
+  }
+}
+// 2) Backyard defaults by subregion.
+for (const [subregion, cropList] of Object.entries(BACKYARD_DEFAULTS)) {
+  for (const label of cropList) {
+    const row = buildBackyardRow({ cropLabel: label, climateSubregion: subregion, override: false });
+    if (row) ALL_RULES_RAW.push(row);
+  }
+}
+
+// 3) State-specific commercial overrides — emitted with higher base.
+for (const [stateName, cropList] of Object.entries(STATE_COMMERCIAL_OVERRIDES)) {
+  const stateCode = stateNameToCode(stateName);
+  if (!stateCode) continue;
+  const climateSubregion = US_STATES[stateCode].climateSubregion;
+  for (const label of cropList) {
+    const row = buildCommercialRow({
+      cropLabel: label, climateSubregion, stateCode, override: true,
+    });
+    if (row) ALL_RULES_RAW.push(row);
+  }
+}
+
+// 4) State-specific backyard overrides.
+for (const [stateName, cropList] of Object.entries(STATE_BACKYARD_OVERRIDES)) {
+  const stateCode = stateNameToCode(stateName);
+  if (!stateCode) continue;
+  const climateSubregion = US_STATES[stateCode].climateSubregion;
+  for (const label of cropList) {
+    const row = buildBackyardRow({
+      cropLabel: label, climateSubregion, stateCode, override: true,
+    });
+    if (row) ALL_RULES_RAW.push(row);
+  }
+}
+
+// 5) Small-farm rules derived from commercial (spec says small_farm
+//    may blend but must stay distinct).
+const commercialRows = ALL_RULES_RAW.filter((r) => r.farmType === 'commercial');
+const smallFarmRows = commercialRows.map(buildSmallFarmRowFromCommercial);
+ALL_RULES_RAW.push(...smallFarmRows);
+
+// 6) STATE_OVERRIDES — narrow score adjustments applied after match.
 export const STATE_OVERRIDES = Object.freeze({
-  // Cassava is tropical-only. Keep it quietly suppressed everywhere
-  // except HI (even then it's capped; Hawaii skews to taro/sweet potato).
+  // Hawaii gets a modest cassava entry; elsewhere cassava stays suppressed.
   HI: {
     cassava: { commercial: { suitabilityBaseScore: 55, marketStrength: 'medium' } },
   },
 });
 
-/** All rule rows in one flat list. */
-export const ALL_RULES = Object.freeze([
-  ...BACKYARD_RULES,
-  ...SMALL_FARM_RULES,
-  ...COMMERCIAL_RULES,
-]);
+/**
+ * De-duplicate rows so each (crop × farmType × subregion × stateCode)
+ * appears once, keeping the highest base score. Deterministic.
+ */
+function dedupeRules(rows) {
+  const byKey = new Map();
+  for (const r of rows) {
+    const k = `${r.crop}|${r.farmType}|${r.climateSubregion}|${r.stateCode || ''}`;
+    const prev = byKey.get(k);
+    if (!prev || r.suitabilityBaseScore > prev.suitabilityBaseScore) byKey.set(k, r);
+  }
+  return Array.from(byKey.values());
+}
+
+export const ALL_RULES = Object.freeze(dedupeRules(ALL_RULES_RAW));
 
 /**
  * Index rules for fast lookup:
- *   ruleIndex[farmType][climateSubregion] = [row, row, …]
+ *   ruleIndex[farmType][climateSubregion] = row[]
+ * If a state-level override exists it's emitted before the generic
+ * row; the scoring engine picks the higher base.
  */
 export function buildRuleIndex(rows = ALL_RULES) {
   const ix = {};
@@ -317,33 +382,13 @@ export function buildRuleIndex(rows = ALL_RULES) {
   return ix;
 }
 
-/** Pre-built default index (most callers want this). */
 export const RULE_INDEX = buildRuleIndex();
 
-// ─── helpers to keep rule tables compact ─────────────────────
-function r(crop, farmType, climateSubregion, base, market, beginnerFriendly, homeUseValue, localSellValue, window) {
-  return {
-    crop, farmType, climateSubregion,
-    suitabilityBaseScore: base,
-    marketStrength: market,
-    beginnerFriendly: !!beginnerFriendly,
-    homeUseValue: homeUseValue || null,
-    localSellValue: localSellValue || null,
-    plantingStartMonth: window[0],
-    plantingEndMonth: window[1],
-  };
-}
+// ─── helpers ─────────────────────────────────────────────────
 
-function c(crop, farmType, climateSubregion, base, market, beginnerFriendly, window, extras = {}) {
-  return {
-    crop, farmType, climateSubregion,
-    suitabilityBaseScore: base,
-    marketStrength: market,
-    beginnerFriendly: !!beginnerFriendly,
-    homeUseValue: null,
-    localSellValue: null,
-    plantingStartMonth: window[0],
-    plantingEndMonth: window[1],
-    ...extras,
-  };
+function stateNameToCode(name) {
+  for (const [code, entry] of Object.entries(US_STATES)) {
+    if (entry.name === name) return code;
+  }
+  return null;
 }
