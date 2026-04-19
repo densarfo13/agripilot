@@ -151,27 +151,40 @@ describe('applyConfidenceWording — key-driven tier variants', () => {
     expect(out.title).toBe('Your field may need more clearing');
   });
 
-  it('LOW on a risky intent flips to the checkFirst override', () => {
+  it('LOW on a risky intent with a conflict reason flips to the checkFirst override', () => {
+    // Tightened contract: LOW + risky intent is NOT enough by
+    // itself — we require a concrete conflict/uncertainty reason.
     const out = applyConfidenceWording(
       { titleKey: 'task.plant', intent: 'plant' },
-      { level: 'low', score: 30 },
+      { level: 'low', score: 30, reasons: ['conflict_land_vs_stage'] },
       (k) => t(k, 'en'),
     );
-    // Check-first override takes precedence on low-conf risky intents
     expect(out.checkFirst).toBe(true);
     expect(out.titleKey).toBe('confidence.checkFirst.title');
     expect(out.title).toBe('Check your field before acting');
   });
 
-  it('LOW on a non-risky intent just uses the .low variant', () => {
+  it('LOW on a risky intent WITHOUT a reason softens via tier variant but does NOT flip', () => {
+    const out = applyConfidenceWording(
+      { titleKey: 'task.plant', intent: 'plant' },
+      { level: 'low', score: 30 },
+      (k) => t(k, 'en'),
+    );
+    expect(out.checkFirst).not.toBe(true);
+    expect(out.titleKey).toBe('task.plant.low');
+  });
+
+  it('LOW on a non-risky intent keeps the direct key (no tier suffix)', () => {
+    // Production contract: observational / low-risk tasks are NOT
+    // softened. "Check your plants for pests" becoming "Check your
+    // plants closely today" just adds noise.
     const out = applyConfidenceWording(
       { titleKey: 'task.scoutPests', intent: 'scout' },
       { level: 'low', score: 30 },
       (k) => t(k, 'en'),
     );
-    expect(out.checkFirst).toBeFalsy();
-    expect(out.titleKey).toBe('task.scoutPests.low');
-    expect(out.title).toBe('Check your plants closely today');
+    expect(out.checkFirst).not.toBe(true);
+    expect(out.titleKey).toBe('task.scoutPests');
   });
 
   it('never mutates the original task', () => {
@@ -217,10 +230,19 @@ describe('applyConfidenceWording — plain-string fallback', () => {
 });
 
 describe('shouldUseCheckFirst', () => {
-  it('true for LOW + plant/drain/prep/clear intents', () => {
-    for (const intent of ['plant', 'drain', 'prepare', 'clear']) {
-      expect(shouldUseCheckFirst({ intent }, { level: 'low' })).toBe(true);
+  it('true for LOW + risky intent WITH a conflict reason', () => {
+    // Note: 'prepare' is no longer a match — risky intents are
+    // exact-match now (use 'prep'). Broad substring matching is
+    // gone. See taskConfidenceProductionGrade.test.js for full
+    // risky/low-risk coverage.
+    for (const intent of ['plant', 'drain', 'prep', 'clear']) {
+      expect(shouldUseCheckFirst({ intent },
+        { level: 'low', reasons: ['conflict_land_vs_stage'] })).toBe(true);
     }
+  });
+  it('false for LOW + risky intent WITHOUT a conflict reason', () => {
+    // Tightened contract: low alone isn't enough. Need a reason.
+    expect(shouldUseCheckFirst({ intent: 'plant' }, { level: 'low' })).toBe(false);
   });
   it('false for LOW + scout (inspection already safe)', () => {
     expect(shouldUseCheckFirst({ intent: 'scout' }, { level: 'low' })).toBe(false);
@@ -229,11 +251,22 @@ describe('shouldUseCheckFirst', () => {
     expect(shouldUseCheckFirst({ intent: 'plant' }, { level: 'medium' })).toBe(false);
     expect(shouldUseCheckFirst({ intent: 'plant' }, { level: 'high' })).toBe(false);
   });
-  it('true when a land-vs-stage conflict is in the reasons', () => {
+  it('true when a land-vs-stage conflict is in the reasons (risky intent)', () => {
+    // Previously this test used intent='water'. Under the tight
+    // production contract, water is a low-risk intent (mistakes
+    // self-correct), so check-first does NOT fire. Switch to a
+    // genuinely risky intent to assert the positive case.
+    expect(shouldUseCheckFirst(
+      { intent: 'plant' },
+      { level: 'low', reasons: ['conflict_land_vs_stage'] },
+    )).toBe(true);
+  });
+
+  it('false for LOW + water + conflict (water is low-risk, self-correcting)', () => {
     expect(shouldUseCheckFirst(
       { intent: 'water' },
       { level: 'low', reasons: ['conflict_land_vs_stage'] },
-    )).toBe(true);
+    )).toBe(false);
   });
 });
 

@@ -146,14 +146,127 @@ export function scoreTaskConfidence(ctx = {}) {
   return { level, score, reasons };
 }
 
-/** Should a low-confidence task become a "check first" safer version? */
+// ─── Intent classification ───────────────────────────────
+// Risky intents have real downside if done at the wrong time
+// (wrong-planting = wasted seed, wrong-drain = erosion, etc.).
+// Low-risk / observational intents don't need protective
+// wording — a farmer observing pests at low confidence still
+// just needs to go look; we don't want to make that awkward
+// with "Check whether you should check your plants".
+const RISKY_INTENTS = new Set([
+  'plant', 'drain', 'prep', 'clear',
+  'fertilize', 'spray', 'harvest',
+]);
+
+const LOW_RISK_INTENTS = new Set([
+  'scout', 'inspect', 'observe', 'review', 'check_status',
+  'water',   // water mistakes self-correct quickly — leave direct
+]);
+
+// Confidence reasons that justify forcing a check-first override
+// when the intent is risky AND the level is low. We keep this
+// tight and explicit — broadening it in the future means adding
+// a reason here, not loosening the match regex.
+const CHECK_FIRST_REASONS = new Set([
+  'conflict_land_vs_stage',
+  'conflict_weather_vs_land',
+  'stale_offline_state',
+  'weak_camera_signal',
+  'camera_uncertain',
+  'compound_wet_risk',
+]);
+
+/** True when the intent is in the risky set (exact match, not regex). */
+export function isRiskyIntent(intent) {
+  if (!intent) return false;
+  return RISKY_INTENTS.has(String(intent).toLowerCase());
+}
+
+/** True when any reason justifies check-first. Tolerates null/undefined. */
+export function hasConflictReason(reasons) {
+  if (!Array.isArray(reasons) || reasons.length === 0) return false;
+  for (const r of reasons) {
+    if (r && CHECK_FIRST_REASONS.has(String(r))) return true;
+  }
+  return false;
+}
+
+/**
+ * normalizeConfidence — coerce any shape into a predictable
+ * `{ level, score, reasons }` with safe defaults. Never throws.
+ * Returns null ONLY when the input is null/undefined — so
+ * callers can distinguish "no confidence info at all" from
+ * "confidence info, missing fields".
+ */
+export function normalizeConfidence(confidence) {
+  if (confidence == null) return null;
+  if (typeof confidence !== 'object') return null;
+  const rawLevel = String(confidence.level || '').toLowerCase();
+  const level = rawLevel === 'high' || rawLevel === 'medium' || rawLevel === 'low'
+    ? rawLevel
+    : 'medium';
+  const score = Number.isFinite(confidence.score) ? Number(confidence.score) : null;
+  const reasons = Array.isArray(confidence.reasons) ? confidence.reasons : [];
+  return { level, score, reasons };
+}
+
+/**
+ * shouldUseCheckFirst — predicate for swapping a task for its
+ * "check first" variant. Production contract:
+ *
+ *   • always returns an explicit boolean (never undefined)
+ *   • null/undefined confidence → false
+ *   • level !== 'low' → false
+ *   • risky intent (plant/drain/clear/etc.) + a real conflict /
+ *     uncertainty reason → true
+ *   • risky intent alone at low confidence → false
+ *     (we don't force check-first just because the task is
+ *     planting — we need a CONCRETE reason to suspect the
+ *     action will go wrong)
+ *   • low-risk intent (scout/inspect/water) → false regardless
+ *
+ * This avoids both the overconfident "imperative action at low
+ * confidence" failure mode AND the over-cautious "wrap every
+ * low-confidence task in a reminder" failure mode.
+ */
 export function shouldUseCheckFirst(task, confidence) {
-  if (!confidence) return false;
-  if (confidence.level !== 'low') return false;
+  const c = normalizeConfidence(confidence);
+  if (!c)                    return false;
+  if (c.level !== 'low')     return false;
+
   const intent = String(task?.intent || task?.code || '').toLowerCase();
-  // Low-confidence planting / drainage / field prep → check-first.
-  return /plant|drain|prep|clear/.test(intent)
-    || confidence.reasons?.includes('conflict_land_vs_stage');
+  if (!intent)               return false;
+  if (LOW_RISK_INTENTS.has(intent)) return false;
+  if (!isRiskyIntent(intent))      return false;
+  return hasConflictReason(c.reasons);
+}
+
+/**
+ * shouldUseSoftWhy — predicate for the wording adapter: should
+ * the "why" line carry hedging language? True when confidence is
+ * LOW or MEDIUM on a risky intent. Always boolean.
+ */
+export function shouldUseSoftWhy(task, confidence) {
+  const c = normalizeConfidence(confidence);
+  if (!c) return false;
+  if (c.level === 'high') return false;
+  const intent = String(task?.intent || task?.code || '').toLowerCase();
+  if (LOW_RISK_INTENTS.has(intent)) return false;
+  return true;
+}
+
+/**
+ * shouldUseStateFirst — predicate for flipping the display mode
+ * to state-first when the task is low-confidence AND risky. Low-
+ * risk observational tasks keep their direct framing.
+ */
+export function shouldUseStateFirst(task, confidence) {
+  const c = normalizeConfidence(confidence);
+  if (!c) return false;
+  if (c.level !== 'low') return false;
+  const intent = String(task?.intent || task?.code || '').toLowerCase();
+  if (LOW_RISK_INTENTS.has(intent)) return false;
+  return isRiskyIntent(intent);
 }
 
 /**
@@ -170,43 +283,63 @@ export function shouldUseCheckFirst(task, confidence) {
  * overconfidence even when translations aren't yet filled.
  */
 export function applyConfidenceWording(task, confidence, t = null) {
-  if (!task || !confidence) return task;
-  const level = confidence.level || 'medium';
+  if (!task) return task;
+  const c = normalizeConfidence(confidence);
+  if (!c) return task;
+
+  const level = c.level;
   const out = {
     ...task,
-    confidence: { level, score: confidence.score },
+    confidence: { level, score: c.score },
   };
+
+  // Low-risk / observational tasks should NOT have their titles
+  // softened into awkward double-hedges ("Check whether you
+  // should check your plants"). Identify them up front.
+  const intent = String(task.intent || task.code || '').toLowerCase();
+  const isLowRisk = LOW_RISK_INTENTS.has(intent);
 
   // ─── key-driven variants ─────────────────────────────
   const titleKey  = task.titleKey;
   const detailKey = task.detailKey;
   if (titleKey) {
-    const variantKey = `${titleKey}.${level}`;
+    // Low-risk tasks keep their direct i18n key — no tier suffix.
+    const variantKey = isLowRisk ? titleKey : `${titleKey}.${level}`;
     out.titleKey = variantKey;
     if (t) {
       const translated = t(variantKey);
-      out.title = translated && translated !== variantKey ? translated : (t(titleKey) || task.title);
+      out.title = translated && translated !== variantKey
+        ? translated
+        : (t(titleKey) || task.title);
     }
   }
   if (detailKey) {
-    const variantKey = `${detailKey}.${level}`;
+    const variantKey = isLowRisk ? detailKey : `${detailKey}.${level}`;
     out.detailKey = variantKey;
     if (t) {
       const translated = t(variantKey);
-      out.detail = translated && translated !== variantKey ? translated : (t(detailKey) || task.detail);
+      out.detail = translated && translated !== variantKey
+        ? translated
+        : (t(detailKey) || task.detail);
     }
   }
 
   // ─── string-driven hedging fallback ─────────────────
+  // Low-risk tasks keep their original title/detail; risky
+  // tasks get tier-appropriate hedging. HIGH always keeps the
+  // original copy (short-circuit inside hedgeTitle/hedgeDetail).
   if (!titleKey && task.title) {
-    out.title = hedgeTitle(task.title, level);
+    out.title = isLowRisk ? task.title : hedgeTitle(task.title, level);
   }
   if (!detailKey && task.detail) {
-    out.detail = hedgeDetail(task.detail, level);
+    out.detail = isLowRisk ? task.detail : hedgeDetail(task.detail, level);
   }
 
-  // ─── check-first override for low-confidence risky intents ─
-  if (shouldUseCheckFirst(task, confidence)) {
+  // ─── check-first override ────────────────────────────
+  // Only fires when BOTH (a) level is low, (b) intent is risky,
+  // and (c) a concrete conflict/uncertainty reason is present.
+  // See shouldUseCheckFirst for the full contract.
+  if (shouldUseCheckFirst(task, c)) {
     out.checkFirst = true;
     out.titleKey = 'confidence.checkFirst.title';
     if (t) {
@@ -248,4 +381,5 @@ function hedgeDetail(detail, level) {
 export const _internal = {
   MEDIUM_THRESHOLD, HIGH_THRESHOLD, LAND_BLOCKER_TYPES,
   CAMERA_CLEAR, CAMERA_UNCERTAIN, hedgeTitle, hedgeDetail,
+  RISKY_INTENTS, LOW_RISK_INTENTS, CHECK_FIRST_REASONS,
 };
