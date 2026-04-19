@@ -1987,6 +1987,9 @@ model V2CropCycle {
   // backfill existing rows; new writes set it explicitly.
   lifecycleStatus     CropCycleStatus? @map("lifecycle_status")
   statusReason        String?          @map("status_reason")   // short note for delayed/failed
+  // Action-driven risk band updated by the feedback loop on every
+  // meaningful farmer action. Nullable so existing rows stay valid.
+  riskBand            String?          @map("risk_band")       // low | medium | high
   updatedAt           DateTime  @updatedAt @map("updated_at")
   createdAt           DateTime  @default(now()) @map("created_at")
 
@@ -1999,6 +2002,7 @@ model V2CropCycle {
 
   @@index([profileId], map: "idx_v2_crop_cycle_profile")
   @@index([lifecycleStatus], map: "idx_v2_crop_cycle_lifecycle")
+  @@index([riskBand], map: "idx_v2_crop_cycle_risk_band")
   @@map("v2_crop_cycles")
 }
 
@@ -2199,6 +2203,58 @@ model VerificationRecord {
   @@index([subjectType, subjectId], map: "idx_verification_subject")
   @@index([verifiedAt], map: "idx_verification_verified")
   @@map("verification_records")
+}
+
+// ─── Farmer action feedback loop ─────────────────────────────
+// Append-only ledger of every meaningful action a farmer takes so
+// the Today engine can feed recency/streak/skip-rate back into task
+// ranking, and the recommendation tuner (future) can compare input
+// behavior against harvest outcomes.
+model FarmerActionLog {
+  id            String   @id @default(uuid())
+  farmProfileId String?  @map("farm_profile_id")
+  cropCycleId   String?  @map("crop_cycle_id")
+  userId        String?  @map("user_id")
+  actionType    String   @map("action_type")      // task_completed | task_skipped | issue_reported | harvest_reported
+  subjectType   String?  @map("subject_type")     // task | issue | harvest
+  subjectId     String?  @map("subject_id")
+  details       Json?
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([farmProfileId], map: "idx_action_log_farm")
+  @@index([cropCycleId], map: "idx_action_log_cycle")
+  @@index([actionType], map: "idx_action_log_type")
+  @@index([occurredAt], map: "idx_action_log_time")
+  @@map("farmer_action_logs")
+}
+
+// ─── Harvest outcome (durable result per cycle) ──────────────
+// Stores the end state of a crop cycle for future recommendation
+// tuning. One row per cycle — upserted when the farmer submits a
+// harvest report. Fields after `notes` are pre-aggregated from the
+// task plan + action log so the tuner doesn't have to re-scan.
+model HarvestOutcome {
+  id                  String   @id @default(uuid())
+  farmProfileId       String?  @map("farm_profile_id")
+  cropCycleId         String   @unique @map("crop_cycle_id")
+  cropKey             String?  @map("crop_key")
+  actualYieldKg       Float?   @map("actual_yield_kg")
+  yieldUnit           String   @default("kg") @map("yield_unit")
+  qualityBand         String?  @map("quality_band")       // poor | fair | good | excellent
+  completedTasksCount Int?     @map("completed_tasks_count")
+  skippedTasksCount   Int?     @map("skipped_tasks_count")
+  overdueTasksCount   Int?     @map("overdue_tasks_count")
+  issueCount          Int?     @map("issue_count")
+  notes               String?
+  reportedAt          DateTime @default(now()) @map("reported_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([farmProfileId], map: "idx_harvest_outcome_farm")
+  @@index([cropKey], map: "idx_harvest_outcome_crop")
+  @@index([qualityBand], map: "idx_harvest_outcome_quality")
+  @@map("harvest_outcomes")
 }
 
 model V2PestImage {

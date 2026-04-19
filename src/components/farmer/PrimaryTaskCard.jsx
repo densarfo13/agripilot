@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 
-export default function PrimaryTaskCard({ task, warning, onComplete, onReportIssue }) {
+export default function PrimaryTaskCard({ task, warning, onComplete, onSkip, onReportIssue, onHarvest, harvestEligible = false }) {
   const { t } = useAppSettings();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -16,6 +16,14 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onReportIss
     try { await onComplete?.(task); }
     catch (e) { setErr(e?.code || 'error'); }
     finally { setBusy(false); }
+  }
+
+  function handleSkip() {
+    // Delegates to the parent, which opens the localized modal. The
+    // modal handles the reason prompt, so this component no longer
+    // reaches for window.prompt.
+    if (!task || busy || task.source?.startsWith('override:')) return;
+    onSkip?.(task);
   }
 
   if (!task) {
@@ -70,6 +78,16 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onReportIss
         >
           {busy ? t('actionHome.primary.markingDone') : t('actionHome.primary.markComplete')}
         </button>
+        {onSkip && !task.source?.startsWith('override:') && (
+          <button
+            type="button"
+            onClick={handleSkip}
+            style={S.ctaGhost}
+            data-testid="primary-task-skip"
+          >
+            {t('actionHome.primary.skip')}
+          </button>
+        )}
         {onReportIssue && (
           <button
             type="button"
@@ -81,6 +99,17 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onReportIss
           </button>
         )}
       </div>
+
+      {harvestEligible && onHarvest && (
+        <button
+          type="button"
+          onClick={onHarvest}
+          style={S.ctaHarvest}
+          data-testid="primary-task-harvest"
+        >
+          {t('actionHome.primary.reportHarvest')}
+        </button>
+      )}
     </div>
   );
 }
@@ -152,4 +181,10 @@ const S = {
     minHeight: '52px',
   },
   ctaBusy: { opacity: 0.7, cursor: 'wait' },
+  ctaHarvest: {
+    marginTop: '0.75rem', width: '100%',
+    padding: '0.875rem', borderRadius: '14px', border: 'none',
+    background: '#F59E0B', color: '#1b1b1f',
+    fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
+  },
 };

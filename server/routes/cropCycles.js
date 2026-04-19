@@ -16,6 +16,9 @@ import {
   listCyclesForUser,
   getCycleDetail,
   completeTask,
+  skipTask,
+  reportIssue,
+  submitHarvest,
   updateCycleStatus,
   getTodayFeedForUser,
 } from '../src/services/cropCycles/cropCycleService.js';
@@ -74,6 +77,42 @@ router.post('/tasks/:taskId/complete', ...FARMER_SCOPE, express.json(), async (r
   try {
     res.json(await completeTask({
       user: req.user, taskId: req.params.taskId, note: req.body?.note,
+    }));
+  } catch (err) { handleErr(res, err); }
+});
+
+// ─── POST /api/v2/crop-cycles/tasks/:taskId/skip ───────────
+router.post('/tasks/:taskId/skip', ...FARMER_SCOPE, express.json(), async (req, res) => {
+  try {
+    res.json(await skipTask({
+      user: req.user, taskId: req.params.taskId, reason: req.body?.reason,
+    }));
+  } catch (err) { handleErr(res, err); }
+});
+
+// ─── POST /api/v2/crop-cycles/:id/issues ───────────────────
+router.post('/:id/issues', ...FARMER_SCOPE, express.json(), async (req, res) => {
+  try {
+    res.json(await reportIssue({
+      user: req.user,
+      cycleId: req.params.id,
+      category: req.body?.category,
+      severity: req.body?.severity,
+      description: req.body?.description,
+      photoUrl: req.body?.photoUrl,
+    }));
+  } catch (err) { handleErr(res, err); }
+});
+
+// ─── POST /api/v2/crop-cycles/:id/harvest ──────────────────
+router.post('/:id/harvest', ...FARMER_SCOPE, express.json(), async (req, res) => {
+  try {
+    res.json(await submitHarvest({
+      user: req.user,
+      cycleId: req.params.id,
+      actualYieldKg: req.body?.actualYieldKg,
+      qualityBand: req.body?.qualityBand,
+      notes: req.body?.notes,
     }));
   } catch (err) { handleErr(res, err); }
 });

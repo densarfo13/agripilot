@@ -25,6 +25,11 @@ import { getCropStageOverlay } from './cropTaskTemplates.js';
 import { getWeatherRisk } from '../weather/weatherRiskEngine.js';
 import { adjustTasksForWeather } from '../weather/adjustTasksForWeather.js';
 import { getWeatherAlerts } from '../weather/weatherAlerts.js';
+import {
+  summarizeBehavior,
+  priorityBoostFromIssues,
+  deriveNextActionHint,
+} from '../feedback/responseEngine.js';
 
 /** Numeric urgency value by priority string. */
 const URGENCY = { high: 35, medium: 20, low: 8 };
@@ -82,9 +87,15 @@ export function buildTodayFeed(ctx = {}) {
     ? adjustTasksForWeather(rawPending, weatherRisk)
     : rawPending;
 
+  // Recent-action feedback → behavior summary the scorer can use
+  // to boost issue-related tasks and to derive a fallback next-
+  // action hint when no pending task wins outright.
+  const allTasks = ctx.allTasks || rawPending;
+  const behavior = summarizeBehavior(ctx.recentActions || [], allTasks);
+
   // ─── 1. Score every candidate ────────────────────────────
   const scored = pending.map((task) => ({
-    task, ...scoreTask({ task, ctx, now }),
+    task, ...scoreTask({ task, ctx, now, behavior }),
   }));
 
   // Sort highest-priority first; deterministic tiebreaker on dueDate.
@@ -122,7 +133,7 @@ export function buildTodayFeed(ctx = {}) {
   const overdueTasksCount = countOverdue(pending, now);
   const nextActionSummary = primary
     ? buildNextActionSummary({ primary, overdueTasksCount, riskAlerts })
-    : (riskAlerts.length ? riskAlerts[0] : null);
+    : (riskAlerts.length ? riskAlerts[0] : deriveNextActionHint(behavior, ctx?.cycle?.lifecycleStatus));
 
   return {
     primaryTask: primary ? shapeTask(primary) : null,
@@ -132,6 +143,7 @@ export function buildTodayFeed(ctx = {}) {
     weatherRisk,
     nextActionSummary,
     overdueTasksCount,
+    behaviorSummary: behavior,
     timeEstimateMinutes: primary ? estimateMinutes(primary) : null,
     priorityScore: primary ? (scored.find((s) => s.task?.id === primary.id)?.priorityScore ?? null) : null,
     debug: { scored: scored.slice(0, 5).map((s) => ({ id: s.task?.id, score: s.priorityScore, parts: s.parts })) },
@@ -140,23 +152,37 @@ export function buildTodayFeed(ctx = {}) {
 
 // ─── Helpers ──────────────────────────────────────────────
 
-function scoreTask({ task, ctx, now }) {
+function scoreTask({ task, ctx, now, behavior }) {
   const parts = {
     urgency: URGENCY[String(task.priority || 'medium').toLowerCase()] ?? URGENCY.medium,
     riskImpact: riskImpactFor(ctx),
     stageRelevance: stageRelevanceFor({ task, ctx }),
     overdueBoost: overdueBoostFor({ task, now }),
     issueBoost: issueBoostFor({ task, ctx }),
+    issueFeedbackBoost: priorityBoostFromIssues(task, ctx?.openIssues || []),
     seasonalBoost: seasonalBoostFor({ task, ctx }),
+    behaviorBoost: behaviorBoostFor({ task, behavior }),
     complexityPenalty: complexityPenaltyFor(task),
   };
   const priorityScore = clamp(
     parts.urgency + parts.riskImpact + parts.stageRelevance
-    + parts.overdueBoost + parts.issueBoost + parts.seasonalBoost
+    + parts.overdueBoost + parts.issueBoost + parts.issueFeedbackBoost
+    + parts.seasonalBoost + parts.behaviorBoost
     - parts.complexityPenalty,
     0, 100,
   );
   return { priorityScore: Math.round(priorityScore), parts };
+}
+
+/**
+ * Behavior feedback nudge: farmers who skipped several tasks recently
+ * get their remaining medium/low tasks slightly boosted so the next
+ * day doesn't look empty. Streaks get no boost (already motivated).
+ */
+function behaviorBoostFor({ task, behavior }) {
+  if (!behavior) return 0;
+  if (behavior.skipRate >= 0.5 && String(task.priority || '').toLowerCase() !== 'high') return 5;
+  return 0;
 }
 
 function riskImpactFor(ctx) {

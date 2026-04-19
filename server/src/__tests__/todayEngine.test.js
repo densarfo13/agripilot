@@ -163,6 +163,55 @@ describe('buildTodayFeed — payload shape', () => {
   });
 });
 
+describe('buildTodayFeed — feedback loop integration', () => {
+  it('exposes behaviorSummary derived from recentActions + allTasks', () => {
+    const feed = buildTodayFeed({
+      pendingTasks: [mkTask({ id: 'p', title: 'Water rows' })],
+      allTasks: [
+        { id: 'a', status: 'completed', priority: 'medium' },
+        { id: 'b', status: 'completed', priority: 'high' },
+        { id: 'c', status: 'skipped', priority: 'medium' },
+      ],
+      recentActions: [
+        { actionType: 'task_completed', occurredAt: new Date().toISOString() },
+        { actionType: 'task_completed', occurredAt: new Date(Date.now() - 86400000).toISOString() },
+      ],
+      now: NOW,
+    });
+    expect(feed.behaviorSummary).toBeTruthy();
+    expect(feed.behaviorSummary.streak).toBe(2);
+    expect(feed.behaviorSummary.totalCompleted).toBe(2);
+    expect(feed.behaviorSummary.totalSkipped).toBe(1);
+  });
+
+  it('falls back to a derived next-action hint when no primary task', () => {
+    const feed = buildTodayFeed({
+      pendingTasks: [],
+      allTasks: [
+        { id: 'a', status: 'completed', priority: 'high' },
+      ],
+      recentActions: [],
+      cycle: { lifecycleStatus: 'harvest_ready' },
+      now: NOW,
+    });
+    expect(feed.primaryTask).toBeNull();
+    expect(feed.nextActionSummary).toMatch(/harvest/i);
+  });
+
+  it('open pest issue lifts a scouting task above an unrelated task', () => {
+    const feed = buildTodayFeed({
+      pendingTasks: [
+        mkTask({ id: 'unrelated', title: 'Update records', priority: 'medium', priorityScore: 55 }),
+        mkTask({ id: 'scout', title: 'Scout for pests', priority: 'medium', priorityScore: 40 }),
+      ],
+      openIssues: [{ category: 'pest', severity: 'high', status: 'open' }],
+      now: NOW,
+    });
+    // Override path or boosted scoring — either way scout must win.
+    expect(['scout', 'override:pest']).toContain(feed.primaryTask.id);
+  });
+});
+
 describe('buildTodayFeed — weather integration', () => {
   it('returns weatherRisk + weatherAlerts when weather is supplied', () => {
     const feed = buildTodayFeed({

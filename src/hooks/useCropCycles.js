@@ -48,6 +48,27 @@ export async function completeCycleTask(taskId, note) {
   }));
 }
 
+export async function skipCycleTask(taskId, reason) {
+  return handle(await fetch(`/api/v2/crop-cycles/tasks/${encodeURIComponent(taskId)}/skip`, {
+    ...JSON_POST,
+    body: JSON.stringify({ reason }),
+  }));
+}
+
+export async function reportCycleIssue(cycleId, { category, severity, description, photoUrl } = {}) {
+  return handle(await fetch(`/api/v2/crop-cycles/${encodeURIComponent(cycleId)}/issues`, {
+    ...JSON_POST,
+    body: JSON.stringify({ category, severity, description, photoUrl }),
+  }));
+}
+
+export async function submitCycleHarvest(cycleId, { actualYieldKg, qualityBand, notes } = {}) {
+  return handle(await fetch(`/api/v2/crop-cycles/${encodeURIComponent(cycleId)}/harvest`, {
+    ...JSON_POST,
+    body: JSON.stringify({ actualYieldKg, qualityBand, notes }),
+  }));
+}
+
 export async function getTodayFeed() {
   return handle(await fetch('/api/v2/farmer/today', { credentials: 'include' }));
 }

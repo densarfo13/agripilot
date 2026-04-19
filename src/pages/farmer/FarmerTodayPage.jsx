@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
-import { getTodayFeed, completeCycleTask, listCropCycles } from '../../hooks/useCropCycles.js';
+import { getTodayFeed, completeCycleTask, skipCycleTask, reportCycleIssue, submitCycleHarvest, listCropCycles } from '../../hooks/useCropCycles.js';
 import { usePreferenceSync } from '../../hooks/usePreferenceSync.js';
 import { localizeServerTask } from '../../utils/generateLocalizedTask.js';
 import { evaluateCropFit } from '../../utils/cropFit.js';
@@ -25,6 +25,7 @@ import RiskAlertsPanel from '../../components/farmer/RiskAlertsPanel.jsx';
 import ProgressSummaryCard from '../../components/farmer/ProgressSummaryCard.jsx';
 import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
+import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
 
 export default function FarmerTodayPage() {
   const { t, language, region } = useAppSettings();
@@ -90,11 +91,47 @@ export default function FarmerTodayPage() {
     });
   }, [activeCycle, region]);
 
+  const [modal, setModal] = useState({ open: false, mode: null, task: null });
+
   async function handleComplete(task) {
     if (!task?.id || task.source?.startsWith('override:')) return;
     await completeCycleTask(task.id);
     await reload();
   }
+
+  // PrimaryTaskCard calls these to open the modal; the modal's
+  // onSubmit actually performs the request. This avoids window.prompt
+  // entirely and keeps the interaction localized + accessible.
+  function openSkipModal(task) {
+    if (!task?.id || task.source?.startsWith('override:')) return;
+    setModal({ open: true, mode: 'skip', task });
+  }
+  function openIssueModal() {
+    if (!activeCycle?.id) return;
+    setModal({ open: true, mode: 'issue', task: null });
+  }
+  function openHarvestModal() {
+    if (!activeCycle?.id) return;
+    setModal({ open: true, mode: 'harvest', task: null });
+  }
+
+  async function handleModalSubmit(data) {
+    try {
+      if (modal.mode === 'skip' && modal.task) {
+        await skipCycleTask(modal.task.id, data.reason);
+      } else if (modal.mode === 'issue' && activeCycle?.id) {
+        await reportCycleIssue(activeCycle.id, data);
+      } else if (modal.mode === 'harvest' && activeCycle?.id) {
+        await submitCycleHarvest(activeCycle.id, data);
+      }
+    } finally {
+      await reload();
+    }
+  }
+
+  const harvestEligible = ['harvest_ready', 'flowering'].includes(
+    activeCycle?.lifecycleStatus || '',
+  );
 
   if (state.loading) {
     return <Shell><p style={S.muted}>{t('common.loading')}</p></Shell>;
@@ -118,6 +155,17 @@ export default function FarmerTodayPage() {
         task={primaryTask}
         warning={warning}
         onComplete={handleComplete}
+        onSkip={openSkipModal}
+        onReportIssue={openIssueModal}
+        onHarvest={openHarvestModal}
+        harvestEligible={harvestEligible}
+      />
+
+      <FeedbackModal
+        open={modal.open}
+        mode={modal.mode}
+        onClose={() => setModal({ open: false, mode: null, task: null })}
+        onSubmit={handleModalSubmit}
       />
 
       <SecondaryTaskList tasks={secondaryTasks} />

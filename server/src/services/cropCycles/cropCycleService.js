@@ -18,6 +18,14 @@ import { canTransition, isValidStatus, transitionError, ACTIVE_STATUSES } from '
 import { assessCycleRisk } from './cycleRiskEngine.js';
 import { buildTodayFeed } from '../today/todayEngine.js';
 import { getWeatherForFarm } from '../weather/weatherProvider.js';
+import {
+  recordTaskCompleted,
+  recordTaskSkipped,
+  recordIssueReported,
+  recordHarvestOutcome,
+  getRecentActions,
+} from '../feedback/feedbackService.js';
+import { summarizeBehavior } from '../feedback/responseEngine.js';
 
 const prisma = new PrismaClient();
 
@@ -187,7 +195,7 @@ export async function getCycleDetail({ user, cycleId }) {
   };
 }
 
-/** Mark a single task done and refresh cycle progress. */
+/** Mark a single task done, log the action, and refresh cycle progress. */
 export async function completeTask({ user, taskId, note }) {
   if (!user?.id) throw httpErr(401, 'unauthenticated');
   const task = await prisma.cycleTaskPlan.findUnique({
@@ -202,16 +210,109 @@ export async function completeTask({ user, taskId, note }) {
   });
   if (!farm) throw httpErr(403, 'forbidden');
 
-  const updated = await prisma.cycleTaskPlan.update({
+  return recordTaskCompleted(prisma, {
+    user,
+    task: { ...task, farmProfileId: farm.id },
+    note,
+  });
+}
+
+/** Mark a task skipped and log the skip (with optional reason). */
+export async function skipTask({ user, taskId, reason }) {
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  const task = await prisma.cycleTaskPlan.findUnique({
     where: { id: taskId },
+    include: { cropCycle: { select: { id: true, profileId: true } } },
+  });
+  if (!task) throw httpErr(404, 'task_not_found');
+  if (task.status === 'completed') throw httpErr(409, 'already_completed');
+
+  const farm = await prisma.farmProfile.findFirst({
+    where: { id: task.cropCycle.profileId, userId: user.id },
+    select: { id: true },
+  });
+  if (!farm) throw httpErr(403, 'forbidden');
+
+  return recordTaskSkipped(prisma, {
+    user,
+    task: { ...task, farmProfileId: farm.id },
+    reason,
+  });
+}
+
+/**
+ * Report an issue AND mirror it into the action log so the Today
+ * engine can surface issue-driven priority boosts immediately.
+ */
+export async function reportIssue({ user, cycleId, category, severity, description, photoUrl }) {
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  const cycle = await prisma.v2CropCycle.findUnique({
+    where: { id: cycleId },
+    select: { id: true, profileId: true },
+  });
+  if (!cycle) throw httpErr(404, 'cycle_not_found');
+  const farm = await prisma.farmProfile.findFirst({
+    where: { id: cycle.profileId, userId: user.id },
+    select: { id: true, farmerUuid: true },
+  });
+  if (!farm) throw httpErr(403, 'forbidden');
+
+  const issue = await prisma.issueReport.create({
     data: {
-      status: 'completed',
-      completedAt: new Date(),
-      completedBy: user.id,
-      note: typeof note === 'string' ? note.slice(0, 500) : undefined,
+      farmProfileId: farm.id,
+      cropCycleId: cycle.id,
+      category: String(category || 'other').toLowerCase(),
+      severity: ['low', 'medium', 'high'].includes(String(severity || '').toLowerCase())
+        ? String(severity).toLowerCase() : 'medium',
+      description: typeof description === 'string' ? description.slice(0, 2000) : '',
+      photoUrl: typeof photoUrl === 'string' ? photoUrl.slice(0, 1000) : null,
+      status: 'open',
     },
   });
-  return { task: updated };
+  await recordIssueReported(prisma, { user, issue });
+  return { issue };
+}
+
+/**
+ * Submit a harvest outcome. Writes HarvestOutcome, logs the action,
+ * and transitions the cycle to 'harvested' so downstream consumers
+ * see a closed loop.
+ */
+export async function submitHarvest({ user, cycleId, actualYieldKg, qualityBand, notes }) {
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  const cycle = await prisma.v2CropCycle.findUnique({
+    where: { id: cycleId },
+    include: { taskPlans: true },
+  });
+  if (!cycle) throw httpErr(404, 'cycle_not_found');
+  const farm = await prisma.farmProfile.findFirst({
+    where: { id: cycle.profileId, userId: user.id },
+    select: { id: true },
+  });
+  if (!farm) throw httpErr(403, 'forbidden');
+
+  const actions = await getRecentActions(prisma, { cropCycleId: cycle.id, limit: 200 });
+  const result = await recordHarvestOutcome(prisma, {
+    user,
+    cycle,
+    tasks: cycle.taskPlans || [],
+    actions,
+    input: { actualYieldKg, qualityBand, notes },
+  });
+
+  // Move the cycle into a terminal 'harvested' state if the current
+  // state allows it. Uses the status machine so illegal transitions
+  // fail cleanly.
+  try {
+    if (canTransition(cycle.lifecycleStatus, 'harvested')) {
+      await prisma.v2CropCycle.update({
+        where: { id: cycle.id },
+        data: { lifecycleStatus: 'harvested' },
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  return { outcome: result.outcome };
 }
 
 /**
@@ -295,10 +396,15 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
   if (!cycleIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null, weatherAlerts: [], weatherRisk: null };
 
   const now = new Date();
-  const [pending, openIssues, cycleWithContext] = await Promise.all([
+  const [pending, allTasks, openIssues, cycleWithContext, recentActions] = await Promise.all([
     prisma.cycleTaskPlan.findMany({
       where: { cropCycleId: { in: cycleIds }, status: 'pending' },
       take: 30,
+    }),
+    prisma.cycleTaskPlan.findMany({
+      where: { cropCycleId: { in: cycleIds } },
+      select: { id: true, status: true, priority: true, dueDate: true },
+      take: 500,
     }),
     prisma.issueReport.findMany({
       where: {
@@ -313,8 +419,12 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
       select: {
         id: true, cropType: true, variety: true,
         lifecycleStatus: true, plantingDate: true, expectedHarvestDate: true,
+        riskBand: true,
       },
     }),
+    getRecentActions(prisma, { limit: 50 }).then((rows) =>
+      rows.filter((r) => !r.cropCycleId || cycleIds.includes(r.cropCycleId))
+    ),
   ]);
 
   // Derive overall risk level from the mix of overdue + issues so
@@ -323,8 +433,15 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
     t.dueDate && new Date(t.dueDate).getTime() < now.getTime()
   ).length;
   const highSevCount = openIssues.filter((i) => i.severity === 'high').length;
-  const riskLevel = (overdueCount >= 3 || highSevCount >= 2) ? 'high'
+  const derivedRisk = (overdueCount >= 3 || highSevCount >= 2) ? 'high'
     : (overdueCount >= 1 || highSevCount >= 1) ? 'medium' : 'low';
+  // The action-driven riskBand persisted on the cycle acts as a
+  // sticky floor — once a farmer raises risk via a skip or issue,
+  // the Today engine keeps honoring it even if the instant derivation
+  // would say "low". max(band) of {derived, persisted}.
+  const RISK_ORDER = { low: 0, medium: 1, high: 2 };
+  const persisted = cycleWithContext?.riskBand || 'low';
+  const riskLevel = RISK_ORDER[persisted] > RISK_ORDER[derivedRisk] ? persisted : derivedRisk;
 
   // If the caller didn't supply pre-fetched weather, fall back to the
   // default provider using the first farm's coordinates. Any provider
@@ -341,6 +458,8 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
 
   const feed = buildTodayFeed({
     pendingTasks: pending,
+    allTasks,
+    recentActions,
     cycle: cycleWithContext,
     cropKey: cycleWithContext?.cropType || null,
     riskLevel,
@@ -350,12 +469,18 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
     now,
   });
 
+  // Behavior summary — derived from allTasks + recentActions so the
+  // client can render streak / skip / issue chips without re-deriving.
+  const behaviorSummary = feed.behaviorSummary
+    || summarizeBehavior(recentActions, allTasks);
+
   return {
     primaryTask: feed.primaryTask,
     secondaryTasks: feed.secondaryTasks,
     riskAlerts: feed.riskAlerts,
     weatherAlerts: feed.weatherAlerts || [],
     weatherRisk: feed.weatherRisk || null,
+    behaviorSummary,
     nextActionSummary: feed.nextActionSummary,
     overdueTasksCount: feed.overdueTasksCount,
     timeEstimateMinutes: feed.timeEstimateMinutes,

@@ -253,6 +253,15 @@ const T = {
   'issue.category.soil':      { en: 'Soil problem',    fr: 'Problème de sol',    sw: 'Tatizo la udongo', ha: 'Matsalar ƙasa',     tw: 'Asase ho ɔhaw', hi: 'मिट्टी की समस्या' },
   'issue.category.other':     { en: 'Other',           fr: 'Autre',              sw: 'Nyingine',      ha: 'Sauran',                tw: 'Foforɔ',    hi: 'अन्य' },
 
+  // Issue severity + harvest quality bands — used by the FeedbackModal
+  'issue.severity.low':       { en: 'Low',             fr: 'Faible',             sw: 'Chini',         ha: 'Ƙasa',                  tw: 'Kakra',     hi: 'कम' },
+  'issue.severity.medium':    { en: 'Medium',          fr: 'Moyen',              sw: 'Wastani',       ha: 'Matsakaici',            tw: 'Ntam',      hi: 'मध्यम' },
+  'issue.severity.high':      { en: 'High',            fr: 'Élevé',              sw: 'Juu',           ha: 'Sama',                  tw: 'Kɛse',      hi: 'उच्च' },
+  'harvest.quality.poor':      { en: 'Poor',            fr: 'Faible',             sw: 'Duni',          ha: 'Ƙasa',                  tw: 'Enye',      hi: 'खराब' },
+  'harvest.quality.fair':      { en: 'Fair',            fr: 'Moyen',              sw: 'Wastani',       ha: 'Matsakaici',            tw: 'Bɛyɛ',      hi: 'औसत' },
+  'harvest.quality.good':      { en: 'Good',            fr: 'Bon',                sw: 'Nzuri',         ha: 'Kyau',                  tw: 'Pa',        hi: 'अच्छा' },
+  'harvest.quality.excellent': { en: 'Excellent',       fr: 'Excellent',          sw: 'Bora',          ha: 'Mafi kyau',             tw: 'Papapa',    hi: 'उत्कृष्ट' },
+
   // NGO dashboard
   'ngo.title':              { en: 'NGO Dashboard',         fr: 'Tableau ONG',          sw: 'Dashibodi ya NGO',   ha: 'Dashborden NGO',      tw: 'NGO dashboard',     hi: 'एनजीओ डैशबोर्ड' },
   'ngo.subtitle':           { en: 'Farmer activity and risk at a glance.', fr: 'Activité et risques.', sw: 'Shughuli na hatari.', ha: 'Ayyuka da haɗari.',   tw: 'Adwuma ne asiane.', hi: 'किसान गतिविधि और जोखिम एक नज़र में।' },
@@ -343,6 +352,17 @@ const T = {
   'actionHome.motivation.body':      { en: 'Every small step makes your farm stronger.', fr: 'Chaque petit pas compte.', sw: 'Kila hatua ndogo hufanya shamba lako kuwa imara.', ha: 'Kowane mataki yana ƙara ƙarfin gonar ku.', tw: 'Anammɔn biara ma w\'afuo mu yɛ den.', hi: 'हर छोटा कदम आपके खेत को मजबूत बनाता है।' },
   'actionHome.todayHeader':          { en: 'Today on your farm',              fr: 'Aujourd\'hui sur votre ferme',   sw: 'Leo kwenye shamba lako',        ha: 'Yau a gonarku',               tw: 'Nnɛ wɔ w\'afuo so',           hi: 'आज आपके खेत पर' },
   'actionHome.primary.reportIssue':  { en: 'Report an issue',                 fr: 'Signaler un problème',           sw: 'Ripoti tatizo',                 ha: 'Bayar da rahoton matsala',    tw: 'Ka ɔhaw',                     hi: 'समस्या की रिपोर्ट करें' },
+
+  // ─── Feedback loop — skip / harvest / issue prompts ────────
+  'actionHome.primary.skip':           { en: 'Skip',                           fr: 'Passer',                          sw: 'Ruka',                           ha: 'Tsallake',                   tw: 'Fa kyɛn',                     hi: 'छोड़ें' },
+  'actionHome.primary.skipReason':     { en: 'Why are you skipping?',          fr: 'Pourquoi passer ?',               sw: 'Kwa nini unaruka?',              ha: 'Me ya sa kake tsallake?',    tw: 'Adɛn na worefa kyɛn?',        hi: 'क्यों छोड़ रहे हैं?' },
+  'actionHome.primary.reportHarvest':  { en: 'Report harvest',                 fr: 'Signaler la récolte',             sw: 'Ripoti mavuno',                  ha: 'Bayar da rahoton girbi',     tw: 'Ka wo twa ho asɛm',           hi: 'फसल की रिपोर्ट करें' },
+  'actionHome.issue.categoryPrompt':   { en: 'Category (pest/disease/water/soil/weather/other)', fr: 'Catégorie (ravageurs/maladie/eau/sol/météo/autre)', sw: 'Aina (wadudu/magonjwa/maji/udongo/hewa/nyingine)', ha: 'Nau\'i (kwari/cuta/ruwa/kasa/yanayi/sauran)', tw: 'Ɔhaw su (mmoawa/yadeɛ/nsuo/asase/wim/foforɔ)', hi: 'श्रेणी (कीट/रोग/पानी/मिट्टी/मौसम/अन्य)' },
+  'actionHome.issue.severityPrompt':   { en: 'Severity (low/medium/high)',     fr: 'Sévérité (faible/moyen/élevé)',   sw: 'Ukali (chini/kati/juu)',         ha: 'Tsanani (ƙasa/matsakaici/sama)', tw: 'Ɛhyɛ mu (kakra/ntam/kɛse)',   hi: 'गंभीरता (कम/मध्यम/उच्च)' },
+  'actionHome.issue.descriptionPrompt':{ en: 'What happened?',                 fr: 'Que s\'est-il passé ?',           sw: 'Nini kilichotokea?',             ha: 'Me ya faru?',                tw: 'Ɛdeɛn na asi?',               hi: 'क्या हुआ?' },
+  'actionHome.harvest.yieldPrompt':    { en: 'Yield in kg (optional)',         fr: 'Rendement en kg (optionnel)',     sw: 'Mavuno kwa kg (hiari)',          ha: 'Girbi a kg (na son rai)',    tw: 'Deɛ wotwaeɛ (kg)',            hi: 'उपज किलोग्राम में (वैकल्पिक)' },
+  'actionHome.harvest.qualityPrompt':  { en: 'Quality (poor/fair/good/excellent)', fr: 'Qualité (faible/moyen/bon/excellent)', sw: 'Ubora (duni/wastani/nzuri/bora)', ha: 'Inganci (ƙasa/matsakaici/kyau/mafi kyau)', tw: 'Papa (enye/bɛyɛ/pa/papapa)', hi: 'गुणवत्ता (खराब/औसत/अच्छा/उत्कृष्ट)' },
+  'actionHome.harvest.notesPrompt':    { en: 'Notes (optional)',               fr: 'Notes (optionnel)',               sw: 'Maelezo (hiari)',                ha: 'Bayanin kula (na son rai)',  tw: 'Nsɛm a woka',                 hi: 'नोट्स (वैकल्पिक)' },
 
   // ─── Generated task titles (type × crop × timing) ──────────
   'generatedTask.crop.generic':       { en: 'your crop',        fr: 'votre culture',     sw: 'zao lako',         ha: 'amfaninku',       tw: 'w\'afudeɛ',       hi: 'आपकी फसल' },
