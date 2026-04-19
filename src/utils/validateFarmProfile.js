@@ -52,7 +52,11 @@ export function validateFarmProfile(profile = {}) {
 
   if (!isNonEmptyString(p.cropType)) errors.cropType = 'required';
 
-  if (p.farmType && !FARM_TYPES.has(String(p.farmType).toLowerCase())) {
+  // farmType is required by the onboarding flow — without it the
+  // recommendation + task engines can't pick the right track.
+  if (!p.farmType) {
+    errors.farmType = 'required';
+  } else if (!FARM_TYPES.has(String(p.farmType).toLowerCase())) {
     errors.farmType = 'invalid_enum';
   }
   if (p.experienceLevel && !EXPERIENCE.has(String(p.experienceLevel).toLowerCase())) {

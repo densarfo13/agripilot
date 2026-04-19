@@ -416,7 +416,19 @@ const T = {
   'generatedTask.custom.eta':         { en: '15 min',           fr: '15 min',            sw: 'dakika 15',         ha: 'minti 15',         tw: 'simma 15',        hi: '15 मिनट' },
 
   // ─── Smart farmer onboarding ──────────────────────────
-  'onboarding.progress':                 { en: 'Step {current} of {total}',  fr: 'Étape {current} sur {total}',  sw: 'Hatua {current} ya {total}',  ha: 'Mataki {current} na {total}', tw: 'Anammɔn {current} wɔ {total}', hi: 'चरण {current} / {total}' },
+  'onboarding.progress':                 { en: '{current} of {total} steps complete',  fr: '{current} / {total} étapes',  sw: 'Hatua {current} ya {total}',  ha: 'Mataki {current} na {total}', tw: 'Anammɔn {current} wɔ {total}', hi: '{current} / {total} चरण पूर्ण' },
+
+  // Validation error summary shown on onboarding when save fails.
+  'onboarding.validation.title':         { en: 'Please fix these before continuing:', fr: 'Corrigez avant de continuer :', sw: 'Rekebisha kabla ya kuendelea:', ha: 'Gyara waɗannan kafin ku ci gaba:', tw: 'Siesie yeinom ansa na wotoa so:', hi: 'जारी रखने से पहले ठीक करें:' },
+  'onboarding.fields.country':           { en: 'Country',        fr: 'Pays',       sw: 'Nchi',      ha: 'Ƙasa',      tw: 'Ɔman',      hi: 'देश' },
+  'onboarding.fields.state':             { en: 'State / region', fr: 'Région',     sw: 'Mkoa',      ha: 'Jiha',      tw: 'Ɔmantam',   hi: 'राज्य' },
+  'onboarding.fields.farmType':          { en: 'Farm type',      fr: 'Type de ferme', sw: 'Aina ya shamba', ha: 'Nau\'in gona', tw: 'Afuo su', hi: 'खेत का प्रकार' },
+  'onboarding.fields.size':              { en: 'Farm size',      fr: 'Taille',     sw: 'Ukubwa',    ha: 'Girma',     tw: 'Kɛseɛ',     hi: 'आकार' },
+  'onboarding.fields.sizeUnit':          { en: 'Size unit',      fr: 'Unité',      sw: 'Kipimo',    ha: 'Auna',      tw: 'Nsusuwii',  hi: 'इकाई' },
+  'onboarding.fields.cropType':          { en: 'Crop',           fr: 'Culture',    sw: 'Zao',       ha: 'Amfani',    tw: 'Afudeɛ',    hi: 'फसल' },
+  'onboarding.fields.growingStyle':      { en: 'Growing style',  fr: 'Mode de culture', sw: 'Njia ya kulima', ha: 'Hanyar shuka', tw: 'Afuoyɛ kwan', hi: 'बढ़ने की शैली' },
+  'onboarding.fields.farmerName':        { en: 'Your name',      fr: 'Votre nom',  sw: 'Jina lako', ha: 'Sunanku',   tw: 'Wo din',    hi: 'आपका नाम' },
+  'onboarding.fields.farmName':          { en: 'Farm name',      fr: 'Nom de la ferme', sw: 'Jina la shamba', ha: 'Sunan gona', tw: 'Afuo din', hi: 'खेत का नाम' },
 
   'onboarding.location.title':           { en: 'Where is your farm?',        fr: 'Où se trouve votre ferme ?',     sw: 'Shamba lako liko wapi?',      ha: 'Ina gonarku take?',           tw: 'Wo afuo wɔ he?',              hi: 'आपका खेत कहाँ है?' },
   'onboarding.location.subtitle':        { en: 'We use this to pick the right crops for your climate.', fr: "Pour choisir les bonnes cultures.", sw: 'Tutachagua mazao yanayofaa hapa.', ha: 'Za mu zaɓi amfanin gona mai dacewa.', tw: "Yɛbɛhwɛ afudeɛ a ɛfata.", hi: 'जलवायु के अनुसार फसलें चुनने के लिए।' },
