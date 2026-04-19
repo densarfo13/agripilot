@@ -14,9 +14,13 @@
 import { count as mutationCount, purgeExpired, onSyncChange } from '../utils/offlineQueue.js';
 import { getSyncQueue, getSyncMeta, saveSyncMeta } from '../lib/offlineDb.js';
 import { log, logError } from '../lib/logger.js';
+import { computeBackoffMs, shouldRetry } from './offlineBackoff.js';
 
 let _listeners = [];
 let _syncing = false;
+// Count of consecutive flush failures so we can back off exponentially
+// when the network is flapping. Reset on a clean success.
+let _flushFailures = 0;
 
 /**
  * Get unified sync status across both queues.
@@ -79,16 +83,35 @@ export async function flushAll(opts = {}) {
 
     const status = await getSyncStatus();
     if (status.pending === 0) {
+      _flushFailures = 0;
       await saveSyncMeta({ lastSyncedAt: Date.now(), lastError: null }).catch(() => {});
+    } else {
+      // Still pending after flush — count as a soft failure and
+      // schedule a backed-off retry. Capped by shouldRetry.
+      _flushFailures += 1;
+      if (shouldRetry(_flushFailures)) {
+        const delay = computeBackoffMs(_flushFailures);
+        setTimeout(() => {
+          if (navigator.onLine) flushAll(opts);
+        }, delay);
+      }
     }
 
     log('sync', 'flush_completed', {
       profileSynced,
       remaining: status.pending,
+      failures: _flushFailures,
     });
   } catch (err) {
-    logError('sync', err, { phase: 'flush_all' });
+    _flushFailures += 1;
+    logError('sync', err, { phase: 'flush_all', failures: _flushFailures });
     await saveSyncMeta({ lastError: err.message || 'Flush failed' }).catch(() => {});
+    if (shouldRetry(_flushFailures)) {
+      const delay = computeBackoffMs(_flushFailures);
+      setTimeout(() => {
+        if (navigator.onLine) flushAll(opts);
+      }, delay);
+    }
   } finally {
     _syncing = false;
     _notify();

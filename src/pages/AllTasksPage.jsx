@@ -26,6 +26,9 @@ import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 import { NAV_ICONS, getTaskActionIcon } from '../lib/farmerIcons.js';
 import CompletionCard from '../components/farmer/CompletionCard.jsx';
 import { loadTasksSafe, getFallbackTodayAction } from '../services/loadTasksSafe.js';
+import { formatRelativeUpdate } from '../lib/relativeTime.js';
+import { isReallyOnline } from '../services/isReallyOnline.js';
+import { offlineEvents } from '../services/offlineLogger.js';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -68,11 +71,20 @@ export default function AllTasksPage() {
   }, [currentFarmId, isOnline]);
 
   // Retry honours the spec §7 rules: don't spam when offline; keep
-  // the visible state while re-fetching.
+  // the visible state while re-fetching. We verify actual reachability
+  // (not just navigator.onLine) so captive portals don't trigger a
+  // doomed fetch that ends in the same fallback state.
   async function handleRetry() {
+    offlineEvents.retryClicked(mode);
     if (!isOnline) {
       setBannerMessageKey('offline.stillOffline');
-      safeTrackEvent('tasks.retry_blocked_offline', {});
+      offlineEvents.retryBlocked('browser_offline');
+      return;
+    }
+    const reachable = await isReallyOnline();
+    if (!reachable) {
+      setBannerMessageKey('offline.stillOffline');
+      offlineEvents.reachabilityFailed();
       return;
     }
     setMode('retrying');
@@ -212,7 +224,14 @@ export default function AllTasksPage() {
           <div style={S.offlineBannerText}>
             <div>{t(bannerMessageKey)}</div>
             {mode === 'offline_with_cache' && (
-              <div style={S.offlineBannerSub}>{t('offline.syncOnReconnect')}</div>
+              <div style={S.offlineBannerSub}>
+                {lastUpdatedAt
+                  ? (() => {
+                      const rel = formatRelativeUpdate(lastUpdatedAt);
+                      return t(rel.key, rel.params);
+                    })()
+                  : t('offline.syncOnReconnect')}
+              </div>
             )}
           </div>
           {mode !== 'retrying' && (
