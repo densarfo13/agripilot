@@ -1,14 +1,27 @@
 /**
- * getCropDisplayName(cropKey, language) — consistent crop naming
- * across languages.
+ * getCropDisplayName(cropKey, language, options?) — consistent crop
+ * naming across languages.
  *
- * Rules:
- *   - English returns the canonical capitalized name.
- *   - Non-English returns the native label + "(English)" in parens
- *     when the two differ, so a farmer reading Hindi UI still sees
- *     "कसावा (Cassava)" and doesn't lose the cross-reference.
- *   - Unknown crop keys humanize cleanly ("swiss_chard" →
- *     "Swiss chard") instead of leaking the raw key.
+ * Default behavior:
+ *   - English UI  → English canonical name (e.g. "Cassava")
+ *   - Hindi UI    → Hindi name ONLY (e.g. "कसावा")
+ *   - Twi UI      → Twi name, with English fallback
+ *   - Unknown crop keys humanize cleanly
+ *     ("swiss_chard" → "Swiss chard" / "स्विस चार्ड" etc.)
+ *
+ * Bilingual mode — show "कसावा (Cassava)" — is opt-in:
+ *   getCropDisplayName('cassava', 'hi')                → "कसावा"
+ *   getCropDisplayName('cassava', 'hi', { bilingual: true })
+ *                                                     → "कसावा (Cassava)"
+ *   getCropDisplayName('cassava', 'hi', { bilingual: 'auto' })
+ *                                                     → "कसावा (Cassava)"  // in BILINGUAL_HINTED
+ *   getCropDisplayName('tomato',  'hi', { bilingual: 'auto' })
+ *                                                     → "टमाटर"             // not in BILINGUAL_HINTED
+ *
+ * BILINGUAL_HINTED lists crops whose native name is likely unfamiliar
+ * to a typical Hindi speaker (imported global crops, niche tropical
+ * cash crops). Keep the list small — most staple crops should stay
+ * native-only so the UI feels native.
  */
 
 /** English canonical names — single source of truth. */
@@ -24,24 +37,31 @@ const EN_NAMES = Object.freeze({
   cabbage: 'Cabbage', broccoli: 'Broccoli', peas: 'Peas',
   green_onion: 'Green Onion', collards: 'Collards',
   swiss_chard: 'Swiss Chard', pumpkin: 'Pumpkin', melon: 'Melon',
-  corn: 'Corn', sweet_corn: 'Sweet Corn', soybean: 'Soybean',
+  corn: 'Corn', maize: 'Maize', sweet_corn: 'Sweet Corn', soybean: 'Soybean',
   wheat: 'Wheat', sorghum: 'Sorghum', cotton: 'Cotton',
-  peanut: 'Peanut', oats: 'Oats', alfalfa: 'Alfalfa',
+  peanut: 'Peanut', groundnut: 'Groundnut', oats: 'Oats', alfalfa: 'Alfalfa',
   barley: 'Barley', rice: 'Rice', sunflower: 'Sunflower',
   potato: 'Potato', apple: 'Apple', blueberry: 'Blueberry',
   raspberry: 'Raspberry', grapes: 'Grapes', almonds: 'Almonds',
   pecan: 'Pecan', citrus: 'Citrus', sugarcane: 'Sugarcane',
   taro: 'Taro', banana: 'Banana', papaya: 'Papaya',
   pineapple: 'Pineapple', cassava: 'Cassava',
+  cocoa: 'Cocoa', coffee: 'Coffee',
 });
 
-/** Native-language labels. Anything not listed falls back to the English name. */
+/**
+ * Native-language labels. Anything not listed falls back to the
+ * English name so we never leak a raw crop key to the UI.
+ *
+ * Hindi spelling follows the spec's requested forms where they
+ * differ from everyday transliteration (e.g. गेहूं vs गेहूँ).
+ */
 const LOCAL_NAMES = Object.freeze({
   hi: {
     tomato: 'टमाटर', pepper: 'मिर्च', chili_pepper: 'मिर्च',
     lettuce: 'लेट्यूस', spinach: 'पालक', kale: 'केल',
-    onion: 'प्याज़', garlic: 'लहसुन',
-    beans: 'सेम', bush_beans: 'बुश सेम', pole_beans: 'लता सेम',
+    onion: 'प्याज', garlic: 'लहसुन',
+    beans: 'बीन्स', bush_beans: 'बुश बीन्स', pole_beans: 'लता बीन्स',
     cucumber: 'खीरा', squash: 'स्क्वैश', zucchini: 'तोरी',
     herbs: 'जड़ी-बूटियाँ', okra: 'भिंडी',
     sweet_potato: 'शकरकंद', strawberry: 'स्ट्रॉबेरी',
@@ -49,13 +69,14 @@ const LOCAL_NAMES = Object.freeze({
     beets: 'चुकंदर', cabbage: 'पत्तागोभी', broccoli: 'ब्रोकली',
     peas: 'मटर', collards: 'कॉलर्ड',
     pumpkin: 'कद्दू', melon: 'खरबूजा',
-    corn: 'मक्का', sweet_corn: 'मीठा मक्का', soybean: 'सोयाबीन',
-    wheat: 'गेहूँ', sorghum: 'ज्वार', cotton: 'कपास',
-    peanut: 'मूँगफली', oats: 'जई', rice: 'चावल',
+    corn: 'मक्का', maize: 'मक्का', sweet_corn: 'मीठा मक्का', soybean: 'सोयाबीन',
+    wheat: 'गेहूं', sorghum: 'ज्वार', cotton: 'कपास',
+    peanut: 'मूंगफली', groundnut: 'मूंगफली', oats: 'जई', rice: 'चावल',
     potato: 'आलू', apple: 'सेब', blueberry: 'ब्लूबेरी',
     grapes: 'अंगूर', almonds: 'बादाम', citrus: 'नींबू जाति',
     sugarcane: 'गन्ना', banana: 'केला', papaya: 'पपीता',
     pineapple: 'अनानास', cassava: 'कसावा',
+    cocoa: 'कोकोआ', coffee: 'कॉफी',
   },
   tw: {
     tomato: 'Ntɔs', pepper: 'Mako',
@@ -64,11 +85,23 @@ const LOCAL_NAMES = Object.freeze({
     herbs: 'Nhaban', okra: 'Nkruma',
     sweet_potato: 'Santom', eggplant: 'Nyaadewa',
     cabbage: 'Cabbage', peas: 'Asedua',
-    corn: 'Aburoo', soybean: 'Asopopro',
-    peanut: 'Nkateɛ', rice: 'Emo',
+    corn: 'Aburoo', maize: 'Aburoo', soybean: 'Asopopro',
+    peanut: 'Nkateɛ', groundnut: 'Nkateɛ', rice: 'Emo',
     potato: 'Ɔborɔde', cassava: 'Bankye',
     banana: 'Kwaduo', pineapple: 'Abrɔbɛ',
+    cocoa: 'Kookoo', coffee: 'Kɔfe',
   },
+});
+
+/**
+ * Crops that should auto-show bilingual when `options.bilingual === 'auto'`.
+ * Intentionally short: crops whose native-language name is the same
+ * transliteration as the English one, or that a farmer might not
+ * recognize by the native label in everyday speech.
+ */
+const BILINGUAL_HINTED = Object.freeze({
+  hi: new Set(['cassava', 'sorghum', 'groundnut', 'taro', 'cocoa', 'coffee', 'barley', 'soybean', 'alfalfa']),
+  tw: new Set(['cassava', 'groundnut', 'cocoa', 'coffee']),
 });
 
 function humanize(cropKey) {
@@ -79,7 +112,12 @@ function humanize(cropKey) {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
 
-export function getCropDisplayName(cropKey, language = 'en') {
+/**
+ * @param {string} cropKey
+ * @param {string} [language='en']
+ * @param {{bilingual?: boolean | 'auto'}} [options]
+ */
+export function getCropDisplayName(cropKey, language = 'en', options = {}) {
   if (!cropKey) return '';
   const key = String(cropKey).toLowerCase();
   const english = EN_NAMES[key] || humanize(key);
@@ -87,10 +125,17 @@ export function getCropDisplayName(cropKey, language = 'en') {
   if (lang === 'en') return english;
 
   const local = LOCAL_NAMES[lang]?.[key];
+  // No native label → English fallback (so we never render a raw key).
   if (!local) return english;
+  // Native label happens to match English → no point adding parens.
   if (local === english) return english;
-  // Farmer-friendly cross-reference: native name + English in parens.
-  return `${local} (${english})`;
+
+  const bilingual = options?.bilingual;
+  const shouldBilingual =
+    bilingual === true
+    || (bilingual === 'auto' && BILINGUAL_HINTED[lang]?.has(key));
+
+  return shouldBilingual ? `${local} (${english})` : local;
 }
 
-export const _internal = { EN_NAMES, LOCAL_NAMES, humanize };
+export const _internal = { EN_NAMES, LOCAL_NAMES, BILINGUAL_HINTED, humanize };

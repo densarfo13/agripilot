@@ -4502,28 +4502,28 @@ const T = {
 
   // ─── Weather badge + risk wording for the Today screen ──
   'weather.badge.low': {
-    en: 'Weather looks calm', fr: 'Météo calme', sw: 'Hali ya hewa shwari', ha: 'Yanayi lafiya', tw: 'Wim tebea yɛ dwoodwoo',
+    en: 'Weather looks calm', fr: 'Météo calme', sw: 'Hali ya hewa shwari', ha: 'Yanayi lafiya', tw: 'Wim tebea yɛ dwoodwoo', hi: 'मौसम शांत है',
   },
   'weather.badge.medium': {
-    en: 'Weather needs attention', fr: 'Météo à surveiller', sw: 'Angalia hali ya hewa', ha: 'Kula da yanayi', tw: 'Hwɛ wim tebea yiye',
+    en: 'Weather needs attention', fr: 'Météo à surveiller', sw: 'Angalia hali ya hewa', ha: 'Kula da yanayi', tw: 'Hwɛ wim tebea yiye', hi: 'मौसम पर ध्यान दें',
   },
   'weather.badge.high': {
-    en: 'Weather risk is high today', fr: 'Risque météo élevé', sw: 'Hatari kubwa ya hewa leo', ha: 'Haɗarin yanayi mai girma yau', tw: 'Wim tebea ho asiane yɛ kɛse ɛnnɛ',
+    en: 'Weather risk is high today', fr: 'Risque météo élevé', sw: 'Hatari kubwa ya hewa leo', ha: 'Haɗarin yanayi mai girma yau', tw: 'Wim tebea ho asiane yɛ kɛse ɛnnɛ', hi: 'आज मौसम का जोखिम अधिक है',
   },
   'weather.alert.heatHigh': {
-    en: 'High heat expected today — keep crops watered and shaded.', fr: 'Forte chaleur — arrosez et ombragez.', sw: 'Joto kali leo — mwagilia na weka kivuli.', ha: 'Zafi mai yawa yau — shayar da kare rana.', tw: 'Ɛyɛ hyew ɛnnɛ — gugu na fa nyunu bɔ nnɔbae ho ban.',
+    en: 'High heat expected today — keep crops watered and shaded.', fr: 'Forte chaleur — arrosez et ombragez.', sw: 'Joto kali leo — mwagilia na weka kivuli.', ha: 'Zafi mai yawa yau — shayar da kare rana.', tw: 'Ɛyɛ hyew ɛnnɛ — gugu na fa nyunu bɔ nnɔbae ho ban.', hi: 'आज तेज़ गर्मी रहेगी — फसलों को पानी दें और छाया करें।',
   },
   'weather.alert.rainHeavy': {
-    en: 'Heavy rain expected — delay planting and protect harvested crops.', fr: 'Fortes pluies — retardez les plantations.', sw: 'Mvua kubwa — chelewesha kupanda, linda mavuno.', ha: 'Ruwan sama mai ƙarfi — jinkirta shuka.', tw: 'Nsuo bɛtɔ pa — twɛn na wo dua, bɔ wo nnɔbae ho ban.',
+    en: 'Heavy rain expected — delay planting and protect harvested crops.', fr: 'Fortes pluies — retardez les plantations.', sw: 'Mvua kubwa — chelewesha kupanda, linda mavuno.', ha: 'Ruwan sama mai ƙarfi — jinkirta shuka.', tw: 'Nsuo bɛtɔ pa — twɛn na wo dua, bɔ wo nnɔbae ho ban.', hi: 'भारी बारिश की संभावना है — बुआई टालें और कटी फसल की रक्षा करें।',
   },
   'weather.alert.frost': {
-    en: 'Frost possible overnight — cover sensitive seedlings.', fr: 'Gel possible — couvrez les plants sensibles.', sw: 'Theluji usiku — funika miche.', ha: 'Yiwuwar sanyi da dare — rufe tsire-tsire.', tw: 'Awɔw bɛba anadwo — kata nnɔbae foforɔ so.',
+    en: 'Frost possible overnight — cover sensitive seedlings.', fr: 'Gel possible — couvrez les plants sensibles.', sw: 'Theluji usiku — funika miche.', ha: 'Yiwuwar sanyi da dare — rufe tsire-tsire.', tw: 'Awɔw bɛba anadwo — kata nnɔbae foforɔ so.', hi: 'रात में पाला संभव है — कोमल पौधों को ढकें।',
   },
   'weather.alert.humidityPest': {
-    en: 'Humidity is high — walk the rows and scout for disease.', fr: 'Humidité élevée — surveillez les maladies.', sw: 'Unyevu mkubwa — angalia magonjwa.', ha: 'Laima mai yawa — duba cututtuka.', tw: 'Nsu a ɛwɔ wim dɔɔso — hwɛ yadeɛ.',
+    en: 'Humidity is high — walk the rows and scout for disease.', fr: 'Humidité élevée — surveillez les maladies.', sw: 'Unyevu mkubwa — angalia magonjwa.', ha: 'Laima mai yawa — duba cututtuka.', tw: 'Nsu a ɛwɔ wim dɔɔso — hwɛ yadeɛ.', hi: 'नमी अधिक है — खेत में घूमकर रोगों की जाँच करें।',
   },
   'weather.alert.windHigh': {
-    en: 'Windy day — skip spraying and stake tall plants.', fr: 'Vent fort — ne pulvérisez pas.', sw: 'Upepo mkali — usipulizie.', ha: 'Iska mai ƙarfi — kada ku fesa.', tw: 'Mframa yɛ den — mfa aduru mpete.',
+    en: 'Windy day — skip spraying and stake tall plants.', fr: 'Vent fort — ne pulvérisez pas.', sw: 'Upepo mkali — usipulizie.', ha: 'Iska mai ƙarfi — kada ku fesa.', tw: 'Mframa yɛ den — mfa aduru mpete.', hi: 'तेज़ हवा है — छिड़काव न करें और ऊँचे पौधों को सहारा दें।',
   },
 
   // ─── Weather Intelligence (wx.*) ─────────────────────

@@ -269,7 +269,9 @@ function CropCard({ crop, isBeginner, onboarding, language, confidence, onPick, 
   const badge = BADGE_LABEL_KEY[crop.fitLevel] || BADGE_LABEL_KEY.low;
   const statusLabel = crop.plantingStatus && STATUS_LABEL_KEY[crop.plantingStatus]
     ? t(STATUS_LABEL_KEY[crop.plantingStatus]) : null;
-  const displayName = getCropDisplayName(crop.crop, language);
+  // 'auto' → Hindi UI shows Hindi name only for familiar crops and
+  // "कसावा (Cassava)" for less-familiar ones (see BILINGUAL_HINTED).
+  const displayName = getCropDisplayName(crop.crop, language, { bilingual: 'auto' });
   const supportDepth = getCropSupportDepth(crop.crop);
   const depthKey = DEPTH_I18N_KEY[supportDepth];
   const confidenceKey = confidence ? CONFIDENCE_I18N_KEY[confidence.level] : null;
