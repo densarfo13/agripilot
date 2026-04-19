@@ -24,6 +24,7 @@ import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { getCycleSummary, getNextCycleOptions } from '../../hooks/useCropCycles.js';
 import HarvestSummaryCard from '../../components/farmer/HarvestSummaryCard.jsx';
 import NextCycleOptions from '../../components/farmer/NextCycleOptions.jsx';
+import { shouldShowSellCta } from '../../utils/featureGates.js';
 
 const OUTCOME_COLOR = {
   successful: '#22C55E',
@@ -126,12 +127,11 @@ export default function PostHarvestSummaryPage() {
 
       <HarvestSummaryCard summary={state.summary} />
 
-      {/* Sell this harvest — offers the farmer the chance to turn
-          today's outcome into a live CropListing. Tapping routes to
-          /farmer/listings/new with the cycle context; that page then
-          calls /api/listings/from-harvest to pre-fill quantity /
-          quality / location from the stored outcome. */}
-      {cycleId && state.summary?.metrics?.yieldKg > 0 && (
+      {/* Sell this harvest — offered only in Farm Mode. Backyard
+          users typically aren't selling, so the CTA is suppressed to
+          match the dual-mode spec. Feature gate flips instantly if
+          the farmer upgrades their profile to farm mode later. */}
+      {cycleId && state.summary?.metrics?.yieldKg > 0 && shouldShowSellCta({ farmType: state.summary?.farmType }) && (
         <button
           type="button"
           style={S.btnSell}

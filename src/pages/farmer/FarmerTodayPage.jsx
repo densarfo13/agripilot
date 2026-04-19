@@ -32,6 +32,8 @@ import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 import { getTodayScreenState } from '../../utils/getTodayScreenState.js';
+import { getAppMode } from '../../utils/getAppMode.js';
+import { shapeTodayPayloadForMode } from '../../utils/modeAwareTasks.js';
 
 export default function FarmerTodayPage() {
   const { t, language, region } = useAppSettings();
@@ -55,8 +57,17 @@ export default function FarmerTodayPage() {
 
   // Re-derive localized tasks whenever the language or the raw today
   // payload changes. Using useMemo keeps the re-render cheap.
+  // Dual-mode derivation: take farmType off the freshest farm row
+  // we have. Defaults to farm so existing users don't lose any
+  // features silently.
+  const currentMode = useMemo(() => {
+    const firstFarm = state.cycles?.cycles?.[0];
+    return getAppMode({ farmType: firstFarm?.farmType || firstFarm?.summary?.farmType || 'small_farm' });
+  }, [state.cycles]);
+
   const { primaryTask, secondaryTasks, riskAlerts, weatherAlerts, weatherBadge } = useMemo(() => {
-    const today = state.today;
+    const rawToday = state.today;
+    const today = shapeTodayPayloadForMode(rawToday, currentMode, t);
     if (!today) {
       return { primaryTask: null, secondaryTasks: [], riskAlerts: [], weatherAlerts: [], weatherBadge: null };
     }

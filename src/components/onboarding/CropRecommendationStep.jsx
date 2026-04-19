@@ -17,6 +17,8 @@ import {
 } from '../../utils/onboardingCropFilter.js';
 import { getRecommendationReasons } from '../../utils/getRecommendationReasons.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { getModeAwareRecommendations } from '../../utils/modeAwareRecommendations.js';
+import { getAppMode } from '../../utils/getAppMode.js';
 import { getCountrySupportTier, TIER_I18N_KEY, SUPPORT_TIER } from '../../utils/countrySupport.js';
 import { getCropSupportDepth, DEPTH_I18N_KEY, CROP_SUPPORT_DEPTH } from '../../utils/cropSupport.js';
 import { getRecommendationConfidence, CONFIDENCE_I18N_KEY } from '../../utils/getRecommendationConfidence.js';
@@ -82,15 +84,24 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
 
   const { best, possible, notRecommended } = useMemo(() => {
     if (!state.data) return { best: [], possible: [], notRecommended: [] };
+    // Apply the dual-mode filter FIRST so backyard users never see
+    // commercial-heavy crops at the top, then run the existing
+    // beginner + farm-size sorters on the narrowed set.
+    const mode = getAppMode(onboarding);
+    const modeFiltered = getModeAwareRecommendations({
+      bestMatch: state.data.bestMatch || [],
+      alsoConsider: state.data.alsoConsider || [],
+      notRecommendedNow: state.data.notRecommendedNow || [],
+    }, mode);
     const flat = [
-      ...(state.data.bestMatch || []),
-      ...(state.data.alsoConsider || []),
-      ...(state.data.notRecommendedNow || []),
+      ...(modeFiltered.bestMatch || []),
+      ...(modeFiltered.alsoConsider || []),
+      ...(modeFiltered.notRecommendedNow || []),
     ];
     let sorted = filterCropsByBeginnerStatus(flat, isBeginner);
     sorted = filterCropsByFarmSize(sorted, size);
     return categorizeCropsByFit(sorted);
-  }, [state.data, isBeginner, size]);
+  }, [state.data, isBeginner, size, onboarding]);
 
   // Beginner-gated advanced picks — in the best bucket, beginners
   // only see the first ~4 unless they ask for more.
