@@ -25,21 +25,36 @@ import {
 import { completeCycleTask } from '../../hooks/useCropCycles.js';
 import SupportCard from '../SupportCard.jsx';
 
-export default function ActionFirstHome({ today, progress, cropStage, onTaskCompleted }) {
+export default function ActionFirstHome({ today, progress, cropStage, onTaskCompleted, onReportIssue }) {
   const { t } = useTranslation();
 
-  const primary = today?.topTasks?.[0] || null;
-  const secondary = (today?.topTasks || []).slice(1, 3);
-  const riskAlerts = buildRiskAlerts({ today, t });
+  // Support both the new today payload (primaryTask/secondaryTasks/
+  // riskAlerts/nextActionSummary) AND the legacy shape
+  // (topTasks/openHighRiskIssues/nextAction) so callers can migrate
+  // incrementally without breaking.
+  const primary = today?.primaryTask ?? today?.topTasks?.[0] ?? null;
+  const secondary = today?.secondaryTasks
+    ?? (today?.topTasks || []).slice(1, 3);
+  const riskAlerts = Array.isArray(today?.riskAlerts)
+    ? today.riskAlerts
+    : buildRiskAlerts({ today, t });
+  const nextActionSummary = today?.nextActionSummary ?? today?.nextAction ?? null;
 
   return (
     <div style={S.page}>
       <div style={S.container}>
+        {/* Header — "Today on your farm" */}
+        <h1 style={S.pageTitle}>{t('actionHome.todayHeader')}</h1>
+        {nextActionSummary && (
+          <p style={S.pageSummary}>{nextActionSummary}</p>
+        )}
+
         {/* 1. Primary Task Card */}
         <PrimaryTaskCard
           task={primary}
           t={t}
           onCompleted={onTaskCompleted}
+          onReportIssue={onReportIssue}
         />
 
         {/* 2. Secondary Tasks */}
@@ -109,7 +124,7 @@ export default function ActionFirstHome({ today, progress, cropStage, onTaskComp
   );
 }
 
-function PrimaryTaskCard({ task, t, onCompleted }) {
+function PrimaryTaskCard({ task, t, onCompleted, onReportIssue }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -160,15 +175,27 @@ function PrimaryTaskCard({ task, t, onCompleted }) {
 
       {err && <div style={S.err}>{t('issue.err.generic')}</div>}
 
-      <button
-        type="button"
-        onClick={handleComplete}
-        disabled={busy}
-        style={{ ...S.cta, ...(busy ? S.ctaBusy : null) }}
-        data-testid="primary-task-complete"
-      >
-        {busy ? t('actionHome.primary.markingDone') : t('actionHome.primary.markComplete')}
-      </button>
+      <div style={S.ctaRow}>
+        <button
+          type="button"
+          onClick={handleComplete}
+          disabled={busy || task.source?.startsWith('override:')}
+          style={{ ...S.cta, ...(busy ? S.ctaBusy : null) }}
+          data-testid="primary-task-complete"
+        >
+          {busy ? t('actionHome.primary.markingDone') : t('actionHome.primary.markComplete')}
+        </button>
+        {onReportIssue && (
+          <button
+            type="button"
+            onClick={onReportIssue}
+            style={S.ctaGhost}
+            data-testid="primary-task-report"
+          >
+            {t('actionHome.primary.reportIssue')}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -209,6 +236,8 @@ function buildRiskAlerts({ today, t }) {
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
+  pageTitle: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
+  pageSummary: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 0.5rem', lineHeight: 1.45 },
 
   // Primary task card
   primary: {
@@ -252,11 +281,18 @@ const S = {
   etaIcon: { fontSize: '1rem' },
   etaLabel: { color: '#6F8299' },
   etaValue: { color: '#EAF2FF', fontWeight: 600 },
+  ctaRow: { display: 'flex', gap: '0.5rem' },
   cta: {
-    width: '100%', padding: '0.875rem', borderRadius: '14px',
+    flex: 1, padding: '0.875rem', borderRadius: '14px',
     border: 'none', background: '#22C55E', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
     boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+  },
+  ctaGhost: {
+    padding: '0.875rem 1rem', borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
+    color: '#9FB3C8', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+    minHeight: '52px',
   },
   ctaBusy: { opacity: 0.7, cursor: 'wait' },
   err: { color: '#FCA5A5', fontSize: '0.8125rem', marginBottom: '0.5rem' },

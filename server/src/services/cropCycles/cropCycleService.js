@@ -16,6 +16,7 @@ import { PrismaClient } from '@prisma/client';
 import { generateWeeklyTasks, summarizeTasks } from './taskPlanEngine.js';
 import { canTransition, isValidStatus, transitionError, ACTIVE_STATUSES } from './statusMachine.js';
 import { assessCycleRisk } from './cycleRiskEngine.js';
+import { buildTodayFeed } from '../today/todayEngine.js';
 
 const prisma = new PrismaClient();
 
@@ -292,60 +293,59 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
   if (!cycleIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null };
 
   const now = new Date();
-  const soonCutoff = new Date(now.getTime() + 24 * 3600 * 1000);
-  const [pending, overdue, risk] = await Promise.all([
+  const [pending, openIssues, cycleWithContext] = await Promise.all([
     prisma.cycleTaskPlan.findMany({
       where: { cropCycleId: { in: cycleIds }, status: 'pending' },
       take: 30,
     }),
-    prisma.cycleTaskPlan.findMany({
-      where: {
-        cropCycleId: { in: cycleIds },
-        status: 'pending',
-        dueDate: { lt: now },
-      },
-      orderBy: { dueDate: 'asc' },
-      take: 10,
-    }),
-    prisma.issueReport.count({
+    prisma.issueReport.findMany({
       where: {
         farmProfileId: { in: farmIds },
-        severity: 'high',
         status: { in: ['open', 'in_review'] },
+      },
+      select: { category: true, severity: true, status: true },
+    }),
+    prisma.v2CropCycle.findFirst({
+      where: { id: { in: cycleIds } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, cropType: true, variety: true,
+        lifecycleStatus: true, plantingDate: true, expectedHarvestDate: true,
       },
     }),
   ]);
 
-  // Rank: overdue first, then due-today, then high-priority, then
-  // soonest dueDate, then everything else. Deterministic tiebreakers.
-  const prio = { high: 3, medium: 2, low: 1 };
-  function rank(task) {
-    const dueMs = task.dueDate ? new Date(task.dueDate).getTime() : Number.POSITIVE_INFINITY;
-    let rank = 0;
-    if (dueMs < now.getTime()) rank += 1000;                // overdue cliff
-    else if (dueMs <= soonCutoff.getTime()) rank += 500;    // due within 24h
-    rank += (prio[task.priority] || 2) * 20;                // priority weight
-    rank -= Math.min(365, Math.max(0, (dueMs - now.getTime()) / 86_400_000)); // soonest first
-    return rank;
-  }
-  const topTasks = pending
-    .slice()
-    .sort((a, b) => rank(b) - rank(a))
-    .slice(0, limit);
+  // Derive overall risk level from the mix of overdue + issues so
+  // the today engine's risk overrides fire at the right time.
+  const overdueCount = pending.filter((t) =>
+    t.dueDate && new Date(t.dueDate).getTime() < now.getTime()
+  ).length;
+  const highSevCount = openIssues.filter((i) => i.severity === 'high').length;
+  const riskLevel = (overdueCount >= 3 || highSevCount >= 2) ? 'high'
+    : (overdueCount >= 1 || highSevCount >= 1) ? 'medium' : 'low';
 
-  const nextAction = topTasks[0]
-    ? (topTasks[0].dueDate && new Date(topTasks[0].dueDate) < now
-        ? `Catch up: ${topTasks[0].title}`
-        : topTasks[0].title)
-    : (risk > 0 ? 'Check and resolve your open high-severity issues.' : null);
+  const feed = buildTodayFeed({
+    pendingTasks: pending,
+    cycle: cycleWithContext,
+    cropKey: cycleWithContext?.cropType || null,
+    riskLevel,
+    openIssues,
+    currentMonth: now.getMonth() + 1,
+    now,
+  });
 
   return {
-    topTasks,
-    overdue,
-    overdueTasksCount: overdue.length,
-    riskAlerts: risk,             // number of high-severity open issues
-    openHighRiskIssues: risk,
-    nextAction,
+    primaryTask: feed.primaryTask,
+    secondaryTasks: feed.secondaryTasks,
+    riskAlerts: feed.riskAlerts,
+    nextActionSummary: feed.nextActionSummary,
+    overdueTasksCount: feed.overdueTasksCount,
+    timeEstimateMinutes: feed.timeEstimateMinutes,
+    priorityScore: feed.priorityScore,
+    // Backwards-compat: old callers read topTasks / overdue / nextAction.
+    topTasks: [feed.primaryTask, ...feed.secondaryTasks].filter(Boolean),
+    nextAction: feed.nextActionSummary,
+    openHighRiskIssues: highSevCount,
   };
 }
 

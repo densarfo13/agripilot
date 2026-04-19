@@ -341,6 +341,8 @@ const T = {
   'actionHome.stage.none':           { en: 'No active crop cycle',     fr: 'Aucun cycle actif',  sw: 'Hakuna mzunguko',       ha: 'Babu aiki',             tw: 'Afudeɛ adwuma nni hɔ',   hi: 'अभी कोई फसल चक्र नहीं' },
   'actionHome.motivation.title':     { en: "You're doing well",        fr: 'Bon travail',        sw: 'Unafanya vizuri',       ha: 'Kuna yi da kyau',       tw: 'Woreyɛ yie',             hi: 'आप अच्छा कर रहे हैं' },
   'actionHome.motivation.body':      { en: 'Every small step makes your farm stronger.', fr: 'Chaque petit pas compte.', sw: 'Kila hatua ndogo hufanya shamba lako kuwa imara.', ha: 'Kowane mataki yana ƙara ƙarfin gonar ku.', tw: 'Anammɔn biara ma w\'afuo mu yɛ den.', hi: 'हर छोटा कदम आपके खेत को मजबूत बनाता है।' },
+  'actionHome.todayHeader':          { en: 'Today on your farm',              fr: 'Aujourd\'hui sur votre ferme',   sw: 'Leo kwenye shamba lako',        ha: 'Yau a gonarku',               tw: 'Nnɛ wɔ w\'afuo so',           hi: 'आज आपके खेत पर' },
+  'actionHome.primary.reportIssue':  { en: 'Report an issue',                 fr: 'Signaler un problème',           sw: 'Ripoti tatizo',                 ha: 'Bayar da rahoton matsala',    tw: 'Ka ɔhaw',                     hi: 'समस्या की रिपोर्ट करें' },
 
   // Risk-alert one-liners (feed from buildRiskAlerts)
   'actionHome.risks.overdueCount':       { en: '{n} overdue tasks',           fr: '{n} tâches en retard',       sw: 'Kazi {n} zimechelewa',    ha: 'Ayyuka {n} sun makara',     tw: 'Adwuma {n} a atwam',         hi: '{n} कार्य समय से पीछे' },
