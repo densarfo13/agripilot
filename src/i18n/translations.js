@@ -201,6 +201,29 @@ const T = {
   'usRec.badge.warm':      { en: 'Warm Season',       fr: 'Saison chaude',  sw: 'Msimu Joto',   ha: 'Lokacin zafi',  tw: 'Hyew berɛ',    hi: 'गर्म मौसम' },
   'usRec.badge.drought':   { en: 'Drought Tolerant',  fr: 'Résiste sécheresse', sw: 'Hustahimili ukame', ha: 'Mai juriyar fari', tw: 'Osukɔmhia', hi: 'सूखा सहनशील' },
 
+  // Time intelligence badges
+  'usRec.timing.plant_now':  { en: 'Plant now',       fr: 'Planter maintenant', sw: 'Panda sasa',     ha: 'Shuka yanzu',      tw: 'Dua seesei',       hi: 'अभी बोएँ' },
+  'usRec.timing.plant_soon': { en: 'Plant soon',      fr: 'Bientôt',            sw: 'Panda hivi karibuni', ha: 'Shuka ba da daɗewa ba', tw: 'Dua nkyɛ',  hi: 'जल्द बोएँ' },
+  'usRec.timing.wait':       { en: 'Wait',            fr: 'Attendre',           sw: 'Subiri',         ha: 'Jira',             tw: 'Twɛn',             hi: 'प्रतीक्षा करें' },
+  'usRec.timing.too_late':   { en: 'Too late',        fr: 'Trop tard',          sw: 'Umechelewa',     ha: 'Ya makara',        tw: 'Atwam',            hi: 'बहुत देर हो गई' },
+  'usRec.timing.unknown':    { en: 'Timing',          fr: 'Moment',             sw: 'Wakati',         ha: 'Lokaci',           tw: 'Berɛ',             hi: 'समय' },
+
+  // Risk & profitability
+  'usRec.riskLevel': { en: 'Risk',       fr: 'Risque',    sw: 'Hatari',    ha: 'Haɗari',      tw: 'Asiane',    hi: 'जोखिम' },
+  'usRec.risk.low':    { en: 'Low',     fr: 'Faible',   sw: 'Chini',    ha: 'Ƙanana',     tw: 'Ketewa',   hi: 'कम' },
+  'usRec.risk.medium': { en: 'Medium',  fr: 'Moyen',    sw: 'Wastani',  ha: 'Matsakaici', tw: 'Mfinimfini', hi: 'मध्यम' },
+  'usRec.risk.high':   { en: 'High',    fr: 'Élevé',    sw: 'Juu',      ha: 'Babba',      tw: 'Kɛse',     hi: 'उच्च' },
+
+  'usRec.profitability':   { en: 'Profit',  fr: 'Profit',     sw: 'Faida',    ha: 'Riba',       tw: 'Mfasoɔ',   hi: 'लाभ' },
+  'usRec.profit.low':      { en: 'Low',     fr: 'Faible',     sw: 'Chini',    ha: 'Ƙanana',     tw: 'Ketewa',   hi: 'कम' },
+  'usRec.profit.medium':   { en: 'Medium',  fr: 'Moyen',      sw: 'Wastani',  ha: 'Matsakaici', tw: 'Mfinimfini', hi: 'मध्यम' },
+  'usRec.profit.high':     { en: 'High',    fr: 'Élevé',      sw: 'Juu',      ha: 'Babba',      tw: 'Kɛse',     hi: 'उच्च' },
+
+  // Action guidance
+  'usRec.doThisNow':   { en: 'Do this now',  fr: 'À faire maintenant',  sw: 'Fanya hii sasa',     ha: 'Yi wannan yanzu',   tw: 'Yɛ yei seesei',    hi: 'यह अभी करें' },
+  'usRec.nextStep':    { en: 'Next step',    fr: 'Étape suivante',      sw: 'Hatua inayofuata',   ha: 'Mataki na gaba',    tw: 'Anammɔn a ɛdi so', hi: 'अगला चरण' },
+  'usRec.actionSteps': { en: 'Action steps', fr: 'Étapes d\'action',    sw: 'Hatua za utekelezaji', ha: 'Matakan aiki',    tw: 'Adwuma anammɔn',   hi: 'कार्य चरण' },
+
   // Onboarding — U.S. farm-type step
   'wizard.usStep.title': {
     en: 'Tell us about your U.S. farm',

@@ -20,6 +20,10 @@
 
 import { CROP_PROFILES } from './cropProfiles.js';
 import { STATE_OVERRIDES } from './cropRules.js';
+import { evaluateTiming } from './timeEngine.js';
+import { assessRisks } from './riskEngine.js';
+import { buildActionPlan } from './actionEngine.js';
+import { assessMarket } from './marketEngine.js';
 
 const VIABILITY_CUTOFF = 55;
 const BEST_MATCH_FLOOR = 75;
@@ -196,6 +200,24 @@ export function scoreCrop({ rule, stateProfile, ctx }) {
     stateProfile,
   });
 
+  // ─── Layered intelligence: time, risk, action plan, market ──
+  const timing = evaluateTiming({
+    currentMonth: ctx.currentMonth,
+    plantingStartMonth: effectiveRule.plantingStartMonth,
+    plantingEndMonth: effectiveRule.plantingEndMonth,
+  });
+  const risks = assessRisks({
+    profile, stateProfile, currentMonth: ctx.currentMonth,
+  });
+  // Merge risk notes into the existing riskNotes array so the UI has
+  // one canonical place to read from.
+  for (const n of risks.notes) if (!riskNotes.includes(n)) riskNotes.push(n);
+
+  const actionPlan = buildActionPlan({
+    cropKey: rule.crop, cropName: profile.name, timing,
+  });
+  const market = assessMarket({ rule: effectiveRule, farmType: ctx.farmType });
+
   return {
     key: rule.crop,
     name: profile.name,
@@ -207,13 +229,31 @@ export function scoreCrop({ rule, stateProfile, ctx }) {
     reasons,
     riskNotes,
     marketStrength: effectiveRule.marketStrength || 'medium',
+    // ─── Time intelligence ──────────────────────────────
+    timing,                       // { recommendation, inWindow, monthsUntilWindow, monthsSinceWindowClose }
+    // ─── Risk intelligence ──────────────────────────────
+    risks: {
+      frostRisk: risks.frostRisk,
+      heatRisk: risks.heatRisk,
+      waterStressRisk: risks.waterStressRisk,
+      overallRisk: risks.overallRisk,
+    },
+    riskLevel: risks.overallRisk,  // convenient top-level for UI badges
+    // ─── Action guidance ────────────────────────────────
+    doThisNow: actionPlan.doThisNow,
+    nextAction: actionPlan.nextAction,
+    actionSteps: actionPlan.actionSteps,
+    weeklyGuide: actionPlan.weeklyGuide,
+    // ─── Market layer ───────────────────────────────────
+    marketDemand: market.marketDemand,     // 'high_demand' | 'medium' | 'low'
+    profitability: market.profitability,   // 'low' | 'medium' | 'high'
     plantingWindow: {
       startMonth: effectiveRule.plantingStartMonth,
       endMonth: effectiveRule.plantingEndMonth,
       active: inWindow,
     },
     harvestWindow: approximateHarvestWindow(effectiveRule, profile),
-    tags: buildTags(profile, effectiveRule, stateProfile, ctx),
+    tags: buildTags(profile, effectiveRule, stateProfile, ctx, market),
   };
 }
 
@@ -226,13 +266,14 @@ function approximateHarvestWindow(rule, profile) {
   return { startMonth, endMonth };
 }
 
-function buildTags(profile, rule, stateProfile, ctx) {
+function buildTags(profile, rule, stateProfile, ctx, market) {
   const tags = new Set(profile.defaultTags || []);
   if (rule.beginnerFriendly) tags.add('beginner_friendly');
   if (profile.containerFriendly && ctx.growingStyle === 'container') tags.add('container_friendly');
   if (rule.marketStrength === 'high' || rule.localSellValue === 'high') tags.add('strong_local_market');
   if (profile.heatTolerance === 'high') tags.add('heat_tolerant');
   if (profile.frostSensitive && stateProfile.frostRisk === 'high') tags.add('frost_risk');
+  if (market?.marketTags) for (const t of market.marketTags) tags.add(t);
   return Array.from(tags);
 }
 

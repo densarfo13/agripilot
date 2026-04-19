@@ -186,8 +186,26 @@ function Bucket({ title, crops, accent, muted, t }) {
   );
 }
 
+const RISK_STYLE = {
+  low:    { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+  medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+  high:   { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+};
+
+const TIMING_STYLE = {
+  plant_now:  { color: '#22C55E', bg: 'rgba(34,197,94,0.14)' },
+  plant_soon: { color: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
+  wait:       { color: '#9FB3C8', bg: 'rgba(255,255,255,0.05)' },
+  too_late:   { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+  unknown:    { color: '#9FB3C8', bg: 'rgba(255,255,255,0.05)' },
+};
+
 function CropCard({ crop, muted, t }) {
   const badges = (crop.tags || []).filter((tag) => BADGE_META[tag]);
+  const riskStyle = RISK_STYLE[crop.riskLevel] || RISK_STYLE.low;
+  const timingKey = crop.timing?.recommendation || 'unknown';
+  const timingStyle = TIMING_STYLE[timingKey] || TIMING_STYLE.unknown;
+
   return (
     <article style={{ ...S.card, ...(muted ? S.cardMuted : null) }}>
       <header style={S.cardHeader}>
@@ -195,12 +213,36 @@ function CropCard({ crop, muted, t }) {
         <span style={S.score}>{crop.score}</span>
       </header>
 
+      {/* ─── Timing + Risk chips ──────────────────────────── */}
+      <div style={S.chipRow}>
+        <span style={{ ...S.chip, color: timingStyle.color, background: timingStyle.bg }}>
+          {t(`usRec.timing.${timingKey}`)}
+        </span>
+        <span style={{ ...S.chip, color: riskStyle.color, background: riskStyle.bg }}>
+          {t('usRec.riskLevel')}: {t(`usRec.risk.${crop.riskLevel || 'low'}`)}
+        </span>
+      </div>
+
+      {/* ─── Do this now banner ───────────────────────────── */}
+      {crop.doThisNow && (
+        <div style={S.doNow}>
+          <span style={S.doNowLabel}>{t('usRec.doThisNow')}</span>
+          <span style={S.doNowText}>{crop.doThisNow}</span>
+        </div>
+      )}
+
       <div style={S.metaRow}>
         <span>{t(`usRec.diff.${crop.difficulty}`)}</span>
         <span>•</span>
         <span>{t(`usRec.water.${crop.waterNeed}`)}</span>
         <span>•</span>
         <span>{crop.growthWeeksMin}–{crop.growthWeeksMax} {t('usRec.weeks')}</span>
+        {crop.profitability && (
+          <>
+            <span>•</span>
+            <span>{t('usRec.profitability')}: {t(`usRec.profit.${crop.profitability}`)}</span>
+          </>
+        )}
       </div>
 
       {badges.length > 0 && (
@@ -226,7 +268,7 @@ function CropCard({ crop, muted, t }) {
         <div style={S.risks}>
           <div style={S.risksLabel}>{t('usRec.riskNotes')}</div>
           <ul style={S.list}>
-            {crop.riskNotes.slice(0, 2).map((r, i) => <li key={i}>{r}</li>)}
+            {crop.riskNotes.slice(0, 3).map((r, i) => <li key={i}>{r}</li>)}
           </ul>
         </div>
       )}
@@ -238,6 +280,27 @@ function CropCard({ crop, muted, t }) {
             <span> • {t('usRec.harvest')}: {monthRange(crop.harvestWindow)}</span>
           )}
         </div>
+      )}
+
+      {crop.nextAction && (
+        <div style={S.nextStep}>
+          <span style={S.nextStepLabel}>{t('usRec.nextStep')}</span>
+          <span style={S.nextStepText}>{crop.nextAction}</span>
+        </div>
+      )}
+
+      {crop.actionSteps?.length > 0 && (
+        <details style={S.detailsWrap}>
+          <summary style={S.detailsSummary}>{t('usRec.actionSteps')}</summary>
+          <ol style={S.actionList}>
+            {crop.actionSteps.map((step, i) => (
+              <li key={i} style={S.actionItem}>
+                <span style={S.actionLabel}>{step.label}</span>
+                {step.detail && <span style={S.actionDetail}>{step.detail}</span>}
+              </li>
+            ))}
+          </ol>
+        </details>
       )}
     </article>
   );
@@ -282,4 +345,51 @@ const S = {
   risksLabel: { fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600, marginBottom: '0.25rem' },
   list: { margin: 0, paddingLeft: '1.125rem', fontSize: '0.8125rem', color: '#EAF2FF', lineHeight: 1.45 },
   window: { marginTop: '0.625rem', fontSize: '0.75rem', color: '#6F8299' },
+  chipRow: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' },
+  chip: {
+    padding: '0.25rem 0.625rem', borderRadius: '999px',
+    fontSize: '0.75rem', fontWeight: 600,
+  },
+  doNow: {
+    display: 'flex', flexDirection: 'column', gap: '0.125rem',
+    padding: '0.625rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.18)',
+    marginBottom: '0.5rem',
+  },
+  doNowLabel: {
+    fontSize: '0.6875rem', fontWeight: 700, color: '#22C55E',
+    textTransform: 'uppercase', letterSpacing: '0.05em',
+  },
+  doNowText: { fontSize: '0.875rem', color: '#EAF2FF', fontWeight: 600, lineHeight: 1.4 },
+  nextStep: {
+    marginTop: '0.625rem',
+    padding: '0.5rem 0.625rem',
+    borderRadius: '10px',
+    background: 'rgba(14,165,233,0.08)',
+    border: '1px solid rgba(14,165,233,0.18)',
+  },
+  nextStepLabel: {
+    display: 'block', fontSize: '0.6875rem', fontWeight: 700,
+    color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.05em',
+    marginBottom: '0.125rem',
+  },
+  nextStepText: { fontSize: '0.8125rem', color: '#EAF2FF', lineHeight: 1.4 },
+  detailsWrap: {
+    marginTop: '0.625rem',
+    padding: '0.375rem 0',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+  },
+  detailsSummary: {
+    cursor: 'pointer',
+    fontSize: '0.8125rem', fontWeight: 600, color: '#9FB3C8',
+    padding: '0.25rem 0',
+  },
+  actionList: { margin: '0.375rem 0 0', paddingLeft: '1.125rem' },
+  actionItem: {
+    fontSize: '0.8125rem', color: '#EAF2FF',
+    lineHeight: 1.45, marginBottom: '0.25rem',
+  },
+  actionLabel: { fontWeight: 600, display: 'block' },
+  actionDetail: { color: '#9FB3C8', fontSize: '0.75rem', display: 'block' },
 };
