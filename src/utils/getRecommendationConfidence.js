@@ -59,8 +59,11 @@ export function getRecommendationConfidence({
   return { level, reasons, wordingKey, score };
 }
 
+// Points to the shared-namespace keys so crop cards, crop-plan, and
+// any future screen resolve to the same "High confidence" string in
+// every language without coupling to the onboarding namespace.
 export const CONFIDENCE_I18N_KEY = Object.freeze({
-  high:   'recConfidence.level.high',
-  medium: 'recConfidence.level.medium',
-  low:    'recConfidence.level.low',
+  high:   'confidence.high',
+  medium: 'confidence.medium',
+  low:    'confidence.low',
 });

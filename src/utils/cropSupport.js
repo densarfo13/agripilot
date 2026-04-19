@@ -74,10 +74,12 @@ export function isFullyGuidedCrop(cropKey) {
   return getCropSupportDepth(cropKey) === CROP_SUPPORT_DEPTH.FULLY_GUIDED;
 }
 
+// Points to the shared-namespace keys ('support.full/partial/browse')
+// so every screen renders the same depth label in every language.
 export const DEPTH_I18N_KEY = Object.freeze({
-  FULLY_GUIDED:     'cropSupport.depth.fullyGuided',
-  PARTIAL_GUIDANCE: 'cropSupport.depth.partial',
-  BROWSE_ONLY:      'cropSupport.depth.browseOnly',
+  FULLY_GUIDED:     'support.full',
+  PARTIAL_GUIDANCE: 'support.partial',
+  BROWSE_ONLY:      'support.browse',
 });
 
 export const CORE_SUPPORTED_CROPS = Object.freeze([...FULLY_GUIDED_SET]);

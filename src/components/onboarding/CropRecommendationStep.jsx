@@ -35,13 +35,16 @@ const BEGINNER_FRIENDLY = new Set([
 ]);
 
 const BADGE_COLOR = { high: '#22C55E', medium: '#F59E0B', low: '#9FB3C8' };
-const BADGE_LABEL_KEY = { high: 'onboarding.fit.high', medium: 'onboarding.fit.medium', low: 'onboarding.fit.low' };
+// Shared-namespace keys so the same "High fit" label resolves on
+// the crop-plan page, NGO dashboard, and Today-screen chips without
+// needing per-screen duplicates.
+const BADGE_LABEL_KEY = { high: 'fit.high', medium: 'fit.medium', low: 'fit.low' };
 
 const STATUS_LABEL_KEY = {
-  plant_now: 'onboarding.status.plantNow',
-  plant_soon: 'onboarding.status.plantSoon',
-  wait: 'onboarding.status.wait',
-  avoid: 'onboarding.status.avoid',
+  plant_now:  'status.plantNow',
+  plant_soon: 'status.plantSoon',
+  wait:       'status.wait',
+  avoid:      'status.avoid',
 };
 
 export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
@@ -302,11 +305,11 @@ function CropCard({ crop, isBeginner, onboarding, language, confidence, onPick, 
       </div>
       <div style={S.meta}>
         {isBeginner && beginnerFriendly && (
-          <span style={S.beginnerTag}>{t('onboarding.fit.beginnerFriendly')}</span>
+          <span style={S.beginnerTag}>{t('cropTraits.beginnerFriendly')}</span>
         )}
         {statusLabel && <span style={S.status}>{statusLabel}</span>}
         {crop.fitLevel === 'low' && (
-          <span style={S.lowFitTag}>{t('onboarding.fit.lowFitLabel')}</span>
+          <span style={S.lowFitTag}>{t('fit.low')}</span>
         )}
         {supportDepth !== CROP_SUPPORT_DEPTH.FULLY_GUIDED && (
           <span style={{ ...S.depthTag, color: DEPTH_COLOR[supportDepth], borderColor: DEPTH_COLOR[supportDepth] }}>
