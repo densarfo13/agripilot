@@ -105,7 +105,9 @@ router.post('/interventions/recompute', ...NGO_SCOPE, async (_req, res) => {
         reason: assessment.reason.slice(0, 500),
         recommendedAction: assessment.recommendedAction.slice(0, 500),
         dueAt: assessment.dueAt,
-        signals: assessment.signals,
+        // Persist the full signals + explain payload so reviewers
+        // can audit which components fired. Serializes to Json.
+        signals: { ...assessment.signals, explain: assessment.explain },
       },
     });
     created += 1;
@@ -134,10 +136,21 @@ router.post('/farmer-scores/recompute', ...NGO_SCOPE, async (_req, res) => {
   for (const farm of farms) {
     const signals = await gatherScoreSignals(farm);
     const score = computeFarmerScore(signals);
+    // Persist the explain payload alongside signals so reviewers can
+    // see exactly which sub-scores fed the composite.
+    const persistable = {
+      performanceScore: score.performanceScore,
+      consistencyScore: score.consistencyScore,
+      riskScore: score.riskScore,
+      verificationScore: score.verificationScore,
+      healthScore: score.healthScore,
+      scoreBand: score.scoreBand,
+      signals: { ...score.signals, explain: score.explain },
+    };
     await prisma.farmerScore.upsert({
       where: { farmProfileId: farm.id },
-      update: { ...score, signals: score.signals, computedAt: new Date() },
-      create: { farmProfileId: farm.id, ...score, signals: score.signals },
+      update: { ...persistable, computedAt: new Date() },
+      create: { farmProfileId: farm.id, ...persistable },
     });
     processed += 1;
   }
@@ -159,14 +172,26 @@ router.post('/funding-readiness/recompute', ...NGO_SCOPE, async (_req, res) => {
   if (!scores.length) return res.json({ processed: 0 });
   let processed = 0;
   for (const score of scores) {
-    const intervention = await prisma.intervention.findFirst({
-      where: {
-        farmProfileId: score.farmProfileId,
-        status: { in: ['open', 'in_progress'] },
-      },
-      orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }],
-    });
-    const result = decideFundingEligibility({ score, intervention });
+    const [intervention, cycles] = await Promise.all([
+      prisma.intervention.findFirst({
+        where: {
+          farmProfileId: score.farmProfileId,
+          status: { in: ['open', 'in_progress'] },
+        },
+        orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }],
+      }),
+      prisma.v2CropCycle.findMany({
+        where: { profileId: score.farmProfileId },
+        select: { lifecycleStatus: true },
+      }),
+    ]);
+    const context = {
+      totalCycles: cycles.length,
+      completedCycles: cycles.filter((c) => c.lifecycleStatus === 'harvested').length,
+      activeCycles: cycles.filter((c) => !['harvested', 'failed'].includes(c.lifecycleStatus || '')).length,
+      failedCycles: cycles.filter((c) => c.lifecycleStatus === 'failed').length,
+    };
+    const result = decideFundingEligibility({ score, intervention, context });
     await prisma.fundingDecision.create({
       data: {
         farmProfileId: score.farmProfileId,
@@ -174,7 +199,9 @@ router.post('/funding-readiness/recompute', ...NGO_SCOPE, async (_req, res) => {
         reason: result.reason.slice(0, 500),
         healthScore: score.healthScore,
         verificationScore: score.verificationScore,
-        blockers: result.blockers,
+        // Persist blockers alongside the explain payload so the
+        // reviewer UI can surface which thresholds fired.
+        blockers: { blockers: result.blockers, explain: result.explain },
       },
     });
     processed += 1;
