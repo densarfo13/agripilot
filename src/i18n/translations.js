@@ -936,6 +936,25 @@ const T = {
   'firstLaunch.skip':      { en: 'Skip',        fr: 'Passer',    sw: 'Ruka',     ha: 'Tsallake',  tw: 'Twa mu',  hi: 'छोड़ें' },
   'firstLaunch.detecting': { en: 'Detecting…',  fr: 'Détection…', sw: 'Inatambua…', ha: 'Ana ganowa…', tw: 'Yɛrehwɛ…', hi: 'पहचान की जा रही है…' },
 
+  // ─── Spec-named aliases (unprefixed) + auto-detect copy ──
+  // The existing firstLaunch.* keys stay for back-compat; the
+  // setup/FirstLaunchConfirm screen now reads from these too.
+  'setup_title':           { en: "Let's set up Farroway for you", fr: 'Configurons Farroway pour vous', sw: 'Tuandae Farroway kwa ajili yako', ha: 'Bari mu shirya Farroway muku', tw: 'Ma yɛnhyehyɛ Farroway mma wo', hi: 'आइए Farroway को आपके लिए सेट करें', es: 'Configuremos Farroway para ti', pt: 'Vamos configurar o Farroway para você', ar: 'لنجهّز Farroway لك', id: 'Mari siapkan Farroway untuk Anda' },
+  'setup_subtitle':        { en: 'Pick your language, country, and state', fr: 'Choisissez votre langue, votre pays et votre région', sw: 'Chagua lugha, nchi na jimbo lako', ha: 'Zaɓi harshe, ƙasa da jiharku', tw: 'Fa wo kasa, wo man, ne wo man mu si', hi: 'अपनी भाषा, देश और राज्य चुनें', es: 'Elige tu idioma, país y estado', pt: 'Escolha seu idioma, país e estado', ar: 'اختر لغتك وبلدك وولايتك', id: 'Pilih bahasa, negara, dan provinsi Anda' },
+  'language':              { en: 'Language',    fr: 'Langue',    sw: 'Lugha',    ha: 'Harshe',    tw: 'Kasa',    hi: 'भाषा',         es: 'Idioma',    pt: 'Idioma',    ar: 'اللغة',     id: 'Bahasa' },
+  'country':               { en: 'Country',     fr: 'Pays',      sw: 'Nchi',     ha: 'Ƙasa',      tw: 'Ɔman',    hi: 'देश',         es: 'País',      pt: 'País',      ar: 'البلد',     id: 'Negara' },
+  'state':                 { en: 'State',       fr: 'État',      sw: 'Jimbo',    ha: 'Jiha',      tw: 'Ɔman mu si', hi: 'राज्य',      es: 'Estado',    pt: 'Estado',    ar: 'الولاية',   id: 'Provinsi' },
+  'skip':                  { en: 'Skip',        fr: 'Passer',    sw: 'Ruka',     ha: 'Tsallake',  tw: 'Twa mu',  hi: 'छोड़ें',      es: 'Omitir',    pt: 'Pular',     ar: 'تخطي',      id: 'Lewati' },
+  'continue':              { en: 'Continue',    fr: 'Continuer', sw: 'Endelea',  ha: 'Ci gaba',   tw: 'Toa so',  hi: 'जारी रखें',   es: 'Continuar', pt: 'Continuar', ar: 'متابعة',    id: 'Lanjut' },
+  'detecting_location':    { en: 'Detecting your location', fr: 'Détection de votre emplacement', sw: 'Inatambua eneo lako', ha: 'Ana gane wurinku', tw: 'Yɛrehwɛ baabi a wowɔ', hi: 'आपका स्थान पता किया जा रहा है', es: 'Detectando tu ubicación', pt: 'Detectando sua localização', ar: 'جاري تحديد موقعك', id: 'Mendeteksi lokasi Anda' },
+  'use_detected_location': { en: 'Use detected location',   fr: 'Utiliser la localisation détectée', sw: 'Tumia eneo lililogunduliwa', ha: "Yi amfani da wurin da aka gano", tw: 'Fa baabi a yɛahu no', hi: 'पता किया गया स्थान उपयोग करें', es: 'Usar ubicación detectada', pt: 'Usar localização detectada', ar: 'استخدم الموقع المكتشف', id: 'Gunakan lokasi terdeteksi' },
+  'detect_location':       { en: 'Detect my location',      fr: 'Détecter ma localisation',        sw: 'Gundua eneo langu',          ha: 'Nemo wurina',                tw: 'Hwɛ me baabi',           hi: 'मेरा स्थान पता करें',        es: 'Detectar mi ubicación',    pt: 'Detectar minha localização', ar: 'حدد موقعي',     id: 'Deteksi lokasi saya' },
+  'location_detected':     { en: 'We found your location',  fr: 'Nous avons trouvé votre emplacement', sw: 'Tumepata eneo lako',      ha: 'Mun sami wurinku',           tw: 'Yɛahu wo baabi',          hi: 'हमें आपका स्थान मिल गया',     es: 'Encontramos tu ubicación', pt: 'Encontramos sua localização', ar: 'وجدنا موقعك',    id: 'Kami menemukan lokasi Anda' },
+  'location_detection_failed': { en: 'Could not detect your location', fr: "Impossible de détecter votre emplacement", sw: 'Haikuwezekana kupata eneo lako', ha: "Ba a iya gano wurinku ba", tw: 'Yɛantumi anhu wo baabi', hi: 'आपका स्थान पता नहीं चल सका', es: 'No se pudo detectar tu ubicación', pt: 'Não foi possível detectar sua localização', ar: 'تعذر تحديد موقعك', id: 'Tidak dapat mendeteksi lokasi Anda' },
+  'choose_manually':       { en: 'Choose manually', fr: 'Choisir manuellement', sw: 'Chagua mwenyewe', ha: 'Zaɓi da kanku', tw: 'Fa wo ara kyerɛ', hi: 'खुद चुनें', es: 'Elegir manualmente', pt: 'Escolher manualmente', ar: 'اختر يدويًا', id: 'Pilih secara manual' },
+  'country_detected':      { en: 'Detected country', fr: 'Pays détecté',  sw: 'Nchi iliyogunduliwa', ha: 'Ƙasar da aka gano', tw: 'Ɔman a yɛahu',        hi: 'पता किया गया देश',    es: 'País detectado',    pt: 'País detectado',   ar: 'البلد المكتشف',     id: 'Negara terdeteksi' },
+  'state_detected':        { en: 'Detected state',   fr: 'État détecté',  sw: 'Jimbo lililogunduliwa', ha: 'Jihar da aka gano', tw: 'Ɔman mu si a yɛahu', hi: 'पता किया गया राज्य', es: 'Estado detectado',  pt: 'Estado detectado', ar: 'الولاية المكتشفة', id: 'Provinsi terdeteksi' },
+
   // Onboarding — U.S. farm-type step
   'wizard.usStep.title': {
     en: 'Tell us about your U.S. farm',

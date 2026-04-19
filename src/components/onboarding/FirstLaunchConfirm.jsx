@@ -80,6 +80,11 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
   const [country, setCountry] = useState(initial.country || '');
   const [stateCode, setStateCode] = useState(initial.stateCode || '');
   const [detecting, setDetecting] = useState(false);
+  // `detectResult` drives the confirmation / failure block that
+  // appears under the Detect my location button. Shape:
+  //   { status: 'idle' | 'detecting' | 'ok' | 'failed',
+  //     country?, stateCode?, countryLabel?, stateLabel? }
+  const [detectResult, setDetectResult] = useState({ status: 'idle' });
 
   // Background GPS attempt. Stays silent on failure; never blocks the
   // user from confirming manually.
@@ -124,6 +129,49 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
     onComplete?.({ lang, country, stateCode });
   }
 
+  /**
+   * handleDetectLocation — explicit "Detect my location" button.
+   * Runs geolocation + reverse-geocode; shows a calm confirmation
+   * block on success and a "couldn't detect" note on failure. Never
+   * blocks the user from continuing — manual fields stay first-class.
+   */
+  async function handleDetectLocation() {
+    setDetectResult({ status: 'detecting' });
+    setDetecting(true);
+    try {
+      const region = await detectRegionViaGps({ geocoder });
+      setDetecting(false);
+      if (!region?.country) {
+        setDetectResult({ status: 'failed' });
+        return;
+      }
+      // Pre-fill the form fields (still editable) and surface the
+      // confirmation block so the user can accept or correct.
+      const countryLabel = (COUNTRIES.find(([c]) => c === region.country) || [])[1] || region.country;
+      const stateLabel = region.stateCode
+        ? (US_STATES.find(([c]) => c === region.stateCode) || [])[1] || region.stateCode
+        : null;
+      setCountry(region.country);
+      if (region.stateCode) setStateCode(region.stateCode);
+      setDetectResult({
+        status: 'ok',
+        country: region.country,
+        stateCode: region.stateCode || null,
+        countryLabel,
+        stateLabel,
+      });
+    } catch {
+      setDetecting(false);
+      setDetectResult({ status: 'failed' });
+    }
+  }
+
+  function clearDetected() {
+    setDetectResult({ status: 'idle' });
+    setCountry('');
+    setStateCode('');
+  }
+
   function handleSkip() {
     // Skipping is fine — we still set language manual slot so the UI
     // doesn't re-nag, but leave region unset so the resolver stays
@@ -136,12 +184,12 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
   return (
     <div style={S.overlay} role="dialog" aria-labelledby="firstlaunch-title">
       <div style={S.modal}>
-        <h2 id="firstlaunch-title" style={S.title}>{t('firstLaunch.title')}</h2>
-        <p style={S.subtitle}>{t('firstLaunch.subtitle')}</p>
+        <h2 id="firstlaunch-title" style={S.title}>{t('setup_title')}</h2>
+        <p style={S.subtitle}>{t('setup_subtitle')}</p>
 
         {/* Language chips */}
         <section style={S.section}>
-          <div style={S.sectionLabel}>{t('firstLaunch.language')}</div>
+          <div style={S.sectionLabel}>{t('language')}</div>
           <div style={S.chipRow}>
             {VISIBLE_LANGS.map((l) => (
               <button
@@ -162,14 +210,14 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
 
         {/* Country */}
         <section style={S.section}>
-          <div style={S.sectionLabel}>{t('firstLaunch.country')}</div>
+          <div style={S.sectionLabel}>{t('country')}</div>
           <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             style={S.select}
             data-testid="firstlaunch-country"
           >
-            <option value="">{detecting ? t('firstLaunch.detecting') : '—'}</option>
+            <option value="">{detecting ? t('detecting_location') : '—'}</option>
             {COUNTRIES.map(([code, label]) => (
               <option key={code} value={code}>{label}</option>
             ))}
@@ -179,7 +227,7 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
         {/* U.S. state — only when country === US */}
         {country === 'US' && (
           <section style={S.section}>
-            <div style={S.sectionLabel}>{t('firstLaunch.state')}</div>
+            <div style={S.sectionLabel}>{t('state')}</div>
             <select
               value={stateCode}
               onChange={(e) => setStateCode(e.target.value)}
@@ -194,9 +242,55 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
           </section>
         )}
 
+        {/* Explicit "Detect my location" — secondary action.
+            Never blocks Continue; shows a calm success or failure
+            block so the user is never left guessing. */}
+        <section style={S.section}>
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={detectResult.status === 'detecting'}
+            style={S.detectBtn}
+            data-testid="firstlaunch-detect"
+          >
+            {detectResult.status === 'detecting'
+              ? t('detecting_location')
+              : t('detect_location')}
+          </button>
+
+          {detectResult.status === 'ok' && (
+            <div style={S.detectOk} data-testid="firstlaunch-detect-ok">
+              <strong>{t('location_detected')}</strong>
+              <div style={S.detectLine}>
+                <span style={S.detectLabel}>{t('country_detected')}:</span>{' '}
+                <span>{detectResult.countryLabel}</span>
+              </div>
+              {detectResult.stateLabel && (
+                <div style={S.detectLine}>
+                  <span style={S.detectLabel}>{t('state_detected')}:</span>{' '}
+                  <span>{detectResult.stateLabel}</span>
+                </div>
+              )}
+              <div style={S.detectActions}>
+                <span style={S.detectInlineHint}>{t('use_detected_location')}</span>
+                <button type="button" onClick={clearDetected} style={S.detectClear}>
+                  {t('choose_manually')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {detectResult.status === 'failed' && (
+            <div style={S.detectFail} data-testid="firstlaunch-detect-failed">
+              <strong>{t('location_detection_failed')}</strong>
+              <div style={S.detectInlineHint}>{t('choose_manually')}</div>
+            </div>
+          )}
+        </section>
+
         <div style={S.actions}>
           <button type="button" onClick={handleSkip} style={S.skip}>
-            {t('firstLaunch.skip')}
+            {t('skip')}
           </button>
           <button
             type="button"
@@ -205,7 +299,7 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
             style={S.confirm}
             data-testid="firstlaunch-confirm"
           >
-            {t('firstLaunch.confirm')}
+            {t('continue')}
           </button>
         </div>
       </div>
@@ -263,5 +357,35 @@ const S = {
     flex: 1, padding: '0.75rem', borderRadius: '12px',
     border: 'none', background: '#22C55E', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
+  },
+  detectBtn: {
+    width: '100%', padding: '0.625rem', borderRadius: '10px',
+    border: '1px solid rgba(14,165,233,0.28)',
+    background: 'rgba(14,165,233,0.08)', color: '#0EA5E9',
+    fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', minHeight: '40px',
+  },
+  detectOk: {
+    marginTop: '0.5rem', padding: '0.625rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.25)',
+    color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.25rem',
+  },
+  detectFail: {
+    marginTop: '0.5rem', padding: '0.625rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(245,158,11,0.08)',
+    border: '1px solid rgba(245,158,11,0.22)',
+    color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.125rem',
+  },
+  detectLine: { fontSize: '0.8125rem', color: '#EAF2FF' },
+  detectLabel: { color: '#9FB3C8', fontWeight: 600 },
+  detectActions: {
+    marginTop: '0.125rem',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem',
+  },
+  detectInlineHint: { fontSize: '0.75rem', color: '#9FB3C8' },
+  detectClear: {
+    padding: '0.25rem 0.625rem', borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
+    color: '#9FB3C8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
   },
 };
