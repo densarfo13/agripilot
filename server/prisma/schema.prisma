@@ -1994,6 +1994,8 @@ model V2CropCycle {
   pestReports         V2PestReport[]
   issueReports        IssueReport[]
   verificationRecords VerificationRecord[]
+  taskPlans           CycleTaskPlan[]
+  recommendationSnapshot RecommendationSnapshot?
 
   @@index([profileId], map: "idx_v2_crop_cycle_profile")
   @@index([lifecycleStatus], map: "idx_v2_crop_cycle_lifecycle")
@@ -2010,6 +2012,60 @@ enum CropCycleStatus {
   harvested
   delayed
   failed
+}
+
+// ─── Per-cycle task plan (pending work) ──────────────────────
+// Separate from V2FarmTaskCompletion (which is completion-only).
+// This model tracks the forward-looking plan — one row per
+// week-indexed task template so the Today feed can surface
+// "what's due now" without re-deriving from crop logic.
+model CycleTaskPlan {
+  id            String    @id @default(uuid())
+  cropCycleId   String    @map("crop_cycle_id")
+  title         String
+  detail        String?
+  weekIndex     Int       @map("week_index")         // 0 = planting week, 1 = week 1, ...
+  dueDate       DateTime? @map("due_date")
+  status        String    @default("pending")         // pending | completed | skipped | overdue
+  priority      String    @default("medium")          // low | medium | high
+  completedAt   DateTime? @map("completed_at")
+  completedBy   String?   @map("completed_by")
+  note          String?
+  isTodayTask   Boolean   @default(false) @map("is_today_task")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  cropCycle V2CropCycle @relation(fields: [cropCycleId], references: [id], onDelete: Cascade)
+
+  @@index([cropCycleId], map: "idx_cycle_task_plan_cycle")
+  @@index([status], map: "idx_cycle_task_plan_status")
+  @@index([dueDate], map: "idx_cycle_task_plan_due")
+  @@map("cycle_task_plans")
+}
+
+// ─── Recommendation snapshot (frozen at cycle-creation time) ─
+// When a farmer picks a recommendation and starts a crop cycle,
+// we freeze the full recommendation payload here so their plan
+// stays stable even if the underlying scoring rules change later.
+model RecommendationSnapshot {
+  id             String   @id @default(uuid())
+  cropCycleId    String   @unique @map("crop_cycle_id")
+  score          Int
+  cropKey        String   @map("crop_key")
+  cropName       String   @map("crop_name")
+  stateCode      String?  @map("state_code")
+  farmType       String?  @map("farm_type")
+  why            Json?                                  // reasons[]
+  riskNotes      Json?    @map("risk_notes")
+  plantingWindow Json?    @map("planting_window")
+  harvestWindow  Json?    @map("harvest_window")
+  tags           Json?
+  rawPayload     Json?    @map("raw_payload")           // full source blob for auditability
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  cropCycle V2CropCycle @relation(fields: [cropCycleId], references: [id], onDelete: Cascade)
+
+  @@map("recommendation_snapshots")
 }
 
 // ─── Issue reports (farmer-reported problems) ────────────────
