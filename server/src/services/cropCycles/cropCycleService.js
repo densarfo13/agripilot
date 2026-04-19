@@ -33,6 +33,8 @@ import {
   getOverallRisk,
 } from '../risk/overallRiskEngine.js';
 import { resolveRegionProfile } from '../region/regionProfile.js';
+import { buildHarvestSummary } from '../feedback/cycleSummary.js';
+import { getNextCycleRecommendations } from '../feedback/nextCycleEngine.js';
 
 const prisma = new PrismaClient();
 
@@ -319,7 +321,134 @@ export async function submitHarvest({ user, cycleId, actualYieldKg, qualityBand,
     }
   } catch { /* non-fatal */ }
 
-  return { outcome: result.outcome };
+  // Build the farmer-facing summary + next-cycle options the
+  // PostHarvestSummaryPage consumes. Anything that fails here is
+  // non-fatal — the outcome is already persisted.
+  let summary = null;
+  let nextCycle = null;
+  try {
+    summary = buildHarvestSummary({
+      outcome: result.outcome,
+      cycle,
+      actions,
+    });
+  } catch { /* noop */ }
+  try {
+    const farmForRegion = await prisma.farmProfile.findFirst({
+      where: { id: cycle.profileId },
+      select: { country: true, stateCode: true, farmType: true, experienceLevel: true },
+    });
+    const region = farmForRegion ? resolveRegionProfile({
+      country: farmForRegion.country || 'US',
+      state: farmForRegion.stateCode,
+    }) : null;
+    // Load the farmer's prior outcomes so the confidence multiplier
+    // can reflect a track record, not just today's harvest.
+    const pastOutcomes = [];
+    try {
+      const rows = await prisma.harvestOutcome.findMany({
+        where: { farmProfileId: cycle.profileId },
+        take: 50,
+      });
+      pastOutcomes.push(...rows);
+    } catch { /* table not migrated → skip */ }
+    nextCycle = getNextCycleRecommendations({
+      outcome: result.outcome,
+      cycle,
+      region,
+      farmType: farmForRegion?.farmType,
+      beginnerLevel: farmForRegion?.experienceLevel,
+      currentMonth: new Date().getMonth() + 1,
+      pastOutcomes,
+    });
+  } catch { /* noop */ }
+
+  return {
+    outcome: result.outcome,
+    summary,
+    nextCycle,
+  };
+}
+
+/** getCycleSummary — fetch the persisted harvest + derive a fresh summary. */
+export async function getCycleSummary({ user, cycleId }) {
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  const cycle = await prisma.v2CropCycle.findUnique({
+    where: { id: cycleId },
+    include: { taskPlans: true },
+  });
+  if (!cycle) throw httpErr(404, 'cycle_not_found');
+  const farm = await prisma.farmProfile.findFirst({
+    where: { id: cycle.profileId, userId: user.id }, select: { id: true },
+  });
+  if (!farm && user.role !== 'admin') throw httpErr(403, 'forbidden');
+
+  let stored = null;
+  try {
+    stored = await prisma.harvestOutcome.findUnique({
+      where: { cropCycleId: cycle.id },
+    });
+  } catch { /* table not migrated */ }
+  if (!stored) return { summary: null, outcome: null };
+
+  const actions = await getRecentActions(prisma, { cropCycleId: cycle.id, limit: 200 });
+  const summary = buildHarvestSummary({ outcome: stored, cycle, actions });
+  return { summary, outcome: stored };
+}
+
+/** getNextCycleOptions — standalone endpoint in case the summary page is reloaded. */
+export async function getNextCycleOptions({ user, cycleId = null }) {
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  // Prefer the explicit cycleId; otherwise pick the most recent harvested cycle.
+  let cycle = null;
+  if (cycleId) {
+    cycle = await prisma.v2CropCycle.findUnique({ where: { id: cycleId } });
+  } else {
+    const farms = await prisma.farmProfile.findMany({
+      where: { userId: user.id }, select: { id: true },
+    });
+    if (farms.length) {
+      cycle = await prisma.v2CropCycle.findFirst({
+        where: { profileId: { in: farms.map((f) => f.id) }, lifecycleStatus: 'harvested' },
+        orderBy: { updatedAt: 'desc' },
+      });
+    }
+  }
+  if (!cycle) return { options: [], adjustments: null, headlineKey: null };
+
+  const farm = await prisma.farmProfile.findFirst({
+    where: { id: cycle.profileId }, select: {
+      userId: true, country: true, stateCode: true, farmType: true, experienceLevel: true,
+    },
+  });
+  if (!farm || (farm.userId !== user.id && user.role !== 'admin')) throw httpErr(403, 'forbidden');
+
+  let outcome = null;
+  try {
+    outcome = await prisma.harvestOutcome.findUnique({ where: { cropCycleId: cycle.id } });
+  } catch { /* noop */ }
+
+  const region = resolveRegionProfile({
+    country: farm.country || 'US', state: farm.stateCode,
+  });
+  const pastOutcomes = [];
+  try {
+    const rows = await prisma.harvestOutcome.findMany({
+      where: { farmProfileId: cycle.profileId },
+      take: 50,
+    });
+    pastOutcomes.push(...rows);
+  } catch { /* noop */ }
+
+  return getNextCycleRecommendations({
+    outcome: outcome || { cropKey: cycle.cropType },
+    cycle,
+    region,
+    farmType: farm.farmType,
+    beginnerLevel: farm.experienceLevel,
+    currentMonth: new Date().getMonth() + 1,
+    pastOutcomes,
+  });
 }
 
 /**

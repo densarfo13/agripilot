@@ -119,16 +119,29 @@ export default function FarmerTodayPage() {
   }
 
   async function handleModalSubmit(data) {
+    let harvestResponse = null;
     try {
       if (modal.mode === 'skip' && modal.task) {
         await skipCycleTask(modal.task.id, data.reason);
       } else if (modal.mode === 'issue' && activeCycle?.id) {
         await reportCycleIssue(activeCycle.id, data);
       } else if (modal.mode === 'harvest' && activeCycle?.id) {
-        await submitCycleHarvest(activeCycle.id, data);
+        harvestResponse = await submitCycleHarvest(activeCycle.id, data);
       }
     } finally {
       await reload();
+    }
+    // After a successful harvest, replace the "silent reload" with a
+    // landing on the post-harvest summary page, handing over the
+    // server's summary + next-cycle options via router state so the
+    // page can render without re-fetching.
+    if (modal.mode === 'harvest' && harvestResponse?.summary && activeCycle?.id) {
+      navigate(`/harvest/${activeCycle.id}/summary`, {
+        state: {
+          summary: harvestResponse.summary,
+          nextCycle: harvestResponse.nextCycle || null,
+        },
+      });
     }
   }
 

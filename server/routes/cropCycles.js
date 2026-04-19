@@ -21,6 +21,8 @@ import {
   submitHarvest,
   updateCycleStatus,
   getTodayFeedForUser,
+  getCycleSummary,
+  getNextCycleOptions,
 } from '../src/services/cropCycles/cropCycleService.js';
 
 // Crop-cycle routes are farmer-authored. Buyers and investors are
@@ -117,6 +119,13 @@ router.post('/:id/harvest', ...FARMER_SCOPE, express.json(), async (req, res) =>
   } catch (err) { handleErr(res, err); }
 });
 
+// ─── GET /api/v2/crop-cycles/:id/summary ───────────────────
+router.get('/:id/summary', ...FARMER_SCOPE, async (req, res) => {
+  try {
+    res.json(await getCycleSummary({ user: req.user, cycleId: req.params.id }));
+  } catch (err) { handleErr(res, err); }
+});
+
 export default router;
 
 // ─── Companion Today-feed router (mounted at /api/v2/farmer) ──
@@ -125,6 +134,14 @@ export function createFarmerTodayRouter() {
   r.get('/today', ...FARMER_SCOPE, async (req, res) => {
     try { res.json(await getTodayFeedForUser({ user: req.user })); }
     catch (err) { handleErr(res, err); }
+  });
+  r.get('/next-cycle-options', ...FARMER_SCOPE, async (req, res) => {
+    try {
+      res.json(await getNextCycleOptions({
+        user: req.user,
+        cycleId: typeof req.query?.cycleId === 'string' ? req.query.cycleId : null,
+      }));
+    } catch (err) { handleErr(res, err); }
   });
   return r;
 }

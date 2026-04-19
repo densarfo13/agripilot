@@ -72,3 +72,15 @@ export async function submitCycleHarvest(cycleId, { actualYieldKg, qualityBand, 
 export async function getTodayFeed() {
   return handle(await fetch('/api/v2/farmer/today', { credentials: 'include' }));
 }
+
+export async function getCycleSummary(cycleId) {
+  return handle(await fetch(
+    `/api/v2/crop-cycles/${encodeURIComponent(cycleId)}/summary`,
+    { credentials: 'include' },
+  ));
+}
+
+export async function getNextCycleOptions(cycleId = null) {
+  const q = cycleId ? `?cycleId=${encodeURIComponent(cycleId)}` : '';
+  return handle(await fetch(`/api/v2/farmer/next-cycle-options${q}`, { credentials: 'include' }));
+}
