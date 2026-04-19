@@ -4,7 +4,13 @@
  *
  *   mode='skip'     { onSubmit({ reason }) }
  *   mode='issue'    { onSubmit({ category, severity, description }) }
- *   mode='harvest'  { onSubmit({ actualYieldKg, qualityBand, notes }) }
+ *   mode='harvest'  { onSubmit({ harvestedAt, actualYieldKg, yieldUnit,
+ *                                qualityBand, issues, notes }) }
+ *
+ * Harvest mode is intentionally lean per the post-harvest spec:
+ * date → yield + unit → quality (good/average/poor) → multi-select
+ * issues → notes. Anything more is a crop-plan concern, not a
+ * one-screen capture flow.
  *
  * Fully localized, mobile-first, and accessible (role="dialog",
  * aria-modal, labels wired to inputs). No external form library.
@@ -14,7 +20,17 @@ import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 
 const ISSUE_CATEGORIES = ['pest', 'disease', 'water', 'soil', 'weather', 'other'];
 const SEVERITIES = ['low', 'medium', 'high'];
-const QUALITY_BANDS = ['poor', 'fair', 'good', 'excellent'];
+// Farmer-facing quality vocab stays the 3-band spec set (good /
+// average / poor). `average` normalizes to `fair` server-side.
+const QUALITY_OPTIONS = ['good', 'average', 'poor'];
+const HARVEST_UNITS = ['kg', 'lb', 'crate', 'bushel', 'bag'];
+// Post-harvest issue codes — the spec-declared set.
+const HARVEST_ISSUES = ['pest', 'drought', 'excess_rain', 'missed_tasks', 'poor_growth', 'other'];
+
+function todayIso() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
 
 export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
   const { t } = useAppSettings();
@@ -127,31 +143,86 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
 
         {mode === 'harvest' && (
           <>
-            <Field label={t('actionHome.harvest.yieldPrompt')}>
+            <Field label={t('actionHome.harvest.datePrompt') || 'Harvest date'}>
               <input
                 ref={firstFieldRef}
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.1"
-                value={form.actualYieldKg || ''}
-                onChange={set('actualYieldKg')}
+                type="date"
+                value={form.harvestedAt || todayIso()}
+                onChange={set('harvestedAt')}
+                max={todayIso()}
                 style={S.input}
-                data-testid="harvest-yield"
+                data-testid="harvest-date"
               />
             </Field>
+            <div style={S.inlineRow}>
+              <div style={{ ...S.fieldInline, flex: 2 }}>
+                <span style={S.label}>{t('actionHome.harvest.yieldPrompt')}</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.1"
+                  value={form.actualYieldKg || ''}
+                  onChange={set('actualYieldKg')}
+                  style={S.input}
+                  data-testid="harvest-yield"
+                />
+              </div>
+              <div style={{ ...S.fieldInline, flex: 1 }}>
+                <span style={S.label}>{t('actionHome.harvest.unitPrompt') || 'Unit'}</span>
+                <select
+                  value={form.yieldUnit || 'kg'}
+                  onChange={set('yieldUnit')}
+                  style={S.select}
+                  data-testid="harvest-unit"
+                >
+                  {HARVEST_UNITS.map((u) => (
+                    <option key={u} value={u}>{t(`harvest.unit.${u}`) || u}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <Field label={t('actionHome.harvest.qualityPrompt')}>
-              <select
-                value={form.qualityBand || ''}
-                onChange={set('qualityBand')}
-                style={S.select}
-                data-testid="harvest-quality"
-              >
-                <option value="">—</option>
-                {QUALITY_BANDS.map((q) => (
-                  <option key={q} value={q}>{t(`harvest.quality.${q}`) || q}</option>
-                ))}
-              </select>
+              <div style={S.chipRow} data-testid="harvest-quality">
+                {QUALITY_OPTIONS.map((q) => {
+                  const active = (form.qualityBand || '') === q;
+                  return (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => setForm((s) => ({ ...s, qualityBand: q }))}
+                      style={{ ...S.chip, ...(active ? S.chipActive : null) }}
+                      data-testid={`harvest-quality-${q}`}
+                    >
+                      {t(`harvest.quality.${q}`) || q}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+            <Field label={t('actionHome.harvest.issuesPrompt') || 'Issues encountered (optional)'}>
+              <div style={S.chipRow} data-testid="harvest-issues">
+                {HARVEST_ISSUES.map((iss) => {
+                  const selected = Array.isArray(form.issues) && form.issues.includes(iss);
+                  return (
+                    <button
+                      key={iss}
+                      type="button"
+                      onClick={() => setForm((s) => {
+                        const cur = Array.isArray(s.issues) ? s.issues : [];
+                        const next = cur.includes(iss)
+                          ? cur.filter((x) => x !== iss)
+                          : [...cur, iss];
+                        return { ...s, issues: next };
+                      })}
+                      style={{ ...S.chip, ...(selected ? S.chipActive : null) }}
+                      data-testid={`harvest-issue-${iss}`}
+                    >
+                      {t(`harvest.issue.${iss}`) || iss}
+                    </button>
+                  );
+                })}
+              </div>
             </Field>
             <Field label={t('actionHome.harvest.notesPrompt')}>
               <textarea
@@ -212,8 +283,11 @@ function sanitize(mode, form) {
   if (mode === 'harvest') {
     const n = Number(form.actualYieldKg);
     return {
+      harvestedAt: form.harvestedAt || todayIso(),
       actualYieldKg: Number.isFinite(n) && n >= 0 ? n : null,
+      yieldUnit: form.yieldUnit || 'kg',
       qualityBand: form.qualityBand || null,
+      issues: Array.isArray(form.issues) ? form.issues : [],
       notes: form.notes?.trim() || null,
     };
   }
@@ -282,4 +356,22 @@ const S = {
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
   },
   btnBusy: { opacity: 0.7, cursor: 'wait' },
+  inlineRow: { display: 'flex', gap: '0.5rem', alignItems: 'flex-end' },
+  fieldInline: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+  chipRow: { display: 'flex', flexWrap: 'wrap', gap: '0.375rem' },
+  chip: {
+    padding: '0.5rem 0.75rem',
+    borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF',
+    fontSize: '0.8125rem', fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: '40px',
+  },
+  chipActive: {
+    borderColor: '#22C55E',
+    background: 'rgba(34,197,94,0.14)',
+    color: '#22C55E',
+  },
 };

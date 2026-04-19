@@ -2246,6 +2246,9 @@ model HarvestOutcome {
   skippedTasksCount   Int?     @map("skipped_tasks_count")
   overdueTasksCount   Int?     @map("overdue_tasks_count")
   issueCount          Int?     @map("issue_count")
+  issueTags           Json?    @map("issue_tags")         // string[] e.g. ['pest','drought']
+  harvestedAt         DateTime? @map("harvested_at")      // farmer-reported harvest date
+  outcomeClass        String?   @map("outcome_class")      // successful | delayed | high_risk | failed
   notes               String?
   reportedAt          DateTime @default(now()) @map("reported_at")
   createdAt           DateTime @default(now()) @map("created_at")
@@ -2254,6 +2257,7 @@ model HarvestOutcome {
   @@index([farmProfileId], map: "idx_harvest_outcome_farm")
   @@index([cropKey], map: "idx_harvest_outcome_crop")
   @@index([qualityBand], map: "idx_harvest_outcome_quality")
+  @@index([outcomeClass], map: "idx_harvest_outcome_class")
   @@map("harvest_outcomes")
 }
 

@@ -180,29 +180,28 @@ export async function recordHarvestOutcome(prisma, { user, cycle, tasks = [], ac
   const outcome = computeHarvestOutcome({ cycle, tasks, actions, input });
   let row = null;
   try {
+    const payload = {
+      cropKey: outcome.cropKey,
+      actualYieldKg: outcome.actualYieldKg,
+      yieldUnit: outcome.yieldUnit || 'kg',
+      qualityBand: outcome.qualityBand,
+      completedTasksCount: outcome.completedTasksCount,
+      skippedTasksCount: outcome.skippedTasksCount,
+      overdueTasksCount: outcome.overdueTasksCount,
+      issueCount: outcome.issueCount,
+      issueTags: outcome.issues && outcome.issues.length ? outcome.issues : undefined,
+      harvestedAt: outcome.harvestedAt ? new Date(outcome.harvestedAt) : undefined,
+      outcomeClass: outcome.outcomeClass || undefined,
+      notes: outcome.notes,
+    };
     row = await prisma.harvestOutcome.upsert({
       where: { cropCycleId: cycle.id },
       create: {
         farmProfileId: cycle.profileId || null,
         cropCycleId: cycle.id,
-        cropKey: outcome.cropKey,
-        actualYieldKg: outcome.actualYieldKg,
-        qualityBand: outcome.qualityBand,
-        completedTasksCount: outcome.completedTasksCount,
-        skippedTasksCount: outcome.skippedTasksCount,
-        overdueTasksCount: outcome.overdueTasksCount,
-        issueCount: outcome.issueCount,
-        notes: outcome.notes,
+        ...payload,
       },
-      update: {
-        actualYieldKg: outcome.actualYieldKg,
-        qualityBand: outcome.qualityBand,
-        completedTasksCount: outcome.completedTasksCount,
-        skippedTasksCount: outcome.skippedTasksCount,
-        overdueTasksCount: outcome.overdueTasksCount,
-        issueCount: outcome.issueCount,
-        notes: outcome.notes,
-      },
+      update: payload,
     });
   } catch {
     row = null; // degrade if table not migrated

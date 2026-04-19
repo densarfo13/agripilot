@@ -287,7 +287,7 @@ export async function reportIssue({ user, cycleId, category, severity, descripti
  * and transitions the cycle to 'harvested' so downstream consumers
  * see a closed loop.
  */
-export async function submitHarvest({ user, cycleId, actualYieldKg, qualityBand, notes }) {
+export async function submitHarvest({ user, cycleId, actualYieldKg, yieldUnit, qualityBand, notes, issues, harvestedAt }) {
   if (!user?.id) throw httpErr(401, 'unauthenticated');
   const cycle = await prisma.v2CropCycle.findUnique({
     where: { id: cycleId },
@@ -306,7 +306,7 @@ export async function submitHarvest({ user, cycleId, actualYieldKg, qualityBand,
     cycle,
     tasks: cycle.taskPlans || [],
     actions,
-    input: { actualYieldKg, qualityBand, notes },
+    input: { actualYieldKg, yieldUnit, qualityBand, notes, issues, harvestedAt },
   });
 
   // Move the cycle into a terminal 'harvested' state if the current

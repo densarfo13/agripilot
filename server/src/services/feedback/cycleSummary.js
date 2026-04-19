@@ -71,6 +71,15 @@ function deriveWentWell(outcome, actions) {
  * improvement side. We keep the tone constructive: "heat stress
  * increased risk" not "you failed".
  */
+const ISSUE_TAG_KEY = Object.freeze({
+  pest:         'summary.issueTag.pest',
+  drought:      'summary.issueTag.drought',
+  excess_rain:  'summary.issueTag.excessRain',
+  missed_tasks: 'summary.issueTag.missedTasks',
+  poor_growth:  'summary.issueTag.poorGrowth',
+  other:        'summary.issueTag.other',
+});
+
 function deriveCouldImprove(outcome, cycle, actions) {
   const out = [];
   const completionRate = Number(outcome.completionRate) || 0;
@@ -79,6 +88,15 @@ function deriveCouldImprove(outcome, cycle, actions) {
   const q = String(outcome.qualityBand || '').toLowerCase();
   const klass = classifyHarvestOutcome(outcome);
   const timingDelta = deriveTimingDeltaDays(cycle);
+
+  // Surface farmer-reported issue tags first — they're the strongest
+  // signal we have about what hurt this cycle from the farmer's
+  // perspective. Up to two before the derived bullets kick in.
+  const issueTags = Array.isArray(outcome.issues) ? outcome.issues : [];
+  for (const tag of issueTags.slice(0, 2)) {
+    const key = ISSUE_TAG_KEY[tag];
+    if (key) out.push(key);
+  }
 
   if (skipped >= 3) out.push('summary.couldImprove.tooManySkips');
   else if (completionRate < 0.5 && completionRate > 0) out.push('summary.couldImprove.lowCompletion');
@@ -96,7 +114,16 @@ function deriveCouldImprove(outcome, cycle, actions) {
   if (q === 'poor') out.push('summary.couldImprove.qualityPoor');
   if (klass === OUTCOME_CLASS.FAILED) out.push('summary.couldImprove.consider_support');
 
-  return out.slice(0, 3);
+  // Dedupe while preserving order, then cap at 3.
+  const seen = new Set();
+  const capped = [];
+  for (const k of out) {
+    if (seen.has(k)) continue;
+    seen.add(k);
+    capped.push(k);
+    if (capped.length >= 3) break;
+  }
+  return capped;
 }
 
 const HEADLINE_KEY = Object.freeze({

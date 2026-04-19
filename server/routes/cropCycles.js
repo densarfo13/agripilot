@@ -113,7 +113,10 @@ router.post('/:id/harvest', ...FARMER_SCOPE, express.json(), async (req, res) =>
       user: req.user,
       cycleId: req.params.id,
       actualYieldKg: req.body?.actualYieldKg,
+      yieldUnit: req.body?.yieldUnit,
       qualityBand: req.body?.qualityBand,
+      issues: req.body?.issues,
+      harvestedAt: req.body?.harvestedAt,
       notes: req.body?.notes,
     }));
   } catch (err) { handleErr(res, err); }

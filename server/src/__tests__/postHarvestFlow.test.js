@@ -193,8 +193,69 @@ describe('getNextCycleRecommendations', () => {
 });
 
 // ─── i18n wire-up for every key the new screens reference ──
+// ─── Harvest input normalization ──────────────────────────
+import { normalizeHarvestInput } from '../services/feedback/harvestOutcome.js';
+
+describe('normalizeHarvestInput', () => {
+  it('accepts the new {issues, harvestedAt, yieldUnit} fields', () => {
+    const n = normalizeHarvestInput({
+      actualYieldKg: 22, yieldUnit: 'kg', qualityBand: 'good',
+      issues: ['pest', 'drought', 'bogus'], harvestedAt: '2026-04-10',
+      notes: '  heavy rain in week 6  ',
+    });
+    expect(n.actualYieldKg).toBe(22);
+    expect(n.yieldUnit).toBe('kg');
+    expect(n.qualityBand).toBe('good');
+    expect(n.issues).toEqual(['pest', 'drought']); // bogus dropped
+    expect(n.harvestedAt).toBeInstanceOf(Date);
+    expect(n.notes.length).toBeGreaterThan(0);
+  });
+
+  it('normalizes farmer-facing "average" quality to internal "fair"', () => {
+    expect(normalizeHarvestInput({ qualityBand: 'average' }).qualityBand).toBe('fair');
+  });
+
+  it('falls back to kg for unknown units', () => {
+    expect(normalizeHarvestInput({ yieldUnit: 'martian-sacks' }).yieldUnit).toBe('kg');
+  });
+
+  it('silently drops duplicate and invalid issue tags', () => {
+    expect(normalizeHarvestInput({ issues: ['pest', 'pest', 'NOPE', 'drought'] }).issues)
+      .toEqual(['pest', 'drought']);
+  });
+});
+
+// ─── Summary surfaces farmer-reported issue tags ──────────
+import { buildHarvestSummary as _buildSummary } from '../services/feedback/cycleSummary.js';
+
+describe('buildHarvestSummary — farmer-reported issues drive summary bullets', () => {
+  it('surfaces pest + drought tags from the farmer', () => {
+    const out = _buildSummary({
+      outcome: {
+        cropKey: 'tomato', actualYieldKg: 8, qualityBand: 'fair',
+        completedTasksCount: 5, skippedTasksCount: 1, issueCount: 0,
+        issues: ['pest', 'drought'],
+        completionRate: 0.83,
+      },
+      cycle: {},
+      actions: [],
+    });
+    expect(out.couldImprove).toContain('summary.issueTag.pest');
+    expect(out.couldImprove).toContain('summary.issueTag.drought');
+  });
+});
+
 const POST_HARVEST_KEYS = [
   'postHarvest.title', 'postHarvest.loadError', 'postHarvest.backToToday',
+  'postHarvest.startNext',
+  'actionHome.harvest.datePrompt', 'actionHome.harvest.unitPrompt',
+  'actionHome.harvest.issuesPrompt',
+  'harvest.unit.kg', 'harvest.unit.lb', 'harvest.unit.crate', 'harvest.unit.bag',
+  'harvest.quality.average',
+  'harvest.issue.pest', 'harvest.issue.drought', 'harvest.issue.excess_rain',
+  'harvest.issue.missed_tasks', 'harvest.issue.poor_growth', 'harvest.issue.other',
+  'summary.issueTag.pest', 'summary.issueTag.drought', 'summary.issueTag.excessRain',
+  'summary.issueTag.missedTasks', 'summary.issueTag.poorGrowth', 'summary.issueTag.other',
   'postHarvest.whatWentWell', 'postHarvest.whatCouldImprove',
   'postHarvest.metrics.completion', 'postHarvest.metrics.skipped',
   'postHarvest.metrics.issues', 'postHarvest.metrics.quality',
@@ -224,6 +285,13 @@ describe('post-harvest i18n: every key resolves in English', () => {
   });
 });
 
+// Abbreviations that legitimately match English in many languages
+// (kg, lb, bushel etc.). Having "kg" show as "kg" in French is
+// correct — it's not an English leak.
+const SHARED_UNIT_KEYS = new Set([
+  'harvest.unit.kg', 'harvest.unit.lb', 'harvest.unit.bushel',
+]);
+
 describe('post-harvest i18n: no English leak in non-English locales', () => {
   it.each(
     NON_EN_LOCALES.flatMap((lang) => POST_HARVEST_KEYS.map((key) => [lang, key])),
@@ -231,6 +299,7 @@ describe('post-harvest i18n: no English leak in non-English locales', () => {
     const en = t(key, 'en');
     const localized = t(key, lang);
     expect(localized).toBeTruthy();
+    if (SHARED_UNIT_KEYS.has(key)) return; // abbreviation shared with English
     expect(localized).not.toBe(en);
   });
 });

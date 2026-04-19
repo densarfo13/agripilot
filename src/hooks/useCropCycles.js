@@ -62,10 +62,14 @@ export async function reportCycleIssue(cycleId, { category, severity, descriptio
   }));
 }
 
-export async function submitCycleHarvest(cycleId, { actualYieldKg, qualityBand, notes } = {}) {
+export async function submitCycleHarvest(cycleId, {
+  actualYieldKg, yieldUnit, qualityBand, issues, harvestedAt, notes,
+} = {}) {
   return handle(await fetch(`/api/v2/crop-cycles/${encodeURIComponent(cycleId)}/harvest`, {
     ...JSON_POST,
-    body: JSON.stringify({ actualYieldKg, qualityBand, notes }),
+    body: JSON.stringify({
+      actualYieldKg, yieldUnit, qualityBand, issues, harvestedAt, notes,
+    }),
   }));
 }
 

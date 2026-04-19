@@ -126,6 +126,20 @@ export default function PostHarvestSummaryPage() {
 
       <HarvestSummaryCard summary={state.summary} />
 
+      {/* Primary CTA — dominant, always "Start next crop". Picks the
+          first available option (repeat_improved → switch_crop →
+          auto_pick) so the farmer can tap once and keep moving. */}
+      {state.nextCycle?.options?.length > 0 && (
+        <button
+          type="button"
+          style={S.btnPrimary}
+          onClick={() => handleOptionPick(state.nextCycle.options[0])}
+          data-testid="post-harvest-start-next"
+        >
+          {t('postHarvest.startNext') || 'Start next crop'}
+        </button>
+      )}
+
       <NextCycleOptions
         data={state.nextCycle}
         onPick={handleOptionPick}
@@ -168,5 +182,11 @@ const S = {
     alignSelf: 'center', padding: '0.625rem 1rem', borderRadius: '12px',
     border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
     color: '#9FB3C8', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+  },
+  btnPrimary: {
+    width: '100%', padding: '1rem', borderRadius: '14px',
+    border: 'none', background: '#22C55E', color: '#fff',
+    fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '56px',
+    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
   },
 };

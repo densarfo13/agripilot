@@ -18,6 +18,35 @@ import { deriveOutcomeClass } from './learningEngine.js';
 
 const QUALITY_BANDS = new Set(['poor', 'fair', 'good', 'excellent']);
 
+// Spec-declared issue codes. Anything outside this set is dropped so
+// the tuner only learns from curated categories.
+const ISSUE_TAGS = new Set([
+  'pest', 'drought', 'excess_rain', 'missed_tasks', 'poor_growth', 'other',
+]);
+
+function sanitizeIssues(raw) {
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : String(raw).split(',');
+  const clean = [];
+  for (const v of arr) {
+    const k = String(v || '').trim().toLowerCase();
+    if (ISSUE_TAGS.has(k) && !clean.includes(k)) clean.push(k);
+    if (clean.length >= 6) break;
+  }
+  return clean;
+}
+
+/**
+ * Some farmer-facing quality vocabularies ('average') don't match the
+ * internal band set. Normalize them into the four canonical bands so
+ * the scorer + learning engine see consistent values.
+ */
+const QUALITY_ALIAS = {
+  average: 'fair',
+  avg: 'fair',
+  ok: 'fair',
+};
+
 function toFiniteOrNull(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -25,10 +54,27 @@ function toFiniteOrNull(v) {
 
 export function normalizeHarvestInput(raw = {}) {
   const yieldKg = toFiniteOrNull(raw.actualYieldKg ?? raw.yieldKg ?? raw.yield);
-  const qraw = String(raw.qualityBand || raw.quality || '').toLowerCase();
+  const unitRaw = String(raw.yieldUnit || raw.unit || 'kg').toLowerCase();
+  const yieldUnit = ['kg', 'lb', 'crate', 'bushel', 'bag'].includes(unitRaw) ? unitRaw : 'kg';
+  let qraw = String(raw.qualityBand || raw.quality || '').toLowerCase();
+  if (QUALITY_ALIAS[qraw]) qraw = QUALITY_ALIAS[qraw];
   const quality = QUALITY_BANDS.has(qraw) ? qraw : null;
   const notes = typeof raw.notes === 'string' ? raw.notes.slice(0, 500) : null;
-  return { actualYieldKg: yieldKg, qualityBand: quality, notes };
+  const issues = sanitizeIssues(raw.issues || raw.issueTags);
+  const harvestedAt = (() => {
+    const d = raw.harvestedAt || raw.harvestDate;
+    if (!d) return null;
+    const parsed = d instanceof Date ? d : new Date(d);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+  })();
+  return {
+    actualYieldKg: yieldKg,
+    yieldUnit,
+    qualityBand: quality,
+    notes,
+    issues,
+    harvestedAt,
+  };
 }
 
 /**
@@ -75,16 +121,23 @@ export function computeHarvestOutcome({
     t.status === 'pending' && t.dueDate && new Date(t.dueDate).getTime() < harvestDate.getTime()
   ).length;
 
+  // Farmer-reported issues count toward the issue signal even when no
+  // IssueReport row was created — some farmers only tell us at
+  // harvest time.
+  const farmerIssues = (norm.issues || []).length;
   const outcomeDraft = {
     cropKey: cycle.cropType || cycle.cropKey || null,
     cropCycleId: cycle.id || null,
     actualYieldKg: norm.actualYieldKg,
+    yieldUnit: norm.yieldUnit,
     qualityBand,
     notes: norm.notes,
+    issues: norm.issues || [],
+    harvestedAt: (norm.harvestedAt || harvestDate).toISOString(),
     completedTasksCount: progress.completed,
     skippedTasksCount: progress.skipped,
     overdueTasksCount,
-    issueCount,
+    issueCount: issueCount + farmerIssues,
     completionRate,
     skipRate,
     durationDays,
