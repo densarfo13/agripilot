@@ -1983,14 +1983,95 @@ model V2CropCycle {
   plantingDate        DateTime  @map("planting_date")
   expectedHarvestDate DateTime? @map("expected_harvest_date")
   growthStage         String    @default("seedling") @map("growth_stage")
+  // Lifecycle status — see CropCycleStatus enum. Nullable until we
+  // backfill existing rows; new writes set it explicitly.
+  lifecycleStatus     CropCycleStatus? @map("lifecycle_status")
+  statusReason        String?          @map("status_reason")   // short note for delayed/failed
   updatedAt           DateTime  @updatedAt @map("updated_at")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   profile             FarmProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   pestReports         V2PestReport[]
+  issueReports        IssueReport[]
+  verificationRecords VerificationRecord[]
 
   @@index([profileId], map: "idx_v2_crop_cycle_profile")
+  @@index([lifecycleStatus], map: "idx_v2_crop_cycle_lifecycle")
   @@map("v2_crop_cycles")
+}
+
+// ─── Crop lifecycle status enum ──────────────────────────────
+enum CropCycleStatus {
+  planned
+  planting
+  growing
+  flowering
+  harvest_ready
+  harvested
+  delayed
+  failed
+}
+
+// ─── Issue reports (farmer-reported problems) ────────────────
+// Captures a farmer's "something is wrong" signal — pest, disease,
+// weather damage, etc. Feeds the NGO risk summary + acts as input
+// for future guidance. Keep the schema flat so non-technical staff
+// can triage rows directly in Prisma Studio.
+model IssueReport {
+  id               String   @id @default(uuid())
+  farmProfileId    String   @map("farm_profile_id")
+  cropCycleId      String?  @map("crop_cycle_id")
+  farmerId         String?  @map("farmer_id")
+  category         String                                // pest | disease | weather | water | soil | other
+  severity         String   @default("medium")           // low | medium | high
+  description      String
+  photoUrl         String?  @map("photo_url")
+  latitude         Float?
+  longitude        Float?
+  reportedAt       DateTime @default(now()) @map("reported_at")
+  resolvedAt       DateTime? @map("resolved_at")
+  status           String   @default("open")             // open | in_review | resolved | ignored
+  reviewerNote     String?  @map("reviewer_note")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  cropCycle        V2CropCycle? @relation(fields: [cropCycleId], references: [id], onDelete: SetNull)
+
+  @@index([farmProfileId], map: "idx_issue_report_farm")
+  @@index([farmerId], map: "idx_issue_report_farmer")
+  @@index([status], map: "idx_issue_report_status")
+  @@index([severity], map: "idx_issue_report_severity")
+  @@index([reportedAt], map: "idx_issue_report_reported")
+  @@map("issue_reports")
+}
+
+// ─── Verification records (NGO field audit trail) ────────────
+// Lightweight, append-only ledger documenting that a farmer's
+// claimed data (planting, harvest, issue) has been independently
+// verified — field visit, photo upload, peer confirmation, or
+// automated signal. Makes the NGO dashboard defensible without
+// requiring a full KYC workflow yet.
+model VerificationRecord {
+  id               String   @id @default(uuid())
+  farmProfileId    String   @map("farm_profile_id")
+  cropCycleId      String?  @map("crop_cycle_id")
+  subjectType      String   @map("subject_type")          // planting | harvest | issue | task | profile
+  subjectId        String?  @map("subject_id")            // PK of the thing being verified, opaque
+  method           String                                 // field_visit | photo | peer | automated | document
+  verifiedBy       String   @map("verified_by")           // userId | 'system' | 'peer:<farmerId>'
+  verifiedAt       DateTime @default(now()) @map("verified_at")
+  outcome          String   @default("confirmed")         // confirmed | rejected | inconclusive
+  confidence       Float?                                 // 0..1 for automated signals
+  evidenceUrl      String?  @map("evidence_url")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  cropCycle        V2CropCycle? @relation(fields: [cropCycleId], references: [id], onDelete: SetNull)
+
+  @@index([farmProfileId], map: "idx_verification_farm")
+  @@index([subjectType, subjectId], map: "idx_verification_subject")
+  @@index([verifiedAt], map: "idx_verification_verified")
+  @@map("verification_records")
 }
 
 model V2PestImage {

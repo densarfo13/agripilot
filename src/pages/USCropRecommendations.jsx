@@ -136,12 +136,14 @@ export default function USCropRecommendations() {
               crops={data.bestMatch}
               accent="#22C55E"
               t={t}
+              onOpenPlan={(c) => navigate('/crop-plan', { state: { crop: c, location: data.location } })}
             />
             <Bucket
               title={t('usRec.bucket.alsoConsider')}
               crops={data.alsoConsider}
               accent="#F59E0B"
               t={t}
+              onOpenPlan={(c) => navigate('/crop-plan', { state: { crop: c, location: data.location } })}
             />
             {data.notRecommendedNow?.length > 0 && (
               <Bucket
@@ -172,14 +174,14 @@ function SelectRow({ label, value, onChange, options }) {
   );
 }
 
-function Bucket({ title, crops, accent, muted, t }) {
+function Bucket({ title, crops, accent, muted, t, onOpenPlan }) {
   if (!crops || crops.length === 0) return null;
   return (
     <section style={S.bucket}>
       <h3 style={{ ...S.bucketTitle, color: accent }}>{title}</h3>
       <div style={S.cardGrid}>
         {crops.map((c) => (
-          <CropCard key={c.key || c.name} crop={c} muted={muted} t={t} />
+          <CropCard key={c.key || c.name} crop={c} muted={muted} t={t} onOpenPlan={onOpenPlan} />
         ))}
       </div>
     </section>
@@ -200,7 +202,7 @@ const TIMING_STYLE = {
   unknown:    { color: '#9FB3C8', bg: 'rgba(255,255,255,0.05)' },
 };
 
-function CropCard({ crop, muted, t }) {
+function CropCard({ crop, muted, t, onOpenPlan }) {
   const badges = (crop.tags || []).filter((tag) => BADGE_META[tag]);
   const riskStyle = RISK_STYLE[crop.riskLevel] || RISK_STYLE.low;
   const timingKey = crop.timing?.recommendation || 'unknown';
@@ -302,6 +304,12 @@ function CropCard({ crop, muted, t }) {
           </ol>
         </details>
       )}
+
+      {!muted && onOpenPlan && (
+        <button type="button" onClick={() => onOpenPlan(crop)} style={S.planBtn}>
+          {t('plan.startTracking')}
+        </button>
+      )}
     </article>
   );
 }
@@ -392,4 +400,17 @@ const S = {
   },
   actionLabel: { fontWeight: 600, display: 'block' },
   actionDetail: { color: '#9FB3C8', fontSize: '0.75rem', display: 'block' },
+  planBtn: {
+    marginTop: '0.75rem',
+    width: '100%',
+    padding: '0.75rem',
+    borderRadius: '12px',
+    border: '1px solid rgba(34,197,94,0.25)',
+    background: 'rgba(34,197,94,0.08)',
+    color: '#22C55E',
+    fontWeight: 700,
+    fontSize: '0.9375rem',
+    cursor: 'pointer',
+    minHeight: '44px',
+  },
 };
