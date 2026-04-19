@@ -8,18 +8,19 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireAuth, requireRole } from '../middleware/rbac.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
+
+const REVIEWER_SCOPE = [authenticate, requireAuth, requireRole('reviewer')];
+const READ_SCOPE     = [authenticate, requireAuth];
 
 const VALID_SUBJECT_TYPES = new Set(['planting', 'harvest', 'issue', 'task', 'profile']);
 const VALID_METHODS = new Set(['field_visit', 'photo', 'peer', 'automated', 'document']);
 const VALID_OUTCOMES = new Set(['confirmed', 'rejected', 'inconclusive']);
 
-router.post('/', authenticate, express.json(), async (req, res) => {
-  if (req.user.role !== 'admin' && req.user.role !== 'reviewer') {
-    return res.status(403).json({ error: 'forbidden' });
-  }
+router.post('/', ...REVIEWER_SCOPE, express.json(), async (req, res) => {
   const body = req.body || {};
   const subjectType = String(body.subjectType || '').toLowerCase();
   const method = String(body.method || '').toLowerCase();
@@ -47,7 +48,7 @@ router.post('/', authenticate, express.json(), async (req, res) => {
   res.status(201).json({ record });
 });
 
-router.get('/subject', authenticate, async (req, res) => {
+router.get('/subject', ...READ_SCOPE, async (req, res) => {
   const subjectType = String(req.query.subjectType || '').toLowerCase();
   const subjectId = String(req.query.subjectId || '');
   if (!VALID_SUBJECT_TYPES.has(subjectType) || !subjectId) {
@@ -60,7 +61,7 @@ router.get('/subject', authenticate, async (req, res) => {
   res.json({ records });
 });
 
-router.get('/farm/:id', authenticate, async (req, res) => {
+router.get('/farm/:id', ...READ_SCOPE, async (req, res) => {
   const records = await prisma.verificationRecord.findMany({
     where: { farmProfileId: req.params.id },
     orderBy: { verifiedAt: 'desc' },

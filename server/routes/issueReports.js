@@ -16,9 +16,13 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireAuth, requireRole } from '../middleware/rbac.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
+
+const REVIEWER_SCOPE = [authenticate, requireAuth, requireRole('reviewer')];
+const FARMER_SCOPE   = [authenticate, requireAuth];
 
 const VALID_CATEGORIES = new Set(['pest', 'disease', 'weather', 'water', 'soil', 'other']);
 const VALID_SEVERITIES = new Set(['low', 'medium', 'high']);
@@ -40,7 +44,7 @@ function normalize(body) {
 }
 
 // ─── POST /api/v2/issues — farmer files a new issue ─────────
-router.post('/', authenticate, express.json(), async (req, res) => {
+router.post('/', ...FARMER_SCOPE, express.json(), async (req, res) => {
   const data = normalize(req.body || {});
   if (!data.category) return res.status(400).json({ error: 'invalid_category' });
   if (!data.description || data.description.length < 3) {
@@ -80,7 +84,7 @@ router.post('/', authenticate, express.json(), async (req, res) => {
 });
 
 // ─── GET /api/v2/issues/my ─────────────────────────────────
-router.get('/my', authenticate, async (req, res) => {
+router.get('/my', ...FARMER_SCOPE, async (req, res) => {
   const farms = await prisma.farmProfile.findMany({
     where: { userId: req.user.id },
     select: { id: true },
@@ -97,7 +101,7 @@ router.get('/my', authenticate, async (req, res) => {
 });
 
 // ─── GET /api/v2/issues/:id ────────────────────────────────
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', ...FARMER_SCOPE, async (req, res) => {
   const issue = await prisma.issueReport.findUnique({
     where: { id: req.params.id },
   });
@@ -115,10 +119,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // ─── PATCH /api/v2/issues/:id/status — reviewer action ─────
-router.patch('/:id/status', authenticate, express.json(), async (req, res) => {
-  if (req.user.role !== 'admin' && req.user.role !== 'reviewer') {
-    return res.status(403).json({ error: 'forbidden' });
-  }
+router.patch('/:id/status', ...REVIEWER_SCOPE, express.json(), async (req, res) => {
   const status = String(req.body?.status || '').toLowerCase();
   if (!VALID_STATUSES.has(status)) return res.status(400).json({ error: 'invalid_status' });
 
@@ -138,10 +139,7 @@ router.patch('/:id/status', authenticate, express.json(), async (req, res) => {
 });
 
 // ─── GET /api/v2/issues/ngo/list ───────────────────────────
-router.get('/ngo/list', authenticate, async (req, res) => {
-  if (req.user.role !== 'admin' && req.user.role !== 'reviewer') {
-    return res.status(403).json({ error: 'forbidden' });
-  }
+router.get('/ngo/list', ...REVIEWER_SCOPE, async (req, res) => {
   const where = {};
   if (req.query.status && VALID_STATUSES.has(String(req.query.status))) where.status = String(req.query.status);
   if (req.query.severity && VALID_SEVERITIES.has(String(req.query.severity))) where.severity = String(req.query.severity);

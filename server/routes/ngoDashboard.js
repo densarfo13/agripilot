@@ -15,21 +15,21 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireAuth, requireRole } from '../middleware/rbac.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-function requireReviewer(req, res, next) {
-  if (req.user.role !== 'admin' && req.user.role !== 'reviewer') {
-    return res.status(403).json({ error: 'forbidden' });
-  }
-  next();
-}
+// NGO endpoints are reviewer/admin only. Route-level stack is:
+// authenticate (populates req.user) → requireAuth (401 guard) →
+// requireRole('reviewer') (admin bypasses via the super-role list).
+const requireReviewer = requireRole('reviewer');
+const NGO_SCOPE = [authenticate, requireAuth, requireReviewer];
 
 const ACTIVE_WINDOW_DAYS = 30;
 
 // ─── GET /api/v2/ngo/overview ──────────────────────────────
-router.get('/overview', authenticate, requireReviewer, async (_req, res) => {
+router.get('/overview', ...NGO_SCOPE, async (_req, res) => {
   const now = new Date();
   const activeSince = new Date(now.getTime() - ACTIVE_WINDOW_DAYS * 86_400_000);
 
@@ -67,7 +67,7 @@ router.get('/overview', authenticate, requireReviewer, async (_req, res) => {
 });
 
 // ─── GET /api/v2/ngo/risk-summary ──────────────────────────
-router.get('/risk-summary', authenticate, requireReviewer, async (_req, res) => {
+router.get('/risk-summary', ...NGO_SCOPE, async (_req, res) => {
   // For each open/in-review issue with severity >= medium, surface
   // the farm + farmer context so the NGO can triage from one list.
   const issues = await prisma.issueReport.findMany({
@@ -101,7 +101,7 @@ router.get('/risk-summary', authenticate, requireReviewer, async (_req, res) => 
 });
 
 // ─── GET /api/v2/ngo/crop-analytics ────────────────────────
-router.get('/crop-analytics', authenticate, requireReviewer, async (_req, res) => {
+router.get('/crop-analytics', ...NGO_SCOPE, async (_req, res) => {
   const rows = await prisma.v2CropCycle.groupBy({
     by: ['cropType', 'lifecycleStatus'],
     _count: { _all: true },
@@ -125,7 +125,7 @@ router.get('/crop-analytics', authenticate, requireReviewer, async (_req, res) =
 // Farmers needing help now: open high-severity issues OR 3+ overdue
 // tasks OR 14+ days of inactivity. Returns actionable rows with
 // farm + last-signal context so the NGO can triage directly.
-router.get('/intervention', authenticate, requireReviewer, async (req, res) => {
+router.get('/intervention', ...NGO_SCOPE, async (req, res) => {
   const stateCode = typeof req.query.state === 'string' ? req.query.state.toUpperCase() : null;
   const now = new Date();
   const inactivityCutoff = new Date(now.getTime() - 14 * 86_400_000);
@@ -182,7 +182,7 @@ router.get('/intervention', authenticate, requireReviewer, async (req, res) => {
 });
 
 // ─── GET /api/v2/ngo/inactive-farmers ──────────────────────
-router.get('/inactive-farmers', authenticate, requireReviewer, async (req, res) => {
+router.get('/inactive-farmers', ...NGO_SCOPE, async (req, res) => {
   const days = Math.max(7, Math.min(90, parseInt(req.query.days, 10) || 14));
   const cutoff = new Date(Date.now() - days * 86_400_000);
   const farms = await prisma.farmProfile.findMany({
@@ -197,7 +197,7 @@ router.get('/inactive-farmers', authenticate, requireReviewer, async (req, res) 
 // ─── GET /api/v2/ngo/overdue-clusters ──────────────────────
 // Overdue task counts grouped by cycle → farm. Useful for spotting
 // a single farm with many stalled cycles at once.
-router.get('/overdue-clusters', authenticate, requireReviewer, async (_req, res) => {
+router.get('/overdue-clusters', ...NGO_SCOPE, async (_req, res) => {
   const now = new Date();
   const groups = await prisma.cycleTaskPlan.groupBy({
     by: ['cropCycleId'],
@@ -230,7 +230,7 @@ router.get('/overdue-clusters', authenticate, requireReviewer, async (_req, res)
 });
 
 // ─── GET /api/v2/ngo/harvest-analytics ─────────────────────
-router.get('/harvest-analytics', authenticate, requireReviewer, async (_req, res) => {
+router.get('/harvest-analytics', ...NGO_SCOPE, async (_req, res) => {
   // V2HarvestRecord already exists in the schema (farmProfileId + totals).
   const recent = await prisma.v2HarvestRecord.findMany({
     orderBy: { createdAt: 'desc' },

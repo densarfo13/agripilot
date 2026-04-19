@@ -2517,6 +2517,11 @@ model EmailLog {
 model V2HarvestRecord {
   id                  String   @id @default(uuid())
   farmId              String   @map("farm_id")
+  // Optional link to a specific V2CropCycle so harvest totals can be
+  // rolled into per-cycle progress. Nullable for legacy rows and
+  // for farmers who report a harvest without having started a
+  // tracked cycle first.
+  cropCycleId         String?  @map("crop_cycle_id")
   cropId              String   @map("crop_id")
   cropLabel           String   @map("crop_label")
   harvestDate         DateTime @map("harvest_date")
@@ -2536,6 +2541,7 @@ model V2HarvestRecord {
 
   farm                FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
+  @@unique([cropCycleId], map: "uq_harvest_records_cycle")
   @@index([farmId], map: "idx_harvest_records_farm")
   @@index([farmId, harvestDate], map: "idx_harvest_records_farm_date")
   @@index([cropId], map: "idx_harvest_records_crop")
