@@ -15,6 +15,8 @@ import {
   filterCropsByBeginnerStatus, filterCropsByFarmSize,
   categorizeCropsByFit, pickTopCrop,
 } from '../../utils/onboardingCropFilter.js';
+import { getRecommendationReasons } from '../../utils/getRecommendationReasons.js';
+import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 
 const BEGINNER_FRIENDLY = new Set([
   'tomato', 'pepper', 'lettuce', 'beans', 'bush_beans',
@@ -33,10 +35,11 @@ const STATUS_LABEL_KEY = {
 };
 
 export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
-  const { t } = useAppSettings();
+  const { t, language } = useAppSettings();
   const [state, setState] = useState({ loading: true, error: null, data: null });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showNotRecommended, setShowNotRecommended] = useState(false);
+  const [showAllCrops, setShowAllCrops] = useState(false);
 
   const isBeginner = onboarding?.experience === 'new';
   const size = onboarding?.farmSize?.size;
@@ -83,9 +86,24 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
     : best;
   const hasMoreAdvanced = isBeginner && best.length > 4 && !showAdvanced;
 
+  function handlePick(crop) {
+    // Carry the full onboarding + scoring context alongside the crop
+    // so downstream screens (crop plan, etc.) can show "why" without
+    // re-fetching.
+    onPick?.({
+      ...crop,
+      onboardingContext: {
+        location: onboarding?.location,
+        farmSize: onboarding?.farmSize,
+        farmType,
+        beginnerLevel: isBeginner ? 'beginner' : 'intermediate',
+        language,
+      },
+    });
+  }
   function pickBestForMe() {
     const top = pickTopCrop(best.length ? best : possible);
-    if (top) onPick?.(top);
+    if (top) handlePick(top);
   }
 
   return (
@@ -112,19 +130,45 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
             {t('onboarding.crops.pickBest')}
           </button>
 
-          <Section title={t('onboarding.crops.best')} crops={visibleBest} isBeginner={isBeginner} onPick={onPick} t={t} accent="#22C55E" />
+          {/* Low-confidence fallback — when nothing's "best" and
+              the server didn't surface much either, tell the farmer
+              honestly instead of faking a top pick. */}
+          {best.length === 0 && possible.length === 0 && (
+            <div style={S.fallback} data-testid="onboarding-low-confidence">
+              <div style={S.fallbackTitle}>{t('onboarding.crops.lowConfidence')}</div>
+              <p style={S.fallbackBody}>{t('onboarding.crops.lowConfidenceHint')}</p>
+            </div>
+          )}
+
+          <Section title={t('onboarding.crops.best')} crops={visibleBest} isBeginner={isBeginner}
+                   onboarding={onboarding} language={language} onPick={handlePick} t={t} accent="#22C55E" />
           {hasMoreAdvanced && (
             <button type="button" onClick={() => setShowAdvanced(true)} style={S.seeMore}>
               {t('onboarding.crops.seeMore')}
             </button>
           )}
 
-          <Section title={t('onboarding.crops.possible')} crops={possible} isBeginner={isBeginner} onPick={onPick} t={t} accent="#F59E0B" />
+          <Section title={t('onboarding.crops.possible')} crops={possible} isBeginner={isBeginner}
+                   onboarding={onboarding} language={language} onPick={handlePick} t={t} accent="#F59E0B" />
 
-          {notRecommended.length > 0 && (
-            <details open={showNotRecommended} onToggle={(e) => setShowNotRecommended(e.currentTarget.open)}>
+          {/* Advanced override — reveal low-fit / experimental crops. */}
+          <label style={S.overrideRow}>
+            <input
+              type="checkbox"
+              checked={showAllCrops}
+              onChange={(e) => setShowAllCrops(e.target.checked)}
+              data-testid="onboarding-show-all-crops"
+            />
+            <span style={S.overrideLabel}>{t('onboarding.crops.showAll')}</span>
+          </label>
+
+          {(showAllCrops || notRecommended.length > 0) && notRecommended.length > 0 && (
+            <details open={showAllCrops || showNotRecommended}
+                     onToggle={(e) => setShowNotRecommended(e.currentTarget.open)}>
               <summary style={S.notRecSummary}>{t('onboarding.crops.notRecommended')}</summary>
-              <Section crops={notRecommended} isBeginner={isBeginner} onPick={onPick} t={t} accent="#6F8299" muted />
+              <Section crops={notRecommended} isBeginner={isBeginner}
+                       onboarding={onboarding} language={language}
+                       onPick={handlePick} t={t} accent="#6F8299" muted />
             </details>
           )}
         </>
@@ -137,28 +181,46 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
   );
 }
 
-function Section({ title, crops, isBeginner, onPick, t, accent, muted }) {
+function Section({ title, crops, isBeginner, onboarding, language, onPick, t, accent, muted }) {
   if (!crops || crops.length === 0) return null;
   return (
     <section style={S.section}>
       {title && <h3 style={{ ...S.sectionTitle, color: accent }}>{title}</h3>}
       <div style={S.grid}>
         {crops.map((c) => (
-          <CropCard key={c.crop} crop={c} isBeginner={isBeginner} onPick={onPick} t={t} muted={muted} />
+          <CropCard
+            key={c.crop}
+            crop={c}
+            isBeginner={isBeginner}
+            onboarding={onboarding}
+            language={language}
+            onPick={onPick}
+            t={t}
+            muted={muted}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function CropCard({ crop, isBeginner, onPick, t, muted }) {
+function CropCard({ crop, isBeginner, onboarding, language, onPick, t, muted }) {
   const beginnerFriendly = BEGINNER_FRIENDLY.has(crop.crop);
   const badge = BADGE_LABEL_KEY[crop.fitLevel] || BADGE_LABEL_KEY.low;
   const statusLabel = crop.plantingStatus && STATUS_LABEL_KEY[crop.plantingStatus]
     ? t(STATUS_LABEL_KEY[crop.plantingStatus]) : null;
-  const primaryReason = Array.isArray(crop.reasons) && crop.reasons.length
-    ? crop.reasons[0]
-    : (Array.isArray(crop.riskNotes) && crop.riskNotes.length ? crop.riskNotes[0] : null);
+  const displayName = getCropDisplayName(crop.crop, language);
+  const reasons = getRecommendationReasons({
+    crop,
+    region: {
+      regionLabel: onboarding?.location?.stateCode,
+      country: onboarding?.location?.country,
+    },
+    season: { currentMonth: new Date().getMonth() + 1, plantingStatus: crop.plantingStatus },
+    farmSize: onboarding?.farmSize?.size,
+    beginnerLevel: isBeginner ? 'beginner' : 'intermediate',
+    farmType: onboarding?.farmType,
+  }, t);
 
   return (
     <button
@@ -168,7 +230,7 @@ function CropCard({ crop, isBeginner, onPick, t, muted }) {
       data-testid={`onboarding-crop-${crop.crop}`}
     >
       <div style={S.cardHead}>
-        <span style={S.cardName}>{crop.cropName || crop.crop}</span>
+        <span style={S.cardName}>{displayName}</span>
         <span style={{ ...S.badge, background: BADGE_COLOR[crop.fitLevel] || '#9FB3C8' }}>
           {t(badge)}
         </span>
@@ -178,8 +240,15 @@ function CropCard({ crop, isBeginner, onPick, t, muted }) {
           <span style={S.beginnerTag}>{t('onboarding.fit.beginnerFriendly')}</span>
         )}
         {statusLabel && <span style={S.status}>{statusLabel}</span>}
+        {crop.fitLevel === 'low' && (
+          <span style={S.lowFitTag}>{t('onboarding.fit.lowFitLabel')}</span>
+        )}
       </div>
-      {primaryReason && <p style={S.reason}>{primaryReason}</p>}
+      {reasons.length > 0 ? (
+        <ul style={S.reasonList}>
+          {reasons.map((r, i) => <li key={i} style={S.reasonItem}>{r}</li>)}
+        </ul>
+      ) : null}
     </button>
   );
 }
@@ -242,6 +311,26 @@ const S = {
     background: 'rgba(255,255,255,0.04)', color: '#9FB3C8',
   },
   reason: { fontSize: '0.8125rem', color: '#9FB3C8', margin: '0.125rem 0 0', lineHeight: 1.4 },
+  reasonList: { margin: '0.25rem 0 0', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' },
+  reasonItem: { fontSize: '0.8125rem', color: '#9FB3C8', lineHeight: 1.4 },
+  lowFitTag: {
+    padding: '0.125rem 0.5rem', borderRadius: '999px',
+    fontSize: '0.6875rem', fontWeight: 700,
+    background: 'rgba(239,68,68,0.12)', color: '#FCA5A5',
+  },
+  fallback: {
+    padding: '0.875rem 1rem', borderRadius: '14px',
+    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+    color: '#EAF2FF',
+  },
+  fallbackTitle: { fontSize: '0.9375rem', fontWeight: 700, color: '#F59E0B' },
+  fallbackBody: { fontSize: '0.8125rem', color: '#9FB3C8', margin: '0.25rem 0 0', lineHeight: 1.4 },
+  overrideRow: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.5rem 0', fontSize: '0.8125rem', color: '#9FB3C8',
+    cursor: 'pointer',
+  },
+  overrideLabel: { userSelect: 'none' },
   seeMore: {
     alignSelf: 'center', padding: '0.5rem 0.875rem', borderRadius: '10px',
     border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',

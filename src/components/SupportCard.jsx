@@ -3,7 +3,15 @@ import { createSupportRequest } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { useTranslation } from '../i18n/index.js';
 
-export default function SupportCard() {
+/**
+ * SupportCard — farmer contact form. Optionally auto-attaches a
+ * context payload (farmer ID, location, selected crop, stage, last
+ * issue) so the admin receiving the request doesn't have to chase
+ * the farmer for basic facts.
+ *
+ *   <SupportCard context={{ farmerUuid, location, crop, stage, lastIssue }} />
+ */
+export default function SupportCard({ context }) {
   const { t } = useTranslation();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -18,16 +26,52 @@ export default function SupportCard() {
     setResult(null);
 
     try {
-      await createSupportRequest({ subject: subject.trim(), message: message.trim() });
+      await createSupportRequest({
+        subject: subject.trim(),
+        message: message.trim(),
+        // Context is a sibling field so admin tooling can render it
+        // separately from the farmer-written message. Server must
+        // accept arbitrary JSON here and persist it on the ticket.
+        context: buildContextPayload(context),
+      });
       setResult({ ok: true, text: t('support.sent') });
       setSubject('');
       setMessage('');
-      safeTrackEvent('support.requested');
+      safeTrackEvent('support.requested', {
+        hasContext: !!context,
+        hasCrop: !!context?.crop,
+        hasLocation: !!context?.location,
+      });
     } catch (err) {
       setResult({ ok: false, text: err.message || t('support.failed') });
     } finally {
       setSending(false);
     }
+  }
+
+  function buildContextPayload(ctx) {
+    if (!ctx || typeof ctx !== 'object') return null;
+    // Shape mirrors what a reviewer dashboard wants to display.
+    return {
+      farmerUuid: ctx.farmerUuid || null,
+      location: ctx.location ? {
+        country: ctx.location.country || null,
+        stateCode: ctx.location.stateCode || null,
+        city: ctx.location.city || null,
+      } : null,
+      crop: ctx.crop ? {
+        cropKey: ctx.crop.cropKey || ctx.crop.crop || null,
+        cropName: ctx.crop.cropName || null,
+      } : null,
+      stage: ctx.stage || null,
+      lastIssue: ctx.lastIssue ? {
+        category: ctx.lastIssue.category || null,
+        severity: ctx.lastIssue.severity || null,
+        status: ctx.lastIssue.status || null,
+        id: ctx.lastIssue.id || null,
+      } : null,
+      capturedAt: new Date().toISOString(),
+    };
   }
 
   return (

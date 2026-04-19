@@ -441,6 +441,42 @@ const T = {
   'onboarding.status.wait':              { en: 'Wait',           fr: 'Attendre',        sw: 'Subiri',            ha: 'Jira',              tw: 'Twɛn',             hi: 'प्रतीक्षा करें' },
   'onboarding.status.avoid':             { en: 'Avoid',          fr: 'Éviter',          sw: 'Epuka',             ha: 'Guji',              tw: 'Ntoa',            hi: 'टालें' },
 
+  'onboarding.crops.showAll':            { en: 'Show low-fit / experimental crops', fr: 'Cultures expérimentales', sw: 'Onyesha mazao ya majaribio', ha: 'Nuna amfani na gwaji', tw: 'Kyerɛ afudeɛ a ɛnyɛ pa', hi: 'कम अनुकूल / प्रायोगिक फसलें दिखाएँ' },
+  'onboarding.crops.lowConfidence':      { en: 'No strong crop match right now', fr: 'Pas de correspondance forte', sw: 'Hakuna zao linalofaa sana sasa', ha: 'Babu amfani mai dacewa sosai', tw: 'Afudeɛ pa nni hɔ seesei', hi: 'अभी कोई मजबूत फसल मेल नहीं' },
+  'onboarding.crops.lowConfidenceHint':  { en: "Confirm your location for better recommendations, or browse all crops.", fr: "Confirmez votre lieu pour de meilleures recommandations.", sw: 'Thibitisha eneo kwa mapendekezo bora.', ha: 'Tabbatar da wuri don shawara mafi kyau.', tw: 'Si wo man pi ma nhyehyɛeɛ pa.', hi: 'बेहतर सुझाव के लिए स्थान की पुष्टि करें।' },
+  'onboarding.fit.lowFitLabel':          { en: 'Low fit',        fr: 'Faible',          sw: 'Hafifu',            ha: 'Rauni',             tw: 'Ɛnyɛ pa',         hi: 'कमज़ोर' },
+
+  // Recommendation reasons (used by getRecommendationReasons)
+  'recReason.highFit':                   { en: 'Fits your climate and season.',      fr: 'Convient à votre climat.',   sw: 'Inafaa hali ya hewa na msimu.', ha: 'Ya dace da yanayinku.', tw: 'Ɛfata wo mu ewim ne berɛ.', hi: 'आपकी जलवायु और मौसम के अनुरूप।' },
+  'recReason.highFitInRegion':           { en: 'Strong fit for {region}.',           fr: 'Idéal pour {region}.',        sw: 'Inafaa sana kwa {region}.',    ha: 'Ya dace sosai da {region}.',  tw: 'Ɛfata {region} yie.',     hi: '{region} के लिए उत्तम।' },
+  'recReason.mediumFit':                 { en: 'Worth considering in your area.',    fr: 'À envisager chez vous.',      sw: 'Inafaa kuzingatia.',          ha: 'Yana da kyau a yi tunani.',  tw: 'Ɛyɛ nea wobɛsusu ho.',     hi: 'आपके क्षेत्र में विचारणीय।' },
+  'recReason.plantNow':                  { en: 'Planting window is currently open.', fr: 'Fenêtre de plantation ouverte.', sw: 'Dirisha la kupanda liko wazi.', ha: 'Lokacin shuka ya buɗe.', tw: 'Dua berɛ abue.',          hi: 'बोवाई की अवधि अभी खुली है।' },
+  'recReason.plantSoon':                 { en: 'Planting window opens soon.',         fr: 'Fenêtre bientôt.',            sw: 'Dirisha la kupanda litafunguka hivi karibuni.', ha: 'Lokacin shuka zai buɗe ba da daɗewa ba.', tw: 'Dua berɛ rebɛbue.', hi: 'बोवाई की अवधि जल्द खुलेगी।' },
+  'recReason.beginnerFriendly':          { en: 'Beginner-friendly.',                  fr: 'Facile à débuter.',           sw: 'Rahisi kwa wapya.',            ha: 'Mai sauƙi.',                  tw: 'Ɛnyɛ den.',                hi: 'शुरुआती अनुकूल।' },
+  'recReason.goodForSmallFarms':         { en: 'Good for small farms in your region.', fr: 'Bon pour petites fermes.',   sw: 'Nzuri kwa mashamba madogo.',   ha: 'Ya dace da ƙananan gonaki.',  tw: 'Ɛfata afuo ketewa.',       hi: 'आपके क्षेत्र के छोटे खेतों के लिए अच्छा।' },
+  'recReason.strongMarket':              { en: 'Strong market demand in your region.', fr: 'Forte demande locale.',       sw: 'Soko imara katika eneo lako.', ha: 'Kasuwa mai ƙarfi.',           tw: 'Adwa a ɛyɛ den.',          hi: 'आपके क्षेत्र में मजबूत बाज़ार।' },
+  'recReason.climateFit':                { en: 'Your climate suits this crop.',        fr: 'Climat adapté.',             sw: 'Hali ya hewa inafaa.',        ha: 'Yanayi ya dace.',             tw: 'W\'ewim fata.',            hi: 'आपकी जलवायु उपयुक्त है।' },
+  'recReason.seasonFit':                 { en: 'In the typical planting window.',      fr: 'Bonne saison.',              sw: 'Ndani ya msimu.',              ha: 'A cikin lokacin shuka.',     tw: 'Dua berɛ mu.',             hi: 'सामान्य बोवाई की अवधि में।' },
+
+  // Form validation
+  'validation.required':                 { en: 'This field is required.', fr: 'Champ requis.', sw: 'Inahitajika.', ha: 'Ana buƙata.', tw: 'Ɛho hia.',        hi: 'यह फ़ील्ड आवश्यक है।' },
+  'validation.stateRequiredForUs':       { en: 'Select a state for U.S. farms.', fr: 'État requis.', sw: 'Jimbo linahitajika.', ha: 'Ana buƙatar jiha.', tw: 'Man mu si hia.', hi: 'यू.एस. के लिए राज्य आवश्यक।' },
+  'validation.growingStyleRequired':     { en: 'Pick a growing style for your backyard.', fr: 'Choisissez un style.', sw: 'Chagua mtindo wa kukua.', ha: 'Zaɓi salon girma.', tw: 'Yi dua kwan bi.', hi: 'उगाने का तरीका चुनें।' },
+  'validation.invalidNumber':            { en: 'Enter a positive number.', fr: 'Nombre positif.', sw: 'Weka nambari zaidi ya sifuri.', ha: 'Sanya lamba mai inganci.', tw: 'Fa nsɛmma pa bɛto mu.', hi: 'एक सकारात्मक संख्या दर्ज करें।' },
+  'validation.invalidUnit':              { en: 'Pick an allowed unit.', fr: 'Unité invalide.', sw: 'Chagua kizio sahihi.', ha: 'Zaɓi ma\'auni mai karba.', tw: 'Yi susudeɛ a ɛfata.', hi: 'मान्य इकाई चुनें।' },
+  'validation.invalidChoice':            { en: 'Choose a valid option.', fr: 'Choix invalide.', sw: 'Chagua chaguo sahihi.', ha: 'Zaɓi madaidaici.', tw: 'Yi nea ɛfata.', hi: 'मान्य विकल्प चुनें।' },
+  'validation.sizeTooLarge':             { en: 'Size looks unusually large — double-check.', fr: 'Taille trop grande.', sw: 'Ukubwa mkubwa sana.', ha: 'Girma ya yi yawa.', tw: 'Ɛkɛseɛ dodo.', hi: 'आकार बहुत बड़ा लगता है — जाँचें।' },
+
+  // Crop stage labels (used by getCropStage)
+  'stage.planned':           { en: 'Planned',           fr: 'Planifié',     sw: 'Imepangwa',       ha: 'Tsara',         tw: 'Nhyehyɛe',      hi: 'योजना' },
+  'stage.land_preparation':  { en: 'Land preparation',  fr: 'Préparation',  sw: 'Kuandaa ardhi',   ha: 'Shirya ƙasa',   tw: 'Asase siesieɛ', hi: 'भूमि तैयारी' },
+  'stage.planting':          { en: 'Planting',          fr: 'Plantation',   sw: 'Kupanda',         ha: 'Shuki',         tw: 'Dua',           hi: 'रोपण' },
+  'stage.early_growth':      { en: 'Early growth',      fr: 'Croissance précoce', sw: 'Ukuaji wa awali', ha: 'Girma na farko', tw: 'Nyin ahyɛaseɛ', hi: 'शुरुआती वृद्धि' },
+  'stage.active_growth':     { en: 'Active growth',     fr: 'Croissance active', sw: 'Ukuaji amilifu', ha: 'Girma mai ƙarfi', tw: 'Nyin kɛseɛ', hi: 'सक्रिय वृद्धि' },
+  'stage.flowering':         { en: 'Flowering',         fr: 'Floraison',    sw: 'Kuchanua',        ha: 'Fure',          tw: 'Nhwiren',        hi: 'फूल आना' },
+  'stage.harvest_ready':     { en: 'Harvest ready',     fr: 'Prêt à récolter', sw: 'Tayari kuvuna', ha: 'A shirye girbi', tw: 'Yɛtumi atwa',   hi: 'कटाई के लिए तैयार' },
+  'stage.harvested':         { en: 'Harvested',         fr: 'Récolté',      sw: 'Imevunwa',        ha: 'An girbe',      tw: 'Wɔatwa',         hi: 'कटाई हो गई' },
+
   // Risk-alert one-liners (feed from buildRiskAlerts)
   'actionHome.risks.overdueCount':       { en: '{n} overdue tasks',           fr: '{n} tâches en retard',       sw: 'Kazi {n} zimechelewa',    ha: 'Ayyuka {n} sun makara',     tw: 'Adwuma {n} a atwam',         hi: '{n} कार्य समय से पीछे' },
   'actionHome.risks.overdue':            { en: 'You have overdue tasks',      fr: 'Tâches en retard',           sw: 'Una kazi zilizochelewa',  ha: 'Kuna da ayyukan da suka makara', tw: 'Adwuma bi atwam',       hi: 'आपके कुछ कार्य समय से पीछे हैं' },
