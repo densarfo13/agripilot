@@ -395,6 +395,52 @@ const T = {
   'generatedTask.custom.detail':      { en: '{detail}',         fr: '{detail}',          sw: '{detail}',          ha: '{detail}',         tw: '{detail}',        hi: '{detail}' },
   'generatedTask.custom.eta':         { en: '15 min',           fr: '15 min',            sw: 'dakika 15',         ha: 'minti 15',         tw: 'simma 15',        hi: '15 मिनट' },
 
+  // ─── Smart farmer onboarding ──────────────────────────
+  'onboarding.progress':                 { en: 'Step {current} of {total}',  fr: 'Étape {current} sur {total}',  sw: 'Hatua {current} ya {total}',  ha: 'Mataki {current} na {total}', tw: 'Anammɔn {current} wɔ {total}', hi: 'चरण {current} / {total}' },
+
+  'onboarding.location.title':           { en: 'Where is your farm?',        fr: 'Où se trouve votre ferme ?',     sw: 'Shamba lako liko wapi?',      ha: 'Ina gonarku take?',           tw: 'Wo afuo wɔ he?',              hi: 'आपका खेत कहाँ है?' },
+  'onboarding.location.subtitle':        { en: 'We use this to pick the right crops for your climate.', fr: "Pour choisir les bonnes cultures.", sw: 'Tutachagua mazao yanayofaa hapa.', ha: 'Za mu zaɓi amfanin gona mai dacewa.', tw: "Yɛbɛhwɛ afudeɛ a ɛfata.", hi: 'जलवायु के अनुसार फसलें चुनने के लिए।' },
+  'onboarding.location.detect':          { en: 'Use my location',             fr: "Utiliser ma localisation",       sw: 'Tumia eneo langu',            ha: 'Yi amfani da wurina',         tw: 'Fa me baabi',                 hi: 'मेरा स्थान इस्तेमाल करें' },
+  'onboarding.location.detecting':       { en: 'Detecting…',                   fr: 'Détection…',                     sw: 'Inatambua…',                  ha: 'Ana ganowa…',                 tw: 'Yɛrehwɛ…',                    hi: 'पता लगाया जा रहा है…' },
+  'onboarding.location.city':            { en: 'City (optional)',              fr: 'Ville (facultatif)',             sw: 'Mji (hiari)',                 ha: 'Gari (zaɓi)',                 tw: 'Kuro (wopɛ a)',               hi: 'शहर (वैकल्पिक)' },
+
+  'onboarding.experience.title':         { en: 'Are you new to farming?',      fr: 'Êtes-vous nouveau ?',            sw: 'Wewe ni mpya?',               ha: 'Kai sabon noma ne?',          tw: 'Wo yɛ foforɔ?',              hi: 'क्या आप खेती में नए हैं?' },
+  'onboarding.experience.subtitle':      { en: "We'll tailor the recommendations to your level.", fr: 'Recommandations adaptées.',       sw: 'Tutarekebisha mapendekezo.',  ha: 'Za mu daidaita shawara.',     tw: 'Yɛbɛyɛ nhyehyɛeɛ.',          hi: 'हम आपके स्तर के अनुसार सुझाव देंगे।' },
+  'onboarding.experience.new':           { en: "Yes, I'm new",                 fr: 'Oui, nouveau',                   sw: 'Ndiyo, mpya',                 ha: 'Ee, sabon',                   tw: 'Aane, foforɔ',                hi: 'हाँ, मैं नया हूँ' },
+  'onboarding.experience.newDesc':       { en: 'Start with easier crops.',     fr: 'Cultures plus faciles.',         sw: 'Anza na mazao rahisi.',       ha: 'Fara da amfani mai sauƙi.',    tw: 'Fi aseɛ ne afudeɛ a ɛyɛ mmerɛw.', hi: 'आसान फसलों से शुरू करें।' },
+  'onboarding.experience.experienced':   { en: 'No, I have experience',        fr: 'Non, expérimenté',               sw: 'Hapana, nina uzoefu',         ha: 'A\'a, ina da kwarewa',        tw: 'Dabi, mewɔ osuahunu',         hi: 'नहीं, मुझे अनुभव है' },
+  'onboarding.experience.experiencedDesc':{en: 'See the full crop list.',      fr: 'Toutes les cultures.',           sw: 'Angalia orodha yote.',        ha: 'Duba duka amfani.',            tw: 'Hwɛ nyinaa.',                 hi: 'पूरी सूची देखें।' },
+
+  'onboarding.size.title':               { en: 'How big is your farm?',        fr: 'Taille de la ferme ?',           sw: 'Ukubwa wa shamba?',           ha: 'Girman gonarku?',             tw: 'Wo afuo kɛseɛ?',              hi: 'आपका खेत कितना बड़ा है?' },
+  'onboarding.size.subtitle':            { en: 'Used to pick crops that scale to your space.', fr: 'Pour adapter les cultures.',    sw: 'Tuchague mazao sahihi.',      ha: 'Don zaɓar amfani da ya dace.', tw: 'Yɛbɛhwɛ.',                    hi: 'जगह के अनुसार फसलें चुनने के लिए।' },
+  'onboarding.size.exact':               { en: 'Exact size in acres (optional)', fr: 'Taille exacte (facultatif)',   sw: 'Ukubwa halisi (hiari)',       ha: 'Girman daidai (zaɓi)',         tw: 'Kɛseɛ pɛpɛɛpɛ (wopɛ a)',      hi: 'सटीक आकार (वैकल्पिक)' },
+
+  'onboarding.farmType.title':           { en: 'What kind of farm?',            fr: 'Quel type de ferme ?',          sw: 'Aina gani ya shamba?',        ha: "Wane irin gona?",              tw: 'Afuo bɛn?',                    hi: 'कैसा खेत?' },
+  'onboarding.farmType.subtitle':        { en: 'This changes which crop mix we suggest.', fr: 'Change le mélange de cultures.', sw: 'Hii hubadilisha mapendekezo.', ha: 'Wannan zai canza shawarwari.', tw: 'Yei sesa afudeɛ.',           hi: 'इससे सुझाई गई फसलें बदलेंगी।' },
+  'onboarding.farmType.backyardDesc':    { en: 'Home gardens and containers.', fr: 'Jardins et pots.',               sw: 'Bustani ndogo.',              ha: 'Lambuna da tuluna.',           tw: 'Efie akyi.',                  hi: 'घरेलू बगीचे और कंटेनर।' },
+  'onboarding.farmType.smallFarmDesc':   { en: '1–5 acres, mixed crops.',      fr: '1 à 5 acres, mixte.',            sw: 'Ekari 1–5.',                  ha: 'Ekari 1–5.',                  tw: 'Ekari 1–5.',                   hi: '1–5 एकड़, मिश्रित।' },
+  'onboarding.farmType.commercialDesc':  { en: 'Row crops and larger fields.', fr: 'Grandes parcelles.',             sw: 'Mashamba makubwa.',           ha: 'Manyan filaye.',              tw: 'Mfuo akɛseɛ.',                hi: 'बड़े खेत और फ़सल पंक्तियाँ।' },
+
+  'onboarding.crops.title':              { en: 'Best crops for your location',  fr: 'Meilleures cultures',           sw: 'Mazao bora kwako',            ha: 'Amfanin gona mafi dacewa',    tw: 'Afudeɛ pa ma wo',              hi: 'आपके क्षेत्र के लिए सबसे अच्छी फसलें' },
+  'onboarding.crops.helper':             { en: 'Based on your location, farm size, and experience.', fr: 'Selon votre emplacement et taille.', sw: 'Kulingana na eneo, ukubwa, na uzoefu.', ha: 'Bisa wuri, girma, da kwarewa.', tw: 'Wo man, afuo kɛseɛ, ne osuahunu enti.', hi: 'आपके स्थान, आकार और अनुभव के आधार पर।' },
+  'onboarding.crops.pickBest':           { en: 'Pick the best crop for me',     fr: 'Choisir pour moi',              sw: 'Nichagulie bora',             ha: "Zaɓi mini",                    tw: 'Yi ma me',                    hi: 'मेरे लिए सबसे अच्छी चुनें' },
+  'onboarding.crops.best':               { en: 'Best for your area',            fr: 'Idéal pour vous',               sw: 'Bora kwa eneo lako',          ha: 'Mafi kyau a yankinku',        tw: 'Ɛyɛ ma wo man',                hi: 'आपके क्षेत्र के लिए सबसे अच्छी' },
+  'onboarding.crops.possible':           { en: 'Also possible',                 fr: 'Aussi possible',                sw: 'Pia yawezekana',              ha: 'Suma suna yiwuwa',            tw: 'Ɛtumi yɛ',                     hi: 'ये भी संभव' },
+  'onboarding.crops.notRecommended':     { en: 'Not recommended for your area', fr: 'Non recommandé',                sw: 'Haipendekezwi',               ha: 'Ba a ba da shawara ba',       tw: 'Wɔmfa',                        hi: 'अनुशंसित नहीं' },
+  'onboarding.crops.seeMore':            { en: 'See harder crops',              fr: 'Voir plus difficiles',          sw: 'Angalia ngumu zaidi',         ha: 'Duba ƙarin masu wahala',       tw: 'Hwɛ nea ɛyɛ den',             hi: 'कठिन फसलें देखें' },
+  'onboarding.crops.error':              { en: "We couldn't load recommendations. Try again.", fr: 'Chargement impossible.', sw: 'Hatukuweza kupakia.', ha: 'Ba a iya lodawa ba.', tw: 'Yɛantumi.',                    hi: 'सुझाव लोड नहीं हो सके।' },
+  'onboarding.crops.offlineFallback':    { en: 'Offline — showing general picks for now.', fr: 'Hors ligne — sélection générale.', sw: 'Nje ya mtandao.', ha: 'Babu yanar gizo.',             tw: 'Wonni intanɛt.',               hi: 'ऑफ़लाइन — सामान्य विकल्प।' },
+
+  'onboarding.fit.high':                 { en: 'High fit',       fr: 'Idéal',           sw: 'Inafaa sana',       ha: 'Ya dace sosai',     tw: 'Ɛyɛ pa paa',      hi: 'उत्तम मेल' },
+  'onboarding.fit.medium':               { en: 'Medium fit',     fr: 'Moyen',           sw: 'Inafaa kiasi',      ha: 'Ya dace',           tw: 'Mfinimfini',      hi: 'मध्यम' },
+  'onboarding.fit.low':                  { en: 'Low fit',        fr: 'Faible',          sw: 'Hafifu',            ha: 'Rauni',             tw: 'Ɛnyɛ pa',         hi: 'कमज़ोर' },
+  'onboarding.fit.beginnerFriendly':     { en: 'Beginner-friendly', fr: 'Facile',       sw: 'Rahisi kwa wapya',  ha: 'Mai sauƙi',         tw: 'Ɛnyɛ den',        hi: 'शुरुआती अनुकूल' },
+
+  'onboarding.status.plantNow':          { en: 'Plant now',      fr: 'Planter maintenant', sw: 'Panda sasa',    ha: 'Shuka yanzu',       tw: 'Dua seesei',      hi: 'अभी बोएँ' },
+  'onboarding.status.plantSoon':         { en: 'Plant soon',     fr: 'Bientôt',         sw: 'Panda hivi karibuni', ha: 'Ba da daɗewa ba',  tw: 'Dua nkyɛ',        hi: 'जल्द बोएँ' },
+  'onboarding.status.wait':              { en: 'Wait',           fr: 'Attendre',        sw: 'Subiri',            ha: 'Jira',              tw: 'Twɛn',             hi: 'प्रतीक्षा करें' },
+  'onboarding.status.avoid':             { en: 'Avoid',          fr: 'Éviter',          sw: 'Epuka',             ha: 'Guji',              tw: 'Ntoa',            hi: 'टालें' },
+
   // Risk-alert one-liners (feed from buildRiskAlerts)
   'actionHome.risks.overdueCount':       { en: '{n} overdue tasks',           fr: '{n} tâches en retard',       sw: 'Kazi {n} zimechelewa',    ha: 'Ayyuka {n} sun makara',     tw: 'Adwuma {n} a atwam',         hi: '{n} कार्य समय से पीछे' },
   'actionHome.risks.overdue':            { en: 'You have overdue tasks',      fr: 'Tâches en retard',           sw: 'Una kazi zilizochelewa',  ha: 'Kuna da ayyukan da suka makara', tw: 'Adwuma bi atwam',       hi: 'आपके कुछ कार्य समय से पीछे हैं' },
