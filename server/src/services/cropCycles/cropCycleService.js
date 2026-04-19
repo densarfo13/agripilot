@@ -14,13 +14,10 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { generateWeeklyTasks, summarizeTasks } from './taskPlanEngine.js';
+import { canTransition, isValidStatus, transitionError, ACTIVE_STATUSES } from './statusMachine.js';
+import { assessCycleRisk } from './cycleRiskEngine.js';
 
 const prisma = new PrismaClient();
-
-const VALID_STATUSES = new Set([
-  'planned', 'planting', 'growing', 'flowering',
-  'harvest_ready', 'harvested', 'delayed', 'failed',
-]);
 
 /**
  * Create a V2CropCycle + RecommendationSnapshot + initial CycleTaskPlan
@@ -44,6 +41,20 @@ export async function createCycleFromRecommendation({
     select: { id: true, country: true, stateCode: true, farmType: true },
   });
   if (!farm) throw httpErr(404, 'farm_not_found');
+
+  // Duplicate-cycle guard: block when the same farm already has an
+  // active cycle for the same crop. "Active" = anything that isn't
+  // harvested/failed. Farmers can have sequential cycles over time;
+  // they just can't have two concurrent ones for the same crop.
+  const existing = await prisma.v2CropCycle.findFirst({
+    where: {
+      profileId: farm.id,
+      cropType: recommendation.key,
+      lifecycleStatus: { in: ACTIVE_STATUSES },
+    },
+    select: { id: true },
+  });
+  if (existing) throw httpErr(409, 'duplicate_active_cycle');
 
   const planted = plantedDate instanceof Date ? plantedDate
     : plantedDate ? new Date(plantedDate)
@@ -201,23 +212,62 @@ export async function completeTask({ user, taskId, note }) {
   return { task: updated };
 }
 
-/** Move a cycle through its lifecycle. Returns the updated cycle. */
+/**
+ * Move a cycle through its lifecycle, enforcing allowed transitions.
+ * Invalid transitions return 409 `invalid_status_transition`.
+ */
 export async function updateCycleStatus({ user, cycleId, status, reason }) {
   if (!user?.id) throw httpErr(401, 'unauthenticated');
-  if (!VALID_STATUSES.has(status)) throw httpErr(400, 'invalid_status');
+  if (!isValidStatus(status)) throw httpErr(400, 'invalid_status');
   const cycle = await prisma.v2CropCycle.findUnique({
-    where: { id: cycleId }, select: { id: true, profileId: true },
+    where: { id: cycleId }, select: { id: true, profileId: true, lifecycleStatus: true },
   });
   if (!cycle) throw httpErr(404, 'cycle_not_found');
   const farm = await prisma.farmProfile.findFirst({
     where: { id: cycle.profileId, userId: user.id }, select: { id: true },
   });
   if (!farm) throw httpErr(403, 'forbidden');
+  if (!canTransition(cycle.lifecycleStatus, status)) {
+    throw transitionError(cycle.lifecycleStatus, status);
+  }
   const updated = await prisma.v2CropCycle.update({
     where: { id: cycleId },
     data: { lifecycleStatus: status, statusReason: reason || null },
   });
   return { cycle: updated };
+}
+
+/**
+ * Compute live risk for a cycle. Composes cycle + tasks + issues
+ * from the DB and runs the pure risk engine.
+ */
+export async function computeCycleRisk({ user, cycleId }) {
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  const cycle = await prisma.v2CropCycle.findUnique({
+    where: { id: cycleId },
+    include: {
+      taskPlans: true,
+      recommendationSnapshot: true,
+    },
+  });
+  if (!cycle) throw httpErr(404, 'cycle_not_found');
+  const farm = await prisma.farmProfile.findFirst({
+    where: { id: cycle.profileId, userId: user.id }, select: { id: true },
+  });
+  const isReviewer = user.role === 'admin' || user.role === 'reviewer';
+  if (!farm && !isReviewer) throw httpErr(403, 'forbidden');
+
+  const issues = await prisma.issueReport.findMany({
+    where: { cropCycleId: cycleId },
+    select: { severity: true, status: true, category: true },
+  });
+
+  return assessCycleRisk({
+    tasks: cycle.taskPlans,
+    issues,
+    cycle,
+    snapshot: cycle.recommendationSnapshot,
+  });
 }
 
 /**
@@ -242,11 +292,11 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
   if (!cycleIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null };
 
   const now = new Date();
-  const [top, overdue, risk] = await Promise.all([
+  const soonCutoff = new Date(now.getTime() + 24 * 3600 * 1000);
+  const [pending, overdue, risk] = await Promise.all([
     prisma.cycleTaskPlan.findMany({
       where: { cropCycleId: { in: cycleIds }, status: 'pending' },
-      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
-      take: limit,
+      take: 30,
     }),
     prisma.cycleTaskPlan.findMany({
       where: {
@@ -266,8 +316,37 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
     }),
   ]);
 
-  const nextAction = top[0] ? top[0].title : null;
-  return { topTasks: top, overdue, openHighRiskIssues: risk, nextAction };
+  // Rank: overdue first, then due-today, then high-priority, then
+  // soonest dueDate, then everything else. Deterministic tiebreakers.
+  const prio = { high: 3, medium: 2, low: 1 };
+  function rank(task) {
+    const dueMs = task.dueDate ? new Date(task.dueDate).getTime() : Number.POSITIVE_INFINITY;
+    let rank = 0;
+    if (dueMs < now.getTime()) rank += 1000;                // overdue cliff
+    else if (dueMs <= soonCutoff.getTime()) rank += 500;    // due within 24h
+    rank += (prio[task.priority] || 2) * 20;                // priority weight
+    rank -= Math.min(365, Math.max(0, (dueMs - now.getTime()) / 86_400_000)); // soonest first
+    return rank;
+  }
+  const topTasks = pending
+    .slice()
+    .sort((a, b) => rank(b) - rank(a))
+    .slice(0, limit);
+
+  const nextAction = topTasks[0]
+    ? (topTasks[0].dueDate && new Date(topTasks[0].dueDate) < now
+        ? `Catch up: ${topTasks[0].title}`
+        : topTasks[0].title)
+    : (risk > 0 ? 'Check and resolve your open high-severity issues.' : null);
+
+  return {
+    topTasks,
+    overdue,
+    overdueTasksCount: overdue.length,
+    riskAlerts: risk,             // number of high-severity open issues
+    openHighRiskIssues: risk,
+    nextAction,
+  };
 }
 
 // ─── helpers ──────────────────────────────────────────────────

@@ -99,6 +99,14 @@ const CROP_TEMPLATES = {
     { weekIndex: 6, title: 'Scout for sugarcane aphid', detail: 'Biggest yield thief in most regions.', priority: 'medium', offsetDays: 40 },
     { weekIndex: 14, title: 'Harvest at hard dough',    detail: 'Grain should shatter when pressed hard.', priority: 'high', offsetDays: 98 },
   ],
+  peanut: [
+    { weekIndex: 0, title: 'Deep-till the bed',         detail: 'Peanuts peg into loose soil; till 6 inches deep.', priority: 'high', offsetDays: -4 },
+    { weekIndex: 0, title: 'Plant in warm soil',        detail: 'Seed at 1.5 inches once soil hits 65°F+.', priority: 'high', offsetDays: 0 },
+    { weekIndex: 3, title: 'Control early weeds',       detail: 'First 4 weeks are the critical weed-free window.', priority: 'high', offsetDays: 20 },
+    { weekIndex: 6, title: 'Scout for leaf spot',       detail: 'Catch early leaf-spot lesions on lower leaves.', priority: 'medium', offsetDays: 42 },
+    { weekIndex: 9, title: 'Maintain steady water',     detail: 'Water stress at pegging cuts yield most.', priority: 'high', offsetDays: 63 },
+    { weekIndex: 18, title: 'Plan the dig',             detail: 'Lift, cure, and pick when shell veins darken.', priority: 'high', offsetDays: 126 },
+  ],
 };
 
 /** Look up the template for a crop; fall back to the default. */
