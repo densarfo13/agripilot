@@ -26,6 +26,9 @@ import ProgressSummaryCard from '../../components/farmer/ProgressSummaryCard.jsx
 import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
+import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
+import NextHint from '../../components/farmer/NextHint.jsx';
+import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 
 export default function FarmerTodayPage() {
   const { t, language, region } = useAppSettings();
@@ -144,13 +147,48 @@ export default function FarmerTodayPage() {
     (c) => !['harvested', 'failed'].includes(c.lifecycleStatus || ''),
   ).length || 0;
 
+  // ─── Compose the context header (location • crop • stage) ──
+  const locationLabel = [region?.city, region?.stateCode, region?.country]
+    .filter(Boolean).join(', ') || null;
+  const cropLabel = activeCycle?.cropType
+    ? getCropDisplayName(activeCycle.cropType, language, { bilingual: 'auto' })
+    : null;
+  const stageLabel = activeCycle?.lifecycleStatus
+    ? t(`cropStage.${activeCycle.lifecycleStatus}`)
+    : null;
+
+  // Progress — rough but honest: fraction of task rows the farmer has
+  // actually completed, overlaid with the overall risk level so the
+  // status pill can flip from "On track" to "Needs attention" when
+  // something material is wrong.
+  const totalTasks = state.cycles?.cycles?.reduce(
+    (n, c) => n + (c.summary?.total || 0), 0,
+  ) || 0;
+  const progressPercent = totalTasks > 0
+    ? Math.round((tasksDone / totalTasks) * 100)
+    : null;
+  const overallRiskLevel = state.today?.overallRisk?.level || 'low';
+  const overdueTasksCount = state.today?.overdueTasksCount || 0;
+
+  // Next-hint wording: the first secondary task's title, if any.
+  const nextHintText = secondaryTasks?.[0]?.title || null;
+
   return (
     <Shell>
       <h1 style={S.pageTitle}>{t('actionHome.todayHeader')}</h1>
+
+      {/* 1. Small context header */}
+      <TodayContextHeader
+        locationLabel={locationLabel}
+        cropLabel={cropLabel}
+        stageLabel={stageLabel}
+      />
+
       {state.today?.nextActionSummary && (
         <p style={S.pageSummary}>{state.today.nextActionSummary}</p>
       )}
 
+      {/* 2. PRIMARY TASK CARD */}
       <PrimaryTaskCard
         task={primaryTask}
         warning={warning}
@@ -168,14 +206,26 @@ export default function FarmerTodayPage() {
         onSubmit={handleModalSubmit}
       />
 
-      <SecondaryTaskList tasks={secondaryTasks} />
-
+      {/* 3. RISK ALERTS — the panel hides itself when there's nothing
+             meaningful to surface, matching the spec's "don't render
+             an empty section" rule. */}
       <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
 
+      {/* 4. SECONDARY TASKS (max 2 — the list already caps this) */}
+      <SecondaryTaskList tasks={secondaryTasks} />
+
+      {/* 5. LIGHT PROGRESS with a status pill (On track / Slight
+             delay / Needs attention). */}
       <ProgressSummaryCard
         tasksDone={tasksDone}
         cyclesActive={cyclesActive}
+        percent={progressPercent}
+        overdueCount={overdueTasksCount}
+        riskLevel={overallRiskLevel}
       />
+
+      {/* 6. NEXT HINT — one-liner, renders nothing when empty. */}
+      <NextHint text={nextHintText} />
 
       <CropStageCard
         stage={activeCycle?.lifecycleStatus}

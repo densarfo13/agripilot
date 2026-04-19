@@ -14,6 +14,12 @@ export default function RiskAlertsPanel({ alerts = [], weatherAlerts = [], weath
   const weatherSet = new Set(weatherAlerts);
   const staticAlerts = alerts.filter((a) => !weatherSet.has(a));
   const hasAny = staticAlerts.length > 0 || weatherAlerts.length > 0;
+  const hasBadge = !!weatherBadge && weatherBadge.level && weatherBadge.level !== 'low';
+
+  // Action-first rule from the Today spec: if there's no meaningful
+  // risk to surface, render NOTHING rather than an empty shell. The
+  // "You're on track" reassurance lives in the progress pill below.
+  if (!hasAny && !hasBadge) return null;
 
   return (
     <section style={S.section} data-testid="risk-alerts-panel">
