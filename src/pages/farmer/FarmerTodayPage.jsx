@@ -28,7 +28,10 @@ import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
 import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
 import NextHint from '../../components/farmer/NextHint.jsx';
+import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
+import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { getTodayScreenState } from '../../utils/getTodayScreenState.js';
 
 export default function FarmerTodayPage() {
   const { t, language, region } = useAppSettings();
@@ -183,33 +186,43 @@ export default function FarmerTodayPage() {
   const overallRiskLevel = state.today?.overallRisk?.level || 'low';
   const overdueTasksCount = state.today?.overdueTasksCount || 0;
 
-  // Next-hint wording: the first secondary task's title, if any.
-  const nextHintText = secondaryTasks?.[0]?.title || null;
+  // ─── 2-state resolver ─────────────────────────────────────
+  // Single source of truth for whether the farmer has required work
+  // left today (ACTIVE) or not (DONE). When DONE, optional checks
+  // surface in their own clearly-optional section instead of
+  // masquerading as unfinished tasks.
+  const screen = useMemo(() => getTodayScreenState({
+    primaryTask,
+    secondaryTasks,
+    riskAlerts,
+    weatherAlerts,
+    overdueCount: state.today?.overdueTasksCount || 0,
+    tasksDone,
+    totalTasks: state.cycles?.cycles?.reduce((n, c) => n + (c.summary?.total || 0), 0) || 0,
+    riskLevel: state.today?.overallRisk?.level || 'low',
+    serverHint: state.today?.nextActionSummary || null,
+  }), [primaryTask, secondaryTasks, riskAlerts, weatherAlerts, state.today, tasksDone, state.cycles]);
+
+  const nextHintText = screen.nextHint?.text
+    || (screen.nextHint?.textKey ? t(screen.nextHint.textKey) : null);
+
+  function handleOptionalCheck(item) {
+    // Re-use the issue-reporter modal for "Scan crop for issues" so
+    // farmers who spot something can report it in one tap; the other
+    // checks just navigate to detail screens we don't force routing
+    // on here.
+    if (item.code === 'scan_crop') openIssueModal();
+  }
 
   return (
     <Shell>
       <h1 style={S.pageTitle}>{t('actionHome.todayHeader')}</h1>
 
-      {/* 1. Small context header */}
+      {/* 1. Small context header (both states) */}
       <TodayContextHeader
         locationLabel={locationLabel}
         cropLabel={cropLabel}
         stageLabel={stageLabel}
-      />
-
-      {state.today?.nextActionSummary && (
-        <p style={S.pageSummary}>{state.today.nextActionSummary}</p>
-      )}
-
-      {/* 2. PRIMARY TASK CARD */}
-      <PrimaryTaskCard
-        task={primaryTask}
-        warning={warning}
-        onComplete={handleComplete}
-        onSkip={openSkipModal}
-        onReportIssue={openIssueModal}
-        onHarvest={openHarvestModal}
-        harvestEligible={harvestEligible}
       />
 
       <FeedbackModal
@@ -219,26 +232,66 @@ export default function FarmerTodayPage() {
         onSubmit={handleModalSubmit}
       />
 
-      {/* 3. RISK ALERTS — the panel hides itself when there's nothing
-             meaningful to surface, matching the spec's "don't render
-             an empty section" rule. */}
-      <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
+      {screen.state === 'active' ? (
+        <>
+          {state.today?.nextActionSummary && (
+            <p style={S.pageSummary}>{state.today.nextActionSummary}</p>
+          )}
 
-      {/* 4. SECONDARY TASKS (max 2 — the list already caps this) */}
-      <SecondaryTaskList tasks={secondaryTasks} />
+          {/* 2. PRIMARY TASK CARD */}
+          <PrimaryTaskCard
+            task={screen.primaryTask}
+            warning={warning}
+            onComplete={handleComplete}
+            onSkip={openSkipModal}
+            onReportIssue={openIssueModal}
+            onHarvest={openHarvestModal}
+            harvestEligible={harvestEligible}
+          />
 
-      {/* 5. LIGHT PROGRESS with a status pill (On track / Slight
-             delay / Needs attention). */}
-      <ProgressSummaryCard
-        tasksDone={tasksDone}
-        cyclesActive={cyclesActive}
-        percent={progressPercent}
-        overdueCount={overdueTasksCount}
-        riskLevel={overallRiskLevel}
-      />
+          {/* 3. RISK ALERTS — panel self-hides when empty */}
+          <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
 
-      {/* 6. NEXT HINT — one-liner, renders nothing when empty. */}
-      <NextHint text={nextHintText} />
+          {/* 4. SECONDARY TASKS (max 2) */}
+          <SecondaryTaskList tasks={screen.secondaryTasks} />
+
+          {/* 5. LIGHT PROGRESS */}
+          <ProgressSummaryCard
+            tasksDone={tasksDone}
+            cyclesActive={cyclesActive}
+            percent={progressPercent}
+            overdueCount={overdueTasksCount}
+            riskLevel={overallRiskLevel}
+          />
+
+          {/* 6. NEXT HINT */}
+          <NextHint text={nextHintText} />
+        </>
+      ) : (
+        <>
+          {/* DONE state — completion card dominates. No "All done"
+              above task-looking cards; optional checks live in their
+              own clearly-labeled section below. */}
+          <DoneStateCard
+            progressPercent={progressPercent}
+            donePill={screen.progress.total
+              ? t('today.done.donePill', { done: screen.progress.done, total: screen.progress.total })
+                || `${screen.progress.done} of ${screen.progress.total} done`
+              : null}
+          />
+
+          {/* Risk alerts — still render in DONE if weather / issues
+              genuinely raise risk; the panel self-hides otherwise. */}
+          <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
+
+          <OptionalChecksSection
+            items={screen.optionalChecks}
+            onPick={handleOptionalCheck}
+          />
+
+          <NextHint text={nextHintText} />
+        </>
+      )}
 
       <CropStageCard
         stage={activeCycle?.lifecycleStatus}
