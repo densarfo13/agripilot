@@ -1,97 +1,147 @@
 /**
- * LocationStep — country + state (+ optional city) with a GPS try
- * button and a manual fallback. Writes directly into the form state
- * the parent page controls.
+ * LocationStep — structured location flow for onboarding.
+ *
+ * Flow:
+ *   1. Detected-location card at the top (Use this location / Change)
+ *   2. Searchable country selector
+ *   3. Dynamic state/region selector (when the country has regions)
+ *   4. Optional city input
+ *   5. Next button — gated by validateLocation()
+ *
+ * Writes `{ country, stateCode, state, city }` back through `onChange`.
+ * The `stateCode` slot is kept as the canonical identifier so the
+ * recommendation engine can key off it directly; `state` mirrors the
+ * friendly display name for UI labels and persistence.
  */
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { detectRegionViaGps } from '../../lib/regionResolver.js';
-
-const COUNTRIES = [
-  ['US', 'United States'], ['GH', 'Ghana'], ['NG', 'Nigeria'],
-  ['IN', 'India'], ['KE', 'Kenya'], ['TZ', 'Tanzania'],
-  ['UG', 'Uganda'], ['ZA', 'South Africa'], ['OTHER', 'Other'],
-];
-
-const US_STATES = [
-  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
-  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],
-  ['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],
-  ['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],
-  ['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],
-  ['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],
-  ['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],
-  ['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],
-  ['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],
-  ['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],
-  ['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],
-];
+import { formatLocation } from '../../utils/formatLocation.js';
+import { validateLocation } from '../../utils/validateLocation.js';
+import {
+  getRegions, resolveRegion, findCountry, requiresState,
+} from '../../utils/locationData.js';
+import CountrySelector from '../location/CountrySelector.jsx';
+import StateRegionSelector from '../location/StateRegionSelector.jsx';
+import DetectedLocationCard from '../location/DetectedLocationCard.jsx';
+import CityInput from '../location/CityInput.jsx';
 
 export default function LocationStep({ value, onChange, onNext }) {
   const { t } = useAppSettings();
-  const [detecting, setDetecting] = useState(false);
-  const v = value || {};
+  const v = useMemo(() => value || {}, [value]);
 
-  async function handleDetect() {
-    setDetecting(true);
-    const region = await detectRegionViaGps({ timeoutMs: 6000 });
-    setDetecting(false);
-    if (region?.country) {
-      onChange({ ...v, country: region.country, stateCode: region.stateCode || v.stateCode });
-    }
+  const [detecting, setDetecting] = useState(false);
+  const [detected, setDetected] = useState(null);
+  const [permission, setPermission] = useState('unknown');
+
+  // Kick off a one-shot GPS detection when the step opens and the
+  // user hasn't confirmed a location yet. Never blocks the UI —
+  // denials or failures flip permission to 'denied' and the rest
+  // of the step still works.
+  useEffect(() => {
+    if (v.country) return;
+    let cancelled = false;
+    (async () => {
+      setDetecting(true);
+      const region = await detectRegionViaGps({ timeoutMs: 6000 });
+      if (cancelled) return;
+      setDetecting(false);
+      if (region?.country) {
+        setDetected({ country: region.country, stateCode: region.stateCode || null });
+      } else if (typeof navigator !== 'undefined' && navigator.permissions) {
+        try {
+          const status = await navigator.permissions.query({ name: 'geolocation' });
+          setPermission(status.state);
+        } catch { setPermission('unknown'); }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { isValid, errors } = validateLocation({
+    country: v.country, state: v.stateCode || v.state,
+  });
+
+  function applyCountry(code) {
+    const country = findCountry(code);
+    const canon = country ? country.code : code;
+    onChange({ country: canon, stateCode: null, state: null, city: v.city || '' });
   }
 
-  const canContinue = !!v.country && (v.country !== 'US' || !!v.stateCode);
+  function applyState(regionCode) {
+    const region = resolveRegion(v.country, regionCode);
+    onChange({
+      ...v,
+      stateCode: region?.code || regionCode,
+      state: region?.name || null,
+    });
+  }
+
+  function applyCity(city) { onChange({ ...v, city }); }
+
+  function applyDetected() {
+    if (!detected?.country) return;
+    const regions = getRegions(detected.country);
+    const detectedRegion = detected.stateCode
+      ? regions.find((r) => r.code === detected.stateCode) || null
+      : null;
+    onChange({
+      country: detected.country,
+      stateCode: detectedRegion?.code || null,
+      state: detectedRegion?.name || null,
+      city: v.city || '',
+    });
+  }
+
+  const summary = formatLocation(v);
 
   return (
     <div style={S.step}>
       <h2 style={S.title}>{t('onboarding.location.title')}</h2>
       <p style={S.subtitle}>{t('onboarding.location.subtitle')}</p>
 
-      <button type="button" onClick={handleDetect} disabled={detecting} style={S.detect}>
-        {detecting ? t('onboarding.location.detecting') : t('onboarding.location.detect')}
-      </button>
+      <DetectedLocationCard
+        detected={detected}
+        detecting={detecting}
+        permissionState={permission}
+        onUse={applyDetected}
+        onChange={() => setDetected(null)}
+      />
 
-      <label style={S.field}>
-        <span style={S.label}>{t('firstLaunch.country')}</span>
-        <select
-          value={v.country || ''}
-          onChange={(e) => onChange({ ...v, country: e.target.value })}
-          style={S.select}
-          data-testid="onboarding-country"
-        >
-          <option value="">—</option>
-          {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-        </select>
-      </label>
+      <CountrySelector value={v.country} onChange={applyCountry} />
 
-      {v.country === 'US' && (
-        <label style={S.field}>
-          <span style={S.label}>{t('firstLaunch.state')}</span>
-          <select
-            value={v.stateCode || ''}
-            onChange={(e) => onChange({ ...v, stateCode: e.target.value })}
-            style={S.select}
-            data-testid="onboarding-state"
-          >
-            <option value="">—</option>
-            {US_STATES.map(([c, n]) => <option key={c} value={c}>{n} ({c})</option>)}
-          </select>
-        </label>
+      {v.country && requiresState(v.country) && (
+        <StateRegionSelector
+          country={v.country}
+          value={v.stateCode}
+          onChange={applyState}
+        />
       )}
 
-      <label style={S.field}>
-        <span style={S.label}>{t('onboarding.location.city')}</span>
-        <input
-          type="text"
-          value={v.city || ''}
-          onChange={(e) => onChange({ ...v, city: e.target.value })}
-          placeholder="e.g. Frederick"
-          style={S.input}
-        />
-      </label>
+      {v.country && <CityInput value={v.city} onChange={applyCity} />}
 
-      <button type="button" onClick={onNext} disabled={!canContinue} style={S.next}>
+      {summary && (
+        <div style={S.summary} data-testid="location-summary">
+          <span style={S.summaryLabel}>{t('location.currentlySelected')}</span>
+          <span style={S.summaryValue}>{summary}</span>
+        </div>
+      )}
+
+      {errors.country && (
+        <p style={S.err}>{t('validation.countryRequired')}</p>
+      )}
+      {errors.state && (
+        <p style={S.err}>{t('validation.stateRequired')}</p>
+      )}
+
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={!isValid}
+        style={{ ...S.next, ...(isValid ? null : S.nextDisabled) }}
+        data-testid="onboarding-location-next"
+      >
         {t('common.next')}
       </button>
     </div>
@@ -102,30 +152,23 @@ const S = {
   step: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
   title: { fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.25rem', color: '#EAF2FF' },
   subtitle: { fontSize: '0.875rem', color: '#9FB3C8', margin: '0 0 0.5rem' },
-  detect: {
-    padding: '0.625rem 0.875rem', borderRadius: '10px',
-    border: '1px solid rgba(14,165,233,0.3)', background: 'rgba(14,165,233,0.08)',
-    color: '#0EA5E9', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
-    alignSelf: 'flex-start',
+  summary: {
+    display: 'flex', flexDirection: 'column', gap: '0.125rem',
+    padding: '0.625rem 0.75rem', borderRadius: '10px',
+    background: 'rgba(14,165,233,0.08)',
+    border: '1px solid rgba(14,165,233,0.2)',
+    color: '#EAF2FF',
   },
-  field: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
-  label: {
-    fontSize: '0.6875rem', color: '#9FB3C8', fontWeight: 700,
+  summaryLabel: {
+    fontSize: '0.6875rem', fontWeight: 700, color: '#0EA5E9',
     textTransform: 'uppercase', letterSpacing: '0.05em',
   },
-  input: {
-    padding: '0.625rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-    color: '#EAF2FF', fontSize: '0.9375rem', minHeight: '44px',
-  },
-  select: {
-    padding: '0.625rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-    color: '#EAF2FF', fontSize: '0.9375rem', minHeight: '44px',
-  },
+  summaryValue: { fontSize: '0.9375rem', fontWeight: 600 },
+  err: { color: '#FCA5A5', fontSize: '0.8125rem', margin: '0.25rem 0 0' },
   next: {
-    marginTop: '0.75rem', padding: '0.75rem', borderRadius: '12px',
+    marginTop: '0.5rem', padding: '0.75rem', borderRadius: '12px',
     border: 'none', background: '#22C55E', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
   },
+  nextDisabled: { opacity: 0.5, cursor: 'not-allowed' },
 };
