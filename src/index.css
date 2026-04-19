@@ -50,6 +50,37 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: var(--
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* ── Devanagari (Hindi) font + rendering support ─────── */
+/* When the active language is Hindi we prepend Noto Sans Devanagari
+   to the font stack so Devanagari glyphs render cleanly without
+   clipping, and loosen the line-height slightly to accommodate
+   matras above and below the base line. */
+html[lang="hi"] body,
+html[lang="hi"] button,
+html[lang="hi"] input,
+html[lang="hi"] select,
+html[lang="hi"] textarea {
+  font-family: 'Noto Sans Devanagari', 'Mangal', 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}
+html[lang="hi"] h1,
+html[lang="hi"] h2,
+html[lang="hi"] h3,
+html[lang="hi"] h4 {
+  line-height: 1.4;
+}
+/* Prevent Hindi labels from being clipped on pill/badge UIs and
+   keep CTA buttons readable even when the Hindi translation is
+   longer than the English one. */
+html[lang="hi"] .badge,
+html[lang="hi"] .btn {
+  white-space: normal;
+  line-height: 1.35;
+}
+html[lang="hi"] button {
+  min-height: 44px;
+}
+
 /* ── Layout ─────────────────────────────────────── */
 .app-layout { display: flex; height: 100vh; }
 .sidebar { width: var(--sidebar-width); background: #07111F; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; border-right: 1px solid var(--border); }

@@ -237,6 +237,66 @@ const HI = {
   'offline.connection': 'कनेक्शन',
   'offline.lastSavedOnline': 'ऑनलाइन अंतिम सहेजा गया',
   'offline.notYet': 'अभी नहीं',
+
+  // ─── Crop-stage pills ──────────────────────────────
+  'cropStage.planning': 'योजना',
+  'cropStage.landPreparation': 'भूमि तैयारी',
+  'cropStage.planting': 'रोपण',
+  'cropStage.germination': 'अंकुरण',
+  'cropStage.vegetative': 'शुरुआती वृद्धि',
+  'cropStage.flowering': 'फूल आना',
+  'cropStage.fruiting': 'फल लगना',
+  'cropStage.harvest': 'कटाई',
+  'cropStage.postHarvest': 'कटाई के बाद',
+  'cropStage.title': 'आपकी फसल अभी किस अवस्था में है?',
+  'cropStage.subtitle': 'अपनी वर्तमान अवस्था टैप करें',
+  'cropStage.saved': 'सहेजा गया!',
+  'cropStage.savedOffline': 'स्थानीय रूप से सहेजा गया।',
+  'cropStage.saveFailed': 'अवस्था सहेजने में विफल',
+
+  // ─── Dashboard greetings / generic ─────────────────
+  'dashboard.welcome': 'स्वागत है',
+  'dashboard.hello': 'नमस्ते {name}',
+  'dashboard.currentTask': 'वर्तमान कार्य',
+
+  // ─── Weather strip / guidance ──────────────────────
+  'wx.stale': 'पुराना मौसम डेटा',
+  'wx.dry_now_rain_later': 'अभी सूखा — बाद में बारिश',
+  'wx.rain_expected': 'बारिश की संभावना',
+  'wx.hot_day': 'गर्म दिन',
+  'wx.windy': 'तेज़ हवा',
+  'wx.protect_harvest': 'फसल को सुरक्षित रखें',
+  'wx.skip_watering': 'पानी न दें — बारिश आने वाली है',
+  'wx.skip_spraying': 'छिड़काव न करें — बहुत हवा है',
+  'wx.good_to_work': 'काम के लिए अच्छा मौसम',
+
+  // ─── Settings / language ───────────────────────────
+  'settings.title': 'सेटिंग्स',
+  'settings.language': 'भाषा',
+  'settings.voice': 'आवाज़',
+  'settings.notifications': 'सूचनाएँ',
+
+  // ─── Units ─────────────────────────────────────────
+  'unit.acre': 'एकड़',
+  'unit.acres': 'एकड़',
+  'unit.hectare': 'हेक्टेयर',
+  'unit.hectares': 'हेक्टेयर',
+  'unit.kg': 'कि.ग्रा.',
+  'unit.bags': 'बोरे',
+  'unit.litres': 'लीटर',
+
+  // ─── Counts / done today patterns ──────────────────
+  'count.xOfYDoneToday': 'आज {done} में से {total} पूरे',
+  'count.tasksLeft_one': '1 कार्य बाकी',
+  'count.tasksLeft_other': '{count} कार्य बाकी',
+  'count.tasksDone_one': '1 कार्य पूरा',
+  'count.tasksDone_other': '{count} कार्य पूरे',
+  'count.minutesAgo_one': '1 मिनट पहले',
+  'count.minutesAgo_other': '{count} मिनट पहले',
+  'count.hoursAgo_one': '1 घंटा पहले',
+  'count.hoursAgo_other': '{count} घंटे पहले',
+  'count.daysAgo_one': '1 दिन पहले',
+  'count.daysAgo_other': '{count} दिन पहले',
 };
 
 export default HI;

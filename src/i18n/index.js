@@ -14,6 +14,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import T from './translations.js';
 import HI from './hi.js';
+import {
+  formatNumber,
+  formatCount,
+  formatDate,
+  formatRelativeTime,
+  pluralCategory,
+  pluralKey,
+} from './format.js';
+import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
 
 // Merge the Hindi pack into the main dictionary once at module load.
 // Keeping HI in a separate file means Hindi rollouts are reviewable
@@ -62,6 +71,22 @@ export function getLanguage() {
   }
 }
 
+/**
+ * Mirror the active language onto <html lang> so CSS can target
+ * `html[lang="hi"]` for Devanagari font + line-height overrides and
+ * screen readers get the right pronunciation.
+ */
+function applyHtmlLang(code) {
+  try {
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.setAttribute('lang', code || 'en');
+      // Devanagari and other RTL-safe left-to-right scripts stay ltr;
+      // set explicitly so any parent RTL wrapper doesn't flip Hindi.
+      document.documentElement.setAttribute('dir', 'ltr');
+    }
+  } catch { /* SSR / locked-down contexts */ }
+}
+
 /** Persist language to all storage keys (so VoiceBar reads the same value). */
 export function setLanguage(code) {
   try {
@@ -69,8 +94,15 @@ export function setLanguage(code) {
     localStorage.setItem(LEGACY_VOICE_KEY, code); // keeps voice aligned
     localStorage.setItem(LEGACY_UI_KEY, code);     // keeps legacy i18n aligned
   } catch { /* quota exceeded — no-op */ }
+  applyHtmlLang(code);
   // Dispatch custom event so every useTranslation hook picks it up
   window.dispatchEvent(new CustomEvent('farroway:langchange', { detail: code }));
+}
+
+// On module load, mirror the persisted language onto <html lang> so
+// even the first paint on reload gets the right font stack / locale.
+if (typeof window !== 'undefined') {
+  try { applyHtmlLang(getLanguage()); } catch { /* ignore */ }
 }
 
 /**
@@ -183,7 +215,43 @@ export function useTranslation() {
     _setLang(code);
   }, []);
 
-  const boundT = useCallback((key, vars) => t(key, lang, vars), [lang]);
+  // Dev-only: wrap t() to warn once per key when a Hindi screen
+  // resolves to an ASCII-only (likely English) string. No-op in prod.
+  const rawBoundT = useCallback((key, vars) => t(key, lang, vars), [lang]);
+  const boundT = useCallback(
+    wrapTranslationForAudit(rawBoundT, lang),
+    [rawBoundT, lang],
+  );
 
-  return { t: boundT, lang, setLang, languages: LANGUAGES };
+  // Plural-aware translate: given a base key, pick _one/_other variant
+  // using Intl.PluralRules for the active locale.
+  const tPlural = useCallback((baseKey, count, vars) => {
+    const key = pluralKey(baseKey, count, lang);
+    return rawBoundT(key, { count, ...(vars || {}) });
+  }, [rawBoundT, lang]);
+
+  // Locale-aware formatters bound to the active language.
+  const fmtNumber = useCallback((v, opts) => formatNumber(v, lang, opts), [lang]);
+  const fmtCount = useCallback((v) => formatCount(v, lang), [lang]);
+  const fmtDate = useCallback((v, opts) => formatDate(v, lang, opts), [lang]);
+  const fmtRelative = useCallback((v, now) => formatRelativeTime(v, lang, now), [lang]);
+
+  return {
+    t: boundT,
+    tPlural,
+    lang,
+    setLang,
+    languages: LANGUAGES,
+    fmtNumber,
+    fmtCount,
+    fmtDate,
+    fmtRelative,
+    pluralCategory: (n) => pluralCategory(n, lang),
+  };
+}
+
+// Expose an on-demand dev leak report in the console.
+if (typeof window !== 'undefined') {
+  try { window.__i18nLeakReport = (lng = 'hi') => buildLeakReport(T, lng); }
+  catch { /* ignore */ }
 }
