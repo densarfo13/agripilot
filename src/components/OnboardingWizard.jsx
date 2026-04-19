@@ -18,7 +18,32 @@ import { assessSeasonProfit } from '../engine/seasonProfitRules.js';
 import { detectCountryByIP } from '../utils/geolocation.js';
 
 // ─── Step definitions ────────────────────────────────────────
-const STEP_KEYS = ['welcome', 'farmName', 'country', 'experience', 'recommendation', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
+const STEP_KEYS = ['welcome', 'farmName', 'country', 'usFarmType', 'experience', 'recommendation', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
+
+// U.S. farm-type step is only shown when the selected country is the
+// United States. Elsewhere it's transparently skipped in goNext/goBack.
+function isUsCountry(code) {
+  if (!code) return false;
+  const up = String(code).toUpperCase();
+  return up === 'US' || up === 'USA';
+}
+
+// 50 states + D.C., sorted alphabetically by name. Kept inline to
+// avoid a network dependency during onboarding; matches the
+// authoritative server-side list in server/src/domain/us/usStates.js.
+const US_POSTAL_CODES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],
+  ['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],
+  ['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],
+  ['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],
+  ['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],
+  ['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],
+  ['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],
+  ['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],
+  ['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],
+  ['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],
+];
 const TOTAL_USER_STEPS_NEW = 10;         // includes recommendation step
 const TOTAL_USER_STEPS_EXPERIENCED = 9;  // skips recommendation step
 
@@ -317,7 +342,11 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
 
   // ─── Computed helpers ──────────────────────────────────────
   const isNewFarmer = form.experienceLevel === 'new';
-  const TOTAL_USER_STEPS = isNewFarmer ? TOTAL_USER_STEPS_NEW : TOTAL_USER_STEPS_EXPERIENCED;
+  // U.S. farmers see one extra step (usFarmType); adjust the progress
+  // denominator so the percentage stays accurate rather than pegging
+  // short for U.S. users.
+  const usStepAddition = isUsCountry(form.countryCode) ? 1 : 0;
+  const TOTAL_USER_STEPS = (isNewFarmer ? TOTAL_USER_STEPS_NEW : TOTAL_USER_STEPS_EXPERIENCED) + usStepAddition;
   const progressNum = Math.min(step, TOTAL_USER_STEPS); // 0-based, for dots
   const progressPercent = step <= 0 ? 0 : Math.round((progressNum / TOTAL_USER_STEPS) * 100);
 
@@ -343,6 +372,11 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
     if (voiceEnabled && currentVoiceKey) trackVoiceStepCompleted(currentVoiceKey, voiceLang);
     const nextRaw = step + 1;
     const nextKey = STEP_KEYS[nextRaw];
+    // Skip U.S. farm-type step when country isn't the U.S.
+    if (nextKey === 'usFarmType' && !isUsCountry(form.countryCode)) {
+      setStep(nextRaw + 1);
+      return;
+    }
     // Skip recommendation step for experienced farmers
     if (nextKey === 'recommendation' && form.experienceLevel !== 'new') {
       setStep(nextRaw + 1);
@@ -353,6 +387,11 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
   const goBack = () => {
     const prevRaw = step - 1;
     const prevKey = STEP_KEYS[prevRaw];
+    // Skip U.S. farm-type step going backwards when country isn't the U.S.
+    if (prevKey === 'usFarmType' && !isUsCountry(form.countryCode)) {
+      setStep(Math.max(0, prevRaw - 1));
+      return;
+    }
     // Skip recommendation step going backwards for experienced farmers
     if (prevKey === 'recommendation' && form.experienceLevel !== 'new') {
       setStep(Math.max(0, prevRaw - 1));
@@ -440,6 +479,17 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         locationMethod: form.locationMethod || null,
         farmSizeCategory: form.farmSizeCategory || null,
         experienceLevel: form.experienceLevel || null,
+        // U.S. state-aware fields (only populated when country === US/USA;
+        // nullable on the backend so non-U.S. flows are unaffected).
+        stateCode: isUsCountry(form.countryCode) ? (form.stateCode || null) : null,
+        farmType: isUsCountry(form.countryCode) ? (form.farmType || null) : null,
+        beginnerLevel: isUsCountry(form.countryCode) ? (form.beginnerLevel || null) : null,
+        growingStyle: isUsCountry(form.countryCode) && form.farmType === 'backyard'
+          ? (form.growingStyle || null)
+          : null,
+        farmPurpose: isUsCountry(form.countryCode) && form.farmType === 'backyard'
+          ? (form.farmPurpose || null)
+          : null,
       });
 
       clearDraft();
@@ -755,6 +805,110 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 }}
               >
                 {form.countryCode ? t('common.next') : t('common.skip')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ STEP: U.S. farm type (conditional) ═══════════ */}
+        {currentStep === 'usFarmType' && (
+          <div style={S.stepContent}>
+            <div style={S.stepIcon}>{'\uD83C\uDF3D'}</div>
+            <h2 style={S.title}>{t('wizard.usStep.title')}</h2>
+            <p style={S.subtitle}>{t('wizard.usStep.subtitle')}</p>
+
+            <div style={{ ...S.fieldWide, display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <label style={S.usLabel}>
+                <span style={S.usLabelText}>{t('usRec.form.state')}</span>
+                <select
+                  value={form.stateCode || ''}
+                  onChange={(e) => setForm(f => ({ ...f, stateCode: e.target.value }))}
+                  style={S.usSelect}
+                  data-testid="wizard-us-state"
+                >
+                  <option value="">{t('wizard.usStep.chooseState')}</option>
+                  {US_POSTAL_CODES.map(([code, name]) => (
+                    <option key={code} value={code}>{name} ({code})</option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={S.usLabel}>
+                <span style={S.usLabelText}>{t('usRec.form.farmType')}</span>
+                <select
+                  value={form.farmType || ''}
+                  onChange={(e) => setForm(f => ({ ...f, farmType: e.target.value }))}
+                  style={S.usSelect}
+                  data-testid="wizard-us-farmtype"
+                >
+                  <option value="">{t('wizard.usStep.choose')}</option>
+                  <option value="backyard">{t('usRec.farmType.backyard')}</option>
+                  <option value="small_farm">{t('usRec.farmType.smallFarm')}</option>
+                  <option value="commercial">{t('usRec.farmType.commercial')}</option>
+                </select>
+              </label>
+
+              <label style={S.usLabel}>
+                <span style={S.usLabelText}>{t('usRec.form.beginnerLevel')}</span>
+                <select
+                  value={form.beginnerLevel || ''}
+                  onChange={(e) => setForm(f => ({ ...f, beginnerLevel: e.target.value }))}
+                  style={S.usSelect}
+                  data-testid="wizard-us-beginner"
+                >
+                  <option value="">{t('wizard.usStep.choose')}</option>
+                  <option value="beginner">{t('usRec.beginner.beginner')}</option>
+                  <option value="intermediate">{t('usRec.beginner.intermediate')}</option>
+                  <option value="advanced">{t('usRec.beginner.advanced')}</option>
+                </select>
+              </label>
+
+              {form.farmType === 'backyard' && (
+                <>
+                  <label style={S.usLabel}>
+                    <span style={S.usLabelText}>{t('usRec.form.growingStyle')}</span>
+                    <select
+                      value={form.growingStyle || ''}
+                      onChange={(e) => setForm(f => ({ ...f, growingStyle: e.target.value }))}
+                      style={S.usSelect}
+                      data-testid="wizard-us-style"
+                    >
+                      <option value="">{t('wizard.usStep.choose')}</option>
+                      <option value="container">{t('usRec.style.container')}</option>
+                      <option value="raised_bed">{t('usRec.style.raisedBed')}</option>
+                      <option value="in_ground">{t('usRec.style.inGround')}</option>
+                      <option value="mixed">{t('usRec.style.mixed')}</option>
+                    </select>
+                  </label>
+
+                  <label style={S.usLabel}>
+                    <span style={S.usLabelText}>{t('usRec.form.purpose')}</span>
+                    <select
+                      value={form.farmPurpose || ''}
+                      onChange={(e) => setForm(f => ({ ...f, farmPurpose: e.target.value }))}
+                      style={S.usSelect}
+                      data-testid="wizard-us-purpose"
+                    >
+                      <option value="">{t('wizard.usStep.choose')}</option>
+                      <option value="home_food">{t('usRec.purpose.homeFood')}</option>
+                      <option value="sell_locally">{t('usRec.purpose.sellLocally')}</option>
+                      <option value="learning">{t('usRec.purpose.learning')}</option>
+                      <option value="mixed">{t('usRec.purpose.mixed')}</option>
+                    </select>
+                  </label>
+                </>
+              )}
+            </div>
+
+            <div style={S.btnRow}>
+              <button onClick={goBack} style={S.secondaryBtn}>{t('common.back')}</button>
+              <button
+                onClick={goNext}
+                style={S.primaryBtn}
+                disabled={!form.stateCode || !form.farmType}
+                data-testid="wizard-us-next"
+              >
+                {t('common.next')}
               </button>
             </div>
           </div>
@@ -1552,6 +1706,18 @@ const S = {
     padding: '0.75rem 1.2rem', background: 'transparent', color: '#A1A1AA',
     border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', fontWeight: 600, fontSize: '0.9rem',
     cursor: 'pointer', minHeight: '52px', WebkitTapHighlightColor: 'transparent',
+  },
+  // U.S. farm-type step
+  usLabel: { display: 'flex', flexDirection: 'column', gap: '0.375rem', width: '100%' },
+  usLabelText: {
+    fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 600,
+    textTransform: 'uppercase', letterSpacing: '0.04em',
+  },
+  usSelect: {
+    width: '100%', padding: '0.75rem', borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: '#1E293B', color: '#fff', fontSize: '0.9375rem',
+    minHeight: '48px',
   },
   // Experience level
   experienceBtn: {

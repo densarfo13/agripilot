@@ -111,6 +111,129 @@ const T = {
   'mode.full': {
     en: 'Full', fr: 'Complet', sw: 'Kamili', ha: 'Cikakke', tw: 'Nyinaa',
   },
+
+  // ─── U.S. crop recommendation screen ──────────────────────
+  'usRec.title': {
+    en: 'Find crops that fit your farm',
+    fr: 'Trouvez les cultures adaptées à votre ferme',
+    sw: 'Pata mazao yanayofaa shamba lako',
+    ha: 'Nemo amfanin gona masu dacewa da gonarka',
+    tw: 'Hwehwɛ afudeɛ a ɛfata w\'afuo',
+    hi: 'अपने खेत के लिए उपयुक्त फसलें खोजें',
+  },
+  'usRec.subtitle': {
+    en: 'Pick your state and we\'ll rank crops by season, climate, and your setup.',
+    fr: 'Choisissez votre état et nous classerons les cultures.',
+    sw: 'Chagua jimbo lako na tutaorodhesha mazao.',
+    ha: 'Zaɓi jiharka mu shirya amfanin gona masu dacewa.',
+    tw: 'Yi wo man na yɛbɛto afudeɛ a ɛfata.',
+    hi: 'अपना राज्य चुनें और हम फसलों को मौसम, जलवायु और आपके सेटअप के अनुसार क्रमबद्ध करेंगे।',
+  },
+  'usRec.hint.chooseState': {
+    en: 'Choose a state to see recommendations.',
+    fr: 'Choisissez un état pour voir les recommandations.',
+    sw: 'Chagua jimbo ili uone mapendekezo.',
+    ha: 'Zaɓi jiha domin ganin shawarwari.',
+    tw: 'Yi man bi na hwɛ akwankyerɛ.',
+    hi: 'सुझाव देखने के लिए एक राज्य चुनें।',
+  },
+  'usRec.errorLoad': {
+    en: 'Could not load recommendations. Try again.',
+    fr: 'Impossible de charger les recommandations.',
+    sw: 'Imeshindwa kupakia mapendekezo. Jaribu tena.',
+    ha: 'Ba a iya loda shawarwari ba. Sake gwadawa.',
+    tw: 'Yɛantumi amfa akwankyerɛ aba. San hwehwɛ.',
+    hi: 'सुझाव लोड नहीं हो सके। पुनः प्रयास करें।',
+  },
+
+  'usRec.form.state':         { en: 'State',          fr: 'État',            sw: 'Jimbo',       ha: 'Jiha',           tw: 'Ɔman',        hi: 'राज्य' },
+  'usRec.form.farmType':      { en: 'Farm type',      fr: 'Type de ferme',   sw: 'Aina ya shamba', ha: 'Irin gona',  tw: 'Afuo su',     hi: 'खेत का प्रकार' },
+  'usRec.form.beginnerLevel': { en: 'Experience',     fr: 'Expérience',      sw: 'Uzoefu',      ha: 'Kwarewa',        tw: 'Osuahunu',    hi: 'अनुभव स्तर' },
+  'usRec.form.growingStyle':  { en: 'Growing style',  fr: 'Style de culture',sw: 'Mtindo wa kilimo', ha: 'Salon noma',tw: 'Dua kwan',    hi: 'उगाने का तरीका' },
+  'usRec.form.purpose':       { en: 'Purpose',        fr: 'Objectif',        sw: 'Lengo',       ha: 'Dalili',         tw: 'Botaeɛ',      hi: 'उद्देश्य' },
+
+  'usRec.farmType.backyard':   { en: 'Backyard',       fr: 'Jardin',          sw: 'Nyuma',       ha: 'Bayan gida',     tw: 'Efie akyi',   hi: 'पिछवाड़ा' },
+  'usRec.farmType.smallFarm':  { en: 'Small farm',     fr: 'Petite ferme',    sw: 'Shamba dogo', ha: 'Karamar gona',   tw: 'Afuo ketewa', hi: 'छोटा खेत' },
+  'usRec.farmType.commercial': { en: 'Commercial',     fr: 'Commercial',      sw: 'Biashara',    ha: 'Kasuwanci',      tw: 'Dwadie',      hi: 'वाणिज्यिक' },
+
+  'usRec.beginner.beginner':    { en: 'Just starting',  fr: 'Débutant',       sw: 'Mpya',        ha: 'Sabon',          tw: 'Foforɔ',      hi: 'शुरुआती' },
+  'usRec.beginner.intermediate':{ en: 'Some experience',fr: 'Intermédiaire',   sw: 'Uzoefu kidogo',ha: 'Matsakaici',    tw: 'Mfinimfini',  hi: 'मध्यम' },
+  'usRec.beginner.advanced':    { en: 'Experienced',   fr: 'Expérimenté',     sw: 'Mwenye uzoefu', ha: 'Gogagge',      tw: 'Nimdefoɔ',    hi: 'अनुभवी' },
+
+  'usRec.style.container':  { en: 'Containers',   fr: 'Pots',          sw: 'Vyombo',        ha: 'Tuluna',      tw: 'Asenaa',     hi: 'कंटेनर' },
+  'usRec.style.raisedBed':  { en: 'Raised beds',  fr: 'Plates-bandes', sw: 'Vitanda vya juu', ha: 'Gadaje masu tsayi', tw: 'Mmoa mpa', hi: 'उठी हुई क्यारी' },
+  'usRec.style.inGround':   { en: 'In the ground',fr: 'En pleine terre', sw: 'Chini',         ha: 'A ƙasa',       tw: 'Asase mu',   hi: 'ज़मीन में' },
+  'usRec.style.mixed':      { en: 'Mixed',        fr: 'Mixte',         sw: 'Mchanganyiko',  ha: 'Gauraya',     tw: 'Ɛfra',      hi: 'मिश्रित' },
+
+  'usRec.purpose.homeFood':    { en: 'Home food',    fr: 'Alimentation', sw: 'Chakula cha nyumbani', ha: 'Abinci na gida', tw: 'Fie aduane', hi: 'घरेलू भोजन' },
+  'usRec.purpose.sellLocally': { en: 'Sell locally', fr: 'Vendre localement', sw: 'Uza karibu', ha: 'Sayar a kusa', tw: 'Tɔn wɔ hɔ', hi: 'स्थानीय रूप से बेचें' },
+  'usRec.purpose.learning':    { en: 'Learning',     fr: 'Apprendre',    sw: 'Kujifunza',   ha: 'Koyo',        tw: 'Adesua',     hi: 'सीखना' },
+  'usRec.purpose.mixed':       { en: 'A bit of all', fr: 'Un peu de tout', sw: 'Vyote',     ha: 'Duka kaɗan',  tw: 'Ne nyinaa',  hi: 'सब कुछ थोड़ा' },
+
+  'usRec.header.backyard':   { en: 'Best backyard crops for {state}, USA',   fr: 'Meilleures cultures de jardin pour {state}, USA', sw: 'Mazao bora ya nyuma kwa {state}, USA', ha: 'Amfanin gona mafi kyau na bayan gida don {state}, USA', tw: 'Efie akyi afudeɛ a ɛyɛ pa ma {state}, USA', hi: '{state}, यूएसए के लिए सबसे अच्छी पिछवाड़ा फसलें' },
+  'usRec.header.smallFarm':  { en: 'Best small-farm crops for {state}, USA', fr: 'Meilleures cultures de petite ferme pour {state}, USA', sw: 'Mazao bora ya shamba dogo kwa {state}, USA', ha: 'Amfanin gona mafi kyau na karamar gona don {state}, USA', tw: 'Afuo ketewa afudeɛ a ɛyɛ pa ma {state}, USA', hi: '{state}, यूएसए के लिए सबसे अच्छी छोटी खेत फसलें' },
+  'usRec.header.commercial': { en: 'Best crops for {state}, USA',            fr: 'Meilleures cultures pour {state}, USA', sw: 'Mazao bora kwa {state}, USA', ha: 'Amfanin gona mafi kyau don {state}, USA', tw: 'Afudeɛ a ɛyɛ pa ma {state}, USA', hi: '{state}, यूएसए के लिए सबसे अच्छी फसलें' },
+
+  'usRec.bucket.best':         { en: 'Best matches',        fr: 'Meilleures options', sw: 'Zinazofaa zaidi', ha: 'Mafi dacewa',   tw: 'Nea ɛyɛ pa paa', hi: 'सबसे अच्छे विकल्प' },
+  'usRec.bucket.alsoConsider': { en: 'Also consider',       fr: 'À envisager aussi',  sw: 'Zingatia pia',    ha: 'Ku yi tunanin wadannan', tw: 'San susuw wɔ', hi: 'ये भी विचार करें' },
+  'usRec.bucket.avoid':        { en: 'Not recommended now', fr: 'Non recommandé maintenant', sw: 'Hairui sasa', ha: 'Ba a shawarta yanzu', tw: 'Mfa seesei', hi: 'अभी अनुशंसित नहीं' },
+
+  'usRec.whyThisCrop': { en: 'Why this crop',  fr: 'Pourquoi',    sw: 'Kwa nini',    ha: 'Me ya sa',  tw: 'Deɛ enti', hi: 'यह फसल क्यों' },
+  'usRec.riskNotes':   { en: 'Watch out for',  fr: 'Attention à', sw: 'Jihadhari na',ha: 'Kula da',    tw: 'Hwɛ yie', hi: 'ध्यान दें' },
+  'usRec.plant':       { en: 'Plant',          fr: 'Planter',     sw: 'Panda',       ha: 'Shuka',      tw: 'Dua',     hi: 'बोएँ' },
+  'usRec.harvest':     { en: 'Harvest',        fr: 'Récolte',     sw: 'Vuna',        ha: 'Girbi',      tw: 'Otwa',    hi: 'कटाई' },
+  'usRec.weeks':       { en: 'weeks',          fr: 'semaines',    sw: 'wiki',        ha: 'makonni',    tw: 'nnawɔtwe',hi: 'सप्ताह' },
+
+  'usRec.diff.easy':   { en: 'Easy',   fr: 'Facile',  sw: 'Rahisi',  ha: 'Mai sauƙi', tw: 'Ɛnyɛ den', hi: 'आसान' },
+  'usRec.diff.medium': { en: 'Medium', fr: 'Moyen',   sw: 'Wastani', ha: 'Matsakaici', tw: 'Mfinimfini', hi: 'मध्यम' },
+  'usRec.diff.hard':   { en: 'Hard',   fr: 'Difficile',sw: 'Ngumu', ha: 'Mai wuyar',  tw: 'Ɛyɛ den',  hi: 'कठिन' },
+
+  'usRec.water.low':    { en: 'Low water',    fr: 'Peu d\'eau', sw: 'Maji kidogo', ha: 'Ruwa kaɗan',  tw: 'Nsuo kakra', hi: 'कम पानी' },
+  'usRec.water.medium': { en: 'Medium water', fr: 'Eau moyenne', sw: 'Maji wastani', ha: 'Ruwa matsakaici', tw: 'Nsuo mfinimfini', hi: 'मध्यम पानी' },
+  'usRec.water.high':   { en: 'High water',   fr: 'Beaucoup d\'eau', sw: 'Maji mengi', ha: 'Ruwa mai yawa', tw: 'Nsuo pii', hi: 'अधिक पानी' },
+
+  'usRec.badge.beginner':  { en: 'Beginner Friendly', fr: 'Facile',         sw: 'Rahisi',       ha: 'Mai sauƙi',     tw: 'Ɛnyɛ den',     hi: 'शुरुआती अनुकूल' },
+  'usRec.badge.container': { en: 'Container Friendly',fr: 'Pot',             sw: 'Kyombo',       ha: 'Ga tulu',       tw: 'Asena',        hi: 'कंटेनर अनुकूल' },
+  'usRec.badge.market':    { en: 'Strong Local Market', fr: 'Marché local', sw: 'Soko Imara',   ha: 'Kasuwa mai ƙarfi', tw: 'Adwa a ɛyɛ', hi: 'मजबूत स्थानीय बाज़ार' },
+  'usRec.badge.heat':      { en: 'Heat Tolerant',     fr: 'Résiste chaleur',sw: 'Hustaalimili joto', ha: 'Mai juriyar zafi', tw: 'Hyew', hi: 'गर्मी सहनशील' },
+  'usRec.badge.frost':     { en: 'Frost Risk',        fr: 'Risque gel',     sw: 'Hatari ya theluji',ha: 'Hatsarin sanyi', tw: 'Awɔw asiane', hi: 'पाला जोखिम' },
+  'usRec.badge.cool':      { en: 'Cool Season',       fr: 'Saison fraîche', sw: 'Msimu Baridi', ha: 'Lokacin sanyi', tw: 'Awɔw berɛ',    hi: 'ठंडा मौसम' },
+  'usRec.badge.warm':      { en: 'Warm Season',       fr: 'Saison chaude',  sw: 'Msimu Joto',   ha: 'Lokacin zafi',  tw: 'Hyew berɛ',    hi: 'गर्म मौसम' },
+  'usRec.badge.drought':   { en: 'Drought Tolerant',  fr: 'Résiste sécheresse', sw: 'Hustahimili ukame', ha: 'Mai juriyar fari', tw: 'Osukɔmhia', hi: 'सूखा सहनशील' },
+
+  // Onboarding — U.S. farm-type step
+  'wizard.usStep.title': {
+    en: 'Tell us about your U.S. farm',
+    fr: 'Parlez-nous de votre ferme américaine',
+    sw: 'Tueleze kuhusu shamba lako la Marekani',
+    ha: 'Faɗa mana game da gonarka ta Amurka',
+    tw: 'Ka wo Amerika afuo ho asɛm',
+    hi: 'अपने यू.एस. खेत के बारे में बताएं',
+  },
+  'wizard.usStep.subtitle': {
+    en: 'We\'ll use your state and setup to rank the right crops.',
+    fr: 'Nous utiliserons votre état pour classer les bonnes cultures.',
+    sw: 'Tutatumia jimbo lako kuorodhesha mazao sahihi.',
+    ha: 'Za mu yi amfani da jiharka don shirya amfanin gona.',
+    tw: 'Yɛde wo man bɛto afudeɛ a ɛfata.',
+    hi: 'हम आपके राज्य और सेटअप का उपयोग सही फसलों की रैंकिंग के लिए करेंगे।',
+  },
+  'wizard.usStep.chooseState': {
+    en: 'Choose a state…',
+    fr: 'Choisissez un état…',
+    sw: 'Chagua jimbo…',
+    ha: 'Zaɓi jiha…',
+    tw: 'Yi ɔman bi…',
+    hi: 'एक राज्य चुनें…',
+  },
+  'wizard.usStep.choose': {
+    en: 'Choose…',
+    fr: 'Choisir…',
+    sw: 'Chagua…',
+    ha: 'Zaɓi…',
+    tw: 'Yi…',
+    hi: 'चुनें…',
+  },
   'offline.showingCachedStale': {
     en: 'Showing last saved tasks — may be outdated',
     fr: 'Affichage des dernières tâches — peut être obsolète',

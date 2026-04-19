@@ -40,6 +40,7 @@ const MyFarmPage = lazy(() => import('./pages/MyFarmPage.jsx'));
 const FarmerProgressPage = lazy(() => import('./pages/FarmerProgressPage.jsx'));
 const CropFitIntake = lazy(() => import('./pages/CropFitIntake.jsx'));
 const CropRecommendations = lazy(() => import('./pages/CropRecommendations.jsx'));
+const USCropRecommendations = lazy(() => import('./pages/USCropRecommendations.jsx'));
 const CropSummary = lazy(() => import('./pages/CropSummary.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
@@ -245,6 +246,7 @@ export default function App() {
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />
             <Route path="/crop-fit" element={<CropFitIntake />} />
+            <Route path="/crop-fit/us" element={<USCropRecommendations />} />
             <Route path="/settings" element={<FarmerSettingsPage />} />
             <Route path="/scan-crop" element={<CameraScanPage />} />
             <Route path="/land-check" element={<LandCheckPage />} />

@@ -1377,6 +1377,15 @@ model FarmProfile {
   status          String    @default("active") @map("status")  // active | inactive | archived
   isDefault       Boolean   @default(false) @map("is_default")
   experienceLevel String?   @map("experience_level")   // "new" | "experienced" — null = not answered
+
+  // ─── U.S. state-aware onboarding (used by /api/v2/recommend/us) ─
+  // These are nullable so non-U.S. farms and legacy rows keep working.
+  stateCode      String?  @map("state_code")        // "TX" | "MD" | ... | "DC"
+  farmType       String?  @map("farm_type")         // "backyard" | "small_farm" | "commercial"
+  beginnerLevel  String?  @map("beginner_level")    // "beginner" | "intermediate" | "advanced"
+  growingStyle   String?  @map("growing_style")     // "container" | "raised_bed" | "in_ground" | "mixed"
+  farmPurpose    String?  @map("farm_purpose")      // "home_food" | "sell_locally" | "learning" | "mixed"
+
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
   clientUpdatedAt  DateTime? @map("client_updated_at") // Timestamp from client device for conflict ordering

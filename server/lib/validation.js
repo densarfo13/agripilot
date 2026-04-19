@@ -67,6 +67,20 @@ export function validateResetPasswordPayload(body = {}) {
 
 const VALID_SIZE_UNITS = ['ACRE', 'HECTARE', 'SQUARE_METER'];
 const VALID_EXPERIENCE_LEVELS = ['new', 'experienced'];
+// U.S. farm-type extensions — optional on all flows; null-safe.
+const VALID_FARM_TYPES = ['backyard', 'small_farm', 'commercial'];
+const VALID_BEGINNER_LEVELS = ['beginner', 'intermediate', 'advanced'];
+const VALID_GROWING_STYLES = ['container', 'raised_bed', 'in_ground', 'mixed'];
+const VALID_FARM_PURPOSES = ['home_food', 'sell_locally', 'learning', 'mixed'];
+// 50 states + DC postal codes — used as a lightweight allow-list so a
+// bad state string can't poison the profile. Full resolver lives in
+// server/src/domain/us/usStates.js.
+const VALID_US_STATE_CODES = new Set([
+  'AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN',
+  'IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH',
+  'NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT',
+  'VT','VA','WA','WV','WI','WY',
+]);
 
 export function validateFarmProfilePayload(body = {}) {
   const errors = {};
@@ -83,6 +97,17 @@ export function validateFarmProfilePayload(body = {}) {
   const gpsLat = toNullableNumber(body.gpsLat);
   const gpsLng = toNullableNumber(body.gpsLng);
   const experienceLevel = toNullableString(body.experienceLevel);
+  // U.S. state-aware fields — all optional, never required.
+  const stateCodeRaw = toNullableString(body.stateCode);
+  const stateCode = stateCodeRaw ? stateCodeRaw.toUpperCase() : null;
+  const farmTypeRaw = toNullableString(body.farmType);
+  const farmType = farmTypeRaw ? farmTypeRaw.toLowerCase() : null;
+  const beginnerLevelRaw = toNullableString(body.beginnerLevel);
+  const beginnerLevel = beginnerLevelRaw ? beginnerLevelRaw.toLowerCase() : null;
+  const growingStyleRaw = toNullableString(body.growingStyle);
+  const growingStyle = growingStyleRaw ? growingStyleRaw.toLowerCase() : null;
+  const farmPurposeRaw = toNullableString(body.farmPurpose);
+  const farmPurpose = farmPurposeRaw ? farmPurposeRaw.toLowerCase() : null;
 
   if (!farmerName) errors.farmerName = 'Farmer name is required';
   if (!farmName) errors.farmName = 'Farm name is required';
@@ -111,6 +136,24 @@ export function validateFarmProfilePayload(body = {}) {
     errors.experienceLevel = 'Experience level must be "new" or "experienced"';
   }
 
+  // U.S. fields — validated only if supplied; bad values are dropped
+  // rather than rejected so legacy/non-U.S. clients don't break.
+  if (stateCode && !VALID_US_STATE_CODES.has(stateCode)) {
+    errors.stateCode = 'State code must be a valid U.S. postal code';
+  }
+  if (farmType && !VALID_FARM_TYPES.includes(farmType)) {
+    errors.farmType = 'farmType must be backyard | small_farm | commercial';
+  }
+  if (beginnerLevel && !VALID_BEGINNER_LEVELS.includes(beginnerLevel)) {
+    errors.beginnerLevel = 'beginnerLevel must be beginner | intermediate | advanced';
+  }
+  if (growingStyle && !VALID_GROWING_STYLES.includes(growingStyle)) {
+    errors.growingStyle = 'growingStyle must be container | raised_bed | in_ground | mixed';
+  }
+  if (farmPurpose && !VALID_FARM_PURPOSES.includes(farmPurpose)) {
+    errors.farmPurpose = 'farmPurpose must be home_food | sell_locally | learning | mixed';
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
@@ -125,6 +168,11 @@ export function validateFarmProfilePayload(body = {}) {
       gpsLat: Number.isNaN(gpsLat) ? null : gpsLat,
       gpsLng: Number.isNaN(gpsLng) ? null : gpsLng,
       experienceLevel: experienceLevel?.toLowerCase() || null,
+      stateCode,
+      farmType,
+      beginnerLevel,
+      growingStyle,
+      farmPurpose,
     },
   };
 }

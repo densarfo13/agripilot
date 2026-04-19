@@ -172,6 +172,14 @@ router.post('/', authenticate, async (req, res) => {
       profileData.experienceLevel = validation.data.experienceLevel;
     }
 
+    // U.S. state-aware fields — optional, only set if provided so
+    // non-U.S. farms and legacy clients keep the columns NULL.
+    if (validation.data.stateCode != null)     profileData.stateCode     = validation.data.stateCode;
+    if (validation.data.farmType != null)      profileData.farmType      = validation.data.farmType;
+    if (validation.data.beginnerLevel != null) profileData.beginnerLevel = validation.data.beginnerLevel;
+    if (validation.data.growingStyle != null)  profileData.growingStyle  = validation.data.growingStyle;
+    if (validation.data.farmPurpose != null)   profileData.farmPurpose   = validation.data.farmPurpose;
+
     // Crop stage — Zod-validated, optional on save
     if (req.body?.cropStage) {
       const stageResult = farmStageSchema.shape.cropStage.safeParse(req.body.cropStage);
@@ -291,6 +299,13 @@ router.post('/new', authenticate, async (req, res) => {
     if (validation.data.experienceLevel != null) {
       profileData.experienceLevel = validation.data.experienceLevel;
     }
+
+    // U.S. state-aware fields — optional, symmetric with the POST path above.
+    if (validation.data.stateCode != null)     profileData.stateCode     = validation.data.stateCode;
+    if (validation.data.farmType != null)      profileData.farmType      = validation.data.farmType;
+    if (validation.data.beginnerLevel != null) profileData.beginnerLevel = validation.data.beginnerLevel;
+    if (validation.data.growingStyle != null)  profileData.growingStyle  = validation.data.growingStyle;
+    if (validation.data.farmPurpose != null)   profileData.farmPurpose   = validation.data.farmPurpose;
 
     // Crop stage — Zod-validated, optional on new farm
     if (req.body?.cropStage) {
@@ -549,6 +564,8 @@ router.patch('/:id', authenticate, async (req, res) => {
       'farmerName', 'farmName', 'country', 'location', 'cropType',
       'size', 'sizeUnit', 'gpsLat', 'gpsLng', 'locationLabel', 'experienceLevel',
       'cropStage', 'plantedAt',
+      // U.S. state-aware fields (all optional)
+      'stateCode', 'farmType', 'beginnerLevel', 'growingStyle', 'farmPurpose',
       ...SEASONAL_FIELDS,
     ];
     const patch = {};
@@ -580,6 +597,12 @@ router.patch('/:id', authenticate, async (req, res) => {
     if (patch.gpsLng !== undefined) data.longitude = patch.gpsLng;
     if (patch.locationLabel !== undefined) data.locationLabel = patch.locationLabel || null;
     if (patch.experienceLevel !== undefined) data.experienceLevel = patch.experienceLevel;
+    // U.S. state-aware fields — normalize casing where relevant.
+    if (patch.stateCode !== undefined)    data.stateCode     = patch.stateCode ? String(patch.stateCode).toUpperCase() : null;
+    if (patch.farmType !== undefined)     data.farmType      = patch.farmType ? String(patch.farmType).toLowerCase() : null;
+    if (patch.beginnerLevel !== undefined) data.beginnerLevel = patch.beginnerLevel ? String(patch.beginnerLevel).toLowerCase() : null;
+    if (patch.growingStyle !== undefined) data.growingStyle  = patch.growingStyle ? String(patch.growingStyle).toLowerCase() : null;
+    if (patch.farmPurpose !== undefined)  data.farmPurpose   = patch.farmPurpose ? String(patch.farmPurpose).toLowerCase() : null;
     if (patch.landSizeValue !== undefined) data.landSizeValue = patch.landSizeValue;
     if (patch.landSizeUnit !== undefined) data.landSizeUnit = patch.landSizeUnit;
     if (patch.landSizeHectares !== undefined) data.landSizeHectares = patch.landSizeHectares;
