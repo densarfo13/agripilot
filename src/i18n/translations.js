@@ -4468,6 +4468,32 @@ const T = {
     en: 'Today: Safe for normal farm activity.', fr: 'Aujourd\'hui : activité normale sans risque.', sw: 'Leo: Salama kwa shughuli za kawaida.', ha: 'Yau: Lafiya don aikin gona na yau da kullun.', tw: 'Ɛnnɛ: Ɛyɛ sɛ woyɛ afuoyɛ adwuma.',
   },
 
+  // ─── Weather badge + risk wording for the Today screen ──
+  'weather.badge.low': {
+    en: 'Weather looks calm', fr: 'Météo calme', sw: 'Hali ya hewa shwari', ha: 'Yanayi lafiya', tw: 'Wim tebea yɛ dwoodwoo',
+  },
+  'weather.badge.medium': {
+    en: 'Weather needs attention', fr: 'Météo à surveiller', sw: 'Angalia hali ya hewa', ha: 'Kula da yanayi', tw: 'Hwɛ wim tebea yiye',
+  },
+  'weather.badge.high': {
+    en: 'Weather risk is high today', fr: 'Risque météo élevé', sw: 'Hatari kubwa ya hewa leo', ha: 'Haɗarin yanayi mai girma yau', tw: 'Wim tebea ho asiane yɛ kɛse ɛnnɛ',
+  },
+  'weather.alert.heatHigh': {
+    en: 'High heat expected today — keep crops watered and shaded.', fr: 'Forte chaleur — arrosez et ombragez.', sw: 'Joto kali leo — mwagilia na weka kivuli.', ha: 'Zafi mai yawa yau — shayar da kare rana.', tw: 'Ɛyɛ hyew ɛnnɛ — gugu na fa nyunu bɔ nnɔbae ho ban.',
+  },
+  'weather.alert.rainHeavy': {
+    en: 'Heavy rain expected — delay planting and protect harvested crops.', fr: 'Fortes pluies — retardez les plantations.', sw: 'Mvua kubwa — chelewesha kupanda, linda mavuno.', ha: 'Ruwan sama mai ƙarfi — jinkirta shuka.', tw: 'Nsuo bɛtɔ pa — twɛn na wo dua, bɔ wo nnɔbae ho ban.',
+  },
+  'weather.alert.frost': {
+    en: 'Frost possible overnight — cover sensitive seedlings.', fr: 'Gel possible — couvrez les plants sensibles.', sw: 'Theluji usiku — funika miche.', ha: 'Yiwuwar sanyi da dare — rufe tsire-tsire.', tw: 'Awɔw bɛba anadwo — kata nnɔbae foforɔ so.',
+  },
+  'weather.alert.humidityPest': {
+    en: 'Humidity is high — walk the rows and scout for disease.', fr: 'Humidité élevée — surveillez les maladies.', sw: 'Unyevu mkubwa — angalia magonjwa.', ha: 'Laima mai yawa — duba cututtuka.', tw: 'Nsu a ɛwɔ wim dɔɔso — hwɛ yadeɛ.',
+  },
+  'weather.alert.windHigh': {
+    en: 'Windy day — skip spraying and stake tall plants.', fr: 'Vent fort — ne pulvérisez pas.', sw: 'Upepo mkali — usipulizie.', ha: 'Iska mai ƙarfi — kada ku fesa.', tw: 'Mframa yɛ den — mfa aduru mpete.',
+  },
+
   // ─── Weather Intelligence (wx.*) ─────────────────────
   'wx.safe': { en: 'Safe for normal farm work', fr: 'Activité normale sans risque', sw: 'Salama kwa kazi ya shamba', ha: 'Lafiya don aikin gona', tw: 'Ɛyɛ sɛ woyɛ afuoyɛ adwuma' },
   'wx.safeReason': { en: 'Good conditions today.', fr: 'Bonnes conditions aujourd\'hui.', sw: 'Hali nzuri leo.', ha: 'Yanayi mai kyau yau.', tw: 'Tebea yɛ ɛnnɛ.' },

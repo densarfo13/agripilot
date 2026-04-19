@@ -48,13 +48,31 @@ export default function FarmerTodayPage() {
 
   // Re-derive localized tasks whenever the language or the raw today
   // payload changes. Using useMemo keeps the re-render cheap.
-  const { primaryTask, secondaryTasks, riskAlerts } = useMemo(() => {
+  const { primaryTask, secondaryTasks, riskAlerts, weatherAlerts, weatherBadge } = useMemo(() => {
     const today = state.today;
-    if (!today) return { primaryTask: null, secondaryTasks: [], riskAlerts: [] };
+    if (!today) {
+      return { primaryTask: null, secondaryTasks: [], riskAlerts: [], weatherAlerts: [], weatherBadge: null };
+    }
+    const wr = today.weatherRisk || null;
+    const badge = wr
+      ? {
+          level: wr.overallWeatherRisk || 'low',
+          labelKey:
+            wr.overallWeatherRisk === 'high' ? 'weather.badge.high' :
+            wr.overallWeatherRisk === 'medium' ? 'weather.badge.medium' :
+            'weather.badge.low',
+          color:
+            wr.overallWeatherRisk === 'high' ? '#EF4444' :
+            wr.overallWeatherRisk === 'medium' ? '#F59E0B' :
+            '#22C55E',
+        }
+      : null;
     return {
       primaryTask: today.primaryTask ? localizeServerTask(today.primaryTask, t) : null,
       secondaryTasks: (today.secondaryTasks || []).map((task) => localizeServerTask(task, t)),
       riskAlerts: today.riskAlerts || [],
+      weatherAlerts: today.weatherAlerts || [],
+      weatherBadge: badge,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.today, language]);
@@ -104,7 +122,7 @@ export default function FarmerTodayPage() {
 
       <SecondaryTaskList tasks={secondaryTasks} />
 
-      <RiskAlertsPanel alerts={riskAlerts} />
+      <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
 
       <ProgressSummaryCard
         tasksDone={tasksDone}

@@ -162,3 +162,45 @@ describe('buildTodayFeed — payload shape', () => {
     expect(feed.primaryTask.timeEstimateMinutes).toBeGreaterThan(0);
   });
 });
+
+describe('buildTodayFeed — weather integration', () => {
+  it('returns weatherRisk + weatherAlerts when weather is supplied', () => {
+    const feed = buildTodayFeed({
+      pendingTasks: [mkTask({ id: 'w', title: 'Water the rows' })],
+      cycle: { lifecycleStatus: 'growing' },
+      cropKey: 'tomato',
+      weather: { tempHighC: 40, rainChancePct: 90, rainMmNext24h: 30 },
+      now: NOW,
+    });
+    expect(feed.weatherRisk).toBeTruthy();
+    expect(feed.weatherRisk.overallWeatherRisk).toBe('high');
+    expect(feed.weatherAlerts.length).toBeGreaterThan(0);
+    expect(feed.riskAlerts.some((a) => /rain|heat/i.test(a))).toBe(true);
+  });
+
+  it('no weather context → no weatherRisk + empty weatherAlerts', () => {
+    const feed = buildTodayFeed({
+      pendingTasks: [mkTask({ id: 'w', title: 'Water rows' })],
+      cycle: { lifecycleStatus: 'growing' },
+      cropKey: 'tomato',
+      now: NOW,
+    });
+    expect(feed.weatherRisk).toBeNull();
+    expect(feed.weatherAlerts).toEqual([]);
+  });
+
+  it('rain shifts harvest ahead of watering in ranking', () => {
+    // Two medium-priority tasks — rain should push harvest to the top.
+    const feed = buildTodayFeed({
+      pendingTasks: [
+        mkTask({ id: 'water',  title: 'Water the rows', priority: 'medium', priorityScore: 55 }),
+        mkTask({ id: 'harv',   title: 'Harvest beans',  priority: 'medium', priorityScore: 50 }),
+      ],
+      cycle: { lifecycleStatus: 'growing' },
+      cropKey: 'bean',
+      weather: { rainMmNext24h: 40, rainChancePct: 95 },
+      now: NOW,
+    });
+    expect(feed.primaryTask.id).toBe('harv');
+  });
+});

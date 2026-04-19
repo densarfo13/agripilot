@@ -22,6 +22,9 @@
  */
 
 import { getCropStageOverlay } from './cropTaskTemplates.js';
+import { getWeatherRisk } from '../weather/weatherRiskEngine.js';
+import { adjustTasksForWeather } from '../weather/adjustTasksForWeather.js';
+import { getWeatherAlerts } from '../weather/weatherAlerts.js';
 
 /** Numeric urgency value by priority string. */
 const URGENCY = { high: 35, medium: 20, low: 8 };
@@ -69,7 +72,15 @@ function dayDiff(a, b) {
  */
 export function buildTodayFeed(ctx = {}) {
   const now = ctx.now instanceof Date ? ctx.now : new Date();
-  const pending = Array.isArray(ctx.pendingTasks) ? ctx.pendingTasks.slice() : [];
+  const rawPending = Array.isArray(ctx.pendingTasks) ? ctx.pendingTasks.slice() : [];
+
+  // ─── 0. Weather adjustment — reprioritize tasks in-place
+  //         before scoring so rain / heat / humidity shifts the
+  //         ranking naturally through the urgency weight.
+  const weatherRisk = ctx.weather ? getWeatherRisk(ctx.weather) : null;
+  const pending = weatherRisk
+    ? adjustTasksForWeather(rawPending, weatherRisk)
+    : rawPending;
 
   // ─── 1. Score every candidate ────────────────────────────
   const scored = pending.map((task) => ({
@@ -102,8 +113,10 @@ export function buildTodayFeed(ctx = {}) {
     secondaryTasks.push(entry.task);
   }
 
-  // ─── 4. Risk alerts — one compact line per active concern ─
-  const riskAlerts = buildRiskAlerts({ ctx, now, overdueCount: countOverdue(pending, now) });
+  // ─── 4. Risk alerts — combine static risk + weather alerts.
+  const staticAlerts = buildRiskAlerts({ ctx, now, overdueCount: countOverdue(pending, now) });
+  const weatherAlerts = weatherRisk ? getWeatherAlerts(weatherRisk) : [];
+  const riskAlerts = [...staticAlerts, ...weatherAlerts];
 
   // ─── 5. Next action summary ──────────────────────────────
   const overdueTasksCount = countOverdue(pending, now);
@@ -115,6 +128,8 @@ export function buildTodayFeed(ctx = {}) {
     primaryTask: primary ? shapeTask(primary) : null,
     secondaryTasks: secondaryTasks.map(shapeTask),
     riskAlerts,
+    weatherAlerts,
+    weatherRisk,
     nextActionSummary,
     overdueTasksCount,
     timeEstimateMinutes: primary ? estimateMinutes(primary) : null,

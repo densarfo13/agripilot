@@ -17,6 +17,7 @@ import { generateWeeklyTasks, summarizeTasks } from './taskPlanEngine.js';
 import { canTransition, isValidStatus, transitionError, ACTIVE_STATUSES } from './statusMachine.js';
 import { assessCycleRisk } from './cycleRiskEngine.js';
 import { buildTodayFeed } from '../today/todayEngine.js';
+import { getWeatherForFarm } from '../weather/weatherProvider.js';
 
 const prisma = new PrismaClient();
 
@@ -276,13 +277,14 @@ export async function computeCycleRisk({ user, cycleId }) {
  * overdue tasks, and a count of open high-severity issues so the UI
  * can render a risk alert banner.
  */
-export async function getTodayFeedForUser({ user, limit = 3 }) {
+export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
   if (!user?.id) throw httpErr(401, 'unauthenticated');
   const farms = await prisma.farmProfile.findMany({
-    where: { userId: user.id }, select: { id: true },
+    where: { userId: user.id },
+    select: { id: true, latitude: true, longitude: true },
   });
   const farmIds = farms.map((f) => f.id);
-  if (!farmIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null };
+  if (!farmIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null, weatherAlerts: [], weatherRisk: null };
 
   const cycles = await prisma.v2CropCycle.findMany({
     where: { profileId: { in: farmIds }, lifecycleStatus: { notIn: ['harvested', 'failed'] } },
@@ -290,7 +292,7 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
     take: 50,
   });
   const cycleIds = cycles.map((c) => c.id);
-  if (!cycleIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null };
+  if (!cycleIds.length) return { topTasks: [], overdue: [], openHighRiskIssues: 0, nextAction: null, weatherAlerts: [], weatherRisk: null };
 
   const now = new Date();
   const [pending, openIssues, cycleWithContext] = await Promise.all([
@@ -324,6 +326,19 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
   const riskLevel = (overdueCount >= 3 || highSevCount >= 2) ? 'high'
     : (overdueCount >= 1 || highSevCount >= 1) ? 'medium' : 'low';
 
+  // If the caller didn't supply pre-fetched weather, fall back to the
+  // default provider using the first farm's coordinates. Any provider
+  // failure resolves to null and the feed runs in no-weather mode.
+  let effectiveWeather = weather;
+  if (!effectiveWeather) {
+    const farmWithCoords = farms.find(
+      (f) => Number.isFinite(f.latitude) && Number.isFinite(f.longitude),
+    );
+    if (farmWithCoords) {
+      effectiveWeather = await getWeatherForFarm(farmWithCoords);
+    }
+  }
+
   const feed = buildTodayFeed({
     pendingTasks: pending,
     cycle: cycleWithContext,
@@ -331,6 +346,7 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
     riskLevel,
     openIssues,
     currentMonth: now.getMonth() + 1,
+    weather: effectiveWeather,
     now,
   });
 
@@ -338,6 +354,8 @@ export async function getTodayFeedForUser({ user, limit = 3 }) {
     primaryTask: feed.primaryTask,
     secondaryTasks: feed.secondaryTasks,
     riskAlerts: feed.riskAlerts,
+    weatherAlerts: feed.weatherAlerts || [],
+    weatherRisk: feed.weatherRisk || null,
     nextActionSummary: feed.nextActionSummary,
     overdueTasksCount: feed.overdueTasksCount,
     timeEstimateMinutes: feed.timeEstimateMinutes,
