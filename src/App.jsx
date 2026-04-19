@@ -46,6 +46,7 @@ const NGOOverview = lazy(() => import('./pages/NGOOverview.jsx'));
 const InterventionCenter = lazy(() => import('./pages/ngo/InterventionCenter.jsx'));
 const FarmerScoring = lazy(() => import('./pages/ngo/FarmerScoring.jsx'));
 const FundingReadiness = lazy(() => import('./pages/ngo/FundingReadiness.jsx'));
+const FarmerTodayPage = lazy(() => import('./pages/farmer/FarmerTodayPage.jsx'));
 const CropSummary = lazy(() => import('./pages/CropSummary.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
@@ -257,6 +258,7 @@ export default function App() {
             <Route path="/ngo/interventions" element={<InterventionCenter />} />
             <Route path="/ngo/scores" element={<FarmerScoring />} />
             <Route path="/ngo/funding" element={<FundingReadiness />} />
+            <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/settings" element={<FarmerSettingsPage />} />
             <Route path="/scan-crop" element={<CameraScanPage />} />
             <Route path="/land-check" element={<LandCheckPage />} />

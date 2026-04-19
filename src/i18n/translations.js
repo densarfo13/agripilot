@@ -344,6 +344,57 @@ const T = {
   'actionHome.todayHeader':          { en: 'Today on your farm',              fr: 'Aujourd\'hui sur votre ferme',   sw: 'Leo kwenye shamba lako',        ha: 'Yau a gonarku',               tw: 'Nnɛ wɔ w\'afuo so',           hi: 'आज आपके खेत पर' },
   'actionHome.primary.reportIssue':  { en: 'Report an issue',                 fr: 'Signaler un problème',           sw: 'Ripoti tatizo',                 ha: 'Bayar da rahoton matsala',    tw: 'Ka ɔhaw',                     hi: 'समस्या की रिपोर्ट करें' },
 
+  // ─── Generated task titles (type × crop × timing) ──────────
+  'generatedTask.crop.generic':       { en: 'your crop',        fr: 'votre culture',     sw: 'zao lako',         ha: 'amfaninku',       tw: 'w\'afudeɛ',       hi: 'आपकी फसल' },
+  'generatedTask.crop.tomato':        { en: 'tomatoes',         fr: 'tomates',           sw: 'nyanya',           ha: 'tumatir',         tw: 'ntɔs',            hi: 'टमाटर' },
+  'generatedTask.crop.pepper':        { en: 'peppers',          fr: 'poivrons',          sw: 'pilipili hoho',    ha: 'tattasai',        tw: 'mako',            hi: 'मिर्च' },
+  'generatedTask.crop.lettuce':       { en: 'lettuce',          fr: 'laitue',            sw: 'letusi',           ha: 'letas',           tw: 'letusi',          hi: 'लेट्यूस' },
+  'generatedTask.crop.kale':          { en: 'kale',             fr: 'chou frisé',        sw: 'sukuma wiki',      ha: 'kel',             tw: 'kale',            hi: 'केल' },
+  'generatedTask.crop.okra':          { en: 'okra',             fr: 'gombo',             sw: 'bamia',            ha: 'kubewa',          tw: 'nkruma',          hi: 'भिंडी' },
+  'generatedTask.crop.sweet_potato':  { en: 'sweet potatoes',   fr: 'patates douces',    sw: 'viazi vitamu',     ha: 'dankalin hausa',  tw: 'santom',          hi: 'शकरकंद' },
+  'generatedTask.crop.peanut':        { en: 'peanuts',          fr: 'arachides',         sw: 'karanga',          ha: 'gyada',           tw: 'nkateɛ',          hi: 'मूँगफली' },
+  'generatedTask.crop.sorghum':       { en: 'sorghum',          fr: 'sorgho',            sw: 'mtama',            ha: 'dawa',            tw: 'atoko',           hi: 'ज्वार' },
+  'generatedTask.crop.corn':          { en: 'corn',             fr: 'maïs',              sw: 'mahindi',          ha: 'masara',          tw: 'aburoo',          hi: 'मक्का' },
+
+  'generatedTask.timing.today':       { en: 'today',            fr: 'aujourd\'hui',      sw: 'leo',              ha: 'yau',             tw: 'nnɛ',             hi: 'आज' },
+  'generatedTask.timing.this_week':   { en: 'this week',        fr: 'cette semaine',     sw: 'wiki hii',         ha: 'wannan mako',     tw: 'dapɛn yi',        hi: 'इस सप्ताह' },
+  'generatedTask.timing.this_month':  { en: 'this month',       fr: 'ce mois-ci',        sw: 'mwezi huu',        ha: 'wannan wata',     tw: 'bosome yi',       hi: 'इस महीने' },
+
+  // Watering
+  'generatedTask.watering.title':     { en: 'Water {crop} {timing}', fr: 'Arroser {crop} {timing}', sw: 'Mwagilia {crop} {timing}', ha: 'Shayar da {crop} {timing}', tw: 'Gu {crop} nsuo {timing}', hi: '{timing} {crop} को पानी दें' },
+  'generatedTask.watering.detail':    { en: 'Keep the top inch of soil damp — not soggy.', fr: 'Maintenez le sol humide sans être détrempé.', sw: 'Udongo wa juu uwe na unyevu, si maji.', ha: 'Ajiye ƙasa mai laima, ba ƙasa mai jiƙa ba.', tw: 'Ma asase no ani yɛ fɔkyee na ɛnnyɛ bɛtɛɛ.', hi: 'मिट्टी की ऊपरी परत नम रखें — ज्यादा गीली नहीं।' },
+  'generatedTask.watering.eta':       { en: '15 min',           fr: '15 min',            sw: 'dakika 15',        ha: 'minti 15',        tw: 'simma 15',        hi: '15 मिनट' },
+
+  // Planting
+  'generatedTask.planting.title':     { en: 'Plant {crop} {timing}', fr: 'Planter {crop} {timing}', sw: 'Panda {crop} {timing}', ha: 'Shuka {crop} {timing}', tw: 'Dua {crop} {timing}', hi: '{timing} {crop} लगाएँ' },
+  'generatedTask.planting.detail':    { en: 'Follow the spacing on the packet and water the row in gently.', fr: 'Respectez l\'espacement et arrosez doucement.', sw: 'Fuata nafasi za pakiti na mwagilia kwa upole.', ha: 'Bi jeri akan kunshin da a hankali a shayar.', tw: 'Di nkyerɛkyerɛmu akyi na gu nsuo a ɛyɛ brɛoo.', hi: 'पैकेट पर दी गई दूरी रखें और हल्के से पानी दें।' },
+  'generatedTask.planting.eta':       { en: '30 min',           fr: '30 min',            sw: 'dakika 30',        ha: 'minti 30',        tw: 'simma 30',        hi: '30 मिनट' },
+
+  // Pest inspection
+  'generatedTask.pest_inspection.title':  { en: 'Inspect {crop} leaves for pests {timing}', fr: 'Inspecter les feuilles de {crop} {timing}', sw: 'Kagua majani ya {crop} kwa wadudu {timing}', ha: 'Duba ganyen {crop} don kwari {timing}', tw: 'Hwɛ {crop} nhahanam mu mmoawa {timing}', hi: '{timing} {crop} की पत्तियों पर कीट जाँचें' },
+  'generatedTask.pest_inspection.detail': { en: 'Flip leaves and check undersides — catch pests before damage spreads.', fr: 'Retournez les feuilles — attrapez les ravageurs tôt.', sw: 'Geuza majani uangalie chini — shika wadudu mapema.', ha: 'Juya ganye ka duba ƙasa — kama kwari da wuri.', tw: 'Dan nhahanam so hwɛ — kyere mmoawa ntɛm.', hi: 'पत्तियों को पलटकर नीचे देखें — नुकसान फैलने से पहले पकड़ें।' },
+  'generatedTask.pest_inspection.eta':    { en: '10 min',       fr: '10 min',            sw: 'dakika 10',        ha: 'minti 10',        tw: 'simma 10',        hi: '10 मिनट' },
+
+  // Fertilizer
+  'generatedTask.fertilizer.title':   { en: 'Feed {crop} {timing}', fr: 'Fertiliser {crop} {timing}', sw: 'Mbolea {crop} {timing}', ha: 'Shayar da takin {crop} {timing}', tw: 'Ma {crop} aduane {timing}', hi: '{timing} {crop} को खाद दें' },
+  'generatedTask.fertilizer.detail':  { en: 'Side-dress with compost or a balanced feed. Water it in.', fr: 'Compost ou engrais équilibré — arrosez après.', sw: 'Weka mbolea pembeni, kisha mwagilia.', ha: 'Saka takin gefe sannan ka shayar.', tw: 'Fa aduane to ɛho na gu nsuo.', hi: 'खाद पास में डालें और पानी दें।' },
+  'generatedTask.fertilizer.eta':     { en: '25 min',           fr: '25 min',            sw: 'dakika 25',        ha: 'minti 25',        tw: 'simma 25',        hi: '25 मिनट' },
+
+  // Harvest
+  'generatedTask.harvest.title':      { en: 'Harvest {crop} {timing}', fr: 'Récolter {crop} {timing}', sw: 'Vuna {crop} {timing}', ha: 'Girbi {crop} {timing}', tw: 'Twa {crop} {timing}', hi: '{timing} {crop} की कटाई करें' },
+  'generatedTask.harvest.detail':     { en: 'Pick at the right size. Daily picking keeps the plant producing.', fr: 'Cueillez quand c\'est mûr.', sw: 'Chuma kwa ukubwa sahihi. Kuchuma kila siku kunasaidia.', ha: 'Ka girbi lokacin da ya dace.', tw: 'Twa berɛ a ɛfata — daa daa twa ma afudeɛ no kɔ so.', hi: 'सही आकार पर चुनें — रोज़ चुनने से पौधा फलता रहता है।' },
+  'generatedTask.harvest.eta':        { en: '45 min',           fr: '45 min',            sw: 'dakika 45',        ha: 'minti 45',        tw: 'simma 45',        hi: '45 मिनट' },
+
+  // Weed control
+  'generatedTask.weed_control.title': { en: 'Weed {crop} rows {timing}', fr: 'Désherber {crop} {timing}', sw: 'Ng\'oa magugu katika {crop} {timing}', ha: 'Share ciyawa a {crop} {timing}', tw: 'Yi nwura fi {crop} mu {timing}', hi: '{timing} {crop} की पंक्तियाँ निराएँ' },
+  'generatedTask.weed_control.detail':{ en: 'Catch weeds small — they steal water and food from the crop.', fr: 'Petites mauvaises herbes volent eau et nutriments.', sw: 'Ng\'oa magugu yakiwa madogo.', ha: 'Kama ciyawa lokacin suna ƙanana.', tw: 'Yi nwura a ɛyɛ nketewa fi hɔ.', hi: 'छोटे खरपतवार जल्दी निकालें — ये पानी और भोजन छीनते हैं।' },
+  'generatedTask.weed_control.eta':   { en: '35 min',           fr: '35 min',            sw: 'dakika 35',        ha: 'minti 35',        tw: 'simma 35',        hi: '35 मिनट' },
+
+  // Custom task fallback
+  'generatedTask.custom.title':       { en: '{title}',          fr: '{title}',           sw: '{title}',           ha: '{title}',          tw: '{title}',         hi: '{title}' },
+  'generatedTask.custom.detail':      { en: '{detail}',         fr: '{detail}',          sw: '{detail}',          ha: '{detail}',         tw: '{detail}',        hi: '{detail}' },
+  'generatedTask.custom.eta':         { en: '15 min',           fr: '15 min',            sw: 'dakika 15',         ha: 'minti 15',         tw: 'simma 15',        hi: '15 मिनट' },
+
   // Risk-alert one-liners (feed from buildRiskAlerts)
   'actionHome.risks.overdueCount':       { en: '{n} overdue tasks',           fr: '{n} tâches en retard',       sw: 'Kazi {n} zimechelewa',    ha: 'Ayyuka {n} sun makara',     tw: 'Adwuma {n} a atwam',         hi: '{n} कार्य समय से पीछे' },
   'actionHome.risks.overdue':            { en: 'You have overdue tasks',      fr: 'Tâches en retard',           sw: 'Una kazi zilizochelewa',  ha: 'Kuna da ayyukan da suka makara', tw: 'Adwuma bi atwam',       hi: 'आपके कुछ कार्य समय से पीछे हैं' },
