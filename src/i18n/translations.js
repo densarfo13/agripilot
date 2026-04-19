@@ -277,6 +277,49 @@ const T = {
   'ngo.harvest.lossesKg':    { en: 'Losses kg',             fr: 'Pertes kg',            sw: 'Hasara kilogramu',   ha: 'Asara kilo',          tw: 'Anwo kilo',          hi: 'हानि किलो' },
   'ngo.openFarmers':         { en: 'Open farmer list',      fr: 'Voir les agriculteurs',sw: 'Fungua orodha',      ha: 'Duba jerin manoma',   tw: 'Hwɛ akuafoɔ',        hi: 'किसान सूची खोलें' },
 
+  // NGO v2 decision support
+  'ngoV2.recompute':             { en: 'Recompute',          fr: 'Recalculer',        sw: 'Hesabu tena',       ha: 'Sake lissafi',     tw: 'San bu',            hi: 'पुनर्गणना करें' },
+  'ngoV2.dueBy':                 { en: 'Due by',             fr: 'Échéance',          sw: 'Mwisho wa',         ha: 'Iyakar lokaci',    tw: 'Bere a ɛbɛso',      hi: 'इसके द्वारा' },
+  'ngoV2.markInProgress':        { en: 'In progress',        fr: 'En cours',          sw: 'Inaendelea',        ha: 'Ana gudana',       tw: 'Ɛrekɔ so',           hi: 'प्रगति में' },
+  'ngoV2.markResolved':          { en: 'Resolved',           fr: 'Résolu',            sw: 'Imetatuliwa',       ha: 'An warware',       tw: 'Wɔasiesie',          hi: 'हल किया गया' },
+  'ngoV2.dismiss':               { en: 'Dismiss',            fr: 'Ignorer',           sw: 'Puuza',             ha: 'Yi watsi',         tw: 'Gyae',               hi: 'खारिज करें' },
+
+  'ngoV2.priority.critical':     { en: 'Critical',           fr: 'Critique',          sw: 'Muhimu sana',       ha: 'Mai muhimmanci',   tw: 'Ɛho hia kɛseɛ',      hi: 'गंभीर' },
+  'ngoV2.priority.high':         { en: 'High',               fr: 'Élevée',            sw: 'Juu',               ha: 'Babba',            tw: 'Kɛseɛ',              hi: 'उच्च' },
+  'ngoV2.priority.medium':       { en: 'Medium',             fr: 'Moyenne',           sw: 'Wastani',           ha: 'Matsakaici',       tw: 'Mfinimfini',         hi: 'मध्यम' },
+  'ngoV2.priority.low':          { en: 'Low',                fr: 'Faible',            sw: 'Chini',             ha: 'Ƙanana',           tw: 'Ketewa',             hi: 'कम' },
+
+  'ngoV2.interventions.title':   { en: 'Intervention Center',fr: "Centre d'intervention", sw: 'Kituo cha uingiliaji', ha: 'Cibiyar shiga tsakani', tw: 'Nsusuansoɔ fie', hi: 'हस्तक्षेप केंद्र' },
+  'ngoV2.interventions.subtitle':{ en: 'Farmers who need attention right now.', fr: 'Agriculteurs nécessitant une attention.', sw: 'Wakulima wanaohitaji msaada.', ha: 'Manoman da suke buƙatar kulawa.', tw: 'Akuafoɔ a wɔhia mmoa.', hi: 'किसान जिन्हें अभी ध्यान चाहिए।' },
+  'ngoV2.interventions.queue':   { en: 'Priority queue',     fr: 'File prioritaire',  sw: 'Foleni ya kipaumbele', ha: 'Jerin fifiko', tw: 'Nea edi kan',         hi: 'प्राथमिकता कतार' },
+  'ngoV2.interventions.empty':   { en: 'Nothing to review right now.', fr: 'Rien à examiner.', sw: 'Hakuna cha kukagua.', ha: 'Babu abin da za a duba.', tw: 'Nea wobɛhwɛ nni hɔ.', hi: 'अभी समीक्षा के लिए कुछ नहीं।' },
+
+  'ngoV2.scores.title':          { en: 'Farmer Scoring',     fr: 'Notation des agriculteurs', sw: 'Alama za wakulima', ha: 'Makin manoma', tw: 'Akuafoɔ nkyerɛwoɔ',  hi: 'किसान स्कोरिंग' },
+  'ngoV2.scores.subtitle':       { en: 'Health, performance, consistency, risk, verification.', fr: 'Santé, performance, cohérence, risque, vérification.', sw: 'Afya, utendaji, uthabiti, hatari, uthibitisho.', ha: 'Lafiya, aiki, daidaito, haɗari, tabbatarwa.', tw: 'Apɔwmuden, dwumadie, gyinapɛn, asiane, adansedie.', hi: 'स्वास्थ्य, प्रदर्शन, स्थिरता, जोखिम, सत्यापन।' },
+  'ngoV2.scores.filterBand':     { en: 'Filter band',        fr: 'Filtrer par tranche', sw: 'Chuja bendi',      ha: 'Tace madauki',     tw: 'Tew kuo',             hi: 'बैंड फ़िल्टर' },
+  'ngoV2.scores.allBands':       { en: 'All bands',          fr: 'Toutes les tranches', sw: 'Bendi zote',       ha: 'Dukkan madauki',   tw: 'Kuo nyinaa',          hi: 'सभी बैंड' },
+  'ngoV2.scores.empty':          { en: 'No farmer scores yet. Run Recompute.', fr: 'Aucun score. Recalculez.', sw: 'Hakuna alama. Bonyeza Recompute.', ha: 'Babu maki. Danna Recompute.', tw: 'Nkyerɛwoɔ nni hɔ.', hi: 'अभी कोई स्कोर नहीं। पुनर्गणना चलाएँ।' },
+  'ngoV2.scores.band':           { en: 'Band',               fr: 'Tranche',           sw: 'Bendi',             ha: 'Madauki',          tw: 'Kuo',                hi: 'बैंड' },
+  'ngoV2.scores.health':         { en: 'Health',             fr: 'Santé',             sw: 'Afya',              ha: 'Lafiya',           tw: 'Apɔwmuden',          hi: 'स्वास्थ्य' },
+  'ngoV2.scores.performance':    { en: 'Performance',        fr: 'Performance',       sw: 'Utendaji',          ha: 'Aiki',             tw: 'Dwumadie',           hi: 'प्रदर्शन' },
+  'ngoV2.scores.consistency':    { en: 'Consistency',        fr: 'Cohérence',         sw: 'Uthabiti',          ha: 'Daidaito',         tw: 'Gyinapɛn',           hi: 'स्थिरता' },
+  'ngoV2.scores.risk':           { en: 'Risk',               fr: 'Risque',            sw: 'Hatari',            ha: 'Haɗari',           tw: 'Asiane',             hi: 'जोखिम' },
+  'ngoV2.scores.verification':   { en: 'Verification',       fr: 'Vérification',      sw: 'Uthibitisho',       ha: 'Tabbatarwa',       tw: 'Adansedie',          hi: 'सत्यापन' },
+
+  'ngoV2.band.excellent':        { en: 'Excellent',          fr: 'Excellent',         sw: 'Bora',              ha: 'Mai kyau sosai',   tw: 'Ɛyɛ pa paa',         hi: 'उत्तम' },
+  'ngoV2.band.good':             { en: 'Good',               fr: 'Bon',               sw: 'Nzuri',             ha: 'Nagari',           tw: 'Ɛyɛ',                hi: 'अच्छा' },
+  'ngoV2.band.fair':             { en: 'Fair',               fr: 'Correct',           sw: 'Wastani',           ha: 'Matsakaici',       tw: 'Ɛyɛ kakra',          hi: 'ठीक-ठाक' },
+  'ngoV2.band.weak':             { en: 'Weak',               fr: 'Faible',            sw: 'Dhaifu',            ha: 'Rauni',            tw: 'Mmerɛw',             hi: 'कमज़ोर' },
+
+  'ngoV2.funding.title':         { en: 'Funding Readiness',  fr: 'Admissibilité au financement', sw: 'Utayari wa ufadhili', ha: 'Shirya tallafin kuɗi', tw: 'Sika hwɛsoɔ', hi: 'वित्त-पोषण तत्परता' },
+  'ngoV2.funding.subtitle':      { en: 'Who is ready, who needs review, who should wait.', fr: "Qui est prêt, qui a besoin d'une révision.", sw: 'Nani yuko tayari, nani anahitaji ukaguzi.', ha: 'Wa ya shirya, wa yake buƙatar bita.', tw: 'Hwan na wayare.', hi: 'कौन तैयार है, किसे समीक्षा चाहिए, किसे प्रतीक्षा करनी चाहिए।' },
+  'ngoV2.funding.allDecisions':  { en: 'All decisions',      fr: 'Toutes',            sw: 'Zote',              ha: 'Duka',             tw: 'Ne nyinaa',          hi: 'सभी निर्णय' },
+  'ngoV2.funding.eligible':      { en: 'Eligible',           fr: 'Admissible',        sw: 'Anastahili',        ha: 'Cancanta',         tw: 'Fata',               hi: 'योग्य' },
+  'ngoV2.funding.monitor':       { en: 'Monitor',            fr: 'Surveiller',        sw: 'Fuatilia',          ha: 'Saka idanu',       tw: 'Hwɛ',                hi: 'निगरानी' },
+  'ngoV2.funding.needsReview':   { en: 'Needs review',       fr: 'Examen requis',     sw: 'Inahitaji ukaguzi', ha: 'Yana buƙatar bita',tw: 'Hia hwɛ',            hi: 'समीक्षा चाहिए' },
+  'ngoV2.funding.notYet':        { en: 'Not yet eligible',   fr: 'Pas encore',        sw: 'Bado haistahili',   ha: 'Ba tukuna',        tw: 'Ɛnnyɛ',              hi: 'अभी योग्य नहीं' },
+  'ngoV2.funding.empty':         { en: 'No decisions yet. Run Recompute.', fr: 'Aucune décision.', sw: 'Hakuna maamuzi.', ha: 'Babu yanke hukunci.', tw: 'Wɔnyɛɛ gyinaeɛ.', hi: 'अभी कोई निर्णय नहीं। पुनर्गणना चलाएँ।' },
+
   // Onboarding — U.S. farm-type step
   'wizard.usStep.title': {
     en: 'Tell us about your U.S. farm',

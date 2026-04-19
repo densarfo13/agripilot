@@ -2043,6 +2043,77 @@ model CycleTaskPlan {
   @@map("cycle_task_plans")
 }
 
+// ─── NGO intervention queue ─────────────────────────────────
+// One row per farm/cycle intervention that the intervention engine
+// thinks needs human attention. Persisted so staff can triage and
+// reviewer actions have an audit trail.
+model Intervention {
+  id                  String   @id @default(uuid())
+  farmProfileId       String   @map("farm_profile_id")
+  cropCycleId         String?  @map("crop_cycle_id")
+  interventionScore   Int      @map("intervention_score")     // 0..100
+  priority            String                                    // critical | high | medium | low
+  reason              String
+  recommendedAction   String   @map("recommended_action")
+  dueAt               DateTime? @map("due_at")
+  status              String   @default("open")                 // open | in_progress | resolved | dismissed
+  assignedTo          String?  @map("assigned_to")
+  resolvedAt          DateTime? @map("resolved_at")
+  reviewerNote        String?  @map("reviewer_note")
+  signals             Json?                                      // structured blob of what fired the score
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([farmProfileId], map: "idx_intervention_farm")
+  @@index([priority], map: "idx_intervention_priority")
+  @@index([status], map: "idx_intervention_status")
+  @@index([createdAt], map: "idx_intervention_created")
+  @@map("interventions")
+}
+
+// ─── Farmer scorecard (aggregate over all their activity) ────
+// One row per farmProfile. Recomputed on demand; not normalized
+// to status transitions so we can regenerate cheaply.
+model FarmerScore {
+  id                 String   @id @default(uuid())
+  farmProfileId      String   @unique @map("farm_profile_id")
+  performanceScore   Int      @map("performance_score")  // 0..100
+  consistencyScore   Int      @map("consistency_score")  // 0..100
+  riskScore          Int      @map("risk_score")         // 0..100 (higher = riskier)
+  verificationScore  Int      @map("verification_score") // 0..100
+  healthScore        Int      @map("health_score")       // weighted composite 0..100
+  scoreBand          String   @map("score_band")         // excellent | good | fair | weak
+  signals            Json?                                // input-counts used to compute scores
+  computedAt         DateTime @default(now()) @map("computed_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([scoreBand], map: "idx_farmer_score_band")
+  @@index([healthScore], map: "idx_farmer_score_health")
+  @@map("farmer_scores")
+}
+
+// ─── Funding eligibility decision ───────────────────────────
+model FundingDecision {
+  id                 String   @id @default(uuid())
+  farmProfileId      String   @map("farm_profile_id")
+  decision           String                               // eligible | monitor | not_yet_eligible | needs_review
+  reason             String
+  healthScore        Int?     @map("health_score")
+  verificationScore  Int?     @map("verification_score")
+  blockers           Json?                                // string[] of soft blockers
+  reviewerStatus     String   @default("pending") @map("reviewer_status")  // pending | approved | rejected
+  reviewerNote       String?  @map("reviewer_note")
+  decidedAt          DateTime @default(now()) @map("decided_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([farmProfileId], map: "idx_funding_decision_farm")
+  @@index([decision], map: "idx_funding_decision_outcome")
+  @@index([reviewerStatus], map: "idx_funding_decision_reviewer")
+  @@map("funding_decisions")
+}
+
 // ─── Recommendation snapshot (frozen at cycle-creation time) ─
 // When a farmer picks a recommendation and starts a crop cycle,
 // we freeze the full recommendation payload here so their plan
