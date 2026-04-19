@@ -955,6 +955,11 @@ const T = {
   'country_detected':      { en: 'Detected country', fr: 'Pays détecté',  sw: 'Nchi iliyogunduliwa', ha: 'Ƙasar da aka gano', tw: 'Ɔman a yɛahu',        hi: 'पता किया गया देश',    es: 'País detectado',    pt: 'País detectado',   ar: 'البلد المكتشف',     id: 'Negara terdeteksi' },
   'state_detected':        { en: 'Detected state',   fr: 'État détecté',  sw: 'Jimbo lililogunduliwa', ha: 'Jihar da aka gano', tw: 'Ɔman mu si a yɛahu', hi: 'पता किया गया राज्य', es: 'Estado detectado',  pt: 'Estado detectado', ar: 'الولاية المكتشفة', id: 'Provinsi terdeteksi' },
 
+  // Trust-gap confirmation + denial + offline
+  'setup.confirmFarmLocation':       { en: 'Is this your farm location?', hi: 'क्या यह आपके खेत का स्थान है?', tw: 'Wo afuo no wɔ ha anaa?',   es: '¿Es esta tu ubicación de cultivo?', pt: 'Esta é a localização da sua fazenda?', fr: 'Est-ce l\'emplacement de votre ferme ?', ar: 'هل هذا موقع مزرعتك؟',      sw: 'Je, hii ni eneo la shamba lako?', id: 'Apakah ini lokasi pertanian Anda?' },
+  'setup.locationPermissionDenied':  { en: 'Location access was not allowed', hi: 'स्थान की अनुमति नहीं मिली', tw: 'Wɔamma yɛn kwan sɛ yɛnhwɛ wo baabi', es: 'No se permitió el acceso a la ubicación', pt: 'Acesso à localização não permitido', fr: "L'accès à la localisation n'a pas été autorisé", ar: 'لم يُسمح بالوصول إلى الموقع', sw: 'Ruhusa ya eneo haikutolewa', id: 'Akses lokasi tidak diizinkan' },
+  'setup.offlineHint':               { en: 'You\'re offline — choose manually',     hi: 'आप ऑफ़लाइन हैं — खुद चुनें',       tw: 'Wonkɔ intanɛt so — fa wo ara kyerɛ', es: 'Estás sin conexión — elige manualmente',   pt: 'Você está offline — escolha manualmente', fr: 'Vous êtes hors ligne — choisissez manuellement', ar: 'أنت غير متصل — اختر يدويًا', sw: 'Uko nje ya mtandao — chagua mwenyewe', id: 'Anda offline — pilih secara manual' },
+
   // Onboarding — U.S. farm-type step
   'wizard.usStep.title': {
     en: 'Tell us about your U.S. farm',

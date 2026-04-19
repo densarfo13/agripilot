@@ -14,7 +14,15 @@
  * Canonical event types (keep this list authoritative):
  */
 export const EVENT_TYPES = Object.freeze({
-  ONBOARDING_COMPLETED:     'onboarding_completed',
+  ONBOARDING_COMPLETED:                      'onboarding_completed',
+  ONBOARDING_RESUMED:                        'onboarding_resumed',
+  ONBOARDING_LANGUAGE_SELECTED:              'onboarding_language_selected',
+  ONBOARDING_LOCATION_DETECT_CLICKED:        'onboarding_location_detect_clicked',
+  ONBOARDING_LOCATION_DETECT_SUCCESS:        'onboarding_location_detect_success',
+  ONBOARDING_LOCATION_DETECT_FAILED:         'onboarding_location_detect_failed',
+  ONBOARDING_LOCATION_PERMISSION_DENIED:     'onboarding_location_permission_denied',
+  ONBOARDING_MANUAL_COUNTRY_SELECTED:        'onboarding_manual_country_selected',
+  ONBOARDING_CONTINUE_BLOCKED_MISSING_COUNTRY:'onboarding_continue_blocked_missing_country',
   RECOMMENDATION_VIEWED:    'recommendation_viewed',
   CROP_SELECTED:            'crop_selected',
   TODAY_VIEWED:             'today_viewed',

@@ -21,6 +21,7 @@ import {
 import {
   resolveRegion, confirmRegion, detectRegionViaGps, recordGpsRegion,
 } from '../../lib/regionResolver.js';
+import { logClientEvent, ONBOARDING_EVENT_TYPES } from '../../utils/analyticsClient.js';
 
 const FIRST_LAUNCH_KEY = 'farroway:firstLaunchComplete';
 
@@ -86,24 +87,10 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
   //     country?, stateCode?, countryLabel?, stateLabel? }
   const [detectResult, setDetectResult] = useState({ status: 'idle' });
 
-  // Background GPS attempt. Stays silent on failure; never blocks the
-  // user from confirming manually.
-  useEffect(() => {
-    if (country) return; // already have a region
-    let cancelled = false;
-    setDetecting(true);
-    (async () => {
-      const region = await detectRegionViaGps({ geocoder });
-      if (cancelled) return;
-      setDetecting(false);
-      if (region?.country) {
-        recordGpsRegion(region);
-        setCountry((c) => c || region.country);
-        if (region.stateCode) setStateCode((s) => s || region.stateCode);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [country, geocoder]);
+  // Background GPS attempt is deliberately disabled now — the
+  // trust-gap fix requires the user to confirm before we apply the
+  // detected region to the farm-profile fields. The button path
+  // below is the only way detected values reach country/stateCode.
 
   // If the browser locale is a supported one and the user hasn't
   // chosen yet, nudge the default language there.
@@ -119,51 +106,131 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
   function pickLang(code) {
     setLangState(code);
     setLang(code); // live-update UI as the farmer experiments
+    logClientEvent(ONBOARDING_EVENT_TYPES.LANGUAGE_SELECTED, { lang: code });
+  }
+
+  function handleCountryChange(e) {
+    const next = e.target.value;
+    setCountry(next);
+    if (next) {
+      logClientEvent(ONBOARDING_EVENT_TYPES.MANUAL_COUNTRY_SELECTED, { country: next });
+    }
   }
 
   function handleConfirm() {
-    if (!country) return;
+    if (!country) {
+      logClientEvent(ONBOARDING_EVENT_TYPES.CONTINUE_BLOCKED_MISSING_COUNTRY, { lang });
+      return;
+    }
     confirmLanguage(lang);
     confirmRegion({ country, stateCode: country === 'US' ? stateCode : null });
     markFirstLaunchComplete();
+    logClientEvent(ONBOARDING_EVENT_TYPES.COMPLETED, { lang, country, stateCode: stateCode || null });
     onComplete?.({ lang, country, stateCode });
   }
 
   /**
    * handleDetectLocation — explicit "Detect my location" button.
-   * Runs geolocation + reverse-geocode; shows a calm confirmation
-   * block on success and a "couldn't detect" note on failure. Never
-   * blocks the user from continuing — manual fields stay first-class.
+   *
+   * TRUST-GAP FIX: we no longer apply the detected country/state
+   * to the form on success. We only stage it in `detectResult` and
+   * ask the user "Is this your farm location?". Nothing reaches the
+   * manual slots until they tap "Yes, use this".
+   *
+   * The detectResult.status carries five values:
+   *   idle | detecting | detected_success |
+   *   detection_failed | permission_denied
+   *
+   * We infer permission_denied from geolocation's own error code
+   * (1 === PERMISSION_DENIED); anything else (timeout / position
+   * unavailable / geocoder fail) collapses to detection_failed.
    */
   async function handleDetectLocation() {
+    logClientEvent(ONBOARDING_EVENT_TYPES.LOCATION_DETECT_CLICKED, {});
     setDetectResult({ status: 'detecting' });
     setDetecting(true);
-    try {
-      const region = await detectRegionViaGps({ geocoder });
+
+    // Pre-flight: distinguish permission_denied before we even call
+    // detectRegionViaGps (which collapses both paths to null). We do
+    // this by directly calling navigator.geolocation ourselves first,
+    // then delegating to detectRegionViaGps for the happy path.
+    const hasGeo = typeof navigator !== 'undefined' && navigator.geolocation;
+    if (!hasGeo) {
       setDetecting(false);
+      setDetectResult({ status: 'detection_failed' });
+      logClientEvent(ONBOARDING_EVENT_TYPES.LOCATION_DETECT_FAILED, { reason: 'unavailable' });
+      return;
+    }
+
+    try {
+      // Probe permission directly so we can show the right card.
+      const coords = await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('timeout')), 7000);
+        navigator.geolocation.getCurrentPosition(
+          (p) => { clearTimeout(timer); resolve(p); },
+          (err) => { clearTimeout(timer); reject(err); },
+          { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 },
+        );
+      });
+
+      let region = null;
+      if (typeof geocoder === 'function' && coords?.coords) {
+        try {
+          region = await geocoder(coords.coords.latitude, coords.coords.longitude);
+        } catch { region = null; }
+      }
+      setDetecting(false);
+
       if (!region?.country) {
-        setDetectResult({ status: 'failed' });
+        setDetectResult({ status: 'detection_failed' });
+        logClientEvent(ONBOARDING_EVENT_TYPES.LOCATION_DETECT_FAILED, { reason: 'no_country' });
         return;
       }
-      // Pre-fill the form fields (still editable) and surface the
-      // confirmation block so the user can accept or correct.
+
       const countryLabel = (COUNTRIES.find(([c]) => c === region.country) || [])[1] || region.country;
       const stateLabel = region.stateCode
         ? (US_STATES.find(([c]) => c === region.stateCode) || [])[1] || region.stateCode
         : null;
-      setCountry(region.country);
-      if (region.stateCode) setStateCode(region.stateCode);
+      // Stage only — DO NOT mutate country/stateCode here.
       setDetectResult({
-        status: 'ok',
+        status: 'detected_success',
         country: region.country,
         stateCode: region.stateCode || null,
         countryLabel,
         stateLabel,
       });
-    } catch {
+      logClientEvent(ONBOARDING_EVENT_TYPES.LOCATION_DETECT_SUCCESS, {
+        country: region.country, stateCode: region.stateCode || null,
+      });
+    } catch (err) {
       setDetecting(false);
-      setDetectResult({ status: 'failed' });
+      // code 1 === PERMISSION_DENIED per the Geolocation API spec.
+      if (err && err.code === 1) {
+        setDetectResult({ status: 'permission_denied' });
+        logClientEvent(ONBOARDING_EVENT_TYPES.LOCATION_PERMISSION_DENIED, {});
+      } else {
+        setDetectResult({ status: 'detection_failed' });
+        logClientEvent(ONBOARDING_EVENT_TYPES.LOCATION_DETECT_FAILED, { reason: 'error' });
+      }
     }
+  }
+
+  /**
+   * acceptDetected — the "Yes, use this" button. ONLY here do we
+   * apply the detected region to the editable form fields. The
+   * farmer can still correct them afterwards.
+   */
+  function acceptDetected() {
+    const r = detectResult;
+    if (r.status !== 'detected_success' || !r.country) return;
+    recordGpsRegion({ country: r.country, stateCode: r.stateCode || null });
+    setCountry(r.country);
+    if (r.stateCode) setStateCode(r.stateCode);
+    setDetectResult({ status: 'idle' }); // collapse the confirmation card
+  }
+
+  function rejectDetected() {
+    setDetectResult({ status: 'idle' });
   }
 
   function clearDetected() {
@@ -213,7 +280,7 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
           <div style={S.sectionLabel}>{t('country')}</div>
           <select
             value={country}
-            onChange={(e) => setCountry(e.target.value)}
+            onChange={handleCountryChange}
             style={S.select}
             data-testid="firstlaunch-country"
           >
@@ -258,9 +325,13 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
               : t('detect_location')}
           </button>
 
-          {detectResult.status === 'ok' && (
+          {/* TRUST-GAP CONFIRMATION: detected values are staged but
+              not applied until the farmer says yes. "Is this your
+              farm location?" is the explicit ask. */}
+          {detectResult.status === 'detected_success' && (
             <div style={S.detectOk} data-testid="firstlaunch-detect-ok">
               <strong>{t('location_detected')}</strong>
+              <div style={S.detectInlineHint}>{t('setup.confirmFarmLocation')}</div>
               <div style={S.detectLine}>
                 <span style={S.detectLabel}>{t('country_detected')}:</span>{' '}
                 <span>{detectResult.countryLabel}</span>
@@ -272,18 +343,43 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
                 </div>
               )}
               <div style={S.detectActions}>
-                <span style={S.detectInlineHint}>{t('use_detected_location')}</span>
-                <button type="button" onClick={clearDetected} style={S.detectClear}>
+                <button
+                  type="button"
+                  onClick={acceptDetected}
+                  style={S.detectAccept}
+                  data-testid="firstlaunch-detect-accept"
+                >
+                  {t('use_detected_location')}
+                </button>
+                <button
+                  type="button"
+                  onClick={rejectDetected}
+                  style={S.detectClear}
+                  data-testid="firstlaunch-detect-reject"
+                >
                   {t('choose_manually')}
                 </button>
               </div>
             </div>
           )}
 
-          {detectResult.status === 'failed' && (
+          {detectResult.status === 'detection_failed' && (
             <div style={S.detectFail} data-testid="firstlaunch-detect-failed">
               <strong>{t('location_detection_failed')}</strong>
               <div style={S.detectInlineHint}>{t('choose_manually')}</div>
+            </div>
+          )}
+
+          {detectResult.status === 'permission_denied' && (
+            <div style={S.detectFail} data-testid="firstlaunch-detect-denied">
+              <strong>{t('setup.locationPermissionDenied')}</strong>
+              <div style={S.detectInlineHint}>{t('choose_manually')}</div>
+            </div>
+          )}
+
+          {typeof navigator !== 'undefined' && navigator.onLine === false && (
+            <div style={S.offlineHint} data-testid="firstlaunch-offline">
+              {t('setup.offlineHint')}
             </div>
           )}
         </section>
@@ -384,8 +480,19 @@ const S = {
   },
   detectInlineHint: { fontSize: '0.75rem', color: '#9FB3C8' },
   detectClear: {
-    padding: '0.25rem 0.625rem', borderRadius: '8px',
+    padding: '0.375rem 0.75rem', borderRadius: '8px',
     border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
-    color: '#9FB3C8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+    color: '#9FB3C8', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+  },
+  detectAccept: {
+    padding: '0.375rem 0.75rem', borderRadius: '8px',
+    border: 'none', background: '#22C55E', color: '#fff',
+    fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+  },
+  offlineHint: {
+    marginTop: '0.5rem', padding: '0.5rem 0.625rem', borderRadius: '10px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px dashed rgba(255,255,255,0.12)',
+    color: '#9FB3C8', fontSize: '0.75rem',
   },
 };
