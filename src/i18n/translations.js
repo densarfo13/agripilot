@@ -368,6 +368,16 @@ const T = {
   'cropFit.warning.consider': { en: 'Consider these instead:', fr: 'Considérez plutôt :', sw: 'Zingatia haya badala yake:', ha: 'Ku yi tunanin waɗannan:', tw: 'Susuw wɔ yeinom ho:', hi: 'इसके बजाय ये फसलें देखें:' },
   'cropFit.warning.reason':   { en: 'Your climate is a weak match for this crop.', fr: 'Votre climat ne convient pas bien à cette culture.', sw: 'Hali ya hewa yako haifai zao hili.', ha: 'Yanayinku bai dace da wannan amfani ba.', tw: 'Wo mu ewim tebea mfa saa afudeɛ yi ho.', hi: 'आपकी जलवायु इस फसल के लिए कम अनुकूल है।' },
 
+  // ─── First-launch confirmation modal ─────────────────
+  'firstLaunch.title':     { en: "Let's set up Farroway for you", fr: 'Configurons Farroway pour vous', sw: 'Tuandae Farroway kwa ajili yako', ha: 'Bari mu shirya Farroway muku', tw: 'Ma yɛnhyehyɛ Farroway mma wo', hi: 'चलिए Farroway सेट करते हैं' },
+  'firstLaunch.subtitle':  { en: 'Pick your language, country, and state.',  fr: 'Choisissez votre langue, votre pays et votre état.', sw: 'Chagua lugha, nchi, na jimbo lako.', ha: 'Zaɓi harshe, ƙasa da jiharku.', tw: 'Fa wo kasa, wo man, ne wo man mu si', hi: 'अपनी भाषा, देश और राज्य चुनें।' },
+  'firstLaunch.language':  { en: 'Language',    fr: 'Langue',    sw: 'Lugha',    ha: 'Harshe',    tw: 'Kasa',    hi: 'भाषा' },
+  'firstLaunch.country':   { en: 'Country',     fr: 'Pays',      sw: 'Nchi',     ha: 'Ƙasa',      tw: 'Ɔman',    hi: 'देश' },
+  'firstLaunch.state':     { en: 'State',       fr: 'État',      sw: 'Jimbo',    ha: 'Jiha',      tw: 'Ɔman mu si', hi: 'राज्य' },
+  'firstLaunch.confirm':   { en: 'Continue',    fr: 'Continuer', sw: 'Endelea',  ha: 'Ci gaba',   tw: 'Toa so',  hi: 'जारी रखें' },
+  'firstLaunch.skip':      { en: 'Skip',        fr: 'Passer',    sw: 'Ruka',     ha: 'Tsallake',  tw: 'Twa mu',  hi: 'छोड़ें' },
+  'firstLaunch.detecting': { en: 'Detecting…',  fr: 'Détection…', sw: 'Inatambua…', ha: 'Ana ganowa…', tw: 'Yɛrehwɛ…', hi: 'पहचान की जा रही है…' },
+
   // Onboarding — U.S. farm-type step
   'wizard.usStep.title': {
     en: 'Tell us about your U.S. farm',

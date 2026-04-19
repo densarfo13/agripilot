@@ -14,6 +14,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import T from './translations.js';
 import HI from './hi.js';
+import TW from './tw.js';
+import { resolveLanguage, confirmLanguage } from '../lib/languageResolver.js';
 import {
   formatNumber,
   formatCount,
@@ -24,18 +26,20 @@ import {
 } from './format.js';
 import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
 
-// Merge the Hindi pack into the main dictionary once at module load.
-// Keeping HI in a separate file means Hindi rollouts are reviewable
-// in one place and don't bloat translations.js further.
-(function mergeHindi() {
-  for (const key of Object.keys(HI)) {
-    if (T[key]) {
-      // Only fill in when the main entry is missing hi — never clobber
-      // an existing in-place Hindi string that a translator may have
-      // committed directly into translations.js.
-      if (!T[key].hi) T[key].hi = HI[key];
-    } else {
-      T[key] = { hi: HI[key] };
+// Merge per-language packs into the main dictionary once at module
+// load. Separate packs keep language rollouts reviewable in one
+// place and prevent translations.js from bloating indefinitely.
+// Existing translator-authored values in the main dictionary always
+// win — packs only fill *empty* slots.
+(function mergePacks() {
+  const packs = [['hi', HI], ['tw', TW]];
+  for (const [lang, dict] of packs) {
+    for (const key of Object.keys(dict)) {
+      if (T[key]) {
+        if (!T[key][lang]) T[key][lang] = dict[key];
+      } else {
+        T[key] = { [lang]: dict[key] };
+      }
     }
   }
 })();
@@ -59,16 +63,14 @@ const LEGACY_VOICE_KEY = 'farroway:voiceLang';
 // Legacy key from old server-based i18n — keep in sync
 const LEGACY_UI_KEY = 'farroway_lang';
 
-/** Read persisted language, defaulting to 'en'. */
+/**
+ * Read the active UI language using the full priority chain:
+ * manual → saved profile → legacy storage → device locale → 'en'.
+ * The chain lives in languageResolver so region logic stays
+ * independent — a farmer can use Hindi UI with Maryland agronomy.
+ */
 export function getLanguage() {
-  try {
-    return localStorage.getItem(STORAGE_KEY)
-      || localStorage.getItem(LEGACY_VOICE_KEY)
-      || localStorage.getItem(LEGACY_UI_KEY)
-      || 'en';
-  } catch {
-    return 'en';
-  }
+  try { return resolveLanguage(); } catch { return 'en'; }
 }
 
 /**
@@ -87,16 +89,19 @@ function applyHtmlLang(code) {
   } catch { /* SSR / locked-down contexts */ }
 }
 
-/** Persist language to all storage keys (so VoiceBar reads the same value). */
+/**
+ * Persist language using the resolver so manual, profile, and legacy
+ * slots stay in sync (VoiceBar + server-side locale still read from
+ * the legacy keys). Broadcasts a change event for every subscriber.
+ */
 export function setLanguage(code) {
-  try {
-    localStorage.setItem(STORAGE_KEY, code);
-    localStorage.setItem(LEGACY_VOICE_KEY, code); // keeps voice aligned
-    localStorage.setItem(LEGACY_UI_KEY, code);     // keeps legacy i18n aligned
-  } catch { /* quota exceeded — no-op */ }
+  confirmLanguage(code);
   applyHtmlLang(code);
-  // Dispatch custom event so every useTranslation hook picks it up
-  window.dispatchEvent(new CustomEvent('farroway:langchange', { detail: code }));
+  // confirmLanguage already dispatches the event, but we re-dispatch
+  // here for older call sites that imported setLanguage directly
+  // before the resolver existed.
+  try { window.dispatchEvent(new CustomEvent('farroway:langchange', { detail: code })); }
+  catch { /* ignore */ }
 }
 
 // On module load, mirror the persisted language onto <html lang> so
