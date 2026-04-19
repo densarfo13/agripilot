@@ -54,6 +54,8 @@ const CreateListingPage = lazy(() => import('./pages/farmer/CreateListingPage.js
 const NotificationsPage = lazy(() => import('./pages/farmer/NotificationsPage.jsx'));
 const BrowseListingsPage = lazy(() => import('./pages/buyer/BrowseListingsPage.jsx'));
 const ListingDetailPage = lazy(() => import('./pages/buyer/ListingDetailPage.jsx'));
+const MyInterestsPage = lazy(() => import('./pages/buyer/MyInterestsPage.jsx'));
+const BuyerNotificationsPage = lazy(() => import('./pages/buyer/BuyerNotificationsPage.jsx'));
 const CropSummary = lazy(() => import('./pages/CropSummary.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
@@ -272,6 +274,8 @@ export default function App() {
             <Route path="/farmer/notifications" element={<NotificationsPage />} />
             <Route path="/market/browse" element={<BrowseListingsPage />} />
             <Route path="/market/listings/:id" element={<ListingDetailPage />} />
+            <Route path="/buyer/interests" element={<MyInterestsPage />} />
+            <Route path="/buyer/notifications" element={<BuyerNotificationsPage />} />
             <Route path="/onboarding/smart" element={<FarmerOnboardingPage />} />
             <Route path="/settings" element={<FarmerSettingsPage />} />
             <Route path="/scan-crop" element={<CameraScanPage />} />

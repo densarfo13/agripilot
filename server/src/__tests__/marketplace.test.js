@@ -15,7 +15,7 @@ import {
 } from '../services/market/listingMatcher.js';
 import {
   createListing, searchListings, expressInterest, respondToInterest,
-  markListingSold, closeListing, listMyListings,
+  markListingSold, closeListing, listMyListings, listBuyerInterests,
   listNotifications,
 } from '../services/market/marketService.js';
 import { t } from '../../../src/i18n/index.js';
@@ -107,7 +107,7 @@ describe('getTrustBadges honesty', () => {
 });
 
 // ─── service layer via stub prisma ───────────────────────
-function makeStub() {
+function makeStub({ farmProfiles = [] } = {}) {
   const listings = new Map();
   const interests = new Map();
   const notifications = [];
@@ -116,7 +116,15 @@ function makeStub() {
   let notifSeq = 0;
 
   return {
-    _state: { listings, interests, notifications },
+    _state: { listings, interests, notifications, farmProfiles },
+    farmProfile: {
+      findMany: async ({ where = {} } = {}) => {
+        if (where.userId?.in) {
+          return farmProfiles.filter((p) => where.userId.in.includes(p.userId));
+        }
+        return farmProfiles;
+      },
+    },
     cropListing: {
       create: async ({ data }) => {
         const id = 'L' + (++listingSeq);
@@ -169,6 +177,9 @@ function makeStub() {
         let rows = Array.from(interests.values());
         if (where.listing?.farmerId) {
           rows = rows.filter((i) => listings.get(i.listingId)?.farmerId === where.listing.farmerId);
+        }
+        if (where.buyerId) {
+          rows = rows.filter((i) => i.buyerId === where.buyerId);
         }
         rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         rows = rows.slice(0, take);
@@ -279,6 +290,64 @@ describe('marketService (stub prisma)', () => {
   });
 });
 
+// ─── Buyer MyInterests + controlled-contact reveal ───────
+describe('listBuyerInterests — contact reveal is gated on acceptance', () => {
+  const farmer = { id: 'user-farmer' };
+  const buyer = { id: 'user-buyer' };
+
+  it('pending interest does NOT include farmer contact', async () => {
+    const prisma = makeStub({
+      farmProfiles: [{ userId: farmer.id, farmerName: 'Ada', farmName: "Ada's Farm", country: 'US', stateCode: 'MD', contactPhone: '+1-202-555-0100' }],
+    });
+    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    await expressInterest(prisma, { user: buyer, listingId: l.listing.id, data: { quantityRequested: 10 } });
+    const { interests } = await listBuyerInterests(prisma, { user: buyer });
+    expect(interests).toHaveLength(1);
+    expect(interests[0].status).toBe('pending');
+    expect(interests[0].farmerContact).toBeNull();
+  });
+
+  it('accepted interest exposes farmer name + farm + location', async () => {
+    const prisma = makeStub({
+      farmProfiles: [{ userId: farmer.id, farmerName: 'Ada', farmName: "Ada's Farm", country: 'US', stateCode: 'MD', contactPhone: '+1-202-555-0100' }],
+    });
+    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const { interest } = await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
+    await respondToInterest(prisma, { user: farmer, id: interest.id, accept: true });
+    const { interests } = await listBuyerInterests(prisma, { user: buyer });
+    expect(interests[0].status).toBe('accepted');
+    expect(interests[0].farmerContact).toBeTruthy();
+    expect(interests[0].farmerContact.farmerName).toBe('Ada');
+    expect(interests[0].farmerContact.contactPhone).toBe('+1-202-555-0100');
+  });
+
+  it('declined interest never reveals contact', async () => {
+    const prisma = makeStub({
+      farmProfiles: [{ userId: farmer.id, farmerName: 'Ada', country: 'US' }],
+    });
+    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const { interest } = await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
+    await respondToInterest(prisma, { user: farmer, id: interest.id, accept: false });
+    const { interests } = await listBuyerInterests(prisma, { user: buyer });
+    expect(interests[0].status).toBe('declined');
+    expect(interests[0].farmerContact).toBeNull();
+  });
+
+  it('only returns interests the buyer themself submitted', async () => {
+    const prisma = makeStub({ farmProfiles: [] });
+    const otherBuyer = { id: 'user-other' };
+    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
+    await expressInterest(prisma, { user: otherBuyer, listingId: l.listing.id });
+    const mine = await listBuyerInterests(prisma, { user: buyer });
+    const theirs = await listBuyerInterests(prisma, { user: otherBuyer });
+    expect(mine.interests).toHaveLength(1);
+    expect(theirs.interests).toHaveLength(1);
+    expect(mine.interests[0].buyerId).toBe(buyer.id);
+    expect(theirs.interests[0].buyerId).toBe(otherBuyer.id);
+  });
+});
+
 // ─── i18n: every marketplace key lives in every locale ───
 const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
 const MARKET_KEYS = [
@@ -299,6 +368,17 @@ const MARKET_KEYS = [
   'market.trust.locationVerified', 'market.trust.recentActivity',
   'notifications.title', 'notification.interest.title',
   'notification.accepted.title', 'notification.declined.title',
+
+  'market.myInterests.title', 'market.myInterests.browse',
+  'market.myInterests.empty', 'market.myInterests.emptyHint',
+  'market.interestStatus.pending', 'market.interestStatus.accepted',
+  'market.interestStatus.declined', 'market.interestStatus.expired',
+  'market.interest.farmerNote', 'market.interest.contactReady',
+  'market.interest.contactHint', 'market.interest.awaitingContact',
+  'market.interest.declinedBody',
+  'market.action.sendInterest',
+  'market.detail.reservedTitle', 'market.detail.unavailableTitle',
+  'market.browse.noResults',
 ];
 
 // Words that legitimately share an identical spelling in some

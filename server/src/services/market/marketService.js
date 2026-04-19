@@ -346,6 +346,60 @@ export async function listMyInterests(_prisma, { user } = {}) {
   }
 }
 
+/**
+ * listBuyerInterests — the buyer's "my sent interests" view. Only
+ * returns rows where the current user is the buyer. Contact info
+ * for the farmer is attached ONLY when the interest was accepted,
+ * so the controlled-contact rule survives at the data layer too.
+ */
+export async function listBuyerInterests(_prisma, { user } = {}) {
+  const prisma = getPrisma(_prisma);
+  if (!user?.id) throw httpErr(401, 'unauthenticated');
+  try {
+    const rows = await prisma.marketInterest.findMany({
+      where: { buyerId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      include: { listing: true },
+    });
+    // Load farmer contact only for accepted interests. We attach a
+    // minimal card (name + maybe city); we never leak email/phone
+    // unless the farmer has opted in on their profile.
+    const farmerIds = Array.from(new Set(
+      rows.filter((r) => r.status === 'accepted').map((r) => r.listing?.farmerId).filter(Boolean),
+    ));
+    let contactById = {};
+    if (farmerIds.length) {
+      try {
+        const profiles = await prisma.farmProfile.findMany({
+          where: { userId: { in: farmerIds } },
+          select: {
+            userId: true,
+            farmerName: true,
+            farmName: true,
+            country: true,
+            stateCode: true,
+            locationName: true,
+            contactPhone: true,
+            contactEmail: true,
+          },
+        });
+        contactById = Object.fromEntries(profiles.map((p) => [p.userId, p]));
+      } catch { /* columns absent — degrade silently */ }
+    }
+    return {
+      interests: rows.map((r) => ({
+        ...r,
+        farmerContact: r.status === 'accepted' && r.listing?.farmerId
+          ? contactById[r.listing.farmerId] || null
+          : null,
+      })),
+    };
+  } catch {
+    return { interests: [] };
+  }
+}
+
 export async function respondToInterest(_prisma, { user, id, accept, note }) {
   const prisma = getPrisma(_prisma);
   if (!user?.id) throw httpErr(401, 'unauthenticated');

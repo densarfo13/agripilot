@@ -29,7 +29,7 @@ import {
   createListing, createListingFromHarvest, listMyListings,
   updateListing, markListingSold, closeListing,
   searchListings, getListingPublic,
-  expressInterest, listMyInterests, respondToInterest,
+  expressInterest, listMyInterests, listBuyerInterests, respondToInterest,
   listNotifications, markNotificationRead,
 } from '../src/services/market/marketService.js';
 
@@ -110,6 +110,13 @@ router.post('/listings/:id/interested', ...AUTH, express.json(), async (req, res
 // ─── Interest management (farmer side) ───────────────────
 router.get('/farmer/interests', ...AUTH, async (req, res) => {
   try { res.json(await listMyInterests(prisma, { user: req.user })); }
+  catch (err) { handleErr(res, err); }
+});
+
+// Buyer's "my sent interests" feed — contact reveal gated by the
+// service layer to accepted rows only.
+router.get('/buyer/interests', ...AUTH, async (req, res) => {
+  try { res.json(await listBuyerInterests(prisma, { user: req.user })); }
   catch (err) { handleErr(res, err); }
 });
 

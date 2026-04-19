@@ -76,6 +76,12 @@ export async function expressInterest(listingId, data = {}) {
 export async function listMyInterests() {
   return handle(await fetch('/api/farmer/interests', { credentials: 'include' }));
 }
+
+/** Buyer's sent-interest feed. Contact on the farmer is populated only
+ *  for rows with status === 'accepted'. */
+export async function listBuyerInterests() {
+  return handle(await fetch('/api/buyer/interests', { credentials: 'include' }));
+}
 export async function acceptInterest(id, note) {
   return handle(await fetch(`/api/interests/${encodeURIComponent(id)}/accept`, {
     ...JSON_POST, body: JSON.stringify({ note: note || null }),

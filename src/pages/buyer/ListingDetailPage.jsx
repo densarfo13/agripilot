@@ -1,8 +1,13 @@
 /**
  * ListingDetailPage — buyer-facing listing view with the interest
- * form. Contact info is deliberately absent until the farmer
- * accepts — the UI shows the status of the buyer's own interest
- * if one exists.
+ * form.
+ *
+ * Guardrails:
+ *   - farmer contact is NEVER exposed here; the controlled-contact
+ *     card lives on MyInterestsPage and only populates after the
+ *     farmer accepts.
+ *   - non-active listings (reserved / sold / closed) show a muted
+ *     "no longer available" card instead of the interest form.
  *
  * Route: /market/listings/:id
  */
@@ -11,13 +16,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { getListing, expressInterest } from '../../hooks/useMarket.js';
 import ListingCard from '../../components/market/ListingCard.jsx';
+import BuyerInterestForm from '../../components/market/BuyerInterestForm.jsx';
 
 export default function ListingDetailPage() {
   const { t } = useAppSettings();
   const navigate = useNavigate();
   const { id } = useParams();
   const [state, setState] = useState({ loading: true, listing: null, error: null });
-  const [form, setForm] = useState({ quantityRequested: '', offeredPrice: '', note: '' });
   const [submitState, setSubmitState] = useState({ busy: false, submitted: false, error: null });
 
   useEffect(() => {
@@ -33,18 +38,10 @@ export default function ListingDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  const set = (k) => (e) => setForm((s) => ({ ...s, [k]: e.target.value }));
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (submitState.busy) return;
+  async function handleSubmit(payload) {
     setSubmitState({ busy: true, submitted: false, error: null });
     try {
-      await expressInterest(id, {
-        quantityRequested: form.quantityRequested ? Number(form.quantityRequested) : null,
-        offeredPrice: form.offeredPrice ? Number(form.offeredPrice) : null,
-        note: form.note?.trim() || null,
-      });
+      await expressInterest(id, payload);
       setSubmitState({ busy: false, submitted: true, error: null });
     } catch (err) {
       setSubmitState({ busy: false, submitted: false, error: err?.code || 'error' });
@@ -57,6 +54,8 @@ export default function ListingDetailPage() {
   if (!state.listing) {
     return <Shell><p style={S.muted}>{t('market.detail.notFound') || 'Listing not found.'}</p></Shell>;
   }
+
+  const isActive = state.listing.status === 'active';
 
   return (
     <Shell>
@@ -73,58 +72,34 @@ export default function ListingDetailPage() {
         </div>
       )}
 
-      {/* Contact is hidden by design — the farmer must accept the
-          interest before we reveal anything. */}
       <div style={S.contactNote}>
         {t('market.detail.contactNote') || 'Contact info will be shared after the farmer accepts your interest.'}
       </div>
 
-      {submitState.submitted ? (
-        <div style={S.success} data-testid="interest-success">
-          <strong>{t('market.interest.sentTitle') || 'Interest sent'}</strong>
-          <p style={S.successBody}>
-            {t('market.interest.sentBody')
-              || 'The farmer has been notified. You will see a response in your notifications.'}
+      {isActive ? (
+        <BuyerInterestForm
+          onSubmit={handleSubmit}
+          submitting={submitState.busy}
+          submitted={submitState.submitted}
+          error={submitState.error}
+          onBrowseMore={() => navigate('/market/browse')}
+        />
+      ) : (
+        <div style={S.closed} data-testid="listing-unavailable">
+          <strong>
+            {state.listing.status === 'reserved'
+              ? (t('market.detail.reservedTitle') || 'Currently reserved')
+              : (t('market.detail.unavailableTitle') || 'No longer available')}
+          </strong>
+          <p style={S.closedBody}>
+            {state.listing.status === 'reserved'
+              ? (t('market.detail.reservedBody') || 'Another buyer is finalizing this listing. It may re-open if that falls through.')
+              : (t('market.detail.unavailableBody') || 'This listing is no longer accepting new interest.')}
           </p>
-          <button type="button" onClick={() => navigate('/market/browse')} style={S.btnBack}>
+          <button type="button" onClick={() => navigate('/market/browse')} style={S.browseBtn}>
             {t('market.interest.browseMore') || 'Browse more'}
           </button>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} style={S.form} data-testid="interest-form">
-          <h3 style={S.formTitle}>{t('market.interest.title') || 'Tell the farmer what you need'}</h3>
-          <div style={S.row}>
-            <Field label={t('market.interest.quantity') || 'Quantity needed'} flex={1}>
-              <input type="number" min="0" step="0.1"
-                value={form.quantityRequested}
-                onChange={set('quantityRequested')}
-                style={S.input}
-                data-testid="interest-quantity"
-              />
-            </Field>
-            <Field label={t('market.interest.offered') || 'Offered price (optional)'} flex={1}>
-              <input type="number" min="0" step="0.01"
-                value={form.offeredPrice}
-                onChange={set('offeredPrice')}
-                style={S.input}
-                data-testid="interest-price"
-              />
-            </Field>
-          </div>
-          <Field label={t('market.interest.note') || 'Short note (optional)'}>
-            <textarea
-              value={form.note} onChange={set('note')}
-              maxLength={400} rows={3} style={S.textarea}
-              data-testid="interest-note"
-            />
-          </Field>
-          {submitState.error && (
-            <p style={S.err}>{t(`market.err.${submitState.error}`) || t('issue.err.generic')}</p>
-          )}
-          <button type="submit" disabled={submitState.busy} style={S.btnPrimary}>
-            {submitState.busy ? t('common.saving') : (t('market.action.interested') || 'Interested')}
-          </button>
-        </form>
       )}
     </Shell>
   );
@@ -135,15 +110,6 @@ function Shell({ children }) {
     <div style={S.page}>
       <div style={S.container}>{children}</div>
     </div>
-  );
-}
-
-function Field({ label, children, flex }) {
-  return (
-    <label style={{ ...S.field, ...(flex ? { flex } : {}) }}>
-      <span style={S.label}>{label}</span>
-      {children}
-    </label>
   );
 }
 
@@ -169,42 +135,17 @@ const S = {
     background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.22)',
     color: '#EAF2FF', fontSize: '0.8125rem', lineHeight: 1.4,
   },
-  form: {
-    display: 'flex', flexDirection: 'column', gap: '0.625rem',
+  closed: {
     padding: '1rem', borderRadius: '14px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px dashed rgba(255,255,255,0.15)',
+    color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.5rem',
   },
-  formTitle: { margin: 0, fontSize: '0.9375rem', fontWeight: 700 },
-  row: { display: 'flex', gap: '0.5rem' },
-  field: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
-  label: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 600 },
-  input: {
-    padding: '0.625rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem',
-  },
-  textarea: {
-    padding: '0.625rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem', resize: 'vertical',
-  },
-  err: { color: '#FCA5A5', fontSize: '0.8125rem', margin: 0 },
-  btnPrimary: {
-    padding: '0.875rem', borderRadius: '12px', border: 'none',
-    background: '#22C55E', color: '#fff',
-    fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
-  },
-  success: {
-    padding: '1rem', borderRadius: '14px',
-    background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.28)',
-    display: 'flex', flexDirection: 'column', gap: '0.5rem',
-  },
-  successBody: { margin: 0, fontSize: '0.875rem', color: '#EAF2FF' },
-  btnBack: {
+  closedBody: { margin: 0, fontSize: '0.875rem', color: '#9FB3C8' },
+  browseBtn: {
     alignSelf: 'flex-start',
     padding: '0.5rem 0.875rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
-    color: '#9FB3C8', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+    border: 'none', background: '#22C55E', color: '#fff',
+    fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
   },
 };
