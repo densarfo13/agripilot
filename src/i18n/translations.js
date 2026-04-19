@@ -463,6 +463,18 @@ const T = {
   'onboarding.crops.error':              { en: "We couldn't load recommendations. Try again.", fr: 'Chargement impossible.', sw: 'Hatukuweza kupakia.', ha: 'Ba a iya lodawa ba.', tw: 'Yɛantumi.',                    hi: 'सुझाव लोड नहीं हो सके।' },
   'onboarding.crops.offlineFallback':    { en: 'Offline — showing general picks for now.', fr: 'Hors ligne — sélection générale.', sw: 'Nje ya mtandao.', ha: 'Babu yanar gizo.',             tw: 'Wonni intanɛt.',               hi: 'ऑफ़लाइन — सामान्य विकल्प।' },
 
+  // ─── Cross-screen fit + crop-trait labels ───────────────
+  // These sit in the non-prefixed namespace so crop-plan, NGO, and
+  // dashboard screens can reuse them. Hausa is not yet provided by
+  // the reviewer; resolver falls back to English for locales not
+  // declared here. Include es / pt / ar / id for the 9-language rollout.
+  'fit.high':                            { en: 'High fit',   hi: 'उच्च उपयुक्तता',   tw: 'Ɛfata paa',      es: 'Alta compatibilidad',   pt: 'Alta compatibilidade',   fr: 'Très adapté',       ar: 'ملاءمة عالية',   sw: 'Ulinganifu wa juu',   id: 'Sangat cocok' },
+  'fit.medium':                          { en: 'Medium fit', hi: 'मध्यम उपयुक्तता', tw: 'Ɛfata kakra',    es: 'Compatibilidad media',  pt: 'Compatibilidade média',  fr: 'Adaptation moyenne', ar: 'ملاءمة متوسطة', sw: 'Ulinganifu wa kati',  id: 'Cukup cocok' },
+  'fit.low':                             { en: 'Low fit',    hi: 'कम उपयुक्तता',    tw: 'Ɛmfata paa',     es: 'Baja compatibilidad',   pt: 'Baixa compatibilidade',  fr: 'Faible adaptation',  ar: 'ملاءمة منخفضة', sw: 'Ulinganifu mdogo',    id: 'Kurang cocok' },
+  'cropTraits.beginnerFriendly':         { en: 'Beginner-friendly', hi: 'शुरुआती के लिए उपयुक्त', tw: 'Ɛfata wɔn a wɔrefi ase', es: 'Apto para principiantes', pt: 'Bom para iniciantes', fr: 'Adapté aux débutants', ar: 'مناسب للمبتدئين', sw: 'Inafaa kwa wanaoanza', id: 'Cocok untuk pemula' },
+  'cropTraits.lowWater':                 { en: 'Low water needs',   hi: 'कम पानी की जरूरत',       tw: 'Nsuo kakra na ehia',     es: 'Necesita poca agua',       pt: 'Precisa de pouca água', fr: 'Faible besoin en eau', ar: 'يحتاج ماء قليل', sw: 'Inahitaji maji kidogo', id: 'Kebutuhan air rendah' },
+  'cropTraits.droughtTolerant':          { en: 'Drought tolerant',  hi: 'सूखा सहनशील',             tw: 'Egyina ɔpɛ so',           es: 'Resistente a la sequía',   pt: 'Tolerante à seca',      fr: 'Tolérant à la sécheresse', ar: 'يتحمل الجفاف', sw: 'Inastahimili ukame',     id: 'Tahan kekeringan' },
+
   'onboarding.fit.high':                 { en: 'High fit',       fr: 'Idéal',           sw: 'Inafaa sana',       ha: 'Ya dace sosai',     tw: 'Ɛyɛ pa paa',      hi: 'उत्तम मेल' },
   'onboarding.fit.medium':               { en: 'Medium fit',     fr: 'Moyen',           sw: 'Inafaa kiasi',      ha: 'Ya dace',           tw: 'Mfinimfini',      hi: 'मध्यम' },
   'onboarding.fit.low':                  { en: 'Low fit',        fr: 'Faible',          sw: 'Hafifu',            ha: 'Rauni',             tw: 'Ɛnyɛ pa',         hi: 'कमज़ोर' },
