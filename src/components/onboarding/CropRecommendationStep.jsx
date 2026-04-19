@@ -116,6 +116,31 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
     if (top) handlePick(top);
   }
 
+  // Derive overall recommendation confidence from the farmer's
+  // context + the top-scored crop. Single source of truth — the
+  // Best and Also-consider sections both read from this so their
+  // wording stays consistent.
+  const overallConfidence = useMemo(() => {
+    const countrySupportTier = getCountrySupportTier(onboarding?.location?.country);
+    const locationCompleteness =
+      (onboarding?.location?.country ? 0.5 : 0) +
+      (onboarding?.location?.stateCode ? 0.4 : 0) +
+      (onboarding?.location?.city ? 0.1 : 0);
+    const topCrop = best[0] || possible[0] || null;
+    return getRecommendationConfidence({
+      countrySupportTier,
+      stateSupported: !!onboarding?.location?.stateCode,
+      cropSupportDepth: getCropSupportDepth(topCrop?.crop),
+      locationCompleteness,
+      fitLevel: topCrop?.fitLevel,
+    });
+  }, [onboarding?.location?.country, onboarding?.location?.stateCode, onboarding?.location?.city, best, possible]);
+
+  const bestTitleKey =
+    overallConfidence.level === 'high'   ? 'onboarding.crops.best' :
+    overallConfidence.level === 'medium' ? 'recConfidence.wording.suggested' :
+                                           'recConfidence.wording.limited';
+
   return (
     <div style={S.step}>
       <h2 style={S.title}>{t('onboarding.crops.title')}</h2>
@@ -150,51 +175,40 @@ export default function CropRecommendationStep({ onboarding, onPick, onBack }) {
             </div>
           )}
 
-          {(() => {
-            // Derive overall confidence once per render so the
-            // section heading stops promising "Best for you" when
-            // the data underneath is thin.
-            const countrySupportTier = getCountrySupportTier(onboarding?.location?.country);
-            const locationCompleteness =
-              (onboarding?.location?.country ? 0.5 : 0) +
-              (onboarding?.location?.stateCode ? 0.4 : 0) +
-              (onboarding?.location?.city ? 0.1 : 0);
-            const topCrop = visibleBest[0];
-            const overallConfidence = getRecommendationConfidence({
-              countrySupportTier,
-              stateSupported: !!onboarding?.location?.stateCode,
-              cropSupportDepth: getCropSupportDepth(topCrop?.crop),
-              locationCompleteness,
-              fitLevel: topCrop?.fitLevel,
-            });
-            const bestTitleKey = overallConfidence.level === 'high'
-              ? 'onboarding.crops.best'
-              : overallConfidence.level === 'medium'
-                ? 'recConfidence.wording.suggested'
-                : 'recConfidence.wording.limited';
-            return (
-              <>
-                {overallConfidence.level !== 'high' && (
-                  <div style={S.confidenceBanner} data-testid="confidence-banner">
-                    <span style={S.confidenceIcon}>{'\u2139\uFE0F'}</span>
-                    <span>{t('recConfidence.bannerBody')}</span>
-                  </div>
-                )}
-                <Section title={t(bestTitleKey)} crops={visibleBest} isBeginner={isBeginner}
-                         onboarding={onboarding} language={language}
-                         confidence={overallConfidence} onPick={handlePick} t={t}
-                         accent={CONFIDENCE_COLOR[overallConfidence.level]} />
-              </>
-            );
-          })()}
+          {overallConfidence.level !== 'high' && (
+            <div style={S.confidenceBanner} data-testid="confidence-banner">
+              <span style={S.confidenceIcon}>{'\u2139\uFE0F'}</span>
+              <span>{t('recConfidence.bannerBody')}</span>
+            </div>
+          )}
+          <Section
+            title={t(bestTitleKey)}
+            crops={visibleBest}
+            isBeginner={isBeginner}
+            onboarding={onboarding}
+            language={language}
+            confidence={overallConfidence}
+            onPick={handlePick}
+            t={t}
+            accent={CONFIDENCE_COLOR[overallConfidence.level]}
+          />
           {hasMoreAdvanced && (
             <button type="button" onClick={() => setShowAdvanced(true)} style={S.seeMore}>
               {t('onboarding.crops.seeMore')}
             </button>
           )}
 
-          <Section title={t('onboarding.crops.possible')} crops={possible} isBeginner={isBeginner}
-                   onboarding={onboarding} language={language} onPick={handlePick} t={t} accent="#F59E0B" />
+          <Section
+            title={t('onboarding.crops.possible')}
+            crops={possible}
+            isBeginner={isBeginner}
+            onboarding={onboarding}
+            language={language}
+            confidence={overallConfidence}
+            onPick={handlePick}
+            t={t}
+            accent="#F59E0B"
+          />
 
           {/* Advanced override — reveal low-fit / experimental crops. */}
           <label style={S.overrideRow}>

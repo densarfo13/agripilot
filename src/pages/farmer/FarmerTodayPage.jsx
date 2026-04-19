@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { getTodayFeed, completeCycleTask, listCropCycles } from '../../hooks/useCropCycles.js';
+import { usePreferenceSync } from '../../hooks/usePreferenceSync.js';
 import { localizeServerTask } from '../../utils/generateLocalizedTask.js';
 import { evaluateCropFit } from '../../utils/cropFit.js';
 import PrimaryTaskCard from '../../components/farmer/PrimaryTaskCard.jsx';
@@ -27,6 +28,10 @@ import SupportSection from '../../components/farmer/SupportSection.jsx';
 
 export default function FarmerTodayPage() {
   const { t, language, region } = useAppSettings();
+  // Side-effect hook — hydrates language + region from the backend
+  // profile on mount, and PATCHes the profile when either changes.
+  // Fire-and-forget; never blocks the UI.
+  usePreferenceSync();
   const [state, setState] = useState({ loading: true, today: null, cycles: null, error: null });
 
   const reload = useCallback(async () => {
