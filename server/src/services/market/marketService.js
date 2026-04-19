@@ -28,6 +28,7 @@ import {
   canTransitionListing, canTransitionInterest,
   getMatchingListings, getTrustBadges,
 } from './listingMatcher.js';
+import { logEvent, EVENT_TYPES } from '../analytics/eventLogService.js';
 
 const prismaFallback = new PrismaClient();
 
@@ -106,12 +107,19 @@ function sanitizeListingInput(raw = {}, defaults = {}) {
   };
 }
 
-export async function createListing(_prisma, { user, data } = {}) {
+export async function createListing(_prisma, { user, data, allowManualWithoutHarvest = false } = {}) {
   const prisma = getPrisma(_prisma);
   if (!user?.id) throw httpErr(401, 'unauthenticated');
   const clean = sanitizeListingInput(data);
   if (!clean.cropKey || !clean.country || !Number.isFinite(clean.quantity) || clean.quantity <= 0) {
     throw httpErr(400, 'invalid_listing');
+  }
+  // Supply-credibility rule: direct listings without a crop cycle
+  // are blocked unless the caller has explicitly opted into manual
+  // creation (admin tooling) or the user is an admin.
+  const isAdmin = user.role === 'admin';
+  if (!data?.cropCycleId && !allowManualWithoutHarvest && !isAdmin) {
+    throw httpErr(400, 'listing_requires_harvest_context');
   }
   try {
     const row = await prisma.cropListing.create({
@@ -122,6 +130,10 @@ export async function createListing(_prisma, { user, data } = {}) {
         ...clean,
         status: data?.status && ['draft', 'active'].includes(data.status) ? data.status : 'active',
       },
+    });
+    await logEvent(prisma, {
+      user, eventType: EVENT_TYPES.LISTING_CREATED,
+      metadata: { listingId: row.id, cropKey: row.cropKey, cropCycleId: row.cropCycleId || null },
     });
     return { listing: row };
   } catch (err) {
@@ -234,6 +246,10 @@ export async function markListingSold(_prisma, { user, id }) {
   const updated = await prisma.cropListing.update({
     where: { id }, data: { status: 'sold' },
   });
+  await logEvent(prisma, {
+    user, eventType: EVENT_TYPES.LISTING_SOLD,
+    metadata: { listingId: id, cropKey: row.cropKey },
+  });
   return { listing: updated };
 }
 
@@ -325,6 +341,10 @@ export async function expressInterest(_prisma, { user, listingId, data = {} } = 
       quantity: row.quantityRequested,
       offeredPrice: row.offeredPrice,
     },
+  });
+  await logEvent(prisma, {
+    user, eventType: EVENT_TYPES.BUYER_INTEREST_SUBMITTED,
+    metadata: { listingId: listing.id, interestId: row.id, cropKey: listing.cropKey },
   });
 
   return { interest: row };
@@ -442,6 +462,10 @@ export async function respondToInterest(_prisma, { user, id, accept, note }) {
       interestId: row.id,
       cropKey: row.listing.cropKey,
     },
+  });
+  await logEvent(prisma, {
+    user, eventType: accept ? EVENT_TYPES.INTEREST_ACCEPTED : EVENT_TYPES.INTEREST_DECLINED,
+    metadata: { listingId: row.listingId, interestId: row.id, cropKey: row.listing.cropKey },
   });
 
   return { interest: updated };

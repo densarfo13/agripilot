@@ -21,6 +21,7 @@
 import { ACTION_TYPES, normalizeAction } from './actionTypes.js';
 import { applyActionToRisk } from './responseEngine.js';
 import { computeHarvestOutcome } from './harvestOutcome.js';
+import { logEvent, EVENT_TYPES } from '../analytics/eventLogService.js';
 
 /**
  * persistCycleRisk(prisma, cycleId, action)
@@ -127,6 +128,10 @@ export async function recordTaskCompleted(prisma, { user, task, note }) {
   };
   await logAction(prisma, action);
   const riskBand = await persistCycleRisk(prisma, task.cropCycleId, action);
+  await logEvent(prisma, {
+    user, eventType: EVENT_TYPES.TASK_COMPLETED,
+    metadata: { taskId: task.id, cropCycleId: task.cropCycleId, priority: task.priority || 'medium' },
+  });
   return { task: updated, riskBand };
 }
 
@@ -154,6 +159,10 @@ export async function recordTaskSkipped(prisma, { user, task, reason }) {
   };
   await logAction(prisma, action);
   const riskBand = await persistCycleRisk(prisma, task.cropCycleId, action);
+  await logEvent(prisma, {
+    user, eventType: EVENT_TYPES.TASK_SKIPPED,
+    metadata: { taskId: task.id, cropCycleId: task.cropCycleId, reason: cleanReason },
+  });
   return { task: updated, riskBand };
 }
 
@@ -171,6 +180,10 @@ export async function recordIssueReported(prisma, { user, issue }) {
   };
   await logAction(prisma, action);
   const riskBand = await persistCycleRisk(prisma, issue.cropCycleId, action);
+  await logEvent(prisma, {
+    user, eventType: EVENT_TYPES.ISSUE_REPORTED,
+    metadata: { issueId: issue.id, category: issue.category, severity: issue.severity },
+  });
   return { issue, riskBand };
 }
 
@@ -221,6 +234,13 @@ export async function recordHarvestOutcome(prisma, { user, cycle, tasks = [], ac
   };
   await logAction(prisma, action);
   const riskBand = await persistCycleRisk(prisma, cycle.id, action);
+  await logEvent(prisma, {
+    user, eventType: EVENT_TYPES.HARVEST_SUBMITTED,
+    metadata: {
+      cropCycleId: cycle.id, cropKey: outcome.cropKey,
+      outcomeClass: outcome.outcomeClass, qualityBand: outcome.qualityBand,
+    },
+  });
   return { outcome, row, riskBand };
 }
 

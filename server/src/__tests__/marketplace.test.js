@@ -224,6 +224,7 @@ describe('marketService (stub prisma)', () => {
   it('creates an active listing end-to-end', async () => {
     const out = await createListing(prisma, {
       user: farmer,
+      allowManualWithoutHarvest: true,
       data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US', stateCode: 'MD' },
     });
     expect(out.listing.status).toBe('active');
@@ -231,8 +232,8 @@ describe('marketService (stub prisma)', () => {
   });
 
   it('search returns only active listings with match score + trust badges', async () => {
-    await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US', stateCode: 'MD' } });
-    const sold = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 10, quality: 'high', country: 'US', stateCode: 'MD' } });
+    await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US', stateCode: 'MD' } });
+    const sold = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 10, quality: 'high', country: 'US', stateCode: 'MD' } });
     await markListingSold(prisma, { user: farmer, id: sold.listing.id });
 
     const out = await searchListings(prisma, { crop: 'tomato', country: 'US', stateCode: 'MD' });
@@ -242,7 +243,7 @@ describe('marketService (stub prisma)', () => {
   });
 
   it('express interest creates a notification for the farmer', async () => {
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     await expressInterest(prisma, { user: buyer, listingId: l.listing.id, data: { quantityRequested: 10, note: 'need by Friday' } });
     const { notifications } = await listNotifications(prisma, { user: farmer });
     expect(notifications).toHaveLength(1);
@@ -251,12 +252,12 @@ describe('marketService (stub prisma)', () => {
   });
 
   it('refuses interest on the farmer’s own listing', async () => {
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     await expect(expressInterest(prisma, { user: farmer, listingId: l.listing.id })).rejects.toThrow('cannot_interest_own_listing');
   });
 
   it('accept moves listing to reserved + notifies the buyer', async () => {
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     const { interest } = await expressInterest(prisma, { user: buyer, listingId: l.listing.id, data: { quantityRequested: 10 } });
     await respondToInterest(prisma, { user: farmer, id: interest.id, accept: true });
     const { listings } = await listMyListings(prisma, { user: farmer });
@@ -266,7 +267,7 @@ describe('marketService (stub prisma)', () => {
   });
 
   it('decline notifies the buyer and leaves the listing active', async () => {
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     const { interest } = await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
     await respondToInterest(prisma, { user: farmer, id: interest.id, accept: false });
     const { listings } = await listMyListings(prisma, { user: farmer });
@@ -276,14 +277,14 @@ describe('marketService (stub prisma)', () => {
   });
 
   it('mark sold removes the listing from buyer search results', async () => {
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     await markListingSold(prisma, { user: farmer, id: l.listing.id });
     const { listings } = await searchListings(prisma, { crop: 'tomato', country: 'US' });
     expect(listings).toHaveLength(0);
   });
 
   it('close transitions from active / reserved to closed', async () => {
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     await closeListing(prisma, { user: farmer, id: l.listing.id });
     const row = prisma._state.listings.get(l.listing.id);
     expect(row.status).toBe('closed');
@@ -299,7 +300,7 @@ describe('listBuyerInterests — contact reveal is gated on acceptance', () => {
     const prisma = makeStub({
       farmProfiles: [{ userId: farmer.id, farmerName: 'Ada', farmName: "Ada's Farm", country: 'US', stateCode: 'MD', contactPhone: '+1-202-555-0100' }],
     });
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     await expressInterest(prisma, { user: buyer, listingId: l.listing.id, data: { quantityRequested: 10 } });
     const { interests } = await listBuyerInterests(prisma, { user: buyer });
     expect(interests).toHaveLength(1);
@@ -311,7 +312,7 @@ describe('listBuyerInterests — contact reveal is gated on acceptance', () => {
     const prisma = makeStub({
       farmProfiles: [{ userId: farmer.id, farmerName: 'Ada', farmName: "Ada's Farm", country: 'US', stateCode: 'MD', contactPhone: '+1-202-555-0100' }],
     });
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     const { interest } = await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
     await respondToInterest(prisma, { user: farmer, id: interest.id, accept: true });
     const { interests } = await listBuyerInterests(prisma, { user: buyer });
@@ -325,7 +326,7 @@ describe('listBuyerInterests — contact reveal is gated on acceptance', () => {
     const prisma = makeStub({
       farmProfiles: [{ userId: farmer.id, farmerName: 'Ada', country: 'US' }],
     });
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     const { interest } = await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
     await respondToInterest(prisma, { user: farmer, id: interest.id, accept: false });
     const { interests } = await listBuyerInterests(prisma, { user: buyer });
@@ -336,7 +337,7 @@ describe('listBuyerInterests — contact reveal is gated on acceptance', () => {
   it('only returns interests the buyer themself submitted', async () => {
     const prisma = makeStub({ farmProfiles: [] });
     const otherBuyer = { id: 'user-other' };
-    const l = await createListing(prisma, { user: farmer, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
+    const l = await createListing(prisma, { user: farmer, allowManualWithoutHarvest: true, data: { cropKey: 'tomato', quantity: 25, quality: 'high', country: 'US' } });
     await expressInterest(prisma, { user: buyer, listingId: l.listing.id });
     await expressInterest(prisma, { user: otherBuyer, listingId: l.listing.id });
     const mine = await listBuyerInterests(prisma, { user: buyer });

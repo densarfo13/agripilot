@@ -2338,6 +2338,24 @@ model Notification {
   @@map("notifications")
 }
 
+// ─── Analytics event log ─────────────────────────────────
+// Append-only stream of farmer + buyer events. Used for ops
+// dashboards and simple derived metrics (daily return rate,
+// task completion rate, harvest-to-listing rate, etc.). No PII
+// beyond the userId itself; metadata blob is free-form but should
+// stay small.
+model EventLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  eventType String   @map("event_type")      // onboarding_completed | task_completed | …
+  metadata  Json?
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  @@index([eventType,  occurredAt], map: "idx_event_log_type_time")
+  @@index([userId,     occurredAt], map: "idx_event_log_user_time")
+  @@map("event_logs")
+}
+
 // Buyer-side preferences. One row per user. Preferred regions are
 // a small JSON array of {country, stateCode?} so the buyer can
 // bookmark either a whole country or specific states within it.
