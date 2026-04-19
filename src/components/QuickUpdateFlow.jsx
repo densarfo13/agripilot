@@ -488,7 +488,7 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
         <ActionFeedback
           state={ACTION_STATE.LOADING}
           stillWorking={submitAction.stillWorking}
-          loadingText={t('update.saving') || 'Saving...'}
+          loadingText={t('update.saving')}
           compact
         />
       </div>
@@ -502,26 +502,26 @@ export default function QuickUpdateFlow({ seasonId, farmerId, onComplete, onCanc
       <div style={QS.container} data-testid="quick-update-flow">
         <div style={QS.successScreen}>
           <div style={QS.successIcon}>&#x2705;</div>
-          <div style={QS.successTitle}>{t('update.saved') || 'Saved'}</div>
+          <div style={QS.successTitle}>{t('update.saved')}</div>
 
           {/* Background photo upload status */}
           {photoUploading && (
             <div style={QS.uploadIndicator} data-testid="photo-uploading">
               <div style={QS.uploadSpinner} />
-              <span style={QS.uploadText}>{t('update.uploadingPhoto') || 'Uploading photo...'}</span>
+              <span style={QS.uploadText}>{t('update.uploadingPhoto')}</span>
             </div>
           )}
           {photoUploadDone && (
             <div style={QS.uploadDoneIndicator} data-testid="photo-upload-done">
               <span>&#x2705;</span>
-              <span style={QS.uploadText}>{t('update.photoUploaded') || 'Photo uploaded'}</span>
+              <span style={QS.uploadText}>{t('update.photoUploaded')}</span>
             </div>
           )}
           {photoUploadFailed && (
             <div style={QS.uploadFailIndicator} data-testid="photo-upload-failed">
-              <span style={QS.uploadFailText}>{t('update.photoFailed') || 'Photo upload failed'}</span>
+              <span style={QS.uploadFailText}>{t('update.photoFailed')}</span>
               <button onClick={retryPhotoUpload} style={QS.retryUploadBtn} data-testid="retry-photo-btn">
-                {t('common.retry') || 'Retry'}
+                {t('common.retry')}
               </button>
             </div>
           )}

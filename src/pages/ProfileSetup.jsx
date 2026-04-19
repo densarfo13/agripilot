@@ -340,7 +340,7 @@ export default function ProfileSetup() {
 
       if (result?.offline) {
         console.log('[ProfileSetup] Save queued for offline sync');
-        setSaveError(t('setup.savedOffline') || 'Saved locally. Will sync when back online.');
+        setSaveError(t('setup.savedOffline'));
         return;
       }
 
@@ -377,14 +377,14 @@ export default function ProfileSetup() {
       clearTimeout(timeoutId);
       console.error('Farm profile submission error:', error.status, error.message, JSON.stringify(error.fieldErrors), 'form was:', JSON.stringify(form));
       if (error.message === '__SAVE_TIMEOUT__') {
-        setSaveError(t('setup.saveTimeout') || 'Save timed out. Please try again.');
+        setSaveError(t('setup.saveTimeout'));
         trackPilotEvent('setup_failed', { reason: 'timeout' });
         safeTrackEvent('profile.save_timeout', {});
       } else {
         if (error.fieldErrors && Object.keys(error.fieldErrors).length) {
           setFieldErrors((prev) => ({ ...prev, ...error.fieldErrors }));
         }
-        setSaveError(error.message || t('setup.saveFailed') || 'Failed to save. Please try again.');
+        setSaveError(error.message || t('setup.saveFailed'));
         trackPilotEvent('setup_failed', { reason: error.message, status: error.status });
         safeTrackEvent('profile.save_failed', { error: error.message, status: error.status });
       }

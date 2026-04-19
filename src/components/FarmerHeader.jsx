@@ -24,7 +24,7 @@ export default function FarmerHeader({ user, profile, t, weatherDecision, onRefr
   }, []);
 
   const name = user?.fullName || profile?.farmerName || '';
-  const displayName = name || t('dashboard.welcome') || 'Welcome';
+  const displayName = name || t('dashboard.welcome');
   const rawCrop = profile?.cropType || profile?.crop || '';
   const cropDisplay = getCropLabel(rawCrop);
   const locationName = profile?.location || profile?.locationLabel || profile?.locationName || '';

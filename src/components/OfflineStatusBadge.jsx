@@ -2,10 +2,10 @@ import { useNetwork } from '../context/NetworkContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 
-function formatTime(timestamp) {
-  if (!timestamp) return 'Not yet';
+function formatTime(timestamp, notYetLabel) {
+  if (!timestamp) return notYetLabel;
   const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return 'Not yet';
+  if (Number.isNaN(date.getTime())) return notYetLabel;
   return date.toLocaleString();
 }
 
@@ -16,12 +16,12 @@ export default function OfflineStatusBadge() {
 
   return (
     <div style={S.wrapper}>
-      <div style={S.label}>Connection</div>
-      <div style={S.status}>{isOnline ? 'Online' : t('offline.savedLocally')}</div>
+      <div style={S.label}>{t('offline.connection')}</div>
+      <div style={S.status}>{isOnline ? t('status.online') : t('offline.savedLocally')}</div>
       {(syncMeta?.pendingCount || 0) > 0 && (
         <div style={S.detail}>{t('offline.pendingSync', { count: syncMeta.pendingCount })}</div>
       )}
-      <div style={S.detail}>Last saved online: {formatTime(syncMeta?.lastSyncedAt)}</div>
+      <div style={S.detail}>{t('offline.lastSavedOnline')}: {formatTime(syncMeta?.lastSyncedAt, t('offline.notYet'))}</div>
 
       {!isOnline && (
         <div style={S.queued}>{t('offline.willSync')}</div>

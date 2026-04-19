@@ -90,6 +90,27 @@ const T = {
     ha: 'Sake haɗawa don sabunta jagora',
     tw: 'San bɔ intanɛt mu na akwankyerɛ ɛyɛ foforɔ',
   },
+  'offline.connection': {
+    en: 'Connection', fr: 'Connexion', sw: 'Muunganisho', ha: 'Haɗin kai', tw: 'Nkitahodie',
+  },
+  'offline.lastSavedOnline': {
+    en: 'Last saved online', fr: 'Dernière sauvegarde en ligne', sw: 'Imehifadhiwa mwisho mtandaoni', ha: 'An ajiye na ƙarshe yanar gizo', tw: 'Wɔakora ntanɛt so bere a ɛtwa toɔ',
+  },
+  'offline.notYet': {
+    en: 'Not yet', fr: 'Pas encore', sw: 'Bado', ha: 'Ba tukuna', tw: 'Ɛnyɛ nnɛ',
+  },
+  'status.online': {
+    en: 'Online', fr: 'En ligne', sw: 'Mtandaoni', ha: 'Yanar gizo', tw: 'Intanɛt so',
+  },
+  'status.offline': {
+    en: 'Offline', fr: 'Hors ligne', sw: 'Nje ya mtandao', ha: 'Babu yanar gizo', tw: 'Wonni intanɛt',
+  },
+  'mode.simple': {
+    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Mai sauƙi', tw: 'Ɛyɛ mmerɛw',
+  },
+  'mode.full': {
+    en: 'Full', fr: 'Complet', sw: 'Kamili', ha: 'Cikakke', tw: 'Nyinaa',
+  },
   'offline.showingCachedStale': {
     en: 'Showing last saved tasks — may be outdated',
     fr: 'Affichage des dernières tâches — peut être obsolète',

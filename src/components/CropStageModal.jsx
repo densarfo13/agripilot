@@ -46,8 +46,8 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
 
     if (result.success) {
       const msg = result.offline
-        ? (t('cropStage.savedOffline') || 'Saved locally.')
-        : `${t('cropStage.saved') || 'Saved!'} ${stageName}`;
+        ? t('cropStage.savedOffline')
+        : `${t('cropStage.saved')} ${stageName}`;
       setFeedback({ type: 'success', message: msg });
       feedbackTimer.current = setTimeout(() => {
         if (onSaved) onSaved(stage.value);
@@ -64,8 +64,8 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
   return (
     <div style={S.overlay} onClick={onClose}>
       <div style={S.modal} onClick={(e) => e.stopPropagation()} data-testid="crop-stage-modal">
-        <h2 style={S.title}>{t('cropStage.title') || 'Where is your crop now?'}</h2>
-        <p style={S.subtitle}>{t('cropStage.subtitle') || 'Tap your current stage'}</p>
+        <h2 style={S.title}>{t('cropStage.title')}</h2>
+        <p style={S.subtitle}>{t('cropStage.subtitle')}</p>
 
         {/* Inline feedback banner */}
         {feedback && (
@@ -108,12 +108,12 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
 
         {/* Saving indicator */}
         {saving && (
-          <p style={S.savingText}>{t('common.saving') || 'Saving...'}</p>
+          <p style={S.savingText}>{t('common.saving')}</p>
         )}
 
         {/* Cancel */}
         <button onClick={onClose} style={S.cancelBtn} disabled={saving}>
-          {t('common.cancel') || 'Cancel'}
+          {t('common.cancel')}
         </button>
       </div>
     </div>

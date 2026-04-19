@@ -23,7 +23,7 @@ export default function SeasonStart() {
         <div style={S.container}>
           <div style={S.loadingWrap}>
             <div style={S.spinner} />
-            <div style={S.loadingText}>{t('common.loading') || 'Loading...'}</div>
+            <div style={S.loadingText}>{t('common.loading')}</div>
           </div>
         </div>
       </div>

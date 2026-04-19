@@ -83,7 +83,7 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
     if (!isOnline) {
       // Offline — stop loading spinner, show offline message instead of hanging
       setLoading(false);
-      if (!fetched) setError(t('farmTasks.offline') || 'Offline — tasks will load when connected');
+      if (!fetched) setError(t('farmTasks.offline'));
       return;
     }
     setLoading(true);
@@ -147,7 +147,7 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
             onClick={() => fetchTasks(currentFarmId)}
             style={S.retryBtn}
           >
-            {t('common.retry') || 'Retry'}
+            {t('common.retry')}
           </button>
         )}
       </div>

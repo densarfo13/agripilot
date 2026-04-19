@@ -109,7 +109,7 @@ export default function BasicFarmerHome({
       {showTask && (
         <div style={S.sectionLabel}>
           <span style={S.sectionIcon}>{SECTION_ICONS.currentTask}</span>
-          <span style={S.sectionText}>{t('dashboard.currentTask') || 'Current task'}</span>
+          <span style={S.sectionText}>{t('dashboard.currentTask')}</span>
         </div>
       )}
 

@@ -13,6 +13,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import T from './translations.js';
+import HI from './hi.js';
+
+// Merge the Hindi pack into the main dictionary once at module load.
+// Keeping HI in a separate file means Hindi rollouts are reviewable
+// in one place and don't bloat translations.js further.
+(function mergeHindi() {
+  for (const key of Object.keys(HI)) {
+    if (T[key]) {
+      // Only fill in when the main entry is missing hi — never clobber
+      // an existing in-place Hindi string that a translator may have
+      // committed directly into translations.js.
+      if (!T[key].hi) T[key].hi = HI[key];
+    } else {
+      T[key] = { hi: HI[key] };
+    }
+  }
+})();
 
 // ── Language list (matches VOICE_LANGUAGES in voiceGuide.js) ──
 export const LANGUAGES = [
@@ -64,15 +81,35 @@ export function setLanguage(code) {
  * @param {object} [vars]  — interpolation variables, e.g. { days: 5 }
  * @returns {string}
  */
+/**
+ * Humanize a dotted key as a last-resort fallback so the UI never
+ * shows a blank where a translation was expected.
+ *   'myFarm.findBestCrop' → 'Find best crop'
+ */
+function humanizeKey(key) {
+  const tail = String(key).split('.').pop() || key;
+  const spaced = tail
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  if (!spaced) return '';
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
 export function t(key, lang, vars) {
   if (!key) return '';
   const entry = T[key];
   const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV === 'development';
   if (!entry) {
     if (isDev) {
-      console.warn(`[i18n] Missing key: "${key}"`);
+      _warnedMissing ??= new Set();
+      if (!_warnedMissing.has(key)) {
+        _warnedMissing.add(key);
+        console.warn(`[i18n] Missing key: "${key}"`);
+      }
     }
-    return ''; // never leak raw keys to UI
+    // Never leak the raw key to the UI — humanize instead.
+    return humanizeKey(key);
   }
   let text = entry[lang];
   if (!text && lang !== 'en') {
@@ -90,6 +127,10 @@ export function t(key, lang, vars) {
   } else if (!text) {
     text = entry.en || '';
   }
+  if (!text) {
+    // Still nothing — humanize rather than leak blank to UI.
+    text = humanizeKey(key);
+  }
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
@@ -99,6 +140,26 @@ export function t(key, lang, vars) {
 }
 
 let _warnedFallbacks = null;
+let _warnedMissing = null;
+
+/**
+ * Dev-only audit: return keys with no Hindi translation.
+ * Exposed so a one-liner in the console can surface coverage gaps:
+ *   window.__i18nAuditHindi?.()
+ */
+export function auditMissingForLang(lang = 'hi') {
+  const missing = [];
+  for (const [key, entry] of Object.entries(T)) {
+    if (!entry[lang]) missing.push(key);
+  }
+  return missing;
+}
+
+if (typeof window !== 'undefined') {
+  try {
+    window.__i18nAuditHindi = () => auditMissingForLang('hi');
+  } catch { /* SSR / locked-down contexts — ignore */ }
+}
 
 // ── Convenience: bound translate for a given lang ──
 export function createT(lang) {

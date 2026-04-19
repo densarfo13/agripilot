@@ -163,11 +163,11 @@ export default function MyFarmPage() {
             </div>
             <div style={S.avatarActions}>
               <button onClick={() => fileInputRef.current?.click()} style={S.avatarBtn} disabled={avatarUploading}>
-                {avatarUploading ? (t('avatar.uploading') || 'Uploading...') : avatarUrl ? (t('avatar.change') || 'Change photo') : (t('avatar.add') || 'Add photo')}
+                {avatarUploading ? t('avatar.uploading') : avatarUrl ? t('avatar.change') : t('avatar.add')}
               </button>
               {avatarUrl && (
                 <button onClick={handleRemoveAvatar} style={S.avatarRemoveBtn}>
-                  {t('avatar.remove') || 'Remove'}
+                  {t('avatar.remove')}
                 </button>
               )}
             </div>
@@ -222,14 +222,14 @@ export default function MyFarmPage() {
               onClick={() => navigate('/crop-fit')}
               style={S.cropFitBtn}
             >
-              {'\uD83C\uDF3E'} {t('myFarm.findBestCrop') || 'Find My Best Crop'}
+              {'\uD83C\uDF3E'} {t('myFarm.findBestCrop')}
             </button>
             <button
               type="button"
               onClick={() => navigate('/profile/setup')}
               style={S.editBtn}
             >
-              {t('myFarm.edit') || 'Edit Farm'}
+              {t('myFarm.edit')}
             </button>
             {isMultiFarm && (
               <button
@@ -237,7 +237,7 @@ export default function MyFarmPage() {
                 onClick={() => navigate('/dashboard')}
                 style={S.switchBtn}
               >
-                {t('myFarm.switchFarm') || 'Switch Farm'}
+                {t('myFarm.switchFarm')}
               </button>
             )}
           </div>
@@ -250,7 +250,7 @@ export default function MyFarmPage() {
             onClick={() => navigate('/profile/setup')}
             style={S.editBtn}
           >
-            {t('myFarm.setupFarm') || 'Set Up Farm'}
+            {t('myFarm.setupFarm')}
           </button>
         </div>
       )}
