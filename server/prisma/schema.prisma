@@ -2261,6 +2261,83 @@ model HarvestOutcome {
   @@map("harvest_outcomes")
 }
 
+// ─── Marketplace v1: structured buyer/farmer matching ───────
+// Not an open marketplace — every interest routes through the
+// farmer's acceptance before contact is revealed.
+model CropListing {
+  id             String    @id @default(uuid())
+  farmerId       String    @map("farmer_id")
+  farmProfileId  String?   @map("farm_profile_id")
+  cropCycleId    String?   @unique @map("crop_cycle_id")
+  cropKey        String    @map("crop_key")
+  quantity       Float
+  unit           String    @default("kg")
+  quality        String                                    // high | medium | low
+  country        String
+  stateCode      String?   @map("state_code")
+  city           String?
+  availableFrom  DateTime? @map("available_from")
+  price          Float?
+  pricingMode    String    @default("negotiable") @map("pricing_mode") // fixed | negotiable | ask_buyer
+  deliveryMode   String    @default("either") @map("delivery_mode")    // pickup | delivery | either
+  status         String    @default("draft")                           // draft | active | reserved | sold | closed
+  supportConfidence String? @map("support_confidence")                 // high | medium | low
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  interests      MarketInterest[]
+
+  @@index([farmerId],  map: "idx_crop_listing_farmer")
+  @@index([cropKey],   map: "idx_crop_listing_crop")
+  @@index([country],   map: "idx_crop_listing_country")
+  @@index([stateCode], map: "idx_crop_listing_state")
+  @@index([status],    map: "idx_crop_listing_status")
+  @@index([createdAt], map: "idx_crop_listing_created")
+  @@map("crop_listings")
+}
+
+// Marketplace v1 — distinct from the legacy BuyerInterest model
+// above (which captures a farmer's interest in selling to a buyer
+// type). This one is a specific buyer's expression of interest in
+// a concrete CropListing, gated on the farmer's acceptance before
+// contact reveal.
+model MarketInterest {
+  id                 String    @id @default(uuid())
+  listingId          String    @map("listing_id")
+  buyerId            String    @map("buyer_id")
+  quantityRequested  Float?    @map("quantity_requested")
+  offeredPrice       Float?    @map("offered_price")
+  note               String?
+  status             String    @default("pending")                  // pending | accepted | declined | expired
+  farmerResponseNote String?   @map("farmer_response_note")
+  respondedAt        DateTime? @map("responded_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  listing            CropListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId], map: "idx_market_interest_listing")
+  @@index([buyerId],   map: "idx_market_interest_buyer")
+  @@index([status],    map: "idx_market_interest_status")
+  @@map("market_buyer_interests")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String                                    // listing_interest | interest_accepted | interest_declined | …
+  title     String
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId,   isRead],  map: "idx_notification_user_unread")
+  @@index([userId,   createdAt], map: "idx_notification_user_time")
+  @@map("notifications")
+}
+
 model V2PestImage {
   id            String    @id @default(uuid())
   profileId     String    @map("profile_id")

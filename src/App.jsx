@@ -49,6 +49,11 @@ const FundingReadiness = lazy(() => import('./pages/ngo/FundingReadiness.jsx'));
 const FarmerTodayPage = lazy(() => import('./pages/farmer/FarmerTodayPage.jsx'));
 const PostHarvestSummaryPage = lazy(() => import('./pages/farmer/PostHarvestSummaryPage.jsx'));
 const FarmerOnboardingPage = lazy(() => import('./pages/onboarding/FarmerOnboardingPage.jsx'));
+const MyListingsPage = lazy(() => import('./pages/farmer/MyListingsPage.jsx'));
+const CreateListingPage = lazy(() => import('./pages/farmer/CreateListingPage.jsx'));
+const NotificationsPage = lazy(() => import('./pages/farmer/NotificationsPage.jsx'));
+const BrowseListingsPage = lazy(() => import('./pages/buyer/BrowseListingsPage.jsx'));
+const ListingDetailPage = lazy(() => import('./pages/buyer/ListingDetailPage.jsx'));
 const CropSummary = lazy(() => import('./pages/CropSummary.jsx'));
 
 // Lazy-loaded pages — split into separate chunks for faster initial load
@@ -262,6 +267,11 @@ export default function App() {
             <Route path="/ngo/funding" element={<FundingReadiness />} />
             <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
+            <Route path="/farmer/listings" element={<MyListingsPage />} />
+            <Route path="/farmer/listings/new" element={<CreateListingPage />} />
+            <Route path="/farmer/notifications" element={<NotificationsPage />} />
+            <Route path="/market/browse" element={<BrowseListingsPage />} />
+            <Route path="/market/listings/:id" element={<ListingDetailPage />} />
             <Route path="/onboarding/smart" element={<FarmerOnboardingPage />} />
             <Route path="/settings" element={<FarmerSettingsPage />} />
             <Route path="/scan-crop" element={<CameraScanPage />} />

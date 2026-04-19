@@ -126,6 +126,27 @@ export default function PostHarvestSummaryPage() {
 
       <HarvestSummaryCard summary={state.summary} />
 
+      {/* Sell this harvest — offers the farmer the chance to turn
+          today's outcome into a live CropListing. Tapping routes to
+          /farmer/listings/new with the cycle context; that page then
+          calls /api/listings/from-harvest to pre-fill quantity /
+          quality / location from the stored outcome. */}
+      {cycleId && state.summary?.metrics?.yieldKg > 0 && (
+        <button
+          type="button"
+          style={S.btnSell}
+          onClick={() => navigate('/farmer/listings/new', {
+            state: { cycleId, prefill: {
+              cropKey: state.summary?.cropKey,
+              quantity: state.summary?.metrics?.yieldKg,
+            } },
+          })}
+          data-testid="post-harvest-sell"
+        >
+          {t('postHarvest.sellPrompt') || 'Do you want to sell this harvest?'}
+        </button>
+      )}
+
       {/* Primary CTA — dominant, always "Start next crop". Picks the
           first available option (repeat_improved → switch_crop →
           auto_pick) so the farmer can tap once and keep moving. */}
@@ -188,5 +209,10 @@ const S = {
     border: 'none', background: '#22C55E', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '56px',
     boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+  },
+  btnSell: {
+    width: '100%', padding: '0.875rem', borderRadius: '14px',
+    border: '1px solid rgba(14,165,233,0.28)', background: 'rgba(14,165,233,0.10)',
+    color: '#0EA5E9', fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
   },
 };
