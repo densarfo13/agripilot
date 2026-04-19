@@ -26,6 +26,13 @@ import {
   getRecentActions,
 } from '../feedback/feedbackService.js';
 import { summarizeBehavior } from '../feedback/responseEngine.js';
+import {
+  getBaseRisk,
+  getBehaviorRisk,
+  getWeatherRiskPayload,
+  getOverallRisk,
+} from '../risk/overallRiskEngine.js';
+import { resolveRegionProfile } from '../region/regionProfile.js';
 
 const prisma = new PrismaClient();
 
@@ -474,6 +481,39 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
   const behaviorSummary = feed.behaviorSummary
     || summarizeBehavior(recentActions, allTasks);
 
+  // ─── Combined risk payload ────────────────────────────────
+  // base = crop × region × season (needs farm region data); weather
+  // comes from the engine; behavior from the summary we just built.
+  // If we can't load region (no farm w/ a state), base reduces to a
+  // low-risk baseline rather than fabricating factors.
+  let regionProfile = null;
+  try {
+    const firstFarm = await prisma.farmProfile.findFirst({
+      where: { userId: user.id }, select: { country: true, stateCode: true, locationName: true },
+    });
+    if (firstFarm) {
+      regionProfile = resolveRegionProfile({
+        country: firstFarm.country || 'US',
+        state: firstFarm.stateCode || firstFarm.locationName,
+      });
+    }
+  } catch { /* ignore */ }
+
+  const baseRisk = getBaseRisk({
+    region: regionProfile,
+    seasonFit: 100,
+    plantingStatus: 'plant_now',
+    climateFit: 80,
+    fitLevel: 'medium',
+  });
+  const weatherRiskCh = effectiveWeather ? getWeatherRiskPayload(effectiveWeather) : null;
+  const behaviorRiskCh = getBehaviorRisk(behaviorSummary);
+  const overallRisk = getOverallRisk({
+    base: baseRisk,
+    weather: weatherRiskCh,
+    behavior: behaviorRiskCh,
+  });
+
   return {
     primaryTask: feed.primaryTask,
     secondaryTasks: feed.secondaryTasks,
@@ -481,6 +521,8 @@ export async function getTodayFeedForUser({ user, limit = 3, weather = null }) {
     weatherAlerts: feed.weatherAlerts || [],
     weatherRisk: feed.weatherRisk || null,
     behaviorSummary,
+    overallRisk,
+    regionProfile,
     nextActionSummary: feed.nextActionSummary,
     overdueTasksCount: feed.overdueTasksCount,
     timeEstimateMinutes: feed.timeEstimateMinutes,

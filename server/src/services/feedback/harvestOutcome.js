@@ -14,6 +14,7 @@
 
 import { ACTION_TYPES } from './actionTypes.js';
 import { computeProgress } from './responseEngine.js';
+import { deriveOutcomeClass } from './learningEngine.js';
 
 const QUALITY_BANDS = new Set(['poor', 'fair', 'good', 'excellent']);
 
@@ -70,7 +71,11 @@ export function computeHarvestOutcome({
     ? Math.max(0, Math.floor((harvestDate.getTime() - plantingDate.getTime()) / 86_400_000))
     : null;
 
-  return {
+  const overdueTasksCount = tasks.filter((t) =>
+    t.status === 'pending' && t.dueDate && new Date(t.dueDate).getTime() < harvestDate.getTime()
+  ).length;
+
+  const outcomeDraft = {
     cropKey: cycle.cropType || cycle.cropKey || null,
     cropCycleId: cycle.id || null,
     actualYieldKg: norm.actualYieldKg,
@@ -78,15 +83,17 @@ export function computeHarvestOutcome({
     notes: norm.notes,
     completedTasksCount: progress.completed,
     skippedTasksCount: progress.skipped,
-    overdueTasksCount: tasks.filter((t) =>
-      t.status === 'pending' && t.dueDate && new Date(t.dueDate).getTime() < harvestDate.getTime()
-    ).length,
+    overdueTasksCount,
     issueCount,
     completionRate,
     skipRate,
     durationDays,
     reportedAt: harvestDate.toISOString(),
   };
+  // Derive outcomeClass using the shared learning helper so the tuner
+  // and the outcome aggregator always agree.
+  outcomeDraft.outcomeClass = deriveOutcomeClass(outcomeDraft);
+  return outcomeDraft;
 }
 
 export const _internal = { deriveQualityBand, QUALITY_BANDS };
