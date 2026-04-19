@@ -1,17 +1,26 @@
 /**
  * CropStageCard — shows the lifecycle stage of the active crop cycle.
+ *
+ * Accepts either `cropKey` (preferred — the scorer's snake_case key,
+ * resolved via getCropDisplayName so the label updates when the UI
+ * language changes) or `cropName` (back-compat for callers that
+ * still hand in a server-provided display string).
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 
-export default function CropStageCard({ stage, cropName }) {
-  const { t } = useAppSettings();
+export default function CropStageCard({ stage, cropKey, cropName }) {
+  const { t, language } = useAppSettings();
+  const displayName = cropKey
+    ? getCropDisplayName(cropKey, language, { bilingual: 'auto' })
+    : cropName;
   return (
     <section style={S.section} data-testid="crop-stage-card">
       <h3 style={S.title}>{t('actionHome.stage.title')}</h3>
       {stage ? (
         <div style={S.row}>
           <span style={S.label}>{t(`cropStage.${stage}`)}</span>
-          {cropName && <span style={S.crop}>• {cropName}</span>}
+          {displayName && <span style={S.crop}>• {displayName}</span>}
         </div>
       ) : (
         <p style={S.muted}>{t('actionHome.stage.none')}</p>

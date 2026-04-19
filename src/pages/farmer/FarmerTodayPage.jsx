@@ -179,7 +179,8 @@ export default function FarmerTodayPage() {
 
       <CropStageCard
         stage={activeCycle?.lifecycleStatus}
-        cropName={activeCycle?.cropDisplayName || activeCycle?.cropType}
+        cropKey={activeCycle?.cropType}
+        cropName={activeCycle?.cropDisplayName}
       />
 
       <SupportSection />

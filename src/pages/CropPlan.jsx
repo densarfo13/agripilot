@@ -17,6 +17,8 @@
  */
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
+import { useAppSettings } from '../context/AppSettingsContext.jsx';
+import { getCropDisplayName } from '../utils/getCropDisplayName.js';
 
 const RISK_COLOR = {
   low:    '#22C55E',
@@ -42,6 +44,7 @@ export default function CropPlan() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { language } = useAppSettings();
 
   const state = location.state;
   if (!state?.crop) return <Navigate to="/crop-fit/us" replace />;
@@ -51,6 +54,14 @@ export default function CropPlan() {
   const timingColor = TIMING_COLOR[timing] || TIMING_COLOR.unknown;
   const riskColor = RISK_COLOR[crop.riskLevel] || RISK_COLOR.low;
 
+  // Resolve a farmer-facing crop label from any of the shapes the
+  // scorer / recommendation payloads return. `bilingual: 'auto'`
+  // means crops with opt-in flags (cassava, sorghum, peanut,
+  // sweet_potato, okra, yam, millet) render as "native (English)".
+  const cropKey = crop.key || crop.code || crop.crop || String(crop.name || '').toLowerCase();
+  const displayName = getCropDisplayName(cropKey, language, { bilingual: 'auto' })
+    || crop.name;
+
   return (
     <div style={S.page}>
       <div style={S.container}>
@@ -58,7 +69,7 @@ export default function CropPlan() {
           {'\u2190'} {t('common.back')}
         </button>
 
-        <h1 style={S.title}>{crop.name}</h1>
+        <h1 style={S.title}>{displayName}</h1>
         {loc && (
           <p style={S.subtitle}>{loc.state}, USA • {loc.displayRegionLabel || loc.displayRegion}</p>
         )}
