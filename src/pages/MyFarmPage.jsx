@@ -226,7 +226,7 @@ export default function MyFarmPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/profile/setup')}
+              onClick={() => navigate('/edit-farm')}
               style={S.editBtn}
             >
               {t('myFarm.edit')}
@@ -247,7 +247,7 @@ export default function MyFarmPage() {
           <p style={S.emptyText}>{t('myFarm.noFarm')}</p>
           <button
             type="button"
-            onClick={() => navigate('/profile/setup')}
+            onClick={() => navigate('/onboarding/fast')}
             style={S.editBtn}
           >
             {t('myFarm.setupFarm')}
