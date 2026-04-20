@@ -28,6 +28,10 @@ const { getIntervention } = require('./interventionEngine.js');
 const { generateAlerts }  = require('./alertService.js');
 const { computeScore }    = require('./scoreEngine.js');
 const { getFundingDecision } = require('./fundingEngine.js');
+const {
+  buildProgramSummary, buildProgramFarmers,
+  buildProgramRisk, buildProgramPerformance, buildProgramCsv,
+} = require('./programService.js');
 
 function createNgoAdminRouter(opts = {}) {
   const { prisma, requireAdmin } = opts;
@@ -407,6 +411,112 @@ function createNgoAdminRouter(opts = {}) {
       // eslint-disable-next-line no-console
       console.error('[ngoAdmin.farmer-score]', err?.message);
       res.status(500).json({ error: 'farmer score failed' });
+    }
+  });
+
+  // ─── Program-level endpoints (NGO multi-program dashboard) ──
+  //
+  //   GET /program-summary?program=X
+  //   GET /program-farmers?program=X
+  //   GET /program-risk?program=X
+  //   GET /program-performance?program=X
+  //   GET /program-export?program=X
+  //
+  // Program filter is optional — omitted = every program.
+  // All four reuse the SAME loadEventsWithFarmJoin helper so
+  // they stay consistent.
+  async function loadEventsWithProgram(windowDays = 90) {
+    if (!prisma || typeof prisma.farmEvent?.findMany !== 'function') return [];
+    const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+    return prisma.farmEvent.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      take: 10000,
+    });
+  }
+  async function loadProgramFarms(program) {
+    if (!prisma?.farmProfile?.findMany) return [];
+    const where = program ? { program: String(program) } : {};
+    try {
+      return await prisma.farmProfile.findMany({
+        where, orderBy: { createdAt: 'desc' }, take: 2000,
+      });
+    } catch { return []; }
+  }
+
+  router.get('/program-summary', adminGate, async (req, res) => {
+    try {
+      const program = req.query.program ? String(req.query.program) : null;
+      const events  = await loadEventsWithProgram(90);
+      res.json(buildProgramSummary(events, { program }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.program-summary]', err?.message);
+      res.status(500).json({ error: 'program_summary_failed' });
+    }
+  });
+
+  router.get('/program-farmers', adminGate, async (req, res) => {
+    try {
+      const program = req.query.program ? String(req.query.program) : null;
+      const [events, farms] = await Promise.all([
+        loadEventsWithProgram(90),
+        loadProgramFarms(program),
+      ]);
+      res.json(buildProgramFarmers(events, farms, { program }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.program-farmers]', err?.message);
+      res.status(500).json({ error: 'program_farmers_failed' });
+    }
+  });
+
+  router.get('/program-risk', adminGate, async (req, res) => {
+    try {
+      const program = req.query.program ? String(req.query.program) : null;
+      const events  = await loadEventsWithProgram(90);
+      res.json(buildProgramRisk(events, { program }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.program-risk]', err?.message);
+      res.status(500).json({ error: 'program_risk_failed' });
+    }
+  });
+
+  router.get('/program-performance', adminGate, async (req, res) => {
+    try {
+      const program = req.query.program ? String(req.query.program) : null;
+      const [events, farms] = await Promise.all([
+        loadEventsWithProgram(90),
+        loadProgramFarms(program),
+      ]);
+      res.json(buildProgramPerformance(events, farms, { program }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.program-performance]', err?.message);
+      res.status(500).json({ error: 'program_performance_failed' });
+    }
+  });
+
+  router.get('/program-export', adminGate, async (req, res) => {
+    try {
+      const program = req.query.program ? String(req.query.program) : null;
+      const limit   = Math.min(5000, Math.max(1, parseInt(req.query.limit, 10) || 500));
+      const [events, farms] = await Promise.all([
+        loadEventsWithProgram(90),
+        loadProgramFarms(program),
+      ]);
+      const csv = buildProgramCsv(events, farms, { program, limit });
+      res.header('Content-Type', 'text/csv; charset=utf-8');
+      const fname = program
+        ? `farroway_${String(program).replace(/\s+/g, '_').toLowerCase()}.csv`
+        : 'farroway_program_export.csv';
+      res.attachment(fname);
+      res.send(csv);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.program-export]', err?.message);
+      res.status(500).json({ error: 'program_export_failed' });
     }
   });
 
