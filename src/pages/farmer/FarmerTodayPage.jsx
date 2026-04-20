@@ -49,6 +49,11 @@ import {
 } from '../../lib/loop/dailyLoop.js';
 import { getLastActivity } from '../../lib/ngo/analytics.js';
 import { formatRelativeTime } from '../../lib/time/relativeTime.js';
+import { getEvents as getAllFarmEvents } from '../../lib/events/eventLogger.js';
+import {
+  evaluateReminder, markReminderShown,
+  shouldRequestBrowserPermission, requestBrowserPush,
+} from '../../lib/notifications/reminderEngine.js';
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
@@ -348,6 +353,57 @@ export default function FarmerTodayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressTick]);
 
+  // ─── Daily reminder (offline-first, computed locally) ─────
+  // Evaluates the reminderEngine against local completions + the
+  // server-derived weather summary so the Today page can surface a
+  // single actionable banner.
+  const reminder = useMemo(() => {
+    return evaluateReminder({
+      weather: weatherSummary,
+      riskLevel: state.today?.overallRisk?.level || 'low',
+      completions: getTaskCompletions(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weatherSummary, state.today, progressTick]);
+
+  // Mark the daily reminder as shown once per day so we don't flash
+  // it again on every navigation.
+  useEffect(() => {
+    if (reminder.show && reminder.kind === 'daily') {
+      markReminderShown();
+    }
+  }, [reminder.show, reminder.kind]);
+
+  // Browser-push permission: only ask AFTER engagement signals fire
+  // (spec §3). Never on the first-open screen. Uses the NGO event
+  // log + the fact that touchLastVisit just ran to detect a second
+  // visit.
+  const [permissionAsk, setPermissionAsk] = useState(false);
+  useEffect(() => {
+    const events = getAllFarmEvents();
+    const secondVisitOrLater = !!loopFacts.lastVisit
+      && loopFacts.lastVisit !== null
+      && !loopFacts.firstVisitToday === false; // re-opened today
+    const ok = shouldRequestBrowserPermission({
+      events,
+      secondVisitOrLater: secondVisitOrLater || !loopFacts.firstVisitToday,
+    });
+    if (ok) setPermissionAsk(true);
+  }, [loopFacts.firstVisitToday, loopFacts.lastVisit]);
+
+  async function handleAcceptBrowserPush() {
+    setPermissionAsk(false);
+    await requestBrowserPush();
+  }
+  function handleDismissBrowserPush() {
+    setPermissionAsk(false);
+    // Mark "asked" so we don't re-prompt in the same session.
+    // Import updateSettings lazily via the engine.
+    import('../../lib/notifications/reminderEngine.js').then((m) => {
+      m.updateSettings({ askedBrowserPermission: true });
+    }).catch(() => {});
+  }
+
   const progressSnapshot = useMemo(() => {
     const serverTasks = [
       primaryTask ? { id: primaryTask.id, title: primaryTask.title, priority: 'high',
@@ -440,6 +496,61 @@ export default function FarmerTodayPage() {
         messageKey={reinforcementKey || 'actionHome.completion.positive'}
         onClose={() => setCompletionBanner(false)}
       />
+
+      {/* Reminder banner (spec §4/§5/§6). At most one active card.
+          Weather / risk severities win over missed-day / daily. */}
+      {reminder.show && (
+        <div
+          style={{
+            ...S.reminderBanner,
+            ...reminderBannerStyleFor(reminder.severity),
+          }}
+          role="status"
+          aria-live="polite"
+          data-testid="reminder-banner"
+          data-kind={reminder.kind}
+          data-severity={reminder.severity}
+        >
+          <span style={S.reminderIcon} aria-hidden="true">
+            {reminder.severity === 'critical' ? '\u26A0\uFE0F'
+              : reminder.severity === 'warning' ? '\uD83D\uDCA1'
+              : '\u23F0'}
+          </span>
+          <span style={S.reminderText}>
+            {t(reminder.messageKey) || reminderFallback(reminder.kind)}
+          </span>
+        </div>
+      )}
+
+      {/* Browser-push permission ask (spec §3). Delayed until the
+          farmer has actual engagement. Dismissal is sticky so we
+          don't re-ask on every render. */}
+      {permissionAsk && (
+        <div style={S.permissionCard} data-testid="browser-permission-ask">
+          <span style={S.permissionText}>
+            {t('reminder.permission_ask')
+              || 'Would you like daily farm reminders on this device?'}
+          </span>
+          <div style={S.permissionRow}>
+            <button
+              type="button"
+              onClick={handleAcceptBrowserPush}
+              style={S.permissionAccept}
+              data-testid="browser-permission-accept"
+            >
+              {t('common.yes') || 'Yes'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDismissBrowserPush}
+              style={S.permissionDismiss}
+              data-testid="browser-permission-dismiss"
+            >
+              {t('common.no') || 'No'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Daily loop header — streak pill + entry message + last
           activity (spec §7). First row shown every render; no layout
@@ -627,6 +738,28 @@ function resolvePrimaryTaskForCard(serverTask, engineSnapshot, t) {
   };
 }
 
+function reminderBannerStyleFor(severity) {
+  if (severity === 'critical') return {
+    background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)',
+    color: '#FCA5A5',
+  };
+  if (severity === 'warning') return {
+    background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.30)',
+    color: '#FDE68A',
+  };
+  return {
+    background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)',
+    color: '#93C5FD',
+  };
+}
+
+function reminderFallback(kind) {
+  if (kind === 'weather_severe') return 'Severe weather — protect your crops.';
+  if (kind === 'risk_high')       return 'Rain expected. Prepare today.';
+  if (kind === 'missed_day')      return "You missed yesterday. Let's get back on track.";
+  return "Today's farm action is ready";
+}
+
 function microStatusStyleFor(code) {
   if (code === 'on_track')     return { color: '#86EFAC', background: 'rgba(34,197,94,0.14)' };
   if (code === 'slight_delay') return { color: '#FDE68A', background: 'rgba(245,158,11,0.14)' };
@@ -695,5 +828,33 @@ const S = {
     color: '#6F8299',
     fontSize: '0.75rem',
     fontWeight: 500,
+  },
+  reminderBanner: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.625rem 0.875rem',
+    borderRadius: '14px',
+    fontSize: '0.875rem', fontWeight: 600,
+  },
+  reminderIcon: { fontSize: '1rem', lineHeight: 1 },
+  reminderText: { lineHeight: 1.3 },
+  permissionCard: {
+    padding: '0.75rem 0.875rem',
+    borderRadius: '14px',
+    background: 'rgba(14,165,233,0.08)',
+    border: '1px solid rgba(14,165,233,0.22)',
+    display: 'flex', flexDirection: 'column', gap: '0.5rem',
+  },
+  permissionText: { color: '#EAF2FF', fontSize: '0.875rem', fontWeight: 500 },
+  permissionRow: { display: 'flex', gap: '0.5rem' },
+  permissionAccept: {
+    flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px',
+    border: 'none', background: '#22C55E', color: '#fff',
+    fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
+  },
+  permissionDismiss: {
+    flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'transparent', color: '#9FB3C8',
+    fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
   },
 };

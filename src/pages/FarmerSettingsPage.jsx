@@ -8,6 +8,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import FarmerSettingsPanel from '../components/FarmerSettingsPanel.jsx';
+import NotificationSettingsPanel from '../components/NotificationSettingsPanel.jsx';
 
 export default function FarmerSettingsPage() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function FarmerSettingsPage() {
         </button>
         <h1 style={S.title}>{t('settings.title')}</h1>
         <FarmerSettingsPanel />
+        <NotificationSettingsPanel />
       </div>
     </div>
   );
