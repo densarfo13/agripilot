@@ -24,6 +24,8 @@ const {
 } = require('./farmEventsService.js');
 const { calculateRisk } = require('./riskEngine.js');
 const { estimateYield } = require('./yieldEngine.js');
+const { getIntervention } = require('./interventionEngine.js');
+const { generateAlerts }  = require('./alertService.js');
 
 function createNgoAdminRouter(opts = {}) {
   const { prisma, requireAdmin } = opts;
@@ -157,6 +159,110 @@ function createNgoAdminRouter(opts = {}) {
       // eslint-disable-next-line no-console
       console.error('[ngoAdmin.performance]', err?.message);
       res.status(500).json({ error: 'performance failed' });
+    }
+  });
+
+  /**
+   * /interventions — admin-facing per-farm intervention plan.
+   * Reuses the per-farm completionRate + stage computed for the
+   * /performance endpoint so risk scoring stays consistent.
+   */
+  router.get('/interventions', adminGate, async (_req, res) => {
+    try {
+      const events = await loadEvents(90);
+      const farmList = buildFarmersList(events, { limit: 200 });
+
+      const perFarmStats = new Map();
+      for (const e of events) {
+        if (!e || !e.farmId) continue;
+        let s = perFarmStats.get(e.farmId);
+        if (!s) { s = { completed: 0, seen: 0 }; perFarmStats.set(e.farmId, s); }
+        if (e.eventType === 'task_completed') s.completed++;
+        else if (e.eventType === 'task_seen') s.seen++;
+      }
+
+      const weatherFor = typeof opts?.weatherFor === 'function'
+        ? opts.weatherFor
+        : () => ({ rainTomorrow: false, rainExpected: false, extremeHeat: false });
+
+      const out = farmList.map((f) => {
+        const stats = perFarmStats.get(f.id) || { completed: 0, seen: 0 };
+        const total = stats.completed + stats.seen;
+        const completionRate = total > 0 ? stats.completed / total : 0.5;
+        const weather = weatherFor(f) || {};
+
+        const risk = calculateRisk({ weather, completionRate, stage: f.stage });
+        const intervention = getIntervention({
+          risk: risk.level, crop: f.crop, stage: f.stage,
+        });
+        const alerts = generateAlerts({ risk: risk.level, weather });
+
+        return {
+          farmId:       f.id,
+          region:       f.location,
+          crop:         f.crop,
+          stage:        f.stage,
+          risk:         risk.level,
+          riskScore:    risk.score,
+          intervention, // { level, actionKey, actionFallback, stepKeys[], stepFallbacks[] }
+          alerts,       // [{ id, severity, key, params, fallback }]
+        };
+      })
+      // Surface highest-priority farms first so admins triage quickly.
+      .sort((a, b) => {
+        const sev = { critical: 3, warning: 2, safe: 1 };
+        return (sev[b.intervention.level] || 0) - (sev[a.intervention.level] || 0);
+      });
+
+      res.json(out);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.interventions]', err?.message);
+      res.status(500).json({ error: 'interventions failed' });
+    }
+  });
+
+  /**
+   * /alerts — farmer-facing endpoint. Accepts ?farmId=X and
+   * returns the alerts for JUST that farm. Kept on the admin
+   * router for now since it uses the same Prisma client and
+   * weather source; mount path can be aliased by the caller
+   * (e.g. app.use('/api/alerts', <thin wrapper>)) if desired.
+   */
+  router.get('/alerts/:farmId', adminGate, async (req, res) => {
+    try {
+      const farmId = String(req.params.farmId || '');
+      if (!farmId) return res.status(400).json({ error: 'missing farmId' });
+
+      const events = await loadEvents(90);
+      const farmEvents = events.filter((e) => e && e.farmId === farmId);
+      if (farmEvents.length === 0) {
+        return res.json({ farmId, risk: 'low', alerts: [] });
+      }
+
+      let completed = 0, seen = 0;
+      for (const e of farmEvents) {
+        if (e.eventType === 'task_completed') completed++;
+        else if (e.eventType === 'task_seen') seen++;
+      }
+      const total = completed + seen;
+      const completionRate = total > 0 ? completed / total : 0.5;
+      const latest = farmEvents[0]; // ordered desc by loadEvents
+      const stage  = (latest.payload && (latest.payload.stage || latest.payload.cropStage)) || null;
+
+      const weatherFor = typeof opts?.weatherFor === 'function'
+        ? opts.weatherFor
+        : () => ({ rainTomorrow: false });
+      const weather = weatherFor({ id: farmId, stage, crop: latest.crop, region: latest.region }) || {};
+
+      const risk = calculateRisk({ weather, completionRate, stage });
+      const alerts = generateAlerts({ risk: risk.level, weather });
+
+      res.json({ farmId, risk: risk.level, alerts });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.alerts]', err?.message);
+      res.status(500).json({ error: 'alerts failed' });
     }
   });
 

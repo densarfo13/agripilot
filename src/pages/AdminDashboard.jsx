@@ -32,6 +32,7 @@ export default function AdminDashboard() {
   const [farmers, setFarmers] = useState(null);
   const [risk, setRisk]       = useState(null);
   const [performance, setPerformance] = useState(null);
+  const [interventions, setInterventions] = useState(null);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -41,16 +42,18 @@ export default function AdminDashboard() {
       setLoading(true);
       setError('');
       try {
-        // /performance is new — if the backend hasn't shipped yet,
-        // don't block the whole page on its failure.
-        const [s, f, r, p] = await Promise.all([
+        // /performance and /interventions are new — if the backend
+        // hasn't shipped them yet, don't block the rest of the page.
+        const [s, f, r, p, iv] = await Promise.all([
           fetchJson('/api/admin/summary'),
           fetchJson('/api/admin/farmers'),
           fetchJson('/api/admin/risk'),
           fetchJson('/api/admin/performance').catch(() => null),
+          fetchJson('/api/admin/interventions').catch(() => null),
         ]);
         if (!alive) return;
-        setSummary(s); setFarmers(f); setRisk(r); setPerformance(p);
+        setSummary(s); setFarmers(f); setRisk(r);
+        setPerformance(p); setInterventions(iv);
       } catch (e) {
         if (alive) setError(e?.message || 'Failed to load');
       } finally {
@@ -184,6 +187,57 @@ export default function AdminDashboard() {
         </section>
       )}
 
+      {/* ─── Interventions Needed (critical + warning cards) ── */}
+      {Array.isArray(interventions) && interventions.length > 0 && (
+        <section style={S.section} data-testid="admin-interventions">
+          <h3 style={S.h3}>
+            {resolve(t, 'admin.dashboard.interventionsNeeded', 'Interventions Needed')}
+          </h3>
+          {interventions
+            .filter((i) => i.intervention?.level !== 'safe')
+            .map((i) => (
+              <div
+                key={i.farmId}
+                style={{
+                  ...S.interventionCard,
+                  borderColor: i.intervention.level === 'critical' ? '#EF4444' : '#F59E0B',
+                }}
+                data-level={i.intervention.level}
+              >
+                <div style={S.interventionHeader}>
+                  <strong>{`${String(i.farmId || '').slice(0, 10)}\u2026`}</strong>
+                  <span>{i.region || '—'}</span>
+                  <span style={{
+                    ...S.riskBadge,
+                    ...riskStyleFor(i.risk),
+                  }}>
+                    {resolve(t, `admin.dashboard.risk.${i.risk}`, i.risk)}
+                  </span>
+                </div>
+                <div style={S.interventionAction}>
+                  {resolve(t, i.intervention.actionKey, i.intervention.actionFallback)}
+                </div>
+                {Array.isArray(i.intervention.stepKeys) && i.intervention.stepKeys.length > 0 && (
+                  <ul style={S.interventionSteps}>
+                    {i.intervention.stepKeys.map((k, idx) => (
+                      <li key={k}>
+                        {resolve(t, k, i.intervention.stepFallbacks?.[idx] || k)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {Array.isArray(i.alerts) && i.alerts.length > 0 && (
+                  <ul style={S.interventionAlerts}>
+                    {i.alerts.map((a) => (
+                      <li key={a.id}>{resolve(t, a.key, a.fallback)}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+        </section>
+      )}
+
       <a
         href="/api/admin/export"
         style={S.exportBtn}
@@ -273,5 +327,26 @@ const S = {
     padding: '0.625rem 1rem', borderRadius: 10,
     background: '#22C55E', color: '#fff', fontWeight: 700,
     textDecoration: 'none', fontSize: '0.95rem',
+  },
+  interventionCard: {
+    marginTop: '0.75rem', padding: '0.875rem 1rem',
+    borderRadius: 12, borderWidth: 2, borderStyle: 'solid',
+    background: 'rgba(255,255,255,0.04)',
+  },
+  interventionHeader: {
+    display: 'flex', alignItems: 'center', gap: '0.75rem',
+    flexWrap: 'wrap', marginBottom: '0.5rem',
+    fontSize: '0.85rem',
+  },
+  interventionAction: {
+    fontSize: '1rem', fontWeight: 700, margin: '0.25rem 0 0.5rem',
+  },
+  interventionSteps: {
+    margin: '0.25rem 0 0.25rem 1rem', padding: 0,
+    fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)',
+  },
+  interventionAlerts: {
+    margin: '0.25rem 0 0 1rem', padding: 0,
+    fontSize: '0.85rem', color: '#FCA5A5',
   },
 };
