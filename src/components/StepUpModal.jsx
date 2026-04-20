@@ -8,6 +8,9 @@
 import React, { useState } from 'react';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import {
+  flushStepUpRetryQueue, rejectStepUpRetryQueue,
+} from '../core/auth/stepUpRetryQueue.js';
 
 export default function StepUpModal() {
   const setStepUpRequired = useAuthStore((s) => s.setStepUpRequired);
@@ -27,6 +30,9 @@ export default function StepUpModal() {
       setAuth(data.user, data.accessToken);
       setStepUpRequired(false);
       setCode('');
+      // Auto-replay every request that was 401-ed with STEP_UP_REQUIRED.
+      // This is what turns "empty admin page" into "admin page with data".
+      flushStepUpRetryQueue((cfg) => api(cfg)).catch(() => { /* per-item errors already delivered */ });
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid code. Please try again.');
     } finally {
@@ -38,6 +44,8 @@ export default function StepUpModal() {
     setStepUpRequired(false);
     setCode('');
     setError('');
+    // Cancel = every queued caller should know their request is dead.
+    rejectStepUpRetryQueue(new Error('step_up_cancelled'));
   };
 
   return (

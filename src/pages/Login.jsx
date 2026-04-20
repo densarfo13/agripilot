@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { STAFF_ROLES } from '../utils/roles.js';
+import { consumeReturnTo } from '../core/auth/returnToStorage.js';
 
 // ─── Remembered email ──────────────────────────────────────
 function getRememberedEmail() {
@@ -31,7 +32,14 @@ export default function Login() {
 
   const { user } = useAuth();
   const defaultRedirect = (user && STAFF_ROLES.includes(user.role)) ? '/' : '/dashboard';
-  const redirectTo = location.state?.from || defaultRedirect;
+  // Capture the persisted returnTo ONCE on mount. Consuming on
+  // every render would clear it before we navigate.
+  const returnToRef = useRef(null);
+  if (returnToRef.current === null) {
+    returnToRef.current = consumeReturnTo() || '';
+  }
+  const persistedReturnTo = returnToRef.current || null;
+  const redirectTo = location.state?.from || persistedReturnTo || defaultRedirect;
 
   // ─── Gate 1: Auth still loading ───
   if (authLoading) {

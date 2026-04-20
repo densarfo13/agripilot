@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { saveReturnTo } from '../core/auth/returnToStorage.js';
 
 export default function AuthGuard({ children }) {
   const location = useLocation();
@@ -19,6 +20,10 @@ export default function AuthGuard({ children }) {
   }
 
   if (!isAuthenticated) {
+    // Persist intended path to sessionStorage so it survives the
+    // login round-trip (router state evaporates on full page reload).
+    const fullPath = `${location.pathname}${location.search || ''}`;
+    saveReturnTo(fullPath);
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 

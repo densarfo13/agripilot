@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { generateUUID } from '../utils/generateId.js';
+import { enqueueStepUpRetry } from '../core/auth/stepUpRetryQueue.js';
 
 // Detect native platform: Capacitor injects window.Capacitor on native
 // isNativePlatform can be a function (returns bool) or a boolean depending on version
@@ -73,9 +74,15 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401) {
       const code = error.response?.data?.code;
-      // Step-up required — show modal, do NOT logout
+      // Step-up required — show modal, do NOT logout.
+      // If the request wasn't already retried post step-up, park
+      // it on the retry queue and return the pending promise so
+      // the admin page auto-refetches once the user verifies.
       if (code === 'STEP_UP_REQUIRED' || code === 'STEP_UP_EXPIRED') {
         useAuthStore.getState().setStepUpRequired(true);
+        if (!config._stepUpRetried) {
+          return enqueueStepUpRetry(config);
+        }
         return Promise.reject(error);
       }
       // MFA setup/challenge required — user has limited token; do NOT logout so they can enroll
