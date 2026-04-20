@@ -16,8 +16,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import {
-  SUPPORTED_LANGUAGES, resolveLanguage, confirmLanguage, detectBrowserLanguage,
+  resolveLanguage, confirmLanguage, detectBrowserLanguage,
 } from '../../lib/languageResolver.js';
+import {
+  getQuickLanguages, getAllLanguages,
+} from '../../config/languages.js';
 import {
   resolveRegion, confirmRegion, detectRegionViaGps, recordGpsRegion,
 } from '../../lib/regionResolver.js';
@@ -25,8 +28,13 @@ import { logClientEvent, ONBOARDING_EVENT_TYPES } from '../../utils/analyticsCli
 
 const FIRST_LAUNCH_KEY = 'farroway:firstLaunchComplete';
 
-/** Visible language chip options — skips legacy hidden codes. */
-const VISIBLE_LANGS = SUPPORTED_LANGUAGES.filter((l) => !l.hidden);
+/**
+ * Quick chips come from the central config (`quick === true`); the
+ * dropdown below renders every supported language. Adding a locale
+ * is a one-line change in src/config/languages.js.
+ */
+const QUICK_LANGS = getQuickLanguages();
+const ALL_LANGS   = getAllLanguages();
 
 /** Small top-10 country list for the confirmation dropdown. */
 const COUNTRIES = [
@@ -254,11 +262,13 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
         <h2 id="firstlaunch-title" style={S.title}>{t('setup_title')}</h2>
         <p style={S.subtitle}>{t('setup_subtitle')}</p>
 
-        {/* Language chips */}
+        {/* Language: quick chips (config.quick === true) + full list
+            dropdown. Both read from src/config/languages.js so adding
+            a locale is a one-line change. */}
         <section style={S.section}>
           <div style={S.sectionLabel}>{t('language')}</div>
           <div style={S.chipRow}>
-            {VISIBLE_LANGS.map((l) => (
+            {QUICK_LANGS.map((l) => (
               <button
                 key={l.code}
                 type="button"
@@ -273,6 +283,19 @@ export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder
               </button>
             ))}
           </div>
+          <select
+            value={lang}
+            onChange={(e) => pickLang(e.target.value)}
+            style={{ ...S.select, marginTop: '0.5rem' }}
+            data-testid="firstlaunch-lang-select"
+            aria-label={t('language')}
+          >
+            {ALL_LANGS.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}{l.quick ? '' : '  •'}
+              </option>
+            ))}
+          </select>
         </section>
 
         {/* Country */}

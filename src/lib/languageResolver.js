@@ -3,42 +3,56 @@
  * strict priority chain that never mixes up "what language do I
  * speak" with "what region do I farm in".
  *
- *   1. manual user choice     — picked in the settings UI
+ *   1. manual user choice      — picked in the settings UI
  *   2. saved profile preference — what the farmer last confirmed
- *   3. device/browser locale  — first call, no prior signals
- *   4. default fallback       — English
+ *   3. device/browser locale   — first call, no prior signals
+ *   4. default fallback        — English
  *
- * Exports:
- *   SUPPORTED_LANGUAGES     — ordered list of language codes
- *   resolveLanguage()       — returns the current active code
- *   confirmLanguage(code)   — store manual + profile choice
- *   detectBrowserLanguage() — returns browser locale mapped to ours
+ * The supported-language list now lives in src/config/languages.js
+ * so adding a locale is a one-line change. This module keeps the
+ * `SUPPORTED_LANGUAGES` export for backward compatibility with
+ * existing callers (tagging a `hidden` flag derived from `!quick`).
  */
 
-export const SUPPORTED_LANGUAGES = Object.freeze([
-  { code: 'en', label: 'English',  short: 'EN' },
-  { code: 'hi', label: 'हिन्दी',    short: 'HI' },
-  { code: 'tw', label: 'Twi (beta)', short: 'TW' },
-  // Legacy codes still supported by the dictionary — kept out of the
-  // confirmation UI so the roll-out stays focused.
-  { code: 'fr', label: 'Français', short: 'FR', hidden: true },
-  { code: 'sw', label: 'Kiswahili', short: 'SW', hidden: true },
-  { code: 'ha', label: 'Hausa',    short: 'HA', hidden: true },
-]);
+import {
+  LANGUAGES,
+  getAllLanguages,
+  isSupported,
+  DEFAULT_LANGUAGE,
+} from '../config/languages.js';
 
-const SUPPORTED_SET = new Set(SUPPORTED_LANGUAGES.map((l) => l.code));
+/**
+ * Back-compat view of the central config. Existing components that
+ * filter by `!l.hidden` (e.g. a "show only primary languages" chip
+ * row) still work — `hidden` is derived from the `quick` flag.
+ */
+export const SUPPORTED_LANGUAGES = Object.freeze(
+  LANGUAGES.map((l) => Object.freeze({
+    code:   l.code,
+    label:  l.label,
+    short:  l.code.toUpperCase(),
+    quick:  !!l.quick,
+    hidden: !l.quick,
+  })),
+);
+
+const SUPPORTED_SET = new Set(LANGUAGES.map((l) => l.code));
 
 // Storage keys — separate from region storage so the two resolvers
 // can't stomp each other.
 const KEY_MANUAL = 'farroway:lang:manual';
 const KEY_PROFILE = 'farroway:lang:profile';
+// Spec-canonical key for persisted UI language (scalable rollout).
+// Written alongside the legacy keys so older code keeps working
+// while new code can read this one directly.
+const KEY_SPEC = 'farroway.language';
 // Legacy key the existing app already persists to. We keep writing
 // it so VoiceBar and server-side locale reads stay in sync.
 const KEY_LEGACY = 'farroway:lang';
 const KEY_LEGACY_VOICE = 'farroway:voiceLang';
 const KEY_LEGACY_UI = 'farroway_lang';
 
-const DEFAULT_LANG = 'en';
+const DEFAULT_LANG = DEFAULT_LANGUAGE;
 
 function readLs(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -75,6 +89,11 @@ export function resolveLanguage(opts = {}) {
   const profile = opts.profileLang || readLs(KEY_PROFILE);
   if (profile && SUPPORTED_SET.has(profile)) return profile;
 
+  // Spec-canonical storage (farroway.language). Read-before-legacy
+  // so new installs don't pick up a stale legacy value.
+  const spec = readLs(KEY_SPEC);
+  if (spec && SUPPORTED_SET.has(spec)) return spec;
+
   // Legacy path — older installs wrote only to the combined key.
   const legacy = readLs(KEY_LEGACY) || readLs(KEY_LEGACY_UI) || readLs(KEY_LEGACY_VOICE);
   if (legacy && SUPPORTED_SET.has(legacy)) return legacy;
@@ -91,9 +110,10 @@ export function resolveLanguage(opts = {}) {
  * flip in one atomic operation.
  */
 export function confirmLanguage(code) {
-  if (!SUPPORTED_SET.has(code)) return false;
+  if (!isSupported(code)) return false;
   writeLs(KEY_MANUAL, code);
   writeLs(KEY_PROFILE, code);
+  writeLs(KEY_SPEC, code);
   writeLs(KEY_LEGACY, code);
   writeLs(KEY_LEGACY_VOICE, code);
   writeLs(KEY_LEGACY_UI, code);
@@ -104,4 +124,8 @@ export function confirmLanguage(code) {
   return true;
 }
 
-export const _keys = { KEY_MANUAL, KEY_PROFILE, KEY_LEGACY };
+// Re-export central-config helpers so existing importers can reach
+// them via the resolver too. Reduces churn for refactors.
+export { getAllLanguages, isSupported };
+
+export const _keys = { KEY_MANUAL, KEY_PROFILE, KEY_SPEC, KEY_LEGACY };
