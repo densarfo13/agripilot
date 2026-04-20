@@ -47,6 +47,8 @@ import {
   pickReinforcementKey,
   pickNextDayHint,
 } from '../../lib/loop/dailyLoop.js';
+import { getLastActivity } from '../../lib/ngo/analytics.js';
+import { formatRelativeTime } from '../../lib/time/relativeTime.js';
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
@@ -337,6 +339,15 @@ export default function FarmerTodayPage() {
     [progressTick],
   );
 
+  // Trust signal (spec §7) — last activity time for the active farm,
+  // derived from the NGO event log so it reflects actual recorded
+  // actions, not UI-only state.
+  const lastActivityPayload = useMemo(() => {
+    const ts = getLastActivity(getActiveFarmId());
+    return formatRelativeTime(ts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressTick]);
+
   const progressSnapshot = useMemo(() => {
     const serverTasks = [
       primaryTask ? { id: primaryTask.id, title: primaryTask.title, priority: 'high',
@@ -430,8 +441,9 @@ export default function FarmerTodayPage() {
         onClose={() => setCompletionBanner(false)}
       />
 
-      {/* Daily loop header — streak pill + entry message. First row
-          shown every render; no layout jumps between states. */}
+      {/* Daily loop header — streak pill + entry message + last
+          activity (spec §7). First row shown every render; no layout
+          jumps between states. */}
       <div style={S.loopRow} data-testid="daily-loop-row">
         <span style={S.streakPill} data-testid="streak-pill">
           {loopFacts.streak > 0
@@ -441,6 +453,12 @@ export default function FarmerTodayPage() {
         </span>
         <span style={S.loopEntry} data-testid="loop-entry-message">
           {t(loopFacts.entryMessageKey) || ''}
+        </span>
+        <span style={S.trustSignal} data-testid="trust-last-activity">
+          {t('trust.last_activity', {
+            ago: (t(lastActivityPayload.key, lastActivityPayload.vars)
+                   || lastActivityPayload.fallback),
+          }) || `Last activity: ${lastActivityPayload.fallback}`}
         </span>
       </div>
 
@@ -670,6 +688,12 @@ const S = {
   loopEntry: {
     color: '#9FB3C8',
     fontSize: '0.8125rem',
+    fontWeight: 500,
+  },
+  trustSignal: {
+    marginLeft: 'auto',
+    color: '#6F8299',
+    fontSize: '0.75rem',
     fontWeight: 500,
   },
 };
