@@ -18,6 +18,10 @@ import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
+import {
+  resolveFindBestCropRoute, destinationToUrl,
+  assertFindBestCropNotOnboarding,
+} from '../core/multiFarm/index.js';
 
 const CROP_EMOJIS = {
   maize: '🌽',
@@ -219,7 +223,16 @@ export default function MyFarmPage() {
           <div style={S.actionsRow}>
             <button
               type="button"
-              onClick={() => navigate('/crop-fit')}
+              onClick={() => {
+                const dest = resolveFindBestCropRoute({ profile, farms });
+                const url = destinationToUrl(dest);
+                // Dev-only guard: existing users must NEVER be sent to
+                // /onboarding/* via this button. resolveFindBestCropRoute
+                // should have already enforced that — the assertion is
+                // belt-and-braces for future regressions.
+                assertFindBestCropNotOnboarding(!!profile?.id, url);
+                navigate(url);
+              }}
               style={S.cropFitBtn}
             >
               {'\uD83C\uDF3E'} {t('myFarm.findBestCrop')}
