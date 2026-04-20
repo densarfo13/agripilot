@@ -27,6 +27,7 @@ import { HOME_TRANSLATIONS }            from './homeTranslations.js';
 import { EDIT_FARM_TRANSLATIONS }       from './editFarmTranslations.js';
 import { NEW_FARM_TRANSLATIONS }        from './newFarmTranslations.js';
 import { COMPLETION_TRANSLATIONS }      from './completionTranslations.js';
+import { USE_CROP_TRANSLATIONS }        from './useCropTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -65,6 +66,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     EDIT_FARM_TRANSLATIONS,
     NEW_FARM_TRANSLATIONS,
     COMPLETION_TRANSLATIONS,
+    USE_CROP_TRANSLATIONS,
   ]);
 })();
 

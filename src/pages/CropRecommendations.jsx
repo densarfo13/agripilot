@@ -5,7 +5,7 @@
  * Each card shows: icon, name, difficulty, timing, harvest, fit reasons.
  * Tapping a card navigates to /crop-summary with the crop code.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { getRecommendedCrops } from '../engine/cropFit.js';
@@ -14,14 +14,20 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 import {
   buildCropFitAnswersFromFarm, hasEnoughForRecommendations,
+  recomputeFarmContext,
 } from '../core/multiFarm/index.js';
+import { showToast } from '../core/farm/unified.js';
 
 export default function CropRecommendations() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
-  const { profile, farms } = useProfile();
+  const { profile, farms, editFarm, refreshProfile, refreshFarms } = useProfile();
+  // Tracks which crop (if any) is currently being applied so we can
+  // disable its button and surface a spinner without blocking the
+  // whole page.
+  const [applyingCode, setApplyingCode] = useState(null);
 
   // Two entry paths:
   //   1. legacy wizard → answers passed in location.state
@@ -65,6 +71,45 @@ export default function CropRecommendations() {
   function handleSelect(crop) {
     safeTrackEvent('cropFit.crop_selected', { code: crop.code });
     navigate('/crop-summary', { state: { crop, answers } });
+  }
+
+  /**
+   * handleUseThisCrop — §3 decision action. Update the active
+   * farm's cropType, recompute derived context, toast success,
+   * then go to Home. Does NOT create a new farm, does NOT touch
+   * onboarding state.
+   */
+  async function handleUseThisCrop(crop) {
+    const farmId = answers?.farmId || profile?.id;
+    if (!farmId || !crop?.code) {
+      showToast(t('cropFit.results.useCropFailed') && t('cropFit.results.useCropFailed') !== 'cropFit.results.useCropFailed'
+        ? t('cropFit.results.useCropFailed')
+        : 'Could not update your farm.');
+      return;
+    }
+    setApplyingCode(crop.code);
+    try {
+      await editFarm(farmId, { cropType: String(crop.code).toUpperCase() });
+      safeTrackEvent('cropFit.crop_applied', { farmId, code: crop.code });
+      // Explicit refresh chain — belt-and-braces post-save recompute.
+      await recomputeFarmContext({
+        currentFarmId: farmId,
+        intent: { cropSwitched: true },
+        deps: { refreshProfile, refreshFarms },
+      });
+      const msg = t('cropFit.results.farmUpdated') && t('cropFit.results.farmUpdated') !== 'cropFit.results.farmUpdated'
+        ? t('cropFit.results.farmUpdated')
+        : 'Farm updated successfully';
+      showToast(msg);
+      navigate('/dashboard');
+    } catch (err) {
+      const msg = t('cropFit.results.useCropFailed') && t('cropFit.results.useCropFailed') !== 'cropFit.results.useCropFailed'
+        ? t('cropFit.results.useCropFailed')
+        : (err?.message || 'Could not update your farm.');
+      showToast(msg);
+    } finally {
+      setApplyingCode(null);
+    }
   }
 
   const difficultyColors = {
@@ -139,10 +184,24 @@ export default function CropRecommendations() {
                   </div>
                 )}
 
+                {/* §3 decision: apply this crop to the active farm */}
+                <button
+                  type="button"
+                  onClick={() => handleUseThisCrop(crops[0])}
+                  disabled={applyingCode === crops[0].code}
+                  style={S.viewPlanBtn}
+                  data-testid="rec-use-this-crop"
+                >
+                  {applyingCode === crops[0].code
+                    ? (t('common.saving') || 'Saving\u2026')
+                    : (t('cropFit.results.useThisCrop') && t('cropFit.results.useThisCrop') !== 'cropFit.results.useThisCrop'
+                        ? t('cropFit.results.useThisCrop')
+                        : 'Use this crop')}
+                </button>
                 <button
                   type="button"
                   onClick={() => handleSelect(crops[0])}
-                  style={S.viewPlanBtn}
+                  style={{ ...S.viewPlanBtn, marginTop: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.15)' }}
                   data-testid="rec-view-plan"
                 >
                   {t('cropFit.results.viewPlan')}
