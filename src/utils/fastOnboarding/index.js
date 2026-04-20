@@ -36,3 +36,15 @@ export {
   warnFirstTimeRoutingRegression,
   FIRST_TIME_WARN,
 } from './firstTimeFarmerGuard.js';
+
+export {
+  assertSingleDominantCard,
+  assertHomeHasWhy,
+  assertCountryPresent,
+  assertCheckFirstHasReason,
+  assertNotDirectOnStale,
+  assertLocationConfirmed,
+  assertHeaderFromStateEngine,
+  assertNotBothOnboardingRoutes,
+  assertNoEnglishLeakInHindi,
+} from './devAssertions.js';
