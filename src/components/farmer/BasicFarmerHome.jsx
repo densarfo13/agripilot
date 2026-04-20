@@ -27,6 +27,8 @@ import { SECTION_ICONS } from '../../lib/farmerIcons.js';
 import { LOOP_STATE } from '../../services/farmerLoopService.js';
 import TaskCard from './TaskCard.jsx';
 import CompletionCard from './CompletionCard.jsx';
+import { buildCompletionBridge } from '../../core/experience/index.js';
+import { renderLocalizedMessage } from '../../core/i18n/index.js';
 
 const ACTION_ROUTES = {
   onboarding_incomplete: 'setup',
@@ -151,17 +153,41 @@ export default function BasicFarmerHome({
       )}
 
       {/* ═══ ALL DONE STATE ═══ */}
-      {isAllDone && !isCompleted && (
-        <div style={S.allDoneCard} data-testid="loop-all-done">
-          <span style={S.allDoneIcon}>{'\u2728'}</span>
-          <div style={S.allDoneTitle}>{t('loop.allDone')}</div>
-          <div style={S.allDoneSubtext}>
-            {progress.done > 0
-              ? t('loop.greatWork')
-              : t('loop.comeBackTomorrow')}
+      {/*
+          §6 completion bridge: no more dead-end. The existing
+          "Great work" line stays; we add a forward-looking next-step
+          line below so the farmer always has an outlook. The bridge
+          emits a LocalizedPayload; the shared renderer localizes it.
+      */}
+      {isAllDone && !isCompleted && (() => {
+        const bridge = buildCompletionBridge({
+          cropStage: decision?.cropStage || vm?.stage || null,
+          missedDays: decision?.missedDays || 0,
+          allDoneReason: decision?.reason || null,
+        });
+        const nextLine = bridge?.next
+          ? renderLocalizedMessage(bridge.next, t)
+          : '';
+        return (
+          <div style={S.allDoneCard} data-testid="loop-all-done">
+            <span style={S.allDoneIcon}>{'\u2728'}</span>
+            <div style={S.allDoneTitle}>{t('loop.allDone')}</div>
+            <div style={S.allDoneSubtext}>
+              {progress.done > 0
+                ? t('loop.greatWork')
+                : t('loop.comeBackTomorrow')}
+            </div>
+            {nextLine && (
+              <div
+                style={S.allDoneSubtext}
+                data-testid="loop-next-bridge"
+              >
+                {nextLine}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ═══ COME BACK STATE ═══ */}
       {isComeBack && (
