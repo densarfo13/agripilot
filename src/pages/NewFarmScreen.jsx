@@ -20,6 +20,10 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import {
+  saveFarm as farrowaySaveFarm,
+  setActiveFarmId as farrowaySetActiveFarmId,
+} from '../store/farrowayLocal.js';
 
 const STAGE_OPTIONS = [
   'land_prep', 'planting', 'early_growth',
@@ -81,6 +85,14 @@ export default function NewFarmScreen() {
       };
       const result = await saveProfile(payload);
       setCreatedFarm(result?.profile || null);
+      // Offline-first mirror to farroway.farms so the farm survives
+      // even if the backend write fails or we're offline.
+      farrowaySaveFarm({
+        name:     payload.farmName,
+        crop:     payload.cropType || '',
+        location: [payload.country, payload.stateCode].filter(Boolean).join(', '),
+        size:     payload.size ? `${payload.size} ${payload.sizeUnit || ''}`.trim() : '',
+      });
       safeTrackEvent('farm.new_farm_created', {
         farmId: result?.profile?.id || null,
         crop: payload.cropType || null,
@@ -100,12 +112,18 @@ export default function NewFarmScreen() {
     }
     try {
       await switchFarm(createdFarm.id);
+      // Mirror active-farm selection to the farroway-local store so
+      // offline reads agree with the server/profile-context selection.
+      farrowaySetActiveFarmId(createdFarm.id);
       try {
         if (typeof refreshProfile === 'function') await refreshProfile();
         if (typeof refreshFarms === 'function')   await refreshFarms();
       } catch { /* non-blocking */ }
       navigate('/my-farm');
-    } catch { navigate('/my-farm'); }
+    } catch {
+      farrowaySetActiveFarmId(createdFarm.id);
+      navigate('/my-farm');
+    }
   }
 
   function handleStayOnCurrent() {

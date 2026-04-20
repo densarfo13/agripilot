@@ -26,7 +26,15 @@ import ProgressSummaryCard from '../../components/farmer/ProgressSummaryCard.jsx
 import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
+import TaskFeedbackModal from '../../components/farmer/TaskFeedbackModal.jsx';
 import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
+import {
+  saveTaskCompletion,
+  saveFeedback,
+  drainQueue,
+  defaultSender,
+  getActiveFarmId,
+} from '../../store/farrowayLocal.js';
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
@@ -54,6 +62,21 @@ export default function FarmerTodayPage() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // Offline-first sync drain — attempt on mount and whenever the
+  // browser reports we're back online. Silently no-ops offline.
+  useEffect(() => {
+    const run = () => { drainQueue(defaultSender).catch(() => {}); };
+    run();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', run);
+      return () => window.removeEventListener('online', run);
+    }
+  }, []);
+
+  // "Did this help?" prompt state — opens right after a successful
+  // complete, non-blocking (user can dismiss by tapping outside).
+  const [taskFeedback, setTaskFeedback] = useState({ open: false, taskId: null });
 
   // Re-derive localized tasks whenever the language or the raw today
   // payload changes. Using useMemo keeps the re-render cheap.
@@ -112,8 +135,25 @@ export default function FarmerTodayPage() {
 
   async function handleComplete(task) {
     if (!task?.id || task.source?.startsWith('override:')) return;
-    await completeCycleTask(task.id);
+    // Offline-first: always persist locally + queue for sync first,
+    // so a refresh preserves the completion even if the network call
+    // below never reaches the server.
+    const farmId = activeCycle?.farmId || activeCycle?.id || getActiveFarmId();
+    saveTaskCompletion({ taskId: task.id, farmId });
+    try {
+      await completeCycleTask(task.id);
+    } catch { /* offline / server error — local + queue already cover it */ }
     await reload();
+    // Show the non-blocking "Did this help?" prompt.
+    setTaskFeedback({ open: true, taskId: task.id });
+    // Opportunistic drain — if we're online now, flush the queue.
+    drainQueue(defaultSender).catch(() => {});
+  }
+
+  function handleTaskFeedback(value) {
+    if (!taskFeedback.taskId) return;
+    saveFeedback({ taskId: taskFeedback.taskId, feedback: value });
+    drainQueue(defaultSender).catch(() => {});
   }
 
   // PrimaryTaskCard calls these to open the modal; the modal's
@@ -241,6 +281,13 @@ export default function FarmerTodayPage() {
         mode={modal.mode}
         onClose={() => setModal({ open: false, mode: null, task: null })}
         onSubmit={handleModalSubmit}
+      />
+
+      <TaskFeedbackModal
+        open={taskFeedback.open}
+        taskId={taskFeedback.taskId}
+        onAnswer={handleTaskFeedback}
+        onClose={() => setTaskFeedback({ open: false, taskId: null })}
       />
 
       {screen.state === 'active' ? (

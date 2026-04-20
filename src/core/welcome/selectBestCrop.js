@@ -130,10 +130,13 @@ export function selectBestCrop({
     });
   }
 
-  // 3) Safe fallback — starter list unchanged.
+  // 3) Safe fallback — spec §5: default trio is cassava / maize / rice.
+  const byCode = (code) => STARTER_CROPS.find((c) => c.code === code);
+  const fallbackPicks = [byCode('cassava'), byCode('maize'), byCode('rice')]
+    .filter(Boolean);
   return Object.freeze({
-    best:         STARTER_CROPS[0],
-    alternatives: Object.freeze(STARTER_CROPS.slice(1, 1 + alt)),
+    best:         fallbackPicks[0] || STARTER_CROPS[0],
+    alternatives: Object.freeze(fallbackPicks.slice(1, 1 + alt)),
     source:       'fallback',
   });
 }

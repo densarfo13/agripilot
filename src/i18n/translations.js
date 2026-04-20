@@ -668,6 +668,7 @@ const T = {
   'actionHome.harvest.yieldPrompt':    { en: 'Yield in kg (optional)',         fr: 'Rendement en kg (optionnel)',     sw: 'Mavuno kwa kg (hiari)',          ha: 'Girbi a kg (na son rai)',    tw: 'Deɛ wotwaeɛ (kg)',            hi: 'उपज किलोग्राम में (वैकल्पिक)' },
   'actionHome.harvest.qualityPrompt':  { en: 'Quality (poor/fair/good/excellent)', fr: 'Qualité (faible/moyen/bon/excellent)', sw: 'Ubora (duni/wastani/nzuri/bora)', ha: 'Inganci (ƙasa/matsakaici/kyau/mafi kyau)', tw: 'Papa (enye/bɛyɛ/pa/papapa)', hi: 'गुणवत्ता (खराब/औसत/अच्छा/उत्कृष्ट)' },
   'actionHome.harvest.notesPrompt':    { en: 'Notes (optional)',               fr: 'Notes (optionnel)',               sw: 'Maelezo (hiari)',                ha: 'Bayanin kula (na son rai)',  tw: 'Nsɛm a woka',                 hi: 'नोट्स (वैकल्पिक)' },
+  'actionHome.feedback.didThisHelp':   { en: 'Did this help?',                 fr: 'Est-ce que cela a aidé ?',        sw: 'Je, hii ilisaidia?',             ha: 'Shin wannan ya taimaka?',    tw: 'So yei boaa wo?',             hi: 'क्या इससे मदद मिली?' },
 
   // ─── Generated task titles (type × crop × timing) ──────────
   'generatedTask.crop.generic':       { en: 'your crop',        fr: 'votre culture',     sw: 'zao lako',         ha: 'amfaninku',       tw: 'w\'afudeɛ',       hi: 'आपकी फसल' },
