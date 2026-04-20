@@ -30,6 +30,7 @@ import {
   getCountryLabel, getStateLabel,
 } from '../config/countriesStates.js';
 import { searchCrops, normalizeCrop, CROP_OTHER, getCropLabel } from '../config/crops.js';
+import { reverseGeocode } from '../lib/location/reverseGeocode.js';
 
 const STAGE_OPTIONS = [
   'land_prep', 'planting', 'early_growth',
@@ -41,21 +42,6 @@ const resolve = (t, key, fallback) => {
   const v = t(key);
   return v && v !== key ? v : fallback;
 };
-
-// ─── Coarse reverse geocoder — same footprint as FirstLaunchConfirm.
-// Real apps would call a mapping service; we only need the happy path
-// for the countries we support.
-function coarseGeocode(lat, lng) {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (lat >= 24 && lat <= 50 && lng >= -125 && lng <= -66) return { country: 'US' };
-  if (lat >=  4.5 && lat <= 11.5 && lng >=  -3.5 && lng <=   1.5) return { country: 'GH' };
-  if (lat >=  6 && lat <= 37 && lng >= 68 && lng <= 97) return { country: 'IN' };
-  if (lat >=  4 && lat <= 14 && lng >= 2 && lng <= 15) return { country: 'NG' };
-  if (lat >= -5 && lat <=  5 && lng >= 33 && lng <= 42) return { country: 'KE' };
-  if (lat >=-12 && lat <= -1 && lng >= 29 && lng <= 40) return { country: 'TZ' };
-  if (lat >=-35 && lat <=-22 && lng >= 16 && lng <= 33) return { country: 'ZA' };
-  return null;
-}
 
 export default function NewFarmScreen() {
   const navigate = useNavigate();
@@ -122,7 +108,9 @@ export default function NewFarmScreen() {
           { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 },
         );
       });
-      const region = coarseGeocode(coords?.coords?.latitude, coords?.coords?.longitude);
+      const region = await reverseGeocode(
+        coords?.coords?.latitude, coords?.coords?.longitude,
+      );
       if (!region?.country) { setDetectStatus('failed'); return; }
       setForm((prev) => ({
         ...prev,

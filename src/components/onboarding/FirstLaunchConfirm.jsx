@@ -25,6 +25,7 @@ import {
   resolveRegion, confirmRegion, detectRegionViaGps, recordGpsRegion,
 } from '../../lib/regionResolver.js';
 import { logClientEvent, ONBOARDING_EVENT_TYPES } from '../../utils/analyticsClient.js';
+import { reverseGeocode } from '../../lib/location/reverseGeocode.js';
 
 const FIRST_LAUNCH_KEY = 'farroway:firstLaunchComplete';
 
@@ -68,20 +69,18 @@ function markFirstLaunchComplete() {
 }
 
 /**
- * Minimal reverse-geocoder stub — maps common locale heuristics to
- * a country. Real apps would call a mapping service; we only need
- * the happy path for US/GH/IN since those are the supported regions.
+ * Default reverse-geocoder. Uses the shared helper which first
+ * tries bigdatacloud.net (network) and falls back to a local
+ * bounding-box heuristic when offline or HTTP. Returns the same
+ * `{ country, stateCode? }` shape the existing caller expects.
  */
-async function stubGeocoder(lat, lng) {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  // Very coarse — good enough to suggest "United States" vs "Other".
-  if (lat >= 24 && lat <= 50 && lng >= -125 && lng <= -66) return { country: 'US' };
-  if (lat >= 4.5 && lat <= 11.5 && lng >= -3.5 && lng <= 1.5) return { country: 'GH' };
-  if (lat >= 6 && lat <= 37 && lng >= 68 && lng <= 97) return { country: 'IN' };
-  return null;
+async function defaultGeocoder(lat, lng) {
+  const r = await reverseGeocode(lat, lng);
+  if (!r) return null;
+  return { country: r.country, stateCode: r.stateCode || null };
 }
 
-export default function FirstLaunchConfirm({ onComplete, geocoder = stubGeocoder }) {
+export default function FirstLaunchConfirm({ onComplete, geocoder = defaultGeocoder }) {
   const { t, setLang } = useTranslation();
 
   const initial = resolveRegion();
