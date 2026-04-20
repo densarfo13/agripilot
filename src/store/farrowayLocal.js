@@ -132,31 +132,61 @@ export function getFarms() {
   return Array.isArray(v) ? v : [];
 }
 
-export function saveFarm({ name, crop, location, size, program = null }) {
+export function saveFarm({
+  name,
+  crop,
+  location,        // legacy free-form string; preserved for back-compat
+  size,            // legacy free-form string
+  program = null,
+  // Canonical data shape — prefer these over legacy location/size.
+  country  = null,
+  state    = null,
+  farmSize = null,
+  sizeUnit = null,
+  stage    = null,
+  setActive = false,
+} = {}) {
   if (!name || typeof name !== 'string') return null;
+  const now = Date.now();
+  const countryCode = country ? String(country).trim() : '';
+  const stateCode   = state   ? String(state).trim()   : '';
+  const sizeNum     = farmSize != null && farmSize !== ''
+    ? Number(farmSize)
+    : (size != null && size !== '' ? Number(size) : null);
+  // Compose a human "location" string so the existing MyFarm cards
+  // keep rendering without needing to know the new fields.
+  const locationStr = location
+    ? String(location).trim()
+    : [countryCode, stateCode].filter(Boolean).join(', ');
   const farm = {
     id: genId(),
     name: String(name).trim(),
-    crop: crop ? String(crop).trim() : '',
-    location: location ? String(location).trim() : '',
-    size: size != null ? String(size).trim() : '',
-    // Spec §4 — optional NGO program tag used for grouping in the
-    // analytics layer. Null when the farmer isn't in a program.
-    program: (typeof program === 'string' && program.trim()) ? program.trim() : null,
-    createdAt: Date.now(),
+    crop: crop ? String(crop).trim().toLowerCase() : '',
+    // Canonical fields (spec §7).
+    country:  countryCode || null,
+    state:    stateCode   || null,
+    farmSize: Number.isFinite(sizeNum) ? sizeNum : null,
+    sizeUnit: sizeUnit ? String(sizeUnit).trim() : null,
+    stage:    stage    ? String(stage).trim()    : null,
+    // Legacy mirrors — kept so existing readers continue to work.
+    location: locationStr,
+    size:     Number.isFinite(sizeNum) ? String(sizeNum) : '',
+    program:  (typeof program === 'string' && program.trim()) ? program.trim() : null,
+    createdAt: now,
   };
   const farms = getFarms();
   farms.push(farm);
   writeJson(K.FARMS, farms);
-  // First farm becomes active automatically.
-  if (!getActiveFarmId()) setActiveFarmId(farm.id);
+  // First farm becomes active automatically; caller can also opt in
+  // explicitly via setActive so "Add Farm" can toggle it.
+  if (setActive || !getActiveFarmId()) setActiveFarmId(farm.id);
   queueEvent({ type: 'farm_added', payload: farm });
   // NGO-trust event — needed so the farm's timeline starts at
   // "Farm created" (spec §2 example).
   logEvent({
     farmId:    farm.id,
     type:     'farm_created',
-    payload:  { name: farm.name, crop: farm.crop, program: farm.program },
+    payload:  { name: farm.name, crop: farm.crop, country: farm.country, program: farm.program },
     timestamp: farm.createdAt,
   });
   return farm;

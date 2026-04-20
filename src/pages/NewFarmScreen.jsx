@@ -1,20 +1,21 @@
 /**
- * NewFarmScreen — standalone "Add Another Farm" page.
+ * NewFarmScreen — structured, validated, usable "Add Another Farm"
+ * page.
  *
- * Deliberately separate from onboarding AND from the Edit
- * Farm screen:
- *   • no step shell, no onboarding copy
- *   • never modifies the current active farm until the user
- *     chooses "Switch to this farm"
- *   • creates a new farm record via ProfileContext.saveProfile
- *     with the newFarm flag
+ *   • country dropdown (global list)  + state dropdown (subdivisions
+ *     only appear for countries we operate in)
+ *   • searchable crop picker (common crops + "Other")
+ *   • "Detect my location" button → navigator.geolocation
+ *   • inline field errors; save disabled until required fields valid
+ *   • optional "Set as active farm" toggle on save
+ *   • success screen still prompts "Switch to this farm"
  *
- * Data flow:
- *   empty form → user fills fields → saveProfile({...payload, newFarm:true})
- *   → success → show { Switch to this farm | Stay on current farm }
+ * Data flow unchanged at the API layer: we still call saveProfile
+ * with newFarm:true, mirror to the farroway-local store, and let the
+ * existing switch/stay buttons drive navigation.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useProfile } from '../context/ProfileContext.jsx';
@@ -24,6 +25,11 @@ import {
   saveFarm as farrowaySaveFarm,
   setActiveFarmId as farrowaySetActiveFarmId,
 } from '../store/farrowayLocal.js';
+import {
+  COUNTRIES, getStatesForCountry, hasStatesForCountry,
+  getCountryLabel, getStateLabel,
+} from '../config/countriesStates.js';
+import { searchCrops, normalizeCrop, CROP_OTHER, getCropLabel } from '../config/crops.js';
 
 const STAGE_OPTIONS = [
   'land_prep', 'planting', 'early_growth',
@@ -36,69 +42,166 @@ const resolve = (t, key, fallback) => {
   return v && v !== key ? v : fallback;
 };
 
+// ─── Coarse reverse geocoder — same footprint as FirstLaunchConfirm.
+// Real apps would call a mapping service; we only need the happy path
+// for the countries we support.
+function coarseGeocode(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat >= 24 && lat <= 50 && lng >= -125 && lng <= -66) return { country: 'US' };
+  if (lat >=  4.5 && lat <= 11.5 && lng >=  -3.5 && lng <=   1.5) return { country: 'GH' };
+  if (lat >=  6 && lat <= 37 && lng >= 68 && lng <= 97) return { country: 'IN' };
+  if (lat >=  4 && lat <= 14 && lng >= 2 && lng <= 15) return { country: 'NG' };
+  if (lat >= -5 && lat <=  5 && lng >= 33 && lng <= 42) return { country: 'KE' };
+  if (lat >=-12 && lat <= -1 && lng >= 29 && lng <= 40) return { country: 'TZ' };
+  if (lat >=-35 && lat <=-22 && lng >= 16 && lng <= 33) return { country: 'ZA' };
+  return null;
+}
+
 export default function NewFarmScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const {
-    profile, saveProfile, switchFarm, refreshFarms, refreshProfile,
+    saveProfile, switchFarm, refreshFarms, refreshProfile,
   } = useProfile();
 
   const [form, setForm] = useState({
     farmName: '',
-    cropType: '',
+    cropType: '',         // normalized code (e.g. 'maize'), or 'other'
+    cropOther: '',        // free-form when cropType === 'other'
+    cropQuery: '',        // search input string
     country: '',
     stateCode: '',
     size: '',
     sizeUnit: 'ACRE',
     stage: 'land_prep',
+    setActive: false,
   });
+  const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [createdFarm, setCreatedFarm] = useState(null);
+  const [detectStatus, setDetectStatus] = useState('idle'); // idle | detecting | ok | failed
 
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    // Clear this field's error as the user edits it.
+    if (errors[field]) setErrors((e) => ({ ...e, [field]: null }));
+  }
+
+  function handleCountryChange(e) {
+    update('country', e.target.value);
+    update('stateCode', ''); // reset state when country changes
+  }
+
+  // ─── Crop search + selection ──────────────────────────────
+  const cropSuggestions = useMemo(() => {
+    return searchCrops(form.cropQuery, { limit: 12 });
+  }, [form.cropQuery]);
+
+  function pickCrop(code) {
+    setForm((prev) => ({
+      ...prev,
+      cropType: code,
+      cropQuery: code === CROP_OTHER ? prev.cropQuery : getCropLabel(code),
+    }));
+    if (errors.cropType) setErrors((e) => ({ ...e, cropType: null }));
+  }
+
+  // ─── Detect location ──────────────────────────────────────
+  async function handleDetectLocation() {
+    if (detectStatus === 'detecting') return;
+    setDetectStatus('detecting');
+    const hasGeo = typeof navigator !== 'undefined' && navigator.geolocation;
+    if (!hasGeo) { setDetectStatus('failed'); return; }
+    try {
+      const coords = await new Promise((resolve2, reject) => {
+        const timer = setTimeout(() => reject(new Error('timeout')), 7000);
+        navigator.geolocation.getCurrentPosition(
+          (p) => { clearTimeout(timer); resolve2(p); },
+          (err) => { clearTimeout(timer); reject(err); },
+          { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 },
+        );
+      });
+      const region = coarseGeocode(coords?.coords?.latitude, coords?.coords?.longitude);
+      if (!region?.country) { setDetectStatus('failed'); return; }
+      setForm((prev) => ({
+        ...prev,
+        country: region.country,
+        stateCode: region.stateCode || '',
+      }));
+      setDetectStatus('ok');
+    } catch {
+      setDetectStatus('failed');
+    }
+  }
+
+  // ─── Validation ───────────────────────────────────────────
+  function validate() {
+    const next = {};
+    const resolvedCropCode = form.cropType === CROP_OTHER
+      ? normalizeCrop(form.cropOther)
+      : form.cropType;
+    if (!form.country.trim()) {
+      next.country = resolve(t, 'farm.newFarm.countryRequired',
+        'Country is required to create a farm.');
+    }
+    if (!resolvedCropCode) {
+      next.cropType = resolve(t, 'farm.newFarm.cropRequired',
+        'Pick a crop or choose "Other" and name one.');
+    }
+    const sizeNum = Number(form.size);
+    if (!form.size || !Number.isFinite(sizeNum) || sizeNum <= 0) {
+      next.size = resolve(t, 'farm.newFarm.sizeRequired',
+        'Farm size is required and must be greater than zero.');
+    }
+    return { errors: next, cropCode: resolvedCropCode };
   }
 
   async function handleSave(e) {
     e?.preventDefault?.();
     if (saving) return;
-    if (!form.country.trim()) {
-      setError(resolve(t, 'farm.newFarm.countryRequired',
-        'Country is required to create a farm.'));
+    const { errors: fieldErrors, cropCode } = validate();
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      setSubmitError('');
       return;
     }
+    setErrors({});
+    setSubmitError('');
     setSaving(true);
-    setError('');
     try {
       const payload = {
         farmName:  form.farmName.trim() || 'My New Farm',
-        cropType:  form.cropType.trim().toUpperCase() || undefined,
+        cropType:  cropCode.toUpperCase(),
         country:   form.country.trim(),
         stateCode: form.stateCode.trim() || undefined,
-        size:      form.size ? Number(form.size) : undefined,
+        size:      Number(form.size),
         sizeUnit:  form.sizeUnit,
         cropStage: form.stage || 'land_prep',
-        // Critical: signals saveProfile to CREATE a new farm rather
-        // than update the current one. Prevents overwrite bugs.
         newFarm: true,
       };
       const result = await saveProfile(payload);
       setCreatedFarm(result?.profile || null);
-      // Offline-first mirror to farroway.farms so the farm survives
-      // even if the backend write fails or we're offline.
-      farrowaySaveFarm({
+      // Offline-first mirror — full structured shape per spec §7.
+      const localFarm = farrowaySaveFarm({
         name:     payload.farmName,
-        crop:     payload.cropType || '',
-        location: [payload.country, payload.stateCode].filter(Boolean).join(', '),
-        size:     payload.size ? `${payload.size} ${payload.sizeUnit || ''}`.trim() : '',
+        crop:     cropCode,
+        country:  payload.country,
+        state:    payload.stateCode || null,
+        farmSize: payload.size,
+        sizeUnit: payload.sizeUnit,
+        stage:    payload.cropStage,
+        setActive: !!form.setActive,
       });
+      if (form.setActive && localFarm?.id) {
+        farrowaySetActiveFarmId(localFarm.id);
+      }
       safeTrackEvent('farm.new_farm_created', {
         farmId: result?.profile?.id || null,
-        crop: payload.cropType || null,
+        crop: cropCode || null,
       });
     } catch (err) {
-      setError(err?.message
+      setSubmitError(err?.message
         || resolve(t, 'farm.newFarm.saveFailed', 'Could not create the new farm.'));
     } finally {
       setSaving(false);
@@ -106,14 +209,9 @@ export default function NewFarmScreen() {
   }
 
   async function handleSwitchToNew() {
-    if (!createdFarm?.id) {
-      navigate('/my-farm');
-      return;
-    }
+    if (!createdFarm?.id) { navigate('/my-farm'); return; }
     try {
       await switchFarm(createdFarm.id);
-      // Mirror active-farm selection to the farroway-local store so
-      // offline reads agree with the server/profile-context selection.
       farrowaySetActiveFarmId(createdFarm.id);
       try {
         if (typeof refreshProfile === 'function') await refreshProfile();
@@ -126,13 +224,8 @@ export default function NewFarmScreen() {
     }
   }
 
-  function handleStayOnCurrent() {
-    navigate('/my-farm');
-  }
-
-  function handleCancel() {
-    navigate('/my-farm');
-  }
+  function handleStayOnCurrent() { navigate('/my-farm'); }
+  function handleCancel()        { navigate('/my-farm'); }
 
   // ─── Success state ──────────────────────────────────────
   if (createdFarm) {
@@ -141,6 +234,10 @@ export default function NewFarmScreen() {
         <h1 style={S.title}>
           {resolve(t, 'farm.newFarm.successTitle', 'New farm created')}
         </h1>
+        <p style={S.success} data-testid="new-farm-success">
+          {'\u2714'} {resolve(t, 'farm.newFarm.successMessage',
+            'Saved. Your farm is ready to use.')}
+        </p>
         <p style={S.helper}>
           {resolve(t, 'farm.newFarm.successHelper',
             'Would you like to switch to this new farm now?')}
@@ -168,6 +265,9 @@ export default function NewFarmScreen() {
   }
 
   // ─── Form state ─────────────────────────────────────────
+  const countryStates = getStatesForCountry(form.country);
+  const showStates = hasStatesForCountry(form.country);
+
   return (
     <main style={S.page} data-screen="new-farm" data-state="form">
       <h1 style={S.title}>{resolve(t, 'farm.newFarm.title', 'Add New Farm')}</h1>
@@ -176,7 +276,8 @@ export default function NewFarmScreen() {
           'Create another farm without affecting your current one.')}
       </p>
 
-      <form onSubmit={handleSave} style={S.form}>
+      <form onSubmit={handleSave} style={S.form} noValidate>
+        {/* Farm name */}
         <label style={S.label}>
           {resolve(t, 'setup.farmName', 'Farm name')}
           <input
@@ -189,51 +290,138 @@ export default function NewFarmScreen() {
           />
         </label>
 
+        {/* Crop — searchable + common list + Other */}
         <label style={S.label}>
-          {resolve(t, 'setup.mainCrop', 'Crop')}
+          {resolve(t, 'setup.mainCrop', 'Main crop')}{' *'}
           <input
             type="text"
-            value={form.cropType}
-            onChange={(e) => update('cropType', e.target.value)}
-            style={S.input}
-            data-testid="new-farm-crop"
+            value={form.cropQuery}
+            onChange={(e) => setForm((p) => ({ ...p, cropQuery: e.target.value, cropType: '' }))}
+            placeholder={resolve(t, 'farm.newFarm.cropSearchPlaceholder',
+              'Search common crops…')}
+            style={{
+              ...S.input,
+              ...(errors.cropType ? S.inputError : null),
+            }}
+            data-testid="new-farm-crop-search"
+            aria-invalid={!!errors.cropType}
           />
+          <div style={S.chipRow} data-testid="new-farm-crop-suggestions">
+            {cropSuggestions.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => pickCrop(c.code)}
+                style={{
+                  ...S.chip,
+                  ...(form.cropType === c.code ? S.chipActive : null),
+                }}
+                data-testid={`new-farm-crop-${c.code}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {form.cropType === CROP_OTHER && (
+            <input
+              type="text"
+              value={form.cropOther}
+              onChange={(e) => update('cropOther', e.target.value)}
+              placeholder={resolve(t, 'farm.newFarm.cropOtherPlaceholder',
+                'Name the crop')}
+              style={{ ...S.input, marginTop: '0.375rem' }}
+              data-testid="new-farm-crop-other"
+            />
+          )}
+          {errors.cropType && (
+            <span style={S.fieldError} data-testid="new-farm-crop-error">
+              {errors.cropType}
+            </span>
+          )}
         </label>
 
+        {/* Country */}
         <label style={S.label}>
-          {resolve(t, 'setup.country', 'Country')}
-          <input
-            type="text"
+          {resolve(t, 'setup.country', 'Country')}{' *'}
+          <select
             value={form.country}
-            onChange={(e) => update('country', e.target.value)}
-            style={S.input}
-            required
+            onChange={handleCountryChange}
+            style={{
+              ...S.input,
+              ...(errors.country ? S.inputError : null),
+            }}
             data-testid="new-farm-country"
-          />
+            aria-invalid={!!errors.country}
+          >
+            <option value="">—</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+          {errors.country && (
+            <span style={S.fieldError} data-testid="new-farm-country-error">
+              {errors.country}
+            </span>
+          )}
         </label>
 
-        <label style={S.label}>
-          {resolve(t, 'setup.state', 'State / Region (optional)')}
-          <input
-            type="text"
-            value={form.stateCode}
-            onChange={(e) => update('stateCode', e.target.value)}
-            style={S.input}
-            data-testid="new-farm-state"
-          />
-        </label>
+        {/* State / region — only for countries with subdivisions */}
+        {showStates && (
+          <label style={S.label}>
+            {resolve(t, 'setup.state', 'State / Region')}
+            <select
+              value={form.stateCode}
+              onChange={(e) => update('stateCode', e.target.value)}
+              style={S.input}
+              data-testid="new-farm-state"
+            >
+              <option value="">—</option>
+              {countryStates.map((s) => (
+                <option key={s.code} value={s.code}>{s.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
+        {/* Detect my location */}
+        <button
+          type="button"
+          onClick={handleDetectLocation}
+          disabled={detectStatus === 'detecting'}
+          style={S.detectBtn}
+          data-testid="new-farm-detect"
+        >
+          {detectStatus === 'detecting'
+            ? resolve(t, 'detecting_location', 'Detecting…')
+            : resolve(t, 'detect_location', 'Detect my location')}
+        </button>
+        {detectStatus === 'ok' && (
+          <span style={S.detectOk} data-testid="new-farm-detect-ok">
+            {resolve(t, 'location_detected', 'Location detected')}
+          </span>
+        )}
+        {detectStatus === 'failed' && (
+          <span style={S.detectFail} data-testid="new-farm-detect-failed">
+            {resolve(t, 'location_detection_failed', "Couldn't detect location. Pick manually.")}
+          </span>
+        )}
+
+        {/* Size + unit */}
         <div style={S.row}>
           <label style={{ ...S.label, flex: 1 }}>
-            {resolve(t, 'setup.farmSize', 'Farm size (optional)')}
+            {resolve(t, 'setup.farmSize', 'Farm size')}{' *'}
             <input
               type="number"
               min="0"
               step="0.01"
               value={form.size}
               onChange={(e) => update('size', e.target.value)}
-              style={S.input}
+              style={{
+                ...S.input,
+                ...(errors.size ? S.inputError : null),
+              }}
               data-testid="new-farm-size"
+              aria-invalid={!!errors.size}
             />
           </label>
           <label style={{ ...S.label, width: '8rem' }}>
@@ -242,13 +430,20 @@ export default function NewFarmScreen() {
               value={form.sizeUnit}
               onChange={(e) => update('sizeUnit', e.target.value)}
               style={S.input}
+              data-testid="new-farm-size-unit"
             >
               <option value="ACRE">{resolve(t, 'setup.acres', 'Acres')}</option>
               <option value="HECTARE">{resolve(t, 'setup.hectares', 'Hectares')}</option>
             </select>
           </label>
         </div>
+        {errors.size && (
+          <span style={S.fieldError} data-testid="new-farm-size-error">
+            {errors.size}
+          </span>
+        )}
 
+        {/* Stage */}
         <label style={S.label}>
           {resolve(t, 'cropStage.label', 'Stage (optional)')}
           <select
@@ -265,7 +460,21 @@ export default function NewFarmScreen() {
           </select>
         </label>
 
-        {error && <p style={S.error} role="alert">{error}</p>}
+        {/* Set as active toggle */}
+        <label style={S.toggleRow}>
+          <input
+            type="checkbox"
+            checked={form.setActive}
+            onChange={(e) => update('setActive', e.target.checked)}
+            data-testid="new-farm-set-active"
+          />
+          <span>
+            {resolve(t, 'farm.newFarm.setActive',
+              'Set this as my active farm after saving')}
+          </span>
+        </label>
+
+        {submitError && <p style={S.error} role="alert">{submitError}</p>}
 
         <div style={S.buttons}>
           <button
@@ -301,6 +510,11 @@ const S = {
   },
   title:  { fontSize: '1.375rem', fontWeight: 700, margin: '0 0 0.25rem' },
   helper: { margin: '0 0 1rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' },
+  success: {
+    margin: '0 0 0.75rem', padding: '0.625rem 0.75rem', borderRadius: 10,
+    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.28)',
+    color: '#86EFAC', fontSize: '0.9rem',
+  },
   form:   { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
   label:  {
     display: 'flex', flexDirection: 'column', gap: '0.25rem',
@@ -312,11 +526,49 @@ const S = {
     background: 'rgba(255,255,255,0.05)', color: '#fff',
     fontSize: '0.9375rem', outline: 'none', boxSizing: 'border-box',
   },
+  inputError: { borderColor: 'rgba(239,68,68,0.55)' },
   row:    { display: 'flex', gap: '0.75rem', alignItems: 'flex-end' },
   error:  {
     padding: '0.625rem 0.75rem', borderRadius: 10,
     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
     color: '#FCA5A5', fontSize: '0.875rem', margin: '0.25rem 0 0',
+  },
+  fieldError: {
+    marginTop: '0.25rem',
+    color: '#FCA5A5', fontSize: '0.75rem', fontWeight: 500,
+  },
+  chipRow: {
+    display: 'flex', flexWrap: 'wrap', gap: '0.25rem',
+    marginTop: '0.375rem',
+  },
+  chip: {
+    padding: '0.25rem 0.625rem', borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.12)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF', fontSize: '0.75rem', fontWeight: 600,
+    cursor: 'pointer',
+  },
+  chipActive: {
+    borderColor: '#22C55E',
+    background: 'rgba(34,197,94,0.14)',
+    color: '#86EFAC',
+  },
+  detectBtn: {
+    padding: '0.5rem 0.75rem', borderRadius: 10,
+    border: '1px solid rgba(14,165,233,0.28)',
+    background: 'rgba(14,165,233,0.08)', color: '#0EA5E9',
+    fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+  },
+  detectOk: {
+    marginTop: '0.25rem', color: '#86EFAC', fontSize: '0.75rem', fontWeight: 600,
+  },
+  detectFail: {
+    marginTop: '0.25rem', color: '#FDE68A', fontSize: '0.75rem', fontWeight: 600,
+  },
+  toggleRow: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    fontSize: '0.8125rem', color: 'rgba(255,255,255,0.75)', fontWeight: 500,
+    marginTop: '0.25rem',
   },
   buttons: { display: 'flex', gap: '0.75rem', marginTop: '1rem' },
   cancelBtn: {
@@ -329,3 +581,6 @@ const S = {
     background: '#22C55E', color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
   },
 };
+
+// Helper export (used by tests).
+export const _helpers = Object.freeze({ getCountryLabel, getStateLabel });
