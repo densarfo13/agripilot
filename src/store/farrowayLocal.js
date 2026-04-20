@@ -6,13 +6,17 @@
  *
  *   farroway.taskCompletions   → array of { taskId, farmId, completed, timestamp }
  *   farroway.feedback          → array of { taskId, feedback: "yes"|"no", timestamp }
- *   farroway.farms             → array of { id, name, crop, location, size, ... }
+ *   farroway.farms             → array of { id, name, crop, location, size, program, ... }
  *   farroway.activeFarmId      → string (id of active farm)
  *   farroway.pendingEvents     → queue of { type, payload, timestamp }
+ *   farroway.farmEvents        → see lib/events/eventLogger.js — the
+ *                                append-only NGO-trust event log.
  *
  * Everything here is intentionally tiny, synchronous, and SSR-safe.
  * No dependency on any other module so pages can import it freely.
  */
+
+import { logEvent } from '../lib/events/eventLogger.js';
 
 const K = Object.freeze({
   TASKS:    'farroway.taskCompletions',
@@ -72,6 +76,15 @@ export function saveTaskCompletion({ taskId, farmId }) {
   writeJson(K.TASKS, list);
   // Also queue for sync.
   queueEvent({ type: 'task_completed', payload: entry });
+  // NGO-trust append-only event log (spec §1, §8). Separate from the
+  // sync queue — this log is the source of truth for timelines,
+  // active-farmer detection and program summaries.
+  logEvent({
+    farmId: entry.farmId,
+    type:   'task_completed',
+    payload: { taskId: entry.taskId },
+    timestamp: entry.timestamp,
+  });
   return entry;
 }
 
@@ -80,7 +93,7 @@ export function getTaskCompletions() {
 }
 
 // ─── Feedback ──────────────────────────────────────────────────────
-export function saveFeedback({ taskId, feedback }) {
+export function saveFeedback({ taskId, feedback, farmId = null }) {
   if (!taskId || (feedback !== 'yes' && feedback !== 'no')) return null;
   const entry = {
     taskId: String(taskId),
@@ -91,6 +104,14 @@ export function saveFeedback({ taskId, feedback }) {
   list.push(entry);
   writeJson(K.FEEDBACK, list);
   queueEvent({ type: 'task_feedback', payload: entry });
+  // NGO-trust log. farmId is optional — include when the caller
+  // knows it so program summaries can attribute feedback correctly.
+  logEvent({
+    farmId: farmId || getActiveFarmId(),
+    type:   'task_feedback',
+    payload: { taskId: entry.taskId, feedback },
+    timestamp: entry.timestamp,
+  });
   return entry;
 }
 
@@ -111,7 +132,7 @@ export function getFarms() {
   return Array.isArray(v) ? v : [];
 }
 
-export function saveFarm({ name, crop, location, size }) {
+export function saveFarm({ name, crop, location, size, program = null }) {
   if (!name || typeof name !== 'string') return null;
   const farm = {
     id: genId(),
@@ -119,6 +140,9 @@ export function saveFarm({ name, crop, location, size }) {
     crop: crop ? String(crop).trim() : '',
     location: location ? String(location).trim() : '',
     size: size != null ? String(size).trim() : '',
+    // Spec §4 — optional NGO program tag used for grouping in the
+    // analytics layer. Null when the farmer isn't in a program.
+    program: (typeof program === 'string' && program.trim()) ? program.trim() : null,
     createdAt: Date.now(),
   };
   const farms = getFarms();
@@ -127,7 +151,54 @@ export function saveFarm({ name, crop, location, size }) {
   // First farm becomes active automatically.
   if (!getActiveFarmId()) setActiveFarmId(farm.id);
   queueEvent({ type: 'farm_added', payload: farm });
+  // NGO-trust event — needed so the farm's timeline starts at
+  // "Farm created" (spec §2 example).
+  logEvent({
+    farmId:    farm.id,
+    type:     'farm_created',
+    payload:  { name: farm.name, crop: farm.crop, program: farm.program },
+    timestamp: farm.createdAt,
+  });
   return farm;
+}
+
+/**
+ * updateFarm — patch an existing farm by id and log a farm_updated
+ * event. Used when NGO or farmer edits details (spec §1, §8).
+ * No-op if the farm id doesn't exist.
+ */
+export function updateFarm(farmId, patch = {}) {
+  if (!farmId) return null;
+  const farms = getFarms();
+  const idx = farms.findIndex((f) => f && f.id === String(farmId));
+  if (idx < 0) return null;
+  const before = farms[idx];
+  const keys = ['name', 'crop', 'location', 'size', 'program'];
+  const changed = {};
+  for (const k of keys) {
+    if (patch[k] !== undefined && patch[k] !== before[k]) changed[k] = patch[k];
+  }
+  if (Object.keys(changed).length === 0) return before;
+  const after = { ...before, ...changed, updatedAt: Date.now() };
+  farms[idx] = after;
+  writeJson(K.FARMS, farms);
+  logEvent({
+    farmId:    after.id,
+    type:     'farm_updated',
+    payload:  { changed },
+    timestamp: after.updatedAt,
+  });
+  return after;
+}
+
+/** Log a login / app-open event tied to the current active farm. */
+export function logLogin() {
+  return logEvent({
+    farmId:    getActiveFarmId(),
+    type:     'login',
+    payload:   null,
+    timestamp: Date.now(),
+  });
 }
 
 export function setActiveFarmId(id) {
