@@ -16,6 +16,15 @@ import T from './translations.js';
 import HI from './hi.js';
 import TW from './tw.js';
 import { resolveLanguage, confirmLanguage } from '../lib/languageResolver.js';
+import { mergeManyOverlays } from './mergeOverlays.js';
+
+// ─── Translation overlays ─────────────────────────────────
+// Each overlay is shaped `{ locale: { key: value } }` and
+// merges into T as empty-slot fill. Translator-authored
+// values in translations.js always win.
+import { FAST_ONBOARDING_TRANSLATIONS } from './fastOnboardingTranslations.js';
+import { HOME_TRANSLATIONS }            from './homeTranslations.js';
+import { EDIT_FARM_TRANSLATIONS }       from './editFarmTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -32,6 +41,8 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
 // Existing translator-authored values in the main dictionary always
 // win — packs only fill *empty* slots.
 (function mergePacks() {
+  // 1. Per-language single-pack merges (legacy shape: flat key→string
+  //    keyed under a single locale).
   const packs = [['hi', HI], ['tw', TW]];
   for (const [lang, dict] of packs) {
     for (const key of Object.keys(dict)) {
@@ -42,6 +53,15 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
       }
     }
   }
+  // 2. Locale-first overlays (new shape: `{locale: {key: value}}`).
+  //    These were previously defined but never merged — that's how
+  //    farm.editFarm.* / fast_onboarding.* / home.* keys were leaking
+  //    as humanized strings instead of rendering their translations.
+  mergeManyOverlays(T, [
+    FAST_ONBOARDING_TRANSLATIONS,
+    HOME_TRANSLATIONS,
+    EDIT_FARM_TRANSLATIONS,
+  ]);
 })();
 
 // ── Language list (matches VOICE_LANGUAGES in voiceGuide.js) ──
