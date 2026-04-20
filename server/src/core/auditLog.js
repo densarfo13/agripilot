@@ -29,7 +29,7 @@ const ALLOWED_TARGET_KINDS = Object.freeze(new Set([
 ]));
 
 async function logAuditAction(prisma, input = {}) {
-  if (!prisma?.auditLog?.create) return { ok: false, reason: 'no_prisma' };
+  if (!prisma?.adminAuditLog?.create) return { ok: false, reason: 'no_prisma' };
   const {
     actorId    = null,
     actorRole  = null,
@@ -52,7 +52,7 @@ async function logAuditAction(prisma, input = {}) {
   }
 
   try {
-    const row = await prisma.auditLog.create({
+    const row = await prisma.adminAuditLog.create({
       data: {
         actorId, actorRole,
         action,

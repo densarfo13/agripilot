@@ -2845,11 +2845,13 @@ model FarmEvent {
   @@map("farm_events")
 }
 
-// ─── Audit Log (NGO trust — admin actions, imports, updates) ─
+// ─── Admin Audit Log (NGO trust — admin actions, imports, updates) ─
 // Append-only record of mutations that affect a farmer or program.
 // The dashboard can show "who did what when" without digging through
-// application logs. Run `npx prisma migrate dev --name add_audit_logs`.
-model AuditLog {
+// application logs. Distinct from the application-level AuditLog —
+// this one is actor-oriented (actor/target/payload) and maps to its
+// own table `admin_audit_logs`. Run `npx prisma db push` to apply.
+model AdminAuditLog {
   id         String   @id @default(uuid())
   actorId    String?  @map("actor_id")        // user id of the admin / NGO operator
   actorRole  String?  @map("actor_role")      // role at the time of action
@@ -2861,11 +2863,11 @@ model AuditLog {
   userAgent  String?  @map("user_agent")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@index([createdAt], map: "idx_audit_logs_created")
-  @@index([actorId],   map: "idx_audit_logs_actor")
-  @@index([action],    map: "idx_audit_logs_action")
-  @@index([targetId],  map: "idx_audit_logs_target")
-  @@map("audit_logs")
+  @@index([createdAt], map: "idx_admin_audit_created")
+  @@index([actorId],   map: "idx_admin_audit_actor")
+  @@index([action],    map: "idx_admin_audit_action")
+  @@index([targetId],  map: "idx_admin_audit_target")
+  @@map("admin_audit_logs")
 }
 
 // ─── Marketplace: farmer-listed produce ──────────────────────

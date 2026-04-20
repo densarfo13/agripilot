@@ -242,7 +242,7 @@ describe('logAuditAction', () => {
     const rows = [];
     return {
       _rows: rows,
-      auditLog: {
+      adminAuditLog: {
         create: async ({ data }) => {
           const row = { id: `a_${rows.length + 1}`, createdAt: new Date(), ...data };
           rows.push(row);
@@ -288,7 +288,7 @@ describe('logAuditAction', () => {
   });
 
   it('DB throw is caught and returns db_failed', async () => {
-    const bad = { auditLog: { create: async () => { throw new Error('boom'); } } };
+    const bad = { adminAuditLog: { create: async () => { throw new Error('boom'); } } };
     const out = await logAuditAction(bad, { action: 'ngo_import' });
     expect(out.ok).toBe(false);
     expect(out.reason).toBe('db_failed');
