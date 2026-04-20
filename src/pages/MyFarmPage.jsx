@@ -239,7 +239,13 @@ export default function MyFarmPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/edit-farm')}
+              onClick={() => {
+                // Always pass the current farm id so Edit targets the
+                // right record in a multi-farm world. The screen pulls
+                // the farm from ProfileContext using this id.
+                const farmId = currentFarmId || profile?.id;
+                navigate(farmId ? `/edit-farm?farmId=${encodeURIComponent(farmId)}` : '/edit-farm');
+              }}
               style={S.editBtn}
             >
               {t('myFarm.edit')}

@@ -20,6 +20,10 @@ export {
 } from './farmToCropFitAnswers.js';
 
 export {
+  recomputeFarmContext, summarizeIntent, STEPS as RECOMPUTE_STEPS,
+} from './recomputeFarmContext.js';
+
+export {
   buildRecommendationContext,
   normalizeRecommendationResult,
   rankRecommendations,
