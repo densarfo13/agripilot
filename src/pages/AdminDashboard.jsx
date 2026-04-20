@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from '../i18n/index.js';
+import { isFeatureEnabled } from '../config/features.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -53,7 +54,10 @@ export default function AdminDashboard() {
           fetchJson('/api/admin/performance').catch(() => null),
           fetchJson('/api/admin/interventions').catch(() => null),
           fetchJson('/api/admin/scoring').catch(() => null),
-          fetchJson('/api/admin/marketplace-stats').catch(() => null),
+          // Feature-flagged — skip the fetch entirely when disabled.
+          isFeatureEnabled('marketplace')
+            ? fetchJson('/api/admin/marketplace-stats').catch(() => null)
+            : Promise.resolve(null),
         ]);
         if (!alive) return;
         setSummary(s); setFarmers(f); setRisk(r);
@@ -284,7 +288,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ─── Marketplace Activity ────────────────────────── */}
-      {marketplace && marketplace.ok !== false && (
+      {isFeatureEnabled('marketplace') && marketplace && marketplace.ok !== false && (
         <section style={S.section} data-testid="admin-marketplace-stats">
           <h3 style={S.h3}>
             {resolve(t, 'admin.dashboard.marketplaceActivity', 'Marketplace Activity')}

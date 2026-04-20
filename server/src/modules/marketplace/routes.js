@@ -20,11 +20,16 @@ import {
   matchAllFlat, recordPayment, marketplaceStats,
 } from './marketplaceService.js';
 import mwPkg from '../../core/middleware.js';
+import { requireFeature } from '../../core/featureGuard.js';
 const { requireFields, requireRole, standardResponse, asyncHandler } = mwPkg;
 
 export function createMarketplaceRouter(opts = {}) {
   const { prisma, requireAuth, requireAdmin } = opts;
   const router = express.Router();
+  // Feature-flag the ENTIRE marketplace surface. When
+  // FEATURES.marketplace is false (the default), every request
+  // under this router returns 404 — same as if it didn't exist.
+  router.use(requireFeature('marketplace', { isEnabled: opts.isEnabled }));
   const auth  = typeof requireAuth  === 'function' ? requireAuth  : (_r, _s, n) => n();
   const admin = typeof requireAdmin === 'function' ? requireAdmin : (_r, _s, n) => n();
 
@@ -111,6 +116,9 @@ export function createMarketplaceRouter(opts = {}) {
 export function createPaymentsRouter(opts = {}) {
   const { prisma, requireAuth } = opts;
   const router = express.Router();
+  // Payments only exist in the marketplace flow. Gate the same way
+  // so disabling marketplace also disables all payment endpoints.
+  router.use(requireFeature('marketplace', { isEnabled: opts.isEnabled }));
   const auth = typeof requireAuth === 'function' ? requireAuth : (_r, _s, n) => n();
 
   router.post('/initiate',
@@ -141,6 +149,10 @@ export function createPaymentsRouter(opts = {}) {
 export function createAdminMarketplaceStatsRouter(opts = {}) {
   const { prisma, requireAdmin } = opts;
   const router = express.Router();
+  // Admin stats are a marketplace view — hide them entirely when
+  // the feature is disabled. The AdminDashboard already tolerates
+  // 404 on this endpoint and keeps the section hidden.
+  router.use(requireFeature('marketplace', { isEnabled: opts.isEnabled }));
   const admin = typeof requireAdmin === 'function' ? requireAdmin : (_r, _s, n) => n();
 
   router.get('/marketplace-stats', admin, asyncHandler(async (_req, res) => {
