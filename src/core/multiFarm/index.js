@@ -15,6 +15,11 @@ export {
 } from './profileCompletionRoute.js';
 
 export {
+  buildCropFitAnswersFromFarm,
+  hasEnoughForRecommendations,
+} from './farmToCropFitAnswers.js';
+
+export {
   buildRecommendationContext,
   normalizeRecommendationResult,
   rankRecommendations,

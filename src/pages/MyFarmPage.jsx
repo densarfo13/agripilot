@@ -244,6 +244,14 @@ export default function MyFarmPage() {
             >
               {t('myFarm.edit')}
             </button>
+            <button
+              type="button"
+              onClick={() => navigate('/farm/new')}
+              style={S.editBtn}
+              data-testid="my-farm-add-new"
+            >
+              {'\u2795'} {t('myFarm.addNewFarm')}
+            </button>
             {isMultiFarm && (
               <button
                 type="button"

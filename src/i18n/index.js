@@ -25,6 +25,7 @@ import { mergeManyOverlays } from './mergeOverlays.js';
 import { FAST_ONBOARDING_TRANSLATIONS } from './fastOnboardingTranslations.js';
 import { HOME_TRANSLATIONS }            from './homeTranslations.js';
 import { EDIT_FARM_TRANSLATIONS }       from './editFarmTranslations.js';
+import { NEW_FARM_TRANSLATIONS }        from './newFarmTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -61,6 +62,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     FAST_ONBOARDING_TRANSLATIONS,
     HOME_TRANSLATIONS,
     EDIT_FARM_TRANSLATIONS,
+    NEW_FARM_TRANSLATIONS,
   ]);
 })();
 

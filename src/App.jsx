@@ -51,6 +51,7 @@ const PostHarvestSummaryPage = lazy(() => import('./pages/farmer/PostHarvestSumm
 const FarmerOnboardingPage = lazy(() => import('./pages/onboarding/FarmerOnboardingPage.jsx'));
 const FastOnboardingRoute = lazy(() => import('./pages/onboarding/fast/FastOnboardingRoute.jsx'));
 const EditFarmScreen = lazy(() => import('./pages/EditFarmScreen.jsx'));
+const NewFarmScreen  = lazy(() => import('./pages/NewFarmScreen.jsx'));
 const MyListingsPage = lazy(() => import('./pages/farmer/MyListingsPage.jsx'));
 const CreateListingPage = lazy(() => import('./pages/farmer/CreateListingPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/farmer/NotificationsPage.jsx'));
@@ -281,6 +282,7 @@ export default function App() {
             <Route path="/onboarding/smart" element={<FarmerOnboardingPage />} />
             <Route path="/onboarding/fast" element={<FastOnboardingRoute />} />
             <Route path="/edit-farm" element={<EditFarmScreen />} />
+            <Route path="/farm/new" element={<NewFarmScreen />} />
             <Route path="/settings" element={<FarmerSettingsPage />} />
             <Route path="/scan-crop" element={<CameraScanPage />} />
             <Route path="/land-check" element={<LandCheckPage />} />

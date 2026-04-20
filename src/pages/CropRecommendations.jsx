@@ -6,22 +6,59 @@
  * Tapping a card navigates to /crop-summary with the crop code.
  */
 import { useMemo } from 'react';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { getRecommendedCrops } from '../engine/cropFit.js';
 import { isBetaCrop } from '../engine/cropDefinitions.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { useProfile } from '../context/ProfileContext.jsx';
+import {
+  buildCropFitAnswersFromFarm, hasEnoughForRecommendations,
+} from '../core/multiFarm/index.js';
 
 export default function CropRecommendations() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
-  const answers = location.state;
+  const { profile, farms } = useProfile();
 
-  // Without answers this page has nothing to show. Route existing
-  // users to My Farm; ProfileGuard will forward first-timers to the
-  // fast onboarding path.
-  if (!answers) return <Navigate to="/my-farm" replace />;
+  // Two entry paths:
+  //   1. legacy wizard → answers passed in location.state
+  //   2. existing user via "Find My Best Crop" → ?farmId=X
+  //      build answers from that farm's profile so the page
+  //      actually renders something (prior behavior: silently
+  //      redirect back to /my-farm because state was empty).
+  const farmIdFromQuery = searchParams.get('farmId');
+  const farmFromId = useMemo(() => {
+    if (!farmIdFromQuery) return null;
+    if (profile?.id === farmIdFromQuery) return profile;
+    return (farms || []).find((f) => f && f.id === farmIdFromQuery) || null;
+  }, [farmIdFromQuery, profile, farms]);
+
+  const answers = useMemo(() => {
+    // 1. Wizard state wins if present (legacy path).
+    if (location.state) return location.state;
+    // 2. Build from farmId.
+    if (farmFromId && hasEnoughForRecommendations(farmFromId)) {
+      return buildCropFitAnswersFromFarm(farmFromId);
+    }
+    // 3. Fall back to the active profile when no farmId query.
+    if (!farmIdFromQuery && profile && hasEnoughForRecommendations(profile)) {
+      return buildCropFitAnswersFromFarm(profile);
+    }
+    return null;
+  }, [location.state, farmFromId, farmIdFromQuery, profile]);
+
+  // Without answers we still can't render; but now we route the
+  // user to complete their farm details instead of silently bouncing.
+  if (!answers) {
+    const farmId = farmIdFromQuery || profile?.id;
+    const dest = farmId
+      ? `/edit-farm?mode=complete_for_recommendation&farmId=${encodeURIComponent(farmId)}`
+      : '/my-farm';
+    return <Navigate to={dest} replace />;
+  }
 
   const crops = useMemo(() => getRecommendedCrops(answers), [answers]);
 
