@@ -24,7 +24,9 @@ export default function StarterGuide() {
 
   function handleFindCrop() {
     safeTrackEvent('onboarding.find_best_crop', {});
-    navigate('/crop-fit');
+    // Fast onboarding is the new-farmer flow. /crop-fit was the
+    // legacy intake that existing users should never hit.
+    navigate('/onboarding/fast');
   }
 
   return (

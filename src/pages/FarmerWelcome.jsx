@@ -39,7 +39,9 @@ export function postAuthDestination() {
     // unless the farmer has already seen it this session (resume case).
     try {
       const seen = sessionStorage.getItem('farroway:reassurance_seen') === '1';
-      return seen ? '/crop-fit' : '/beginner-reassurance';
+      // Fast onboarding is the new-farmer flow. Reassurance screen
+      // still shows once per session and then forwards to /onboarding/fast.
+      return seen ? '/onboarding/fast' : '/beginner-reassurance';
     } catch { return '/beginner-reassurance'; }
   }
   return '/dashboard';

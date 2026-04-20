@@ -34,7 +34,9 @@ export default function BeginnerReassurance() {
   function handleContinue() {
     markSeen();
     safeTrackEvent('onboarding.reassurance_continue', {});
-    navigate('/crop-fit', { replace: true });
+    // Route into the fast onboarding flow (first-time farmer path)
+    // rather than the legacy crop-fit intake form.
+    navigate('/onboarding/fast', { replace: true });
   }
 
   return (

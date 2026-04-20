@@ -22,7 +22,9 @@ export default function BeginnerPrompt({ variant = 'card' }) {
 
   function handleStart() {
     safeTrackEvent('beginner.find_crop_clicked', { source: 'dashboard' });
-    navigate('/crop-fit');
+    // Fast onboarding owns the new-farmer flow. /crop-fit was the
+    // legacy intake that mixed setup + recommendation in one form.
+    navigate('/onboarding/fast');
   }
 
   function handleDismiss() {

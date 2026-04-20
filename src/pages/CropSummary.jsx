@@ -68,7 +68,9 @@ export default function CropSummary() {
 
   const crop = location.state?.crop;
   const answers = location.state?.answers;
-  if (!crop) return <Navigate to="/crop-fit" replace />;
+  // Without a crop in state this page has nothing to show. Send
+  // the user back to My Farm; ProfileGuard handles first-timers.
+  if (!crop) return <Navigate to="/my-farm" replace />;
 
   const cp = getCropProfile(crop.code);
   if (!cp) return <Navigate to="/crop-recommendations" replace />;

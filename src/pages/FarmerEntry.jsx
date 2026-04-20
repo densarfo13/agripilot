@@ -59,9 +59,10 @@ export default function FarmerEntry() {
       // Case A/B: session + farm → Home
       return <Navigate to="/dashboard" replace />;
     }
-    // Case C: authenticated but no farm yet → Start-a-new-crop flow.
-    // Send through the reassurance screen the first time this session.
-    const next = hasSeenReassurance() ? '/crop-fit' : '/beginner-reassurance';
+    // Case C: authenticated but no farm yet → fast onboarding.
+    // First session shows the reassurance screen once, then the
+    // reassurance page itself forwards to /onboarding/fast.
+    const next = hasSeenReassurance() ? '/onboarding/fast' : '/beginner-reassurance';
     return <Navigate to={next} replace />;
   }
 

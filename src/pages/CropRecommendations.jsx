@@ -18,7 +18,10 @@ export default function CropRecommendations() {
   const { t } = useTranslation();
   const answers = location.state;
 
-  if (!answers) return <Navigate to="/crop-fit" replace />;
+  // Without answers this page has nothing to show. Route existing
+  // users to My Farm; ProfileGuard will forward first-timers to the
+  // fast onboarding path.
+  if (!answers) return <Navigate to="/my-farm" replace />;
 
   const crops = useMemo(() => getRecommendedCrops(answers), [answers]);
 
@@ -149,7 +152,7 @@ export default function CropRecommendations() {
         {crops.length === 0 && (
           <div style={S.empty}>
             <p style={S.emptyText}>{t('cropFit.results.noResults')}</p>
-            <button type="button" onClick={() => navigate('/crop-fit')} style={S.retryBtn}>
+            <button type="button" onClick={() => navigate('/my-farm')} style={S.retryBtn}>
               {t('cropFit.results.tryAgain')}
             </button>
           </div>
