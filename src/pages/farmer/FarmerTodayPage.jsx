@@ -35,11 +35,14 @@ import {
   drainQueue,
   defaultSender,
   getActiveFarmId,
+  getActiveFarm,
   getTaskCompletions,
   getFeedback,
 } from '../../store/farrowayLocal.js';
 import { computeProgress, STATUS_LABEL_KEY } from '../../lib/progress/progressEngine.js';
 import { generateTasks } from '../../lib/tasks/taskEngine.js';
+import { generateDailyTasks } from '../../lib/tasks/dailyTaskEngine.js';
+import { inferPlantingStatus } from '../../lib/tasks/plantingStatus.js';
 import {
   computeDailyLoopFacts,
   touchLastVisit,
@@ -330,6 +333,28 @@ export default function FarmerTodayPage() {
     completions: getTaskCompletions(),
   }), [activeCycle, weatherSummary, region, progressTick]);
 
+  // ─── Daily-task engine (v1 starter tasks) ───────────────────
+  // Layered below the stage-aware engineSnapshot so newly-onboarded
+  // farmers (no active cycle yet) still see a useful today task.
+  // Reads crop / country / state from the local active farm when
+  // the server cycle hasn't been created yet.
+  const dailySnapshot = useMemo(() => {
+    const activeFarm = getActiveFarm();
+    const crop = activeCycle?.cropType || activeFarm?.crop || null;
+    const stage = activeCycle?.lifecycleStatus || null;
+    const plantingStatus = inferPlantingStatus({
+      cropStage: stage,
+      crop,
+      country: activeFarm?.country || null,
+      state:   activeFarm?.state   || null,
+    });
+    return generateDailyTasks({
+      crop, stage, plantingStatus,
+      completions: getTaskCompletions(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCycle, progressTick]);
+
   // ─── Progress Engine snapshot ──────────────────────────────
   // Reads locally-persisted task completions + feedback. Prefers the
   // server-driven task list; falls back to the engine's output
@@ -449,7 +474,15 @@ export default function FarmerTodayPage() {
         id: t2.id, titleKey: t2.titleKey, priority: t2.priority,
       })),
     ].filter(Boolean);
-    const mergedTasks = serverTasks.length > 0 ? serverTasks : engineTasks;
+    // v1 daily-task fallback — used when both the server feed and the
+    // stage-aware engine produced nothing actionable (typical for a
+    // farmer who just finished onboarding but has no cycle yet).
+    const dailyTasks = (dailySnapshot.today || []).map((dt) => ({
+      id: dt.id, titleKey: dt.titleKey, priority: dt.priority,
+    }));
+    const mergedTasks = serverTasks.length > 0
+      ? serverTasks
+      : (engineTasks.length > 0 ? engineTasks : dailyTasks);
     return computeProgress({
       farm: { cropStage: activeCycle?.lifecycleStatus || null },
       tasks: mergedTasks,
@@ -461,7 +494,7 @@ export default function FarmerTodayPage() {
       lastVisit: loopFacts.lastVisit,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryTask, secondaryTasks, activeCycle, engineSnapshot, loopFacts, progressTick]);
+  }, [primaryTask, secondaryTasks, activeCycle, engineSnapshot, dailySnapshot, loopFacts, progressTick]);
 
   // Next-day hint — shown in the DONE state so completion is never a
   // dead end. Pulled from the task engine's remaining queue.
