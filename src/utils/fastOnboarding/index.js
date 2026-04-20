@@ -30,3 +30,9 @@ export {
   hasFarmYet, isFirstTimeHome,
   filterTasksForFirstTime, getFirstTimeHomeMode,
 } from './firstTimeHomeGuard.js';
+
+export {
+  isFirstTimeFarmer,
+  warnFirstTimeRoutingRegression,
+  FIRST_TIME_WARN,
+} from './firstTimeFarmerGuard.js';

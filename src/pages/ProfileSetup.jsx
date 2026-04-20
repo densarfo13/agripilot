@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  isFirstTimeFarmer,
+  warnFirstTimeRoutingRegression,
+  FIRST_TIME_WARN,
+} from '../utils/fastOnboarding/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { languageToVoiceCode, speakText } from '../lib/voice.js';
 import { useTranslation } from '../i18n/index.js';
@@ -73,7 +78,22 @@ export default function ProfileSetup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isNewFarmMode = searchParams.get('newFarm') === '1';
-  const { profile, loading, saveProfile, switchFarm, refreshFarms, syncStatus } = useProfile();
+  const { profile, farms, loading, saveProfile, switchFarm, refreshFarms, syncStatus } = useProfile();
+
+  // ─── Short-circuit: first-time farmers must NEVER land on the
+  // legacy Save Farm Profile form. If they somehow reach it (direct
+  // link, stale cache, old deeplink), redirect them to the new fast
+  // onboarding flow. `newFarm=1` is always an explicit "add another
+  // farm" from an existing farmer — that path is kept.
+  const firstTime = !isNewFarmMode && !loading && isFirstTimeFarmer({ profile, farms });
+  if (firstTime) {
+    warnFirstTimeRoutingRegression(FIRST_TIME_WARN.LEGACY_PAGE_REACHED, {
+      where: 'ProfileSetup',
+      hasProfile: !!profile,
+      farmCount: Array.isArray(farms) ? farms.length : 0,
+    });
+    return <Navigate to="/onboarding/fast" replace />;
+  }
   const { language, autoVoice } = useAppPrefs();
   const { t } = useTranslation();
   const nameInputRef = useRef(null);

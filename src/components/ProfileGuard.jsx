@@ -1,10 +1,11 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { isProfileComplete } from '../lib/farmScore.js';
+import { isFirstTimeFarmer } from '../utils/fastOnboarding/index.js';
 
 export default function ProfileGuard({ children }) {
   const location = useLocation();
-  const { profile, loading, initialized } = useProfile();
+  const { profile, farms, loading, initialized } = useProfile();
 
   // Show loading while profile hasn't been initialized for current auth session.
   // This prevents flashing /profile/setup when profile fetch is still in-flight.
@@ -20,13 +21,27 @@ export default function ProfileGuard({ children }) {
     );
   }
 
+  // Always let the fast flow render itself — it IS the first-time destination.
+  if (location.pathname === '/onboarding/fast') return children;
+  // Legacy setup page is still allowed for users who navigate to it directly
+  // (e.g. editing an existing farm), but first-time farmers are kicked out
+  // inside that page via its own short-circuit.
   if (location.pathname === '/profile/setup') return children;
 
-  if (!isProfileComplete(profile || {})) {
-    return <Navigate to="/profile/setup" replace />;
+  // If the profile is already complete, no routing work needed.
+  if (isProfileComplete(profile || {})) return children;
+
+  // Profile incomplete. Decide where to send them.
+  const firstTime = isFirstTimeFarmer({ profile, farms });
+
+  if (firstTime) {
+    // ─── First-time path: go to the fast flow, NOT the legacy form. ─
+    return <Navigate to="/onboarding/fast" replace />;
   }
 
-  return children;
+  // ─── Returning user with an incomplete legacy profile: the old
+  // /profile/setup remains the right destination for them. ────────
+  return <Navigate to="/profile/setup" replace />;
 }
 
 const S = {
