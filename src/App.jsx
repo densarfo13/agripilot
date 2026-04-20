@@ -52,6 +52,7 @@ const FarmerOnboardingPage = lazy(() => import('./pages/onboarding/FarmerOnboard
 const FastOnboardingRoute = lazy(() => import('./pages/onboarding/fast/FastOnboardingRoute.jsx'));
 const EditFarmScreen = lazy(() => import('./pages/EditFarmScreen.jsx'));
 const NewFarmScreen  = lazy(() => import('./pages/NewFarmScreen.jsx'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 const MyListingsPage = lazy(() => import('./pages/farmer/MyListingsPage.jsx'));
 const CreateListingPage = lazy(() => import('./pages/farmer/CreateListingPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/farmer/NotificationsPage.jsx'));
@@ -337,6 +338,7 @@ export default function App() {
             <Route path="admin/buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerManagementPage /></RoleRoute>} />
             <Route path="admin/buyer-trust" element={<RoleRoute roles={ADMIN_ROLES}><BuyerTrustPage /></RoleRoute>} />
             <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
+            <Route path="admin/ngo-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><AdminDashboard /></RoleRoute>} />
             <Route path="admin/import-farmers" element={<RoleRoute roles={ADMIN_ROLES}><AdminImportFarmersPage /></RoleRoute>} />
             <Route path="admin/intelligence/regional-risk" element={<RoleRoute roles={ADMIN_ROLES}><AdminRegionalRiskMap /></RoleRoute>} />
             <Route path="admin/intelligence/high-risk-farms" element={<RoleRoute roles={ADMIN_ROLES}><AdminHighRiskFarms /></RoleRoute>} />

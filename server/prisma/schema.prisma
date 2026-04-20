@@ -2816,3 +2816,27 @@ model V2FarmCostRecord {
   @@index([idempotencyKey], map: "idx_cost_records_idem")
   @@map("farm_cost_records")
 }
+
+// ─── Farm Events (NGO admin analytics — append-only event log) ──
+// Captures user-level activity (task_completed, crop_changed,
+// farm_updated, feedback) for aggregate reporting. Mirrors the
+// admin-dashboard spec's farm_events table one-to-one.
+// Run `npx prisma migrate dev --name add_farm_events` to apply.
+model FarmEvent {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  farmId     String?  @map("farm_id")
+  eventType  String   @map("event_type")   // task_completed | crop_changed | farm_updated | task_feedback | ...
+  payload    Json?
+  country    String?
+  region     String?
+  crop       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt], map: "idx_farm_events_created")
+  @@index([userId],    map: "idx_farm_events_user")
+  @@index([farmId],    map: "idx_farm_events_farm")
+  @@index([eventType], map: "idx_farm_events_type")
+  @@index([region],    map: "idx_farm_events_region")
+  @@map("farm_events")
+}
