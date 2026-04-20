@@ -170,6 +170,68 @@ describe('taskEngine — localisation', () => {
   });
 });
 
+// ─── Urgency (UX layer) ────────────────────────────────────────
+describe('taskEngine — urgency', () => {
+  it('heavy-rain + maize planting → urgent', () => {
+    const out = generateTasks({
+      crop: 'maize',
+      stage: 'planting',
+      weather: { heavyRain: true },
+    });
+    expect(out.primaryTask.urgency).toBe('urgent');
+  });
+
+  it('severe weather always → urgent', () => {
+    const out = generateTasks({
+      crop: 'cassava',
+      stage: 'land_prep',
+      weather: { severe: true },
+    });
+    expect(out.primaryTask.urgency).toBe('urgent');
+  });
+
+  it('high priority without weather → important', () => {
+    const out = generateTasks({ crop: 'maize', stage: 'planting' });
+    expect(out.primaryTask.urgency).toBe('important');
+  });
+
+  it('normal priority, no weather → normal', () => {
+    const out = generateTasks({ crop: 'maize', stage: 'maintain' });
+    // monitor_moisture / weed_control default to normal.
+    expect(out.primaryTask.urgency).toBe('normal');
+  });
+
+  it('secondary tasks each carry an urgency code', () => {
+    const out = generateTasks({ crop: 'cassava', stage: 'land_prep', weather: { rainSoon: true } });
+    for (const s of out.secondaryTasks) {
+      expect(['urgent', 'important', 'normal']).toContain(s.urgency);
+    }
+  });
+});
+
+// ─── Every task has a whyKey (spec §2 — WHY system mandatory) ──
+describe('taskEngine — whyKey is mandatory on every task', () => {
+  it('primary + secondary tasks all expose a whyKey', () => {
+    const scenarios = [
+      { crop: 'cassava', stage: 'land_prep',    weather: { rainSoon: true } },
+      { crop: 'maize',   stage: 'planting',     weather: { heavyRain: true } },
+      { crop: 'rice',    stage: 'maintain'      },
+      { crop: 'maize',   stage: 'early_growth'  },
+      { crop: 'cassava', stage: 'harvest',      weather: { rainSoon: true } },
+      { crop: 'rice',    stage: 'post_harvest'  },
+    ];
+    for (const s of scenarios) {
+      const out = generateTasks(s);
+      if (out.primaryTask.kind === 'task') {
+        expect(out.primaryTask.whyKey).toMatch(/^tasks\.why\./);
+      }
+      for (const t of out.secondaryTasks) {
+        expect(t.whyKey).toMatch(/^tasks\.why\./);
+      }
+    }
+  });
+});
+
 // ─── weatherIsSevere helper ────────────────────────────────────
 describe('weatherIsSevere', () => {
   it('true for severe + heavyRain; false otherwise', () => {

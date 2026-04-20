@@ -199,6 +199,32 @@ function sortByPriority(tasks) {
 }
 
 /**
+ * resolveUrgency — map (priority × weather reasons) to a stable
+ * urgency code the UI uses to style the primary task card.
+ *
+ *   'urgent'    → severe / heavy-rain reasons OR high priority + rain
+ *   'important' → high priority by itself, or rain-soon reasons
+ *   'normal'    → default
+ *
+ * The UI never branches on the raw reasons list — it only looks at
+ * this code so new reason types don't ripple into components.
+ */
+function resolveUrgency(task, weather) {
+  const reasons = task.reasons || [];
+  const w = weather || {};
+  if (w.severe) return 'urgent';
+  if (reasons.includes('weather_heavy_rain')) return 'urgent';
+  if (task.priority === 'high' && (reasons.includes('weather_rain_soon') || w.heavyRain)) {
+    return 'urgent';
+  }
+  if (task.priority === 'high') return 'important';
+  if (reasons.includes('weather_rain_soon') || reasons.includes('weather_dry')) {
+    return 'important';
+  }
+  return 'normal';
+}
+
+/**
  * bridgeTask — never-empty fallback used when every task for the
  * current stage is already complete. Uses the same i18n keys the
  * Progress Engine uses for its own bridge actions.
@@ -266,9 +292,17 @@ export function generateTasks({
   const [primary, ...rest] = sorted;
   const secondaries = rest.slice(0, 3);
 
+  // Derive UI-facing urgency once so every consumer agrees on the
+  // styling bucket. Stable strings: 'urgent' | 'important' | 'normal'.
+  const primaryWithUrgency   = { ...primary, kind: 'task',
+    urgency: resolveUrgency(primary, weather) };
+  const secondariesWithTags  = secondaries.map((t2) => Object.freeze({
+    ...t2, kind: 'task', urgency: resolveUrgency(t2, weather),
+  }));
+
   return Object.freeze({
-    primaryTask:    Object.freeze({ ...primary, kind: 'task' }),
-    secondaryTasks: Object.freeze(secondaries.map((t) => Object.freeze({ ...t, kind: 'task' }))),
+    primaryTask:    Object.freeze(primaryWithUrgency),
+    secondaryTasks: Object.freeze(secondariesWithTags),
     why,
                                     // Location is not used for ranking today
                                     // but is plumbed so later rules (regional
@@ -291,6 +325,7 @@ export const _internal = Object.freeze({
   applyWeatherModifiers,
   applyCropOverrides,
   sortByPriority,
+  resolveUrgency,
 });
 
 export default generateTasks;

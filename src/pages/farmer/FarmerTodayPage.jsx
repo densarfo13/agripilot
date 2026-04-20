@@ -27,6 +27,7 @@ import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
 import TaskFeedbackModal from '../../components/farmer/TaskFeedbackModal.jsx';
+import CompletionBanner from '../../components/farmer/CompletionBanner.jsx';
 import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
 import {
   saveTaskCompletion,
@@ -81,6 +82,10 @@ export default function FarmerTodayPage() {
   // "Did this help?" prompt state — opens right after a successful
   // complete, non-blocking (user can dismiss by tapping outside).
   const [taskFeedback, setTaskFeedback] = useState({ open: false, taskId: null });
+
+  // Positive-reinforcement banner shown briefly after every successful
+  // complete. Fades itself out — does not block flow.
+  const [completionBanner, setCompletionBanner] = useState(false);
 
   // Tick counter — bumped after each action so useMemo re-reads the
   // localStorage-backed completions and refreshes the progress snapshot
@@ -154,7 +159,10 @@ export default function FarmerTodayPage() {
       await completeCycleTask(task.id);
     } catch { /* offline / server error — local + queue already cover it */ }
     await reload();
-    // Show the non-blocking "Did this help?" prompt.
+    // Positive reinforcement first (non-blocking banner), then the
+    // optional "Did this help?" prompt. Farmer can dismiss either
+    // without impacting flow.
+    setCompletionBanner(true);
     setTaskFeedback({ open: true, taskId: task.id });
     // Opportunistic drain — if we're online now, flush the queue.
     drainQueue(defaultSender).catch(() => {});
@@ -372,15 +380,36 @@ export default function FarmerTodayPage() {
         onClose={() => setTaskFeedback({ open: false, taskId: null })}
       />
 
+      {/* Positive-reinforcement banner — non-blocking, auto-hides. */}
+      <CompletionBanner
+        open={completionBanner}
+        onClose={() => setCompletionBanner(false)}
+      />
+
+      {/* Micro progress summary — always visible, lightweight. */}
+      <div style={S.microRow} data-testid="micro-progress">
+        <span style={S.microCount}>
+          {t('actionHome.progress.summary', {
+            done: progressSnapshot.completedCount,
+            total: progressSnapshot.totalCount,
+          }) || `${progressSnapshot.completedCount} of ${progressSnapshot.totalCount} tasks completed`}
+        </span>
+        <span style={{ ...S.microStatus, ...microStatusStyleFor(progressSnapshot.status) }}>
+          {progressStatusLabel}
+        </span>
+      </div>
+
       {screen.state === 'active' ? (
         <>
           {state.today?.nextActionSummary && (
             <p style={S.pageSummary}>{state.today.nextActionSummary}</p>
           )}
 
-          {/* 2. PRIMARY TASK CARD */}
+          {/* 2. PRIMARY TASK CARD — server task preferred; if missing,
+              fall back to the engine's stage/crop/weather-aware primary
+              so the farmer always sees ONE clear action + WHY. */}
           <PrimaryTaskCard
-            task={screen.primaryTask}
+            task={resolvePrimaryTaskForCard(screen.primaryTask, engineSnapshot, t)}
             warning={warning}
             onComplete={handleComplete}
             onSkip={openSkipModal}
@@ -478,6 +507,39 @@ function Shell({ children }) {
   );
 }
 
+// Merge urgency + whyKey-resolved text into the server task before
+// handing it to PrimaryTaskCard. If the server didn't supply a
+// primary, fall back to the engine's task-kind primary (bridge
+// actions surface elsewhere via the DONE state).
+function resolvePrimaryTaskForCard(serverTask, engineSnapshot, t) {
+  if (serverTask) {
+    const eng = engineSnapshot?.primaryTask;
+    return {
+      ...serverTask,
+      urgency: serverTask.urgency
+        || (eng && eng.urgency) || 'normal',
+      detail: serverTask.detail
+        || (serverTask.whyKey && t && t(serverTask.whyKey))
+        || null,
+    };
+  }
+  const eng = engineSnapshot?.primaryTask;
+  if (!eng || eng.kind !== 'task') return null;
+  return {
+    id:      eng.id,
+    title:   (t && t(eng.titleKey)) || '',
+    detail:  (t && eng.whyKey && t(eng.whyKey)) || null,
+    urgency: eng.urgency || 'normal',
+    whyKey:  eng.whyKey || null,
+  };
+}
+
+function microStatusStyleFor(code) {
+  if (code === 'on_track')     return { color: '#86EFAC', background: 'rgba(34,197,94,0.14)' };
+  if (code === 'slight_delay') return { color: '#FDE68A', background: 'rgba(245,158,11,0.14)' };
+  return                              { color: '#FCA5A5', background: 'rgba(239,68,68,0.14)' };
+}
+
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
@@ -504,4 +566,19 @@ const S = {
     textTransform: 'uppercase', letterSpacing: '0.04em',
   },
   bridgeText: { fontSize: '0.9375rem', fontWeight: 600, color: '#EAF2FF' },
+  microRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '0.5rem',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '999px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    fontSize: '0.8125rem',
+  },
+  microCount: { color: '#EAF2FF', fontWeight: 600 },
+  microStatus: {
+    padding: '0.125rem 0.5rem', borderRadius: '999px',
+    fontSize: '0.6875rem', fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '0.05em',
+  },
 };

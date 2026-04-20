@@ -10,6 +10,23 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onSkip, onR
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
+  // Urgency-aware styling. The engine emits a stable 'normal' |
+  // 'important' | 'urgent' code; the UI never inspects the raw
+  // reason list directly, so new reason types don't ripple here.
+  const urgency = (task && task.urgency) || 'normal';
+  const urgencyStyle = urgencyStyleFor(urgency);
+
+  // Why-body can come either from the server (already localized
+  // `task.detail`) or from a stable i18n key the engine emits
+  // (`task.whyKey`). Fall back to the first one that resolves.
+  const whyText = (task && task.detail)
+    || (task && task.whyKey && t(task.whyKey))
+    || null;
+
+  const urgencyLabel = urgency === 'urgent'   ? (t('actionHome.urgency.urgent')    || 'Urgent')
+                     : urgency === 'important' ? (t('actionHome.urgency.important') || 'Important')
+                     : null;
+
   async function handleComplete() {
     if (!task || busy || task.source?.startsWith('override:')) return;
     setBusy(true); setErr(null);
@@ -37,14 +54,28 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onSkip, onR
   }
 
   return (
-    <div style={S.card} data-testid="primary-task-card">
-      <div style={S.label}>{t('actionHome.primary.title')}</div>
-      <h2 style={S.title}>{task.title}</h2>
+    <div
+      style={{ ...S.card, ...urgencyStyle.card }}
+      data-testid="primary-task-card"
+      data-urgency={urgency}
+    >
+      <div style={S.labelRow}>
+        <div style={{ ...S.label, ...urgencyStyle.label }}>
+          {t('actionHome.primary.title')}
+        </div>
+        {urgencyLabel && (
+          <span style={{ ...S.urgencyBadge, ...urgencyStyle.badge }}
+                data-testid="primary-task-urgency">
+            {urgencyLabel}
+          </span>
+        )}
+      </div>
+      <h2 style={S.title}>{task.title || (task.titleKey ? t(task.titleKey) : '')}</h2>
 
-      {task.detail && (
+      {whyText && (
         <div style={S.whyRow}>
           <div style={S.whyLabel}>{t('actionHome.primary.why')}</div>
-          <div style={S.whyBody}>{task.detail}</div>
+          <div style={S.whyBody}>{whyText}</div>
         </div>
       )}
 
@@ -114,6 +145,25 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onSkip, onR
   );
 }
 
+function urgencyStyleFor(code) {
+  if (code === 'urgent') return {
+    card:  { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.30)' },
+    label: { color: '#FCA5A5' },
+    badge: { background: 'rgba(239,68,68,0.18)', color: '#FCA5A5' },
+  };
+  if (code === 'important') return {
+    card:  { background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.28)' },
+    label: { color: '#FDE68A' },
+    badge: { background: 'rgba(245,158,11,0.18)', color: '#FDE68A' },
+  };
+  // 'normal' — default to the existing green "on track" styling.
+  return {
+    card:  {},
+    label: {},
+    badge: { background: 'rgba(34,197,94,0.16)', color: '#86EFAC' },
+  };
+}
+
 const S = {
   card: {
     padding: '1.25rem',
@@ -121,6 +171,15 @@ const S = {
     background: 'rgba(34,197,94,0.08)',
     border: '1px solid rgba(34,197,94,0.22)',
     boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
+  },
+  labelRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '0.5rem', marginBottom: '0.375rem',
+  },
+  urgencyBadge: {
+    padding: '0.125rem 0.5rem', borderRadius: '999px',
+    fontSize: '0.6875rem', fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '0.05em',
   },
   empty: {
     padding: '1.5rem',
