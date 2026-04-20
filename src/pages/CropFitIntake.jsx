@@ -156,7 +156,28 @@ export default function CropFitIntake() {
       setStep(clamped);
       setAnswers(draft.answers || {});
       safeTrackEvent('cropFit.intake_resumed', { step: clamped });
+      return;
     }
+    // Fallback: seed answers from the minimal WelcomeScreen state
+    // written to localStorage under `farroway_onboarding`. If the
+    // welcome screen auto-detected a location / the user tapped
+    // the "Yes I'm new" button, we pre-fill so the wizard doesn't
+    // re-ask what the user already told us.
+    try {
+      // Dynamic import keeps this a no-op on pages that don't need it.
+      import('../core/welcome/onboardingState.js').then((mod) => {
+        const state = mod.readOnboardingState();
+        if (!state) return;
+        setAnswers((prev) => ({
+          ...prev,
+          // Respect values already in the form — don't stomp drafts.
+          experience: prev.experience ?? (state.isNewFarmer ? 'none' : 'some'),
+          gpsLat:     prev.gpsLat     ?? state.location?.lat,
+          gpsLng:     prev.gpsLng     ?? state.location?.lng,
+        }));
+        safeTrackEvent('cropFit.seeded_from_welcome', {});
+      }).catch(() => { /* silent — welcome prefill is optional */ });
+    } catch { /* ignore — strict CSP / old runtimes */ }
   }, []);
 
   const current = STEPS[step];
