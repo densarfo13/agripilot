@@ -73,7 +73,8 @@ export function getNextAction(ctx = {}) {
       actionKey: 'nextAction.createProfile',
       icon: '📋',
       priority: 1,
-      route: '/profile/setup',
+      // First-time farmer → fast flow, not the legacy form.
+      route: '/onboarding/fast',
       reason: 'nextAction.createProfileReason',
     };
   }
@@ -84,7 +85,9 @@ export function getNextAction(ctx = {}) {
       actionKey: 'nextAction.finishSetup',
       icon: '⚙️',
       priority: 1,
-      route: '/profile/setup',
+      // Existing user with incomplete profile → dedicated edit page
+      // in completion mode, not the legacy Save Farm Profile form.
+      route: '/edit-farm?mode=complete_profile',
       reason: 'nextAction.finishSetupReason',
       meta: { missing: lifecycle.missing },
     };

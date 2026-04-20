@@ -41,6 +41,13 @@ import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
 import RainfallForecastCard from '../components/RainfallForecastCard.jsx';
 import MarketSignalCard from '../components/MarketSignalCard.jsx';
+import {
+  resolveProfileCompletionRoute, routeToUrl,
+} from '../core/multiFarm/index.js';
+import {
+  isFirstTimeFarmer,
+  warnFirstTimeRoutingRegression, FIRST_TIME_WARN,
+} from '../utils/fastOnboarding/index.js';
 
 const BasicFarmerHome = lazy(() => import('../components/farmer/BasicFarmerHome.jsx'));
 const BeginnerPrompt = lazy(() => import('../components/farmer/BeginnerPrompt.jsx'));
@@ -229,7 +236,15 @@ export default function Dashboard() {
   }
 
   function handleGoToSetup() {
-    navigate('/profile/setup');
+    // Route through the single profile-completion helper so
+    // first-time farmers land on /onboarding/fast and existing
+    // users with incomplete profiles land on /edit-farm — never
+    // on the legacy Save Farm Profile form by accident.
+    const dest = resolveProfileCompletionRoute({
+      profile: loop.profile, farms: [],
+      reason: 'complete_profile',
+    });
+    navigate(routeToUrl(dest));
   }
 
   // ─── Loading gate ────────────────────────────────────────
@@ -253,6 +268,18 @@ export default function Dashboard() {
       <span>{loop.weatherDecision.actionLine}</span>
     </div>
   ) : null;
+
+  // Dev-only: if a first-time farmer somehow reaches this Dashboard
+  // (they should be routed to /onboarding/fast by ProfileGuard first),
+  // surface a console warning so we notice the guard regression.
+  // The Dashboard itself still renders whatever it would — this
+  // is passive detection only.
+  if (typeof window !== 'undefined' && isFirstTimeFarmer({ profile: loop.profile, farms: [] })) {
+    warnFirstTimeRoutingRegression(FIRST_TIME_WARN.LEGACY_PAGE_REACHED, {
+      where: 'Dashboard',
+      hasProfile: !!loop.profile,
+    });
+  }
 
   const emptyState = !loop.profile ? (
     <div style={S.emptyState}>

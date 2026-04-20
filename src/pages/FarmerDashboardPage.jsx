@@ -18,6 +18,9 @@ import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
 import FarmerUuidBadge from '../components/FarmerUuidBadge.jsx';
 import { getFarmerLifecycleState, FARMER_STATE, canShowScore, canStartSeason } from '../utils/farmerLifecycle.js';
+import {
+  resolveProfileCompletionRoute, routeToUrl,
+} from '../core/multiFarm/index.js';
 import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
 
@@ -471,7 +474,13 @@ export default function FarmerDashboardPage() {
                       </div>
                     )}
                     <button
-                      onClick={() => navigate('/profile/setup')}
+                      onClick={() => {
+                        const dest = resolveProfileCompletionRoute({
+                          profile: farmProfile, farms: [],
+                          reason: isNew ? 'setup' : 'complete_profile',
+                        });
+                        navigate(routeToUrl(dest));
+                      }}
                       style={S.primaryActionBtn}
                       data-testid="primary-action-btn"
                     >

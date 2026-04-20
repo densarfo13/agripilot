@@ -5,6 +5,7 @@ import { calculateFarmScore } from '../lib/farmScore.js';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
+import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
 
 function formatDate(value) {
   if (!value) return '-';
@@ -51,7 +52,15 @@ export default function SeasonTasksCard() {
       <div style={S.card}>
         <h3 style={S.title}>{t('tasks.title')}</h3>
         <p style={S.emptyText}>{t('tasks.setupFirst')}</p>
-        <button onClick={() => navigate('/profile/setup')} style={S.setupBtn}>
+        <button
+          onClick={() => {
+            const dest = resolveProfileCompletionRoute({
+              profile, farms: [], reason: 'complete_profile',
+            });
+            navigate(routeToUrl(dest));
+          }}
+          style={S.setupBtn}
+        >
           {t('dashboard.completeSetup')}
         </button>
       </div>

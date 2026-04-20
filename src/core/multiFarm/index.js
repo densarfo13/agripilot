@@ -10,6 +10,11 @@ export {
 } from './findBestCropRoute.js';
 
 export {
+  resolveProfileCompletionRoute,
+  routeToUrl,
+} from './profileCompletionRoute.js';
+
+export {
   buildRecommendationContext,
   normalizeRecommendationResult,
   rankRecommendations,

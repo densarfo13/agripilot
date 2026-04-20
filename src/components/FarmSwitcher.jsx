@@ -4,6 +4,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
 
 /**
  * FarmSwitcher — always visible. Shows active farm, allows switching.
@@ -47,7 +48,13 @@ export default function FarmSwitcher() {
 
   function handleAddFarm() {
     setOpen(false);
-    navigate('/profile/setup?newFarm=1');
+    // Existing multi-farm user adding a second farm → legacy setup
+    // with ?newFarm=1 is the intended destination. The helper still
+    // centralizes the decision so future rerouting lives in one place.
+    const dest = resolveProfileCompletionRoute({
+      profile, farms: activeFarms, reason: 'new_farm',
+    });
+    navigate(routeToUrl(dest));
   }
 
   return (

@@ -16,7 +16,7 @@
  */
 
 import { useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
@@ -31,6 +31,7 @@ import {
   assertFarmerTypeNotMutated,
   assertRecomputeTriggered,
 } from '../utils/editFarm/index.js';
+import { getEditModeCopy } from '../utils/editFarm/editModeCopy.js';
 
 const CROP_STAGES = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -59,6 +60,13 @@ export default function EditFarmScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { profile, editFarm, refreshFarms, refreshProfile } = useProfile();
+  const [searchParams] = useSearchParams();
+  // Mode flags from the query string. Supported values:
+  //   • complete_profile           — routed from "Complete Profile"
+  //   • complete_for_recommendation — routed from Find My Best Crop
+  // The page still behaves as a plain edit form, but the header
+  // copy adapts so the user knows WHY they're here.
+  const editMode = searchParams.get('mode') || 'edit';
 
   // Snapshot the original farm at mount so change-detection is
   // stable while the user types (hasAnyChange compares to this).
@@ -179,13 +187,14 @@ export default function EditFarmScreen() {
     navigate('/my-farm');
   }
 
+  // Mode-specific header derived from the pure helper; testable
+  // without mounting React.
+  const { titleKey, titleFallback, helperKey, helperFallback } = getEditModeCopy(editMode);
+
   return (
-    <main style={S.page} data-screen="edit-farm">
-      <h1 style={S.title}>{resolve(t, 'farm.editFarm.title', 'Edit Farm')}</h1>
-      <p style={S.helper}>
-        {resolve(t, 'farm.editFarm.helper',
-          'Change your farm details. This does not start onboarding over.')}
-      </p>
+    <main style={S.page} data-screen="edit-farm" data-edit-mode={editMode}>
+      <h1 style={S.title}>{resolve(t, titleKey, titleFallback)}</h1>
+      <p style={S.helper}>{resolve(t, helperKey, helperFallback)}</p>
 
       <form onSubmit={handleSave} style={S.form}>
         <label style={S.label}>

@@ -89,12 +89,15 @@ describe('Next-Action Engine — source structure', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('Next-Action Engine — rule evaluation', () => {
-  it('returns createProfile for no profile', async () => {
+  it('returns createProfile for no profile (routes to fast onboarding)', async () => {
     const { getNextAction } = await import('../../../src/utils/nextActionEngine.js');
     const result = getNextAction({ profile: null });
     expect(result.actionKey).toBe('nextAction.createProfile');
     expect(result.priority).toBe(1);
-    expect(result.route).toBe('/profile/setup');
+    // First-time farmer → fast flow, not the legacy Save Farm
+    // Profile form. Contract updated when fast onboarding became
+    // the default first-time path.
+    expect(result.route).toBe('/onboarding/fast');
   });
 
   it('returns finishSetup for incomplete profile', async () => {
