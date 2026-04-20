@@ -478,6 +478,38 @@ const T = {
   'daily.post.plan_next_cycle.title':  { en: 'Plan your next cycle',      fr: 'Planifier le cycle suivant',    sw: 'Panga msimu ujao',             ha: 'Tsara zagaye na gaba',    tw: 'Siesie afiri a ɛdi hɔ',   hi: 'अगले चक्र की योजना बनाएँ' },
   'daily.post.plan_next_cycle.why':    { en: 'Rotating crops keeps soil healthy.', fr: 'La rotation des cultures préserve le sol.', sw: 'Kubadilishana mazao huweka udongo wenye afya.', ha: 'Juyawar amfanin gona yana kiyaye ƙasa lafiya.', tw: 'Nnɔbae ahodoɔ dua ma asase tena nkwa mu.', hi: 'फसल चक्र से मिट्टी स्वस्थ रहती है।' },
 
+  // ─── Farmer journey summary card ────────────────────────────
+  'journey.summary.header':     { en: 'Your farm today',      fr: 'Votre ferme aujourd\u2019hui', sw: 'Shamba lako leo',     ha: 'Gonarka yau',              tw: 'Wo kuayɛ ɛnnɛ',             hi: 'आज आपका खेत' },
+  'journey.summary.crop':       { en: 'Crop',                 fr: 'Culture',                      sw: 'Zao',                  ha: 'Amfanin gona',             tw: 'Afudeɛ',                    hi: 'फसल' },
+  'journey.summary.stage':      { en: 'Stage',                fr: 'Étape',                        sw: 'Hatua',                ha: 'Mataki',                   tw: 'Gyinaberɛ',                 hi: 'चरण' },
+  'journey.summary.next_step':  { en: 'Next step',            fr: 'Prochaine étape',              sw: 'Hatua inayofuata',     ha: 'Mataki na gaba',           tw: 'Adeyɛ a ɛdi hɔ',            hi: 'अगला कदम' },
+  'journey.summary.continue':   { en: 'Continue',             fr: 'Continuer',                    sw: 'Endelea',              ha: 'Ci gaba',                  tw: 'Toa so',                    hi: 'जारी रखें' },
+  'journey.unknown_crop':       { en: 'Not selected',         fr: 'Non sélectionnée',             sw: 'Haijachaguliwa',       ha: 'Ba a zaɓa ba',             tw: 'Wɔmpaaw',                   hi: 'अभी नहीं चुनी' },
+
+  'journey.state.onboarding':     { en: 'Setting up',         fr: 'Configuration',                sw: 'Kuandaa',              ha: 'Shirye-shirye',            tw: 'Siesie',                    hi: 'सेटअप' },
+  'journey.state.crop_selected':  { en: 'Crop chosen',        fr: 'Culture choisie',              sw: 'Zao limechaguliwa',    ha: 'An zaɓi amfani',           tw: 'Wɔapaw afudeɛ',             hi: 'फसल चुनी' },
+  'journey.state.planning':       { en: 'Planning',           fr: 'Planification',                sw: 'Kupanga',              ha: 'Tsara',                    tw: 'Nhyehyɛe',                  hi: 'योजना' },
+  'journey.state.active_farming': { en: 'Active farming',     fr: 'Culture en cours',             sw: 'Kilimo hai',           ha: 'Noma mai aiki',            tw: 'Kuayɛ a ɛrekɔ so',          hi: 'सक्रिय खेती' },
+  'journey.state.harvest':        { en: 'Harvest time',       fr: 'Période de récolte',           sw: 'Wakati wa mavuno',     ha: 'Lokacin girbi',            tw: 'Otwa berɛ',                 hi: 'कटाई का समय' },
+  'journey.state.post_harvest':   { en: 'Post-harvest',       fr: 'Après récolte',                sw: 'Baada ya mavuno',      ha: 'Bayan girbi',              tw: 'Otwa akyi',                 hi: 'कटाई के बाद' },
+
+  // ─── Notification feed (v1) ─────────────────────────────────
+  'notifications.feed.title':       { en: 'Notifications',      fr: 'Notifications',            sw: 'Arifa',                ha: 'Sanarwa',                  tw: 'Nkra',                      hi: 'सूचनाएँ' },
+  'notifications.feed.empty':       { en: 'You have no notifications yet.', fr: 'Aucune notification pour l\u2019instant.', sw: 'Bado hakuna arifa.', ha: 'Babu sanarwa tukuna.', tw: 'Nkra biara nni hɔ.', hi: 'अभी कोई सूचना नहीं है।' },
+  'notifications.feed.mark_read':   { en: 'Mark as read',       fr: 'Marquer comme lu',         sw: 'Weka kama imesomwa',   ha: 'Sanya a matsayin an karanta', tw: 'Fa sɛ wɔakenkan',       hi: 'पढ़ा हुआ चिह्नित करें' },
+  'notifications.feed.mark_all':    { en: 'Mark all as read',   fr: 'Tout marquer comme lu',    sw: 'Weka zote kama zimesomwa', ha: 'Sanya duka a karanta', tw: 'Fa ne nyinaa sɛ wɔakenkan', hi: 'सभी को पढ़ा हुआ मानें' },
+  'notifications.feed.view_all':    { en: 'View all',           fr: 'Tout voir',                sw: 'Tazama zote',          ha: 'Duba duk',                 tw: 'Hwɛ ne nyinaa',             hi: 'सभी देखें' },
+
+  'notifications.priority.high':    { en: 'High',               fr: 'Élevée',                   sw: 'Juu',                  ha: 'Babba',                    tw: 'Ɛso',                       hi: 'उच्च' },
+  'notifications.priority.medium':  { en: 'Medium',             fr: 'Moyenne',                  sw: 'Wastani',              ha: 'Matsakaici',               tw: 'Ntam',                      hi: 'मध्यम' },
+  'notifications.priority.low':     { en: 'Low',                fr: 'Faible',                   sw: 'Chini',                ha: 'Ƙasa',                     tw: 'Ase',                       hi: 'निम्न' },
+
+  'notifications.feed.daily_pending':    { en: 'You have {count} tasks to complete today.',    fr: 'Vous avez {count} tâches à terminer aujourd\u2019hui.',  sw: 'Una kazi {count} za kukamilisha leo.',            ha: 'Kana da ayyuka {count} na yau.',                  tw: 'Wowɔ adwuma {count} a ɛsɛ sɛ woyɛ ɛnnɛ.',           hi: 'आज आपके पास {count} कार्य बाकी हैं।' },
+  'notifications.feed.missed_yesterday': { en: 'You missed yesterday\u2019s tasks — let\u2019s get back on track.', fr: 'Vous avez manqué les tâches d\u2019hier — reprenons.', sw: 'Ulikosa kazi za jana — turudi kwenye mstari.', ha: "Kun rasa ayyukan jiya — mu koma kan hanya.",     tw: "Woantumi annyɛ ɛnnɛra adwuma — momma yɛnsan mmɔ mu.", hi: 'आप कल के कार्य चूक गए — वापस पटरी पर लौटें।' },
+  'notifications.feed.stage_entered':    { en: 'Your farm has moved to a new stage.',          fr: 'Votre ferme entre dans une nouvelle étape.',            sw: 'Shamba lako limeingia hatua mpya.',              ha: 'Gonarka ta shiga sabon mataki.',                  tw: 'Wo kuayɛ akɔ gyinaberɛ foforɔ.',                    hi: 'आपका खेत एक नए चरण में पहुँचा है।' },
+  'notifications.feed.harvest_nearing':  { en: 'Harvest season is approaching — prepare soon.', fr: 'La récolte approche — préparez-vous.',                  sw: 'Mavuno yanakaribia — jiandae hivi karibuni.',    ha: 'Lokacin girbi yana gabatowa — shirya.',           tw: 'Otwa berɛ rebɛn — siesie wo ho.',                   hi: 'कटाई का समय निकट है — तैयारी करें।' },
+  'notifications.feed.inactivity':       { en: 'It\u2019s been {days} days — check in on your farm.', fr: 'Cela fait {days} jours — revenez voir votre ferme.', sw: 'Imepita siku {days} — angalia shamba lako.',     ha: 'Kwana {days} sun wuce — duba gonarka.',           tw: 'Nna {days} atwam — hwɛ wo kuayɛ.',                 hi: '{days} दिन हो गए — अपने खेत को देखें।' },
+
   // ─── Settings page — notifications block ────────────────────
   'settings.notifications.title':             { en: 'Notifications',        fr: 'Notifications',          sw: 'Arifa',                  ha: 'Sanarwa',                     tw: 'Nkra',                       hi: 'सूचनाएँ' },
   'settings.notifications.daily':             { en: 'Daily reminders',      fr: 'Rappels quotidiens',     sw: 'Ukumbusho wa kila siku', ha: 'Tunatarwa ta yau da kullun',  tw: 'Daa nkaeɛ',                  hi: 'दैनिक रिमाइंडर' },

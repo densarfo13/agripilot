@@ -32,6 +32,7 @@ import { productionDetectFn } from '../../../lib/location/productionDetectFn.js'
 import { recommendCropsForScreen } from '../../../lib/recommendations/cropRecommendationEngine.js';
 import { annotateRecommendations } from '../../../lib/recommendations/plantingDecision.js';
 import { createWeatherService } from '../../../lib/weather/weatherService.js';
+import { advanceJourney } from '../../../store/farmerJourney.js';
 
 // ─── Minimal country list resolved once per render ──────────
 // Shape: [{ code, name }]. Sourced from i18n-iso-countries which
@@ -179,6 +180,14 @@ export default function FastOnboardingRoute() {
 
       const payload = buildMinimumProfile({ farm, fastState, authUser });
       await saveProfile(payload);
+      // Flip the journey state forward so the dashboard / today
+      // page can recognise the post-onboarding farmer without
+      // re-deriving from disparate signals. advanceJourney refuses
+      // regressions, so this is idempotent.
+      advanceJourney('active_farming', {
+        crop:   payload.cropType ? String(payload.cropType).toLowerCase() : null,
+        farmId: (fastState && fastState.farmId) || farm.id || null,
+      });
     } catch (err) {
       // Even if save fails, still navigate to Home — the fast flow
       // already persisted locally and progressive onboarding can retry.

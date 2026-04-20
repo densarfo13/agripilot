@@ -44,6 +44,13 @@ import { generateTasks } from '../../lib/tasks/taskEngine.js';
 import { generateDailyTasks } from '../../lib/tasks/dailyTaskEngine.js';
 import { inferPlantingStatus } from '../../lib/tasks/plantingStatus.js';
 import {
+  getJourneyState, setJourneyState,
+} from '../../store/farmerJourney.js';
+import { deriveJourneyState } from '../../lib/journey/journeySignals.js';
+import JourneySummaryCard from '../../components/JourneySummaryCard.jsx';
+import { runNotificationChecks } from '../../lib/notifications/notificationGenerator.js';
+import NotificationBadge from '../../components/NotificationBadge.jsx';
+import {
   computeDailyLoopFacts,
   touchLastVisit,
   markTaskCompletedForStreak,
@@ -333,6 +340,68 @@ export default function FarmerTodayPage() {
     completions: getTaskCompletions(),
   }), [activeCycle, weatherSummary, region, progressTick]);
 
+  // ─── Journey state — derived once per render and persisted ──
+  // Keeps the single source of truth (farroway.journeyState) in sync
+  // with the live signals (profile/farm/cycle) without forcing the
+  // user through a recovery route.
+  const journeySnapshot = useMemo(() => {
+    const stored = getJourneyState();
+    const activeFarm = getActiveFarm();
+    const derived = deriveJourneyState({
+      profile:     null,               // server profile isn't needed on Today
+      activeFarm,
+      activeCycle: activeCycle || null,
+      completions: getTaskCompletions(),
+      journeyRecord: stored,
+    });
+    return derived;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCycle, progressTick]);
+
+  // Persist when the derived state moves forward. Never regresses.
+  useEffect(() => {
+    const stored = getJourneyState();
+    if (stored.state !== journeySnapshot.state
+        || stored.crop !== (journeySnapshot.crop || null)
+        || stored.farmId !== (journeySnapshot.farmId || null)
+        || stored.plantedAt !== (journeySnapshot.plantedAt || null)) {
+      setJourneyState({
+        state:      journeySnapshot.state,
+        crop:       journeySnapshot.crop   || null,
+        farmId:     journeySnapshot.farmId || null,
+        plantedAt:  journeySnapshot.plantedAt  || null,
+        harvestedAt:journeySnapshot.harvestedAt || null,
+      });
+    }
+  }, [journeySnapshot]);
+
+  // ─── Notification checks (spec §6 — run on open) ────────────
+  // Fires once per day per rule thanks to the generator's built-in
+  // dedup keyed by rule id + day (or week for harvest).
+  const [notifTick, setNotifTick] = useState(0);
+  useEffect(() => {
+    const stored = getJourneyState();
+    runNotificationChecks({
+      tasks: [
+        primaryTask ? { id: primaryTask.id } : null,
+        ...(secondaryTasks || []).map((t2) => ({ id: t2.id })),
+      ].filter(Boolean),
+      completions: getTaskCompletions(),
+      loopFacts: {
+        lastVisit:   stored.lastUpdatedAt || null,
+        missedDays:  null,
+        streak:      null,
+      },
+      journey:     { ...stored, state: journeySnapshot.state, crop: journeySnapshot.crop,
+                     plantedAt: journeySnapshot.plantedAt, enteredAt: stored.enteredAt },
+      weatherSummary: null,
+    });
+    setNotifTick((n) => n + 1);
+    // Re-run once per navigation + on every progress change so a
+    // just-completed task can flip the daily reminder off.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journeySnapshot, progressTick]);
+
   // ─── Daily-task engine (v1 starter tasks) ───────────────────
   // Layered below the stage-aware engineSnapshot so newly-onboarded
   // farmers (no active cycle yet) still see a useful today task.
@@ -527,6 +596,26 @@ export default function FarmerTodayPage() {
   return (
     <Shell>
       <h1 style={S.pageTitle}>{t('actionHome.todayHeader')}</h1>
+
+      {/* Top notification — rendered above everything else so high-
+          priority alerts are seen first. Hidden when nothing unread. */}
+      <NotificationBadge key={`notif-${notifTick}`} />
+
+      {/* 0. Journey summary — single source of truth card. Hidden
+          when the farmer still has no crop (onboarding / crop-selection
+          states handle routing themselves). */}
+      {journeySnapshot.state !== 'onboarding'
+        && journeySnapshot.state !== 'crop_selected' && (
+        <JourneySummaryCard
+          journeyState={journeySnapshot.state}
+          cropLabel={cropLabel || journeySnapshot.crop}
+          stageLabel={stageLabel}
+          progressStatus={progressSnapshot.status}
+          progressLabel={progressStatusLabel}
+          nextActionText={nextBestActionText}
+          stagePercent={progressPercent}
+        />
+      )}
 
       {/* 1. Small context header (both states) */}
       <TodayContextHeader
