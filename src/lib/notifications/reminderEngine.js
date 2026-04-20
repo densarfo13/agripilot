@@ -119,9 +119,19 @@ function isAtOrAfterTime(now, hhmm) {
  *   • lastReminderSentAt must not equal today's date
  *   • local clock must be at or after dailyReminderTime
  */
-export function isReminderDue({ now, settings } = {}) {
+export function isReminderDue({
+  now, settings,
+  // Spec §3 gates — optional, default-true so existing callers keep
+  // behaviour. Pass `hasActiveFarm=false` or `todayPrimaryDone=true`
+  // to suppress the generic daily reminder without touching weather
+  // or missed-day precedence.
+  hasActiveFarm = true,
+  todayPrimaryDone = false,
+} = {}) {
   const s = settings || getSettings();
   if (!s.dailyReminderEnabled) return false;
+  if (!hasActiveFarm) return false;
+  if (todayPrimaryDone) return false;
   const today = toIsoDate(now || new Date());
   if (s.lastReminderSentAt === today) return false;
   return isAtOrAfterTime(now || new Date(), s.dailyReminderTime);
@@ -201,21 +211,37 @@ function pickWeatherKind(weather, riskLevel) {
  * never suppresses weather_severe / risk_high.
  */
 export function evaluateReminder(ctx = {}) {
-  const { now, completions, weather, riskLevel } = ctx;
+  const {
+    now, completions, weather, riskLevel,
+    hasActiveFarm = true,       // spec §3 gate
+    todayPrimaryDone = false,   // spec §3 gate — suppress daily when
+                                // today's primary task is already done
+  } = ctx;
   const settings = ctx.settings || getSettings();
 
   const weatherKind = pickWeatherKind(weather, riskLevel);
   const missed = didMissYesterday({ now, completions });
-  const due    = isReminderDue({ now, settings });
+  const due    = isReminderDue({
+    now, settings,
+    hasActiveFarm,
+    todayPrimaryDone,
+  });
+
+  // Spec §12 canonical keys; we also return a short fallback so
+  // callers without t() at hand can still render something.
+  const KEY = {
+    weather_severe: 'notifications.weather_warning',
+    risk_high:      'notifications.high_risk',
+    missed_day:     'notifications.missed_day',
+    daily:          'notifications.daily_ready',
+  };
 
   // Weather / risk beats everything else (never suppressed).
   if (weatherKind) {
     return Object.freeze({
       show: true,
       kind: weatherKind,
-      messageKey: weatherKind === 'weather_severe'
-        ? 'reminder.weather_severe'
-        : 'reminder.risk_high',
+      messageKey: KEY[weatherKind],
       severity: weatherKind === 'weather_severe' ? 'critical' : 'warning',
     });
   }
@@ -229,7 +255,7 @@ export function evaluateReminder(ctx = {}) {
     return Object.freeze({
       show: true,
       kind: 'missed_day',
-      messageKey: 'reminder.missed_day',
+      messageKey: KEY.missed_day,
       severity: 'warning',
     });
   }
@@ -238,7 +264,7 @@ export function evaluateReminder(ctx = {}) {
     return Object.freeze({
       show: true,
       kind: 'daily',
-      messageKey: 'reminder.today_ready',
+      messageKey: KEY.daily,
       severity: 'info',
     });
   }
@@ -294,6 +320,32 @@ export async function requestBrowserPush() {
     updateSettings({ askedBrowserPermission: true });
     return 'error';
   }
+}
+
+/**
+ * sendBrowserNotification — spec §9. Fires the OS-level notification
+ * only when browserPushEnabled is true AND Notification.permission
+ * is 'granted'. Returns 'sent' | 'skipped' | 'unsupported' | 'error'.
+ *
+ *   sendBrowserNotification({ title, body })
+ *
+ * Safe: never throws; never renders a notification if the caller's
+ * preconditions aren't met.
+ */
+export function sendBrowserNotification({ title, body, tag } = {}) {
+  if (!title) return 'skipped';
+  const s = getSettings();
+  if (!s.browserPushEnabled) return 'skipped';
+  if (typeof Notification === 'undefined') return 'unsupported';
+  if (Notification.permission !== 'granted') return 'skipped';
+  try {
+    // eslint-disable-next-line no-new
+    new Notification(String(title), {
+      body: body ? String(body) : undefined,
+      tag:  tag   ? String(tag)  : undefined,
+    });
+    return 'sent';
+  } catch { return 'error'; }
 }
 
 export const _internal = Object.freeze({

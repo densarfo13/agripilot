@@ -53,6 +53,7 @@ import { getEvents as getAllFarmEvents } from '../../lib/events/eventLogger.js';
 import {
   evaluateReminder, markReminderShown,
   shouldRequestBrowserPermission, requestBrowserPush,
+  sendBrowserNotification,
 } from '../../lib/notifications/reminderEngine.js';
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
@@ -353,6 +354,18 @@ export default function FarmerTodayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressTick]);
 
+  // Is today's primary task already completed? Checked against the
+  // local completions store so the daily reminder can stand down.
+  const todayPrimaryDone = useMemo(() => {
+    if (!primaryTask?.id) return false;
+    const completions = getTaskCompletions();
+    const todayIso = new Date().toDateString();
+    return completions.some((c) => c && c.completed !== false
+      && String(c.taskId) === String(primaryTask.id)
+      && new Date(c.timestamp || 0).toDateString() === todayIso);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primaryTask, progressTick]);
+
   // ─── Daily reminder (offline-first, computed locally) ─────
   // Evaluates the reminderEngine against local completions + the
   // server-derived weather summary so the Today page can surface a
@@ -362,17 +375,31 @@ export default function FarmerTodayPage() {
       weather: weatherSummary,
       riskLevel: state.today?.overallRisk?.level || 'low',
       completions: getTaskCompletions(),
+      hasActiveFarm: !!(activeCycle?.id || getActiveFarmId()),
+      todayPrimaryDone,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weatherSummary, state.today, progressTick]);
+  }, [weatherSummary, state.today, activeCycle, todayPrimaryDone, progressTick]);
 
   // Mark the daily reminder as shown once per day so we don't flash
-  // it again on every navigation.
+  // it again on every navigation, AND fire a browser notification
+  // once (spec §9) when the user has opted in + granted permission.
   useEffect(() => {
-    if (reminder.show && reminder.kind === 'daily') {
+    if (!reminder.show) return;
+    if (reminder.kind === 'daily') {
       markReminderShown();
     }
-  }, [reminder.show, reminder.kind]);
+    // Fire a single OS notification on the transition. We tag by
+    // kind+today so the same reminder doesn't re-notify if React
+    // remounts — the browser dedupes by tag.
+    const todayStr = new Date().toDateString();
+    sendBrowserNotification({
+      title: (t && t(reminder.messageKey)) || 'Farroway',
+      body:  (t && t('notifications.settings_title')) || '',
+      tag:   `farroway.${reminder.kind}.${todayStr}`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminder.show, reminder.kind, reminder.messageKey]);
 
   // Browser-push permission: only ask AFTER engagement signals fire
   // (spec §3). Never on the first-open screen. Uses the NGO event
@@ -528,7 +555,8 @@ export default function FarmerTodayPage() {
       {permissionAsk && (
         <div style={S.permissionCard} data-testid="browser-permission-ask">
           <span style={S.permissionText}>
-            {t('reminder.permission_ask')
+            {t('notifications.permission_prompt')
+              || t('reminder.permission_ask')
               || 'Would you like daily farm reminders on this device?'}
           </span>
           <div style={S.permissionRow}>

@@ -374,6 +374,16 @@ const T = {
   'reminder.risk_high':         { en: 'Rain expected. Prepare drainage today.', fr: 'Pluie prévue. Préparez le drainage aujourd\'hui.', sw: 'Mvua inatarajiwa. Andaa mifereji leo.', ha: 'Ana sa ran ruwan sama. Shirya magudanar ruwa yau.', tw: 'Osutɔ rebɛba. Siesie nsuosene ɛnnɛ.',          hi: 'बारिश संभावित। आज जल निकासी तैयार करें।' },
   'reminder.permission_ask':    { en: 'Would you like daily farm reminders on this device?', fr: 'Voulez-vous des rappels quotidiens sur cet appareil ?', sw: 'Ungependa ukumbusho wa kila siku kwenye kifaa hiki?', ha: 'Kana son tunatarwa ta yau da kullun a wannan na\'urar?', tw: 'Wopɛ sɛ wonya nkaeɛ daa wɔ saa afidie yi so?', hi: 'क्या आप इस डिवाइस पर रोज़ाना कृषि रिमाइंडर चाहते हैं?' },
 
+  // ─── Spec §12 canonical notifications.* aliases ───────────────
+  // These are the keys evaluateReminder emits in messageKey. Values
+  // mirror the reminder.* set above so either key renders correctly.
+  'notifications.daily_ready':        { en: "Today's farm action is ready",           fr: "L'action du jour est prête",             sw: 'Kazi ya leo iko tayari',                 ha: 'Aikin yau yana shirye',               tw: 'Ɛnnɛ adwuma no asiesie',                  hi: 'आज का कार्य तैयार है' },
+  'notifications.missed_day':         { en: "You missed yesterday — let's get back on track", fr: 'Vous avez manqué hier — reprenons ensemble', sw: 'Ulikosa jana — turudi kwenye mstari', ha: "Kun rasa jiya — mu koma kan hanya",   tw: "Woantumi baa ɛnnɛra — momma yɛnsan mmɔ mu", hi: 'आपने कल छोड़ा — आइए वापस पटरी पर आएँ' },
+  'notifications.high_risk':          { en: 'Your farm needs attention today',       fr: 'Votre ferme nécessite votre attention aujourd\'hui', sw: 'Shamba lako linahitaji uangalizi leo', ha: 'Gonarka na bukatar kulawa yau',      tw: 'Wo kuayɛ hia hwɛ ɛnnɛ',                    hi: 'आपके खेत को आज ध्यान चाहिए' },
+  'notifications.weather_warning':    { en: 'Rain expected. Prepare today.',          fr: 'Pluie prévue. Préparez-vous aujourd\'hui.', sw: 'Mvua inatarajiwa. Jiandae leo.',       ha: 'Ana sa ran ruwan sama. Shirya yau.',  tw: 'Osutɔ rebɛba. Siesie ɛnnɛ.',               hi: 'बारिश संभावित। आज तैयारी करें।' },
+  'notifications.permission_prompt':  { en: 'Would you like daily farm reminders on this device?', fr: 'Voulez-vous des rappels quotidiens sur cet appareil ?', sw: 'Ungependa ukumbusho wa kila siku kwenye kifaa hiki?', ha: 'Kana son tunatarwa ta yau da kullun a wannan na\'urar?', tw: 'Wopɛ sɛ wonya nkaeɛ daa wɔ saa afidie yi so?', hi: 'क्या आप इस डिवाइस पर रोज़ाना कृषि रिमाइंडर चाहते हैं?' },
+  'notifications.settings_title':     { en: 'Notifications',        fr: 'Notifications',          sw: 'Arifa',                  ha: 'Sanarwa',                     tw: 'Nkra',                       hi: 'सूचनाएँ' },
+
   // ─── Settings page — notifications block ────────────────────
   'settings.notifications.title':             { en: 'Notifications',        fr: 'Notifications',          sw: 'Arifa',                  ha: 'Sanarwa',                     tw: 'Nkra',                       hi: 'सूचनाएँ' },
   'settings.notifications.daily':             { en: 'Daily reminders',      fr: 'Rappels quotidiens',     sw: 'Ukumbusho wa kila siku', ha: 'Tunatarwa ta yau da kullun',  tw: 'Daa nkaeɛ',                  hi: 'दैनिक रिमाइंडर' },

@@ -18,6 +18,7 @@ import {
   evaluateReminder, isReminderDue, markReminderShown,
   didMissYesterday,
   shouldRequestBrowserPermission,
+  sendBrowserNotification,
   REMINDER_KINDS, DEFAULT_SETTINGS, _internal,
 } from '../../../src/lib/notifications/reminderEngine.js';
 
@@ -315,5 +316,143 @@ describe('reminderEngine — offline safety', () => {
     expect(typeof _internal.isAtOrAfterTime).toBe('function');
     expect(typeof _internal.pickWeatherKind).toBe('function');
     expect(_internal.STORAGE_KEY).toBe('farroway.notificationSettings');
+  });
+});
+
+// ─── 7. New gates (spec §3) + message key namespace (spec §12) ─
+describe('evaluateReminder — spec §3 gates', () => {
+  beforeEach(() => { installLocalStorage(); });
+  afterEach(()  => { delete globalThis.window; });
+
+  it('hasActiveFarm:false suppresses the daily reminder', () => {
+    updateSettings({ dailyReminderTime: '07:00' });
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    const r = evaluateReminder({ now, hasActiveFarm: false, completions: [] });
+    expect(r.show).toBe(false);
+  });
+
+  it('todayPrimaryDone:true suppresses the daily reminder', () => {
+    updateSettings({ dailyReminderTime: '07:00' });
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    const r = evaluateReminder({ now, todayPrimaryDone: true, completions: [] });
+    expect(r.show).toBe(false);
+  });
+
+  it('todayPrimaryDone gates daily but NOT weather', () => {
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    const r = evaluateReminder({
+      now, weather: { severe: true },
+      todayPrimaryDone: true, completions: [],
+    });
+    expect(r.show).toBe(true);
+    expect(r.kind).toBe('weather_severe');
+  });
+
+  it('todayPrimaryDone gates daily but NOT missed_day', () => {
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    const r = evaluateReminder({
+      now, todayPrimaryDone: true,
+      // Note: missed_day only fires when there are ZERO completions today.
+      // todayPrimaryDone=true implies a completion exists today, so in
+      // the real app these don't co-exist. We test suppression purely
+      // via the missed-day path ignoring the gate.
+      completions: [{ taskId: 't', completed: true, timestamp: now.getTime() - 3 * DAY_MS }],
+    });
+    expect(r.kind).toBe('missed_day');
+  });
+});
+
+describe('evaluateReminder — message keys (spec §12)', () => {
+  beforeEach(() => { installLocalStorage(); });
+  afterEach(()  => { delete globalThis.window; });
+
+  it('daily → notifications.daily_ready', () => {
+    updateSettings({ dailyReminderTime: '07:00' });
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    expect(evaluateReminder({ now, completions: [] }).messageKey)
+      .toBe('notifications.daily_ready');
+  });
+
+  it('missed_day → notifications.missed_day', () => {
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    expect(evaluateReminder({
+      now, completions: [{ taskId: 't', completed: true, timestamp: now.getTime() - 3 * DAY_MS }],
+    }).messageKey).toBe('notifications.missed_day');
+  });
+
+  it('risk_high → notifications.high_risk', () => {
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    expect(evaluateReminder({ now, weather: { rainSoon: true } }).messageKey)
+      .toBe('notifications.high_risk');
+  });
+
+  it('weather_severe → notifications.weather_warning', () => {
+    const now = atHM(new Date('2026-04-20T00:00:00'), 10, 0);
+    expect(evaluateReminder({ now, weather: { heavyRain: true } }).messageKey)
+      .toBe('notifications.weather_warning');
+  });
+});
+
+// ─── 8. sendBrowserNotification (spec §9) ──────────────────────
+describe('sendBrowserNotification', () => {
+  beforeEach(() => { installLocalStorage(); });
+  afterEach(()  => {
+    delete globalThis.window;
+    try { Object.defineProperty(globalThis, 'Notification', { configurable: true, value: undefined }); }
+    catch { /* ignore */ }
+  });
+
+  function installNotification({ permission, onNew } = {}) {
+    function FakeNotification(title, opts) {
+      FakeNotification.last = { title, opts };
+      if (typeof onNew === 'function') onNew(title, opts);
+    }
+    FakeNotification.permission = permission || 'default';
+    Object.defineProperty(globalThis, 'Notification', {
+      configurable: true, value: FakeNotification,
+    });
+    return FakeNotification;
+  }
+
+  it('skipped when browserPushEnabled is false', () => {
+    installNotification({ permission: 'granted' });
+    expect(sendBrowserNotification({ title: 'x' })).toBe('skipped');
+  });
+
+  it('unsupported when Notification is missing', () => {
+    updateSettings({ browserPushEnabled: true });
+    // Notification not installed on globalThis
+    expect(sendBrowserNotification({ title: 'x' })).toBe('unsupported');
+  });
+
+  it('skipped when permission is not granted', () => {
+    updateSettings({ browserPushEnabled: true });
+    installNotification({ permission: 'denied' });
+    expect(sendBrowserNotification({ title: 'x' })).toBe('skipped');
+  });
+
+  it('sent when enabled + granted — fires new Notification', () => {
+    updateSettings({ browserPushEnabled: true });
+    const N = installNotification({ permission: 'granted' });
+    const res = sendBrowserNotification({ title: 'Farroway', body: 'Today ready', tag: 't1' });
+    expect(res).toBe('sent');
+    expect(N.last.title).toBe('Farroway');
+    expect(N.last.opts.body).toBe('Today ready');
+    expect(N.last.opts.tag).toBe('t1');
+  });
+
+  it('skipped when title is missing', () => {
+    updateSettings({ browserPushEnabled: true });
+    installNotification({ permission: 'granted' });
+    expect(sendBrowserNotification({})).toBe('skipped');
+  });
+
+  it('catches constructor throws → "error"', () => {
+    updateSettings({ browserPushEnabled: true });
+    installNotification({
+      permission: 'granted',
+      onNew: () => { throw new Error('boom'); },
+    });
+    expect(sendBrowserNotification({ title: 'x' })).toBe('error');
   });
 });
