@@ -40,6 +40,13 @@ import {
 } from '../../store/farrowayLocal.js';
 import { computeProgress, STATUS_LABEL_KEY } from '../../lib/progress/progressEngine.js';
 import { generateTasks } from '../../lib/tasks/taskEngine.js';
+import {
+  computeDailyLoopFacts,
+  touchLastVisit,
+  markTaskCompletedForStreak,
+  pickReinforcementKey,
+  pickNextDayHint,
+} from '../../lib/loop/dailyLoop.js';
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
@@ -86,6 +93,11 @@ export default function FarmerTodayPage() {
   // Positive-reinforcement banner shown briefly after every successful
   // complete. Fades itself out — does not block flow.
   const [completionBanner, setCompletionBanner] = useState(false);
+  const [reinforcementKey, setReinforcementKey] = useState(null);
+
+  // Mark today as "visited" so the daily-entry helper can tell
+  // first-open from continuing session on the next render cycle.
+  useEffect(() => { touchLastVisit(); }, []);
 
   // Tick counter — bumped after each action so useMemo re-reads the
   // localStorage-backed completions and refreshes the progress snapshot
@@ -159,6 +171,12 @@ export default function FarmerTodayPage() {
       await completeCycleTask(task.id);
     } catch { /* offline / server error — local + queue already cover it */ }
     await reload();
+    // Daily-loop streak bookkeeping — deterministic, once per day,
+    // tied to the active farm's local completions.
+    markTaskCompletedForStreak();
+    // Rotate a short reinforcement message (varied but deterministic
+    // per task so the same completion renders the same copy).
+    setReinforcementKey(pickReinforcementKey(task.id));
     // Positive reinforcement first (non-blocking banner), then the
     // optional "Did this help?" prompt. Farmer can dismiss either
     // without impacting flow.
@@ -310,6 +328,15 @@ export default function FarmerTodayPage() {
   // (spec §7 offline-first). `progressTick` bumps after every
   // handleComplete / feedback so both snapshots refresh without a
   // page reload.
+  // Daily loop facts — streak, last visit, missed-day, first-visit-today.
+  // Re-read on every progressTick so completing a task immediately
+  // updates the streak chip without a reload.
+  const loopFacts = useMemo(
+    () => computeDailyLoopFacts({ completions: getTaskCompletions() }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [progressTick],
+  );
+
   const progressSnapshot = useMemo(() => {
     const serverTasks = [
       primaryTask ? { id: primaryTask.id, title: primaryTask.title, priority: 'high',
@@ -334,9 +361,24 @@ export default function FarmerTodayPage() {
       tasks: mergedTasks,
       completions: getTaskCompletions(),
       feedback: getFeedback(),
+      // Surface daily-loop facts on the snapshot so consumers only
+      // call computeProgress once (spec §7).
+      streak:    loopFacts.streak,
+      lastVisit: loopFacts.lastVisit,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryTask, secondaryTasks, activeCycle, engineSnapshot, progressTick]);
+  }, [primaryTask, secondaryTasks, activeCycle, engineSnapshot, loopFacts, progressTick]);
+
+  // Next-day hint — shown in the DONE state so completion is never a
+  // dead end. Pulled from the task engine's remaining queue.
+  const nextDayHint = useMemo(
+    () => pickNextDayHint({
+      engineSnapshot,
+      completions: getTaskCompletions(),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [engineSnapshot, progressTick],
+  );
 
   const progressStatusLabel = t(STATUS_LABEL_KEY[progressSnapshot.status])
     || progressSnapshot.status;
@@ -380,11 +422,27 @@ export default function FarmerTodayPage() {
         onClose={() => setTaskFeedback({ open: false, taskId: null })}
       />
 
-      {/* Positive-reinforcement banner — non-blocking, auto-hides. */}
+      {/* Positive-reinforcement banner — non-blocking, auto-hides.
+          Uses a varied-but-deterministic message key picked on complete. */}
       <CompletionBanner
         open={completionBanner}
+        messageKey={reinforcementKey || 'actionHome.completion.positive'}
         onClose={() => setCompletionBanner(false)}
       />
+
+      {/* Daily loop header — streak pill + entry message. First row
+          shown every render; no layout jumps between states. */}
+      <div style={S.loopRow} data-testid="daily-loop-row">
+        <span style={S.streakPill} data-testid="streak-pill">
+          {loopFacts.streak > 0
+            ? (t('loop.streak_label', { days: loopFacts.streak })
+                || `${loopFacts.streak}-day streak`)
+            : (t('loop.streak_start') || 'Start your streak today')}
+        </span>
+        <span style={S.loopEntry} data-testid="loop-entry-message">
+          {t(loopFacts.entryMessageKey) || ''}
+        </span>
+      </div>
 
       {/* Micro progress summary — always visible, lightweight. */}
       <div style={S.microRow} data-testid="micro-progress">
@@ -484,6 +542,23 @@ export default function FarmerTodayPage() {
             </div>
           )}
 
+          {/* Next-day preview — retention trigger (spec §4). Shown
+              in DONE so the farmer always sees what "tomorrow" brings. */}
+          {nextDayHint && (
+            <div style={S.bridgeCard} data-testid="next-day-preview">
+              <span style={S.bridgeLabel}>
+                {t('loop.check_tomorrow') || 'Next: check tomorrow'}
+              </span>
+              <span style={S.bridgeText}>
+                {nextDayHint.kind === 'bridge'
+                  ? (t(nextDayHint.bridgeKey) || '')
+                  : (t('loop.tomorrow_preview',
+                       { task: (nextDayHint.titleKey && t(nextDayHint.titleKey)) || '' })
+                     || '')}
+              </span>
+            </div>
+          )}
+
           <NextHint text={nextHintText} />
         </>
       )}
@@ -580,5 +655,21 @@ const S = {
     padding: '0.125rem 0.5rem', borderRadius: '999px',
     fontSize: '0.6875rem', fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '0.05em',
+  },
+  loopRow: {
+    display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+    padding: '0.375rem 0',
+  },
+  streakPill: {
+    padding: '0.25rem 0.625rem', borderRadius: '999px',
+    background: 'rgba(245,158,11,0.12)',
+    border: '1px solid rgba(245,158,11,0.28)',
+    color: '#FDE68A',
+    fontSize: '0.75rem', fontWeight: 700,
+  },
+  loopEntry: {
+    color: '#9FB3C8',
+    fontSize: '0.8125rem',
+    fontWeight: 500,
   },
 };

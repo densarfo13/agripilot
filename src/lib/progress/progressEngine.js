@@ -221,6 +221,11 @@ export function computeProgress({
   feedback = [],
   stageCompletionPercent,
   now,
+  // Daily-loop inputs — optional so existing callers keep working.
+  // Pass { streak, lastVisit } from the dailyLoop module to surface
+  // them on the snapshot without forcing a second call in the UI.
+  streak,
+  lastVisit,
 } = {}) {
   const taskList = Array.isArray(tasks) ? tasks.filter((t) => t && t.id) : [];
   const completedIds = completedIdSet(completions);
@@ -283,6 +288,11 @@ export function computeProgress({
     stageCompletionPercent: stagePct,
   });
 
+  // Daily-loop surface (spec §7). Defaults preserve backward compat.
+  const streakVal    = Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
+  const lastVisitVal = (typeof lastVisit === 'string' && lastVisit) ? lastVisit : null;
+  const dailyCompletionFlag = completedToday >= 1;
+
   return Object.freeze({
     progressScore,
     status,
@@ -291,6 +301,11 @@ export function computeProgress({
     stageCompletionPercent: stagePct,
     completedTodayCount: completedToday,
     nextBestAction: Object.freeze(nextBestAction),
+    // ─── Daily loop ───
+    streak:              streakVal,
+    lastVisit:           lastVisitVal,
+    completedToday,      // alias of completedTodayCount in spec-matching naming
+    dailyCompletionFlag,
   });
 }
 
