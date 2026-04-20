@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [risk, setRisk]       = useState(null);
   const [performance, setPerformance] = useState(null);
   const [interventions, setInterventions] = useState(null);
+  const [scoring, setScoring] = useState(null);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -42,18 +43,20 @@ export default function AdminDashboard() {
       setLoading(true);
       setError('');
       try {
-        // /performance and /interventions are new — if the backend
-        // hasn't shipped them yet, don't block the rest of the page.
-        const [s, f, r, p, iv] = await Promise.all([
+        // /performance, /interventions, /scoring are new — catch
+        // each individually so a rollout order mismatch doesn't
+        // blank the whole page.
+        const [s, f, r, p, iv, sc] = await Promise.all([
           fetchJson('/api/admin/summary'),
           fetchJson('/api/admin/farmers'),
           fetchJson('/api/admin/risk'),
           fetchJson('/api/admin/performance').catch(() => null),
           fetchJson('/api/admin/interventions').catch(() => null),
+          fetchJson('/api/admin/scoring').catch(() => null),
         ]);
         if (!alive) return;
         setSummary(s); setFarmers(f); setRisk(r);
-        setPerformance(p); setInterventions(iv);
+        setPerformance(p); setInterventions(iv); setScoring(sc);
       } catch (e) {
         if (alive) setError(e?.message || 'Failed to load');
       } finally {
@@ -238,6 +241,46 @@ export default function AdminDashboard() {
         </section>
       )}
 
+      {/* ─── Farmer Scores (with tier + funding) ────────── */}
+      {Array.isArray(scoring) && scoring.length > 0 && (
+        <section style={S.section} data-testid="admin-scoring">
+          <h3 style={S.h3}>
+            {resolve(t, 'admin.dashboard.farmerScores', 'Farmer Scores')}
+          </h3>
+          <div style={S.tableWrap}>
+            <table style={S.table}>
+              <thead>
+                <tr>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.farm',    'Farm')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.crop',    'Crop')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.region',  'Region')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.score',   'Score')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.tier',    'Funding')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scoring.map((s) => (
+                  <tr key={s.farmId}>
+                    <td style={S.td}>{`${String(s.farmId || '').slice(0, 8)}\u2026`}</td>
+                    <td style={S.td}>{s.crop || '—'}</td>
+                    <td style={S.td}>{s.region || '—'}</td>
+                    <td style={{ ...S.td, fontWeight: 700 }}>{s.score}</td>
+                    <td style={{ ...S.td, ...tierStyleFor(s.funding?.tier) }}>
+                      <strong>{s.funding?.tier || '—'}</strong>
+                      {s.funding?.eligible === false && (
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem' }}>
+                          ({resolve(t, 'funding.label.not_yet', 'not yet')})
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <a
         href="/api/admin/export"
         style={S.exportBtn}
@@ -263,6 +306,14 @@ function riskStyleFor(level) {
     case 'high':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
     case 'medium': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
     default:       return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+  }
+}
+
+function tierStyleFor(tier) {
+  switch (tier) {
+    case 'A': return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    case 'B': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
+    default:  return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
   }
 }
 

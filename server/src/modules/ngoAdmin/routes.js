@@ -26,6 +26,8 @@ const { calculateRisk } = require('./riskEngine.js');
 const { estimateYield } = require('./yieldEngine.js');
 const { getIntervention } = require('./interventionEngine.js');
 const { generateAlerts }  = require('./alertService.js');
+const { computeScore }    = require('./scoreEngine.js');
+const { getFundingDecision } = require('./fundingEngine.js');
 
 function createNgoAdminRouter(opts = {}) {
   const { prisma, requireAdmin } = opts;
@@ -263,6 +265,148 @@ function createNgoAdminRouter(opts = {}) {
       // eslint-disable-next-line no-console
       console.error('[ngoAdmin.alerts]', err?.message);
       res.status(500).json({ error: 'alerts failed' });
+    }
+  });
+
+  /**
+   * /scoring — per-farm farmer score + funding decision.
+   * Score inputs are derived from farm_events:
+   *   completionRate = task_completed / (task_completed + task_seen)
+   *   consistencyDays = distinct calendar days with any event (last 30)
+   *   riskLevel = calculateRisk(...) level
+   *   farmEventsCount = total events for the farm
+   */
+  router.get('/scoring', adminGate, async (_req, res) => {
+    try {
+      const events = await loadEvents(90);
+      const farmList = buildFarmersList(events, { limit: 200 });
+
+      // Per-farm stats.
+      const perFarm = new Map();
+      const now = Date.now();
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+      for (const e of events) {
+        if (!e || !e.farmId) continue;
+        let s = perFarm.get(e.farmId);
+        if (!s) {
+          s = { completed: 0, seen: 0, total: 0, activeDays: new Set() };
+          perFarm.set(e.farmId, s);
+        }
+        s.total++;
+        if (e.eventType === 'task_completed') s.completed++;
+        else if (e.eventType === 'task_seen') s.seen++;
+        const ts = e.createdAt instanceof Date
+          ? e.createdAt.getTime()
+          : Date.parse(String(e.createdAt));
+        if (Number.isFinite(ts) && ts >= thirtyDaysAgo) {
+          s.activeDays.add(new Date(ts).toISOString().slice(0, 10));
+        }
+      }
+
+      const weatherFor = typeof opts?.weatherFor === 'function'
+        ? opts.weatherFor
+        : () => ({ rainExpected: false, extremeHeat: false });
+
+      const results = farmList.map((f) => {
+        const s = perFarm.get(f.id) || { completed: 0, seen: 0, total: 0, activeDays: new Set() };
+        const ratioTotal = s.completed + s.seen;
+        const completionRate = ratioTotal > 0 ? s.completed / ratioTotal : 0.5;
+        const consistencyDays = s.activeDays.size;
+        const farmEventsCount = s.total;
+        const risk = calculateRisk({
+          weather: weatherFor(f), completionRate, stage: f.stage,
+        });
+        const scored = computeScore({
+          completionRate, consistencyDays,
+          riskLevel: risk.level, farmEventsCount,
+        });
+        const funding = getFundingDecision(scored.score);
+        return {
+          farmId:  f.id,
+          crop:    f.crop,
+          region:  f.location,
+          score:   scored.score,
+          breakdown: scored.breakdown,
+          factors:   scored.factors,
+          funding, // { eligible, tier, messageKey, messageFallback, thresholds }
+        };
+      }).sort((a, b) => b.score - a.score); // highest score first
+
+      res.json(results);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.scoring]', err?.message);
+      res.status(500).json({ error: 'scoring failed' });
+    }
+  });
+
+  /**
+   * /farmer-score/:farmId — single-farm view for the farmer app.
+   * Returns the same shape as one element of /scoring so the
+   * farmer's client can reuse the same rendering helpers.
+   */
+  router.get('/farmer-score/:farmId', adminGate, async (req, res) => {
+    try {
+      const farmId = String(req.params.farmId || '');
+      if (!farmId) return res.status(400).json({ error: 'missing farmId' });
+
+      const events = await loadEvents(90);
+      const farmEvents = events.filter((e) => e && e.farmId === farmId);
+      if (farmEvents.length === 0) {
+        // No activity yet — return tier C "not eligible yet" baseline.
+        const zeroScore = computeScore({
+          completionRate: 0, consistencyDays: 0, riskLevel: 'low', farmEventsCount: 0,
+        });
+        const funding = getFundingDecision(zeroScore.score);
+        return res.json({
+          farmId, score: zeroScore.score,
+          breakdown: zeroScore.breakdown, factors: zeroScore.factors,
+          funding,
+        });
+      }
+
+      let completed = 0, seen = 0;
+      const days = new Set();
+      const now = Date.now();
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+      for (const e of farmEvents) {
+        if (e.eventType === 'task_completed') completed++;
+        else if (e.eventType === 'task_seen') seen++;
+        const ts = e.createdAt instanceof Date
+          ? e.createdAt.getTime()
+          : Date.parse(String(e.createdAt));
+        if (Number.isFinite(ts) && ts >= thirtyDaysAgo) {
+          days.add(new Date(ts).toISOString().slice(0, 10));
+        }
+      }
+      const total = completed + seen;
+      const completionRate = total > 0 ? completed / total : 0.5;
+      const latest = farmEvents[0];
+      const stage  = (latest.payload && (latest.payload.stage || latest.payload.cropStage)) || null;
+
+      const weatherFor = typeof opts?.weatherFor === 'function'
+        ? opts.weatherFor
+        : () => ({});
+      const risk = calculateRisk({
+        weather: weatherFor({ id: farmId, stage, crop: latest.crop }),
+        completionRate, stage,
+      });
+      const scored = computeScore({
+        completionRate, consistencyDays: days.size,
+        riskLevel: risk.level, farmEventsCount: farmEvents.length,
+      });
+      const funding = getFundingDecision(scored.score);
+
+      res.json({
+        farmId, score: scored.score,
+        breakdown: scored.breakdown, factors: scored.factors,
+        funding,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.farmer-score]', err?.message);
+      res.status(500).json({ error: 'farmer score failed' });
     }
   });
 
