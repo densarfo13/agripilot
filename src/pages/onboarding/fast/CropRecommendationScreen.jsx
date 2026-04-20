@@ -83,6 +83,35 @@ export default function CropRecommendationScreen({
   };
   const isGeneral = crops.length > 0 && crops.every((c) => c.isGeneral);
 
+  // Planting-decision badges + copy (fallbacks match
+  // plantingDecision.js and stay farmer-friendly).
+  const decisionLabels = {
+    good_to_plant:   resolve(t, 'planting.decision.good_to_plant',   'Good to plant now'),
+    plant_soon:      resolve(t, 'planting.decision.plant_soon',      'Plant soon'),
+    wait_monitor:    resolve(t, 'planting.decision.wait_monitor',    'Wait and monitor'),
+    not_recommended: resolve(t, 'planting.decision.not_recommended', 'Not recommended now'),
+    unsupported:     resolve(t, 'planting.decision.unsupported',     'Seasonal guidance unavailable'),
+  };
+  const nextStepLabels = {
+    good_to_plant:   resolve(t, 'planting.next_step.good_to_plant',
+      'Season is right where you are — start preparing your land.'),
+    plant_soon:      resolve(t, 'planting.next_step.plant_soon',
+      'Get ready — your planting window is coming up.'),
+    wait_monitor:    resolve(t, 'planting.next_step.wait_monitor',
+      'Hold off and watch the weather — check again in a few days.'),
+    not_recommended: resolve(t, 'planting.next_step.not_recommended',
+      'Outside the planting window — pick a different crop or wait for the next season.'),
+    unsupported:     resolve(t, 'planting.next_step.unsupported',
+      'We don\u2019t have seasonal rules for your region yet — ask local extension services.'),
+  };
+  const decisionColors = {
+    good_to_plant:   { fg: '#1b5e20', bg: '#e8f5e9' },
+    plant_soon:      { fg: '#1565c0', bg: '#e3f2fd' },
+    wait_monitor:    { fg: '#b26a00', bg: '#fff3e0' },
+    not_recommended: { fg: '#c62828', bg: '#ffebee' },
+    unsupported:     { fg: '#546e7a', bg: '#eceff1' },
+  };
+
   const selected = state.selectedCrop;
   const selectedLabel = selected
     ? getCropLabel(selected, state.setup?.language)
@@ -159,6 +188,27 @@ export default function CropRecommendationScreen({
                                lineHeight: 1.4 }}>
                   {c.note}
                 </span>
+              )}
+              {c.decisionStatus && decisionLabels[c.decisionStatus] && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4,
+                              marginTop: 4 }}
+                     data-testid={`rec-decision-${id}`}>
+                  <span style={{
+                    alignSelf: 'flex-start',
+                    padding: '3px 8px', borderRadius: 8,
+                    fontSize: 11, fontWeight: 700,
+                    background: decisionColors[c.decisionStatus].bg,
+                    color:      decisionColors[c.decisionStatus].fg,
+                    textTransform: 'uppercase', letterSpacing: '0.04em',
+                  }}>
+                    {decisionLabels[c.decisionStatus]}
+                  </span>
+                  {nextStepLabels[c.decisionStatus] && (
+                    <span style={{ fontSize: 12, color: '#37474f', lineHeight: 1.4 }}>
+                      {nextStepLabels[c.decisionStatus]}
+                    </span>
+                  )}
+                </div>
               )}
             </button>
           );

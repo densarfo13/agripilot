@@ -30,6 +30,8 @@ import {
 } from '../../../utils/fastOnboarding/index.js';
 import { productionDetectFn } from '../../../lib/location/productionDetectFn.js';
 import { recommendCropsForScreen } from '../../../lib/recommendations/cropRecommendationEngine.js';
+import { annotateRecommendations } from '../../../lib/recommendations/plantingDecision.js';
+import { createWeatherService } from '../../../lib/weather/weatherService.js';
 
 // ─── Minimal country list resolved once per render ──────────
 // Shape: [{ code, name }]. Sourced from i18n-iso-countries which
@@ -76,14 +78,27 @@ function buildMinimumProfile({ farm, fastState, authUser }) {
 }
 
 /**
+ * v1 weather service — no live provider wired yet. A future turn
+ * can pass a `fetcher` that talks to the existing WeatherContext
+ * endpoint; until then `getSummary(...)` returns
+ * { status: 'unavailable' } and the decision layer falls back to
+ * calendar-only guidance cleanly.
+ */
+const weatherService = createWeatherService({ fetcher: null });
+
+/**
  * defaultRecommender — v1 rule-based recommender wired to the
- * shared engine in src/lib/recommendations/cropRecommendationEngine.js.
+ * shared engine in src/lib/recommendations/cropRecommendationEngine.js,
+ * plus the planting-calendar + weather decision layer on top. For
+ * each crop we attach a `decisionStatus` (good_to_plant / plant_soon
+ * / wait_monitor / not_recommended / unsupported) so the UI can show
+ * a single farmer-facing next-step message per card.
  *
  * Reads the live onboarding state (country, state, farmerType) and
  * returns 3–5 crops with confidence + planting window + note fields
  * that CropRecommendationScreen knows how to render. When the
- * country is unsupported, the engine returns a general global list
- * and flags `isGeneral: true` so the UI can clarify that the picks
+ * country is unsupported the engine returns a general global list
+ * and flags `isGeneral: true` so the UI clarifies that the picks
  * are generic.
  *
  * Kept synchronous-async so the existing getRecommendations contract
@@ -91,12 +106,23 @@ function buildMinimumProfile({ farm, fastState, authUser }) {
  */
 async function defaultRecommender(state) {
   const setup = (state && state.setup) || {};
-  return recommendCropsForScreen({
-    country:    setup.country || null,
-    state:      setup.stateCode || null,
+  const country = setup.country || null;
+  const stateCode = setup.stateCode || null;
+  const items = recommendCropsForScreen({
+    country,
+    state:      stateCode,
     farmerType: (state && state.farmerType) || null,
     limit:      5,
   });
+  // Weather is optional; the decision layer handles 'unavailable'.
+  let weather = null;
+  try {
+    weather = await weatherService.getSummary({
+      country, state: stateCode,
+      lat: setup.latitude, lng: setup.longitude,
+    });
+  } catch { weather = null; }
+  return annotateRecommendations(items, { country, state: stateCode, weather });
 }
 
 // Location detection is delegated to the shared helper at
