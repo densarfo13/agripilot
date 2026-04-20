@@ -2845,6 +2845,29 @@ model FarmEvent {
   @@map("farm_events")
 }
 
+// ─── Audit Log (NGO trust — admin actions, imports, updates) ─
+// Append-only record of mutations that affect a farmer or program.
+// The dashboard can show "who did what when" without digging through
+// application logs. Run `npx prisma migrate dev --name add_audit_logs`.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")        // user id of the admin / NGO operator
+  actorRole  String?  @map("actor_role")      // role at the time of action
+  action     String                             // e.g. 'ngo_import', 'farmer_update', 'program_change'
+  targetId   String?  @map("target_id")       // farmId / userId / listingId depending on action
+  targetKind String?  @map("target_kind")     // 'farm' | 'user' | 'listing' | 'program'
+  payload    Json?                              // structured context
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt], map: "idx_audit_logs_created")
+  @@index([actorId],   map: "idx_audit_logs_actor")
+  @@index([action],    map: "idx_audit_logs_action")
+  @@index([targetId],  map: "idx_audit_logs_target")
+  @@map("audit_logs")
+}
+
 // ─── Marketplace: farmer-listed produce ──────────────────────
 // Mirrors the spec's produce_listings table one-to-one.
 // Run `npx prisma migrate dev --name add_marketplace` to apply.

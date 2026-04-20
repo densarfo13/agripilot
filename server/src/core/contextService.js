@@ -44,6 +44,7 @@ function deriveEventStats(events = [], { nowMs = Date.now() } = {}) {
   const days = new Set();
   const thirtyDaysAgo = nowMs - 30 * 24 * 60 * 60 * 1000;
   let completed = 0, seen = 0;
+  let lastActivityMs = 0;
 
   for (const e of safe) {
     if (!e) continue;
@@ -52,8 +53,9 @@ function deriveEventStats(events = [], { nowMs = Date.now() } = {}) {
     const ts = e.createdAt instanceof Date
       ? e.createdAt.getTime()
       : Date.parse(String(e.createdAt));
-    if (Number.isFinite(ts) && ts >= thirtyDaysAgo) {
-      days.add(new Date(ts).toISOString().slice(0, 10));
+    if (Number.isFinite(ts)) {
+      if (ts > lastActivityMs) lastActivityMs = ts;
+      if (ts >= thirtyDaysAgo) days.add(new Date(ts).toISOString().slice(0, 10));
     }
   }
   const ratioTotal = completed + seen;
@@ -63,6 +65,8 @@ function deriveEventStats(events = [], { nowMs = Date.now() } = {}) {
     completed, seen,
     completionRate,
     consistencyDays: days.size,
+    lastActivityMs:  lastActivityMs || null,
+    lastActivity:    lastActivityMs ? new Date(lastActivityMs).toISOString() : null,
   });
 }
 
@@ -180,6 +184,17 @@ async function getFarmContext({
 
   const tasks = farm ? generateBasicTasks(farm) : [];
 
+  // Promote top-line metrics per spec §2 — the UI + admin endpoints
+  // both expect these at the ROOT of the context object, not nested
+  // under `events`. `events` stays for consumers that want the raw
+  // breakdown (completed/seen/total).
+  const nowIso = new Date(nowMs).toISOString();
+  const status = (() => {
+    if (!eventStats.lastActivityMs) return 'Inactive';
+    const ageDays = (nowMs - eventStats.lastActivityMs) / (24 * 60 * 60 * 1000);
+    return ageDays <= 7 ? 'Active' : 'Inactive';
+  })();
+
   return Object.freeze({
     farm: farm || null,
     weather,
@@ -188,8 +203,14 @@ async function getFarmContext({
     score: scored,
     funding,
     tasks,
-    events: eventStats,
-    lastUpdated: new Date(nowMs).toISOString(),
+    events:           eventStats,
+    // ── Promoted top-level fields (§2 + §4 + §6) ──────
+    completionRate:   eventStats.completionRate,
+    consistencyDays:  eventStats.consistencyDays,
+    lastActivity:     eventStats.lastActivity,
+    status,
+    // ─────────────────────────────────────────────────
+    lastUpdated: nowIso,
   });
 }
 
