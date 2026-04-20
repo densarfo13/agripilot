@@ -64,4 +64,42 @@ export function assertEditPatchHasNoOnboardingState(patch) {
   warn('onboarding state reset from edit action', { leaked });
 }
 
+/**
+ * §13: warn if an edit save that changed crop/location/stage
+ * did NOT trigger a recompute. Consumer passes the intent
+ * descriptor and a boolean "did we actually fire the refresh?".
+ */
+export function assertRecomputeTriggered(intent, didRefresh) {
+  if (!isDev()) return;
+  if (!intent || typeof intent !== 'object') return;
+  if (!intent.shouldRefreshHomeExperience) return;
+  if (didRefresh) return;
+  warn('edit save not triggering task/home recomputation', {
+    rule: intent.rule, shouldRefresh: intent.shouldRefreshHomeExperience,
+  });
+}
+
+/** §13: warn if farmerType was mutated from the edit flow. */
+export function assertFarmerTypeNotMutated(prevFarmerType, nextFarmerType) {
+  if (!isDev()) return;
+  if (prevFarmerType === nextFarmerType) return;
+  if (prevFarmerType == null && nextFarmerType == null) return;
+  warn('farmerType being mutated from edit flow', {
+    prev: prevFarmerType, next: nextFarmerType,
+  });
+}
+
+/**
+ * §13: warn if Home was NOT refreshed after an edit save that
+ * should have triggered a rebuild. Downstream callers supply
+ * a small boolean indicating whether the Home consumer saw
+ * a new payload.
+ */
+export function assertHomeRefreshedAfterEdit(intent, homeRebuilt) {
+  if (!isDev()) return;
+  if (!intent || !intent.shouldRefreshHomeExperience) return;
+  if (homeRebuilt) return;
+  warn('Home not refreshed after edit save', { rule: intent.rule });
+}
+
 export const _internal = { TAG };

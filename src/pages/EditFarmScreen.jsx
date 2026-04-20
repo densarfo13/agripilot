@@ -24,8 +24,12 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import {
   farmToEditForm, editFormToPatch,
   hasAnyChange, validateEditForm,
+  classifyFarmChanges,
+  buildRecomputeIntent, analyticsPayloadForChanges,
   assertEditPatchHasNoOnboardingState,
   assertFarmWasUpdatedNotRecreated,
+  assertFarmerTypeNotMutated,
+  assertRecomputeTriggered,
 } from '../utils/editFarm/index.js';
 
 const CROP_STAGES = [
@@ -54,7 +58,7 @@ const resolve = (t, key, fallback) => {
 export default function EditFarmScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { profile, editFarm } = useProfile();
+  const { profile, editFarm, refreshFarms, refreshProfile } = useProfile();
 
   // Snapshot the original farm at mount so change-detection is
   // stable while the user types (hasAnyChange compares to this).
@@ -68,6 +72,9 @@ export default function EditFarmScreen() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // Brief "Farm updated — your guidance has been refreshed" flash
+  // shown after a successful save, before navigating back to Home.
+  const [successFlash, setSuccessFlash] = useState('');
 
   const patch = useMemo(() => editFormToPatch(form, original), [form, original]);
   const dirty = useMemo(() => hasAnyChange(form, original),   [form, original]);
@@ -115,14 +122,52 @@ export default function EditFarmScreen() {
     // §10 dev assertion: never ship onboarding keys in an edit patch.
     assertEditPatchHasNoOnboardingState(patch);
 
+    // Classify WHAT changed so we can: log it, signal downstream
+    // systems via intent descriptor, and fire only the refreshes
+    // that are actually needed.
+    const changes = classifyFarmChanges(form, original);
+    const intent  = buildRecomputeIntent(changes);
+
     setSaving(true);
     setSaveError('');
     try {
       const updated = await editFarm(profile.id, patch);
       // §10 dev assertion: confirm the server returned the SAME farm id.
       assertFarmWasUpdatedNotRecreated(profile.id, updated?.id);
-      safeTrackEvent('farm.edit_saved', { farmId: profile.id, fields: Object.keys(patch) });
-      navigate('/my-farm');
+      // §13 dev assertion: farmerType must survive an edit.
+      assertFarmerTypeNotMutated(original.farmerType, updated?.farmerType);
+
+      // Belt-and-braces recompute triggers. editFarm already calls
+      // refreshFarms() internally, but if caller code or server
+      // latency left stale data, these make sure Home sees the
+      // new profile. Each is a no-op if unavailable (older context).
+      let didRefresh = false;
+      try {
+        if (typeof refreshProfile === 'function') await refreshProfile();
+        if (typeof refreshFarms === 'function')   await refreshFarms();
+        didRefresh = true;
+      } catch { /* non-blocking — context will still re-render */ }
+      // §13 dev assertion: any edit that should rebuild Home must
+      // have fired a refresh. `didRefresh` answers "did we try?".
+      assertRecomputeTriggered(intent, didRefresh);
+
+      // Structured analytics — consumers can filter on change type.
+      safeTrackEvent('farm.edit_saved', {
+        farmId: profile.id,
+        ...analyticsPayloadForChanges(changes, patch),
+        recomputeRule: intent.rule,
+      });
+
+      // Brief success flash so the user sees confirmation before
+      // the navigation flash (§9: "Farm updated — your guidance
+      // has been refreshed"). ~900ms is enough to read without
+      // feeling like a blocker.
+      setSuccessFlash(resolve(t, 'farm.editFarm.saveSuccess',
+        'Farm updated \u2014 your guidance has been refreshed'));
+      setTimeout(() => {
+        setSuccessFlash('');
+        navigate('/my-farm');
+      }, 900);
     } catch (err) {
       setSaveError(err?.message || resolve(t, 'farm.editFailed', 'Could not save your changes.'));
     } finally {
@@ -237,6 +282,11 @@ export default function EditFarmScreen() {
         </label>
 
         {saveError && <p style={S.error} role="alert">{saveError}</p>}
+        {successFlash && (
+          <p style={S.success} role="status" data-testid="edit-farm-success">
+            {successFlash}
+          </p>
+        )}
 
         <div style={S.buttons}>
           <button
@@ -297,6 +347,11 @@ const S = {
     padding: '0.625rem 0.75rem', borderRadius: 10,
     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
     color: '#FCA5A5', fontSize: '0.875rem', margin: '0.25rem 0 0',
+  },
+  success: {
+    padding: '0.625rem 0.75rem', borderRadius: 10,
+    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)',
+    color: '#86EFAC', fontSize: '0.875rem', margin: '0.25rem 0 0',
   },
   buttons: { display: 'flex', gap: '0.75rem', marginTop: '1rem' },
   cancelBtn: {

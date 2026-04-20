@@ -7,11 +7,19 @@
 export {
   farmToEditForm, editFormToPatch,
   hasAnyChange, validateEditForm,
+  classifyFarmChanges,
 } from './editFarmMapper.js';
+
+export {
+  buildRecomputeIntent, analyticsPayloadForChanges,
+} from './recomputeIntent.js';
 
 export {
   assertEditRouteNotOnboarding,
   assertNoStepIndicatorInEdit,
   assertFarmWasUpdatedNotRecreated,
   assertEditPatchHasNoOnboardingState,
+  assertRecomputeTriggered,
+  assertFarmerTypeNotMutated,
+  assertHomeRefreshedAfterEdit,
 } from './editFarmDevAssertions.js';

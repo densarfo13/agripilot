@@ -114,6 +114,50 @@ export function hasAnyChange(form, originalFarm) {
   return Object.keys(editFormToPatch(form, originalFarm)).length > 0;
 }
 
+/**
+ * classifyFarmChanges — describe WHAT changed so downstream
+ * code can decide what to recompute. Each flag maps to the
+ * rules in §8 of the edit-farm spec.
+ *
+ * Returns a frozen object:
+ *   {
+ *     cropChanged:     boolean  — re-run task engine for new crop
+ *     locationChanged: boolean  — recompute region + weather
+ *     sizeChanged:     boolean  — analytics only, no task restart
+ *     stageChanged:    boolean  — re-resolve active task
+ *     nameChanged:     boolean  — cosmetic; no recompute
+ *     plantedAtChanged:boolean  — stage-derived task restart
+ *     types:           string[] — enum of changed buckets
+ *     hasChanges:      boolean  — at least one flag is true
+ *   }
+ */
+export function classifyFarmChanges(form = {}, originalFarm = {}) {
+  const patch = editFormToPatch(form, originalFarm);
+  const keys = new Set(Object.keys(patch));
+
+  const cropChanged     = keys.has('cropType');
+  const locationChanged = keys.has('country') || keys.has('location');
+  const sizeChanged     = keys.has('size') || keys.has('sizeUnit');
+  const stageChanged    = keys.has('cropStage');
+  const nameChanged     = keys.has('farmName');
+  const plantedAtChanged = keys.has('plantedAt');
+
+  const types = [];
+  if (cropChanged)      types.push('crop');
+  if (locationChanged)  types.push('location');
+  if (sizeChanged)      types.push('size');
+  if (stageChanged)     types.push('stage');
+  if (nameChanged)      types.push('name');
+  if (plantedAtChanged) types.push('plantedAt');
+
+  return Object.freeze({
+    cropChanged, locationChanged, sizeChanged, stageChanged,
+    nameChanged, plantedAtChanged,
+    types,
+    hasChanges: types.length > 0,
+  });
+}
+
 /** Simple field-level validator. Returns a map of fieldName → errorKey. */
 export function validateEditForm(form = {}) {
   const errors = {};
