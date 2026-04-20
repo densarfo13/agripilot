@@ -34,7 +34,11 @@ import {
   drainQueue,
   defaultSender,
   getActiveFarmId,
+  getTaskCompletions,
+  getFeedback,
 } from '../../store/farrowayLocal.js';
+import { computeProgress, STATUS_LABEL_KEY } from '../../lib/progress/progressEngine.js';
+import { generateTasks } from '../../lib/tasks/taskEngine.js';
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
@@ -77,6 +81,12 @@ export default function FarmerTodayPage() {
   // "Did this help?" prompt state — opens right after a successful
   // complete, non-blocking (user can dismiss by tapping outside).
   const [taskFeedback, setTaskFeedback] = useState({ open: false, taskId: null });
+
+  // Tick counter — bumped after each action so useMemo re-reads the
+  // localStorage-backed completions and refreshes the progress snapshot
+  // without a page reload.
+  const [progressTick, setProgressTick] = useState(0);
+  const bumpProgress = () => setProgressTick((n) => n + 1);
 
   // Re-derive localized tasks whenever the language or the raw today
   // payload changes. Using useMemo keeps the re-render cheap.
@@ -148,12 +158,15 @@ export default function FarmerTodayPage() {
     setTaskFeedback({ open: true, taskId: task.id });
     // Opportunistic drain — if we're online now, flush the queue.
     drainQueue(defaultSender).catch(() => {});
+    // Recompute progress immediately (no refresh needed).
+    bumpProgress();
   }
 
   function handleTaskFeedback(value) {
     if (!taskFeedback.taskId) return;
     saveFeedback({ taskId: taskFeedback.taskId, feedback: value });
     drainQueue(defaultSender).catch(() => {});
+    bumpProgress();
   }
 
   // PrimaryTaskCard calls these to open the modal; the modal's
@@ -257,6 +270,75 @@ export default function FarmerTodayPage() {
   const nextHintText = screen.nextHint?.text
     || (screen.nextHint?.textKey ? t(screen.nextHint.textKey) : null);
 
+  // ─── Task Engine snapshot (deterministic, offline-first) ───
+  // Generates stage + crop + weather-aware tasks from pure inputs.
+  // Used as the source of truth when the server feed has no primary
+  // task, and always piped into the Progress Engine below so
+  // nextBestAction stays aligned with the current farming context.
+  const weatherSummary = useMemo(() => {
+    const wr = state.today?.weatherRisk || null;
+    if (!wr) return null;
+    const level = wr.overallWeatherRisk;
+    return {
+      rainSoon:  level === 'medium' || level === 'high',
+      heavyRain: level === 'high',
+      dry:       level === 'dry',
+      severe:    level === 'severe',
+    };
+  }, [state.today]);
+
+  const engineSnapshot = useMemo(() => generateTasks({
+    farm:     activeCycle || null,
+    crop:     activeCycle?.cropType || null,
+    stage:    activeCycle?.lifecycleStatus || null,
+    weather:  weatherSummary,
+    location: region || null,
+    completions: getTaskCompletions(),
+  }), [activeCycle, weatherSummary, region, progressTick]);
+
+  // ─── Progress Engine snapshot ──────────────────────────────
+  // Reads locally-persisted task completions + feedback. Prefers the
+  // server-driven task list; falls back to the engine's output
+  // (spec §7 offline-first). `progressTick` bumps after every
+  // handleComplete / feedback so both snapshots refresh without a
+  // page reload.
+  const progressSnapshot = useMemo(() => {
+    const serverTasks = [
+      primaryTask ? { id: primaryTask.id, title: primaryTask.title, priority: 'high',
+                       overdue: !!primaryTask.overdue } : null,
+      ...((secondaryTasks || []).map((t2) => ({
+        id: t2.id, title: t2.title, priority: 'normal', overdue: !!t2.overdue,
+      }))),
+    ].filter(Boolean);
+    const engineTasks = [
+      engineSnapshot.primaryTask && engineSnapshot.primaryTask.kind === 'task'
+        ? { id: engineSnapshot.primaryTask.id,
+            titleKey: engineSnapshot.primaryTask.titleKey,
+            priority: engineSnapshot.primaryTask.priority }
+        : null,
+      ...(engineSnapshot.secondaryTasks || []).map((t2) => ({
+        id: t2.id, titleKey: t2.titleKey, priority: t2.priority,
+      })),
+    ].filter(Boolean);
+    const mergedTasks = serverTasks.length > 0 ? serverTasks : engineTasks;
+    return computeProgress({
+      farm: { cropStage: activeCycle?.lifecycleStatus || null },
+      tasks: mergedTasks,
+      completions: getTaskCompletions(),
+      feedback: getFeedback(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primaryTask, secondaryTasks, activeCycle, engineSnapshot, progressTick]);
+
+  const progressStatusLabel = t(STATUS_LABEL_KEY[progressSnapshot.status])
+    || progressSnapshot.status;
+  const nextBestActionText = progressSnapshot.nextBestAction.kind === 'bridge'
+    ? (t(progressSnapshot.nextBestAction.bridgeKey) || null)
+    : (progressSnapshot.nextBestAction.title
+        || (progressSnapshot.nextBestAction.titleKey
+            ? t(progressSnapshot.nextBestAction.titleKey)
+            : null));
+
   function handleOptionalCheck(item) {
     // Re-use the issue-reporter modal for "Scan crop for issues" so
     // farmers who spot something can report it in one tap; the other
@@ -322,6 +404,14 @@ export default function FarmerTodayPage() {
             riskLevel={overallRiskLevel}
           />
 
+          {/* 5b. Progress Engine status chip (deterministic score + state). */}
+          <div style={S.progressChip} data-testid="progress-engine-chip">
+            <span style={S.progressChipLabel}>{progressStatusLabel}</span>
+            <span style={S.progressChipScore}>
+              {progressSnapshot.progressScore}/100
+            </span>
+          </div>
+
           {/* 6. NEXT HINT */}
           <NextHint text={nextHintText} />
         </>
@@ -346,6 +436,24 @@ export default function FarmerTodayPage() {
             items={screen.optionalChecks}
             onPick={handleOptionalCheck}
           />
+
+          {/* Progress Engine status + bridge action — avoids a dead end
+              after all tasks are done; always gives the farmer a next
+              step to look at. */}
+          <div style={S.progressChip} data-testid="progress-engine-chip">
+            <span style={S.progressChipLabel}>{progressStatusLabel}</span>
+            <span style={S.progressChipScore}>
+              {progressSnapshot.progressScore}/100
+            </span>
+          </div>
+          {nextBestActionText && (
+            <div style={S.bridgeCard} data-testid="next-best-action">
+              <span style={S.bridgeLabel}>
+                {t('progress.next_best_action') || 'Next best action'}
+              </span>
+              <span style={S.bridgeText}>{nextBestActionText}</span>
+            </div>
+          )}
 
           <NextHint text={nextHintText} />
         </>
@@ -376,4 +484,24 @@ const S = {
   pageTitle: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
   pageSummary: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 0.5rem', lineHeight: 1.45 },
   muted: { color: '#9FB3C8' },
+  progressChip: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0.5rem 0.875rem', borderRadius: '999px',
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.18)',
+    fontSize: '0.8125rem',
+  },
+  progressChipLabel: { color: '#86EFAC', fontWeight: 700 },
+  progressChipScore: { color: '#EAF2FF', fontWeight: 600 },
+  bridgeCard: {
+    display: 'flex', flexDirection: 'column', gap: '0.25rem',
+    padding: '0.75rem 1rem', borderRadius: '14px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  bridgeLabel: {
+    fontSize: '0.6875rem', fontWeight: 700, color: '#6F8299',
+    textTransform: 'uppercase', letterSpacing: '0.04em',
+  },
+  bridgeText: { fontSize: '0.9375rem', fontWeight: 600, color: '#EAF2FF' },
 };

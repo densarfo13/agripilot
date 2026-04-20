@@ -22,6 +22,9 @@ import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
 import { getStageEconomics } from '../engine/economicsSignal.js';
+import { computeProgress, STATUS_LABEL_KEY } from '../lib/progress/progressEngine.js';
+import { generateTasks } from '../lib/tasks/taskEngine.js';
+import { getTaskCompletions, getFeedback } from '../store/farrowayLocal.js';
 
 const STAGE_ORDER = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -35,6 +38,7 @@ export default function FarmerProgressPage() {
 
   const [taskCount, setTaskCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
+  const [taskList, setTaskList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -42,7 +46,9 @@ export default function FarmerProgressPage() {
     setLoading(true);
     try {
       const data = await getFarmTasks(currentFarmId);
-      setTaskCount((data.tasks || []).length);
+      const incoming = Array.isArray(data.tasks) ? data.tasks : [];
+      setTaskList(incoming);
+      setTaskCount(incoming.length);
       setCompletedCount(data.completedCount || 0);
     } catch {
       // Non-blocking
@@ -77,6 +83,50 @@ export default function FarmerProgressPage() {
   // Stage economics (spec §6)
   const stageEcon = cropStage ? getStageEconomics(cropStage) : null;
 
+  // ─── Task Engine snapshot — stage/crop-aware (spec §6) ───────
+  // Pure, offline-first: same farming context → same tasks. Used as
+  // a fallback when the server returned no tasks.
+  const engineSnapshot = generateTasks({
+    farm: { cropType, cropStage },
+    crop: cropType,
+    stage: cropStage,
+    weather: null, // server-authoritative when known; null is safe
+    completions: getTaskCompletions(),
+  });
+  const engineTasks = [
+    engineSnapshot.primaryTask && engineSnapshot.primaryTask.kind === 'task'
+      ? { id: engineSnapshot.primaryTask.id,
+          titleKey: engineSnapshot.primaryTask.titleKey,
+          priority: engineSnapshot.primaryTask.priority }
+      : null,
+    ...(engineSnapshot.secondaryTasks || []).map((task) => ({
+      id: task.id, titleKey: task.titleKey, priority: task.priority,
+    })),
+  ].filter(Boolean);
+  const serverTasks = taskList.map((task) => ({
+    id: task.id, title: task.title,
+    priority: task.priority, overdue: !!task.overdue,
+  }));
+  const unifiedTasks = serverTasks.length > 0 ? serverTasks : engineTasks;
+
+  // ─── Progress Engine snapshot (deterministic, offline-first) ──
+  // Combines server-or-engine tasks + local completions + local feedback.
+  const progressSnapshot = computeProgress({
+    farm: { cropStage },
+    tasks: unifiedTasks,
+    completions: getTaskCompletions(),
+    feedback: getFeedback(),
+    stageCompletionPercent: stageProgress,
+  });
+  const engineStatusLabel = t(STATUS_LABEL_KEY[progressSnapshot.status])
+    || progressSnapshot.status;
+  const engineNextActionText = progressSnapshot.nextBestAction.kind === 'bridge'
+    ? (t(progressSnapshot.nextBestAction.bridgeKey) || null)
+    : (progressSnapshot.nextBestAction.title
+        || (progressSnapshot.nextBestAction.titleKey
+            ? t(progressSnapshot.nextBestAction.titleKey)
+            : null));
+
   if (!profile) return null;
 
   return (
@@ -103,6 +153,37 @@ export default function FarmerProgressPage() {
             {completedCount > 0 && (
               <div style={S.heroSubtext}>
                 {t('progress.doneToday', { count: completedCount })}
+              </div>
+            )}
+          </div>
+
+          {/* ═══ 1b. PROGRESS ENGINE (score + status + next action) ═══ */}
+          <div style={S.engineCard} data-testid="progress-engine-card">
+            <div style={S.engineHeader}>
+              <span style={S.engineScore}>{progressSnapshot.progressScore}</span>
+              <span style={S.engineScoreUnit}>/ 100</span>
+              <span style={{ ...S.engineStatusPill, ...engineStatusStyle(progressSnapshot.status) }}>
+                {engineStatusLabel}
+              </span>
+            </div>
+            <div style={S.engineTrack}>
+              <div style={{ ...S.engineFill, width: `${progressSnapshot.progressScore}%` }} />
+            </div>
+            <div style={S.engineMetaRow}>
+              <span style={S.engineMetaLabel}>
+                {progressSnapshot.completedCount} / {progressSnapshot.totalCount}
+              </span>
+              <span style={S.engineMetaLabel}>
+                {t('progress.stage_progress') || 'Stage progress'}:{' '}
+                {progressSnapshot.stageCompletionPercent}%
+              </span>
+            </div>
+            {engineNextActionText && (
+              <div style={S.engineNextAction} data-testid="progress-next-best-action">
+                <span style={S.engineNextLabel}>
+                  {t('progress.next_best_action') || 'Next best action'}
+                </span>
+                <span style={S.engineNextText}>{engineNextActionText}</span>
               </div>
             )}
           </div>
@@ -234,6 +315,12 @@ export default function FarmerProgressPage() {
       )}
     </div>
   );
+}
+
+function engineStatusStyle(code) {
+  if (code === 'on_track')      return { background: 'rgba(34,197,94,0.14)',  color: '#86EFAC' };
+  if (code === 'slight_delay')  return { background: 'rgba(245,158,11,0.14)', color: '#FDE68A' };
+  return                                { background: 'rgba(239,68,68,0.14)',  color: '#FCA5A5' };
 }
 
 const S = {
@@ -492,5 +579,56 @@ const S = {
     color: 'rgba(245,158,11,0.6)',
     textAlign: 'center',
     padding: '0.5rem',
+  },
+  // ─── Progress Engine card ───
+  engineCard: {
+    display: 'flex', flexDirection: 'column', gap: '0.75rem',
+    padding: '1.25rem',
+    borderRadius: '18px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+  },
+  engineHeader: {
+    display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap',
+  },
+  engineScore: {
+    fontSize: '2rem', fontWeight: 800, color: '#EAF2FF', lineHeight: 1,
+  },
+  engineScoreUnit: {
+    fontSize: '0.875rem', fontWeight: 600, color: '#6F8299',
+  },
+  engineStatusPill: {
+    marginLeft: 'auto',
+    padding: '0.25rem 0.625rem', borderRadius: '999px',
+    fontSize: '0.75rem', fontWeight: 700,
+  },
+  engineTrack: {
+    height: '8px', borderRadius: '4px',
+    background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
+  },
+  engineFill: {
+    height: '100%', borderRadius: '4px',
+    background: '#22C55E', transition: 'width 0.3s ease',
+  },
+  engineMetaRow: {
+    display: 'flex', justifyContent: 'space-between',
+    fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 600,
+  },
+  engineMetaLabel: { textTransform: 'none' },
+  engineNextAction: {
+    marginTop: '0.25rem',
+    padding: '0.75rem',
+    borderRadius: '12px',
+    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(34,197,94,0.14)',
+    display: 'flex', flexDirection: 'column', gap: '0.125rem',
+  },
+  engineNextLabel: {
+    fontSize: '0.6875rem', fontWeight: 700, color: '#6F8299',
+    textTransform: 'uppercase', letterSpacing: '0.04em',
+  },
+  engineNextText: {
+    fontSize: '0.9375rem', fontWeight: 600, color: '#EAF2FF',
   },
 };
