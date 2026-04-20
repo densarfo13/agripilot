@@ -100,12 +100,31 @@ export function recordGpsRegion({ country, stateCode }) {
 }
 
 /**
- * Best-effort geolocation attempt. Never throws; returns null on
- * any failure (permission denied, timeout, reverse-geocode missing).
- * Callers pass a geocoder function so this module stays IO-free in
- * tests.
+ * @deprecated — superseded by src/lib/location/productionDetectFn.js.
+ *
+ * Kept exported only so that any legacy import still parses and the
+ * app keeps booting. Every live onboarding screen now uses the
+ * shared production detector, which provides:
+ *   • classified errors (permission_denied / timeout / …)
+ *   • provider-chain reverse geocoding (bigdatacloud → Nominatim →
+ *     coarse bounding-box)
+ *   • 24h coord-keyed cache
+ *   • privacy rounding at every persistence boundary
+ *
+ * Do NOT add new call sites. Prefer:
+ *   import { productionDetectFn } from '../lib/location/productionDetectFn.js';
+ *
+ * If this function is invoked the fallback still works (calls the
+ * caller-supplied geocoder if any) but emits a dev-only warning so
+ * regressions are visible.
  */
 export async function detectRegionViaGps({ geocoder, timeoutMs = 7000 } = {}) {
+  if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[farroway] detectRegionViaGps is deprecated — use productionDetectFn() instead.',
+    );
+  }
   if (typeof navigator === 'undefined' || !navigator.geolocation) return null;
   try {
     const pos = await new Promise((resolve, reject) => {

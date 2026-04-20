@@ -15,7 +15,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
-import { detectRegionViaGps } from '../../lib/regionResolver.js';
+import { productionDetectFn } from '../../lib/location/productionDetectFn.js';
 import { formatLocation } from '../../utils/formatLocation.js';
 import { validateLocation } from '../../utils/validateLocation.js';
 import {
@@ -34,25 +34,40 @@ export default function LocationStep({ value, onChange, onNext }) {
   const [detected, setDetected] = useState(null);
   const [permission, setPermission] = useState('unknown');
 
-  // Kick off a one-shot GPS detection when the step opens and the
-  // user hasn't confirmed a location yet. Never blocks the UI —
-  // denials or failures flip permission to 'denied' and the rest
-  // of the step still works.
+  // Kick off a one-shot detection via the shared production helper
+  // when the step opens and the user hasn't confirmed a location
+  // yet. Never blocks the UI — denials or failures flip `permission`
+  // to 'denied' / 'unavailable' and the rest of the step still works.
+  //
+  // productionDetectFn handles:
+  //   • classified errors (permission_denied / timeout / ...)
+  //   • reverse-geocode provider chain (bigdatacloud → Nominatim)
+  //   • coarse-rounded coord cache (24h) so a repeat open skips
+  //     both the GPS prompt and the network call.
   useEffect(() => {
     if (v.country) return;
     let cancelled = false;
     (async () => {
       setDetecting(true);
-      const region = await detectRegionViaGps({ timeoutMs: 6000 });
-      if (cancelled) return;
-      setDetecting(false);
-      if (region?.country) {
-        setDetected({ country: region.country, stateCode: region.stateCode || null });
-      } else if (typeof navigator !== 'undefined' && navigator.permissions) {
-        try {
-          const status = await navigator.permissions.query({ name: 'geolocation' });
-          setPermission(status.state);
-        } catch { setPermission('unknown'); }
+      try {
+        const r = await productionDetectFn();
+        if (cancelled) return;
+        if (r?.country) {
+          setDetected({ country: r.country, stateCode: r.stateCode || null });
+        }
+      } catch (e) {
+        if (cancelled) return;
+        // BrowserLocationError codes map cleanly onto the permission
+        // state LocationStep already renders.
+        const code = e && e.code;
+        if      (code === 'permission_denied')   setPermission('denied');
+        else if (code === 'position_unavailable') setPermission('unavailable');
+        else if (code === 'timeout')              setPermission('timeout');
+        else if (code === 'insecure_context')     setPermission('insecure');
+        else if (code === 'unsupported')          setPermission('unsupported');
+        else                                      setPermission('unknown');
+      } finally {
+        if (!cancelled) setDetecting(false);
       }
     })();
     return () => { cancelled = true; };

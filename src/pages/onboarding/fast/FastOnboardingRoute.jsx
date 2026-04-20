@@ -28,6 +28,8 @@ import {
   warnFirstTimeRoutingRegression,
   FIRST_TIME_WARN,
 } from '../../../utils/fastOnboarding/index.js';
+import { productionDetectFn } from '../../../lib/location/productionDetectFn.js';
+import { recommendCropsForScreen } from '../../../lib/recommendations/cropRecommendationEngine.js';
 
 // ─── Minimal country list resolved once per render ──────────
 // Shape: [{ code, name }]. Sourced from i18n-iso-countries which
@@ -73,18 +75,35 @@ function buildMinimumProfile({ farm, fastState, authUser }) {
   };
 }
 
-// ─── Simple recommender: falls back to starter crops when we
-// can't reach the server. Keeps the first-open experience fast.
-const STARTER_CROPS = [
-  { crop: 'MAIZE',   reason: 'Reliable across most regions' },
-  { crop: 'BEAN',    reason: 'Short cycle, low input' },
-  { crop: 'RICE',    reason: 'Strong water-plan fit' },
-  { crop: 'CASSAVA', reason: 'Hardy, drought tolerant' },
-];
-
-async function defaultRecommender(_state) {
-  return STARTER_CROPS;
+/**
+ * defaultRecommender — v1 rule-based recommender wired to the
+ * shared engine in src/lib/recommendations/cropRecommendationEngine.js.
+ *
+ * Reads the live onboarding state (country, state, farmerType) and
+ * returns 3–5 crops with confidence + planting window + note fields
+ * that CropRecommendationScreen knows how to render. When the
+ * country is unsupported, the engine returns a general global list
+ * and flags `isGeneral: true` so the UI can clarify that the picks
+ * are generic.
+ *
+ * Kept synchronous-async so the existing getRecommendations contract
+ * (Promise<crops>) is preserved — no behaviour change for the screen.
+ */
+async function defaultRecommender(state) {
+  const setup = (state && state.setup) || {};
+  return recommendCropsForScreen({
+    country:    setup.country || null,
+    state:      setup.stateCode || null,
+    farmerType: (state && state.farmerType) || null,
+    limit:      5,
+  });
 }
+
+// Location detection is delegated to the shared helper at
+// src/lib/location/productionDetectFn.js so every onboarding flow
+// (fast, v2, future) hits the exact same pipeline:
+//   getBrowserCoords → reverseGeocode (provider chain) → round +
+//   cache. See that file for cache TTL + privacy rounding details.
 
 export default function FastOnboardingRoute() {
   const navigate = useNavigate();
@@ -149,7 +168,7 @@ export default function FastOnboardingRoute() {
       t={t}
       initialLanguage={language || 'en'}
       countries={countries}
-      detectFn={null}
+      detectFn={productionDetectFn}
       getRecommendations={defaultRecommender}
       getCropLabel={(c) => c}
       onFinish={handleFinish}

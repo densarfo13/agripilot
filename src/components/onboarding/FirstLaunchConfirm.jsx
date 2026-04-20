@@ -22,7 +22,7 @@ import {
   getQuickLanguages, getAllLanguages,
 } from '../../config/languages.js';
 import {
-  resolveRegion, confirmRegion, detectRegionViaGps, recordGpsRegion,
+  resolveRegion, confirmRegion, recordGpsRegion,
 } from '../../lib/regionResolver.js';
 import { logClientEvent, ONBOARDING_EVENT_TYPES } from '../../utils/analyticsClient.js';
 import { reverseGeocode } from '../../lib/location/reverseGeocode.js';

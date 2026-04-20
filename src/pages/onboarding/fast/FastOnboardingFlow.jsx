@@ -164,6 +164,9 @@ export default function FastOnboardingFlow({
           getCropLabel={getCropLabel}
           onSelect={onCropSelect}
           onContinue={onCropContinue}
+          onChangeLocation={() => setState(
+            (prev) => ({ ...prev, currentStep: FAST_STEPS.SETUP }),
+          )}
         />
       );
 

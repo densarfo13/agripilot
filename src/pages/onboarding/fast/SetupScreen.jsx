@@ -18,12 +18,35 @@ import {
   warnFirstTimeRoutingRegression,
   FIRST_TIME_WARN,
 } from '../../../utils/fastOnboarding/index.js';
+import { roundCoord } from '../../../lib/location/coordsPrivacy.js';
+import { clearCache as clearLocationCache } from '../../../lib/location/locationCache.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
   const v = t(key);
   return v && v !== key ? v : fallback;
 };
+
+/**
+ * Map a BrowserLocationError.code (or a plain Error.message we
+ * couldn't classify) to a translatable i18n key + fallback text.
+ * Keeps SetupScreen itself free of hardcoded strings.
+ */
+function errorKeyFor(e) {
+  const code = e && (e.code || '');
+  if (code === 'permission_denied')   return ['fast_onboarding.setup.err_permission_denied',
+    'Location permission was denied. Please allow access in your browser or phone settings.'];
+  if (code === 'timeout')             return ['fast_onboarding.setup.err_timeout',
+    'The location request timed out. Try again with a stronger GPS or network signal.'];
+  if (code === 'position_unavailable') return ['fast_onboarding.setup.err_position_unavailable',
+    'Your location is unavailable right now. Try moving to an open area.'];
+  if (code === 'insecure_context')    return ['fast_onboarding.setup.err_insecure_context',
+    'Location only works on HTTPS or localhost.'];
+  if (code === 'unsupported')         return ['fast_onboarding.setup.err_unsupported',
+    'This device or browser does not support location access.'];
+  return ['fast_onboarding.setup.detect_failed',
+    'We couldn\u2019t detect your location — you can continue without it'];
+}
 
 const LOCALES = ['en', 'hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
 const LOCALE_NAMES = {
@@ -85,7 +108,9 @@ export default function SetupScreen({
   onTrackEvent = null, // optional analytics hook
 }) {
   const [detecting, setDetecting] = useState(false);
-  const [detectError, setDetectError] = useState(null);
+  // Classified error surface — holds the i18n key + English fallback
+  // from errorKeyFor(). Cleared on every new detect attempt.
+  const [detectErrorKeys, setDetectErrorKeys] = useState(null);
   // PENDING detection — NOT yet committed to onboarding state.
   const [pendingLocation, setPendingLocation] = useState(null);
 
@@ -99,9 +124,14 @@ export default function SetupScreen({
   const detecting_ = resolve(t, 'fast_onboarding.setup.detecting', 'Detecting\u2026');
   const trust    = resolve(t, 'fast_onboarding.setup.trust',
     'We only use this to suggest crops for your area');
-  const detectFailedLbl = resolve(t, 'fast_onboarding.setup.detect_failed',
-    'We couldn\u2019t detect your location \u2014 you can continue without it');
   const cta      = resolve(t, 'fast_onboarding.setup.cta', 'Continue');
+
+  // Classified error string. When the detect helper rejected with a
+  // BrowserLocationError, errorKeyFor() gave us a specific i18n key;
+  // otherwise we render the generic "detect_failed" copy.
+  const detectErrorLbl = detectErrorKeys
+    ? resolve(t, detectErrorKeys[0], detectErrorKeys[1])
+    : null;
 
   const setup = state.setup || {};
   const canContinue = !!setup.language && !!setup.country && !pendingLocation;
@@ -114,26 +144,68 @@ export default function SetupScreen({
 
   async function handleDetect() {
     if (typeof detectFn !== 'function') return;
-    setDetectError(null);
+    setDetectErrorKeys(null);
     setDetecting(true);
     emit('onboarding_location_detect_clicked');
     try {
       const r = await detectFn();
+
+      // Coarse-round coords at the persistence boundary. The shared
+      // productionDetectFn already rounds, but this is a second-
+      // chance guard so any future detectFn that forgets can't leak
+      // raw precision into onboarding state.
+      const rLat = Number.isFinite(r?.latitude)  ? roundCoord(r.latitude)  : null;
+      const rLng = Number.isFinite(r?.longitude) ? roundCoord(r.longitude) : null;
+
+      // Graceful fallback (spec §13): if reverse geocoding failed
+      // but we still have lat/long from the device, keep those and
+      // let the user pick a country manually. We persist lat/long
+      // immediately so completion doesn't lose the signal.
+      if ((!r || !r.country) && rLat != null && rLng != null) {
+        onPatch({ setup: {
+          latitude:  rLat,
+          longitude: rLng,
+          accuracyM: r.accuracyM ?? null,
+          locationSource: 'detect_partial',
+        }});
+        setDetectErrorKeys(['fast_onboarding.setup.err_no_country',
+          'We found your location, but couldn\u2019t determine the country. Please select your country below or try again.']);
+        emit('onboarding_location_detect_partial');
+        return;
+      }
+
       if (!r?.country) throw new Error('no_result');
       // Do NOT commit silently. Hold in pending state and ask the
-      // user to confirm before we call onPatch.
+      // user to confirm before we call onPatch. Coordinates + accuracy
+      // ride along so we can persist them on confirm.
       setPendingLocation({
         country:   r.country,
         stateCode: r.stateCode || null,
         city:      r.city || null,
+        latitude:  rLat,
+        longitude: rLng,
+        accuracyM: r.accuracyM ?? null,
       });
       emit('onboarding_location_detect_success');
     } catch (e) {
-      setDetectError(e?.message || 'detect_failed');
-      emit('onboarding_location_detect_failed', { message: e?.message || 'detect_failed' });
+      setDetectErrorKeys(errorKeyFor(e));
+      emit('onboarding_location_detect_failed',
+           { code: e?.code || null, message: e?.message || 'detect_failed' });
     } finally {
       setDetecting(false);
     }
+  }
+
+  /**
+   * handleDetectAgain — clears the local detection cache and reruns
+   * handleDetect. Wired to the inline "Try again" CTA so farmers
+   * who hit a partial / permission / timeout failure can retry
+   * without reloading the page or pressing the main button from
+   * memory.
+   */
+  function handleDetectAgain() {
+    try { clearLocationCache(); } catch { /* best effort */ }
+    handleDetect();
   }
 
   function handleConfirmLocation() {
@@ -143,6 +215,9 @@ export default function SetupScreen({
         country:        pendingLocation.country,
         stateCode:      pendingLocation.stateCode,
         city:           pendingLocation.city,
+        latitude:       pendingLocation.latitude,
+        longitude:      pendingLocation.longitude,
+        accuracyM:      pendingLocation.accuracyM,
         locationSource: 'detect',
       },
     });
@@ -215,7 +290,21 @@ export default function SetupScreen({
         📍 {detecting ? detecting_ : useLoc}
       </button>
       <p style={trustLine}>{trust}</p>
-      {detectError && <p style={errLine}>{detectFailedLbl}</p>}
+      {detectErrorLbl && (
+        <div style={errBlock}>
+          <p style={errLine} data-testid="setup-detect-error">{detectErrorLbl}</p>
+          <button
+            type="button"
+            onClick={handleDetectAgain}
+            disabled={detecting}
+            style={btnTryAgain}
+            data-testid="setup-detect-retry"
+          >
+            {resolve(t, 'fast_onboarding.setup.try_again',
+              detecting ? 'Detecting\u2026' : 'Try again')}
+          </button>
+        </div>
+      )}
 
       <PendingLocationBlock
         pending={pendingLocation}
@@ -256,6 +345,13 @@ const btnSecondary = { padding: '12px 14px', borderRadius: 10,
                        color: '#1b5e20', fontWeight: 700, fontSize: 15, cursor: 'pointer' };
 const trustLine = { margin: '4px 0 0', color: '#90a4ae', fontSize: 12 };
 const errLine   = { margin: '2px 0 0', color: '#c62828', fontSize: 13 };
+const errBlock  = { display: 'flex', flexDirection: 'column',
+                    alignItems: 'flex-start', gap: 6, marginTop: 2 };
+const btnTryAgain = {
+  padding: '6px 10px', borderRadius: 8,
+  border: '1px solid #1b5e20', background: '#fff',
+  color: '#1b5e20', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+};
 const ctaBtn = { padding: '14px 16px', borderRadius: 12, border: 0,
                  color: '#fff', fontWeight: 700, fontSize: 16 };
 

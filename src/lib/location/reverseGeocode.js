@@ -1,16 +1,14 @@
 /**
- * reverseGeocode.js — real reverse-geocode helper + offline fallback.
+ * reverseGeocode.js — reverse-geocode facade.
  *
  * Strategy:
- *   1. If the browser is in a secure context and we're online,
- *      call bigdatacloud.net's free reverse-geocode-client endpoint.
- *      That API returns an ISO-2 `countryCode` directly — no
- *      ambiguous name-to-code mapping needed.
- *   2. If the network call fails / times out / returns nothing,
- *      fall back to a small local bounding-box heuristic that
- *      catches the countries we operate in (US, GH, IN, NG, KE,
- *      TZ, ZA). This keeps the "Detect my location" button useful
- *      offline.
+ *   1. Try a chain of network providers (bigdatacloud, then
+ *      Nominatim). Any vendor-specific logic lives in
+ *      reverseGeocodeProviders.js so it can be swapped.
+ *   2. If every provider fails / is rate-limited, fall back to a
+ *      small local bounding-box heuristic that catches the
+ *      countries we operate in (US, GH, IN, NG, KE, TZ, ZA). This
+ *      keeps the "Detect my location" button useful offline.
  *
  *   reverseGeocode(lat, lng, opts?)
  *     → Promise<{
@@ -30,8 +28,8 @@
 import {
   getCountryLabel, getStatesForCountry,
 } from '../../config/countriesStates.js';
+import { tryProviders, DEFAULT_PROVIDERS } from './reverseGeocodeProviders.js';
 
-const ENDPOINT = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
 const DEFAULT_TIMEOUT_MS = 7000;
 
 function isFiniteLatLng(lat, lng) {
@@ -87,68 +85,41 @@ export function stateCodeFromLabel(countryCode, label) {
 }
 
 /**
- * fetchWithTimeout — wraps fetch with AbortController so a slow
- * network never hangs the caller. Returns null on any failure.
- */
-async function fetchWithTimeout(url, timeoutMs) {
-  if (typeof fetch !== 'function') return null;
-  const controller = typeof AbortController !== 'undefined'
-    ? new AbortController()
-    : null;
-  const signal = controller ? controller.signal : undefined;
-  const timer = controller
-    ? setTimeout(() => controller.abort(), timeoutMs)
-    : null;
-  try {
-    const res = await fetch(url, { signal });
-    if (!res || !res.ok) return null;
-    return await res.json();
-  } catch { return null; }
-  finally { if (timer) clearTimeout(timer); }
-}
-
-/**
- * reverseGeocode — main export. Network-first with coarse fallback.
+ * reverseGeocode — main export. Provider chain with coarse fallback.
  *
  * opts:
- *   timeoutMs?: number   (default 7000)
- *   forceCoarse?: bool   (test shim — skip the network call)
- *   fetchJson?: fn       (test shim — swap the network function)
+ *   timeoutMs?: number    (default 7000)
+ *   forceCoarse?: bool    (test shim — skip the network call entirely)
+ *   fetchJson?: fn        (test shim — swap the network function)
+ *   providers?: Array<fn> (test shim — override the provider chain)
  */
 export async function reverseGeocode(lat, lng, opts = {}) {
   if (!isFiniteLatLng(lat, lng)) return null;
 
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : DEFAULT_TIMEOUT_MS;
-  const fetchJson = typeof opts.fetchJson === 'function'
-    ? opts.fetchJson
-    : (u) => fetchWithTimeout(u, timeoutMs);
 
   // Fast path — skip network when the caller says so, or when the
   // environment forbids it.
   const canNetwork = !opts.forceCoarse && isSecureContext() && isOnline();
 
   if (canNetwork) {
-    const la = Number(lat).toFixed(6);
-    const lo = Number(lng).toFixed(6);
-    const url =
-      `${ENDPOINT}?latitude=${la}&longitude=${lo}&localityLanguage=en`;
-    const data = await fetchJson(url);
-    if (data && (data.countryCode || data.countryName)) {
-      const country = data.countryCode ? String(data.countryCode).toUpperCase() : null;
-      const countryLabel = data.countryName
-        || (country ? getCountryLabel(country) : null);
-      const principalSubdivision = data.principalSubdivision || null;
-      const stateCode = country && principalSubdivision
-        ? stateCodeFromLabel(country, principalSubdivision)
+    const res = await tryProviders(lat, lng, {
+      timeoutMs,
+      fetchJson: opts.fetchJson,
+      providers: opts.providers,
+    });
+    if (res && res.country) {
+      const stateCode = res.principalSubdivision
+        ? stateCodeFromLabel(res.country, res.principalSubdivision)
         : null;
       return Object.freeze({
-        country,
-        countryLabel,
-        principalSubdivision,
+        country:              res.country,
+        countryLabel:         res.countryLabel || getCountryLabel(res.country),
+        principalSubdivision: res.principalSubdivision || null,
         stateCode,
-        city: data.city || data.locality || null,
-        source: 'network',
-        raw: data,
+        city:                 res.city || null,
+        source:               'network',
+        raw:                  res.raw || null,
       });
     }
   }
@@ -170,4 +141,4 @@ export async function reverseGeocode(lat, lng, opts = {}) {
   return null;
 }
 
-export const _internal = Object.freeze({ ENDPOINT, DEFAULT_TIMEOUT_MS });
+export const _internal = Object.freeze({ DEFAULT_TIMEOUT_MS, DEFAULT_PROVIDERS });

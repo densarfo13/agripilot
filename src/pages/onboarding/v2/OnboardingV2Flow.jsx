@@ -26,6 +26,7 @@
 import useOnboardingState from '../../../hooks/useOnboardingState.js';
 import { ONBOARDING_STEPS } from '../../../utils/onboardingV2/stepIds.js';
 import { buildPostOnboardingRoute } from '../../../utils/onboardingV2/getNextOnboardingStep.js';
+import { productionDetectFn } from '../../../lib/location/productionDetectFn.js';
 
 import WelcomePage         from './WelcomePage.jsx';
 import LocationStepV2      from './LocationStepV2.jsx';
@@ -40,7 +41,10 @@ export default function OnboardingV2Flow({
   t = null,
   initialLanguage = 'en',
   onLanguageChange = null,
-  detectFn = null,
+  // Default to the shared productionDetectFn so if this flow is
+  // ever mounted the location step works without rewiring. Callers
+  // can still inject their own for tests / alternate providers.
+  detectFn = productionDetectFn,
   countries = [],
   statesForCountry = () => [],
   getRecommendations = null,
