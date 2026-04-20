@@ -280,7 +280,9 @@ model User {
   onboardingStartedAt  DateTime?        @map("onboarding_started_at")
   onboardedAt          DateTime?        @map("onboarded_at")
   onboardingLastStep   String?          @map("onboarding_last_step")
-  onboardingSource     String?          @map("onboarding_source")   // 'self_register', 'admin_invite', 'field_officer'
+  onboardingSource     String?          @map("onboarding_source")   // 'self_register', 'admin_invite', 'field_officer', 'ngo'
+  // ─── NGO program tracking ─────────────────────────────
+  program              String?          // e.g. "Cassava Program"; set when source='ngo'
   timezone             String?                                       // e.g. 'Africa/Nairobi'
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
@@ -1360,6 +1362,8 @@ model FarmProfile {
   longitude       Float?
   locationLabel   String?   @map("location_label")   // cached reverse-geocoded label e.g. "Accra, Ghana"
   crop            String
+  // ─── NGO program tag ─────────────────────────────────
+  program         String?                             // mirrors User.program for farms created via NGO import
   farmSizeAcres   Float?    @map("farm_size_acres")
   landSizeValue   Float?    @map("land_size_value")
   landSizeUnit    String?   @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
