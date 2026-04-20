@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
   const [farmers, setFarmers] = useState(null);
   const [risk, setRisk]       = useState(null);
+  const [performance, setPerformance] = useState(null);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -40,13 +41,16 @@ export default function AdminDashboard() {
       setLoading(true);
       setError('');
       try {
-        const [s, f, r] = await Promise.all([
+        // /performance is new — if the backend hasn't shipped yet,
+        // don't block the whole page on its failure.
+        const [s, f, r, p] = await Promise.all([
           fetchJson('/api/admin/summary'),
           fetchJson('/api/admin/farmers'),
           fetchJson('/api/admin/risk'),
+          fetchJson('/api/admin/performance').catch(() => null),
         ]);
         if (!alive) return;
-        setSummary(s); setFarmers(f); setRisk(r);
+        setSummary(s); setFarmers(f); setRisk(r); setPerformance(p);
       } catch (e) {
         if (alive) setError(e?.message || 'Failed to load');
       } finally {
@@ -144,6 +148,41 @@ export default function AdminDashboard() {
           </div>
         ) : <p style={S.muted}>{emptyT}</p>}
       </section>
+
+      {/* ─── Performance (risk + yield per farm) ─────── */}
+      {Array.isArray(performance) && performance.length > 0 && (
+        <section style={S.section} data-testid="admin-performance">
+          <h3 style={S.h3}>
+            {resolve(t, 'admin.dashboard.performance', 'Farm Performance')}
+          </h3>
+          <div style={S.tableWrap}>
+            <table style={S.table}>
+              <thead>
+                <tr>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.farm',   'Farm')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.crop',   'Crop')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.region', 'Region')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.risk',   'Risk')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.estYield', 'Est Yield')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {performance.map((p) => (
+                  <tr key={p.farmId}>
+                    <td style={S.td}>{`${String(p.farmId || '').slice(0, 8)}\u2026`}</td>
+                    <td style={S.td}>{p.crop || '—'}</td>
+                    <td style={S.td}>{p.region || '—'}</td>
+                    <td style={{ ...S.td, ...riskStyleFor(p.risk) }}>
+                      <strong>{resolve(t, `admin.dashboard.risk.${p.risk}`, p.risk)}</strong>
+                    </td>
+                    <td style={S.td}>{p.yield}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <a
         href="/api/admin/export"

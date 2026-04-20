@@ -22,8 +22,11 @@ const {
   buildRiskByRegion,
   buildCsvExport,
 } = require('./farmEventsService.js');
+const { calculateRisk } = require('./riskEngine.js');
+const { estimateYield } = require('./yieldEngine.js');
 
-function createNgoAdminRouter({ prisma, requireAdmin } = {}) {
+function createNgoAdminRouter(opts = {}) {
+  const { prisma, requireAdmin } = opts;
   const router = express.Router();
   const adminGate = typeof requireAdmin === 'function'
     ? requireAdmin
@@ -91,6 +94,69 @@ function createNgoAdminRouter({ prisma, requireAdmin } = {}) {
       // eslint-disable-next-line no-console
       console.error('[ngoAdmin.export]', err?.message);
       res.status(500).json({ error: 'export failed' });
+    }
+  });
+
+  /**
+   * /performance — per-farm risk + yield estimates.
+   *
+   * Iterates unique farms from the last 90 days of events,
+   * computes the completion rate per farm, and runs risk +
+   * yield engines. Weather is injected by an optional
+   * `weatherFor(farm)` function the caller can pass in; when
+   * absent, a neutral "unknown weather" profile is used so
+   * the engines still produce deterministic output.
+   */
+  router.get('/performance', adminGate, async (_req, res) => {
+    try {
+      const events = await loadEvents(90);
+      const farmList = buildFarmersList(events, { limit: 200 });
+
+      // Completion rate per farm, derived from task_completed/task_seen ratio.
+      const perFarmStats = new Map();
+      for (const e of events) {
+        if (!e || !e.farmId) continue;
+        let s = perFarmStats.get(e.farmId);
+        if (!s) { s = { completed: 0, seen: 0 }; perFarmStats.set(e.farmId, s); }
+        if (e.eventType === 'task_completed') s.completed++;
+        else if (e.eventType === 'task_seen') s.seen++;
+      }
+
+      const weatherFor = typeof opts?.weatherFor === 'function'
+        ? opts.weatherFor
+        : () => ({ rainExpected: false, extremeHeat: false });
+
+      const out = farmList.map((f) => {
+        const stats = perFarmStats.get(f.id) || { completed: 0, seen: 0 };
+        const total = stats.completed + stats.seen;
+        const completionRate = total > 0 ? stats.completed / total : 0.5;
+        const weather = weatherFor(f) || {};
+        const rainfall = Number.isFinite(weather.rainfall)
+          ? weather.rainfall : (weather.rainExpected ? 25 : 15);
+
+        const risk   = calculateRisk({ weather, completionRate, stage: f.stage });
+        const yieldE = estimateYield({ crop: f.crop, rainfall, completionRate });
+
+        return {
+          farmId:        f.id,
+          crop:          f.crop,
+          region:        f.location,
+          stage:         f.stage,
+          completionRate,
+          risk:          risk.level,
+          riskScore:     risk.score,
+          riskReasons:   risk.reasons,
+          yield:         yieldE.estimated,
+          yieldBaseline: yieldE.baseline,
+          yieldDeltas:   yieldE.deltas,
+        };
+      });
+
+      res.json(out);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ngoAdmin.performance]', err?.message);
+      res.status(500).json({ error: 'performance failed' });
     }
   });
 
