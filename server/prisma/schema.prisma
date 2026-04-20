@@ -2840,3 +2840,60 @@ model FarmEvent {
   @@index([region],    map: "idx_farm_events_region")
   @@map("farm_events")
 }
+
+// ─── Marketplace: farmer-listed produce ──────────────────────
+// Mirrors the spec's produce_listings table one-to-one.
+// Run `npx prisma migrate dev --name add_marketplace` to apply.
+model ProduceListing {
+  id           String   @id @default(uuid())
+  farmId       String?  @map("farm_id")
+  crop         String
+  quantity     Int
+  priceFdUnit  Decimal? @map("price_per_unit") @db.Decimal(12, 2)
+  location     String?
+  region       String?
+  status       String   @default("available")  // available | reserved | sold | cancelled
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt           @map("updated_at")
+
+  @@index([status],   map: "idx_produce_listings_status")
+  @@index([crop],     map: "idx_produce_listings_crop")
+  @@index([farmId],   map: "idx_produce_listings_farm")
+  @@index([createdAt], map: "idx_produce_listings_created")
+  @@map("produce_listings")
+}
+
+// ─── Marketplace: buyer-originated purchase requests ────────
+model BuyerRequest {
+  id         String   @id @default(uuid())
+  buyerName  String?  @map("buyer_name")
+  buyerId    String?  @map("buyer_id")
+  crop       String
+  quantity   Int
+  location   String?
+  region     String?
+  status     String   @default("open")  // open | matched | fulfilled | cancelled
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt       @map("updated_at")
+
+  @@index([status],  map: "idx_buyer_requests_status")
+  @@index([crop],    map: "idx_buyer_requests_crop")
+  @@index([buyerId], map: "idx_buyer_requests_buyer")
+  @@map("buyer_requests")
+}
+
+// ─── Marketplace: simple payments ledger (v1 simulated) ─────
+model MarketplacePayment {
+  id          String   @id @default(uuid())
+  buyerId     String?  @map("buyer_id")
+  listingId   String   @map("listing_id")
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String?
+  status      String   @default("completed") // completed | failed | pending
+  createdAt   DateTime @default(now())       @map("created_at")
+
+  @@index([buyerId],   map: "idx_marketplace_payments_buyer")
+  @@index([listingId], map: "idx_marketplace_payments_listing")
+  @@index([status],    map: "idx_marketplace_payments_status")
+  @@map("marketplace_payments")
+}

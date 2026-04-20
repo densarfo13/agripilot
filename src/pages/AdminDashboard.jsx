@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   const [performance, setPerformance] = useState(null);
   const [interventions, setInterventions] = useState(null);
   const [scoring, setScoring] = useState(null);
+  const [marketplace, setMarketplace] = useState(null);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -43,20 +44,21 @@ export default function AdminDashboard() {
       setLoading(true);
       setError('');
       try {
-        // /performance, /interventions, /scoring are new — catch
-        // each individually so a rollout order mismatch doesn't
-        // blank the whole page.
-        const [s, f, r, p, iv, sc] = await Promise.all([
+        // /performance, /interventions, /scoring, /marketplace-stats are new —
+        // catch each individually so a rollout mismatch doesn't blank the page.
+        const [s, f, r, p, iv, sc, mk] = await Promise.all([
           fetchJson('/api/admin/summary'),
           fetchJson('/api/admin/farmers'),
           fetchJson('/api/admin/risk'),
           fetchJson('/api/admin/performance').catch(() => null),
           fetchJson('/api/admin/interventions').catch(() => null),
           fetchJson('/api/admin/scoring').catch(() => null),
+          fetchJson('/api/admin/marketplace-stats').catch(() => null),
         ]);
         if (!alive) return;
         setSummary(s); setFarmers(f); setRisk(r);
         setPerformance(p); setInterventions(iv); setScoring(sc);
+        setMarketplace(mk);
       } catch (e) {
         if (alive) setError(e?.message || 'Failed to load');
       } finally {
@@ -277,6 +279,29 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {/* ─── Marketplace Activity ────────────────────────── */}
+      {marketplace && marketplace.ok !== false && (
+        <section style={S.section} data-testid="admin-marketplace-stats">
+          <h3 style={S.h3}>
+            {resolve(t, 'admin.dashboard.marketplaceActivity', 'Marketplace Activity')}
+          </h3>
+          <div style={S.cardsRow}>
+            <Card
+              label={resolve(t, 'admin.dashboard.marketplace.totalListings', 'Total Listings')}
+              value={marketplace.totalListings ?? 0}
+            />
+            <Card
+              label={resolve(t, 'admin.dashboard.marketplace.totalSold', 'Sold')}
+              value={marketplace.totalSold ?? 0}
+            />
+            <Card
+              label={resolve(t, 'admin.dashboard.marketplace.totalRequests', 'Buyer Requests')}
+              value={marketplace.totalRequests ?? 0}
+            />
           </div>
         </section>
       )}
