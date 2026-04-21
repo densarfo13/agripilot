@@ -25,6 +25,7 @@ import {
 import {
   MetricCard, MetricGrid, SoftBanner, AdminEmptyState, SectionHeader,
 } from '../components/admin/AdminPolish.jsx';
+import NeedsAttentionPanel from '../components/admin/NeedsAttentionPanel.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -183,6 +184,30 @@ export default function NgoDashboard() {
             ))}
           </select>
         </div>
+      )}
+
+      {/* Needs attention — actionable top-of-dashboard band. Numbers
+          come straight from the already-fetched summary + farmers
+          payload so there's zero extra API cost. Hidden when we
+          have nothing to surface. */}
+      {summary && (
+        <NeedsAttentionPanel
+          inactiveFarmers={Math.max(0, (summary.totalFarmers ?? 0) - (summary.activeFarmers ?? 0))}
+          incompleteProfiles={Array.isArray(farmers)
+            ? farmers.filter((f) => f && (!f.crop || !f.location)).length
+            : 0}
+          missedTasks={summary.missedTasks ?? summary.overdueTasks ?? 0}
+          highRisk={summary.highRiskFarmers ?? 0}
+          titleLabel={resolve(t, 'ngo.dashboard.needsAttention', 'Needs attention')}
+          allClearLabel={resolve(t, 'ngo.dashboard.allClear',
+            'Everything looks clear \u2014 no urgent follow-ups.')}
+          labels={{
+            inactive:   resolve(t, 'ngo.dashboard.attention.inactive',   'Inactive farmers'),
+            incomplete: resolve(t, 'ngo.dashboard.attention.incomplete', 'Profiles incomplete'),
+            missed:     resolve(t, 'ngo.dashboard.attention.missed',     'Missed tasks'),
+            highRisk:   resolve(t, 'ngo.dashboard.attention.highRisk',   'High risk'),
+          }}
+        />
       )}
 
       {/* Summary cards — polished metric grid (spec §§1, 4) */}
