@@ -6,6 +6,7 @@ import { sha256 } from '../lib/hash.js';
 import { env } from '../lib/env.js';
 import { setAuthCookies, clearAuthCookies } from '../lib/cookies.js';
 import { writeAuditLog } from '../lib/audit.js';
+import { isDemoMode } from '../lib/demoMode.js';
 import {
   generateOpaqueToken,
   signAccessToken,
@@ -548,11 +549,12 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
       const base = String(env.APP_BASE_URL || '').replace(/\/+$/, '');
       const resetUrl = `${base}/reset-password?token=${rawToken}`;
 
-      // In non-production environments, echo the reset URL to the
-      // server log regardless of email provider. This is invaluable
-      // during pilot / demo runs where SendGrid is not yet wired but
-      // the operator still needs a usable link.
-      if (String(env.NODE_ENV).toLowerCase() !== 'production') {
+      // In non-production environments OR when DEMO_MODE is
+      // explicitly enabled, echo the reset URL to the server log so
+      // the operator can copy it directly during pilot / demo runs.
+      // Gated via isDemoMode() (single source of truth); this never
+      // writes the link into an HTTP response body.
+      if (isDemoMode()) {
         console.log(`${tag} dev_reset_link ${resetUrl}`);
       }
 

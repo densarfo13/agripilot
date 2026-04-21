@@ -22,6 +22,7 @@
 import prisma from '../config/database.js';
 import { isMfaRequired, isMfaExempt } from '../modules/mfa/service.js';
 import { opsEvent } from '../utils/opsLogger.js';
+import { isDemoMode, isDemoAccount } from '../../lib/demoMode.js';
 
 /**
  * Full MFA gate: blocks access if MFA is required but not satisfied.
@@ -37,6 +38,16 @@ export function requireMfa(req, res, next) {
 
   // MFA is optional for this role
   if (!isMfaRequired(role)) return next();
+
+  // Demo-mode bypass — only when BOTH flags agree:
+  //   1. the server is in demo mode (DEMO_MODE=true OR non-prod), AND
+  //   2. the email on the token is an explicitly allow-listed demo
+  //      account (server/lib/demoMode.js DEMO_ALLOWED_EMAILS).
+  // Real accounts never hit this branch, even when DEMO_MODE is on.
+  if (isDemoMode() && isDemoAccount(req.user.email)) {
+    opsEvent('mfa', 'demo_bypass', 'info', { userId: req.user.sub, role });
+    return next();
+  }
 
   // MFA is required — check JWT has mfaVerifiedAt
   if (!req.user.mfaVerifiedAt) {

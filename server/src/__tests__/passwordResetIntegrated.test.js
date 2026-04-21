@@ -80,10 +80,12 @@ describe('reset link generation', () => {
 describe('dev / demo fallback', () => {
   const code = readFile('server/routes/auth.js');
 
-  it('echoes the reset link to the server log in non-production', () => {
+  it('echoes the reset link to the server log in non-production or demo mode', () => {
     expect(code).toMatch(/dev_reset_link \$\{resetUrl\}/);
-    // and is gated by NODE_ENV !== 'production'
-    expect(code).toMatch(/env\.NODE_ENV\)\.toLowerCase\(\)\s*!==\s*'production'/);
+    // The gate is now the single-source isDemoMode() helper, which
+    // is true in non-production OR when DEMO_MODE=true is set.
+    expect(code).toContain("from '../lib/demoMode.js'");
+    expect(code).toMatch(/if\s*\(\s*isDemoMode\(\)\s*\)/);
   });
 
   it('never writes the reset link into an HTTP response body', () => {

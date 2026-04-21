@@ -22,6 +22,7 @@ import {
   pruneJobs,
 } from '../intelligence/dist/index.js';
 import { validateEmailConfig } from '../services/emailService.js';
+import { validateSmsConfig }   from '../services/smsService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,10 +105,13 @@ async function main() {
     setInterval(() => pruneJobs(7).catch(console.error), 60 * 60 * 1000);
   }
 
-  // One-shot email provider check at boot so missing SENDGRID_API_KEY
-  // / EMAIL_FROM / APP_BASE_URL shows up in the deploy log instead of
-  // silently degrading password-reset delivery at 2am.
+  // One-shot provider checks at boot so missing config shows up in
+  // the deploy log instead of silently degrading user-facing flows
+  // (password reset, invite email, invite SMS, SMS-based recovery).
+  // Both validators never throw — each is wrapped defensively so a
+  // bad config never blocks unrelated server startup.
   try { validateEmailConfig(); } catch (e) { console.warn('[SERVER] email config check failed:', e?.message); }
+  try { validateSmsConfig();   } catch (e) { console.warn('[SERVER] sms config check failed:',   e?.message); }
 
   const host = '0.0.0.0';
   const server = app.listen(config.port, host, () => {
