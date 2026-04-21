@@ -22,6 +22,9 @@ import {
   getFallbackNgoSummary, getFallbackProgramRisk, getFallbackPerformance,
   shouldShowFallback,
 } from '../lib/demo/demoFallbacks.js';
+import {
+  MetricCard, MetricGrid, SoftBanner, AdminEmptyState, SectionHeader,
+} from '../components/admin/AdminPolish.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -125,28 +128,34 @@ export default function NgoDashboard() {
   // non-zero fallback summary. Production flow (non-demo) keeps the
   // original red error banner so real operators still see problems.
   if (error) {
+    // Demo-safe soft recovery: calmer banner + non-zero KPIs so the
+    // demo never dead-ends. Production paths still show a blocking
+    // banner — real operators need to see real failures.
     if (isDemoMode()) {
       const soft = friendlyErrorMessage('analytics');
       const fb = getFallbackNgoSummary();
       return (
         <main style={S.page} data-screen="ngo-dashboard" data-state="demo-fallback">
           <h2 style={S.title}>{title}</h2>
-          <p style={S.muted} role="status" data-testid="ngo-soft-recovery">
+          <SoftBanner tone="info" testId="ngo-soft-recovery">
             {resolve(t, soft.key, soft.fallback)}
-          </p>
-          <section style={S.cardsRow} data-testid="ngo-summary-fallback">
-            <Card label={lblTot} value={fb.totalFarmers} />
-            <Card label={lblAct} value={fb.activeFarmers} />
-            <Card label={lblCmp} value={`${Math.round(fb.completionRate * 100)}%`} />
-            <Card label={lblHi}  value={fb.highRiskFarmers} tone="warning" />
-          </section>
+          </SoftBanner>
+          <SectionHeader title={resolve(t, 'ngo.dashboard.kpis', 'Program overview')} />
+          <MetricGrid testId="ngo-summary-fallback">
+            <MetricCard label={lblTot} value={fb.totalFarmers}  tone="neutral" />
+            <MetricCard label={lblAct} value={fb.activeFarmers} tone="info" />
+            <MetricCard label={lblCmp} value={`${Math.round(fb.completionRate * 100)}%`} tone="good" />
+            <MetricCard label={lblHi}  value={fb.highRiskFarmers} tone="warn" />
+          </MetricGrid>
         </main>
       );
     }
     return (
       <main style={S.page} data-screen="ngo-dashboard" data-state="error">
         <h2 style={S.title}>{title}</h2>
-        <p style={S.error} role="alert">{errLbl}: {error}</p>
+        <SoftBanner tone="critical" role="alert" testId="ngo-error-banner">
+          {errLbl}: {error}
+        </SoftBanner>
       </main>
     );
   }
@@ -176,14 +185,17 @@ export default function NgoDashboard() {
         </div>
       )}
 
-      {/* Summary cards */}
+      {/* Summary cards — polished metric grid (spec §§1, 4) */}
       {summary && (
-        <section style={S.cardsRow} data-testid="ngo-summary">
-          <Card label={lblTot} value={summary.totalFarmers ?? 0} />
-          <Card label={lblAct} value={summary.activeFarmers ?? 0} />
-          <Card label={lblCmp} value={`${Math.round((summary.completionRate ?? 0) * 100)}%`} />
-          <Card label={lblHi}  value={summary.highRiskFarmers ?? 0} tone="warning" />
-        </section>
+        <>
+          <SectionHeader title={resolve(t, 'ngo.dashboard.kpis', 'Program overview')} />
+          <MetricGrid testId="ngo-summary">
+            <MetricCard label={lblTot} value={summary.totalFarmers ?? 0}  tone="neutral" />
+            <MetricCard label={lblAct} value={summary.activeFarmers ?? 0} tone="info" />
+            <MetricCard label={lblCmp} value={`${Math.round((summary.completionRate ?? 0) * 100)}%`} tone="good" />
+            <MetricCard label={lblHi}  value={summary.highRiskFarmers ?? 0} tone="warn" />
+          </MetricGrid>
+        </>
       )}
 
       {/* Risk distribution */}
@@ -257,7 +269,15 @@ export default function NgoDashboard() {
               </tbody>
             </table>
           </div>
-        ) : <p style={S.muted}>{emptyLbl}</p>}
+        ) : (
+          <AdminEmptyState
+            tone="positive"
+            icon={'\u2713'}
+            title={resolve(t, 'ngo.dashboard.empty.title', 'Nothing to review yet')}
+            body={emptyLbl}
+            testId="ngo-farmers-empty"
+          />
+        )}
       </section>
 
       <a
