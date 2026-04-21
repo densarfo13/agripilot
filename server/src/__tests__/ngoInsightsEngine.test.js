@@ -342,7 +342,7 @@ describe('CSV export', () => {
     const events = [evt('a', 'task_completed', -DAY)];
     const csv = exportInsightsCsv({ farms, issues, events, now: NOW });
     const lines = csv.trim().split('\n');
-    expect(lines[0]).toBe('farmerId,farmId,crop,region,risk,issueCount,activity,program');
+    expect(lines[0]).toBe('farmerId,farmId,crop,region,risk,issueCount,activity,program,farmType');
     expect(lines.length).toBe(3); // header + two rows
     expect(lines[1]).toContain('u1');
     expect(lines[1]).toContain('active');

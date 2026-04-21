@@ -30,6 +30,7 @@
 import {
   RULES, SUPPORTED_STAGES, PRIORITY_RANK, PLANTING_STATUS_TO_STAGE,
 } from '../../config/dailyTaskRules.js';
+import { getFarmTypePolicy as _farmTypeGet } from '../farm/farmTypeBehavior.js';
 
 const DEFAULT_LIMIT = 3;
 
@@ -149,6 +150,7 @@ export function generateDailyTasks({
   stage = null,
   plantingStatus = null,
   farmerType = null,
+  farmType = null,       // 'backyard' | 'small_farm' | 'commercial'; default via policy
   completions = [],
   limit = DEFAULT_LIMIT,
   weather = null,        // optional summarizeWeather shape
@@ -159,9 +161,17 @@ export function generateDailyTasks({
   const { tasks, cropSource } = pickRuleSet(resolvedStage, crop);
   const done = completedIdSet(completions);
 
+  // Farm-type tier drops commercial-only tasks on backyard and caps
+  // the daily list. Unknown/missing farmType flows through the
+  // default (small_farm) policy so pre-migration farms keep their
+  // standard cadence.
+  const policy = _farmTypePolicy(farmType);
+
   const sanitized = applyWeatherOverrides(
     tasks
       .filter((t) => t && t.id && !done.has(String(t.id)))
+      // Drop commercial-only task ids for backyard tier.
+      .filter((t) => !policy.dropTaskIds.has(String(t.id)))
       .map((t, i) => ({
         id:       t.id,
         titleKey: t.titleKey,
@@ -184,7 +194,10 @@ export function generateDailyTasks({
   const today = sanitized.filter((t) => t.dueHint === 'today');
   const later = sanitized.filter((t) => t.dueHint !== 'today');
 
-  const todayList = today.slice(0, Math.max(1, Math.min(3, limit)));
+  // Backyard: cap 1-2, commercial: up to 6, small_farm: 3 (existing).
+  // The explicit `limit` still wins when the caller set a smaller cap.
+  const effectiveToday = Math.max(1, Math.min(limit, policy.maxDailyTasks));
+  const todayList = today.slice(0, effectiveToday);
   // Back-fill "today" with the highest-priority upcoming task when the
   // stage has no explicit "today" slot (e.g. mid_growth generic list
   // only has this_week items). Farmers should never see an empty
@@ -194,7 +207,7 @@ export function generateDailyTasks({
     : [];
   const thisWeek = later
     .filter((t) => !backfill.some((b) => b.id === t.id))
-    .slice(0, 3);
+    .slice(0, policy.maxSecondaryTasks);
 
   const out = [...todayList, ...backfill].map((t) => toFrozenTask(t, farmerType));
   const upcoming = thisWeek.map((t) => toFrozenTask(t, farmerType));
@@ -205,8 +218,28 @@ export function generateDailyTasks({
     stage:       resolvedStage,
     cropSource,
     farmerType:  farmerType === 'new' || farmerType === 'existing' ? farmerType : null,
+    farmType:    policy.tier,
     supported:   sanitized.length > 0,
   });
+}
+
+// farmTypeBehavior is imported at module load — no circular import
+// (farmTypeBehavior has no reverse dep on this file). Kept as a
+// thin wrapper so fallback + safety stays explicit.
+function _farmTypePolicy(farmType) {
+  try {
+    return _farmTypeGet(farmType);
+  } catch {
+    return {
+      tier: 'small_farm',
+      maxDailyTasks: 3,
+      maxSecondaryTasks: 3,
+      allowAlerts: ['medium', 'high', 'critical'],
+      recommendationDepth: 'standard',
+      copyRegister: 'standard',
+      dropTaskIds: new Set(),
+    };
+  }
 }
 
 function toFrozenTask(t, farmerType) {

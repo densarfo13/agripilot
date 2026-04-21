@@ -216,6 +216,7 @@ export function evaluateReminder(ctx = {}) {
     hasActiveFarm = true,       // spec §3 gate
     todayPrimaryDone = false,   // spec §3 gate — suppress daily when
                                 // today's primary task is already done
+    farmType = null,            // 'backyard' | 'small_farm' | 'commercial'
   } = ctx;
   const settings = ctx.settings || getSettings();
 
@@ -226,6 +227,19 @@ export function evaluateReminder(ctx = {}) {
     hasActiveFarm,
     todayPrimaryDone,
   });
+
+  // Farm-type alert gate. Backyard suppresses 'info' / 'warning'
+  // severities and keeps only high/critical; commercial passes
+  // everything through. Never silences weather_severe / risk_high
+  // since those are already gated above this block.
+  const gateForFarmType = (severity) => {
+    const s = String(farmType || 'small_farm').toLowerCase();
+    if (s === 'backyard')   return severity === 'critical';
+    if (s === 'commercial') return true;
+    // small_farm default: suppress pure info daily prompts when
+    // the UI wants a calmer feed — but by default we show them.
+    return true;
+  };
 
   // Spec §12 canonical keys; we also return a short fallback so
   // callers without t() at hand can still render something.
@@ -252,20 +266,24 @@ export function evaluateReminder(ctx = {}) {
   }
 
   if (missed) {
+    const show = gateForFarmType('warning');
     return Object.freeze({
-      show: true,
-      kind: 'missed_day',
-      messageKey: KEY.missed_day,
+      show,
+      kind: show ? 'missed_day' : null,
+      messageKey: show ? KEY.missed_day : null,
       severity: 'warning',
+      farmType: farmType || null,
     });
   }
 
   if (due) {
+    const show = gateForFarmType('info');
     return Object.freeze({
-      show: true,
-      kind: 'daily',
-      messageKey: KEY.daily,
+      show,
+      kind: show ? 'daily' : null,
+      messageKey: show ? KEY.daily : null,
       severity: 'info',
+      farmType: farmType || null,
     });
   }
 

@@ -356,6 +356,25 @@ export function getNgoInsights({
   // ─── Officer focus ───────────────────────────────────────────
   const officerFocus = scoreOfficerFocus({ byRegion, hotspots });
 
+  // ─── byFarmType (tier roll-up) ───────────────────────────────
+  // Always includes the three canonical tiers (even at zero count)
+  // so the dashboard can render a stable stacked bar.
+  const byFarmTypeMap = new Map([
+    ['backyard',   { farmType: 'backyard',   farmerCount: 0, activeCount: 0, highRiskCount: 0 }],
+    ['small_farm', { farmType: 'small_farm', farmerCount: 0, activeCount: 0, highRiskCount: 0 }],
+    ['commercial', { farmType: 'commercial', farmerCount: 0, activeCount: 0, highRiskCount: 0 }],
+  ]);
+  for (const row of farmRows) {
+    const tier = _normalizeFarmType(row.farm.farmType);
+    const entry = byFarmTypeMap.get(tier);
+    if (!entry) continue;
+    entry.farmerCount += 1;
+    if (row.active) entry.activeCount += 1;
+    if (highRiskFarmIds.has(row.farm.id)) entry.highRiskCount += 1;
+  }
+  const byFarmType = Array.from(byFarmTypeMap.values())
+    .map((e) => Object.freeze({ ...e }));
+
   return Object.freeze({
     totals: Object.freeze({
       totalFarmers, activeFarmers, inactiveFarmers,
@@ -363,10 +382,18 @@ export function getNgoInsights({
     }),
     byRegion:     Object.freeze(byRegion),
     byCrop:       Object.freeze(byCrop),
+    byFarmType:   Object.freeze(byFarmType),
     hotspots:     Object.freeze(hotspots),
     officerFocus: Object.freeze(officerFocus),
     filteredBy:   Object.freeze({ program: program || null }),
   });
+}
+
+function _normalizeFarmType(raw) {
+  const s = String(raw || 'small_farm').toLowerCase().trim();
+  if (s === 'backyard' || s === 'home_food' || s === 'home' || s === 'backyard_home') return 'backyard';
+  if (s === 'commercial' || s === 'commercial_farm' || s === 'large' || s === 'enterprise') return 'commercial';
+  return 'small_farm';
 }
 
 // ─── CSV export helpers (spec §8) ────────────────────────────────
@@ -391,7 +418,7 @@ export function exportInsightsCsv({
     : farms.slice();
 
   const headers = ['farmerId', 'farmId', 'crop', 'region', 'risk',
-                   'issueCount', 'activity', 'program'];
+                   'issueCount', 'activity', 'program', 'farmType'];
   const rows = [headers.join(',')];
 
   for (const farm of filteredFarms) {
@@ -413,6 +440,7 @@ export function exportInsightsCsv({
       csvEscape(related.length),
       csvEscape(active ? 'active' : 'inactive'),
       csvEscape(farm.program || ''),
+      csvEscape(_normalizeFarmType(farm.farmType)),
     ].join(','));
   }
   return rows.join('\n') + (rows.length > 1 ? '\n' : '');

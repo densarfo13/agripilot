@@ -226,6 +226,11 @@ export function computeProgress({
   // them on the snapshot without forcing a second call in the UI.
   streak,
   lastVisit,
+  // Farm-type tier tuning. When supplied, the "completed today"
+  // bonus scales against a tier-specific target (spec §2) so
+  // backyard farmers aren't penalised with the same denominator
+  // as commercial. Read from farm.farmType when not supplied.
+  farmType,
 } = {}) {
   const taskList = Array.isArray(tasks) ? tasks.filter((t) => t && t.id) : [];
   const completedIds = completedIdSet(completions);
@@ -261,9 +266,24 @@ export function computeProgress({
     ? Math.round((completedCount / totalCount) * 60)
     : 0;
 
+  // Tier-scaled bonus. backyard + small_farm keep the original
+  // thresholds (≥2 → +15, ≥1 → +10) so existing farmers see no score
+  // drift. commercial gets a 3-step curve scaled to its larger daily
+  // target (5 for full +15, 3 for +10, 1 for +5). `dailyTarget` below
+  // is the displayed goal and may differ from the +15 threshold for
+  // backyard (displayed 2; also happens to be the +15 threshold).
+  const effectiveFarmType = farmType || (farm && farm.farmType) || 'small_farm';
+  const target = _dailyTargetFor(effectiveFarmType);
   let bonusToday = 0;
-  if (completedToday >= 2) bonusToday = 15;
-  else if (completedToday >= 1) bonusToday = 10;
+  if (effectiveFarmType === 'commercial') {
+    if (completedToday >= 5)      bonusToday = 15;
+    else if (completedToday >= 3) bonusToday = 10;
+    else if (completedToday >= 1) bonusToday = 5;
+  } else {
+    // backyard + small_farm (and any unknown tier) — original rule
+    if (completedToday >= 2)      bonusToday = 15;
+    else if (completedToday >= 1) bonusToday = 10;
+  }
 
   let bonusStage = 0;
   if (stagePct >= 70) bonusStage = 15;
@@ -306,7 +326,19 @@ export function computeProgress({
     lastVisit:           lastVisitVal,
     completedToday,      // alias of completedTodayCount in spec-matching naming
     dailyCompletionFlag,
+    // Farm-type context + the target that drove the today-bonus.
+    farmType:    effectiveFarmType,
+    dailyTarget: target,
   });
+}
+
+// Daily-task target per tier (spec §2). Centralised so the task +
+// progress engines agree on the same goalposts.
+function _dailyTargetFor(farmType) {
+  const s = String(farmType || 'small_farm').toLowerCase();
+  if (s === 'backyard')   return 2;
+  if (s === 'commercial') return 5;
+  return 3;
 }
 
 export const _internal = Object.freeze({

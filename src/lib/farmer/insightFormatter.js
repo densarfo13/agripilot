@@ -42,24 +42,30 @@ function cropBaseline(crop) {
  */
 export function formatWeatherInsight({
   weather = null, crop = null, stage = null, forecastDays = 3,
+  farmType = null,          // 'backyard' | 'small_farm' | 'commercial'
 } = {}) {
   if (!weather || typeof weather !== 'object') return null;
   const status = normalize(weather.status);
   const { thirsty } = cropBaseline(crop);
+  const tier = _tier(farmType);
 
   if (status === 'excessive_heat') {
+    const actions = tier === 'backyard'
+      ? ['Water plants early morning.', 'Keep young plants shaded.']
+      : tier === 'commercial'
+        ? ['Irrigate field sections early tomorrow and inspect moisture by afternoon.',
+           'Protect seedling blocks with shade netting.']
+        : [
+          'Shade seedlings during the hottest hours',
+          thirsty ? 'Water early morning or after sunset' : 'Check soil moisture in the evening',
+        ];
     return Object.freeze({
       tone: 'danger',
       conditionKey:    'farmer.insight.weather.condition.hot',
-      condition:       'Extreme heat expected today',
+      condition:       tier === 'backyard' ? 'Very hot today' : 'Extreme heat expected today',
       timeWindowKey:   'farmer.insight.weather.window.today',
       timeWindow:      'Later today',
-      actions: Object.freeze([
-        'Shade seedlings during the hottest hours',
-        thirsty
-          ? 'Water early morning or after sunset'
-          : 'Check soil moisture in the evening',
-      ]),
+      actions: Object.freeze(actions),
       actionKeys: Object.freeze([
         'farmer.insight.weather.action.shade',
         thirsty
@@ -67,25 +73,33 @@ export function formatWeatherInsight({
           : 'farmer.insight.weather.action.check_moisture',
       ]),
       ruleTag: 'weather_excessive_heat',
+      tier,
     });
   }
 
   if (status === 'low_rain' || status === 'dry_ahead') {
+    const actions = tier === 'backyard'
+      ? ['Water plants tomorrow morning.']
+      : tier === 'commercial'
+        ? ['Irrigate field sections early tomorrow and inspect moisture by afternoon.',
+           'Plan a second moisture check before midday.']
+        : ['Water crops tomorrow morning',
+           'Check soil moisture in the evening'];
     return Object.freeze({
       tone: 'warn',
       conditionKey:    'farmer.insight.weather.condition.dry',
-      condition:       `Dry weather for the next ${forecastDays} days`,
+      condition:       tier === 'backyard'
+        ? `Dry weather ahead (${forecastDays} days)`
+        : `Dry weather for the next ${forecastDays} days`,
       timeWindowKey:   'farmer.insight.weather.window.days3',
       timeWindow:      `Next ${forecastDays} days`,
-      actions: Object.freeze([
-        'Water crops tomorrow morning',
-        'Check soil moisture in the evening',
-      ]),
+      actions: Object.freeze(actions),
       actionKeys: Object.freeze([
         'farmer.insight.weather.action.water_tomorrow',
         'farmer.insight.weather.action.check_moisture',
       ]),
       ruleTag: 'weather_low_rain',
+      tier,
     });
   }
 
@@ -204,4 +218,15 @@ export function pickTopInsight({ weatherInsight = null, riskInsight = null } = {
   return riskInsight || weatherInsight;
 }
 
-export const _internal = Object.freeze({ normalize, cropBaseline });
+// Canonicalise farmType for the copy branches above. Kept inline
+// (rather than importing farmTypeBehavior) so this pure formatter
+// stays free of back-dependencies; the behavior module can still
+// call this formatter without a cycle.
+function _tier(farmType) {
+  const s = String(farmType || 'small_farm').toLowerCase().trim();
+  if (s === 'backyard' || s === 'home_food' || s === 'backyard_home' || s === 'home') return 'backyard';
+  if (s === 'commercial' || s === 'commercial_farm' || s === 'large' || s === 'enterprise') return 'commercial';
+  return 'small_farm';
+}
+
+export const _internal = Object.freeze({ normalize, cropBaseline, tier: _tier });
