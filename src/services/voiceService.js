@@ -18,6 +18,7 @@
  */
 
 import { getVoicePrompt, getPromptClip, getPromptText, resolvePromptId } from './voicePrompts.js';
+import { isAdminContext } from '../lib/voice/adminGuard.js';
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -285,6 +286,9 @@ function speakBrowserTTS(text, lang) {
  * @returns {boolean} true if playback was initiated
  */
 export function speakPrompt(key, lang = 'en') {
+  // Admin-context guard — no AudioContext, no SpeechSynthesis, no
+  // provider fetch. See src/lib/voice/adminGuard.js.
+  if (isAdminContext()) return false;
   const promptId = resolvePromptId(key) || key;
   const text = getPromptText(promptId, lang);
   if (!text) return false;
@@ -306,6 +310,7 @@ export function speakPrompt(key, lang = 'en') {
  * @returns {boolean} true if playback was initiated
  */
 export function speakText(text, lang = 'en') {
+  if (isAdminContext()) return false;
   if (!text) return false;
   stop();
   _speakTextWithFallback(text, lang);
@@ -325,6 +330,7 @@ export function speakText(text, lang = 'en') {
  * @returns {boolean}
  */
 export function speakVoiceMapKey(voiceMapKey, lang, voiceMapTexts) {
+  if (isAdminContext()) return false;
   stop();
 
   // Unified resolution: prompt ID, VOICE_MAP key, i18n key, or wx.* key
@@ -384,6 +390,11 @@ export function isSpeaking() {
  * Call once at app startup.
  */
 export function warmup() {
+  // Admin surfaces never speak — skip the provider availability
+  // ping AND the browser getVoices() warm-up. This keeps admin
+  // pages off /tts/status in telemetry and avoids spinning up
+  // the browser voice list on load.
+  if (isAdminContext()) return;
   // Fetch provider availability in background
   getProviderStatus().catch(() => {});
   // Trigger browser voice list load (Chrome fix)

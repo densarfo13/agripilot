@@ -760,10 +760,13 @@ export function isVoiceAvailable() {
 // fallback: prerecorded clip → provider TTS → browser TTS.
 
 import voiceService from '../services/voiceService.js';
+import { isAdminContext } from '../lib/voice/adminGuard.js';
 
 // ─── Stop any current speech ────────────────────────────────────
 
 export function stopSpeech() {
+  // Admin context: nothing to stop — we never start in admin.
+  if (isAdminContext()) return;
   voiceService.stop();
 }
 
@@ -786,6 +789,11 @@ export const canUseTTS = isVoiceAvailable;
  * @returns {boolean} true if speech was initiated
  */
 export function speak(stepKey, lang = 'en') {
+  // Voice is OFF on admin surfaces. Returning false here means
+  // callers that check the boolean get a clean "did not speak"
+  // answer, and no AudioContext / SpeechSynthesisUtterance is
+  // constructed downstream.
+  if (isAdminContext()) return false;
   if (!isVoiceAvailable()) return false;
   const stepTexts = VOICE_MAP[stepKey];
   if (!stepTexts) return false;

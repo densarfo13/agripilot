@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceEvent } from '../utils/voiceAnalytics.js';
 import { getLanguage, setLanguage, useTranslation } from '../i18n/index.js';
+import { isAdminContext } from '../lib/voice/adminGuard.js';
 
 /**
  * VoiceBar — shared voice controls for low-literacy farmers.
@@ -11,11 +12,18 @@ import { getLanguage, setLanguage, useTranslation } from '../i18n/index.js';
  * Stops speech on voiceKey change and on unmount.
  * Hidden entirely when speechSynthesis is unavailable.
  *
+ * Voice is DISABLED on admin / officer / reports routes so the
+ * admin UI stays distraction-free. See src/lib/voice/adminGuard.js.
+ *
  * Props:
  *   voiceKey  — current voice map key (e.g. 'home_welcome', 'update_start')
  *   compact   — if true, shows smaller controls (default: false)
  */
 export default function VoiceBar({ voiceKey, compact = false }) {
+  // Admin-context guard: collapse to nothing so no audio listeners,
+  // no language-change subscriptions, and no SpeechSynthesisUtterance
+  // objects are created on admin surfaces.
+  if (isAdminContext()) return null;
   const { t } = useTranslation();
   const [voiceLang, setVoiceLang] = useState(() => getLanguage());
   const [enabled, setEnabled] = useState(() => isVoiceAvailable());

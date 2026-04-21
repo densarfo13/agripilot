@@ -4,7 +4,9 @@ import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
-import VoiceBar from '../components/VoiceBar.jsx';
+// Voice removed — officer routes are admin context per
+// src/lib/voice/adminGuard.js. Keeps the officer queue quiet +
+// focused. Farmer-facing voice is unaffected.
 import { useTranslation } from '../i18n/index.js';
 
 const VALIDATION_TIMEOUT_MS = 10000;
@@ -217,7 +219,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && queue.length === 0) {
     return (
       <div style={VS.page}>
-        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer.empty" compact /></div>
+        {/* Voice bar removed for officer routes — admin context. */}
         <div style={VS.emptyCenter} data-testid="validation-empty">
           <span style={{ fontSize: '3rem' }}>✅</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t('validation.queueClear')}</div>
@@ -231,7 +233,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && completedIds.size > 0) {
     return (
       <div style={VS.page}>
-        <div style={{ padding: '0.75rem 1rem 0' }}><VoiceBar voiceKey="officer.empty" compact /></div>
+        {/* Voice bar removed for officer routes — admin context. */}
         <div style={VS.emptyCenter} data-testid="validation-done">
           <span style={{ fontSize: '3rem' }}>🎉</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t('validation.allDone')}</div>
@@ -262,7 +264,7 @@ export default function OfficerValidationPage() {
 
       {/* Voice guide for officers */}
       <div style={{ padding: '0.5rem 1rem 0', maxWidth: '600px', width: '100%', margin: '0 auto' }}>
-        <VoiceBar voiceKey="officer.openItem" compact />
+        {/* Voice bar removed for officer routes — admin context. */}
       </div>
 
       {current && (

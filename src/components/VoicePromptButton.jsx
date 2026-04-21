@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import voiceService from '../services/voiceService.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
+import { isAdminContext } from '../lib/voice/adminGuard.js';
 
 /**
  * VoicePromptButton — plays voice by prompt ID or raw text.
@@ -12,8 +13,14 @@ import { useAppPrefs } from '../context/AppPrefsContext.jsx';
  *
  * If promptId is provided, speakPrompt() is used (with prerecorded clip support).
  * If only text is provided, speakText() is used (provider → browser only).
+ *
+ * Voice is DISABLED on admin / officer / reports routes — see
+ * src/lib/voice/adminGuard.js. Component returns null + no service
+ * calls fire, so no AudioContext or SpeechSynthesis objects are
+ * constructed.
  */
 export default function VoicePromptButton({ promptId, text, label }) {
+  if (isAdminContext()) return null;
   const { language } = useAppPrefs();
   const [speaking, setSpeaking] = useState(false);
 
