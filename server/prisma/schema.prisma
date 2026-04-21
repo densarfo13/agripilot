@@ -2902,10 +2902,10 @@ model ActionLog {
   executedAt    DateTime? @map("executed_at")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  @@index([createdAt],   map: "idx_action_log_created")
-  @@index([actionType],  map: "idx_action_log_type")
-  @@index([targetId],    map: "idx_action_log_target")
-  @@index([outcome],     map: "idx_action_log_outcome")
+  @@index([createdAt],   map: "idx_sys_action_log_created")
+  @@index([actionType],  map: "idx_sys_action_log_type")
+  @@index([targetId],    map: "idx_sys_action_log_target")
+  @@index([outcome],     map: "idx_sys_action_log_outcome")
   @@map("action_logs")
 }
 
