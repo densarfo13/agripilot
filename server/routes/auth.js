@@ -502,10 +502,25 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
     // reached the server. We never log the reset token itself.
     console.log(`${tag} requested email=${validation.data.email} ip=${req.ip || 'unknown'}`);
 
+    // Validate env we strictly need. Missing APP_BASE_URL means the
+    // link inside the email would be relative (e.g. "/reset-password
+    // ?token=…"), which is unusable. We still return the generic
+    // success response to the caller — the problem is logged
+    // server-side for ops to fix.
+    if (!env.APP_BASE_URL) {
+      console.error(`${tag} config_error: APP_BASE_URL is not set; reset links cannot be built`);
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: validation.data.email },
       select: { id: true, email: true, active: true },
     });
+
+    // Explicit user_found trace — lets ops grep the log for
+    // "user_found=true" when debugging "I never got an email".
+    // This line is INTERNAL; the HTTP response stays anti-enumeration.
+    const userFound = !!(user && user.active !== false);
+    console.log(`${tag} user_found=${userFound}`);
 
     // Anti-enumeration: always return success.
     if (user && user.active !== false) {
@@ -596,6 +611,36 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
     // Still return a generic 200 so attackers can't use errors to probe.
     return res.json({ success: true });
   }
+});
+
+// ─── Recovery methods (public) ─────────────────────────────
+/**
+ * GET /api/v2/auth/recovery-methods
+ *
+ * Tells the unauthenticated forgot-password UI which recovery paths
+ * are actually usable in this environment, so the UI can hide the
+ * "Use SMS instead" link when SMS is not wired yet. Returns only
+ * *availability* flags — no user data, no enumeration surface.
+ *
+ *   200 { email: boolean, sms: boolean }
+ */
+router.get('/recovery-methods', (_req, res) => {
+  const email = !!process.env.SENDGRID_API_KEY;
+  // SMS reset requires a verify-service on whichever provider is
+  // active. Twilio Verify is the default — without the service SID
+  // every POST to /api/auth/sms/* returns 503.
+  const smsProvider = (process.env.SMS_VERIFY_PROVIDER || 'twilio-verify').toLowerCase();
+  let sms = false;
+  if (smsProvider === 'twilio-verify') {
+    sms = !!(process.env.TWILIO_ACCOUNT_SID
+          && process.env.TWILIO_AUTH_TOKEN
+          && process.env.TWILIO_VERIFY_SERVICE_SID);
+  } else if (smsProvider === 'plivo-verify') {
+    sms = !!(process.env.PLIVO_AUTH_ID && process.env.PLIVO_AUTH_TOKEN && process.env.PLIVO_VERIFY_APP_UUID);
+  } else if (smsProvider === 'infobip-verify') {
+    sms = !!(process.env.INFOBIP_API_KEY && process.env.INFOBIP_2FA_APPLICATION_ID);
+  }
+  return res.json({ email, sms });
 });
 
 // ─── Reset Password ────────────────────────────────────────

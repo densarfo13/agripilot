@@ -141,6 +141,16 @@ export function forgotPassword(payload) {
   }, false);
 }
 
+/**
+ * getRecoveryMethods — unauthenticated probe that tells the UI
+ * which reset paths are usable right now (email, sms). Used by
+ * ForgotPassword to hide the "Use SMS instead" link when SMS is
+ * not wired. Returns { email: boolean, sms: boolean }.
+ */
+export function getRecoveryMethods() {
+  return request('/api/v2/auth/recovery-methods', { method: 'GET' }, false);
+}
+
 export function resetPassword(payload) {
   return request('/api/v2/auth/reset-password', {
     method: 'POST',
