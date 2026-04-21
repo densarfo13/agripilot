@@ -18,7 +18,19 @@ export const env = {
   SMTP_PORT: Number(process.env.SMTP_PORT || 587),
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
-  SMTP_FROM: process.env.SMTP_FROM || 'no-reply@example.com',
+  // EMAIL_FROM is the canonical name; SMTP_FROM / EMAIL_FROM_ADDRESS
+  // are accepted for backwards compatibility. Default matches the
+  // product spec ("admin@farroway.app") — this MUST match an
+  // authenticated Zoho mailbox (or a valid send-as alias) or the
+  // SMTP server will reject the RCPT envelope.
+  EMAIL_FROM: process.env.EMAIL_FROM
+           || process.env.SMTP_FROM
+           || process.env.EMAIL_FROM_ADDRESS
+           || 'admin@farroway.app',
+  // Kept for back-compat with older callers that still read SMTP_FROM.
+  SMTP_FROM: process.env.EMAIL_FROM
+          || process.env.SMTP_FROM
+          || 'admin@farroway.app',
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || '',
   COOKIE_SAMESITE: process.env.COOKIE_SAMESITE || 'lax',
   ALLOWED_ORIGINS: (process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || 'http://localhost:5173')

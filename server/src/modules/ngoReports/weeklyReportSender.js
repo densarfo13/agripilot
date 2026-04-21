@@ -1,13 +1,14 @@
 /**
  * weeklyReportSender.js — dispatches the Monday weekly report via
- * SendGrid (with graceful fallback when email isn't configured).
+ * the shared SMTP transport (Zoho). Gracefully skips when SMTP isn't
+ * configured rather than crashing the batch.
  *
  *   sendWeeklyReport({
  *     recipients,        // array of { email, name?, program? } rows
  *     report?,           // pre-compiled report — if omitted we build one
  *     prisma?,
  *     now?,
- *     fetchEmail?,       // test shim — replaces the sendgrid call
+ *     fetchEmail?,       // test shim — replaces the SMTP call
  *   }) → {
  *     sent:        number,
  *     skipped:     number,
@@ -29,31 +30,22 @@ import { opsEvent } from '../../utils/opsLogger.js';
 import {
   buildWeeklyReport, formatReportAsText, formatReportAsHtml,
 } from './weeklyReportEngine.js';
+import {
+  sendEmail as smtpSendEmail, isEmailConfigured as mailerConfigured,
+} from '../../../lib/mailer.js';
 
 function envEmailConfigured() {
-  return !!(process.env.SENDGRID_API_KEY && process.env.EMAIL_FROM_ADDRESS);
+  return mailerConfigured();
 }
 
 async function defaultSendEmail({ to, subject, text, html }) {
   if (!envEmailConfigured()) {
     return { sent: false, skipped: true, reason: 'email_not_configured' };
   }
-  try {
-    const sg = (await import('@sendgrid/mail')).default;
-    sg.setApiKey(process.env.SENDGRID_API_KEY);
-    const fromName = process.env.EMAIL_FROM_NAME || 'Farroway';
-    const fromAddress = process.env.EMAIL_FROM_ADDRESS;
-    await sg.send({
-      to,
-      from: { email: fromAddress, name: fromName },
-      subject,
-      text,
-      html,
-    });
-    return { sent: true };
-  } catch (err) {
-    return { sent: false, reason: err && err.message ? err.message.slice(0, 160) : 'send_failed' };
-  }
+  const result = await smtpSendEmail({ to, subject, text, html });
+  if (result.success) return { sent: true };
+  const reason = (result.error || 'send_failed').slice(0, 160);
+  return { sent: false, reason };
 }
 
 /**

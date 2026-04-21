@@ -90,9 +90,9 @@ describe('Email Constants — @farroways.com Senders', () => {
   });
 });
 
-// ─── 3. Provider — SendGrid ────────────────────────────────
+// ─── 3. Provider — SMTP (Zoho) ────────────────────────────
 
-describe('Email Provider — SendGrid', () => {
+describe('Email Provider — SMTP', () => {
   const code = readFile('server/src/modules/email/provider.js');
 
   it('exports send function', () => {
@@ -100,20 +100,17 @@ describe('Email Provider — SendGrid', () => {
   });
 
   it('exports isConfigured function', () => {
-    expect(code).toContain('export { isConfigured }');
+    expect(code).toContain('export function isConfigured(');
   });
 
-  it('checks SENDGRID_API_KEY before sending', () => {
-    expect(code).toContain('SENDGRID_API_KEY');
+  it('delegates to the shared SMTP mailer', () => {
+    expect(code).toContain("from '../../../lib/mailer.js'");
+    expect(code).toContain('sendEmail');
   });
 
-  it('returns { success: false } when not configured', () => {
-    expect(code).toContain("success: false, error: 'SENDGRID_API_KEY not configured'");
-  });
-
-  it('catches SendGrid errors gracefully', () => {
-    expect(code).toContain('catch (err)');
-    expect(code).toContain("success: false, error: message");
+  it('returns { success: false } when SMTP is not configured', () => {
+    expect(code).toContain('SMTP not configured');
+    expect(code).toContain('success: false');
   });
 });
 
@@ -410,16 +407,16 @@ describe('Email Admin Routes', () => {
 describe('Environment Configuration', () => {
   const env = readFile('server/.env.example');
 
-  it('documents all email sender env vars', () => {
-    expect(env).toContain('EMAIL_FROM_SUPPORT');
-    expect(env).toContain('EMAIL_FROM_NO_REPLY');
-    expect(env).toContain('EMAIL_FROM_NOTIFICATIONS');
-    expect(env).toContain('EMAIL_FROM_ONBOARDING');
-    expect(env).toContain('EMAIL_FROM_REPORTS');
+  it('documents SMTP transport variables', () => {
+    expect(env).toContain('SMTP_HOST');
+    expect(env).toContain('SMTP_PORT');
+    expect(env).toContain('SMTP_USER');
+    expect(env).toContain('SMTP_PASS');
   });
 
-  it('documents SENDGRID_API_KEY', () => {
-    expect(env).toContain('SENDGRID_API_KEY');
+  it('documents EMAIL_FROM with the admin@farroway.app default', () => {
+    expect(env).toContain('EMAIL_FROM');
+    expect(env).toContain('admin@farroway.app');
   });
 });
 

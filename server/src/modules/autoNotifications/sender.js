@@ -6,6 +6,7 @@
  */
 
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
+import { sendEmail as smtpSendEmail } from '../../../lib/mailer.js';
 
 // ─── SMS ──────────────────────────────────────────────────
 
@@ -28,12 +29,6 @@ async function sendEmail(toEmail, subject, message) {
   if (!toEmail) throw new Error('No email address');
   if (!isEmailConfigured()) throw new Error('Email not configured');
 
-  const sgMail = (await import('@sendgrid/mail')).default;
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-  const fromName    = process.env.EMAIL_FROM_NAME    || 'Farroway';
-  const fromAddress = process.env.EMAIL_FROM_ADDRESS;
-
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px">
       <h2 style="color:#1d4ed8;margin-bottom:8px">${subject}</h2>
@@ -43,13 +38,17 @@ async function sendEmail(toEmail, subject, message) {
     </div>
   `;
 
-  await sgMail.send({
+  // Delegates to the shared SMTP transport; throws on delivery failure
+  // so the channel-fallback chain can move on to the next option.
+  const result = await smtpSendEmail({
     to: toEmail,
-    from: { email: fromAddress, name: fromName },
     subject,
     text: message,
     html,
   });
+  if (!result.success) {
+    throw new Error(result.error || 'smtp_send_failed');
+  }
 }
 
 // ─── In-app (FarmerNotification) ─────────────────────────

@@ -2,7 +2,7 @@
  * Password Reset Service
  *
  * Self-service password reset via email token.
- * Requires SendGrid to be configured (EMAIL_FROM_ADDRESS + SENDGRID_API_KEY).
+ * Requires SMTP to be configured (SMTP_HOST + SMTP_USER + SMTP_PASS).
  *
  * Flow:
  *   1. POST /api/auth/forgot-password  — generate token, send email
@@ -24,6 +24,7 @@ import { config } from '../../config/index.js';
 import { validatePassword } from '../../middleware/validate.js';
 import { writeAuditLog } from '../audit/service.js';
 import { opsEvent } from '../../utils/opsLogger.js';
+import { sendEmail as smtpSendEmail, isEmailConfigured } from '../../../lib/mailer.js';
 
 const RESET_TOKEN_BYTES = 64;
 
@@ -34,53 +35,51 @@ function hashToken(rawToken) {
 // ─── Send Reset Email ──────────────────────────────────────
 
 async function sendResetEmail({ toEmail, fullName, resetUrl, expiryMinutes }) {
-  const { sendgridApiKey, fromAddress, fromName } = config.email;
-  if (!sendgridApiKey || !fromAddress) return false; // email not configured
-
-  try {
-    const sgMail = (await import('@sendgrid/mail')).default;
-    sgMail.setApiKey(sendgridApiKey);
-
-    const expiryText = expiryMinutes >= 60
-      ? `${Math.round(expiryMinutes / 60)} hour(s)`
-      : `${expiryMinutes} minutes`;
-
-    await sgMail.send({
-      to: toEmail,
-      from: { email: fromAddress, name: fromName },
-      subject: 'Reset your Farroway password',
-      text: [
-        `Hello ${fullName},`,
-        '',
-        'You requested a password reset for your Farroway account.',
-        `Click the link below to reset your password (valid for ${expiryText}):`,
-        '',
-        resetUrl,
-        '',
-        'If you did not request this, you can safely ignore this email.',
-        'Your password will not change unless you click the link above.',
-        '',
-        '— The Farroway Team',
-      ].join('\n'),
-      html: `
-        <p>Hello <strong>${fullName}</strong>,</p>
-        <p>You requested a password reset for your Farroway account.</p>
-        <p>Click the button below to reset your password. This link is valid for <strong>${expiryText}</strong>.</p>
-        <p style="margin:24px 0">
-          <a href="${resetUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold">
-            Reset My Password
-          </a>
-        </p>
-        <p>Or copy this link: <code>${resetUrl}</code></p>
-        <p>If you did not request this, you can safely ignore this email.</p>
-        <p>— The Farroway Team</p>
-      `,
-    });
-    return true;
-  } catch (err) {
-    opsEvent('auth', 'reset_email_failed', 'error', { toEmail, error: err?.message });
+  if (!isEmailConfigured()) {
+    opsEvent('auth', 'reset_email_skipped', 'warn',
+      { toEmail, reason: 'smtp_not_configured' });
     return false;
   }
+
+  const expiryText = expiryMinutes >= 60
+    ? `${Math.round(expiryMinutes / 60)} hour(s)`
+    : `${expiryMinutes} minutes`;
+
+  const result = await smtpSendEmail({
+    to: toEmail,
+    subject: 'Reset your Farroway password',
+    text: [
+      `Hello ${fullName},`,
+      '',
+      'You requested a password reset for your Farroway account.',
+      `Click the link below to reset your password (valid for ${expiryText}):`,
+      '',
+      resetUrl,
+      '',
+      'If you did not request this, you can safely ignore this email.',
+      'Your password will not change unless you click the link above.',
+      '',
+      '— The Farroway Team',
+    ].join('\n'),
+    html: `
+      <p>Hello <strong>${fullName}</strong>,</p>
+      <p>You requested a password reset for your Farroway account.</p>
+      <p>Click the button below to reset your password. This link is valid for <strong>${expiryText}</strong>.</p>
+      <p style="margin:24px 0">
+        <a href="${resetUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold">
+          Reset My Password
+        </a>
+      </p>
+      <p>Or copy this link: <code>${resetUrl}</code></p>
+      <p>If you did not request this, you can safely ignore this email.</p>
+      <p>— The Farroway Team</p>
+    `,
+  });
+
+  if (!result.success) {
+    opsEvent('auth', 'reset_email_failed', 'error', { toEmail, error: result.error });
+  }
+  return !!result.success;
 }
 
 // ─── Initiate Reset ────────────────────────────────────────

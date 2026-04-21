@@ -59,9 +59,14 @@ vi.mock('../utils/opsLogger.js', () => ({
   logAuthEvent: vi.fn(),
 }));
 
-// ─── SendGrid mock ───────────────────────────────────────
-vi.mock('@sendgrid/mail', () => ({
-  default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue([{ statusCode: 202 }]) },
+// ─── SMTP mailer mock ────────────────────────────────────
+// Replaces the previous @sendgrid/mail mock after the Zoho switch.
+// The MFA flow only touches the mailer indirectly (via the delivery
+// service), so a successful stub is enough to keep it out of the way.
+vi.mock('../../lib/mailer.js', () => ({
+  sendEmail: vi.fn().mockResolvedValue({ success: true, provider: 'smtp', messageId: '<test>' }),
+  isEmailConfigured: () => true,
+  validateEmailConfig: () => ({ provider: 'smtp', from: 'admin@farroway.app', problems: [] }),
 }));
 
 import prisma from '../config/database.js';

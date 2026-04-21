@@ -1,19 +1,30 @@
 /**
- * Delivery Service — real email and SMS invite delivery via SendGrid and Twilio.
+ * Delivery Service — real email + SMS invite delivery.
  *
- * Honesty contract: NEVER reports delivery as successful unless it actually happened.
- * When a channel is not configured or delivery fails, returns manual_share_ready so
- * the caller can clearly communicate the limitation to the UI.
+ * Email provider: Zoho SMTP (nodemailer) via the shared transport in
+ * `server/lib/mailer.js`. SendGrid was removed.
+ *
+ * Honesty contract: NEVER reports delivery as successful unless it
+ * actually happened. When a channel is not configured or delivery
+ * fails, returns `manual_share_ready` so the caller can communicate
+ * the limitation to the UI.
  *
  * Environment variables:
- *   Email: SENDGRID_API_KEY + EMAIL_FROM_ADDRESS (+ optional EMAIL_FROM_NAME)
+ *   Email: SMTP_HOST + SMTP_USER + SMTP_PASS (+ optional EMAIL_FROM,
+ *          EMAIL_FROM_NAME, SMTP_PORT)
  *   SMS:   TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_PHONE_NUMBER
  */
+
+import {
+  sendEmail as smtpSendEmail,
+  isEmailConfigured as mailerIsEmailConfigured,
+} from '../../../lib/mailer.js';
 
 // ─── Channel detection ────────────────────────────────────
 
 export function isEmailConfigured() {
-  return !!(process.env.SENDGRID_API_KEY && process.env.EMAIL_FROM_ADDRESS);
+  // Single source of truth; mailer.js owns the SMTP env check.
+  return mailerIsEmailConfigured();
 }
 
 export function isSmsConfigured() {
@@ -48,16 +59,11 @@ export async function sendInviteEmail({ toEmail, farmerName, inviteUrl, inviterN
       delivered: false,
       channel: 'link',
       deliveryStatus: 'manual_share_ready',
-      reason: 'Email delivery not configured. Set SENDGRID_API_KEY and EMAIL_FROM_ADDRESS to enable.',
+      reason: 'Email delivery not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS to enable.',
     };
   }
 
   try {
-    const sgMail = (await import('@sendgrid/mail')).default;
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-    const fromName = process.env.EMAIL_FROM_NAME || 'Farroway';
-    const fromAddress = process.env.EMAIL_FROM_ADDRESS;
     const expiryText = expiresAt
       ? `This link expires on ${new Date(expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.`
       : '';
@@ -91,13 +97,25 @@ export async function sendInviteEmail({ toEmail, farmerName, inviteUrl, inviterN
       </div>
     `;
 
-    await sgMail.send({
+    const result = await smtpSendEmail({
       to: toEmail,
-      from: { email: fromAddress, name: fromName },
-      subject: `You have been invited to join Farroway`,
+      subject: 'You have been invited to join Farroway',
       text,
       html,
     });
+
+    if (!result.success) {
+      console.error('[deliveryService] SMTP email failed:', result.error);
+      import('../../utils/opsLogger.js').then(({ logDeliveryEvent }) => {
+        logDeliveryEvent('provider_error', { provider: 'smtp', error: result.error, toEmail });
+      }).catch(() => {});
+      return {
+        delivered: false,
+        channel: 'link',
+        deliveryStatus: 'manual_share_ready',
+        reason: `Email delivery failed: ${result.error || 'SMTP error'}. Copy the invite link and send it manually.`,
+      };
+    }
 
     return {
       delivered: true,
@@ -105,11 +123,11 @@ export async function sendInviteEmail({ toEmail, farmerName, inviteUrl, inviterN
       deliveryStatus: 'email_sent',
     };
   } catch (err) {
-    const reason = err?.response?.body?.errors?.[0]?.message || err?.message || 'Unknown SendGrid error';
-    console.error('[deliveryService] SendGrid email failed:', reason);
-    // Route through opsLogger so admin monitoring captures provider failures
+    // sendEmail should never throw; this catch is defensive only.
+    const reason = err?.message || 'Unknown SMTP error';
+    console.error('[deliveryService] SMTP email threw unexpectedly:', reason);
     import('../../utils/opsLogger.js').then(({ logDeliveryEvent }) => {
-      logDeliveryEvent('provider_error', { provider: 'sendgrid', error: reason, toEmail });
+      logDeliveryEvent('provider_error', { provider: 'smtp', error: reason, toEmail });
     }).catch(() => {});
     return {
       delivered: false,

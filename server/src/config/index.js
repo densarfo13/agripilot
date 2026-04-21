@@ -39,9 +39,10 @@ if (isProduction) {
     console.warn('[WARN] MFA_SECRET_KEY not set — MFA enrollment will be unavailable.');
   }
 
-  // Warn if communication providers are not configured — delivery will fail silently at cron time.
-  if (!process.env.SENDGRID_API_KEY || !process.env.EMAIL_FROM_ADDRESS) {
-    console.warn('[WARN] SendGrid not fully configured (SENDGRID_API_KEY / EMAIL_FROM_ADDRESS missing) — email delivery disabled.');
+  // Warn if communication providers are not configured — delivery
+  // will fail at cron time if left unset.
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('[WARN] SMTP not fully configured (SMTP_HOST / SMTP_USER / SMTP_PASS missing) — email delivery disabled.');
   }
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
     console.warn('[WARN] Twilio not fully configured — SMS delivery disabled.');
@@ -95,11 +96,19 @@ export const config = {
     // Frontend origin for postMessage target and redirect
     frontendBaseUrl: process.env.FRONTEND_BASE_URL || 'http://localhost:5173',
   },
-  // ─── Email delivery (SendGrid) — optional ──────────────
+  // ─── Email delivery (SMTP / Zoho) — required in production ─
   email: {
-    sendgridApiKey: process.env.SENDGRID_API_KEY || '',
-    fromAddress: process.env.EMAIL_FROM_ADDRESS || '',
-    fromName: process.env.EMAIL_FROM_NAME || 'Farroway',
+    smtpHost:  process.env.SMTP_HOST || '',
+    smtpPort:  parseInt(process.env.SMTP_PORT || '587', 10),
+    smtpUser:  process.env.SMTP_USER || '',
+    smtpPass:  process.env.SMTP_PASS || '',
+    // EMAIL_FROM is the spec-canonical name; EMAIL_FROM_ADDRESS was
+    // the legacy SendGrid variable. Either works; we prefer the new
+    // name. Default matches the product spec ("admin@farroway.app").
+    fromAddress: process.env.EMAIL_FROM
+              || process.env.EMAIL_FROM_ADDRESS
+              || 'admin@farroway.app',
+    fromName:    process.env.EMAIL_FROM_NAME || 'Farroway',
   },
   // ─── SMS delivery (Twilio) — optional ─────────────────
   sms: {

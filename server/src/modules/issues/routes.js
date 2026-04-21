@@ -36,6 +36,7 @@ import prisma from '../../config/database.js';
 import { opsEvent } from '../../utils/opsLogger.js';
 import { writeAuditLog } from '../audit/service.js';
 import { isEmailConfigured } from '../notifications/deliveryService.js';
+import { sendEmail as smtpSendEmail } from '../../../lib/mailer.js';
 
 // ── SSE ticket system ──
 // EventSource can't send Authorization headers. Instead of passing the raw JWT
@@ -226,27 +227,21 @@ async function autoEscalateBreached(orgScope = {}) {
   }
 }
 
-// Helper: send issue notification email via SendGrid
+// Helper: send issue notification email via the shared SMTP transport.
 async function sendIssueEmail(toEmail, recipientName, subject, body) {
-  try {
-    const sgMail = (await import('@sendgrid/mail')).default;
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const fromAddress = process.env.EMAIL_FROM_ADDRESS;
-    const fromName = process.env.EMAIL_FROM_NAME || 'Farroway';
-    await sgMail.send({
-      to: toEmail,
-      from: { email: fromAddress, name: fromName },
-      subject: `[Issues] ${subject}`,
-      text: `Hello ${recipientName},\n\n${body}\n\nView your issues dashboard for details.`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px">
-        <h3 style="color:#1d4ed8">${subject}</h3>
-        <p>Hello <strong>${recipientName}</strong>,</p>
-        <p>${body}</p>
-        <p style="color:#6b7280;font-size:13px;margin-top:16px">View your issues dashboard for details.</p>
-      </div>`,
-    });
-  } catch (err) {
-    opsEvent('notification', 'issue_email_failed', 'warn', { toEmail, error: err?.message });
+  const result = await smtpSendEmail({
+    to: toEmail,
+    subject: `[Issues] ${subject}`,
+    text: `Hello ${recipientName},\n\n${body}\n\nView your issues dashboard for details.`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px">
+      <h3 style="color:#1d4ed8">${subject}</h3>
+      <p>Hello <strong>${recipientName}</strong>,</p>
+      <p>${body}</p>
+      <p style="color:#6b7280;font-size:13px;margin-top:16px">View your issues dashboard for details.</p>
+    </div>`,
+  });
+  if (!result.success) {
+    opsEvent('notification', 'issue_email_failed', 'warn', { toEmail, error: result.error });
   }
 }
 

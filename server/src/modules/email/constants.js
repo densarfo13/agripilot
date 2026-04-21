@@ -34,9 +34,20 @@ export const PEST_ALERT_MIN_CONFIDENCE = 0.6;
 export const REGIONAL_WATCH_MIN_CONFIDENCE = 0.5;
 
 // ─── Deliverability Notes ────────────────────────────────────
+// Active provider: Zoho Mail SMTP. All transactional mail flows
+// through the single SMTP_USER mailbox (see lib/mailer.js). The
+// per-purpose SENDERS map above is preserved for in-app labelling
+// only — the envelope From is always EMAIL_FROM, because Zoho
+// rejects envelopes that don't match the authenticated account.
+//
 // Before production email delivery:
-// 1. Verify all sender identities in SendGrid (or your provider)
-// 2. Configure SPF record: include sendgrid.net in your DNS TXT record for farroways.com
-// 3. Configure DKIM: add CNAME records provided by SendGrid
-// 4. Set up DMARC: _dmarc.farroways.com TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@farroways.com"
-// 5. Warm up sending domain gradually (start with transactional, then bulk)
+// 1. Verify farroway.app (and any aliases) in Zoho Mail Admin →
+//    Domains → Add Domain, then complete ownership + MX steps.
+// 2. Configure SPF:  farroway.app TXT "v=spf1 include:zoho.com ~all"
+// 3. Configure DKIM: enable in Zoho Mail Admin → Email Configuration
+//    → DKIM, then add the CNAME / TXT record Zoho shows for your
+//    selector (usually `zoho._domainkey`).
+// 4. DMARC: _dmarc.farroway.app TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@farroway.app"
+// 5. Create an app password at https://accounts.zoho.com → Security
+//    → App Passwords and use it for SMTP_PASS (required when 2FA
+//    is enabled, which it should be).

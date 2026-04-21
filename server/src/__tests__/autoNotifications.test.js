@@ -183,12 +183,12 @@ describe('dispatch (sender fallback)', () => {
       isSmsConfigured:   vi.fn().mockReturnValue(false), // SMS NOT configured by default
     }));
 
-    // Mock SendGrid
-    vi.doMock('@sendgrid/mail', () => ({
-      default: {
-        setApiKey: vi.fn(),
-        send: vi.fn().mockResolvedValue([{ statusCode: 202 }]),
-      },
+    // Mock the shared SMTP transport (replaces the old @sendgrid/mail
+    // mock after the Zoho switch).
+    vi.doMock('../../lib/mailer.js', () => ({
+      sendEmail: vi.fn().mockResolvedValue({ success: true, provider: 'smtp', messageId: '<test>' }),
+      isEmailConfigured: () => true,
+      validateEmailConfig: () => ({ provider: 'smtp', from: 'admin@farroway.app', problems: [] }),
     }));
 
     ({ dispatch } = await import('../modules/autoNotifications/sender.js'));

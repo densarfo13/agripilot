@@ -391,25 +391,34 @@ describe('autoNotification deliverRecord — delivery/send_failed stored in even
 // ═══════════════════════════════════════════════════════════
 
 describe('deliveryService — provider config detection', () => {
-  it('isEmailConfigured returns false when SENDGRID_API_KEY missing', async () => {
-    const orig = process.env.SENDGRID_API_KEY;
-    delete process.env.SENDGRID_API_KEY;
+  // Back up + clear the SMTP env so the detection tests start clean.
+  const SMTP_KEYS = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+  const snapshot = () => Object.fromEntries(SMTP_KEYS.map((k) => [k, process.env[k]]));
+  const restore = (snap) => {
+    for (const k of SMTP_KEYS) {
+      if (snap[k] !== undefined) process.env[k] = snap[k];
+      else delete process.env[k];
+    }
+  };
+
+  it('isEmailConfigured returns false when SMTP_HOST missing', async () => {
+    const snap = snapshot();
+    delete process.env.SMTP_HOST;
     vi.resetModules();
     const { isEmailConfigured } = await import('../modules/notifications/deliveryService.js');
     expect(isEmailConfigured()).toBe(false);
-    if (orig !== undefined) process.env.SENDGRID_API_KEY = orig;
+    restore(snap);
   });
 
-  it('isEmailConfigured returns false when EMAIL_FROM_ADDRESS missing', async () => {
-    const origKey  = process.env.SENDGRID_API_KEY;
-    const origFrom = process.env.EMAIL_FROM_ADDRESS;
-    process.env.SENDGRID_API_KEY = 'SG.test';
-    delete process.env.EMAIL_FROM_ADDRESS;
+  it('isEmailConfigured returns false when SMTP_USER/SMTP_PASS missing', async () => {
+    const snap = snapshot();
+    process.env.SMTP_HOST = 'smtp.zoho.com';
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
     vi.resetModules();
     const { isEmailConfigured } = await import('../modules/notifications/deliveryService.js');
     expect(isEmailConfigured()).toBe(false);
-    if (origKey  !== undefined) process.env.SENDGRID_API_KEY   = origKey;  else delete process.env.SENDGRID_API_KEY;
-    if (origFrom !== undefined) process.env.EMAIL_FROM_ADDRESS = origFrom;
+    restore(snap);
   });
 
   it('isSmsConfigured returns false when TWILIO_ACCOUNT_SID missing', async () => {
@@ -421,9 +430,9 @@ describe('deliveryService — provider config detection', () => {
     if (origSid !== undefined) process.env.TWILIO_ACCOUNT_SID = origSid;
   });
 
-  it('sendInviteEmail returns manual_share_ready when not configured', async () => {
-    const origKey = process.env.SENDGRID_API_KEY;
-    delete process.env.SENDGRID_API_KEY;
+  it('sendInviteEmail returns manual_share_ready when SMTP not configured', async () => {
+    const snap = snapshot();
+    for (const k of SMTP_KEYS) delete process.env[k];
     vi.resetModules();
     const { sendInviteEmail } = await import('../modules/notifications/deliveryService.js');
     const result = await sendInviteEmail({
@@ -435,7 +444,7 @@ describe('deliveryService — provider config detection', () => {
     expect(result.delivered).toBe(false);
     expect(result.deliveryStatus).toBe('manual_share_ready');
     expect(result.reason).toMatch(/not configured/i);
-    if (origKey !== undefined) process.env.SENDGRID_API_KEY = origKey;
+    restore(snap);
   });
 
   it('sendInviteEmail returns manual_share_ready when no toEmail provided', async () => {
