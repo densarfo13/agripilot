@@ -227,6 +227,30 @@ export default function NewFarmScreen() {
   function handleStayOnCurrent() { navigate('/my-farm'); }
   function handleCancel()        { navigate('/my-farm'); }
 
+  // Back button — returns via browser history when we have one
+  // (covers "came here from FarmsList"), falls back to /my-farm
+  // otherwise. If the user has started typing, confirm before
+  // discarding so an accidental back tap doesn't wipe their work.
+  function handleBack() {
+    const dirty =
+      (form.farmName && form.farmName.trim()) ||
+      (form.cropType && form.cropType.trim()) ||
+      (form.country && form.country.trim()) ||
+      (form.size && String(form.size).trim()) ||
+      (form.stateCode && form.stateCode.trim());
+    if (dirty) {
+      const ok = typeof window !== 'undefined' && typeof window.confirm === 'function'
+        ? window.confirm('You have unsaved changes. Go back and discard them?')
+        : true;
+      if (!ok) return;
+    }
+    if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/my-farm');
+    }
+  }
+
   // ─── Success state ──────────────────────────────────────
   if (createdFarm) {
     return (
@@ -270,6 +294,20 @@ export default function NewFarmScreen() {
 
   return (
     <main style={S.page} data-screen="new-farm" data-state="form">
+      {/* Back button — first thing in reading order so users on
+          mobile can return without hunting for browser chrome. */}
+      <button
+        type="button"
+        onClick={handleBack}
+        style={S.backBtn}
+        data-testid="new-farm-back"
+        aria-label={resolve(t, 'common.back', 'Back')}
+      >
+        <span aria-hidden="true" style={{ fontSize: '1.05rem', lineHeight: 1 }}>
+          {'\u2190'}
+        </span>
+        <span>{resolve(t, 'common.back', 'Back')}</span>
+      </button>
       <h1 style={S.title}>{resolve(t, 'farm.newFarm.title', 'Add New Farm')}</h1>
       <p style={S.helper}>
         {resolve(t, 'farm.newFarm.helper',
@@ -344,16 +382,17 @@ export default function NewFarmScreen() {
         <label style={S.label}>
           {resolve(t, 'setup.country', 'Country')}{' *'}
           <select
+            className="form-select"
             value={form.country}
             onChange={handleCountryChange}
             style={{
-              ...S.input,
+              ...S.select,
               ...(errors.country ? S.inputError : null),
             }}
             data-testid="new-farm-country"
             aria-invalid={!!errors.country}
           >
-            <option value="">—</option>
+            <option value="">{resolve(t, 'setup.selectCountry', 'Select a country')}</option>
             {COUNTRIES.map((c) => (
               <option key={c.code} value={c.code}>{c.label}</option>
             ))}
@@ -370,12 +409,13 @@ export default function NewFarmScreen() {
           <label style={S.label}>
             {resolve(t, 'setup.state', 'State / Region')}
             <select
+              className="form-select"
               value={form.stateCode}
               onChange={(e) => update('stateCode', e.target.value)}
-              style={S.input}
+              style={S.select}
               data-testid="new-farm-state"
             >
-              <option value="">—</option>
+              <option value="">{resolve(t, 'setup.selectState', 'Select a region')}</option>
               {countryStates.map((s) => (
                 <option key={s.code} value={s.code}>{s.label}</option>
               ))}
@@ -455,9 +495,10 @@ export default function NewFarmScreen() {
           <label style={{ ...S.label, width: '8rem' }}>
             {resolve(t, 'setup.sizeUnit', 'Unit')}
             <select
+              className="form-select"
               value={form.sizeUnit}
               onChange={(e) => update('sizeUnit', e.target.value)}
-              style={S.input}
+              style={S.select}
               data-testid="new-farm-size-unit"
             >
               <option value="ACRE">{resolve(t, 'setup.acres', 'Acres')}</option>
@@ -475,9 +516,10 @@ export default function NewFarmScreen() {
         <label style={S.label}>
           {resolve(t, 'cropStage.label', 'Stage (optional)')}
           <select
+            className="form-select"
             value={form.stage}
             onChange={(e) => update('stage', e.target.value)}
-            style={S.input}
+            style={S.select}
             data-testid="new-farm-stage"
           >
             {STAGE_OPTIONS.map((s) => (
@@ -553,6 +595,44 @@ const S = {
     border: '1px solid rgba(255,255,255,0.15)',
     background: 'rgba(255,255,255,0.05)', color: '#fff',
     fontSize: '0.9375rem', outline: 'none', boxSizing: 'border-box',
+  },
+  // Dedicated <select> style — solid background so Windows Chromium
+  // stops falling back to the OS white popup theme + explicit
+  // colorScheme + appearance:none to hide the browser chevron
+  // (replaced with an SVG so the control looks like a select). See
+  // EditFarmScreen for the full rationale.
+  select: {
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    colorScheme: 'dark',
+    padding: '0.625rem 2.25rem 0.625rem 0.75rem',
+    borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: '#0F1F3A '
+      + 'url("data:image/svg+xml;utf8,'
+      + '<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22>'
+      + '<path fill=%22none%22 stroke=%22%239FB3C8%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 d=%22M2 4l4 4 4-4%22/>'
+      + '</svg>") '
+      + 'no-repeat right 0.75rem center / 12px 12px',
+    color: '#EAF2FF',
+    fontSize: '0.9375rem',
+    outline: 'none',
+    boxSizing: 'border-box',
+    minHeight: 44,
+    width: '100%',
+    cursor: 'pointer',
+  },
+  backBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+    padding: '0.5rem 0.75rem', borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.14)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF',
+    fontSize: '0.875rem', fontWeight: 600,
+    cursor: 'pointer',
+    marginBottom: '0.5rem',
+    minHeight: 40,
   },
   inputError: { borderColor: 'rgba(239,68,68,0.55)' },
   row:    { display: 'flex', gap: '0.75rem', alignItems: 'flex-end' },

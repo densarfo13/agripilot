@@ -254,12 +254,54 @@ export default function EditFarmScreen() {
     navigate('/my-farm');
   }
 
+  // Back button — returns to the previous page via browser history
+  // when available (covers "I came here from /farms/123"), falls back
+  // to the canonical farm dashboard otherwise. If the user has edited
+  // fields, confirm before discarding so accidental back taps don't
+  // wipe a long entry.
+  function handleBack() {
+    const dirty = hasAnyChange(form, originalRef.current || {});
+    if (dirty) {
+      const ok = typeof window !== 'undefined' && typeof window.confirm === 'function'
+        ? window.confirm(resolve(
+            t,
+            'farm.editFarm.discardConfirm',
+            'You have unsaved changes. Go back and discard them?',
+          ))
+        : true;
+      if (!ok) return;
+    }
+    if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/my-farm');
+    }
+  }
+
   // Mode-specific header derived from the pure helper; testable
   // without mounting React.
   const { titleKey, titleFallback, helperKey, helperFallback } = getEditModeCopy(editMode);
 
   return (
     <main style={S.page} data-screen="edit-farm" data-edit-mode={editMode}>
+      {/* Top Back button — returns to the previous page, with an
+          unsaved-changes guard. Sits above the title so it's the
+          first thing in the reading order on both desktop and
+          mobile. Keeps the bottom "Cancel" (which explicitly
+          discards + returns to /my-farm) for users who want a clear
+          "abandon changes" intent. */}
+      <button
+        type="button"
+        onClick={handleBack}
+        style={S.backBtn}
+        data-testid="edit-farm-back"
+        aria-label={resolve(t, 'common.back', 'Back')}
+      >
+        <span aria-hidden="true" style={{ fontSize: '1.05rem', lineHeight: 1 }}>
+          {'\u2190'}
+        </span>
+        <span>{resolve(t, 'common.back', 'Back')}</span>
+      </button>
       <h1 style={S.title}>{resolve(t, titleKey, titleFallback)}</h1>
       <p style={S.helper}>{resolve(t, helperKey, helperFallback)}</p>
 
@@ -333,16 +375,17 @@ export default function EditFarmScreen() {
         <label style={S.label}>
           {resolve(t, 'setup.country', 'Country')}{' *'}
           <select
+            className="form-select"
             value={form.country}
             onChange={handleCountryChange}
             style={{
-              ...S.input,
+              ...S.select,
               ...(fieldErrors.country ? S.inputError : null),
             }}
             data-testid="edit-farm-country"
             aria-invalid={!!fieldErrors.country}
           >
-            <option value="">—</option>
+            <option value="">{resolve(t, 'setup.selectCountry', 'Select a country')}</option>
             {COUNTRIES.map((c) => (
               <option key={c.code} value={c.code}>{c.label}</option>
             ))}
@@ -358,12 +401,13 @@ export default function EditFarmScreen() {
           <label style={S.label}>
             {resolve(t, 'setup.state', 'State / Region')}
             <select
+              className="form-select"
               value={form.stateCode}
               onChange={(e) => update('stateCode', e.target.value)}
-              style={S.input}
+              style={S.select}
               data-testid="edit-farm-state"
             >
-              <option value="">—</option>
+              <option value="">{resolve(t, 'setup.selectState', 'Select a region')}</option>
               {getStatesForCountry(form.country).map((s) => (
                 <option key={s.code} value={s.code}>{s.label}</option>
               ))}
@@ -417,9 +461,10 @@ export default function EditFarmScreen() {
           <label style={{ ...S.label, width: '8rem' }}>
             {resolve(t, 'setup.sizeUnit', 'Unit')}
             <select
+              className="form-select"
               value={form.sizeUnit}
               onChange={(e) => update('sizeUnit', e.target.value)}
-              style={S.input}
+              style={S.select}
             >
               <option value="ACRE">{resolve(t, 'setup.acres', 'Acres')}</option>
               <option value="HECTARE">{resolve(t, 'setup.hectares', 'Hectares')}</option>
@@ -430,9 +475,10 @@ export default function EditFarmScreen() {
         <label style={S.label}>
           {resolve(t, 'cropStage.label', 'Stage (optional)')}
           <select
+            className="form-select"
             value={form.cropStage}
             onChange={(e) => update('cropStage', e.target.value)}
-            style={S.input}
+            style={S.select}
             data-testid="edit-farm-stage"
           >
             {CROP_STAGES.map((s) => (
@@ -503,6 +549,38 @@ const S = {
     background: 'rgba(255,255,255,0.05)', color: '#fff',
     fontSize: '0.9375rem', outline: 'none', boxSizing: 'border-box',
   },
+  // Dedicated style for <select>. The generic `input` background is
+  // semi-transparent, which on Windows Chromium triggers the native
+  // dropdown's OS-theme fallback (white text on white popup). This
+  // style uses a SOLID #0F1F3A background + colorScheme:'dark' so
+  // both the closed control AND the expanded native popup stay
+  // readable. A CSS chevron keeps the control looking like a select
+  // after appearance:none strips the browser default arrow.
+  select: {
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    colorScheme: 'dark',
+    padding: '0.625rem 2.25rem 0.625rem 0.75rem',
+    borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: '#0F1F3A '
+      + 'url("data:image/svg+xml;utf8,'
+      + '<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22>'
+      + '<path fill=%22none%22 stroke=%22%239FB3C8%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 d=%22M2 4l4 4 4-4%22/>'
+      + '</svg>") '
+      + 'no-repeat right 0.75rem center / 12px 12px',
+    color: '#EAF2FF',
+    fontSize: '0.9375rem',
+    outline: 'none',
+    boxSizing: 'border-box',
+    minHeight: 44,                  // keeps tap targets comfortable
+    width: '100%',                  // match the field width; stops the
+                                    // browser giving selects intrinsic
+                                    // text-content width (the "giant
+                                    // menu" report when options are long)
+    cursor: 'pointer',
+  },
   row: { display: 'flex', gap: '0.75rem', alignItems: 'flex-end' },
   inputError: { borderColor: 'rgba(239,68,68,0.55)' },
   chipRow: {
@@ -530,6 +608,17 @@ const S = {
     padding: '0.625rem 0.75rem', borderRadius: 10,
     background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)',
     color: '#86EFAC', fontSize: '0.875rem', margin: '0.25rem 0 0',
+  },
+  backBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+    padding: '0.5rem 0.75rem', borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.14)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF',
+    fontSize: '0.875rem', fontWeight: 600,
+    cursor: 'pointer',
+    marginBottom: '0.5rem',
+    minHeight: 40,
   },
   buttons: { display: 'flex', gap: '0.75rem', marginTop: '1rem' },
   cancelBtn: {
