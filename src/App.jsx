@@ -20,6 +20,14 @@ const V2Register = lazy(() => import('./pages/Register.jsx'));
 const V2ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const V2ForgotPasswordSms = lazy(() => import('./pages/ForgotPasswordSms.jsx'));
 const V2ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
+
+// Farm-issue management (farmer → admin → field officer pipeline).
+// Local-first for v1 — no server endpoints yet; all state in the
+// farroway.issues localStorage key via src/lib/issues/issueStore.js.
+const ReportIssuePage      = lazy(() => import('./pages/farmer/ReportIssuePage.jsx'));
+const MyIssuesPage         = lazy(() => import('./pages/farmer/MyIssuesPage.jsx'));
+const AdminFarmIssuesPage  = lazy(() => import('./pages/admin/AdminFarmIssuesPage.jsx'));
+const OfficerIssuesPage    = lazy(() => import('./pages/officer/OfficerIssuesPage.jsx'));
 const V2VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
 const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
 const V2FarmerType = lazy(() => import('./pages/FarmerType.jsx'));
@@ -260,6 +268,15 @@ export default function App() {
           <Route path="/forgot-password" element={<V2ForgotPassword />} />
           <Route path="/forgot-password/sms" element={<V2ForgotPasswordSms />} />
           <Route path="/reset-password" element={<V2ResetPassword />} />
+
+          {/* Farm-issue management pipeline. Farmer submits, admin
+              triages + assigns, field officer works + resolves. Kept
+              local-first for v1; server endpoints will slot in later
+              without changing the UI shape. */}
+          <Route path="/report-issue"     element={<ReportIssuePage />} />
+          <Route path="/my-issues"        element={<MyIssuesPage />} />
+          <Route path="/admin/farm-issues" element={<AdminFarmIssuesPage />} />
+          <Route path="/officer/issues"   element={<OfficerIssuesPage />} />
           <Route path="/verify-email" element={<V2VerifyEmail />} />
           <Route path="/profile/setup" element={<V2ProfileSetup />} />
           <Route element={<V2ProtectedLayout />}>
