@@ -22,8 +22,11 @@ import COUNTRIES from '../utils/countries.js';
 export default function CountrySelect({
   value = '',
   onChange,
-  className,
-  searchClassName,   // class for the search input; falls back to className when omitted
+  className = 'form-select',   // default so every caller picks up the
+                               // dark-theme option rules in index.css
+                               // (fixes Windows-Chromium white-on-white)
+  searchClassName,             // class for the search input; falls back to
+                               // 'form-input' when omitted
   inputStyle,
   selectStyle,
   wrapperStyle,
@@ -73,8 +76,11 @@ export default function CountrySelect({
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search country..."
-        className={searchClassName ?? className}
+        placeholder="Search country…"
+        /* Default the search input to `form-input` so it picks up the
+           placeholder + focus-ring rules from index.css. Callers may
+           still override via searchClassName for legacy screens. */
+        className={searchClassName ?? 'form-input'}
         style={baseInputStyle}
         disabled={disabled}
         autoComplete="off"
