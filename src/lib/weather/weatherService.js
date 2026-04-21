@@ -194,9 +194,12 @@ export async function openMeteoFetcher({ lat, lng, fetchJson } = {}) {
   };
 }
 
-// ─── Local cache (1 h TTL, coord-bucket keyed) ───────────────────
+// ─── Local cache (3 h TTL, coord-bucket keyed) ───────────────────
 const CACHE_KEY_PREFIX = 'farroway.weatherCache.';
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 h — weather changes fast
+// 3 hours — spec §1 "3-6 h". Weather changes fast enough that a
+// 24 h cache would let stale advice reach farmers, but aggressive
+// 1 h refreshes burned the free tier on low-connectivity phones.
+const CACHE_TTL_MS = 3 * 60 * 60 * 1000;
 
 function hasLocalStorage() {
   return typeof window !== 'undefined' && !!window.localStorage;

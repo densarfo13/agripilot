@@ -27,10 +27,19 @@ export const LANGUAGES = Object.freeze([
   // Kept in the config so existing users who chose these before the
   // quick/long-tail split still see them and their translations
   // continue to work via the i18n fallback chain.
+  //
+  // Any language without a matching translations.js bundle falls
+  // back to English automatically via i18n resolver — adding a
+  // locale here is cheap + non-breaking.
   Object.freeze({ code: 'sw', label: 'Kiswahili',  quick: false }),
   Object.freeze({ code: 'ha', label: 'Hausa',      quick: false }),
   Object.freeze({ code: 'es', label: 'Español',    quick: false }),
   Object.freeze({ code: 'pt', label: 'Português',  quick: false }),
+  Object.freeze({ code: 'ar', label: 'العربية',     quick: false }),
+  Object.freeze({ code: 'am', label: 'አማርኛ',       quick: false }),
+  Object.freeze({ code: 'yo', label: 'Yorùbá',     quick: false }),
+  Object.freeze({ code: 'ig', label: 'Igbo',       quick: false }),
+  Object.freeze({ code: 'zu', label: 'isiZulu',    quick: false }),
 ]);
 
 export const DEFAULT_LANGUAGE = 'en';

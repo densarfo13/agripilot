@@ -26,12 +26,23 @@ const STORAGE_KEY = 'farroway.farmEvents';
 
 // Exhaustive list of allowed types. The NGO analytics layer trusts
 // this whitelist — new types must be added here to avoid silent drops.
+// v1 covers the full spec §3 set so every meaningful farmer action
+// has a canonical type; anything unknown is rejected at write time.
 export const EVENT_TYPES = Object.freeze([
+  // Legacy (kept for back-compat — do not remove)
   'task_completed',
   'task_feedback',
   'farm_created',
   'farm_updated',
   'login',
+  // v1 integrated-pass additions
+  'task_skipped',
+  'crop_selected',
+  'issue_reported',
+  'issue_assigned',
+  'issue_resolved',
+  'harvest_recorded',
+  'notification_dismissed',
 ]);
 
 function hasStorage() {
