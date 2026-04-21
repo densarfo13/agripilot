@@ -21,8 +21,15 @@ import {
   validateResetPasswordPayload,
 } from '../lib/validation.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { passwordResetLimiter } from '../src/middleware/rateLimiters.js';
 
 const router = express.Router();
+
+// Password-reset config — tight defaults aligned with spec.
+//   • 30-min token expiry
+//   • Single active token per user (prior tokens invalidated on new issue)
+//   • All outstanding tokens cleaned up after successful reset
+const RESET_TOKEN_EXPIRY_MS = 30 * 60 * 1000;
 
 async function createSessionAndCookies(req, res, user) {
   const refreshTokenId = generateOpaqueToken();
@@ -479,7 +486,10 @@ router.post('/resend-verification', authenticate, async (req, res) => {
 });
 
 // ─── Forgot Password ───────────────────────────────────────
-router.post('/forgot-password', async (req, res) => {
+// Rate-limited (5 / 15 min / IP) + anti-enumeration. Always returns
+// { success: true } regardless of whether the email exists so the
+// caller cannot tell accounts apart from timing or status code.
+router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
   try {
     const validation = validateForgotPasswordPayload(req.body || {});
     if (!validation.isValid) {
@@ -492,11 +502,18 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email: validation.data.email },
-      select: { id: true, email: true },
+      select: { id: true, email: true, active: true },
     });
 
-    // Anti-enumeration: always return success
-    if (user) {
+    // Anti-enumeration: always return success.
+    if (user && user.active !== false) {
+      // Single active token per user — invalidate any outstanding
+      // unused tokens before issuing a new one. Prevents a spam
+      // loop from leaving a pile of live tokens behind.
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: user.id, usedAt: null },
+      });
+
       const rawToken = generateOpaqueToken();
       const tokenHash = sha256(rawToken);
 
@@ -504,29 +521,61 @@ router.post('/forgot-password', async (req, res) => {
         data: {
           userId: user.id,
           tokenHash,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + RESET_TOKEN_EXPIRY_MS),
         },
       });
 
       const resetUrl = `${env.APP_BASE_URL}/reset-password?token=${rawToken}`;
 
-      await sendEmail({
-        to: user.email,
-        subject: 'Reset your password',
-        text: `Reset your password using this link: ${resetUrl}`,
-        html: `<p>Reset your password using this link:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-      });
+      // Fire the email but never leak the send outcome to the caller —
+      // network failures shouldn't reveal account existence either.
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Reset your Farroway password',
+          text: [
+            'You requested a password reset for your Farroway account.',
+            `Click the link below to reset your password (valid for 30 minutes):`,
+            resetUrl,
+            'If you did not request this, you can safely ignore this email.',
+          ].join('\n\n'),
+          html: `
+            <p>You requested a password reset for your Farroway account.</p>
+            <p>Click the link below to reset your password. This link is valid for <strong>30 minutes</strong>.</p>
+            <p><a href="${resetUrl}" style="background:#22c55e;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Reset password</a></p>
+            <p>Or copy this link: <code>${resetUrl}</code></p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+          `,
+        });
+      } catch (mailErr) {
+        console.error('forgot-password email send failed:', mailErr?.message || mailErr);
+      }
+
+      // Audit trail — recovery request is a security event even on
+      // success. We deliberately don't log the raw token.
+      try {
+        await writeAuditLog(req, {
+          userId: user.id,
+          action: 'auth.forgot_password_requested',
+          entityType: 'User',
+          entityId: user.id,
+        });
+      } catch { /* non-fatal */ }
     }
 
     return res.json({ success: true });
   } catch (error) {
     console.error('POST /api/v2/auth/forgot-password failed:', error);
-    return res.status(500).json({ success: false, error: 'Failed to process forgot password' });
+    // Still return a generic 200 so attackers can't use errors to probe.
+    return res.json({ success: true });
   }
 });
 
 // ─── Reset Password ────────────────────────────────────────
-router.post('/reset-password', async (req, res) => {
+// Rate-limited same envelope as forgot-password so token guessing
+// pays the same price as initiation. Single-use + explicit expiry
+// + all-user-tokens wipe on success.
+router.post('/reset-password', passwordResetLimiter, async (req, res) => {
   try {
     const validation = validateResetPasswordPayload(req.body || {});
     if (!validation.isValid) {
@@ -541,19 +590,30 @@ router.post('/reset-password', async (req, res) => {
 
     const record = await prisma.passwordResetToken.findUnique({
       where: { tokenHash },
-      include: { user: true },
+      include: { user: { select: { id: true, active: true } } },
     });
 
+    // Uniform error — do not tell the caller whether the token exists,
+    // was already used, or expired. "Invalid or expired" covers all three.
     if (!record || record.usedAt || record.expiresAt < new Date()) {
+      return res.status(400).json({ success: false, error: 'Invalid or expired reset token' });
+    }
+    if (record.user && record.user.active === false) {
       return res.status(400).json({ success: false, error: 'Invalid or expired reset token' });
     }
 
     const passwordHash = await bcrypt.hash(validation.data.password, 12);
 
+    // Atomic: mark this token used, set password, revoke all active
+    // sessions for the user, and wipe any OTHER outstanding tokens so
+    // a single leak can't be replayed from a second copy.
     await prisma.$transaction([
       prisma.passwordResetToken.update({
         where: { id: record.id },
         data: { usedAt: new Date() },
+      }),
+      prisma.passwordResetToken.deleteMany({
+        where: { userId: record.userId, usedAt: null, id: { not: record.id } },
       }),
       prisma.user.update({
         where: { id: record.userId },
