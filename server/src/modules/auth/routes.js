@@ -11,10 +11,18 @@ import { initiatePasswordReset, completePasswordReset } from './resetService.js'
 import { writeAuditLog } from '../audit/service.js';
 import { logAuthEvent } from '../../utils/opsLogger.js';
 import * as federated from './federated.js';
+import smsVerificationRoutes from './smsVerification/routes.js';
 import prisma from '../../config/database.js';
 import { config } from '../../config/index.js';
 
 const router = Router();
+
+// SMS-based verification (provider-agnostic OTP). Mounted at
+// /api/auth/sms/{start-verification,check-verification}. Used for
+// phone-based password reset, account recovery, and optional
+// login verification. Email-based reset remains on /forgot-password
+// + /reset-password — both paths coexist.
+router.use('/sms', smsVerificationRoutes);
 
 // ─── Local Auth ────────────────────────────────────────
 

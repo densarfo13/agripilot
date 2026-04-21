@@ -43,6 +43,8 @@ export default function ForgotPassword() {
   const emailBad      = resolve(t, 'auth.forgotPassword.emailInvalid',  'Enter a valid email');
   const generic       = resolve(t, 'auth.forgotPassword.generic',
     'Something went wrong. Please try again.');
+  const preferSmsLbl  = resolve(t, 'auth.forgotPassword.preferSms',
+    'Reset by SMS instead');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -107,6 +109,8 @@ export default function ForgotPassword() {
 
         <p style={S.footerText}>
           <Link to="/login" style={S.link}>{backLbl}</Link>
+          {' \u00B7 '}
+          <Link to="/forgot-password/sms" style={S.link}>{preferSmsLbl}</Link>
         </p>
       </div>
     </div>

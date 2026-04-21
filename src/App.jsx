@@ -18,6 +18,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 import V2Login from './pages/Login.jsx';
 const V2Register = lazy(() => import('./pages/Register.jsx'));
 const V2ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
+const V2ForgotPasswordSms = lazy(() => import('./pages/ForgotPasswordSms.jsx'));
 const V2ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 const V2VerifyEmail = lazy(() => import('./pages/VerifyEmail.jsx'));
 const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
@@ -257,6 +258,7 @@ export default function App() {
           <Route path="/login" element={<V2Login />} />
           <Route path="/register" element={<V2Register />} />
           <Route path="/forgot-password" element={<V2ForgotPassword />} />
+          <Route path="/forgot-password/sms" element={<V2ForgotPasswordSms />} />
           <Route path="/reset-password" element={<V2ResetPassword />} />
           <Route path="/verify-email" element={<V2VerifyEmail />} />
           <Route path="/profile/setup" element={<V2ProfileSetup />} />

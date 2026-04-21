@@ -148,6 +148,25 @@ export function resetPassword(payload) {
   }, false);
 }
 
+// ─── SMS verification (provider-agnostic OTP) ──────────────
+// Works for password reset, account recovery, and optional login
+// verification. The server delegates to an active Twilio-Verify /
+// Plivo / Infobip provider — the shape stays the same.
+
+export function smsStartVerification({ phone, purpose, channel, locale } = {}) {
+  return request('/api/auth/sms/start-verification', {
+    method: 'POST',
+    body: JSON.stringify({ phone, purpose, channel, locale }),
+  }, false);
+}
+
+export function smsCheckVerification({ phone, code, purpose, newPassword } = {}) {
+  return request('/api/auth/sms/check-verification', {
+    method: 'POST',
+    body: JSON.stringify({ phone, code, purpose, newPassword }),
+  }, false);
+}
+
 export function getFarmProfile() {
   return request('/api/v2/farm-profile');
 }
