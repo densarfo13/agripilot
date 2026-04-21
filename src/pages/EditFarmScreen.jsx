@@ -64,7 +64,7 @@ const resolve = (t, key, fallback) => {
 
 export default function EditFarmScreen() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { profile, editFarm, refreshFarms, refreshProfile } = useProfile();
   const [searchParams] = useSearchParams();
   // Mode flags from the query string. Supported values:
@@ -94,9 +94,9 @@ export default function EditFarmScreen() {
   // list. These two pieces of local state stay out of the form + patch
   // because they're UI, not data.
   const initialCrop = (original.cropType || original.crop || '').toString().toLowerCase();
-  const [cropQuery, setCropQuery] = useState(() => getCropLabel(initialCrop));
+  const [cropQuery, setCropQuery] = useState(() => getCropLabel(initialCrop, lang));
   const [cropOther, setCropOther] = useState(
-    () => (initialCrop && !getCropLabel(initialCrop) ? initialCrop : ''),
+    () => (initialCrop && !getCropLabel(initialCrop, lang) ? initialCrop : ''),
   );
   // Brief "Farm updated — your guidance has been refreshed" flash
   // shown after a successful save, before navigating back to Home.
@@ -153,7 +153,7 @@ export default function EditFarmScreen() {
   function pickCrop(code) {
     setForm((prev) => ({ ...prev, cropType: code }));
     if (code !== CROP_OTHER) {
-      setCropQuery(getCropLabel(code));
+      setCropQuery(getCropLabel(code, lang));
       setCropOther('');
     }
     if (fieldErrors.cropType) {
@@ -350,7 +350,9 @@ export default function EditFarmScreen() {
                 }}
                 data-testid={`edit-farm-crop-${c.code}`}
               >
-                {c.label}
+                {/* Render the localised label — auto-updates when
+                    the user flips the language toggle. */}
+                {getCropLabel(c.code, lang)}
               </button>
             ))}
           </div>

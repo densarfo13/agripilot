@@ -45,7 +45,7 @@ const resolve = (t, key, fallback) => {
 
 export default function NewFarmScreen() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const {
     saveProfile, switchFarm, refreshFarms, refreshProfile,
   } = useProfile();
@@ -91,7 +91,7 @@ export default function NewFarmScreen() {
     setForm((prev) => ({
       ...prev,
       cropType: code,
-      cropQuery: code === CROP_OTHER ? prev.cropQuery : getCropLabel(code),
+      cropQuery: code === CROP_OTHER ? prev.cropQuery : getCropLabel(code, lang),
     }));
     if (errors.cropType) setErrors((e) => ({ ...e, cropType: null }));
   }
@@ -180,7 +180,10 @@ export default function NewFarmScreen() {
         crop:         cropCode,
         cropLabel:    form.cropType === CROP_OTHER
                         ? (form.cropOther.trim() || 'Other')
-                        : getCropLabel(cropCode),
+                        // Store the English label so cached data stays stable
+                        // across language switches; display layer translates
+                        // on render via useCropLabel / getCropLabel(code, lang).
+                        : getCropLabel(cropCode, 'en'),
         country:      payload.country,
         countryLabel: getCountryLabel(payload.country),
         state:        payload.stateCode || null,
@@ -356,7 +359,8 @@ export default function NewFarmScreen() {
                 }}
                 data-testid={`new-farm-crop-${c.code}`}
               >
-                {c.label}
+                {/* Localised — re-renders when language changes. */}
+                {getCropLabel(c.code, lang)}
               </button>
             ))}
           </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/authStore.js';
 import { loadTranslations, getCurrentLang } from './utils/i18n.js';
 import { initAutoSync } from './utils/offlineQueue.js';
@@ -168,6 +168,7 @@ function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
   const storeUser = useAuthStore(s => s.user);
   const { user: v2User, authLoading } = useAuth();
+  const location = useLocation();
 
   console.log('[GUARD]', Date.now(), 'ProtectedRoute:', {
     v1Token: !!token, v1Role: storeUser?.role, v2Role: v2User?.role,
@@ -186,6 +187,26 @@ function ProtectedRoute({ children, allowSetup }) {
   const user = useAuthStore.getState().user || v2User;
   const hasSession = useAuthStore.getState().token || (v2User && v2User.role);
 
+  // Wait for the auth context to finish its /me bootstrap BEFORE
+  // making a redirect decision. On a page reload, authLoading=true
+  // for the first ~100ms while /api/v2/auth/me restores the session
+  // from the httpOnly cookie; without this gate we used to flash-
+  // redirect the farmer from (e.g.) /edit-farm → /login → /dashboard
+  // even though the cookie was perfectly valid. We also check the
+  // localStorage session cache so a user on a slow network sees
+  // their last-known role immediately and doesn't get a blank page.
+  if (!hasSession && authLoading) {
+    let cachedHasUser = false;
+    try {
+      const cached = localStorage.getItem('farroway:session_cache');
+      cachedHasUser = !!(cached && JSON.parse(cached)?.user);
+    } catch { /* ignore */ }
+    if (cachedHasUser || true) {  // always wait — the cookie may validate
+      console.log('[GUARD]', Date.now(), 'Waiting for auth bootstrap…');
+      return <PageLoader />;
+    }
+  }
+
   if (!hasSession) {
     console.log('[GUARD]', Date.now(), 'No session — redirecting to login');
     // No V1 token and no V2 staff session — check for cached V2 farmer session
@@ -196,7 +217,13 @@ function ProtectedRoute({ children, allowSetup }) {
       const cached = localStorage.getItem('farroway:session_cache');
       if (cached && JSON.parse(cached)?.user) return <Navigate to="/dashboard" replace />;
     } catch { /* ignore */ }
-    return <Navigate to="/login" replace />;
+    // Preserve the intended destination so Login can send the user
+    // back to their refreshed page once they sign in again. Stops
+    // "I was on /edit-farm → refreshed → redirected → forgot where
+    // I was" — Login already reads `location.state.from` + the
+    // sessionStorage returnTo slot via AuthGuard, but inside
+    // ProtectedRoute we can set state directly here too.
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
   // Farmer-role users get their own limited dashboard
   if (user?.role === 'farmer') {

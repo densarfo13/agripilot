@@ -7,7 +7,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCropLabel } from '../utils/crops.js';
+import { useCropLabel } from '../utils/crops.js';
 import { getAvatar } from '../utils/avatarStorage.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 
@@ -26,7 +26,9 @@ export default function FarmerHeader({ user, profile, t, weatherDecision, onRefr
   const name = user?.fullName || profile?.farmerName || '';
   const displayName = name || t('dashboard.welcome');
   const rawCrop = profile?.cropType || profile?.crop || '';
-  const cropDisplay = getCropLabel(rawCrop);
+  // Hook auto-re-renders when the UI language changes — chip updates
+  // from "Cassava" to "कसावा" without page reload.
+  const cropDisplay = useCropLabel(rawCrop);
   const locationName = profile?.location || profile?.locationLabel || profile?.locationName || '';
   const subtitle = [locationName, cropDisplay].filter(Boolean).join(' \u2022 ');
 

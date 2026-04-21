@@ -1,3 +1,8 @@
+import {
+  getCropLabel as getLangCropLabel,
+} from '../config/crops.js';
+import { useTranslation } from '../i18n/index.js';
+
 /**
  * Shared Crop Dataset — single source of truth for all crop selectors.
  *
@@ -156,16 +161,54 @@ export function getCropByValue(value) {
  * Get display name for a crop code/value, with fallbacks.
  * Handles: "MAIZE" → "Maize", "OTHER" → "Other", "OTHER:Teff" → "Teff",
  * "maize" (legacy) → "Maize", unknown → raw value as-is.
+ *
+ * Optional `lang` parameter translates to the active UI language
+ * (Hindi, Swahili, Hausa, Twi, French, English). When the language
+ * table doesn't have the crop, falls back to the English catalog
+ * here, then finally to the raw value. Callers inside a React
+ * render can use the `useCropLabel` hook instead for automatic
+ * re-render on language switch.
  */
-export function getCropLabel(value) {
+export function getCropLabel(value, lang = 'en') {
   if (!value) return '';
-  // Structured "Other" → extract custom name
-  if (value.toUpperCase().startsWith('OTHER:')) {
-    return value.slice(6).trim() || 'Other';
+  // Structured "Other" → extract custom name (language-agnostic)
+  if (String(value).toUpperCase().startsWith('OTHER:')) {
+    return String(value).slice(6).trim() || 'Other';
   }
-  if (value.toUpperCase() === 'OTHER') return 'Other';
+  if (String(value).toUpperCase() === 'OTHER') return 'Other';
+
+  // 1) Prefer the language-aware catalog in config/crops.js so every
+  //    other language (hi/sw/ha/tw/fr) resolves correctly. It
+  //    lowercases the code internally via normalizeCrop, so
+  //    'MAIZE' / 'Maize' / 'maize' all resolve to the same row.
+  const localised = getLangCropLabel(value, lang);
+  // getLangCropLabel returns a humanised fallback for unknown codes
+  // (e.g. "Black Pepper" for "BLACK_PEPPER"). We only accept it when
+  // it maps to a recognised row — otherwise fall through to the
+  // richer legacy catalog below so crops like APPLE / ALMOND that
+  // live only in CROPS still display correctly.
+  if (localised && localised !== value && !/^[A-Z_]+$/.test(value)) return localised;
+
+  // 2) Legacy English catalog (uppercase codes). Still the only
+  //    source of truth for crops we haven't added to the
+  //    config/crops.js table yet (APPLE, ALMOND, BLUEBERRY, etc).
   const crop = getCropByValue(value);
-  return crop ? crop.name : value; // fallback to raw for legacy
+  if (crop) return crop.name;
+
+  // 3) Fall back to the localised label (even if it just humanised
+  //    the code) — better than leaking the raw UPPERCASE value.
+  return localised || value;
+}
+
+/**
+ * useCropLabel — React hook that returns the display label in the
+ * active UI language. Re-renders automatically when the farmer
+ * switches languages. Use this inside a React component; for pure
+ * / non-React code paths use `getCropLabel(value, lang)`.
+ */
+export function useCropLabel(value) {
+  const { lang } = useTranslation();
+  return getCropLabel(value, lang);
 }
 
 // ── Crop Icon Registry ──────────────────────────────────────
