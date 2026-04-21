@@ -64,6 +64,7 @@ const FarmerTodayPage = lazy(() => import('./pages/farmer/FarmerTodayPage.jsx'))
 const PostHarvestSummaryPage = lazy(() => import('./pages/farmer/PostHarvestSummaryPage.jsx'));
 const FarmerOnboardingPage = lazy(() => import('./pages/onboarding/FarmerOnboardingPage.jsx'));
 const FastOnboardingRoute = lazy(() => import('./pages/onboarding/fast/FastOnboardingRoute.jsx'));
+const OnboardingV3 = lazy(() => import('./pages/onboarding/OnboardingV3.jsx'));
 const EditFarmScreen = lazy(() => import('./pages/EditFarmScreen.jsx'));
 const NewFarmScreen  = lazy(() => import('./pages/NewFarmScreen.jsx'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
@@ -340,6 +341,12 @@ export default function App() {
             <Route path="/buyer/notifications" element={<BuyerNotificationsPage />} />
             <Route path="/onboarding/smart" element={<FarmerOnboardingPage />} />
             <Route path="/onboarding/fast" element={<FastOnboardingRoute />} />
+            {/* Canonical 3-step flow — replaces the heavy wizard for
+                new signups. Legacy /fast + /smart kept for back-compat
+                with any in-flight sessions but all new entry points
+                (FarmerRegister, ProfileGuard) point here. */}
+            <Route path="/onboarding"    element={<OnboardingV3 />} />
+            <Route path="/onboarding/v3" element={<OnboardingV3 />} />
             <Route path="/edit-farm" element={<EditFarmScreen />} />
             <Route path="/farm/new" element={<NewFarmScreen />} />
             <Route path="/welcome-farmer" element={<WelcomeScreen />} />

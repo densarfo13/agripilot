@@ -44,8 +44,10 @@ export default function Register() {
       await register({ fullName, email, password });
       // Fresh registration → the user has no farm yet, which makes
       // them a first-time farmer. resolveProfileCompletionRoute
-      // sends them into /onboarding/fast rather than the legacy form.
-      navigate('/onboarding/fast');
+      // sends them into the canonical 3-step onboarding. Legacy
+      // /onboarding/fast is kept reachable for users who started
+      // the old flow, but every new signup lands on v3 first.
+      navigate('/onboarding');
     } catch (err) {
       if (err.fieldErrors && Object.keys(err.fieldErrors).length) {
         setErrors(err.fieldErrors);
