@@ -6,6 +6,9 @@ import { config } from './config/index.js';
 import prisma from './config/database.js';
 import { startNotificationCron, stopNotificationCron } from './modules/autoNotifications/cron.js';
 import {
+  startAutonomousActionCron, stopAutonomousActionCron,
+} from './modules/autonomousActions/cronRunner.js';
+import {
   loadThresholdsFromDb,
   startWorker,
   stopAllWorkers,
@@ -52,6 +55,10 @@ async function main() {
   // Start automated notification cron (skip in test environment)
   if (config.nodeEnv !== 'test') {
     startNotificationCron();
+    // Autonomous action loop — decision → SMS/email → action log.
+    // Schedule overridable via AUTONOMOUS_ACTION_CRON (default 07:00 UTC).
+    // Dry-run mode via AUTONOMOUS_ACTION_DRY_RUN=1 for shadow validation.
+    startAutonomousActionCron();
   }
 
   // ── Intelligence module startup ──

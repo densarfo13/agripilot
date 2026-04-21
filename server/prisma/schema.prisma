@@ -2852,6 +2852,39 @@ model FarmEvent {
 // application logs. Distinct from the application-level AuditLog —
 // this one is actor-oriented (actor/target/payload) and maps to its
 // own table `admin_audit_logs`. Run `npx prisma db push` to apply.
+// ─── Autonomous action log ───────────────────────────────────
+// Every autonomous action (SMS reminder, email alert, officer
+// assignment, review mark) writes one row. Fields are a superset of
+// what the rule-based engines need today plus room for the future
+// learning loop to correlate actions → outcomes.
+//
+// Run `npx prisma migrate deploy` (or `prisma db push` in staging)
+// after pulling this change to apply. The runtime also tolerates
+// the table being absent — autonomous actions fall back to the
+// ops event log so the feature never blocks on a missing migration.
+model ActionLog {
+  id            String   @id @default(uuid())
+  actionType    String   @map("action_type")        // 'sms_reminder' | 'email_alert' | 'assign_officer' | 'review' | ...
+  targetType    String?  @map("target_type")        // 'farmer' | 'farm' | 'issue' | 'program'
+  targetId      String?  @map("target_id")
+  actorRole     String?  @map("actor_role")         // 'system' for autonomous runs; role string otherwise
+  actorId       String?  @map("actor_id")
+  channel       String?                              // 'sms' | 'email' | 'in_app' | null
+  outcome       String                               // 'success' | 'failure' | 'skipped'
+  reason        String?                              // short machine-readable code when outcome ≠ success
+  priorityScore Int?     @map("priority_score")     // from scoringEngine
+  metadata      Json?                                // free-form context (phone, subject, rule tag, etc.)
+  scheduledFor  DateTime? @map("scheduled_for")
+  executedAt    DateTime? @map("executed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt],   map: "idx_action_log_created")
+  @@index([actionType],  map: "idx_action_log_type")
+  @@index([targetId],    map: "idx_action_log_target")
+  @@index([outcome],     map: "idx_action_log_outcome")
+  @@map("action_logs")
+}
+
 model AdminAuditLog {
   id         String   @id @default(uuid())
   actorId    String?  @map("actor_id")        // user id of the admin / NGO operator
