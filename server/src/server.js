@@ -9,6 +9,9 @@ import {
   startAutonomousActionCron, stopAutonomousActionCron,
 } from './modules/autonomousActions/cronRunner.js';
 import {
+  startFarmProcessingCron, stopFarmProcessingCron,
+} from './queue/farmProcessingCron.js';
+import {
   loadThresholdsFromDb,
   startWorker,
   stopAllWorkers,
@@ -59,6 +62,10 @@ async function main() {
     // Schedule overridable via AUTONOMOUS_ACTION_CRON (default 07:00 UTC).
     // Dry-run mode via AUTONOMOUS_ACTION_DRY_RUN=1 for shadow validation.
     startAutonomousActionCron();
+    // Farm processing sweep — batches farms onto the risk_scoring
+    // queue for workers. Degrades to inline execution when no
+    // processor + Redis are wired yet; the API layer never blocks.
+    startFarmProcessingCron();
   }
 
   // ── Intelligence module startup ──

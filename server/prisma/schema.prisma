@@ -2852,6 +2852,30 @@ model FarmEvent {
 // application logs. Distinct from the application-level AuditLog —
 // this one is actor-oriented (actor/target/payload) and maps to its
 // own table `admin_audit_logs`. Run `npx prisma db push` to apply.
+// ─── Farm metrics (time-series) ──────────────────────────────
+// Long-format rows so adding a metric name never requires a
+// schema change. One row per (farmId, metric, capturedAt) tuple.
+// Callers query with a metric + time window. Retention is
+// operational — the periodic cron prunes rows older than 90 days.
+//
+// Run `npx prisma migrate deploy` after pulling to apply.
+model FarmMetrics {
+  id          String   @id @default(uuid())
+  farmId      String   @map("farm_id")
+  metric      String                              // 'risk_score' | 'task_completion' | 'open_issues' | ...
+  value       Float
+  unit        String?                             // optional — 'count' | 'percent' | 'score'
+  program     String?
+  source      String?                              // 'cron' | 'worker' | 'api' | 'admin'
+  capturedAt  DateTime @default(now()) @map("captured_at")
+  metadata    Json?
+
+  @@index([farmId, metric, capturedAt(sort: Desc)], map: "idx_farm_metrics_farm_metric_time")
+  @@index([metric, capturedAt(sort: Desc)],         map: "idx_farm_metrics_metric_time")
+  @@index([program, capturedAt(sort: Desc)],        map: "idx_farm_metrics_program_time")
+  @@map("farm_metrics")
+}
+
 // ─── Autonomous action log ───────────────────────────────────
 // Every autonomous action (SMS reminder, email alert, officer
 // assignment, review mark) writes one row. Fields are a superset of
