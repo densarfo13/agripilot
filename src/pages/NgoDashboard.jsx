@@ -16,6 +16,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useTranslation } from '../i18n/index.js';
+import { isDemoMode } from '../config/demoMode.js';
+import {
+  friendlyEmptyMessage, friendlyErrorMessage,
+  getFallbackNgoSummary, getFallbackProgramRisk, getFallbackPerformance,
+  shouldShowFallback,
+} from '../lib/demo/demoFallbacks.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -114,7 +120,29 @@ export default function NgoDashboard() {
     return <main style={S.page} data-screen="ngo-dashboard">{resolve(t, 'common.loading', 'Loading\u2026')}</main>;
   }
 
+  // Demo-safe soft recovery: when the dashboard endpoint fails and
+  // we're in demo mode, swap the red banner for friendly copy + a
+  // non-zero fallback summary. Production flow (non-demo) keeps the
+  // original red error banner so real operators still see problems.
   if (error) {
+    if (isDemoMode()) {
+      const soft = friendlyErrorMessage('analytics');
+      const fb = getFallbackNgoSummary();
+      return (
+        <main style={S.page} data-screen="ngo-dashboard" data-state="demo-fallback">
+          <h2 style={S.title}>{title}</h2>
+          <p style={S.muted} role="status" data-testid="ngo-soft-recovery">
+            {resolve(t, soft.key, soft.fallback)}
+          </p>
+          <section style={S.cardsRow} data-testid="ngo-summary-fallback">
+            <Card label={lblTot} value={fb.totalFarmers} />
+            <Card label={lblAct} value={fb.activeFarmers} />
+            <Card label={lblCmp} value={`${Math.round(fb.completionRate * 100)}%`} />
+            <Card label={lblHi}  value={fb.highRiskFarmers} tone="warning" />
+          </section>
+        </main>
+      );
+    }
     return (
       <main style={S.page} data-screen="ngo-dashboard" data-state="error">
         <h2 style={S.title}>{title}</h2>

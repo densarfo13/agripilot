@@ -4,6 +4,11 @@ import { useAuthStore } from './store/authStore.js';
 import { loadTranslations, getCurrentLang } from './utils/i18n.js';
 import { initAutoSync } from './utils/offlineQueue.js';
 import api from './api/client.js';
+// Demo-readiness: one-line call populates the local store with a
+// plausible NGO roster (farmers, farms, activity, issues) the first
+// time the app boots in demo mode. Production boots are unaffected
+// because `isDemoMode()` is false and the helper no-ops.
+import { ensureDemoSeed } from './lib/demo/demoSeed.js';
 
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -234,6 +239,10 @@ export default function App() {
       .catch(() => setI18nReady(true)); // proceed even if translations fail — fallbacks work
     // Initialize offline sync — replays queued mutations when back online
     initAutoSync(api);
+    // Demo mode: populate the local store so every admin/NGO page
+    // renders real data on first load. No-ops outside demo mode and
+    // when the store already has real data (see demoSeed.isStoreEmpty).
+    try { ensureDemoSeed(); } catch { /* never blocks app boot */ }
   }, []);
 
   return (
