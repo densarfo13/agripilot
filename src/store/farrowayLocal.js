@@ -152,6 +152,7 @@ export function saveFarm({
   farmSize      = null,
   sizeUnit      = null,
   stage         = null,
+  farmType      = null, // 'backyard' | 'small_farm' | 'commercial'
   setActive     = false,
 } = {}) {
   if (!name || typeof name !== 'string') return null;
@@ -187,6 +188,19 @@ export function saveFarm({
     farmSize: Number.isFinite(sizeNum) ? sizeNum : null,
     sizeUnit: sizeUnit ? String(sizeUnit).trim() : null,
     stage:    stage    ? String(stage).trim()    : null,
+    // Farm type tiers the downstream experience (task engine,
+    // alerts, recommendations). Canonicalised to one of three
+    // strings or falls back to the default tier when unset.
+    // See src/lib/farm/farmTypeBehavior.js for the policy map.
+    farmType: (function () {
+      const VALID = ['backyard', 'small_farm', 'commercial'];
+      if (!farmType) return 'small_farm';
+      const s = String(farmType).toLowerCase().trim();
+      if (VALID.indexOf(s) !== -1) return s;
+      if (s === 'home_food' || s === 'backyard_home' || s === 'home') return 'backyard';
+      if (s === 'commercial_farm' || s === 'large' || s === 'enterprise') return 'commercial';
+      return 'small_farm';
+    })(),
     // Legacy mirrors — kept so existing readers continue to work.
     location: locationStr,
     size:     Number.isFinite(sizeNum) ? String(sizeNum) : '',
@@ -222,7 +236,10 @@ export function updateFarm(farmId, patch = {}) {
   const idx = farms.findIndex((f) => f && f.id === String(farmId));
   if (idx < 0) return null;
   const before = farms[idx];
-  const keys = ['name', 'crop', 'location', 'size', 'program'];
+  const keys = ['name', 'crop', 'location', 'size', 'program', 'farmType',
+                'farmSize', 'sizeUnit', 'stage', 'country', 'state',
+                'countryCode', 'countryLabel', 'stateCode', 'stateLabel',
+                'cropLabel'];
   const changed = {};
   for (const k of keys) {
     if (patch[k] !== undefined && patch[k] !== before[k]) changed[k] = patch[k];

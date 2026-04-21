@@ -60,6 +60,9 @@ export default function NewFarmScreen() {
     size: '',
     sizeUnit: 'ACRE',
     stage: 'land_prep',
+    // Farm type tier — tiers downstream experience (task engine,
+    // alerts, recommendations). Defaults to small_farm per spec §4.
+    farmType: 'small_farm',
     setActive: false,
   });
   const [errors, setErrors] = useState({});
@@ -187,6 +190,7 @@ export default function NewFarmScreen() {
         farmSize:     payload.size,
         sizeUnit:     payload.sizeUnit,
         stage:        payload.cropStage,
+        farmType:     form.farmType,
         setActive:    !!form.setActive,
       });
       if (form.setActive && localFarm?.id) {
@@ -401,6 +405,34 @@ export default function NewFarmScreen() {
             {resolve(t, 'location_detection_failed', "Couldn't detect location. Pick manually.")}
           </span>
         )}
+
+        {/* Farm type — tier selector. Drives downstream task engine
+            + alert verbosity via src/lib/farm/farmTypeBehavior.js.
+            Sits directly above Farm Size per spec §3. */}
+        <label style={S.label}>
+          {resolve(t, 'setup.farmType', 'Farm type')}{' *'}
+          <div style={S.chipRow} data-testid="new-farm-type-row">
+            {[
+              { code: 'backyard',   label: resolve(t, 'setup.farmType.backyard',   'Backyard / Home') },
+              { code: 'small_farm', label: resolve(t, 'setup.farmType.small_farm', 'Small Farm') },
+              { code: 'commercial', label: resolve(t, 'setup.farmType.commercial', 'Commercial Farm') },
+            ].map((opt) => (
+              <button
+                key={opt.code}
+                type="button"
+                onClick={() => update('farmType', opt.code)}
+                style={{
+                  ...S.chip,
+                  ...(form.farmType === opt.code ? S.chipActive : null),
+                }}
+                data-testid={`new-farm-type-${opt.code}`}
+                aria-pressed={form.farmType === opt.code}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </label>
 
         {/* Size + unit */}
         <div style={S.row}>

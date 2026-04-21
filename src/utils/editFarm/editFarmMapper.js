@@ -27,7 +27,7 @@
 /** Fields the user can edit on this screen. Anything else is rejected. */
 const EDITABLE_FIELDS = Object.freeze([
   'farmName', 'cropType', 'country', 'stateCode', 'location',
-  'size', 'sizeUnit', 'cropStage', 'plantedAt',
+  'size', 'sizeUnit', 'cropStage', 'plantedAt', 'farmType',
 ]);
 
 /** Fields the caller must NEVER send through the edit-farm patch. */
@@ -61,6 +61,10 @@ export function farmToEditForm(farm = {}) {
     sizeUnit:  f.sizeUnit || (f.size ? 'ACRE' : 'ACRE'),
     cropStage: f.cropStage || f.stage || 'planning',
     plantedAt: f.plantedAt ? String(f.plantedAt).slice(0, 10) : '',
+    // Farm type tiers downstream behaviour (task engine, alerts,
+    // recommendations). Fallback to 'small_farm' keeps existing
+    // farms working without a data migration.
+    farmType:  f.farmType || 'small_farm',
   };
 }
 

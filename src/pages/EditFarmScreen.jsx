@@ -371,6 +371,33 @@ export default function EditFarmScreen() {
           </label>
         )}
 
+        {/* Farm type tier — drives downstream behaviour via
+            farmTypeBehavior.js. Renders above Farm Size per spec §3. */}
+        <label style={S.label}>
+          {resolve(t, 'setup.farmType', 'Farm type')}{' *'}
+          <div style={S.chipRow} data-testid="edit-farm-type-row">
+            {[
+              { code: 'backyard',   label: resolve(t, 'setup.farmType.backyard',   'Backyard / Home') },
+              { code: 'small_farm', label: resolve(t, 'setup.farmType.small_farm', 'Small Farm') },
+              { code: 'commercial', label: resolve(t, 'setup.farmType.commercial', 'Commercial Farm') },
+            ].map((opt) => (
+              <button
+                key={opt.code}
+                type="button"
+                onClick={() => update('farmType', opt.code)}
+                style={{
+                  ...S.chip,
+                  ...(form.farmType === opt.code ? S.chipActive : null),
+                }}
+                data-testid={`edit-farm-type-${opt.code}`}
+                aria-pressed={form.farmType === opt.code}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </label>
+
         <div style={S.row}>
           <label style={{ ...S.label, flex: 1 }}>
             {resolve(t, 'setup.farmSize', 'Farm size (optional)')}
