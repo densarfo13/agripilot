@@ -165,8 +165,6 @@ router.post('/login', async (req, res) => {
       },
     });
 
-    console.log('[LOGIN]', validation.data.email, '→ found:', !!user, user ? `role=${user.role} active=${user.active} hasHash=${!!user.passwordHash}` : '');
-
     if (!user || !user.passwordHash) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
@@ -176,7 +174,6 @@ router.post('/login', async (req, res) => {
     }
 
     const validPassword = await bcrypt.compare(validation.data.password, user.passwordHash);
-    console.log('[LOGIN]', validation.data.email, '→ password valid:', validPassword);
     if (!validPassword) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
@@ -196,7 +193,6 @@ router.post('/login', async (req, res) => {
       if (mfaUser?.mfaEnabled) {
         // MFA enrolled → require TOTP code
         const mfaToken = signMfaChallengeToken(user);
-        console.log('[LOGIN]', validation.data.email, '→ MFA challenge required');
         return res.json({
           success: true,
           mfaChallengeRequired: true,
@@ -205,9 +201,8 @@ router.post('/login', async (req, res) => {
         });
       }
 
-      // MFA required but NOT enrolled → let them in but signal setup needed
-      // They'll be prompted on the Account page to set up MFA
-      console.log('[LOGIN]', validation.data.email, '→ MFA setup required (not enrolled yet)');
+      // MFA required but NOT enrolled → let them in but signal setup needed.
+      // They'll be prompted on the Account page to set up MFA.
     }
 
     // No MFA required or MFA not enrolled → issue session directly
@@ -259,7 +254,6 @@ router.post('/mfa/verify', async (req, res) => {
     const valid = await verifyMfaCode(payload.sub, code);
 
     if (!valid) {
-      console.log('[MFA]', payload.email, '→ invalid code');
       return res.status(401).json({ success: false, error: 'Invalid code. Try again.' });
     }
 
@@ -288,8 +282,6 @@ router.post('/mfa/verify', async (req, res) => {
       entityType: 'User',
       entityId: user.id,
     });
-
-    console.log('[MFA]', user.email, '→ verified, session created');
 
     return res.json({
       success: true,

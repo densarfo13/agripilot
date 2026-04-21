@@ -46,6 +46,13 @@ if (isProduction) {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
     console.warn('[WARN] Twilio not fully configured — SMS delivery disabled.');
   }
+  // SMS verification (password recovery / OTP) uses a Verify Service.
+  // Without it, /api/auth/sms/* returns 503 and the UI falls back to
+  // the email reset link — not a boot failure, but worth flagging.
+  if ((process.env.SMS_VERIFY_PROVIDER || 'twilio-verify') === 'twilio-verify'
+      && !process.env.TWILIO_VERIFY_SERVICE_SID) {
+    console.warn('[WARN] TWILIO_VERIFY_SERVICE_SID not set — SMS-based password recovery will be unavailable.');
+  }
 }
 
 // In development, warn if using fallback secret
