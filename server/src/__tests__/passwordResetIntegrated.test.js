@@ -36,8 +36,9 @@ describe('routes/auth.js — forgot-password logging contract', () => {
     expect(code).toMatch(/email_failed/);
   });
 
-  it('uses the canonical subject line', () => {
-    expect(code).toContain("subject: 'Reset your Farroway password'");
+  it('uses the canonical subject line (now in the template module)', () => {
+    const tpl = readFile('server/services/emailTemplates.js');
+    expect(tpl).toContain("'Reset your Farroway password'");
   });
 
   it('writes a config_error log line when APP_BASE_URL is missing', () => {
@@ -63,16 +64,15 @@ describe('routes/auth.js — forgot-password logging contract', () => {
 });
 
 // ─── Server: reset link format ───────────────────────────────────
-describe('reset link generation', () => {
-  const code = readFile('server/routes/auth.js');
+describe('reset link generation (now via emailTemplates.buildResetUrl)', () => {
+  const tpl = readFile('server/services/emailTemplates.js');
 
   it('builds the reset URL as APP_BASE_URL + /reset-password?token=…', () => {
-    expect(code).toMatch(/\/reset-password\?token=\$\{rawToken\}/);
+    expect(tpl).toMatch(/\$\{trimmed\}\/reset-password\?token=\$\{encodeURIComponent\(token\)\}/);
   });
 
   it('trims trailing slashes from APP_BASE_URL before concatenation', () => {
-    // We expect `base = String(env.APP_BASE_URL || '').replace(/\/+$/, '')`
-    expect(code).toMatch(/APP_BASE_URL\s*\|\|\s*''\)\.replace\(\/\\\/\+\$\//);
+    expect(tpl).toMatch(/\.replace\(\/\\\/\+\$\//);
   });
 });
 

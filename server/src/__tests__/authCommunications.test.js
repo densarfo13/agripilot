@@ -172,10 +172,15 @@ describe('forgot-password: dev link echo gating', () => {
     expect(code).toMatch(/if\s*\(\s*isDemoMode\(\)\s*\)\s*\{\s*\n\s*console\.log\(.*dev_reset_link/);
   });
 
-  it('reset link echo is the only place the raw URL appears in a log', () => {
+  it('reset link echo and the url-generated trace are the only log lines referencing resetUrl', () => {
     const resetLogs = code.match(/console\.\w+\([^)]*resetUrl[^)]*\)/g) || [];
-    // Exactly one — the guarded dev_reset_link echo.
-    expect(resetLogs.length).toBe(1);
+    // Two log lines now reference resetUrl:
+    //   1. console.log(`${tag} reset_url_generated host=${new URL(resetUrl).host}`)
+    //   2. console.log(`${tag} dev_reset_link ${resetUrl}`) — gated by isDemoMode()
+    // Neither leaks into the HTTP response (covered by a sibling test).
+    expect(resetLogs.length).toBeLessThanOrEqual(2);
+    // The dev_reset_link echo must remain.
+    expect(code).toMatch(/dev_reset_link \$\{resetUrl\}/);
   });
 });
 

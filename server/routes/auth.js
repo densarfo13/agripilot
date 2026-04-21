@@ -8,6 +8,10 @@ import { setAuthCookies, clearAuthCookies } from '../lib/cookies.js';
 import { writeAuditLog } from '../lib/audit.js';
 import { isDemoMode } from '../lib/demoMode.js';
 import {
+  buildResetUrl,
+  buildPasswordResetEmail,
+} from '../services/emailTemplates.js';
+import {
   generateOpaqueToken,
   signAccessToken,
   signRefreshToken,
@@ -544,41 +548,51 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
       });
       console.log(`${tag} token_created userId=${user.id} expiresIn=${Math.round(RESET_TOKEN_EXPIRY_MS / 60000)}m`);
 
-      // Ensure the reset link always points at APP_BASE_URL without a
-      // trailing slash so the query-string join is predictable.
-      const base = String(env.APP_BASE_URL || '').replace(/\/+$/, '');
-      const resetUrl = `${base}/reset-password?token=${rawToken}`;
-
-      // In non-production environments OR when DEMO_MODE is
-      // explicitly enabled, echo the reset URL to the server log so
-      // the operator can copy it directly during pilot / demo runs.
-      // Gated via isDemoMode() (single source of truth); this never
-      // writes the link into an HTTP response body.
-      if (isDemoMode()) {
-        console.log(`${tag} dev_reset_link ${resetUrl}`);
-      }
-
-      // Fire the email. `sendEmail` never throws; we inspect the
-      // structured result so we can log success vs failure crisply.
-      console.log(`${tag} email_send_start to=${user.email}`);
-      const result = await sendEmail({
-        to: user.email,
-        subject: 'Reset your Farroway password',
-        text: [
-          'You requested a password reset for your Farroway account.',
-          'Click the link below to reset your password (valid for 30 minutes):',
-          resetUrl,
-          'If you did not request this, you can safely ignore this email.',
-        ].join('\n\n'),
-        html: `
-          <p>You requested a password reset for your Farroway account.</p>
-          <p>Click the link below to reset your password. This link is valid for <strong>30 minutes</strong>.</p>
-          <p><a href="${resetUrl}" style="background:#22c55e;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Reset password</a></p>
-          <p>Or copy this link: <code>${resetUrl}</code></p>
-          <p>If you did not request this, you can safely ignore this email.</p>
-        `,
-        requestId: reqId,
+      // Build the reset URL via the pure helper so the same validation
+      // + trailing-slash trim is applied everywhere (route + tests).
+      // ABORT the send when the URL can't be built — the previous code
+      // path would happily dispatch a relative "/reset-password?token=…"
+      // href, which Outlook / some mobile mail clients render as a
+      // non-clickable span. That's the "link is missing or not
+      // visible" class of report. Anti-enumeration response shape is
+      // preserved at the end of the handler.
+      const expiryMinutes = Math.round(RESET_TOKEN_EXPIRY_MS / 60000);
+      const urlResult = buildResetUrl({
+        appBaseUrl: env.APP_BASE_URL,
+        token:      rawToken,
       });
+      let result;
+      if (!urlResult.ok) {
+        console.error(`${tag} reset_url_build_failed error=${urlResult.error} appBaseUrl=${env.APP_BASE_URL || '(unset)'}`);
+        result = { success: false, provider: 'none', error: `reset_url_build_failed: ${urlResult.error}` };
+      } else {
+        const resetUrl = urlResult.url;
+        console.log(`${tag} reset_url_generated host=${new URL(resetUrl).host}`);
+
+        // In non-production environments OR when DEMO_MODE is
+        // explicitly enabled, echo the reset URL to the server log so
+        // the operator can copy it directly during pilot / demo runs.
+        // Gated via isDemoMode() (single source of truth); this never
+        // writes the link into an HTTP response body.
+        if (isDemoMode()) {
+          console.log(`${tag} dev_reset_link ${resetUrl}`);
+        }
+
+        // Fire the email. `sendEmail` never throws; we inspect the
+        // structured result so we can log success vs failure crisply.
+        // The body is built by the pure emailTemplates module so the
+        // button and the plain-text fallback always share the same
+        // absolute href — no empty hrefs, no relative paths.
+        const { subject, text, html } = buildPasswordResetEmail({ resetUrl, expiryMinutes });
+        console.log(`${tag} email_send_start to=${user.email}`);
+        result = await sendEmail({
+          to: user.email,
+          subject,
+          text,
+          html,
+          requestId: reqId,
+        });
+      }
 
       if (result.success) {
         console.log(`${tag} email_sent provider=${result.provider}${result.skipped ? ' (console-only)' : ''}`);
