@@ -29,18 +29,19 @@
  * UI can show "Status changed since last visit" without any push.
  */
 
-// ESM-safe lazy bridge to autoTriage so we don't create an eager
-// top-level circular dep (autoTriage imports ISSUE_SEVERITY +
-// ISSUE_STATUS from this file). Using a dynamic import would make
-// createIssue async, which would be a breaking API change — instead
-// we pre-wire the module handle from the consumer side via
-// `__wireAutoTriage()`, called once at module graph init below.
+import { planAutomation } from './automationRules.js';
+
+// Backward-compat bridge kept for the legacy autoTriage.js caller —
+// it still self-wires, but we no longer depend on it; the direct
+// import above is the source of truth.
 let _autoTriageRef = null;
 export function __wireAutoTriage(fn) { _autoTriageRef = fn || null; }
 
 const STORAGE_KEY        = 'farroway.issues';
 const LAST_SEEN_KEY      = 'farroway.lastSeenIssueUpdates';
 const OFFICER_REG_KEY    = 'farroway.officerRegistry';
+const AUDIT_KEY          = 'farroway.issueAutomationAudit';
+const CLUSTERS_KEY       = 'farroway.issueClusters';
 
 export const ISSUE_STATUS = Object.freeze({
   OPEN:        'open',
@@ -266,57 +267,100 @@ export function createIssue({
   let issue = baseIssue;
 
   if (autoTriage) {
-    // Lazy-import the triage module so the store can be consumed in
-    // environments that never opt in (unit tests, SSR probes, etc.)
-    // without paying for the extra code.
+    // Full automation plan from src/lib/issues/automationRules.js.
+    // The planner is pure — it tallies classification, severity,
+    // assignment, cluster, and escalation. This function just
+    // applies the decisions.
     //
-    // The planner is pure — it returns the decisions, we apply them.
-    // We NEVER change status here; assignment uses ISSUE_STATUS.ASSIGNED
-    // only when a real officer is picked. Admin queue stays 'open'.
-    //
-    // Pass the CALLER'S explicit severity (or null) rather than the
-    // already-defaulted `baseIssue.severity`, so inferSeverity can
-    // actually infer when the caller didn't set one.
+    // Pass the CALLER'S explicit severity separately so the planner
+    // can still infer when the caller didn't set one; we reconcile
+    // below (explicit caller severity always wins the stored value
+    // but the scored plan is kept in the audit).
     const triageInput = { ...baseIssue, severity: callerSeverity };
-    const triage = autoTriageSync(triageInput, { registry });
+    const plan = planAutomationSync(triageInput, { registry });
+
     const triageNotes = [];
-    if (triage.suggestedNote) {
+    // Farmer-visible suggestion — gated by planAutomation's safety
+    // rules. `suggested: true` so the farmer view hides it until an
+    // officer explicitly re-sends, and the officer view labels it.
+    if (plan.suggestion && plan.suggestion.text) {
       triageNotes.push({
         id:         genId('note'),
         authorRole: 'system',
         authorId:   null,
-        text:       triage.suggestedNote.text,
+        text:       plan.suggestion.text,
         system:     true,
         suggested:  true,
+        kind:       plan.suggestion.kind,
         createdAt:  stamp,
       });
     }
-    if (triage.systemNote) {
+    // Assignment / admin-queue system note — gives context in both
+    // the farmer timeline (hidden because system:true) and admin view.
+    const assignText = plan.assignment && plan.assignment.officerId
+      ? `Auto-assigned to ${plan.assignment.officerId} (${plan.assignment.reasonTier})`
+      : `Routed to admin queue (${plan.assignment ? plan.assignment.reasonTier : 'no_registry'})`;
+    triageNotes.push({
+      id:         genId('note'),
+      authorRole: 'system',
+      authorId:   null,
+      text:       assignText,
+      system:     true,
+      createdAt:  stamp,
+    });
+    // Escalation system note (spec §9)
+    if (plan.escalate) {
       triageNotes.push({
         id:         genId('note'),
         authorRole: 'system',
         authorId:   null,
-        text:       triage.systemNote.text,
+        text:       `Escalated: ${plan.escalateReasons.map((r) => r.rule).join(', ')}`,
         system:     true,
         createdAt:  stamp,
       });
     }
 
+    const picked = plan.assignment && plan.assignment.officerId;
     issue = {
       ...baseIssue,
-      // Severity respects the caller's explicit value; autoTriage only
-      // refines when the caller sent null.
-      severity:   triage.severity || baseIssue.severity,
+      // Explicit caller severity always wins the stored value;
+      // otherwise the planner's scored severity applies.
+      severity:   callerSeverity || (plan.severityPlan && plan.severityPlan.severity) || baseIssue.severity,
+      // Expose the plan's classification + assignment reasoning so
+      // admin / officer views can surface "why" alongside "what".
+      autoTriage: {
+        classifiedAs: plan.classification && plan.classification.issueType,
+        confidence:   plan.classification && plan.classification.confidence,
+        matchedRules: plan.classification && plan.classification.matchedRules,
+      },
+      autoSeverity: {
+        severity: plan.severityPlan && plan.severityPlan.severity,
+        reasons:  plan.severityPlan && plan.severityPlan.reasons,
+      },
+      assignment: {
+        officerId:  plan.assignment && plan.assignment.officerId,
+        reasonTier: plan.assignment && plan.assignment.reasonTier,
+        reasons:    plan.assignment && plan.assignment.reasons,
+      },
       notes:      triageNotes,
-      // Assignment side-effects — stamp assignedTo + firstAssignedAt
-      // inline so we don't need a follow-up assignIssue call (which
-      // would also append its own system note and duplicate the one
-      // above).
-      assignedTo: triage.assignTo || null,
-      status:     triage.assignTo ? ISSUE_STATUS.ASSIGNED : ISSUE_STATUS.OPEN,
-      firstAssignedAt: triage.assignTo ? stamp : null,
-      farmerAck:  triage.farmerAck || null,
+      assignedTo: picked || null,
+      // Escalation overrides the normal assigned/open choice — the
+      // admin queue always sees the escalated flag.
+      status:     plan.escalate
+        ? ISSUE_STATUS.ESCALATED
+        : (picked ? ISSUE_STATUS.ASSIGNED : ISSUE_STATUS.OPEN),
+      firstAssignedAt: picked ? stamp : null,
+      escalatedAt:     plan.escalate ? stamp : null,
+      escalatedAuto:   !!plan.escalate,
+      escalateReasons: plan.escalateReasons || [],
+      clusterId:       plan.cluster ? plan.cluster.clusterId : null,
+      farmerAck:       plan.farmerAck,
     };
+
+    // Persist the per-issue audit trail + any cluster record so
+    // admin dashboards can correlate across refreshes.
+    if (plan.audit && plan.audit.length > 0) appendAudit(baseIssue.id, plan.audit);
+    if (plan.cluster) upsertCluster(plan.cluster);
   }
 
   const list = readList();
@@ -326,25 +370,14 @@ export function createIssue({
   return freezeIssue(issue);
 }
 
-// Sync bridge — the triage layer is wired via __wireAutoTriage at
-// module-graph init time (see bottom of autoTriage.js). If it's not
-// wired yet, createIssue({ autoTriage: true }) just behaves as if
-// no officers matched — safe degradation, never a crash.
-function autoTriageSync(baseIssue, { registry = null } = {}) {
-  const plan = typeof _autoTriageRef === 'function'
-    ? _autoTriageRef(baseIssue, {
-        registry: registry || getOfficerRegistry(),
-        allIssues: readList(),
-        now: baseIssue.createdAt,
-      })
-    : null;
-  return plan || {
-    severity: baseIssue.severity,
-    assignTo: null,
-    systemNote: null,
-    suggestedNote: null,
-    farmerAck: null,
-  };
+// Direct planAutomation call — pure, imported at top. No circular
+// dep (the rule modules don't import back into the store).
+function planAutomationSync(baseIssue, { registry = null } = {}) {
+  return planAutomation(baseIssue, {
+    registry:  registry || getOfficerRegistry(),
+    allIssues: readList(),
+    now:       baseIssue.createdAt,
+  });
 }
 
 /**
@@ -598,6 +631,152 @@ export function upsertOfficer(officer) {
   return officer;
 }
 
+// ─── Automation audit trail (spec §12) ───────────────────────────
+// Shape: { [issueId]: AuditEntry[] }
+//   AuditEntry = { action, result, reasons, timestamp, ... }
+//
+// Written by planAutomationSync + by manual-override calls. Admin
+// reads it via getAutomationAudit(issueId).
+
+function readAudit() {
+  if (!hasStorage()) return {};
+  try {
+    const raw = window.localStorage.getItem(AUDIT_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch { return {}; }
+}
+
+function writeAudit(map) {
+  if (!hasStorage()) return false;
+  try {
+    window.localStorage.setItem(AUDIT_KEY, JSON.stringify(map));
+    return true;
+  } catch { return false; }
+}
+
+function appendAudit(issueId, entries) {
+  if (!issueId || !Array.isArray(entries) || entries.length === 0) return false;
+  const map = readAudit();
+  const list = Array.isArray(map[issueId]) ? map[issueId].slice() : [];
+  for (const e of entries) if (e) list.push(e);
+  map[issueId] = list;
+  return writeAudit(map);
+}
+
+export function getAutomationAudit(issueId) {
+  if (!issueId) return [];
+  const map = readAudit();
+  const list = map[String(issueId)];
+  return Array.isArray(list)
+    ? list.map((e) => Object.freeze({ ...e }))
+    : [];
+}
+
+// ─── Clusters (spec §10) ─────────────────────────────────────────
+function readClusters() {
+  if (!hasStorage()) return {};
+  try {
+    const raw = window.localStorage.getItem(CLUSTERS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch { return {}; }
+}
+
+function writeClusters(map) {
+  if (!hasStorage()) return false;
+  try {
+    window.localStorage.setItem(CLUSTERS_KEY, JSON.stringify(map));
+    return true;
+  } catch { return false; }
+}
+
+function upsertCluster(cluster) {
+  if (!cluster || !cluster.clusterId) return false;
+  const map = readClusters();
+  map[cluster.clusterId] = {
+    ...cluster,
+    lastSeenAt: Date.now(),
+  };
+  return writeClusters(map);
+}
+
+export function getClusters() {
+  const map = readClusters();
+  return Object.values(map).map((c) => Object.freeze({ ...c }))
+    .sort((a, b) => (b.lastSeenAt || 0) - (a.lastSeenAt || 0));
+}
+
+// ─── Manual override (spec §11) ──────────────────────────────────
+/**
+ * setIssueOverride — human re-classification / re-severity /
+ * re-assignment. Records every change in the audit trail so the
+ * automation's view and the human's view can be compared later.
+ *
+ *   setIssueOverride(issueId, patch, { actorRole, actorId })
+ *     patch = { issueType?, severity?, assignedTo?, suggestedNoteText? }
+ *   → the updated, frozen issue (or null)
+ */
+export function setIssueOverride(issueId, patch = {}, {
+  actorRole = null, actorId = null,
+} = {}) {
+  if (!issueId) return null;
+  const list = readList();
+  const idx = list.findIndex((i) => i && i.id === String(issueId));
+  if (idx < 0) return null;
+  const before = list[idx];
+  const now = Date.now();
+  const changes = {};
+  const auditReasons = [];
+
+  if (patch.issueType && VALID_TYPES.has(String(patch.issueType))
+      && patch.issueType !== before.issueType) {
+    changes.issueType = String(patch.issueType);
+    auditReasons.push({ rule: 'override_issueType',
+      detail: `${before.issueType} → ${changes.issueType}` });
+  }
+  if (patch.severity && VALID_SEVERITIES.has(String(patch.severity))
+      && patch.severity !== before.severity) {
+    changes.severity = String(patch.severity);
+    auditReasons.push({ rule: 'override_severity',
+      detail: `${before.severity} → ${changes.severity}` });
+  }
+  if (patch.assignedTo && String(patch.assignedTo) !== String(before.assignedTo || '')) {
+    changes.assignedTo = String(patch.assignedTo);
+    changes.status = ISSUE_STATUS.ASSIGNED;
+    auditReasons.push({ rule: 'override_assignedTo',
+      detail: `${before.assignedTo || 'admin_queue'} → ${changes.assignedTo}` });
+  }
+  if (Object.keys(changes).length === 0) return freezeIssue(before);
+
+  const next = {
+    ...before,
+    ...changes,
+    updatedAt: now,
+    notes: Array.isArray(before.notes) ? before.notes.slice() : [],
+  };
+  next.notes.push({
+    id:         genId('note'),
+    authorRole: actorRole || 'admin',
+    authorId:   actorId ? String(actorId) : null,
+    text:       `Manual override: ${auditReasons.map((r) => r.rule).join(', ')}`,
+    system:     true,
+    createdAt:  now,
+  });
+  list[idx] = next;
+  writeList(list);
+  appendAudit(next.id, [{
+    action: 'manual_override',
+    result: 'applied',
+    reasons: auditReasons,
+    actorRole: actorRole || 'admin',
+    actorId:   actorId || null,
+    timestamp: now,
+  }]);
+  notify();
+  return freezeIssue(next);
+}
+
 // ─── Test-only helpers ───────────────────────────────────────────
 export const _internal = Object.freeze({
   STORAGE_KEY,
@@ -610,6 +789,8 @@ export const _internal = Object.freeze({
       window.localStorage.removeItem(STORAGE_KEY);
       window.localStorage.removeItem(LAST_SEEN_KEY);
       window.localStorage.removeItem(OFFICER_REG_KEY);
+      window.localStorage.removeItem(AUDIT_KEY);
+      window.localStorage.removeItem(CLUSTERS_KEY);
     } catch { /* ignore */ }
   },
 });
