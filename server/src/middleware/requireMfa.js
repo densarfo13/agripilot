@@ -23,6 +23,7 @@ import prisma from '../config/database.js';
 import { isMfaRequired, isMfaExempt } from '../modules/mfa/service.js';
 import { opsEvent } from '../utils/opsLogger.js';
 import { isDemoMode, isDemoAccount } from '../../lib/demoMode.js';
+import { writeAuditLog } from '../modules/audit/service.js';
 
 /**
  * Full MFA gate: blocks access if MFA is required but not satisfied.
@@ -46,6 +47,20 @@ export function requireMfa(req, res, next) {
   // Real accounts never hit this branch, even when DEMO_MODE is on.
   if (isDemoMode() && isDemoAccount(req.user.email)) {
     opsEvent('mfa', 'demo_bypass', 'info', { userId: req.user.sub, role });
+    // Durable audit trail — compliance reviews need to see every
+    // time an MFA gate was bypassed, even for demo accounts.
+    // Non-blocking: never await / never throw from middleware.
+    writeAuditLog({
+      userId: req.user.sub,
+      action: 'mfa.demo_bypass',
+      details: {
+        role,
+        email:  req.user.email,
+        ip:     req.ip || null,
+        path:   req.originalUrl || req.url || null,
+        method: req.method,
+      },
+    }).catch(() => { /* non-fatal */ });
     return next();
   }
 

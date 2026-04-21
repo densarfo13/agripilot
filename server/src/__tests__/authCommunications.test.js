@@ -142,6 +142,12 @@ describe('requireMfa — demo-mode bypass (source contract)', () => {
     expect(code).toContain('isDemoAccount');
   });
 
+  it('writes an audit log row whenever a demo bypass fires', () => {
+    expect(code).toContain("from '../modules/audit/service.js'");
+    expect(code).toContain('writeAuditLog');
+    expect(code).toMatch(/action:\s*['"]mfa\.demo_bypass['"]/);
+  });
+
   it('bypass requires BOTH demo-mode AND an allow-listed email', () => {
     // Look for the guarded branch:
     //   if (isDemoMode() && isDemoAccount(req.user.email)) return next();
@@ -208,6 +214,53 @@ describe('SMS recovery endpoints', () => {
   it('exposes POST /start-verification and /check-verification', () => {
     expect(routes).toMatch(/router\.post\(['"]\/start-verification['"]/);
     expect(routes).toMatch(/router\.post\(['"]\/check-verification['"]/);
+  });
+
+  it('sets auth cookies when the SMS service issues a session', () => {
+    expect(routes).toContain('setAuthCookies');
+  });
+});
+
+// ─── Dead-file cleanup ───────────────────────────────────────────
+describe('dead legacy auth pages removed', () => {
+  it('ForgotPasswordPage.jsx is gone', () => {
+    expect(fs.existsSync(path.join(process.cwd(), 'src/pages/ForgotPasswordPage.jsx'))).toBe(false);
+  });
+  it('ResetPasswordPage.jsx is gone', () => {
+    expect(fs.existsSync(path.join(process.cwd(), 'src/pages/ResetPasswordPage.jsx'))).toBe(false);
+  });
+  it('App.jsx no longer imports the dead pages', () => {
+    const app = readFile('src/App.jsx');
+    expect(app).not.toContain('ForgotPasswordPage.jsx');
+    expect(app).not.toContain('ResetPasswordPage.jsx');
+  });
+});
+
+// ─── Smoke scripts present for operator use ──────────────────────
+describe('pilot smoke scripts', () => {
+  it('scripts/smoke-email.mjs exists and exits cleanly on missing config', () => {
+    expect(fs.existsSync(path.join(process.cwd(), 'scripts/smoke-email.mjs'))).toBe(true);
+    const code = readFile('scripts/smoke-email.mjs');
+    expect(code).toContain('validateEmailConfig');
+    expect(code).toContain('buildPasswordResetEmail');
+  });
+  it('scripts/smoke-sms.mjs exists and uses the real provider', () => {
+    expect(fs.existsSync(path.join(process.cwd(), 'scripts/smoke-sms.mjs'))).toBe(true);
+    const code = readFile('scripts/smoke-sms.mjs');
+    expect(code).toContain('getActiveSmsVerificationProvider');
+    expect(code).toContain('validateSmsConfig');
+  });
+});
+
+// ─── ForgotPasswordSms phone hint ────────────────────────────────
+describe('ForgotPasswordSms phone hint', () => {
+  const code = readFile('src/pages/ForgotPasswordSms.jsx');
+  it('renders a persistent hint asking for the country code', () => {
+    expect(code).toContain('auth.smsReset.phoneHint');
+    expect(code).toContain('country code');
+  });
+  it('has aria-describedby wired to the hint element', () => {
+    expect(code).toContain('aria-describedby="sms-phone-hint"');
   });
 });
 

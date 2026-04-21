@@ -113,8 +113,6 @@ const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
 const SecurityRequestsPage = lazy(() => import('./pages/SecurityRequestsPage.jsx'));
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage.jsx'));
 const PilotQAPage = lazy(() => import('./pages/PilotQAPage.jsx'));
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const AutoNotificationsPage = lazy(() => import('./pages/AutoNotificationsPage.jsx'));
 const ImpactDashboardPage = lazy(() => import('./pages/ImpactDashboardPage.jsx'));
 const AdminIssuesPage = lazy(() => import('./pages/AdminIssuesPage.jsx'));

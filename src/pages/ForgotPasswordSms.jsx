@@ -215,13 +215,21 @@ export default function ForgotPasswordSms() {
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder={resolve(t, 'auth.smsReset.phonePlaceholder',
-                  'Phone number with country code (e.g. +1 555 555 1212)')}
+                  'Phone number, e.g. +233 24 123 4567')}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 style={S.input}
                 disabled={loading}
+                aria-describedby="sms-phone-hint"
                 data-testid="sms-phone"
               />
+              {/* Persistent hint — stays visible once the user starts
+                  typing, so the "must start with +" rule isn't lost
+                  the moment the placeholder disappears. */}
+              <p id="sms-phone-hint" style={S.hint}>
+                {resolve(t, 'auth.smsReset.phoneHint',
+                  'Include your country code, starting with +.')}
+              </p>
             </div>
             <button
               type="submit"
@@ -337,6 +345,7 @@ const S = {
   subtitle:   { color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', marginTop: '0.25rem', marginBottom: '1.25rem' },
   form:       { display: 'flex', flexDirection: 'column', gap: '1rem' },
   label:      { fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block' },
+  hint:       { fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.35rem', marginBottom: 0, lineHeight: 1.4 },
   input:      { background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#fff', outline: 'none', width: '100%', fontSize: '0.875rem', boxSizing: 'border-box' },
   errorBox:   { background: 'rgba(252,165,165,0.1)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
   successBox: { background: 'rgba(134,239,172,0.1)', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#86EFAC', fontSize: '0.875rem', marginBottom: '0.5rem' },
