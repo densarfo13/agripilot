@@ -173,8 +173,16 @@ describe('validateEditForm', () => {
   it('empty size is fine — size is optional', () => {
     expect('size' in validateEditForm({ farmName: 'A', size: '' })).toBe(false);
   });
-  it('returns empty object for a valid form', () => {
-    expect(validateEditForm({ farmName: 'A', size: '3' })).toEqual({});
+  it('flags missing country (required by structured-inputs spec)', () => {
+    expect(validateEditForm({ farmName: 'A', cropType: 'maize' }).country).toBeTruthy();
+  });
+  it('flags missing cropType (required by structured-inputs spec)', () => {
+    expect(validateEditForm({ farmName: 'A', country: 'GH' }).cropType).toBeTruthy();
+  });
+  it('returns empty object for a valid form with all required fields', () => {
+    expect(validateEditForm({
+      farmName: 'A', cropType: 'maize', country: 'GH', size: '3',
+    })).toEqual({});
   });
 });
 

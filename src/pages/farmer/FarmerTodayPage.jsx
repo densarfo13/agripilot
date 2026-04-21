@@ -38,6 +38,8 @@ import {
   getActiveFarm,
   getTaskCompletions,
   getFeedback,
+  isAlertDismissed,
+  dismissAlert,
 } from '../../store/farrowayLocal.js';
 import { computeProgress, STATUS_LABEL_KEY } from '../../lib/progress/progressEngine.js';
 import { generateTasks } from '../../lib/tasks/taskEngine.js';
@@ -319,6 +321,32 @@ export default function FarmerTodayPage() {
 
   const nextHintText = screen.nextHint?.text
     || (screen.nextHint?.textKey ? t(screen.nextHint.textKey) : null);
+
+  // ─── Alert dismiss memory + dedup (spec §§4-5) ───────────
+  // When the top reminder banner is showing a weather / high-risk
+  // message, the RiskAlertsPanel below must NOT repeat the same
+  // category — priority rule: critical risk > weather > generic
+  // reminder. We also hide the banner when the farmer has dismissed
+  // it for the current cycle (day).
+  const [dismissBump, setDismissBump] = useState(0);
+
+  function dismissTopAlert(alertId, messageKey) {
+    if (!alertId) return;
+    dismissAlert(alertId, messageKey || '');
+    setDismissBump((n) => n + 1);
+  }
+
+  // Is the top reminder banner actually on screen right now? We use
+  // this both to pick the <RiskAlertsPanel> suppression set AND to
+  // read `dismissBump` so the memo invalidates on every dismiss.
+  const topBannerActive = useMemo(() => {
+    // eslint-disable-next-line no-unused-vars
+    const _bump = dismissBump;
+    if (!reminder.show) return false;
+    const content = t(reminder.messageKey) || reminderFallback(reminder.kind);
+    return !isAlertDismissed(`reminder:${reminder.kind}`, content);
+  }, [reminder.show, reminder.kind, reminder.messageKey, dismissBump, t]);
+  const topBannerKind = reminder.kind || null;
 
   // ─── Live weather summary (Open-Meteo via weatherService) ──
   // Fetched once per active-cycle change. Falls back to the
@@ -696,8 +724,10 @@ export default function FarmerTodayPage() {
       />
 
       {/* Reminder banner (spec §4/§5/§6). At most one active card.
-          Weather / risk severities win over missed-day / daily. */}
-      {reminder.show && (
+          Weather / risk severities win over missed-day / daily. Hidden
+          when the farmer has dismissed it for the current cycle — see
+          farrowayLocal.isAlertDismissed + §5 "dismiss memory". */}
+      {topBannerActive && (
         <div
           style={{
             ...S.reminderBanner,
@@ -717,6 +747,18 @@ export default function FarmerTodayPage() {
           <span style={S.reminderText}>
             {t(reminder.messageKey) || reminderFallback(reminder.kind)}
           </span>
+          <button
+            type="button"
+            onClick={() => dismissTopAlert(
+              `reminder:${reminder.kind}`,
+              t(reminder.messageKey) || reminderFallback(reminder.kind),
+            )}
+            style={S.reminderDismiss}
+            aria-label={t('common.dismiss') || 'Dismiss'}
+            data-testid="reminder-banner-dismiss"
+          >
+            {'\u2715'}
+          </button>
         </div>
       )}
 
@@ -805,7 +847,11 @@ export default function FarmerTodayPage() {
           />
 
           {/* 3. RISK ALERTS — panel self-hides when empty */}
-          <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
+          <RiskAlertsPanel
+            alerts={topBannerActive && topBannerKind === 'high_risk' ? [] : riskAlerts}
+            weatherAlerts={topBannerActive && topBannerKind === 'weather' ? [] : weatherAlerts}
+            weatherBadge={topBannerActive && topBannerKind === 'weather' ? null : weatherBadge}
+          />
 
           {/* 4. SECONDARY TASKS (max 2) */}
           <SecondaryTaskList tasks={screen.secondaryTasks} />
@@ -845,7 +891,11 @@ export default function FarmerTodayPage() {
 
           {/* Risk alerts — still render in DONE if weather / issues
               genuinely raise risk; the panel self-hides otherwise. */}
-          <RiskAlertsPanel alerts={riskAlerts} weatherAlerts={weatherAlerts} weatherBadge={weatherBadge} />
+          <RiskAlertsPanel
+            alerts={topBannerActive && topBannerKind === 'high_risk' ? [] : riskAlerts}
+            weatherAlerts={topBannerActive && topBannerKind === 'weather' ? [] : weatherAlerts}
+            weatherBadge={topBannerActive && topBannerKind === 'weather' ? null : weatherBadge}
+          />
 
           <OptionalChecksSection
             items={screen.optionalChecks}
@@ -1035,7 +1085,12 @@ const S = {
     fontSize: '0.875rem', fontWeight: 600,
   },
   reminderIcon: { fontSize: '1rem', lineHeight: 1 },
-  reminderText: { lineHeight: 1.3 },
+  reminderText: { lineHeight: 1.3, flex: 1 },
+  reminderDismiss: {
+    marginLeft: 'auto', background: 'transparent', border: 'none',
+    color: 'rgba(255,255,255,0.7)', fontSize: '1rem', cursor: 'pointer',
+    padding: '2px 6px', borderRadius: 6,
+  },
   permissionCard: {
     padding: '0.75rem 0.875rem',
     borderRadius: '14px',

@@ -32,6 +32,12 @@ import {
   assertRecomputeTriggered,
 } from '../utils/editFarm/index.js';
 import { getEditModeCopy } from '../utils/editFarm/editModeCopy.js';
+import {
+  COUNTRIES, getStatesForCountry, hasStatesForCountry,
+} from '../config/countriesStates.js';
+import {
+  searchCrops, normalizeCrop, CROP_OTHER, getCropLabel,
+} from '../config/crops.js';
 
 const CROP_STAGES = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -80,6 +86,18 @@ export default function EditFarmScreen() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+
+  // Crop picker is structured: the user either clicks a chip (which
+  // writes a normalized code to `form.cropType`) or picks "Other" and
+  // names one (which writes a normalized code from `cropOther`).
+  // Free-typed text alone is not accepted — it only filters the chip
+  // list. These two pieces of local state stay out of the form + patch
+  // because they're UI, not data.
+  const initialCrop = (original.cropType || original.crop || '').toString().toLowerCase();
+  const [cropQuery, setCropQuery] = useState(() => getCropLabel(initialCrop));
+  const [cropOther, setCropOther] = useState(
+    () => (initialCrop && !getCropLabel(initialCrop) ? initialCrop : ''),
+  );
   // Brief "Farm updated — your guidance has been refreshed" flash
   // shown after a successful save, before navigating back to Home.
   const [successFlash, setSuccessFlash] = useState('');
@@ -110,6 +128,55 @@ export default function EditFarmScreen() {
       setFieldErrors((prev) => ({ ...prev, [field]: '' }));
     }
   }
+
+  // Country change resets the dependent state dropdown so the user
+  // never saves a stale subdivision code.
+  function handleCountryChange(e) {
+    setForm((prev) => ({ ...prev, country: e.target.value, stateCode: '' }));
+    if (fieldErrors.country) {
+      setFieldErrors((prev) => ({ ...prev, country: '' }));
+    }
+  }
+
+  // Typing in the crop input FILTERS the list but also clears the
+  // stored code — the user must pick a chip again (or "Other" and
+  // supply a name). This is how we disallow free text.
+  function handleCropQueryChange(e) {
+    const next = e.target.value;
+    setCropQuery(next);
+    setForm((prev) => ({ ...prev, cropType: '' }));
+    if (fieldErrors.cropType) {
+      setFieldErrors((prev) => ({ ...prev, cropType: '' }));
+    }
+  }
+
+  function pickCrop(code) {
+    setForm((prev) => ({ ...prev, cropType: code }));
+    if (code !== CROP_OTHER) {
+      setCropQuery(getCropLabel(code));
+      setCropOther('');
+    }
+    if (fieldErrors.cropType) {
+      setFieldErrors((prev) => ({ ...prev, cropType: '' }));
+    }
+  }
+
+  function handleCropOtherChange(e) {
+    const next = e.target.value;
+    setCropOther(next);
+    // While "Other" is selected, the stored code follows whatever
+    // the user types, normalized. Clearing the input drops cropType
+    // back to 'other' so validation still blocks save until named.
+    const normalized = normalizeCrop(next);
+    setForm((prev) => ({
+      ...prev,
+      cropType: normalized || CROP_OTHER,
+    }));
+  }
+
+  const cropSuggestions = useMemo(() => {
+    return searchCrops(cropQuery, { limit: 12 });
+  }, [cropQuery]);
 
   async function handleSave(e) {
     e?.preventDefault?.();
@@ -212,38 +279,97 @@ export default function EditFarmScreen() {
           </span>}
         </label>
 
+        {/* Crop — searchable, chip-picked; free text is only for "Other". */}
         <label style={S.label}>
-          {resolve(t, 'setup.mainCrop', 'Crop')}
+          {resolve(t, 'setup.mainCrop', 'Crop')}{' *'}
           <input
             type="text"
-            value={form.cropType}
-            onChange={(e) => update('cropType', e.target.value)}
-            style={S.input}
+            value={cropQuery}
+            onChange={handleCropQueryChange}
+            placeholder={resolve(t, 'farm.editFarm.cropSearchPlaceholder',
+              'Search common crops\u2026')}
+            style={{
+              ...S.input,
+              ...(fieldErrors.cropType ? S.inputError : null),
+            }}
             data-testid="edit-farm-crop"
+            aria-invalid={!!fieldErrors.cropType}
           />
+          <div style={S.chipRow} data-testid="edit-farm-crop-suggestions">
+            {cropSuggestions.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => pickCrop(c.code)}
+                style={{
+                  ...S.chip,
+                  ...(form.cropType === c.code || (c.code === CROP_OTHER && form.cropType && !getCropLabel(form.cropType))
+                    ? S.chipActive : null),
+                }}
+                data-testid={`edit-farm-crop-${c.code}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {form.cropType === CROP_OTHER && (
+            <input
+              type="text"
+              value={cropOther}
+              onChange={handleCropOtherChange}
+              placeholder={resolve(t, 'farm.editFarm.cropOtherPlaceholder',
+                'Name the crop')}
+              style={{ ...S.input, marginTop: '0.375rem' }}
+              data-testid="edit-farm-crop-other"
+            />
+          )}
+          {fieldErrors.cropType && <span style={S.fieldError}>
+            {resolve(t, fieldErrors.cropType,
+              'Pick a crop or choose "Other" and name one.')}
+          </span>}
         </label>
 
+        {/* Country — dropdown bound to the curated list. */}
         <label style={S.label}>
-          {resolve(t, 'setup.country', 'Country')}
-          <input
-            type="text"
+          {resolve(t, 'setup.country', 'Country')}{' *'}
+          <select
             value={form.country}
-            onChange={(e) => update('country', e.target.value)}
-            style={S.input}
+            onChange={handleCountryChange}
+            style={{
+              ...S.input,
+              ...(fieldErrors.country ? S.inputError : null),
+            }}
             data-testid="edit-farm-country"
-          />
+            aria-invalid={!!fieldErrors.country}
+          >
+            <option value="">—</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+          {fieldErrors.country && <span style={S.fieldError}>
+            {resolve(t, fieldErrors.country, 'Country is required.')}
+          </span>}
         </label>
 
-        <label style={S.label}>
-          {resolve(t, 'setup.location', 'Location (state or region)')}
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => update('location', e.target.value)}
-            style={S.input}
-            data-testid="edit-farm-location"
-          />
-        </label>
+        {/* State / region — dependent dropdown; hidden when the
+            country has no curated subdivisions. */}
+        {hasStatesForCountry(form.country) && (
+          <label style={S.label}>
+            {resolve(t, 'setup.state', 'State / Region')}
+            <select
+              value={form.stateCode}
+              onChange={(e) => update('stateCode', e.target.value)}
+              style={S.input}
+              data-testid="edit-farm-state"
+            >
+              <option value="">—</option>
+              {getStatesForCountry(form.country).map((s) => (
+                <option key={s.code} value={s.code}>{s.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div style={S.row}>
           <label style={{ ...S.label, flex: 1 }}>
@@ -351,6 +477,22 @@ const S = {
     fontSize: '0.9375rem', outline: 'none', boxSizing: 'border-box',
   },
   row: { display: 'flex', gap: '0.75rem', alignItems: 'flex-end' },
+  inputError: { borderColor: 'rgba(239,68,68,0.55)' },
+  chipRow: {
+    display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.375rem',
+  },
+  chip: {
+    padding: '0.25rem 0.625rem', borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.12)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#EAF2FF', fontSize: '0.75rem', fontWeight: 600,
+    cursor: 'pointer',
+  },
+  chipActive: {
+    borderColor: '#22C55E',
+    background: 'rgba(34,197,94,0.14)',
+    color: '#86EFAC',
+  },
   fieldError: { color: '#FCA5A5', fontSize: '0.75rem' },
   error: {
     padding: '0.625rem 0.75rem', borderRadius: 10,

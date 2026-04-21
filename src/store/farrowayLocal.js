@@ -24,6 +24,7 @@ const K = Object.freeze({
   FARMS:    'farroway.farms',
   ACTIVE:   'farroway.activeFarmId',
   QUEUE:    'farroway.pendingEvents',
+  DISMISSED_ALERTS: 'farroway.dismissedAlerts',
 });
 
 function hasStorage() {
@@ -135,34 +136,48 @@ export function getFarms() {
 export function saveFarm({
   name,
   crop,
-  location,        // legacy free-form string; preserved for back-compat
-  size,            // legacy free-form string
+  cropLabel   = null,   // human label (e.g. "Maize (corn)")
+  location,             // legacy free-form string; preserved for back-compat
+  size,                 // legacy free-form string
   program = null,
   // Canonical data shape — prefer these over legacy location/size.
-  country  = null,
-  state    = null,
-  farmSize = null,
-  sizeUnit = null,
-  stage    = null,
-  setActive = false,
+  country       = null,
+  countryLabel  = null, // human label (e.g. "Ghana")
+  state         = null,
+  stateLabel    = null, // human label (e.g. "Ashanti")
+  farmSize      = null,
+  sizeUnit      = null,
+  stage         = null,
+  setActive     = false,
 } = {}) {
   if (!name || typeof name !== 'string') return null;
   const now = Date.now();
-  const countryCode = country ? String(country).trim() : '';
+  const countryCode = country ? String(country).trim().toUpperCase() : '';
   const stateCode   = state   ? String(state).trim()   : '';
+  const cropCode    = crop    ? String(crop).trim().toLowerCase() : '';
   const sizeNum     = farmSize != null && farmSize !== ''
     ? Number(farmSize)
     : (size != null && size !== '' ? Number(size) : null);
   // Compose a human "location" string so the existing MyFarm cards
-  // keep rendering without needing to know the new fields.
+  // keep rendering without needing to know the new fields. Prefer
+  // the structured labels when available.
   const locationStr = location
     ? String(location).trim()
-    : [countryCode, stateCode].filter(Boolean).join(', ');
+    : [stateLabel || stateCode, countryLabel || countryCode].filter(Boolean).join(', ');
   const farm = {
     id: genId(),
     name: String(name).trim(),
-    crop: crop ? String(crop).trim().toLowerCase() : '',
-    // Canonical fields (spec §7).
+    crop: cropCode,
+    // Canonical normalized shape — v1 spec §1 "Stored farm object must
+    // be normalized". Code + label pair so analytics can group on the
+    // stable code while UIs can render the human label without a lookup.
+    cropLabel:    cropLabel    ? String(cropLabel).trim()    : null,
+    countryCode:  countryCode  || null,
+    countryLabel: countryLabel ? String(countryLabel).trim() : null,
+    stateCode:    stateCode    || null,
+    stateLabel:   stateLabel   ? String(stateLabel).trim()   : null,
+    // Canonical fields kept for back-compat with readers that used
+    // them before the label split.
     country:  countryCode || null,
     state:    stateCode   || null,
     farmSize: Number.isFinite(sizeNum) ? sizeNum : null,
@@ -304,4 +319,100 @@ export function defaultSender(_evt) {
   return Promise.resolve(true);
 }
 
+// ─── Dismissed-alerts memory (spec §5) ───────────────────────────
+// Shape:  { [alertId]: { ts, contentHash, cycleKey } }
+//   ts         — when the alert was dismissed
+//   contentHash — tiny fingerprint of the message so a materially
+//                 different alert under the same id surfaces again
+//   cycleKey   — YYYY-MM-DD so dismissal naturally expires overnight
+//
+// This is deliberately local-first + lightweight. A process with no
+// localStorage (SSR) sees nothing dismissed, which is the right
+// default — dismissals never travel across devices.
+const DISMISS_TTL_MS = 36 * 3600 * 1000; // 36h so weekday dismissals cover time-zone drift
+
+function todayCycleKey(now = Date.now()) {
+  const d = new Date(now);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * tiny, stable content hash — good enough to notice "the forecast
+ * changed from low_rain to excessive_heat". Not cryptographic.
+ */
+function hashContent(content) {
+  const s = String(content || '').slice(0, 400);
+  let h = 5381;
+  for (let i = 0; i < s.length; i += 1) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return String(h);
+}
+
+export function getDismissedAlerts() {
+  const map = readJson(K.DISMISSED_ALERTS, {});
+  return (map && typeof map === 'object' && !Array.isArray(map)) ? map : {};
+}
+
+/**
+ * Persist a dismissal for `alertId`. `content` is any user-visible
+ * string (message, headline) — we hash it so a materially different
+ * alert under the same id can break through.
+ */
+export function dismissAlert(alertId, content = '') {
+  if (!alertId) return false;
+  const now = Date.now();
+  const map = getDismissedAlerts();
+  map[String(alertId)] = {
+    ts: now,
+    contentHash: hashContent(content),
+    cycleKey:    todayCycleKey(now),
+  };
+  return writeJson(K.DISMISSED_ALERTS, map);
+}
+
+/**
+ * True if `alertId` is dismissed for the current cycle AND the
+ * content hasn't materially changed since dismissal.
+ *
+ *   • not dismissed          → false (show it)
+ *   • dismissed but stale    → false (TTL / cycle expired)
+ *   • dismissed, content new → false (break through)
+ *   • dismissed, still fresh → true  (keep hidden)
+ */
+export function isAlertDismissed(alertId, content = '', now = Date.now()) {
+  if (!alertId) return false;
+  const map = getDismissedAlerts();
+  const entry = map[String(alertId)];
+  if (!entry) return false;
+  if (entry.cycleKey && entry.cycleKey !== todayCycleKey(now)) return false;
+  if (entry.ts && (now - entry.ts) > DISMISS_TTL_MS) return false;
+  if (hashContent(content) !== entry.contentHash) return false;
+  return true;
+}
+
+/**
+ * Sweep out dismissals older than the TTL so the map doesn't grow.
+ * Called lazily — not on every read, to keep the common path fast.
+ */
+export function pruneDismissedAlerts(now = Date.now()) {
+  const map = getDismissedAlerts();
+  const keys = Object.keys(map);
+  if (keys.length === 0) return false;
+  let dirty = false;
+  for (const k of keys) {
+    const e = map[k];
+    if (!e || !e.ts || (now - e.ts) > DISMISS_TTL_MS) {
+      delete map[k];
+      dirty = true;
+    }
+  }
+  if (dirty) writeJson(K.DISMISSED_ALERTS, map);
+  return dirty;
+}
+
 export const _keys = K;
+export const _dismissInternal = Object.freeze({
+  DISMISS_TTL_MS, todayCycleKey, hashContent,
+});

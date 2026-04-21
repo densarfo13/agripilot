@@ -26,7 +26,7 @@
 
 /** Fields the user can edit on this screen. Anything else is rejected. */
 const EDITABLE_FIELDS = Object.freeze([
-  'farmName', 'cropType', 'country', 'location',
+  'farmName', 'cropType', 'country', 'stateCode', 'location',
   'size', 'sizeUnit', 'cropStage', 'plantedAt',
 ]);
 
@@ -45,7 +45,17 @@ export function farmToEditForm(farm = {}) {
   return {
     farmName:  f.farmName || '',
     cropType:  (f.cropType || f.crop || '').toString(),
+    // Country is stored as ISO-2 code ('GH'). Legacy records may have
+    // a label ('Ghana') — we leave those untouched here so the edit
+    // screen can detect the drift and prompt a re-pick rather than
+    // silently mapping a label we're not 100% sure about.
     country:   f.country || '',
+    // New: structured subdivision code (e.g. 'AS' for Ashanti). Falls
+    // back to farm.state for legacy records.
+    stateCode: f.stateCode || f.state || '',
+    // Free-text "location" is preserved for legacy records that
+    // pre-date stateCode. New rows should leave this blank — the
+    // dropdown writes stateCode instead.
     location:  f.location || f.locationLabel || '',
     size:      f.size != null ? String(f.size) : '',
     sizeUnit:  f.sizeUnit || (f.size ? 'ACRE' : 'ACRE'),
@@ -89,6 +99,22 @@ export function editFormToPatch(form = {}, originalFarm = {}) {
       patch.size = raw === '' || raw == null ? undefined : Number(raw);
     } else if (field === 'plantedAt') {
       patch.plantedAt = raw ? new Date(raw).toISOString() : null;
+    } else if (field === 'country') {
+      // Country is an ISO-2 code from the dropdown. Upper-case it
+      // on the wire so storage matches COUNTRIES in countriesStates.js.
+      const v = typeof raw === 'string' ? raw.trim().toUpperCase() : raw;
+      patch.country = v === '' || v == null ? undefined : v;
+    } else if (field === 'stateCode') {
+      // State codes come from getStatesForCountry() — preserve case
+      // but strip whitespace. Empty → drop key so server keeps value.
+      const v = typeof raw === 'string' ? raw.trim() : raw;
+      patch.stateCode = v === '' || v == null ? undefined : v;
+    } else if (field === 'cropType') {
+      // Crop is always stored lower-cased ('maize', 'sweet_potato',
+      // 'other'). The EditFarm input writes the normalized code so
+      // this is mostly a safety net against legacy records.
+      const v = typeof raw === 'string' ? raw.trim().toLowerCase() : raw;
+      patch.cropType = v === '' || v == null ? undefined : v;
     } else {
       const v = typeof raw === 'string' ? raw.trim() : raw;
       // Empty strings → drop the key (server keeps existing value).
@@ -158,7 +184,18 @@ export function classifyFarmChanges(form = {}, originalFarm = {}) {
   });
 }
 
-/** Simple field-level validator. Returns a map of fieldName → errorKey. */
+/**
+ * Simple field-level validator. Returns a map of fieldName → errorKey.
+ *
+ * Required (by spec §3):
+ *   • farmName — blocks save (existing rule)
+ *   • country  — blocks save (new: dropdown value must be picked)
+ *   • cropType — blocks save (new: chip or Other name must be set)
+ *
+ * Size is only flagged when negative; empty size is allowed (the
+ * farmer may not know the size yet — we don't want to block edits
+ * behind a number they'd have to guess).
+ */
 export function validateEditForm(form = {}) {
   const errors = {};
   if (!form || typeof form !== 'object') {
@@ -167,6 +204,12 @@ export function validateEditForm(form = {}) {
   }
   if (!form.farmName || !String(form.farmName).trim()) {
     errors.farmName = 'farm.editFarm.farmNameRequired';
+  }
+  if (!form.country || !String(form.country).trim()) {
+    errors.country = 'farm.editFarm.countryRequired';
+  }
+  if (!form.cropType || !String(form.cropType).trim()) {
+    errors.cropType = 'farm.editFarm.cropRequired';
   }
   if (form.size !== '' && form.size != null && Number(form.size) < 0) {
     errors.size = 'farm.editFarm.sizeNegative';

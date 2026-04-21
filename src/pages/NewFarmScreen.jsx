@@ -170,16 +170,24 @@ export default function NewFarmScreen() {
       };
       const result = await saveProfile(payload);
       setCreatedFarm(result?.profile || null);
-      // Offline-first mirror — full structured shape per spec §7.
+      // Offline-first mirror — full normalized shape (spec §1 "Stored
+      // farm object must be normalized" with code + label pairs).
       const localFarm = farrowaySaveFarm({
-        name:     payload.farmName,
-        crop:     cropCode,
-        country:  payload.country,
-        state:    payload.stateCode || null,
-        farmSize: payload.size,
-        sizeUnit: payload.sizeUnit,
-        stage:    payload.cropStage,
-        setActive: !!form.setActive,
+        name:         payload.farmName,
+        crop:         cropCode,
+        cropLabel:    form.cropType === CROP_OTHER
+                        ? (form.cropOther.trim() || 'Other')
+                        : getCropLabel(cropCode),
+        country:      payload.country,
+        countryLabel: getCountryLabel(payload.country),
+        state:        payload.stateCode || null,
+        stateLabel:   payload.stateCode
+                        ? getStateLabel(payload.country, payload.stateCode)
+                        : null,
+        farmSize:     payload.size,
+        sizeUnit:     payload.sizeUnit,
+        stage:        payload.cropStage,
+        setActive:    !!form.setActive,
       });
       if (form.setActive && localFarm?.id) {
         farrowaySetActiveFarmId(localFarm.id);
