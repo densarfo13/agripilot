@@ -214,7 +214,8 @@ export default function ForgotPasswordSms() {
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                placeholder="+254712345678"
+                placeholder={resolve(t, 'auth.smsReset.phonePlaceholder',
+                  'Phone number with country code (e.g. +1 555 555 1212)')}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 style={S.input}

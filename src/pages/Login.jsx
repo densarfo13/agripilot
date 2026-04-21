@@ -111,7 +111,7 @@ export default function Login() {
     e.preventDefault();
     const trimmed = mfaCode.trim();
     if (!trimmed) {
-      setMfaError('Enter your 6-digit code');
+      setMfaError(t('auth.mfa.enterCode') || 'Enter the 6-digit code from your authenticator app.');
       return;
     }
     setMfaError('');
@@ -120,7 +120,10 @@ export default function Login() {
       await completeMfaChallenge(mfaToken, trimmed);
       safeTrackEvent('auth.mfa.verified', {});
     } catch (err) {
-      setMfaError(err.message || 'Invalid code. Try again.');
+      // Server error messages here are already user-safe ("Code is
+      // invalid or expired"). We surface them as-is, with a calm
+      // fallback if the message is missing.
+      setMfaError(err.message || t('auth.mfa.invalidCode') || 'That code did not match. Try again with a fresh 6-digit code from your app.');
       setMfaCode('');
       safeTrackEvent('auth.mfa.failed', {});
       setTimeout(() => mfaInputRef.current?.focus(), 50);
@@ -205,7 +208,8 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('auth.emailPlaceholder') || 'Email address'}
+              autoComplete="email"
               style={S.input}
             />
             {errors.email && <span style={S.fieldError}>{errors.email}</span>}
@@ -217,7 +221,8 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t('auth.passwordPlaceholder') || 'Password'}
+              autoComplete="current-password"
               style={S.input}
             />
             {errors.password && <span style={S.fieldError}>{errors.password}</span>}

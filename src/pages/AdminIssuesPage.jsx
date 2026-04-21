@@ -35,6 +35,27 @@ const CAT_COLOR = { BLOCKER: '#EF4444', FRICTION: '#F59E0B', TRUST: '#0891b2', F
 const TYPE_LABEL = { BUG: 'Bug', DATA_ISSUE: 'Data Issue', ACCESS_ISSUE: 'Access Issue', FEATURE_REQUEST: 'Feature Request' };
 const SEL = { background: '#1E293B', color: '#fff', border: '1px solid #243041', borderRadius: 6, padding: '0.45rem 0.75rem', fontSize: '0.85rem' };
 
+// Turn a raw API / network failure into a short, calm line the admin
+// can act on. Never surfaces {status, code, stack} payloads verbatim.
+function friendlyAdminIssueError(err, verb = 'complete that action') {
+  const status = err?.response?.status;
+  const serverMsg = err?.response?.data?.error;
+  const msg = String(err?.message || '').toLowerCase();
+  if (status === 401 || status === 403) return `You do not have permission to ${verb}.`;
+  if (status === 404)                    return 'That issue was not found. It may have been removed.';
+  if (status === 409)                    return 'Someone else just updated this issue. Refresh and try again.';
+  if (status >= 500)                     return 'The server had a problem. Please try again in a moment.';
+  if (msg.includes('network') || msg.includes('timeout') || msg.includes('fetch')) {
+    return 'We could not reach the server. Check your connection and try again.';
+  }
+  // Allow an intentionally user-safe server message through if the
+  // backend provided one (short strings only — no stack traces).
+  if (typeof serverMsg === 'string' && serverMsg.length > 0 && serverMsg.length < 140) {
+    return serverMsg;
+  }
+  return `Could not ${verb}. Please try again.`;
+}
+
 export default function AdminIssuesPage() {
   const { t } = useTranslation();
   const [issues, setIssues] = useState([]);
@@ -113,7 +134,9 @@ export default function AdminIssuesPage() {
       if (data.adminNote !== undefined) setNoteEditing(null);
       if (data.resolutionNote !== undefined) setResEditing(null);
     } catch (err) {
-      setActionError(err.response?.data?.error || 'Failed to update issue');
+      // Never show the raw API payload to the admin. Map known shapes
+      // to a short, calm line; fall back to a generic message.
+      setActionError(friendlyAdminIssueError(err, 'update this issue'));
     } finally {
       setActionLoading((s) => ({ ...s, [id]: false }));
     }
@@ -542,16 +565,31 @@ export default function AdminIssuesPage() {
         {selectedIds.length > 0 && (
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem', padding: '0.6rem 0.85rem', background: '#1E293B', borderRadius: 6 }}>
             <span style={{ fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 600 }}>{selectedIds.length} selected</span>
-            <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)} style={{ ...SEL, fontSize: '0.78rem' }}>
-              <option value="">Bulk Action...</option>
-              <option value="start">Start All</option>
-              <option value="close">Close All</option>
-              <option value="unassign">Unassign All</option>
-              {assignees.map((u) => <option key={u.id} value={`assign:${u.id}`}>Assign → {u.fullName}</option>)}
+            <select
+              value={bulkAction}
+              onChange={(e) => setBulkAction(e.target.value)}
+              style={{ ...SEL, fontSize: '0.78rem' }}
+              aria-label="Choose a bulk action"
+            >
+              <option value="">Choose a bulk action…</option>
+              <option value="start">Start all selected</option>
+              <option value="close">Close all selected</option>
+              <option value="unassign">Remove assignee</option>
+              {assignees.map((u) => <option key={u.id} value={`assign:${u.id}`}>Assign to {u.fullName}</option>)}
             </select>
-            <button className="btn btn-primary btn-sm" disabled={!bulkAction || bulkLoading}
-              onClick={() => executeBulk(bulkAction)}>{bulkLoading ? '...' : 'Apply'}</button>
-            <button className="btn btn-outline btn-sm" onClick={() => { setSelectedIds([]); setBulkAction(''); }}>Cancel</button>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={!bulkAction || bulkLoading}
+              onClick={() => executeBulk(bulkAction)}
+            >
+              {bulkLoading ? 'Working…' : `Apply to ${selectedIds.length}`}
+            </button>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => { setSelectedIds([]); setBulkAction(''); }}
+            >
+              Cancel
+            </button>
           </div>
         )}
 

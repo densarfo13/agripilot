@@ -88,7 +88,7 @@ export default function ForgotPassword() {
                   inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={emailLbl}
                   style={S.input}
                   disabled={loading}
                   data-testid="forgot-password-email"

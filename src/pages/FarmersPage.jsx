@@ -124,7 +124,14 @@ export default function FarmersPage() {
         </div>
         <div className="flex gap-1">
           <form onSubmit={handleSearch} className="flex gap-1">
-            <input className="form-input" style={{ width: 220 }} placeholder="Search name, phone, ID..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              className="form-input"
+              style={{ width: 240 }}
+              placeholder="Search name, phone, or farmer ID…"
+              aria-label="Search farmers"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
             <button type="submit" className="btn btn-outline">Search</button>
           </form>
           {canCreate && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New Farmer</button>}
@@ -544,7 +551,23 @@ function CreateFarmerModal({ onClose, onCreated }) {
         setError(err.response.data.error);
       } else {
         setDuplicateWarning(null);
-        setError(err.response?.data?.error || 'Failed to create farmer');
+        // Translate common backend failure shapes into clear, calm
+        // English instead of leaking the raw error payload.
+        const s = err.response?.status;
+        const serverMsg = err.response?.data?.error;
+        let msg = 'We could not create this farmer. Please try again.';
+        if (s === 400 && typeof serverMsg === 'string' && serverMsg.length < 160) {
+          msg = serverMsg;   // 400 messages are usually already safe
+        } else if (s === 401 || s === 403) {
+          msg = 'You do not have permission to create farmers in this program.';
+        } else if (s === 409) {
+          msg = 'A farmer with these details already exists.';
+        } else if (s >= 500) {
+          msg = 'The server had a problem. Please try again in a moment.';
+        } else if (String(err.message || '').toLowerCase().includes('network')) {
+          msg = 'We could not reach the server. Check your connection and try again.';
+        }
+        setError(msg);
       }
     } finally { setSaving(false); submitGuardRef.current = false; }
   };

@@ -24,6 +24,25 @@ const STATUS_STYLE = {
   skipped: { bg: '#1E293B', color: '#71717A' },
 };
 
+// Convert a UTC wall-clock "HH:MM" into the admin's local equivalent
+// so the info banner reads naturally. Defensive against SSR / older
+// environments — falls back to a plain "HH:MM UTC" render if the
+// Intl.DateTimeFormat timezone bits aren't available.
+function formatLocalFromUtc(utcHour, utcMinute = 0) {
+  try {
+    const now = new Date();
+    const d = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+      utcHour, utcMinute, 0,
+    ));
+    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    const tz   = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    return tz ? `${time} local, ${tz}` : time;
+  } catch {
+    return `${String(utcHour).padStart(2, '0')}:${String(utcMinute).padStart(2, '0')} UTC`;
+  }
+}
+
 const CHANNEL_STYLE = {
   sms:    { bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
   email:  { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
@@ -184,9 +203,11 @@ export default function AutoNotificationsPage() {
 
         {/* Info banner */}
         <div className="alert-inline alert-inline-success" style={{ fontSize: '0.85rem' }}>
-          <strong>How it works:</strong> The system runs daily at 08:00 UTC, evaluating 6 trigger rules.
-          Messages are delivered via SMS → Email → In-App fallback. Each farmer is capped at 3 notifications per day.
-          {isSuperAdmin && ' Use "Run Cycle Now" to trigger immediately.'}
+          <strong>How it works:</strong> The system runs daily at 08:00 UTC
+          ({formatLocalFromUtc(8, 0)} in your time zone), evaluating 6 trigger rules.
+          Messages are delivered via SMS, then email, then in-app as a fallback.
+          Each farmer is capped at 3 notifications per day.
+          {isSuperAdmin && ' Use “Run cycle now” to trigger immediately.'}
         </div>
 
         {/* Filters */}
