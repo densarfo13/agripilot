@@ -22,6 +22,8 @@ import {
 } from '../events/eventLogger.js';
 import { computeProgress } from '../progress/progressEngine.js';
 import { getFarmerVerificationSignals } from './verificationSignals.js';
+import { getFarmerTrustProfile } from '../trust/trustProfile.js';
+import { aggregateTrustProfiles } from '../trust/trustAggregate.js';
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -169,12 +171,23 @@ export function getProgramSummary(program, {
     if (f.isActive) active += 1;
   }
 
+  // Org-level trust aggregate — built from the same farm set so
+  // dashboards, CSV exports, and printable reports agree.
+  const trust = aggregateTrustProfiles({
+    farms: matching,
+    events: allEvents,
+    completions: allCompletions,
+    now,
+    activityWindowDays: windowDays,
+  });
+
   return Object.freeze({
     program:             program ?? null,
     totalFarmers:        matching.length,
     activeFarmers:       active,
     avgProgressScore:    Math.round(totalScore / matching.length),
     totalTasksCompleted: totalTasks,
+    trust,
   });
 }
 
@@ -195,6 +208,11 @@ const EXPORT_HEADERS = Object.freeze([
   'recentActivity',
   'taskActivity',
   'verificationScore',
+  // Trust-profile columns — extend the verification view with the
+  // org-link signal + a 3-tier level for quick reading.
+  'organizationLinked',
+  'trustScore',
+  'trustLevel',
 ]);
 
 /** Escape a cell value for CSV — wraps in quotes when needed. */
@@ -244,6 +262,13 @@ export function getExportData(program, {
       now,
       activityWindowDays: windowDays,
     });
+    const trust = getFarmerTrustProfile({
+      farm,
+      events:      allEvents,
+      completions: allCompletions,
+      now,
+      activityWindowDays: windowDays,
+    });
     rows.push([
       csvEscape(f.farmerId || ''),
       csvEscape(f.farmId),
@@ -258,6 +283,9 @@ export function getExportData(program, {
       csvEscape(v.recentActivity     ? 'yes' : 'no'),
       csvEscape(v.taskActivity       ? 'yes' : 'no'),
       csvEscape(v.score),
+      csvEscape(trust.signals.organizationLinked ? 'yes' : 'no'),
+      csvEscape(trust.score),
+      csvEscape(trust.level),
     ].join(','));
   }
   return rows.join('\n') + (rows.length > 1 ? '\n' : '');

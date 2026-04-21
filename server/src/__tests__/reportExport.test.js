@@ -232,13 +232,21 @@ describe('getExportData — verification columns', () => {
       now: NOW, farms, events, completions: [],
     });
     const [header, row] = csv.trim().split('\n');
-    expect(header.endsWith(
+    // Verification block still appears unchanged in order.
+    expect(header).toContain(
       'tasksCompleted,onboardingComplete,locationCaptured,cropSelected,'
       + 'recentActivity,taskActivity,verificationScore',
-    )).toBe(true);
+    );
+    // Trust columns are appended after the verification block.
+    expect(header.endsWith('organizationLinked,trustScore,trustLevel')).toBe(true);
     const cols = row.split(',');
-    // Last six columns are the new flag + score columns.
-    const tail = cols.slice(-6);
-    expect(tail).toEqual(['yes', 'yes', 'yes', 'yes', 'yes', '5']);
+    // Flag/score block: five yes/no + integer verification score.
+    const verifBlock = cols.slice(-9, -3);
+    expect(verifBlock).toEqual(['yes', 'yes', 'yes', 'yes', 'yes', '5']);
+    // Trust block: org-linked yes/no, trust score, trust level.
+    const trustBlock = cols.slice(-3);
+    expect(trustBlock[0]).toMatch(/^(yes|no)$/);
+    expect(Number.isFinite(Number(trustBlock[1]))).toBe(true);
+    expect(['low', 'medium', 'high']).toContain(trustBlock[2]);
   });
 });

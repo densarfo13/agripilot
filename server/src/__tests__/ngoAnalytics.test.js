@@ -104,7 +104,8 @@ describe('getExportData — CSV', () => {
     expect(lines.length).toBe(1 + 2); // header + 2 farms in p1
     expect(lines[0]).toBe(
       'farmerId,farmId,crop,progressScore,streak,lastActivity,tasksCompleted,'
-      + 'onboardingComplete,locationCaptured,cropSelected,recentActivity,taskActivity,verificationScore'
+      + 'onboardingComplete,locationCaptured,cropSelected,recentActivity,taskActivity,verificationScore,'
+      + 'organizationLinked,trustScore,trustLevel'
     );
     // Row columns in declared order.
     const cols = lines[1].split(',');
@@ -156,6 +157,7 @@ describe('analytics — internals', () => {
     expect(_internal.EXPORT_HEADERS).toEqual([
       'farmerId','farmId','crop','progressScore','streak','lastActivity','tasksCompleted',
       'onboardingComplete','locationCaptured','cropSelected','recentActivity','taskActivity','verificationScore',
+      'organizationLinked','trustScore','trustLevel',
     ]);
   });
 });
