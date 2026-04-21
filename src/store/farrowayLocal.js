@@ -25,6 +25,10 @@ const K = Object.freeze({
   ACTIVE:   'farroway.activeFarmId',
   QUEUE:    'farroway.pendingEvents',
   DISMISSED_ALERTS: 'farroway.dismissedAlerts',
+  // Location Intelligence Engine cache keys
+  REGION_PROFILE:      'farroway.regionProfile',
+  LAST_RECOMMENDATION: 'farroway.lastRecommendation',
+  LAST_RISK:           'farroway.lastRisk',
 });
 
 function hasStorage() {
@@ -410,6 +414,34 @@ export function pruneDismissedAlerts(now = Date.now()) {
   }
   if (dirty) writeJson(K.DISMISSED_ALERTS, map);
   return dirty;
+}
+
+// ─── Location Intelligence Engine cache (spec §7) ────────────────
+// Thin get/set pairs for the three engine outputs. Writes are frozen
+// only at the function boundary — storage round-trips plain objects.
+
+export function getRegionProfileCached() {
+  return readJson(K.REGION_PROFILE, null);
+}
+export function setRegionProfileCached(profile) {
+  if (!profile || typeof profile !== 'object') return false;
+  return writeJson(K.REGION_PROFILE, { ...profile, cachedAt: Date.now() });
+}
+
+export function getLastRecommendation() {
+  return readJson(K.LAST_RECOMMENDATION, null);
+}
+export function setLastRecommendation(rec) {
+  if (!rec || typeof rec !== 'object') return false;
+  return writeJson(K.LAST_RECOMMENDATION, { ...rec, cachedAt: Date.now() });
+}
+
+export function getLastRisk() {
+  return readJson(K.LAST_RISK, null);
+}
+export function setLastRisk(risk) {
+  if (!risk || typeof risk !== 'object') return false;
+  return writeJson(K.LAST_RISK, { ...risk, cachedAt: Date.now() });
 }
 
 export const _keys = K;

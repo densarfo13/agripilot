@@ -30,6 +30,8 @@
  */
 
 import { planAutomation } from './automationRules.js';
+import { getRegionProfile } from '../location/regionProfile.js';
+import { getRisk }          from '../risk/riskEngine.js';
 
 // Backward-compat bridge kept for the legacy autoTriage.js caller —
 // it still self-wires, but we no longer depend on it; the direct
@@ -245,6 +247,22 @@ export function createIssue({
     : null;
   const stamp = Number.isFinite(now) ? now : Date.now();
 
+  // Derive region + riskLevel at creation time (spec §5) so they
+  // travel with the issue object, can feed officer routing, and
+  // don't depend on the UI having computed them beforehand. Both
+  // are best-effort — missing inputs fall through to safe defaults.
+  const countryForProfile = location && /^[A-Z]{2}$/.test(String(location).toUpperCase())
+    ? String(location).toUpperCase()
+    : null;
+  const regionProfile = countryForProfile
+    ? getRegionProfile({ countryCode: countryForProfile })
+    : null;
+  const region = regionProfile ? regionProfile.region : (location ? String(location).trim() : null);
+  const risk   = regionProfile
+    ? getRisk({ crop, regionProfile })
+    : null;
+  const riskLevel = risk ? risk.level : null;
+
   const baseIssue = {
     id:          genId(),
     farmerId:    farmerId ? String(farmerId) : null,
@@ -260,6 +278,10 @@ export function createIssue({
     status:      ISSUE_STATUS.OPEN,
     assignedTo:  null,
     notes:       [],
+    // Location Intelligence Engine inputs — used by routing + risk
+    // surfaces (admin + officer views read these straight off).
+    region,
+    riskLevel,
     createdAt:   stamp,
     updatedAt:   stamp,
   };

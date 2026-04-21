@@ -230,7 +230,134 @@ export function getTopTask(ctx) {
   return r.today[0] || null;
 }
 
+// ─── Location-aware facade (spec §3) ─────────────────────────────
+// Simpler shape than `generateDailyTasks`, driven by crop + stage +
+// weather + regionProfile. Rules are deterministic and always return
+// at least one primaryTask so the UI never renders an empty Today
+// card. The full engine above is preserved for existing callers.
+//
+// Rule cascade (first match wins for primary):
+//   1. rain coming + harvest stage    → "Harvest early to avoid loss"
+//   2. dry + planting stage           → "Irrigate if possible before planting"
+//   3. planting stage (any)           → "Prepare land and plant seeds"
+//   4. crop-aware stage defaults      → delegates to getTopTask
+//   5. safe default                   → "Walk the field and note changes"
+const WEATHER_RAIN_CODES = new Set(['rain_expected', 'rain_coming', 'heavy_rain']);
+const WEATHER_DRY_CODES  = new Set(['dry', 'dry_ahead', 'low_rain', 'drought']);
+
+function weatherIsRainy(weather) {
+  if (!weather) return false;
+  if (weather.rainExpected === true) return true;
+  if (weather.status && WEATHER_RAIN_CODES.has(String(weather.status))) return true;
+  if (Array.isArray(weather.cautions) && weather.cautions.some((c) => WEATHER_RAIN_CODES.has(c))) return true;
+  return false;
+}
+function weatherIsDry(weather) {
+  if (!weather) return false;
+  if (weather.status && WEATHER_DRY_CODES.has(String(weather.status))) return true;
+  if (Array.isArray(weather.cautions) && weather.cautions.some((c) => WEATHER_DRY_CODES.has(c))) return true;
+  return false;
+}
+function weatherIsHot(weather) {
+  if (!weather) return false;
+  if (weather.status === 'excessive_heat') return true;
+  if (Array.isArray(weather.cautions)
+      && (weather.cautions.includes('extreme_heat')
+          || weather.cautions.includes('excessive_heat'))) return true;
+  return false;
+}
+
+/**
+ * getDailyTask — location-aware single-task facade. Never returns
+ * null primaryTask — the safe-default rule guarantees a value.
+ */
+export function getDailyTask({ crop, stage, weather, regionProfile } = {}) {
+  const s = String(stage || '').toLowerCase();
+  const rainy = weatherIsRainy(weather);
+  const dry   = weatherIsDry(weather);
+  const hot   = weatherIsHot(weather);
+  const wetSeason = regionProfile && regionProfile.season === 'wet';
+  const drySeason = regionProfile && regionProfile.season === 'dry';
+
+  // Rule 1
+  if (rainy && (s === 'harvest' || s === 'post_harvest')) {
+    return Object.freeze({
+      primaryTask: Object.freeze({
+        id: 'loc.harvest_early',
+        titleKey: 'tasks.harvest_early',
+        title: 'Harvest early to avoid rain loss',
+        priority: 'high', dueHint: 'today', reason: 'rain_expected',
+      }),
+      secondaryTask: null,
+    });
+  }
+
+  // Rule 2
+  if ((dry || drySeason) && (s === 'planting' || s === 'land_prep')) {
+    return Object.freeze({
+      primaryTask: Object.freeze({
+        id: 'loc.irrigate_before_planting',
+        titleKey: 'tasks.irrigate_before_planting',
+        title: 'Irrigate if possible before planting',
+        priority: 'high', dueHint: 'today', reason: 'dry_conditions',
+      }),
+      secondaryTask: hot ? Object.freeze({
+        id: 'loc.shade_seedlings',
+        titleKey: 'tasks.shade_seedlings',
+        title: 'Shade young seedlings during the hottest hours',
+        priority: 'medium', dueHint: 'today', reason: 'excessive_heat',
+      }) : null,
+    });
+  }
+
+  // Rule 3
+  if (s === 'planting' || s === 'land_prep') {
+    return Object.freeze({
+      primaryTask: Object.freeze({
+        id: 'loc.prepare_and_plant',
+        titleKey: 'tasks.prepare_and_plant',
+        title: 'Prepare the land and plant your seeds',
+        priority: 'high', dueHint: 'today', reason: 'planting_season',
+      }),
+      secondaryTask: wetSeason ? Object.freeze({
+        id: 'loc.check_drainage',
+        titleKey: 'tasks.check_drainage',
+        title: 'Check drainage channels before heavy rain',
+        priority: 'medium', dueHint: 'this_week', reason: 'wet_season',
+      }) : null,
+    });
+  }
+
+  // Rule 4 — delegate to the existing engine for stage-specific tasks.
+  const top = getTopTask({ crop, stage });
+  if (top) {
+    return Object.freeze({
+      primaryTask: Object.freeze({
+        id: top.id,
+        titleKey: `tasks.${top.id}`,
+        title: top.note || String(top.id).replace(/_/g, ' '),
+        priority: top.priority || 'medium',
+        dueHint:  top.dueHint  || 'today',
+        reason:   top.reason   || 'stage_default',
+      }),
+      secondaryTask: null,
+    });
+  }
+
+  // Rule 5 — always return something.
+  return Object.freeze({
+    primaryTask: Object.freeze({
+      id: 'loc.walk_the_field',
+      titleKey: 'tasks.walk_the_field',
+      title: 'Walk the field and note anything new',
+      priority: 'medium', dueHint: 'today', reason: 'safe_default',
+    }),
+    secondaryTask: null,
+  });
+}
+
 export { PLANTING_STATUS_TO_STAGE, SUPPORTED_STAGES };
 export const _internal = Object.freeze({
   resolveStage, pickRuleSet, dueRank, applyWeatherOverrides,
+  weatherIsRainy, weatherIsDry, weatherIsHot,
 });
