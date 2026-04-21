@@ -22,9 +22,23 @@ export default function TaskFeedbackModal({ open, taskId, onAnswer, onClose }) {
   const { t } = useAppSettings();
   if (!open) return null;
 
-  const titleLbl = (t && t('actionHome.feedback.didThisHelp')) || 'Did this help?';
-  const yesLbl   = (t && t('common.yes')) || 'Yes';
-  const noLbl    = (t && t('common.no'))  || 'No';
+  // Gap-fix §7: the outcome prompt is "Yes / No / Not sure". We keep
+  // the existing `actionHome.feedback.didThisHelp` key for backward
+  // compatibility but prefer the new canonical `loop.did_this_help`
+  // when present (both resolve to the same English when missing).
+  const titleLbl = (t && (t('loop.did_this_help') !== 'loop.did_this_help'
+                           ? t('loop.did_this_help')
+                           : t('actionHome.feedback.didThisHelp')))
+                || 'Did this help?';
+  const yesLbl   = (t && (t('loop.outcome.yes') !== 'loop.outcome.yes'
+                           ? t('loop.outcome.yes')
+                           : t('common.yes'))) || 'Yes';
+  const noLbl    = (t && (t('loop.outcome.no') !== 'loop.outcome.no'
+                           ? t('loop.outcome.no')
+                           : t('common.no'))) || 'No';
+  const notSureLbl = (t && (t('loop.outcome.not_sure') !== 'loop.outcome.not_sure'
+                             ? t('loop.outcome.not_sure')
+                             : null)) || 'Not sure';
 
   function handleBackdrop(e) {
     if (e.target === e.currentTarget) onClose?.();
@@ -62,6 +76,14 @@ export default function TaskFeedbackModal({ open, taskId, onAnswer, onClose }) {
             data-testid="task-feedback-no"
           >
             {noLbl}
+          </button>
+          <button
+            type="button"
+            onClick={() => pick('not_sure')}
+            style={S.btnGhost}
+            data-testid="task-feedback-not-sure"
+          >
+            {notSureLbl}
           </button>
         </div>
       </div>

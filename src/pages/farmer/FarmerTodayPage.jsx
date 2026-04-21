@@ -27,6 +27,7 @@ import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
 import TaskFeedbackModal from '../../components/farmer/TaskFeedbackModal.jsx';
+import { recordOutcome } from '../../lib/outcomes/outcomeStore.js';
 import CompletionBanner from '../../components/farmer/CompletionBanner.jsx';
 import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
 import {
@@ -217,6 +218,18 @@ export default function FarmerTodayPage() {
   function handleTaskFeedback(value) {
     if (!taskFeedback.taskId) return;
     saveFeedback({ taskId: taskFeedback.taskId, feedback: value });
+    // Gap-fix §7: canonical outcome log. Yes → improved, No → worse,
+    // Not sure → no_change. Never blocks the user if the mapping
+    // fails — recordOutcome returns null and we carry on.
+    try {
+      recordOutcome({
+        farmId:     (state.cycles?.cycles?.[0]?.farmId) || null,
+        sourceType: 'task',
+        sourceId:   taskFeedback.taskId,
+        action:     'task_completed',
+        answer:     value,   // 'yes' | 'no' | 'not_sure'
+      });
+    } catch { /* non-blocking */ }
     drainQueue(defaultSender).catch(() => {});
     bumpProgress();
   }

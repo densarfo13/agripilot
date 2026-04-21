@@ -169,6 +169,14 @@ export default function FarmerProgressPage() {
             <div style={S.engineTrack}>
               <div style={{ ...S.engineFill, width: `${progressSnapshot.progressScore}%` }} />
             </div>
+            {/* Gap-fix §5: one-line explanation of what the score
+                means right now — ties score to stage + action, so the
+                number is never shown without meaning. */}
+            {progressSnapshot.explanationFallback && (
+              <div style={S.engineExplain} data-testid="progress-explanation">
+                {t(progressSnapshot.explanationKey) || progressSnapshot.explanationFallback}
+              </div>
+            )}
             <div style={S.engineMetaRow}>
               <span style={S.engineMetaLabel}>
                 {progressSnapshot.completedCount} / {progressSnapshot.totalCount}
@@ -610,6 +618,10 @@ const S = {
   engineFill: {
     height: '100%', borderRadius: '4px',
     background: '#22C55E', transition: 'width 0.3s ease',
+  },
+  engineExplain: {
+    fontSize: '0.8125rem', color: '#9FB3C8',
+    lineHeight: 1.45, fontWeight: 500,
   },
   engineMetaRow: {
     display: 'flex', justifyContent: 'space-between',

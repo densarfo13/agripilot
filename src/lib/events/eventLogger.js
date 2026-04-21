@@ -43,6 +43,10 @@ export const EVENT_TYPES = Object.freeze([
   'issue_resolved',
   'harvest_recorded',
   'notification_dismissed',
+  // Gap-fix pass additions (spec §6)
+  'issue_status_changed',
+  'alert_dismissed',
+  'outcome_recorded',
 ]);
 
 function hasStorage() {
@@ -86,22 +90,30 @@ function genId(type, timestamp) {
  */
 export function logEvent({
   id,
+  farmerId = null,        // new in gap-fix pass (spec §6)
   farmId = null,
   type,
+  eventType,              // alias for `type` — spec §6 canonical name
   payload = null,
+  metadata,               // alias for `payload` — spec §6 canonical name
   timestamp,
 } = {}) {
-  if (!type || typeof type !== 'string') return null;
-  if (!EVENT_TYPES.includes(type)) return null;
+  const resolvedType = type || eventType;
+  if (!resolvedType || typeof resolvedType !== 'string') return null;
+  if (!EVENT_TYPES.includes(resolvedType)) return null;
   const ts = Number.isFinite(timestamp) ? Number(timestamp) : Date.now();
-  const eventId = id || genId(type, ts);
+  const eventId = id || genId(resolvedType, ts);
   const list = readRaw();
   if (list.some((e) => e && e.id === eventId)) return null;
+  const resolvedPayload = (metadata !== undefined) ? metadata : payload;
   const event = Object.freeze({
     id:        eventId,
+    farmerId:  farmerId ? String(farmerId) : null,
     farmId:    farmId ? String(farmId) : null,
-    type,
-    payload:   payload ?? null,
+    type:      resolvedType,
+    eventType: resolvedType,                 // canonical alias
+    payload:   resolvedPayload ?? null,
+    metadata:  resolvedPayload ?? null,      // canonical alias
     timestamp: ts,
   });
   list.push(event);

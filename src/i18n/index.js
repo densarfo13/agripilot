@@ -30,6 +30,7 @@ import { COMPLETION_TRANSLATIONS }      from './completionTranslations.js';
 import { USE_CROP_TRANSLATIONS }        from './useCropTranslations.js';
 import { TASK_ENGINE_TRANSLATIONS }     from './taskEngineTranslations.js';
 import { SIGNAL_TRANSLATIONS }          from './signalTranslations.js';
+import { GAP_FIX_TRANSLATIONS }         from './gapFixTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -71,6 +72,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     USE_CROP_TRANSLATIONS,
     TASK_ENGINE_TRANSLATIONS,
     SIGNAL_TRANSLATIONS,
+    GAP_FIX_TRANSLATIONS,
   ]);
 })();
 

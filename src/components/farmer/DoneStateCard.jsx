@@ -9,14 +9,34 @@
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 
-export default function DoneStateCard({ progressPercent = null, donePill = null }) {
+export default function DoneStateCard({
+  progressPercent = null,
+  donePill        = null,
+  // Gap-fix §2: never leave the card with no next action. Callers
+  // pass one or more of these; we render whichever are provided so
+  // the farmer always has somewhere obvious to go.
+  nextActionLabel = null,
+  onNextAction    = null,
+  reviewLabel     = null,
+  onReview        = null,
+  tomorrowPreview = null,     // optional string; shown as a subtle line
+}) {
   const { t } = useAppSettings();
+
+  // Stable English fallbacks ensure we never render the raw key even
+  // if the active language is missing this block.
+  const title    = t('today.done.title') || 'All done for today';
+  const body     = t('today.done.body')  || "You're on track. Great work.";
+  const nextLbl  = nextActionLabel
+                || t('today.done.nextAction') || 'Check tomorrow\u2019s preview';
+  const revLbl   = reviewLabel
+                || t('today.done.reviewProgress') || 'Review progress';
 
   return (
     <section style={S.card} data-testid="done-state-card">
       <div style={S.celebration}>{'\u2705'}</div>
-      <h2 style={S.title}>{t('today.done.title') || 'All done for today'}</h2>
-      <p style={S.body}>{t('today.done.body') || "You're on track. Great work."}</p>
+      <h2 style={S.title}>{title}</h2>
+      <p style={S.body}>{body}</p>
 
       {donePill && (
         <div style={S.pill} data-testid="done-state-pill">
@@ -27,6 +47,37 @@ export default function DoneStateCard({ progressPercent = null, donePill = null 
       {Number.isFinite(progressPercent) && (
         <div style={S.barTrack} aria-label={t('actionHome.progress.title')}>
           <div style={{ ...S.barFill, width: `${Math.max(0, Math.min(100, progressPercent))}%` }} />
+        </div>
+      )}
+
+      {tomorrowPreview && (
+        <div style={S.tomorrow} data-testid="done-state-tomorrow">
+          {tomorrowPreview}
+        </div>
+      )}
+
+      {(onNextAction || onReview) && (
+        <div style={S.actionsRow} data-testid="done-state-actions">
+          {onNextAction && (
+            <button
+              type="button"
+              onClick={onNextAction}
+              style={S.nextBtn}
+              data-testid="done-state-next-action"
+            >
+              {nextLbl}
+            </button>
+          )}
+          {onReview && (
+            <button
+              type="button"
+              onClick={onReview}
+              style={S.reviewBtn}
+              data-testid="done-state-review"
+            >
+              {revLbl}
+            </button>
+          )}
         </div>
       )}
     </section>
@@ -63,4 +114,27 @@ const S = {
     background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
   },
   barFill: { height: '100%', background: '#22C55E', transition: 'width 0.3s ease' },
+  tomorrow: {
+    marginTop: '0.5rem',
+    fontSize: '0.8125rem',
+    color: 'rgba(234,242,255,0.72)',
+    lineHeight: 1.4,
+  },
+  actionsRow: {
+    marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap',
+    justifyContent: 'center', width: '100%',
+  },
+  nextBtn: {
+    padding: '0.5rem 0.875rem', borderRadius: 10, border: 'none',
+    background: '#22C55E', color: '#07210E',
+    fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer',
+    minHeight: 40,
+  },
+  reviewBtn: {
+    padding: '0.5rem 0.875rem', borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: 'transparent', color: '#EAF2FF',
+    fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer',
+    minHeight: 40,
+  },
 };

@@ -308,6 +308,15 @@ export function computeProgress({
     stageCompletionPercent: stagePct,
   });
 
+  // ─── Explanation text (gap-fix spec §5) ───
+  // Progress numbers are meaningless without a one-line "what does
+  // this score mean right now?" line. We derive it from stage + status
+  // so the copy is honest and doesn't over-promise.
+  const explanation = _deriveExplanation({
+    status, stagePct, completedToday,
+    dailyTarget: target, farm,
+  });
+
   // Daily-loop surface (spec §7). Defaults preserve backward compat.
   const streakVal    = Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
   const lastVisitVal = (typeof lastVisit === 'string' && lastVisit) ? lastVisit : null;
@@ -329,7 +338,68 @@ export function computeProgress({
     // Farm-type context + the target that drove the today-bonus.
     farmType:    effectiveFarmType,
     dailyTarget: target,
+    // Gap-fix §5: stable explanation the UI renders under the score.
+    explanationKey:      explanation.key,
+    explanationFallback: explanation.en,
+    explanationStage:    explanation.stage,  // 'early'|'mid'|'late'|'none'
   });
+}
+
+// ─── Explanation helper (gap-fix §5) ─────────────────────────────
+/**
+ * _deriveExplanation — one short line that tells the farmer what the
+ * score means RIGHT NOW. Ties together crop stage + daily progress +
+ * status band so the score is never a number without meaning.
+ *
+ *   returns { key, en, stage }
+ */
+function _deriveExplanation({ status, stagePct, completedToday, dailyTarget, farm }) {
+  const cropStage = String((farm && farm.cropStage) || '').toLowerCase();
+  // Rough stage bucketing — safe even when stage info is missing.
+  let stage = 'none';
+  if (cropStage.includes('plan'))              stage = 'early';
+  else if (cropStage.includes('pre'))          stage = 'early';
+  else if (cropStage.includes('plant'))        stage = 'early';
+  else if (cropStage.includes('grow'))         stage = 'mid';
+  else if (cropStage.includes('mid'))          stage = 'mid';
+  else if (cropStage.includes('harv'))         stage = 'late';
+  else if (cropStage.includes('post'))         stage = 'late';
+  else if (stagePct >= 70)                     stage = 'late';
+  else if (stagePct >= 30)                     stage = 'mid';
+  else if (stagePct > 0)                       stage = 'early';
+
+  // Honest, encouraging, farmer-friendly wording. Never alarmist.
+  if (status === STATUS.HIGH_RISK) {
+    if (stage === 'early') return { key: 'progress.explain.highrisk_early', stage,
+      en: 'Your crop is just getting started. Complete today\u2019s tasks to get back on track.' };
+    if (stage === 'late')  return { key: 'progress.explain.highrisk_late', stage,
+      en: 'Harvest stage needs attention. Finish today\u2019s checks to protect your yield.' };
+    return { key: 'progress.explain.highrisk_mid', stage,
+      en: 'You have some overdue work. A few tasks today will move the score back up.' };
+  }
+  if (status === STATUS.SLIGHT_DELAY) {
+    return { key: 'progress.explain.slight_delay', stage,
+      en: 'You are close to on-track. Finish today\u2019s tasks to catch up.' };
+  }
+  // on_track
+  if (completedToday >= (dailyTarget || 2)) {
+    return { key: 'progress.explain.ontrack_done', stage,
+      en: 'You finished today\u2019s tasks. Check tomorrow\u2019s preview or review your progress.' };
+  }
+  if (stage === 'early') {
+    return { key: 'progress.explain.ontrack_early', stage,
+      en: 'You are in the early stage of this crop. Complete today\u2019s tasks to stay on track.' };
+  }
+  if (stage === 'mid') {
+    return { key: 'progress.explain.ontrack_mid', stage,
+      en: 'Your crop is growing well. Keep up today\u2019s checks to stay on track.' };
+  }
+  if (stage === 'late') {
+    return { key: 'progress.explain.ontrack_late', stage,
+      en: 'You\u2019re close to harvest. Small daily checks protect the yield.' };
+  }
+  return { key: 'progress.explain.ontrack_default', stage,
+    en: 'You are on track. Complete today\u2019s tasks to keep the score steady.' };
 }
 
 // Daily-task target per tier (spec §2). Centralised so the task +
