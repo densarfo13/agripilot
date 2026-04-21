@@ -24,6 +24,13 @@ const router = Router();
 // + /reset-password — both paths coexist.
 router.use('/sms', smsVerificationRoutes);
 
+// Spec-compliant aliases (same service, same limits, same audit).
+// Legacy /sms/start-verification and /sms/check-verification continue
+// to work; these mirror the shorter paths the product spec calls for
+// and the ones the Twilio-facing integration docs reference.
+router.post('/send-otp',   passwordResetLimiter, (req, res, next) => { req.url = '/sms/start-verification'; smsVerificationRoutes.handle(req, res, next); });
+router.post('/verify-otp', passwordResetLimiter, (req, res, next) => { req.url = '/sms/check-verification'; smsVerificationRoutes.handle(req, res, next); });
+
 // ─── Local Auth ────────────────────────────────────────
 
 // Staff registration — requires admin authentication.

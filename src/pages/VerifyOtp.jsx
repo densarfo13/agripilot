@@ -105,8 +105,11 @@ export default function VerifyOtp() {
       safeTrackEvent('auth.otp.verified', { method: 'phone' });
       navigate(postAuthDestination(), { replace: true });
     } catch (err) {
-      setError(err.message || t('auth.invalidCode'));
-      safeTrackEvent('auth.otp.verify_failed', {});
+      // Map server-side codes to safe, user-facing copy. The server
+      // returns a structured { ok:false, code, message, retryAfterSec }
+      // shape; the request wrapper surfaces `code` on err.code.
+      setError(friendlyOtpError(err, t));
+      safeTrackEvent('auth.otp.verify_failed', { code: err?.code || 'unknown' });
       // Clear digits on failure so user can re-enter
       setDigits(Array(CODE_LENGTH).fill(''));
       inputsRef.current[0]?.focus();
@@ -119,15 +122,37 @@ export default function VerifyOtp() {
   async function handleResend() {
     if (resendCooldown > 0) return;
     try {
-      await requestPhoneOtp(phone);
+      // Server echoes the real cooldown in { cooldownSec }. Fall back
+      // to 60s only if the field is missing (e.g. old deploy).
+      const r = await requestPhoneOtp(phone);
+      const echoed = Number(r?.cooldownSec);
+      const cooldown = Number.isFinite(echoed) && echoed > 0 ? echoed : 60;
       setResent(true);
-      setResendCooldown(60);
+      setResendCooldown(cooldown);
       setError('');
       safeTrackEvent('auth.otp.resent', { method: 'phone' });
       setTimeout(() => setResent(false), 3000);
     } catch (err) {
-      setError(err.message || t('auth.otpRequestFailed'));
+      // On server-enforced cooldown / rate-limit, honour the
+      // retryAfterSec so the countdown matches reality.
+      const retry = Number(err?.retryAfterSec);
+      if (Number.isFinite(retry) && retry > 0) setResendCooldown(retry);
+      setError(friendlyOtpError(err, t));
     }
+  }
+
+  function friendlyOtpError(err, tFn) {
+    const code = err?.code || '';
+    if (code === 'invalid_code')        return tFn('auth.otp.invalid')       || 'That code did not match. Please try again.';
+    if (code === 'expired_or_invalid')  return tFn('auth.otp.expired')       || 'That code has expired. Tap resend for a new one.';
+    if (code === 'max_attempts')        return tFn('auth.otp.maxAttempts')   || 'Too many attempts. Please wait a minute and try again.';
+    if (code === 'rate_limited')        return tFn('auth.otp.rateLimited')   || 'Too many requests. Please wait and try again.';
+    if (code === 'cooldown')            return tFn('auth.otp.cooldown')      || 'Please wait before requesting another code.';
+    if (code === 'provider_error')      return tFn('auth.otp.providerError') || 'Verification service is unavailable. Try email recovery instead.';
+    // Fall back to the server-provided message if it looks safe, else generic.
+    const msg = err?.message || '';
+    if (msg && msg.length < 160 && !/stack|error:/i.test(msg)) return msg;
+    return tFn('auth.invalidCode') || 'Could not verify the code. Please try again.';
   }
 
   const code = digits.join('');

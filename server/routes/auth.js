@@ -27,6 +27,11 @@ import {
 } from '../lib/validation.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { passwordResetLimiter } from '../src/middleware/rateLimiters.js';
+import {
+  startSmsVerification,
+  checkSmsVerification,
+  SMS_PURPOSES,
+} from '../src/modules/auth/smsVerification/service.js';
 
 const router = express.Router();
 
@@ -727,6 +732,90 @@ router.post('/reset-password', passwordResetLimiter, async (req, res) => {
     console.error('POST /api/v2/auth/reset-password failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to reset password' });
   }
+});
+
+// ─── Twilio Verify OTP — aliases for spec-compliant paths ──
+// The SMS verification service lives at
+// server/src/modules/auth/smsVerification/service.js and is already
+// mounted at /api/auth/sms/{start,check}-verification. These v2
+// aliases expose the SAME service under the paths the frontend
+// calls (src/lib/api.js:requestPhoneOtp → /api/v2/auth/otp/request)
+// and the paths the new spec uses. Every limit, audit event, and
+// provider wiring runs through the same service functions — no
+// parallel implementation.
+
+function sendOtpResult(res, result) {
+  const status = result.status || (result.ok ? 200 : 400);
+  const payload = result.ok
+    ? {
+        ok: true,
+        code: result.code || 'sent',
+        channel: result.channel,
+        purpose: result.purpose,
+        cooldownSec: result.cooldownSec,
+        verified: result.verified,
+        passwordReset: result.passwordReset,
+      }
+    : {
+        ok: false,
+        code: result.code || 'error',
+        message: result.message || 'Verification failed.',
+        retryAfterSec: result.retryAfterSec,
+      };
+  return res.status(status).json(payload);
+}
+
+// POST /api/v2/auth/otp/request    (current frontend path)
+// POST /api/v2/auth/send-otp       (spec §3 canonical path)
+async function handleSendOtp(req, res) {
+  try {
+    const {
+      phone,
+      purpose = SMS_PURPOSES.LOGIN_VERIFY,
+      channel = 'sms',
+      locale,
+    } = req.body || {};
+    const r = await startSmsVerification({
+      phone, purpose, channel, locale,
+      ip: req.ip || req.headers['x-forwarded-for'] || null,
+    });
+    return sendOtpResult(res, r);
+  } catch (err) {
+    console.error('[otp] send-otp unexpected_failure:', err?.message);
+    return res.status(500).json({ ok: false, code: 'provider_error', message: 'Could not send verification code right now.' });
+  }
+}
+
+// POST /api/v2/auth/otp/verify     (current frontend path)
+// POST /api/v2/auth/verify-otp     (spec §4 canonical path)
+async function handleVerifyOtp(req, res) {
+  try {
+    const {
+      phone,
+      code,
+      purpose = SMS_PURPOSES.LOGIN_VERIFY,
+      newPassword,
+    } = req.body || {};
+    const r = await checkSmsVerification({ phone, code, purpose, newPassword });
+    return sendOtpResult(res, r);
+  } catch (err) {
+    console.error('[otp] verify-otp unexpected_failure:', err?.message);
+    return res.status(500).json({ ok: false, code: 'provider_error', message: 'Could not verify the code right now.' });
+  }
+}
+
+router.post('/otp/request', passwordResetLimiter, handleSendOtp);
+router.post('/otp/verify',  passwordResetLimiter, handleVerifyOtp);
+router.post('/send-otp',    passwordResetLimiter, handleSendOtp);
+router.post('/verify-otp',  passwordResetLimiter, handleVerifyOtp);
+
+// POST /api/v2/auth/send-recovery-email — spec §6 alias for
+// /forgot-password. Forwards the body verbatim so every rate limit,
+// audit event, token-rotation step, and anti-enumeration guarantee
+// on the original handler applies identically.
+router.post('/send-recovery-email', passwordResetLimiter, (req, res, next) => {
+  req.url = '/forgot-password';
+  return router.handle(req, res, next);
 });
 
 export default router;
