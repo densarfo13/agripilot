@@ -557,6 +557,226 @@ export function getIssueMetrics({ issues = null } = {}) {
 }
 
 // ─── Farmer-facing status messages (spec §7) ─────────────────────
+// ─── Health triage wrappers (spec §§ 5-11) ───────────────────────
+/**
+ * createHealthReport — the structured symptom-capture path. Runs the
+ * pure `triageFarmHealthIssue` then persists via `createIssue` with
+ * the triage output stamped on the issue. Callers can pass
+ * `autoTriage: false` to skip the planner's own classification —
+ * the health triage result is authoritative for these reports.
+ *
+ *   createHealthReport({
+ *     farmerId, farmId, crop, region, symptoms, affectedPart,
+ *     extent, duration, description, imageUrl, weather,
+ *     recentFarmReports, now,
+ *   }) → Issue | null
+ */
+export async function createHealthReport(input = {}) {
+  const {
+    farmerId = null, farmId = null, farmerName = null,
+    program = null, location = null, crop = null,
+    symptoms = [], affectedPart = null, extent = null, duration = null,
+    description = '', imageUrl = null, weather = null,
+    recentFarmReports = 0, region = null, now = null,
+  } = input;
+
+  // Lazy import avoids a top-level cycle (triage → types import).
+  const { triageFarmHealthIssue } = await import('./healthTriageEngine.js');
+  const triage = triageFarmHealthIssue({
+    crop, region, symptoms, affectedPart, extent, duration,
+    weather, description, recentFarmReports,
+  });
+
+  // Persist via the existing createIssue so every downstream reader
+  // (admin inbox, officer view, NGO insights, impact reports) picks
+  // up the row automatically. The triage output lands in metadata
+  // fields we stamp via setIssueOverride right after creation.
+  const issue = createIssue({
+    farmerId, farmId, farmerName, program, location, crop,
+    // Map structured categories to the store's existing issueType
+    // set so filters + clustering keep working. Unknown falls
+    // through to 'other'.
+    issueType: mapCategoryToType(triage.predictedCategory),
+    severity:  triage.severity,
+    description: buildStructuredDescription({
+      symptoms, affectedPart, extent, duration, description,
+    }),
+    imageUrl,
+    // We deliberately DON'T run the automation planner here —
+    // health triage IS our classifier.
+    autoTriage: false,
+    now,
+  });
+  if (!issue) return null;
+
+  // Stamp the triage output on the stored issue via a direct
+  // metadata update + a system note. Reuses the override writer so
+  // the admin audit log captures the triage run.
+  const list = readList();
+  const idx = list.findIndex((i) => i && i.id === issue.id);
+  if (idx >= 0) {
+    list[idx] = {
+      ...list[idx],
+      triage: {
+        predictedCategory:       triage.predictedCategory,
+        predictedCategoryKey:    triage.predictedCategoryKey,
+        confidenceLevel:         triage.confidenceLevel,
+        severity:                triage.severity,
+        requiresOfficerReview:   triage.requiresOfficerReview,
+        escalationFlag:          triage.escalationFlag,
+        reasoning:               triage.reasoning,
+        suggestedNextStepKey:    triage.suggestedNextStepKey,
+      },
+      // Persist the raw form fields so the officer view can render
+      // exactly what the farmer submitted.
+      symptoms: Array.isArray(symptoms) ? symptoms.slice() : [],
+      affectedPart:   affectedPart || null,
+      extent:         extent || null,
+      duration:       duration || null,
+      imageUrl:       imageUrl || null,
+    };
+    // Suggested-next-step note, marked `suggested: true` so the
+    // farmer-facing timeline hides it until an officer confirms.
+    list[idx].notes = (list[idx].notes || []).concat([{
+      id:         genId('note'),
+      authorRole: 'system',
+      authorId:   null,
+      text:       triage.suggestedNextStepFallback,
+      system:     true,
+      suggested:  true,
+      createdAt:  list[idx].updatedAt || Date.now(),
+    }]);
+    // Officer-review flag → auto-escalate immediately.
+    if (triage.escalationFlag) {
+      list[idx].status = ISSUE_STATUS.ESCALATED;
+      list[idx].escalatedAt   = list[idx].updatedAt;
+      list[idx].escalatedAuto = true;
+      list[idx].escalateReasons = (list[idx].escalateReasons || []).concat([{
+        rule: 'health_triage_escalation',
+        detail: `Severity ${triage.severity}`,
+      }]);
+    } else if (triage.requiresOfficerReview) {
+      list[idx].requiresOfficerReview = true;
+    }
+    writeList(list);
+    notify();
+  }
+
+  return freezeIssue(list[idx] || issue);
+}
+
+function buildStructuredDescription({
+  symptoms = [], affectedPart = null, extent = null, duration = null, description = '',
+}) {
+  const parts = [];
+  if (Array.isArray(symptoms) && symptoms.length > 0) {
+    parts.push(`Symptoms: ${symptoms.join(', ')}`);
+  }
+  if (affectedPart) parts.push(`Affected: ${affectedPart}`);
+  if (extent)       parts.push(`Extent: ${extent}`);
+  if (duration)     parts.push(`Started: ${duration}`);
+  if (description && String(description).trim()) {
+    parts.push(String(description).trim());
+  }
+  const body = parts.join(' \u00B7 ');
+  return body || 'Health issue reported';
+}
+
+function mapCategoryToType(category) {
+  switch (String(category || '').toLowerCase()) {
+    case 'pest':                return 'pest';
+    case 'disease':             return 'disease';
+    case 'nutrient_deficiency': return 'soil';          // closest existing bucket
+    case 'water_stress':        return 'irrigation';
+    case 'physical_damage':     return 'weather_damage';
+    default:                    return 'other';
+  }
+}
+
+/**
+ * confirmHealthCategory — officer / admin final confirmation. Locks
+ * in the human-validated category + optional diagnosis text, clears
+ * the "needsOfficerReview" flag, and writes an audit row so the
+ * learning loop can correlate predicted vs confirmed.
+ *
+ *   confirmHealthCategory(issueId, {
+ *     category, diagnosis, note, confirmedBy,
+ *   }) → Issue | null
+ */
+export function confirmHealthCategory(issueId, {
+  category, diagnosis = null, note = null, confirmedBy = null, now = null,
+} = {}) {
+  if (!issueId || !category) return null;
+  const list = readList();
+  const idx = list.findIndex((i) => i && i.id === String(issueId));
+  if (idx < 0) return null;
+  const before = list[idx];
+  const ts = Number.isFinite(now) ? now : Date.now();
+
+  const next = {
+    ...before,
+    triage: {
+      ...(before.triage || {}),
+      confirmedCategory: String(category),
+      confirmedAt:       ts,
+      confirmedBy:       confirmedBy ? String(confirmedBy) : null,
+      confirmedDiagnosis: diagnosis ? String(diagnosis) : null,
+    },
+    requiresOfficerReview: false,
+    updatedAt: ts,
+    notes: Array.isArray(before.notes) ? before.notes.slice() : [],
+  };
+  // System note captures the confirmation in the timeline.
+  next.notes.push({
+    id:         genId('note'),
+    authorRole: 'admin',
+    authorId:   confirmedBy ? String(confirmedBy) : null,
+    text:       diagnosis
+      ? `Confirmed category: ${category} — ${diagnosis}`
+      : `Confirmed category: ${category}`,
+    system:     true,
+    createdAt:  ts,
+  });
+  // Officer's optional response note — visible to the farmer.
+  if (note && String(note).trim()) {
+    next.notes.push({
+      id:         genId('note'),
+      authorRole: 'admin',
+      authorId:   confirmedBy ? String(confirmedBy) : null,
+      text:       String(note).trim(),
+      system:     false,
+      createdAt:  ts,
+    });
+  }
+  list[idx] = next;
+  writeList(list);
+  appendAudit(next.id, [{
+    action: 'health_category_confirmed',
+    result: String(category),
+    reasons: [{
+      rule: 'officer_confirmation',
+      detail: diagnosis || null,
+    }],
+    actorRole: 'admin',
+    actorId:   confirmedBy || null,
+    timestamp: ts,
+  }]);
+  notify();
+  return freezeIssue(next);
+}
+
+// ─── Farmer-safe status wording (health triage extension) ────────
+// Existing FARMER_STATUS_KEYS covers issue status; this map covers
+// the category-level safe wording the triage engine emits.
+export const FARMER_TRIAGE_CATEGORY_KEYS = Object.freeze({
+  pest:                { key: 'health.category.pest',               fallback: 'Likely pest issue' },
+  disease:             { key: 'health.category.disease',            fallback: 'Possible disease risk' },
+  nutrient_deficiency: { key: 'health.category.nutrient_deficiency', fallback: 'Possible nutrient deficiency' },
+  water_stress:        { key: 'health.category.water_stress',       fallback: 'Possible water stress' },
+  physical_damage:     { key: 'health.category.physical_damage',    fallback: 'Physical damage noted' },
+  unknown:             { key: 'health.category.unknown',            fallback: 'Needs officer review' },
+});
+
 export const FARMER_STATUS_KEYS = Object.freeze({
   open:        'issues.farmer.status.reported',     // "Reported"
   assigned:    'issues.farmer.status.assigned',     // "Assigned to field officer"
