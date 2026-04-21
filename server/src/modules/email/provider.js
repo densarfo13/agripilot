@@ -14,7 +14,12 @@ import {
   isEmailConfigured,
 } from '../../../services/emailService.js';
 
+// The canonical helper is `isEmailConfigured`; keep the legacy name
+// `isConfigured` (used by email/routes.js and older callers) as a
+// thin alias so the import chain stays intact after the SendGrid
+// migration.
 export { isEmailConfigured };
+export function isConfigured() { return isEmailConfigured(); }
 
 /**
  * Send an email via SendGrid.
