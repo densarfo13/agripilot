@@ -14,23 +14,14 @@ export const env = {
   REFRESH_TOKEN_SECRET: required('REFRESH_TOKEN_SECRET', process.env.JWT_SECRET ? process.env.JWT_SECRET + '-refresh' : 'dev-refresh-secret-replace-me'),
   APP_BASE_URL: required('APP_BASE_URL', 'http://localhost:5173'),
   API_BASE_URL: required('API_BASE_URL', 'http://localhost:5000'),
-  SMTP_HOST: process.env.SMTP_HOST || '',
-  SMTP_PORT: Number(process.env.SMTP_PORT || 587),
-  SMTP_USER: process.env.SMTP_USER || '',
-  SMTP_PASS: process.env.SMTP_PASS || '',
-  // EMAIL_FROM is the canonical name; SMTP_FROM / EMAIL_FROM_ADDRESS
-  // are accepted for backwards compatibility. Default matches the
-  // product spec ("admin@farroway.app") — this MUST match an
-  // authenticated Zoho mailbox (or a valid send-as alias) or the
-  // SMTP server will reject the RCPT envelope.
+  // Provider: SendGrid. SMTP_* variables are no longer read —
+  // callers went via `lib/mailer.js` → `services/emailService.js`.
+  // EMAIL_FROM is the canonical name; EMAIL_FROM_ADDRESS kept as a
+  // legacy alias. Must be a verified sender in SendGrid.
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || '',
   EMAIL_FROM: process.env.EMAIL_FROM
-           || process.env.SMTP_FROM
            || process.env.EMAIL_FROM_ADDRESS
            || 'admin@farroway.app',
-  // Kept for back-compat with older callers that still read SMTP_FROM.
-  SMTP_FROM: process.env.EMAIL_FROM
-          || process.env.SMTP_FROM
-          || 'admin@farroway.app',
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || '',
   COOKIE_SAMESITE: process.env.COOKIE_SAMESITE || 'lax',
   ALLOWED_ORIGINS: (process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || 'http://localhost:5173')

@@ -1,39 +1,42 @@
 /**
- * Email provider — SMTP via Zoho (nodemailer).
+ * Email provider adapter.
  *
- * SendGrid was removed; this module now delegates to the shared SMTP
- * transport in `server/lib/mailer.js`. The public contract is
- * unchanged so every caller inside `src/modules/email/service.js`
- * continues to work without code changes:
- *
- *   isConfigured()                             → boolean
- *   send({ to, from, subject, html, text })    → { success, error? }
- *
- * `from` is accepted for API shape compatibility but is ignored —
- * SMTP servers (Zoho especially) require the envelope sender to match
- * the authenticated SMTP_USER, so the mailer always uses EMAIL_FROM.
- * Passing a different `from` silently here would get the message
- * bounced by the relay.
+ * Delegates to the canonical `server/services/emailService.js` which
+ * is SendGrid-only. The template orchestrator in
+ * `server/src/modules/email/service.js` calls `send(...)` below with
+ * already-rendered subject/html/text and a per-template `from`
+ * identity. We honour the given `from.email` when it's a non-empty
+ * verified address, otherwise we fall back to EMAIL_FROM.
  */
 
-import { sendEmail, isEmailConfigured } from '../../../lib/mailer.js';
+import {
+  sendEmail as sgSendEmail,
+  isEmailConfigured,
+} from '../../../services/emailService.js';
 
-export function isConfigured() {
-  return isEmailConfigured();
-}
+export { isEmailConfigured };
 
 /**
- * Send an email via the shared SMTP transport.
+ * Send an email via SendGrid.
  * @param {{ to: string, from?: { email: string, name: string }, subject: string, html: string, text: string }} params
  * @returns {{ success: boolean, error?: string }}
  */
 export async function send({ to, from: _from, subject, html, text }) {
-  // `_from` is accepted for backwards compatibility and intentionally
-  // ignored — see file header.
+  // `from.email` in this module's call sites is a per-purpose sender
+  // (support@ / notifications@ / etc). SendGrid requires each address
+  // to be verified individually; if it isn't, the send fails with
+  // `sender_not_verified`. In practice we rely on the global
+  // EMAIL_FROM, which is why emailService doesn't accept per-call
+  // `from` overrides. We accept the argument here for API shape
+  // compatibility and ignore it.
+  void _from;
   if (!isEmailConfigured()) {
-    return { success: false, error: 'SMTP not configured (set SMTP_HOST, SMTP_USER, SMTP_PASS).' };
+    return { success: false, error: 'SENDGRID_API_KEY not configured' };
   }
-  const result = await sendEmail({ to, subject, html, text });
-  if (result.success) return { success: true };
-  return { success: false, error: result.error || 'smtp_send_failed' };
+  const result = await sgSendEmail({ to, subject, html, text });
+  if (result.ok) return { success: true };
+  return {
+    success: false,
+    error: result.code + (result.details ? `: ${result.details}` : ''),
+  };
 }

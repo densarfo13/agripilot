@@ -2,7 +2,7 @@
  * Password Reset Service
  *
  * Self-service password reset via email token.
- * Requires SMTP to be configured (SMTP_HOST + SMTP_USER + SMTP_PASS).
+ * Requires SendGrid to be configured (SENDGRID_API_KEY + EMAIL_FROM).
  *
  * Flow:
  *   1. POST /api/auth/forgot-password  — generate token, send email

@@ -41,8 +41,11 @@ if (isProduction) {
 
   // Warn if communication providers are not configured — delivery
   // will fail at cron time if left unset.
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('[WARN] SMTP not fully configured (SMTP_HOST / SMTP_USER / SMTP_PASS missing) — email delivery disabled.');
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('[WARN] SENDGRID_API_KEY is not set — email delivery disabled.');
+  }
+  if (!process.env.EMAIL_FROM) {
+    console.warn('[WARN] EMAIL_FROM is not set — falling back to admin@farroway.app. This MUST be verified in SendGrid.');
   }
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
     console.warn('[WARN] Twilio not fully configured — SMS delivery disabled.');
@@ -96,15 +99,11 @@ export const config = {
     // Frontend origin for postMessage target and redirect
     frontendBaseUrl: process.env.FRONTEND_BASE_URL || 'http://localhost:5173',
   },
-  // ─── Email delivery (SMTP / Zoho) — required in production ─
+  // ─── Email delivery (SendGrid) — required in production ──
   email: {
-    smtpHost:  process.env.SMTP_HOST || '',
-    smtpPort:  parseInt(process.env.SMTP_PORT || '587', 10),
-    smtpUser:  process.env.SMTP_USER || '',
-    smtpPass:  process.env.SMTP_PASS || '',
-    // EMAIL_FROM is the spec-canonical name; EMAIL_FROM_ADDRESS was
-    // the legacy SendGrid variable. Either works; we prefer the new
-    // name. Default matches the product spec ("admin@farroway.app").
+    sendgridApiKey: process.env.SENDGRID_API_KEY || '',
+    // EMAIL_FROM is the canonical name; EMAIL_FROM_ADDRESS is
+    // accepted as a legacy alias. Default = admin@farroway.app.
     fromAddress: process.env.EMAIL_FROM
               || process.env.EMAIL_FROM_ADDRESS
               || 'admin@farroway.app',

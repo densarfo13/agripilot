@@ -1,8 +1,9 @@
 /**
  * Delivery Service — real email + SMS invite delivery.
  *
- * Email provider: Zoho SMTP (nodemailer) via the shared transport in
- * `server/lib/mailer.js`. SendGrid was removed.
+ * Email provider: SendGrid via `server/services/emailService.js`.
+ * SMTP / Zoho was removed. The old `lib/mailer.js` file is kept as a
+ * legacy adapter that also routes here.
  *
  * Honesty contract: NEVER reports delivery as successful unless it
  * actually happened. When a channel is not configured or delivery
@@ -10,15 +11,14 @@
  * the limitation to the UI.
  *
  * Environment variables:
- *   Email: SMTP_HOST + SMTP_USER + SMTP_PASS (+ optional EMAIL_FROM,
- *          EMAIL_FROM_NAME, SMTP_PORT)
+ *   Email: SENDGRID_API_KEY + EMAIL_FROM (+ optional EMAIL_FROM_NAME)
  *   SMS:   TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_PHONE_NUMBER
  */
 
 import {
-  sendEmail as smtpSendEmail,
+  sendEmail as sgSendEmail,
   isEmailConfigured as mailerIsEmailConfigured,
-} from '../../../lib/mailer.js';
+} from '../../../services/emailService.js';
 
 // ─── Channel detection ────────────────────────────────────
 
@@ -59,7 +59,7 @@ export async function sendInviteEmail({ toEmail, farmerName, inviteUrl, inviterN
       delivered: false,
       channel: 'link',
       deliveryStatus: 'manual_share_ready',
-      reason: 'Email delivery not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS to enable.',
+      reason: 'Email delivery not configured. Set SENDGRID_API_KEY and EMAIL_FROM to enable.',
     };
   }
 
@@ -97,23 +97,31 @@ export async function sendInviteEmail({ toEmail, farmerName, inviteUrl, inviterN
       </div>
     `;
 
-    const result = await smtpSendEmail({
+    const result = await sgSendEmail({
       to: toEmail,
       subject: 'You have been invited to join Farroway',
       text,
       html,
     });
 
-    if (!result.success) {
-      console.error('[deliveryService] SMTP email failed:', result.error);
+    if (!result.ok) {
+      // Server-side: structured error code + sanitised details go to
+      // the log. Farmer-facing: the reason is a short, safe line and
+      // the invite link is preserved for manual share.
+      console.error(`[deliveryService] SendGrid failed code=${result.code} status=${result.statusCode || '?'} details=${result.details || ''}`);
       import('../../utils/opsLogger.js').then(({ logDeliveryEvent }) => {
-        logDeliveryEvent('provider_error', { provider: 'smtp', error: result.error, toEmail });
+        logDeliveryEvent('provider_error', {
+          provider: 'sendgrid',
+          code: result.code,
+          statusCode: result.statusCode,
+          toEmail,
+        });
       }).catch(() => {});
       return {
         delivered: false,
         channel: 'link',
         deliveryStatus: 'manual_share_ready',
-        reason: `Email delivery failed: ${result.error || 'SMTP error'}. Copy the invite link and send it manually.`,
+        reason: friendlySendError(result) + ' Copy the invite link and send it manually.',
       };
     }
 
@@ -123,18 +131,33 @@ export async function sendInviteEmail({ toEmail, farmerName, inviteUrl, inviterN
       deliveryStatus: 'email_sent',
     };
   } catch (err) {
-    // sendEmail should never throw; this catch is defensive only.
-    const reason = err?.message || 'Unknown SMTP error';
-    console.error('[deliveryService] SMTP email threw unexpectedly:', reason);
+    // sgSendEmail should never throw; this catch is defensive only.
+    const reason = err?.message || 'Unknown email error';
+    console.error('[deliveryService] email send threw unexpectedly:', reason);
     import('../../utils/opsLogger.js').then(({ logDeliveryEvent }) => {
-      logDeliveryEvent('provider_error', { provider: 'smtp', error: reason, toEmail });
+      logDeliveryEvent('provider_error', { provider: 'sendgrid', error: reason, toEmail });
     }).catch(() => {});
     return {
       delivered: false,
       channel: 'link',
       deliveryStatus: 'manual_share_ready',
-      reason: `Email delivery failed: ${reason}. Copy the invite link and send it manually.`,
+      reason: 'Email delivery failed. Copy the invite link and send it manually.',
     };
+  }
+}
+
+/**
+ * Map a sendEmail failure result into a short, user-safe reason line.
+ * Never leaks the full SendGrid body — we just communicate intent.
+ */
+function friendlySendError(result) {
+  switch (result.code) {
+    case 'not_configured':      return 'Email delivery is not configured yet.';
+    case 'sender_not_verified': return 'The sender address is not verified with the email provider.';
+    case 'recipient_invalid':   return 'The recipient address was rejected.';
+    case 'auth_failed':         return 'Email provider rejected the credentials.';
+    case 'network_error':       return 'Could not reach the email provider.';
+    default:                    return 'Email delivery failed.';
   }
 }
 

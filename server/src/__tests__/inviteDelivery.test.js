@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// ─── Mock the shared SMTP transport ─────────────────────────
-// Replaces the previous @sendgrid/mail mock. `lib/mailer.js` is the
-// single source of truth for outbound email after the Zoho switch.
-// vi.mock is hoisted to the top of the module, so the shared mock
-// functions must be declared inside vi.hoisted to be accessible.
-const { mockSmtpSend, mockTwilioCreate } = vi.hoisted(() => ({
-  mockSmtpSend:     vi.fn(),
+// ─── Mock the SendGrid-backed emailService ──────────────────
+// deliveryService.js imports { sendEmail, isEmailConfigured } from
+// services/emailService.js. Tests hook in at that boundary so every
+// assertion is provider-agnostic even though the real module uses
+// SendGrid now. vi.mock is hoisted — the shared mock must live in
+// vi.hoisted so the factory can close over it.
+const { mockSgSendEmail, mockTwilioCreate } = vi.hoisted(() => ({
+  mockSgSendEmail:  vi.fn(),
   mockTwilioCreate: vi.fn(),
 }));
-vi.mock('../../lib/mailer.js', () => ({
-  sendEmail: mockSmtpSend,
-  isEmailConfigured: () => (
-    !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
-  ),
-  validateEmailConfig: () => ({ provider: 'smtp', from: 'admin@farroway.app', problems: [] }),
+vi.mock('../../services/emailService.js', () => ({
+  sendEmail: mockSgSendEmail,
+  isEmailConfigured: () => !!process.env.SENDGRID_API_KEY,
+  validateEmailConfig: () => ({ provider: 'sendgrid', from: 'admin@farroway.app', problems: [] }),
+  fromAddress: () => process.env.EMAIL_FROM || 'admin@farroway.app',
 }));
 vi.mock('twilio', () => ({
   default: vi.fn(() => ({
@@ -40,23 +40,16 @@ function setEnv(vars) {
 }
 
 const EMAIL_ENV = {
-  SMTP_HOST:  'smtp.zoho.com',
-  SMTP_PORT:  '465',
-  SMTP_USER:  'admin@farroway.app',
-  SMTP_PASS:  'app-password',
-  EMAIL_FROM: 'admin@farroway.app',
+  SENDGRID_API_KEY: 'SG.test-key',
+  EMAIL_FROM:       'admin@farroway.app',
 };
 const SMS_ENV = {
   TWILIO_ACCOUNT_SID:  'ACtest',
   TWILIO_AUTH_TOKEN:   'authtest',
   TWILIO_PHONE_NUMBER: '+10000000000',
 };
-const CLEAR_EMAIL = {
-  SMTP_HOST: undefined, SMTP_PORT: undefined,
-  SMTP_USER: undefined, SMTP_PASS: undefined,
-  EMAIL_FROM: undefined,
-};
-const CLEAR_SMS = {
+const CLEAR_EMAIL = { SENDGRID_API_KEY: undefined, EMAIL_FROM: undefined };
+const CLEAR_SMS   = {
   TWILIO_ACCOUNT_SID: undefined, TWILIO_AUTH_TOKEN: undefined, TWILIO_PHONE_NUMBER: undefined,
 };
 
@@ -64,23 +57,17 @@ beforeEach(() => {
   vi.clearAllMocks();
   setEnv({ ...CLEAR_EMAIL, ...CLEAR_SMS });
 });
-
 afterEach(() => {
   setEnv({ ...CLEAR_EMAIL, ...CLEAR_SMS });
 });
 
 // ─── isEmailConfigured ─────────────────────────────────────
 describe('isEmailConfigured', () => {
-  it('returns false when no SMTP vars are set', () => {
+  it('returns false when SENDGRID_API_KEY is not set', () => {
     expect(isEmailConfigured()).toBe(false);
   });
 
-  it('returns false when SMTP_HOST is set but SMTP_USER/SMTP_PASS are missing', () => {
-    setEnv({ SMTP_HOST: 'smtp.zoho.com' });
-    expect(isEmailConfigured()).toBe(false);
-  });
-
-  it('returns true when SMTP_HOST + SMTP_USER + SMTP_PASS are all set', () => {
+  it('returns true when SENDGRID_API_KEY is set', () => {
     setEnv(EMAIL_ENV);
     expect(isEmailConfigured()).toBe(true);
   });
@@ -105,14 +92,14 @@ describe('isSmsConfigured', () => {
 
 // ─── sendInviteEmail ───────────────────────────────────────
 describe('sendInviteEmail — not configured', () => {
-  it('returns manual_share_ready when SMTP is not configured', async () => {
+  it('returns manual_share_ready when SendGrid is not configured', async () => {
     const result = await sendInviteEmail({
       toEmail: 'farmer@test.com', farmerName: 'Alice',
       inviteUrl: 'http://x/accept?token=t',
     });
     expect(result.delivered).toBe(false);
     expect(result.deliveryStatus).toBe('manual_share_ready');
-    expect(mockSmtpSend).not.toHaveBeenCalled();
+    expect(mockSgSendEmail).not.toHaveBeenCalled();
   });
 
   it('returns manual_share_ready when toEmail is missing', async () => {
@@ -122,17 +109,19 @@ describe('sendInviteEmail — not configured', () => {
     });
     expect(result.delivered).toBe(false);
     expect(result.deliveryStatus).toBe('manual_share_ready');
-    expect(mockSmtpSend).not.toHaveBeenCalled();
+    expect(mockSgSendEmail).not.toHaveBeenCalled();
   });
 });
 
 describe('sendInviteEmail — configured, delivery succeeds', () => {
   beforeEach(() => {
     setEnv(EMAIL_ENV);
-    mockSmtpSend.mockResolvedValue({ success: true, provider: 'smtp', messageId: '<id@zoho>' });
+    mockSgSendEmail.mockResolvedValue({
+      ok: true, code: 'ok', statusCode: 202, messageId: '<msg@sendgrid>',
+    });
   });
 
-  it('calls the SMTP mailer and returns email_sent on success', async () => {
+  it('calls the emailService and returns email_sent on success', async () => {
     const result = await sendInviteEmail({
       toEmail: 'farmer@test.com',
       farmerName: 'Alice Kamau',
@@ -140,7 +129,7 @@ describe('sendInviteEmail — configured, delivery succeeds', () => {
       inviterName: 'Field Officer Bob',
       expiresAt: new Date('2026-05-01'),
     });
-    expect(mockSmtpSend).toHaveBeenCalledOnce();
+    expect(mockSgSendEmail).toHaveBeenCalledOnce();
     expect(result.delivered).toBe(true);
     expect(result.deliveryStatus).toBe('email_sent');
     expect(result.channel).toBe('email');
@@ -150,7 +139,7 @@ describe('sendInviteEmail — configured, delivery succeeds', () => {
     await sendInviteEmail({
       toEmail: 'farmer@test.com', farmerName: 'Alice', inviteUrl: 'http://x',
     });
-    const call = mockSmtpSend.mock.calls[0][0];
+    const call = mockSgSendEmail.mock.calls[0][0];
     expect(call.to).toBe('farmer@test.com');
   });
 
@@ -159,7 +148,7 @@ describe('sendInviteEmail — configured, delivery succeeds', () => {
     await sendInviteEmail({
       toEmail: 'farmer@test.com', farmerName: 'Alice', inviteUrl,
     });
-    const call = mockSmtpSend.mock.calls[0][0];
+    const call = mockSgSendEmail.mock.calls[0][0];
     expect(call.text).toContain(inviteUrl);
     expect(call.html).toContain(inviteUrl);
   });
@@ -168,25 +157,40 @@ describe('sendInviteEmail — configured, delivery succeeds', () => {
 describe('sendInviteEmail — configured, delivery fails', () => {
   beforeEach(() => {
     setEnv(EMAIL_ENV);
-    mockSmtpSend.mockResolvedValue({
-      success: false, provider: 'smtp',
-      error: 'smtp_error: Invalid email address',
+    mockSgSendEmail.mockResolvedValue({
+      ok: false, code: 'recipient_invalid', statusCode: 400,
+      details: 'Invalid email address',
     });
   });
 
-  it('returns manual_share_ready on SMTP failure', async () => {
+  it('returns manual_share_ready with a friendly reason on recipient rejection', async () => {
     const result = await sendInviteEmail({
       toEmail: 'bad@test.com', farmerName: 'Alice', inviteUrl: 'http://x',
     });
     expect(result.delivered).toBe(false);
     expect(result.deliveryStatus).toBe('manual_share_ready');
-    expect(result.reason).toMatch(/Invalid email address/);
+    // UI-safe reason text — no raw SendGrid error body.
+    expect(result.reason).toMatch(/recipient address was rejected|email delivery failed/i);
   });
 
   it('never throws — always returns a result', async () => {
     await expect(sendInviteEmail({
       toEmail: 'x@t.com', farmerName: 'A', inviteUrl: 'u',
     })).resolves.toBeDefined();
+  });
+
+  it('maps sender_not_verified to a safe line', async () => {
+    mockSgSendEmail.mockResolvedValueOnce({
+      ok: false, code: 'sender_not_verified', statusCode: 403,
+      details: 'The from address does not match a verified Sender Identity.',
+    });
+    const result = await sendInviteEmail({
+      toEmail: 'farmer@test.com', farmerName: 'A', inviteUrl: 'http://x',
+    });
+    expect(result.delivered).toBe(false);
+    expect(result.reason).toMatch(/sender address is not verified|email delivery failed/i);
+    // Must not leak the raw provider body to the UI.
+    expect(result.reason).not.toMatch(/verified Sender Identity/i);
   });
 });
 
@@ -253,9 +257,7 @@ describe('getDeliveryStatusLabel', () => {
     expect(shape(getDeliveryStatusLabel('email_sent'))).toBe(true);
     expect(shape(getDeliveryStatusLabel('phone_sent'))).toBe(true);
     expect(shape(getDeliveryStatusLabel('manual_share_ready'))).toBe(true);
-    // Unknown codes still return a safe badge instead of undefined.
     expect(shape(getDeliveryStatusLabel('unknown_code'))).toBe(true);
-    // With hasUserAccount=true the function short-circuits.
     expect(shape(getDeliveryStatusLabel('email_sent', true))).toBe(true);
   });
 });

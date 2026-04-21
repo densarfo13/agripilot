@@ -34,20 +34,22 @@ export const PEST_ALERT_MIN_CONFIDENCE = 0.6;
 export const REGIONAL_WATCH_MIN_CONFIDENCE = 0.5;
 
 // ─── Deliverability Notes ────────────────────────────────────
-// Active provider: Zoho Mail SMTP. All transactional mail flows
-// through the single SMTP_USER mailbox (see lib/mailer.js). The
+// Active provider: SendGrid. All transactional mail goes through the
+// single EMAIL_FROM address (see services/emailService.js). The
 // per-purpose SENDERS map above is preserved for in-app labelling
-// only — the envelope From is always EMAIL_FROM, because Zoho
-// rejects envelopes that don't match the authenticated account.
+// only — SendGrid requires every distinct From address to be a
+// verified Single Sender (or on an authenticated domain), so
+// provider.js ignores the per-call `from` and uses EMAIL_FROM.
 //
 // Before production email delivery:
-// 1. Verify farroway.app (and any aliases) in Zoho Mail Admin →
-//    Domains → Add Domain, then complete ownership + MX steps.
-// 2. Configure SPF:  farroway.app TXT "v=spf1 include:zoho.com ~all"
-// 3. Configure DKIM: enable in Zoho Mail Admin → Email Configuration
-//    → DKIM, then add the CNAME / TXT record Zoho shows for your
-//    selector (usually `zoho._domainkey`).
-// 4. DMARC: _dmarc.farroway.app TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@farroway.app"
-// 5. Create an app password at https://accounts.zoho.com → Security
-//    → App Passwords and use it for SMTP_PASS (required when 2FA
-//    is enabled, which it should be).
+// 1. Create an API key in SendGrid → Settings → API Keys with at
+//    least the "Mail Send" scope. Store it as SENDGRID_API_KEY.
+// 2. Verify the sender:
+//      - Fastest: Settings → Sender Authentication → Verify a Single
+//        Sender, confirm admin@farroway.app by clicking the link.
+//      - Better: authenticate the whole farroway.app domain via
+//        Domain Authentication (adds CNAMEs for SPF/DKIM).
+// 3. Configure SPF:  farroway.app TXT "v=spf1 include:sendgrid.net ~all"
+// 4. Configure DKIM: the Domain Authentication wizard generates
+//    three CNAMEs — add them to DNS.
+// 5. DMARC: _dmarc.farroway.app TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@farroway.app"

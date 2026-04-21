@@ -90,27 +90,52 @@ describe('Email Constants — @farroways.com Senders', () => {
   });
 });
 
-// ─── 3. Provider — SMTP (Zoho) ────────────────────────────
+// ─── 3. Provider — SendGrid ────────────────────────────
 
-describe('Email Provider — SMTP', () => {
+describe('Email Provider — SendGrid', () => {
   const code = readFile('server/src/modules/email/provider.js');
 
   it('exports send function', () => {
     expect(code).toContain('export async function send(');
   });
 
-  it('exports isConfigured function', () => {
-    expect(code).toContain('export function isConfigured(');
+  it('re-exports isEmailConfigured from the services emailService', () => {
+    expect(code).toContain('isEmailConfigured');
+    expect(code).toContain("from '../../../services/emailService.js'");
   });
 
-  it('delegates to the shared SMTP mailer', () => {
-    expect(code).toContain("from '../../../lib/mailer.js'");
-    expect(code).toContain('sendEmail');
-  });
-
-  it('returns { success: false } when SMTP is not configured', () => {
-    expect(code).toContain('SMTP not configured');
+  it('returns { success: false } when SendGrid is not configured', () => {
+    expect(code).toContain('SENDGRID_API_KEY not configured');
     expect(code).toContain('success: false');
+  });
+});
+
+// ─── 3b. Provider — canonical emailService ─────────────────
+describe('Email Service — SendGrid transport', () => {
+  const code = readFile('server/services/emailService.js');
+
+  it('imports @sendgrid/mail', () => {
+    expect(code).toContain("import('@sendgrid/mail')");
+  });
+
+  it('exports sendEmail with the { ok, code } shape', () => {
+    expect(code).toContain('export async function sendEmail(');
+    expect(code).toContain('ok: true');
+    expect(code).toContain('ok: false');
+  });
+
+  it('classifies sender_not_verified and other SendGrid failures', () => {
+    expect(code).toContain('sender_not_verified');
+    expect(code).toContain('recipient_invalid');
+    expect(code).toContain('auth_failed');
+  });
+
+  it('never imports nodemailer or calls createTransport', () => {
+    // Check imports/calls specifically — file comments may mention
+    // nodemailer as historical context ("SMTP / Zoho was removed").
+    expect(code).not.toMatch(/from ['"]nodemailer['"]/);
+    expect(code).not.toMatch(/import.+nodemailer/);
+    expect(code).not.toMatch(/createTransport\s*\(/);
   });
 });
 
@@ -407,16 +432,17 @@ describe('Email Admin Routes', () => {
 describe('Environment Configuration', () => {
   const env = readFile('server/.env.example');
 
-  it('documents SMTP transport variables', () => {
-    expect(env).toContain('SMTP_HOST');
-    expect(env).toContain('SMTP_PORT');
-    expect(env).toContain('SMTP_USER');
-    expect(env).toContain('SMTP_PASS');
+  it('documents the SendGrid API key variable', () => {
+    expect(env).toContain('SENDGRID_API_KEY');
   });
 
   it('documents EMAIL_FROM with the admin@farroway.app default', () => {
     expect(env).toContain('EMAIL_FROM');
     expect(env).toContain('admin@farroway.app');
+  });
+
+  it('documents APP_BASE_URL for link construction', () => {
+    expect(env).toContain('APP_BASE_URL');
   });
 });
 

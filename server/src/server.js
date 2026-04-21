@@ -21,7 +21,7 @@ import {
   expireStaleAlerts,
   pruneJobs,
 } from '../intelligence/dist/index.js';
-import { validateEmailConfig } from '../lib/mailer.js';
+import { validateEmailConfig } from '../services/emailService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -51,9 +51,7 @@ import { isEmailConfigured, isSmsConfigured } from '../modules/notifications/del
 describe('Delivery Honesty — no email/SMS configured', () => {
   it('isEmailConfigured returns false when no env vars set', () => {
     // Delete any email-provider env vars that might be set
-    delete process.env.SMTP_HOST;
-    delete process.env.SMTP_USER;
-    delete process.env.SMTP_PASS;
+    delete process.env.SENDGRID_API_KEY;
     expect(isEmailConfigured()).toBe(false);
   });
 
@@ -64,14 +62,10 @@ describe('Delivery Honesty — no email/SMS configured', () => {
     expect(isSmsConfigured()).toBe(false);
   });
 
-  it('isEmailConfigured returns true when SMTP_HOST, SMTP_USER, and SMTP_PASS are set', () => {
-    process.env.SMTP_HOST = 'smtp.zoho.com';
-    process.env.SMTP_USER = 'admin@farroway.app';
-    process.env.SMTP_PASS = 'app-password';
+  it('isEmailConfigured returns true when SENDGRID_API_KEY is set', () => {
+    process.env.SENDGRID_API_KEY = 'SG.test-key';
     expect(isEmailConfigured()).toBe(true);
-    delete process.env.SMTP_HOST;
-    delete process.env.SMTP_USER;
-    delete process.env.SMTP_PASS;
+    delete process.env.SENDGRID_API_KEY;
   });
 
   it('isSmsConfigured returns true when all Twilio vars are set', () => {
