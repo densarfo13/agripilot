@@ -101,8 +101,26 @@ export default function VerifyOtp() {
     submittingRef.current = true;
 
     try {
-      await verifyPhoneOtp(phone, code);
+      const data = await verifyPhoneOtp(phone, code);
       safeTrackEvent('auth.otp.verified', { method: 'phone' });
+      // Server returns { code: 'no_account' } when the phone was
+      // verified but no user row matches it — route to registration
+      // instead of bouncing off the auth gate on the next page.
+      if (data && data.code === 'no_account') {
+        navigate('/farmer-register', { state: { phone }, replace: true });
+        return;
+      }
+      // Rare: OTP accepted but session start failed server-side.
+      // Show a safe message and keep the user on this page.
+      if (data && data.ok === false && data.code === 'login_failed') {
+        setError(friendlyOtpError({ code: 'login_failed' }, t));
+        setDigits(Array(CODE_LENGTH).fill(''));
+        inputsRef.current[0]?.focus();
+        return;
+      }
+      // Happy path — AuthContext has already populated the user via
+      // setUser(data.user). postAuthDestination now resolves to a
+      // signed-in landing page.
       navigate(postAuthDestination(), { replace: true });
     } catch (err) {
       // Map server-side codes to safe, user-facing copy. The server
@@ -149,6 +167,8 @@ export default function VerifyOtp() {
     if (code === 'rate_limited')        return tFn('auth.otp.rateLimited')   || 'Too many requests. Please wait and try again.';
     if (code === 'cooldown')            return tFn('auth.otp.cooldown')      || 'Please wait before requesting another code.';
     if (code === 'provider_error')      return tFn('auth.otp.providerError') || 'Verification service is unavailable. Try email recovery instead.';
+    if (code === 'login_failed')        return tFn('auth.otp.loginFailed')   || 'Your code was accepted but we could not start your session. Please try again.';
+    if (code === 'no_account')          return tFn('auth.otp.noAccount')     || 'No account is linked to this phone number yet. Tap to sign up.';
     // Fall back to the server-provided message if it looks safe, else generic.
     const msg = err?.message || '';
     if (msg && msg.length < 160 && !/stack|error:/i.test(msg)) return msg;

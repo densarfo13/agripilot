@@ -1,6 +1,14 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  /* Tells every native control (select popups, scrollbars, date
+     pickers, spinners) to render against the app's dark palette.
+     Without this, Windows Chromium / Edge draw native popups using
+     OS theme colours and the page's white-ish text becomes
+     invisible on the white popup background — the root cause of
+     the country-dropdown unreadability bug. */
+  color-scheme: dark;
+
   /* ── Farroway brand tokens (premium theme) ──── */
   --primary: #22C55E;
   --primary-dark: #16A34A;
@@ -226,6 +234,32 @@ tbody tr:hover { background: var(--card-hover); }
 }
 .form-textarea { min-height: 80px; resize: vertical; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* ── Universal native <select> fallback ─────────────
+   Many screens hand-roll their own select elements with inline
+   styles (AdminFarmIssuesPage filter bar, AlertControlCenter,
+   HighRiskFarms, feedback modals, etc.) without the `form-select`
+   class. The :root color-scheme above handles the OS-level popup
+   contrast; this block adds the same solid-option treatment to
+   every native select on the page so Firefox and any browser that
+   honours option CSS renders readable rows regardless of class. */
+select {
+  color-scheme: dark;
+}
+select option {
+  background-color: #111D2E;
+  color: #EAF2FF;
+  padding: 10px 12px;
+  font-weight: 500;
+}
+select option:disabled {
+  color: #64748B;
+}
+select option:checked {
+  background-color: #15803D;
+  color: #FFFFFF;
+  font-weight: 700;
+}
 
 /* ── Detail views ───────────────────────────────── */
 .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }

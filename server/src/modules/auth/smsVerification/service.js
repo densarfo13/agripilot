@@ -455,7 +455,68 @@ export async function checkSmsVerification({
     return { ok: true, verified: true, purpose };
   }
 
-  // login_verify (or any other purpose) — just return verification.
+  // login_verify — OTP approved, now issue a session. We stamp
+  // phoneVerifiedAt on the farmer row in the same flow so a first-
+  // time phone-login farmer is "verified" after step 1 completes.
+  if (purpose === SMS_PURPOSES.LOGIN_VERIFY) {
+    try {
+      if (prisma.farmer && typeof prisma.farmer.updateMany === 'function') {
+        await prisma.farmer.updateMany({
+          where: { phone: to },
+          data:  { phoneVerifiedAt: new Date() },
+        });
+      }
+    } catch { /* non-fatal */ }
+
+    // Dynamic import keeps the SMS service tree-shakable from tests
+    // that stub the provider but don't need a real auth service.
+    try {
+      const { loginViaPhone } = await import('../service.js');
+      const session = await loginViaPhone({ phone: to });
+      if (!session) {
+        // No account on this phone. We still return ok:true/verified:
+        // true so the farmer sees an honest "no account found on this
+        // number" state in the UI instead of a scary auth error, but
+        // we surface a distinct code so the caller can route to
+        // signup instead of into the app.
+        try {
+          await writeAuditLog({
+            action: 'auth.phone_login_no_account',
+            details: { phone: to, provider: provider.name },
+          });
+        } catch { /* non-fatal */ }
+        return {
+          ok: true, verified: true, purpose,
+          code: 'no_account',
+          message: 'No account is linked to this phone number.',
+        };
+      }
+      try {
+        await writeAuditLog({
+          userId: session.user.id,
+          action: 'auth.phone_login_success',
+          details: { phone: to, role: session.user.role },
+        });
+      } catch { /* non-fatal */ }
+      return {
+        ok: true, verified: true, purpose,
+        user: session.user,
+        accessToken: session.accessToken,
+      };
+    } catch (err) {
+      opsEvent('auth', 'phone_login_failed', 'error',
+        { phone: to, error: err?.message });
+      // Do NOT throw — the OTP itself was valid. Return a safe
+      // signal so the UI can show a retry / support prompt.
+      return {
+        ok: false, verified: true, purpose,
+        code: 'login_failed',
+        message: 'Verification succeeded but we could not start your session. Please try again.',
+      };
+    }
+  }
+
+  // Any other purpose — fall through with a plain verified result.
   // Success event already logged above the purpose branches.
   return { ok: true, verified: true, purpose };
 }

@@ -40,6 +40,78 @@ export async function register({ email, password, fullName, role, organizationId
   };
 }
 
+/**
+ * loginViaPhone — issue a session for a phone-verified farmer after
+ * a successful Twilio Verify OTP check. Called from the SMS
+ * verification service when `purpose === 'login_verify'`.
+ *
+ * Lookup order:
+ *   1. Match a Farmer row by phone (the source of truth for farmer
+ *      phone numbers). The farmer row carries the userId we need.
+ *   2. Load the User through the farmer's userId so the sanitised
+ *      shape matches what `login()` returns — same MFA gate, same
+ *      organisation claim, same audit trail downstream.
+ *
+ * Notes:
+ *   • Returns null (not throw) when no farmer owns this phone — the
+ *     caller renders a safe "no account on this phone" response.
+ *   • MFA is NOT re-challenged here because farmers are exempt
+ *     (mfa/service.isMfaExempt('farmer')=true). If a non-farmer role
+ *     ever starts using phone login, the existing isMfaRequired gate
+ *     should be re-evaluated.
+ *   • phoneVerifiedAt on the farmer row is stamped by the caller
+ *     (sms service) as part of the same transaction intent, so we
+ *     don't re-touch it here.
+ */
+export async function loginViaPhone({ phone }) {
+  if (!phone || typeof phone !== 'string') {
+    const err = new Error('phone is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const farmer = await prisma.farmer.findFirst({
+    where: { phone },
+    select: {
+      id: true,
+      userId: true,
+      registrationStatus: true,
+      fullName: true,
+    },
+  });
+  if (!farmer || !farmer.userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: farmer.userId },
+    include: {
+      farmerProfile: {
+        select: { id: true, registrationStatus: true, fullName: true },
+      },
+      organization: {
+        select: { id: true, name: true, type: true },
+      },
+    },
+  });
+  if (!user || !user.active) return null;
+
+  // Record the login channel so audits + dashboards can distinguish
+  // phone-OTP logins from password / federated.
+  await prisma.user.update({
+    where: { id: user.id },
+    data:  { lastLoginMethod: 'phone_otp', lastLoginAt: new Date() },
+  }).catch(() => { /* non-fatal */ });
+
+  const sanitized = sanitizeUser(user);
+  if (user.role === 'farmer' && user.farmerProfile) {
+    sanitized.farmerId = user.farmerProfile.id;
+    sanitized.registrationStatus = user.farmerProfile.registrationStatus;
+  }
+  sanitized.organizationId = user.organizationId || null;
+  sanitized.organization   = user.organization || null;
+
+  return { user: sanitized, accessToken: generateToken(user) };
+}
+
 export async function login({ email, password }) {
   const user = await prisma.user.findUnique({
     where: { email },

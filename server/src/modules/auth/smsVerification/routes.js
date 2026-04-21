@@ -14,6 +14,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../../middleware/errorHandler.js';
 import { passwordResetLimiter } from '../../../middleware/rateLimiters.js';
+import { setAuthCookies } from '../../../../lib/cookies.js';
 import {
   startSmsVerification,
   checkSmsVerification,
@@ -24,6 +25,13 @@ const router = Router();
 
 function sendResult(res, result) {
   const status = result.status || (result.ok ? 200 : 400);
+  // When the SMS service issued a session (phone-OTP login path),
+  // set HttpOnly auth cookies on the response — mirrors the password
+  // /login route so the farmer is signed in on the next request.
+  if (result.ok && result.user && result.accessToken) {
+    try { setAuthCookies(res, result.user); }
+    catch (e) { console.warn('[sms] setAuthCookies failed:', e?.message); }
+  }
   // Don't echo internal flags to the client — just the user-facing shape.
   const payload = result.ok
     ? {
@@ -34,6 +42,7 @@ function sendResult(res, result) {
         cooldownSec: result.cooldownSec,
         verified: result.verified,
         passwordReset: result.passwordReset,
+        user: result.user || undefined,
       }
     : {
         ok: false,

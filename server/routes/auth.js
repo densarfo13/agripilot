@@ -746,6 +746,15 @@ router.post('/reset-password', passwordResetLimiter, async (req, res) => {
 
 function sendOtpResult(res, result) {
   const status = result.status || (result.ok ? 200 : 400);
+  // If the SMS service returned a session (phone-OTP login path),
+  // set the auth cookies exactly like the password-login route does
+  // so the user is immediately signed in on the next navigation.
+  // Cookies are HttpOnly + SameSite — never a token in the response
+  // body that a non-first-party script could scrape.
+  if (result.ok && result.user && result.accessToken) {
+    try { setAuthCookies(res, result.user); }
+    catch (e) { console.warn('[otp] setAuthCookies failed:', e?.message); }
+  }
   const payload = result.ok
     ? {
         ok: true,
@@ -755,6 +764,10 @@ function sendOtpResult(res, result) {
         cooldownSec: result.cooldownSec,
         verified: result.verified,
         passwordReset: result.passwordReset,
+        // When the SMS verification produced a session (login_verify),
+        // forward the user object so the frontend AuthContext can
+        // populate state immediately — mirrors what /login returns.
+        user: result.user || undefined,
       }
     : {
         ok: false,
