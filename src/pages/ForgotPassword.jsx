@@ -37,8 +37,14 @@ export default function ForgotPassword() {
   const submitLbl     = resolve(t, 'auth.forgotPassword.submit',   'Send Reset Link');
   const submittingLbl = resolve(t, 'auth.forgotPassword.submitting','Sending\u2026');
   const backLbl       = resolve(t, 'auth.forgotPassword.backToLogin','Back to Sign In');
+  const sentTitle     = resolve(t, 'auth.forgotPassword.sentTitle',
+    'Check your email');
   const sentMsg       = resolve(t, 'auth.forgotPassword.sentMsg',
-    'If an account exists for this email, a reset link has been sent. Check your inbox \u2014 the link expires in 30 minutes.');
+    'If an account exists for this email, we just sent a reset link. Check your inbox and your spam folder \u2014 the link expires in 30 minutes.');
+  const sentHint      = resolve(t, 'auth.forgotPassword.sentHint',
+    'Didn\u2019t get it? Check your spam folder, or try again with the same email below.');
+  const tryAgainLbl   = resolve(t, 'auth.forgotPassword.tryAgain',
+    'Try again');
   const emailReq      = resolve(t, 'auth.forgotPassword.emailRequired', 'Email is required');
   const emailBad      = resolve(t, 'auth.forgotPassword.emailInvalid',  'Enter a valid email');
   const generic       = resolve(t, 'auth.forgotPassword.generic',
@@ -72,7 +78,17 @@ export default function ForgotPassword() {
 
         {sent ? (
           <div style={S.successBox} data-testid="forgot-password-sent">
-            {sentMsg}
+            <div style={S.successTitle}>{sentTitle}</div>
+            <p style={S.successBody}>{sentMsg}</p>
+            <p style={S.successHint}>{sentHint}</p>
+            <button
+              type="button"
+              onClick={() => { setSent(false); setError(''); }}
+              style={S.resendBtn}
+              data-testid="forgot-password-resend"
+            >
+              {tryAgainLbl}
+            </button>
           </div>
         ) : (
           <>
@@ -126,7 +142,11 @@ const S = {
   label:      { fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block' },
   input:      { background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#fff', outline: 'none', width: '100%', fontSize: '0.875rem', boxSizing: 'border-box' },
   errorBox:   { background: 'rgba(252,165,165,0.1)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
-  successBox: { background: 'rgba(134,239,172,0.1)', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#86EFAC', fontSize: '0.875rem', marginBottom: '0.5rem' },
+  successBox: { background: 'rgba(134,239,172,0.08)', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '12px', padding: '1rem 1.125rem', marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  successTitle: { color: '#86EFAC', fontSize: '1rem', fontWeight: 700 },
+  successBody:  { color: '#D1FAE5', fontSize: '0.875rem', margin: 0, lineHeight: 1.5 },
+  successHint:  { color: 'rgba(255,255,255,0.55)', fontSize: '0.8125rem', margin: 0, lineHeight: 1.45 },
+  resendBtn:    { marginTop: '0.25rem', alignSelf: 'flex-start', padding: '0.5rem 0.875rem', borderRadius: 10, border: '1px solid rgba(134,239,172,0.3)', background: 'transparent', color: '#86EFAC', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' },
   link:       { color: '#86EFAC', textDecoration: 'none', fontSize: '0.875rem' },
   button:     { background: '#22C55E', color: '#000', border: 'none', borderRadius: '12px', padding: '0.75rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },

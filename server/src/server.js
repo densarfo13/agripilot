@@ -21,6 +21,7 @@ import {
   expireStaleAlerts,
   pruneJobs,
 } from '../intelligence/dist/index.js';
+import { validateEmailConfig } from '../lib/mailer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,6 +103,11 @@ async function main() {
     // Prune completed/failed jobs older than 7 days, once per hour
     setInterval(() => pruneJobs(7).catch(console.error), 60 * 60 * 1000);
   }
+
+  // One-shot email provider check at boot so missing SENDGRID_API_KEY
+  // / EMAIL_FROM / APP_BASE_URL shows up in the deploy log instead of
+  // silently degrading password-reset delivery at 2am.
+  try { validateEmailConfig(); } catch (e) { console.warn('[SERVER] email config check failed:', e?.message); }
 
   const host = '0.0.0.0';
   const server = app.listen(config.port, host, () => {

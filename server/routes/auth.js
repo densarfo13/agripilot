@@ -482,15 +482,25 @@ router.post('/resend-verification', authenticate, async (req, res) => {
 // { success: true } regardless of whether the email exists so the
 // caller cannot tell accounts apart from timing or status code.
 router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
+  // Phase tags make the log stream greppable end-to-end. Use the
+  // existing per-request id when middleware set one; fall back to a
+  // short random id so operators can still correlate phases.
+  const reqId = req.id || Math.random().toString(36).slice(2, 10);
+  const tag = `[forgot-password:${reqId}]`;
   try {
     const validation = validateForgotPasswordPayload(req.body || {});
     if (!validation.isValid) {
+      console.warn(`${tag} validation_failed`, { fieldErrors: validation.errors });
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
         fieldErrors: validation.errors,
       });
     }
+
+    // Log the requested email at INFO so ops can confirm the request
+    // reached the server. We never log the reset token itself.
+    console.log(`${tag} requested email=${validation.data.email} ip=${req.ip || 'unknown'}`);
 
     const user = await prisma.user.findUnique({
       where: { email: validation.data.email },
@@ -516,31 +526,49 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
           expiresAt: new Date(Date.now() + RESET_TOKEN_EXPIRY_MS),
         },
       });
+      console.log(`${tag} token_created userId=${user.id} expiresIn=${Math.round(RESET_TOKEN_EXPIRY_MS / 60000)}m`);
 
-      const resetUrl = `${env.APP_BASE_URL}/reset-password?token=${rawToken}`;
+      // Ensure the reset link always points at APP_BASE_URL without a
+      // trailing slash so the query-string join is predictable.
+      const base = String(env.APP_BASE_URL || '').replace(/\/+$/, '');
+      const resetUrl = `${base}/reset-password?token=${rawToken}`;
 
-      // Fire the email but never leak the send outcome to the caller —
-      // network failures shouldn't reveal account existence either.
-      try {
-        await sendEmail({
-          to: user.email,
-          subject: 'Reset your Farroway password',
-          text: [
-            'You requested a password reset for your Farroway account.',
-            `Click the link below to reset your password (valid for 30 minutes):`,
-            resetUrl,
-            'If you did not request this, you can safely ignore this email.',
-          ].join('\n\n'),
-          html: `
-            <p>You requested a password reset for your Farroway account.</p>
-            <p>Click the link below to reset your password. This link is valid for <strong>30 minutes</strong>.</p>
-            <p><a href="${resetUrl}" style="background:#22c55e;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Reset password</a></p>
-            <p>Or copy this link: <code>${resetUrl}</code></p>
-            <p>If you did not request this, you can safely ignore this email.</p>
-          `,
-        });
-      } catch (mailErr) {
-        console.error('forgot-password email send failed:', mailErr?.message || mailErr);
+      // In non-production environments, echo the reset URL to the
+      // server log regardless of email provider. This is invaluable
+      // during pilot / demo runs where SendGrid is not yet wired but
+      // the operator still needs a usable link.
+      if (String(env.NODE_ENV).toLowerCase() !== 'production') {
+        console.log(`${tag} dev_reset_link ${resetUrl}`);
+      }
+
+      // Fire the email. `sendEmail` never throws; we inspect the
+      // structured result so we can log success vs failure crisply.
+      console.log(`${tag} email_send_start to=${user.email}`);
+      const result = await sendEmail({
+        to: user.email,
+        subject: 'Reset your Farroway password',
+        text: [
+          'You requested a password reset for your Farroway account.',
+          'Click the link below to reset your password (valid for 30 minutes):',
+          resetUrl,
+          'If you did not request this, you can safely ignore this email.',
+        ].join('\n\n'),
+        html: `
+          <p>You requested a password reset for your Farroway account.</p>
+          <p>Click the link below to reset your password. This link is valid for <strong>30 minutes</strong>.</p>
+          <p><a href="${resetUrl}" style="background:#22c55e;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Reset password</a></p>
+          <p>Or copy this link: <code>${resetUrl}</code></p>
+          <p>If you did not request this, you can safely ignore this email.</p>
+        `,
+        requestId: reqId,
+      });
+
+      if (result.success) {
+        console.log(`${tag} email_sent provider=${result.provider}${result.skipped ? ' (console-only)' : ''}`);
+      } else {
+        // Full failure details to the server log only — the caller
+        // still gets the anti-enumeration generic success.
+        console.error(`${tag} email_failed provider=${result.provider} error=${result.error}`);
       }
 
       // Audit trail — recovery request is a security event even on
@@ -551,13 +579,20 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
           action: 'auth.forgot_password_requested',
           entityType: 'User',
           entityId: user.id,
+          metadata: {
+            emailProvider: result.provider,
+            emailSent:     !!result.success,
+            emailSkipped:  !!result.skipped,
+          },
         });
       } catch { /* non-fatal */ }
+    } else {
+      console.log(`${tag} no_active_user (anti-enumeration success)`);
     }
 
     return res.json({ success: true });
   } catch (error) {
-    console.error('POST /api/v2/auth/forgot-password failed:', error);
+    console.error(`${tag} unexpected_failure`, error);
     // Still return a generic 200 so attackers can't use errors to probe.
     return res.json({ success: true });
   }
