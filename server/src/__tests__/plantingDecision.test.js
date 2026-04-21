@@ -136,8 +136,11 @@ describe('summarizeWeather — pure mapper', () => {
 
 // ─── 3. Weather service abstraction ───────────────────────────────
 describe('createWeatherService', () => {
-  it('no fetcher → getSummary returns unavailable', async () => {
-    const ws = createWeatherService();
+  it('fetcher returning null → unavailable (fallback path)', async () => {
+    // The default service now uses the Open-Meteo fetcher; inject an
+    // explicit null-returning fetcher here to exercise the fallback
+    // without hitting the live network.
+    const ws = createWeatherService({ fetcher: async () => null, cache: false });
     const r = await ws.getSummary({ lat: 1, lng: 1 });
     expect(r.status).toBe(WSTATUS.UNAVAILABLE);
   });

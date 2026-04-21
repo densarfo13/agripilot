@@ -50,6 +50,12 @@ import { deriveJourneyState } from '../../lib/journey/journeySignals.js';
 import JourneySummaryCard from '../../components/JourneySummaryCard.jsx';
 import { runNotificationChecks } from '../../lib/notifications/notificationGenerator.js';
 import NotificationBadge from '../../components/NotificationBadge.jsx';
+import { createWeatherService } from '../../lib/weather/weatherService.js';
+
+// Shared live weather service. Open-Meteo, 1h local cache.
+// Declared module-level so mounting/unmounting Today doesn't
+// spawn fresh services that each re-hit the network.
+const weatherService = createWeatherService();
 import {
   computeDailyLoopFacts,
   touchLastVisit,
@@ -314,12 +320,48 @@ export default function FarmerTodayPage() {
   const nextHintText = screen.nextHint?.text
     || (screen.nextHint?.textKey ? t(screen.nextHint.textKey) : null);
 
+  // ─── Live weather summary (Open-Meteo via weatherService) ──
+  // Fetched once per active-cycle change. Falls back to the
+  // server-provided `state.today.weatherRisk` when lat/lng aren't
+  // available or the API is unreachable (offline mode).
+  const [liveWeather, setLiveWeather] = useState(null);
+  useEffect(() => {
+    const activeFarm = getActiveFarm();
+    const lat = activeCycle?.latitude
+      ?? activeFarm?.latitude
+      ?? region?.lat
+      ?? null;
+    const lng = activeCycle?.longitude
+      ?? activeFarm?.longitude
+      ?? region?.lng
+      ?? null;
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) {
+      setLiveWeather(null);
+      return;
+    }
+    let cancelled = false;
+    weatherService.getSummary({ lat, lng }).then((summary) => {
+      if (!cancelled) setLiveWeather(summary || null);
+    }).catch(() => { if (!cancelled) setLiveWeather(null); });
+    return () => { cancelled = true; };
+  }, [activeCycle, region]);
+
   // ─── Task Engine snapshot (deterministic, offline-first) ───
   // Generates stage + crop + weather-aware tasks from pure inputs.
   // Used as the source of truth when the server feed has no primary
   // task, and always piped into the Progress Engine below so
   // nextBestAction stays aligned with the current farming context.
   const weatherSummary = useMemo(() => {
+    // Prefer the live Open-Meteo summary when we have one; otherwise
+    // derive from the server-provided weatherRisk.
+    if (liveWeather && liveWeather.status && liveWeather.status !== 'unavailable') {
+      return {
+        rainSoon:  liveWeather.status === 'low_rain' || liveWeather.status === 'dry_ahead',
+        heavyRain: false, // reserved — Open-Meteo summary doesn't flag this
+        dry:       liveWeather.status === 'low_rain' || liveWeather.status === 'dry_ahead',
+        severe:    liveWeather.status === 'excessive_heat',
+      };
+    }
     const wr = state.today?.weatherRisk || null;
     if (!wr) return null;
     const level = wr.overallWeatherRisk;
@@ -329,7 +371,7 @@ export default function FarmerTodayPage() {
       dry:       level === 'dry',
       severe:    level === 'severe',
     };
-  }, [state.today]);
+  }, [liveWeather, state.today]);
 
   const engineSnapshot = useMemo(() => generateTasks({
     farm:     activeCycle || null,
@@ -420,9 +462,10 @@ export default function FarmerTodayPage() {
     return generateDailyTasks({
       crop, stage, plantingStatus,
       completions: getTaskCompletions(),
+      weather: liveWeather || null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCycle, progressTick]);
+  }, [activeCycle, progressTick, liveWeather]);
 
   // ─── Progress Engine snapshot ──────────────────────────────
   // Reads locally-persisted task completions + feedback. Prefers the
@@ -465,15 +508,21 @@ export default function FarmerTodayPage() {
   // server-derived weather summary so the Today page can surface a
   // single actionable banner.
   const reminder = useMemo(() => {
+    // Prefer the live weather summary (Open-Meteo) when available so
+    // the reminder engine can surface weather_warning / high_risk
+    // banners from real rainfall + temperature signals.
+    const weatherForReminder = liveWeather && liveWeather.status !== 'unavailable'
+      ? liveWeather
+      : weatherSummary;
     return evaluateReminder({
-      weather: weatherSummary,
+      weather: weatherForReminder,
       riskLevel: state.today?.overallRisk?.level || 'low',
       completions: getTaskCompletions(),
       hasActiveFarm: !!(activeCycle?.id || getActiveFarmId()),
       todayPrimaryDone,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weatherSummary, state.today, activeCycle, todayPrimaryDone, progressTick]);
+  }, [liveWeather, weatherSummary, state.today, activeCycle, todayPrimaryDone, progressTick]);
 
   // Mark the daily reminder as shown once per day so we don't flash
   // it again on every navigation, AND fire a browser notification

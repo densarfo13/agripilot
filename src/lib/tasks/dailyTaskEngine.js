@@ -109,6 +109,40 @@ function dueRank(hint) {
   return 3;
 }
 
+/**
+ * applyWeatherOverrides — promote weather-sensitive tasks to
+ * today + high priority when the live forecast calls for it. Pure;
+ * returns a new array. No-op when `weather` is falsy so callers
+ * without a live signal keep the deterministic calendar behaviour.
+ *
+ * Rules (v1):
+ *   • dry  / low_rain / dry_ahead  → monitor_moisture + manage_water → today/high
+ *   • rain_soon                    → check_drainage → today/high
+ *   • excessive_heat / extreme_heat→ monitor_moisture + manage_water → today/high
+ */
+function applyWeatherOverrides(tasks, weather) {
+  if (!weather) return tasks;
+  const status = weather.status || null;
+  const cautions = Array.isArray(weather.cautions) ? weather.cautions : [];
+
+  const dry  = status === 'low_rain' || status === 'dry_ahead'
+            || cautions.includes('low_rain') || cautions.includes('dry_ahead');
+  const hot  = status === 'excessive_heat'
+            || cautions.includes('excessive_heat') || cautions.includes('extreme_heat');
+  const rainSoon = status === 'rain_soon' || cautions.includes('rain_soon');
+
+  return tasks.map((t) => {
+    const id = t.id || '';
+    if ((dry || hot) && /monitor_moisture|manage_water|water/.test(id)) {
+      return { ...t, priority: 'high', dueHint: 'today' };
+    }
+    if (rainSoon && /check_drainage|drainage|prepare_ridges/.test(id)) {
+      return { ...t, priority: 'high', dueHint: 'today' };
+    }
+    return t;
+  });
+}
+
 // ─── Main export ─────────────────────────────────────────────────
 export function generateDailyTasks({
   crop = null,
@@ -117,6 +151,7 @@ export function generateDailyTasks({
   farmerType = null,
   completions = [],
   limit = DEFAULT_LIMIT,
+  weather = null,        // optional summarizeWeather shape
   // eslint-disable-next-line no-unused-vars
   now = null,
 } = {}) {
@@ -124,17 +159,20 @@ export function generateDailyTasks({
   const { tasks, cropSource } = pickRuleSet(resolvedStage, crop);
   const done = completedIdSet(completions);
 
-  const sanitized = tasks
-    .filter((t) => t && t.id && !done.has(String(t.id)))
-    .map((t, i) => ({
-      id:       t.id,
-      titleKey: t.titleKey,
-      whyKey:   t.whyKey,
-      priority: t.priority || 'medium',
-      dueHint:  t.dueHint  || 'this_week',
-      note:     t.note     || null,
-      _order:   i,
-    }));
+  const sanitized = applyWeatherOverrides(
+    tasks
+      .filter((t) => t && t.id && !done.has(String(t.id)))
+      .map((t, i) => ({
+        id:       t.id,
+        titleKey: t.titleKey,
+        whyKey:   t.whyKey,
+        priority: t.priority || 'medium',
+        dueHint:  t.dueHint  || 'this_week',
+        note:     t.note     || null,
+        _order:   i,
+      })),
+    weather,
+  );
 
   // Sort: dueHint (today > soon > this_week), then priority, then input order.
   sanitized.sort((a, b) =>
@@ -193,4 +231,6 @@ export function getTopTask(ctx) {
 }
 
 export { PLANTING_STATUS_TO_STAGE, SUPPORTED_STAGES };
-export const _internal = Object.freeze({ resolveStage, pickRuleSet, dueRank });
+export const _internal = Object.freeze({
+  resolveStage, pickRuleSet, dueRank, applyWeatherOverrides,
+});

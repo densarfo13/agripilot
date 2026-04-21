@@ -79,13 +79,15 @@ function buildMinimumProfile({ farm, fastState, authUser }) {
 }
 
 /**
- * v1 weather service — no live provider wired yet. A future turn
- * can pass a `fetcher` that talks to the existing WeatherContext
- * endpoint; until then `getSummary(...)` returns
- * { status: 'unavailable' } and the decision layer falls back to
- * calendar-only guidance cleanly.
+ * Live weather service (Open-Meteo, no API key, 1h local cache).
+ * getSummary({ lat, lng }) returns a farmer-friendly summary:
+ *   { status: 'ok' | 'low_rain' | 'dry_ahead' | 'excessive_heat'
+ *            | 'uncertain' | 'unavailable',
+ *     cautions, headlineKey, tempC, precip7dMm, forecast7dMm }
+ * On network / API failure, the service returns status='unavailable'
+ * so the decision layer cleanly falls back to calendar-only guidance.
  */
-const weatherService = createWeatherService({ fetcher: null });
+const weatherService = createWeatherService();
 
 /**
  * defaultRecommender — v1 rule-based recommender wired to the

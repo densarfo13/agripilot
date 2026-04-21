@@ -116,32 +116,168 @@ export function summarizeWeather(raw = {}) {
   });
 }
 
+// ─── Open-Meteo fetcher (v1 real provider) ────────────────────────
+// No API key, no signup, generous rate limits. Endpoint:
+//   https://api.open-meteo.com/v1/forecast
+// We request current temperature + daily precipitation for the past
+// 7 days and the next 7 days, then roll it up into the
+// summarizeWeather() shape so every downstream consumer stays
+// agnostic of the provider.
+const OPEN_METEO_ENDPOINT = 'https://api.open-meteo.com/v1/forecast';
+const OPEN_METEO_TIMEOUT_MS = 7000;
+
+// Coord bucket for cache keys — ~1.1 km at the equator. Keeps
+// cache hits warm across small movements without leaking precise
+// position to the cache layer.
+function coordBucket(lat, lng) {
+  const la = Number(lat), lo = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return null;
+  return `${la.toFixed(2)},${lo.toFixed(2)}`;
+}
+
+async function defaultFetchJson(url, { timeoutMs } = {}) {
+  if (typeof fetch !== 'function') return null;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const signal = controller ? controller.signal : undefined;
+  const timer  = controller
+    ? setTimeout(() => controller.abort(), timeoutMs || OPEN_METEO_TIMEOUT_MS)
+    : null;
+  try {
+    const res = await fetch(url, { signal });
+    if (!res || !res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+  finally { if (timer) clearTimeout(timer); }
+}
+
 /**
- * createWeatherService — small factory that lets callers plug in a
- * real fetcher later without changing every consumer.
+ * openMeteoFetcher — maps the Open-Meteo response to the raw shape
+ * summarizeWeather() expects:
  *
- *   const ws = createWeatherService({ fetcher: async ({ lat, lng }) => {
- *     const r = await fetch(...);
- *     return await r.json();           // shape: { tempC, precip7dMm, forecast7dMm? }
- *   }});
- *   await ws.getSummary({ lat, lng, country, state });
+ *   { tempC, precip7dMm, forecast7dMm, source: 'open-meteo' }
  *
- * If no fetcher is provided, every call resolves to the safe
- * `{ status: 'unavailable' }` summary. Fetcher throws / returns null
- * are caught and collapse to the same fallback.
+ *   opts.fetchJson — test shim to swap the network call
  */
-export function createWeatherService({ fetcher } = {}) {
+export async function openMeteoFetcher({ lat, lng, fetchJson } = {}) {
+  // Explicit null/undefined guard — Number(null) === 0 would
+  // otherwise pass Number.isFinite and trigger a real network call
+  // with coords (0, 0) in the Atlantic.
+  if (lat == null || lng == null) return null;
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  const url =
+    `${OPEN_METEO_ENDPOINT}?latitude=${Number(lat)}&longitude=${Number(lng)}`
+    + '&current=temperature_2m'
+    + '&daily=precipitation_sum'
+    + '&past_days=7&forecast_days=7&timezone=auto';
+  const fj = typeof fetchJson === 'function' ? fetchJson : defaultFetchJson;
+  const data = await fj(url);
+  if (!data || typeof data !== 'object') return null;
+
+  const tempC = Number(data.current && data.current.temperature_2m);
+  const daily = data.daily && Array.isArray(data.daily.precipitation_sum)
+    ? data.daily.precipitation_sum.map((n) => Number(n) || 0)
+    : null;
+  if (!daily) return null;
+
+  // past_days=7 then forecast_days=7 → 14 entries, indexed oldest → newest.
+  // Past 7 are indices 0..6, forecast 7..13.
+  const past    = daily.slice(0, 7);
+  const future  = daily.slice(7, 14);
+  const sum = (arr) => arr.reduce((acc, n) => acc + (Number.isFinite(n) ? n : 0), 0);
+
+  return {
+    tempC:        Number.isFinite(tempC) ? tempC : null,
+    precip7dMm:   past.length ? sum(past)   : null,
+    forecast7dMm: future.length ? sum(future) : null,
+    source:       'open-meteo',
+    raw:          data,
+  };
+}
+
+// ─── Local cache (1 h TTL, coord-bucket keyed) ───────────────────
+const CACHE_KEY_PREFIX = 'farroway.weatherCache.';
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 h — weather changes fast
+
+function hasLocalStorage() {
+  return typeof window !== 'undefined' && !!window.localStorage;
+}
+function readCache(bucket) {
+  if (!bucket || !hasLocalStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY_PREFIX + bucket);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Number.isFinite(parsed.ts)) return null;
+    if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+    return parsed.raw || null;
+  } catch { return null; }
+}
+function writeCache(bucket, raw) {
+  if (!bucket || !hasLocalStorage()) return false;
+  try {
+    window.localStorage.setItem(
+      CACHE_KEY_PREFIX + bucket,
+      JSON.stringify({ ts: Date.now(), raw }),
+    );
+    return true;
+  } catch { return false; }
+}
+
+/**
+ * createWeatherService — factory that returns a service with:
+ *
+ *   getSummary({ lat, lng, country?, state?, crop? })
+ *     → Promise<summarizeWeather shape>
+ *
+ * By default the service uses `openMeteoFetcher`. Callers can
+ * override via `{ fetcher }` (for tests or alternate providers)
+ * and disable caching via `{ cache: false }`.
+ *
+ * The service NEVER throws:
+ *   • unknown lat/lng           → summarizeWeather({}) (unavailable)
+ *   • network fail              → summarizeWeather({}) (unavailable)
+ *   • cached hit                → same summary, marked with source='cache'
+ */
+export function createWeatherService({ fetcher, cache = true } = {}) {
+  const fetchFn = typeof fetcher === 'function' ? fetcher : openMeteoFetcher;
+
   async function getSummary(ctx = {}) {
-    if (typeof fetcher !== 'function') return summarizeWeather({});
-    try {
-      const raw = await fetcher(ctx);
-      if (!raw || typeof raw !== 'object') return summarizeWeather({});
-      return summarizeWeather(raw);
-    } catch {
-      return summarizeWeather({});
+    const bucket = cache ? coordBucket(ctx.lat, ctx.lng) : null;
+
+    if (bucket) {
+      const cached = readCache(bucket);
+      if (cached) {
+        // Tag the summary so callers can tell a cache hit apart from
+        // a fresh network response (useful for debugging + analytics).
+        return Object.freeze({ ...summarizeWeather(cached), source: 'cache' });
+      }
     }
+
+    let raw;
+    try {
+      raw = await fetchFn(ctx);
+    } catch { raw = null; }
+
+    if (!raw || typeof raw !== 'object') return summarizeWeather({});
+    if (bucket) writeCache(bucket, raw);
+    return summarizeWeather(raw);
   }
+
   return Object.freeze({ getSummary });
+}
+
+/** Clears every cached weather entry — used on sign-out and tests. */
+export function clearWeatherCache() {
+  if (!hasLocalStorage()) return false;
+  try {
+    const keys = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(CACHE_KEY_PREFIX)) keys.push(k);
+    }
+    for (const k of keys) window.localStorage.removeItem(k);
+    return true;
+  } catch { return false; }
 }
 
 function numOr(v, fallback) {
@@ -153,4 +289,6 @@ function numOr(v, fallback) {
 export { STATUS };
 export const _internal = Object.freeze({
   TEMP_HOT_C, TEMP_EXTREME_HOT_C, PRECIP_LOW_7D_MM, FORECAST_LOW_7D_MM,
+  OPEN_METEO_ENDPOINT, OPEN_METEO_TIMEOUT_MS,
+  CACHE_KEY_PREFIX, CACHE_TTL_MS, coordBucket,
 });
