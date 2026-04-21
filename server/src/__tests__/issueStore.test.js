@@ -236,7 +236,42 @@ describe('getIssueMetrics', () => {
   });
 });
 
-// ─── Robustness ──────────────────────────────────────────────────
+// ─── Filters (spec §1 finalization) ──────────────────────────────
+describe('getIssuesForRole — admin filters', () => {
+  beforeEach(() => {
+    createIssue({ farmerId: 'u1', farmerName: 'Ada Mensah', issueType: 'pest',
+      description: 'armyworm', crop: 'maize' });
+    createIssue({ farmerId: 'u2', farmerName: 'Kofi Annan', issueType: 'disease',
+      description: 'blight', crop: 'cassava' });
+    createIssue({ farmerId: 'u3', farmerName: 'Amina Sow',  issueType: 'soil',
+      description: 'dry patch', crop: 'tomato' });
+  });
+
+  it('filters by issueType', () => {
+    const pest = getIssuesForRole('admin', { issueType: 'pest' });
+    expect(pest).toHaveLength(1);
+    expect(pest[0].issueType).toBe('pest');
+  });
+
+  it('filters by farmer name substring', () => {
+    const found = getIssuesForRole('admin', { farmerSearch: 'kof' });
+    expect(found).toHaveLength(1);
+    expect(found[0].farmerName).toBe('Kofi Annan');
+  });
+
+  it('filters by farmer id substring', () => {
+    const found = getIssuesForRole('admin', { farmerSearch: 'u3' });
+    expect(found).toHaveLength(1);
+    expect(found[0].farmerId).toBe('u3');
+  });
+
+  it('empty / null farmerSearch falls through (not over-restrictive)', () => {
+    expect(getIssuesForRole('admin', { farmerSearch: '' })).toHaveLength(3);
+    expect(getIssuesForRole('admin', { farmerSearch: '   ' })).toHaveLength(3);
+  });
+});
+
+
 describe('robustness', () => {
   it('no crash when the store is empty', () => {
     expect(getAllIssues()).toEqual([]);

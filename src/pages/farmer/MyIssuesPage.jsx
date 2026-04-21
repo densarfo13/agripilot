@@ -120,11 +120,17 @@ function formatDate(ts) {
   try { return new Date(ts).toLocaleDateString(); } catch { return ''; }
 }
 
+/**
+ * Farmer-visible "latest update" — skips system rows AND suggested
+ * notes. Per safety contract §7, auto-generated suggestions are
+ * never surfaced to the farmer until an officer explicitly confirms
+ * + sends (which adds a fresh non-suggested note).
+ */
 function latestVisibleNote(issue) {
   if (!issue || !Array.isArray(issue.notes)) return null;
   for (let i = issue.notes.length - 1; i >= 0; i -= 1) {
     const n = issue.notes[i];
-    if (n && !n.system && n.text) return n;
+    if (n && !n.system && !n.suggested && n.text) return n;
   }
   return null;
 }

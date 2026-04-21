@@ -52,6 +52,7 @@ export default function AdminFarmIssuesPage() {
 
   const [filters, setFilters] = useState({
     status: '', crop: '', severity: '', location: '', program: '',
+    issueType: '', farmerSearch: '',
   });
   const [assignDraft, setAssignDraft] = useState({}); // { [issueId]: 'officer_id' }
 
@@ -59,11 +60,13 @@ export default function AdminFarmIssuesPage() {
     // eslint-disable-next-line no-unused-vars
     const _ = tick;
     return getIssuesForRole('admin', {
-      status:   filters.status   || null,
-      crop:     filters.crop     || null,
-      severity: filters.severity || null,
-      location: filters.location || null,
-      program:  filters.program  || null,
+      status:       filters.status       || null,
+      crop:         filters.crop         || null,
+      severity:     filters.severity     || null,
+      location:     filters.location     || null,
+      program:      filters.program      || null,
+      issueType:    filters.issueType    || null,
+      farmerSearch: filters.farmerSearch || null,
     });
   }, [tick, filters]);
 
@@ -168,6 +171,30 @@ export default function AdminFarmIssuesPage() {
           optionLabel={(v) => v || resolve(t, 'common.all', 'All')}
           testId="admin-filter-program"
         />
+        <Select
+          value={filters.issueType}
+          onChange={(v) => setFilters((f) => ({ ...f, issueType: v }))}
+          label={resolve(t, 'issues.admin.filter.type', 'Type')}
+          options={['', ...ISSUE_TYPES]}
+          optionLabel={(v) => v
+            ? resolve(t, `issues.type.${v}`, humanize(v))
+            : resolve(t, 'common.all', 'All')}
+          testId="admin-filter-type"
+        />
+        <label style={S.filterLabel}>
+          <span style={S.filterLabelText}>
+            {resolve(t, 'issues.admin.filter.farmer', 'Farmer')}
+          </span>
+          <input
+            type="text"
+            value={filters.farmerSearch}
+            onChange={(e) => setFilters((f) => ({ ...f, farmerSearch: e.target.value }))}
+            placeholder={resolve(t, 'issues.admin.filter.farmerPlaceholder',
+              'Name or id\u2026')}
+            style={S.smallSelect}
+            data-testid="admin-filter-farmer"
+          />
+        </label>
       </section>
 
       {issues.length === 0 ? (

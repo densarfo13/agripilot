@@ -123,12 +123,34 @@ export default function OfficerIssuesPage() {
                   <div style={S.notesHeader}>{notesHeaderLbl}</div>
                   <ul style={S.notesList}>
                     {issue.notes.map((n) => (
-                      <li key={n.id} style={{ ...S.noteItem, ...(n.system ? S.noteSystem : null) }}>
+                      <li
+                        key={n.id}
+                        style={{
+                          ...S.noteItem,
+                          ...(n.system    ? S.noteSystem    : null),
+                          ...(n.suggested ? S.noteSuggested : null),
+                        }}
+                        data-suggested={n.suggested ? 'yes' : 'no'}
+                      >
                         <span style={S.noteRole}>
-                          {resolve(t, `issues.role.${n.authorRole}`, n.authorRole || 'system')}
+                          {n.suggested
+                            ? resolve(t, 'issues.officer.suggestedBadge',
+                                'Suggested \u2014 confirm before sending')
+                            : resolve(t, `issues.role.${n.authorRole}`,
+                                n.authorRole || 'system')}
                         </span>
                         <span style={S.noteText}>{n.text}</span>
                         <span style={S.noteTime}>{formatDate(n.createdAt)}</span>
+                        {n.suggested && (
+                          <button
+                            type="button"
+                            onClick={() => setNoteDraft((d) => ({ ...d, [issue.id]: n.text }))}
+                            style={S.useSuggestion}
+                            data-testid={`officer-use-suggestion-${issue.id}`}
+                          >
+                            {resolve(t, 'issues.officer.useSuggestion', 'Use this')}
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -239,6 +261,18 @@ const S = {
   noteItem: { display: 'flex', gap: 8, fontSize: 12,
               color: 'rgba(255,255,255,0.85)' },
   noteSystem:{ color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' },
+  noteSuggested: {
+    padding: '6px 8px', borderRadius: 8,
+    border: '1px dashed rgba(59,130,246,0.45)',
+    background: 'rgba(59,130,246,0.08)',
+    color: '#93C5FD', fontStyle: 'normal',
+  },
+  useSuggestion: {
+    padding: '2px 8px', borderRadius: 6,
+    border: '1px solid rgba(147,197,253,0.4)',
+    background: 'transparent', color: '#BFDBFE',
+    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+  },
   noteRole: { minWidth: 100, fontWeight: 600 },
   noteText: { flex: 1 },
   noteTime: { color: 'rgba(255,255,255,0.45)', fontSize: 11 },

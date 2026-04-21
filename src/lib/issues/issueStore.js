@@ -172,6 +172,8 @@ export function getIssuesForRole(role, {
   severity = null,
   location = null,
   program = null,
+  issueType = null,       // filter by issueType (spec §1 "type" filter)
+  farmerSearch = null,    // substring match on farmerName / farmerId (spec §1 "farmer" filter)
 } = {}) {
   const list = readList();
   let out;
@@ -186,11 +188,22 @@ export function getIssuesForRole(role, {
     out = list.slice();
   }
 
-  if (status)   out = out.filter((i) => i.status === status);
-  if (crop)     out = out.filter((i) => i.crop === crop);
-  if (severity) out = out.filter((i) => i.severity === severity);
-  if (location) out = out.filter((i) => String(i.location || '').toLowerCase().includes(String(location).toLowerCase()));
-  if (program)  out = out.filter((i) => i.program === program);
+  if (status)    out = out.filter((i) => i.status === status);
+  if (crop)      out = out.filter((i) => i.crop === crop);
+  if (severity)  out = out.filter((i) => i.severity === severity);
+  if (location)  out = out.filter((i) => String(i.location || '').toLowerCase().includes(String(location).toLowerCase()));
+  if (program)   out = out.filter((i) => i.program === program);
+  if (issueType) out = out.filter((i) => i.issueType === issueType);
+  if (farmerSearch) {
+    const q = String(farmerSearch).toLowerCase().trim();
+    if (q) {
+      out = out.filter((i) => {
+        const name = String(i.farmerName || '').toLowerCase();
+        const fid  = String(i.farmerId   || '').toLowerCase();
+        return name.includes(q) || fid.includes(q);
+      });
+    }
+  }
 
   out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   return out.map(freezeIssue);
