@@ -29,6 +29,7 @@ import { NEW_FARM_TRANSLATIONS }        from './newFarmTranslations.js';
 import { COMPLETION_TRANSLATIONS }      from './completionTranslations.js';
 import { USE_CROP_TRANSLATIONS }        from './useCropTranslations.js';
 import { TASK_ENGINE_TRANSLATIONS }     from './taskEngineTranslations.js';
+import { SIGNAL_TRANSLATIONS }          from './signalTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -69,6 +70,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     COMPLETION_TRANSLATIONS,
     USE_CROP_TRANSLATIONS,
     TASK_ENGINE_TRANSLATIONS,
+    SIGNAL_TRANSLATIONS,
   ]);
 })();
 

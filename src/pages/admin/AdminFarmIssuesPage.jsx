@@ -30,6 +30,7 @@ import {
   ISSUE_SEVERITY,
   ISSUE_TYPES,
 } from '../../lib/issues/issueStore.js';
+import { getFarmerSignals } from '../../lib/signals/farmerSignalEngine.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -211,6 +212,7 @@ export default function AdminFarmIssuesPage() {
                 <Th>{resolve(t, 'issues.admin.col.status',    'Status')}</Th>
                 <Th>{resolve(t, 'issues.admin.col.assignedTo','Assigned to')}</Th>
                 <Th>{resolve(t, 'issues.admin.col.createdAt', 'Created')}</Th>
+                <Th>{resolve(t, 'signal.admin.colHeader',     'Signal')}</Th>
                 <Th>{resolve(t, 'issues.admin.col.actions',   'Actions')}</Th>
               </tr>
             </thead>
@@ -232,6 +234,7 @@ export default function AdminFarmIssuesPage() {
                   </Td>
                   <Td>{issue.assignedTo || '—'}</Td>
                   <Td>{formatDate(issue.createdAt)}</Td>
+                  <Td><SignalCell issue={issue} allIssues={allIssues} t={t} /></Td>
                   <Td>
                     <div style={S.actionsCell}>
                       {(issue.status === ISSUE_STATUS.OPEN
@@ -275,6 +278,81 @@ export default function AdminFarmIssuesPage() {
         </div>
       )}
     </main>
+  );
+}
+
+// ─── Signal cell ─────────────────────────────────────────────────
+/**
+ * SignalCell — compact signal summary for an admin row.
+ *
+ * Runs getFarmerSignals off the issue's surrounding history (same
+ * farm's open issues + whatever we have on the issue itself). Never
+ * claims a specific disease; all wording goes through t() so non-
+ * English admins see localised labels.
+ */
+function SignalCell({ issue, allIssues, t }) {
+  const resolveLbl = (key, fallback) => {
+    if (typeof t !== 'function' || !key) return fallback;
+    const v = t(key);
+    return v && v !== key ? v : fallback;
+  };
+  const peers = Array.isArray(allIssues)
+    ? allIssues.filter((x) => x && x.farmId === issue.farmId)
+    : [];
+  // Mirror the issue's triage category into a symptom report shape
+  // so the engine can weight it — we intentionally don't synthesise
+  // fake symptoms; we use the extent dial instead.
+  const extent =
+      issue.severity === 'high'   ? 'many_plants'
+    : issue.severity === 'medium' ? 'few_plants'
+    :                                'one_plant';
+  const signal = getFarmerSignals({
+    farm: { id: issue.farmId, crop: issue.crop, farmType: issue.farmType || 'small_farm' },
+    issues: peers,
+    symptomReport: {
+      symptoms:     [],
+      affectedPart: null,
+      extent,
+      description:  issue.description || '',
+    },
+    imageMeta: issue.imageUrl ? { url: issue.imageUrl } : null,
+    weather: null,
+    now: Date.now(),
+  });
+  if (signal.signalScore < 15) {
+    return <span style={{ color: 'rgba(255,255,255,0.45)' }}>
+      {resolveLbl('signal.admin.emptySignals', '\u2014')}
+    </span>;
+  }
+  const tone =
+    signal.severityTone === 'danger' ? { color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)' }
+  : signal.severityTone === 'warn'   ? { color: '#FDE68A', borderColor: 'rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.1)' }
+  :                                    { color: '#93C5FD', borderColor: 'rgba(59,130,246,0.35)', background: 'rgba(59,130,246,0.1)' };
+  return (
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}
+      data-testid={`admin-signal-${issue.id}`}
+      data-risk={signal.riskLevel}
+      data-category={signal.likelyCategory}
+    >
+      <span
+        style={{
+          display: 'inline-block',
+          padding: '2px 7px', borderRadius: 999,
+          fontWeight: 700, letterSpacing: 0.3,
+          border: '1px solid',
+          ...tone,
+        }}
+      >
+        {resolveLbl(signal.likelyCategoryKey, signal.likelyCategoryFallback)}
+      </span>
+      <span style={{ color: 'rgba(255,255,255,0.62)' }}>
+        {resolveLbl('signal.admin.scoreLabel', 'Score')}: {signal.signalScore}
+        {signal.requiresReview
+          ? ' \u00B7 ' + resolveLbl('signal.admin.needsReview', 'Needs review')
+          : ''}
+      </span>
+    </div>
   );
 }
 

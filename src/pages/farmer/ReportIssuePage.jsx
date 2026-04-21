@@ -20,10 +20,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import {
   createIssue,
+  getIssuesForRole,
   ISSUE_TYPES,
   ISSUE_SEVERITY,
 } from '../../lib/issues/issueStore.js';
 import { getActiveFarm, getActiveFarmId } from '../../store/farrowayLocal.js';
+import { getFarmerSignals } from '../../lib/signals/farmerSignalEngine.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -112,10 +114,39 @@ export default function ReportIssuePage() {
   }
 
   if (done) {
+    // Compute a signal snapshot off the just-created issue + the
+    // farmer's recent history. Pure + deterministic — no network.
+    // Safe-hedged wording only; never claims a specific disease.
+    const activeFarm = getActiveFarm();
+    const farmId     = getActiveFarmId();
+    const recentIssues = (() => {
+      try { return getIssuesForRole('farmer') || []; } catch { return []; }
+    })();
+    const signal = getFarmerSignals({
+      farm: activeFarm
+        ? { id: farmId, farmerId: activeFarm.farmerId,
+            crop: activeFarm.crop, farmType: activeFarm.farmType,
+            location: activeFarm.location }
+        : { id: farmId },
+      issues: recentIssues,
+      symptomReport: {
+        symptoms: [],  // ReportIssuePage v1 has no structured symptom
+                       // picker yet — the signal still uses description
+                       // keywords via the issueType dropdown.
+        affectedPart: null,
+        extent: severity === 'high' ? 'many_plants' : 'few_plants',
+        description,
+      },
+      imageMeta: done.imageUrl ? { url: done.imageUrl } : null,
+      weather: null,
+    });
     return (
       <main style={S.page} data-screen="report-issue" data-state="done">
         <h1 style={S.title}>{successTitle}</h1>
         <p style={S.success}>{successMsg}</p>
+        {signal.signalScore >= 30 && (
+          <SignalBanner t={t} signal={signal} resolve={resolve} />
+        )}
         <div style={S.buttonsRow}>
           <button
             type="button"
@@ -228,6 +259,46 @@ function humanizeType(code) {
   return String(code).replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 }
 
+/**
+ * SignalBanner — safe, hedged wording about what the signal engine
+ * inferred. Rendered only when signalScore ≥ 30 so low-noise reports
+ * don\u2019t get a warning treatment. Every string goes through t()
+ * with English fallbacks; one language per render.
+ */
+function SignalBanner({ t, signal, resolve }) {
+  const toneStyle =
+    signal.severityTone === 'danger' ? S.bannerDanger
+    : signal.severityTone === 'warn' ? S.bannerWarn
+    :                                   S.bannerInfo;
+  const title   = resolve(t, 'signal.banner.detected', 'We noticed a possible risk');
+  const catLbl  = resolve(t, signal.likelyCategoryKey, signal.likelyCategoryFallback);
+  const riskLbl = resolve(t, `signal.risk.${signal.riskLevel}`,
+    signal.riskLevel === 'high' ? 'Needs review soon'
+      : signal.riskLevel === 'medium' ? 'Needs attention' : 'Low risk');
+  const nextLbl = resolve(t, signal.suggestedActionKey, signal.suggestedActionFallback);
+  const reviewLine = signal.requiresReview
+    ? resolve(t, 'signal.banner.reviewLine', 'A field officer has been notified to review your report.')
+    : resolve(t, 'signal.banner.noReviewLine', 'Keep watching your plants over the next few days.');
+  return (
+    <div
+      style={{ ...S.banner, ...toneStyle }}
+      role="status"
+      data-testid="signal-banner"
+      data-risk={signal.riskLevel}
+      data-category={signal.likelyCategory}
+    >
+      <div style={S.bannerTitle}>{title}</div>
+      <div style={S.bannerLine}>
+        <span style={S.bannerPill}>{catLbl}</span>
+        <span style={S.bannerDot}>{'\u00B7'}</span>
+        <span>{riskLbl}</span>
+      </div>
+      <div style={S.bannerBody}>{nextLbl}</div>
+      <div style={S.bannerSub}>{reviewLine}</div>
+    </div>
+  );
+}
+
 const S = {
   page:    { minHeight: '100vh', background: '#0B1D34', color: '#fff',
              padding: '1.25rem 1rem 2rem', maxWidth: '32rem', margin: '0 auto',
@@ -260,4 +331,26 @@ const S = {
              color: '#FCA5A5', fontSize: '0.875rem', margin: '0 0 0.5rem' },
   link:    { color: '#86EFAC', textDecoration: 'none', fontSize: '0.875rem' },
   footerRow: { marginTop: '0.5rem', textAlign: 'center' },
+  // ─── Signal banner ───
+  banner:  { marginTop: '0.75rem', padding: '0.75rem 0.875rem', borderRadius: 12,
+             border: '1px solid rgba(255,255,255,0.12)' },
+  bannerInfo:   { background: 'rgba(59,130,246,0.08)',
+                  borderColor: 'rgba(59,130,246,0.3)' },
+  bannerWarn:   { background: 'rgba(245,158,11,0.08)',
+                  borderColor: 'rgba(245,158,11,0.35)' },
+  bannerDanger: { background: 'rgba(239,68,68,0.08)',
+                  borderColor: 'rgba(239,68,68,0.35)' },
+  bannerTitle:  { fontWeight: 700, fontSize: '0.95rem',
+                  color: 'rgba(255,255,255,0.95)', marginBottom: 4 },
+  bannerLine:   { display: 'flex', gap: 6, alignItems: 'center',
+                  fontSize: '0.8125rem', color: 'rgba(255,255,255,0.8)',
+                  marginBottom: 6, flexWrap: 'wrap' },
+  bannerPill:   { padding: '1px 8px', borderRadius: 999,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  fontWeight: 700 },
+  bannerDot:    { opacity: 0.5 },
+  bannerBody:   { fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)',
+                  marginBottom: 4, lineHeight: 1.35 },
+  bannerSub:    { fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' },
 };
