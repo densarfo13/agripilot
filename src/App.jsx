@@ -74,6 +74,7 @@ const NewApplicationPage = lazy(() => import('./pages/NewApplicationPage.jsx'));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage.jsx'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage.jsx'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'));
+const PrintableReportPage = lazy(() => import('./pages/PrintableReportPage.jsx'));
 const AuditPage = lazy(() => import('./pages/AuditPage.jsx'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'));
 const VerificationQueuePage = lazy(() => import('./pages/VerificationQueuePage.jsx'));
@@ -331,6 +332,7 @@ export default function App() {
             <Route path="investor/farmers/:farmerId" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><InvestorIntelligencePage /></RoleRoute>} />
             <Route path="portfolio" element={<PortfolioPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="reports/print" element={<RoleRoute roles={STAFF_ROLES}><PrintableReportPage /></RoleRoute>} />
             <Route path="audit" element={<RoleRoute roles={ADMIN_ROLES}><AuditPage /></RoleRoute>} />
             <Route path="admin/users" element={<RoleRoute roles={ADMIN_ROLES}><AdminUsersPage /></RoleRoute>} />
             <Route path="admin/registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />

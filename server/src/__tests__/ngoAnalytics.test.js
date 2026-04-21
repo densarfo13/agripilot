@@ -102,7 +102,10 @@ describe('getExportData — CSV', () => {
     const csv = getExportData('p1', { now: NOW, farms, events, streak: 5 });
     const lines = csv.trim().split('\n');
     expect(lines.length).toBe(1 + 2); // header + 2 farms in p1
-    expect(lines[0]).toBe('farmerId,farmId,crop,progressScore,streak,lastActivity,tasksCompleted');
+    expect(lines[0]).toBe(
+      'farmerId,farmId,crop,progressScore,streak,lastActivity,tasksCompleted,'
+      + 'onboardingComplete,locationCaptured,cropSelected,recentActivity,taskActivity,verificationScore'
+    );
     // Row columns in declared order.
     const cols = lines[1].split(',');
     expect(cols[0]).toBe('u1');    // farmerId
@@ -152,6 +155,7 @@ describe('analytics — internals', () => {
   it('EXPORT_HEADERS order is stable', () => {
     expect(_internal.EXPORT_HEADERS).toEqual([
       'farmerId','farmId','crop','progressScore','streak','lastActivity','tasksCompleted',
+      'onboardingComplete','locationCaptured','cropSelected','recentActivity','taskActivity','verificationScore',
     ]);
   });
 });

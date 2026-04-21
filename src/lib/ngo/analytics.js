@@ -21,6 +21,7 @@ import {
   isFarmActive,
 } from '../events/eventLogger.js';
 import { computeProgress } from '../progress/progressEngine.js';
+import { getFarmerVerificationSignals } from './verificationSignals.js';
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -186,6 +187,14 @@ const EXPORT_HEADERS = Object.freeze([
   'streak',
   'lastActivity',
   'tasksCompleted',
+  // Verification-signal columns (spec §5 — operational proof of
+  // activity, NOT fraud scoring). Five booleans + an integer score.
+  'onboardingComplete',
+  'locationCaptured',
+  'cropSelected',
+  'recentActivity',
+  'taskActivity',
+  'verificationScore',
 ]);
 
 /** Escape a cell value for CSV — wraps in quotes when needed. */
@@ -228,6 +237,13 @@ export function getExportData(program, {
     const f = buildFarmFacts(farm, {
       now, events: allEvents, completions: allCompletions, windowDays,
     });
+    const v = getFarmerVerificationSignals({
+      farm,
+      events:      allEvents,
+      completions: allCompletions,
+      now,
+      activityWindowDays: windowDays,
+    });
     rows.push([
       csvEscape(f.farmerId || ''),
       csvEscape(f.farmId),
@@ -236,6 +252,12 @@ export function getExportData(program, {
       csvEscape(globalStreak),                   // streak is global/per-user
       csvEscape(isoOrEmpty(f.lastActivity)),
       csvEscape(f.tasksCompleted),
+      csvEscape(v.onboardingComplete ? 'yes' : 'no'),
+      csvEscape(v.locationCaptured   ? 'yes' : 'no'),
+      csvEscape(v.cropSelected       ? 'yes' : 'no'),
+      csvEscape(v.recentActivity     ? 'yes' : 'no'),
+      csvEscape(v.taskActivity       ? 'yes' : 'no'),
+      csvEscape(v.score),
     ].join(','));
   }
   return rows.join('\n') + (rows.length > 1 ? '\n' : '');
