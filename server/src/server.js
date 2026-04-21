@@ -12,6 +12,9 @@ import {
   startFarmProcessingCron, stopFarmProcessingCron,
 } from './queue/farmProcessingCron.js';
 import {
+  startWeeklyReportCron, stopWeeklyReportCron,
+} from './modules/ngoReports/weeklyReportCron.js';
+import {
   loadThresholdsFromDb,
   startWorker,
   stopAllWorkers,
@@ -66,6 +69,10 @@ async function main() {
     // queue for workers. Degrades to inline execution when no
     // processor + Redis are wired yet; the API layer never blocks.
     startFarmProcessingCron();
+    // Weekly NGO report — Monday 08:00 UTC by default. Gated by
+    // SendGrid config (skipped at send time with a `skipped`
+    // outcome if email is off).
+    startWeeklyReportCron();
   }
 
   // ── Intelligence module startup ──
