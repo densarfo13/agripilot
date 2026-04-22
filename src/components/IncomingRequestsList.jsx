@@ -123,7 +123,22 @@ export default function IncomingRequestsList({
             <div style={styles.rowMain}>
               <div style={styles.rowTitle}>
                 {getCropLabel(row.crop, lang)} · {row.quantity} kg
+                {row.isBulk && (
+                  <span style={styles.bulkPill}
+                        data-testid={`bulk-pill-${row.request.id}`}>
+                    {tr('marketplace.inbox.bulkPill', 'Bulk lot')}
+                  </span>
+                )}
               </div>
+              {row.isBulk && row.lotTotal && (
+                <div style={styles.rowMeta}>
+                  {tr('marketplace.inbox.bulkShare', 'Your share')}:{' '}
+                  <strong>{row.quantity} kg</strong>{' '}
+                  / {row.lotTotal} kg {tr('marketplace.inbox.bulkOf', 'across')}
+                  {' '}{row.contributors || 1}{' '}
+                  {tr('marketplace.inbox.bulkFarmers', 'farmers')}
+                </div>
+              )}
               <div style={styles.rowMeta}>
                 {row.buyerName
                   ? (tr('marketplace.inbox.from', 'From') + ` ${row.buyerName}`)
@@ -243,6 +258,11 @@ function buildStyles(compact) {
     more: {
       fontSize: 12, color: 'rgba(230,244,234,0.55)', textAlign: 'center',
       padding: 4,
+    },
+    bulkPill: {
+      padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700,
+      background: 'rgba(56,189,248,0.22)', color: '#7DD3FC',
+      textTransform: 'uppercase', letterSpacing: 0.3, marginLeft: 6,
     },
   };
 }

@@ -22,6 +22,7 @@ import {
   matchAllFlat, recordPayment, marketplaceStats,
 } from './marketplaceService.js';
 import { buildPriceInsight } from './priceInsights.js';
+import { buildBulkLots, buildBulkLotById } from './bulkAggregation.js';
 import mwPkg from '../../core/middleware.js';
 import { requireFeature } from '../../core/featureGuard.js';
 const { requireFields, requireRole, standardResponse, asyncHandler } = mwPkg;
@@ -193,6 +194,132 @@ export function createMarketplaceRouter(opts = {}) {
         windowDays: days,
       });
       return r.ok(insight);
+    }),
+  );
+
+  // ─── Bulk lots ──────────────────────────────────────────
+  // GET /bulk-lots — derive bulk lots from available listings.
+  // Public so buyers + prospective users can browse; no PII is
+  // exposed (contributor farmId is opaque).
+  router.get('/bulk-lots',
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      const lots = await buildBulkLots(prisma, {
+        crop:              req.query.crop   || null,
+        country:           req.query.country || null,
+        region:            req.query.region || null,
+        windowDays:        Math.min(60, Math.max(3, Number(req.query.windowDays)  || 14)),
+        pickupWindowDays:  Math.min(30, Math.max(1, Number(req.query.pickupDays)  || 7)),
+        minContributors:   Math.min(10, Math.max(2, Number(req.query.minContrib) || 2)),
+      });
+      // Attach a per-lot price signal so the buyer UI can show a
+      // range without a second round-trip per card.
+      const enriched = [];
+      for (const lot of lots) {
+        let priceSignal = null;
+        try {
+          const ins = await buildPriceInsight(prisma, {
+            crop: lot.crop, country: lot.country, region: lot.region,
+            windowDays: 30,
+          });
+          if (ins && ins.suggested) {
+            priceSignal = Object.freeze({
+              currency: ins.currency,
+              low:      ins.suggested.low,
+              high:     ins.suggested.high,
+              typical:  ins.suggested.typical,
+              source:   ins.source,
+            });
+          }
+        } catch (_) { priceSignal = null; }
+        enriched.push({ ...lot, priceSignal });
+      }
+      return r.ok(enriched);
+    }),
+  );
+
+  // POST /bulk-lots/:lotId/request — buyer requests an entire lot.
+  // Creates ONE BuyerRequest (with metadata.kind='bulk_request' +
+  // contributorListingIds) and fires one FarmerNotification per
+  // participating farmer so they each see it in their inbox.
+  router.post('/bulk-lots/:lotId/request',
+    auth,
+    requireRole(['buyer', 'admin']),
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      const lot = await buildBulkLotById(prisma, req.params.lotId);
+      if (!lot) return r.fail('lot_not_found', 404);
+
+      const { buyerName, buyerId, message } = req.body || {};
+      if (!prisma?.buyerRequest?.create) return r.fail('no_prisma', 500);
+
+      // Record the bulk request as a single BuyerRequest with the
+      // lot's total quantity. Farmers see their share via the
+      // per-farmer FarmerNotification below.
+      const request = await prisma.buyerRequest.create({
+        data: {
+          buyerName: buyerName || null,
+          buyerId:   buyerId   || null,
+          crop:      lot.crop,
+          quantity:  Math.max(1, Math.round(lot.totalQuantity)),
+          location:  lot.location || null,
+          region:    lot.region   || null,
+          status:    'open',
+        },
+      });
+
+      // Notify every contributing farmer. Reuse the same metadata
+      // kind the single-listing path uses so IncomingRequestsList
+      // picks these up without modification; add a isBulk flag +
+      // lotId so the UI can show "Bulk lot" when available.
+      if (prisma?.farm?.findMany && prisma?.farmerNotification?.create) {
+        const farmIds = Array.from(new Set(
+          lot.contributors.map((c) => c.farmId),
+        ));
+        const farms = farmIds.length > 0
+          ? await prisma.farm.findMany({
+              where: { id: { in: farmIds } },
+              select: { id: true, farmerId: true },
+            })
+          : [];
+        const farmerIdByFarmId = new Map(farms.map((f) => [f.id, f.farmerId]));
+        for (const c of lot.contributors) {
+          const farmerId = farmerIdByFarmId.get(c.farmId);
+          if (!farmerId) continue;
+          try {
+            await prisma.farmerNotification.create({
+              data: {
+                farmerId,
+                notificationType: 'market',
+                title:   'New bulk buyer interest',
+                message: `${buyerName || 'A buyer'} wants a bulk lot of ${lot.totalQuantity} kg of ${lot.crop}. Your share: ${c.quantity} kg.`,
+                metadata: {
+                  kind:       'marketplace.request.created',
+                  isBulk:     true,
+                  lotId:      lot.lotId,
+                  requestId:  request.id,
+                  buyerId:    buyerId   || null,
+                  buyerName:  buyerName || null,
+                  crop:       lot.crop,
+                  quantity:   c.quantity,
+                  lotTotal:   lot.totalQuantity,
+                  contributors: lot.contributors.length,
+                  pickupWindow: lot.pickupWindow,
+                  listingIds: c.listingIds,
+                  message:    message || null,
+                },
+              },
+            });
+          } catch (_) { /* non-fatal per-farmer failure */ }
+        }
+      }
+
+      return r.ok({
+        request,
+        lotId:        lot.lotId,
+        contributors: lot.contributors.length,
+        totalQuantity: lot.totalQuantity,
+      });
     }),
   );
 

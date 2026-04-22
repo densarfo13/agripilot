@@ -7225,6 +7225,27 @@ const T = {
   'priceInsight.conf.medium':        { en: 'Medium', fr: 'Moyen', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
   'priceInsight.conf.low':           { en: 'Low', fr: 'Faible', sw: 'Mdogo', ha: 'Ƙaramin', tw: 'Sua' },
 
+  // ─── Bulk lots (marketplace aggregation) ──────────────────────
+  'bulk.title':               { en: 'Bulk lots near you', fr: 'Lots groupés près de chez vous', sw: 'Mikupuo ya pamoja karibu nawe', ha: 'Bulk lots kusa da kai', tw: 'Bulk lot a ɛbɛn wo' },
+  'bulk.loading':             { en: 'Finding bulk lots\u2026', fr: 'Recherche des lots\u2026', sw: 'Inatafuta mikupuo\u2026', ha: 'Ana neman bulk lots\u2026', tw: 'Rehwehwɛ bulk lot\u2026' },
+  'bulk.empty':               { en: 'No bulk lots right now \u2014 farmers still need to post individual listings for aggregation to kick in.', fr: 'Aucun lot groupé pour le moment.', sw: 'Hakuna mikupuo ya pamoja sasa.', ha: 'Babu bulk lots yanzu.', tw: 'Bulk lot biara nni hɔ seesei.' },
+  'bulk.filter.crop':         { en: 'Filter by crop', fr: 'Filtrer par culture', sw: 'Chuja kwa mazao', ha: 'Tace ta amfani', tw: 'Yiyi nnɔbae' },
+  'bulk.filter.region':       { en: 'Filter by region', fr: 'Filtrer par région', sw: 'Chuja kwa eneo', ha: 'Tace ta yanki', tw: 'Yiyi man' },
+  'bulk.contributors':        { en: 'farmers', fr: 'agriculteurs', sw: 'wakulima', ha: 'manoma', tw: 'akuafoɔ' },
+  'bulk.pickup':              { en: 'Pickup', fr: 'Collecte', sw: 'Ukusanyaji', ha: 'Ɗauka', tw: 'Kɔfa' },
+  'bulk.request':             { en: 'Request lot', fr: 'Demander le lot', sw: 'Omba mkupuo', ha: 'Nema bulk lot', tw: 'Bisa lot' },
+  'bulk.requesting':          { en: 'Requesting\u2026', fr: 'Demande en cours\u2026', sw: 'Inaomba\u2026', ha: 'Ana nema\u2026', tw: 'Rebisa\u2026' },
+  'bulk.err.generic':         { en: 'Something went wrong. Try again.', fr: 'Une erreur est survenue.', sw: 'Kuna tatizo. Jaribu tena.', ha: 'Akwai matsala.', tw: 'Biribi anyɛ yie.' },
+  'bulk.err.lot_not_found':   { en: 'This lot is no longer available.', fr: 'Ce lot n\u2019est plus disponible.', sw: 'Mkupuo huu haipatikani tena.', ha: 'Wannan lot ba ya nan yanzu.', tw: 'Saa lot yi nni hɔ bio.' },
+  'bulk.err.load_failed':     { en: 'Could not load bulk lots.', fr: 'Impossible de charger les lots.', sw: 'Imeshindwa kupakia.', ha: 'Ba a iya lodawa ba.', tw: 'Yɛantumi anload.' },
+  'bulk.err.request_failed':  { en: 'Could not send the request. Try again.', fr: 'Impossible d\u2019envoyer la demande.', sw: 'Ombi halikufaulu.', ha: 'Ba a iya aikawa ba.', tw: 'Wɔantumi anto.' },
+
+  // Farmer inbox — bulk context
+  'marketplace.inbox.bulkPill':     { en: 'Bulk lot', fr: 'Lot groupé', sw: 'Mkupuo', ha: 'Bulk', tw: 'Bulk lot' },
+  'marketplace.inbox.bulkShare':    { en: 'Your share', fr: 'Votre part', sw: 'Fungu lako', ha: 'Rabonka', tw: 'Wo kyɛfa' },
+  'marketplace.inbox.bulkOf':       { en: 'across', fr: 'sur', sw: 'katika', ha: 'tsakanin', tw: 'wɔ' },
+  'marketplace.inbox.bulkFarmers':  { en: 'farmers', fr: 'agriculteurs', sw: 'wakulima', ha: 'manoma', tw: 'akuafoɔ' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },

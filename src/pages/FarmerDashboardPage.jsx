@@ -20,6 +20,7 @@ import IncomingRequestsList from '../components/IncomingRequestsList.jsx';
 import SmartAlertsCard from '../components/SmartAlertsCard.jsx';
 import FarrowayScoreCard from '../components/FarrowayScoreCard.jsx';
 import PriceTrendsCard from '../components/PriceTrendsCard.jsx';
+import BulkLotsCard from '../components/BulkLotsCard.jsx';
 import { useTaskCompletion } from '../lib/intelligence/taskCompletion.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
@@ -891,6 +892,21 @@ export default function FarmerDashboardPage() {
             {farmProfile && farmProfile.crop && setupComplete && (
               <div data-testid="marketplace-quick" style={{ marginTop: '1rem' }}>
                 <MarketplaceCard mode="list" farm={farmProfile} compact />
+              </div>
+            )}
+
+            {/* 5c1. Bulk lots — aggregated farmer produce that buyers
+                 can request in one shot. Derived live from the
+                 marketplace's existing listings (no new Prisma model).
+                 Buyers tap "Request lot" → every contributing farmer
+                 gets a notification with their share; requests show
+                 up in IncomingRequestsList just like single-listing
+                 requests. */}
+            {setupComplete && (
+              <div data-testid="bulk-lots-section" style={{ marginTop: '1rem' }}>
+                <BulkLotsCard farm={farmProfile}
+                              buyerName={farmProfile && farmProfile.farmerName}
+                              buyerId={user && user.id} />
               </div>
             )}
 

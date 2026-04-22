@@ -427,6 +427,13 @@ export async function listIncomingRequestsForFarmer(prisma, { farmerId, status =
           buyerName:      meta.buyerName || null,
           crop:           meta.crop      || null,
           quantity:       meta.quantity  || null,
+          // Bulk-lot fields (present when the request came via the
+          // bulk-lot fan-out; null otherwise).
+          isBulk:       meta.isBulk || false,
+          lotId:        meta.lotId || null,
+          lotTotal:     meta.lotTotal || null,
+          contributors: meta.contributors || null,
+          pickupWindow: meta.pickupWindow || null,
         };
       })
       .filter((e) => e && nonEmptyString(e.requestId));
@@ -452,8 +459,17 @@ export async function listIncomingRequestsForFarmer(prisma, { farmerId, status =
         notificationId: e.notificationId,
         buyerName:      e.buyerName || row.buyerName,
         crop:           row.crop,
-        quantity:       row.quantity,
+        // For bulk requests `e.quantity` is the farmer's SHARE
+        // (from notification metadata), not the full BuyerRequest
+        // quantity. Surface the farmer share so the UI can display
+        // "Your share: 50 kg of 250 kg".
+        quantity:       e.quantity || row.quantity,
         createdAt:      e.createdAt,
+        isBulk:       e.isBulk,
+        lotId:        e.lotId,
+        lotTotal:     e.lotTotal,
+        contributors: e.contributors,
+        pickupWindow: e.pickupWindow,
       });
       if (data.length >= limit) break;
     }
