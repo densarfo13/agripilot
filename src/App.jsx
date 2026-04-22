@@ -16,6 +16,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
+import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -287,7 +288,11 @@ export default function App() {
       <SeasonProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
-      <OfflineBanner />
+      {/* Offline banner wired to the real sync transport — routes
+          queued actions (task_complete, task_skip, crop.update,
+          farm.update, listing.draft, photo.metadata) to their
+          actual server endpoints when the device reconnects. */}
+      <OfflineBanner transport={makeOfflineTransport()} />
       <AuthLoadingGate>
       <Suspense fallback={<PageLoader />}>
         <Routes>

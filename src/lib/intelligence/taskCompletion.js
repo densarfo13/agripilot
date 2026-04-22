@@ -36,6 +36,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { enqueueAction } from '../sync/offlineQueue.js';
 
 const STORAGE_KEY = 'farroway:taskCompletion:v1';
 const TRIM_DAYS   = 30;
@@ -108,9 +109,24 @@ export function markTaskDone(farmId, templateId, date = null) {
   const set = new Set(all[farmId][day].ids);
   if (!set.has(templateId)) {
     set.add(templateId);
-    all[farmId][day].at[templateId] = new Date().toISOString();
+    const completedAt = new Date().toISOString();
+    all[farmId][day].at[templateId] = completedAt;
     all[farmId][day].ids = Array.from(set);
     writeAll(all);
+    // Enqueue a server-sync action. Dedup key keeps rapid
+    // double-ticks + offline→online replays from producing
+    // duplicate server rows. Sync happens automatically when
+    // the auto-sync listener fires an 'online' event; offline
+    // writes stay in IndexedDB / localStorage until reconnect.
+    try {
+      enqueueAction({
+        type:    'task_complete',
+        farmId,
+        taskId:  templateId,
+        payload: { completedAt },
+        dedupKey: `task_complete:${farmId}:${templateId}:${day}`,
+      });
+    } catch { /* non-fatal — local state is authoritative */ }
   }
   return set;
 }
@@ -127,6 +143,15 @@ export function unmarkTaskDone(farmId, templateId, date = null) {
     if (row.at) delete row.at[templateId];
     row.ids = Array.from(set);
     writeAll(all);
+    try {
+      enqueueAction({
+        type:    'task_uncomplete',
+        farmId,
+        taskId:  templateId,
+        payload: { uncompletedAt: new Date().toISOString() },
+        dedupKey: `task_uncomplete:${farmId}:${templateId}:${day}`,
+      });
+    } catch { /* non-fatal */ }
   }
   return set;
 }
