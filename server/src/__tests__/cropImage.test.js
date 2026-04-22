@@ -12,7 +12,7 @@
  *   8. CropImage supports a circular prop for the card UI
  *   9. CropImage falls back to the placeholder via onError guard
  *  10. MyFarmPage + FarmerDashboardPage both consume CropImage
- *  11. Placeholder SVG exists at /public/crops/_placeholder.svg
+ *  11. Placeholder SVG exists at /public/crops/fallback-crop.webp
  */
 
 import { describe, it, expect } from 'vitest';
@@ -39,21 +39,21 @@ const SPEC_CANONICAL_KEYS = [
 
 describe('getCropImagePath', () => {
   it('resolves canonical lowercase keys to /crops/*.webp', () => {
-    expect(getCropImagePath('maize')).toBe('/crops/maize.svg');
-    expect(getCropImagePath('rice')).toBe('/crops/rice.svg');
-    expect(getCropImagePath('cassava')).toBe('/crops/cassava.svg');
+    expect(getCropImagePath('maize')).toBe('/crops/maize.webp');
+    expect(getCropImagePath('rice')).toBe('/crops/rice.webp');
+    expect(getCropImagePath('cassava')).toBe('/crops/cassava.webp');
   });
 
   it('accepts uppercase storage codes (MAIZE, SWEET_POTATO)', () => {
     // Spec §2 standardised on hyphenated canonical keys
     // (sweet-potato, oil-palm). Underscored legacy forms still
     // resolve through getCropImagePath's separator collapse.
-    expect(getCropImagePath('MAIZE')).toBe('/crops/maize.svg');
-    expect(getCropImagePath('SWEET_POTATO')).toBe('/crops/sweet-potato.svg');
+    expect(getCropImagePath('MAIZE')).toBe('/crops/maize.webp');
+    expect(getCropImagePath('SWEET_POTATO')).toBe('/crops/sweet-potato.webp');
   });
 
   it('accepts display strings ("Maize", "Sweet Potato")', () => {
-    expect(getCropImagePath('Maize')).toBe('/crops/maize.svg');
+    expect(getCropImagePath('Maize')).toBe('/crops/maize.webp');
   });
 
   it('returns null for unknown / empty / null inputs (no crashes)', () => {
@@ -90,13 +90,13 @@ describe('getCropImagePath', () => {
 
   it('treats hyphen, underscore, and space as interchangeable separators', () => {
     // Hyphenated (spec canonical)
-    expect(getCropImagePath('sweet-potato')).toBe('/crops/sweet-potato.svg');
+    expect(getCropImagePath('sweet-potato')).toBe('/crops/sweet-potato.webp');
     expect(getCropImagePath('oil-palm')).toBe('/crops/oil-palm.webp');
     // Underscored (legacy storage)
-    expect(getCropImagePath('sweet_potato')).toBe('/crops/sweet-potato.svg');
+    expect(getCropImagePath('sweet_potato')).toBe('/crops/sweet-potato.webp');
     expect(getCropImagePath('oil_palm')).toBe('/crops/oil-palm.webp');
     // Display strings with spaces
-    expect(getCropImagePath('Sweet Potato')).toBe('/crops/sweet-potato.svg');
+    expect(getCropImagePath('Sweet Potato')).toBe('/crops/sweet-potato.webp');
     expect(getCropImagePath('OIL PALM')).toBe('/crops/oil-palm.webp');
   });
 
@@ -108,14 +108,14 @@ describe('getCropImagePath', () => {
 
 describe('getCropImage (placeholder-safe alias)', () => {
   it('returns the mapped URL when the crop is known', () => {
-    expect(getCropImage('maize')).toBe('/crops/maize.svg');
-    expect(getCropImage('sweet-potato')).toBe('/crops/sweet-potato.svg');
+    expect(getCropImage('maize')).toBe('/crops/maize.webp');
+    expect(getCropImage('sweet-potato')).toBe('/crops/sweet-potato.webp');
   });
 
   it('returns the placeholder SVG when the crop is unknown', () => {
-    expect(getCropImage('dragonfruit')).toBe('/crops/_placeholder.svg');
-    expect(getCropImage(null)).toBe('/crops/_placeholder.svg');
-    expect(getCropImage('')).toBe('/crops/_placeholder.svg');
+    expect(getCropImage('dragonfruit')).toBe('/crops/fallback-crop.webp');
+    expect(getCropImage(null)).toBe('/crops/fallback-crop.webp');
+    expect(getCropImage('')).toBe('/crops/fallback-crop.webp');
   });
 
   it('is safe to drop directly into <img src> (never returns null)', () => {
@@ -143,13 +143,42 @@ describe('CROP_IMAGE_PATHS catalog', () => {
   });
 
   it('CROP_IMAGE_PLACEHOLDER points at the shipped SVG', () => {
-    expect(CROP_IMAGE_PLACEHOLDER).toBe('/crops/_placeholder.svg');
+    expect(CROP_IMAGE_PLACEHOLDER).toBe('/crops/fallback-crop.webp');
   });
 });
 
 describe('public assets', () => {
-  it('placeholder SVG exists in /public/crops', () => {
-    expect(fs.existsSync(path.join(process.cwd(), 'public/crops/_placeholder.svg'))).toBe(true);
+  it('fallback-crop.webp exists in /public/crops', () => {
+    expect(fs.existsSync(path.join(process.cwd(), 'public/crops/fallback-crop.webp'))).toBe(true);
+  });
+
+  it('every spec-mandated WebP is physically on disk', () => {
+    // 14 named crops + sweet-potato + fallback — all present as .webp.
+    const required = [
+      'cassava', 'sweet-potato', 'groundnut', 'maize', 'rice', 'tomato',
+      'pepper', 'onion', 'okra', 'yam', 'plantain', 'cocoa', 'banana', 'mango',
+      'potato', 'fallback-crop',
+    ];
+    for (const key of required) {
+      const file = path.join(process.cwd(), 'public', 'crops', `${key}.webp`);
+      expect(fs.existsSync(file), `${key}.webp should be shipped`).toBe(true);
+      // Sanity: mobile-friendly size (well under 200 KB ceiling).
+      const stats = fs.statSync(file);
+      expect(stats.size, `${key}.webp should be < 200 KB`).toBeLessThan(200_000);
+    }
+  });
+});
+
+// ─── src/utils/cropImages.js — spec-preferred wrapper shape ─────
+describe('utils/cropImages wrapper', () => {
+  it('re-exports cropImageMap + fallbackCropImage + getCropImage', async () => {
+    const mod = await import('../../../src/utils/cropImages.js');
+    expect(mod.cropImageMap).toBeDefined();
+    expect(mod.fallbackCropImage).toBe('/crops/fallback-crop.webp');
+    expect(typeof mod.getCropImage).toBe('function');
+    expect(mod.getCropImage('maize')).toBe('/crops/maize.webp');
+    expect(mod.getCropImage('unknown')).toBe('/crops/fallback-crop.webp');
+    expect(mod.default).toBe(mod.getCropImage);
   });
 });
 
