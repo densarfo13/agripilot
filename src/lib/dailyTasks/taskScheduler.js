@@ -34,6 +34,7 @@
 
 import { generateDailyTasks } from './taskEngine.js';
 import { enqueueAction } from '../sync/offlineQueue.js';
+import { getCropTimeline } from '../timeline/cropTimelineEngine.js';
 
 const KEY = 'farroway.dailyTasks.v1';
 
@@ -76,31 +77,66 @@ function keyFor(farm) {
 }
 
 /**
+ * resolveTimelineStage — compute the current crop stage on every
+ * read using the timeline engine. This is how the scheduler
+ * auto-advances: `plantingDate` + elapsed days → `currentStage`,
+ * and the next call of the day sees the newer stage without the
+ * farmer lifting a finger. Manual overrides are preserved because
+ * getCropTimeline checks them first.
+ */
+function resolveTimelineStage(farm, now) {
+  try {
+    const tl = getCropTimeline({ farm, now });
+    return (tl && tl.currentStage) || null;
+  } catch { return null; }
+}
+
+/**
  * getTodayTasks — the main read entry point. Generates + persists
  * today's plan on first call of the day; returns the stored plan on
  * subsequent calls (so completion state survives re-renders).
+ *
+ * Auto-advance: the scheduler now stores a `stageSnapshot` alongside
+ * each plan. If the timeline engine decides the crop has moved to a
+ * new stage (planting date + elapsed days pushed us past the
+ * previous stage's durationDays), the plan is regenerated on the
+ * same day — so task templates keep up with the crop even when the
+ * farmer doesn't reload between sunrise and sunset.
  */
 export function getTodayTasks({ farm = null, weather = null, now = null } = {}) {
   const today = ymdLocal(now || Date.now());
   const store = readStore();
   const slotKey = keyFor(farm);
   const existing = store.byFarm[slotKey];
+  const timelineStage = resolveTimelineStage(farm, now);
 
-  if (existing && existing.date === today && Array.isArray(existing.tasks)) {
+  // Keep the persisted plan ONLY when the date AND the timeline stage
+  // both match. A stage drift (auto-advance or a correction to
+  // plantingDate / manualStageOverride) forces regeneration so
+  // today's tasks reflect reality.
+  const sameDate  = existing && existing.date === today;
+  const sameStage = existing && existing.stageSnapshot === timelineStage;
+
+  if (sameDate && sameStage && Array.isArray(existing.tasks)) {
     return Object.freeze({
       date: existing.date,
       farmId: farm ? farm.id || farm._id || null : null,
       tasks: Object.freeze(existing.tasks.map((t) => Object.freeze({ ...t }))),
       source: 'persisted',
+      stage:  existing.stageSnapshot || null,
     });
   }
 
-  // New day (or first load) → regenerate.
-  const generated = generateDailyTasks({ farm, weather, date: now });
+  // New day OR stage advanced → regenerate with the timeline stage.
+  const generated = generateDailyTasks({
+    farm, weather, date: now,
+    timelineStage,   // timeline wins over farm.cropStage (spec §5)
+  });
   const slot = {
-    date:        generated.date,
-    tasks:       generated.tasks.map((t) => ({ ...t })),
-    generatedAt: new Date().toISOString(),
+    date:          generated.date,
+    tasks:         generated.tasks.map((t) => ({ ...t })),
+    generatedAt:   new Date().toISOString(),
+    stageSnapshot: timelineStage,
   };
   store.byFarm[slotKey] = slot;
   writeStore(store);
@@ -110,6 +146,7 @@ export function getTodayTasks({ farm = null, weather = null, now = null } = {}) 
     farmId: generated.farmId,
     tasks: Object.freeze(slot.tasks.map((t) => Object.freeze({ ...t }))),
     source: 'generated',
+    stage:  timelineStage,
   });
 }
 
