@@ -37,6 +37,7 @@ export const STAGES = [
 
 /** i18n translation keys for each stage */
 export const STAGE_KEYS = {
+  // ─── Generic stages (server + client share these) ───────────
   planning: 'cropStage.planning',
   land_preparation: 'cropStage.landPreparation',
   planting: 'cropStage.planting',
@@ -46,6 +47,19 @@ export const STAGE_KEYS = {
   fruiting: 'cropStage.fruiting',
   harvest: 'cropStage.harvest',
   post_harvest: 'cropStage.postHarvest',
+  // ─── Crop-specific lifecycle stages (Crop Intelligence Layer)
+  // These map the canonical snake_case stage keys used inside the
+  // registry lifecycles (cassava bulking, maize grain_fill, etc.)
+  // to the camelCase i18n keys published in translations.js + hi.js.
+  establishment: 'cropStage.establishment',
+  bulking:       'cropStage.bulking',
+  maturation:    'cropStage.maturation',
+  seedling:      'cropStage.seedling',
+  transplant:    'cropStage.transplant',
+  tasseling:     'cropStage.tasseling',
+  grain_fill:    'cropStage.grainFill',
+  pod_fill:      'cropStage.podFill',
+  pegging:       'cropStage.pegging',
 };
 
 /** Emoji icons indexed by stage value */

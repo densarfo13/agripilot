@@ -6017,6 +6017,19 @@ const T = {
   'cropStage.fruiting': { en: 'Fruiting', fr: 'Fructification', sw: 'Matunda', ha: 'Ɗan itace', tw: 'Aba' },
   'cropStage.harvest': { en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa' },
   'cropStage.postHarvest': { en: 'Post-Harvest', fr: 'Post-récolte', sw: 'Baada ya Mavuno', ha: 'Bayan Girbi', tw: 'Otwa Akyi' },
+  // Crop-specific lifecycle stages (Crop Intelligence Layer §3) —
+  // these appear in the stage dropdown when a crop like cassava,
+  // maize, tomato, rice, or groundnut is selected.
+  'cropStage.establishment': { en: 'Establishment', fr: 'Établissement', sw: 'Kujisimamisha', ha: 'Kafuwa', tw: 'Ntetee' },
+  'cropStage.bulking':       { en: 'Bulking',       fr: 'Grossissement', sw: 'Kujaza',        ha: 'Cikawa', tw: 'Nnyin' },
+  'cropStage.maturation':    { en: 'Maturation',    fr: 'Maturation',   sw: 'Kukomaa',        ha: 'Nunawa', tw: 'Anyini' },
+  'cropStage.seedling':      { en: 'Seedling',      fr: 'Semis',        sw: 'Mche',            ha: 'Tsire',  tw: 'Fifiri' },
+  'cropStage.transplant':    { en: 'Transplant',    fr: 'Repiquage',    sw: 'Kupandikiza',     ha: 'Dasa',   tw: 'Yi dua' },
+  'cropStage.tasseling':     { en: 'Tasseling',     fr: 'Floraison mâle', sw: 'Kutoa miche', ha: 'Fitar fure', tw: 'Nhwiren Pue' },
+  'cropStage.grainFill':     { en: 'Grain fill',    fr: 'Remplissage du grain', sw: 'Kujaza nafaka', ha: 'Cika hatsi', tw: 'Aba Nhyɛso' },
+  'cropStage.podFill':       { en: 'Pod fill',      fr: 'Remplissage des gousses', sw: 'Kujaza ganda', ha: 'Cika kwasfa', tw: 'Aba Nhyɛso' },
+  'cropStage.pegging':       { en: 'Pegging',       fr: 'Enfoncement',  sw: 'Kuweka pembe',    ha: 'Sanya ƙaya', tw: 'Hyɛ fam' },
+
   'cropStage.plantedDate': { en: 'Date Planted (optional)', fr: 'Date de plantation (optionnel)', sw: 'Tarehe ya Kupanda (si lazima)', ha: 'Ranar Shuka (zaɓi)', tw: 'Da a duae (ɛnyɛ dɛ)' },
   'cropStage.plantedDateHint': { en: 'Helps estimate when to move to the next stage', fr: 'Aide à estimer le passage à l\'étape suivante', sw: 'Husaidia kukadirisha hatua inayofuata', ha: 'Yana taimakawa wajen kiyasin mataki na gaba', tw: 'Ɛboa sɛ wobɛhunu bere a wobɛkɔ anammɔn a edi so' },
   'cropStage.saveFailed': { en: 'Could not save stage. Try again.', fr: 'Impossible de sauvegarder.', sw: 'Imeshindikana kuhifadhi hatua.', ha: 'Ba a iya adana mataki ba.', tw: 'Yɛantumi ankora anammɔn no.' },
@@ -6985,6 +6998,66 @@ const T = {
   'risk.landPrep.delayedPlanting': { en: 'Risk: planting delayed if soil not ready.', fr: 'Risque : plantation retardée si le sol n\'est pas prêt.', sw: 'Hatari: kupanda kuchelewa udongo usipokuwa tayari.', ha: 'Haɗari: shuka zai yi latti idan ƙasa ba ta shirya ba.', tw: 'Asiane: dua no bɛkyɛ sɛ asase no nsiesie.' },
   'risk.sort.qualityLoss': { en: 'Risk: unsorted produce loses value.', fr: 'Risque : les produits non triés perdent de la valeur.', sw: 'Hatari: mazao yasiyopangwa yanapoteza thamani.', ha: 'Haɗari: kayan da ba a tsara ba na rasa daraja.', tw: 'Asiane: nneɛma a wɔmpae mu no bo bɛte.' },
   'risk.store.postHarvestLoss': { en: 'Risk: poor storage causes loss.', fr: 'Risque : un mauvais stockage cause des pertes.', sw: 'Hatari: uhifadhi mbaya husababisha upotevu.', ha: 'Haɗari: rashin ajiyar daidai na haifar da asara.', tw: 'Asiane: sɛ wonkora yie a wobɛhwere.' },
+
+  // ─── Crop-specific risk patterns (Crop Intelligence Layer §5) ──
+  // These messageKeys are produced by src/config/crops/cropRiskPatterns.js
+  // and rendered on crop-aware risk cards in the farm dashboard.
+
+  // Cassava
+  'risk.cassava.whitefly_mosaic': { en: 'Watch for whitefly and cassava mosaic virus.', fr: 'Surveillez la mouche blanche et la mosaïque du manioc.', sw: 'Angalia inzi-weupe na ugonjwa wa mosaic wa muhogo.', ha: 'Kula da ƙudaje-farare da cutar mosaic na rogo.', tw: 'Hwɛ nwansena fitaa ne bankye yadeɛ.' },
+  'risk.cassava.root_rot':        { en: 'Root rot risk — keep fields well drained.', fr: 'Risque de pourriture des racines — drainez bien le champ.', sw: 'Hatari ya kuoza kwa mizizi — hakikisha maji yanaondoka.', ha: 'Haɗarin ruɓewar saiwa — tabbatar ruwa na tafiya daga gona.', tw: 'Nhini porɔwee asiane — ma nsu nkɔ afuo no mu.' },
+  'risk.cassava.leaf_yellowing':  { en: 'Leaf yellowing may signal nutrient stress.', fr: 'Le jaunissement peut signaler un manque de nutriments.', sw: 'Majani ya manjano yanaweza kuonyesha ukosefu wa virutubisho.', ha: 'Yellowar ganye na iya nuna rashin abinci.', tw: 'Ahahan kɔkɔɔ kyerɛ sɛ aduan asa.' },
+
+  // Maize
+  'risk.maize.drought_tasseling': { en: 'Drought at tasseling hits yield hardest.', fr: 'La sécheresse à la floraison affecte le plus le rendement.', sw: 'Ukame wakati wa kutoa miche huathiri mavuno zaidi.', ha: 'Fari lokacin fitar fure yana rage amfani sosai.', tw: 'Osukɔm wɔ nhwiren bere mu sɛe aba kɛse.' },
+  'risk.maize.fall_armyworm':     { en: 'Scout for fall armyworm on leaves and whorl.', fr: 'Inspectez la chenille légionnaire sur les feuilles.', sw: 'Angalia funza wa maize kwenye majani.', ha: 'Duba tsutsar soja a kan ganye.', tw: 'Hwehwɛ nwansena a wɔdidi ahahan so.' },
+  'risk.maize.heat_grainfill':    { en: 'Heat stress at grain fill cuts kernel weight.', fr: 'La chaleur au remplissage réduit le poids des grains.', sw: 'Joto wakati wa kujaza nafaka hupunguza uzito.', ha: 'Zafi lokacin cika hatsi na rage nauyi.', tw: 'Ahuhuro wɔ aba nhyɛso mu te aba mu.' },
+
+  // Rice
+  'risk.rice.blast':        { en: 'Rice blast risk — monitor for grey-green lesions.', fr: 'Risque de pyriculariose — surveillez les taches grises.', sw: 'Hatari ya blast — angalia madoa ya kijivu.', ha: 'Haɗarin blast — duba alamun ganye.', tw: 'Mpunga blast asiane — hwɛ ahahan ntokwa.' },
+  'risk.rice.stem_borer':   { en: 'Check for stem borer — look for dead hearts.', fr: 'Inspectez le foreur de tige — cherchez les cœurs morts.', sw: 'Angalia funza wa shina — tafuta mioyo iliyokufa.', ha: 'Duba tsutsar tushe — nemo masu mutu.', tw: 'Hwehwɛ dua mu nwansena — hwɛ dua a awu.' },
+  'risk.rice.water_stress': { en: 'Water stress — keep bunds sealed and refilled.', fr: 'Stress hydrique — maintenez les diguettes étanches.', sw: 'Ukosefu wa maji — funga kingo za paddy.', ha: 'Rashin ruwa — rufe dikokin paddy.', tw: 'Nsu sua — to paddy bund mu.' },
+
+  // Tomato
+  'risk.tomato.late_blight':       { en: 'Late blight risk — avoid overhead watering.', fr: 'Mildiou — évitez d\'arroser par le dessus.', sw: 'Blight ya baadaye — epuka kumwagilia kutoka juu.', ha: 'Blight daga sama — guji shayar da shi daga sama.', tw: 'Late blight asiane — mma ɛnnhyia ahahan no so.' },
+  'risk.tomato.fruitworm':         { en: 'Watch fruits for worm entry holes.', fr: 'Vérifiez les trous d\'entrée sur les fruits.', sw: 'Angalia matunda kwa mashimo ya funza.', ha: 'Duba \u0257an itace don ramukan tsutsotsi.', tw: 'Hwɛ aduaba so hwɛ nwansena tokuro.' },
+  'risk.tomato.blossom_end_rot':   { en: 'Uneven watering can cause blossom-end rot.', fr: 'L\'arrosage irrégulier peut causer la nécrose apicale.', sw: 'Kumwagilia kusiko sawasawa husababisha kuoza.', ha: 'Shayarwa da ba daidai ba na haifar da ruɓewa.', tw: 'Sɛ wogu nsu mpɛ mpɛ a ɛma aduaba porɔwee.' },
+
+  // Onion
+  'risk.onion.purple_blotch': { en: 'Purple blotch risk in humid conditions.', fr: 'Taches pourpres en conditions humides.', sw: 'Hatari ya madoa ya zambarau katika unyevu.', ha: 'Haɗarin tabo shunayya cikin damina.', tw: 'Kɔbene ntokwa asiane wɔ fũ bere mu.' },
+  'risk.onion.wet_bulking':   { en: 'Avoid heavy watering as bulbs mature.', fr: 'Évitez l\'arrosage excessif à la bulbaison.', sw: 'Epuka maji mengi wakati wa kukomaa kwa balbu.', ha: 'Kauce yawan ruwa lokacin da bulb ya nuna.', tw: 'Mma ɛnnhyia nsu pii wɔ bulbs anyini bere mu.' },
+
+  // Okra
+  'risk.okra.shoot_fruit_borer': { en: 'Scout for shoot and fruit borer.', fr: 'Inspectez le foreur des pousses et fruits.', sw: 'Angalia funza wa matawi na matunda.', ha: 'Duba tsutsar reshe da \u0257an itace.', tw: 'Hwɛ mmran ne aduaba mu nwansena.' },
+  'risk.okra.yellow_vein':       { en: 'Yellow vein mosaic — spread by whitefly.', fr: 'Mosaïque des nervures jaunes — propagée par la mouche blanche.', sw: 'Mosaic ya mishipa ya njano — huenezwa na inzi-weupe.', ha: 'Yellow vein mosaic — ta hanyar ƙudaje-farare.', tw: 'Ahahan kɔkɔɔ mmoaba yadeɛ — nwansena na ɛtrɛw.' },
+
+  // Pepper
+  'risk.pepper.anthracnose': { en: 'Anthracnose — dark sunken spots on fruit.', fr: 'Anthracnose — taches foncées sur les fruits.', sw: 'Anthracnose — madoa meusi kwenye matunda.', ha: 'Anthracnose — baƙar tabo a kan \u0257an itace.', tw: 'Anthracnose — ntokwa tuntum wɔ aduaba so.' },
+  'risk.pepper.thrips':      { en: 'Check leaves for thrips damage.', fr: 'Vérifiez les dégâts de thrips sur les feuilles.', sw: 'Angalia uharibifu wa thrips kwenye majani.', ha: 'Duba lalacewar thrips a ganyayyaki.', tw: 'Hwɛ thrips sɛe wɔ ahahan so.' },
+
+  // Potato
+  'risk.potato.late_blight': { en: 'Late blight watch — inspect leaves weekly.', fr: 'Surveillance du mildiou — inspectez chaque semaine.', sw: 'Angalia blight — kagua majani kila wiki.', ha: 'Duba late blight — bincika ganye sati-sati.', tw: 'Hwehwɛ late blight — hwɛ ahahan kwasida biara.' },
+  'risk.potato.aphids':      { en: 'Monitor aphids on new growth.', fr: 'Surveillez les pucerons sur les jeunes pousses.', sw: 'Fuatilia vidukari kwenye ukuaji mpya.', ha: 'Bibiyar aphid akan sabon girma.', tw: 'Hwɛ aphids wɔ foforo nhyin so.' },
+
+  // Banana
+  'risk.banana.black_sigatoka': { en: 'Black Sigatoka — remove dead leaves weekly.', fr: 'Sigatoka noire — retirez les feuilles mortes.', sw: 'Black Sigatoka — ondoa majani yaliyokufa.', ha: 'Black Sigatoka — cire matattun ganye.', tw: 'Black Sigatoka — yi ahahan a awu.' },
+  'risk.banana.weevil':         { en: 'Check pseudostems for banana weevil holes.', fr: 'Vérifiez les trous de charançon sur les pseudo-troncs.', sw: 'Angalia mashimo ya mdudu kwenye shina.', ha: 'Duba ramuka a kan kututture.', tw: 'Hwɛ kwadu dua mu nwansena tokuro.' },
+
+  // Plantain
+  'risk.plantain.black_sigatoka': { en: 'Black Sigatoka — sanitise the field weekly.', fr: 'Sigatoka noire — assainissez le champ chaque semaine.', sw: 'Black Sigatoka — safisha shamba kila wiki.', ha: 'Black Sigatoka — tsaftace gona sati-sati.', tw: 'Black Sigatoka — siesie afuo no kwasida.' },
+  'risk.plantain.wind':           { en: 'Fruiting plants tip over in wind — stake them.', fr: 'Les plants fructifiants tombent au vent — tuteurez-les.', sw: 'Mimea inayozaa huanguka upeponi — iunge.', ha: 'Tsire-tsire masu \u0257an itace na fa\u0257uwa cikin iska — ka tallafa.', tw: 'Aba a ɛwɔ dua so twa gu mframa mu — sɔ mu.' },
+
+  // Cocoa
+  'risk.cocoa.black_pod': { en: 'Black pod rot — remove diseased pods weekly.', fr: 'Pourriture brune — retirez les cabosses malades.', sw: 'Kuoza kwa maganda — ondoa maganda magonjwa.', ha: 'Baƙar ruɓe — cire kwasfa masu cuta.', tw: 'Kookoo porɔwee — yi abɛ a ayare.' },
+  'risk.cocoa.mirids':    { en: 'Scout for capsid (mirid) damage on pods and shoots.', fr: 'Inspectez les dégâts de mirides sur cabosses et pousses.', sw: 'Angalia uharibifu wa mirids kwenye maganda.', ha: 'Duba lalacewar mirids a kan kwasfa.', tw: 'Hwehwɛ mirids sɛe wɔ abɛ so.' },
+
+  // Mango
+  'risk.mango.powdery_mildew': { en: 'Powdery mildew on flowers reduces fruit set.', fr: 'L\'oïdium sur les fleurs réduit la nouaison.', sw: 'Powdery mildew kwenye maua hupunguza matunda.', ha: 'Powdery mildew akan furen na rage \u0257an itace.', tw: 'Powdery mildew wɔ nhwiren so te aduaba so.' },
+  'risk.mango.fruit_fly':      { en: 'Fruit fly — bag or trap around ripening fruit.', fr: 'Mouche des fruits — ensachez ou piégez.', sw: 'Inzi wa matunda — funika au weka mtego.', ha: 'Ƙudar \u0257an itace — ka rufe ko sa wata.', tw: 'Aduaba nwansena — katakata anaa yɛ atiridii.' },
+
+  // Generic fallback (used when a crop has no bespoke patterns)
+  'risk.generic.dry_stress':   { en: 'Dry conditions — plan irrigation windows.', fr: 'Conditions sèches — planifiez l\'arrosage.', sw: 'Hali ya ukavu — panga nyakati za umwagiliaji.', ha: 'Bushewa — tsara lokutan ban ruwa.', tw: 'Nsu sua — hyɛ nsu gu bere.' },
+  'risk.generic.wet_disease':  { en: 'Wet weather raises foliar disease pressure.', fr: 'Le temps humide augmente les maladies foliaires.', sw: 'Hali ya mvua huongeza magonjwa ya majani.', ha: 'Yanayin ruwa na ƙara cututtukan ganye.', tw: 'Fũ bere ma ahahan yadeɛ.' },
 
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },

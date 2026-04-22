@@ -248,6 +248,61 @@ const HI = {
   'cropStage.fruiting': 'फल लगना',
   'cropStage.harvest': 'कटाई',
   'cropStage.postHarvest': 'कटाई के बाद',
+  // Crop-specific lifecycle stages (Crop Intelligence Layer §3)
+  'cropStage.establishment': 'स्थापना',
+  'cropStage.bulking':       'कंद वृद्धि',
+  'cropStage.maturation':    'परिपक्वता',
+  'cropStage.seedling':      'पौध',
+  'cropStage.transplant':    'रोपाई',
+  'cropStage.tasseling':     'बालियाँ निकलना',
+  'cropStage.grainFill':     'दाना भरना',
+  'cropStage.podFill':       'फली भरना',
+  'cropStage.pegging':       'सूईलगाव',
+
+  // ─── Crop Intelligence Layer: risk patterns (§5) ──────────────
+  // Cassava
+  'risk.cassava.whitefly_mosaic': 'सफेद मक्खी और कसावा मोज़ेक वायरस पर नज़र रखें।',
+  'risk.cassava.root_rot':        'जड़ सड़न का ख़तरा — खेत की जलनिकासी ठीक रखें।',
+  'risk.cassava.leaf_yellowing':  'पत्तियाँ पीली होना पोषक तनाव का संकेत हो सकता है।',
+  // Maize
+  'risk.maize.drought_tasseling': 'बालियाँ आते समय सूखा उपज को सबसे अधिक नुकसान पहुँचाता है।',
+  'risk.maize.fall_armyworm':     'पत्तियों और शीर्ष पर फ़ॉल आर्मीवर्म देखें।',
+  'risk.maize.heat_grainfill':    'दाना भरते समय गर्मी से दाने का वज़न घटता है।',
+  // Rice
+  'risk.rice.blast':        'धान ब्लास्ट का ख़तरा — भूरे-हरे धब्बों पर ध्यान दें।',
+  'risk.rice.stem_borer':   'तना छेदक जाँचें — मरे हुए केंद्र तलाशें।',
+  'risk.rice.water_stress': 'पानी की कमी — मेड़ सील रखें और भरते रहें।',
+  // Tomato
+  'risk.tomato.late_blight':     'लेट ब्लाइट का ख़तरा — ऊपर से सिंचाई न करें।',
+  'risk.tomato.fruitworm':       'फलों में कीड़ों के छेद देखें।',
+  'risk.tomato.blossom_end_rot': 'असमान पानी देने से फल का सिरा सड़ सकता है।',
+  // Onion
+  'risk.onion.purple_blotch': 'नम मौसम में पर्पल ब्लॉच का ख़तरा।',
+  'risk.onion.wet_bulking':   'कंद परिपक्व होते समय अधिक पानी न दें।',
+  // Okra
+  'risk.okra.shoot_fruit_borer': 'शूट और फ्रूट बोरर की जाँच करें।',
+  'risk.okra.yellow_vein':       'यलो वेन मोज़ेक — सफेद मक्खी से फैलता है।',
+  // Pepper
+  'risk.pepper.anthracnose': 'एंथ्राक्नोज़ — फल पर गहरे धँसे धब्बे।',
+  'risk.pepper.thrips':      'पत्तियों पर थ्रिप्स के नुकसान की जाँच करें।',
+  // Potato
+  'risk.potato.late_blight': 'लेट ब्लाइट पर नज़र — हर सप्ताह पत्तियाँ देखें।',
+  'risk.potato.aphids':      'नई वृद्धि पर अफ़िड (माहू) की निगरानी करें।',
+  // Banana
+  'risk.banana.black_sigatoka': 'ब्लैक सिगाटोका — हर सप्ताह सूखी पत्तियाँ हटाएँ।',
+  'risk.banana.weevil':         'छद्म तने में केला वीविल के छेद देखें।',
+  // Plantain
+  'risk.plantain.black_sigatoka': 'ब्लैक सिगाटोका — खेत को हर सप्ताह साफ करें।',
+  'risk.plantain.wind':           'फल लदे पौधे हवा से गिरते हैं — सहारा लगाएँ।',
+  // Cocoa
+  'risk.cocoa.black_pod': 'ब्लैक पॉड रॉट — रोगग्रस्त फली हटाते रहें।',
+  'risk.cocoa.mirids':    'कैप्सिड (मिरिड) से फलियों का नुकसान देखें।',
+  // Mango
+  'risk.mango.powdery_mildew': 'फूलों पर पाउडरी मिल्ड्यू फल बनने को घटाता है।',
+  'risk.mango.fruit_fly':      'फ्रूट फ़्लाई — पकते फलों को थैली से ढकें या ट्रैप लगाएँ।',
+  // Generic fallback
+  'risk.generic.dry_stress':  'सूखा — सिंचाई की योजना बनाएँ।',
+  'risk.generic.wet_disease': 'नम मौसम में पत्तियों के रोग बढ़ते हैं।',
   'cropStage.title': 'आपकी फसल अभी किस अवस्था में है?',
   'cropStage.subtitle': 'अपनी वर्तमान अवस्था टैप करें',
   'cropStage.saved': 'सहेजा गया!',
