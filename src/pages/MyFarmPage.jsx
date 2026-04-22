@@ -21,6 +21,7 @@ import SupportCard from '../components/SupportCard.jsx';
 import FarmInsightCard from '../components/FarmInsightCard.jsx';
 import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
 import NotificationPreferencesCard from '../components/NotificationPreferencesCard.jsx';
+import DailyProgressCard from '../components/DailyProgressCard.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -312,6 +313,16 @@ export default function MyFarmPage() {
             {t('myFarm.setupFarm')}
           </button>
         </div>
+      )}
+
+      {/* Daily progress — streak, score, next action, milestones */}
+      {farm && (
+        <DailyProgressCard
+          farm={farm}
+          user={user}
+          issues={profile?.issues || []}
+          risk={profile?.risk || null}
+        />
       )}
 
       {/* Today's tasks — 1 high + 1–2 medium + optional low */}
