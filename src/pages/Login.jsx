@@ -6,6 +6,15 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import { STAFF_ROLES } from '../utils/roles.js';
 import { consumeReturnTo } from '../core/auth/returnToStorage.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
+import LoadingButton from '../components/auth/LoadingButton.jsx';
+import OTPInput from '../components/auth/OTPInput.jsx';
+
+// Lightweight, user-safe email shape check. The server still
+// validates strictly — this just catches obvious typos before submit.
+function isLikelyEmail(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim());
+}
 
 // ─── Remembered email ──────────────────────────────────────
 function getRememberedEmail() {
@@ -59,11 +68,34 @@ export default function Login() {
     return <Navigate to={redirectTo} replace />;
   }
 
+  // Surface a session-expired info banner when the protected route
+  // sent the user back to /login with a `reason`. Cleared as soon as
+  // the user starts typing.
+  const [sessionNotice, setSessionNotice] = useState(() => {
+    const reason = location.state && location.state.reason;
+    if (reason === 'session_expired') {
+      return t('auth.sessionExpired')
+        || 'Your session expired. Please sign in again.';
+    }
+    if (reason === 'signed_out') {
+      return t('auth.signedOut')
+        || 'You\u2019ve been signed out. Sign in to continue.';
+    }
+    return '';
+  });
+
   // ─── Password login (step 1) ────────────────────────────
   const validate = () => {
     const e = {};
-    if (!email.trim()) e.email = t('auth.emailRequired');
-    if (!password) e.password = t('auth.passwordRequired');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      e.email = t('auth.emailRequired') || 'Email is required.';
+    } else if (!isLikelyEmail(trimmedEmail)) {
+      e.email = t('auth.emailInvalid') || 'Enter a valid email address.';
+    }
+    if (!password) {
+      e.password = t('auth.passwordRequired') || 'Password is required.';
+    }
     return e;
   };
 
@@ -155,39 +187,47 @@ export default function Login() {
             Enter the 6-digit code from your authenticator app.
           </p>
 
-          {mfaError && <div style={S.errorBox}>{mfaError}</div>}
+          <AuthFormMessage tone="error" message={mfaError} testId="login-mfa-error" />
 
           <form onSubmit={handleMfaSubmit} style={S.form}>
             <div>
-              <label style={S.label}>Verification Code</label>
-              <input
+              <label style={S.label}>
+                {t('auth.mfa.codeLabel') || 'Verification code'}
+              </label>
+              <OTPInput
                 ref={mfaInputRef}
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={10}
                 value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value.replace(/\s/g, ''))}
-                placeholder="000000"
-                style={{ ...S.input, ...S.mfaInput }}
+                onChange={(v) => setMfaCode(v)}
+                length={6}
+                ariaLabel={t('auth.mfa.codeLabel') || 'Verification code'}
+                testId="login-mfa-code"
+                disabled={mfaLoading}
+                autoFocus
               />
               <p style={S.mfaHint}>
-                You can also use a 10-character backup code.
+                {t('auth.mfa.backupCodeHint')
+                  || 'You can also use a 10-character backup code.'}
               </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={mfaLoading}
-              style={{ ...S.button, ...(mfaLoading ? S.buttonDisabled : {}) }}
+            <LoadingButton
+              loading={mfaLoading}
+              loadingText={t('auth.verifying') || 'Verifying\u2026'}
+              testId="login-mfa-submit"
             >
-              {mfaLoading ? 'Verifying...' : 'Verify'}
-            </button>
+              {t('auth.verify') || 'Verify'}
+            </LoadingButton>
           </form>
 
-          <button onClick={handleBackToLogin} style={S.backBtn}>
-            Back to login
-          </button>
+          <LoadingButton
+            variant="ghost"
+            type="button"
+            onClick={handleBackToLogin}
+            testId="login-mfa-back"
+            style={{ marginTop: '1rem' }}
+          >
+            {t('auth.backToLogin') || 'Back to login'}
+          </LoadingButton>
         </div>
       </div>
     );
@@ -200,20 +240,45 @@ export default function Login() {
         <h1 style={S.title}>{t('auth.welcomeBack')}</h1>
         <p style={S.subtitle}>{t('auth.signInPrompt')}</p>
 
-        {generalError && <div style={S.errorBox}>{generalError}</div>}
+        <AuthFormMessage tone="info" message={sessionNotice} testId="login-session-notice" />
+        <AuthFormMessage tone="error" message={generalError} testId="login-error" />
 
-        <form onSubmit={handleSubmit} style={S.form}>
+        <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
-            <label style={S.label}>{t('auth.email')}</label>
+            <label style={S.label} htmlFor="login-email">
+              {t('auth.email') || 'Email address'}
+            </label>
             <input
+              id="login-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (sessionNotice) setSessionNotice('');
+                if (errors.email) setErrors((s) => ({ ...s, email: undefined }));
+              }}
+              onBlur={() => {
+                // Show an invalid-format hint once the user leaves
+                // the field — don't interrupt while they're typing.
+                const trimmed = email.trim();
+                if (trimmed && !isLikelyEmail(trimmed)) {
+                  setErrors((s) => ({ ...s, email:
+                    t('auth.emailInvalid') || 'Enter a valid email address.' }));
+                }
+              }}
               placeholder={t('auth.emailPlaceholder') || 'Email address'}
               autoComplete="email"
+              inputMode="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'login-email-err' : undefined}
               style={S.input}
+              data-testid="login-email"
             />
-            {errors.email && <span style={S.fieldError}>{errors.email}</span>}
+            {errors.email && (
+              <span id="login-email-err" style={S.fieldError} data-testid="login-email-error">
+                {errors.email}
+              </span>
+            )}
           </div>
 
           <div>
@@ -234,16 +299,18 @@ export default function Login() {
           </div>
 
           <div style={S.forgotRow}>
-            <Link to="/forgot-password" style={S.link}>{t('auth.forgotPassword')}</Link>
+            <Link to="/forgot-password" style={S.link} data-testid="login-forgot-link">
+              {t('auth.forgotPassword') || 'Forgot your password?'}
+            </Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ ...S.button, ...(loading ? S.buttonDisabled : {}) }}
+          <LoadingButton
+            loading={loading}
+            loadingText={t('auth.signingIn') || 'Signing in\u2026'}
+            testId="login-submit"
           >
-            {loading ? t('auth.signingIn') : t('auth.signIn')}
-          </button>
+            {t('auth.signIn') || 'Sign in'}
+          </LoadingButton>
         </form>
 
         <p style={S.footerText}>

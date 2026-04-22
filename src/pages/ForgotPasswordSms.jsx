@@ -24,6 +24,9 @@ import { Link } from 'react-router-dom';
 import { smsStartVerification, smsCheckVerification } from '../lib/api';
 import { useTranslation } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
+import LoadingButton from '../components/auth/LoadingButton.jsx';
+import OTPInput from '../components/auth/OTPInput.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -204,7 +207,7 @@ export default function ForgotPasswordSms() {
           <div style={S.successBox} data-testid="sms-sent-banner">{sentMsg}</div>
         )}
 
-        {error && <div style={S.errorBox} role="alert">{error}</div>}
+        <AuthFormMessage tone="error" message={error} testId="sms-error" />
 
         {step === 'phone' && (
           <form onSubmit={handleSendCode} style={S.form} noValidate>
@@ -232,14 +235,13 @@ export default function ForgotPasswordSms() {
                   'Include your country code, starting with +.')}
               </p>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ ...S.button, ...(loading ? S.buttonDisabled : {}) }}
-              data-testid="sms-send"
+            <LoadingButton
+              loading={loading}
+              loadingText={sendingLbl}
+              testId="sms-send"
             >
-              {loading ? sendingLbl : sendLbl}
-            </button>
+              {sendLbl}
+            </LoadingButton>
           </form>
         )}
 
@@ -247,18 +249,14 @@ export default function ForgotPasswordSms() {
           <form onSubmit={handleVerify} style={S.form} noValidate>
             <div>
               <label style={S.label} htmlFor="sms-code">{codeLbl}</label>
-              <input
+              <OTPInput
                 id="sms-code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]*"
-                maxLength={10}
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-                style={S.input}
+                onChange={(v) => setCode(v)}
+                length={6}
                 disabled={loading}
-                data-testid="sms-code"
+                testId="sms-code"
+                ariaLabel={codeLbl}
               />
             </div>
 
@@ -292,14 +290,13 @@ export default function ForgotPasswordSms() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ ...S.button, ...(loading ? S.buttonDisabled : {}) }}
-              data-testid="sms-verify"
+            <LoadingButton
+              loading={loading}
+              loadingText={verifyingLbl}
+              testId="sms-verify"
             >
-              {loading ? verifyingLbl : verifyLbl}
-            </button>
+              {verifyLbl}
+            </LoadingButton>
 
             <div style={S.linkRow}>
               <button

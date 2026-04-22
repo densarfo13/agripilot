@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PasswordInput from '../components/PasswordInput.jsx';
+import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
+import LoadingButton from '../components/auth/LoadingButton.jsx';
+import { useRef } from 'react';
 
 export default function Register() {
   const { register } = useAuth();
@@ -12,6 +15,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   // Keep the minimum password length in sync with ResetPassword and
   // FarmerRegister (both require 8). Showing a different threshold
@@ -33,6 +37,7 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;          // hard guard against double-submit
     setGeneralError('');
     const fieldErrors = validate();
     if (Object.keys(fieldErrors).length) {
@@ -41,6 +46,7 @@ export default function Register() {
     }
     setErrors({});
     setLoading(true);
+    submittingRef.current = true;
     try {
       await register({ fullName, email, password });
       // Fresh registration → the user has no farm yet, which makes
@@ -57,69 +63,107 @@ export default function Register() {
       }
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
   return (
     <div style={S.page}>
       <div style={S.card}>
-        <h1 style={S.title}>Create Account</h1>
-        <p style={S.subtitle}>Join Farroway to manage your farm</p>
+        <h1 style={S.title}>Create your account</h1>
+        <p style={S.subtitle}>Join Farroway to manage your farm.</p>
 
-        {generalError && <div style={S.errorBox}>{generalError}</div>}
+        <AuthFormMessage tone="error" message={generalError} testId="register-error" />
 
-        <form onSubmit={handleSubmit} style={S.form}>
+        <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
-            <label style={S.label}>Full Name</label>
+            <label style={S.label} htmlFor="register-name">Full name</label>
             <input
+              id="register-name"
               type="text"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                if (errors.fullName) setErrors((s) => ({ ...s, fullName: undefined }));
+              }}
               placeholder="Full name"
               autoComplete="name"
+              aria-invalid={!!errors.fullName}
+              aria-describedby={errors.fullName ? 'register-name-err' : undefined}
               style={S.input}
+              data-testid="register-name"
             />
-            {errors.fullName && <span style={S.fieldError}>{errors.fullName}</span>}
+            {errors.fullName && (
+              <span id="register-name-err" style={S.fieldError} data-testid="register-name-error">
+                {errors.fullName}
+              </span>
+            )}
           </div>
 
           <div>
-            <label style={S.label}>Email</label>
+            <label style={S.label} htmlFor="register-email">Email address</label>
             <input
+              id="register-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) setErrors((s) => ({ ...s, email: undefined }));
+              }}
+              onBlur={() => {
+                const trimmed = email.trim();
+                if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                  setErrors((s) => ({ ...s, email: 'Enter a valid email address.' }));
+                }
+              }}
               placeholder="Email address"
               autoComplete="email"
               inputMode="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'register-email-err' : undefined}
               style={S.input}
+              data-testid="register-email"
             />
-            {errors.email && <span style={S.fieldError}>{errors.email}</span>}
+            {errors.email && (
+              <span id="register-email-err" style={S.fieldError} data-testid="register-email-error">
+                {errors.email}
+              </span>
+            )}
           </div>
 
           <div>
-            <label style={S.label}>Password</label>
+            <label style={S.label} htmlFor="register-password">Password</label>
             <PasswordInput
+              id="register-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) setErrors((s) => ({ ...s, password: undefined }));
+              }}
               placeholder={`At least ${MIN_PASSWORD} characters`}
               autoComplete="new-password"
               style={S.input}
               aria-describedby="register-password-hint"
+              aria-invalid={!!errors.password}
               testIdPrefix="register-password"
             />
             <p id="register-password-hint" style={S.hintText}>
               Use at least {MIN_PASSWORD} characters. A mix of letters and numbers is safer.
             </p>
-            {errors.password && <span style={S.fieldError}>{errors.password}</span>}
+            {errors.password && (
+              <span style={S.fieldError} data-testid="register-password-error">
+                {errors.password}
+              </span>
+            )}
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ ...S.button, ...(loading ? S.buttonDisabled : {}) }}
+          <LoadingButton
+            loading={loading}
+            loadingText="Creating account\u2026"
+            testId="register-submit"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
+            Create account
+          </LoadingButton>
         </form>
 
         <p style={S.footerText}>

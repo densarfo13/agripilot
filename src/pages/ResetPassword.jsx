@@ -27,6 +27,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../lib/api';
 import { useTranslation } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
+import LoadingButton from '../components/auth/LoadingButton.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -233,11 +235,11 @@ export default function ResetPassword() {
         <h1 style={S.title}>{L.title}</h1>
         <p style={S.subtitle}>{L.subtitle}</p>
 
-        {formError && (
-          <div style={S.errorBox} role="alert" data-testid="reset-password-form-error">
-            {formError}
-          </div>
-        )}
+        <AuthFormMessage
+          tone="error"
+          message={formError}
+          testId="reset-password-form-error"
+        />
 
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
@@ -311,14 +313,14 @@ export default function ResetPassword() {
             )}
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ ...S.primaryBtn, ...(loading ? S.primaryBtnDisabled : {}) }}
-            data-testid="reset-password-submit"
+          <LoadingButton
+            loading={loading}
+            loadingText={L.submittingLbl}
+            testId="reset-password-submit"
+            style={S.primaryBtn}
           >
-            {loading ? L.submittingLbl : L.submitLbl}
-          </button>
+            {L.submitLbl}
+          </LoadingButton>
         </form>
 
         <p style={S.footerText}>

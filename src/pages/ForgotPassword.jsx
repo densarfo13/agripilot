@@ -24,6 +24,8 @@ import { Link } from 'react-router-dom';
 
 import { forgotPassword, getRecoveryMethods } from '../lib/api';
 import { useTranslation } from '../i18n/index.js';
+import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
+import LoadingButton from '../components/auth/LoadingButton.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -177,7 +179,7 @@ export default function ForgotPassword() {
           </div>
         ) : (
           <>
-            {error && <div style={S.errorBox} role="alert">{error}</div>}
+            <AuthFormMessage tone="error" message={error} testId="forgot-password-error" />
 
             <form onSubmit={handleSubmit} style={S.form} noValidate>
               <div>
@@ -196,14 +198,13 @@ export default function ForgotPassword() {
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                style={{ ...S.button, ...(loading ? S.buttonDisabled : {}) }}
-                data-testid="forgot-password-submit"
+              <LoadingButton
+                loading={loading}
+                loadingText={submittingLbl}
+                testId="forgot-password-submit"
               >
-                {loading ? submittingLbl : submitLbl}
-              </button>
+                {submitLbl}
+              </LoadingButton>
             </form>
           </>
         )}
