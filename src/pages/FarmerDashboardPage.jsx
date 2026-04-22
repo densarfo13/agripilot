@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useFarmStore } from '../store/farmStore.js';
@@ -69,48 +69,70 @@ export default function FarmerDashboardPage() {
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const [profileError, setProfileError] = useState('');
 
-  useEffect(() => {
-    // ─── Account load: bulletproof against the infinite-loading bug ──
-    // Previous version left `loading=true` semantics up to the render
-    // branch, which only checked `profile` — any caught failure with
-    // no cached fallback + no offline user set `profileError` but
-    // left `profile` null, so the UI fell through to the "Loading
-    // your account status..." card forever.
-    //
-    // Fixes in order:
-    //   • AbortController with an 8 s timeout so a stalled request
-    //     can't pin the spinner (spec §4)
-    //   • try/catch around every async branch, setLoading(false)
-    //     in the finally block EVERY time (spec §1 + §2)
-    //   • explicit 401 / 403 handling — clear auth + redirect to
-    //     /login with a session-expired reason (spec §5)
-    //   • console.error("ACCOUNT LOAD ERROR:", err) on any failure
-    //     (spec §6)
-    //   • render branch below now honours profileError + loading
-    //     separately, so a failure shows a real error UI instead of
-    //     the "Loading…" fallback
-    let alive = true;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+  // ─── Dashboard bootstrap — reusable + safety-netted ────────────
+  // Extracted so the retry button can re-run the full sequence. Each
+  // step logs "[BOOT] …" and loading always clears in finally.
+  // A parallel hard-deadline timer ALSO sets loading=false at 10 s
+  // so even a runtime that manages to escape the finally block can't
+  // pin the spinner.
+  const aliveRef = useRef(true);
+  const bootCtrlRef = useRef(null);
+  const bootDeadlineRef = useRef(null);
 
-    (async () => {
+  const runBootstrap = useCallback(async () => {
+    if (bootCtrlRef.current) { try { bootCtrlRef.current.abort(); } catch {} }
+    const controller = new AbortController();
+    bootCtrlRef.current = controller;
+
+    // Per-request abort (8 s — kicks inside axios via the signal).
+    const requestTimeout = setTimeout(() => controller.abort(), 8000);
+    // Hard safety net (10 s — forces loading off even if some code
+    // path swallows the promise and skips the finally block).
+    if (bootDeadlineRef.current) clearTimeout(bootDeadlineRef.current);
+    bootDeadlineRef.current = setTimeout(() => {
+      if (!aliveRef.current) return;
+      // eslint-disable-next-line no-console
+      console.error('[BOOT] bootstrap hard-deadline hit at 10s — forcing loading=false');
+      setLoading(false);
+      setProfileError((prev) => prev
+        || 'Unable to load account. Please refresh or login again.');
+    }, 10000);
+
+    setLoading(true);
+    setProfileError('');
+    // eslint-disable-next-line no-console
+    console.log('[BOOT] starting dashboard bootstrap');
+
+    try {
+      // Session snapshot — already hydrated by AuthProvider; we just
+      // log which path we're on.
+      const currentUser = useAuthStore.getState().user || user;
+      if (currentUser) {
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] session ok');
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] user ok');
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] no session');
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] user missing');
+      }
+
+      // ─── Farmer profile fetch ────────────────────────────────
+      let r;
       try {
-        const r = await api.get('/auth/farmer-profile', { signal: controller.signal });
-        if (!alive) return;
-        setProfile(r.data);
-        setProfileError('');
-        try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(r.data)); } catch {}
+        r = await api.get('/auth/farmer-profile', { signal: controller.signal });
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('ACCOUNT LOAD ERROR:', err);
-        if (!alive) return;
+        console.error('[BOOT] bootstrap failed', err);
+        if (!aliveRef.current) return;
 
         const status = err && err.response && err.response.status;
         const aborted = err && (err.name === 'AbortError' || err.name === 'CanceledError'
           || err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED');
 
-        // 401 / 403 — clear the session and bounce to /login with
-        // a reason so the user sees the info banner there.
+        // 401 / 403 — clear the session and bounce to /login.
         if (status === 401 || status === 403) {
           try { useAuthStore.getState().logout?.(); } catch { /* noop */ }
           try { localStorage.removeItem('farroway:farmerProfile'); } catch { /* noop */ }
@@ -122,53 +144,115 @@ export default function FarmerDashboardPage() {
           return;
         }
 
+        // 404 — user is authenticated but has no farmer row. Don't
+        // hang on "Loading" and don't show the error card either —
+        // bounce them to onboarding/profile setup.
+        if (status === 404) {
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] farmer missing — routing to onboarding');
+          setShowOnboarding(true);
+          return;
+        }
+
         // Fall back to the cached profile first, then the authStore
-        // user (for offline sessions) — BUT only claim success if we
-        // actually have something to render. Otherwise set a loud
-        // error the UI can show.
+        // user (for offline sessions).
         const cachedProfile = (() => {
           try { return JSON.parse(localStorage.getItem('farroway:farmerProfile')); }
           catch { return null; }
         })();
         if (cachedProfile) {
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] farmer loaded (cache)');
           setProfile(cachedProfile);
           setProfileError('');
-        } else if (!navigator.onLine && user) {
-          setProfile(user);
+        } else if (!navigator.onLine && currentUser) {
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] farmer loaded (offline user)');
+          setProfile(currentUser);
           setProfileError('');
         } else {
           setProfileError(aborted
             ? 'Unable to load account. The request timed out. Please refresh or login again.'
             : 'Unable to load account. Please refresh or login again.');
         }
-      } finally {
-        clearTimeout(timeoutId);
-        if (alive) setLoading(false);
+        return;   // skip downstream steps when the fetch failed
       }
-    })();
 
-    // Load farm profiles + referral (farmStore now hydrates from cache if offline)
-    (async () => {
+      if (!aliveRef.current) return;
+
+      // Normalise response shape — server returns the raw profile
+      // object, but be defensive in case middleware wraps it.
+      const payload = r && r.data;
+      const farmer = (payload && (payload.farmer || payload.profile)) || payload || null;
+      if (farmer) {
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] farmer loaded');
+        setProfile(farmer);
+        setProfileError('');
+        try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(farmer)); }
+        catch { /* quota */ }
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] farmer missing');
+        setShowOnboarding(true);
+      }
+
+      // ─── Farms (side-effect: onboarding gate) ────────────────
       try {
         const profiles = await fetchProfiles();
-        if (alive && profiles.length === 0 && !_fromCache) setShowOnboarding(true);
+        const list = Array.isArray(profiles)
+          ? profiles
+          : (profiles && profiles.data) ? profiles.data : [];
+        // eslint-disable-next-line no-console
+        console.log('[BOOT] farms loaded', { count: list.length });
+        if (aliveRef.current && list.length === 0 && !_fromCache) {
+          setShowOnboarding(true);
+        }
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('ACCOUNT LOAD ERROR:', err);
-        if (alive && !_fromCache) {
+        console.error('[BOOT] bootstrap failed', err);
+        if (aliveRef.current && !_fromCache) {
           setProfileError((prev) => prev
             || 'Could not load your farm data. Please check your connection and refresh.');
         }
       }
-    })();
 
-    fetchReferral(); // supplemental — referral card just won't render if this fails
-    trackEvent('dashboard_viewed'); // fire-and-forget analytics
+      // ─── Referral + analytics (non-blocking) ────────────────
+      try { fetchReferral(); } catch { /* noop */ }
+      try { trackEvent('dashboard_viewed'); } catch { /* noop */ }
 
+      // eslint-disable-next-line no-console
+      console.log('[BOOT] dashboard ready');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[BOOT] bootstrap failed', err);
+      if (!aliveRef.current) return;
+      setProfileError('Failed to load account. Please refresh or login again.');
+    } finally {
+      clearTimeout(requestTimeout);
+      if (bootDeadlineRef.current) {
+        clearTimeout(bootDeadlineRef.current);
+        bootDeadlineRef.current = null;
+      }
+      if (aliveRef.current) setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, fetchProfiles, fetchReferral, trackEvent, user, _fromCache]);
+
+  // Retry entry point bound to the error-card button.
+  const handleBootstrapRetry = useCallback(() => {
+    // eslint-disable-next-line no-console
+    console.log('[BOOT] retry requested');
+    runBootstrap();
+  }, [runBootstrap]);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    runBootstrap();
     return () => {
-      alive = false;
-      clearTimeout(timeoutId);
-      controller.abort();
+      aliveRef.current = false;
+      if (bootCtrlRef.current) { try { bootCtrlRef.current.abort(); } catch {} }
+      if (bootDeadlineRef.current) clearTimeout(bootDeadlineRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);   // once on mount — never loop
@@ -915,7 +999,7 @@ export default function FarmerDashboardPage() {
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={handleBootstrapRetry}
                 style={{
                   flex: 1, minHeight: 44, borderRadius: 12, border: 'none',
                   background: '#22C55E', color: '#fff', fontWeight: 700,
@@ -924,7 +1008,7 @@ export default function FarmerDashboardPage() {
                 }}
                 data-testid="farmer-account-refresh"
               >
-                {t('common.refresh') || 'Refresh'}
+                {t('common.refresh') || 'Retry'}
               </button>
               <button
                 type="button"
