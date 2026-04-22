@@ -40,6 +40,7 @@ export function buildFarmersCsv(farmers = [], { org = null } = {}) {
   const header = [
     'farmer_id', 'full_name', 'phone', 'region', 'registration_status',
     'primary_crop', 'farroway_score', 'score_band', 'score_date',
+    'trust_level', 'trust_score', 'trust_checks_passed',
     'created_at', 'updated_at',
     ...(org ? ['organization_id', 'organization_name'] : []),
   ];
@@ -49,6 +50,9 @@ export function buildFarmersCsv(farmers = [], { org = null } = {}) {
       f.id, f.fullName, f.phoneNumber, f.region, f.registrationStatus,
       f.primaryCrop, f.score ? f.score.overall : '',
       f.score ? f.score.band : '', f.score ? f.score.date : '',
+      f.trust ? f.trust.level : '',
+      f.trust ? f.trust.score : '',
+      f.trust ? `${f.trust.passedCount}/${f.trust.totalCount}` : '',
       iso(f.createdAt), iso(f.updatedAt),
     ];
     if (org) {
@@ -90,6 +94,10 @@ export function buildDashboardCsv(dashboard) {
                    dashboard.riskIndicators ? dashboard.riskIndicators.pestAlerts : 0]));
   lines.push(row(['total_projected_kg',
                    dashboard.yieldProjection ? dashboard.yieldProjection.totalKg : 0]));
+  lines.push(row(['trust_high',   dashboard.trust ? dashboard.trust.high   : 0]));
+  lines.push(row(['trust_medium', dashboard.trust ? dashboard.trust.medium : 0]));
+  lines.push(row(['trust_low',    dashboard.trust ? dashboard.trust.low    : 0]));
+  lines.push(row(['trust_average',dashboard.trust ? dashboard.trust.average: 0]));
   lines.push(row(['window_days',
                    dashboard.window ? dashboard.window.days : 30]));
   lines.push(row(['generated_at', dashboard.generatedAt]));

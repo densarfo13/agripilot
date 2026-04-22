@@ -6,6 +6,8 @@ import {
   fetchOrganizationDashboard, listOrganizationFarmers,
   exportOrganizationFarmersCsv, exportOrganizationDashboardCsv,
 } from '../lib/organizations.js';
+import TrustBadge from '../components/TrustBadge.jsx';
+import { trustColor } from '../lib/verification/trustSignals.js';
 
 /**
  * OrganizationDashboardPage — institutional-admin / super-admin
@@ -138,6 +140,13 @@ export default function OrganizationDashboardPage() {
                         secondary={`${dashboard.riskIndicators.marketAlerts}m · ${dashboard.riskIndicators.weatherAlerts}w · ${dashboard.riskIndicators.pestAlerts}p`}
                         accent="#FCA5A5"
                         styles={styles} />
+            <MetricTile label={tr('orgDashboard.tile.trust', 'Verified farmers')}
+                        value={`${dashboard.trust ? dashboard.trust.high : 0}/${dashboard.totalFarmers}`}
+                        secondary={dashboard.trust
+                          ? `${dashboard.trust.high} high · ${dashboard.trust.medium} med · ${dashboard.trust.low} low · avg ${dashboard.trust.average}`
+                          : tr('orgDashboard.tile.trustEmpty', 'no trust data yet')}
+                        accent="#86EFAC"
+                        styles={styles} />
           </section>
 
           {dashboard.cropDistribution.length > 0 && (
@@ -207,6 +216,7 @@ export default function OrganizationDashboardPage() {
                   <th style={styles.th}>{tr('orgDashboard.col.region', 'Region')}</th>
                   <th style={styles.th}>{tr('orgDashboard.col.crop', 'Crop')}</th>
                   <th style={styles.th}>{tr('orgDashboard.col.score', 'Score')}</th>
+                  <th style={styles.th}>{tr('orgDashboard.col.trust', 'Trust')}</th>
                   <th style={styles.th}>{tr('orgDashboard.col.status', 'Status')}</th>
                 </tr>
               </thead>
@@ -224,6 +234,18 @@ export default function OrganizationDashboardPage() {
                         ? <span style={{ color: bandColor(f.score.band), fontWeight: 700 }}>
                             {f.score.overall}
                           </span>
+                        : '—'}
+                    </td>
+                    <td style={styles.td}>
+                      {f.trust
+                        ? <TrustBadge precomputed={{
+                              level: f.trust.level,
+                              score: f.trust.score,
+                              passedCount: f.trust.passedCount,
+                              totalCount:  f.trust.totalCount,
+                              checks: [], signals: f.trust.signals || {},
+                            }}
+                            variant="chip" />
                         : '—'}
                     </td>
                     <td style={styles.td}>

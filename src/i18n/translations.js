@@ -7295,6 +7295,23 @@ const T = {
 
   'admin.viewDashboard':            { en: 'View dashboard \u2192', fr: 'Voir le tableau de bord \u2192', sw: 'Tazama dashibodi \u2192', ha: 'Duba dashboard \u2192', tw: 'Hwɛ dashboard \u2192' },
 
+  // ─── Trust / verification badges ─────────────────────────────
+  'trust.level.high':           { en: 'High trust', fr: 'Confiance élevée', sw: 'Uaminifu mkubwa', ha: 'Babban amincewa', tw: 'Gyidie kɛse' },
+  'trust.level.medium':         { en: 'Medium trust', fr: 'Confiance moyenne', sw: 'Uaminifu wa wastani', ha: 'Matsakaicin amincewa', tw: 'Gyidie ntam' },
+  'trust.level.low':            { en: 'Low trust', fr: 'Faible confiance', sw: 'Uaminifu mdogo', ha: 'Karancin amincewa', tw: 'Gyidie sua' },
+  'trust.check.profileComplete':  { en: 'Profile completed', fr: 'Profil complet', sw: 'Wasifu umekamilika', ha: 'An kammala bayani', tw: 'Nsɛm awie' },
+  'trust.check.phoneVerified':    { en: 'Phone verified', fr: 'Téléphone vérifié', sw: 'Simu imethibitishwa', ha: 'An tabbatar da waya', tw: 'Ahama a ahina' },
+  'trust.check.emailVerified':    { en: 'Email verified', fr: 'Email vérifié', sw: 'Barua pepe imethibitishwa', ha: 'An tabbatar da imel', tw: 'Email ahina' },
+  'trust.check.locationCaptured': { en: 'Location captured', fr: 'Localisation enregistrée', sw: 'Eneo limepatikana', ha: 'An kama wuri', tw: 'Baabi no ahi' },
+  'trust.check.cropSelected':     { en: 'Crop selected', fr: 'Culture sélectionnée', sw: 'Mazao yamechaguliwa', ha: 'An zaɓi amfani', tw: 'Nnɔbae a wɔapaw' },
+  'trust.check.recentActivity':   { en: 'Recent activity present', fr: 'Activité récente présente', sw: 'Shughuli za hivi karibuni', ha: 'Aikin kwanan nan', tw: 'Adeyɛ a ɛreba' },
+  'trust.check.photoUploaded':    { en: 'Photo evidence on file', fr: 'Photo en dossier', sw: 'Picha iko kwenye faili', ha: 'Akwai hoto a fayil', tw: 'Mfonini wɔ hɔ' },
+
+  // Organization dashboard trust tile + column
+  'orgDashboard.tile.trust':      { en: 'Verified farmers', fr: 'Agriculteurs vérifiés', sw: 'Wakulima waliothibitishwa', ha: 'Manoma da aka tabbatar', tw: 'Akuafoɔ a wɔakyerɛ' },
+  'orgDashboard.tile.trustEmpty': { en: 'no trust data yet', fr: 'pas encore de données', sw: 'bado hakuna data', ha: 'babu bayanai tukuna', tw: 'data nni hɔ' },
+  'orgDashboard.col.trust':       { en: 'Trust', fr: 'Confiance', sw: 'Uaminifu', ha: 'Amincewa', tw: 'Gyidie' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },

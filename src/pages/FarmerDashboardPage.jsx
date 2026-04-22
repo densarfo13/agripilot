@@ -22,6 +22,7 @@ import FarrowayScoreCard from '../components/FarrowayScoreCard.jsx';
 import PriceTrendsCard from '../components/PriceTrendsCard.jsx';
 import BulkLotsCard from '../components/BulkLotsCard.jsx';
 import { useTaskCompletion } from '../lib/intelligence/taskCompletion.js';
+import TrustBadge from '../components/TrustBadge.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -586,6 +587,21 @@ export default function FarmerDashboardPage() {
             {farmProfile?.farmerUuid && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
                 <FarmerUuidBadge />
+              </div>
+            )}
+
+            {/* 1a. Trust badge — verification / completeness signal.
+                 Expandable panel lists which signals passed so the
+                 farmer knows exactly what to do to lift their level. */}
+            {farmProfile && (
+              <div style={{ marginBottom: '0.75rem' }} data-testid="dashboard-trust-badge">
+                <TrustBadge farmer={profile && {
+                              ...profile,
+                              fullName: profile.fullName || (profile.user && profile.user.fullName),
+                              country:  profile.country || farmProfile.country,
+                              region:   profile.region  || farmProfile.region,
+                            }}
+                            farm={farmProfile} />
               </div>
             )}
 

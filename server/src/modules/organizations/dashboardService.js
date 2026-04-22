@@ -28,6 +28,8 @@
  *     no snapshot yet, they simply don't contribute to the average.
  */
 
+import { computeTrustLevel, summariseTrustLevels } from '../verification/trustSignalsService.js';
+
 // ─── Yield multipliers (kg per hectare, conservative) ─────────
 // Embedded on purpose so this server module stays independent of
 // the frontend yieldEngine. Numbers mirror the global USD band's
@@ -226,11 +228,18 @@ export async function buildOrganizationDashboard(prisma, {
   if (!organizationId || typeof organizationId !== 'string') return null;
   if (!prisma?.farmer?.findMany) return null;
 
-  // Load all farmers in the org (id only) so we can scope follow-up
-  // queries.
+  // Load all farmers in the org (id + the trust-signal fields so the
+  // roll-up below doesn't need a second fetch).
   const farmers = await prisma.farmer.findMany({
     where:  { organizationId },
-    select: { id: true, registrationStatus: true, updatedAt: true },
+    select: {
+      id: true, fullName: true,
+      phoneNumber: true, phoneVerifiedAt: true,
+      email: true, emailVerifiedAt: true,
+      country: true, region: true,
+      profileImageUrl: true,
+      registrationStatus: true, updatedAt: true,
+    },
   });
   const farmerIds = farmers.map((f) => f.id);
 
@@ -297,6 +306,19 @@ export async function buildOrganizationDashboard(prisma, {
     windowMs: windowDays * 24 * 60 * 60 * 1000,
   });
 
+  // Trust-signal roll-up: one trust result per farmer using their
+  // most-recent farm profile as the per-farm signal source. Never
+  // mutates the input rows.
+  const firstFarmByFarmer = new Map();
+  for (const f of farms) {
+    if (!firstFarmByFarmer.has(f.farmerId)) firstFarmByFarmer.set(f.farmerId, f);
+  }
+  const trustResults = farmers.map((farmer) => computeTrustLevel({
+    farmer,
+    farm: firstFarmByFarmer.get(farmer.id) || null,
+  }));
+  const trustSummary = summariseTrustLevels(trustResults);
+
   return Object.freeze({
     organizationId,
     totalFarmers:  farmers.length,
@@ -306,6 +328,7 @@ export async function buildOrganizationDashboard(prisma, {
     averageScore,
     riskIndicators,
     yieldProjection,
+    trust: Object.freeze(trustSummary),
     window: Object.freeze({
       days: windowDays,
       from: new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString(),
@@ -323,6 +346,7 @@ function buildEmptyDashboard({ organizationId }) {
     averageScore:     { value: null, sampleSize: 0, band: null },
     riskIndicators:   { farmersWithPendingAlerts: 0, marketAlerts: 0, weatherAlerts: 0, pestAlerts: 0 },
     yieldProjection:  { totalKg: 0, byCrop: [], units: 'kg', source: 'embedded_yield_band' },
+    trust:            { low: 0, medium: 0, high: 0, average: 0, count: 0 },
     window: Object.freeze({
       days: 30,
       from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -357,7 +381,9 @@ export async function listOrganizationFarmers(prisma, {
     prisma.farmer.findMany({
       where, skip, take, orderBy: { updatedAt: 'desc' },
       select: {
-        id: true, fullName: true, phoneNumber: true, region: true,
+        id: true, fullName: true, phoneNumber: true, phoneVerifiedAt: true,
+        email: true, emailVerifiedAt: true, profileImageUrl: true,
+        region: true, country: true,
         registrationStatus: true, updatedAt: true, createdAt: true,
       },
     }),
@@ -411,18 +437,36 @@ export async function listOrganizationFarmers(prisma, {
   }
 
   // Post-filter by crop / score (can't push into SQL cleanly without
-  // schema changes; page size caps the cost).
-  const enriched = farmers.map((f) => ({
-    id:            f.id,
-    fullName:      f.fullName,
-    phoneNumber:   f.phoneNumber || null,
-    region:        f.region || null,
-    registrationStatus: f.registrationStatus,
-    primaryCrop:   primaryCropByFarmer.get(f.id) || null,
-    score:         latestScoreByFarmer.get(f.id) || null,
-    updatedAt:     f.updatedAt,
-    createdAt:     f.createdAt,
-  })).filter((row) => {
+  // schema changes; page size caps the cost). Per-row trust is
+  // computed from the farmer + their most-recent farm profile.
+  const primaryFarmByFarmer = new Map();
+  for (const f of farms) {
+    if (!primaryFarmByFarmer.has(f.farmerId)) primaryFarmByFarmer.set(f.farmerId, f);
+  }
+  const enriched = farmers.map((f) => {
+    const trust = computeTrustLevel({
+      farmer: f,
+      farm:   primaryFarmByFarmer.get(f.id) || null,
+    });
+    return {
+      id:            f.id,
+      fullName:      f.fullName,
+      phoneNumber:   f.phoneNumber || null,
+      region:        f.region || null,
+      registrationStatus: f.registrationStatus,
+      primaryCrop:   primaryCropByFarmer.get(f.id) || null,
+      score:         latestScoreByFarmer.get(f.id) || null,
+      trust: {
+        level: trust.level,
+        score: trust.score,
+        signals: trust.signals,
+        passedCount: trust.passedCount,
+        totalCount:  trust.totalCount,
+      },
+      updatedAt:     f.updatedAt,
+      createdAt:     f.createdAt,
+    };
+  }).filter((row) => {
     if (crop && row.primaryCrop !== normalizeCrop(crop)) return false;
     const s = row.score && Number.isFinite(row.score.overall) ? row.score.overall : null;
     if (scoreMin != null && (s == null || s < Number(scoreMin))) return false;

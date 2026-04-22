@@ -24,6 +24,7 @@ import {
 } from './marketplaceService.js';
 import { buildPriceInsight } from './priceInsights.js';
 import { buildBulkLots, buildBulkLotById } from './bulkAggregation.js';
+import { writeAuditLog } from '../audit/service.js';
 import mwPkg from '../../core/middleware.js';
 import { requireFeature } from '../../core/featureGuard.js';
 const { requireFields, requireRole, standardResponse, asyncHandler } = mwPkg;
@@ -58,6 +59,18 @@ export function createMarketplaceRouter(opts = {}) {
       const r = standardResponse(res);
       const out = await createListing(prisma, req.body || {});
       if (!out.ok) return r.fail(out.reason, mapReasonToStatus(out.reason));
+      // Audit: farmer creates a listing. Non-blocking.
+      writeAuditLog({
+        userId: req.user && req.user.sub,
+        organizationId: req.organizationId || null,
+        action: 'marketplace.listing.created',
+        details: {
+          listingId: out.listing.id, crop: out.listing.crop,
+          quantity:  out.listing.quantity,
+          farmId:    out.listing.farmId || null,
+        },
+        ipAddress: req.ip,
+      }).catch(() => {});
       return r.ok(out.listing);
     }),
   );
@@ -102,6 +115,16 @@ export function createMarketplaceRouter(opts = {}) {
       const r = standardResponse(res);
       const out = await createRequest(prisma, req.body || {});
       if (!out.ok) return r.fail(out.reason, mapReasonToStatus(out.reason));
+      writeAuditLog({
+        userId: req.user && req.user.sub,
+        action: 'marketplace.request.created',
+        details: {
+          requestId: out.request.id, crop: out.request.crop,
+          quantity:  out.request.quantity,
+          listingId: out.listingId || null,
+        },
+        ipAddress: req.ip,
+      }).catch(() => {});
       return r.ok(out.request);
     }),
   );
@@ -228,6 +251,17 @@ export function createMarketplaceRouter(opts = {}) {
         return r.fail('invalid_status', 400);
       }
       if (!out.ok) return r.fail(out.reason, mapReasonToStatus(out.reason));
+      writeAuditLog({
+        userId: req.user && req.user.sub,
+        action: next === 'accepted'
+          ? 'marketplace.request.accepted'
+          : 'marketplace.request.declined',
+        details: {
+          requestId: req.params.id,
+          listingId: req.body.listingId || null,
+        },
+        ipAddress: req.ip,
+      }).catch(() => {});
       return r.ok(out.request);
     }),
   );
@@ -381,6 +415,20 @@ export function createMarketplaceRouter(opts = {}) {
           } catch (_) { /* non-fatal per-farmer failure */ }
         }
       }
+
+      writeAuditLog({
+        userId: req.user && req.user.sub,
+        action: 'marketplace.bulk_request.created',
+        details: {
+          requestId:     request.id,
+          lotId:         lot.lotId,
+          crop:          lot.crop,
+          totalQuantity: lot.totalQuantity,
+          contributors:  lot.contributors.length,
+          pickupPoint:   resolvedPickup,
+        },
+        ipAddress: req.ip,
+      }).catch(() => {});
 
       return r.ok({
         request,
