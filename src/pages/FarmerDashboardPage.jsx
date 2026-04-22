@@ -16,6 +16,7 @@ import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import CropImage from '../components/CropImage.jsx';
 import FarmActionPlan from '../components/FarmActionPlan.jsx';
 import MarketplaceCard from '../components/MarketplaceCard.jsx';
+import IncomingRequestsList from '../components/IncomingRequestsList.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -845,6 +846,18 @@ export default function FarmerDashboardPage() {
             {farmProfile && farmProfile.crop && setupComplete && (
               <div data-testid="marketplace-quick" style={{ marginTop: '1rem' }}>
                 <MarketplaceCard mode="list" farm={farmProfile} compact />
+              </div>
+            )}
+
+            {/* 5d. Incoming buyer requests — farmer inbox.
+                 Reads GET /api/marketplace/requests/incoming which
+                 joins FarmerNotification (type=market) to BuyerRequest
+                 to surface "who wants my crop, and for how much".
+                 Accept / decline buttons hit PATCH /requests/:id/status
+                 and flip the linked listing to 'requested'. */}
+            {setupComplete && (
+              <div data-testid="marketplace-inbox" style={{ marginTop: '1rem' }}>
+                <IncomingRequestsList status="pending" maxRows={5} />
               </div>
             )}
 

@@ -108,6 +108,23 @@ export async function listMarketplaceRequests(filters = {}) {
   return handle(res);
 }
 
+// ─── Farmer inbox: requests placed against my listings ───────
+export async function listIncomingRequestsForFarmer(filters = {}) {
+  const qs = buildQuery({
+    status: filters.status || 'pending', // pending | accepted | declined | all
+    limit:  filters.limit  || '',
+  });
+  const res = await fetch(`/api/marketplace/requests/incoming${qs ? `?${qs}` : ''}`,
+    { credentials: 'include' });
+  return handle(res);
+}
+
+// ─── Buyer inbox: my requests ────────────────────────────────
+export async function listMyBuyerRequests(buyerId, filters = {}) {
+  if (!buyerId) throw new Error('buyerId_required');
+  return listMarketplaceRequests({ ...filters, buyerId });
+}
+
 // ─── Requests (farmer — accept / decline) ─────────────────────
 export async function acceptMarketplaceRequest(requestId, listingId = null) {
   const body = { status: 'accepted' };

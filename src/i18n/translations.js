@@ -7129,6 +7129,25 @@ const T = {
   'marketplace.err.request_failed':   { en: 'Could not send the request. Try again.', fr: 'Impossible d\'envoyer la demande.', sw: 'Ombi halikufaulu. Jaribu tena.', ha: 'Ba a iya aikawa ba. Sake gwadawa.', tw: 'Wɔantumi anto abisadeɛ. Sɔ bio.' },
   'marketplace.err.load_failed':      { en: 'Could not load listings.', fr: 'Impossible de charger.', sw: 'Imeshindwa kupakia.', ha: 'Ba a iya lodawa ba.', tw: 'Yɛantumi anload.' },
   'marketplace.err.create_failed':    { en: 'Could not create the listing.', fr: 'Impossible de créer l\'annonce.', sw: 'Imeshindwa kuunda orodha.', ha: 'Ba a iya ƙirƙiri ba.', tw: 'Yɛantumi anyɛ nkrataa no.' },
+  'marketplace.err.action_failed':    { en: 'Could not update. Try again.', fr: 'Impossible de mettre à jour.', sw: 'Imeshindwa kusasisha.', ha: 'Ba a iya sabuntawa ba.', tw: 'Yɛantumi ansesa.' },
+  'marketplace.err.missing_farmer_id':{ en: 'Sign in as a farmer to see requests.', fr: 'Connectez-vous comme agriculteur.', sw: 'Ingia kama mkulima kuona maombi.', ha: 'Shigar da manomi don ganin buƙatu.', tw: 'Kɔ mu sɛ okuafoɔ na w\u2019ahunu.' },
+  // Incoming requests inbox (farmer)
+  'marketplace.inbox.title':          { en: 'Buyer requests', fr: 'Demandes des acheteurs', sw: 'Maombi ya wanunuzi', ha: 'Buƙatun masu siye', tw: 'Atɔfoɔ abisadeɛ' },
+  'marketplace.inbox.empty':          { en: 'No buyer requests yet. Your active listings are visible to buyers.', fr: 'Aucune demande pour le moment. Vos annonces sont visibles.', sw: 'Hakuna maombi bado. Orodha zako zinaonekana.', ha: 'Babu buƙatu tukuna. Bayananka suna bayyana.', tw: 'Abisadeɛ biara nni hɔ.' },
+  'marketplace.inbox.from':           { en: 'From', fr: 'De', sw: 'Kutoka', ha: 'Daga', tw: 'Fi' },
+  'marketplace.inbox.fromAnonymous':  { en: 'From a buyer', fr: 'D\'un acheteur', sw: 'Kutoka kwa mnunuzi', ha: 'Daga mai siye', tw: 'Fi ɔtɔni bi' },
+  'marketplace.inbox.moreCount':      { en: '+{{n}} more — open full list to see all', fr: '+{{n}} de plus', sw: '+{{n}} zaidi', ha: '+{{n}} ƙari', tw: '+{{n}} bebree' },
+  // Buyer "my requests"
+  'marketplace.myRequests.title':     { en: 'My requests', fr: 'Mes demandes', sw: 'Maombi yangu', ha: 'Buƙatuna', tw: 'M\u2019abisadeɛ' },
+  'marketplace.myRequests.empty':     { en: 'No requests yet. Browse available crops and tap Request to connect with a farmer.', fr: 'Aucune demande. Parcourez et appuyez sur Demander.', sw: 'Hakuna maombi bado. Vinjari mazao na gonga Omba.', ha: 'Babu buƙatu. Bincika amfani da danna Nema.', tw: 'Abisadeɛ biara nni hɔ.' },
+  // Action verbs + status labels
+  'marketplace.accept':               { en: 'Accept', fr: 'Accepter', sw: 'Kubali', ha: 'Karɓa', tw: 'Gye to mu' },
+  'marketplace.decline':              { en: 'Decline', fr: 'Refuser', sw: 'Kataa', ha: 'Ki', tw: 'Nnyae' },
+  'marketplace.working':              { en: 'Working…', fr: 'En cours…', sw: 'Inafanya…', ha: 'Ana aiki…', tw: 'Reyɛ…' },
+  'marketplace.more':                 { en: 'more', fr: 'autres', sw: 'zaidi', ha: 'ƙari', tw: 'bebree' },
+  'marketplace.status.pending':       { en: 'Pending', fr: 'En attente', sw: 'Inasubiri', ha: 'Jiran', tw: 'Retwɛn' },
+  'marketplace.status.accepted':      { en: 'Accepted', fr: 'Acceptée', sw: 'Imekubaliwa', ha: 'An karɓi', tw: 'Wɔagye' },
+  'marketplace.status.declined':      { en: 'Declined', fr: 'Refusée', sw: 'Imekataliwa', ha: 'An ƙi', tw: 'Wɔannyae' },
 
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },

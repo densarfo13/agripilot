@@ -18,6 +18,7 @@ import {
   createListing, listListings,
   createRequest, listRequests,
   acceptRequest, declineRequest, updateListingStatus,
+  listIncomingRequestsForFarmer,
   matchAllFlat, recordPayment, marketplaceStats,
 } from './marketplaceService.js';
 import mwPkg from '../../core/middleware.js';
@@ -111,6 +112,36 @@ export function createMarketplaceRouter(opts = {}) {
         buyerId: req.query.buyerId || null,
         crop:    req.query.crop    || null,
         limit:   Number(req.query.limit) || 100,
+      });
+      if (!out.ok) return r.fail(out.reason);
+      return r.ok(out.data);
+    }),
+  );
+
+  // GET /requests/incoming — farmer inbox. Returns all requests
+  // placed against listings owned by the authenticated farmer,
+  // derived from the marketplace.request.created FarmerNotification
+  // trail. Optional ?status=pending|accepted|declined filter.
+  router.get('/requests/incoming',
+    auth, requireRole(['farmer', 'admin']),
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      // Resolve farmerId from the authenticated user. req.user.sub is
+      // the userId; farmerId lives on the Farmer row keyed by userId.
+      let farmerId = req.query.farmerId || null;
+      if (!farmerId && req.user && req.user.sub && prisma?.farmer?.findFirst) {
+        const farmer = await prisma.farmer.findFirst({
+          where:  { userId: req.user.sub },
+          select: { id: true },
+        });
+        farmerId = farmer ? farmer.id : null;
+      }
+      if (!farmerId) return r.fail('missing_farmer_id', 400);
+
+      const out = await listIncomingRequestsForFarmer(prisma, {
+        farmerId,
+        status: req.query.status || 'pending',
+        limit:  Number(req.query.limit) || 100,
       });
       if (!out.ok) return r.fail(out.reason);
       return r.ok(out.data);

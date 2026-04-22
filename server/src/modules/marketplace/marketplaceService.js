@@ -358,6 +358,111 @@ export async function listRequests(prisma, { status = 'open', buyerId = null, cr
   }
 }
 
+// ─── Farmer inbox: incoming requests ─────────────────────────
+/**
+ * listIncomingRequestsForFarmer(prisma, { farmerId, status? })
+ *
+ * Returns the buyer requests routed to this farmer's listings
+ * (via the marketplace.request.created FarmerNotification trail).
+ * Without a listingId FK on BuyerRequest we derive the join from
+ * notification metadata, so the view is always consistent with
+ * the spec-defined linkage even while the schema stays migration-
+ * free.
+ *
+ * Result shape:
+ *   {
+ *     ok: true,
+ *     data: [
+ *       {
+ *         request:  BuyerRequest (spec-mapped status),
+ *         listingId: id of the listing the request was placed
+ *                     against (from notification metadata),
+ *         notificationId: id of the farmer notification that
+ *                         surfaced the request,
+ *         buyerName, crop, quantity,
+ *         createdAt:     when the notification was created
+ *                        (mirrors when the request was placed),
+ *       },
+ *       ...
+ *     ]
+ *   }
+ *
+ * Filters:
+ *   status? — 'pending' | 'accepted' | 'declined' | 'all'
+ *             Filters on the request's spec-status. Default 'pending'.
+ */
+export async function listIncomingRequestsForFarmer(prisma, { farmerId, status = 'pending', limit = 100 } = {}) {
+  if (!prisma?.farmerNotification?.findMany) return { ok: false, reason: 'no_prisma', data: [] };
+  if (!nonEmptyString(farmerId)) return { ok: false, reason: 'missing_farmer_id', data: [] };
+
+  const dbStatus = REQUEST_STATUS_SPEC_TO_DB[status] || status;
+  try {
+    // 1. Pull market notifications that signalled a buyer request.
+    //    We over-fetch (limit × 2) so the post-filter by request
+    //    status still returns a full page most of the time.
+    const notifications = await prisma.farmerNotification.findMany({
+      where: {
+        farmerId,
+        notificationType: 'market',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(500, Math.max(1, limit * 2)),
+    });
+
+    // 2. Extract requestIds from notifications that look like
+    //    marketplace.request.created events. Tolerate stringified
+    //    JSON metadata (some DBs roundtrip that way).
+    const entries = notifications
+      .map((n) => {
+        let meta = n.metadata;
+        if (typeof meta === 'string') {
+          try { meta = JSON.parse(meta); } catch { meta = null; }
+        }
+        if (!meta || meta.kind !== 'marketplace.request.created') return null;
+        return {
+          notificationId: n.id,
+          createdAt:      n.createdAt,
+          requestId:      meta.requestId,
+          listingId:      meta.listingId || null,
+          buyerName:      meta.buyerName || null,
+          crop:           meta.crop      || null,
+          quantity:       meta.quantity  || null,
+        };
+      })
+      .filter((e) => e && nonEmptyString(e.requestId));
+
+    if (entries.length === 0) return { ok: true, data: [] };
+
+    // 3. Fetch the BuyerRequest rows in one round-trip.
+    const requestIds = Array.from(new Set(entries.map((e) => e.requestId)));
+    const rows = prisma?.buyerRequest?.findMany
+      ? await prisma.buyerRequest.findMany({ where: { id: { in: requestIds } } })
+      : [];
+    const byId = new Map(rows.map((r) => [r.id, r]));
+
+    // 4. Assemble result, apply status filter.
+    const data = [];
+    for (const e of entries) {
+      const row = byId.get(e.requestId);
+      if (!row) continue;
+      if (dbStatus !== 'all' && row.status !== dbStatus) continue;
+      data.push({
+        request:        mapRequestToSpec(row),
+        listingId:      e.listingId,
+        notificationId: e.notificationId,
+        buyerName:      e.buyerName || row.buyerName,
+        crop:           row.crop,
+        quantity:       row.quantity,
+        createdAt:      e.createdAt,
+      });
+      if (data.length >= limit) break;
+    }
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, reason: 'db_failed', message: err?.message || 'unknown', data: [] };
+  }
+}
+
 // ─── Matching ────────────────────────────────────────────────
 /**
  * matchAll — pure join of listings × requests using the shared
