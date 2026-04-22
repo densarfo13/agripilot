@@ -91,6 +91,48 @@ function FadeIn({ children, delay = 0, as = 'div', style = null, ...rest }) {
   );
 }
 
+// Inline shield — keeps the logo bullet-proof (no <img> load,
+// no 404 race, no dark-on-dark transparency failure).
+function LogoMark({ size = 28 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      aria-hidden="true"
+      style={S.logoSvg}
+    >
+      <defs>
+        <linearGradient id="fwLogoGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"  stopColor="#86EFAC" />
+          <stop offset="100%" stopColor="#16A34A" />
+        </linearGradient>
+      </defs>
+      {/* Shield outline */}
+      <path
+        d="M16 2 L28 6 V16 C28 23 22 28 16 30 C10 28 4 23 4 16 V6 Z"
+        fill="url(#fwLogoGrad)"
+        stroke="#052e16"
+        strokeWidth="1.25"
+      />
+      {/* Sprout */}
+      <path
+        d="M16 22 V13"
+        stroke="#052e16" strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16 13 C12 13 10 10 10 8 C13 8 16 10 16 13 Z"
+        fill="#052e16"
+      />
+      <path
+        d="M16 13 C20 13 22 10 22 8 C19 8 16 10 16 13 Z"
+        fill="#052e16"
+      />
+    </svg>
+  );
+}
+
 // ──────────────────────────────────────────────────────────────
 // Navbar — sticky, collapses to hamburger below 760 px
 // ──────────────────────────────────────────────────────────────
@@ -128,14 +170,7 @@ function Navbar() {
     >
       <div style={S.navInner}>
         <a href="#top" style={S.logo} aria-label="Farroway home">
-          <img
-            src="/icons/logo-shield.png"
-            alt=""
-            width={28}
-            height={28}
-            style={S.logoImg}
-            aria-hidden="true"
-          />
+          <LogoMark size={28} />
           <span>Farroway</span>
         </a>
 
@@ -338,7 +373,7 @@ function ImpactSection() {
   return (
     <Section id="why" eyebrow="Why it matters" title="The next agriculture boom runs on a phone.">
       <p style={S.lede}>
-        Most of the world\u2019s farms are small. Most are mobile-first. Most
+        Most of the world’s farms are small. Most are mobile-first. Most
         are offline half the day. Farroway is built for that reality — not
         the reverse. The tools that work at 500 million farms have to feel
         like a friend: fast, patient, and always on your side.
@@ -406,7 +441,7 @@ function AudienceSection() {
   ];
 
   return (
-    <Section id="audience" eyebrow="Who it\u2019s for" title="Different farms. One plan that fits each.">
+    <Section id="audience" eyebrow="Who it’s for" title="Different farms. One plan that fits each.">
       <div style={S.audGrid} className="fw-aud-grid">
         {audiences.map((a, i) => (
           <FadeIn key={a.tag} delay={i * 50}>
@@ -471,7 +506,7 @@ function CTASection() {
         </FadeIn>
         <FadeIn delay={80}>
           <p style={S.ctaSub}>
-            We\u2019re onboarding farmers, co-ops and partners for the next
+            We’re onboarding farmers, co-ops and partners for the next
             season. Join early access and help shape the tool your farm
             actually needs.
           </p>
@@ -518,7 +553,7 @@ function FooterSection() {
             <span>Farroway</span>
           </a>
           <p style={{ ...S.cardBody, marginTop: '0.5rem', maxWidth: '28rem' }}>
-            A farming assistant that speaks every farmer\u2019s language — and
+            A farming assistant that speaks every farmer’s language — and
             works whether the signal does or not.
           </p>
         </div>
@@ -533,7 +568,7 @@ function FooterSection() {
           <div>
             <div style={S.footerHead}>Company</div>
             <a href="#vision" style={S.footerLink}>Vision</a>
-            <a href="#audience" style={S.footerLink}>Who it\u2019s for</a>
+            <a href="#audience" style={S.footerLink}>Who it’s for</a>
             <a href="mailto:hello@farroway.app" style={S.footerLink}>Contact</a>
           </div>
           <div>
@@ -593,7 +628,7 @@ function MockPhone() {
           </div>
         </div>
         <div style={S.phoneCard}>
-          <div style={S.phoneCardTitle}>Today\u2019s task</div>
+          <div style={S.phoneCardTitle}>Today’s task</div>
           <div style={S.phoneCardPill}>High</div>
           <div style={S.phoneCardBody}>Scout rows for pest pressure</div>
           <button style={S.phoneMiniCta} type="button">Mark done</button>
@@ -767,13 +802,11 @@ const S = {
     color: TOKENS.text, textDecoration: 'none',
     fontSize: '1.125rem', fontWeight: 800, letterSpacing: '-0.01em',
   },
-  logoImg: {
-    width: 28, height: 28, borderRadius: 8,
-    // Subtle green glow ring so the shield reads on the dark bg
-    // even when the image itself is mostly mono.
-    boxShadow: `0 0 0 4px rgba(34,197,94,0.14)`,
-    objectFit: 'contain',
+  logoSvg: {
     display: 'block',
+    borderRadius: 8,
+    // Subtle green glow ring so the shield reads on the dark bg.
+    boxShadow: `0 0 0 4px rgba(34,197,94,0.14)`,
   },
   desktopNav: { gap: '1.25rem', alignItems: 'center' },
   navLink: {
