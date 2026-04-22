@@ -256,6 +256,40 @@ export function useCropStageLabel(code) {
   return getCropStageLabel(code, lang);
 }
 
+// ─── Onboarding status ───────────────────────────────────────────
+// Single source of truth for "has this farmer finished the 3-step
+// flow?" and "should we surface beginner guidance?". Reads the
+// completion row OnboardingV3 writes on finish. Safe in non-browser
+// contexts (SSR / tests) — returns sensible defaults.
+
+const ONBOARDING_KEY = 'farroway.onboardingV3';
+
+function readOnboardingStatus() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(ONBOARDING_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+/** True iff onboarding completed and the farmer self-identified as new. */
+export function isNewFarmer() {
+  const r = readOnboardingStatus();
+  return !!(r && r.onboardingCompleted && r.isNewFarmer === true);
+}
+
+/** True iff the 3-step flow has been finished. */
+export function isOnboardingComplete() {
+  const r = readOnboardingStatus();
+  return !!(r && r.onboardingCompleted);
+}
+
+/** Full status row — callers that need completedAt etc. */
+export function getOnboardingStatus() {
+  return readOnboardingStatus() || { onboardingCompleted: false, isNewFarmer: false };
+}
+
 export const _internal = Object.freeze({
   FARM_TYPE_LABELS_BY_LANG,
   SIZE_UNIT_LABELS_BY_LANG,
@@ -263,4 +297,5 @@ export const _internal = Object.freeze({
   FARM_TYPE_ALIASES,
   SIZE_UNIT_ALIASES,
   CROP_STAGE_ALIASES,
+  ONBOARDING_KEY,
 });
