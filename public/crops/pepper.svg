@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Pepper">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#1B3A2A"/>
+      <stop offset="70%" stop-color="#0F2133"/>
+      <stop offset="100%" stop-color="#0B1D34"/>
+    </radialGradient>
+    <linearGradient id="crop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#CDEF4A"/>
+      <stop offset="50%" stop-color="#8AD648"/>
+      <stop offset="100%" stop-color="#45B845"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCA5A5"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+    <linearGradient id="brown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D6A77A"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#bg)"/>
+  
+    <g stroke="#0a2015" stroke-width="2" stroke-linejoin="round">
+      <path d="M100 60 L 120 50 L 140 60 L 135 80" fill="url(#crop)"/>
+      <path d="M125 75 Q 80 100 85 160 Q 95 215 140 210 Q 175 195 170 155 Q 165 95 125 75 Z" fill="url(#red)"/>
+      <path d="M130 100 Q 105 130 105 165" fill="none" stroke="#fff" stroke-width="3" opacity="0.2"/>
+    </g>
+</svg>

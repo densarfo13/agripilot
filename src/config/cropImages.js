@@ -40,39 +40,44 @@ export const CROP_IMAGE_PLACEHOLDER = '/crops/_placeholder.svg';
  * render the placeholder (tested in cropImage.test.js), so entries
  * can land slightly ahead of the asset drop.
  */
+// Canonical crop → image path. 14 crops ship real illustration SVGs
+// under /public/crops today (consistent style: dark radial gradient
+// + crop-specific silhouette). Rows still pointing at .webp will
+// gracefully fall back to _placeholder.svg until the real photo
+// lands — swap the extension to .webp once the asset is dropped in.
 export const CROP_IMAGE_PATHS = Object.freeze({
   // Staples + grains
-  maize:          '/crops/maize.webp',
-  corn:           '/crops/maize.webp',      // synonym
-  rice:           '/crops/rice.webp',
+  maize:          '/crops/maize.svg',
+  corn:           '/crops/maize.svg',        // synonym
+  rice:           '/crops/rice.svg',
   wheat:          '/crops/wheat.webp',
   sorghum:        '/crops/sorghum.webp',
   millet:         '/crops/millet.webp',
   barley:         '/crops/barley.webp',
   // Roots + tubers
-  cassava:        '/crops/cassava.webp',
+  cassava:        '/crops/cassava.svg',
   yam:            '/crops/yam.webp',
-  potato:         '/crops/potato.webp',
-  'sweet-potato': '/crops/sweet-potato.webp',
-  sweet_potato:   '/crops/sweet-potato.webp',  // underscore variant
-  sweetpotato:    '/crops/sweet-potato.webp',  // no-separator variant
+  potato:         '/crops/potato.svg',
+  'sweet-potato': '/crops/sweet-potato.svg',
+  sweet_potato:   '/crops/sweet-potato.svg',  // underscore variant
+  sweetpotato:    '/crops/sweet-potato.svg',  // no-separator variant
   // Legumes
   beans:          '/crops/beans.webp',
   bean:           '/crops/beans.webp',
   soybean:        '/crops/soybean.webp',
-  groundnut:      '/crops/groundnut.webp',
-  peanut:         '/crops/groundnut.webp',
+  groundnut:      '/crops/groundnut.svg',
+  peanut:         '/crops/groundnut.svg',
   cowpea:         '/crops/cowpea.webp',
   chickpea:       '/crops/chickpea.webp',
   lentil:         '/crops/lentil.webp',
   // Vegetables
-  tomato:         '/crops/tomato.webp',
-  onion:          '/crops/onion.webp',
-  pepper:         '/crops/pepper.webp',
-  chili:          '/crops/pepper.webp',
+  tomato:         '/crops/tomato.svg',
+  onion:          '/crops/onion.svg',
+  pepper:         '/crops/pepper.svg',
+  chili:          '/crops/pepper.svg',
   cabbage:        '/crops/cabbage.webp',
   carrot:         '/crops/carrot.webp',
-  okra:           '/crops/okra.webp',
+  okra:           '/crops/okra.svg',
   cucumber:       '/crops/cucumber.webp',
   watermelon:     '/crops/watermelon.webp',
   eggplant:       '/crops/eggplant.webp',
@@ -82,19 +87,19 @@ export const CROP_IMAGE_PATHS = Object.freeze({
   lettuce:        '/crops/lettuce.webp',
   spinach:        '/crops/spinach.webp',
   // Tree + permanent
-  banana:         '/crops/banana.webp',
-  plantain:       '/crops/plantain.webp',
-  mango:          '/crops/mango.webp',
+  banana:         '/crops/banana.svg',
+  plantain:       '/crops/plantain.svg',
+  mango:          '/crops/mango.svg',
   avocado:        '/crops/avocado.webp',
   orange:         '/crops/orange.webp',
   coffee:         '/crops/coffee.webp',
   tea:            '/crops/tea.webp',
-  cocoa:          '/crops/cocoa.webp',
-  cacao:          '/crops/cocoa.webp',      // synonym
+  cocoa:          '/crops/cocoa.svg',
+  cacao:          '/crops/cocoa.svg',        // synonym
   'oil-palm':     '/crops/oil-palm.webp',
-  oil_palm:       '/crops/oil-palm.webp',   // underscore variant
-  oilpalm:        '/crops/oil-palm.webp',   // no-separator variant
-  palm:           '/crops/oil-palm.webp',   // shorthand
+  oil_palm:       '/crops/oil-palm.webp',    // underscore variant
+  oilpalm:        '/crops/oil-palm.webp',    // no-separator variant
+  palm:           '/crops/oil-palm.webp',    // shorthand
   cotton:         '/crops/cotton.webp',
   sugarcane:      '/crops/sugarcane.webp',
   sunflower:      '/crops/sunflower.webp',

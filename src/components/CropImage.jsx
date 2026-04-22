@@ -42,12 +42,14 @@ import {
 export default function CropImage({
   cropKey,
   alt,
-  size = 64,
+  size = 96,             // Spec §CSS: 72–96 px default. 96 reads
+                         //   cleanly in top-crop grids + crop info.
   circular = false,
   style = null,
   imgStyle = null,
   testId = null,
   onLoadedSrc = null,
+  className = '',
 } = {}) {
   const mapped = getCropImagePath(cropKey);
   const initial = mapped || CROP_IMAGE_PLACEHOLDER;
@@ -64,18 +66,21 @@ export default function CropImage({
     if (typeof onLoadedSrc === 'function') onLoadedSrc(src);
   }
 
+  const radius = circular ? '50%' : '14px';
   const wrapperStyle = {
     ...S.wrap,
     width:  `${size}px`,
     height: `${size}px`,
-    borderRadius: circular ? '50%' : '12px',
+    borderRadius: radius,
     ...(style || {}),
   };
 
   const imgAriaLabel = alt && alt.length > 0 ? alt : 'Crop image';
+  const wrapperClass = `crop-image${className ? ' ' + className : ''}`;
 
   return (
     <div
+      className={wrapperClass}
       style={wrapperStyle}
       data-testid={testId || 'crop-image'}
       data-crop-key={String(cropKey || '').toLowerCase() || 'unknown'}
@@ -92,7 +97,7 @@ export default function CropImage({
         onLoad={handleLoad}
         style={{
           ...S.img,
-          borderRadius: circular ? '50%' : '12px',
+          borderRadius: radius,
           ...(imgStyle || {}),
         }}
       />
@@ -108,6 +113,9 @@ const S = {
     overflow: 'hidden',
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',
+    // Subtle depth — matches the Farroway card family shadow so the
+    // image reads as "a crop thumbnail" not "a floating emoji".
+    boxShadow: '0 6px 14px rgba(0,0,0,0.28)',
     flexShrink: 0,
   },
   img: {

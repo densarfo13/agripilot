@@ -39,21 +39,21 @@ const SPEC_CANONICAL_KEYS = [
 
 describe('getCropImagePath', () => {
   it('resolves canonical lowercase keys to /crops/*.webp', () => {
-    expect(getCropImagePath('maize')).toBe('/crops/maize.webp');
-    expect(getCropImagePath('rice')).toBe('/crops/rice.webp');
-    expect(getCropImagePath('cassava')).toBe('/crops/cassava.webp');
+    expect(getCropImagePath('maize')).toBe('/crops/maize.svg');
+    expect(getCropImagePath('rice')).toBe('/crops/rice.svg');
+    expect(getCropImagePath('cassava')).toBe('/crops/cassava.svg');
   });
 
   it('accepts uppercase storage codes (MAIZE, SWEET_POTATO)', () => {
     // Spec §2 standardised on hyphenated canonical keys
     // (sweet-potato, oil-palm). Underscored legacy forms still
     // resolve through getCropImagePath's separator collapse.
-    expect(getCropImagePath('MAIZE')).toBe('/crops/maize.webp');
-    expect(getCropImagePath('SWEET_POTATO')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('MAIZE')).toBe('/crops/maize.svg');
+    expect(getCropImagePath('SWEET_POTATO')).toBe('/crops/sweet-potato.svg');
   });
 
   it('accepts display strings ("Maize", "Sweet Potato")', () => {
-    expect(getCropImagePath('Maize')).toBe('/crops/maize.webp');
+    expect(getCropImagePath('Maize')).toBe('/crops/maize.svg');
   });
 
   it('returns null for unknown / empty / null inputs (no crashes)', () => {
@@ -90,13 +90,13 @@ describe('getCropImagePath', () => {
 
   it('treats hyphen, underscore, and space as interchangeable separators', () => {
     // Hyphenated (spec canonical)
-    expect(getCropImagePath('sweet-potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('sweet-potato')).toBe('/crops/sweet-potato.svg');
     expect(getCropImagePath('oil-palm')).toBe('/crops/oil-palm.webp');
     // Underscored (legacy storage)
-    expect(getCropImagePath('sweet_potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('sweet_potato')).toBe('/crops/sweet-potato.svg');
     expect(getCropImagePath('oil_palm')).toBe('/crops/oil-palm.webp');
     // Display strings with spaces
-    expect(getCropImagePath('Sweet Potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('Sweet Potato')).toBe('/crops/sweet-potato.svg');
     expect(getCropImagePath('OIL PALM')).toBe('/crops/oil-palm.webp');
   });
 
@@ -108,8 +108,8 @@ describe('getCropImagePath', () => {
 
 describe('getCropImage (placeholder-safe alias)', () => {
   it('returns the mapped URL when the crop is known', () => {
-    expect(getCropImage('maize')).toBe('/crops/maize.webp');
-    expect(getCropImage('sweet-potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImage('maize')).toBe('/crops/maize.svg');
+    expect(getCropImage('sweet-potato')).toBe('/crops/sweet-potato.svg');
   });
 
   it('returns the placeholder SVG when the crop is unknown', () => {
@@ -128,12 +128,13 @@ describe('getCropImage (placeholder-safe alias)', () => {
 });
 
 describe('CROP_IMAGE_PATHS catalog', () => {
-  it('every value is a /crops/*.webp URL', () => {
-    // Allow hyphens for multi-word canonical keys (sweet-potato,
-    // oil-palm) alongside underscores (legacy) and single words.
+  it('every value is a /crops/*.{webp|svg} URL', () => {
+    // Allow .svg as a legitimate asset extension (illustration
+    // placeholders shipped while real photographic .webp files are
+    // commissioned). Hyphens + underscores both accepted in the key.
     for (const [key, value] of Object.entries(CROP_IMAGE_PATHS)) {
-      expect(value, `${key} should map to a webp under /crops`)
-        .toMatch(/^\/crops\/[a-z_-]+\.webp$/);
+      expect(value, `${key} should map to a webp/svg under /crops`)
+        .toMatch(/^\/crops\/[a-z_-]+\.(webp|svg)$/);
     }
   });
 
@@ -183,7 +184,10 @@ describe('CropImage component — source contract', () => {
 
   it('supports a circular prop for the existing crop card look', () => {
     expect(src).toMatch(/circular = false/);
-    expect(src).toMatch(/borderRadius:\s*circular\s*\?\s*'50%'/);
+    // Radius can be inlined (`circular ? '50%' : ...`) OR lifted to
+    // a `radius` helper var — both satisfy the spec as long as 50%
+    // is the circular value.
+    expect(src).toMatch(/(circular\s*\?\s*'50%'|const radius\s*=\s*circular\s*\?\s*'50%')/);
   });
 
   it('uses loading=lazy + decoding=async for mobile bandwidth', () => {

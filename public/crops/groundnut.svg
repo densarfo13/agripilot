@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Groundnut">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#1B3A2A"/>
+      <stop offset="70%" stop-color="#0F2133"/>
+      <stop offset="100%" stop-color="#0B1D34"/>
+    </radialGradient>
+    <linearGradient id="crop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#CDEF4A"/>
+      <stop offset="50%" stop-color="#8AD648"/>
+      <stop offset="100%" stop-color="#45B845"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCA5A5"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+    <linearGradient id="brown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D6A77A"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#bg)"/>
+  
+    <g stroke="#0a2015" stroke-width="2" stroke-linejoin="round">
+      <path d="M110 95 Q 105 75 90 75 Q 85 85 95 95" fill="url(#crop)"/>
+      <path d="M130 95 Q 135 75 150 75 Q 155 85 145 95" fill="url(#crop)"/>
+      <path d="M75 140 Q 70 110 95 100 Q 115 100 120 120 Q 125 100 145 100 Q 170 110 165 140 Q 170 170 150 185 Q 120 175 120 155 Q 120 175 90 185 Q 70 170 75 140 Z" fill="url(#brown)"/>
+      <circle cx="100" cy="135" r="4" fill="#8B5E3C"/>
+      <circle cx="140" cy="135" r="4" fill="#8B5E3C"/>
+      <circle cx="100" cy="165" r="4" fill="#8B5E3C"/>
+      <circle cx="140" cy="165" r="4" fill="#8B5E3C"/>
+    </g>
+</svg>

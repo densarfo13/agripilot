@@ -426,3 +426,34 @@ select option:checked {
   touch-action: manipulation;
 }
 
+
+/* ─── Crop images ──────────────────────────────────────────
+ *
+ * Shared tokens for every <CropImage>. The component wraps the
+ * <img> in a div with className="crop-image" plus its own inline
+ * styles, so these rules act as theme defaults that any page can
+ * override via className composition (e.g. "crop-image crop-image--large").
+ */
+.crop-image {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.crop-image:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.34) !important;
+}
+.crop-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+.crop-image--large  { width: 120px !important; height: 120px !important; }
+.crop-image--medium { width: 96px !important;  height: 96px !important; }
+.crop-image--small  { width: 72px !important;  height: 72px !important; }
+.crop-image--tiny   { width: 40px !important;  height: 40px !important; }

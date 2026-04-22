@@ -203,7 +203,12 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
                     }}
                   >
                     <div style={RS.cropTop}>
-                      <span style={RS.cropIcon}>{CROP_ICONS[crop.code] || '\uD83C\uDF3F'}</span>
+                      <CropImage
+                        cropKey={crop.code}
+                        alt={t(CROP_LABEL_KEY[crop.code] || `crop.${crop.code.toLowerCase()}`)}
+                        size={32}
+                        circular
+                      />
                       <span style={RS.cropName}>{t(CROP_LABEL_KEY[crop.code] || `crop.${crop.code.toLowerCase()}`)}</span>
                       {isActive && <span style={RS.checkMark}>{'\u2713'}</span>}
                     </div>
@@ -277,7 +282,12 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
                         onClick={() => setSelectedCrop(alt.code)}
                         style={RS.seasonAltBtn}
                       >
-                        <span>{CROP_ICONS[alt.code] || '\uD83C\uDF3F'}</span>
+                        <CropImage
+                          cropKey={alt.code}
+                          alt={t(CROP_LABEL_KEY[alt.code] || `crop.${alt.code.toLowerCase()}`)}
+                          size={24}
+                          circular
+                        />
                         <span>{t(CROP_LABEL_KEY[alt.code] || `crop.${alt.code.toLowerCase()}`)}</span>
                       </button>
                     ))}

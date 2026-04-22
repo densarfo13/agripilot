@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Sweet potato">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#1B3A2A"/>
+      <stop offset="70%" stop-color="#0F2133"/>
+      <stop offset="100%" stop-color="#0B1D34"/>
+    </radialGradient>
+    <linearGradient id="crop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#CDEF4A"/>
+      <stop offset="50%" stop-color="#8AD648"/>
+      <stop offset="100%" stop-color="#45B845"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCA5A5"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+    <linearGradient id="brown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D6A77A"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#bg)"/>
+  
+    <g stroke="#0a2015" stroke-width="2" stroke-linejoin="round">
+      <path d="M70 90 Q 60 60 90 50 Q 100 80 80 95 Z" fill="url(#crop)"/>
+      <path d="M110 55 Q 120 30 140 45 Q 130 75 115 75 Z" fill="url(#crop)"/>
+      <path d="M55 165 Q 45 130 75 120 Q 115 100 155 115 Q 200 130 195 165 Q 185 205 150 215 Q 100 215 65 200 Q 50 185 55 165 Z" fill="#C07858"/>
+      <path d="M80 140 Q 120 155 180 145" fill="none" stroke="#8B5E3C" stroke-width="1.5" opacity="0.5"/>
+      <path d="M70 175 Q 120 190 175 175" fill="none" stroke="#8B5E3C" stroke-width="1.5" opacity="0.5"/>
+    </g>
+</svg>
