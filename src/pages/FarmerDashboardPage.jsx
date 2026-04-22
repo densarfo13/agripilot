@@ -14,6 +14,7 @@ import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import CropImage from '../components/CropImage.jsx';
+import FarmActionPlan from '../components/FarmActionPlan.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -818,6 +819,20 @@ export default function FarmerDashboardPage() {
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{weatherRecs.recommendations[0].title}</div>
                   <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{weatherRecs.recommendations[0].action}</div>
                 </div>
+              </div>
+            )}
+
+            {/* 5b. Your Farm Plan — decision timeline (Crop Intelligence v3)
+                 Synthesises Now / This Week / Coming Up / Risk Watch /
+                 Recommendations from the existing engines. Only renders
+                 when a farm profile exists so it never shows for
+                 pre-onboarding users. */}
+            {farmProfile && farmProfile.crop && setupComplete && (
+              <div data-testid="farm-plan-section" style={{ marginTop: '1rem' }}>
+                <FarmActionPlan
+                  farm={farmProfile}
+                  weather={weather}
+                />
               </div>
             )}
 

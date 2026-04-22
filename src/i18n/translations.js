@@ -7084,6 +7084,25 @@ const T = {
   'yield.rec.shade':          { en: 'Water early morning and mulch the root zone — heat stress slices the top end.', fr: 'Arrosez tôt le matin et paillez — la chaleur réduit le haut de la fourchette.', sw: 'Mwagilia asubuhi mapema na funga mizizi — joto hupunguza mavuno.', ha: 'Shayar da safe da wuri da sa mulch — zafi na rage amfani.', tw: 'Gu nsu anɔpatutuutu na kata ntini ho — ahuhuro te aba atifi.' },
   'yield.rec.plantingDate':   { en: 'Save the planting date to sharpen the yield estimate week-over-week.', fr: 'Enregistrez la date de plantation pour affiner l\'estimation chaque semaine.', sw: 'Hifadhi tarehe ya kupanda ili kuboresha makadirio kila wiki.', ha: 'Adana ranar shuka don daidaita ƙiyasin kowane mako.', tw: 'Kora dua da no na ama akontabu no akɔ mu.' },
 
+  // ─── Crop Intelligence v3: Your Farm Plan (decision timeline) ──
+  'farmPlan.title':             { en: 'Your Farm Plan', fr: 'Votre plan de ferme', sw: 'Mpango Wako wa Shamba', ha: 'Shirin Gonar Ka', tw: 'Wo Afuo Nhyehyɛe' },
+  'farmPlan.empty':             { en: 'Your farm plan will fill in as you add a crop, stage, and planting date.', fr: 'Votre plan se remplira quand vous ajouterez culture, étape et date.', sw: 'Mpango utajaa ukisajili mazao, hatua, na tarehe ya kupanda.', ha: 'Shirin zai cika lokacin da ka saka amfani, mataki, da ranar shuka.', tw: 'Wo nhyehyɛe bɛhyɛ ma sɛ wo saa nnɔbae, anammɔn, ne dua da a.' },
+  'farmPlan.now':               { en: 'Now', fr: 'Maintenant', sw: 'Sasa', ha: 'Yanzu', tw: 'Seesei' },
+  'farmPlan.nowSub':            { en: 'What to do today', fr: 'À faire aujourd\'hui', sw: 'Cha kufanya leo', ha: 'Abin da za a yi yau', tw: 'Nea wobɛyɛ ɛnnɛ' },
+  'farmPlan.thisWeek':          { en: 'This Week', fr: 'Cette semaine', sw: 'Wiki Hii', ha: 'Wannan Mako', tw: 'Nnawɔtwe Yi' },
+  'farmPlan.thisWeekSub':       { en: 'Coming up at this stage', fr: 'Prochaines actions à cette étape', sw: 'Zinakuja katika hatua hii', ha: 'Na gaba a wannan mataki', tw: 'Nea ɛreba wɔ saa anammɔn yi mu' },
+  'farmPlan.comingUp':          { en: 'Coming Up', fr: 'À venir', sw: 'Inakuja', ha: 'Mai Zuwa', tw: 'Nea Ɛreba' },
+  'farmPlan.comingUpSub':       { en: 'The next stage of your crop', fr: 'La prochaine étape de votre culture', sw: 'Hatua ijayo ya mazao yako', ha: 'Matakin gaba na amfaninka', tw: 'Wo nnɔbae anammɔn a ɛdi hɔ' },
+  'farmPlan.riskWatch':         { en: 'Risk Watch', fr: 'Risques à surveiller', sw: 'Tahadhari za Hatari', ha: 'Kiyayye Haɗari', tw: 'Asiane a Ɛwɔ Hɔ' },
+  'farmPlan.riskWatchSub':      { en: 'Watch for these in your area', fr: 'Surveillez ceci dans votre région', sw: 'Angalia haya katika eneo lako', ha: 'Kula da waɗannan a yankinka', tw: 'Hwɛ yeinom wɔ wo man mu' },
+  'farmPlan.recommendations':   { en: 'What most affects your yield', fr: 'Ce qui pèse le plus sur votre rendement', sw: 'Kinachoathiri zaidi mavuno yako', ha: 'Abin da ya fi shafar amfaninka', tw: 'Nea ɛka wo aba kɛse' },
+  'farmPlan.recommendationsSub':{ en: 'One or two small changes that lift the harvest', fr: 'Un ou deux gestes qui augmentent la récolte', sw: 'Mabadiliko madogo moja au mawili ya kuongeza mavuno', ha: 'Sauye-sauye ƙanana guda ɗaya ko biyu da ke ƙara girbi', tw: 'Nsesaeɛ kakra baako anaa mmienu a ɛma aba boro so' },
+  'farmPlan.priorityHigh':      { en: 'Do this first', fr: 'À faire en priorité', sw: 'Fanya hili kwanza', ha: 'Yi wannan tukuna', tw: 'Yɛ yei kane' },
+  'farmPlan.why':               { en: 'Why this plan?', fr: 'Pourquoi ce plan ?', sw: 'Kwa nini mpango huu?', ha: 'Me ya sa wannan shiri?', tw: 'Deɛn nti saa nhyehyɛe yi?' },
+  'farmPlan.conf.high':         { en: 'High confidence', fr: 'Confiance élevée', sw: 'Uhakika mkubwa', ha: 'Babban tabbaci', tw: 'Nkyinhyim kɛse' },
+  'farmPlan.conf.medium':       { en: 'Medium confidence', fr: 'Confiance moyenne', sw: 'Uhakika wa wastani', ha: 'Matsakaicin tabbaci', tw: 'Nkyinhyim ntam' },
+  'farmPlan.conf.low':          { en: 'Low confidence', fr: 'Faible confiance', sw: 'Uhakika mdogo', ha: 'Ƙarancin tabbaci', tw: 'Nkyinhyim sua' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },
