@@ -37,6 +37,7 @@ import { estimateValue }      from './valueEngine.js';
 import { getWeatherAction }   from './weatherActionEngine.js';
 import { getRiskInsight }     from './riskInsightEngine.js';
 import { getCropLabel, normalizeCrop } from '../../config/crops.js';
+import { getCropTimeline }    from '../timeline/cropTimelineEngine.js';
 
 function depthFor(farmType) {
   const s = String(farmType || 'small_farm').toLowerCase().trim();
@@ -87,6 +88,16 @@ export function getFarmInsight({
   const farmType = farm.farmType || 'small_farm';
   const depth    = depthFor(farmType);
 
+  // Source of truth for stage = timeline engine (handles manual
+  // override, planting-date auto-advance, and fallback to the
+  // persisted cropStage when no date anchor exists). Downstream
+  // engines (yield, weather action) now read this instead of the
+  // stored farm.cropStage so they stay honest when the farmer was
+  // away while the crop progressed.
+  const timeline = getCropTimeline({ farm, now });
+  const computedStage = (timeline && timeline.currentStage)
+    || farm.cropStage || farm.stage;
+
   // ─── Yield ───────────────────────────────────────────────────
   const yieldEstimate = crop ? estimateYield({
     crop,
@@ -94,7 +105,7 @@ export function getFarmInsight({
     size:              farm.size,
     sizeUnit:          farm.sizeUnit,
     farmType,
-    cropStage:         farm.cropStage || farm.stage,
+    cropStage:         computedStage,
     countryCode:       farm.countryCode || farm.country,
   }) : null;
 
@@ -112,7 +123,7 @@ export function getFarmInsight({
   const weatherAction = getWeatherAction({
     weather,
     crop,
-    cropStage: farm.cropStage || farm.stage,
+    cropStage: computedStage,
     farmType,
     forecastDays: 3,
   });

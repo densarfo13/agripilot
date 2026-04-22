@@ -122,6 +122,14 @@ export function chooseChannels({ candidate, preferences, user = null } = {}) {
       break;
     }
 
+    case 'stage_advanced_away': {
+      // Low-pressure informational message — always in-app only.
+      // Never escalates to SMS / email; farmer sees it next time
+      // they open the farm page.
+      plans.push(row('in_app', 'default', true));
+      break;
+    }
+
     case 'stage_transition': {
       if (prefs.riskAlertsEnabled === false) break;   // reuses risk toggle
       plans.push(row('in_app', 'default', true));

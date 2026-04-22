@@ -31,6 +31,7 @@ import { getWeatherAction } from '../intelligence/weatherActionEngine.js';
 import { getRiskInsight }   from '../intelligence/riskInsightEngine.js';
 import { getCropTimeline }  from '../timeline/cropTimelineEngine.js';
 import { getStageProgress } from '../timeline/stageProgressEngine.js';
+import { detectStageAdvance } from '../timeline/stageAdvanceNotifier.js';
 
 function ymd(date) {
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) return date.slice(0, 10);
@@ -196,6 +197,35 @@ function stageTransitionCandidate({ farm, date, farmType, now }) {
   };
 }
 
+// ─── Stage-advanced-while-away candidate ─────────────────────────
+// Fires exactly once per stage transition when the farmer returns
+// after ≥24h of absence. The detector itself handles dedup (it only
+// emits on the first open after a change) plus persistence of the
+// new "last seen" observation. We key the notification on
+// farmId + toStage so if a second advance happens mid-session the
+// store dedup guard still prevents a duplicate card.
+function stageAdvancedWhileAwayCandidate({ farm, date, farmType, now }) {
+  const advance = detectStageAdvance({ farm, now });
+  if (!advance || !advance.advanced) return null;
+
+  const farmId = (farm && (farm.id || farm._id)) || 'nofarm';
+  return {
+    key:      `stage_advanced_away:${farmId}:${advance.toStage}`,
+    type:     'stage_advanced_away',
+    priority: 'medium',
+    titleKey:      advance.message.key,
+    titleFallback: advance.message.fallback,
+    bodyKey:       advance.focusNext ? advance.focusNext.key : null,
+    bodyFallback:  advance.focusNext ? advance.focusNext.fallback : '',
+    vars:  { fromStage: advance.from.fallback, toStage: advance.to.fallback,
+             daysAway: advance.daysAway },
+    data:  { farmId, fromStage: advance.fromStage, toStage: advance.toStage,
+             daysAway: advance.daysAway },
+    meta:  { ruleTag: 'stage_advanced_away', source: 'stageAdvanceNotifier',
+             farmType, confidenceLevel: advance.confidenceLevel },
+  };
+}
+
 // ─── Orchestrator ────────────────────────────────────────────────
 export function generateCandidates({
   user          = null,
@@ -229,6 +259,9 @@ export function generateCandidates({
 
   const stageTrans = stageTransitionCandidate({ farm, date, farmType, now });
   if (stageTrans) list.push(stageTrans);
+
+  const advanced = stageAdvancedWhileAwayCandidate({ farm, date, farmType, now });
+  if (advanced) list.push(advanced);
 
   // Mark each with a shared date + ownerUserId for downstream dedup.
   return list.map((c) => ({
