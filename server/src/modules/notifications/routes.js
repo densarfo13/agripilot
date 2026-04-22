@@ -3,6 +3,7 @@ import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate, authorize, requireApprovedFarmer, requireFarmerOwnership } from '../../middleware/auth.js';
 import { validateParamUUID } from '../../middleware/validate.js';
 import * as svc from './service.js';
+import { dispatchSmartAlerts } from './smartAlertDispatcher.js';
 
 const STAFF_ROLES = ['super_admin', 'institutional_admin', 'field_officer', 'reviewer'];
 
@@ -47,6 +48,33 @@ router.patch('/:id/read',
       }
     }
     res.json(await svc.markRead(req.params.id));
+  }));
+
+// ─── Smart alert dispatch ──────────────────────────────────────
+// Client runs the alert engine locally (pure JS, cheap) and POSTs
+// the resulting alert list here for persistence + dedup.
+// Body: { alerts: [{ id, type, priority, action, reason, consequence,
+//          messageKey?, triggeredBy? }] }
+// Returns: { created: Notification[], skipped: number }
+router.post('/farmer/:farmerId/smart-alerts/dispatch',
+  validateParamUUID('farmerId'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireFarmerOwnership,
+  asyncHandler(async (req, res) => {
+    const prisma = (await import('../../config/database.js')).default;
+    const alerts = Array.isArray(req.body && req.body.alerts) ? req.body.alerts : [];
+    if (alerts.length > 50) {
+      return res.status(400).json({ error: 'too_many_alerts' });
+    }
+    const out = await dispatchSmartAlerts({
+      prisma, farmerId: req.params.farmerId, alerts,
+    });
+    if (!out.ok) return res.status(500).json({ error: out.reason || 'dispatch_failed' });
+    res.json({
+      created: out.created.length,
+      skipped: out.skipped,
+      ids:     out.created.map((n) => n.id),
+    });
   }));
 
 // Mark all read

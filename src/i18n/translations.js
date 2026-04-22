@@ -7149,6 +7149,26 @@ const T = {
   'marketplace.status.accepted':      { en: 'Accepted', fr: 'Acceptée', sw: 'Imekubaliwa', ha: 'An karɓi', tw: 'Wɔagye' },
   'marketplace.status.declined':      { en: 'Declined', fr: 'Refusée', sw: 'Imekataliwa', ha: 'An ƙi', tw: 'Wɔannyae' },
 
+  // ─── Smart Alerts (Crop Intelligence v4) ──────────────────────
+  'alerts.title':                   { en: 'Smart alerts', fr: 'Alertes intelligentes', sw: 'Arifa mahiri', ha: 'Faɗakarwa ta gaggauta', tw: 'Kɔkɔbɔ pa' },
+  'alerts.empty':                   { en: 'No alerts right now. We\u2019ll ping you when something needs action.', fr: 'Aucune alerte. Nous vous préviendrons si nécessaire.', sw: 'Hakuna arifa sasa. Tutakujulisha ikibidi.', ha: 'Babu faɗakarwa yanzu. Za mu gaya maka idan akwai bukata.', tw: 'Kɔkɔbɔ biara nni hɔ seesei.' },
+  'alerts.showWhy':                 { en: 'Why this?', fr: 'Pourquoi ?', sw: 'Kwa nini?', ha: 'Me ya sa?', tw: 'Deɛn nti?' },
+  'alerts.hideWhy':                 { en: 'Hide details', fr: 'Masquer', sw: 'Ficha', ha: 'Boye', tw: 'Fa ho' },
+  'alerts.reason':                  { en: 'Reason', fr: 'Raison', sw: 'Sababu', ha: 'Dalili', tw: 'Nea enti' },
+  'alerts.consequence':             { en: 'If ignored', fr: 'Si ignoré', sw: 'Kama ikipuuzwa', ha: 'Idan aka watsar', tw: 'Sɛ wogyae' },
+  'alerts.dismiss':                 { en: 'Dismiss', fr: 'Ignorer', sw: 'Futa', ha: 'Soke', tw: 'Yi fi hɔ' },
+  'alerts.moreAlerts':              { en: 'more alerts', fr: 'alertes de plus', sw: 'arifa zaidi', ha: 'ƙarin faɗakarwa', tw: 'kɔkɔbɔ bebree' },
+
+  // Specific alert bodies (i18n fallbacks — engine copy wins when
+  // the key isn't registered in the active language)
+  'alerts.weather.delay_fertilizer':{ en: 'Delay fertilizer application until after the rain.', fr: 'Reporter l\'application d\'engrais après la pluie.', sw: 'Ahirisha mbolea hadi baada ya mvua.', ha: 'Jinkirta takin har ruwa ya tsaya.', tw: 'Twɛn sɛ osu ntɔ ansa na woato aduro.' },
+  'alerts.weather.irrigate':        { en: 'Irrigate the driest rows today.', fr: 'Arrosez les rangs les plus secs.', sw: 'Mwagilia safu zilizo kavu leo.', ha: 'Shayar da layukan da suka fi bushewa yau.', tw: 'Gu nsu wɔ nhyekyere a ayɛ wo mu.' },
+  'alerts.weather.heat_morning':    { en: 'Water early morning and mulch the root zone.', fr: 'Arrosez tôt et paillez.', sw: 'Mwagilia asubuhi na funga mizizi.', ha: 'Shayar da safe da wuri da sa mulch.', tw: 'Gu nsu anɔpatutuutu na kata ntini ho.' },
+  'alerts.task.missed_critical':    { en: 'Top task still pending — it\u2019s flagged high priority for a reason.', fr: 'Tâche prioritaire encore en attente.', sw: 'Kazi muhimu bado haijakamilika.', ha: 'Babban aiki har yanzu baka yi ba.', tw: 'Adwuma titire wo so.' },
+  'alerts.planting.window_closing': { en: 'Plant now or shift to a shorter-cycle variety.', fr: 'Plantez maintenant ou choisissez une variété plus courte.', sw: 'Panda sasa au chagua aina ya muda mfupi.', ha: 'Shuka yanzu ko zaɓi iri-iri mai gajeren lokaci.', tw: 'Dua seesei anaa paw suban a ɛfa bere tiaa.' },
+  'alerts.yield.weather_drag':      { en: 'Protect the crop — current weather is trimming yield.', fr: 'Protégez la culture — la météo rogne le rendement.', sw: 'Linda mazao — hali ya hewa inapunguza mavuno.', ha: 'Kare amfanin gona — yanayi yana rage amfani.', tw: 'Bɔ nnɔbae no ho ban — ewiem te aba so.' },
+  'alerts.stage.transition':        { en: 'Next growth stage is coming — prepare this week.', fr: 'Prochaine étape bientôt — préparez-vous.', sw: 'Hatua ijayo inakuja — jiandae.', ha: 'Matakin gaba yana zuwa — ka shirya.', tw: 'Anammɔn a ɛdi hɔ reba — siesie wo ho.' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },

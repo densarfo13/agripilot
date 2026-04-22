@@ -393,6 +393,25 @@ const HI = {
   'marketplace.status.pending':      'लंबित',
   'marketplace.status.accepted':     'स्वीकृत',
   'marketplace.status.declined':     'अस्वीकृत',
+
+  // ─── Smart Alerts (Crop Intelligence v4) ──────────────────────
+  'alerts.title':                   'स्मार्ट चेतावनी',
+  'alerts.empty':                   'अभी कोई चेतावनी नहीं। जरूरत पड़ने पर आपको सूचित करेंगे।',
+  'alerts.showWhy':                 'क्यों?',
+  'alerts.hideWhy':                 'विवरण छिपाएँ',
+  'alerts.reason':                  'कारण',
+  'alerts.consequence':             'अनदेखा करने पर',
+  'alerts.dismiss':                 'खारिज करें',
+  'alerts.moreAlerts':              'और चेतावनियाँ',
+
+  // Specific alert bodies
+  'alerts.weather.delay_fertilizer':'बारिश के बाद ही उर्वरक डालें।',
+  'alerts.weather.irrigate':        'आज सबसे सूखी पंक्तियाँ सिंचित करें।',
+  'alerts.weather.heat_morning':    'सुबह जल्दी पानी दें और जड़ क्षेत्र में मल्च लगाएँ।',
+  'alerts.task.missed_critical':    'सबसे जरूरी कार्य अभी भी शेष है।',
+  'alerts.planting.window_closing': 'अभी रोपण करें या कम अवधि की किस्म चुनें।',
+  'alerts.yield.weather_drag':      'फसल की रक्षा करें — मौसम उपज घटा रहा है।',
+  'alerts.stage.transition':        'अगली अवस्था आ रही है — इस सप्ताह तैयारी करें।',
   'cropStage.title': 'आपकी फसल अभी किस अवस्था में है?',
   'cropStage.subtitle': 'अपनी वर्तमान अवस्था टैप करें',
   'cropStage.saved': 'सहेजा गया!',

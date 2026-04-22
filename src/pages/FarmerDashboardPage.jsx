@@ -17,6 +17,7 @@ import CropImage from '../components/CropImage.jsx';
 import FarmActionPlan from '../components/FarmActionPlan.jsx';
 import MarketplaceCard from '../components/MarketplaceCard.jsx';
 import IncomingRequestsList from '../components/IncomingRequestsList.jsx';
+import SmartAlertsCard from '../components/SmartAlertsCard.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -821,6 +822,18 @@ export default function FarmerDashboardPage() {
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{weatherRecs.recommendations[0].title}</div>
                   <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{weatherRecs.recommendations[0].action}</div>
                 </div>
+              </div>
+            )}
+
+            {/* 5a1. Smart Alerts — context-aware warnings that compose
+                 over weather + farm plan + crop risk patterns +
+                 yield engine. Renders client-side (pure JS) and
+                 POSTs to /smart-alerts/dispatch for server-side
+                 history + dedup. Dismissed alerts are hidden via
+                 localStorage until their id expires (daily). */}
+            {farmProfile && farmProfile.crop && setupComplete && (
+              <div data-testid="smart-alerts-section" style={{ marginTop: '1rem' }}>
+                <SmartAlertsCard farm={farmProfile} weather={weather} />
               </div>
             )}
 
