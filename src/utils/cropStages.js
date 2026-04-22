@@ -7,6 +7,8 @@
  * Matches server/lib/cropStages.js exactly.
  */
 
+import { getCropLifecycle } from '../config/crops/index.js';
+
 /** All valid crop stages in lifecycle order */
 export const CROP_STAGES = [
   'planning',
@@ -66,4 +68,41 @@ export function resolveStage(raw) {
   if (CROP_STAGES.includes(lower)) return lower;
   if (LEGACY_STAGE_MAP[lower]) return LEGACY_STAGE_MAP[lower];
   return 'planning';
+}
+
+/**
+ * getStagesForCrop(cropCode) — crop-specific stage list.
+ *
+ * Wraps the Crop Intelligence Layer (src/config/crops) to return the
+ * per-crop lifecycle stages for the stage dropdown. Cassava returns
+ * planting/establishment/vegetative/bulking/maturation/harvest; maize
+ * returns planting/germination/vegetative/tasseling/grain_fill/
+ * harvest; tomato returns seedling/transplant/.../fruiting/harvest;
+ * etc.
+ *
+ * For unknown crops (or when the registry lookup fails) we fall back
+ * to the generic CROP_STAGES list so the form never crashes.
+ *
+ * Stage values remain canonical snake_case so server validation +
+ * the existing server-side cropStages list keep working. UI icons
+ * come from STAGE_EMOJIS by stage value.
+ *
+ * Shape:
+ *   [{ value: 'planting', icon: '🌱', labelKey: 'cropStage.planting' }, ...]
+ */
+export function getStagesForCrop(cropCode) {
+  if (!cropCode) return STAGES.map((s) => decorateStage(s.value));
+  const lifecycle = getCropLifecycle(cropCode);
+  if (!lifecycle || !Array.isArray(lifecycle) || lifecycle.length === 0) {
+    return STAGES.map((s) => decorateStage(s.value));
+  }
+  return lifecycle.map((stage) => decorateStage(stage.key));
+}
+
+function decorateStage(value) {
+  return {
+    value,
+    icon: STAGE_EMOJIS[value] || '\u{1F331}',
+    labelKey: STAGE_KEYS[value] || `cropStage.${value}`,
+  };
 }

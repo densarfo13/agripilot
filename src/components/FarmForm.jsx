@@ -42,7 +42,7 @@ import {
   CROPS, ALL_CROPS_WITH_OTHER, OTHER_CROP,
   getCropLabel, normalizeCropCode, parseCropValue, buildOtherCropValue,
 } from '../utils/crops.js';
-import { STAGES, STAGE_KEYS, resolveStage } from '../utils/cropStages.js';
+import { STAGES, STAGE_KEYS, resolveStage, getStagesForCrop } from '../utils/cropStages.js';
 import {
   COUNTRIES, getCountryLabel, getStatesForCountry, hasStatesForCountry,
 } from '../config/countriesStates.js';
@@ -595,10 +595,18 @@ export default function FarmForm({
             data-testid="farm-stage"
           >
             <option value="">{t('farm.fields.stagePlaceholder') || 'Select crop stage'}</option>
-            {STAGES.map((s) => (
+            {/*
+              Crop Intelligence Layer: per-crop lifecycle stages.
+              Cassava shows planting/establishment/vegetative/bulking/
+              maturation/harvest; maize shows planting/germination/
+              vegetative/tasseling/grain_fill/harvest; etc. Unknown
+              crops fall back to the generic STAGES list so nothing
+              breaks.
+            */}
+            {getStagesForCrop(form.crop).map((s) => (
               <option key={s.value} value={s.value}>
-                {(t(STAGE_KEYS[s.value]) && t(STAGE_KEYS[s.value]) !== STAGE_KEYS[s.value])
-                  ? t(STAGE_KEYS[s.value])
+                {(t(s.labelKey) && t(s.labelKey) !== s.labelKey)
+                  ? t(s.labelKey)
                   : s.value.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())}
               </option>
             ))}

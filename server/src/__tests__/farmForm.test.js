@@ -41,10 +41,12 @@ describe('FarmForm — sources options from centralised configs', () => {
     expect(SRC).toMatch(/hasStatesForCountry/);
   });
 
-  it('imports STAGES + STAGE_KEYS + resolveStage from cropStages.js', () => {
+  it('imports stage helpers from cropStages.js and renders stage options', () => {
     expect(SRC).toMatch(/from ['"]\.\.\/utils\/cropStages\.js['"]/);
-    expect(SRC).toMatch(/STAGES\.map/);
-    expect(SRC).toMatch(/STAGE_KEYS/);
+    // Accept either the legacy STAGES.map OR the Crop Intelligence
+    // Layer's per-crop getStagesForCrop(...).map — both satisfy the
+    // contract: stage options source from cropStages.js, not hardcoded.
+    expect(SRC).toMatch(/(STAGES\.map|getStagesForCrop\([^)]*\)\.map)/);
     expect(SRC).toMatch(/resolveStage/);
   });
 

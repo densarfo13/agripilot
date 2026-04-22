@@ -18,6 +18,8 @@
  * Pure. Frozen output.
  */
 
+import { matchCropRiskPatterns, normalizeCropKey } from '../../config/crops/index.js';
+
 const LEVEL_ORDER = Object.freeze(['low', 'medium', 'high']);
 
 function bumpLevel(level, steps = 1) {
@@ -38,6 +40,9 @@ export function getRisk({ crop = null, regionProfile = null, recentIssueCount = 
     return Object.freeze({
       level: 'low', type, message, messageKey,
       reasons: Object.freeze(reasons.map(Object.freeze)),
+      crop: normalizeCropKey(crop),
+      // No region context → no crop-specific hints to match against.
+      cropPatterns: Object.freeze([]),
     });
   }
 
@@ -115,9 +120,27 @@ export function getRisk({ crop = null, regionProfile = null, recentIssueCount = 
     }
   }
 
+  // ─── Crop Intelligence Layer enrichment ───────────────────────
+  // Additively attach per-crop risk hints from the registry. Unknown
+  // crops return the generic fallback set — never null. The existing
+  // return shape (level/type/message/messageKey/reasons) is
+  // preserved exactly; downstream callers that want richer guidance
+  // can read `cropPatterns`, the rest ignore it.
+  const canonicalCrop = normalizeCropKey(crop);
+  const cropPatterns = regionProfile
+    ? matchCropRiskPatterns({
+        canonicalKey: canonicalCrop,
+        climate: regionProfile.climate,
+        season: regionProfile.season,
+        stage: regionProfile.stage || null,
+      })
+    : Object.freeze([]);
+
   return Object.freeze({
     level, type, message, messageKey,
     reasons: Object.freeze(reasons.map(Object.freeze)),
+    crop: canonicalCrop,
+    cropPatterns: Object.freeze(cropPatterns),
   });
 }
 
