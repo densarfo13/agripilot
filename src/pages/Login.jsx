@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
@@ -9,11 +9,41 @@ import PasswordInput from '../components/PasswordInput.jsx';
 import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
 import LoadingButton from '../components/auth/LoadingButton.jsx';
 import OTPInput from '../components/auth/OTPInput.jsx';
+import PhoneInput from '../components/PhoneInput.jsx';
 
 // Lightweight, user-safe email shape check. The server still
 // validates strictly — this just catches obvious typos before submit.
 function isLikelyEmail(s) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim());
+}
+
+// E.164 check — "+" then 7–15 digits. We don't try to be clever
+// about national format here; PhoneInput onBlur normalises the
+// country-dialing prefix so most users end up with a clean +…
+// string on submit.
+function isLikelyE164(s) {
+  const cleaned = String(s || '').replace(/[\s().-]/g, '');
+  return /^\+[1-9]\d{6,14}$/.test(cleaned);
+}
+
+// Map any phone-auth error surface to a short, user-safe line. We
+// never expose Twilio / provider strings directly.
+function friendlyPhoneError(err, fallback) {
+  if (!err) return fallback;
+  const code = err.code || err.response?.data?.code;
+  switch (code) {
+    case 'rate_limited':
+    case 'too_many_requests':
+      return 'Too many attempts. Please wait a minute and try again.';
+    case 'invalid_phone':
+    case 'recipient_invalid':
+      return 'That phone number does not look right. Check the format and try again.';
+    case 'provider_error':
+    case 'unconfigured':
+      return 'We could not send a code right now. Try again in a moment.';
+    default:
+      return err.message || fallback;
+  }
 }
 
 // ─── Remembered email ──────────────────────────────────────
@@ -22,11 +52,26 @@ function getRememberedEmail() {
 }
 
 export default function Login() {
-  const { login, completeMfaChallenge, isAuthenticated, authLoading } = useAuth();
+  const {
+    login, completeMfaChallenge, requestPhoneOtp,
+    isAuthenticated, authLoading,
+  } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // ─── Method toggle — "email" | "phone" ───────────────────────
+  const [method, setMethod] = useState('email');
+
   const [email, setEmail] = useState(getRememberedEmail);
   const [password, setPassword] = useState('');
+
+  // ─── Phone login state ───────────────────────────────────────
+  const [phone, setPhone]           = useState('');
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [phoneError,   setPhoneError]   = useState('');
+  const phoneSubmittingRef = useRef(false);
+
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -165,6 +210,52 @@ export default function Login() {
     }
   };
 
+  // ─── Phone login — send OTP ───────────────────────────────────
+  // Anti-enumeration contract: the server always returns ok:true /
+  // a normalized "sent" response for well-formed phone numbers,
+  // whether or not an account exists. We navigate to the OTP screen
+  // unconditionally on a clean request so there's no signal here
+  // about whether the number is registered.
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault();
+    if (phoneSubmittingRef.current) return;
+    setPhoneError('');
+    const trimmed = String(phone || '').trim();
+    if (!trimmed) {
+      setErrors({ phone: t('auth.phoneRequired') || 'Phone number is required.' });
+      return;
+    }
+    if (!isLikelyE164(trimmed)) {
+      setErrors({ phone: t('auth.phoneInvalid')
+        || 'Enter a full phone number including country code, e.g. +254712345678.' });
+      return;
+    }
+    setErrors({});
+    setPhoneLoading(true);
+    phoneSubmittingRef.current = true;
+    try {
+      const r = await requestPhoneOtp(trimmed);
+      // requestPhoneOtp returns the server payload — ok:true when
+      // the code is queued. Provider / rate-limit errors throw.
+      if (r && r.ok === false) {
+        setPhoneError(friendlyPhoneError({ code: r.code, message: r.message },
+          t('auth.phone.sendFailed') || 'We could not send a code right now. Try again in a moment.'));
+        return;
+      }
+      safeTrackEvent('auth.phone.otp_requested', {});
+      // Navigate to the existing VerifyOtp page with the normalised
+      // phone in route state so it never has to hit storage.
+      navigate('/verify-otp', { state: { phone: trimmed } });
+    } catch (err) {
+      safeTrackEvent('auth.phone.otp_failed', {});
+      setPhoneError(friendlyPhoneError(err,
+        t('auth.phone.sendFailed') || 'We could not send a code right now. Try again in a moment.'));
+    } finally {
+      setPhoneLoading(false);
+      phoneSubmittingRef.current = false;
+    }
+  };
+
   const handleBackToLogin = () => {
     setMfaStep(false);
     setMfaToken('');
@@ -241,8 +332,93 @@ export default function Login() {
         <p style={S.subtitle}>{t('auth.signInPrompt')}</p>
 
         <AuthFormMessage tone="info" message={sessionNotice} testId="login-session-notice" />
-        <AuthFormMessage tone="error" message={generalError} testId="login-error" />
+        {/* Email / Phone method toggle */}
+        <div style={S.methodRow} role="tablist" aria-label="Sign-in method">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={method === 'email'}
+            onClick={() => {
+              if (method === 'email') return;
+              setMethod('email');
+              setErrors({});
+              setGeneralError('');
+              setPhoneError('');
+            }}
+            style={{ ...S.methodBtn, ...(method === 'email' ? S.methodBtnActive : {}) }}
+            data-testid="login-method-email"
+          >
+            {t('auth.method.email') || 'Email'}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={method === 'phone'}
+            onClick={() => {
+              if (method === 'phone') return;
+              setMethod('phone');
+              setErrors({});
+              setGeneralError('');
+              setPhoneError('');
+            }}
+            style={{ ...S.methodBtn, ...(method === 'phone' ? S.methodBtnActive : {}) }}
+            data-testid="login-method-phone"
+          >
+            {t('auth.method.phone') || 'Phone'}
+          </button>
+        </div>
 
+        <AuthFormMessage
+          tone="error"
+          message={method === 'email' ? generalError : phoneError}
+          testId={method === 'email' ? 'login-error' : 'login-phone-error'}
+        />
+
+        {method === 'phone' ? (
+          // ─── Phone login form ─────────────────────────────
+          <form onSubmit={handlePhoneSubmit} style={S.form} noValidate>
+            <div>
+              <label style={S.label} htmlFor="login-phone">
+                {t('auth.phone') || 'Phone number'}
+              </label>
+              <PhoneInput
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (errors.phone) setErrors((s) => ({ ...s, phone: undefined }));
+                }}
+                style={S.input}
+                required
+                disabled={phoneLoading}
+                data-testid="login-phone"
+              />
+              <p style={S.mfaHint}>
+                {t('auth.phoneHint')
+                  || 'Include your country code, e.g. +254712345678.'}
+              </p>
+              {errors.phone && (
+                <span style={S.fieldError} data-testid="login-phone-error-inline">
+                  {errors.phone}
+                </span>
+              )}
+            </div>
+
+            <LoadingButton
+              loading={phoneLoading}
+              loadingText={t('auth.phone.sending') || 'Sending code\u2026'}
+              testId="login-phone-submit"
+            >
+              {t('auth.phone.sendCode') || 'Send code'}
+            </LoadingButton>
+
+            <p style={S.footerText}>
+              {t('auth.noAccount') || 'New to Farroway?'}{' '}
+              <Link to="/register" style={S.link}>
+                {t('auth.createOne') || 'Create account'}
+              </Link>
+            </p>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
             <label style={S.label} htmlFor="login-email">
@@ -312,11 +488,14 @@ export default function Login() {
             {t('auth.signIn') || 'Sign in'}
           </LoadingButton>
         </form>
+        )}
 
-        <p style={S.footerText}>
-          {t('auth.noAccount')}{' '}
-          <Link to="/register" style={S.link}>{t('auth.createOne')}</Link>
-        </p>
+        {method === 'email' && (
+          <p style={S.footerText}>
+            {t('auth.noAccount')}{' '}
+            <Link to="/register" style={S.link}>{t('auth.createOne')}</Link>
+          </p>
+        )}
       </div>
     </div>
   );
@@ -340,6 +519,25 @@ const S = {
   button: { background: '#22C55E', color: '#fff', border: 'none', borderRadius: '14px', padding: '0.875rem 1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', width: '100%', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   footerText: { textAlign: 'center', color: '#6F8299', fontSize: '0.875rem', marginTop: '1.5rem' },
+  // Email / Phone method toggle
+  methodRow: {
+    display: 'flex', gap: '0.5rem', marginBottom: '1rem',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: '12px', padding: '0.25rem',
+  },
+  methodBtn: {
+    flex: 1, padding: '0.5rem 0.75rem',
+    border: 'none', borderRadius: '10px',
+    background: 'transparent', color: '#9FB3C8',
+    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+    minHeight: '2.5rem',
+    transition: 'background-color 120ms ease, color 120ms ease',
+  },
+  methodBtnActive: {
+    background: 'rgba(34,197,94,0.15)',
+    color: '#86EFAC',
+  },
   // MFA-specific styles
   mfaIconRow: { textAlign: 'center', marginBottom: '0.5rem' },
   mfaIcon: { fontSize: '2.5rem' },
