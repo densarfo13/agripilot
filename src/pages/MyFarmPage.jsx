@@ -19,6 +19,7 @@ import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
 import FarmInsightCard from '../components/FarmInsightCard.jsx';
+import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
 import {
   resolveFindBestCropRoute, destinationToUrl,
   assertFindBestCropNotOnboarding,
@@ -281,6 +282,11 @@ export default function MyFarmPage() {
             {t('myFarm.setupFarm')}
           </button>
         </div>
+      )}
+
+      {/* Today's tasks — 1 high + 1–2 medium + optional low */}
+      {farm && (
+        <TodaysTasksCard farm={farm} weather={profile?.weather || null} />
       )}
 
       {/* Farm intelligence — yield / value / weather-action / risk cards */}
