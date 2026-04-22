@@ -426,20 +426,26 @@ describe('getAllowedSizeUnits', () => {
     expect(getAllowedSizeUnits('backyard', '')).toEqual(['SQM', 'SQFT']);
   });
 
-  it('returns ACRE/HECTARE for small_farm + commercial', () => {
-    expect(getAllowedSizeUnits('small_farm', 'US')).toEqual(LAND_AREA_UNITS);
-    expect(getAllowedSizeUnits('commercial', 'GH')).toEqual(LAND_AREA_UNITS);
+  it('returns land-area tier with US → ACRE first, non-US → HECTARE first', () => {
+    expect(getAllowedSizeUnits('small_farm', 'US')).toEqual(['ACRE', 'HECTARE']);
+    expect(getAllowedSizeUnits('commercial', 'US')).toEqual(['ACRE', 'HECTARE']);
+    expect(getAllowedSizeUnits('small_farm', 'GH')).toEqual(['HECTARE', 'ACRE']);
+    expect(getAllowedSizeUnits('commercial', 'KE')).toEqual(['HECTARE', 'ACRE']);
   });
 
   it('falls back to land-area units for unknown farm types', () => {
-    expect(getAllowedSizeUnits('nonsense', 'US')).toEqual(LAND_AREA_UNITS);
-    expect(getAllowedSizeUnits(null, 'US')).toEqual(LAND_AREA_UNITS);
+    const usOrder    = getAllowedSizeUnits('nonsense', 'US');
+    const worldOrder = getAllowedSizeUnits(null, 'GH');
+    // Members always the same; order depends on country.
+    expect(new Set(usOrder)).toEqual(new Set(LAND_AREA_UNITS));
+    expect(new Set(worldOrder)).toEqual(new Set(LAND_AREA_UNITS));
   });
 
   it('getDefaultSizeUnit returns the first allowed unit for the tier', () => {
     expect(getDefaultSizeUnit('backyard', 'US')).toBe('SQFT');
     expect(getDefaultSizeUnit('backyard', 'GH')).toBe('SQM');
     expect(getDefaultSizeUnit('commercial', 'US')).toBe('ACRE');
+    expect(getDefaultSizeUnit('commercial', 'GH')).toBe('HECTARE');
   });
 });
 

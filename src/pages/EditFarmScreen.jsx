@@ -39,6 +39,10 @@ import {
   getAllowedSizeUnits, convertSize,
   getFarmSizeLabel, getUnitLabel, normalizeSizeUnit, normalizeFarmType,
 } from '../config/onboardingLabels.js';
+import { convertArea } from '../lib/units/areaConversion.js';
+
+// Uppercase storage codes ↔ lowercase canonical for convertArea.
+const UNIT_UC_TO_LC = { ACRE: 'acres', HECTARE: 'hectares', SQFT: 'sqft', SQM: 'sqm' };
 import {
   searchCrops, normalizeCrop, CROP_OTHER, getCropLabel,
 } from '../config/crops.js';
@@ -133,10 +137,14 @@ export default function EditFarmScreen() {
     }
   }
 
-  // Farm-type change may invalidate the current size unit when the
-  // tier changes (backyard ↔ small/commercial). Within-tier changes
-  // (small ↔ commercial) keep the unit. Cross-tier changes reset
-  // the numeric value to avoid absurd auto-conversions (sqft → acres).
+  // Transient info line shown once when a unit / tier switch
+  // auto-converted the typed size. Cleared on the next size edit.
+  const [conversionNotice, setConversionNotice] = useState('');
+
+  // Farm-type change: convert the value across tiers via the
+  // canonical square-meter base rather than resetting. The farmer's
+  // stored area is preserved, just re-expressed in the new tier's
+  // default unit. See spec §5C.
   function changeFarmType(nextType) {
     setForm((prev) => {
       const prevT = normalizeFarmType(prev.farmType);
@@ -145,11 +153,22 @@ export default function EditFarmScreen() {
       const allowed = getAllowedSizeUnits(nextT, prev.country);
       const currentUnit = normalizeSizeUnit(prev.sizeUnit);
       const stillOk = allowed.includes(currentUnit);
+      if (stillOk) return { ...prev, farmType: nextT };
+
+      const newUnit = allowed[0];
+      const n = Number(prev.size);
+      if (!Number.isFinite(n) || n <= 0) {
+        return { ...prev, farmType: nextT, sizeUnit: newUnit };
+      }
+      const converted = convertArea(n,
+        UNIT_UC_TO_LC[currentUnit], UNIT_UC_TO_LC[newUnit]);
+      if (converted == null) {
+        return { ...prev, farmType: nextT, sizeUnit: newUnit, size: '' };
+      }
+      setConversionNotice('converted');
       return {
-        ...prev,
-        farmType: nextT,
-        sizeUnit: stillOk ? currentUnit : allowed[0],
-        size: stillOk ? prev.size : '',
+        ...prev, farmType: nextT, sizeUnit: newUnit,
+        size: String(converted),
       };
     });
     if (fieldErrors.farmType || fieldErrors.sizeUnit || fieldErrors.size) {
@@ -169,6 +188,7 @@ export default function EditFarmScreen() {
       const n = Number(prev.size);
       if (!Number.isFinite(n) || n <= 0) return { ...prev, sizeUnit: to };
       const { value, ok } = convertSize(n, from, to);
+      if (ok && value != null) setConversionNotice('converted');
       return {
         ...prev,
         sizeUnit: to,
@@ -503,7 +523,10 @@ export default function EditFarmScreen() {
               min="0"
               step="0.01"
               value={form.size}
-              onChange={(e) => update('size', e.target.value)}
+              onChange={(e) => {
+                update('size', e.target.value);
+                if (conversionNotice) setConversionNotice('');
+              }}
               style={S.input}
               data-testid="edit-farm-size"
             />
@@ -530,6 +553,29 @@ export default function EditFarmScreen() {
             </select>
           </label>
         </div>
+        {/* Helper text + conversion notice — same copy / styling as
+            the onboarding v3 screen. */}
+        <p style={{ fontSize: '0.75rem', color: '#9FB3C8', marginTop: '0.25rem', lineHeight: 1.4 }}>
+          {normalizeFarmType(form.farmType) === 'backyard'
+            ? resolve(t, 'onboarding.sizeHelper.backyard',
+                'Use square feet or square meters for home/backyard farms.')
+            : resolve(t, 'onboarding.sizeHelper.land',
+                'Use acres or hectares for larger farms.')}
+        </p>
+        {conversionNotice && (
+          <p
+            style={{
+              marginTop: '0.5rem', padding: '0.5rem 0.75rem',
+              borderRadius: 10, background: 'rgba(34,197,94,0.08)',
+              border: '1px solid rgba(34,197,94,0.28)',
+              color: '#86EFAC', fontSize: '0.8125rem', lineHeight: 1.4,
+            }}
+            data-testid="edit-farm-size-conversion-notice"
+          >
+            {resolve(t, 'onboarding.sizeConverted',
+              'Size converted to match selected unit.')}
+          </p>
+        )}
 
         <label style={S.label}>
           {resolve(t, 'cropStage.label', 'Stage (optional)')}

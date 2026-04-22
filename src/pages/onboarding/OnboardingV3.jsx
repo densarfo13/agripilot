@@ -43,6 +43,7 @@ import {
 import {
   searchCrops, normalizeCrop, getCropLabel, CROP_OTHER,
 } from '../../config/crops.js';
+import { convertArea } from '../../lib/units/areaConversion.js';
 import COUNTRIES from '../../utils/countries.js';
 import { detectCountryByIP } from '../../utils/geolocation.js';
 
@@ -145,13 +146,17 @@ export default function OnboardingV3() {
     setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
   }, []);
 
-  // Changing farm type may invalidate the current size unit:
-  //   backyard → small/commercial : SQFT/SQM → not allowed
-  //   small/commercial → backyard : ACRE/HECTARE → not allowed
-  // Within-tier changes (e.g. "small" ↔ "commercial") keep the unit.
-  // Cross-tier → pick the default unit for the new tier AND reset
-  // the numeric value: auto-converting 400 sqft into 0.009 acres is
-  // more confusing than a blank input.
+  // Transient info message — shown once when the farmer's typed
+  // size is auto-converted because they switched unit or farm type.
+  // Cleared on the next edit or next step navigation.
+  const [conversionNotice, setConversionNotice] = useState('');
+
+  // Changing farm type CAN cross unit tiers:
+  //   backyard (sqft/sqm) ↔ small/commercial (acres/hectares)
+  // Per spec §5C: convert the value across tiers via the canonical
+  // area helper (sqft → sqm → acres/hectares) instead of resetting.
+  // The farmer keeps their area in a sensible unit; we surface a
+  // subtle info line so the number change isn't mysterious.
   const changeFarmType = useCallback((nextType) => {
     setForm((f) => {
       const prev = normalizeFarmType(f.farmType);
@@ -160,11 +165,24 @@ export default function OnboardingV3() {
       const allowed = getAllowedSizeUnits(next, f.country);
       const currentUnit = normalizeSizeUnit(f.sizeUnit);
       const stillOk = allowed.includes(currentUnit);
+      if (stillOk) return { ...f, farmType: next };
+
+      const newUnit = allowed[0];
+      const numeric = Number(f.farmSize);
+      if (!Number.isFinite(numeric) || numeric <= 0) {
+        return { ...f, farmType: next, sizeUnit: newUnit };
+      }
+      // Map uppercase storage codes to the canonical lowercase
+      // accepted by convertArea.
+      const LC = { ACRE: 'acres', HECTARE: 'hectares', SQFT: 'sqft', SQM: 'sqm' };
+      const converted = convertArea(numeric, LC[currentUnit], LC[newUnit]);
+      if (converted == null) {
+        return { ...f, farmType: next, sizeUnit: newUnit, farmSize: '' };
+      }
+      setConversionNotice('converted');
       return {
-        ...f,
-        farmType: next,
-        sizeUnit: stillOk ? currentUnit : allowed[0],
-        farmSize: stillOk ? f.farmSize : '',
+        ...f, farmType: next, sizeUnit: newUnit,
+        farmSize: String(converted),
       };
     });
     setErrors((e) => {
@@ -186,6 +204,7 @@ export default function OnboardingV3() {
         return { ...f, sizeUnit: toUnit };   // nothing to convert
       }
       const { value, ok } = convertSize(numeric, fromUnit, toUnit);
+      if (ok && value != null) setConversionNotice('converted');
       return {
         ...f,
         sizeUnit: toUnit,
@@ -490,7 +509,10 @@ export default function OnboardingV3() {
                   min="0"
                   step="0.01"
                   value={form.farmSize}
-                  onChange={(e) => update('farmSize', e.target.value)}
+                  onChange={(e) => {
+                    update('farmSize', e.target.value);
+                    if (conversionNotice) setConversionNotice('');
+                  }}
                   placeholder={L.farmSizePh}
                   style={{
                     ...S.input,
@@ -503,10 +525,11 @@ export default function OnboardingV3() {
               <Field label={L.sizeUnitLbl} style={{ width: '9rem' }}>
                 {/* Chip list is driven by the current farmType + country:
                     backyard → SQFT / SQM (US: sqft first, else sqm first)
-                    small / commercial → ACRE / HECTARE. Switching within
-                    the same tier auto-converts the numeric value via
-                    changeSizeUnit; switching farm type across tiers
-                    resets the value (see changeFarmType). */}
+                    small / commercial → ACRE / HECTARE (US: acres first,
+                    else hectares first). Within-tier switches auto-
+                    convert the numeric value; cross-tier switches (via
+                    changeFarmType) also convert via the canonical
+                    square-meter base. */}
                 <div style={S.chipRow} data-testid="onboarding-size-unit">
                   {allowedUnits.map((u) => (
                     <ChoiceChip
@@ -520,6 +543,25 @@ export default function OnboardingV3() {
                 </div>
               </Field>
             </div>
+            {/* Helper text that tells the farmer which units fit
+                their farm type. Localised via t(). */}
+            <p style={S.helperText} data-testid="onboarding-size-helper">
+              {normalizeFarmType(form.farmType) === 'backyard'
+                ? resolve(t, 'onboarding.sizeHelper.backyard',
+                    'Use square feet or square meters for home/backyard farms.')
+                : resolve(t, 'onboarding.sizeHelper.land',
+                    'Use acres or hectares for larger farms.')}
+            </p>
+            {/* Subtle notice shown when switching unit/tier auto-
+                converted the entered value so the number change isn't
+                mysterious. Clears on the farmer's next size edit. */}
+            {conversionNotice && (
+              <p style={S.conversionNotice}
+                 data-testid="onboarding-size-conversion-notice">
+                {resolve(t, 'onboarding.sizeConverted',
+                  'Size converted to match selected unit.')}
+              </p>
+            )}
           </>
         )}
 
@@ -754,6 +796,17 @@ const S = {
     boxSizing: 'border-box', minHeight: 44, width: '100%', cursor: 'pointer',
   },
   inputError: { borderColor: 'rgba(239,68,68,0.55)', background: 'rgba(239,68,68,0.04)' },
+  helperText: {
+    fontSize: '0.75rem', color: '#9FB3C8',
+    marginTop: '0.25rem', marginBottom: 0, lineHeight: 1.4,
+  },
+  conversionNotice: {
+    marginTop: '0.5rem', marginBottom: 0,
+    padding: '0.5rem 0.75rem', borderRadius: 10,
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.28)',
+    color: '#86EFAC', fontSize: '0.8125rem', lineHeight: 1.4,
+  },
   fieldError: { color: '#FCA5A5', fontSize: '0.8125rem' },
   chipRow: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' },
   chip: {

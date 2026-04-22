@@ -186,13 +186,18 @@ export function useUnitLabel(code) {
  */
 export function getAllowedSizeUnits(farmType, countryCode) {
   const ft = normalizeFarmType(farmType);
+  const iso2 = String(countryCode || '').trim().toUpperCase();
   if (ft === 'backyard') {
-    const iso2 = String(countryCode || '').trim().toUpperCase();
     return iso2 === 'US'
       ? Object.freeze(['SQFT', 'SQM'])
       : Object.freeze(['SQM', 'SQFT']);
   }
-  return LAND_AREA_UNITS;
+  // Small / commercial: US defaults to acres; everywhere else
+  // defaults to hectares (matches the area-conversion module's
+  // getDefaultUnit and the spec's country logic).
+  return iso2 === 'US'
+    ? Object.freeze(['ACRE', 'HECTARE'])
+    : Object.freeze(['HECTARE', 'ACRE']);
 }
 
 /**

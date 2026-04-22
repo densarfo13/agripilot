@@ -16,6 +16,8 @@
  * No dependency on any other module so pages can import it freely.
  */
 
+import { toSquareMeters } from '../lib/units/areaConversion.js';
+
 import { logEvent } from '../lib/events/eventLogger.js';
 
 const K = Object.freeze({
@@ -134,7 +136,17 @@ function genId() {
 
 export function getFarms() {
   const v = readJson(K.FARMS, []);
-  return Array.isArray(v) ? v : [];
+  if (!Array.isArray(v)) return [];
+  // Back-compat: rows created before normalizedAreaSqm existed are
+  // enriched on read so every downstream consumer (dashboards, NGO
+  // reports, yield math) sees the field. We do NOT rewrite storage
+  // here — the next updateFarm / saveFarm persists it naturally.
+  return v.map((row) => {
+    if (!row || typeof row !== 'object') return row;
+    if (row.normalizedAreaSqm != null) return row;
+    const sqm = toSquareMeters(row.farmSize ?? row.size, row.sizeUnit);
+    return sqm == null ? row : { ...row, normalizedAreaSqm: sqm };
+  });
 }
 
 export function saveFarm({
@@ -187,6 +199,12 @@ export function saveFarm({
     state:    stateCode   || null,
     farmSize: Number.isFinite(sizeNum) ? sizeNum : null,
     sizeUnit: sizeUnit ? String(sizeUnit).trim() : null,
+    // Spec §3: every farm carries a normalizedAreaSqm so yield /
+    // value / NGO-summary math has a single base unit. Computed
+    // from (farmSize, sizeUnit) via the canonical area converter —
+    // returns null when either piece is missing / invalid so
+    // downstream code can handle "unknown area" explicitly.
+    normalizedAreaSqm: toSquareMeters(sizeNum, sizeUnit),
     stage:    stage    ? String(stage).trim()    : null,
     // Farm type tiers the downstream experience (task engine,
     // alerts, recommendations). Canonicalised to one of three
@@ -246,6 +264,13 @@ export function updateFarm(farmId, patch = {}) {
   }
   if (Object.keys(changed).length === 0) return before;
   const after = { ...before, ...changed, updatedAt: Date.now() };
+  // Recompute the normalized area whenever a size- or unit-relevant
+  // field changed so yield / value math keeps a consistent base.
+  if (changed.farmSize != null || changed.sizeUnit != null
+      || changed.size != null) {
+    const size = after.farmSize != null ? after.farmSize : after.size;
+    after.normalizedAreaSqm = toSquareMeters(size, after.sizeUnit);
+  }
   farms[idx] = after;
   writeJson(K.FARMS, farms);
   logEvent({
