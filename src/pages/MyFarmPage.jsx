@@ -23,6 +23,7 @@ import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
 import NotificationPreferencesCard from '../components/NotificationPreferencesCard.jsx';
 import DailyProgressCard from '../components/DailyProgressCard.jsx';
 import CropImage from '../components/CropImage.jsx';
+import CropTimelineCard from '../components/CropTimelineCard.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -321,6 +322,9 @@ export default function MyFarmPage() {
           </button>
         </div>
       )}
+
+      {/* Crop timeline — journey, current stage, next stage, days left */}
+      {farm && <CropTimelineCard farm={farm} />}
 
       {/* Daily progress — streak, score, next action, milestones */}
       {farm && (

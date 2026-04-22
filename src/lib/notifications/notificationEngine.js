@@ -29,6 +29,8 @@
 
 import { getWeatherAction } from '../intelligence/weatherActionEngine.js';
 import { getRiskInsight }   from '../intelligence/riskInsightEngine.js';
+import { getCropTimeline }  from '../timeline/cropTimelineEngine.js';
+import { getStageProgress } from '../timeline/stageProgressEngine.js';
 
 function ymd(date) {
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) return date.slice(0, 10);
@@ -158,6 +160,42 @@ function missedTaskCandidate({ farm, tasks, completions, date, farmType }) {
   };
 }
 
+// ─── Stage-transition candidate ──────────────────────────────────
+// Fires once per crop × stage transition when the timeline engine
+// flags an imminent move (≤ 20% remaining in the current stage). The
+// dedup key embeds the NEXT stage so we never retrigger for the same
+// upcoming transition, and we don't ping again once the crop has
+// actually advanced.
+function stageTransitionCandidate({ farm, date, farmType, now }) {
+  const timeline = getCropTimeline({ farm, now });
+  if (!timeline) return null;
+  const progress = getStageProgress({ timeline });
+  if (!progress || !progress.transitionImminent) return null;
+  if (!timeline.nextStage) return null;
+
+  const farmId = (farm && (farm.id || farm._id)) || 'nofarm';
+  const next = String(timeline.nextStage).replace(/[_-]+/g, ' ');
+  const pretty = next.charAt(0).toUpperCase() + next.slice(1);
+
+  return {
+    key:  `stage_transition:${farmId}:${timeline.nextStage}`,
+    type: 'stage_transition',
+    priority: timeline.nextStage === 'harvest' ? 'high' : 'medium',
+    titleKey:      'notif.stage.title',
+    titleFallback: `Your crop is entering ${next} stage soon.`,
+    bodyKey:       `notif.stage.body.${timeline.nextStage}`,
+    bodyFallback:  timeline.nextStage === 'harvest'
+      ? 'Harvest stage is approaching. Prepare storage and planning.'
+      : `This week\u2019s focus: prepare for ${next} stage.`,
+    vars: { nextStage: pretty },
+    data: { farmId, currentStage: timeline.currentStage,
+            nextStage: timeline.nextStage,
+            daysRemaining: timeline.estimatedDaysRemainingInStage },
+    meta: { ruleTag: 'stage_transition', source: 'cropTimelineEngine',
+            farmType, confidenceLevel: timeline.confidenceLevel },
+  };
+}
+
 // ─── Orchestrator ────────────────────────────────────────────────
 export function generateCandidates({
   user          = null,
@@ -188,6 +226,9 @@ export function generateCandidates({
 
   const missed = missedTaskCandidate({ farm, tasks, completions, date, farmType });
   if (missed) list.push(missed);
+
+  const stageTrans = stageTransitionCandidate({ farm, date, farmType, now });
+  if (stageTrans) list.push(stageTrans);
 
   // Mark each with a shared date + ownerUserId for downstream dedup.
   return list.map((c) => ({

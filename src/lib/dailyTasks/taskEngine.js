@@ -107,13 +107,19 @@ function toTask({ template, farmId, date }) {
   });
 }
 
-export function generateDailyTasks({ farm = null, weather = null, date = null } = {}) {
+export function generateDailyTasks({
+  farm = null, weather = null, date = null,
+  timelineStage = null,   // optional override from cropTimelineEngine
+} = {}) {
   const dateStr   = ymd(date);
   const farmId    = farm && (farm.id || farm._id) || null;
   const farmType  = canonicalFarmType(farm && farm.farmType);
   const allow     = ALLOW_BY_FARM_TYPE[farmType];
-  const stageKey  = canonicalStage(farm && (farm.cropStage || farm.stage))
-                 || 'mid_growth';
+  // Timeline stage (derived from planting date + lifecycle) wins over
+  // the farmer's selected / legacy stage. When callers don't pass one,
+  // we fall through to the farm's persisted stage exactly as before.
+  const rawStage  = timelineStage || (farm && (farm.cropStage || farm.stage));
+  const stageKey  = canonicalStage(rawStage) || 'mid_growth';
   const { generic, cropList } = poolFor(stageKey, farm && farm.crop);
 
   // Crop-specific items sit at the front of the pool (they beat

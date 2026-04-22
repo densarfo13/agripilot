@@ -122,6 +122,21 @@ export function chooseChannels({ candidate, preferences, user = null } = {}) {
       break;
     }
 
+    case 'stage_transition': {
+      if (prefs.riskAlertsEnabled === false) break;   // reuses risk toggle
+      plans.push(row('in_app', 'default', true));
+      // Harvest-stage transitions are high-signal — nudge via SMS
+      // when the farmer has opted in or has no other channel.
+      if (priority === 'high') {
+        if (prefs.smsEnabled && hasPhone(user)) {
+          plans.push(row('sms', 'high_priority', true));
+        } else if (!hasEmail(user) && hasPhone(user)) {
+          plans.push(row('sms', 'phone_only_critical', true));
+        }
+      }
+      break;
+    }
+
     case 'missed_task_reminder': {
       if (prefs.missedTaskRemindersEnabled === false) break;
       plans.push(row('in_app', 'default', true));
