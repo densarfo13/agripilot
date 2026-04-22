@@ -121,10 +121,14 @@ export function detectMilestones({
     });
   }
 
-  // First harvest recorded (a task of type 'harvest' that's complete,
-  // or a completion with template id harvest.*)
+  // First harvest recorded — now also triggered by an actual
+  // harvestRecordStore entry (new harvest system). Task-completion
+  // heuristic kept for back-compat with legacy records.
+  const hasHarvestRecord = !!(farm && Array.isArray(farm.harvestRecords)
+    && farm.harvestRecords.length > 0);
   const harvested =
-       (Array.isArray(tasks) && tasks.some((t) => t && t.type === 'harvest' && t.status === 'complete'))
+       hasHarvestRecord
+    || (Array.isArray(tasks) && tasks.some((t) => t && t.type === 'harvest' && t.status === 'complete'))
     || (Array.isArray(completions) && completions.some((c) => c && typeof c.taskId === 'string' && /harvest\./.test(c.taskId)));
   if (harvested) {
     found.push({
@@ -133,6 +137,19 @@ export function detectMilestones({
       title:      'First harvest recorded',
       messageKey: 'progress.milestone.harvest.message',
       message:    'Harvest logged — a real milestone for your farm.',
+    });
+  }
+
+  // Crop cycle completed — farmer finished a full grow-to-harvest
+  // journey. Fires only when a concrete record exists (the UI passes
+  // it through as farm.harvestRecords).
+  if (hasHarvestRecord) {
+    found.push({
+      type:       'crop_cycle_completed',
+      titleKey:   'progress.milestone.cycleComplete.title',
+      title:      'Crop cycle complete',
+      messageKey: 'progress.milestone.cycleComplete.message',
+      message:    'You closed out a full crop cycle. Time to plan the next one.',
     });
   }
 

@@ -39,6 +39,8 @@ import { normalizeCrop } from '../../config/crops.js';
 import {
   TEMPLATES, GENERIC_FALLBACK, WEATHER_TEMPLATES, ALLOW_BY_FARM_TYPE,
 } from './taskTemplates.js';
+import { getCropCycleState } from '../harvest/cropCycleCompletionEngine.js';
+import { getHarvestTasks }   from '../harvest/harvestTaskEngine.js';
 
 function canonicalFarmType(t) {
   const s = String(t || 'small_farm').toLowerCase().trim();
@@ -120,11 +122,42 @@ export function generateDailyTasks({
   // we fall through to the farm's persisted stage exactly as before.
   const rawStage  = timelineStage || (farm && (farm.cropStage || farm.stage));
   const stageKey  = canonicalStage(rawStage) || 'mid_growth';
+
+  // Consult the harvest cycle engine BEFORE picking a pool:
+  //   • completed → drop growth tasks, return a short "wrap the cycle"
+  //     nudge so the farmer is never task-less
+  //   • harvest_ready → merge the farmType-aware harvest templates
+  //     in front of the usual growth pool so high / medium slots
+  //     prefer harvest work
+  const cycle = getCropCycleState({ farm, now: date });
+  if (cycle.shouldSuppressGrowthTasks) {
+    return Object.freeze({
+      date:  dateStr, farmId, farmType,
+      stage: 'completed', cycleState: cycle.state,
+      weatherTrigger: null,
+      tasks: Object.freeze([toTask({
+        template: {
+          id: 'cycle.completed.plan_next', type: 'harvest', priority: 'medium',
+          title: 'Plan your next crop cycle',
+          description: 'Review this season\u2019s harvest and decide what to plant next.',
+          why: 'A clean handoff from one cycle to the next is where the best seasons start.',
+        },
+        farmId, date: dateStr,
+      })]),
+    });
+  }
+
+  const harvestTemplates = cycle.shouldInjectHarvestTasks
+    ? getHarvestTasks({ farmType, harvestState: cycle.harvestState })
+    : [];
+
   const { generic, cropList } = poolFor(stageKey, farm && farm.crop);
 
-  // Crop-specific items sit at the front of the pool (they beat
-  // generic for the same priority slot).
-  const pool = filterByType([...cropList, ...generic], allow);
+  // Harvest templates lead when active, then crop-specific, then
+  // generic. Each pool still filters by farmType allow-list.
+  const pool = filterByType([
+    ...harvestTemplates, ...cropList, ...generic,
+  ], allow);
 
   const tasks   = [];
   const usedIds = new Set();
@@ -170,6 +203,7 @@ export function generateDailyTasks({
     farmId,
     farmType,
     stage: stageKey,
+    cycleState: cycle.state,
     weatherTrigger: highTpl && highTpl === weatherTpl ? weatherKey : null,
     tasks: Object.freeze(tasks),
   });

@@ -24,6 +24,7 @@ import NotificationPreferencesCard from '../components/NotificationPreferencesCa
 import DailyProgressCard from '../components/DailyProgressCard.jsx';
 import CropImage from '../components/CropImage.jsx';
 import CropTimelineCard from '../components/CropTimelineCard.jsx';
+import HarvestCard from '../components/HarvestCard.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -325,6 +326,9 @@ export default function MyFarmPage() {
 
       {/* Crop timeline — journey, current stage, next stage, days left */}
       {farm && <CropTimelineCard farm={farm} />}
+
+      {/* Harvest — capture form when ready, summary once recorded */}
+      {farm && <HarvestCard farm={farm} />}
 
       {/* Daily progress — streak, score, next action, milestones */}
       {farm && (
