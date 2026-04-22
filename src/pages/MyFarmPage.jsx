@@ -18,6 +18,7 @@ import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
+import FarmInsightCard from '../components/FarmInsightCard.jsx';
 import {
   resolveFindBestCropRoute, destinationToUrl,
   assertFindBestCropNotOnboarding,
@@ -280,6 +281,16 @@ export default function MyFarmPage() {
             {t('myFarm.setupFarm')}
           </button>
         </div>
+      )}
+
+      {/* Farm intelligence — yield / value / weather-action / risk cards */}
+      {farm && (
+        <FarmInsightCard
+          farm={farm}
+          weather={profile?.weather || null}
+          tasks={profile?.tasks || []}
+          issues={profile?.issues || []}
+        />
       )}
 
       {/* Farmer ID + Support — moved here from dashboard */}
