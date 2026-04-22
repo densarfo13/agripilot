@@ -291,9 +291,12 @@ export default function FarmForm({
   }
 
   // ─── Payload builder — CANONICAL VALUES ONLY ──────────────
+  // Wire format matches what the /api/v2/farm-profile/{new,:id}
+  // routes expect AFTER their alias normalisation. We ship BOTH
+  // the frontend-canonical names (`crop`, `state`, `farmSize`) AND
+  // the schema-canonical names (`cropType`, `stateCode`, `size`)
+  // so the routes succeed regardless of which pair they read first.
   function buildPayload() {
-    // Crop: emit either canonical lowercase ('cassava') or the
-    // structured "OTHER:Teff" value the server already understands.
     let cropCanon;
     if (form.crop === 'OTHER') {
       cropCanon = buildOtherCropValue(form.otherCropName);
@@ -301,28 +304,48 @@ export default function FarmForm({
       cropCanon = (normalizeCropCode(form.crop) || '').toLowerCase();
     }
 
-    const unitCanon = normalizeUnit(form.sizeUnit);
+    // Frontend speaks canonical lowercase (sqft / sqm / acres /
+    // hectares). The backend schema wants uppercase short codes
+    // (SQFT / SQM / ACRE / HECTARE). Translate once, here.
+    const unitCanonLower = normalizeUnit(form.sizeUnit);
+    const SERVER_UNIT = { sqft: 'SQFT', sqm: 'SQM',
+                          acres: 'ACRE', hectares: 'HECTARE' };
+    const unitForServer = SERVER_UNIT[unitCanonLower] || null;
+
     const stageCanon = resolveStage(form.cropStage) || form.cropStage;
     const farmTypeCanon = normalizeFarmType(form.farmType);
     const sizeNum = Number(form.farmSize);
 
     const payload = {
       farmName:          form.farmName.trim(),
+
+      // Crop — ship both aliases so the route accepts us regardless.
       crop:              cropCanon,
+      cropType:          cropCanon,
       otherCropName:     cropCanon && cropCanon.startsWith('OTHER:')
         ? form.otherCropName.trim() : '',
+
+      // Country + state — canonical + schema-canonical aliases.
       country:           form.country,
       state:             form.state || '',
+      stateCode:         form.state || '',
+
+      // Farm type — already canonical lowercase via normalizeFarmType.
       farmType:          farmTypeCanon,
+
+      // Size — ship the number under `size` (schema), `farmSize`
+      // (legacy), and `normalizedAreaSqm` (timeline + intelligence).
+      size:              sizeNum,
       farmSize:          sizeNum,
-      size:              sizeNum,               // legacy field name some endpoints still read
-      sizeUnit:          unitCanon,
-      normalizedAreaSqm: toSquareMeters(sizeNum, unitCanon),
+      sizeUnit:          unitForServer,        // UPPERCASE for the schema
+      normalizedAreaSqm: toSquareMeters(sizeNum, unitCanonLower),
+
+      // Stage + planting date feed the timeline engine.
       cropStage:         stageCanon,
       plantingDate:      form.plantingDate || null,
-      // When the farmer checked the override, mirror cropStage into
-      // manualStageOverride so the timeline engine respects it.
+      plantedAt:         form.plantingDate || null,   // schema alias
       manualStageOverride: form.manualStageOverride ? stageCanon : null,
+
       isActiveFarm:      Boolean(form.isActiveFarm),
     };
     return payload;
@@ -344,9 +367,35 @@ export default function FarmForm({
         : await createNewFarm(payload);
       if (typeof onSuccess === 'function') onSuccess(response);
     } catch (error) {
-      // Surface the backend's own error message — formatApiError
-      // prefers error.details / error.message / error.error over a
-      // raw "Validation failed" with no context.
+      // Lift backend fieldErrors onto the matching inline form
+      // fields so the user sees EXACTLY what to fix (not a generic
+      // "Validation failed"). Fallback to a readable banner line
+      // via formatApiError for non-field errors.
+      const payload = (error && (error.response?.data || error.data || error)) || {};
+      const fe = payload && payload.fieldErrors;
+      if (fe && typeof fe === 'object') {
+        // Map server field names → local form field names.
+        const SERVER_TO_LOCAL = {
+          cropType:     'crop',
+          stateCode:    'state',
+          size:         'farmSize',
+          sizeUnit:     'sizeUnit',
+          farmName:     'farmName',
+          farmerName:   'farmName',    // treat as farm-name error; farmForm has no farmerName field
+          country:      'country',
+          farmType:     'farmType',
+          cropStage:    'cropStage',
+          location:     'country',     // location is derived from country/state; flag country
+        };
+        const next = {};
+        for (const [key, msg] of Object.entries(fe)) {
+          const local = SERVER_TO_LOCAL[key] || key;
+          next[local] = String(msg || '').trim();
+        }
+        if (Object.keys(next).length > 0) {
+          setErrors((prev) => ({ ...prev, ...next }));
+        }
+      }
       setSubmitError(formatApiError(error,
         t('farm.err.saveFailed')
           || 'Unable to save the farm right now. Please check your inputs.'));

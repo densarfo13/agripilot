@@ -65,7 +65,28 @@ export function validateResetPasswordPayload(body = {}) {
   return { isValid: Object.keys(errors).length === 0, errors, data: { token, password } };
 }
 
-const VALID_SIZE_UNITS = ['ACRE', 'HECTARE', 'SQUARE_METER'];
+// Canonical uppercase size units accepted on the wire. Small-area
+// units (SQFT / SQM) are required for backyard farms. SQUARE_METER is
+// kept as a legacy alias so old clients that spelled it long-form
+// don't break; the normalisation below collapses both to 'SQM'.
+const VALID_SIZE_UNITS = ['ACRE', 'HECTARE', 'SQFT', 'SQM', 'SQUARE_METER'];
+
+// Map every incoming unit shape (short codes, legacy long form,
+// lowercase frontend values, "sq ft"/"sq m" display strings) onto
+// the canonical uppercase code the schema + downstream engines use.
+const SIZE_UNIT_ALIASES = {
+  ACRE: 'ACRE', ACRES: 'ACRE',
+  HECTARE: 'HECTARE', HECTARES: 'HECTARE', HA: 'HECTARE',
+  SQFT: 'SQFT', 'SQ FT': 'SQFT', 'SQUARE FEET': 'SQFT', 'SQUARE_FEET': 'SQFT',
+  SQM: 'SQM', 'SQ M': 'SQM', 'SQUARE METER': 'SQM', 'SQUARE_METER': 'SQM',
+  'SQUARE METERS': 'SQM', 'M2': 'SQM',
+};
+
+function normalizeSizeUnit(raw) {
+  if (raw == null) return null;
+  const up = String(raw).trim().toUpperCase().replace(/\s+/g, ' ');
+  return SIZE_UNIT_ALIASES[up] || (VALID_SIZE_UNITS.includes(up) ? up : null);
+}
 const VALID_EXPERIENCE_LEVELS = ['new', 'experienced'];
 // U.S. farm-type extensions — optional on all flows; null-safe.
 const VALID_FARM_TYPES = ['backyard', 'small_farm', 'commercial'];
@@ -87,18 +108,37 @@ export function validateFarmProfilePayload(body = {}) {
   const farmerName = toNullableString(body.farmerName);
   const farmName = toNullableString(body.farmName);
   const country = toNullableString(body.country);
-  const location = toNullableString(body.location);
-  const cropType = toNullableString(body.cropType);
-  const size = toNullableNumber(body.size);
+  // Accept either `location` (canonical) or `locationLabel` /
+  // `locationName` (display aliases the frontend has shipped over
+  // time). Any of them satisfies the required-location check.
+  const location = toNullableString(
+    body.location != null ? body.location
+    : body.locationLabel != null ? body.locationLabel
+    : body.locationName,
+  );
+  // Accept either `cropType` (canonical, used by the schema) or
+  // `crop` (the shorthand the FarmForm ships). Both route to the
+  // same persisted column.
+  const cropType = toNullableString(
+    body.cropType != null ? body.cropType : body.crop,
+  );
+  // Accept both the canonical `size` and the common `farmSize` alias
+  // the FarmForm ships so a simple rename on one side never causes
+  // a "Validation failed" dead-end.
+  const size = toNullableNumber(
+    body.size != null ? body.size : body.farmSize,
+  );
   const rawUnit = toNullableString(body.sizeUnit);
-  const sizeUnit = rawUnit && VALID_SIZE_UNITS.includes(rawUnit.toUpperCase())
-    ? rawUnit.toUpperCase()
-    : 'ACRE'; // backward compatible default
+  const normalisedUnit = normalizeSizeUnit(rawUnit);
+  const sizeUnit = normalisedUnit || 'ACRE'; // backward compatible default
   const gpsLat = toNullableNumber(body.gpsLat);
   const gpsLng = toNullableNumber(body.gpsLng);
   const experienceLevel = toNullableString(body.experienceLevel);
   // U.S. state-aware fields — all optional, never required.
-  const stateCodeRaw = toNullableString(body.stateCode);
+  // Accept `stateCode` (canonical) or `state` (frontend alias).
+  const stateCodeRaw = toNullableString(
+    body.stateCode != null ? body.stateCode : body.state,
+  );
   const stateCode = stateCodeRaw ? stateCodeRaw.toUpperCase() : null;
   const farmTypeRaw = toNullableString(body.farmType);
   const farmType = farmTypeRaw ? farmTypeRaw.toLowerCase() : null;
@@ -123,6 +163,14 @@ export function validateFarmProfilePayload(body = {}) {
 
   if (size === null) errors.size = 'Farm size is required';
   else if (Number.isNaN(size) || size <= 0) errors.size = 'Farm size must be greater than 0';
+
+  // Explicit unit rejection — silent fallback to ACRE is fine for
+  // legacy clients that never sent a unit, but a real value that
+  // can't be parsed should surface as a field error instead of
+  // silently corrupting storage.
+  if (rawUnit && !normalisedUnit) {
+    errors.sizeUnit = `Invalid size unit: ${rawUnit}`;
+  }
 
   // GPS is optional — only validate format if provided
   if (gpsLat !== null && (Number.isNaN(gpsLat) || gpsLat < -90 || gpsLat > 90)) {

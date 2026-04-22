@@ -48,11 +48,33 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Classify a raw axios error into a user-friendly message string.
-// Handles network errors, timeouts, and server-sent error payloads.
+// Classify a raw error (axios OR the fetch-based src/lib/api.js
+// wrapper) into a user-friendly message string. Handles network
+// errors, timeouts, and server-sent error payloads — and, crucially
+// for the farm form, surfaces the backend's per-field validation
+// summary instead of a generic "Validation failed".
 export function formatApiError(err, fallback = 'Something went wrong. Please try again.') {
+  if (!err) return fallback;
+
+  // Fetch-wrapper shape: err.status + err.fieldErrors + err.message.
+  // No .response property, but status IS present — treat as a real
+  // server response, not a connectivity failure.
+  if (err.status && !err.response) {
+    if (err.status === 429) {
+      return 'Too many requests — please wait a moment and try again.';
+    }
+    const fe = err.fieldErrors;
+    if (fe && typeof fe === 'object') {
+      const summary = Object.entries(fe)
+        .map(([k, v]) => `${prettyField(k)}: ${v}`)
+        .join('; ');
+      if (summary) return summary;
+    }
+    return err.message || fallback;
+  }
+
   if (!err.response) {
-    // No response received — connectivity or timeout issue
+    // No response received AND no status — genuine connectivity issue.
     return 'No network connection — check your signal and try again.';
   }
   // Rate limited — show user-friendly message with retry hint
@@ -63,7 +85,37 @@ export function formatApiError(err, fallback = 'Something went wrong. Please try
       ? `Too many requests — please wait ${seconds} seconds and try again.`
       : 'Too many requests — please wait a moment and try again.';
   }
-  return err.response?.data?.error || err.message || fallback;
+  // Axios: prefer the backend's fieldErrors summary when present.
+  const fe = err.response?.data?.fieldErrors;
+  if (fe && typeof fe === 'object') {
+    const summary = Object.entries(fe)
+      .map(([k, v]) => `${prettyField(k)}: ${v}`)
+      .join('; ');
+    if (summary) return summary;
+  }
+  return err.response?.data?.error || err.response?.data?.message
+    || err.message || fallback;
+}
+
+// Map server field keys → human-readable labels for the error
+// summary. Unknown keys pass through as-is (lowercased).
+function prettyField(key) {
+  const MAP = {
+    farmerName: 'Farmer name',
+    farmName:   'Farm name',
+    country:    'Country',
+    location:   'Location',
+    cropType:   'Crop',
+    crop:       'Crop',
+    size:       'Farm size',
+    farmSize:   'Farm size',
+    sizeUnit:   'Size unit',
+    stateCode:  'State',
+    state:      'State',
+    farmType:   'Farm type',
+    cropStage:  'Crop stage',
+  };
+  return MAP[key] || String(key || '').trim();
 }
 
 // Response interceptor: 401 logout + network error tagging + GET auto-retry

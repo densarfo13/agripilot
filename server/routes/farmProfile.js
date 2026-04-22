@@ -247,11 +247,42 @@ router.post('/', authenticate, async (req, res) => {
 // Does NOT deactivate other farms — multiple farms stay active
 router.post('/new', authenticate, async (req, res) => {
   try {
-    const validation = validateFarmProfilePayload(req.body || {});
+    // Fall back to the authenticated user's own name when the
+    // caller didn't include farmerName in the payload — every
+    // FarmForm submit now hits this path and the field is no
+    // longer a human-entered one.
+    const body = { ...(req.body || {}) };
+    if (!body.farmerName && req.user) {
+      body.farmerName = req.user.fullName || req.user.name || req.user.email || 'Farmer';
+    }
+    // Accept `farmSize` as a `size` alias so the FarmForm ships
+    // with the same field it renders.
+    if (body.farmSize != null && body.size == null) body.size = body.farmSize;
+    // Accept `state` as a `stateCode` alias.
+    if (body.state != null && body.stateCode == null) body.stateCode = body.state;
+    // Accept `crop` as a `cropType` alias (canonical lowercase OK).
+    if (body.crop != null && body.cropType == null) body.cropType = body.crop;
+    // If the farmer didn't supply an explicit location string, fall
+    // back to "State, Country" so the required-location check passes
+    // instead of bouncing the form.
+    if (!body.location && !body.locationLabel && !body.locationName) {
+      const s = body.stateCode || body.state;
+      const c = body.country;
+      if (s && c)        body.location = `${s}, ${c}`;
+      else if (c)        body.location = String(c);
+    }
+    const validation = validateFarmProfilePayload(body);
     if (!validation.isValid) {
+      // Surface a readable summary in `error` so clients that only
+      // render one line of feedback still see the actual reason.
+      // `fieldErrors` is kept for clients that want per-field.
+      const fieldSummary = Object.entries(validation.errors)
+        .map(([field, msg]) => `${field}: ${msg}`)
+        .join('; ');
       return res.status(400).json({
         success: false,
-        error: 'Validation failed',
+        error: fieldSummary || 'Validation failed',
+        message: fieldSummary || 'Validation failed',
         fieldErrors: validation.errors,
       });
     }
@@ -559,6 +590,17 @@ router.patch('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Farm not found' });
     }
 
+    // Accept aliases the FarmForm ships (symmetric with POST /new):
+    //   crop     ↔ cropType
+    //   state    ↔ stateCode
+    //   farmSize ↔ size
+    //   plantingDate ↔ plantedAt
+    const body = { ...(req.body || {}) };
+    if (body.crop != null && body.cropType == null) body.cropType = body.crop;
+    if (body.state != null && body.stateCode == null) body.stateCode = body.state;
+    if (body.farmSize != null && body.size == null) body.size = body.farmSize;
+    if (body.plantingDate != null && body.plantedAt == null) body.plantedAt = body.plantingDate;
+
     // Only allow updating specific fields — never userId, farmerUuid
     const allowedFields = [
       'farmerName', 'farmName', 'country', 'location', 'cropType',
@@ -570,7 +612,46 @@ router.patch('/:id', authenticate, async (req, res) => {
     ];
     const patch = {};
     for (const key of allowedFields) {
-      if (req.body[key] !== undefined) patch[key] = req.body[key];
+      if (body[key] !== undefined) patch[key] = body[key];
+    }
+
+    // Normalise sizeUnit if the caller sent a legacy / lowercase
+    // form ("sqft", "sq ft", "hectares") — mirrors the /new path.
+    if (patch.sizeUnit !== undefined) {
+      const raw = String(patch.sizeUnit).trim().toUpperCase().replace(/\s+/g, ' ');
+      const MAP = {
+        ACRES: 'ACRE', ACRE: 'ACRE',
+        HECTARES: 'HECTARE', HECTARE: 'HECTARE', HA: 'HECTARE',
+        SQFT: 'SQFT', 'SQ FT': 'SQFT', 'SQUARE FEET': 'SQFT',
+        SQM: 'SQM', 'SQ M': 'SQM', 'SQUARE METER': 'SQM',
+        'SQUARE METERS': 'SQM', 'SQUARE_METER': 'SQM', M2: 'SQM',
+      };
+      const VALID = new Set(['ACRE', 'HECTARE', 'SQFT', 'SQM']);
+      const normalised = MAP[raw] || (VALID.has(raw) ? raw : null);
+      if (!normalised) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid size unit: ${patch.sizeUnit}`,
+          message: `Invalid size unit: ${patch.sizeUnit}`,
+          fieldErrors: { sizeUnit: `Invalid size unit: ${patch.sizeUnit}` },
+        });
+      }
+      patch.sizeUnit = normalised;
+    }
+
+    // Surface an explicit error when size is non-positive — silent
+    // coercion is how the old "Validation failed" dead-end happened.
+    if (patch.size !== undefined) {
+      const n = Number(patch.size);
+      if (!Number.isFinite(n) || n <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Farm size must be greater than 0',
+          message: 'Farm size must be greater than 0',
+          fieldErrors: { size: 'Farm size must be greater than 0' },
+        });
+      }
+      patch.size = n;
     }
 
     // If size/sizeUnit changed, recompute normalized fields
