@@ -6,6 +6,8 @@ import { extractOrganization } from '../../middleware/orgScope.js';
 import { dedupGuard } from '../../middleware/dedup.js';
 import prisma from '../../config/database.js';
 import { writeAuditLog } from '../audit/service.js';
+import { buildOrganizationDashboard, listOrganizationFarmers } from './dashboardService.js';
+import { buildFarmersCsv, buildDashboardCsv } from './exportService.js';
 
 const router = Router();
 router.use(authenticate);
@@ -68,6 +70,99 @@ router.get('/:id',
     });
 
     res.json({ ...org, _count: { ...org._count, applications: appCount } });
+  }));
+
+// ─── Organization dashboard ─────────────────────────────────────
+// Aggregate metrics for an org: total farmers, active vs inactive,
+// crop distribution, average Farroway Score, risk indicators,
+// aggregate yield projection. Mobile-friendly single JSON payload.
+function canViewOrg(req, orgId) {
+  if (req.user.role === 'super_admin') return true;
+  if (req.user.role === 'institutional_admin' && req.organizationId === orgId) return true;
+  return false;
+}
+
+router.get('/:id/dashboard',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    if (!canViewOrg(req, req.params.id)) {
+      return res.status(403).json({ error: 'Access denied — not your organization' });
+    }
+    const windowDays = Math.min(180, Math.max(7, Number(req.query.windowDays) || 30));
+    const out = await buildOrganizationDashboard(prisma, {
+      organizationId: req.params.id, windowDays,
+    });
+    if (!out) return res.status(404).json({ error: 'Organization not found' });
+    res.json(out);
+  }));
+
+// ─── Farmer list for the dashboard table ────────────────────────
+// Paginated + filterable (region, crop, score range). Institutional
+// admin is auto-scoped to their own org; super_admin can view any.
+router.get('/:id/farmers',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    if (!canViewOrg(req, req.params.id)) {
+      return res.status(403).json({ error: 'Access denied — not your organization' });
+    }
+    const out = await listOrganizationFarmers(prisma, {
+      organizationId: req.params.id,
+      region:   req.query.region || null,
+      crop:     req.query.crop || null,
+      scoreMin: req.query.scoreMin != null ? Number(req.query.scoreMin) : null,
+      scoreMax: req.query.scoreMax != null ? Number(req.query.scoreMax) : null,
+      page:     Number(req.query.page)  || 1,
+      limit:    Number(req.query.limit) || 50,
+    });
+    if (!out.ok) return res.status(500).json({ error: out.reason || 'failed' });
+    res.json({ data: out.data, total: out.total, page: out.page, limit: out.limit });
+  }));
+
+// ─── CSV exports ────────────────────────────────────────────────
+// ?kind=farmers (default) → one row per farmer with score + crop
+// ?kind=dashboard         → compact metric summary + crop/yield tables
+router.get('/:id/export',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    if (!canViewOrg(req, req.params.id)) {
+      return res.status(403).json({ error: 'Access denied — not your organization' });
+    }
+    const kind = String(req.query.kind || 'farmers').toLowerCase();
+    const org  = await prisma.organization.findUnique({
+      where: { id: req.params.id }, select: { id: true, name: true },
+    });
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    const safeName = String(org.name || 'org').replace(/[^A-Za-z0-9_-]+/g, '_').toLowerCase();
+
+    if (kind === 'dashboard') {
+      const dash = await buildOrganizationDashboard(prisma, {
+        organizationId: req.params.id,
+        windowDays: Math.min(180, Math.max(7, Number(req.query.windowDays) || 30)),
+      });
+      res.setHeader('Content-Disposition',
+        `attachment; filename="farroway_${safeName}_dashboard.csv"`);
+      return res.send(buildDashboardCsv(dash));
+    }
+
+    // Default: farmers export (respects the same filters as the list).
+    const out = await listOrganizationFarmers(prisma, {
+      organizationId: req.params.id,
+      region:   req.query.region || null,
+      crop:     req.query.crop || null,
+      scoreMin: req.query.scoreMin != null ? Number(req.query.scoreMin) : null,
+      scoreMax: req.query.scoreMax != null ? Number(req.query.scoreMax) : null,
+      page: 1,
+      limit: Math.min(2000, Math.max(1, Number(req.query.limit) || 1000)),
+    });
+    if (!out.ok) return res.status(500).json({ error: out.reason || 'export_failed' });
+    res.setHeader('Content-Disposition',
+      `attachment; filename="farroway_${safeName}_farmers.csv"`);
+    res.send(buildFarmersCsv(out.data, { org }));
   }));
 
 // Create organization (super_admin only)

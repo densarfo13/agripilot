@@ -7254,6 +7254,46 @@ const T = {
   'bulk.myRequest.declined':       { en: 'declined', fr: 'refusé', sw: 'walikataa', ha: 'sun ki', tw: 'annyae' },
   'bulk.myRequest.pending':        { en: 'still deciding', fr: 'en attente', sw: 'bado wanaamua', ha: 'har yanzu ba a yanke ba', tw: 'reyɛ adwene' },
   'common.cancel':                 { en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae' },
+  'common.back':                   { en: 'Back', fr: 'Retour', sw: 'Rudi', ha: 'Baya', tw: 'San kɔ akyi' },
+
+  // ─── Organization Dashboard ───────────────────────────────────
+  'orgDashboard.title':             { en: 'Organization dashboard', fr: 'Tableau de bord', sw: 'Dashibodi ya shirika', ha: 'Dashboard na ƙungiya', tw: 'Ahyehyɛdeɛ dashboard' },
+  'orgDashboard.loading':           { en: 'Loading dashboard\u2026', fr: 'Chargement\u2026', sw: 'Inapakia\u2026', ha: 'Ana lodawa\u2026', tw: 'Rehwehwɛ\u2026' },
+  'orgDashboard.loadingFarmers':    { en: 'Loading farmers\u2026', fr: 'Chargement des agriculteurs\u2026', sw: 'Inapakia wakulima\u2026', ha: 'Ana lodin manoma\u2026', tw: 'Rehwehwɛ akuafoɔ\u2026' },
+  'orgDashboard.error':             { en: 'Could not load the dashboard. You might not have access to this organization.', fr: 'Impossible de charger.', sw: 'Imeshindwa kupakia.', ha: 'Ba a iya lodawa ba.', tw: 'Yɛantumi anload.' },
+  'orgDashboard.noFarmers':         { en: 'No farmers match these filters.', fr: 'Aucun agriculteur ne correspond aux filtres.', sw: 'Hakuna wakulima.', ha: 'Babu manoma.', tw: 'Akuafoɔ biara nni hɔ.' },
+  'orgDashboard.exportDashboard':   { en: 'Export summary', fr: 'Exporter résumé', sw: 'Hamisha muhtasari', ha: 'Fitar da taƙaitawa', tw: 'Yi summary no fi' },
+  'orgDashboard.exportFarmers':     { en: 'Export farmers', fr: 'Exporter agriculteurs', sw: 'Hamisha wakulima', ha: 'Fitar da manoma', tw: 'Yi akuafoɔ no fi' },
+
+  'orgDashboard.window.7':          { en: 'Last 7 days', fr: '7 derniers jours', sw: 'Siku 7', ha: 'Kwanaki 7', tw: 'Nna 7' },
+  'orgDashboard.window.30':         { en: 'Last 30 days', fr: '30 derniers jours', sw: 'Siku 30', ha: 'Kwanaki 30', tw: 'Nna 30' },
+  'orgDashboard.window.90':         { en: 'Last 90 days', fr: '90 derniers jours', sw: 'Siku 90', ha: 'Kwanaki 90', tw: 'Nna 90' },
+
+  'orgDashboard.tile.total':        { en: 'Total farmers', fr: 'Agriculteurs totaux', sw: 'Wakulima jumla', ha: 'Jimillar manoma', tw: 'Akuafoɔ nyinaa' },
+  'orgDashboard.tile.active':       { en: 'Active', fr: 'Actifs', sw: 'Wanafanya kazi', ha: 'Masu aiki', tw: 'Wɔreyɛ adwuma' },
+  'orgDashboard.tile.inactive':     { en: 'Inactive', fr: 'Inactifs', sw: 'Hawafanyi kazi', ha: 'Ba sa aiki', tw: 'Wɔnnyɛ adwuma' },
+  'orgDashboard.tile.avgScore':     { en: 'Avg Farroway Score', fr: 'Score Farroway moyen', sw: 'Wastani wa alama', ha: 'Matsakaicin matsayi', tw: 'Nkyerɛwdeɛ ntam' },
+  'orgDashboard.tile.yield':        { en: 'Projected yield', fr: 'Rendement prévu', sw: 'Mavuno yaliyokadiriwa', ha: 'Amfani da aka ƙiyasta', tw: 'Aba a wɔbɛfa' },
+  'orgDashboard.tile.risk':         { en: 'Farmers with alerts', fr: 'Agriculteurs avec alertes', sw: 'Wakulima walio na arifa', ha: 'Manoma masu faɗakarwa', tw: 'Akuafoɔ a wɔwɔ kɔkɔbɔ' },
+  'orgDashboard.tile.from':         { en: 'from', fr: 'sur', sw: 'kutoka', ha: 'daga', tw: 'fi' },
+  'orgDashboard.tile.noScores':     { en: 'no scores yet', fr: 'pas encore de scores', sw: 'bado hakuna alama', ha: 'babu matsayi tukuna', tw: 'nkyerɛwdeɛ biara nni hɔ' },
+  'orgDashboard.tile.yieldSource':  { en: 'estimated', fr: 'estimé', sw: 'kadirio', ha: 'ƙiyasin', tw: 'akontabu' },
+
+  'orgDashboard.cropDist':          { en: 'Crop distribution', fr: 'Répartition des cultures', sw: 'Mgawanyo wa mazao', ha: 'Rarraba amfani', tw: 'Nnɔbae mu nhyehyɛe' },
+  'orgDashboard.farmers':           { en: 'Farmers', fr: 'Agriculteurs', sw: 'Wakulima', ha: 'Manoma', tw: 'Akuafoɔ' },
+
+  'orgDashboard.filter.region':     { en: 'Filter by region', fr: 'Filtrer par région', sw: 'Chuja kwa eneo', ha: 'Tace ta yanki', tw: 'Yiyi man' },
+  'orgDashboard.filter.crop':       { en: 'Filter by crop', fr: 'Filtrer par culture', sw: 'Chuja kwa mazao', ha: 'Tace ta amfani', tw: 'Yiyi nnɔbae' },
+  'orgDashboard.filter.scoreMin':   { en: 'Score \u2265', fr: 'Score \u2265', sw: 'Alama \u2265', ha: 'Matsayi \u2265', tw: 'Nkyerɛwdeɛ \u2265' },
+  'orgDashboard.filter.scoreMax':   { en: 'Score \u2264', fr: 'Score \u2264', sw: 'Alama \u2264', ha: 'Matsayi \u2264', tw: 'Nkyerɛwdeɛ \u2264' },
+
+  'orgDashboard.col.name':          { en: 'Farmer', fr: 'Agriculteur', sw: 'Mkulima', ha: 'Manomi', tw: 'Okuafoɔ' },
+  'orgDashboard.col.region':        { en: 'Region', fr: 'Région', sw: 'Eneo', ha: 'Yanki', tw: 'Man' },
+  'orgDashboard.col.crop':          { en: 'Crop', fr: 'Culture', sw: 'Mazao', ha: 'Amfani', tw: 'Nnɔbae' },
+  'orgDashboard.col.score':         { en: 'Score', fr: 'Score', sw: 'Alama', ha: 'Matsayi', tw: 'Nkyerɛwdeɛ' },
+  'orgDashboard.col.status':        { en: 'Status', fr: 'Statut', sw: 'Hali', ha: 'Matsayi', tw: 'Tebea' },
+
+  'admin.viewDashboard':            { en: 'View dashboard \u2192', fr: 'Voir le tableau de bord \u2192', sw: 'Tazama dashibodi \u2192', ha: 'Duba dashboard \u2192', tw: 'Hwɛ dashboard \u2192' },
 
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },

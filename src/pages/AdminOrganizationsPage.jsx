@@ -70,6 +70,21 @@ export default function AdminOrganizationsPage() {
                         {org.isActive ? t('admin.active') : t('admin.inactive')}
                       </span>
                     </div>
+                    <a
+                      href={`/admin/organizations/${org.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        display: 'inline-block', marginBottom: '0.75rem',
+                        padding: '4px 10px', borderRadius: 6,
+                        background: 'rgba(34,197,94,0.14)',
+                        color: '#86EFAC', fontSize: '0.8rem',
+                        fontWeight: 600, textDecoration: 'none',
+                      }}
+                      data-testid={`org-dashboard-link-${org.id}`}
+                    >
+                      {t('admin.viewDashboard') !== 'admin.viewDashboard'
+                        ? t('admin.viewDashboard') : 'View dashboard →'}
+                    </a>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
                       <div style={{ textAlign: 'center', padding: '0.5rem', background: '#1E293B', borderRadius: 6 }}>
