@@ -6,7 +6,7 @@
  * no technical fields. Dark theme, inline styles, all text via useTranslation().
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -20,6 +20,9 @@ import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
 import FarmInsightCard from '../components/FarmInsightCard.jsx';
 import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
+import NotificationPreferencesCard from '../components/NotificationPreferencesCard.jsx';
+import { processNotifications } from '../lib/notifications/notificationScheduler.js';
+import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
   resolveFindBestCropRoute, destinationToUrl,
   assertFindBestCropNotOnboarding,
@@ -102,6 +105,33 @@ export default function MyFarmPage() {
     removeAvatar();
     setAvatarUrl(null);
   }
+
+  // Run the notification scheduler once per mount — generates
+  // candidates (daily task, weather, risk, missed-task) and stores
+  // the in-app ones. Safe to call on every open; dedup guarantees no
+  // duplicates within the same day.
+  useEffect(() => {
+    if (!profile) return;
+    const farmObj = profile;
+    try {
+      const todayPlan = getTodayTasks({
+        farm: {
+          id: farmObj.id, crop: farmObj.crop || farmObj.cropType,
+          farmType: farmObj.farmType, cropStage: farmObj.cropStage,
+          countryCode: farmObj.countryCode || farmObj.country,
+        },
+        weather: profile.weather || null,
+      });
+      processNotifications({
+        user, farm: farmObj,
+        tasks: todayPlan && todayPlan.tasks ? todayPlan.tasks : [],
+        weather: profile.weather || null,
+        issues: profile.issues || [],
+        language: profile.language || 'en',
+      }).catch(() => { /* non-fatal — scheduler never breaks the page */ });
+    } catch { /* ignore — scheduler is best-effort */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile && profile.id]);
 
   const farmerName = user?.fullName || profile?.farmerName || '';
 
@@ -298,6 +328,9 @@ export default function MyFarmPage() {
           issues={profile?.issues || []}
         />
       )}
+
+      {/* Notification preferences */}
+      <NotificationPreferencesCard />
 
       {/* Farmer ID + Support — moved here from dashboard */}
       <div style={S.cardWrap}>
