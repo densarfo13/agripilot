@@ -36,6 +36,10 @@ import {
   COUNTRIES, getStatesForCountry, hasStatesForCountry,
 } from '../config/countriesStates.js';
 import {
+  getAllowedSizeUnits, convertSize,
+  getFarmSizeLabel, getUnitLabel, normalizeSizeUnit, normalizeFarmType,
+} from '../config/onboardingLabels.js';
+import {
   searchCrops, normalizeCrop, CROP_OTHER, getCropLabel,
 } from '../config/crops.js';
 
@@ -127,6 +131,50 @@ export default function EditFarmScreen() {
     if (fieldErrors[field]) {
       setFieldErrors((prev) => ({ ...prev, [field]: '' }));
     }
+  }
+
+  // Farm-type change may invalidate the current size unit when the
+  // tier changes (backyard ↔ small/commercial). Within-tier changes
+  // (small ↔ commercial) keep the unit. Cross-tier changes reset
+  // the numeric value to avoid absurd auto-conversions (sqft → acres).
+  function changeFarmType(nextType) {
+    setForm((prev) => {
+      const prevT = normalizeFarmType(prev.farmType);
+      const nextT = normalizeFarmType(nextType);
+      if (prevT === nextT) return { ...prev, farmType: nextT };
+      const allowed = getAllowedSizeUnits(nextT, prev.country);
+      const currentUnit = normalizeSizeUnit(prev.sizeUnit);
+      const stillOk = allowed.includes(currentUnit);
+      return {
+        ...prev,
+        farmType: nextT,
+        sizeUnit: stillOk ? currentUnit : allowed[0],
+        size: stillOk ? prev.size : '',
+      };
+    });
+    if (fieldErrors.farmType || fieldErrors.sizeUnit || fieldErrors.size) {
+      setFieldErrors((prev) => ({
+        ...prev, farmType: '', sizeUnit: '', size: '',
+      }));
+    }
+  }
+
+  // Same-tier unit switch (sqft ↔ sqm, acres ↔ hectares) auto-
+  // converts the numeric value so the farmer doesn't lose context.
+  function changeSizeUnit(nextUnit) {
+    setForm((prev) => {
+      const from = normalizeSizeUnit(prev.sizeUnit);
+      const to   = normalizeSizeUnit(nextUnit);
+      if (from === to) return { ...prev, sizeUnit: to };
+      const n = Number(prev.size);
+      if (!Number.isFinite(n) || n <= 0) return { ...prev, sizeUnit: to };
+      const { value, ok } = convertSize(n, from, to);
+      return {
+        ...prev,
+        sizeUnit: to,
+        size: ok && value != null ? String(value) : prev.size,
+      };
+    });
   }
 
   // Country change resets the dependent state dropdown so the user
@@ -430,7 +478,7 @@ export default function EditFarmScreen() {
               <button
                 key={opt.code}
                 type="button"
-                onClick={() => update('farmType', opt.code)}
+                onClick={() => changeFarmType(opt.code)}
                 style={{
                   ...S.chip,
                   ...(form.farmType === opt.code ? S.chipActive : null),
@@ -446,7 +494,10 @@ export default function EditFarmScreen() {
 
         <div style={S.row}>
           <label style={{ ...S.label, flex: 1 }}>
-            {resolve(t, 'setup.farmSize', 'Farm size (optional)')}
+            {/* Label reflects tier: backyard reads "(Small Area)";
+                small / commercial read "(Land Area)" — keeps the
+                input honest about the magnitude being entered. */}
+            {getFarmSizeLabel(form.farmType, lang)}
             <input
               type="number"
               min="0"
@@ -462,14 +513,20 @@ export default function EditFarmScreen() {
           </label>
           <label style={{ ...S.label, width: '8rem' }}>
             {resolve(t, 'setup.sizeUnit', 'Unit')}
+            {/* Allowed units are derived from farmType + country:
+                backyard → SQFT / SQM (US default = SQFT)
+                small / commercial → ACRE / HECTARE
+                Within-tier switches convert the numeric value. */}
             <select
               className="form-select"
-              value={form.sizeUnit}
-              onChange={(e) => update('sizeUnit', e.target.value)}
+              value={normalizeSizeUnit(form.sizeUnit)}
+              onChange={(e) => changeSizeUnit(e.target.value)}
               style={S.select}
+              data-testid="edit-farm-size-unit"
             >
-              <option value="ACRE">{resolve(t, 'setup.acres', 'Acres')}</option>
-              <option value="HECTARE">{resolve(t, 'setup.hectares', 'Hectares')}</option>
+              {getAllowedSizeUnits(form.farmType, form.country).map((u) => (
+                <option key={u} value={u}>{getUnitLabel(u, lang)}</option>
+              ))}
             </select>
           </label>
         </div>

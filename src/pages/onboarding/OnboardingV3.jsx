@@ -37,6 +37,7 @@ import {
 import {
   getFarmTypeLabel, getUnitLabel, getCropStageLabel,
   normalizeFarmType, normalizeSizeUnit, normalizeCropStage,
+  getAllowedSizeUnits, getDefaultSizeUnit, convertSize, getFarmSizeLabel,
   FARM_TYPES, SIZE_UNITS, CROP_STAGES,
 } from '../../config/onboardingLabels.js';
 import {
@@ -143,6 +144,63 @@ export default function OnboardingV3() {
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
   }, []);
+
+  // Changing farm type may invalidate the current size unit:
+  //   backyard → small/commercial : SQFT/SQM → not allowed
+  //   small/commercial → backyard : ACRE/HECTARE → not allowed
+  // Within-tier changes (e.g. "small" ↔ "commercial") keep the unit.
+  // Cross-tier → pick the default unit for the new tier AND reset
+  // the numeric value: auto-converting 400 sqft into 0.009 acres is
+  // more confusing than a blank input.
+  const changeFarmType = useCallback((nextType) => {
+    setForm((f) => {
+      const prev = normalizeFarmType(f.farmType);
+      const next = normalizeFarmType(nextType);
+      if (prev === next) return { ...f, farmType: next };
+      const allowed = getAllowedSizeUnits(next, f.country);
+      const currentUnit = normalizeSizeUnit(f.sizeUnit);
+      const stillOk = allowed.includes(currentUnit);
+      return {
+        ...f,
+        farmType: next,
+        sizeUnit: stillOk ? currentUnit : allowed[0],
+        farmSize: stillOk ? f.farmSize : '',
+      };
+    });
+    setErrors((e) => {
+      if (!e.farmType && !e.sizeUnit && !e.farmSize) return e;
+      const { farmType: _a, sizeUnit: _b, farmSize: _c, ...rest } = e;
+      return rest;
+    });
+  }, []);
+
+  // Switching within the same tier (sqft ↔ sqm, acres ↔ hectares)
+  // converts the numeric value so the farmer doesn't lose context.
+  const changeSizeUnit = useCallback((nextUnit) => {
+    setForm((f) => {
+      const fromUnit = normalizeSizeUnit(f.sizeUnit);
+      const toUnit   = normalizeSizeUnit(nextUnit);
+      if (fromUnit === toUnit) return { ...f, sizeUnit: toUnit };
+      const numeric = Number(f.farmSize);
+      if (!Number.isFinite(numeric) || numeric <= 0) {
+        return { ...f, sizeUnit: toUnit };   // nothing to convert
+      }
+      const { value, ok } = convertSize(numeric, fromUnit, toUnit);
+      return {
+        ...f,
+        sizeUnit: toUnit,
+        farmSize: ok && value != null ? String(value) : f.farmSize,
+      };
+    });
+    setErrors((e) => (e.sizeUnit ? { ...e, sizeUnit: undefined } : e));
+  }, []);
+
+  // Keep the allowed-unit list reactive to both farmType AND country
+  // (US backyard → sqft first, elsewhere → sqm first).
+  const allowedUnits = useMemo(
+    () => getAllowedSizeUnits(form.farmType, form.country),
+    [form.farmType, form.country],
+  );
 
   const cropSuggestions = useMemo(
     () => searchCrops(cropQuery, { limit: 12, lang }),
@@ -412,7 +470,7 @@ export default function OnboardingV3() {
                   <ChoiceChip
                     key={code}
                     active={normalizeFarmType(form.farmType) === code}
-                    onClick={() => update('farmType', code)}
+                    onClick={() => changeFarmType(code)}
                     label={getFarmTypeLabel(code, lang)}
                     testid={`onboarding-farm-type-${code}`}
                   />
@@ -421,7 +479,11 @@ export default function OnboardingV3() {
             </Field>
 
             <div style={S.row}>
-              <Field label={L.farmSizeLbl} error={errors.farmSize} style={{ flex: 1 }}>
+              <Field
+                label={getFarmSizeLabel(form.farmType, lang)}
+                error={errors.farmSize}
+                style={{ flex: 1 }}
+              >
                 <input
                   type="number"
                   inputMode="decimal"
@@ -439,12 +501,18 @@ export default function OnboardingV3() {
                 />
               </Field>
               <Field label={L.sizeUnitLbl} style={{ width: '9rem' }}>
+                {/* Chip list is driven by the current farmType + country:
+                    backyard → SQFT / SQM (US: sqft first, else sqm first)
+                    small / commercial → ACRE / HECTARE. Switching within
+                    the same tier auto-converts the numeric value via
+                    changeSizeUnit; switching farm type across tiers
+                    resets the value (see changeFarmType). */}
                 <div style={S.chipRow} data-testid="onboarding-size-unit">
-                  {SIZE_UNITS.map((u) => (
+                  {allowedUnits.map((u) => (
                     <ChoiceChip
                       key={u}
                       active={normalizeSizeUnit(form.sizeUnit) === u}
-                      onClick={() => update('sizeUnit', u)}
+                      onClick={() => changeSizeUnit(u)}
                       label={getUnitLabel(u, lang)}
                       testid={`onboarding-size-unit-${u.toLowerCase()}`}
                     />

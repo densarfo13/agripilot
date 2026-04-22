@@ -103,23 +103,50 @@ export function useFarmTypeLabel(code) {
 }
 
 // ─── Size unit ───────────────────────────────────────────────────
-export const SIZE_UNITS = Object.freeze(['ACRE', 'HECTARE']);
+// Canonical uppercase codes. SQFT / SQM are the "small area" units
+// used by backyard farms; ACRE / HECTARE are land-area units used
+// by small + commercial farms. The allowed set for any given farm
+// is derived from farmType via getAllowedSizeUnits below.
+export const SIZE_UNITS = Object.freeze(['ACRE', 'HECTARE', 'SQFT', 'SQM']);
+export const LAND_AREA_UNITS = Object.freeze(['ACRE', 'HECTARE']);
+export const SMALL_AREA_UNITS = Object.freeze(['SQFT', 'SQM']);
 
 const SIZE_UNIT_LABELS_BY_LANG = Object.freeze({
-  en: Object.freeze({ ACRE: 'Acres',  HECTARE: 'Hectares' }),
-  fr: Object.freeze({ ACRE: 'Acres',  HECTARE: 'Hectares' }),
-  sw: Object.freeze({ ACRE: 'Ekari',  HECTARE: 'Hekta'   }),
-  ha: Object.freeze({ ACRE: 'Ek\u1E69a', HECTARE: 'Hekta' }),
-  tw: Object.freeze({ ACRE: 'Ɛka',    HECTARE: 'Hekta'   }),
+  en: Object.freeze({
+    ACRE: 'Acres',  HECTARE: 'Hectares',
+    SQFT: 'sq ft',  SQM:     'sq m',
+  }),
+  fr: Object.freeze({
+    ACRE: 'Acres',  HECTARE: 'Hectares',
+    SQFT: 'pi\u00B2', SQM:   'm\u00B2',
+  }),
+  sw: Object.freeze({
+    ACRE: 'Ekari',  HECTARE: 'Hekta',
+    SQFT: 'futi za mraba', SQM: 'mita za mraba',
+  }),
+  ha: Object.freeze({
+    ACRE: 'Ek\u1E69a', HECTARE: 'Hekta',
+    SQFT: 'murabba\u2019an \u1E93a\u0257i', SQM: 'murabba\u2019an mita',
+  }),
+  tw: Object.freeze({
+    ACRE: 'Ɛka',    HECTARE: 'Hekta',
+    SQFT: 'square feet', SQM: 'square meters',
+  }),
   hi: Object.freeze({
     ACRE:    '\u090F\u0915\u095C',
     HECTARE: '\u0939\u0947\u0915\u094D\u091F\u0947\u092F\u0930',
+    SQFT:    '\u0935\u0930\u094D\u0917 \u092B\u0941\u091F',
+    SQM:     '\u0935\u0930\u094D\u0917 \u092E\u0940\u091F\u0930',
   }),
 });
 
 const SIZE_UNIT_ALIASES = Object.freeze({
   acre: 'ACRE', acres: 'ACRE', ac: 'ACRE', ACRE: 'ACRE',
   hectare: 'HECTARE', hectares: 'HECTARE', ha: 'HECTARE', HECTARE: 'HECTARE',
+  sqft: 'SQFT', SQFT: 'SQFT', 'sq ft': 'SQFT', 'sq_ft': 'SQFT',
+  'square_feet': 'SQFT', 'square feet': 'SQFT', 'ft2': 'SQFT',
+  sqm: 'SQM', SQM: 'SQM', 'sq m': 'SQM', 'sq_m': 'SQM',
+  'square_meter': 'SQM', 'square meter': 'SQM', 'square meters': 'SQM', 'm2': 'SQM',
   // common French / Swahili storage drift
   ekari: 'ACRE', hekta: 'HECTARE',
 });
@@ -142,6 +169,113 @@ export function getUnitLabel(code, lang = 'en') {
 export function useUnitLabel(code) {
   const { lang } = useTranslation();
   return getUnitLabel(code, lang);
+}
+
+// ─── Allowed units per farm type ─────────────────────────────────
+/**
+ * getAllowedSizeUnits — what units this farm can choose from.
+ *
+ *   backyard  → ['SQFT', 'SQM']   (small-area units)
+ *                US default:  SQFT first
+ *                elsewhere:   SQM first
+ *
+ *   small_farm | commercial → ['ACRE', 'HECTARE']  (land-area)
+ *
+ * Unknown farmType falls back to the land-area set — existing
+ * non-backyard farms keep their current unit menu unchanged.
+ */
+export function getAllowedSizeUnits(farmType, countryCode) {
+  const ft = normalizeFarmType(farmType);
+  if (ft === 'backyard') {
+    const iso2 = String(countryCode || '').trim().toUpperCase();
+    return iso2 === 'US'
+      ? Object.freeze(['SQFT', 'SQM'])
+      : Object.freeze(['SQM', 'SQFT']);
+  }
+  return LAND_AREA_UNITS;
+}
+
+/**
+ * getDefaultSizeUnit — the first entry in getAllowedSizeUnits.
+ * Used when a form is first opened or when the farm type flips to
+ * an incompatible tier and the UI needs a safe starting point.
+ */
+export function getDefaultSizeUnit(farmType, countryCode) {
+  return getAllowedSizeUnits(farmType, countryCode)[0];
+}
+
+/**
+ * Conversion factors. Values are "how many OF target per ONE of
+ * source" so: targetValue = sourceValue * FACTOR[source][target].
+ * Only convert within the same "tier" (small-area or land-area) —
+ * cross-tier conversion (e.g. acres → sqft) would produce absurd
+ * numbers for real-world input and is deliberately disabled.
+ */
+const CONVERSION = Object.freeze({
+  SQFT: { SQM: 0.09290304, SQFT: 1 },
+  SQM:  { SQFT: 10.7639104, SQM: 1 },
+  ACRE: { HECTARE: 0.40468564, ACRE: 1 },
+  HECTARE: { ACRE: 2.47105381, HECTARE: 1 },
+});
+
+/**
+ * convertSize — convert a numeric size between units within the
+ * same tier. Returns:
+ *   { value, ok: true }           on a valid within-tier conversion
+ *   { value: null, ok: false }    on cross-tier or invalid input
+ *
+ * UI callers: on a cross-tier switch (e.g. backyard → commercial)
+ * reset the numeric input instead of passing it through — rounding
+ * a 400 sqft garden into 0.01 acres is more confusing than helpful.
+ */
+export function convertSize(value, fromUnit, toUnit) {
+  const from = normalizeSizeUnit(fromUnit);
+  const to   = normalizeSizeUnit(toUnit);
+  // Reject empty string / null / undefined BEFORE the Number()
+  // coercion: Number('') === 0 would otherwise look "valid" and
+  // mask a missing input.
+  if (value === '' || value == null) return { value: null, ok: false };
+  const num  = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) return { value: null, ok: false };
+  if (from === to) return { value: num, ok: true };
+  const row = CONVERSION[from];
+  if (!row || row[to] == null) {
+    return { value: null, ok: false };     // cross-tier
+  }
+  const converted = num * row[to];
+  // Round to 4 decimals so "1 acre" doesn't become 0.40468564001
+  const rounded = Math.round(converted * 10000) / 10000;
+  return { value: rounded, ok: true };
+}
+
+/**
+ * getFarmSizeLabel — the localized title shown above the size
+ * input. Backyard reads "Small Area" (sqft/sqm); everyone else
+ * reads "Land Area" (acres/hectares). Keeps the surrounding UI
+ * honest about the magnitude the farmer is entering.
+ */
+const FARM_SIZE_LABELS_BY_LANG = Object.freeze({
+  en: Object.freeze({ small: 'Farm Size (Small Area)', land: 'Farm Size (Land Area)' }),
+  fr: Object.freeze({ small: 'Taille (petite surface)', land: 'Superficie du terrain' }),
+  sw: Object.freeze({ small: 'Eneo (ndogo)',            land: 'Eneo la shamba' }),
+  ha: Object.freeze({ small: 'Girman gona (\u1E63ar\u0257a)', land: 'Girman gona' }),
+  tw: Object.freeze({ small: 'Afuo kɛse (ket\u025Bw\u025Ba)', land: 'Afuo kɛse' }),
+  hi: Object.freeze({
+    small: '\u0916\u0947\u0924 \u0915\u093E \u0906\u0915\u093E\u0930 (\u091B\u094B\u091F\u093E)',
+    land:  '\u0916\u0947\u0924 \u0915\u093E \u0906\u0915\u093E\u0930',
+  }),
+});
+
+export function getFarmSizeLabel(farmType, lang = 'en') {
+  const ft = normalizeFarmType(farmType);
+  const bucket = ft === 'backyard' ? 'small' : 'land';
+  const table = FARM_SIZE_LABELS_BY_LANG[lang] || FARM_SIZE_LABELS_BY_LANG.en;
+  return table[bucket] || FARM_SIZE_LABELS_BY_LANG.en[bucket];
+}
+
+export function useFarmSizeLabel(farmType) {
+  const { lang } = useTranslation();
+  return getFarmSizeLabel(farmType, lang);
 }
 
 // ─── Crop stage ──────────────────────────────────────────────────

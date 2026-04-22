@@ -38,8 +38,11 @@ function installWindow() {
 
 import {
   FARM_TYPES, SIZE_UNITS, CROP_STAGES,
+  LAND_AREA_UNITS, SMALL_AREA_UNITS,
   normalizeFarmType, normalizeSizeUnit, normalizeCropStage,
   getFarmTypeLabel, getUnitLabel, getCropStageLabel,
+  getAllowedSizeUnits, getDefaultSizeUnit, convertSize,
+  getFarmSizeLabel,
   isNewFarmer, isOnboardingComplete, getOnboardingStatus,
   _internal,
 } from '../../../src/config/onboardingLabels.js';
@@ -344,11 +347,12 @@ describe('OnboardingV3.jsx source contract', () => {
     expect(code).toContain('isNewFarmer');
     expect(code).toContain("update('country'");
     expect(code).toContain("update('language'");
-    // Step 2
+    // Step 2 — farmType + sizeUnit now flow through the dynamic-
+    // unit reconcilers so the raw update() calls were replaced.
     expect(code).toContain("update('farmName'");
-    expect(code).toContain("update('farmType'");
+    expect(code).toContain('changeFarmType');
     expect(code).toContain("update('farmSize'");
-    expect(code).toContain("update('sizeUnit'");
+    expect(code).toContain('changeSizeUnit');
     // Step 3
     expect(code).toContain("update('mainCrop'");
     expect(code).toContain("update('cropStage'");
@@ -407,5 +411,130 @@ describe('OnboardingV3.jsx source contract', () => {
     const app = readFile('src/App.jsx');
     expect(app).toContain("path=\"/onboarding\"");
     expect(app).toContain('OnboardingV3');
+  });
+});
+
+// ─── 6. Dynamic size units ──────────────────────────────────────
+describe('getAllowedSizeUnits', () => {
+  it('returns SQFT/SQM for backyard, with US default first', () => {
+    expect(getAllowedSizeUnits('backyard', 'US')).toEqual(['SQFT', 'SQM']);
+  });
+
+  it('returns SQM/SQFT for backyard when country is not US', () => {
+    expect(getAllowedSizeUnits('backyard', 'GH')).toEqual(['SQM', 'SQFT']);
+    expect(getAllowedSizeUnits('backyard', 'KE')).toEqual(['SQM', 'SQFT']);
+    expect(getAllowedSizeUnits('backyard', '')).toEqual(['SQM', 'SQFT']);
+  });
+
+  it('returns ACRE/HECTARE for small_farm + commercial', () => {
+    expect(getAllowedSizeUnits('small_farm', 'US')).toEqual(LAND_AREA_UNITS);
+    expect(getAllowedSizeUnits('commercial', 'GH')).toEqual(LAND_AREA_UNITS);
+  });
+
+  it('falls back to land-area units for unknown farm types', () => {
+    expect(getAllowedSizeUnits('nonsense', 'US')).toEqual(LAND_AREA_UNITS);
+    expect(getAllowedSizeUnits(null, 'US')).toEqual(LAND_AREA_UNITS);
+  });
+
+  it('getDefaultSizeUnit returns the first allowed unit for the tier', () => {
+    expect(getDefaultSizeUnit('backyard', 'US')).toBe('SQFT');
+    expect(getDefaultSizeUnit('backyard', 'GH')).toBe('SQM');
+    expect(getDefaultSizeUnit('commercial', 'US')).toBe('ACRE');
+  });
+});
+
+describe('SQFT / SQM support', () => {
+  it('SIZE_UNITS contains all four canonical codes', () => {
+    expect(SIZE_UNITS).toEqual(['ACRE', 'HECTARE', 'SQFT', 'SQM']);
+    expect(SMALL_AREA_UNITS).toEqual(['SQFT', 'SQM']);
+  });
+
+  it('normalizeSizeUnit accepts every SQFT alias', () => {
+    for (const input of ['SQFT', 'sqft', 'sq ft', 'sq_ft', 'square feet', 'ft2']) {
+      expect(normalizeSizeUnit(input)).toBe('SQFT');
+    }
+  });
+
+  it('normalizeSizeUnit accepts every SQM alias', () => {
+    for (const input of ['SQM', 'sqm', 'sq m', 'sq_m', 'square meter', 'square meters', 'm2']) {
+      expect(normalizeSizeUnit(input)).toBe('SQM');
+    }
+  });
+
+  it('getUnitLabel returns localized labels for SQFT and SQM', () => {
+    expect(getUnitLabel('SQFT', 'en')).toBe('sq ft');
+    expect(getUnitLabel('SQM',  'en')).toBe('sq m');
+    expect(getUnitLabel('SQFT', 'fr')).toMatch(/pi/);
+    expect(getUnitLabel('SQM',  'hi')).toBeTruthy();
+    // Hindi renders Devanagari, not English.
+    expect(getUnitLabel('SQM', 'hi')).not.toMatch(/sq m/i);
+  });
+});
+
+describe('convertSize — within-tier conversion only', () => {
+  it('converts sqft ↔ sqm with 4-decimal rounding', () => {
+    const a = convertSize(1, 'SQM', 'SQFT');
+    expect(a.ok).toBe(true);
+    expect(a.value).toBeCloseTo(10.7639, 3);
+    const b = convertSize(100, 'SQFT', 'SQM');
+    expect(b.ok).toBe(true);
+    expect(b.value).toBeCloseTo(9.2903, 3);
+  });
+
+  it('converts acres ↔ hectares with 4-decimal rounding', () => {
+    const a = convertSize(1, 'HECTARE', 'ACRE');
+    expect(a.value).toBeCloseTo(2.47105, 4);
+    const b = convertSize(5, 'ACRE', 'HECTARE');
+    expect(b.value).toBeCloseTo(2.0234, 3);
+  });
+
+  it('same-unit round-trip returns the same numeric value', () => {
+    expect(convertSize(3.5, 'ACRE', 'ACRE')).toEqual({ value: 3.5, ok: true });
+  });
+
+  it('refuses cross-tier conversion (sqft ↔ acre) — returns ok:false', () => {
+    expect(convertSize(400, 'SQFT', 'ACRE')).toEqual({ value: null, ok: false });
+    expect(convertSize(1, 'HECTARE', 'SQM')).toEqual({ value: null, ok: false });
+  });
+
+  it('returns ok:false for invalid numeric input', () => {
+    expect(convertSize('', 'ACRE', 'HECTARE').ok).toBe(false);
+    expect(convertSize(null, 'SQFT', 'SQM').ok).toBe(false);
+    expect(convertSize('abc', 'ACRE', 'HECTARE').ok).toBe(false);
+  });
+
+  it('normalizes unit aliases before converting', () => {
+    expect(convertSize(1, 'acres', 'hectares').value).toBeCloseTo(0.4047, 3);
+    expect(convertSize(1, 'sq ft', 'square meter').value).toBeCloseTo(0.0929, 3);
+  });
+
+  it('is lossless for round-trip conversions (rounding tolerance)', () => {
+    const once = convertSize(10, 'SQM', 'SQFT');
+    const back = convertSize(once.value, 'SQFT', 'SQM');
+    expect(back.value).toBeCloseTo(10, 2);
+  });
+});
+
+describe('getFarmSizeLabel', () => {
+  it('reads "Small Area" for backyard, "Land Area" for others', () => {
+    expect(getFarmSizeLabel('backyard', 'en')).toBe('Farm Size (Small Area)');
+    expect(getFarmSizeLabel('small_farm', 'en')).toBe('Farm Size (Land Area)');
+    expect(getFarmSizeLabel('commercial', 'en')).toBe('Farm Size (Land Area)');
+  });
+
+  it('translates by language', () => {
+    expect(getFarmSizeLabel('backyard', 'fr')).toMatch(/petite/i);
+    expect(getFarmSizeLabel('commercial', 'fr')).toMatch(/Superficie/);
+    expect(getFarmSizeLabel('backyard', 'hi')).toMatch(/[\u0900-\u097F]/); // Devanagari
+  });
+
+  it('falls back to English on unknown language', () => {
+    expect(getFarmSizeLabel('backyard', 'xx')).toBe('Farm Size (Small Area)');
+  });
+
+  it('normalizes farmType input', () => {
+    // Legacy English label → still resolves to the right bucket.
+    expect(getFarmSizeLabel('Backyard / Home', 'en')).toBe('Farm Size (Small Area)');
+    expect(getFarmSizeLabel('Small Farm', 'en')).toBe('Farm Size (Land Area)');
   });
 });
