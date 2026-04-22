@@ -75,6 +75,33 @@ const IN_DEFAULTS = [
   { crop: 'pulses',    fit: 'medium', why: 'Rotation-friendly legumes; strong government support.',  plantingWindow: 'Jun–Jul / Oct–Nov', note: 'Chickpea, pigeon pea, mung bean depending on region.' },
 ];
 
+// ─── Tanzania (TZ) — East African savanna + highlands ────────
+const TZ_DEFAULTS = [
+  { crop: 'maize',     fit: 'high',   why: 'Core staple across most of Tanzania.',               plantingWindow: 'Oct–Dec (short rains) / Feb–Apr (long rains)' },
+  { crop: 'cassava',   fit: 'high',   why: 'Drought-tolerant staple for lowland zones.',         plantingWindow: 'Oct–Dec' },
+  { crop: 'beans',     fit: 'medium', why: 'Intercropped with maize on smallholder farms.',     plantingWindow: 'Mar–May' },
+  { crop: 'sorghum',   fit: 'medium', why: 'Suited to drier central regions.',                   plantingWindow: 'Nov–Jan' },
+  { crop: 'rice',      fit: 'medium', why: 'Growing demand; best where water is reliable.',      plantingWindow: 'Dec–Feb' },
+];
+
+// ─── Uganda (UG) — equatorial bimodal rains ────────────────────
+const UG_DEFAULTS = [
+  { crop: 'banana',    fit: 'high',   why: 'Matooke is the national staple; year-round harvest.', plantingWindow: 'Mar–May / Sep–Nov' },
+  { crop: 'maize',     fit: 'high',   why: 'Key grain; two seasons thanks to bimodal rains.',     plantingWindow: 'Mar–May / Sep–Nov' },
+  { crop: 'cassava',   fit: 'high',   why: 'Hardy staple tuber across most zones.',               plantingWindow: 'Mar–May' },
+  { crop: 'beans',     fit: 'medium', why: 'Short-cycle legume for both seasons.',                 plantingWindow: 'Mar–May / Sep–Nov' },
+  { crop: 'coffee',    fit: 'medium', why: 'Major cash crop in the western highlands.',            plantingWindow: 'Mar–May (seedlings)' },
+];
+
+// ─── Brazil (BR) — South America cerrado + coastal ─────────────
+const BR_DEFAULTS = [
+  { crop: 'soybean',   fit: 'high',   why: 'World\'s largest soy producer; cerrado agriculture.',  plantingWindow: 'Oct–Dec' },
+  { crop: 'maize',     fit: 'high',   why: 'Safrinha (second-crop) corn after soy is huge.',       plantingWindow: 'Oct–Dec (main) / Jan–Mar (safrinha)' },
+  { crop: 'sugarcane', fit: 'high',   why: 'Central-south belt dominates global sugar + ethanol.', plantingWindow: 'Jan–Apr / Sep–Nov' },
+  { crop: 'cotton',    fit: 'medium', why: 'Large in Mato Grosso + Bahia.',                         plantingWindow: 'Dec–Feb' },
+  { crop: 'cassava',   fit: 'medium', why: 'Traditional staple across the Northeast.',              plantingWindow: 'Sep–Nov' },
+];
+
 // ─── Per-state overrides (subset — extend as needed) ──────────────
 const US_STATES = {
   CA: [
@@ -192,6 +219,9 @@ export const RULES = freeze({
   NG: freeze({ defaults: freeze(NG_DEFAULTS), states: freeze(NG_STATES) }),
   KE: freeze({ defaults: freeze(KE_DEFAULTS), states: freeze(KE_STATES) }),
   IN: freeze({ defaults: freeze(IN_DEFAULTS), states: freeze(IN_STATES) }),
+  TZ: freeze({ defaults: freeze(TZ_DEFAULTS) }),
+  UG: freeze({ defaults: freeze(UG_DEFAULTS) }),
+  BR: freeze({ defaults: freeze(BR_DEFAULTS) }),
 });
 
 export const GLOBAL_FALLBACK = freeze(GLOBAL_DEFAULTS);

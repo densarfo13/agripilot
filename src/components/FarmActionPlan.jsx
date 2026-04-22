@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { buildFarmActionPlan } from '../lib/intelligence/farmActionPlan.js';
+import { useTaskCompletion } from '../lib/intelligence/taskCompletion.js';
 
 /**
  * FarmActionPlan — "Your Farm Plan" card.
@@ -37,6 +38,11 @@ export default function FarmActionPlan({
   onActionTap = null,
 }) {
   const { t, lang } = useTranslation();
+
+  // Per-farm task-completion store (localStorage, in-memory synced).
+  // Enables the "mark done" UX + feeds execution/timing in
+  // FarrowayScore + suppresses missed-task alerts in Smart Alerts.
+  const { completedIds, toggle } = useTaskCompletion(farm && farm.id);
 
   const plan = useMemo(
     () => buildFarmActionPlan({ farm, weather, date, tasks, yieldEstimate }),
@@ -78,7 +84,10 @@ export default function FarmActionPlan({
           testId="farm-plan-now"
           items={plan.now}
           renderItem={(a) => (
-            <ActionRow key={a.id} action={a} onTap={onActionTap} t={t} showPriority />
+            <ActionRow key={a.id} action={a}
+                       onTap={onActionTap} t={t} showPriority
+                       done={completedIds.has(a.templateId || a.id)}
+                       onToggleDone={() => toggle(a.templateId || a.id)} />
           )}
           styles={styles}
         />
@@ -170,19 +179,37 @@ function Bucket({ title, subtitle, items, renderItem, tone = 'plan', testId, sty
   );
 }
 
-function ActionRow({ action, onTap, t, showPriority }) {
+function ActionRow({ action, onTap, t, showPriority, done = false, onToggleDone }) {
   const styles = rowStyles;
+  const rowStyle = done ? { ...styles.row, ...styles.rowDone } : styles.row;
+  const titleStyle = done ? { ...styles.rowTitle, ...styles.rowTitleDone } : styles.rowTitle;
   return (
-    <li style={styles.row}
-        onClick={onTap ? () => onTap(action) : undefined}
+    <li style={rowStyle}
         data-testid={`action-${action.templateId || action.id}`}>
-      <div style={styles.rowMain}>
+      {onToggleDone && (
+        <button type="button"
+                onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
+                style={done ? styles.checkDone : styles.check}
+                aria-label={done
+                  ? (t('farmPlan.undo') !== 'farmPlan.undo' ? t('farmPlan.undo') : 'Undo')
+                  : (t('farmPlan.markDone') !== 'farmPlan.markDone' ? t('farmPlan.markDone') : 'Mark done')}
+                data-testid={`action-done-${action.templateId || action.id}`}>
+          {done ? '✓' : ''}
+        </button>
+      )}
+      <div style={styles.rowMain}
+           onClick={onTap ? () => onTap(action) : undefined}>
         <div style={styles.rowTitleLine}>
-          <span style={styles.rowTitle}>{action.title}</span>
-          {showPriority && action.priority === 'high' && (
+          <span style={titleStyle}>{action.title}</span>
+          {showPriority && action.priority === 'high' && !done && (
             <span style={styles.priorityChip}>
               {t('farmPlan.priorityHigh') !== 'farmPlan.priorityHigh'
                 ? t('farmPlan.priorityHigh') : 'Do this first'}
+            </span>
+          )}
+          {done && (
+            <span style={styles.doneChip}>
+              {t('farmPlan.done') !== 'farmPlan.done' ? t('farmPlan.done') : 'Done'}
             </span>
           )}
         </div>
@@ -277,6 +304,35 @@ const rowStyles = {
     border: '1px solid rgba(255,255,255,0.08)',
     display: 'flex', gap: 10, alignItems: 'flex-start',
     cursor: 'pointer',
+  },
+  rowDone: {
+    background: 'rgba(34,197,94,0.06)',
+    borderColor: 'rgba(34,197,94,0.22)',
+  },
+  rowTitleDone: {
+    textDecoration: 'line-through',
+    color: 'rgba(230,244,234,0.5)',
+  },
+  check: {
+    width: 24, height: 24, borderRadius: 6,
+    border: '2px solid rgba(230,244,234,0.4)',
+    background: 'transparent', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, marginTop: 2,
+    padding: 0, color: '#0B1D34',
+  },
+  checkDone: {
+    width: 24, height: 24, borderRadius: 6,
+    border: '2px solid #22C55E',
+    background: '#22C55E', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, marginTop: 2,
+    padding: 0, color: '#0B1D34', fontWeight: 700, fontSize: 14,
+  },
+  doneChip: {
+    padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 600,
+    background: 'rgba(34,197,94,0.18)', color: '#86EFAC',
+    letterSpacing: 0.3, textTransform: 'uppercase',
   },
   rowMain: { flex: 1, minWidth: 0 },
   rowTitleLine: {

@@ -251,11 +251,22 @@ describe('cropFit category', () => {
   });
 
   it('unsupported country → neutral 50', () => {
+    // FR still isn't in the rules table; BR/TZ/UG now are.
     const s = computeFarrowayScore({
-      farm: farm({ country: 'BR' }),
+      farm: farm({ country: 'FR' }),
     });
     expect(s.categories.cropFit.score).toBe(50);
     expect(s.categories.cropFit.confidence).toBe('low');
+  });
+
+  it('expanded TZ/UG/BR countries now evaluate real fit', () => {
+    for (const country of ['TZ', 'UG', 'BR']) {
+      const s = computeFarrowayScore({ farm: farm({ country, state: null }) });
+      // Maize is a high-fit crop in all three additions, so the
+      // default-crop farm should land >= 75 with medium confidence.
+      expect(s.categories.cropFit.score).toBeGreaterThanOrEqual(75);
+      expect(['medium', 'high']).toContain(s.categories.cropFit.confidence);
+    }
   });
 
   it('no region data → neutral 50', () => {

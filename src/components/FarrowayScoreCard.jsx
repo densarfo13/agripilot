@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { computeFarrowayScore } from '../lib/intelligence/farrowayScoreEngine.js';
+import { postScoreSnapshot, fetchScoreHistory } from '../lib/farrowayScore.js';
 
 /**
  * FarrowayScoreCard — the farm-performance score (0–100) with
@@ -21,6 +22,8 @@ import { computeFarrowayScore } from '../lib/intelligence/farrowayScoreEngine.js
  */
 const STORAGE_KEY = 'farroway:scoreHistory:v1';
 const MAX_HISTORY = 14; // two weeks
+const POST_COOLDOWN_MS = 2 * 60 * 1000;   // don't spam the server
+let lastPostAt = 0;
 
 export default function FarrowayScoreCard({
   farm,
@@ -33,11 +36,31 @@ export default function FarrowayScoreCard({
 
   const [expanded, setExpanded] = useState(false);
 
-  // Previous score for the trend arrow. Per farm id so a multi-farm
-  // user sees the right trend for each farm.
-  const previousScore = useMemo(
+  // Previous score for the trend arrow. Starts from localStorage so
+  // the first render is instant; once the server history loads we
+  // upgrade to the cross-device snapshot. Both paths feed the same
+  // { overall } shape the engine expects.
+  const [remotePrev, setRemotePrev] = useState(null);
+  const localPrev = useMemo(
     () => readPreviousScore(farm && farm.id),
     [farm && farm.id]);
+  const previousScore = remotePrev || localPrev;
+
+  // Pull server-side history when a farmerId is available. Silently
+  // falls back to local history when the endpoint isn't reachable.
+  useEffect(() => {
+    const farmerId = farm && farm.farmerId;
+    const farmId   = farm && farm.id;
+    if (!farmerId) return undefined;
+    let cancelled = false;
+    fetchScoreHistory(farmerId, { farmId, limit: 14 }).then((rows) => {
+      if (cancelled || !Array.isArray(rows) || rows.length === 0) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const prev = rows.find((r) => r.date !== today);
+      if (prev && Number.isFinite(prev.overall)) setRemotePrev(prev);
+    });
+    return () => { cancelled = true; };
+  }, [farm && farm.farmerId, farm && farm.id]);
 
   const score = useMemo(
     () => computeFarrowayScore({
@@ -46,10 +69,26 @@ export default function FarrowayScoreCard({
     [farm, weather, completedTaskIds, previousScore]);
 
   // Persist today's score so tomorrow's render has a trend baseline.
+  // Two writes: local (instant, offline-safe) + server (cross-device,
+  // throttled to one POST per cooldown window).
   useEffect(() => {
     if (!farm || !farm.id || !Number.isFinite(score.overall)) return;
     writeScoreSnapshot(farm.id, score);
-  }, [farm && farm.id, score.overall, score.generatedFor.date]);
+    if (farm.farmerId) {
+      const now = Date.now();
+      if (now - lastPostAt >= POST_COOLDOWN_MS) {
+        lastPostAt = now;
+        postScoreSnapshot(farm.farmerId, {
+          farmId:     farm.id,
+          date:       score.generatedFor.date,
+          overall:    score.overall,
+          band:       score.band,
+          confidence: score.confidence,
+          categories: score.categories,
+        });
+      }
+    }
+  }, [farm && farm.id, farm && farm.farmerId, score.overall, score.generatedFor.date]);
 
   const tr = (k, fallback) => {
     const v = t(k);

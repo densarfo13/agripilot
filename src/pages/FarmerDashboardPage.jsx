@@ -19,6 +19,7 @@ import MarketplaceCard from '../components/MarketplaceCard.jsx';
 import IncomingRequestsList from '../components/IncomingRequestsList.jsx';
 import SmartAlertsCard from '../components/SmartAlertsCard.jsx';
 import FarrowayScoreCard from '../components/FarrowayScoreCard.jsx';
+import { useTaskCompletion } from '../lib/intelligence/taskCompletion.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -67,6 +68,11 @@ export default function FarmerDashboardPage() {
     submitRecFeedback, fetchReferral, trackEvent,
   } = useFarmStore();
   const { createProfile } = useFarmStore();
+  // Per-farm task-completion store (localStorage). Feeds execution/
+  // timing in Farroway Score + missed-task rule in Smart Alerts +
+  // the "mark done" UX in FarmActionPlan. All three cards update
+  // in real time because they subscribe to the same store events.
+  const { completedIds: completedTaskIds } = useTaskCompletion(farmProfile && farmProfile.id);
   const [recNoteId, setRecNoteId] = useState(null);
   const [recNote, setRecNote] = useState('');
   const [feedbackSent, setFeedbackSent] = useState({});
@@ -833,7 +839,8 @@ export default function FarmerDashboardPage() {
                  Computed client-side from existing engines. */}
             {farmProfile && farmProfile.crop && setupComplete && (
               <div data-testid="farroway-score-section" style={{ marginTop: '1rem' }}>
-                <FarrowayScoreCard farm={farmProfile} weather={weather} />
+                <FarrowayScoreCard farm={farmProfile} weather={weather}
+                                   completedTaskIds={completedTaskIds} />
               </div>
             )}
 
@@ -845,7 +852,8 @@ export default function FarmerDashboardPage() {
                  localStorage until their id expires (daily). */}
             {farmProfile && farmProfile.crop && setupComplete && (
               <div data-testid="smart-alerts-section" style={{ marginTop: '1rem' }}>
-                <SmartAlertsCard farm={farmProfile} weather={weather} />
+                <SmartAlertsCard farm={farmProfile} weather={weather}
+                                 completedTaskIds={completedTaskIds} />
               </div>
             )}
 

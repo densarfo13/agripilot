@@ -77,6 +77,30 @@ router.post('/farmer/:farmerId/smart-alerts/dispatch',
     });
   }));
 
+// ─── Farroway Score snapshots ─────────────────────────────────
+// POST body: { farmId?, overall, band?, confidence?, categories?, date }
+router.post('/farmer/:farmerId/score/snapshot',
+  validateParamUUID('farmerId'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireFarmerOwnership,
+  asyncHandler(async (req, res) => {
+    const snap = await svc.createScoreSnapshot(req.params.farmerId, req.body || {});
+    if (!snap) return res.status(400).json({ error: 'invalid_snapshot' });
+    res.json({ id: snap.id, savedAt: snap.createdAt });
+  }));
+
+router.get('/farmer/:farmerId/score/history',
+  validateParamUUID('farmerId'),
+  authorize(...STAFF_ROLES, 'farmer'),
+  requireFarmerOwnership,
+  asyncHandler(async (req, res) => {
+    const rows = await svc.listScoreSnapshots(req.params.farmerId, {
+      farmId: req.query.farmId || null,
+      limit:  Math.min(90, Math.max(1, Number(req.query.limit) || 14)),
+    });
+    res.json({ data: rows });
+  }));
+
 // Mark all read
 router.post('/farmer/:farmerId/mark-all-read',
   validateParamUUID('farmerId'),

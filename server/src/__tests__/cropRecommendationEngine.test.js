@@ -108,8 +108,8 @@ describe('recommendCrops — country fallback', () => {
 
 // ─── 3. Unsupported country → global fallback (spec §6.3) ─────────
 describe('recommendCrops — unsupported country', () => {
-  it('BR (not in v1) returns global fallback + isGeneral=true', () => {
-    const r = recommendCrops({ country: 'BR' });
+  it('FR (not in rules) returns global fallback + isGeneral=true', () => {
+    const r = recommendCrops({ country: 'FR' });
     expect(r.source).toBe('global');
     expect(r.isGeneral).toBe(true);
     expect(r.supported).toBe(false);
@@ -120,6 +120,29 @@ describe('recommendCrops — unsupported country', () => {
     const r = recommendCrops();
     expect(r.source).toBe('global');
     expect(r.isGeneral).toBe(true);
+  });
+
+  // ─── Expanded v2 countries ─────────────────────────────────
+  it('TZ (Tanzania) now supported with maize + cassava high-fit', () => {
+    const r = recommendCrops({ country: 'TZ' });
+    expect(r.source).toBe('country');
+    expect(r.isGeneral).toBe(false);
+    const top = r.items.slice(0, 2).map((i) => i.crop);
+    expect(top).toContain('maize');
+  });
+
+  it('UG (Uganda) now supported with banana + maize high-fit', () => {
+    const r = recommendCrops({ country: 'UG' });
+    expect(r.source).toBe('country');
+    const top = r.items.slice(0, 2).map((i) => i.crop);
+    expect(top).toContain('banana');
+  });
+
+  it('BR (Brazil) now supported with soybean + maize high-fit', () => {
+    const r = recommendCrops({ country: 'BR' });
+    expect(r.source).toBe('country');
+    const top = r.items.slice(0, 2).map((i) => i.crop);
+    expect(top).toContain('soybean');
   });
 });
 
