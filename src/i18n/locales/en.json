@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "home": "Home",
+    "farm": "Farm",
+    "tasks": "Tasks",
+    "reports": "Reports"
+  },
+  "dashboard": {
+    "smart_assistant": "Your Smart Farming Assistant",
+    "crop_progress": "Crop progress",
+    "just_started": "Just started",
+    "message_start": "Your crop is just getting started. Complete today's tasks to get back on track.",
+    "overall_progress": "Overall progress",
+    "today_focus": "Today's focus",
+    "good_job": "Good job!",
+    "keep_going": "Keep going and your farm will thrive."
+  },
+  "tasks": {
+    "total": "Total tasks",
+    "pending": "Pending",
+    "completed": "Completed",
+    "prepare_field": "Prepare your field and plants",
+    "scout_pests": "Scout pests"
+  },
+  "farm": {
+    "crop_information": "Crop Information",
+    "primary_crop": "Primary Crop",
+    "farm_profile": "Farm Profile",
+    "farm_size": "Farm Size",
+    "farmer_name": "Farmer Name",
+    "location": "Location",
+    "view_farm": "View My Farm",
+    "add_farm": "Add New Farm",
+    "switch_farm": "Switch Farm",
+    "farm_status": "Farm Status",
+    "start_date": "Start Date",
+    "active_tasks": "Active Tasks",
+    "recent_activities": "Recent Activities"
+  },
+  "settings": {
+    "settings": "Settings",
+    "manage_preferences": "Manage your preferences and account",
+    "notifications": "Notifications",
+    "daily_reminders": "Daily Reminders",
+    "daily_reminders_helper": "Get daily task reminders",
+    "weather_alerts": "Weather Alerts",
+    "weather_alerts_helper": "Get important weather updates",
+    "risk_alerts": "Risk Alerts",
+    "risk_alerts_helper": "Get pest and disease alerts",
+    "missed_task_alerts": "Missed Task Alerts",
+    "missed_task_alerts_helper": "Get alerts for missed tasks",
+    "email_notifications": "Email Notifications",
+    "email_notifications_helper": "Receive email notifications",
+    "sms_notifications": "SMS Notifications",
+    "sms_notifications_helper": "Receive SMS notifications",
+    "reminder_time": "Reminder Time",
+    "reminder_time_helper": "Set the time to send reminders",
+    "language": "Language",
+    "language_helper": "Choose your preferred language",
+    "change_password": "Change Password",
+    "change_password_helper": "Update your password",
+    "help_support": "Help & Support",
+    "help_support_helper": "Get help and support",
+    "about_app": "About Farroway",
+    "about_app_helper": "Learn more about the app",
+    "farmer_id": "Farmer ID",
+    "copy": "Copy"
+  },
+  "tips": {
+    "daily_tip": "Daily Tip",
+    "tip_consistency": "Stay consistent with your tasks for the best results."
+  },
+  "reminders": {
+    "title": "Reminder",
+    "none": "You have no new reminders."
+  },
+  "market": {
+    "title": "Market Insight",
+    "check_prices": "Check local prices before you sell your produce."
+  },
+  "status": {
+    "fair": "Fair",
+    "good": "Good",
+    "excellent": "Excellent",
+    "poor": "Poor"
+  },
+  "stages": {
+    "planting": "Planting",
+    "establishment": "Establishment",
+    "vegetative": "Vegetative",
+    "bulking": "Bulking",
+    "maturation": "Maturation",
+    "harvest": "Harvest"
+  },
+  "crops": {
+    "cassava": "Cassava",
+    "maize": "Maize",
+    "rice": "Rice",
+    "tomato": "Tomato",
+    "pepper": "Pepper",
+    "onion": "Onion",
+    "okra": "Okra",
+    "yam": "Yam",
+    "plantain": "Plantain",
+    "cocoa": "Cocoa",
+    "groundnut": "Groundnut",
+    "beans": "Beans"
+  },
+  "common": {
+    "none": "None",
+    "open_count": "{{count}} Open"
+  }
+}

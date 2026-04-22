@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "farm": "Finca",
+    "tasks": "Tareas",
+    "reports": "Reportes"
+  },
+  "dashboard": {
+    "smart_assistant": "Tu asistente agrícola inteligente",
+    "crop_progress": "Progreso del cultivo",
+    "just_started": "Recién iniciado",
+    "message_start": "Tu cultivo apenas está comenzando. Completa las tareas de hoy para mantenerte en camino.",
+    "overall_progress": "Progreso general",
+    "today_focus": "Enfoque de hoy",
+    "good_job": "¡Buen trabajo!",
+    "keep_going": "Sigue así y tu finca prosperará."
+  },
+  "tasks": {
+    "total": "Tareas totales",
+    "pending": "Pendientes",
+    "completed": "Completadas",
+    "prepare_field": "Prepara tu campo y las plantas",
+    "scout_pests": "Inspeccionar plagas"
+  },
+  "farm": {
+    "crop_information": "Información del cultivo",
+    "primary_crop": "Cultivo principal",
+    "farm_profile": "Perfil de la finca",
+    "farm_size": "Tamaño de la finca",
+    "farmer_name": "Nombre del agricultor",
+    "location": "Ubicación",
+    "view_farm": "Ver mi finca",
+    "add_farm": "Agregar nueva finca",
+    "switch_farm": "Cambiar finca",
+    "farm_status": "Estado de la finca",
+    "start_date": "Fecha de inicio",
+    "active_tasks": "Tareas activas",
+    "recent_activities": "Actividades recientes"
+  },
+  "settings": {
+    "settings": "Configuración",
+    "manage_preferences": "Administra tus preferencias y cuenta",
+    "notifications": "Notificaciones",
+    "daily_reminders": "Recordatorios diarios",
+    "daily_reminders_helper": "Recibe recordatorios diarios",
+    "weather_alerts": "Alertas del clima",
+    "weather_alerts_helper": "Recibe actualizaciones importantes del clima",
+    "risk_alerts": "Alertas de riesgo",
+    "risk_alerts_helper": "Recibe alertas de plagas y enfermedades",
+    "missed_task_alerts": "Alertas de tareas perdidas",
+    "missed_task_alerts_helper": "Recibe alertas por tareas perdidas",
+    "email_notifications": "Notificaciones por correo",
+    "email_notifications_helper": "Recibe notificaciones por correo",
+    "sms_notifications": "Notificaciones por SMS",
+    "sms_notifications_helper": "Recibe notificaciones por SMS",
+    "reminder_time": "Hora del recordatorio",
+    "reminder_time_helper": "Configura la hora del recordatorio",
+    "language": "Idioma",
+    "language_helper": "Elige tu idioma preferido",
+    "change_password": "Cambiar contraseña",
+    "change_password_helper": "Actualiza tu contraseña",
+    "help_support": "Ayuda y soporte",
+    "help_support_helper": "Obtén ayuda y soporte",
+    "about_app": "Acerca de Farroway",
+    "about_app_helper": "Más información sobre la app",
+    "farmer_id": "ID del agricultor",
+    "copy": "Copiar"
+  },
+  "tips": {
+    "daily_tip": "Consejo diario",
+    "tip_consistency": "Sé constante con tus tareas para obtener mejores resultados."
+  },
+  "reminders": {
+    "title": "Recordatorio",
+    "none": "No tienes nuevos recordatorios."
+  },
+  "market": {
+    "title": "Información del mercado",
+    "check_prices": "Consulta los precios locales antes de vender tu producción."
+  },
+  "status": {
+    "fair": "Regular",
+    "good": "Bueno",
+    "excellent": "Excelente",
+    "poor": "Deficiente"
+  },
+  "stages": {
+    "planting": "Siembra",
+    "establishment": "Establecimiento",
+    "vegetative": "Vegetativo",
+    "bulking": "Engrosamiento",
+    "maturation": "Maduración",
+    "harvest": "Cosecha"
+  },
+  "crops": {
+    "cassava": "Yuca",
+    "maize": "Maíz",
+    "rice": "Arroz",
+    "tomato": "Tomate",
+    "pepper": "Pimiento",
+    "onion": "Cebolla",
+    "okra": "Quimbombó",
+    "yam": "Ñame",
+    "plantain": "Plátano",
+    "cocoa": "Cacao",
+    "groundnut": "Cacahuete",
+    "beans": "Frijoles"
+  },
+  "common": {
+    "none": "Ninguno",
+    "open_count": "{{count}} abiertos"
+  }
+}

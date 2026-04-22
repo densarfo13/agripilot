@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "home": "Nyumbani",
+    "farm": "Shamba",
+    "tasks": "Kazi",
+    "reports": "Ripoti"
+  },
+  "dashboard": {
+    "smart_assistant": "Msaidizi wako mahiri wa kilimo",
+    "crop_progress": "Maendeleo ya mazao",
+    "just_started": "Imeanza tu",
+    "message_start": "Mazao yako yanaanza tu. Kamilisha kazi za leo ili urudi kwenye mpango mzuri.",
+    "overall_progress": "Maendeleo ya jumla",
+    "today_focus": "Lengo la leo",
+    "good_job": "Kazi nzuri!",
+    "keep_going": "Endelea hivyo na shamba lako litastawi."
+  },
+  "tasks": {
+    "total": "Jumla ya kazi",
+    "pending": "Zinasubiri",
+    "completed": "Zimekamilika",
+    "prepare_field": "Andaa shamba lako na mimea",
+    "scout_pests": "Kagua wadudu"
+  },
+  "farm": {
+    "crop_information": "Taarifa za mazao",
+    "primary_crop": "Zao kuu",
+    "farm_profile": "Wasifu wa shamba",
+    "farm_size": "Ukubwa wa shamba",
+    "farmer_name": "Jina la mkulima",
+    "location": "Mahali",
+    "view_farm": "Tazama shamba langu",
+    "add_farm": "Ongeza shamba jipya",
+    "switch_farm": "Badilisha shamba",
+    "farm_status": "Hali ya shamba",
+    "start_date": "Tarehe ya kuanza",
+    "active_tasks": "Kazi zinazoendelea",
+    "recent_activities": "Shughuli za hivi karibuni"
+  },
+  "settings": {
+    "settings": "Mipangilio",
+    "manage_preferences": "Dhibiti mapendeleo na akaunti yako",
+    "notifications": "Arifa",
+    "daily_reminders": "Vikumbusho vya kila siku",
+    "daily_reminders_helper": "Pata vikumbusho vya kazi kila siku",
+    "weather_alerts": "Arifa za hali ya hewa",
+    "weather_alerts_helper": "Pata taarifa muhimu za hali ya hewa",
+    "risk_alerts": "Arifa za hatari",
+    "risk_alerts_helper": "Pata arifa za wadudu na magonjwa",
+    "missed_task_alerts": "Arifa za kazi zilizokosekana",
+    "missed_task_alerts_helper": "Pata arifa za kazi zilizokosekana",
+    "email_notifications": "Arifa za barua pepe",
+    "email_notifications_helper": "Pokea arifa za barua pepe",
+    "sms_notifications": "Arifa za SMS",
+    "sms_notifications_helper": "Pokea arifa za SMS",
+    "reminder_time": "Muda wa kikumbusho",
+    "reminder_time_helper": "Weka muda wa kutuma vikumbusho",
+    "language": "Lugha",
+    "language_helper": "Chagua lugha unayopendelea",
+    "change_password": "Badilisha nenosiri",
+    "change_password_helper": "Sasisha nenosiri lako",
+    "help_support": "Msaada",
+    "help_support_helper": "Pata msaada na huduma",
+    "about_app": "Kuhusu Farroway",
+    "about_app_helper": "Jifunze zaidi kuhusu programu",
+    "farmer_id": "Kitambulisho cha mkulima",
+    "copy": "Nakili"
+  },
+  "tips": {
+    "daily_tip": "Kidokezo cha siku",
+    "tip_consistency": "Endelea kufanya kazi zako kwa uthabiti ili kupata matokeo bora."
+  },
+  "reminders": {
+    "title": "Kikumbusho",
+    "none": "Huna vikumbusho vipya."
+  },
+  "market": {
+    "title": "Taarifa ya soko",
+    "check_prices": "Angalia bei za eneo lako kabla ya kuuza mazao yako."
+  },
+  "status": {
+    "fair": "Wastani",
+    "good": "Nzuri",
+    "excellent": "Bora sana",
+    "poor": "Dhaifu"
+  },
+  "stages": {
+    "planting": "Kupanda",
+    "establishment": "Kuota na kushika",
+    "vegetative": "Ukuaji wa majani",
+    "bulking": "Kuongezeka ukubwa",
+    "maturation": "Kukomaa",
+    "harvest": "Mavuno"
+  },
+  "crops": {
+    "cassava": "Muhogo",
+    "maize": "Mahindi",
+    "rice": "Mchele",
+    "tomato": "Nyanya",
+    "pepper": "Pilipili",
+    "onion": "Kitunguu",
+    "okra": "Bamia",
+    "yam": "Viazi vikuu",
+    "plantain": "Ndizi za kupika",
+    "cocoa": "Kakao",
+    "groundnut": "Karanga",
+    "beans": "Maharage"
+  },
+  "common": {
+    "none": "Hakuna",
+    "open_count": "{{count}} wazi"
+  }
+}

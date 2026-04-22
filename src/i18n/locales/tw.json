@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "home": "Fie",
+    "farm": "Afuo",
+    "tasks": "Adwuma",
+    "reports": "Nkɔso"
+  },
+  "dashboard": {
+    "smart_assistant": "Wo afuo boafoɔ nyansafo",
+    "crop_progress": "Nnɔbae nkɔso",
+    "just_started": "Rehyɛ ase",
+    "message_start": "Wo nnɔbae no rehyɛ ase. Wie nnɛ adwuma no na kɔ so yiye.",
+    "overall_progress": "Gyinaberɛ nkɔso",
+    "today_focus": "Adeyɛ a ɛdi ho",
+    "good_job": "Adwuma pa!",
+    "keep_going": "Kɔ so na wo afuo bɛyɛ yiye."
+  },
+  "tasks": {
+    "total": "Adwuma nyinaa",
+    "pending": "Aka",
+    "completed": "Wɔawie",
+    "prepare_field": "Siesie wo afuo no",
+    "scout_pests": "Hwɛ mmoawa"
+  },
+  "farm": {
+    "crop_information": "Nnɔbae ho nsɛm",
+    "primary_crop": "Nnɔbae titiriw",
+    "farm_profile": "Afuo ho nsɛm",
+    "farm_size": "Afuo kɛse",
+    "farmer_name": "Okuani din",
+    "location": "Beaeɛ",
+    "view_farm": "Hwɛ me afuo",
+    "add_farm": "Ka afuo foforɔ ho",
+    "switch_farm": "Sesa afuo no",
+    "farm_status": "Afuo tebea",
+    "start_date": "Da a ɛhyɛɛ ase",
+    "active_tasks": "Adwuma a ɛreyɛ",
+    "recent_activities": "Nneɛma a wɔayɛ nnansa yi"
+  },
+  "settings": {
+    "settings": "Nhyehyɛe",
+    "manage_preferences": "Hwɛ wo nhyehyɛe ne account no",
+    "notifications": "Nkaebɔ",
+    "daily_reminders": "Da biara nkaebɔ",
+    "daily_reminders_helper": "Nya da biara adwuma nkaebɔ",
+    "weather_alerts": "Ewiem tebea nkaebɔ",
+    "weather_alerts_helper": "Nya ewiem tebea ho nkaebɔ",
+    "risk_alerts": "Asiane nkaebɔ",
+    "risk_alerts_helper": "Nya mmoawa ne yareɛ ho nkaebɔ",
+    "missed_task_alerts": "Adwuma a woanni ho nkaebɔ",
+    "missed_task_alerts_helper": "Nya nkaebɔ ma adwuma a woahwere",
+    "email_notifications": "Email nkaebɔ",
+    "email_notifications_helper": "Nya email nkaebɔ",
+    "sms_notifications": "SMS nkaebɔ",
+    "sms_notifications_helper": "Nya SMS nkaebɔ",
+    "reminder_time": "Nkaebɔ berɛ",
+    "reminder_time_helper": "Hyɛ berɛ a wɔde nkaebɔ bɛba",
+    "language": "Kasa",
+    "language_helper": "Paw kasa a wopɛ",
+    "change_password": "Sesa secret code",
+    "change_password_helper": "Sesa wo secret code",
+    "help_support": "Mmoa ne support",
+    "help_support_helper": "Nya mmoa ne support",
+    "about_app": "Farroway ho nsɛm",
+    "about_app_helper": "Sua app no ho nsɛm",
+    "farmer_id": "Okuani ID",
+    "copy": "Kopi"
+  },
+  "tips": {
+    "daily_tip": "Da biara afotuo",
+    "tip_consistency": "Kɔ so yɛ w'adwuma daa na wo benya mfasoɔ."
+  },
+  "reminders": {
+    "title": "Nkaebɔ",
+    "none": "Wonni nkaebɔ foforɔ biara."
+  },
+  "market": {
+    "title": "Gua ho nsɛm",
+    "check_prices": "Hwɛ boɔ ansa na woatɔn wo nnɔbae."
+  },
+  "status": {
+    "fair": "Ɛyɛ kakra",
+    "good": "Ɛyɛ",
+    "excellent": "Ɛyɛ paa",
+    "poor": "Ɛnyɛ yiye"
+  },
+  "stages": {
+    "planting": "Dua",
+    "establishment": "Agyina pintinn",
+    "vegetative": "Nhaban mu mpuntuo",
+    "bulking": "Nsono mu mpuntuo",
+    "maturation": "Akwanhyia",
+    "harvest": "Twabere"
+  },
+  "crops": {
+    "cassava": "Bankye",
+    "maize": "Aburo",
+    "rice": "Emo",
+    "tomato": "Ntomaa",
+    "pepper": "Mako",
+    "onion": "Gyene",
+    "okra": "Nkruma",
+    "yam": "Bayere",
+    "plantain": "Borɔdeɛ",
+    "cocoa": "Kookoo",
+    "groundnut": "Nkateɛ",
+    "beans": "Aduane aba"
+  },
+  "common": {
+    "none": "Hwee biara nni hɔ",
+    "open_count": "{{count}} abue"
+  }
+}
