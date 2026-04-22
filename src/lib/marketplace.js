@@ -77,6 +77,64 @@ export async function createMarketplaceListing({ crop, quantity, price, location
   return handle(res);
 }
 
+/**
+ * createMarketplaceListingOfflineAware(payload)
+ *
+ * Try to publish the listing immediately. If the device is offline
+ * or the request fails with a network error, queue it as a
+ * `listing.draft` action and return a synthetic "queued" response
+ * so the UI can tell the farmer their draft is saved and will
+ * publish automatically on reconnect.
+ *
+ * Contract:
+ *   Online success       → { queued: false, listing: <server row> }
+ *   Offline / network err → { queued: true,  queueId, payload }
+ *   Server-side failure (4xx/5xx) bubbles as before — the caller
+ *     sees a thrown error with .code so validation errors don't
+ *     silently "save as draft".
+ */
+export async function createMarketplaceListingOfflineAware(payload = {}) {
+  const online = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+  if (online) {
+    try {
+      const listing = await createMarketplaceListing(payload);
+      return { queued: false, listing };
+    } catch (err) {
+      // Only queue on transport-level failures. Validation errors
+      // (missing_crop, invalid_quantity) have a stable .code and
+      // should surface to the farmer so they can fix the form.
+      if (err && err.code && err.code !== 'request_failed_0'
+          && !/network|fetch|timeout/i.test(String(err.code))) {
+        throw err;
+      }
+      // fall through to queue
+    }
+  }
+  // Queue for later. Lazy-import the queue so this file stays
+  // importable by server-side tests that don't have window.
+  const { enqueueAction } = await import('./sync/offlineQueue.js');
+  const row = enqueueAction({
+    type: 'listing.draft',
+    farmId: payload.farmId || null,
+    payload: {
+      crop:     payload.crop,
+      quantity: Number(payload.quantity),
+      price:    payload.price  != null ? Number(payload.price) : undefined,
+      location: payload.location || undefined,
+      region:   payload.region   || undefined,
+      farmId:   payload.farmId   || undefined,
+    },
+    dedupKey: payload.farmId
+      ? `listing.draft:${payload.farmId}:${String(payload.crop || '').toLowerCase()}`
+      : null,
+  });
+  return {
+    queued:  true,
+    queueId: row && row.id,
+    payload,
+  };
+}
+
 export async function updateMarketplaceListingStatus(listingId, status) {
   const res = await fetch(
     `/api/marketplace/listings/${encodeURIComponent(listingId)}/status`,

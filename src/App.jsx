@@ -109,6 +109,7 @@ const FarmerProgressTab = lazy(() => import('./pages/FarmerProgressTab.jsx'));
 const AdminControlPage = lazy(() => import('./pages/AdminControlPage.jsx'));
 const AdminOrganizationsPage = lazy(() => import('./pages/AdminOrganizationsPage.jsx'));
 const OrganizationDashboardPage = lazy(() => import('./pages/OrganizationDashboardPage.jsx'));
+const AdminSyncQueuePage = lazy(() => import('./pages/AdminSyncQueuePage.jsx'));
 const FarmerRegisterPage = lazy(() => import('./pages/FarmerRegisterPage.jsx'));
 const FarmerDashboardPage = lazy(() => import('./pages/FarmerDashboardPage.jsx'));
 const PendingRegistrationsPage = lazy(() => import('./pages/PendingRegistrationsPage.jsx'));
@@ -408,6 +409,7 @@ export default function App() {
             <Route path="admin/registrations" element={<RoleRoute roles={REGISTRATION_ROLES}><PendingRegistrationsPage /></RoleRoute>} />
             <Route path="admin/organizations" element={<RoleRoute roles={ADMIN_ROLES}><AdminOrganizationsPage /></RoleRoute>} />
             <Route path="admin/organizations/:orgId" element={<RoleRoute roles={ADMIN_ROLES}><OrganizationDashboardPage /></RoleRoute>} />
+            <Route path="admin/sync-queue" element={<RoleRoute roles={ADMIN_ROLES}><AdminSyncQueuePage /></RoleRoute>} />
             <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
             <Route path="admin/security" element={<RoleRoute roles={ADMIN_ROLES}><SecurityRequestsPage /></RoleRoute>} />
             <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />

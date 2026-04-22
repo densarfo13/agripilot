@@ -4,6 +4,7 @@ import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import {
   listMarketplaceListings,
   createMarketplaceListing,
+  createMarketplaceListingOfflineAware,
   requestMarketplaceListing,
   updateMarketplaceListingStatus,
   LISTING_STATUS,
@@ -199,16 +200,18 @@ function FarmerListingMode({ farm, onCreated, t, tr, styles }) {
     if (!Number.isInteger(q) || q <= 0) return setError('invalid_quantity');
     setBusy(true);
     try {
-      const listing = await createMarketplaceListing({
+      // Offline-aware: tries direct POST, falls back to the action
+      // queue + syncs automatically when the device reconnects.
+      const result = await createMarketplaceListingOfflineAware({
         crop, quantity: q,
         price:    price ? Number(price) : undefined,
         location: location || undefined,
         region:   region   || undefined,
         farmId:   farm && farm.id,
       });
-      setCreated(listing);
+      setCreated(result);
       setQuantity(''); setPrice('');
-      onCreated && onCreated(listing);
+      onCreated && onCreated(result);
     } catch (err) {
       setError(err.code || 'create_failed');
     } finally {
@@ -225,9 +228,19 @@ function FarmerListingMode({ farm, onCreated, t, tr, styles }) {
         </h3>
       </header>
 
-      {created && (
+      {created && !created.queued && (
         <div style={styles.success} data-testid="listing-created">
           {tr('marketplace.created', 'Your listing is live — buyers can now find it.')}
+        </div>
+      )}
+      {created && created.queued && (
+        <div style={{ ...styles.success,
+                       background: 'rgba(252,211,77,0.14)',
+                       color: '#FCD34D',
+                       border: '1px solid rgba(252,211,77,0.32)' }}
+             data-testid="listing-queued">
+          {tr('marketplace.listingQueued',
+            'Saved offline — we\u2019ll publish this listing the moment you reconnect.')}
         </div>
       )}
 
