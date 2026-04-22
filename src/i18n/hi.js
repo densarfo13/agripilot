@@ -303,6 +303,31 @@ const HI = {
   // Generic fallback
   'risk.generic.dry_stress':  'सूखा — सिंचाई की योजना बनाएँ।',
   'risk.generic.wet_disease': 'नम मौसम में पत्तियों के रोग बढ़ते हैं।',
+
+  // ─── Crop Intelligence v2: photo capture UI (spec C) ──────────
+  'cropPhoto.title':         'अपनी फसल पहचानें',
+  'cropPhoto.sub':           'एक पौधे या पंक्ति की साफ तस्वीर लें या अपलोड करें।',
+  'cropPhoto.takePhoto':     'फ़ोटो लें',
+  'cropPhoto.upload':        'डिवाइस से अपलोड करें',
+  'cropPhoto.detecting':     'आपकी तस्वीर देखी जा रही है…',
+  'cropPhoto.looksLike':     'लगता है:',
+  'cropPhoto.lowConfidence': 'कम विश्वसनीयता — कृपया पुष्टि करें या दूसरी फसल चुनें।',
+  'cropPhoto.confirm':       'हाँ, यही मेरी फसल है',
+  'cropPhoto.pickDifferent': 'कोई और फसल चुनें',
+  'cropPhoto.retake':        'दूसरी तस्वीर लें',
+  'cropPhoto.pickYours':     'सूची से अपनी फसल चुनें:',
+  'cropPhoto.pickInsteadOf': 'अपनी फसल चुनें:',
+  'cropPhoto.err.type':      'अस्वीकृत चित्र प्रकार। JPEG, PNG या WebP उपयोग करें।',
+  'cropPhoto.err.size':      'चित्र बहुत बड़ा है (अधिकतम 8 MB)।',
+  'cropPhoto.err.detect':    'तस्वीर का विश्लेषण नहीं हो सका। फसल स्वयं चुनें।',
+
+  // ─── Crop Intelligence v2: yield engine extras (spec B) ───────
+  'yield.isEstimate':        'अनुमानित सीमा — वास्तविक उपज मौसम, इनपुट और देखभाल पर निर्भर करती है।',
+  'yield.riskFactors':       'प्रमुख जोखिम जिन पर ध्यान दें',
+  'yield.recommendations':   'उपज बढ़ाने के लिए क्या करें',
+  'yield.rec.irrigate':      'आज सबसे सूखी पंक्तियों को सिंचित करें — सूखे दिन उपज पर जल्दी असर डालते हैं।',
+  'yield.rec.shade':         'सुबह जल्दी पानी दें और जड़ क्षेत्र में मल्च लगाएँ — गर्मी उपज का ऊपरी सिरा घटाती है।',
+  'yield.rec.plantingDate':  'रोपण तिथि सहेजें ताकि उपज अनुमान हर सप्ताह बेहतर हो।',
   'cropStage.title': 'आपकी फसल अभी किस अवस्था में है?',
   'cropStage.subtitle': 'अपनी वर्तमान अवस्था टैप करें',
   'cropStage.saved': 'सहेजा गया!',
