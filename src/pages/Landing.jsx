@@ -128,7 +128,14 @@ function Navbar() {
     >
       <div style={S.navInner}>
         <a href="#top" style={S.logo} aria-label="Farroway home">
-          <span style={S.logoMark} aria-hidden="true" />
+          <img
+            src="/icons/logo-shield.png"
+            alt=""
+            width={28}
+            height={28}
+            style={S.logoImg}
+            aria-hidden="true"
+          />
           <span>Farroway</span>
         </a>
 
@@ -760,10 +767,13 @@ const S = {
     color: TOKENS.text, textDecoration: 'none',
     fontSize: '1.125rem', fontWeight: 800, letterSpacing: '-0.01em',
   },
-  logoMark: {
-    width: 22, height: 22, borderRadius: 7,
-    background: `linear-gradient(135deg, ${TOKENS.green}, #15803d)`,
+  logoImg: {
+    width: 28, height: 28, borderRadius: 8,
+    // Subtle green glow ring so the shield reads on the dark bg
+    // even when the image itself is mostly mono.
     boxShadow: `0 0 0 4px rgba(34,197,94,0.14)`,
+    objectFit: 'contain',
+    display: 'block',
   },
   desktopNav: { gap: '1.25rem', alignItems: 'center' },
   navLink: {
