@@ -91,46 +91,31 @@ function FadeIn({ children, delay = 0, as = 'div', style = null, ...rest }) {
   );
 }
 
-// Inline Farroway shield — pulled verbatim from /public/icons/logo.svg
-// so the landing page ships the real brand mark with zero network
-// request + zero cache risk. Unique gradient id (`fwLogoGradReal`)
-// avoids colliding with any page that also imports the asset.
+// Real Farroway app-icon — the same mark that ships across the
+// rest of the app (nav avatar, PWA home-screen, splash). Uses the
+// 192 px canonical asset scaled down; browser caches it once and
+// reuses everywhere. Decoding is async + loading is eager so the
+// nav mark appears immediately on first paint.
 function LogoMark({ size = 28 }) {
   return (
-    <svg
+    <img
+      src="/icons/icon-192.png"
+      alt=""
       width={size}
       height={size}
-      viewBox="0 0 512 512"
+      decoding="async"
+      loading="eager"
       aria-hidden="true"
-      style={S.logoSvg}
-    >
-      <defs>
-        <linearGradient id="fwLogoGradReal" x1="0" y1="0" x2="0.8" y2="1">
-          <stop offset="0%"   stopColor="#CDEF4A" />
-          <stop offset="20%"  stopColor="#8AD648" />
-          <stop offset="50%"  stopColor="#45B845" />
-          <stop offset="80%"  stopColor="#258E38" />
-          <stop offset="100%" stopColor="#18753A" />
-        </linearGradient>
-      </defs>
-      {/* Shield body */}
-      <path
-        d="M 145 88 Q 200 68, 340 72 Q 420 76, 450 108 Q 468 135, 458 190 Q 445 260, 395 330 Q 345 395, 275 430 Q 215 455, 165 425 Q 110 390, 80 320 Q 52 255, 58 190 Q 64 130, 95 100 Q 115 88, 145 88 Z"
-        fill="url(#fwLogoGradReal)"
-      />
-      {/* Upper furrow */}
-      <path
-        d="M 78 200 Q 200 155, 460 170"
-        stroke="#162033" strokeWidth="20" fill="none"
-        strokeLinecap="round" opacity="0.75"
-      />
-      {/* Lower furrow */}
-      <path
-        d="M 62 300 Q 200 252, 430 280"
-        stroke="#162033" strokeWidth="18" fill="none"
-        strokeLinecap="round" opacity="0.7"
-      />
-    </svg>
+      style={{
+        ...S.logoSvg,
+        width: size,
+        height: size,
+        // The asset already includes the dark navy rounded-square
+        // background; keep a matching radius here to stay crisp
+        // when scaled down.
+        borderRadius: Math.round(size * 0.22),
+      }}
+    />
   );
 }
 
