@@ -23,6 +23,7 @@ import { Link } from 'react-router-dom';
 
 import { smsStartVerification, smsCheckVerification } from '../lib/api';
 import { useTranslation } from '../i18n/index.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -263,9 +264,8 @@ export default function ForgotPasswordSms() {
 
             <div>
               <label style={S.label} htmlFor="sms-new">{newPwdLbl}</label>
-              <input
+              <PasswordInput
                 id="sms-new"
-                type="password"
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD}
                 value={password}
@@ -273,14 +273,14 @@ export default function ForgotPasswordSms() {
                 style={S.input}
                 disabled={loading}
                 data-testid="sms-new-password"
+                testIdPrefix="sms-new-password"
               />
             </div>
 
             <div>
               <label style={S.label} htmlFor="sms-confirm">{confirmLbl}</label>
-              <input
+              <PasswordInput
                 id="sms-confirm"
-                type="password"
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD}
                 value={confirm}
@@ -288,6 +288,7 @@ export default function ForgotPasswordSms() {
                 style={S.input}
                 disabled={loading}
                 data-testid="sms-confirm"
+                testIdPrefix="sms-confirm"
               />
             </div>
 

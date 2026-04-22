@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -201,13 +202,14 @@ export default function LoginPage() {
             style={styles.input}
             required
           />
-          <input
-            type="password"
+          <PasswordInput
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={styles.input}
             required
+            autoComplete="current-password"
+            testIdPrefix="loginpage-password"
           />
           <button type="submit" disabled={loading || !!federatedLoading} style={styles.button}>
             {loading ? 'Signing in...' : 'Sign In'}

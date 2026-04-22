@@ -5,6 +5,7 @@ import CountrySelect from '../components/CountrySelect.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
 import LocationDetect from '../components/LocationDetect.jsx';
 import { useDraft } from '../utils/useDraft.js';
 import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
@@ -156,8 +157,22 @@ export default function FarmerRegisterPage() {
           <input style={styles.input} placeholder="Email Address *" required value={form.email} onChange={set('email')} type="email" />
 
           <div style={styles.row}>
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Password *" required value={form.password} onChange={set('password')} type="password" minLength={8} />
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Confirm Password *" required value={form.confirmPassword} onChange={set('confirmPassword')} type="password" minLength={8} />
+            <PasswordInput
+              wrapperStyle={{ flex: 1 }}
+              style={{ ...styles.input, width: '100%' }}
+              placeholder="Password *" required
+              value={form.password} onChange={set('password')}
+              minLength={8} autoComplete="new-password"
+              testIdPrefix="farmer-register-password"
+            />
+            <PasswordInput
+              wrapperStyle={{ flex: 1 }}
+              style={{ ...styles.input, width: '100%' }}
+              placeholder="Confirm Password *" required
+              value={form.confirmPassword} onChange={set('confirmPassword')}
+              minLength={8} autoComplete="new-password"
+              testIdPrefix="farmer-register-confirm"
+            />
           </div>
 
           <div style={styles.sectionLabel}>Location</div>

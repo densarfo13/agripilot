@@ -5,6 +5,7 @@ import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { STAFF_ROLES } from '../utils/roles.js';
 import { consumeReturnTo } from '../core/auth/returnToStorage.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 // ─── Remembered email ──────────────────────────────────────
 function getRememberedEmail() {
@@ -217,13 +218,17 @@ export default function Login() {
 
           <div>
             <label style={S.label}>{t('auth.password')}</label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('auth.passwordPlaceholder') || 'Password'}
               autoComplete="current-password"
               style={S.input}
+              testIdPrefix="login-password"
+              toggleAriaLabels={{
+                show: t('auth.showPassword') || 'Show password',
+                hide: t('auth.hidePassword') || 'Hide password',
+              }}
             />
             {errors.password && <span style={S.fieldError}>{errors.password}</span>}
           </div>

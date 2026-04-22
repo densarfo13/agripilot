@@ -26,6 +26,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { resetPassword } from '../lib/api';
 import { useTranslation } from '../i18n/index.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -241,10 +242,9 @@ export default function ResetPassword() {
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
             <label style={S.label} htmlFor="rp-new">{L.newPwLbl}</label>
-            <input
+            <PasswordInput
               id="rp-new"
               ref={newPwRef}
-              type="password"
               autoComplete="new-password"
               value={password}
               onChange={(e) => {
@@ -263,6 +263,11 @@ export default function ResetPassword() {
               aria-invalid={!!fieldErrors.password}
               aria-describedby={fieldErrors.password ? 'rp-new-err' : undefined}
               data-testid="reset-password-new"
+              testIdPrefix="reset-password-new"
+              toggleAriaLabels={{
+                show: resolve(t, 'auth.showPassword', 'Show password'),
+                hide: resolve(t, 'auth.hidePassword', 'Hide password'),
+              }}
             />
             {fieldErrors.password && (
               <div id="rp-new-err" style={S.fieldError} data-testid="reset-password-new-error">
@@ -273,9 +278,8 @@ export default function ResetPassword() {
 
           <div>
             <label style={S.label} htmlFor="rp-confirm">{L.confirmLbl}</label>
-            <input
+            <PasswordInput
               id="rp-confirm"
-              type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => {
@@ -294,6 +298,11 @@ export default function ResetPassword() {
               aria-invalid={!!fieldErrors.confirm}
               aria-describedby={fieldErrors.confirm ? 'rp-confirm-err' : undefined}
               data-testid="reset-password-confirm"
+              testIdPrefix="reset-password-confirm"
+              toggleAriaLabels={{
+                show: resolve(t, 'auth.showPassword', 'Show password'),
+                hide: resolve(t, 'auth.hidePassword', 'Hide password'),
+              }}
             />
             {fieldErrors.confirm && (
               <div id="rp-confirm-err" style={S.fieldError} data-testid="reset-password-confirm-error">

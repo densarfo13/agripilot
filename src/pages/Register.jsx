@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function Register() {
   const { register } = useAuth();
@@ -97,14 +98,14 @@ export default function Register() {
 
           <div>
             <label style={S.label}>Password</label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={`At least ${MIN_PASSWORD} characters`}
               autoComplete="new-password"
               style={S.input}
               aria-describedby="register-password-hint"
+              testIdPrefix="register-password"
             />
             <p id="register-password-hint" style={S.hintText}>
               Use at least {MIN_PASSWORD} characters. A mix of letters and numbers is safer.
