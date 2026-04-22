@@ -58,7 +58,8 @@ export default function ForgotPassword() {
   const sentTitle     = resolve(t, 'auth.forgotPassword.sentTitle',
     'We\u2019ve sent you a reset link');
   const sentMsg       = resolve(t, 'auth.forgotPassword.sentMsg',
-    'Check your inbox and spam folder. The link expires in 30 minutes.');
+    'If an account exists, we\u2019ve sent password reset instructions. '
+    + 'Check your inbox and spam folder.');
   const sentHint      = resolve(t, 'auth.forgotPassword.sentHint',
     'Didn\u2019t get it? You can request another link after the cooldown.');
   const resendLbl     = resolve(t, 'auth.forgotPassword.resend',     'Resend link');

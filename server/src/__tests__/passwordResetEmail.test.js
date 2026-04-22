@@ -150,10 +150,18 @@ describe('buildPasswordResetEmail', () => {
 describe('routes/auth.js — forgot-password wiring', () => {
   const code = readFile('server/routes/auth.js');
 
-  it('imports the new email template builders', () => {
+  it('imports the canonical URL + notification helpers', () => {
+    // Template rendering now lives inside notificationService so
+    // the route only needs buildResetUrl for the link math +
+    // sendPasswordReset for the multi-channel dispatch.
     expect(code).toContain("from '../services/emailTemplates.js'");
     expect(code).toContain('buildResetUrl');
-    expect(code).toContain('buildPasswordResetEmail');
+    expect(code).toContain("from '../services/notificationService.js'");
+    expect(code).toContain('notifySendPasswordReset');
+    // buildPasswordResetEmail is now an internal detail of the
+    // notification service — verified separately below.
+    const notify = readFile('server/services/notificationService.js');
+    expect(notify).toContain('buildPasswordResetEmail');
   });
 
   it('aborts the send and logs reset_url_build_failed when URL build fails', () => {

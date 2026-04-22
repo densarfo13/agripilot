@@ -105,11 +105,11 @@ export default function ResetPassword() {
       'Unable to reset password right now. Please try again.'),
     // Success
     successTitle:     resolve(t, 'auth.resetPassword.successTitle',
-      'Password reset successful'),
+      'Your password has been reset'),
     successSubtitle:  resolve(t, 'auth.resetPassword.successSubtitle',
-      'You can now sign in with your new password.'),
+      'You can now sign in.'),
     successCta:       resolve(t, 'auth.resetPassword.successCta',
-      'Back to login'),
+      'Back to sign in'),
     // Expired
     expiredTitle:     resolve(t, 'auth.resetPassword.expiredTitle',
       'Reset link invalid or expired'),

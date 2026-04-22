@@ -9,8 +9,9 @@ import { writeAuditLog } from '../lib/audit.js';
 import { isDemoMode } from '../lib/demoMode.js';
 import {
   buildResetUrl,
-  buildPasswordResetEmail,
 } from '../services/emailTemplates.js';
+import { sendPasswordReset as notifySendPasswordReset }
+  from '../services/notificationService.js';
 import {
   generateOpaqueToken,
   signAccessToken,
@@ -523,7 +524,13 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email: validation.data.email },
-      select: { id: true, email: true, active: true },
+      select: {
+        id: true, email: true, active: true,
+        // Farmer.phone is the source of truth for the recovery SMS
+        // fallback. Widened from the previous narrow select so
+        // notificationService can try SMS when email bounces.
+        farmerProfile: { select: { phone: true } },
+      },
     });
 
     // Explicit user_found trace — lets ops grep the log for
@@ -583,28 +590,44 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
           console.log(`${tag} dev_reset_link ${resetUrl}`);
         }
 
-        // Fire the email. `sendEmail` never throws; we inspect the
-        // structured result so we can log success vs failure crisply.
-        // The body is built by the pure emailTemplates module so the
-        // button and the plain-text fallback always share the same
-        // absolute href — no empty hrefs, no relative paths.
-        const { subject, text, html } = buildPasswordResetEmail({ resetUrl, expiryMinutes });
+        // Multi-channel send: notificationService tries SendGrid
+        // first, then falls back to Twilio Messages SMS when email
+        // fails AND the user's farmer record has a phone number.
+        // The orchestrator handles template rendering + every
+        // channel's error classification + masked logging.
         console.log(`${tag} email_send_start to=${user.email}`);
-        result = await sendEmail({
-          to: user.email,
-          subject,
-          text,
-          html,
+        const deliv = await notifySendPasswordReset({
+          user: {
+            email: user.email,
+            phone: user.farmerProfile && user.farmerProfile.phone || null,
+          },
+          resetLink: resetUrl,
           requestId: reqId,
         });
+        // Flatten into the legacy { success, provider, error } shape
+        // so downstream audit metadata stays backward-compatible.
+        result = deliv.delivered
+          ? {
+              success: true,
+              provider: deliv.email.ok ? 'sendgrid'
+                      : (deliv.sms.attempted && deliv.sms.ok ? 'twilio_sms' : 'none'),
+            }
+          : {
+              success: false,
+              provider: deliv.email.ok === false ? 'sendgrid' : 'none',
+              error: deliv.email.code
+                ? `email:${deliv.email.code}`
+                  + (deliv.sms.attempted ? ` sms:${deliv.sms.code}` : '')
+                : 'unknown',
+            };
       }
 
       if (result.success) {
-        console.log(`${tag} email_sent provider=${result.provider}${result.skipped ? ' (console-only)' : ''}`);
+        console.log(`${tag} delivery_ok provider=${result.provider}`);
       } else {
-        // Full failure details to the server log only — the caller
-        // still gets the anti-enumeration generic success.
-        console.error(`${tag} email_failed provider=${result.provider} error=${result.error}`);
+        // Full failure details already in the service logs above;
+        // single summary line here for grep-ability.
+        console.error(`${tag} delivery_failed provider=${result.provider} error=${result.error}`);
       }
 
       // Audit trail — recovery request is a security event even on
