@@ -44,6 +44,8 @@ export default function BulkLotsCard({
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [busyLotId, setBusyLotId] = useState(null);
+  const [activeLotId, setActiveLotId] = useState(null);      // which lot is expanded
+  const [pickupPoint, setPickupPoint] = useState('');
 
   const tr = (k, fallback) => {
     const v = t(k);
@@ -69,12 +71,16 @@ export default function BulkLotsCard({
 
   useEffect(() => { load(); }, [load]);
 
-  const handleRequest = async (lot) => {
+  const handleRequest = async (lot, opts = {}) => {
     if (busyLotId) return;
     setBusyLotId(lot.lotId); setError('');
     try {
-      const out = await requestBulkLot(lot.lotId, { buyerName, buyerId });
+      const out = await requestBulkLot(lot.lotId, {
+        buyerName, buyerId,
+        pickupPoint: (opts.pickupPoint || pickupPoint || '').trim() || undefined,
+      });
       onRequested && onRequested({ lot, request: out });
+      setActiveLotId(null); setPickupPoint('');
       await load();
     } catch (err) {
       setError(err.code || 'request_failed');
@@ -124,8 +130,15 @@ export default function BulkLotsCard({
         {rows.map((lot) => (
           <LotRow key={lot.lotId}
                   lot={lot}
+                  expanded={activeLotId === lot.lotId}
+                  onToggleExpand={() => {
+                    setActiveLotId((id) => id === lot.lotId ? null : lot.lotId);
+                    setPickupPoint(lot.location || '');
+                  }}
                   onRequest={handleRequest}
                   busy={busyLotId === lot.lotId}
+                  pickupPoint={pickupPoint}
+                  setPickupPoint={setPickupPoint}
                   tr={tr} lang={lang} styles={styles} />
         ))}
       </ul>
@@ -133,7 +146,8 @@ export default function BulkLotsCard({
   );
 }
 
-function LotRow({ lot, onRequest, busy, tr, lang, styles }) {
+function LotRow({ lot, expanded, onToggleExpand, onRequest, busy,
+                   pickupPoint, setPickupPoint, tr, lang, styles }) {
   const pickup = formatPickupWindow(lot);
   const priceRange = lot.priceSignal
     ? formatPrice(lot.priceSignal)
@@ -141,37 +155,69 @@ function LotRow({ lot, onRequest, busy, tr, lang, styles }) {
 
   return (
     <li style={styles.row} data-testid={`bulk-row-${lot.lotId}`}>
-      <img src={getCropImage(lot.crop)} alt="" style={styles.thumb} />
-      <div style={styles.main}>
-        <div style={styles.titleLine}>
-          <span style={styles.cropLabel}>{getCropLabel(lot.crop, lang)}</span>
-          <span style={styles.qty}>{lot.totalQuantity} kg</span>
+      <div style={styles.rowContent}>
+        <img src={getCropImage(lot.crop)} alt="" style={styles.thumb} />
+        <div style={styles.main}>
+          <div style={styles.titleLine}>
+            <span style={styles.cropLabel}>{getCropLabel(lot.crop, lang)}</span>
+            <span style={styles.qty}>{lot.totalQuantity} kg</span>
+          </div>
+          <div style={styles.meta}>
+            {lot.contributors.length} {tr('bulk.contributors', 'farmers')}
+            {lot.region && ` · ${lot.region}`}
+            {lot.location && ` · ${lot.location}`}
+          </div>
+          <div style={styles.meta}>
+            {pickup && (
+              <>
+                <span style={styles.pickupLabel}>
+                  {tr('bulk.pickup', 'Pickup')}:
+                </span>{' '}{pickup}
+              </>
+            )}
+            {priceRange && <> · {priceRange}</>}
+          </div>
         </div>
-        <div style={styles.meta}>
-          {lot.contributors.length} {tr('bulk.contributors', 'farmers')}
-          {lot.region && ` · ${lot.region}`}
-          {lot.location && ` · ${lot.location}`}
-        </div>
-        <div style={styles.meta}>
-          {pickup && (
-            <>
-              <span style={styles.pickupLabel}>
-                {tr('bulk.pickup', 'Pickup')}:
-              </span>{' '}{pickup}
-            </>
-          )}
-          {priceRange && <> · {priceRange}</>}
-        </div>
+        {!expanded && (
+          <button type="button"
+                  disabled={busy}
+                  onClick={onToggleExpand}
+                  style={{ ...styles.primaryBtn, opacity: busy ? 0.6 : 1 }}
+                  data-testid={`bulk-request-${lot.lotId}`}>
+            {busy
+              ? tr('bulk.requesting', 'Requesting…')
+              : tr('bulk.request', 'Request lot')}
+          </button>
+        )}
       </div>
-      <button type="button"
-              disabled={busy}
-              onClick={() => onRequest(lot)}
-              style={{ ...styles.primaryBtn, opacity: busy ? 0.6 : 1 }}
-              data-testid={`bulk-request-${lot.lotId}`}>
-        {busy
-          ? tr('bulk.requesting', 'Requesting…')
-          : tr('bulk.request', 'Request lot')}
-      </button>
+
+      {expanded && (
+        <div style={styles.expandPanel} data-testid={`bulk-expand-${lot.lotId}`}>
+          <label style={styles.expandLabel}>
+            {tr('bulk.pickupPointLabel', 'Pickup point (where should farmers meet you?)')}
+            <input type="text" style={styles.expandInput}
+                   value={pickupPoint}
+                   onChange={(e) => setPickupPoint(e.target.value)}
+                   placeholder={lot.location || tr('bulk.pickupPointPlaceholder', 'Enter a market, depot, or meeting point')}
+                   data-testid={`bulk-pickup-input-${lot.lotId}`} />
+          </label>
+          <div style={styles.expandActions}>
+            <button type="button"
+                    disabled={busy}
+                    onClick={() => onRequest(lot, { pickupPoint })}
+                    style={{ ...styles.primaryBtn, opacity: busy ? 0.6 : 1 }}
+                    data-testid={`bulk-confirm-${lot.lotId}`}>
+              {busy
+                ? tr('bulk.requesting', 'Requesting…')
+                : tr('bulk.confirmRequest', 'Send request')}
+            </button>
+            <button type="button" onClick={onToggleExpand}
+                    style={styles.ghostBtn}>
+              {tr('common.cancel', 'Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
     </li>
   );
 }
@@ -227,10 +273,35 @@ function buildStyles(compact) {
     list: { listStyle: 'none', margin: 0, padding: 0,
             display: 'flex', flexDirection: 'column', gap: 8 },
     row: {
-      display: 'flex', gap: 10, alignItems: 'center',
+      display: 'flex', flexDirection: 'column', gap: 10,
       padding: 10, borderRadius: 10,
       background: 'rgba(56,189,248,0.06)',
       border: '1px solid rgba(56,189,248,0.22)',
+    },
+    rowContent: {
+      display: 'flex', gap: 10, alignItems: 'center',
+    },
+    expandPanel: {
+      display: 'flex', flexDirection: 'column', gap: 8, padding: 8,
+      borderRadius: 8, background: 'rgba(0,0,0,0.2)',
+    },
+    expandLabel: {
+      display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12,
+      color: 'rgba(230,244,234,0.78)',
+    },
+    expandInput: {
+      padding: '8px 10px', borderRadius: 8,
+      border: '1px solid rgba(255,255,255,0.12)',
+      background: 'rgba(255,255,255,0.04)', color: '#E6F4EA', fontSize: 14,
+    },
+    expandActions: {
+      display: 'flex', gap: 8, flexWrap: 'wrap',
+    },
+    ghostBtn: {
+      padding: '8px 14px', borderRadius: 10,
+      border: '1px solid rgba(255,255,255,0.16)',
+      background: 'transparent', color: '#E6F4EA',
+      fontSize: 13, cursor: 'pointer',
     },
     thumb: { width: 48, height: 48, borderRadius: 10, objectFit: 'cover' },
     main:  { flex: 1, minWidth: 0 },

@@ -23,6 +23,7 @@ import {
   createRequest, listRequests,
   acceptRequest, declineRequest, updateListingStatus,
   listIncomingRequestsForFarmer,
+  recordBulkResponse, computeBulkRollup,
   mapListingToSpec, mapRequestToSpec,
   LISTING_STATUS_SPEC_TO_DB, REQUEST_STATUS_SPEC_TO_DB,
 } from '../modules/marketplace/marketplaceService.js';
@@ -456,6 +457,186 @@ describe('listIncomingRequestsForFarmer', () => {
     expect(out.ok).toBe(true);
     expect(out.data.length).toBe(3);
     expect(calls).toBe(1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Bulk-request per-farmer responses (v2 gap fixes)
+// ═══════════════════════════════════════════════════════════════
+describe('recordBulkResponse + computeBulkRollup', () => {
+  let prisma;
+
+  function seedBulkNotifications(farmers, { requestId = 'req-1' } = {}) {
+    for (const { farmerId } of farmers) {
+      prisma._state.farmerNotification.push({
+        id: `ntf_${farmerId}`,
+        farmerId,
+        notificationType: 'market',
+        createdAt: new Date(),
+        read: false,
+        metadata: {
+          kind: 'marketplace.request.created',
+          isBulk: true,
+          lotId: 'bulk:maize:gh:ashanti:2026-05-11',
+          requestId,
+          crop: 'MAIZE',
+          quantity: 50,
+          lotTotal: 150,
+          contributors: farmers.length,
+          bulkResponse: 'pending',
+        },
+      });
+    }
+    // Seed the parent buyer request.
+    prisma._state.buyerRequest.set(requestId, {
+      id: requestId, crop: 'MAIZE', quantity: 150, status: 'open',
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+  }
+
+  beforeEach(() => {
+    prisma = makeFakePrisma();
+    // Add findUnique for farmerNotification which the in-memory
+    // fake doesn't include by default.
+    prisma.farmerNotification.findUnique = async ({ where }) =>
+      prisma._state.farmerNotification.find((n) => n.id === where.id) || null;
+    prisma.farmerNotification.update = async ({ where, data }) => {
+      const row = prisma._state.farmerNotification.find((n) => n.id === where.id);
+      if (!row) throw new Error('not_found');
+      Object.assign(row, data);
+      return row;
+    };
+  });
+
+  it('records an individual farmer response without touching others', async () => {
+    seedBulkNotifications([
+      { farmerId: 'f1' }, { farmerId: 'f2' }, { farmerId: 'f3' },
+    ]);
+    const out = await recordBulkResponse(prisma, {
+      notificationId: 'ntf_f1', farmerId: 'f1', response: 'accepted',
+    });
+    expect(out.ok).toBe(true);
+    expect(out.response).toBe('accepted');
+    expect(out.lotStatus.accepted).toBe(1);
+    expect(out.lotStatus.pending).toBe(2);
+    expect(out.lotStatus.declined).toBe(0);
+    // Parent BuyerRequest stays open until every farmer responds.
+    const parent = await prisma.buyerRequest.findUnique({ where: { id: 'req-1' } });
+    expect(parent.status).toBe('open');
+  });
+
+  it('ALL farmers accept → parent BuyerRequest → matched', async () => {
+    seedBulkNotifications([
+      { farmerId: 'f1' }, { farmerId: 'f2' },
+    ]);
+    await recordBulkResponse(prisma, { notificationId: 'ntf_f1', farmerId: 'f1', response: 'accepted' });
+    const final = await recordBulkResponse(prisma, { notificationId: 'ntf_f2', farmerId: 'f2', response: 'accepted' });
+    expect(final.lotStatus.accepted).toBe(2);
+    expect(final.lotStatus.pending).toBe(0);
+    expect(final.lotStatus.parentStatus).toBe('matched');
+    const parent = await prisma.buyerRequest.findUnique({ where: { id: 'req-1' } });
+    expect(parent.status).toBe('matched');
+  });
+
+  it('any decline after all respond → parent → cancelled', async () => {
+    seedBulkNotifications([
+      { farmerId: 'f1' }, { farmerId: 'f2' }, { farmerId: 'f3' },
+    ]);
+    await recordBulkResponse(prisma, { notificationId: 'ntf_f1', farmerId: 'f1', response: 'accepted' });
+    await recordBulkResponse(prisma, { notificationId: 'ntf_f2', farmerId: 'f2', response: 'accepted' });
+    const final = await recordBulkResponse(prisma, { notificationId: 'ntf_f3', farmerId: 'f3', response: 'declined' });
+    expect(final.lotStatus.accepted).toBe(2);
+    expect(final.lotStatus.declined).toBe(1);
+    expect(final.lotStatus.parentStatus).toBe('cancelled');
+  });
+
+  it('forbidden when farmerId does not own the notification', async () => {
+    seedBulkNotifications([{ farmerId: 'f1' }, { farmerId: 'f2' }]);
+    const out = await recordBulkResponse(prisma, {
+      notificationId: 'ntf_f1', farmerId: 'someone_else', response: 'accepted',
+    });
+    expect(out.ok).toBe(false);
+    expect(out.reason).toBe('forbidden');
+  });
+
+  it('rejects invalid response values', async () => {
+    seedBulkNotifications([{ farmerId: 'f1' }, { farmerId: 'f2' }]);
+    const out = await recordBulkResponse(prisma, {
+      notificationId: 'ntf_f1', farmerId: 'f1', response: 'maybe',
+    });
+    expect(out.reason).toBe('invalid_response');
+  });
+
+  it('rejects double-response (same farmer)', async () => {
+    seedBulkNotifications([{ farmerId: 'f1' }, { farmerId: 'f2' }]);
+    await recordBulkResponse(prisma, { notificationId: 'ntf_f1', farmerId: 'f1', response: 'accepted' });
+    const again = await recordBulkResponse(prisma, { notificationId: 'ntf_f1', farmerId: 'f1', response: 'declined' });
+    expect(again.reason).toBe('already_responded');
+  });
+
+  it('rejects non-bulk notifications', async () => {
+    prisma._state.farmerNotification.push({
+      id: 'ntf_single', farmerId: 'f1', notificationType: 'market',
+      createdAt: new Date(), read: false,
+      metadata: { kind: 'marketplace.request.created', isBulk: false },
+    });
+    const out = await recordBulkResponse(prisma, {
+      notificationId: 'ntf_single', farmerId: 'f1', response: 'accepted',
+    });
+    expect(out.reason).toBe('not_a_bulk_request');
+  });
+
+  it('computeBulkRollup counts across all notifications for a request', async () => {
+    seedBulkNotifications([
+      { farmerId: 'a' }, { farmerId: 'b' }, { farmerId: 'c' },
+    ]);
+    // Simulate one accept + one decline via direct metadata edit.
+    prisma._state.farmerNotification[0].metadata.bulkResponse = 'accepted';
+    prisma._state.farmerNotification[1].metadata.bulkResponse = 'declined';
+    const rollup = await computeBulkRollup(prisma, 'req-1');
+    expect(rollup.totalContributors).toBe(3);
+    expect(rollup.accepted).toBe(1);
+    expect(rollup.declined).toBe(1);
+    expect(rollup.pending).toBe(2 - 1); // 1 still pending
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// listIncomingRequestsForFarmer — bulk state filtering
+// ═══════════════════════════════════════════════════════════════
+describe('inbox filter by per-farmer bulk state', () => {
+  it('bulk requests filter by myResponse, not parent BuyerRequest status', async () => {
+    const prisma = makeFakePrisma();
+    // Parent request is 'open' (pending) but f1 has already
+    // accepted their share.
+    prisma._state.buyerRequest.set('req-1', {
+      id: 'req-1', crop: 'MAIZE', quantity: 100, status: 'open',
+      createdAt: new Date(), updatedAt: new Date(),
+    });
+    prisma._state.farmerNotification.push({
+      id: 'ntf_f1', farmerId: 'f1', notificationType: 'market',
+      createdAt: new Date(), read: true,
+      metadata: {
+        kind: 'marketplace.request.created', isBulk: true,
+        requestId: 'req-1', lotId: 'bulk:x', crop: 'MAIZE',
+        quantity: 50, bulkResponse: 'accepted',
+      },
+    });
+
+    // Default 'pending' filter should NOT surface this — the farmer
+    // already accepted.
+    const pending = await listIncomingRequestsForFarmer(prisma, {
+      farmerId: 'f1', status: 'pending',
+    });
+    expect(pending.data.length).toBe(0);
+
+    // 'accepted' filter surfaces it.
+    const accepted = await listIncomingRequestsForFarmer(prisma, {
+      farmerId: 'f1', status: 'accepted',
+    });
+    expect(accepted.data.length).toBe(1);
+    expect(accepted.data[0].myResponse).toBe('accepted');
+    expect(accepted.data[0].isBulk).toBe(true);
   });
 });
 

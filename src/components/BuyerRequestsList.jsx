@@ -3,6 +3,7 @@ import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import {
   listMyBuyerRequests,
+  fetchBulkLotStatus,
   REQUEST_STATUS,
 } from '../lib/marketplace.js';
 
@@ -33,6 +34,10 @@ export default function BuyerRequestsList({
   const [rows, setRows]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
+  // Per-request bulk-status rollup. Keyed by requestId. Each entry
+  // is either null (non-bulk / unknown) or { totalContributors,
+  // accepted, declined, pending, parentStatus }.
+  const [bulkById, setBulkById] = useState({});
 
   const tr = (k, fallback) => {
     const v = t(k);
@@ -54,6 +59,26 @@ export default function BuyerRequestsList({
   }, [buyerId, status]);
 
   useEffect(() => { load(); }, [load]);
+
+  // After rows load, fetch bulk rollups in parallel. Requests with
+  // no associated bulk notifications (totalContributors === 0) stay
+  // unmarked — the UI falls back to the standard single-request row.
+  useEffect(() => {
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    let cancelled = false;
+    Promise.all(rows.map((r) => fetchBulkLotStatus(r.id)
+      .then((status) => ({ id: r.id, status }))
+      .catch(() => ({ id: r.id, status: null }))
+    )).then((results) => {
+      if (cancelled) return;
+      const next = {};
+      for (const { id, status } of results) {
+        if (status && status.totalContributors > 0) next[id] = status;
+      }
+      setBulkById(next);
+    });
+    return () => { cancelled = true; };
+  }, [rows]);
 
   const visible = rows.slice(0, maxRows);
   const hiddenCount = Math.max(0, rows.length - visible.length);
@@ -89,21 +114,43 @@ export default function BuyerRequestsList({
       )}
 
       <ul style={styles.list}>
-        {visible.map((row) => (
+        {visible.map((row) => {
+          const bulk = bulkById[row.id];
+          return (
           <li key={row.id} style={styles.row}
               data-testid={`my-request-${row.id}`}>
             <img src={getCropImage(row.crop)} alt="" style={styles.thumb} />
             <div style={styles.rowMain}>
               <div style={styles.rowTitle}>
                 {getCropLabel(row.crop, lang)} · {row.quantity} kg
+                {bulk && (
+                  <span style={styles.bulkPill}
+                        data-testid={`my-request-bulk-${row.id}`}>
+                    {tr('marketplace.inbox.bulkPill', 'Bulk lot')}
+                  </span>
+                )}
               </div>
+              {bulk && (
+                <div style={styles.rowMeta}>
+                  {bulk.accepted}/{bulk.totalContributors}{' '}
+                  {tr('bulk.myRequest.acceptedOf', 'farmers accepted')}
+                  {bulk.declined > 0 && `, ${bulk.declined} ${tr('bulk.myRequest.declined', 'declined')}`}
+                  {bulk.pending > 0 && `, ${bulk.pending} ${tr('bulk.myRequest.pending', 'pending')}`}
+                </div>
+              )}
+              {row.location && (
+                <div style={styles.rowMeta}>
+                  {tr('marketplace.inbox.pickupAt', 'Pickup at')}:{' '}
+                  <strong>{row.location}</strong>
+                </div>
+              )}
               <div style={styles.rowMeta}>
                 {row.region && (<span>{row.region} · </span>)}
                 <StatusBadge status={row.status} tr={tr} />
               </div>
             </div>
           </li>
-        ))}
+        );})}
       </ul>
 
       {hiddenCount > 0 && (
@@ -180,5 +227,10 @@ function buildStyles(compact) {
     rowMeta: { fontSize: 12, color: 'rgba(230,244,234,0.7)', marginTop: 2 },
     more:    { fontSize: 12, color: 'rgba(230,244,234,0.55)',
                textAlign: 'center', padding: 4 },
+    bulkPill: {
+      padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700,
+      background: 'rgba(56,189,248,0.22)', color: '#7DD3FC',
+      textTransform: 'uppercase', letterSpacing: 0.3, marginLeft: 6,
+    },
   };
 }

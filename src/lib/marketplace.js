@@ -142,6 +142,29 @@ export async function declineMarketplaceRequest(requestId) {
   return handle(res);
 }
 
+// ─── Bulk-request per-farmer response ─────────────────────────
+// One farmer's response to a bulk lot request. Keeps every other
+// participating farmer's state intact. The parent BuyerRequest
+// only flips to matched/cancelled once every farmer has responded.
+export async function respondToBulkRequest(requestId, notificationId, response) {
+  if (!requestId || !notificationId) throw Object.assign(
+    new Error('missing_ids'), { code: 'missing_ids' });
+  const res = await fetch(
+    `/api/marketplace/requests/${encodeURIComponent(requestId)}/bulk-response`,
+    { ...JSON_PATCH, body: JSON.stringify({ notificationId, response }) });
+  return handle(res);
+}
+
+export async function fetchBulkLotStatus(requestId) {
+  if (!requestId) return null;
+  try {
+    const res = await fetch(
+      `/api/marketplace/requests/${encodeURIComponent(requestId)}/bulk-status`,
+      { credentials: 'include' });
+    return await handle(res);
+  } catch { return null; }
+}
+
 // ─── Convenience helpers (match spec statuses) ────────────────
 export async function markListingCompleted(listingId) {
   return updateMarketplaceListingStatus(listingId, 'completed');

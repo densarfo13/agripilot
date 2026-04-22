@@ -5,6 +5,7 @@ import {
   listIncomingRequestsForFarmer,
   acceptMarketplaceRequest,
   declineMarketplaceRequest,
+  respondToBulkRequest,
   REQUEST_STATUS,
 } from '../lib/marketplace.js';
 
@@ -66,7 +67,14 @@ export default function IncomingRequestsList({
     if (busy) return;
     setBusy(row.request.id); setError('');
     try {
-      if (action === 'accept') {
+      if (row.isBulk) {
+        // Bulk requests: record THIS farmer's individual response.
+        // The parent BuyerRequest only flips when every farmer
+        // has answered; other farmers keep their state.
+        await respondToBulkRequest(
+          row.request.id, row.notificationId,
+          action === 'accept' ? 'accepted' : 'declined');
+      } else if (action === 'accept') {
         await acceptMarketplaceRequest(row.request.id, row.listingId);
       } else {
         await declineMarketplaceRequest(row.request.id);
@@ -139,15 +147,30 @@ export default function IncomingRequestsList({
                   {tr('marketplace.inbox.bulkFarmers', 'farmers')}
                 </div>
               )}
+              {row.pickupPoint && (
+                <div style={styles.rowMeta}>
+                  {tr('marketplace.inbox.pickupAt', 'Pickup at')}:{' '}
+                  <strong>{row.pickupPoint}</strong>
+                </div>
+              )}
               <div style={styles.rowMeta}>
                 {row.buyerName
                   ? (tr('marketplace.inbox.from', 'From') + ` ${row.buyerName}`)
                   : tr('marketplace.inbox.fromAnonymous', 'From a buyer')}
                 {' · '}
-                <StatusBadge status={row.request.status} tr={tr} />
+                <StatusBadge
+                  status={row.isBulk
+                    ? (row.myResponse || REQUEST_STATUS.PENDING)
+                    : row.request.status}
+                  tr={tr} />
               </div>
             </div>
-            {row.request.status === REQUEST_STATUS.PENDING ? (
+            {/* Show accept/decline when THIS farmer's state is
+                pending. For bulk rows we use myResponse (per-farmer);
+                for single rows we fall back to the request status. */}
+            {(row.isBulk
+                ? (row.myResponse || REQUEST_STATUS.PENDING) === REQUEST_STATUS.PENDING
+                : row.request.status === REQUEST_STATUS.PENDING) ? (
               <div style={styles.actions}>
                 <button type="button" style={styles.acceptBtn}
                         disabled={busy === row.request.id}

@@ -56,12 +56,13 @@ export async function listBulkLots(filters = {}) {
   return handle(res);
 }
 
-export async function requestBulkLot(lotId, { buyerName, buyerId, message } = {}) {
+export async function requestBulkLot(lotId, { buyerName, buyerId, message, pickupPoint } = {}) {
   if (!lotId) throw Object.assign(new Error('missing_lot_id'), { code: 'missing_lot_id' });
   const body = {};
-  if (buyerName) body.buyerName = buyerName;
-  if (buyerId)   body.buyerId   = buyerId;
-  if (message)   body.message   = message;
+  if (buyerName)   body.buyerName   = buyerName;
+  if (buyerId)     body.buyerId     = buyerId;
+  if (message)     body.message     = message;
+  if (pickupPoint) body.pickupPoint = pickupPoint;
   const res = await fetch(
     `/api/marketplace/bulk-lots/${encodeURIComponent(lotId)}/request`,
     { ...JSON_POST, body: JSON.stringify(body) });

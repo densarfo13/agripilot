@@ -7245,6 +7245,15 @@ const T = {
   'marketplace.inbox.bulkShare':    { en: 'Your share', fr: 'Votre part', sw: 'Fungu lako', ha: 'Rabonka', tw: 'Wo kyɛfa' },
   'marketplace.inbox.bulkOf':       { en: 'across', fr: 'sur', sw: 'katika', ha: 'tsakanin', tw: 'wɔ' },
   'marketplace.inbox.bulkFarmers':  { en: 'farmers', fr: 'agriculteurs', sw: 'wakulima', ha: 'manoma', tw: 'akuafoɔ' },
+  'marketplace.inbox.pickupAt':     { en: 'Pickup at', fr: 'Collecte à', sw: 'Chukua kutoka', ha: 'Ɗauka a', tw: 'Fa fi' },
+  // Bulk v2 — pickup point input + buyer rollup
+  'bulk.pickupPointLabel':         { en: 'Pickup point (where should farmers meet you?)', fr: 'Point de collecte (où les agriculteurs vous rencontrent)', sw: 'Mahali pa kuchukulia (wapi wakulima wakutane nawe?)', ha: 'Wurin ɗauka (ina manoma za su sadu da kai?)', tw: 'Fa baabi (ɛhe na akuafoɔ behyia wo?)' },
+  'bulk.pickupPointPlaceholder':   { en: 'Enter a market, depot, or meeting point', fr: 'Entrez un marché ou point de rencontre', sw: 'Ingiza soko au mahali pa kukutana', ha: 'Shigar kasuwa ko wurin haɗuwa', tw: 'Kyerɛ ɛdwa anaa nhyiamu baabi' },
+  'bulk.confirmRequest':           { en: 'Send request', fr: 'Envoyer la demande', sw: 'Tuma ombi', ha: 'Aika buƙata', tw: 'Soma abisadeɛ' },
+  'bulk.myRequest.acceptedOf':     { en: 'farmers accepted', fr: 'agriculteurs acceptés', sw: 'wakulima wamekubali', ha: 'manoma sun karɓa', tw: 'akuafoɔ agye to mu' },
+  'bulk.myRequest.declined':       { en: 'declined', fr: 'refusé', sw: 'walikataa', ha: 'sun ki', tw: 'annyae' },
+  'bulk.myRequest.pending':        { en: 'still deciding', fr: 'en attente', sw: 'bado wanaamua', ha: 'har yanzu ba a yanke ba', tw: 'reyɛ adwene' },
+  'common.cancel':                 { en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae' },
 
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },

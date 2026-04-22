@@ -19,6 +19,7 @@ import {
   createRequest, listRequests,
   acceptRequest, declineRequest, updateListingStatus,
   listIncomingRequestsForFarmer,
+  recordBulkResponse, computeBulkRollup,
   matchAllFlat, recordPayment, marketplaceStats,
 } from './marketplaceService.js';
 import { buildPriceInsight } from './priceInsights.js';
@@ -150,6 +151,60 @@ export function createMarketplaceRouter(opts = {}) {
     }),
   );
 
+  // PATCH /requests/:requestId/bulk-response — participating farmer
+  // responds to a bulk request with accepted|declined. Unlike the
+  // single-request status endpoint, this records the response on
+  // THIS farmer's notification only; other farmers' state is
+  // preserved. The parent BuyerRequest flips to matched/cancelled
+  // only when every contributor has responded.
+  // Body: { notificationId, response: 'accepted'|'declined' }
+  router.patch('/requests/:requestId/bulk-response',
+    auth,
+    requireRole(['farmer', 'admin']),
+    requireFields(['notificationId', 'response']),
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      // Resolve farmerId from authenticated user.
+      let farmerId = null;
+      if (req.user && req.user.sub && prisma?.farmer?.findFirst) {
+        const farmer = await prisma.farmer.findFirst({
+          where: { userId: req.user.sub }, select: { id: true },
+        });
+        farmerId = farmer ? farmer.id : null;
+      }
+      if (!farmerId) return r.fail('missing_farmer_id', 400);
+      const out = await recordBulkResponse(prisma, {
+        notificationId: req.body.notificationId,
+        farmerId,
+        response:       req.body.response,
+      });
+      if (!out.ok) {
+        const status =
+          out.reason === 'notification_not_found' ? 404
+        : out.reason === 'forbidden'              ? 403
+        : out.reason === 'not_a_bulk_request'     ? 400
+        : out.reason === 'invalid_response'       ? 400
+        : out.reason === 'already_responded'      ? 409
+                                                    : 500;
+        return r.fail(out.reason, status);
+      }
+      return r.ok(out);
+    }),
+  );
+
+  // GET /requests/:requestId/bulk-status — public-ish rollup so the
+  // buyer can see "2/3 farmers accepted" without trawling through
+  // notification metadata client-side.
+  router.get('/requests/:requestId/bulk-status',
+    auth,
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      const rollup = await computeBulkRollup(prisma, req.params.requestId);
+      if (!rollup) return r.fail('no_prisma', 500);
+      return r.ok(rollup);
+    }),
+  );
+
   // PATCH /requests/:id/status — farmer accepts or declines a request.
   // Body: { status: 'accepted' | 'declined', listingId? }
   // When status=accepted AND listingId is provided, the linked
@@ -250,19 +305,28 @@ export function createMarketplaceRouter(opts = {}) {
       const lot = await buildBulkLotById(prisma, req.params.lotId);
       if (!lot) return r.fail('lot_not_found', 404);
 
-      const { buyerName, buyerId, message } = req.body || {};
+      const { buyerName, buyerId, message, pickupPoint } = req.body || {};
       if (!prisma?.buyerRequest?.create) return r.fail('no_prisma', 500);
 
       // Record the bulk request as a single BuyerRequest with the
       // lot's total quantity. Farmers see their share via the
       // per-farmer FarmerNotification below.
+      // Buyer-supplied pickup point takes precedence over the lot's
+      // default location. We store it on the request row so
+      // buyer-side history shows "Pickup at X" without needing a
+      // metadata lookup, and we also mirror it into the per-farmer
+      // notifications below.
+      const resolvedPickup = (typeof pickupPoint === 'string' && pickupPoint.trim())
+        ? pickupPoint.trim()
+        : (lot.location || null);
+
       const request = await prisma.buyerRequest.create({
         data: {
           buyerName: buyerName || null,
           buyerId:   buyerId   || null,
           crop:      lot.crop,
           quantity:  Math.max(1, Math.round(lot.totalQuantity)),
-          location:  lot.location || null,
+          location:  resolvedPickup,
           region:    lot.region   || null,
           status:    'open',
         },
@@ -305,8 +369,12 @@ export function createMarketplaceRouter(opts = {}) {
                   lotTotal:   lot.totalQuantity,
                   contributors: lot.contributors.length,
                   pickupWindow: lot.pickupWindow,
+                  pickupPoint: resolvedPickup,
                   listingIds: c.listingIds,
                   message:    message || null,
+                  // Per-farmer response state. Transitions to
+                  // 'accepted' | 'declined' via bulk-response route.
+                  bulkResponse: 'pending',
                 },
               },
             });

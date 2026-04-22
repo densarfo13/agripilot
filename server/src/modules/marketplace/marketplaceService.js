@@ -434,6 +434,9 @@ export async function listIncomingRequestsForFarmer(prisma, { farmerId, status =
           lotTotal:     meta.lotTotal || null,
           contributors: meta.contributors || null,
           pickupWindow: meta.pickupWindow || null,
+          pickupPoint:  meta.pickupPoint || null,
+          // Per-farmer bulk response state: pending | accepted | declined
+          myResponse:   meta.bulkResponse || (meta.isBulk ? 'pending' : null),
         };
       })
       .filter((e) => e && nonEmptyString(e.requestId));
@@ -448,11 +451,28 @@ export async function listIncomingRequestsForFarmer(prisma, { farmerId, status =
     const byId = new Map(rows.map((r) => [r.id, r]));
 
     // 4. Assemble result, apply status filter.
+    //
+    // Filter semantics:
+    //   • Non-bulk rows filter on the parent BuyerRequest's status
+    //     (legacy behaviour preserved).
+    //   • Bulk rows filter on THIS farmer's own response state
+    //     (myResponse). This is essential — a bulk parent stays
+    //     'open' until every farmer responds, but an individual
+    //     farmer who already accepted should not see their own
+    //     accepted row under the 'pending' filter.
+    const specStatus = status; // 'pending' | 'accepted' | 'declined' | 'all'
     const data = [];
     for (const e of entries) {
       const row = byId.get(e.requestId);
       if (!row) continue;
-      if (dbStatus !== 'all' && row.status !== dbStatus) continue;
+      if (specStatus !== 'all') {
+        if (e.isBulk) {
+          const my = e.myResponse || 'pending';
+          if (my !== specStatus) continue;
+        } else if (dbStatus !== row.status) {
+          continue;
+        }
+      }
       data.push({
         request:        mapRequestToSpec(row),
         listingId:      e.listingId,
@@ -470,6 +490,8 @@ export async function listIncomingRequestsForFarmer(prisma, { farmerId, status =
         lotTotal:     e.lotTotal,
         contributors: e.contributors,
         pickupWindow: e.pickupWindow,
+        pickupPoint:  e.pickupPoint,
+        myResponse:   e.myResponse,
       });
       if (data.length >= limit) break;
     }
@@ -477,6 +499,121 @@ export async function listIncomingRequestsForFarmer(prisma, { farmerId, status =
   } catch (err) {
     return { ok: false, reason: 'db_failed', message: err?.message || 'unknown', data: [] };
   }
+}
+
+// ─── Bulk request per-farmer responses ───────────────────────
+/**
+ * recordBulkResponse(prisma, { notificationId, farmerId, response })
+ *
+ *   One participating farmer's accept / decline of a bulk request.
+ *   Response is stored on the farmer's own notification (so each
+ *   farmer has an independent state). When the final farmer responds,
+ *   the parent BuyerRequest is rolled forward:
+ *     • all 'accepted' → request → 'matched'
+ *     • any 'declined' (after all respond) → request → 'cancelled'
+ *     • mixed → request stays 'open' (buyer can accept partial
+ *       fulfillment off-platform; we don't auto-close)
+ *
+ *   Returns:
+ *     { ok:true, response, lotStatus: {
+ *         totalContributors, accepted, declined, pending,
+ *         parentStatus: 'open'|'matched'|'cancelled'
+ *       }
+ *     }
+ */
+export async function recordBulkResponse(prisma, { notificationId, farmerId, response } = {}) {
+  if (!prisma?.farmerNotification?.findUnique
+      || !prisma?.farmerNotification?.update) return { ok: false, reason: 'no_prisma' };
+  if (!nonEmptyString(notificationId)) return { ok: false, reason: 'missing_notification_id' };
+  if (!nonEmptyString(farmerId))       return { ok: false, reason: 'missing_farmer_id' };
+  const normalized = String(response || '').toLowerCase();
+  if (!['accepted', 'declined'].includes(normalized)) {
+    return { ok: false, reason: 'invalid_response' };
+  }
+
+  try {
+    const notification = await prisma.farmerNotification.findUnique({
+      where: { id: notificationId },
+    });
+    if (!notification) return { ok: false, reason: 'notification_not_found' };
+    if (notification.farmerId !== farmerId) {
+      return { ok: false, reason: 'forbidden' };
+    }
+
+    let meta = notification.metadata;
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch { meta = null; }
+    }
+    if (!meta || meta.kind !== 'marketplace.request.created' || !meta.isBulk) {
+      return { ok: false, reason: 'not_a_bulk_request' };
+    }
+    if (meta.bulkResponse && meta.bulkResponse !== 'pending') {
+      return { ok: false, reason: 'already_responded' };
+    }
+
+    const nextMeta = { ...meta, bulkResponse: normalized,
+                        respondedAt: new Date().toISOString() };
+    await prisma.farmerNotification.update({
+      where: { id: notificationId },
+      data:  { metadata: nextMeta, read: true },
+    });
+
+    // Roll-up across all farmer notifications for this request.
+    const rollup = await computeBulkRollup(prisma, meta.requestId);
+
+    // Parent request transition when every farmer has responded.
+    if (rollup && rollup.pending === 0 && rollup.totalContributors > 0
+        && prisma?.buyerRequest?.update) {
+      try {
+        const existing = await prisma.buyerRequest.findUnique({ where: { id: meta.requestId } });
+        if (existing && existing.status === 'open') {
+          const nextStatus = rollup.declined === 0 ? 'matched' : 'cancelled';
+          await prisma.buyerRequest.update({
+            where: { id: meta.requestId },
+            data:  { status: nextStatus },
+          });
+          rollup.parentStatus = nextStatus;
+        } else {
+          rollup.parentStatus = existing ? existing.status : null;
+        }
+      } catch (_) { /* non-fatal */ }
+    } else if (rollup) {
+      rollup.parentStatus = 'open';
+    }
+
+    return { ok: true, response: normalized, lotStatus: rollup };
+  } catch (err) {
+    return { ok: false, reason: 'db_failed', message: err?.message || 'unknown' };
+  }
+}
+
+/**
+ * computeBulkRollup(prisma, requestId)
+ *   Aggregates bulkResponse across every FarmerNotification tied to
+ *   this request. Silent on missing prisma; returns null.
+ */
+export async function computeBulkRollup(prisma, requestId) {
+  if (!prisma?.farmerNotification?.findMany || !nonEmptyString(requestId)) return null;
+  const notifications = await prisma.farmerNotification.findMany({
+    where: { notificationType: 'market' },
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+  });
+  let accepted = 0, declined = 0, pending = 0, total = 0;
+  for (const n of notifications) {
+    let meta = n.metadata;
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch { meta = null; }
+    }
+    if (!meta || meta.kind !== 'marketplace.request.created'
+        || !meta.isBulk || meta.requestId !== requestId) continue;
+    total += 1;
+    const r = meta.bulkResponse;
+    if (r === 'accepted')      accepted += 1;
+    else if (r === 'declined') declined += 1;
+    else                        pending += 1;
+  }
+  return { totalContributors: total, accepted, declined, pending, parentStatus: null };
 }
 
 // ─── Matching ────────────────────────────────────────────────
