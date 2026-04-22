@@ -29,12 +29,23 @@ function stageKeyI18n(stageKey) {
 function headlineFor({
   cropKey, currentStage, source, overallProgressPercent,
   transitionImminent, confidenceLevel, nextStage,
+  cycleState = 'active',
 }) {
   const cropCap = cropKey
     ? cropKey.charAt(0).toUpperCase() + cropKey.slice(1)
     : 'Crop';
   const stagePretty = String(currentStage || '')
     .replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+  // Completion wins over every other branch — a recorded harvest
+  // locks the message so the timeline card never tells the farmer
+  // to "get ready" after they've already wrapped the cycle.
+  if (cycleState === 'completed') {
+    return {
+      key: 'timeline.headline.completed',
+      fallback: 'Cycle complete — your harvest is recorded.',
+    };
+  }
 
   if (source === 'generic') {
     return {
@@ -55,6 +66,12 @@ function headlineFor({
       fallback: `Entering ${nextPretty} stage soon.`,
     };
   }
+  if (currentStage === 'harvest' && cycleState === 'harvest_ready') {
+    return {
+      key: 'timeline.headline.harvestReady',
+      fallback: 'Harvest stage reached — likely ready for harvest.',
+    };
+  }
   if (currentStage === 'harvest') {
     return {
       key: 'timeline.headline.harvest',
@@ -73,7 +90,7 @@ function headlineFor({
   };
 }
 
-export function getStageProgress({ timeline } = {}) {
+export function getStageProgress({ timeline, cycleState = 'active' } = {}) {
   if (!timeline || typeof timeline !== 'object') return null;
 
   const {
@@ -113,7 +130,7 @@ export function getStageProgress({ timeline } = {}) {
     transitionImminent,
     headline: headlineFor({
       cropKey: crop, currentStage, source, overallProgressPercent,
-      transitionImminent, confidenceLevel, nextStage,
+      transitionImminent, confidenceLevel, nextStage, cycleState,
     }),
     confidenceLevel,
   });

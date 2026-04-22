@@ -128,18 +128,62 @@ export function getLatestHarvest(farmId) {
 }
 
 /**
- * hasRecentHarvest — true when a record was made for THIS crop cycle
- * (planting date match). When the farm has no plantingDate, any
- * record within the last 60 days counts.
+ * hasRecentHarvest — true when a record was made for THIS crop cycle.
+ *
+ * A cycle counts as "completed" if ANY of these matches — ordered
+ * from most to least specific so real-world edge cases (a farmer
+ * correcting plantingDate post-harvest, a legacy record with no
+ * planting anchor) never trigger a spurious regression to active:
+ *
+ *   1. Exact plantingDate match on the latest record
+ *   2. plantingDate within ±3 days of the record's anchor (small
+ *      corrections don't un-complete the cycle)
+ *   3. Record harvested AFTER the current plantingDate (the record
+ *      can only belong to THIS or a prior cycle; since it's the
+ *      latest record, it belongs to this one)
+ *   4. No plantingDate on the farm + record within the last 60 days
  */
 export function hasRecentHarvest({ farmId, plantingDate = null } = {}) {
   if (!farmId) return false;
   const list = listHarvests(farmId);
   if (list.length === 0) return false;
   const latest = list[0];
+
+  // 1) Exact match on the stored plantingDate.
   if (plantingDate && latest.plantingDate === plantingDate) return true;
-  // No planting date anchor — treat records within 60 days as the
-  // current cycle.
+
+  // 2) Small corrections: if the farm's plantingDate moved within
+  //    ±3 days of the record's own plantingDate, still the same
+  //    cycle — the farmer just fixed the date.
+  if (plantingDate && latest.plantingDate) {
+    const a = new Date(plantingDate).getTime();
+    const b = new Date(latest.plantingDate).getTime();
+    if (Number.isFinite(a) && Number.isFinite(b)
+        && Math.abs(a - b) <= 3 * 86400000) {
+      return true;
+    }
+  }
+
+  // 3) Record happened AFTER the current plantingDate. It can only
+  //    belong to this cycle (you can't harvest a crop before you
+  //    planted it). Prevents regression when plantingDate gets
+  //    edited post-completion without starting a genuinely new cycle.
+  if (plantingDate) {
+    const planted = new Date(plantingDate).getTime();
+    const harvestedAt = new Date(latest.harvestedAt).getTime();
+    if (Number.isFinite(planted) && Number.isFinite(harvestedAt)
+        && harvestedAt > planted) {
+      return true;
+    }
+    // A plantingDate was supplied AND none of the specific rules
+    // matched → this is a genuinely new cycle. Don't fall through
+    // to the 60-day legacy guard (which is only meant for rows
+    // that never had a planting anchor in the first place).
+    return false;
+  }
+
+  // 4) No planting anchor at all — treat records within 60 days as
+  //    the current cycle's harvest.
   const ageMs = Date.now() - new Date(latest.harvestedAt).getTime();
   return Number.isFinite(ageMs) && ageMs < 60 * 86400000;
 }

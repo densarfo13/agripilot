@@ -13,6 +13,7 @@
 import { useMemo } from 'react';
 import { getCropTimeline } from '../lib/timeline/cropTimelineEngine.js';
 import { getStageProgress } from '../lib/timeline/stageProgressEngine.js';
+import { getCropCycleState } from '../lib/harvest/cropCycleCompletionEngine.js';
 import { useTranslation } from '../i18n/index.js';
 
 function prettyStage(key) {
@@ -41,8 +42,15 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
     if (!mapped || !mapped.crop) return null;
     const timeline = getCropTimeline({ farm: mapped, now });
     if (!timeline) return null;
-    const progress = getStageProgress({ timeline });
-    return { timeline, progress };
+    // cycleState (active | harvest_ready | completed) flows into the
+    // headline so a completed cycle never shows "get ready to bring
+    // in the crop" after the farmer already recorded the harvest.
+    const cycle = getCropCycleState({ farm: mapped, now });
+    const progress = getStageProgress({
+      timeline,
+      cycleState: cycle ? cycle.state : 'active',
+    });
+    return { timeline, progress, cycleState: cycle ? cycle.state : 'active' };
   }, [mapped, now]);
 
   if (!view) return null;

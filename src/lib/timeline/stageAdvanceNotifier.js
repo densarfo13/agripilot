@@ -91,17 +91,29 @@ export function detectStageAdvance({ farm = null, now = null } = {}) {
   const fromPretty = toPretty(prior.stage);
   const toPrettyStr = toPretty(toStage);
 
+  // Harvest-stage advances get a more actionable "likely ready for
+  // harvest" message instead of the generic "Now in: Harvest" line.
+  const isHarvestAdvance = toStage === 'harvest';
+  const messageFallback = isHarvestAdvance
+    ? (daysAway <= 1
+        ? 'Your crop has progressed while you were away. It is now likely ready for harvest.'
+        : `Your crop progressed while you were away for ${daysAway} days. It is now likely ready for harvest.`)
+    : (daysAway <= 1
+        ? `Your crop has progressed while you were away. Now in: ${toPrettyStr} stage.`
+        : `Your crop progressed while you were away for ${daysAway} days. Now in: ${toPrettyStr} stage.`);
+
   return Object.freeze({
     advanced:  true,
     fromStage: prior.stage,
     toStage,
     daysAway,
     hoursAway: Math.round(hoursAway),
+    harvestAdvance: isHarvestAdvance,
     message: Object.freeze({
-      key: 'timeline.advancedWhileAway.message',
-      fallback: daysAway <= 1
-        ? `Your crop has progressed while you were away. Now in: ${toPrettyStr} stage.`
-        : `Your crop progressed while you were away for ${daysAway} days. Now in: ${toPrettyStr} stage.`,
+      key: isHarvestAdvance
+        ? 'timeline.advancedWhileAway.harvestReady'
+        : 'timeline.advancedWhileAway.message',
+      fallback: messageFallback,
     }),
     from: Object.freeze({ key: `timeline.stage.${prior.stage}`, fallback: fromPretty }),
     to:   Object.freeze({ key: `timeline.stage.${toStage}`,    fallback: toPrettyStr }),
