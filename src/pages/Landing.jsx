@@ -91,43 +91,44 @@ function FadeIn({ children, delay = 0, as = 'div', style = null, ...rest }) {
   );
 }
 
-// Inline shield — keeps the logo bullet-proof (no <img> load,
-// no 404 race, no dark-on-dark transparency failure).
+// Inline Farroway shield — pulled verbatim from /public/icons/logo.svg
+// so the landing page ships the real brand mark with zero network
+// request + zero cache risk. Unique gradient id (`fwLogoGradReal`)
+// avoids colliding with any page that also imports the asset.
 function LogoMark({ size = 28 }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 512 512"
       aria-hidden="true"
       style={S.logoSvg}
     >
       <defs>
-        <linearGradient id="fwLogoGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%"  stopColor="#86EFAC" />
-          <stop offset="100%" stopColor="#16A34A" />
+        <linearGradient id="fwLogoGradReal" x1="0" y1="0" x2="0.8" y2="1">
+          <stop offset="0%"   stopColor="#CDEF4A" />
+          <stop offset="20%"  stopColor="#8AD648" />
+          <stop offset="50%"  stopColor="#45B845" />
+          <stop offset="80%"  stopColor="#258E38" />
+          <stop offset="100%" stopColor="#18753A" />
         </linearGradient>
       </defs>
-      {/* Shield outline */}
+      {/* Shield body */}
       <path
-        d="M16 2 L28 6 V16 C28 23 22 28 16 30 C10 28 4 23 4 16 V6 Z"
-        fill="url(#fwLogoGrad)"
-        stroke="#052e16"
-        strokeWidth="1.25"
+        d="M 145 88 Q 200 68, 340 72 Q 420 76, 450 108 Q 468 135, 458 190 Q 445 260, 395 330 Q 345 395, 275 430 Q 215 455, 165 425 Q 110 390, 80 320 Q 52 255, 58 190 Q 64 130, 95 100 Q 115 88, 145 88 Z"
+        fill="url(#fwLogoGradReal)"
       />
-      {/* Sprout */}
+      {/* Upper furrow */}
       <path
-        d="M16 22 V13"
-        stroke="#052e16" strokeWidth="2"
-        strokeLinecap="round"
+        d="M 78 200 Q 200 155, 460 170"
+        stroke="#162033" strokeWidth="20" fill="none"
+        strokeLinecap="round" opacity="0.75"
       />
+      {/* Lower furrow */}
       <path
-        d="M16 13 C12 13 10 10 10 8 C13 8 16 10 16 13 Z"
-        fill="#052e16"
-      />
-      <path
-        d="M16 13 C20 13 22 10 22 8 C19 8 16 10 16 13 Z"
-        fill="#052e16"
+        d="M 62 300 Q 200 252, 430 280"
+        stroke="#162033" strokeWidth="18" fill="none"
+        strokeLinecap="round" opacity="0.7"
       />
     </svg>
   );
@@ -804,9 +805,8 @@ const S = {
   },
   logoSvg: {
     display: 'block',
-    borderRadius: 8,
-    // Subtle green glow ring so the shield reads on the dark bg.
-    boxShadow: `0 0 0 4px rgba(34,197,94,0.14)`,
+    // The real shield has its own gradient + furrows and reads
+    // cleanly on the dark nav/footer. No extra glow ring needed.
   },
   desktopNav: { gap: '1.25rem', alignItems: 'center' },
   navLink: {
