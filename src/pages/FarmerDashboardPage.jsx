@@ -13,6 +13,7 @@ import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { getCropLabel, getCropIcon } from '../utils/crops.js';
+import CropImage from '../components/CropImage.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -435,7 +436,16 @@ export default function FarmerDashboardPage() {
               return (
                 <div style={S.heroCard} data-testid="crop-status-hero">
                   <div style={S.heroTop}>
-                    <span style={S.heroCropIcon}>{cropIcon}</span>
+                    {cropCode ? (
+                      <CropImage
+                        cropKey={cropCode}
+                        alt={cropName || 'Crop'}
+                        size={48}
+                        circular
+                      />
+                    ) : (
+                      <span style={S.heroCropIcon}>{cropIcon}</span>
+                    )}
                     <div style={{ flex: 1 }}>
                       <div style={S.heroCropName}>{cropName || t('home.myFarm')}</div>
                       {stageLabel && <span style={S.heroBadge}>{stageLabel}</span>}

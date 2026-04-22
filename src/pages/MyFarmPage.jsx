@@ -22,6 +22,7 @@ import FarmInsightCard from '../components/FarmInsightCard.jsx';
 import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
 import NotificationPreferencesCard from '../components/NotificationPreferencesCard.jsx';
 import DailyProgressCard from '../components/DailyProgressCard.jsx';
+import CropImage from '../components/CropImage.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -216,7 +217,13 @@ export default function MyFarmPage() {
             {/* Crop tile */}
             {(farm.cropType || farm.crop) && (
               <div style={S.tile}>
-                <span style={S.tileIcon}>{getCropIcon(farm.cropType || farm.crop) || getCropEmoji(farm.cropType || farm.crop)}</span>
+                <CropImage
+                  cropKey={farm.cropType || farm.crop}
+                  alt={getCropLabel(farm.cropType || farm.crop)}
+                  size={56}
+                  circular
+                  style={{ marginBottom: '0.5rem' }}
+                />
                 <span style={S.tileLabel}>{t('myFarm.crop')}</span>
                 <span style={S.tileValue}>{getCropLabel(farm.cropType || farm.crop)}</span>
               </div>
