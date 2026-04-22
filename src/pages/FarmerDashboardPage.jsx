@@ -70,15 +70,66 @@ export default function FarmerDashboardPage() {
   const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
-    api.get('/auth/farmer-profile')
-      .then(r => {
-        setProfile(r.data); setProfileError('');
-        // Cache for offline rendering
+    // ─── Account load: bulletproof against the infinite-loading bug ──
+    // Previous version left `loading=true` semantics up to the render
+    // branch, which only checked `profile` — any caught failure with
+    // no cached fallback + no offline user set `profileError` but
+    // left `profile` null, so the UI fell through to the "Loading
+    // your account status..." card forever.
+    //
+    // Fixes in order:
+    //   • AbortController with an 8 s timeout so a stalled request
+    //     can't pin the spinner (spec §4)
+    //   • try/catch around every async branch, setLoading(false)
+    //     in the finally block EVERY time (spec §1 + §2)
+    //   • explicit 401 / 403 handling — clear auth + redirect to
+    //     /login with a session-expired reason (spec §5)
+    //   • console.error("ACCOUNT LOAD ERROR:", err) on any failure
+    //     (spec §6)
+    //   • render branch below now honours profileError + loading
+    //     separately, so a failure shows a real error UI instead of
+    //     the "Loading…" fallback
+    let alive = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    (async () => {
+      try {
+        const r = await api.get('/auth/farmer-profile', { signal: controller.signal });
+        if (!alive) return;
+        setProfile(r.data);
+        setProfileError('');
         try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(r.data)); } catch {}
-      })
-      .catch(() => {
-        // If offline, try cached farmer profile first, then authStore user
-        const cachedProfile = (() => { try { return JSON.parse(localStorage.getItem('farroway:farmerProfile')); } catch { return null; } })();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('ACCOUNT LOAD ERROR:', err);
+        if (!alive) return;
+
+        const status = err && err.response && err.response.status;
+        const aborted = err && (err.name === 'AbortError' || err.name === 'CanceledError'
+          || err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED');
+
+        // 401 / 403 — clear the session and bounce to /login with
+        // a reason so the user sees the info banner there.
+        if (status === 401 || status === 403) {
+          try { useAuthStore.getState().logout?.(); } catch { /* noop */ }
+          try { localStorage.removeItem('farroway:farmerProfile'); } catch { /* noop */ }
+          navigate('/login', {
+            replace: true,
+            state: { reason: 'session_expired',
+                     from: window.location.pathname + window.location.search },
+          });
+          return;
+        }
+
+        // Fall back to the cached profile first, then the authStore
+        // user (for offline sessions) — BUT only claim success if we
+        // actually have something to render. Otherwise set a loud
+        // error the UI can show.
+        const cachedProfile = (() => {
+          try { return JSON.parse(localStorage.getItem('farroway:farmerProfile')); }
+          catch { return null; }
+        })();
         if (cachedProfile) {
           setProfile(cachedProfile);
           setProfileError('');
@@ -86,22 +137,41 @@ export default function FarmerDashboardPage() {
           setProfile(user);
           setProfileError('');
         } else {
-          setProfileError('Could not load your profile. Please check your connection.');
+          setProfileError(aborted
+            ? 'Unable to load account. The request timed out. Please refresh or login again.'
+            : 'Unable to load account. Please refresh or login again.');
         }
-      })
-      .finally(() => setLoading(false));
-    // Load farm profiles + referral (farmStore now hydrates from cache if offline)
-    fetchProfiles().then(profiles => {
-      if (profiles.length === 0 && !_fromCache) setShowOnboarding(true);
-    }).catch(() => {
-      // fetchProfiles failed — do NOT show onboarding, farmer may already be registered; if we have cached profiles, don't show error
-      if (!_fromCache) {
-        setProfileError('Could not load your farm data. Please check your connection and refresh.');
+      } finally {
+        clearTimeout(timeoutId);
+        if (alive) setLoading(false);
       }
-    });
+    })();
+
+    // Load farm profiles + referral (farmStore now hydrates from cache if offline)
+    (async () => {
+      try {
+        const profiles = await fetchProfiles();
+        if (alive && profiles.length === 0 && !_fromCache) setShowOnboarding(true);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('ACCOUNT LOAD ERROR:', err);
+        if (alive && !_fromCache) {
+          setProfileError((prev) => prev
+            || 'Could not load your farm data. Please check your connection and refresh.');
+        }
+      }
+    })();
+
     fetchReferral(); // supplemental — referral card just won't render if this fails
     trackEvent('dashboard_viewed'); // fire-and-forget analytics
-  }, []);
+
+    return () => {
+      alive = false;
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);   // once on mount — never loop
 
   const { t, lang, setLang: switchLang } = useTranslation();
 
@@ -835,8 +905,49 @@ export default function FarmerDashboardPage() {
               aria-label="Get help"
             >?</a>
           </>
-        ) : (
+        ) : loading ? (
           <div style={styles.card}>
+            <p>{t('home.loadingAccount')}</p>
+          </div>
+        ) : profileError ? (
+          <div style={styles.card} data-testid="farmer-account-error" role="alert">
+            <p style={{ margin: 0, marginBottom: '0.75rem' }}>{profileError}</p>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                style={{
+                  flex: 1, minHeight: 44, borderRadius: 12, border: 'none',
+                  background: '#22C55E', color: '#fff', fontWeight: 700,
+                  cursor: 'pointer', touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+                data-testid="farmer-account-refresh"
+              >
+                {t('common.refresh') || 'Refresh'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  try { useAuthStore.getState().logout?.(); } catch { /* noop */ }
+                  navigate('/login', { replace: true,
+                    state: { reason: 'session_expired' } });
+                }}
+                style={{
+                  flex: 1, minHeight: 44, borderRadius: 12,
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  background: 'transparent', color: '#EAF2FF', fontWeight: 600,
+                  cursor: 'pointer', touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+                data-testid="farmer-account-login"
+              >
+                {t('auth.backToLogin') || 'Login again'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={styles.card} data-testid="farmer-account-empty">
             <p>{t('home.loadingAccount')}</p>
           </div>
         )}
