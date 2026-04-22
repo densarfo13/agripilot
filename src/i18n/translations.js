@@ -7200,6 +7200,31 @@ const T = {
   'score.suggestion.cropFit':   { en: 'Next season, consider a higher-fit crop for your region.', fr: 'La saison prochaine, envisagez une culture plus adaptée.', sw: 'Msimu ujao, fikiria mazao yanayofaa zaidi.', ha: 'Damina mai zuwa, tuna amfani da ya fi dacewa.', tw: 'Bere a ɛreba no, dwene nnɔbae a ɛfata wo man.' },
   'score.suggestion.yieldAlign':{ en: 'Save your planting date + keep the stage current.', fr: 'Enregistrez la date de plantation et tenez l\u2019étape à jour.', sw: 'Hifadhi tarehe ya kupanda na sasisha hatua.', ha: 'Adana ranar shuka kuma sabunta mataki.', tw: 'Kora dua da no na ma anammɔn no nkɔ so.' },
 
+  // ─── Price Intelligence (Crop Intelligence v6) ─────────────────
+  'priceInsight.title':              { en: 'Price trends in your region', fr: 'Tendances des prix dans votre région', sw: 'Mwelekeo wa bei katika eneo lako', ha: 'Yanayin farashi a yankinka', tw: 'Bo no nkɔso wɔ wo man mu' },
+  'priceInsight.window30':           { en: 'Last 30 days', fr: '30 derniers jours', sw: 'Siku 30 zilizopita', ha: 'Kwanaki 30 da suka wuce', tw: 'Nna 30 a atwam' },
+  'priceInsight.loading':            { en: 'Loading prices…', fr: 'Chargement des prix…', sw: 'Inapakia bei…', ha: 'Ana lodin farashi…', tw: 'Rehwɛ abɔdeɛ no bo…' },
+  'priceInsight.empty':              { en: 'Market prices aren\u2019t available yet for your crops.', fr: 'Les prix du marché ne sont pas encore disponibles.', sw: 'Bei za soko bado hazipatikani kwa mazao yako.', ha: 'Farashin kasuwa bai samu ba tukuna.', tw: 'Ɛdwa mu bo nni hɔ tukuna.' },
+  'priceInsight.suggestedShort':     { en: 'Market range', fr: 'Fourchette marché', sw: 'Kipengele cha soko', ha: 'Iyakar kasuwa', tw: 'Ɛdwa bo mu' },
+  'priceInsight.listings':           { en: 'listings', fr: 'annonces', sw: 'orodha', ha: 'bayanai', tw: 'nkrataa' },
+  'priceInsight.yourCrop':           { en: 'Your crop', fr: 'Votre culture', sw: 'Mazao yako', ha: 'Amfaninka', tw: 'Wo nnɔbae' },
+
+  // Scope (data source)
+  'priceInsight.scope.local':        { en: 'Your region', fr: 'Votre région', sw: 'Eneo lako', ha: 'Yankinka', tw: 'Wo man' },
+  'priceInsight.scope.country':      { en: 'Country average', fr: 'Moyenne nationale', sw: 'Wastani wa nchi', ha: 'Matsakaicin ƙasa', tw: 'Man mu akontaabuo' },
+  'priceInsight.scope.global':       { en: 'Global benchmark', fr: 'Référence globale', sw: 'Kigezo cha kimataifa', ha: 'Ma\u2019aunin duniya', tw: 'Wiase no nyinaa nhyehyɛe' },
+  'priceInsight.scope.fallback':     { en: 'Generic estimate', fr: 'Estimation générique', sw: 'Makadirio ya jumla', ha: 'Ƙiyasi na gama gari', tw: 'Akontabu bi' },
+
+  // Trend labels
+  'priceInsight.trend.up':           { en: 'Up this week', fr: 'En hausse cette semaine', sw: 'Juu wiki hii', ha: 'Saman a wannan mako', tw: 'Ɛkɔ soro nnawɔtwe yi' },
+  'priceInsight.trend.down':         { en: 'Down this week', fr: 'En baisse cette semaine', sw: 'Chini wiki hii', ha: 'Ƙasa a wannan mako', tw: 'Ɛsi fam nnawɔtwe yi' },
+  'priceInsight.trend.stable':       { en: 'Steady this week', fr: 'Stable cette semaine', sw: 'Imara wiki hii', ha: 'A tsaye wannan mako', tw: 'Hyɛ mu nnawɔtwe yi' },
+
+  // Confidence labels
+  'priceInsight.conf.high':          { en: 'High confidence', fr: 'Confiance élevée', sw: 'Uhakika mkubwa', ha: 'Babban tabbaci', tw: 'Nkyinhyim kɛse' },
+  'priceInsight.conf.medium':        { en: 'Medium', fr: 'Moyen', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
+  'priceInsight.conf.low':           { en: 'Low', fr: 'Faible', sw: 'Mdogo', ha: 'Ƙaramin', tw: 'Sua' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },

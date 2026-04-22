@@ -8,6 +8,12 @@ import {
   updateMarketplaceListingStatus,
   LISTING_STATUS,
 } from '../lib/marketplace.js';
+import {
+  usePriceInsight,
+  formatPriceRange,
+  formatTrend,
+  PRICE_SOURCE_LABELS,
+} from '../lib/priceIntelligence.js';
 
 /**
  * MarketplaceCard — one widget that renders either:
@@ -175,6 +181,16 @@ function FarmerListingMode({ farm, onCreated, t, tr, styles }) {
   const [error, setError]         = useState('');
   const [created, setCreated]     = useState(null);
 
+  // Live suggested price range for the current (crop, country, region).
+  // Re-queries whenever any of the three change; stays silent when
+  // crop is empty so the form doesn't thrash on keystrokes.
+  const { insight: priceInsight } = usePriceInsight({
+    crop,
+    country: farm && (farm.country || farm.countryCode),
+    region:  region || (farm && (farm.region || farm.state)) || null,
+    windowDays: 30,
+  });
+
   const submit = async (e) => {
     e.preventDefault();
     setError('');
@@ -234,6 +250,9 @@ function FarmerListingMode({ farm, onCreated, t, tr, styles }) {
           <input style={styles.input} value={price} type="number" min="0" step="0.01"
                  onChange={(e) => setPrice(e.target.value)}
                  data-testid="list-price" />
+          {priceInsight && priceInsight.suggested && (
+            <PriceSuggestionHint insight={priceInsight} tr={tr} />
+          )}
         </label>
         <label style={styles.label}>
           {tr('marketplace.field.region', 'Region')}
@@ -258,6 +277,48 @@ function FarmerListingMode({ farm, onCreated, t, tr, styles }) {
         </button>
       </form>
     </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PriceSuggestionHint — shown under the listing-form price field.
+// ═══════════════════════════════════════════════════════════════
+function PriceSuggestionHint({ insight, tr }) {
+  const range = formatPriceRange(insight, { short: true });
+  if (!range) return null;
+  const trend = formatTrend(insight);
+  const confColor = insight.confidence === 'high'   ? '#86EFAC'
+                  : insight.confidence === 'medium' ? '#FCD34D'
+                                                      : '#CBD5E1';
+  const scopeLabel = PRICE_SOURCE_LABELS[insight.source] || insight.source;
+  const rangeLabel = tr('priceInsight.suggestedShort', 'Market range');
+  const confLabel  = tr(`priceInsight.conf.${insight.confidence}`,
+                         insight.confidence === 'high'   ? 'High confidence'
+                       : insight.confidence === 'medium' ? 'Medium'
+                                                           : 'Low');
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 2,
+      marginTop: 4, padding: '6px 8px', borderRadius: 8,
+      background: 'rgba(34,197,94,0.08)',
+      border: '1px solid rgba(34,197,94,0.22)',
+      fontSize: 12, color: '#E6F4EA',
+    }} data-testid="list-price-suggestion">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontWeight: 600 }}>{rangeLabel}:</span>
+        <span>{range}</span>
+        {trend.label && (
+          <span style={{ color: trend.color, fontWeight: 600, marginLeft: 4 }}>
+            {trend.arrow}
+          </span>
+        )}
+      </div>
+      <div style={{ color: 'rgba(230,244,234,0.6)' }}>
+        {scopeLabel}
+        {insight.sampleSize > 0 && ` · ${insight.sampleSize} ${tr('priceInsight.listings', 'listings')}`}
+        <span style={{ color: confColor, marginLeft: 6 }}>· {confLabel}</span>
+      </div>
+    </div>
   );
 }
 

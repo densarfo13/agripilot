@@ -21,6 +21,7 @@ import {
   listIncomingRequestsForFarmer,
   matchAllFlat, recordPayment, marketplaceStats,
 } from './marketplaceService.js';
+import { buildPriceInsight } from './priceInsights.js';
 import mwPkg from '../../core/middleware.js';
 import { requireFeature } from '../../core/featureGuard.js';
 const { requireFields, requireRole, standardResponse, asyncHandler } = mwPkg;
@@ -172,6 +173,26 @@ export function createMarketplaceRouter(opts = {}) {
       }
       if (!out.ok) return r.fail(out.reason, mapReasonToStatus(out.reason));
       return r.ok(out.request);
+    }),
+  );
+
+  // ─── Price insights ─────────────────────────────────────
+  // GET /prices/insight?crop=maize&country=GH&region=AS&windowDays=30
+  // Public (no auth) so buyers + farmers + prospective users all
+  // see the same number. Accepts `windowDays` between 7 and 90.
+  router.get('/prices/insight',
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      const crop = String(req.query.crop || '').trim();
+      if (!crop) return r.fail('missing_crop', 400);
+      const days = Math.min(90, Math.max(7, Number(req.query.windowDays) || 30));
+      const insight = await buildPriceInsight(prisma, {
+        crop,
+        country:    req.query.country || null,
+        region:     req.query.region  || null,
+        windowDays: days,
+      });
+      return r.ok(insight);
     }),
   );
 

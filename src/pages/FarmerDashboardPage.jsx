@@ -19,6 +19,7 @@ import MarketplaceCard from '../components/MarketplaceCard.jsx';
 import IncomingRequestsList from '../components/IncomingRequestsList.jsx';
 import SmartAlertsCard from '../components/SmartAlertsCard.jsx';
 import FarrowayScoreCard from '../components/FarrowayScoreCard.jsx';
+import PriceTrendsCard from '../components/PriceTrendsCard.jsx';
 import { useTaskCompletion } from '../lib/intelligence/taskCompletion.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
@@ -868,6 +869,17 @@ export default function FarmerDashboardPage() {
                   farm={farmProfile}
                   weather={weather}
                 />
+              </div>
+            )}
+
+            {/* 5b2. Price trends — "Price trends in your region"
+                 card. Fetches median price + trend arrow for the
+                 farmer's crop + 3 staple comparisons over the last
+                 30 days. Safe fallback when local data is thin:
+                 country average → global USD benchmark. */}
+            {farmProfile && farmProfile.crop && setupComplete && (
+              <div data-testid="price-trends-section" style={{ marginTop: '1rem' }}>
+                <PriceTrendsCard farm={farmProfile} />
               </div>
             )}
 
