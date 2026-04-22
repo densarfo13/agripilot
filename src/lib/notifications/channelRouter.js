@@ -49,18 +49,34 @@ export function chooseChannels({ candidate, preferences, user = null } = {}) {
   const priority = candidate.priority || 'medium';
   const plans = [];
 
+  const phoneOnly = !hasEmail(user) && hasPhone(user);
+
   switch (candidate.type) {
     case 'password_reset_notification': {
-      plans.push(row('email', 'default', hasEmail(user)));
-      if (hasPhone(user) && prefs.smsEnabled !== false) {
-        plans.push(row('sms', 'fallback', true));
+      if (hasEmail(user)) {
+        plans.push(row('email', 'default', true));
+      }
+      // Phone-only farmers: SMS becomes the primary recovery channel
+      // (the Twilio Verify-driven /forgot-password/sms flow).
+      if (hasPhone(user)) {
+        plans.push(row('sms',
+          phoneOnly ? 'phone_only_primary' : 'fallback',
+          prefs.smsEnabled !== false));
       }
       plans.push(row('in_app', 'fallback', true));
       break;
     }
 
     case 'invite_notification': {
-      plans.push(row('email', 'default', hasEmail(user)));
+      if (hasEmail(user)) {
+        plans.push(row('email', 'default', true));
+      }
+      // No email? Fall back to SMS for the invite so the farmer can
+      // still join. Keeps the backyard / commercial onboarding path
+      // open for farmers who never had email to begin with.
+      if (phoneOnly && prefs.smsEnabled !== false) {
+        plans.push(row('sms', 'phone_only_primary', true));
+      }
       plans.push(row('in_app', 'fallback', true));
       break;
     }
@@ -90,8 +106,18 @@ export function chooseChannels({ candidate, preferences, user = null } = {}) {
       if (prefs.riskAlertsEnabled === false) break;
       plans.push(row('in_app', 'default', true));
       if (priority === 'high') {
-        if (prefs.smsEnabled && hasPhone(user)) plans.push(row('sms',   'high_priority', true));
-        if (prefs.emailEnabled && hasEmail(user)) plans.push(row('email','high_priority', true));
+        // Phone-only farmers on high-priority risk: SMS is the only
+        // reliable outbound channel, so we escalate to it regardless
+        // of whether the farmer opted in to SMS preference — users
+        // without email can't receive the email fallback.
+        if (prefs.smsEnabled && hasPhone(user)) {
+          plans.push(row('sms', 'high_priority', true));
+        } else if (phoneOnly && !hasEmail(user)) {
+          plans.push(row('sms', 'phone_only_critical', true));
+        }
+        if (prefs.emailEnabled && hasEmail(user)) {
+          plans.push(row('email','high_priority', true));
+        }
       }
       break;
     }

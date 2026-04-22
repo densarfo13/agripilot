@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
+import OfflineBanner from './components/OfflineBanner.jsx';
 
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -284,6 +285,7 @@ export default function App() {
       <SeasonProvider>
       {stepUpRequired && <StepUpModal />}
       <SyncStatus />
+      <OfflineBanner />
       <AuthLoadingGate>
       <Suspense fallback={<PageLoader />}>
         <Routes>

@@ -33,6 +33,7 @@
  */
 
 import { generateDailyTasks } from './taskEngine.js';
+import { enqueueAction } from '../sync/offlineQueue.js';
 
 const KEY = 'farroway.dailyTasks.v1';
 
@@ -154,6 +155,15 @@ export function markTaskComplete(farmId, taskId) {
       // Non-fatal — the daily task store is still authoritative.
     }
   }
+  // Queue a server-sync action. Dedup key keeps rapid double-clicks
+  // + offline-then-online scenarios from producing duplicate rows.
+  enqueueAction({
+    type:     'task_complete',
+    farmId,
+    taskId,
+    payload:  { completedAt: new Date().toISOString() },
+    dedupKey: `task_complete:${farmId || 'nofarm'}:${taskId}`,
+  });
   return task;
 }
 
@@ -162,7 +172,17 @@ export function markTaskComplete(farmId, taskId) {
  * a completion.
  */
 export function skipTask(farmId, taskId) {
-  return updateTaskStatus(farmId, taskId, 'skipped');
+  const task = updateTaskStatus(farmId, taskId, 'skipped');
+  if (task) {
+    enqueueAction({
+      type:     'task_skip',
+      farmId,
+      taskId,
+      payload:  { skippedAt: new Date().toISOString() },
+      dedupKey: `task_skip:${farmId || 'nofarm'}:${taskId}`,
+    });
+  }
+  return task;
 }
 
 /**
