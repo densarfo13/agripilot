@@ -18,6 +18,7 @@ import FarmActionPlan from '../components/FarmActionPlan.jsx';
 import MarketplaceCard from '../components/MarketplaceCard.jsx';
 import IncomingRequestsList from '../components/IncomingRequestsList.jsx';
 import SmartAlertsCard from '../components/SmartAlertsCard.jsx';
+import FarrowayScoreCard from '../components/FarrowayScoreCard.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -822,6 +823,17 @@ export default function FarmerDashboardPage() {
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{weatherRecs.recommendations[0].title}</div>
                   <div style={{ fontSize: '0.8rem', color: '#A1A1AA', marginTop: '0.15rem' }}>{weatherRecs.recommendations[0].action}</div>
                 </div>
+              </div>
+            )}
+
+            {/* 5a0. Farroway Score — 0-100 farm-performance score
+                 with per-category breakdown (Execution, Timing,
+                 Risk Management, Crop Fit, Yield Alignment),
+                 day-over-day trend, and 1-2 improvement suggestions.
+                 Computed client-side from existing engines. */}
+            {farmProfile && farmProfile.crop && setupComplete && (
+              <div data-testid="farroway-score-section" style={{ marginTop: '1rem' }}>
+                <FarrowayScoreCard farm={farmProfile} weather={weather} />
               </div>
             )}
 

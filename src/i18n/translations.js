@@ -7169,6 +7169,37 @@ const T = {
   'alerts.yield.weather_drag':      { en: 'Protect the crop — current weather is trimming yield.', fr: 'Protégez la culture — la météo rogne le rendement.', sw: 'Linda mazao — hali ya hewa inapunguza mavuno.', ha: 'Kare amfanin gona — yanayi yana rage amfani.', tw: 'Bɔ nnɔbae no ho ban — ewiem te aba so.' },
   'alerts.stage.transition':        { en: 'Next growth stage is coming — prepare this week.', fr: 'Prochaine étape bientôt — préparez-vous.', sw: 'Hatua ijayo inakuja — jiandae.', ha: 'Matakin gaba yana zuwa — ka shirya.', tw: 'Anammɔn a ɛdi hɔ reba — siesie wo ho.' },
 
+  // ─── Farroway Score (Crop Intelligence v5) ────────────────────
+  'score.title':             { en: 'Farroway Score', fr: 'Score Farroway', sw: 'Alama ya Farroway', ha: 'Matsayi na Farroway', tw: 'Farroway Nkyerɛwdeɛ' },
+  'score.sub':               { en: 'How well you\u2019re managing this farm today', fr: 'Comment vous gérez votre ferme aujourd\u2019hui', sw: 'Jinsi unavyosimamia shamba hili leo', ha: 'Yadda kake sarrafa gonar ka yau', tw: 'Sɛdeɛ woredi wo afuo yi ho dwuma ɛnnɛ' },
+  'score.suggestions':       { en: 'How to lift your score', fr: 'Comment améliorer votre score', sw: 'Jinsi ya kuboresha alama yako', ha: 'Yadda za ka ƙara matsayinka', tw: 'Sɛdeɛ wobɛma wo nkyerɛwdeɛ akɔ soro' },
+  'score.why':               { en: 'Why this score?', fr: 'Pourquoi ce score ?', sw: 'Kwa nini alama hii?', ha: 'Me ya sa wannan matsayi?', tw: 'Deɛn nti saa nkyerɛwdeɛ yi?' },
+  // Bands
+  'score.band.excellent':    { en: 'Excellent', fr: 'Excellent', sw: 'Bora kabisa', ha: 'Mai kyau sosai', tw: 'Pa ara' },
+  'score.band.strong':       { en: 'Strong', fr: 'Bon', sw: 'Imara', ha: 'Karfi', tw: 'Den' },
+  'score.band.improving':    { en: 'Improving', fr: 'En progrès', sw: 'Inaboresha', ha: 'Tana haɓaka', tw: 'Ɛreyɛ yie' },
+  'score.band.needs_help':   { en: 'Needs help', fr: 'Besoin d\u2019aide', sw: 'Inahitaji msaada', ha: 'Yana buƙatar taimako', tw: 'Ɛhia mmoa' },
+  // Confidence
+  'score.conf.high':         { en: 'High confidence', fr: 'Confiance élevée', sw: 'Uhakika mkubwa', ha: 'Babban tabbaci', tw: 'Nkyinhyim kɛse' },
+  'score.conf.medium':       { en: 'Medium confidence', fr: 'Confiance moyenne', sw: 'Uhakika wa wastani', ha: 'Matsakaicin tabbaci', tw: 'Nkyinhyim ntam' },
+  'score.conf.low':          { en: 'Low confidence', fr: 'Faible confiance', sw: 'Uhakika mdogo', ha: 'Ƙarancin tabbaci', tw: 'Nkyinhyim sua' },
+  // Trend
+  'score.trend.up':          { en: 'Improving', fr: 'En hausse', sw: 'Inaboresha', ha: 'Tana hauhawa', tw: 'Ɛrekɔ soro' },
+  'score.trend.down':        { en: 'Slipping', fr: 'En baisse', sw: 'Inashuka', ha: 'Tana faɗuwa', tw: 'Ɛrete' },
+  'score.trend.flat':        { en: 'Steady', fr: 'Stable', sw: 'Imara', ha: 'A tsaye', tw: 'Hyɛ mu' },
+  // Category names
+  'score.cat.execution':     { en: 'Execution', fr: 'Exécution', sw: 'Utekelezaji', ha: 'Aiwatarwa', tw: 'Nneyɛe' },
+  'score.cat.timing':        { en: 'Timing', fr: 'Ponctualité', sw: 'Wakati', ha: 'Lokaci', tw: 'Bere' },
+  'score.cat.riskMgmt':      { en: 'Risk Management', fr: 'Gestion des risques', sw: 'Usimamizi wa Hatari', ha: 'Sarrafa Haɗari', tw: 'Asiane Dwumadie' },
+  'score.cat.cropFit':       { en: 'Crop Fit', fr: 'Adéquation culture', sw: 'Mazao Yanafaa', ha: 'Dacewar Amfani', tw: 'Nnɔbae Fata' },
+  'score.cat.yieldAlign':    { en: 'Yield Alignment', fr: 'Alignement rendement', sw: 'Mlinganisho wa Mavuno', ha: 'Daidaita Amfani', tw: 'Aba Nhyehyɛe' },
+  // Suggestions
+  'score.suggestion.execution': { en: 'Mark today\u2019s top task done as soon as you finish it.', fr: 'Marquez la tâche principale terminée dès qu\u2019elle est finie.', sw: 'Weka kazi kuu ya leo kama imekamilika mara tu unapomaliza.', ha: 'Nuna an kammala babban aikin yau nan da nan.', tw: 'Kyerɛ sɛ woawie ɛnnɛ adwuma titire ntɛm.' },
+  'score.suggestion.timing':    { en: 'Tackle the high-priority task first, not last.', fr: 'Faites d\u2019abord la tâche prioritaire.', sw: 'Anza kwa kazi ya kipaumbele cha juu.', ha: 'Fara da aiki mafi muhimmanci.', tw: 'Yɛ adwuma titire no kane.' },
+  'score.suggestion.riskMgmt':  { en: 'Act on the top Smart Alert for your crop today.', fr: 'Agissez sur l\u2019alerte principale aujourd\u2019hui.', sw: 'Chukua hatua kuhusu arifa kuu leo.', ha: 'Ɗauki mataki kan babban faɗakarwa yau.', tw: 'Yɛ ɛnnɛ kɔkɔbɔ kɛseɛ no ho biribi.' },
+  'score.suggestion.cropFit':   { en: 'Next season, consider a higher-fit crop for your region.', fr: 'La saison prochaine, envisagez une culture plus adaptée.', sw: 'Msimu ujao, fikiria mazao yanayofaa zaidi.', ha: 'Damina mai zuwa, tuna amfani da ya fi dacewa.', tw: 'Bere a ɛreba no, dwene nnɔbae a ɛfata wo man.' },
+  'score.suggestion.yieldAlign':{ en: 'Save your planting date + keep the stage current.', fr: 'Enregistrez la date de plantation et tenez l\u2019étape à jour.', sw: 'Hifadhi tarehe ya kupanda na sasisha hatua.', ha: 'Adana ranar shuka kuma sabunta mataki.', tw: 'Kora dua da no na ma anammɔn no nkɔ so.' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },
