@@ -393,3 +393,36 @@ select option:checked {
   .stats-grid { grid-template-columns: 1fr; }
   .page-body { padding: 0.75rem; }
 }
+
+
+/* ─── Decorative overlay guard ────────────────────────────────
+ *
+ * Any layer whose class signals it is a glow / decoration /
+ * modal-backdrop MUST be non-interactive so touch events pass
+ * through to the real content underneath. Added to fix iPhone
+ * Safari taps being swallowed on the task completion screen.
+ */
+.card-overlay,
+.card-glow,
+.card-glow-overlay,
+.task-screen-glow,
+.task-screen-overlay,
+.task-card-overlay,
+.progress-glow-overlay,
+.decorative-overlay,
+[data-overlay='decorative'],
+[data-glow='true'] {
+  pointer-events: none !important;
+}
+
+/* And the scoped question block inside the completion card must
+ * always accept taps — a belt-and-braces backup for the inline
+ * style overrides in CompletionCard.jsx. */
+[data-testid='follow-up-question'],
+[data-testid='follow-up-question'] button,
+[data-testid='completion-continue'],
+[data-testid='completion-later'] {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+

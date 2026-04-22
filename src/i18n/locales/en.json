@@ -109,5 +109,16 @@
   "common": {
     "none": "None",
     "open_count": "{{count}} Open"
+  },
+  "taskCompletion": {
+    "title": "Did you finish this task?",
+    "yes": "Yes",
+    "partly": "Partly",
+    "no": "No",
+    "next_step": "Next step",
+    "continue": "Continue",
+    "later": "Later",
+    "tasks_left": "{{count}} tasks left",
+    "done_today": "{{done}} of {{total}} done today"
   }
 }

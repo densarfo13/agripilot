@@ -14,8 +14,18 @@
  * Renders from CompletionState model only. No raw task access.
  * Mobile-first, low-friction, rewarding.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { safeTrackEvent } from '../../lib/analytics.js';
+
+// Fallback label resolver for the new `taskCompletion.*` keys. When
+// the running translation table doesn't carry a key yet we return
+// the English copy instead of the raw `taskCompletion.yes` token —
+// iPhone users see real words, not keys.
+function resolveTC(t, key, fallback) {
+  if (typeof t !== 'function') return fallback;
+  const v = t(`taskCompletion.${key}`);
+  return v && v !== `taskCompletion.${key}` ? v : fallback;
+}
 
 export default function CompletionCard({
   completionState,
@@ -30,6 +40,31 @@ export default function CompletionCard({
 }) {
   const cs = completionState;
   const trackedRef = useRef(false);
+
+  // ─── Two-step follow-up selection (spec §3) ─────────────────
+  // Tapping Yes/Partly/No now SELECTS the option visibly; the user
+  // confirms with Continue. This replaces the prior one-tap fire
+  // that (a) skipped confirmation and (b) had no selected state,
+  // which is why taps on iPhone Safari felt "dead".
+  const [selectedCompletion, setSelectedCompletion] = useState(null);
+
+  // Reset selection whenever a different task's completion state
+  // arrives — otherwise switching tasks would leave the old answer
+  // pre-highlighted.
+  useEffect(() => {
+    setSelectedCompletion(null);
+  }, [cs && cs.completedTaskId]);
+
+  function handleSelectCompletion(opt) {
+    if (!opt) return;
+    // eslint-disable-next-line no-console
+    console.log('completion selected:', opt.value);
+    setSelectedCompletion(opt.value);
+    safeTrackEvent('followup_selected', {
+      value: opt.value,
+      type: cs && cs.followUp && cs.followUp.type,
+    });
+  }
 
   // Track completion state shown (once)
   useEffect(() => {
@@ -65,12 +100,33 @@ export default function CompletionCard({
     : null;
 
   function handleContinue() {
+    // When a follow-up question is showing, fire the follow-up
+    // callback with the selected option FIRST so downstream state
+    // (completionStatus, status notes) updates before Continue
+    // navigates. Continue is disabled below when nothing is selected.
+    if (cs && cs.followUp && selectedCompletion) {
+      const picked = cs.followUp.options.find(
+        (o) => o.value === selectedCompletion,
+      );
+      if (picked) {
+        safeTrackEvent('followup_answered', {
+          value: picked.value, type: cs.followUp.type,
+        });
+        try { onFollowUp?.({ value: picked.value, status: picked.status }); }
+        catch { /* never block Continue */ }
+      }
+    }
     safeTrackEvent('continue_clicked', {
       taskId: cs.completedTaskId,
       hasNext: cs.hasNext,
     });
     onContinue?.();
   }
+
+  // Continue is disabled until the farmer picks one of Yes/Partly/No
+  // when a follow-up is on screen. Without a follow-up the button is
+  // always clickable (no change from the existing UX).
+  const continueDisabled = !!(cs && cs.followUp) && !selectedCompletion;
 
   function handleLater() {
     safeTrackEvent('later_clicked', {
@@ -119,24 +175,57 @@ export default function CompletionCard({
           <div style={S.progressChip}>{progressText}</div>
         )}
 
-        {/* Follow-up question (spec §4) */}
+        {/* Follow-up question (spec §4) — two-step select → Continue */}
         {cs.followUp && (
           <div style={S.followUpWrap} data-testid="follow-up-question">
-            <div style={S.followUpQuestion}>{t(cs.followUp.questionKey)}</div>
-            <div style={S.followUpOptions}>
-              {cs.followUp.options.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    safeTrackEvent('followup_answered', { value: opt.value, type: cs.followUp.type });
-                    onFollowUp?.({ value: opt.value, status: opt.status });
-                  }}
-                  style={S.followUpBtn}
-                >
-                  {t(opt.labelKey)}
-                </button>
-              ))}
+            <div style={S.followUpQuestion}>
+              {(() => {
+                // Prefer the server-supplied questionKey; fall back to
+                // the new `taskCompletion.title` key so the question
+                // always renders translated text on iPhone.
+                const v = t(cs.followUp.questionKey);
+                if (v && v !== cs.followUp.questionKey) return v;
+                return resolveTC(t, 'title', 'Did you finish this task?');
+              })()}
+            </div>
+            <div
+              style={S.followUpOptions}
+              role="radiogroup"
+              aria-label={resolveTC(t, 'title', 'Did you finish this task?')}
+            >
+              {cs.followUp.options.map((opt) => {
+                const isSelected = selectedCompletion === opt.value;
+                const fallbackLabel = resolveTC(t, opt.value, opt.value);
+                const serverLabel = t(opt.labelKey);
+                const label = (serverLabel && serverLabel !== opt.labelKey)
+                  ? serverLabel : fallbackLabel;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleSelectCompletion(opt)}
+                    onTouchEnd={(e) => {
+                      // Preventing default here removes the 300 ms
+                      // click delay Safari can still apply under
+                      // some layouts and also suppresses the ghost
+                      // click that would re-fire onClick.
+                      e.preventDefault();
+                      handleSelectCompletion(opt);
+                    }}
+                    aria-pressed={isSelected}
+                    role="radio"
+                    aria-checked={isSelected}
+                    style={{
+                      ...S.followUpBtn,
+                      ...(isSelected ? S.followUpBtnSelected : null),
+                    }}
+                    data-testid={`followup-option-${opt.value}`}
+                    data-selected={isSelected ? 'true' : undefined}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -154,11 +243,16 @@ export default function CompletionCard({
           <div style={S.returnCue}>{t(cs.returnCueKey)}</div>
         )}
 
-        {/* D. Primary CTA */}
+        {/* D. Primary CTA — disabled until follow-up answered */}
         <button
           type="button"
           onClick={handleContinue}
-          style={S.primaryBtn}
+          disabled={continueDisabled}
+          aria-disabled={continueDisabled}
+          style={{
+            ...S.primaryBtn,
+            ...(continueDisabled ? S.primaryBtnDisabled : null),
+          }}
           data-testid="completion-continue"
         >
           {cs.hasNext ? t('completion.continue') : t('completion.backToHome')}
@@ -261,12 +355,17 @@ export default function CompletionCard({
         <div style={S.returnCueCompact}>{t(cs.returnCueKey)}</div>
       )}
 
-      {/* D + E. CTAs */}
+      {/* D + E. CTAs — Continue disabled until follow-up answered */}
       <div style={S.ctaRow}>
         <button
           type="button"
           onClick={handleContinue}
-          style={S.primaryBtnCompact}
+          disabled={continueDisabled}
+          aria-disabled={continueDisabled}
+          style={{
+            ...S.primaryBtnCompact,
+            ...(continueDisabled ? S.primaryBtnDisabled : null),
+          }}
           data-testid="completion-continue"
         >
           {cs.hasNext ? t('completion.continue') : t('completion.backToHome')}
@@ -365,6 +464,11 @@ const S = {
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     textAlign: 'center',
     animation: 'farroway-scale-in 0.35s ease-out',
+    // Ensure the card establishes its own stacking context and
+    // doesn't inherit a parent `pointer-events: none` overlay.
+    position: 'relative',
+    zIndex: 10,
+    pointerEvents: 'auto',
   },
   checkWrap: {
     marginBottom: '0.25rem',
@@ -468,6 +572,10 @@ const S = {
     boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
     marginTop: '0.375rem',
     WebkitTapHighlightColor: 'transparent',
+    touchAction: 'manipulation',
+    position: 'relative',
+    zIndex: 22,
+    pointerEvents: 'auto',
   },
   secondaryBtn: {
     width: '100%',
@@ -481,40 +589,78 @@ const S = {
     cursor: 'pointer',
     minHeight: '44px',
     WebkitTapHighlightColor: 'transparent',
+    touchAction: 'manipulation',
+    position: 'relative',
+    zIndex: 22,
+    pointerEvents: 'auto',
   },
 
-  // ═══ Follow-up (spec §4) ═══
+  // ═══ Follow-up (spec §4) — mobile-tap safe ═══
   followUpWrap: {
     width: '100%',
     padding: '0.75rem 1rem',
     borderRadius: '14px',
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.06)',
+    // Keep the question + options above any decorative glow / card
+    // animation layer the parent might apply.
+    position: 'relative',
+    zIndex: 20,
+    pointerEvents: 'auto',
   },
   followUpQuestion: {
-    fontSize: '0.8125rem',
-    fontWeight: 600,
+    fontSize: '0.9375rem',
+    fontWeight: 700,
     color: '#EAF2FF',
-    marginBottom: '0.5rem',
+    marginBottom: '0.625rem',
     textAlign: 'center',
+    position: 'relative',
+    zIndex: 21,
+    pointerEvents: 'auto',
   },
   followUpOptions: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '0.375rem',
+    gap: '12px',
     justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    zIndex: 21,
+    pointerEvents: 'auto',
   },
   followUpBtn: {
-    padding: '0.375rem 0.75rem',
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.03)',
-    color: '#9FB3C8',
-    fontSize: '0.75rem',
-    fontWeight: 600,
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    padding: '14px 18px',
+    minWidth: '92px',
+    minHeight: '48px',
+    borderRadius: '18px',
+    border: '1px solid rgba(255,255,255,0.14)',
+    background: 'rgba(255,255,255,0.04)',
+    color: '#dbe7f3',
+    textAlign: 'center',
+    fontSize: '1rem',
+    fontWeight: 700,
     cursor: 'pointer',
-    minHeight: '36px',
+    touchAction: 'manipulation',
     WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    position: 'relative',
+    zIndex: 22,
+    pointerEvents: 'auto',
+    transition: 'all 0.18s ease',
+  },
+  followUpBtnSelected: {
+    background: 'rgba(34,197,94,0.20)',
+    border: '1px solid #22C55E',
+    color: '#ffffff',
+    boxShadow: 'inset 0 0 0 1px rgba(34,197,94,0.45), 0 0 0 2px rgba(34,197,94,0.15)',
+  },
+  primaryBtnDisabled: {
+    opacity: 0.45,
+    cursor: 'not-allowed',
+    boxShadow: 'none',
   },
 
   // ═══ Standard variant ═══
@@ -528,6 +674,9 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.625rem',
+    position: 'relative',
+    zIndex: 10,
+    pointerEvents: 'auto',
   },
   standardRow: {
     display: 'flex',
@@ -625,6 +774,10 @@ const S = {
     minHeight: '48px',
     boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
     WebkitTapHighlightColor: 'transparent',
+    touchAction: 'manipulation',
+    position: 'relative',
+    zIndex: 22,
+    pointerEvents: 'auto',
   },
   secondaryBtnCompact: {
     padding: '0.875rem 1rem',
@@ -638,5 +791,9 @@ const S = {
     minHeight: '48px',
     WebkitTapHighlightColor: 'transparent',
     whiteSpace: 'nowrap',
+    touchAction: 'manipulation',
+    position: 'relative',
+    zIndex: 22,
+    pointerEvents: 'auto',
   },
 };

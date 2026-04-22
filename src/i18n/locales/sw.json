@@ -109,5 +109,16 @@
   "common": {
     "none": "Hakuna",
     "open_count": "{{count}} wazi"
+  },
+  "taskCompletion": {
+    "title": "Je, umemaliza kazi hii?",
+    "yes": "Ndiyo",
+    "partly": "Sehemu",
+    "no": "Hapana",
+    "next_step": "Hatua inayofuata",
+    "continue": "Endelea",
+    "later": "Baadaye",
+    "tasks_left": "Kazi {{count}} zimesalia",
+    "done_today": "{{done}} kati ya {{total}} zimekamilika leo"
   }
 }

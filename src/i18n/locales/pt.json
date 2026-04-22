@@ -109,5 +109,16 @@
   "common": {
     "none": "Nenhum",
     "open_count": "{{count}} abertos"
+  },
+  "taskCompletion": {
+    "title": "Você terminou esta tarefa?",
+    "yes": "Sim",
+    "partly": "Parcialmente",
+    "no": "Não",
+    "next_step": "Próximo passo",
+    "continue": "Continuar",
+    "later": "Mais tarde",
+    "tasks_left": "{{count}} tarefas restantes",
+    "done_today": "{{done}} de {{total}} concluídas hoje"
   }
 }

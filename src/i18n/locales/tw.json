@@ -109,5 +109,16 @@
   "common": {
     "none": "Hwee biara nni hɔ",
     "open_count": "{{count}} abue"
+  },
+  "taskCompletion": {
+    "title": "Woawie saa adwuma yi anaa?",
+    "yes": "Aane",
+    "partly": "Fa bi",
+    "no": "Daabi",
+    "next_step": "Anammɔn a edi hɔ",
+    "continue": "Toa so",
+    "later": "Akyire yi",
+    "tasks_left": "Adwuma {{count}} aka",
+    "done_today": "{{done}} wɔawie wɔ {{total}} mu nnɛ"
   }
 }
