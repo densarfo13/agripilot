@@ -14,6 +14,7 @@
  */
 import { useState } from 'react';
 import { recommendForNewFarmer } from '../engine/newFarmerRecommendation.js';
+import CropImage from './CropImage.jsx';
 import { assessSeasonProfit } from '../engine/seasonProfitRules.js';
 
 // ─── Question definitions ───────────────────────────────────
@@ -164,7 +165,12 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
             >
               <div style={RS.cropTop}>
                 <span style={RS.bestBadge}>{t('recommend.bestMatch')}</span>
-                <span style={RS.cropIcon}>{CROP_ICONS[primary.code] || '\uD83C\uDF3F'}</span>
+                <CropImage
+                  cropKey={primary.code}
+                  alt={t(CROP_LABEL_KEY[primary.code] || `crop.${primary.code.toLowerCase()}`)}
+                  size={40}
+                  circular
+                />
                 <span style={RS.cropName}>{t(CROP_LABEL_KEY[primary.code] || `crop.${primary.code.toLowerCase()}`)}</span>
                 {activeCrop === primary.code && <span style={RS.checkMark}>{'\u2713'}</span>}
               </div>
