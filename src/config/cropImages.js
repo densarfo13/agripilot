@@ -42,50 +42,63 @@ export const CROP_IMAGE_PLACEHOLDER = '/crops/_placeholder.svg';
  */
 export const CROP_IMAGE_PATHS = Object.freeze({
   // Staples + grains
-  maize:        '/crops/maize.webp',
-  corn:         '/crops/maize.webp',      // synonym
-  rice:         '/crops/rice.webp',
-  wheat:        '/crops/wheat.webp',
-  sorghum:      '/crops/sorghum.webp',
-  millet:       '/crops/millet.webp',
-  barley:       '/crops/barley.webp',
+  maize:          '/crops/maize.webp',
+  corn:           '/crops/maize.webp',      // synonym
+  rice:           '/crops/rice.webp',
+  wheat:          '/crops/wheat.webp',
+  sorghum:        '/crops/sorghum.webp',
+  millet:         '/crops/millet.webp',
+  barley:         '/crops/barley.webp',
   // Roots + tubers
-  cassava:      '/crops/cassava.webp',
-  yam:          '/crops/yam.webp',
-  potato:       '/crops/potato.webp',
-  sweet_potato: '/crops/sweet_potato.webp',
+  cassava:        '/crops/cassava.webp',
+  yam:            '/crops/yam.webp',
+  potato:         '/crops/potato.webp',
+  'sweet-potato': '/crops/sweet-potato.webp',
+  sweet_potato:   '/crops/sweet-potato.webp',  // underscore variant
+  sweetpotato:    '/crops/sweet-potato.webp',  // no-separator variant
   // Legumes
-  beans:        '/crops/beans.webp',
-  bean:         '/crops/beans.webp',
-  soybean:      '/crops/soybean.webp',
-  groundnut:    '/crops/groundnut.webp',
-  peanut:       '/crops/groundnut.webp',
-  cowpea:       '/crops/cowpea.webp',
-  chickpea:     '/crops/chickpea.webp',
-  lentil:       '/crops/lentil.webp',
+  beans:          '/crops/beans.webp',
+  bean:           '/crops/beans.webp',
+  soybean:        '/crops/soybean.webp',
+  groundnut:      '/crops/groundnut.webp',
+  peanut:         '/crops/groundnut.webp',
+  cowpea:         '/crops/cowpea.webp',
+  chickpea:       '/crops/chickpea.webp',
+  lentil:         '/crops/lentil.webp',
   // Vegetables
-  tomato:       '/crops/tomato.webp',
-  onion:        '/crops/onion.webp',
-  pepper:       '/crops/pepper.webp',
-  chili:        '/crops/pepper.webp',
-  cabbage:      '/crops/cabbage.webp',
-  carrot:       '/crops/carrot.webp',
-  okra:         '/crops/okra.webp',
-  cucumber:     '/crops/cucumber.webp',
-  watermelon:   '/crops/watermelon.webp',
+  tomato:         '/crops/tomato.webp',
+  onion:          '/crops/onion.webp',
+  pepper:         '/crops/pepper.webp',
+  chili:          '/crops/pepper.webp',
+  cabbage:        '/crops/cabbage.webp',
+  carrot:         '/crops/carrot.webp',
+  okra:           '/crops/okra.webp',
+  cucumber:       '/crops/cucumber.webp',
+  watermelon:     '/crops/watermelon.webp',
+  eggplant:       '/crops/eggplant.webp',
+  aubergine:      '/crops/eggplant.webp',   // UK synonym
+  garlic:         '/crops/garlic.webp',
+  ginger:         '/crops/ginger.webp',
+  lettuce:        '/crops/lettuce.webp',
+  spinach:        '/crops/spinach.webp',
   // Tree + permanent
-  banana:       '/crops/banana.webp',
-  plantain:     '/crops/plantain.webp',
-  mango:        '/crops/mango.webp',
-  avocado:      '/crops/avocado.webp',
-  coffee:       '/crops/coffee.webp',
-  tea:          '/crops/tea.webp',
-  cocoa:        '/crops/cocoa.webp',
-  cacao:        '/crops/cocoa.webp',      // synonym
-  cotton:       '/crops/cotton.webp',
-  sugarcane:    '/crops/sugarcane.webp',
-  sunflower:    '/crops/sunflower.webp',
-  sesame:       '/crops/sesame.webp',
+  banana:         '/crops/banana.webp',
+  plantain:       '/crops/plantain.webp',
+  mango:          '/crops/mango.webp',
+  avocado:        '/crops/avocado.webp',
+  orange:         '/crops/orange.webp',
+  coffee:         '/crops/coffee.webp',
+  tea:            '/crops/tea.webp',
+  cocoa:          '/crops/cocoa.webp',
+  cacao:          '/crops/cocoa.webp',      // synonym
+  'oil-palm':     '/crops/oil-palm.webp',
+  oil_palm:       '/crops/oil-palm.webp',   // underscore variant
+  oilpalm:        '/crops/oil-palm.webp',   // no-separator variant
+  palm:           '/crops/oil-palm.webp',   // shorthand
+  cotton:         '/crops/cotton.webp',
+  sugarcane:      '/crops/sugarcane.webp',
+  sunflower:      '/crops/sunflower.webp',
+  sesame:         '/crops/sesame.webp',
 });
 
 /**
@@ -107,19 +120,52 @@ export const AVAILABLE_CROP_IMAGES = Object.freeze(new Set([
 /**
  * getCropImagePath — resolve a crop key to an image URL, or null
  * when the catalog has no mapping. Accepts:
- *   - canonical lowercase ('maize', 'sweet_potato')
- *   - storage uppercase   ('MAIZE', 'SWEET_POTATO')
- *   - display string      ('Maize', 'Sweet Potato')
- *   - structured "other"  ('OTHER:Teff') → null (use placeholder)
+ *   - canonical lowercase  ('maize', 'sweet-potato', 'sweet_potato')
+ *   - storage uppercase    ('MAIZE', 'SWEET-POTATO')
+ *   - display string       ('Maize', 'Sweet Potato', 'Oil Palm')
+ *   - structured "other"   ('OTHER:Teff') → null (use placeholder)
+ *
+ * Hyphen + underscore + space forms all collapse to the same row:
+ *   'sweet-potato' === 'sweet_potato' === 'Sweet Potato' === 'SWEETPOTATO'
  *
  * Returns null when no mapping exists OR when the input is empty.
  * The caller's CropImage component turns `null` into the generic
  * placeholder so the UI never shows a broken image.
  */
 export function getCropImagePath(cropKey) {
-  const normalised = normalizeCrop(cropKey);   // lowercase canonical
-  if (!normalised) return null;
-  return CROP_IMAGE_PATHS[normalised] || null;
+  const raw = String(cropKey || '').trim().toLowerCase();
+  if (!raw) return null;
+
+  // Try the exact lowercase form first (handles 'sweet-potato' /
+  // 'oil-palm' / 'sweet_potato' verbatim).
+  if (CROP_IMAGE_PATHS[raw]) return CROP_IMAGE_PATHS[raw];
+
+  // Collapse any separator (space / hyphen / underscore) to try both
+  // canonical shapes without listing every permutation in the table.
+  const hyphenated  = raw.replace(/[\s_]+/g, '-');
+  if (CROP_IMAGE_PATHS[hyphenated]) return CROP_IMAGE_PATHS[hyphenated];
+  const underscored = raw.replace(/[\s-]+/g, '_');
+  if (CROP_IMAGE_PATHS[underscored]) return CROP_IMAGE_PATHS[underscored];
+
+  // Fall back to the legacy normalizeCrop path (handles uppercase
+  // storage codes + OTHER:… structured values).
+  const normalised = normalizeCrop(cropKey);
+  if (normalised && CROP_IMAGE_PATHS[normalised]) return CROP_IMAGE_PATHS[normalised];
+
+  return null;
+}
+
+/**
+ * getCropImage — alias for getCropImagePath that always returns a
+ * usable URL. Missing mappings resolve to the placeholder so callers
+ * who don't want to branch on null can drop the result straight into
+ * an <img src>.
+ *
+ *   getCropImage('maize')        → '/crops/maize.webp'
+ *   getCropImage('dragonfruit')  → '/crops/_placeholder.svg'
+ */
+export function getCropImage(cropKey) {
+  return getCropImagePath(cropKey) || CROP_IMAGE_PLACEHOLDER;
 }
 
 /**

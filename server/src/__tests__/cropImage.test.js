@@ -24,9 +24,18 @@ function readFile(rel) {
 }
 
 import {
-  getCropImagePath, hasCropImage,
+  getCropImagePath, getCropImage, hasCropImage,
   CROP_IMAGE_PATHS, CROP_IMAGE_PLACEHOLDER,
 } from '../../../src/config/cropImages.js';
+
+// Canonical key list from the spec (§2).
+const SPEC_CANONICAL_KEYS = [
+  'banana', 'cabbage', 'carrot', 'cassava', 'cocoa', 'coffee',
+  'cotton', 'cucumber', 'eggplant', 'garlic', 'ginger', 'groundnut',
+  'lettuce', 'maize', 'mango', 'millet', 'oil-palm', 'okra',
+  'onion', 'orange', 'pepper', 'plantain', 'potato', 'rice',
+  'sorghum', 'soybean', 'spinach', 'sugarcane', 'sweet-potato', 'tomato',
+];
 
 describe('getCropImagePath', () => {
   it('resolves canonical lowercase keys to /crops/*.webp', () => {
@@ -36,8 +45,11 @@ describe('getCropImagePath', () => {
   });
 
   it('accepts uppercase storage codes (MAIZE, SWEET_POTATO)', () => {
+    // Spec §2 standardised on hyphenated canonical keys
+    // (sweet-potato, oil-palm). Underscored legacy forms still
+    // resolve through getCropImagePath's separator collapse.
     expect(getCropImagePath('MAIZE')).toBe('/crops/maize.webp');
-    expect(getCropImagePath('SWEET_POTATO')).toBe('/crops/sweet_potato.webp');
+    expect(getCropImagePath('SWEET_POTATO')).toBe('/crops/sweet-potato.webp');
   });
 
   it('accepts display strings ("Maize", "Sweet Potato")', () => {
@@ -68,13 +80,60 @@ describe('getCropImagePath', () => {
     expect(hasCropImage('maize')).toBe(true);
     expect(hasCropImage('unobtainium')).toBe(false);
   });
+
+  it('resolves every spec-mandated canonical key (30 keys)', () => {
+    for (const key of SPEC_CANONICAL_KEYS) {
+      expect(getCropImagePath(key),
+        `spec canonical key "${key}" should map to a webp`).not.toBeNull();
+    }
+  });
+
+  it('treats hyphen, underscore, and space as interchangeable separators', () => {
+    // Hyphenated (spec canonical)
+    expect(getCropImagePath('sweet-potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('oil-palm')).toBe('/crops/oil-palm.webp');
+    // Underscored (legacy storage)
+    expect(getCropImagePath('sweet_potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('oil_palm')).toBe('/crops/oil-palm.webp');
+    // Display strings with spaces
+    expect(getCropImagePath('Sweet Potato')).toBe('/crops/sweet-potato.webp');
+    expect(getCropImagePath('OIL PALM')).toBe('/crops/oil-palm.webp');
+  });
+
+  it('eggplant/aubergine both resolve to the same image', () => {
+    expect(getCropImagePath('eggplant')).toBe('/crops/eggplant.webp');
+    expect(getCropImagePath('aubergine')).toBe('/crops/eggplant.webp');
+  });
+});
+
+describe('getCropImage (placeholder-safe alias)', () => {
+  it('returns the mapped URL when the crop is known', () => {
+    expect(getCropImage('maize')).toBe('/crops/maize.webp');
+    expect(getCropImage('sweet-potato')).toBe('/crops/sweet-potato.webp');
+  });
+
+  it('returns the placeholder SVG when the crop is unknown', () => {
+    expect(getCropImage('dragonfruit')).toBe('/crops/_placeholder.svg');
+    expect(getCropImage(null)).toBe('/crops/_placeholder.svg');
+    expect(getCropImage('')).toBe('/crops/_placeholder.svg');
+  });
+
+  it('is safe to drop directly into <img src> (never returns null)', () => {
+    for (const v of [null, undefined, '', 'maize', 'unknown', 'Oil Palm']) {
+      const src = getCropImage(v);
+      expect(typeof src).toBe('string');
+      expect(src.length).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe('CROP_IMAGE_PATHS catalog', () => {
   it('every value is a /crops/*.webp URL', () => {
+    // Allow hyphens for multi-word canonical keys (sweet-potato,
+    // oil-palm) alongside underscores (legacy) and single words.
     for (const [key, value] of Object.entries(CROP_IMAGE_PATHS)) {
       expect(value, `${key} should map to a webp under /crops`)
-        .toMatch(/^\/crops\/[a-z_]+\.webp$/);
+        .toMatch(/^\/crops\/[a-z_-]+\.webp$/);
     }
   });
 
