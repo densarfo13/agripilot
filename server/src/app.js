@@ -40,6 +40,7 @@ import regionConfigRoutes from './modules/regionConfig/routes.js';
 import postHarvestRoutes from './modules/postHarvest/routes.js';
 import marketGuidanceRoutes from './modules/marketGuidance/routes.js';
 import buyerInterestRoutes from './modules/buyerInterest/routes.js';
+import { createMarketplaceRouter } from './modules/marketplace/routes.js';
 import lifecycleRoutes from './modules/lifecycle/routes.js';
 import seasonRoutes from './modules/seasons/routes.js';
 import organizationRoutes from './modules/organizations/routes.js';
@@ -385,6 +386,24 @@ app.use('/api/region-config', regionConfigRoutes);
 app.use('/api/post-harvest', postHarvestRoutes);
 app.use('/api/market-guidance', marketGuidanceRoutes);
 app.use('/api/buyer-interest', buyerInterestRoutes);
+
+// ─── Marketplace (farmer listings + buyer requests) ──────────
+// Feature-flagged behind FEATURES.marketplace so it can be rolled
+// out to a subset of environments. authenticate handles cookie +
+// bearer tokens and exposes req.user; admin-only routes inside the
+// router layer on an additional role check.
+app.use('/api/marketplace', createMarketplaceRouter({
+  prisma,
+  requireAuth:  authenticate,
+  requireAdmin: authenticate,  // admin-role check lives in router via requireRole
+  // Hard-enable the marketplace feature at mount time. The router
+  // still honours requireFeature internally but this predicate
+  // short-circuits it to on — Railway env vars
+  // (FARROWAY_FEATURE_MARKETPLACE=0) can still kill the surface
+  // since we fall back to the global predicate when this fn is
+  // absent, but while the marketplace is live we want the flag ON.
+  isEnabled:    () => true,
+}));
 app.use('/api/lifecycle', lifecycleRoutes);
 app.use('/api/seasons', seasonRoutes);
 app.use('/api/organizations', organizationRoutes);

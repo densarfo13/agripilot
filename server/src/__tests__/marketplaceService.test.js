@@ -80,13 +80,16 @@ beforeEach(() => { db = makeFakePrisma(); });
 
 // ─── createListing ───────────────────────────────────────────
 describe('createListing', () => {
-  it('creates with defaults (status=available, price null ok)', async () => {
+  it('creates with defaults (status=active, price null ok)', async () => {
     const r = await createListing(db, {
       farmId: 'F1', crop: 'maize', quantity: 100, location: 'Kumasi',
     });
     expect(r.ok).toBe(true);
     expect(r.listing.crop).toBe('MAIZE');    // uppercased
-    expect(r.listing.status).toBe('available');
+    // Service now returns spec-mapped status ('active') and exposes
+    // the raw DB value via statusDb for callers that care.
+    expect(r.listing.status).toBe('active');
+    expect(r.listing.statusDb).toBe('available');
     expect(r.listing.priceFdUnit).toBeNull();
   });
 
@@ -135,12 +138,14 @@ describe('listListings', () => {
 
 // ─── createRequest ───────────────────────────────────────────
 describe('createRequest', () => {
-  it('creates with defaults (status=open)', async () => {
+  it('creates with defaults (status=pending)', async () => {
     const r = await createRequest(db, {
       buyerName: 'ACME', crop: 'maize', quantity: 500, location: 'Kumasi',
     });
     expect(r.ok).toBe(true);
-    expect(r.request.status).toBe('open');
+    // Spec-mapped: DB 'open' → UI 'pending'
+    expect(r.request.status).toBe('pending');
+    expect(r.request.statusDb).toBe('open');
     expect(r.request.crop).toBe('MAIZE');
   });
 

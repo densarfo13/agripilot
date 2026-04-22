@@ -15,6 +15,7 @@ import InlineAlert from '../components/InlineAlert.jsx';
 import { getCropLabel, getCropIcon } from '../utils/crops.js';
 import CropImage from '../components/CropImage.jsx';
 import FarmActionPlan from '../components/FarmActionPlan.jsx';
+import MarketplaceCard from '../components/MarketplaceCard.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { formatLandSize } from '../utils/landSize.js';
 import VoiceBar from '../components/VoiceBar.jsx';
@@ -833,6 +834,17 @@ export default function FarmerDashboardPage() {
                   farm={farmProfile}
                   weather={weather}
                 />
+              </div>
+            )}
+
+            {/* 5c. Marketplace — "Mark ready for sale" quick action.
+                 Shown once the farmer has an active crop so the form
+                 defaults line up. Real multi-listing management lives
+                 at /farmer/listings; this is just the fastest path
+                 from dashboard → new listing. */}
+            {farmProfile && farmProfile.crop && setupComplete && (
+              <div data-testid="marketplace-quick" style={{ marginTop: '1rem' }}>
+                <MarketplaceCard mode="list" farm={farmProfile} compact />
               </div>
             )}
 

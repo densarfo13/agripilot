@@ -17,6 +17,7 @@ import express from 'express';
 import {
   createListing, listListings,
   createRequest, listRequests,
+  acceptRequest, declineRequest, updateListingStatus,
   matchAllFlat, recordPayment, marketplaceStats,
 } from './marketplaceService.js';
 import mwPkg from '../../core/middleware.js';
@@ -36,8 +37,11 @@ export function createMarketplaceRouter(opts = {}) {
   const mapReasonToStatus = (reason) => {
     if (reason === 'missing_crop' || reason === 'invalid_quantity' ||
         reason === 'invalid_price' || reason === 'missing_listing_id' ||
-        reason === 'invalid_amount') return 400;
-    if (reason === 'listing_not_found' || reason === 'not_available') return 409;
+        reason === 'missing_request_id' || reason === 'invalid_amount' ||
+        reason === 'invalid_status' || reason === 'invalid_transition') return 400;
+    if (reason === 'listing_not_found' || reason === 'request_not_found') return 404;
+    if (reason === 'not_available' || reason === 'already_accepted'
+        || reason === 'already_declined') return 409;
     return 500;
   };
 
@@ -56,13 +60,34 @@ export function createMarketplaceRouter(opts = {}) {
 
   router.get('/listings', asyncHandler(async (req, res) => {
     const r = standardResponse(res);
+    // Accept spec statuses (active/requested/completed) OR legacy
+    // DB statuses (available/reserved/sold); service maps either.
     const out = await listListings(prisma, {
-      status: req.query.status || 'available',
+      status: req.query.status || 'active',
+      crop:   req.query.crop   || null,
+      region: req.query.region || null,
       limit:  Number(req.query.limit) || 100,
     });
     if (!out.ok) return r.fail(out.reason);
     return r.ok(out.data);
   }));
+
+  // PATCH /listings/:id/status — farmer transitions the listing.
+  // Accepts spec statuses (active/requested/completed/cancelled).
+  router.patch('/listings/:id/status',
+    auth,
+    requireRole(['farmer', 'admin']),
+    requireFields(['status']),
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      const out = await updateListingStatus(prisma, {
+        listingId: req.params.id,
+        status:    req.body.status,
+      });
+      if (!out.ok) return r.fail(out.reason, mapReasonToStatus(out.reason));
+      return r.ok(out.listing);
+    }),
+  );
 
   // ─── Requests (buyer side) ──────────────────────────────
   router.post('/request',
@@ -78,15 +103,44 @@ export function createMarketplaceRouter(opts = {}) {
   );
 
   router.get('/requests',
-    auth, requireRole(['buyer', 'admin']),
+    auth, requireRole(['buyer', 'farmer', 'admin']),
     asyncHandler(async (req, res) => {
       const r = standardResponse(res);
       const out = await listRequests(prisma, {
-        status: req.query.status || 'open',
-        limit:  Number(req.query.limit) || 100,
+        status:  req.query.status  || 'pending',
+        buyerId: req.query.buyerId || null,
+        crop:    req.query.crop    || null,
+        limit:   Number(req.query.limit) || 100,
       });
       if (!out.ok) return r.fail(out.reason);
       return r.ok(out.data);
+    }),
+  );
+
+  // PATCH /requests/:id/status — farmer accepts or declines a request.
+  // Body: { status: 'accepted' | 'declined', listingId? }
+  // When status=accepted AND listingId is provided, the linked
+  // listing flips to 'reserved' in the same transaction.
+  router.patch('/requests/:id/status',
+    auth,
+    requireRole(['farmer', 'admin']),
+    requireFields(['status']),
+    asyncHandler(async (req, res) => {
+      const r = standardResponse(res);
+      const next = String(req.body.status || '').toLowerCase();
+      let out;
+      if (next === 'accepted') {
+        out = await acceptRequest(prisma, {
+          requestId: req.params.id,
+          listingId: req.body.listingId || null,
+        });
+      } else if (next === 'declined') {
+        out = await declineRequest(prisma, { requestId: req.params.id });
+      } else {
+        return r.fail('invalid_status', 400);
+      }
+      if (!out.ok) return r.fail(out.reason, mapReasonToStatus(out.reason));
+      return r.ok(out.request);
     }),
   );
 
