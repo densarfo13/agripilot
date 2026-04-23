@@ -32,6 +32,8 @@
 
 import { normalizeCropId } from '../../config/crops/index.js';
 import { getCropSeasonality, hasCropSeasonality } from '../../config/crops/cropSeasonality.js';
+import { getWeatherState } from '../weather/weatherState.js';
+import { getRainfallFit } from './rainfallFitEngine.js';
 
 const f = Object.freeze;
 
@@ -139,32 +141,80 @@ export function evaluateSeasonalFit(ctx = {}) {
   else if (fit === 'medium') reasons.push('seasonal.reason.acceptableMonth');
   else if (fit === 'low') reasons.push('seasonal.reason.outOfWindow');
 
-  // 2. Apply weather adjustment (single step).
-  const weatherOut = applyWeatherAdjustment(fit, entry, ctx.weather);
-  fit = weatherOut.fit;
-  if (weatherOut.reason) reasons.push(weatherOut.reason);
+  // 2. Resolve the canonical rainfall state from whatever shape the
+  //    caller passed in. Returns 'unknown' when no rainfall info is
+  //    available, which makes the rainfall layer a safe no-op.
+  const weatherState = getWeatherState(ctx.weather);
+  const rainfall = getRainfallFit(cropId, weatherState);
 
-  // 3. Map fit → message key. When weather pulled us to medium, show
-  //    the "possible but less ideal" copy instead of "favorable".
+  // 3. Rainfall dominates when present. The rainfall engine's
+  //    score weights (+30 / +10 / -25) are stronger than the
+  //    seasonal weights (+20 / +5 / -15), so real weather data
+  //    steers ranking more than calendar month when they disagree.
+  let rainfallDominates = rainfall.rainfallFit !== 'unknown';
+  let adjustment = ADJ[fit] || 0;
   let messageKey;
-  if (fit === 'high') messageKey = MSG.high;
-  else if (fit === 'medium') {
-    messageKey = weatherOut.weatherAdjusted ? MSG.mediumWeather : MSG.mediumOk;
-  } else if (fit === 'low') {
-    // Original month classification was low; distinguish "out of
-    // window" (could plant later) from "really poor fit".
-    const preferredMonths = entry.preferredPlantingMonths || [];
-    const hasPreferred = preferredMonths.length > 0;
-    messageKey = hasPreferred ? MSG.low : MSG.veryLow;
+  let weatherAdjusted = false;
+  let riskMessage = null;
+  let taskHint = null;
+
+  if (rainfallDominates) {
+    // Promote or demote seasonFit to reflect the combined signal.
+    const rainFit = rainfall.rainfallFit;
+    if (rainFit === 'high') {
+      fit = fit === 'low' ? 'medium' : 'high';
+    } else if (rainFit === 'medium') {
+      fit = fit === 'high' ? 'high' : 'medium';
+    } else if (rainFit === 'low') {
+      fit = 'low';
+    }
+
+    // Combined score: rainfall weight + a softened seasonal weight
+    // so a crop that's both in-season AND has favorable rainfall
+    // scores higher than either alone.
+    adjustment = rainfall.scoreAdjustment + Math.round((ADJ[fit] || 0) * 0.5);
+
+    // Message comes from the rainfall layer so the UI says
+    // "Good time to plant with current rainfall" instead of a
+    // generic seasonal line.
+    messageKey = rainfall.plantingMessage;
+    weatherAdjusted = true;
+    riskMessage = rainfall.riskMessage;
+    taskHint = rainfall.taskHint;
+
+    // Fold the rainfall reason in; dedupe preserves insertion order.
+    for (const r of rainfall.reasons) if (!reasons.includes(r)) reasons.push(r);
   } else {
-    messageKey = MSG.unknown;
+    // No rainfall data — apply the legacy single-step weather nudge
+    // so the pre-rainfall behaviour stays available for crops that
+    // only have prefersRain/dislikesHeavyRain flags on their
+    // seasonality entry.
+    const weatherOut = applyWeatherAdjustment(fit, entry, ctx.weather);
+    fit = weatherOut.fit;
+    if (weatherOut.reason) reasons.push(weatherOut.reason);
+    weatherAdjusted = weatherOut.weatherAdjusted;
+
+    if (fit === 'high') messageKey = MSG.high;
+    else if (fit === 'medium') {
+      messageKey = weatherAdjusted ? MSG.mediumWeather : MSG.mediumOk;
+    } else if (fit === 'low') {
+      const preferredMonths = entry.preferredPlantingMonths || [];
+      messageKey = preferredMonths.length > 0 ? MSG.low : MSG.veryLow;
+    } else {
+      messageKey = MSG.unknown;
+    }
+    adjustment = ADJ[fit] || 0;
   }
 
   return buildResult({
     cropId, seasonFit: fit,
     messageKey, reasons,
-    adjustment: ADJ[fit] || 0,
-    weatherAdjusted: weatherOut.weatherAdjusted,
+    adjustment,
+    weatherAdjusted,
+    weatherState,
+    rainfallFit: rainfall.rainfallFit,
+    riskMessage,
+    taskHint,
     window: f({
       preferred:  entry.preferredPlantingMonths || [],
       acceptable: entry.acceptablePlantingMonths || [],
@@ -175,7 +225,8 @@ export function evaluateSeasonalFit(ctx = {}) {
 
 function buildResult({
   cropId, seasonFit, messageKey, reasons, adjustment,
-  weatherAdjusted, window, source,
+  weatherAdjusted, weatherState, rainfallFit, riskMessage, taskHint,
+  window, source,
 }) {
   return f({
     cropId,
@@ -184,6 +235,10 @@ function buildResult({
     reasons: f(reasons || []),
     scoreAdjustment: adjustment,
     weatherAdjusted: Boolean(weatherAdjusted),
+    weatherState: weatherState || 'unknown',
+    rainfallFit:   rainfallFit || 'unknown',
+    riskMessage:   riskMessage || null,
+    taskHint:      taskHint || null,
     window,
     source,
   });

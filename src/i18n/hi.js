@@ -707,6 +707,23 @@ const HI = {
   'seasonal.reason.heavyRainRisk':     'भारी बारिश शुरुआती विकास को प्रभावित कर सकती है',
   'seasonal.reason.heatStress':        'गर्मी का दबाव उपज घटा सकता है',
 
+  // ─── Rainfall intelligence ─────────────────────────
+  'rainfall.msg.goodForCurrentRain':         'मौजूदा बारिश में बुवाई का अच्छा समय',
+  'rainfall.msg.manageable':                 'स्थितियाँ संभाली जा सकती हैं, पर आदर्श नहीं हैं',
+  'rainfall.msg.drySlowsEstablishment':      'सूखी स्थिति विकास धीमा कर सकती है',
+  'rainfall.msg.heavyRainDamage':            'भारी बारिश इस फसल को नुकसान पहुँचा सकती है',
+  'rainfall.msg.currentConditionsMayAffect': 'मौजूदा स्थिति विकास को प्रभावित कर सकती है',
+  'rainfall.msg.checkLocalConditions':       'बुवाई से पहले स्थानीय स्थिति जाँचें',
+  'rainfall.reason.rainSupportsCrop':        'मौजूदा बारिश इस फसल में मदद कर रही है',
+  'rainfall.reason.manageable':              'बारिश इस फसल के लिए चलने लायक है',
+  'rainfall.reason.dryHurtsCrop':            'सूखी स्थिति इस फसल को नुकसान पहुँचाती है',
+  'rainfall.reason.heavyRainHurtsCrop':      'भारी बारिश इस फसल को नुकसान पहुँचाती है',
+  'rainfall.reason.conditionsMayAffect':     'मौजूदा स्थिति इस फसल को प्रभावित कर सकती है',
+  'rainfall.risk.waterStress':               'पानी की कमी का जोखिम',
+  'rainfall.risk.floodOrRootRot':            'बाढ़ या जड़-सड़न का जोखिम',
+  'rainfall.task.planIrrigation':            'सिंचाई या जल-संरक्षण की योजना बनाएं',
+  'rainfall.task.checkDrainage':             'जल-निकासी जाँचें और रोग पर नज़र रखें',
+
   // ─── Counts / done today patterns ──────────────────
   'count.xOfYDoneToday': 'आज {done} में से {total} पूरे',
   'count.tasksLeft_one': '1 कार्य बाकी',

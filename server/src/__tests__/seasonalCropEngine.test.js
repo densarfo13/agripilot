@@ -45,29 +45,32 @@ describe('evaluateSeasonalFit — month only', () => {
   });
 });
 
-// ─── Weather adjustments ───────────────────────────────────────
-describe('evaluateSeasonalFit — weather adjustments', () => {
-  it('dry weather pulls cassava from high → medium', () => {
+// ─── Weather adjustments (rainfall-aware layer) ────────────────
+describe('evaluateSeasonalFit — rainfall-aware', () => {
+  it('dry weather on a water-heavy crop (rice) demotes to low', () => {
+    // Rice needs standing water; a dry reading flips it to low with
+    // a water-stress risk chip regardless of seasonal month fit.
     const r = evaluateSeasonalFit({
-      cropId: 'cassava', country: 'GH', month: 4,
+      cropId: 'rice', country: 'IN', month: 7,
       weather: { pattern: 'dry_conditions' },
     });
-    expect(r.seasonFit).toBe('medium');
-    expect(r.weatherAdjusted).toBe(true);
-    expect(r.reasons).toContain('seasonal.reason.drySlowsEstablishment');
-    expect(r.plantingMessage).toBe('seasonal.msg.possibleButLessIdeal');
+    expect(r.seasonFit).toBe('low');
+    expect(r.rainfallFit).toBe('low');
+    expect(r.riskMessage).toBe('rainfall.risk.waterStress');
+    expect(r.plantingMessage).toMatch(/^rainfall\./);
   });
 
-  it('moderate rain on a rain-loving crop stays supportive', () => {
+  it('moderate rain on a rain-loving crop (cassava) stays supportive', () => {
     const r = evaluateSeasonalFit({
       cropId: 'cassava', country: 'GH', month: 4,
       weather: { pattern: 'moderate_rain' },
     });
     expect(r.seasonFit).toBe('high');
-    expect(r.reasons).toContain('seasonal.reason.rainSupports');
+    expect(r.rainfallFit).toBe('high');
+    expect(r.reasons).toContain('rainfall.reason.rainSupportsCrop');
   });
 
-  it('heavy rain on a dry-lover (tomato) demotes fit', () => {
+  it('heavy rain on a dry-lover (tomato) demotes fit to low', () => {
     const base = evaluateSeasonalFit({
       cropId: 'tomato', country: 'GH', month: 10,
     });
@@ -76,28 +79,29 @@ describe('evaluateSeasonalFit — weather adjustments', () => {
       cropId: 'tomato', country: 'GH', month: 10,
       weather: { pattern: 'high_rain' },
     });
-    expect(wet.seasonFit).toBe('medium');
-    expect(wet.reasons).toContain('seasonal.reason.heavyRainRisk');
+    expect(wet.seasonFit).toBe('low');
+    expect(wet.rainfallFit).toBe('low');
+    expect(wet.riskMessage).toBe('rainfall.risk.floodOrRootRot');
   });
 
-  it('heat stress demotes a heat-sensitive crop', () => {
-    const base = evaluateSeasonalFit({
-      cropId: 'tomato', country: 'US', month: 5,
+  it('cassava tolerates dry — no rainfall demotion', () => {
+    const r = evaluateSeasonalFit({
+      cropId: 'cassava', country: 'GH', month: 4,
+      weather: { pattern: 'dry_conditions' },
     });
-    expect(['high', 'medium']).toContain(base.seasonFit);
-    const hot = evaluateSeasonalFit({
-      cropId: 'tomato', country: 'US', month: 5,
-      weather: { pattern: 'heat_stress' },
-    });
-    expect(hot.scoreAdjustment).toBeLessThan(base.scoreAdjustment);
+    // Cassava is drought-tolerant: rainfall path returns medium, the
+    // combined fit stays high since the month was already high.
+    expect(r.seasonFit).toBe('high');
+    expect(r.rainfallFit).toBe('medium');
   });
 
-  it('no weather → score identical to month-only', () => {
+  it('no weather → no rainfall effect', () => {
     const a = evaluateSeasonalFit({ cropId: 'maize', country: 'GH', month: 4 });
     const b = evaluateSeasonalFit({ cropId: 'maize', country: 'GH', month: 4, weather: null });
     expect(a.scoreAdjustment).toBe(b.scoreAdjustment);
     expect(a.weatherAdjusted).toBe(false);
     expect(b.weatherAdjusted).toBe(false);
+    expect(a.rainfallFit).toBe('unknown');
   });
 });
 

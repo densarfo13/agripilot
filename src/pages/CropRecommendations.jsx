@@ -24,38 +24,25 @@ import {
   normalizeCropId, getCropLabel, getCropImage,
 } from '../config/crops/index.js';
 import { recommendTopCrops } from '../lib/recommendations/topCropEngine.js';
+import { getWeatherState } from '../lib/weather/weatherState.js';
 
 /**
  * deriveWeatherSummary(farmCtx, answers)
- *   Maps whatever lightweight weather/climate field the farm or
- *   onboarding answers carry into the coarse pattern the seasonal
- *   engine understands. Returns null when we genuinely have nothing
- *   — the engine treats missing weather as "no adjustment", so
- *   returning null is safer than guessing.
+ *   Hands whatever lightweight weather/climate field the farm or
+ *   onboarding answers carry to getWeatherState(), which returns
+ *   the canonical rainfall state ('dry' / 'light_rain' /
+ *   'moderate_rain' / 'heavy_rain' / 'unknown'). Returns null when
+ *   nothing usable is available so the downstream engine's
+ *   "no rainfall data" branch takes over.
  */
 function deriveWeatherSummary(farmCtx = {}, answers = null) {
   const src = (answers && answers.weather)
            || (farmCtx && (farmCtx.weather || farmCtx.currentWeather))
            || null;
-  if (!src || typeof src !== 'object') return null;
-  // Direct pass-through when the caller already speaks our vocab.
-  if (src.pattern) return { pattern: String(src.pattern).toLowerCase() };
-  // Fallback: map rainfall mm / temp °C to a coarse pattern.
-  const rain = Number(src.rain3d || src.rainMm || src.precipitation || 0);
-  const temp = Number(src.temp   || src.tempC  || src.temperature  || NaN);
-  if (Number.isFinite(rain)) {
-    if (rain >= 50) return { pattern: 'high_rain' };
-    if (rain >= 10) return { pattern: 'moderate_rain' };
-    if (rain <  2 && Number.isFinite(temp) && temp >= 30) {
-      return { pattern: 'heat_stress' };
-    }
-    if (rain <  2) return { pattern: 'dry_conditions' };
-  }
-  if (Number.isFinite(temp)) {
-    if (temp >= 35) return { pattern: 'heat_stress' };
-    if (temp <= 10) return { pattern: 'cool_conditions' };
-  }
-  return null;
+  if (!src) return null;
+  const state = getWeatherState(src);
+  if (state === 'unknown') return null;
+  return { state, pattern: state };   // legacy field for older consumers
 }
 
 export default function CropRecommendations() {

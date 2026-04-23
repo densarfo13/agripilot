@@ -227,6 +227,11 @@ function scoreCrop(cropId, ctx) {
   } else if (seasonal.seasonFit === 'low') {
     warnings.push('topCrops.warning.outOfSeason');
   }
+  // Rainfall-specific warning chip when the combined picture is
+  // low fit purely because of current rainfall (dry or heavy).
+  if (seasonal.rainfallFit === 'low' && seasonal.riskMessage) {
+    warnings.push(seasonal.riskMessage);
+  }
   // Surface the specific explanation reasons (preferredMonth /
   // acceptableMonth / outOfWindow / weather nudges) so the UI can
   // show a chip per structured reason without string guesswork.
@@ -265,12 +270,18 @@ function scoreCrop(cropId, ctx) {
     beginnerFriendly: crop.beginnerFriendly,
     regions:          crop.regions,
     tags:             crop.tags,
-    // Seasonal intelligence — UI renders plantingMessage as the
-    // dynamic "good time to plant now" copy, honouring language.
+    // Seasonal + rainfall intelligence — UI renders plantingMessage
+    // as the dynamic "good time to plant now" copy, honouring
+    // language. `rainfallFit` / `weatherState` / `riskMessage` /
+    // `taskHint` let downstream engines (risk, task) react.
     seasonFit:        seasonal.seasonFit,
     plantingMessage:  seasonal.plantingMessage,
     plantingWindow:   seasonal.window,
     weatherAdjusted:  seasonal.weatherAdjusted,
+    weatherState:     seasonal.weatherState,
+    rainfallFit:      seasonal.rainfallFit,
+    riskMessage:      seasonal.riskMessage,
+    taskHint:         seasonal.taskHint,
   };
 }
 
