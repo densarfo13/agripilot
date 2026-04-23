@@ -29,7 +29,30 @@
  * verify is for OTPs and cannot send free-form links.
  */
 
+/**
+ * Env-var aliases. The original Farroway uses
+ *   TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER
+ * The spec also asks for the shorter
+ *   TWILIO_SID / TWILIO_TOKEN / TWILIO_PHONE
+ * We accept both; canonicalizeTwilioEnv() copies the short form into
+ * the long form at module load so every downstream helper keeps
+ * working unchanged. Call sites never need to know which pair was set.
+ */
+function canonicalizeTwilioEnv() {
+  if (!process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_SID) {
+    process.env.TWILIO_ACCOUNT_SID = process.env.TWILIO_SID;
+  }
+  if (!process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_TOKEN) {
+    process.env.TWILIO_AUTH_TOKEN = process.env.TWILIO_TOKEN;
+  }
+  if (!process.env.TWILIO_PHONE_NUMBER && process.env.TWILIO_PHONE) {
+    process.env.TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE;
+  }
+}
+canonicalizeTwilioEnv();
+
 export function isSmsMessagingConfigured() {
+  canonicalizeTwilioEnv();
   return !!(
     process.env.TWILIO_ACCOUNT_SID
     && process.env.TWILIO_AUTH_TOKEN
@@ -199,4 +222,33 @@ function maskPhone(raw) {
   return s.slice(0, 1) + '*'.repeat(Math.max(0, s.length - 5)) + s.slice(-4);
 }
 
-export const _internal = Object.freeze({ classifySmsError, maskPhone });
+/**
+ * Spec §3 positional shorthand:
+ *   sendSMS(phoneNumber, message) → { ok, code, messageSid?, details? }
+ *
+ * Thin wrapper over sendSms({ to, body }) that also truncates the
+ * body to 160 characters so callers never accidentally produce a
+ * multi-part SMS (which costs 2× and can split mid-word). Truncation
+ * uses a single-character ellipsis so we stay within 160 bytes of
+ * 7-bit GSM characters.
+ *
+ * Returns the same shape as sendSms(); never throws. Missing phone
+ * number → { ok: false, code: 'missing_to_or_body' } so calling
+ * code can branch cleanly without a null-guard.
+ */
+export async function sendSMS(phoneNumber, message, { requestId = null } = {}) {
+  if (!phoneNumber) return { ok: false, code: 'missing_to_or_body' };
+  const body = truncateTo160(String(message == null ? '' : message));
+  return sendSms({ to: phoneNumber, body, requestId });
+}
+
+function truncateTo160(s) {
+  const MAX = 160;
+  if (!s) return '';
+  if (s.length <= MAX) return s;
+  return `${s.slice(0, MAX - 1)}\u2026`;
+}
+
+export const _internal = Object.freeze({
+  classifySmsError, maskPhone, canonicalizeTwilioEnv, truncateTo160,
+});
