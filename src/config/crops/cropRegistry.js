@@ -40,7 +40,14 @@ import { normalizeCropKey, isCanonicalCropKey, CANONICAL_KEYS } from './cropAlia
 import { getCropCategory } from './cropCategories.js';
 import { getCropRiskPatterns, matchCropRiskPatterns } from './cropRiskPatterns.js';
 import { getCropSeasonalGuidance } from './cropSeasonalGuidance.js';
-import { CROP_TASK_TEMPLATES } from './cropTaskTemplates.js';
+import { CROP_TASK_TEMPLATES, getCropStageTasks } from './cropTaskTemplates.js';
+import {
+  getCropHarvestProfile, hasCropHarvestProfile, GENERIC_HARVEST_PROFILE,
+} from './cropHarvestProfiles.js';
+import {
+  getCropRegions, getRegionForCountry, cropIsRelevantToRegion,
+  getCropsForRegion as getCropsForRegionRaw,
+} from './cropRegions.js';
 
 import { getLifecycle, hasLifecycle, normalizeStageKey } from '../cropLifecycles.js';
 import { getCropImage, getCropImagePath, CROP_IMAGE_PLACEHOLDER } from '../cropImages.js';
@@ -100,6 +107,12 @@ function collectYieldProfile(canonicalKey, countryCode = null) {
   const r = getYieldRange(code, countryCode);
   if (!r || r.source === 'fallback') return null;
   return Object.freeze({
+    // Short aliases match the shape requested by the crop intelligence
+    // spec — `lowPerSqm`, `highPerSqm` — alongside the legacy verbose
+    // names for any consumer that still uses them.
+    lowPerSqm:          r.low,
+    highPerSqm:         r.high,
+    typicalPerSqm:      r.typical,
     lowYieldPerSqm:     r.low,
     highYieldPerSqm:    r.high,
     typicalYieldPerSqm: r.typical,
@@ -123,16 +136,21 @@ function buildCropDefinition(canonicalKey, { countryCode = null } = {}) {
 
   return Object.freeze({
     key: canonicalKey,
+    id: canonicalKey,    // spec alias — same value, both names supported
     labels: collectLabels(canonicalKey),
     image: image || CROP_IMAGE_PLACEHOLDER,
     imageResolved: Boolean(image),
     category: getCropCategory(canonicalKey),
     lifecycle,
     hasCustomLifecycle: hasLifecycle(canonicalKey),
-    defaultTaskTemplates: taskTemplates,
+    tasksByStage: taskTemplates,           // spec name
+    defaultTaskTemplates: taskTemplates,   // legacy name
     riskPatterns: getCropRiskPatterns(canonicalKey),
     yieldProfile: collectYieldProfile(canonicalKey, countryCode),
+    harvestProfile: getCropHarvestProfile(canonicalKey),
+    hasCustomHarvestProfile: hasCropHarvestProfile(canonicalKey),
     seasonalGuidance: getCropSeasonalGuidance(canonicalKey, countryCode),
+    regions: getCropRegions(canonicalKey),
   });
 }
 
@@ -198,6 +216,126 @@ export function listRegisteredCrops() {
   return CANONICAL_KEYS;
 }
 
+// ─── New helpers — spec §6-§11 ───────────────────────────────────
+
+/**
+ * getStageDuration(cropId, stageId) → number (days) | null
+ *   Looks up a single stage's duration. Accepts either canonical form
+ *   of the stage key (e.g. 'grain_fill', 'grain-fill'). Returns null
+ *   when the stage isn't part of the resolved lifecycle.
+ */
+export function getStageDuration(cropId, stageId) {
+  const key   = normalizeCropKey(cropId);
+  const stage = normalizeStageKey(stageId);
+  if (!stage) return null;
+  const lc = getLifecycle(key || '');
+  const match = lc.find((s) => s.key === stage);
+  return match ? match.durationDays : null;
+}
+
+/**
+ * getTasksForCropStage(cropId, stageId, farmType?) → Template[]
+ *   Crop+stage tasks filtered by farm type (audience tag). Unknown
+ *   crops / stages return an empty frozen array so callers can
+ *   concat-merge without null-guarding.
+ *
+ *   farmType ∈ {'backyard', 'small_farm', 'commercial'} (any other
+ *   value behaves like 'small_farm' — the default audience when a
+ *   template omits the `audience` tag).
+ */
+const EMPTY_TASKS = Object.freeze([]);
+export function getTasksForCropStage(cropId, stageId, farmType = null) {
+  const key   = normalizeCropKey(cropId);
+  const stage = normalizeStageKey(stageId);
+  if (!key || !stage) return EMPTY_TASKS;
+  const raw = getCropStageTasks(key, stage);
+  if (!raw || raw.length === 0) return EMPTY_TASKS;
+  if (!farmType) return raw;
+  const want = String(farmType).toLowerCase();
+  const filtered = raw.filter((tpl) => {
+    if (!tpl.audience || tpl.audience.length === 0) return true; // default audience
+    return tpl.audience.includes(want);
+  });
+  return Object.freeze(filtered);
+}
+
+/**
+ * getRiskPatternsForCropStage(cropId, stageId) → RiskPattern[]
+ *   Filters the crop's risk patterns down to those whose trigger.stage
+ *   matches (or is absent — cross-stage risks stay visible).
+ *   Accepts any stage key shape via normalizeStageKey.
+ */
+const EMPTY_RISKS = Object.freeze([]);
+export function getRiskPatternsForCropStage(cropId, stageId) {
+  const key   = normalizeCropKey(cropId);
+  const stage = normalizeStageKey(stageId);
+  if (!key) return EMPTY_RISKS;
+  const all = getCropRiskPatterns(key);
+  if (!all || all.length === 0) return EMPTY_RISKS;
+  if (!stage) return all;
+  const filtered = all.filter((p) => {
+    const t = p && p.trigger;
+    // Patterns with no stage trigger apply to every stage.
+    if (!t || !t.stage) return true;
+    return normalizeStageKey(t.stage) === stage;
+  });
+  return Object.freeze(filtered);
+}
+
+/**
+ * getYieldProfile(cropId, { countryCode? }) → frozen profile | null
+ *   Exposes the same shape getCrop() embeds, usable standalone when
+ *   a caller only wants yields.
+ */
+export function getYieldProfile(cropId, { countryCode = null } = {}) {
+  const key = normalizeCropKey(cropId);
+  if (!key) return null;
+  return collectYieldProfile(key, countryCode);
+}
+
+/**
+ * getHarvestProfile(cropId) → frozen profile (always)
+ *   Falls back to GENERIC_HARVEST_PROFILE so the harvest UI never
+ *   has to null-guard. Callers who care about custom-vs-generic can
+ *   ask hasCropHarvestProfile separately.
+ */
+export function getHarvestProfile(cropId) {
+  const key = normalizeCropKey(cropId);
+  return getCropHarvestProfile(key || '');
+}
+
+/**
+ * getCropsForRegion(regionId, opts?) → canonical crop keys.
+ *   Pass { countryCode } to have the region resolved automatically.
+ *   When neither regionId nor countryCode is provided, returns every
+ *   canonical crop (no filtering).
+ */
+export function getCropsForRegion(regionOrOpts, maybeOpts = {}) {
+  // Support (regionId, opts) OR ({ countryCode, limit, pool }) call shapes.
+  let regionId = null;
+  let opts = {};
+  if (typeof regionOrOpts === 'string' || regionOrOpts == null) {
+    regionId = regionOrOpts || null;
+    opts = maybeOpts || {};
+  } else {
+    opts = regionOrOpts;
+    regionId = opts.regionId
+            || (opts.countryCode ? getRegionForCountry(opts.countryCode) : null);
+  }
+  const pool = opts.pool || CANONICAL_KEYS;
+  if (!regionId) return Object.freeze(pool.slice(0, opts.limit || pool.length));
+  return getCropsForRegionRaw(regionId, { pool, limit: opts.limit || null });
+}
+
+/**
+ * normalizeCropId — spec alias for normalizeCropKey. Keeps both names
+ * callable so new code can use the spec wording and existing code
+ * keeps working.
+ */
+export function normalizeCropId(input) {
+  return normalizeCropKey(input);
+}
+
 // Re-exports so callers import everything they need from one place.
 export {
   normalizeCropKey,
@@ -207,4 +345,10 @@ export {
   getCropRiskPatterns,
   matchCropRiskPatterns,
   getCropSeasonalGuidance,
+  getCropHarvestProfile,
+  hasCropHarvestProfile,
+  GENERIC_HARVEST_PROFILE,
+  getCropRegions,
+  getRegionForCountry,
+  cropIsRelevantToRegion,
 };

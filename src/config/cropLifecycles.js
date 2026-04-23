@@ -168,6 +168,122 @@ const LIFECYCLES = freeze({
     freeze({ key: 'maturation',    durationDays: 45 }),
     freeze({ key: 'harvest',       durationDays: 21 }),
   ]),
+
+  wheat: freeze([
+    freeze({ key: 'planting',   durationDays: 10 }),
+    freeze({ key: 'vegetative', durationDays: 40 }),
+    freeze({ key: 'flowering',  durationDays: 14 }),
+    freeze({ key: 'grain_fill', durationDays: 30 }),
+    freeze({ key: 'harvest',    durationDays: 10 }),
+  ]),
+
+  cowpea: freeze([
+    freeze({ key: 'planting',   durationDays: 7 }),
+    freeze({ key: 'vegetative', durationDays: 30 }),
+    freeze({ key: 'flowering',  durationDays: 14 }),
+    freeze({ key: 'pod_fill',   durationDays: 21 }),
+    freeze({ key: 'harvest',    durationDays: 14 }),
+  ]),
+
+  cabbage: freeze([
+    freeze({ key: 'seedling',   durationDays: 21 }),
+    freeze({ key: 'transplant', durationDays: 7 }),
+    freeze({ key: 'vegetative', durationDays: 45 }),
+    freeze({ key: 'maturation', durationDays: 21 }),
+    freeze({ key: 'harvest',    durationDays: 14 }),
+  ]),
+
+  cucumber: freeze([
+    freeze({ key: 'planting',   durationDays: 7 }),
+    freeze({ key: 'vegetative', durationDays: 21 }),
+    freeze({ key: 'flowering',  durationDays: 10 }),
+    freeze({ key: 'fruiting',   durationDays: 28 }),
+    freeze({ key: 'harvest',    durationDays: 21 }),
+  ]),
+
+  carrot: freeze([
+    freeze({ key: 'planting',   durationDays: 7 }),
+    freeze({ key: 'seedling',   durationDays: 21 }),
+    freeze({ key: 'vegetative', durationDays: 30 }),
+    freeze({ key: 'bulking',    durationDays: 35 }),
+    freeze({ key: 'harvest',    durationDays: 14 }),
+  ]),
+
+  // ─── Tree / perennial (typical annual cycle) ──────────────────
+  banana: freeze([
+    freeze({ key: 'planting',      durationDays: 14 }),
+    freeze({ key: 'establishment', durationDays: 60 }),
+    freeze({ key: 'vegetative',    durationDays: 180 }),
+    freeze({ key: 'flowering',     durationDays: 30 }),
+    freeze({ key: 'maturation',    durationDays: 90 }),
+    freeze({ key: 'harvest',       durationDays: 7 }),
+  ]),
+
+  plantain: freeze([
+    freeze({ key: 'planting',      durationDays: 14 }),
+    freeze({ key: 'establishment', durationDays: 60 }),
+    freeze({ key: 'vegetative',    durationDays: 180 }),
+    freeze({ key: 'flowering',     durationDays: 30 }),
+    freeze({ key: 'maturation',    durationDays: 90 }),
+    freeze({ key: 'harvest',       durationDays: 7 }),
+  ]),
+
+  mango: freeze([
+    freeze({ key: 'planting',      durationDays: 14 }),
+    freeze({ key: 'establishment', durationDays: 180 }),
+    freeze({ key: 'vegetative',    durationDays: 180 }),
+    freeze({ key: 'flowering',     durationDays: 30 }),
+    freeze({ key: 'fruiting',      durationDays: 120 }),
+    freeze({ key: 'harvest',       durationDays: 21 }),
+  ]),
+
+  orange: freeze([
+    freeze({ key: 'vegetative',    durationDays: 180 }),
+    freeze({ key: 'flowering',     durationDays: 30 }),
+    freeze({ key: 'fruiting',      durationDays: 180 }),
+    freeze({ key: 'harvest',       durationDays: 21 }),
+  ]),
+
+  pineapple: freeze([
+    freeze({ key: 'planting',      durationDays: 21 }),
+    freeze({ key: 'establishment', durationDays: 60 }),
+    freeze({ key: 'vegetative',    durationDays: 240 }),
+    freeze({ key: 'flowering',     durationDays: 45 }),
+    freeze({ key: 'fruiting',      durationDays: 120 }),
+    freeze({ key: 'harvest',       durationDays: 14 }),
+  ]),
+
+  cocoa: freeze([
+    freeze({ key: 'planting',      durationDays: 14 }),
+    freeze({ key: 'establishment', durationDays: 180 }),
+    freeze({ key: 'vegetative',    durationDays: 365 }),
+    freeze({ key: 'flowering',     durationDays: 45 }),
+    freeze({ key: 'fruiting',      durationDays: 150 }),
+    freeze({ key: 'harvest',       durationDays: 60 }),
+  ]),
+
+  coffee: freeze([
+    freeze({ key: 'vegetative',    durationDays: 180 }),
+    freeze({ key: 'flowering',     durationDays: 30 }),
+    freeze({ key: 'fruiting',      durationDays: 180 }),
+    freeze({ key: 'harvest',       durationDays: 45 }),
+  ]),
+
+  cotton: freeze([
+    freeze({ key: 'planting',      durationDays: 10 }),
+    freeze({ key: 'vegetative',    durationDays: 45 }),
+    freeze({ key: 'flowering',     durationDays: 35 }),
+    freeze({ key: 'fruiting',      durationDays: 45 }),
+    freeze({ key: 'harvest',       durationDays: 30 }),
+  ]),
+
+  sugarcane: freeze([
+    freeze({ key: 'planting',      durationDays: 21 }),
+    freeze({ key: 'establishment', durationDays: 90 }),
+    freeze({ key: 'vegetative',    durationDays: 180 }),
+    freeze({ key: 'maturation',    durationDays: 90 }),
+    freeze({ key: 'harvest',       durationDays: 60 }),
+  ]),
 });
 
 // ─── Stage key normaliser ────────────────────────────────────────
@@ -196,6 +312,12 @@ const STAGE_ALIASES = freeze({
   post_harvest:     'harvest',
   postharvest:      'harvest',
   pod_fill_stage:   'pod_fill',
+  'pod-fill':       'pod_fill',
+  fruit_set:        'fruiting',
+  fruit_setting:    'fruiting',
+  bulk:             'bulking',
+  bulbing:          'bulking',
+  nursery:          'seedling',
 });
 
 export function normalizeStageKey(stage) {

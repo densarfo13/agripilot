@@ -484,19 +484,415 @@ const MANGO = t({
   ]),
 });
 
+// ─── Wheat ────────────────────────────────────────────────────
+const WHEAT = t({
+  planting: pool([
+    { id: 'wheat.plant.seed_depth', type: 'land_prep', priority: 'high',
+      title: 'Sow 3–4 cm deep in rows',
+      description: 'Drill rows 20 cm apart; shallow sowing dries out, deep sowing delays emergence.',
+      why: 'Even depth gives even emergence — the foundation of a good crop.' },
+  ]),
+  vegetative: pool([
+    { id: 'wheat.veg.topdress_n', type: 'nutrient', priority: 'medium',
+      title: 'Top-dress nitrogen at tillering',
+      description: 'Apply a split-dose of N when plants have 3–4 leaves.',
+      why: 'Nitrogen at tillering sets the number of ears — miss the window, lose the yield.' },
+  ]),
+  grain_fill: pool([
+    { id: 'wheat.gf.rust_scout', type: 'pest', priority: 'high',
+      title: 'Scout for rust on leaves',
+      description: 'Look for orange or brown pustules on leaves.',
+      why: 'Rust at grain fill crashes yield within days — early treatment is essential.' },
+  ]),
+  harvest: pool([
+    { id: 'wheat.harv.dry_cut', type: 'harvest', priority: 'high',
+      title: 'Cut when heads rattle and stems yellow',
+      description: 'Harvest on a dry morning, thresh, and dry grain to 13% before storing.',
+      why: 'Damp grain moulds within days of storage.' },
+  ]),
+});
+
+// ─── Yam ─────────────────────────────────────────────────────
+const YAM = t({
+  planting: pool([
+    { id: 'yam.plant.mounds', type: 'land_prep', priority: 'high',
+      title: 'Plant setts on large mounds',
+      description: 'Build 60 cm mounds, 1 m apart; plant clean setts cut-side down.',
+      why: 'Large mounds give tubers room to swell and keep them dry.' },
+  ]),
+  vegetative: pool([
+    { id: 'yam.veg.stake', type: 'land_prep', priority: 'high',
+      title: 'Stake vines early',
+      description: 'Drive 2–3 m poles per mound and train vines up them.',
+      why: 'Staked vines photosynthesise more and grow bigger tubers.' },
+  ]),
+  bulking: pool([
+    { id: 'yam.bulk.weed', type: 'weeding', priority: 'medium',
+      title: 'Hand-weed around mounds',
+      description: 'Pull weeds; avoid hoeing near tubers.',
+      why: 'Weeds steal water; hoes nick tubers and invite rot.' },
+  ]),
+  harvest: pool([
+    { id: 'yam.harv.cure', type: 'harvest', priority: 'high',
+      title: 'Cure tubers in shade before storing',
+      description: 'Leave lifted tubers in a dry shaded spot for 5–7 days.',
+      why: 'Curing toughens skin so yams store for months without rotting.' },
+  ]),
+});
+
+// ─── Sweet potato ─────────────────────────────────────────────
+const SWEET_POTATO = t({
+  planting: pool([
+    { id: 'sp.plant.vines', type: 'land_prep', priority: 'high',
+      title: 'Plant fresh vine cuttings',
+      description: 'Use 30 cm vines, bury 3 nodes, 30 cm apart on ridges.',
+      why: 'Fresh cuttings root fast; old or dried vines stunt and fail.' },
+  ]),
+  vegetative: pool([
+    { id: 'sp.veg.weevil_scout', type: 'pest', priority: 'high',
+      title: 'Scout for sweet-potato weevil',
+      description: 'Check vines near soil for tunnelling and small holes.',
+      why: 'Weevils tunnel into tubers and ruin the harvest grade.' },
+  ]),
+  bulking: pool([
+    { id: 'sp.bulk.hill', type: 'land_prep', priority: 'medium',
+      title: 'Re-hill ridges as tubers swell',
+      description: 'Cover exposed tubers with soil to prevent greening.',
+      why: 'Sun-exposed tubers go bitter and unsellable.' },
+  ]),
+  harvest: pool([
+    { id: 'sp.harv.gentle', type: 'harvest', priority: 'high',
+      title: 'Lift tubers gently',
+      description: 'Loosen soil with a fork; lift by hand — bruised tubers rot in store.',
+      why: 'Mechanical damage is the #1 cause of post-harvest loss for sweet potato.' },
+  ]),
+});
+
+// ─── Beans ────────────────────────────────────────────────────
+const BEANS = t({
+  planting: pool([
+    { id: 'beans.plant.warm_soil', type: 'land_prep', priority: 'high',
+      title: 'Plant 3 cm deep, 10 cm apart',
+      description: 'Sow into warm, moist soil after rains have settled in.',
+      why: 'Cold wet soils rot bean seed before emergence.' },
+  ]),
+  flowering: pool([
+    { id: 'beans.flow.water_steady', type: 'irrigation', priority: 'high',
+      title: 'Water steadily through flowering',
+      description: 'Even moisture is critical during flowering — flowers abort under stress.',
+      why: 'Flower drop at this stage is the main cause of low pod count.' },
+  ]),
+  pod_fill: pool([
+    { id: 'beans.pf.scout', type: 'pest', priority: 'medium',
+      title: 'Scout for bean fly and pod borer',
+      description: 'Inspect lower stems and young pods weekly.',
+      why: 'Borers at pod fill leave holes in beans and buyers reject them.' },
+  ]),
+  harvest: pool([
+    { id: 'beans.harv.dry', type: 'harvest', priority: 'high',
+      title: 'Harvest dry pods in a single sweep',
+      description: 'Pull plants once 80% of pods are dry; thresh on a clean surface.',
+      why: 'Delayed harvest shatters pods and the crop feeds birds instead of buyers.' },
+  ]),
+});
+
+// ─── Soybean ──────────────────────────────────────────────────
+const SOYBEAN = t({
+  planting: pool([
+    { id: 'soy.plant.inoculate', type: 'land_prep', priority: 'high',
+      title: 'Inoculate seed with rhizobium',
+      description: 'Dust seed with rhizobium inoculant just before sowing.',
+      why: 'Inoculation doubles nitrogen-fixing nodules and boosts yield.' },
+  ]),
+  flowering: pool([
+    { id: 'soy.flow.water', type: 'irrigation', priority: 'high',
+      title: 'Water evenly at flowering',
+      description: 'Flowers abort under water stress — irrigate if rains fail.',
+      why: 'Flower stage drives pod count, which is 80% of final yield.' },
+  ]),
+  harvest: pool([
+    { id: 'soy.harv.shatter', type: 'harvest', priority: 'high',
+      title: 'Cut before pods shatter',
+      description: 'Harvest when leaves drop and pods rattle; don\u2019t wait for the last ones.',
+      why: 'Shattering scatters grain on the ground — a week late costs 15–20%.' },
+  ]),
+});
+
+// ─── Groundnut ────────────────────────────────────────────────
+const GROUNDNUT = t({
+  planting: pool([
+    { id: 'gn.plant.spacing', type: 'land_prep', priority: 'high',
+      title: 'Plant 5 cm deep, 15 cm apart',
+      description: 'Sow into deep loose soil so pegs can bury.',
+      why: 'Groundnut pegs down into soil to form pods; compact soils give empty shells.' },
+  ]),
+  pegging: pool([
+    { id: 'gn.peg.mound', type: 'land_prep', priority: 'medium',
+      title: 'Gently earth up around plants',
+      description: 'Mound loose soil over pegging roots so pods form properly.',
+      why: 'Pegs that hit hard soil abort — loose earth means more filled pods.' },
+  ]),
+  pod_fill: pool([
+    { id: 'gn.pf.leaf_spot', type: 'pest', priority: 'medium',
+      title: 'Scout for leaf spot',
+      description: 'Check lower leaves for dark circular spots; defoliation costs yield.',
+      why: 'Severe leaf spot cuts pod-fill short and shrinks grade.' },
+  ]),
+  harvest: pool([
+    { id: 'gn.harv.dry_fast', type: 'harvest', priority: 'high',
+      title: 'Lift on a dry day and cure in shade',
+      description: 'Hang bundles upside-down until pods rattle.',
+      why: 'Damp nuts mould and produce aflatoxin — a food-safety issue that blocks sales.' },
+  ]),
+});
+
+// ─── Sorghum ──────────────────────────────────────────────────
+const SORGHUM = t({
+  vegetative: pool([
+    { id: 'sorg.veg.thin', type: 'weeding', priority: 'medium',
+      title: 'Thin to 15 cm within rows',
+      description: 'Remove weak plants when 20 cm tall so strong ones have room.',
+      why: 'Thinning matters more than planting rate — strong stands yield.' },
+  ]),
+  flowering: pool([
+    { id: 'sorg.flow.bird_scare', type: 'pest', priority: 'high',
+      title: 'Protect heads from birds',
+      description: 'Set up bird scarers or keep watch at dawn and dusk.',
+      why: 'Birds can strip a sorghum field faster than any pest.' },
+  ]),
+  harvest: pool([
+    { id: 'sorg.harv.timing', type: 'harvest', priority: 'high',
+      title: 'Cut heads when seed hardens',
+      description: 'Press a seed with your nail — if it cracks instead of dents, harvest.',
+      why: 'Leaving heads too long invites bird and mould losses.' },
+  ]),
+});
+
+// ─── Millet ───────────────────────────────────────────────────
+const MILLET = t({
+  vegetative: pool([
+    { id: 'mill.veg.weed', type: 'weeding', priority: 'high',
+      title: 'Weed twice in the first month',
+      description: 'Millet is slow at first and weeds will overtake it.',
+      why: 'Early weeding is the single biggest lever for millet yield.' },
+  ]),
+  grain_fill: pool([
+    { id: 'mill.gf.bird', type: 'pest', priority: 'high',
+      title: 'Guard against grain-eating birds',
+      description: 'Post scarers or have children stand watch at the critical window.',
+      why: 'Birds can wipe out a millet field in a few mornings.' },
+  ]),
+  harvest: pool([
+    { id: 'mill.harv.cut', type: 'harvest', priority: 'high',
+      title: 'Cut heads and sun-dry on mats',
+      description: 'Then thresh and store when grain is fully dry.',
+      why: 'Storing damp millet invites weevils and spoils the crop.' },
+  ]),
+});
+
+// ─── Cabbage ──────────────────────────────────────────────────
+const CABBAGE = t({
+  vegetative: pool([
+    { id: 'cab.veg.feed', type: 'nutrient', priority: 'medium',
+      title: 'Side-dress with nitrogen',
+      description: 'Apply a nitrogen top-dress 3–4 weeks after transplant.',
+      why: 'Cabbage is heavy-feeding; without N it produces loose, small heads.' },
+    { id: 'cab.veg.dbm', type: 'pest', priority: 'high',
+      title: 'Scout for diamondback moth',
+      description: 'Check leaf undersides for small green caterpillars and shot holes.',
+      why: 'DBM larvae riddle heads — one week of inaction can make a crop unsellable.' },
+  ]),
+  harvest: pool([
+    { id: 'cab.harv.firm', type: 'harvest', priority: 'high',
+      title: 'Cut heads when firm',
+      description: 'Press the head — cut when it resists. Leave outer leaves for protection.',
+      why: 'Over-mature heads split in wet weather and lose value fast.' },
+  ]),
+});
+
+// ─── Cucumber ─────────────────────────────────────────────────
+const CUCUMBER = t({
+  flowering: pool([
+    { id: 'cuc.flow.pollinator', type: 'scout', priority: 'medium',
+      title: 'Watch for pollinator activity',
+      description: 'If bees are scarce, plant flowering companions or hand-pollinate.',
+      why: 'No pollinators, no fruit — cucumber is bee-dependent.' },
+  ]),
+  fruiting: pool([
+    { id: 'cuc.fr.pick_daily', type: 'harvest', priority: 'high',
+      title: 'Pick every day at mid-size',
+      description: 'Miss a day and fruit goes seedy; buyers reject oversize fruit.',
+      why: 'Daily picking keeps new flowers coming and fruit tender.' },
+  ]),
+});
+
+// ─── Carrot ───────────────────────────────────────────────────
+const CARROT = t({
+  seedling: pool([
+    { id: 'car.seed.thin', type: 'weeding', priority: 'high',
+      title: 'Thin seedlings to 5 cm apart',
+      description: 'Pull the smallest seedlings when 5 cm tall.',
+      why: 'Crowded carrots fork and stay thin — thinning is everything.' },
+  ]),
+  bulking: pool([
+    { id: 'car.bulk.water_steady', type: 'irrigation', priority: 'medium',
+      title: 'Water evenly through bulking',
+      description: 'Uneven water splits roots.',
+      why: 'Split carrots lose half their market value.' },
+  ]),
+  harvest: pool([
+    { id: 'car.harv.pull_moist', type: 'harvest', priority: 'medium',
+      title: 'Pull when soil is moist',
+      description: 'Loosen with a fork first; dry soil snaps roots.',
+      why: 'Broken carrots can\u2019t be washed and sold as top grade.' },
+  ]),
+});
+
+// ─── Coffee ───────────────────────────────────────────────────
+const COFFEE = t({
+  vegetative: pool([
+    { id: 'coffee.veg.prune', type: 'weeding', priority: 'medium',
+      title: 'Prune for shape and airflow',
+      description: 'Remove suckers and crossing branches; keep a single stem.',
+      why: 'Good pruning doubles future yield and reduces disease pressure.' },
+  ]),
+  flowering: pool([
+    { id: 'coffee.flow.mulch', type: 'irrigation', priority: 'medium',
+      title: 'Mulch deeply at flowering',
+      description: 'A thick mulch layer evens moisture and suppresses weeds.',
+      why: 'Dry stress at flowering aborts cherries.' },
+  ]),
+  fruiting: pool([
+    { id: 'coffee.fr.berry_borer', type: 'pest', priority: 'high',
+      title: 'Scout for coffee berry borer',
+      description: 'Check cherries for small dark entry holes at the tip.',
+      why: 'Borers downgrade beans — early traps and clean picking control them.' },
+  ]),
+  harvest: pool([
+    { id: 'coffee.harv.ripe_only', type: 'harvest', priority: 'high',
+      title: 'Pick only ripe red cherries',
+      description: 'Multiple passes across the orchard give the highest grade.',
+      why: 'Mixed-ripeness batches drop the grade and the price.' },
+  ]),
+});
+
+// ─── Sugarcane ────────────────────────────────────────────────
+const SUGARCANE = t({
+  planting: pool([
+    { id: 'cane.plant.setts', type: 'land_prep', priority: 'high',
+      title: 'Plant clean 3-bud setts',
+      description: 'Lay setts horizontally in furrows and cover with 5 cm soil.',
+      why: 'Clean planting material is the foundation of a disease-free crop.' },
+  ]),
+  vegetative: pool([
+    { id: 'cane.veg.gap_fill', type: 'weeding', priority: 'medium',
+      title: 'Fill gaps after 30 days',
+      description: 'Replant any missing sections — gaps invite weeds that never clear.',
+      why: 'A uniform stand is much easier to harvest and yields more per hectare.' },
+  ]),
+  maturation: pool([
+    { id: 'cane.mat.brix', type: 'scout', priority: 'medium',
+      title: 'Check sucrose with a refractometer',
+      description: 'Test a stem at the bottom, middle, and top.',
+      why: 'Brix tells you when the crop is at peak sugar and should be cut.' },
+  ]),
+  harvest: pool([
+    { id: 'cane.harv.fast', type: 'harvest', priority: 'high',
+      title: 'Cut and crush within 48 hours',
+      description: 'Stage cutting so mill receives a steady stream.',
+      why: 'Sucrose drops fast after cutting — delays are money lost.' },
+  ]),
+});
+
+// ─── Cotton ───────────────────────────────────────────────────
+const COTTON = t({
+  flowering: pool([
+    { id: 'cot.flow.bollworm', type: 'pest', priority: 'high',
+      title: 'Scout for bollworm weekly',
+      description: 'Check squares and young bolls for small entry holes.',
+      why: 'Bollworm inside a boll cannot be reached once it tunnels in — catch it early.' },
+  ]),
+  harvest: pool([
+    { id: 'cot.harv.dry', type: 'harvest', priority: 'high',
+      title: 'Pick open bolls only, on a dry day',
+      description: 'Wet lint stains and discolours during storage.',
+      why: 'Discoloured lint grades down and fetches a lower price.' },
+  ]),
+});
+
+// ─── Orange ───────────────────────────────────────────────────
+const ORANGE = t({
+  vegetative: pool([
+    { id: 'or.veg.canopy', type: 'weeding', priority: 'low',
+      title: 'Prune for open canopy',
+      description: 'Remove inward and crossing branches.',
+      why: 'Airflow reduces fungal pressure and makes picking safer.' },
+  ]),
+  fruiting: pool([
+    { id: 'or.fr.thinning', type: 'weeding', priority: 'medium',
+      title: 'Thin heavy clusters',
+      description: 'Leave 1 fruit per 4–5 leaves for proper size.',
+      why: 'Unthinned trees bear small fruit and alternate yearly.' },
+  ]),
+  harvest: pool([
+    { id: 'or.harv.clip', type: 'harvest', priority: 'high',
+      title: 'Clip stems; don\u2019t pull',
+      description: 'Use shears to leave a short stem on each fruit.',
+      why: 'Torn skins rot first — clipping doubles shelf life.' },
+  ]),
+});
+
+// ─── Pineapple ────────────────────────────────────────────────
+const PINEAPPLE = t({
+  planting: pool([
+    { id: 'pin.plant.suckers', type: 'land_prep', priority: 'high',
+      title: 'Plant disease-free suckers',
+      description: 'Use crowns or suckers from healthy mothers, planted 30 cm apart.',
+      why: 'Pineapple fields last 2–3 cycles — bad starting material haunts every crop.' },
+  ]),
+  fruiting: pool([
+    { id: 'pin.fr.watch_base', type: 'scout', priority: 'medium',
+      title: 'Watch for base yellowing',
+      description: 'Yellowing at the base signals ripeness in 1–2 weeks.',
+      why: 'Pineapples don\u2019t ripen off the plant — timing the cut is everything.' },
+  ]),
+  harvest: pool([
+    { id: 'pin.harv.cut', type: 'harvest', priority: 'high',
+      title: 'Cut fruit with a short stem',
+      description: 'Snap or cut cleanly; leave the crown attached for transport.',
+      why: 'A dry stem resists rot — bruised cuts ruin fruit fast.' },
+  ]),
+});
+
 export const CROP_TASK_TEMPLATES = t({
   cassava:        CASSAVA,
   maize:          MAIZE,
   rice:           RICE,
+  wheat:          WHEAT,
   tomato:         TOMATO,
   onion:          ONION,
   okra:           OKRA,
   pepper:         PEPPER,
   potato:         POTATO,
+  'sweet-potato': SWEET_POTATO,
+  yam:            YAM,
+  beans:          BEANS,
+  soybean:        SOYBEAN,
+  groundnut:      GROUNDNUT,
+  sorghum:        SORGHUM,
+  millet:         MILLET,
+  cabbage:        CABBAGE,
+  cucumber:       CUCUMBER,
+  carrot:         CARROT,
   banana:         BANANA,
   plantain:       PLANTAIN,
-  cocoa:          COCOA,
   mango:          MANGO,
+  orange:         ORANGE,
+  pineapple:      PINEAPPLE,
+  cocoa:          COCOA,
+  coffee:         COFFEE,
+  cotton:         COTTON,
+  sugarcane:      SUGARCANE,
 });
 
 /**
