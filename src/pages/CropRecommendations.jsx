@@ -25,6 +25,39 @@ import {
 } from '../config/crops/index.js';
 import { recommendTopCrops } from '../lib/recommendations/topCropEngine.js';
 
+/**
+ * deriveWeatherSummary(farmCtx, answers)
+ *   Maps whatever lightweight weather/climate field the farm or
+ *   onboarding answers carry into the coarse pattern the seasonal
+ *   engine understands. Returns null when we genuinely have nothing
+ *   — the engine treats missing weather as "no adjustment", so
+ *   returning null is safer than guessing.
+ */
+function deriveWeatherSummary(farmCtx = {}, answers = null) {
+  const src = (answers && answers.weather)
+           || (farmCtx && (farmCtx.weather || farmCtx.currentWeather))
+           || null;
+  if (!src || typeof src !== 'object') return null;
+  // Direct pass-through when the caller already speaks our vocab.
+  if (src.pattern) return { pattern: String(src.pattern).toLowerCase() };
+  // Fallback: map rainfall mm / temp °C to a coarse pattern.
+  const rain = Number(src.rain3d || src.rainMm || src.precipitation || 0);
+  const temp = Number(src.temp   || src.tempC  || src.temperature  || NaN);
+  if (Number.isFinite(rain)) {
+    if (rain >= 50) return { pattern: 'high_rain' };
+    if (rain >= 10) return { pattern: 'moderate_rain' };
+    if (rain <  2 && Number.isFinite(temp) && temp >= 30) {
+      return { pattern: 'heat_stress' };
+    }
+    if (rain <  2) return { pattern: 'dry_conditions' };
+  }
+  if (Number.isFinite(temp)) {
+    if (temp >= 35) return { pattern: 'heat_stress' };
+    if (temp <= 10) return { pattern: 'cool_conditions' };
+  }
+  return null;
+}
+
 export default function CropRecommendations() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,6 +119,10 @@ export default function CropRecommendations() {
     const legacy = getRecommendedCrops(answers) || [];
     // Collect context for the registry engine.
     const farmCtx = farmFromId || profile || {};
+    // Pull a lightweight weather pattern from whatever shape the
+    // profile or answers carries. The engine only cares about a
+    // coarse label so this mapping is intentionally shallow.
+    const weather = deriveWeatherSummary(farmCtx, answers);
     const recs = recommendTopCrops({
       country:  answers && (answers.country || farmCtx.country),
       state:    answers && (answers.state   || farmCtx.state),
@@ -101,6 +138,11 @@ export default function CropRecommendations() {
                           || farmCtx.waterAccess || 'rain_only',
       budgetSensitivity: answers && answers.budget,
       language: lang,
+      // Explicit month + weather open the seasonal intelligence
+      // layer. Engine falls back to Date.now() + no-weather when
+      // these are null.
+      month:   new Date().getMonth() + 1,
+      weather: weather || null,
     });
     const registryScores = new Map();
     if (recs && recs.all) {
@@ -131,6 +173,12 @@ export default function CropRecommendations() {
         // Blend scores: legacy carries goal/experience/water, registry
         // adds regional + farm-type + beginner boosts.
         score: (c.score || 0) + registryScore,
+        // Promote the registry's dynamic planting message over the
+        // generic legacy timingSignal. Falls through to the legacy
+        // signal when the seasonal engine has no entry for the crop.
+        plantingMessage: (reg && reg.plantingMessage) || c.timingSignal || null,
+        seasonFit:       reg && reg.seasonFit,
+        weatherAdjusted: Boolean(reg && reg.weatherAdjusted),
       };
     });
     // If the registry surfaced a strong candidate the legacy engine
@@ -149,8 +197,10 @@ export default function CropRecommendations() {
         waterNeed: recs.best.waterNeed,
         costLevel: recs.best.costLevel,
         marketPotential: null,
-        timingSignal: recs.best.badges.includes('topCrops.badge.goodTiming')
-          ? 'topCrops.badge.goodTiming' : '',
+        timingSignal: recs.best.plantingMessage || '',
+        plantingMessage: recs.best.plantingMessage,
+        seasonFit:       recs.best.seasonFit,
+        weatherAdjusted: recs.best.weatherAdjusted,
         fitReasons: recs.best.reasons,
         badges: recs.best.badges,
         warnings: recs.best.warnings,
@@ -285,7 +335,18 @@ export default function CropRecommendations() {
                   </div>
                 </div>
 
-                <div style={S.timing}>{t(crops[0].timingSignal)}</div>
+                {(crops[0].plantingMessage || crops[0].timingSignal) && (
+                  <div
+                    style={{
+                      ...S.timing,
+                      ...(crops[0].seasonFit === 'low'
+                        ? S.timingCaution : null),
+                    }}
+                    data-testid="planting-message"
+                    data-season-fit={crops[0].seasonFit || 'unknown'}>
+                    {t(crops[0].plantingMessage || crops[0].timingSignal)}
+                  </div>
+                )}
 
                 {(crops[0].fitReasons || []).length > 0 && (
                   <div style={S.reasons}>
@@ -564,6 +625,12 @@ const S = {
     fontSize: '0.75rem', fontWeight: 700, color: '#22C55E',
     padding: '0.25rem 0.625rem', borderRadius: '999px',
     background: 'rgba(34,197,94,0.08)', alignSelf: 'flex-start',
+  },
+  // When the seasonal engine reports 'low' fit, the pill switches to
+  // a warmer amber so the farmer reads it as advisory, not urgent.
+  timingCaution: {
+    color: '#FCD34D',
+    background: 'rgba(251,191,36,0.08)',
   },
   reasons: {
     display: 'flex', flexWrap: 'wrap', gap: '0.375rem',

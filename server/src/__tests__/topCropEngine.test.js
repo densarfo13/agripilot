@@ -125,8 +125,10 @@ describe('recommendTopCrops', () => {
     const out = recommendTopCrops({
       country: 'GH', farmerExperienceLevel: 'beginner',
     });
+    // Reasons come from either topCrops.* (scoring) or seasonal.*
+    // (month/weather fit). Both are translation keys, no raw copy.
     for (const r of out.best.reasons) {
-      expect(r).toMatch(/^topCrops\./);
+      expect(r).toMatch(/^(topCrops|seasonal)\./);
     }
   });
 

@@ -7526,6 +7526,25 @@ const T = {
   'topCrops.warning.needsIrrigation': { en: 'Needs irrigation',          fr: 'Nécessite l\u2019irrigation',           sw: 'Inahitaji umwagiliaji',               ha: 'Yana buƙatar ban ruwa',              tw: 'Ɛhia nsu a wɔde gu' },
   'topCrops.warning.highCost':        { en: 'Higher startup cost',       fr: 'Coût de démarrage élevé',               sw: 'Gharama kubwa ya kuanza',             ha: 'Tsadar farawa mai yawa',             tw: 'Ɛhia sika pii' },
   'topCrops.warning.longCycle':       { en: 'Long growing cycle',        fr: 'Cycle de croissance long',              sw: 'Mzunguko mrefu wa ukuaji',            ha: 'Tsawon lokacin girma',               tw: 'Ne nyin bere ware' },
+  'topCrops.warning.outOfSeason':     { en: 'Not the usual planting season', fr: 'Hors de la saison habituelle',       sw: 'Si msimu wa kawaida wa kupanda',      ha: 'Ba lokacin shuka na yau da kullun ba', tw: 'Ɛnyɛ bere a wɔtaa dua' },
+
+  // ─── Seasonal intelligence — dynamic planting messages ──
+  'seasonal.msg.goodTimeToPlant':     { en: 'Good time to plant now',            fr: 'Bon moment pour planter',                sw: 'Wakati mzuri wa kupanda sasa',           ha: 'Lokaci mai kyau don shuka yanzu',      tw: 'Ɛyɛ bere pa sɛ wuadua seesei' },
+  'seasonal.msg.conditionsFavorable': { en: 'Conditions look favorable for planting', fr: 'Les conditions semblent favorables', sw: 'Hali zinaonekana nzuri kwa kupanda',   ha: 'Yanayi na da kyau don shuka',           tw: 'Tebea no yɛ ma afuw' },
+  'seasonal.msg.possibleButLessIdeal':{ en: 'Can grow now, but conditions are less ideal', fr: 'Possible maintenant, mais conditions moins idéales', sw: 'Inawezekana sasa, lakini hali si bora', ha: 'Mai yiwuwa yanzu, amma yanayi ba mai kyau ba', tw: 'Ɛbɛtumi ayɛ seesei, nanso tebea no nyɛ pa' },
+  'seasonal.msg.usuallyPlantedLater': { en: 'Usually planted later in your area', fr: 'Habituellement planté plus tard dans votre région', sw: 'Hupandwa baadaye katika eneo lako',     ha: 'Ana yawan shukawa daga baya a yankinku', tw: 'Wɔtaa dua akyire wɔ w\u2019amantoɔ mu' },
+  'seasonal.msg.betterAnotherSeason': { en: 'Better suited to another season',   fr: 'Mieux adapté à une autre saison',         sw: 'Inafaa zaidi msimu mwingine',            ha: 'Ya fi dacewa da wani lokaci',           tw: 'Ɛfata bere foforɔ' },
+  'seasonal.msg.suitableManyRegions': { en: 'Suitable in many regions',          fr: 'Adapté à de nombreuses régions',          sw: 'Inafaa katika maeneo mengi',             ha: 'Ya dace da yankuna da yawa',            tw: 'Ɛfata amantoɔ pii mu' },
+  'seasonal.msg.checkLocalConditions':{ en: 'Check local conditions before planting', fr: 'Vérifiez les conditions locales avant de planter', sw: 'Kagua hali za mtaa kabla ya kupanda', ha: 'Duba yanayin wurinku kafin ku shuka',  tw: 'Hwɛ w\u2019abɔdwese tebea ansa na woadua' },
+
+  // ─── Seasonal explanation reasons ──
+  'seasonal.reason.preferredMonth':   { en: 'In the main planting window',       fr: 'Dans la fenêtre principale de plantation', sw: 'Katika dirisha kuu la kupanda',           ha: 'A cikin babban lokacin shuka',         tw: 'Adua bere titire mu' },
+  'seasonal.reason.acceptableMonth':  { en: 'Acceptable planting time',          fr: 'Période de plantation acceptable',        sw: 'Wakati unaokubalika wa kupanda',          ha: 'Lokaci mai karɓuwa na shuka',          tw: 'Adua bere a ɛyɛ' },
+  'seasonal.reason.outOfWindow':      { en: 'Outside the usual planting window', fr: 'Hors de la fenêtre de plantation habituelle', sw: 'Nje ya dirisha la kawaida la kupanda', ha: 'Bayan lokacin shuka na yau da kullun', tw: 'Ɛwɔ adua bere a wɔtaa mu akyi' },
+  'seasonal.reason.rainSupports':     { en: 'Current rains support planting',    fr: 'Les pluies actuelles soutiennent la plantation', sw: 'Mvua za sasa zinasaidia kupanda',   ha: 'Ruwan sama na yanzu ya tallafi shuka', tw: 'Osu a ɛreba no boa adua' },
+  'seasonal.reason.drySlowsEstablishment': { en: 'Dry conditions may slow establishment', fr: 'Les conditions sèches peuvent ralentir l\u2019enracinement', sw: 'Ukavu unaweza kupunguza kustawi', ha: 'Busasshen yanayi na iya rage farawa', tw: 'Ɔpɛ tebea bɛtumi atɛ adwumayɛ no so' },
+  'seasonal.reason.heavyRainRisk':    { en: 'Heavy rain may affect early growth', fr: 'Les fortes pluies peuvent affecter la croissance', sw: 'Mvua nyingi zinaweza kuathiri ukuaji wa mapema', ha: 'Ruwan sama mai yawa na iya shafar girma na farko', tw: 'Osu a ɛba pii bɛtumi adane nyin bere' },
+  'seasonal.reason.heatStress':       { en: 'Heat stress may reduce yield',      fr: 'La chaleur peut réduire le rendement',   sw: 'Joto kali linaweza kupunguza mavuno',     ha: 'Zafi mai yawa na iya rage amfanin gona', tw: 'Ɔhyeɛ bɛtumi ateɛ nneɛma a ɛbɛba' },
 
   // ═══════════════════════════════════════════════════════════
   //  CROP SUMMARY — A-Z crop plan screen

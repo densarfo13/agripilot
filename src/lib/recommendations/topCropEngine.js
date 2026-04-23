@@ -54,6 +54,7 @@ import {
   getCropsForRegion,
   getRegionForCountry,
 } from '../../config/crops/index.js';
+import { evaluateSeasonalFit } from './seasonalCropEngine.js';
 
 const f = Object.freeze;
 
@@ -92,13 +93,21 @@ function normaliseContext(raw = {}) {
   ).toLowerCase();
   const preferredCrop = ctx.preferredCrop
     ? normalizeCropId(ctx.preferredCrop) : null;
+  // Month may be passed explicitly (1-12). Fall back to the month
+  // component of `now`, else today.
+  const nowDate = ctx.now ? new Date(ctx.now) : new Date();
+  const month = Number.isFinite(ctx.month)
+    ? Number(ctx.month)
+    : (nowDate.getMonth() + 1);
   return f({
     country, region, farmType, experience,
     preferredCrop,
-    seasonContext:       ctx.seasonContext || currentSeason(ctx.now),
+    seasonContext:       ctx.seasonContext || currentSeason(nowDate),
     waterAvailability:   ctx.waterAvailability || 'rain_only',
     budgetSensitivity:   ctx.budgetSensitivity || 'medium',
     state:               ctx.state || null,
+    month,
+    weather:             ctx.weather || null,
     now:                 ctx.now || null,
   });
 }
@@ -199,17 +208,29 @@ function scoreCrop(cropId, ctx) {
     }
   }
 
-  // 6. Season fit (best-effort; the registry's seasonal guidance
-  //    is country-sensitive and the engine can't resolve that cheaply
-  //    without a planting date, so we use the simple month bucket).
-  const sg = crop.seasonalGuidance;
-  if (sg && sg.plantingWindow) {
-    if (sg.plantingWindow.includes(ctx.seasonContext)) {
-      score += W.seasonFit;
-      reasons.push('topCrops.reason.goodTiming');
-      badges.push('topCrops.badge.goodTiming');
-    }
+  // 6. Season fit — registry-backed seasonality by country + month.
+  //    Weather (when available) nudges the fit up or down a single
+  //    step. evaluateSeasonalFit always returns a usable shape so we
+  //    can safely drop it straight into reasons / badges / warnings.
+  const seasonal = evaluateSeasonalFit({
+    cropId: crop.id,
+    country: ctx.country,
+    state:   ctx.state,
+    month:   ctx.month,
+    weather: ctx.weather,
+    now:     ctx.now,
+  });
+  score += seasonal.scoreAdjustment || 0;
+  if (seasonal.seasonFit === 'high') {
+    reasons.push('topCrops.reason.goodTiming');
+    badges.push('topCrops.badge.goodTiming');
+  } else if (seasonal.seasonFit === 'low') {
+    warnings.push('topCrops.warning.outOfSeason');
   }
+  // Surface the specific explanation reasons (preferredMonth /
+  // acceptableMonth / outOfWindow / weather nudges) so the UI can
+  // show a chip per structured reason without string guesswork.
+  for (const r of seasonal.reasons) reasons.push(r);
 
   // 7. Preferred crop bonus — the farmer asked for this, trust them.
   if (ctx.preferredCrop && ctx.preferredCrop === crop.id) {
@@ -244,6 +265,12 @@ function scoreCrop(cropId, ctx) {
     beginnerFriendly: crop.beginnerFriendly,
     regions:          crop.regions,
     tags:             crop.tags,
+    // Seasonal intelligence — UI renders plantingMessage as the
+    // dynamic "good time to plant now" copy, honouring language.
+    seasonFit:        seasonal.seasonFit,
+    plantingMessage:  seasonal.plantingMessage,
+    plantingWindow:   seasonal.window,
+    weatherAdjusted:  seasonal.weatherAdjusted,
   };
 }
 

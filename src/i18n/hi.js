@@ -689,6 +689,23 @@ const HI = {
   'topCrops.warning.needsIrrigation':  'सिंचाई की आवश्यकता',
   'topCrops.warning.highCost':         'शुरू करने की अधिक लागत',
   'topCrops.warning.longCycle':        'लंबा विकास चक्र',
+  'topCrops.warning.outOfSeason':      'सामान्य बुवाई का मौसम नहीं है',
+
+  // ─── Seasonal intelligence ────────────────────────
+  'seasonal.msg.goodTimeToPlant':      'अभी बोने का अच्छा समय',
+  'seasonal.msg.conditionsFavorable':  'बुवाई के लिए परिस्थितियाँ अनुकूल हैं',
+  'seasonal.msg.possibleButLessIdeal': 'अभी बो सकते हैं, पर परिस्थितियाँ कम आदर्श हैं',
+  'seasonal.msg.usuallyPlantedLater':  'आपके क्षेत्र में आमतौर पर बाद में बोया जाता है',
+  'seasonal.msg.betterAnotherSeason':  'दूसरे मौसम के लिए अधिक उपयुक्त',
+  'seasonal.msg.suitableManyRegions':  'कई क्षेत्रों में उपयुक्त',
+  'seasonal.msg.checkLocalConditions': 'बुवाई से पहले स्थानीय परिस्थितियाँ जाँचें',
+  'seasonal.reason.preferredMonth':    'मुख्य बुवाई अवधि में',
+  'seasonal.reason.acceptableMonth':   'बुवाई के लिए स्वीकार्य समय',
+  'seasonal.reason.outOfWindow':       'सामान्य बुवाई अवधि के बाहर',
+  'seasonal.reason.rainSupports':      'मौजूदा बारिश बुवाई में मदद कर रही है',
+  'seasonal.reason.drySlowsEstablishment': 'सूखी परिस्थितियाँ विकास धीमा कर सकती हैं',
+  'seasonal.reason.heavyRainRisk':     'भारी बारिश शुरुआती विकास को प्रभावित कर सकती है',
+  'seasonal.reason.heatStress':        'गर्मी का दबाव उपज घटा सकता है',
 
   // ─── Counts / done today patterns ──────────────────
   'count.xOfYDoneToday': 'आज {done} में से {total} पूरे',
