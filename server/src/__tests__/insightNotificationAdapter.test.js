@@ -24,7 +24,8 @@ import { sendSMS, _internal as smsInternal } from '../../services/smsService.js'
 
 // ─── Fixture helpers ───────────────────────────────────────────
 const FARM = Object.freeze({ id: 'farm-1', farmType: 'small_farm',
-                               country: 'GH', cropType: 'cassava' });
+                               country: 'GH', cropType: 'cassava',
+                               phone: '+233555123456' });
 
 function insightDry() {
   return {
