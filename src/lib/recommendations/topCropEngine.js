@@ -55,6 +55,9 @@ import {
   getRegionForCountry,
 } from '../../config/crops/index.js';
 import { evaluateSeasonalFit } from './seasonalCropEngine.js';
+import {
+  estimateFarmEconomics, scoreFromEconomics,
+} from '../intelligence/farmEconomicsEngine.js';
 
 const f = Object.freeze;
 
@@ -108,6 +111,10 @@ function normaliseContext(raw = {}) {
     state:               ctx.state || null,
     month,
     weather:             ctx.weather || null,
+    // Optional farm context — when present, the economics layer uses
+    // this area/stage instead of the reference 500 m² fallback.
+    normalizedAreaSqm:   Number(ctx.normalizedAreaSqm) || null,
+    currentStage:        ctx.currentStage || null,
     now:                 ctx.now || null,
   });
 }
@@ -243,6 +250,27 @@ function scoreCrop(cropId, ctx) {
     reasons.push('topCrops.reason.yourChoice');
   }
 
+  // 9. Economics — secondary signal. Only gently biases ranking so a
+  //    crop with a strong expected profit edges out a tied peer,
+  //    without letting economics dominate recommendation quality.
+  const economics = estimateFarmEconomics({
+    cropId: crop.id,
+    country: ctx.country, state: ctx.state,
+    farmType: ctx.farmType,
+    seasonFit:   seasonal.seasonFit,
+    rainfallFit: seasonal.rainfallFit,
+    // When the caller supplies a farm context we use its normalized
+    // area; otherwise default to a reference 500 m² plot so every
+    // crop gets scored against the same hypothetical size.
+    normalizedAreaSqm: ctx.normalizedAreaSqm || 500,
+    currentStage: ctx.currentStage,
+  });
+  const econBoost = scoreFromEconomics(economics);
+  score += econBoost;
+  if (economics && economics.highlights && economics.highlights.length > 0) {
+    for (const h of economics.highlights) if (!badges.includes(h)) badges.push(h);
+  }
+
   // 8. Cycle length vs farmer profile.
   const cycleMax = crop.cycleRangeWeeks && crop.cycleRangeWeeks[1];
   if (cycleMax) {
@@ -282,6 +310,8 @@ function scoreCrop(cropId, ctx) {
     rainfallFit:      seasonal.rainfallFit,
     riskMessage:      seasonal.riskMessage,
     taskHint:         seasonal.taskHint,
+    economics,
+    _economicsBoost: econBoost,
   };
 }
 
