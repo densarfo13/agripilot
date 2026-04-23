@@ -19,7 +19,15 @@
     "android:open": "npx cap open android",
     "build:ios": "vite build && npx cap sync ios",
     "ios:sync": "npx cap sync ios",
-    "ios:open": "npx cap open ios"
+    "ios:open": "npx cap open ios",
+    "guard:prisma":  "node scripts/ci/check-prisma-safety.mjs",
+    "guard:crops":   "node scripts/ci/check-crop-type-drift.mjs",
+    "guard:i18n":    "node scripts/ci/check-i18n-coverage.mjs",
+    "guard:duplicate-crops": "node scripts/ci/check-duplicate-crop-sources.mjs",
+    "guard:env":     "node scripts/ci/check-env-assertions.mjs --mode=prod",
+    "guards":        "npm run guard:prisma && npm run guard:crops && npm run guard:i18n && npm run guard:duplicate-crops && npm run guard:env",
+    "launch-gate":      "node scripts/launch-gate.mjs",
+    "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

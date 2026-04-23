@@ -322,7 +322,12 @@ const STAGE_ALIASES = freeze({
 
 export function normalizeStageKey(stage) {
   if (!stage) return null;
-  const raw = String(stage).trim().toLowerCase().replace(/-/g, '_');
+  // Collapse any separator (hyphen, space, multi-space) to a single
+  // underscore so "Land prep" / "land-prep" / "land_prep" / "Land
+  // Prep" all resolve to the same alias row.
+  const raw = String(stage).trim().toLowerCase()
+    .replace(/[\s-]+/g, '_')
+    .replace(/_+/g, '_');
   return STAGE_ALIASES[raw] || raw;
 }
 
