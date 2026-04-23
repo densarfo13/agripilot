@@ -205,22 +205,57 @@ export default function OrganizationDashboardPage() {
             <MetricTile label={tr('pilotMetrics.activeWeekly', 'Active this week')}
                         value={metrics.adoption.activeWeekly}
                         secondary={`${metrics.adoption.activeMonthly} ${tr('pilotMetrics.activeMonthlyTail', 'this month')}`}
-                        accent="#7DD3FC" styles={styles} />
+                        accent="#7DD3FC" styles={styles}
+                        delta={metrics.periodOverPeriod
+                                && metrics.periodOverPeriod.adoption
+                                && metrics.periodOverPeriod.adoption.activeMonthly} />
             <MetricTile label={tr('pilotMetrics.adoptionRate', 'Adoption rate')}
                         value={`${Math.round(metrics.adoption.adoptionRate * 100)}%`}
                         secondary={`${metrics.adoption.newThisPeriod} ${tr('pilotMetrics.newThisPeriod', 'new this period')}`}
-                        accent="#86EFAC" styles={styles} />
+                        accent="#86EFAC" styles={styles}
+                        delta={metrics.periodOverPeriod
+                                && metrics.periodOverPeriod.adoption
+                                && metrics.periodOverPeriod.adoption.adoptionRate} />
             <MetricTile label={tr('pilotMetrics.tasksPerWeek', 'Tasks / week')}
                         value={metrics.engagement.tasksCompletedPerWeek}
                         secondary={metrics.engagement.taskCompletionRate != null
                           ? `${Math.round(metrics.engagement.taskCompletionRate * 100)}% ${tr('pilotMetrics.onTime', 'on time')}`
                           : tr('pilotMetrics.noTasks', 'no tasks yet')}
-                        accent="#FCD34D" styles={styles} />
+                        accent="#FCD34D" styles={styles}
+                        delta={metrics.periodOverPeriod
+                                && metrics.periodOverPeriod.engagement
+                                && metrics.periodOverPeriod.engagement.tasksCompletedPerWeek} />
             <MetricTile label={tr('pilotMetrics.listings', 'Listings')}
                         value={metrics.outcomes.marketplaceListings}
                         secondary={`${metrics.outcomes.marketplaceRequests} ${tr('pilotMetrics.requests', 'requests')} · ${metrics.outcomes.acceptedRequests} ${tr('pilotMetrics.accepted', 'accepted')}`}
-                        accent="#FCA5A5" styles={styles} />
+                        accent="#FCA5A5" styles={styles}
+                        delta={metrics.periodOverPeriod
+                                && metrics.periodOverPeriod.outcomes
+                                && metrics.periodOverPeriod.outcomes.marketplaceListings} />
           </div>
+
+          {/* Completion source + previous-window footnote */}
+          {(metrics.engagement.source || metrics.periodOverPeriod) && (
+            <div style={{ marginTop: 8, fontSize: 11, color: '#94A3B8' }}
+                 data-testid="pilot-metrics-footnote">
+              {metrics.engagement.source === 'audit_log'
+                ? tr('pilotMetrics.completionSource.events',
+                      'Task completion from real events')
+                : tr('pilotMetrics.completionSource.proxy',
+                      'Task completion estimated from alert read-state')}
+              {metrics.periodOverPeriod && metrics.periodOverPeriod.previousWindow && (
+                <>
+                  {' · '}
+                  {tr('pilotMetrics.previousWindow', 'vs')}{' '}
+                  {new Date(metrics.periodOverPeriod.previousWindow.from)
+                    .toLocaleDateString()}
+                  {' – '}
+                  {new Date(metrics.periodOverPeriod.previousWindow.to)
+                    .toLocaleDateString()}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Trends */}
           {metrics.trends && metrics.trends.weekly.length > 0 && (
@@ -391,15 +426,49 @@ export default function OrganizationDashboardPage() {
   );
 }
 
-function MetricTile({ label, value, secondary, accent, styles }) {
+function MetricTile({ label, value, secondary, accent, styles, delta }) {
   return (
     <div style={{ ...styles.tile, ...(accent ? { borderColor: accent } : {}) }}>
-      <div style={styles.tileLabel}>{label}</div>
+      <div style={styles.tileLabel}>
+        {label}
+        {delta && <DeltaChip delta={delta} />}
+      </div>
       <div style={{ ...styles.tileValue, ...(accent ? { color: accent } : {}) }}>
         {value}
       </div>
       {secondary && <div style={styles.tileSub}>{secondary}</div>}
     </div>
+  );
+}
+
+/**
+ * DeltaChip — small inline pill showing the period-over-period
+ * change. Green arrow when up, red when down, grey when flat or
+ * when we don't have a relative ratio (previous was 0).
+ */
+function DeltaChip({ delta }) {
+  if (!delta) return null;
+  const abs = delta.absolute;
+  const rel = delta.relative;
+  if (abs == null && rel == null) return null;
+  const up   = (abs != null && abs > 0) || (rel != null && rel > 0);
+  const down = (abs != null && abs < 0) || (rel != null && rel < 0);
+  const color = up ? '#86EFAC' : (down ? '#FCA5A5' : '#94A3B8');
+  const arrow = up ? '▲' : (down ? '▼' : '·');
+  const label = rel != null
+    ? `${rel > 0 ? '+' : ''}${Math.round(rel * 100)}%`
+    : (abs != null ? `${abs > 0 ? '+' : ''}${abs}` : '—');
+  return (
+    <span
+      data-testid="pilot-delta-chip"
+      style={{
+        marginLeft: 6, padding: '1px 6px', borderRadius: 999,
+        fontSize: 10, fontWeight: 700, letterSpacing: 0.2,
+        background: 'rgba(148, 163, 184, 0.12)',
+        color,
+      }}>
+      {arrow} {label}
+    </span>
   );
 }
 

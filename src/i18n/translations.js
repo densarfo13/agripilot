@@ -7364,6 +7364,9 @@ const T = {
   'pilotMetrics.weeklyTrends':      { en: 'Last 6 weeks', fr: '6 derni\u00e8res semaines', sw: 'Wiki 6 zilizopita', ha: 'Makonni 6 da suka wuce', tw: 'Nnawɔtwe 6 a atwam' },
   'pilotMetrics.topRegions':        { en: 'Top regions', fr: 'Principales r\u00e9gions', sw: 'Maeneo bora', ha: 'Manyan yankuna', tw: 'Amansan a edi kan' },
   'pilotMetrics.atRisk':            { en: 'At-risk farmers', fr: 'Agriculteurs \u00e0 risque', sw: 'Wakulima hatarini', ha: 'Manoma cikin hadari', tw: 'Akuafoɔ a wɔwɔ asiane mu' },
+  'pilotMetrics.previousWindow':    { en: 'vs', fr: 'vs', sw: 'dhidi ya', ha: 'da', tw: 'ne' },
+  'pilotMetrics.completionSource.events': { en: 'Task completion from real events', fr: 'Ach\u00e8vement des t\u00e2ches \u00e0 partir d\u2019\u00e9v\u00e9nements r\u00e9els', sw: 'Ukamilishaji wa kazi kutoka matukio halisi', ha: 'Kammala ayyuka daga abubuwan da suka faru', tw: 'Adwuma a wɔawie firi nokwafoɔ mu' },
+  'pilotMetrics.completionSource.proxy':  { en: 'Task completion estimated from alert read-state', fr: 'Ach\u00e8vement estim\u00e9 \u00e0 partir de la lecture des alertes', sw: 'Ukamilishaji unakadiriwa kutoka hali ya kusoma arifa', ha: 'An kiyasta kammala ayyuka daga yanayin karanta gargadi', tw: 'Wɔde akɔkɔbɔ akenkan tebea ayɛ nkontaabuo' },
 
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },

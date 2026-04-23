@@ -367,13 +367,17 @@ export function computeTrends({
 }
 
 /**
- * computeTopRegions(farmers, farms, scoreSnapshots, { limit })
- *   Group farmers by region, report count + average score +
- *   (proxy) task completion rate based on score band. Sorted by
- *   farmer count desc.
+ * computeTopRegions(farmers, farms, scoreSnapshots, { limit,
+ *                    completionEvents })
+ *   Group farmers by region, report count + average score + real
+ *   task completion rate when completionEvents are supplied (they
+ *   carry farmerId + onTime). Falls back to a score-based proxy
+ *   (avg score >= 70) when no task events exist for a region.
+ *   Sorted by farmer count desc.
  */
 export function computeTopRegions({
   farmers = [], farms = [], scoreSnapshots = [], limit = 5,
+  completionEvents = [],
 } = {}) {
   const regionByFarmer = new Map();
   for (const f of farmers) {
@@ -396,24 +400,46 @@ export function computeTopRegions({
   for (const [farmerId, region] of regionByFarmer.entries()) {
     if (!byRegion.has(region)) byRegion.set(region, {
       region, farmers: 0, scoreSum: 0, scoreN: 0,
+      onTime: 0, late: 0,
     });
     const entry = byRegion.get(region);
     entry.farmers += 1;
     const score = latestScoreByFarmer.get(farmerId);
     if (score) { entry.scoreSum += score.overall; entry.scoreN += 1; }
   }
+  // Fold real completion events in by farmer->region.
+  for (const e of completionEvents) {
+    if (!e || !e.farmerId) continue;
+    const region = regionByFarmer.get(e.farmerId);
+    if (!region) continue;
+    const entry = byRegion.get(region);
+    if (!entry) continue;
+    if (e.onTime === true)       entry.onTime += 1;
+    else if (e.onTime === false) entry.late   += 1;
+  }
   return Array.from(byRegion.values())
-    .map((r) => ({
-      region:          r.region,
-      farmers:         r.farmers,
-      averageScore:    r.scoreN > 0 ? Math.round(r.scoreSum / r.scoreN) : null,
-      // Task completion rate isn't directly measurable per region
-      // (tasks aren't regionally tagged in the current schema); we
-      // use score ≥70 as a practical proxy for "executing well".
-      taskCompletionRate: r.scoreN > 0
-        ? Math.round(((r.scoreSum / r.scoreN) >= 70 ? 1 : 0) * 1000) / 1000
-        : null,
-    }))
+    .map((r) => {
+      const avgScore = r.scoreN > 0 ? Math.round(r.scoreSum / r.scoreN) : null;
+      const resolved = r.onTime + r.late;
+      // Prefer the real rate when we have 3+ resolved events; fall
+      // back to the score-based proxy below that threshold so the
+      // number doesn't whipsaw on a single event.
+      const realRate = resolved >= 3
+        ? Math.round((r.onTime / resolved) * 1000) / 1000
+        : null;
+      const proxyRate = avgScore != null
+        ? Math.round((avgScore >= 70 ? 1 : 0) * 1000) / 1000
+        : null;
+      return {
+        region:             r.region,
+        farmers:            r.farmers,
+        averageScore:       avgScore,
+        taskCompletionRate: realRate != null ? realRate : proxyRate,
+        taskCompletionRateSource:
+          realRate != null ? 'events' : (proxyRate != null ? 'score_proxy' : null),
+        onTime: r.onTime, late: r.late,
+      };
+    })
     .sort((a, b) => b.farmers - a.farmers)
     .slice(0, Math.max(1, limit));
 }
@@ -547,6 +573,9 @@ export async function buildPilotMetrics(prisma, {
               'marketplace.bulk_request.created',
               'marketplace.request.accepted',
               'marketplace.request.declined',
+              'task.completed',
+              'task.uncompleted',
+              'task.skipped',
             ] },
             createdAt: { gte: trendFrom },
           },
@@ -564,30 +593,72 @@ export async function buildPilotMetrics(prisma, {
     if (meta && meta.kind === 'farroway_score_snapshot') scoreSnapshots.push(n);
     else if (meta && meta.kind === 'smart_alert')         smartAlerts.push(n);
   }
-  // Engagement "completionEvents" v1 proxy: for each smart_alert
-  // missed-task notification that has read=true, count it as
-  // a completed (late) task; for market/weather/reminder read events
-  // we treat them as on-time engagement signals.
-  const completionEvents = [];
-  for (const n of smartAlerts) {
-    if (!n.read) continue;
-    const meta = coerceMeta(n.metadata);
-    completionEvents.push({
-      farmerId:    n.farmerId,
-      templateId:  meta && meta.triggeredBy && meta.triggeredBy.signals
-                    && meta.triggeredBy.signals.templateId,
-      completedAt: n.createdAt,
-      onTime: !(meta && meta.triggeredBy
-              && meta.triggeredBy.rule === 'task.missed_critical'),
-    });
+  // Engagement completion events: prefer real AuditLog task events.
+  // When the organisation has zero task events yet, fall back to the
+  // smart-alert read-state proxy so dashboards don't go blank during
+  // the migration window.
+  const taskAuditEvents = auditLogs.filter((a) => a && a.action
+    && a.action.startsWith('task.'));
+  let completionEvents;
+  if (taskAuditEvents.length > 0) {
+    completionEvents = [];
+    for (const e of taskAuditEvents) {
+      if (e.action !== 'task.completed' && e.action !== 'task.skipped') continue;
+      const details = coerceMeta(e.details) || {};
+      completionEvents.push({
+        farmerId:    details.farmerId || null,
+        templateId:  details.templateId || null,
+        completedAt: details.completedAt || details.skippedAt || e.createdAt,
+        // On-time heuristic: every recorded completion counts as on
+        // time. A future extension can mark late when we start
+        // persisting a "due" timestamp alongside the task plan.
+        onTime: e.action === 'task.completed',
+      });
+    }
+  } else {
+    // Legacy proxy from smart_alert read-state.
+    completionEvents = [];
+    for (const n of smartAlerts) {
+      if (!n.read) continue;
+      const meta = coerceMeta(n.metadata);
+      completionEvents.push({
+        farmerId:    n.farmerId,
+        templateId:  meta && meta.triggeredBy && meta.triggeredBy.signals
+                      && meta.triggeredBy.signals.templateId,
+        completedAt: n.createdAt,
+        onTime: !(meta && meta.triggeredBy
+                && meta.triggeredBy.rule === 'task.missed_critical'),
+      });
+    }
   }
+  const completionEventSource = taskAuditEvents.length > 0
+    ? 'audit_log' : 'smart_alert_proxy';
+
+  // Scope outcomes to the *current* window only (audit logs are
+  // fetched over the wider trend window so buckets can render all
+  // the way back — we filter down here).
+  const windowStart = now - windowDays * DAY_MS;
+  const windowAuditLogs = auditLogs.filter((a) => {
+    const ts = a && a.createdAt ? new Date(a.createdAt).getTime() : NaN;
+    return Number.isFinite(ts) && ts >= windowStart && ts <= now;
+  });
+  const windowCompletionEvents = completionEvents.filter((e) => {
+    const ts = e && e.completedAt ? new Date(e.completedAt).getTime() : NaN;
+    return Number.isFinite(ts) && ts >= windowStart && ts <= now;
+  });
+  const windowSmartAlerts = smartAlerts.filter((n) => {
+    const ts = n && n.createdAt ? new Date(n.createdAt).getTime() : NaN;
+    return Number.isFinite(ts) && ts >= windowStart && ts <= now;
+  });
 
   const adoption    = computeAdoption(farmers, { now, windowDays });
   const engagement  = computeEngagement({
-    completionEvents, smartAlerts, windowDays,
+    completionEvents: windowCompletionEvents,
+    smartAlerts: windowSmartAlerts,
+    windowDays,
   });
   const performance = computePerformance({ scoreSnapshots, farmers, farms });
-  const outcomes    = computeOutcomes({ farms, auditLogs });
+  const outcomes    = computeOutcomes({ farms, auditLogs: windowAuditLogs });
   const trends      = Object.freeze({
     weekly:  computeTrends({
       farmers, completionEvents, auditLogs, scoreSnapshots,
@@ -600,12 +671,61 @@ export async function buildPilotMetrics(prisma, {
   });
   const topRegions    = computeTopRegions({
     farmers, farms, scoreSnapshots, limit: 5,
+    completionEvents: windowCompletionEvents,
   });
   const atRiskFarmers = computeAtRiskFarmers({
     farmers, scoreSnapshots, alerts: smartAlerts.concat(
       notifications.filter((n) => n.notificationType === 'weather'
         || n.notificationType === 'market'
         || n.notificationType === 'reminder')), limit: 20, now,
+  });
+
+  // ─── Period-over-period ───────────────────────────────────
+  // Compute the same three-headline buckets for the preceding
+  // equal window, then produce deltas. Only compare values that
+  // are stable under "no data" (nulls propagate as null deltas).
+  const prevWindowEnd = now - windowDays * DAY_MS;
+  const prevWindowStart = prevWindowEnd - windowDays * DAY_MS;
+  const prevCompletionEvents = completionEvents.filter((e) => {
+    const ts = e && e.completedAt ? new Date(e.completedAt).getTime() : NaN;
+    return Number.isFinite(ts) && ts >= prevWindowStart && ts < prevWindowEnd;
+  });
+  const prevAuditLogs = auditLogs.filter((a) => {
+    const ts = a && a.createdAt ? new Date(a.createdAt).getTime() : NaN;
+    return Number.isFinite(ts) && ts >= prevWindowStart && ts < prevWindowEnd;
+  });
+  const prevAdoption = computeAdoption(farmers, { now: prevWindowEnd, windowDays });
+  const prevEngagement = computeEngagement({
+    completionEvents: prevCompletionEvents,
+    smartAlerts: smartAlerts.filter((n) => {
+      const ts = n.createdAt ? new Date(n.createdAt).getTime() : NaN;
+      return Number.isFinite(ts) && ts >= prevWindowStart && ts < prevWindowEnd;
+    }),
+    windowDays,
+  });
+  const prevOutcomes = computeOutcomes({ farms, auditLogs: prevAuditLogs });
+
+  const periodOverPeriod = Object.freeze({
+    previousWindow: Object.freeze({
+      from: iso(new Date(prevWindowStart)),
+      to:   iso(new Date(prevWindowEnd)),
+    }),
+    adoption: Object.freeze({
+      activeMonthly: deltaOf(adoption.activeMonthly, prevAdoption.activeMonthly),
+      adoptionRate:  deltaOf(adoption.adoptionRate,  prevAdoption.adoptionRate),
+      newThisPeriod: deltaOf(adoption.newThisPeriod, prevAdoption.newThisPeriod),
+    }),
+    engagement: Object.freeze({
+      tasksCompleted:         deltaOf(engagement.tasksCompleted,         prevEngagement.tasksCompleted),
+      tasksCompletedPerWeek:  deltaOf(engagement.tasksCompletedPerWeek,  prevEngagement.tasksCompletedPerWeek),
+      taskCompletionRate:     deltaOf(engagement.taskCompletionRate,     prevEngagement.taskCompletionRate),
+    }),
+    outcomes: Object.freeze({
+      estimatedYieldKg:    deltaOf(outcomes.estimatedYieldKg,    prevOutcomes.estimatedYieldKg),
+      marketplaceListings: deltaOf(outcomes.marketplaceListings, prevOutcomes.marketplaceListings),
+      marketplaceRequests: deltaOf(outcomes.marketplaceRequests, prevOutcomes.marketplaceRequests),
+      acceptedRequests:    deltaOf(outcomes.acceptedRequests,    prevOutcomes.acceptedRequests),
+    }),
   });
 
   return Object.freeze({
@@ -616,29 +736,55 @@ export async function buildPilotMetrics(prisma, {
       to:   iso(new Date(now)),
     }),
     adoption:    Object.freeze(adoption),
-    engagement:  Object.freeze(engagement),
+    engagement:  Object.freeze({ ...engagement, source: completionEventSource }),
     performance: Object.freeze(performance),
     outcomes:    Object.freeze(outcomes),
     trends,
     topRegions:    Object.freeze(topRegions.map(Object.freeze)),
     atRiskFarmers: Object.freeze(atRiskFarmers.map(Object.freeze)),
+    periodOverPeriod,
     generatedAt: new Date().toISOString(),
   });
 }
 
+/**
+ * deltaOf(current, previous) — returns { current, previous,
+ *   absolute, relative } or nulls when either side is missing.
+ *   relative is a ratio (0.15 = +15%) not a percent; UI formats.
+ */
+export function deltaOf(current, previous) {
+  if (current == null && previous == null) {
+    return { current: null, previous: null, absolute: null, relative: null };
+  }
+  if (current == null || previous == null) {
+    return { current, previous, absolute: null, relative: null };
+  }
+  const absolute = current - previous;
+  const relative = previous === 0
+    ? (current === 0 ? 0 : null)   // undefined ratio when previous is 0
+    : Math.round((absolute / previous) * 1000) / 1000;
+  return { current, previous, absolute, relative };
+}
+
 function buildEmptyMetrics({ organizationId, windowDays }) {
+  const now = Date.now();
+  const prevEnd   = now - windowDays * DAY_MS;
+  const prevStart = prevEnd - windowDays * DAY_MS;
+  const zeroDelta = () => ({ current: 0, previous: 0, absolute: 0, relative: 0 });
+  const nullDelta = () => ({ current: null, previous: null, absolute: null, relative: null });
   return Object.freeze({
     organizationId,
     window: Object.freeze({
       days: windowDays,
-      from: iso(new Date(Date.now() - windowDays * DAY_MS)),
-      to:   iso(new Date()),
+      from: iso(new Date(now - windowDays * DAY_MS)),
+      to:   iso(new Date(now)),
     }),
     adoption:    { total: 0, activeWeekly: 0, activeMonthly: 0,
                     newThisPeriod: 0, adoptionRate: 0 },
     engagement:  { tasksCompleted: 0, tasksCompletedPerWeek: 0,
                     taskCompletionRate: null, onTime: 0, late: 0,
-                    notificationEngagement: null },
+                    notificationEngagement: null,
+                    source: 'audit_log' },
     performance: { averageScore: null, scoreBand: null,
                     scoreDistribution: { excellent: 0, strong: 0, improving: 0, needs_help: 0 },
                     trustDistribution: { low: 0, medium: 0, high: 0, average: 0, count: 0 } },
@@ -647,6 +793,28 @@ function buildEmptyMetrics({ organizationId, windowDays }) {
     trends:      { weekly: [], monthly: [] },
     topRegions:    [],
     atRiskFarmers: [],
+    periodOverPeriod: Object.freeze({
+      previousWindow: Object.freeze({
+        from: iso(new Date(prevStart)),
+        to:   iso(new Date(prevEnd)),
+      }),
+      adoption: Object.freeze({
+        activeMonthly: zeroDelta(),
+        adoptionRate:  zeroDelta(),
+        newThisPeriod: zeroDelta(),
+      }),
+      engagement: Object.freeze({
+        tasksCompleted:        zeroDelta(),
+        tasksCompletedPerWeek: zeroDelta(),
+        taskCompletionRate:    nullDelta(),
+      }),
+      outcomes: Object.freeze({
+        estimatedYieldKg:    zeroDelta(),
+        marketplaceListings: zeroDelta(),
+        marketplaceRequests: zeroDelta(),
+        acceptedRequests:    zeroDelta(),
+      }),
+    }),
     generatedAt: new Date().toISOString(),
   });
 }

@@ -168,6 +168,7 @@ export function buildPilotMetricsCsv(metrics) {
   lines.push(row(['notification_engagement',
                    metrics.engagement.notificationEngagement == null
                      ? '' : metrics.engagement.notificationEngagement]));
+  lines.push(row(['completion_source',            metrics.engagement.source || '']));
   lines.push('');
 
   // Performance
@@ -215,11 +216,13 @@ export function buildPilotMetricsCsv(metrics) {
 
   // Top regions
   lines.push(row(['section', 'top_regions']));
-  lines.push(row(['region', 'farmers', 'average_score', 'task_completion_rate']));
+  lines.push(row(['region', 'farmers', 'average_score',
+                   'task_completion_rate', 'task_completion_rate_source']));
   for (const r of metrics.topRegions || []) {
     lines.push(row([r.region, r.farmers,
                      r.averageScore == null ? '' : r.averageScore,
-                     r.taskCompletionRate == null ? '' : r.taskCompletionRate]));
+                     r.taskCompletionRate == null ? '' : r.taskCompletionRate,
+                     r.taskCompletionRateSource || '']));
   }
   lines.push('');
 
@@ -232,6 +235,45 @@ export function buildPilotMetricsCsv(metrics) {
                      f.region || '',
                      f.score == null ? '' : f.score,
                      reasonList]));
+  }
+  lines.push('');
+
+  // Period-over-period deltas. Each row is (metric, current,
+  // previous, absolute, relative) so spreadsheet users can chart
+  // absolute change, percent change, or both.
+  const pop = metrics.periodOverPeriod;
+  if (pop) {
+    lines.push(row(['section', 'period_over_period']));
+    lines.push(row(['previous_window_from',
+                     (pop.previousWindow && pop.previousWindow.from) || '']));
+    lines.push(row(['previous_window_to',
+                     (pop.previousWindow && pop.previousWindow.to) || '']));
+    lines.push(row(['metric', 'current', 'previous', 'absolute', 'relative']));
+    const popRow = (name, d) => {
+      if (!d) return;
+      lines.push(row([name,
+        d.current  == null ? '' : d.current,
+        d.previous == null ? '' : d.previous,
+        d.absolute == null ? '' : d.absolute,
+        d.relative == null ? '' : d.relative,
+      ]));
+    };
+    if (pop.adoption) {
+      popRow('adoption_active_monthly', pop.adoption.activeMonthly);
+      popRow('adoption_rate',           pop.adoption.adoptionRate);
+      popRow('adoption_new_this_period',pop.adoption.newThisPeriod);
+    }
+    if (pop.engagement) {
+      popRow('engagement_tasks_completed',         pop.engagement.tasksCompleted);
+      popRow('engagement_tasks_completed_per_week',pop.engagement.tasksCompletedPerWeek);
+      popRow('engagement_task_completion_rate',    pop.engagement.taskCompletionRate);
+    }
+    if (pop.outcomes) {
+      popRow('outcomes_estimated_yield_kg',    pop.outcomes.estimatedYieldKg);
+      popRow('outcomes_marketplace_listings',  pop.outcomes.marketplaceListings);
+      popRow('outcomes_marketplace_requests',  pop.outcomes.marketplaceRequests);
+      popRow('outcomes_accepted_requests',     pop.outcomes.acceptedRequests);
+    }
   }
 
   return `${lines.join('\r\n')}\r\n`;
