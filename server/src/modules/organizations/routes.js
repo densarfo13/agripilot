@@ -7,7 +7,8 @@ import { dedupGuard } from '../../middleware/dedup.js';
 import prisma from '../../config/database.js';
 import { writeAuditLog } from '../audit/service.js';
 import { buildOrganizationDashboard, listOrganizationFarmers } from './dashboardService.js';
-import { buildFarmersCsv, buildDashboardCsv } from './exportService.js';
+import { buildFarmersCsv, buildDashboardCsv, buildPilotMetricsCsv } from './exportService.js';
+import { buildPilotMetrics } from './pilotMetricsService.js';
 
 const router = Router();
 router.use(authenticate);
@@ -97,6 +98,26 @@ router.get('/:id/dashboard',
     res.json(out);
   }));
 
+// ─── Pilot metrics ──────────────────────────────────────────────
+// Adoption + engagement + performance + outcomes + trends + top
+// regions + at-risk farmers in one payload. Same role gate as the
+// dashboard.
+router.get('/:id/metrics',
+  validateParamUUID('id'),
+  authorize('super_admin', 'institutional_admin'),
+  asyncHandler(async (req, res) => {
+    if (!canViewOrg(req, req.params.id)) {
+      return res.status(403).json({ error: 'Access denied — not your organization' });
+    }
+    const windowDays = Math.min(180, Math.max(7, Number(req.query.windowDays) || 30));
+    const trendBuckets = Math.min(12, Math.max(3, Number(req.query.trendBuckets) || 6));
+    const out = await buildPilotMetrics(prisma, {
+      organizationId: req.params.id, windowDays, trendBuckets,
+    });
+    if (!out) return res.status(404).json({ error: 'Organization not found' });
+    res.json(out);
+  }));
+
 // ─── Farmer list for the dashboard table ────────────────────────
 // Paginated + filterable (region, crop, score range). Institutional
 // admin is auto-scoped to their own org; super_admin can view any.
@@ -147,6 +168,17 @@ router.get('/:id/export',
       res.setHeader('Content-Disposition',
         `attachment; filename="farroway_${safeName}_dashboard.csv"`);
       return res.send(buildDashboardCsv(dash));
+    }
+
+    if (kind === 'metrics') {
+      const metrics = await buildPilotMetrics(prisma, {
+        organizationId: req.params.id,
+        windowDays:   Math.min(180, Math.max(7, Number(req.query.windowDays) || 30)),
+        trendBuckets: Math.min(12, Math.max(3, Number(req.query.trendBuckets) || 6)),
+      });
+      res.setHeader('Content-Disposition',
+        `attachment; filename="farroway_${safeName}_metrics.csv"`);
+      return res.send(buildPilotMetricsCsv(metrics));
     }
 
     // Default: farmers export (respects the same filters as the list).

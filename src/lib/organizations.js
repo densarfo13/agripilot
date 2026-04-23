@@ -96,6 +96,27 @@ export async function exportOrganizationDashboardCsv(orgId, { windowDays } = {})
   return downloadUrl(url);
 }
 
+// ─── Pilot metrics ───────────────────────────────────────────
+export async function fetchOrganizationMetrics(orgId, { windowDays, trendBuckets } = {}) {
+  if (!orgId) return null;
+  try {
+    const qs = buildQuery({ windowDays, trendBuckets });
+    const res = await fetch(
+      `/api/organizations/${encodeURIComponent(orgId)}/metrics${qs ? `?${qs}` : ''}`,
+      { credentials: 'include' });
+    return await handle(res);
+  } catch {
+    return null;
+  }
+}
+
+export async function exportOrganizationMetricsCsv(orgId, { windowDays, trendBuckets } = {}) {
+  if (!orgId) return false;
+  const qs = buildQuery({ kind: 'metrics', windowDays, trendBuckets });
+  const url = `/api/organizations/${encodeURIComponent(orgId)}/export?${qs}`;
+  return downloadUrl(url);
+}
+
 async function downloadUrl(url) {
   try {
     if (typeof window === 'undefined' || !window.document) return false;

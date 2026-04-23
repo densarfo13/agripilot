@@ -129,3 +129,110 @@ function iso(d) {
   if (!d) return '';
   try { return new Date(d).toISOString(); } catch { return ''; }
 }
+
+/**
+ * buildPilotMetricsCsv(metrics)
+ *   Single spreadsheet with sections: adoption, engagement,
+ *   performance, outcomes, weekly trends, monthly trends, top
+ *   regions, at-risk farmers.
+ */
+export function buildPilotMetricsCsv(metrics) {
+  if (!metrics) return '';
+  const lines = [];
+
+  // Summary metric/value pairs
+  lines.push(row(['metric', 'value']));
+  lines.push(row(['organization_id',    metrics.organizationId]));
+  lines.push(row(['window_days',        metrics.window && metrics.window.days]));
+  lines.push(row(['generated_at',       metrics.generatedAt]));
+  lines.push('');
+
+  // Adoption
+  lines.push(row(['section', 'adoption']));
+  lines.push(row(['total_farmers',      metrics.adoption.total]));
+  lines.push(row(['active_weekly',      metrics.adoption.activeWeekly]));
+  lines.push(row(['active_monthly',     metrics.adoption.activeMonthly]));
+  lines.push(row(['new_this_period',    metrics.adoption.newThisPeriod]));
+  lines.push(row(['adoption_rate',      metrics.adoption.adoptionRate]));
+  lines.push('');
+
+  // Engagement
+  lines.push(row(['section', 'engagement']));
+  lines.push(row(['tasks_completed',              metrics.engagement.tasksCompleted]));
+  lines.push(row(['tasks_completed_per_week',     metrics.engagement.tasksCompletedPerWeek]));
+  lines.push(row(['task_completion_rate',
+                   metrics.engagement.taskCompletionRate == null
+                     ? '' : metrics.engagement.taskCompletionRate]));
+  lines.push(row(['on_time',                      metrics.engagement.onTime]));
+  lines.push(row(['late',                         metrics.engagement.late]));
+  lines.push(row(['notification_engagement',
+                   metrics.engagement.notificationEngagement == null
+                     ? '' : metrics.engagement.notificationEngagement]));
+  lines.push('');
+
+  // Performance
+  lines.push(row(['section', 'performance']));
+  lines.push(row(['average_score',
+                   metrics.performance.averageScore == null
+                     ? '' : metrics.performance.averageScore]));
+  lines.push(row(['score_band',  metrics.performance.scoreBand || '']));
+  const dist = metrics.performance.scoreDistribution || {};
+  for (const band of ['excellent', 'strong', 'improving', 'needs_help']) {
+    lines.push(row([`score_distribution_${band}`, dist[band] || 0]));
+  }
+  const td = metrics.performance.trustDistribution || {};
+  lines.push(row(['trust_high',    td.high    || 0]));
+  lines.push(row(['trust_medium',  td.medium  || 0]));
+  lines.push(row(['trust_low',     td.low     || 0]));
+  lines.push(row(['trust_average', td.average || 0]));
+  lines.push('');
+
+  // Outcomes
+  lines.push(row(['section', 'outcomes']));
+  lines.push(row(['estimated_yield_kg',      metrics.outcomes.estimatedYieldKg]));
+  lines.push(row(['marketplace_listings',    metrics.outcomes.marketplaceListings]));
+  lines.push(row(['marketplace_requests',    metrics.outcomes.marketplaceRequests]));
+  lines.push(row(['accepted_requests',       metrics.outcomes.acceptedRequests]));
+  lines.push('');
+
+  // Weekly trends
+  lines.push(row(['section', 'trends_weekly']));
+  lines.push(row(['week_start', 'active', 'tasks', 'listings', 'requests', 'avg_score']));
+  for (const b of (metrics.trends && metrics.trends.weekly) || []) {
+    lines.push(row([b.weekStart, b.active, b.tasks, b.listings, b.requests,
+                      b.avgScore == null ? '' : b.avgScore]));
+  }
+  lines.push('');
+
+  // Monthly trends
+  lines.push(row(['section', 'trends_monthly']));
+  lines.push(row(['month_start', 'active', 'tasks', 'listings', 'requests', 'avg_score']));
+  for (const b of (metrics.trends && metrics.trends.monthly) || []) {
+    lines.push(row([b.monthStart, b.active, b.tasks, b.listings, b.requests,
+                      b.avgScore == null ? '' : b.avgScore]));
+  }
+  lines.push('');
+
+  // Top regions
+  lines.push(row(['section', 'top_regions']));
+  lines.push(row(['region', 'farmers', 'average_score', 'task_completion_rate']));
+  for (const r of metrics.topRegions || []) {
+    lines.push(row([r.region, r.farmers,
+                     r.averageScore == null ? '' : r.averageScore,
+                     r.taskCompletionRate == null ? '' : r.taskCompletionRate]));
+  }
+  lines.push('');
+
+  // At-risk farmers
+  lines.push(row(['section', 'at_risk_farmers']));
+  lines.push(row(['farmer_id', 'full_name', 'region', 'score', 'reasons']));
+  for (const f of metrics.atRiskFarmers || []) {
+    const reasonList = (f.reasons || []).map((r) => r.code).join(';');
+    lines.push(row([f.farmerId, f.fullName,
+                     f.region || '',
+                     f.score == null ? '' : f.score,
+                     reasonList]));
+  }
+
+  return `${lines.join('\r\n')}\r\n`;
+}

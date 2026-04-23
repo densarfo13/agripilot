@@ -7348,6 +7348,23 @@ const T = {
   'admin.syncQueue.filter.failed':  { en: 'Failed', fr: '\u00c9chou\u00e9es', sw: 'Zilizoshindikana', ha: 'Da suka kasa', tw: 'A anyɛ yie' },
   'admin.syncQueue.filter.synced':  { en: 'Synced', fr: 'Synchronis\u00e9es', sw: 'Zilizosawazishwa', ha: 'An daidaita', tw: 'Wɔayɛ' },
 
+  // ─── Pilot metrics ───────────────────────────────────────────
+  'pilotMetrics.title':             { en: 'Pilot metrics', fr: 'M\u00e9triques pilote', sw: 'Vipimo vya majaribio', ha: 'Ma\u2019aunin pilot', tw: 'Pilot nsusuwiie' },
+  'pilotMetrics.exportCsv':         { en: 'Export metrics CSV', fr: 'Exporter m\u00e9triques CSV', sw: 'Hamisha vipimo', ha: 'Fitar da ma\u2019aunin', tw: 'Yi nsusuwiie fi' },
+  'pilotMetrics.activeWeekly':      { en: 'Active this week', fr: 'Actifs cette semaine', sw: 'Hai wiki hii', ha: 'Masu aiki wannan mako', tw: 'Wɔreyɛ adwuma nnawɔtwe yi' },
+  'pilotMetrics.activeMonthlyTail': { en: 'this month', fr: 'ce mois-ci', sw: 'mwezi huu', ha: 'wannan wata', tw: 'bosome yi' },
+  'pilotMetrics.adoptionRate':      { en: 'Adoption rate', fr: 'Taux d\u2019adoption', sw: 'Kiwango cha matumizi', ha: 'Yawan karba', tw: 'Fasoɔ a wogye' },
+  'pilotMetrics.newThisPeriod':     { en: 'new this period', fr: 'nouveaux cette p\u00e9riode', sw: 'wapya kipindi hiki', ha: 'sababbi wannan lokaci', tw: 'foforɔ bere yi' },
+  'pilotMetrics.tasksPerWeek':      { en: 'Tasks / week', fr: 'T\u00e2ches / semaine', sw: 'Kazi / wiki', ha: 'Ayyuka / mako', tw: 'Adwuma / nnawɔtwe' },
+  'pilotMetrics.onTime':            { en: 'on time', fr: '\u00e0 temps', sw: 'kwa wakati', ha: 'a kan lokaci', tw: 'bere pa' },
+  'pilotMetrics.noTasks':           { en: 'no tasks yet', fr: 'pas encore de t\u00e2ches', sw: 'hakuna kazi bado', ha: 'babu ayyuka tukuna', tw: 'adwuma biara nni hɔ' },
+  'pilotMetrics.listings':          { en: 'Listings', fr: 'Annonces', sw: 'Orodha', ha: 'Bayanai', tw: 'Nkrataa' },
+  'pilotMetrics.requests':          { en: 'requests', fr: 'demandes', sw: 'maombi', ha: 'bu\u0199atu', tw: 'abisadeɛ' },
+  'pilotMetrics.accepted':          { en: 'accepted', fr: 'accept\u00e9es', sw: 'zimekubaliwa', ha: 'an karba', tw: 'wɔagye to mu' },
+  'pilotMetrics.weeklyTrends':      { en: 'Last 6 weeks', fr: '6 derni\u00e8res semaines', sw: 'Wiki 6 zilizopita', ha: 'Makonni 6 da suka wuce', tw: 'Nnawɔtwe 6 a atwam' },
+  'pilotMetrics.topRegions':        { en: 'Top regions', fr: 'Principales r\u00e9gions', sw: 'Maeneo bora', ha: 'Manyan yankuna', tw: 'Amansan a edi kan' },
+  'pilotMetrics.atRisk':            { en: 'At-risk farmers', fr: 'Agriculteurs \u00e0 risque', sw: 'Wakulima hatarini', ha: 'Manoma cikin hadari', tw: 'Akuafoɔ a wɔwɔ asiane mu' },
+
   // ─── NEXT task labels (after completion) ──────────────────
   'next.sortClean': { en: 'Next: Sort and clean your harvest.', fr: 'Suivant : Triez et nettoyez votre récolte.', sw: 'Kazi ifuatayo: Panga na safisha mavuno.', ha: 'Na gaba: Tsara da tsaftace girbi.', tw: 'Nea edi so: Pae na hohoro wotwa adeɛ no.' },
   'next.dryWhenSafe': { en: 'Next: Dry harvest when rain stops.', fr: 'Suivant : Séchez quand la pluie s\'arrête.', sw: 'Kazi ifuatayo: Kausha mvua ikiisha.', ha: 'Na gaba: Bushe idan ruwan sama ya tsaya.', tw: 'Nea edi so: Hwie awo sɛ osu no gyae a.' },

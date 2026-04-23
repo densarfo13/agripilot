@@ -5,6 +5,7 @@ import { getCropLabel } from '../config/crops/index.js';
 import {
   fetchOrganizationDashboard, listOrganizationFarmers,
   exportOrganizationFarmersCsv, exportOrganizationDashboardCsv,
+  fetchOrganizationMetrics, exportOrganizationMetricsCsv,
 } from '../lib/organizations.js';
 import TrustBadge from '../components/TrustBadge.jsx';
 import { trustColor } from '../lib/verification/trustSignals.js';
@@ -39,6 +40,9 @@ export default function OrganizationDashboardPage() {
     region: '', crop: '', scoreMin: '', scoreMax: '',
   });
 
+  const [metrics, setMetrics] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+
   const tr = (k, fb) => {
     const v = t(k);
     return v && v !== k ? v : fb;
@@ -67,6 +71,14 @@ export default function OrganizationDashboardPage() {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
   useEffect(() => { loadFarmers(); }, [loadFarmers]);
+
+  const loadMetrics = useCallback(async () => {
+    setMetricsLoading(true);
+    const out = await fetchOrganizationMetrics(orgId, { windowDays });
+    setMetrics(out);
+    setMetricsLoading(false);
+  }, [orgId, windowDays]);
+  useEffect(() => { loadMetrics(); }, [loadMetrics]);
 
   const styles = useMemo(() => buildStyles(), []);
 
@@ -174,6 +186,123 @@ export default function OrganizationDashboardPage() {
         </>
       )}
 
+      {/* Pilot metrics section */}
+      {!metricsLoading && metrics && (
+        <section style={styles.card} data-testid="org-pilot-metrics">
+          <header style={styles.cardHeader}>
+            <h3 style={styles.cardTitle}>
+              {tr('pilotMetrics.title', 'Pilot metrics')}
+            </h3>
+            <button style={styles.exportBtn}
+                    onClick={() => exportOrganizationMetricsCsv(orgId, { windowDays })}
+                    data-testid="export-metrics-csv">
+              {tr('pilotMetrics.exportCsv', 'Export metrics CSV')}
+            </button>
+          </header>
+
+          {/* Adoption + engagement + outcomes tiles */}
+          <div style={styles.tiles} data-testid="pilot-adoption">
+            <MetricTile label={tr('pilotMetrics.activeWeekly', 'Active this week')}
+                        value={metrics.adoption.activeWeekly}
+                        secondary={`${metrics.adoption.activeMonthly} ${tr('pilotMetrics.activeMonthlyTail', 'this month')}`}
+                        accent="#7DD3FC" styles={styles} />
+            <MetricTile label={tr('pilotMetrics.adoptionRate', 'Adoption rate')}
+                        value={`${Math.round(metrics.adoption.adoptionRate * 100)}%`}
+                        secondary={`${metrics.adoption.newThisPeriod} ${tr('pilotMetrics.newThisPeriod', 'new this period')}`}
+                        accent="#86EFAC" styles={styles} />
+            <MetricTile label={tr('pilotMetrics.tasksPerWeek', 'Tasks / week')}
+                        value={metrics.engagement.tasksCompletedPerWeek}
+                        secondary={metrics.engagement.taskCompletionRate != null
+                          ? `${Math.round(metrics.engagement.taskCompletionRate * 100)}% ${tr('pilotMetrics.onTime', 'on time')}`
+                          : tr('pilotMetrics.noTasks', 'no tasks yet')}
+                        accent="#FCD34D" styles={styles} />
+            <MetricTile label={tr('pilotMetrics.listings', 'Listings')}
+                        value={metrics.outcomes.marketplaceListings}
+                        secondary={`${metrics.outcomes.marketplaceRequests} ${tr('pilotMetrics.requests', 'requests')} · ${metrics.outcomes.acceptedRequests} ${tr('pilotMetrics.accepted', 'accepted')}`}
+                        accent="#FCA5A5" styles={styles} />
+          </div>
+
+          {/* Trends */}
+          {metrics.trends && metrics.trends.weekly.length > 0 && (
+            <div style={{ marginTop: 16 }} data-testid="pilot-trends">
+              <div style={styles.subhead}>
+                {tr('pilotMetrics.weeklyTrends', 'Last 6 weeks')}
+              </div>
+              <div style={styles.trendRow}>
+                {metrics.trends.weekly.map((b) => (
+                  <TrendBar key={b.weekStart} bucket={b} styles={styles} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top regions */}
+          {metrics.topRegions && metrics.topRegions.length > 0 && (
+            <div style={{ marginTop: 16 }} data-testid="pilot-top-regions">
+              <div style={styles.subhead}>
+                {tr('pilotMetrics.topRegions', 'Top regions')}
+              </div>
+              <ul style={styles.distList}>
+                {metrics.topRegions.map((r) => (
+                  <li key={r.region} style={styles.distRow}
+                      data-testid={`pilot-region-${r.region}`}>
+                    <div style={styles.distLabel}>
+                      {r.region}
+                      <span style={styles.distCount}>{r.farmers}</span>
+                    </div>
+                    <div style={styles.distTrack}>
+                      <div style={{
+                        ...styles.distFill,
+                        width: `${Math.min(100, r.averageScore || 0)}%`,
+                      }} />
+                    </div>
+                    <div style={styles.distShare}>
+                      {r.averageScore == null ? '—' : r.averageScore}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* At-risk farmers */}
+          {metrics.atRiskFarmers && metrics.atRiskFarmers.length > 0 && (
+            <div style={{ marginTop: 16 }} data-testid="pilot-at-risk">
+              <div style={styles.subhead}>
+                {tr('pilotMetrics.atRisk', 'At-risk farmers')}
+                <span style={styles.atRiskCount}>
+                  {metrics.atRiskFarmers.length}
+                </span>
+              </div>
+              <ul style={styles.distList}>
+                {metrics.atRiskFarmers.slice(0, 8).map((f) => (
+                  <li key={f.farmerId} style={{ ...styles.distRow,
+                        gridTemplateColumns: '1fr' }}
+                      data-testid={`pilot-at-risk-${f.farmerId}`}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>
+                        {f.fullName}
+                        {f.region && (
+                          <span style={styles.distCount}> · {f.region}</span>
+                        )}
+                        {f.score != null && (
+                          <span style={{ ...styles.distCount, color: '#FCA5A5', marginLeft: 6 }}>
+                            · {f.score}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(230,244,234,0.6)' }}>
+                        {f.reasons.map((r) => r.detail).join(' · ')}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Farmer table */}
       <section style={styles.card} data-testid="org-farmers">
         <header style={styles.cardHeader}>
@@ -270,6 +399,25 @@ function MetricTile({ label, value, secondary, accent, styles }) {
         {value}
       </div>
       {secondary && <div style={styles.tileSub}>{secondary}</div>}
+    </div>
+  );
+}
+
+function TrendBar({ bucket, styles }) {
+  const label = bucket.weekStart
+    ? new Date(bucket.weekStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : '—';
+  // Height scales against a shared-max within the 6 buckets — use
+  // the sum of (active + tasks + listings + requests) as a rough
+  // activity signal.
+  const total = (bucket.active || 0) + (bucket.tasks || 0)
+              + (bucket.listings || 0) + (bucket.requests || 0);
+  const height = Math.max(4, Math.min(100, total * 4));
+  return (
+    <div style={styles.trendCol}>
+      <div style={{ ...styles.trendBar, height: `${height}px` }} />
+      <div style={styles.trendLabel}>{label}</div>
+      <div style={styles.trendValue}>{total}</div>
     </div>
   );
 }
@@ -386,5 +534,32 @@ function buildStyles() {
       background: 'rgba(255,255,255,0.08)', color: 'rgba(230,244,234,0.85)',
       textTransform: 'uppercase', letterSpacing: 0.3,
     },
+    subhead: {
+      fontSize: 12, color: 'rgba(230,244,234,0.75)',
+      textTransform: 'uppercase', letterSpacing: 0.4,
+      fontWeight: 700, marginBottom: 8,
+      display: 'flex', alignItems: 'center', gap: 8,
+    },
+    atRiskCount: {
+      padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+      background: 'rgba(239,68,68,0.18)', color: '#FCA5A5',
+    },
+    trendRow: {
+      display: 'flex', gap: 6, alignItems: 'flex-end', overflowX: 'auto',
+      padding: 8, borderRadius: 10,
+      background: 'rgba(255,255,255,0.03)',
+      minHeight: 120,
+    },
+    trendCol: {
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', gap: 4, flexShrink: 0, minWidth: 48,
+    },
+    trendBar: {
+      width: 18, borderRadius: 3,
+      background: 'linear-gradient(180deg, #22C55E, #22C55Eaa)',
+      minHeight: 4,
+    },
+    trendLabel: { fontSize: 10, color: 'rgba(230,244,234,0.7)' },
+    trendValue: { fontSize: 11, fontWeight: 700, color: '#E6F4EA' },
   };
 }
