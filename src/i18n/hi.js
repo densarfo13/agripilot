@@ -668,6 +668,28 @@ const HI = {
   'cropFit.warning.consider': 'इसके बजाय ये फसलें देखें:',
   'cropFit.warning.reason': 'आपकी जलवायु इस फसल के लिए कम अनुकूल है।',
 
+  // ─── Top Crops engine ──────────────────────────────
+  'topCrops.reason.regionMatch':       'आपके क्षेत्र में अच्छी होती है',
+  'topCrops.reason.beginnerFriendly':  'शुरुआती किसानों के लिए अच्छी',
+  'topCrops.reason.fitsBackyard':      'छोटे बगीचों में काम करती है',
+  'topCrops.reason.goodMarket':        'स्थानीय बाज़ार मजबूत है',
+  'topCrops.reason.lowWater':          'कम पानी की ज़रूरत',
+  'topCrops.reason.droughtTolerant':   'सूखा सहन करती है',
+  'topCrops.reason.lowCost':           'शुरू करने में कम लागत',
+  'topCrops.reason.goodTiming':        'अभी बोने का अच्छा समय',
+  'topCrops.reason.yourChoice':        'आपकी पसंदीदा फसल',
+  'topCrops.badge.beginnerFriendly':   'शुरुआती',
+  'topCrops.badge.lowWater':           'कम पानी',
+  'topCrops.badge.droughtTolerant':    'सूखा-सहिष्णु',
+  'topCrops.badge.lowCost':            'कम लागत',
+  'topCrops.badge.goodMarket':         'मजबूत बाज़ार',
+  'topCrops.badge.goodTiming':         'अभी बोएं',
+  'topCrops.warning.advancedCrop':     'उन्नत फसल',
+  'topCrops.warning.heavyForBackyard': 'छोटे बगीचे के लिए भारी हो सकती है',
+  'topCrops.warning.needsIrrigation':  'सिंचाई की आवश्यकता',
+  'topCrops.warning.highCost':         'शुरू करने की अधिक लागत',
+  'topCrops.warning.longCycle':        'लंबा विकास चक्र',
+
   // ─── Counts / done today patterns ──────────────────
   'count.xOfYDoneToday': 'आज {done} में से {total} पूरे',
   'count.tasksLeft_one': '1 कार्य बाकी',

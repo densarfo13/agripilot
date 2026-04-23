@@ -7505,6 +7505,28 @@ const T = {
   'cropFit.timing.waitForRains': { en: 'Wait for rainy season', fr: 'Attendez la saison des pluies', sw: 'Subiri msimu wa mvua', ha: 'Jira daminar ruwa', tw: 'Twɛn osu bere' },
   'cropFit.timing.notIdealNow': { en: 'Not ideal now — plan ahead', fr: 'Pas idéal maintenant — planifiez', sw: 'Si bora sasa — panga mapema', ha: 'Ba shine ba yanzu — shirya gaba', tw: 'Ɛnyɛ bere pa seesei — hyɛ nsa' },
 
+  // ─── Top Crops engine (registry-driven recommendation) ──
+  'topCrops.reason.regionMatch':      { en: 'Grows well in your region', fr: 'Pousse bien dans votre région',       sw: 'Inakua vizuri katika eneo lako',      ha: 'Tana girma sosai a yankinku',       tw: 'Ɛsi yie wɔ w\u2019amantoɔ mu' },
+  'topCrops.reason.beginnerFriendly': { en: 'Good for beginners',        fr: 'Bon pour les débutants',               sw: 'Nzuri kwa wanaoanza',                 ha: 'Mai kyau ga sabbin farawa',         tw: 'Ɛyɛ mmerɛ ma afoforɔ' },
+  'topCrops.reason.fitsBackyard':     { en: 'Works in small backyards',  fr: 'Convient aux petits jardins',          sw: 'Inafaa kwa bustani ndogo',            ha: 'Tana aiki a ƙananan lambuna',        tw: 'Ɛsi yie wɔ fie afuw ketewa mu' },
+  'topCrops.reason.goodMarket':       { en: 'Strong local market',       fr: 'Marché local solide',                  sw: 'Soko nzuri la ndani',                 ha: 'Kasuwar gida mai ƙarfi',             tw: 'Kuro mu gua a ɛyɛ den' },
+  'topCrops.reason.lowWater':         { en: 'Low water needs',           fr: 'Peu d\u2019eau nécessaire',             sw: 'Haitaji maji mengi',                  ha: 'Ba ta buƙatar ruwa da yawa',         tw: 'Ɛnhia nsu pii' },
+  'topCrops.reason.droughtTolerant':  { en: 'Drought tolerant',          fr: 'Résiste à la sécheresse',               sw: 'Inavumilia ukame',                    ha: 'Tana jure fari',                     tw: 'Ɛtumi gyina ɔpɛ mu' },
+  'topCrops.reason.lowCost':          { en: 'Low cost to start',         fr: 'Faible coût de démarrage',             sw: 'Gharama ndogo kuanza',                ha: 'Ƙaramin farashi don farawa',         tw: 'Ɛnhia sika pii' },
+  'topCrops.reason.goodTiming':       { en: 'Good time to plant now',    fr: 'Bon moment pour planter',               sw: 'Wakati mzuri wa kupanda sasa',        ha: 'Lokaci mai kyau don shuka yanzu',    tw: 'Ɛyɛ bere pa sɛ wuadua seesei' },
+  'topCrops.reason.yourChoice':       { en: 'Your preferred crop',       fr: 'Votre culture préférée',                sw: 'Zao lako unalopendelea',              ha: 'Amfanin gonan da kuka zaɓa',         tw: 'Nnɔbae a wopɛ' },
+  'topCrops.badge.beginnerFriendly':  { en: 'Beginner',                  fr: 'Débutant',                              sw: 'Mwanzo',                              ha: 'Mafari',                             tw: 'Afoforɔ' },
+  'topCrops.badge.lowWater':          { en: 'Low water',                 fr: 'Peu d\u2019eau',                        sw: 'Maji kidogo',                         ha: 'Ruwa kaɗan',                         tw: 'Nsu kakra' },
+  'topCrops.badge.droughtTolerant':   { en: 'Drought-tolerant',          fr: 'Résistant à la sécheresse',             sw: 'Huvumilia ukame',                     ha: 'Mai jurewa fari',                    tw: 'Gyina ɔpɛ mu' },
+  'topCrops.badge.lowCost':           { en: 'Low cost',                  fr: 'Faible coût',                           sw: 'Gharama ndogo',                       ha: 'Ƙaramin farashi',                    tw: 'Ɛnhia sika' },
+  'topCrops.badge.goodMarket':        { en: 'Strong market',             fr: 'Bon marché',                            sw: 'Soko zuri',                           ha: 'Kasuwa mai ƙarfi',                   tw: 'Gua a ɛyɛ den' },
+  'topCrops.badge.goodTiming':        { en: 'Plant now',                 fr: 'Planter maintenant',                    sw: 'Panda sasa',                          ha: 'Shuka yanzu',                        tw: 'Dua seesei' },
+  'topCrops.warning.advancedCrop':    { en: 'Advanced crop',             fr: 'Culture avancée',                       sw: 'Zao la ngazi ya juu',                 ha: 'Amfanin gona na ci gaba',            tw: 'Nnɔbae a ɛyɛ den' },
+  'topCrops.warning.heavyForBackyard':{ en: 'May be too heavy for backyards', fr: 'Peut-être trop pour un jardin',    sw: 'Inaweza kuwa nzito kwa bustani ndogo', ha: 'Na iya yin nauyi ga ƙananan lambuna', tw: 'Ɛbɛtumi ayɛ den ma fie afuw' },
+  'topCrops.warning.needsIrrigation': { en: 'Needs irrigation',          fr: 'Nécessite l\u2019irrigation',           sw: 'Inahitaji umwagiliaji',               ha: 'Yana buƙatar ban ruwa',              tw: 'Ɛhia nsu a wɔde gu' },
+  'topCrops.warning.highCost':        { en: 'Higher startup cost',       fr: 'Coût de démarrage élevé',               sw: 'Gharama kubwa ya kuanza',             ha: 'Tsadar farawa mai yawa',             tw: 'Ɛhia sika pii' },
+  'topCrops.warning.longCycle':       { en: 'Long growing cycle',        fr: 'Cycle de croissance long',              sw: 'Mzunguko mrefu wa ukuaji',            ha: 'Tsawon lokacin girma',               tw: 'Ne nyin bere ware' },
+
   // ═══════════════════════════════════════════════════════════
   //  CROP SUMMARY — A-Z crop plan screen
   // ═══════════════════════════════════════════════════════════

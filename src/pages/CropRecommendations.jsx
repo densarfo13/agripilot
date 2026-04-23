@@ -17,12 +17,19 @@ import {
   recomputeFarmContext,
 } from '../core/multiFarm/index.js';
 import { showToast } from '../core/farm/unified.js';
+// Crop Intelligence Engine — every label/image/duration/trait now
+// comes from the registry so language + image stay in sync with
+// canonical ids. See src/config/crops/cropRegistry.js.
+import {
+  normalizeCropId, getCropLabel, getCropImage,
+} from '../config/crops/index.js';
+import { recommendTopCrops } from '../lib/recommendations/topCropEngine.js';
 
 export default function CropRecommendations() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { profile, farms, editFarm, refreshProfile, refreshFarms } = useProfile();
   // Tracks which crop (if any) is currently being applied so we can
   // disable its button and surface a spinner without blocking the
@@ -66,11 +73,100 @@ export default function CropRecommendations() {
     return <Navigate to={dest} replace />;
   }
 
-  const crops = useMemo(() => getRecommendedCrops(answers), [answers]);
+  /**
+   * Crop recommendations. Two-layer strategy so we keep the existing
+   * goal/water/difficulty scoring from cropFit.js while also applying
+   * the registry-aware region / farm-type / experience boosts from
+   * topCropEngine. The legacy engine still returns crop cards (keeps
+   * the existing `code`/`icon`/`harvestWeeks` shape used by the
+   * layout); the new engine's scores top-up the ranking so cards
+   * relevant to the farmer's country + profile rise to the top.
+   */
+  const crops = useMemo(() => {
+    const legacy = getRecommendedCrops(answers) || [];
+    // Collect context for the registry engine.
+    const farmCtx = farmFromId || profile || {};
+    const recs = recommendTopCrops({
+      country:  answers && (answers.country || farmCtx.country),
+      state:    answers && (answers.state   || farmCtx.state),
+      farmType: farmCtx.farmType || 'small_farm',
+      farmerExperienceLevel:
+        (answers && answers.experience)
+        || (farmCtx.farmerExperience || 'beginner'),
+      preferredCrop:
+        (answers && answers.preferredCrop)
+        || farmCtx.cropType || farmCtx.cropId || null,
+      seasonContext:     answers && answers.seasonContext,
+      waterAvailability: (answers && answers.waterAccess)
+                          || farmCtx.waterAccess || 'rain_only',
+      budgetSensitivity: answers && answers.budget,
+      language: lang,
+    });
+    const registryScores = new Map();
+    if (recs && recs.all) {
+      for (const r of recs.all) registryScores.set(r.cropId, r);
+    }
+    // Enrich every legacy card with canonical id + registry label/image
+    // + merged registry reasons/badges. Also re-score using a blend so
+    // the top pick respects both engines.
+    const merged = legacy.map((c) => {
+      const canonicalId = normalizeCropId(c.code) || String(c.code).toLowerCase();
+      const reg = registryScores.get(canonicalId);
+      // Prefer the registry label for the current language; fall back
+      // to the legacy English name so the screen never goes blank.
+      const label = getCropLabel(canonicalId, lang) || c.name || canonicalId;
+      const image = getCropImage(canonicalId);
+      const mergedReasons = Array.from(new Set([
+        ...(c.fitReasons || []),
+        ...((reg && reg.reasons) || []),
+      ]));
+      const mergedBadges = (reg && reg.badges) || [];
+      const registryScore = reg ? reg.score : 0;
+      return {
+        ...c,
+        cropId: canonicalId,
+        label, image,
+        badges: mergedBadges,
+        fitReasons: mergedReasons,
+        // Blend scores: legacy carries goal/experience/water, registry
+        // adds regional + farm-type + beginner boosts.
+        score: (c.score || 0) + registryScore,
+      };
+    });
+    // If the registry surfaced a strong candidate the legacy engine
+    // didn't know about, splice it in so the user sees the best
+    // recommendation, not just what the legacy pool happens to carry.
+    if (recs && recs.best && !merged.some((m) => m.cropId === recs.best.cropId)) {
+      merged.push({
+        code: recs.best.cropId.toUpperCase(),
+        cropId: recs.best.cropId,
+        name: getCropLabel(recs.best.cropId, 'en'),
+        label: getCropLabel(recs.best.cropId, lang),
+        image: getCropImage(recs.best.cropId),
+        icon: '',
+        difficulty: recs.best.difficulty,
+        harvestWeeks: recs.best.durationText,
+        waterNeed: recs.best.waterNeed,
+        costLevel: recs.best.costLevel,
+        marketPotential: null,
+        timingSignal: recs.best.badges.includes('topCrops.badge.goodTiming')
+          ? 'topCrops.badge.goodTiming' : '',
+        fitReasons: recs.best.reasons,
+        badges: recs.best.badges,
+        warnings: recs.best.warnings,
+        score: recs.best.score,
+      });
+    }
+    merged.sort((a, b) => (b.score || 0) - (a.score || 0));
+    return merged.slice(0, 3);
+  }, [answers, profile, farmFromId, lang]);
 
   function handleSelect(crop) {
-    safeTrackEvent('cropFit.crop_selected', { code: crop.code });
-    navigate('/crop-summary', { state: { crop, answers } });
+    const cropId = crop.cropId || normalizeCropId(crop.code) || null;
+    safeTrackEvent('cropFit.crop_selected', { code: crop.code, cropId });
+    // Pass the canonical id alongside the legacy crop object so the
+    // next screen can move off the uppercase code when ready.
+    navigate('/crop-summary', { state: { crop, cropId, answers } });
   }
 
   /**
@@ -81,16 +177,24 @@ export default function CropRecommendations() {
    */
   async function handleUseThisCrop(crop) {
     const farmId = answers?.farmId || profile?.id;
-    if (!farmId || !crop?.code) {
+    const canonicalId = crop?.cropId || normalizeCropId(crop?.code) || null;
+    const legacyCode = crop?.code
+      || (canonicalId ? canonicalId.toUpperCase().replace(/-/g, '_') : null);
+    if (!farmId || !legacyCode) {
       showToast(t('cropFit.results.useCropFailed') && t('cropFit.results.useCropFailed') !== 'cropFit.results.useCropFailed'
         ? t('cropFit.results.useCropFailed')
         : 'Could not update your farm.');
       return;
     }
-    setApplyingCode(crop.code);
+    setApplyingCode(legacyCode);
     try {
-      await editFarm(farmId, { cropType: String(crop.code).toUpperCase() });
-      safeTrackEvent('cropFit.crop_applied', { farmId, code: crop.code });
+      // Keep storing the uppercase code on the farm (that's still the
+      // canonical storage format for the rest of the app); the
+      // canonical id rides along on analytics so the new engine can
+      // observe what the farmer actually picked.
+      await editFarm(farmId, { cropType: String(legacyCode).toUpperCase() });
+      safeTrackEvent('cropFit.crop_applied',
+        { farmId, code: legacyCode, cropId: canonicalId });
       // Explicit refresh chain — belt-and-braces post-save recompute.
       await recomputeFarmContext({
         currentFarmId: farmId,
@@ -111,6 +215,15 @@ export default function CropRecommendations() {
       setApplyingCode(null);
     }
   }
+
+  // Tracks `applyingCode` by legacy uppercase code; derive the same
+  // disabled flag for the featured card regardless of which shape
+  // the crop card is carrying.
+  const featuredLegacyCode = crops[0]
+    ? (crops[0].code
+        || (crops[0].cropId
+            ? crops[0].cropId.toUpperCase().replace(/-/g, '_') : null))
+    : null;
 
   const difficultyColors = {
     beginner: '#22C55E',
@@ -137,10 +250,16 @@ export default function CropRecommendations() {
               <div style={S.topBadge}>{t('cropFit.results.bestForYou')}</div>
               <div style={S.featuredCard}>
                 <div style={S.featuredHeader}>
-                  <span style={S.featuredIcon}>{crops[0].icon}</span>
+                  {crops[0].image
+                    ? <img src={crops[0].image}
+                           alt=""
+                           aria-hidden="true"
+                           loading="lazy"
+                           style={S.featuredImage} />
+                    : <span style={S.featuredIcon}>{crops[0].icon}</span>}
                   <div style={S.featuredInfo}>
                     <div style={S.featuredName}>
-                      {crops[0].name}
+                      {crops[0].label || crops[0].name}
                       {isBetaCrop(crops[0].code) && (
                         <span style={S.betaChip}>{t('beta.label')}</span>
                       )}
@@ -168,10 +287,17 @@ export default function CropRecommendations() {
 
                 <div style={S.timing}>{t(crops[0].timingSignal)}</div>
 
-                {crops[0].fitReasons.length > 0 && (
+                {(crops[0].fitReasons || []).length > 0 && (
                   <div style={S.reasons}>
                     {crops[0].fitReasons.slice(0, 3).map((key, j) => (
                       <span key={j} style={S.reason}>{t(key)}</span>
+                    ))}
+                  </div>
+                )}
+                {(crops[0].badges || []).length > 0 && (
+                  <div style={S.reasons} data-testid="rec-badges">
+                    {crops[0].badges.slice(0, 3).map((key, j) => (
+                      <span key={`b-${j}`} style={S.reason}>{t(key)}</span>
                     ))}
                   </div>
                 )}
@@ -188,11 +314,12 @@ export default function CropRecommendations() {
                 <button
                   type="button"
                   onClick={() => handleUseThisCrop(crops[0])}
-                  disabled={applyingCode === crops[0].code}
+                  disabled={applyingCode === featuredLegacyCode}
+                  data-crop-id={crops[0].cropId}
                   style={S.viewPlanBtn}
                   data-testid="rec-use-this-crop"
                 >
-                  {applyingCode === crops[0].code
+                  {applyingCode === featuredLegacyCode
                     ? (t('common.saving') || 'Saving\u2026')
                     : (t('cropFit.results.useThisCrop') && t('cropFit.results.useThisCrop') !== 'cropFit.results.useThisCrop'
                         ? t('cropFit.results.useThisCrop')
@@ -201,6 +328,7 @@ export default function CropRecommendations() {
                 <button
                   type="button"
                   onClick={() => handleSelect(crops[0])}
+                  data-crop-id={crops[0].cropId}
                   style={{ ...S.viewPlanBtn, marginTop: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.15)' }}
                   data-testid="rec-view-plan"
                 >
@@ -216,16 +344,23 @@ export default function CropRecommendations() {
             <div style={S.altList}>
               {crops.slice(1, 3).map((crop) => (
                 <button
-                  key={crop.code}
+                  key={crop.cropId || crop.code}
                   type="button"
+                  data-crop-id={crop.cropId}
                   onClick={() => handleSelect(crop)}
                   style={S.compactCard}
                   data-testid="rec-compact"
                 >
-                  <span style={S.compactIcon}>{crop.icon}</span>
+                  {crop.image
+                    ? <img src={crop.image}
+                           alt=""
+                           aria-hidden="true"
+                           loading="lazy"
+                           style={S.compactImage} />
+                    : <span style={S.compactIcon}>{crop.icon}</span>}
                   <div style={S.compactInfo}>
                     <div style={S.compactName}>
-                      {crop.name}
+                      {crop.label || crop.name}
                       {isBetaCrop(crop.code) && (
                         <span style={S.betaChipSmall}>{t('beta.label')}</span>
                       )}
@@ -306,6 +441,12 @@ const S = {
     display: 'flex', alignItems: 'center', gap: '0.875rem',
   },
   featuredIcon: { fontSize: '2.75rem', flexShrink: 0, lineHeight: 1 },
+  featuredImage: {
+    width: '3.5rem', height: '3.5rem', flexShrink: 0,
+    borderRadius: '14px', objectFit: 'cover',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
   featuredInfo: { flex: 1, minWidth: 0 },
   featuredName: { fontSize: '1.375rem', fontWeight: 800, color: '#EAF2FF', lineHeight: 1.2 },
   viewPlanBtn: {
@@ -352,6 +493,12 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   compactIcon: { fontSize: '1.5rem', flexShrink: 0, lineHeight: 1 },
+  compactImage: {
+    width: '2rem', height: '2rem', flexShrink: 0,
+    borderRadius: '10px', objectFit: 'cover',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
   compactInfo: { flex: 1, minWidth: 0 },
   compactName: { fontSize: '1rem', fontWeight: 700, color: '#EAF2FF', lineHeight: 1.2 },
   compactMeta: {

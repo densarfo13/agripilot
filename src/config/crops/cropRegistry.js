@@ -48,6 +48,9 @@ import {
   getCropRegions, getRegionForCountry, cropIsRelevantToRegion,
   getCropsForRegion as getCropsForRegionRaw,
 } from './cropRegions.js';
+import {
+  CROP_INTELLIGENCE_PROFILES, getCropIntelligenceProfile,
+} from './cropIntelligenceProfiles.js';
 
 import { getLifecycle, hasLifecycle, normalizeStageKey } from '../cropLifecycles.js';
 import { getCropImage, getCropImagePath, CROP_IMAGE_PLACEHOLDER } from '../cropImages.js';
@@ -134,6 +137,8 @@ function buildCropDefinition(canonicalKey, { countryCode = null } = {}) {
   const lifecycle = getLifecycle(canonicalKey);  // frozen; falls back to GENERIC_LIFECYCLE
   const taskTemplates = CROP_TASK_TEMPLATES[canonicalKey] || EMPTY;
 
+  const intel = getCropIntelligenceProfile(canonicalKey);
+
   return Object.freeze({
     key: canonicalKey,
     id: canonicalKey,    // spec alias — same value, both names supported
@@ -151,6 +156,17 @@ function buildCropDefinition(canonicalKey, { countryCode = null } = {}) {
     hasCustomHarvestProfile: hasCropHarvestProfile(canonicalKey),
     seasonalGuidance: getCropSeasonalGuidance(canonicalKey, countryCode),
     regions: getCropRegions(canonicalKey),
+    // ── Trait fields consumed by the recommendation engine ──
+    difficulty:       intel.difficulty,
+    beginnerFriendly: intel.beginnerFriendly,
+    waterNeed:        intel.waterNeed,
+    droughtTolerance: intel.droughtTolerance,
+    costLevel:        intel.costLevel,
+    effortLevel:      intel.effortLevel,
+    marketPotential:  intel.marketPotential,
+    cycleRangeWeeks:  intel.cycleRangeWeeks,
+    bestGoals:        intel.bestGoals,
+    tags:             intel.tags,
   });
 }
 
@@ -351,4 +367,6 @@ export {
   getCropRegions,
   getRegionForCountry,
   cropIsRelevantToRegion,
+  getCropIntelligenceProfile,
+  CROP_INTELLIGENCE_PROFILES,
 };

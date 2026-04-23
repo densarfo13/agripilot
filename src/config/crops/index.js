@@ -45,6 +45,8 @@ export {
   getCropHarvestProfile,
   hasCropHarvestProfile,
   GENERIC_HARVEST_PROFILE,
+  getCropIntelligenceProfile,
+  CROP_INTELLIGENCE_PROFILES,
   isCanonicalCropKey,
   listRegisteredCrops,
 } from './cropRegistry.js';
