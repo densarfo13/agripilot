@@ -707,6 +707,22 @@ const HI = {
   'seasonal.reason.heavyRainRisk':     'भारी बारिश शुरुआती विकास को प्रभावित कर सकती है',
   'seasonal.reason.heatStress':        'गर्मी का दबाव उपज घटा सकता है',
 
+  // ─── Seasonal window editor UI (Fix 3) ─────────────
+  'seasonal.title':                       'मौसमी अवधि',
+  'seasonal.subtitle':                    'अपने क्षेत्र के लिए सीज़न तय करें',
+  'seasonal.season':                      'मौसम',
+  'seasonal.seasonLabel':                 'सीज़न का नाम',
+  'seasonal.seasonLabelPlaceholder':      'जैसे: खरीफ़ 2026',
+  'seasonal.seasonRange':                 'सीज़न अवधि',
+  'seasonal.start':                       'शुरुआत',
+  'seasonal.end':                         'समाप्ति',
+  'seasonal.lastRainy':                   'पिछली बारिश की अवधि',
+  'seasonal.lastDry':                     'पिछली सूखी अवधि',
+  'seasonal.plantingWindow':              'बुवाई की खिड़की',
+  'seasonal.setPrompt':                   'सीज़न तय करें',
+  'seasonal.edit':                        'संपादित करें',
+  'seasonal.saveFailed':                  'सीज़न सहेजने में विफल',
+
   // ─── Rainfall intelligence ─────────────────────────
   'rainfall.msg.goodForCurrentRain':         'मौजूदा बारिश में बुवाई का अच्छा समय',
   'rainfall.msg.manageable':                 'स्थितियाँ संभाली जा सकती हैं, पर आदर्श नहीं हैं',
@@ -723,6 +739,28 @@ const HI = {
   'rainfall.risk.floodOrRootRot':            'बाढ़ या जड़-सड़न का जोखिम',
   'rainfall.task.planIrrigation':            'सिंचाई या जल-संरक्षण की योजना बनाएं',
   'rainfall.task.checkDrainage':             'जल-निकासी जाँचें और रोग पर नज़र रखें',
+
+  // ─── Rainfall forecast UI (Fix 3 — strict i18n) ────
+  'rainfall.title':                  'वर्षा',
+  'rainfall.today':                  'आज',
+  'rainfall.thisWeek':               'इस सप्ताह',
+  'rainfall.loading':                'लोड हो रहा है…',
+  'rainfall.noData':                 'वर्षा का डेटा उपलब्ध नहीं',
+  'rainfall.showMore':               'और दिखाएँ',
+  'rainfall.showLess':               'कम दिखाएँ',
+  'rainfall.summaryDry':             'अधिकतर सूखा',
+  'rainfall.summaryWet':             'अधिकतर बारिश',
+  'rainfall.summaryMixed':           'मिश्रित मौसम',
+  'rainfall.heavyWeek':              'इस सप्ताह भारी बारिश की संभावना',
+  'rainfall.dryStretch':             'सूखे की लंबी अवधि की संभावना',
+  'rainfall.droughtRisk':            'सूखे का खतरा',
+  'rainfall.harvestRainRisk':        'कटाई के समय बारिश का खतरा',
+  'rainfall.plantingWindow':         'बुवाई की अवधि',
+  'rainfall.goodToPlant':            'बुवाई के लिए अच्छा समय',
+  'rainfall.delayPlanting':          'बुवाई कुछ दिन रोकें',
+  'rainfall.rainTomorrow':           'कल बारिश की संभावना',
+  'rainfall.rainLikelyTomorrow':     'कल बारिश संभावित',
+  'rainfall.skipIrrigation':         'आज सिंचाई की ज़रूरत नहीं',
 
   // ─── Farm economics (yield + value + profit) ─────
   'econ.label.estimatedYield':             'अनुमानित उपज',

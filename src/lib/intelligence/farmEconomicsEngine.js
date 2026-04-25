@@ -4,6 +4,28 @@
  * the UI (and Top Crops secondary boost) only has to call one
  * function.
  *
+ * ───── Canonical scoring pipeline (Fix 5 — final hardening) ─────
+ *   Inputs (every engine accepts these four; `state` reserved):
+ *     cropId       (canonical hyphenated lowercase, normalised)
+ *     country      (ISO-2)
+ *     seasonFit    'high'|'medium'|'low'|'unknown'
+ *     rainfallFit  'high'|'medium'|'low'|'unknown'
+ *
+ *   Stage 1. predictYield — base = getYieldRange(crop, country)
+ *            + seasonFit × ±10% + rainfallFit × +10/-20%
+ *            + stage/farm-type adjustments.
+ *   Stage 2. estimateValueFromPrediction — price band from
+ *            getCropPrice(crop, country); falls back to global USD.
+ *   Stage 3. estimateProfit — cost band from cropCostProfiles[crop],
+ *            converted to value's currency when FX available, else
+ *            rebuilt in USD on both sides (Fix 3 of prior sprint).
+ *   Stage 4. roll-up — weakest confidence wins; deduped drivers in
+ *            display order; highlights for Top Crops badges.
+ *
+ *   `state` is accepted on the orchestrator API for forward
+ *   compatibility but is NOT threaded into the engines (no current
+ *   data source is state-scoped). Pass it freely; it's a no-op.
+ *
  *   estimateFarmEconomics({
  *     farm,                  // full farm record or lightweight hash
  *     country, state,

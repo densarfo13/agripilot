@@ -1,7 +1,16 @@
 // Farroway Service Worker — PWA + offline API caching
-// SW_VERSION: 2026-04-22T31 — bump this on every deploy to invalidate stale caches
-const CACHE_NAME = 'farroway-v36';
-const API_CACHE = 'farroway-api-v7';
+//
+// CACHE_VERSION below is replaced at build time by
+// scripts/bake-sw-version.mjs with the value of package.json:version
+// + a build hash. The placeholder string survives source control so
+// dev work without the bake step still runs (it just keeps a
+// previous cache instead of evicting it). Production deploys ALWAYS
+// run the bake step via the `postbuild` npm script.
+//
+// __APP_VERSION_TOKEN__  ← single source of truth, do not duplicate
+const APP_VERSION = '__APP_VERSION__';
+const CACHE_NAME = `farroway-${APP_VERSION}`;
+const API_CACHE  = `farroway-api-${APP_VERSION}`;
 
 // API paths to cache for offline use (GET requests only)
 const CACHEABLE_API = [
@@ -30,17 +39,33 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old caches + broadcast a "new version available"
+// message so the client UI can prompt the farmer to refresh. The
+// message includes APP_VERSION so the client can compare against
+// the version it booted with.
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE)
-          .map((k) => caches.delete(k))
-      )
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE)
+        .map((k) => caches.delete(k))
+    );
+    await self.clients.claim();
+    // Announce activation to every controlled client.
+    const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+    for (const c of allClients) {
+      c.postMessage({ type: 'farroway:sw_activated', version: APP_VERSION });
+    }
+  })());
+});
+
+// Allow the client to ask the SW to skipWaiting (used by the
+// "Reload to update" button — when the user taps it we want the new
+// SW to take over immediately).
+self.addEventListener('message', (event) => {
+  if (event && event.data && event.data.type === 'farroway:skip_waiting') {
+    self.skipWaiting();
+  }
 });
 
 // Fetch: network-first with offline fallback for API, cache-first for assets

@@ -96,11 +96,24 @@ export async function syncPending({
       // Normalise to an Error-shaped object so offlineQueue.markFailure
       // stores a human-readable string, never "[object Object]".
       const reason = (result && (result.code || result.message)) || 'unknown';
-      markFailure(action.id, new Error(String(reason)));
+      // Permanent vs transient: validation/auth/missing-resource codes
+      // will never become valid by retrying, so mark them terminal so
+      // the UI can surface them and the engine stops looping.
+      // Transient codes (network/server/timeout/unauthorized after
+      // refresh fails) follow exponential backoff up to MAX_ATTEMPTS.
+      const code = result && result.code;
+      const permanent = code === 'validation_error'
+                      || code === 'unsupported_type'
+                      || code === 'missing_action_type';
+      const updated = markFailure(action.id, new Error(String(reason)),
+                                    { permanent });
       report.failed += 1;
       report.details.push({
-        id: action.id, status: 'failed',
-        reason: (result && (result.code || result.message)) || 'unknown',
+        id: action.id,
+        status: updated && updated.failed ? 'failed_terminal' : 'failed_retrying',
+        attempts: updated && updated.attempts,
+        nextAttemptAt: updated && updated.nextAttemptAt,
+        reason,
       });
     }
 

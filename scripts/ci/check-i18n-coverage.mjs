@@ -31,15 +31,15 @@ const ROOT = path.resolve(HERE, '..', '..');
 const EN_FILE = path.join(ROOT, 'src/i18n/translations.js');
 const HI_FILE = path.join(ROOT, 'src/i18n/hi.js');
 
-// Thresholds are ratcheted up as translations land. Current numbers
-// reflect the 2026-04 audit baseline; raise these when you add keys
-// to hi.js so the guard enforces the new floor.
+// Fix 3 — production-stability hardening: enforce 95% across every
+// high-risk domain. The build fails when any target language drops
+// below the floor, blocking deploys with mixed-language regressions.
 const DOMAINS = [
-  { name: 'insight.',   threshold: 0.95 },   // fully translated
-  { name: 'econ.',      threshold: 0.95 },   // fully translated
-  { name: 'rainfall.',  threshold: 0.40 },   // ratchet up as Hindi lands
-  { name: 'seasonal.',  threshold: 0.45 },   // ratchet up as Hindi lands
-  { name: 'topCrops.',  threshold: 0.95 },   // fully translated
+  { name: 'insight.',   threshold: 0.95 },
+  { name: 'econ.',      threshold: 0.95 },
+  { name: 'rainfall.',  threshold: 0.95 },
+  { name: 'seasonal.',  threshold: 0.95 },
+  { name: 'topCrops.',  threshold: 0.95 },
 ];
 
 function extractKeys(text) {

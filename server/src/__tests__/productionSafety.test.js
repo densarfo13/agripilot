@@ -511,6 +511,56 @@ describe('farm API boundary — canonicalizeFarmPayload', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// Fix 5 — Canonical scoring pipeline contract
+// ═══════════════════════════════════════════════════════════════
+describe('canonical scoring pipeline — every input moves output', () => {
+  const baseCtx = {
+    cropId: 'cassava', country: 'GH',
+    normalizedAreaSqm: 1000, currentStage: 'growing',
+    farmType: 'small_farm',
+  };
+
+  it('cropId change → different yield range', () => {
+    const a = estimateFarmEconomics({ ...baseCtx, cropId: 'cassava' });
+    const b = estimateFarmEconomics({ ...baseCtx, cropId: 'maize' });
+    expect(a.yield.lowYield).not.toBe(b.yield.lowYield);
+  });
+
+  it('country change → different value (localized price)', () => {
+    const gh = estimateFarmEconomics({ ...baseCtx, country: 'GH' });
+    const us = estimateFarmEconomics({ ...baseCtx, country: 'US' });
+    expect(gh.value.currency).not.toBe(us.value.currency);
+  });
+
+  it('seasonFit change → different yield', () => {
+    const high = estimateFarmEconomics({ ...baseCtx, seasonFit: 'high' });
+    const low  = estimateFarmEconomics({ ...baseCtx, seasonFit: 'low' });
+    expect(high.yield.highYield).toBeGreaterThan(low.yield.highYield);
+  });
+
+  it('rainfallFit change → different yield', () => {
+    const high = estimateFarmEconomics({ ...baseCtx, rainfallFit: 'high' });
+    const low  = estimateFarmEconomics({ ...baseCtx, rainfallFit: 'low' });
+    expect(high.yield.highYield).toBeGreaterThan(low.yield.highYield);
+  });
+
+  it('state input is accepted but does not alter output (reserved)', () => {
+    const a = estimateFarmEconomics({ ...baseCtx });
+    const b = estimateFarmEconomics({ ...baseCtx, state: 'Ashanti' });
+    expect(a.yield.lowYield).toBe(b.yield.lowYield);
+    expect(a.profit.lowProfit).toBe(b.profit.lowProfit);
+  });
+
+  it('weakest confidence wins (low yield ⇒ low rollup)', () => {
+    const out = estimateFarmEconomics({
+      ...baseCtx, country: 'ZZ',          // unknown country → lowest data
+      currentStage: 'planning',           // earliest stage → low confidence
+    });
+    expect(out.confidence).toBe('low');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
 // Fix 4 — Adapter defaults to in_app only (live-channel gate)
 // ═══════════════════════════════════════════════════════════════
 import {
@@ -552,6 +602,78 @@ describe('insight adapter live-channel gate', () => {
     const types = new Set(out.map((n) => n.type));
     // WhatsApp is preferred for high priority when both WA+SMS allowed.
     expect(types.has('whatsapp') || types.has('sms')).toBe(true);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Fix 7 — Inactivity auto-logout
+// ═══════════════════════════════════════════════════════════════
+describe('startInactivityWatcher', () => {
+  // Minimal window/document stubs so the watcher can run in node.
+  function makeWindow() {
+    const listeners = new Map();
+    const intervals = new Set();
+    let storage = null;
+    const win = {
+      localStorage: (() => {
+        const m = new Map();
+        return {
+          get length() { return m.size; },
+          getItem(k) { return m.has(k) ? m.get(k) : null; },
+          setItem(k, v) { m.set(k, String(v)); },
+          removeItem(k) { m.delete(k); },
+          clear() { m.clear(); },
+        };
+      })(),
+      addEventListener(evt, cb) { listeners.set(evt, cb); },
+      removeEventListener(evt) { listeners.delete(evt); },
+      _fire(evt) { const cb = listeners.get(evt); if (cb) cb({}); },
+    };
+    return win;
+  }
+  function makeDocument() {
+    const visListeners = new Set();
+    return {
+      visibilityState: 'visible',
+      addEventListener(_e, cb) { visListeners.add(cb); },
+      removeEventListener(_e, cb) { visListeners.delete(cb); },
+    };
+  }
+
+  it('returns no-op stop when window is unavailable (SSR)', async () => {
+    const { startInactivityWatcher } = await import(
+      '../../../src/lib/auth/inactivityWatcher.js'
+    );
+    const stop = startInactivityWatcher({ onTimeout: () => {} });
+    expect(typeof stop).toBe('function');
+    expect(() => stop()).not.toThrow();
+  });
+
+  it('does nothing when enabled=false', async () => {
+    globalThis.window = makeWindow();
+    globalThis.document = makeDocument();
+    vi.resetModules();
+    const { startInactivityWatcher } = await import(
+      '../../../src/lib/auth/inactivityWatcher.js'
+    );
+    let fired = 0;
+    const stop = startInactivityWatcher({
+      onTimeout: () => { fired += 1; },
+      enabled: false,
+    });
+    expect(typeof stop).toBe('function');
+    expect(fired).toBe(0);
+    delete globalThis.window;
+    delete globalThis.document;
+  });
+
+  it('STORAGE_KEY is namespaced under farroway:', async () => {
+    const { _internal } = await import(
+      '../../../src/lib/auth/inactivityWatcher.js'
+    );
+    expect(_internal.STORAGE_KEY).toMatch(/^farroway:/);
+    expect(_internal.DEFAULT_TIMEOUT_MS).toBeGreaterThanOrEqual(5 * 60 * 1000);
+    expect(_internal.DEFAULT_TIMEOUT_MS).toBeLessThanOrEqual(15 * 60 * 1000);
   });
 });
 

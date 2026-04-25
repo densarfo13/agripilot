@@ -1,3 +1,5 @@
+-- ALLOW_DESTRUCTIVE: drops UNIQUE index on user_id_direct so a farmer
+-- can hold multiple farms. Only the index goes; no row data is lost.
 -- Multi-farm support: allow one farmer to have multiple farm/land records
 -- while keeping one active at a time for pilot simplicity.
 

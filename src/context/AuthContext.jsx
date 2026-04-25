@@ -12,6 +12,7 @@ import {
 } from '../lib/api.js';
 import { logActivity } from '../services/activityLogger.js';
 import { clearSessionState } from '../lib/auth/clearSessionState.js';
+import { startInactivityWatcher } from '../lib/auth/inactivityWatcher.js';
 
 const AuthContext = createContext(null);
 
@@ -250,6 +251,20 @@ export function AuthProvider({ children }) {
     }
     setAuthLoading(false);
   }
+
+  // Fix 7 — Inactivity auto-logout (10 min default). Active only
+  // while the farmer is logged in; tears down on logout/unmount.
+  // Runs purely on the client; SSR returns a no-op stop.
+  useEffect(() => {
+    if (!user) return undefined;
+    if (user.isOfflineOnly) return undefined;     // offline session never times out
+    const stop = startInactivityWatcher({
+      onTimeout: () => { logout('inactivity').catch(() => {}); },
+      timeoutMs: 10 * 60 * 1000,
+      enabled:   true,
+    });
+    return stop;
+  }, [user]);
 
   const value = useMemo(
     () => ({

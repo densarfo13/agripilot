@@ -64,7 +64,10 @@ export function predictYield(input = {}) {
   const cropId = normalizeCropId(input.cropId || input.crop);
   if (!cropId) return null;
 
-  // Delegate the heavy lifting to the rule-based engine.
+  // Delegate the heavy lifting to the rule-based engine. `state` is
+  // accepted at the API surface for forward compatibility but
+  // intentionally dropped here — no current yield/price data source
+  // is state-scoped, so threading it would create a fake parameter.
   const base = estimateYield({
     crop:              cropId,
     normalizedAreaSqm: input.normalizedAreaSqm,

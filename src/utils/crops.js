@@ -4,6 +4,20 @@ import {
 import { useTranslation } from '../i18n/index.js';
 
 /**
+ * @deprecated Use src/config/crops/cropRegistry.js (canonical source).
+ *   This file is the legacy uppercase CROPS list (~98 entries) used
+ *   by older selectors and analytics. New code MUST import from
+ *   src/config/crops/index.js. The CI guard
+ *   scripts/ci/check-duplicate-crop-sources.mjs tracks the entry
+ *   count baseline.
+ *
+ *   Migration mapping:
+ *     CROPS / ALL_CROPS_WITH_OTHER  → listRegisteredCrops()
+ *     getCropByCode(code)            → getCrop(normalizeCropId(code))
+ *     getCropLabel(value, lang)      → getCropLabel(id, lang)  (registry)
+ *     normalizeCropName / Code(value)→ normalizeCropId(value)
+ *     parseCropValue(stored)         → normalizeCropId(stored)
+ *
  * Shared Crop Dataset — single source of truth for all crop selectors.
  *
  * Structure per entry:

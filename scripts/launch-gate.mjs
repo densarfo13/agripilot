@@ -25,6 +25,8 @@ const NO_BUILD = process.argv.includes('--no-build');
 const steps = [
   { name: 'CI guard — prisma safety',
     cmd: 'node', args: ['scripts/ci/check-prisma-safety.mjs'] },
+  { name: 'CI guard — migration safety',
+    cmd: 'node', args: ['scripts/ci/check-migration-safety.mjs'] },
   { name: 'CI guard — crop-type drift',
     cmd: 'node', args: ['scripts/ci/check-crop-type-drift.mjs'] },
   { name: 'CI guard — i18n coverage (Hindi)',

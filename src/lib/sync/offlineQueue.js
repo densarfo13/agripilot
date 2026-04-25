@@ -27,6 +27,15 @@
 const KEY = 'farroway.offlineQueue.v1';
 const MAX_ENTRIES = 200;
 
+// Fix 1 — Production-stability hardening §1: retry strategy.
+//   MAX_ATTEMPTS = how many tries we make before giving up and
+//   marking the action FAILED (terminal — visible in UI, not
+//   silently dropped).
+//   BACKOFF_MS  = exponential schedule in ms; index = attempt count.
+//   Past the last entry we cap at the final value (30s).
+export const MAX_ATTEMPTS = 6;
+export const BACKOFF_MS  = Object.freeze([0, 1000, 3000, 10000, 30000, 30000, 30000]);
+
 function hasStorage() {
   return typeof window !== 'undefined' && !!window.localStorage;
 }
@@ -88,6 +97,15 @@ export function enqueueAction({
     lastError:  null,
     synced:     false,
     syncedAt:   null,
+    // Terminal-failure marker (Fix 1): true once attempts ≥
+    // MAX_ATTEMPTS. UI surfaces these as "needs attention" instead
+    // of pretending they'll eventually go through.
+    failed:     false,
+    failedAt:   null,
+    // Backoff gate: the next time the engine is allowed to retry
+    // this row. Honours BACKOFF_MS[attempts]. The engine skips any
+    // row whose nextAttemptAt is in the future.
+    nextAttemptAt: 0,
   };
   list.push(row);
 
@@ -101,20 +119,65 @@ export function enqueueAction({
   return Object.freeze({ ...row });
 }
 
-export function listQueue({ pendingOnly = false, type = null, limit = 200 } = {}) {
+/**
+ * listQueue
+ *   pendingOnly  = true  → only !synced && !failed && nextAttemptAt ≤ now
+ *   pendingOnly  = false → every entry, no filtering
+ *   includeFailed = true → also include FAILED entries (default false)
+ */
+export function listQueue({
+  pendingOnly = false, type = null, limit = 200,
+  includeFailed = false, now = Date.now(),
+} = {}) {
   const list = readRaw();
   let out = list;
-  if (pendingOnly) out = out.filter((e) => e && !e.synced);
-  if (type)        out = out.filter((e) => e && e.type === type);
+  if (pendingOnly) {
+    out = out.filter((e) => e && !e.synced
+      && (includeFailed || !e.failed)
+      && (!e.nextAttemptAt || e.nextAttemptAt <= now));
+  }
+  if (type) out = out.filter((e) => e && e.type === type);
   return out.slice(0, Math.max(0, Math.min(MAX_ENTRIES, limit)));
 }
 
 export function hasPending() {
-  return readRaw().some((e) => e && !e.synced);
+  return readRaw().some((e) => e && !e.synced && !e.failed);
 }
 
 export function pendingCount() {
-  return readRaw().filter((e) => e && !e.synced).length;
+  return readRaw().filter((e) => e && !e.synced && !e.failed).length;
+}
+
+/**
+ * listFailed — terminal-failure rows the UI surfaces in a "needs
+ * attention" badge. Pilot operators retry these manually via
+ * retryFailed(id).
+ */
+export function listFailed() {
+  return readRaw().filter((e) => e && e.failed);
+}
+
+export function failedCount() {
+  return readRaw().filter((e) => e && e.failed).length;
+}
+
+/**
+ * retryFailed(id) — reset attempts/nextAttemptAt on a FAILED row so
+ * the next syncPending() picks it up. Returns the updated row, or
+ * null when the id isn't found / wasn't failed.
+ */
+export function retryFailed(id) {
+  if (!id) return null;
+  const list = readRaw();
+  const entry = list.find((e) => e && e.id === id);
+  if (!entry || !entry.failed) return null;
+  entry.failed = false;
+  entry.failedAt = null;
+  entry.attempts = 0;
+  entry.lastError = null;
+  entry.nextAttemptAt = 0;
+  writeRaw(list);
+  return { ...entry };
 }
 
 export function markSynced(id) {
@@ -129,13 +192,33 @@ export function markSynced(id) {
   return { ...entry };
 }
 
-export function markFailure(id, error) {
+/**
+ * markFailure — bump attempts, schedule the next retry per
+ * BACKOFF_MS, and flip to terminal `failed` once the cap is hit.
+ *   error: Error | string | null  — last failure reason for the UI
+ *   permanent: boolean             — when true (e.g. validation_error
+ *                                    from the server), skip backoff
+ *                                    and go straight to FAILED
+ */
+export function markFailure(id, error, { permanent = false } = {}) {
   if (!id) return null;
   const list = readRaw();
   const entry = list.find((e) => e && e.id === id);
   if (!entry) return null;
   entry.attempts   = (entry.attempts || 0) + 1;
-  entry.lastError  = error ? (error.message || String(error)) : 'unknown';
+  entry.lastError  = error
+    ? (error.message || String(error)) : 'unknown';
+  // Schedule next retry — exponential backoff capped at the last
+  // entry. The engine respects nextAttemptAt and won't drain rows
+  // whose deadline is still in the future.
+  const idx = Math.min(entry.attempts, BACKOFF_MS.length - 1);
+  entry.nextAttemptAt = Date.now() + (BACKOFF_MS[idx] || 30000);
+  // Terminal: hit the retry cap, OR caller marked the failure
+  // permanent (validation/missing-resource = no point retrying).
+  if (permanent || entry.attempts >= MAX_ATTEMPTS) {
+    entry.failed   = true;
+    entry.failedAt = Date.now();
+  }
   writeRaw(list);
   return { ...entry };
 }
@@ -158,4 +241,7 @@ export function clearQueue() {
   catch { return false; }
 }
 
-export const _internal = Object.freeze({ KEY, MAX_ENTRIES, genId, readRaw, writeRaw });
+export const _internal = Object.freeze({
+  KEY, MAX_ENTRIES, MAX_ATTEMPTS, BACKOFF_MS,
+  genId, readRaw, writeRaw,
+});

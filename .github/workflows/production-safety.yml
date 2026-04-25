@@ -27,6 +27,9 @@ jobs:
       - name: CI guard - prisma safety
         run: node scripts/ci/check-prisma-safety.mjs
 
+      - name: CI guard - migration safety
+        run: node scripts/ci/check-migration-safety.mjs
+
       - name: CI guard - crop-type drift
         run: node scripts/ci/check-crop-type-drift.mjs
 

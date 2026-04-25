@@ -109,7 +109,8 @@ export const ROUTES = Object.freeze({
 export const SUPPORTED_TYPES = Object.freeze(Object.keys(ROUTES));
 
 // ─── send(action) ───────────────────────────────────────────────
-export async function send(action, { fetchFn = globalFetch } = {}) {
+export async function send(action, opts = {}) {
+  const fetchFn = opts.fetchFn || globalFetch;
   if (!action || !action.type) {
     return { ok: false, code: 'missing_action_type' };
   }
@@ -126,52 +127,70 @@ export async function send(action, { fetchFn = globalFetch } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (action.id) headers['Idempotency-Key'] = action.id;
 
-  let res;
-  try {
-    res = await fetchFn(path, {
-      method,
-      headers,
-      credentials: 'include',
-      body: body == null ? undefined : JSON.stringify(body),
-    });
-  } catch (err) {
+  // Single send attempt. The wrapper below handles 401 → refresh → retry once.
+  async function attempt() {
+    let res;
+    try {
+      res = await fetchFn(path, {
+        method,
+        headers,
+        credentials: 'include',
+        body: body == null ? undefined : JSON.stringify(body),
+      });
+    } catch (err) {
+      return {
+        ok: false, code: 'network_error',
+        message: (err && err.message) || 'fetch threw',
+      };
+    }
+    let parsed = null;
+    try { parsed = await res.json(); } catch { /* no-op */ }
+
+    if (res.ok) return { ok: true, code: 'sent' };
+
+    if (res.status === 401) {
+      return { ok: false, code: 'unauthorized',
+                message: (parsed && (parsed.error || parsed.message)) || 'unauthorized' };
+    }
+
+    if (res.status === 409
+        && parsed
+        && (parsed.error === 'duplicate'
+          || parsed.reason === 'duplicate'
+          || parsed.error === 'already_synced'
+          || parsed.reason === 'already_synced')) {
+      return { ok: false, code: 'duplicate' };
+    }
+
+    if (res.status >= 500) {
+      return {
+        ok: false, code: 'server_error',
+        message: (parsed && (parsed.error || parsed.message)) || `HTTP ${res.status}`,
+      };
+    }
     return {
-      ok: false, code: 'network_error',
-      message: (err && err.message) || 'fetch threw',
+      ok: false,
+      code: (parsed && (parsed.error || parsed.reason)) || 'validation_error',
+      message: (parsed && parsed.message) || `HTTP ${res.status}`,
     };
   }
 
-  // Parse the body for a code hint (duplicate etc.). Failures here
-  // are not fatal — we fall back to status-code heuristics.
-  let parsed = null;
-  try { parsed = await res.json(); } catch { /* no-op */ }
-
-  if (res.ok) {
-    return { ok: true, code: 'sent' };
+  // Fix 1 — Production-stability hardening §1:
+  //   401 during offline-queue sync triggers a token refresh + a
+  //   single retry. If the refresh itself fails, we surface the
+  //   401 unchanged so the engine moves the action to FAILED
+  //   instead of looping. The refresh is deliberately optional —
+  //   tests inject a stub; real callers wire the auth client.
+  let result = await attempt();
+  if (result.code === 'unauthorized' && typeof opts.refreshAuth === 'function') {
+    let refreshed = false;
+    try { refreshed = await opts.refreshAuth(); }
+    catch { refreshed = false; }
+    if (refreshed) {
+      result = await attempt();
+    }
   }
-
-  // 409 with duplicate marker → treat as synced so the queue moves
-  // on instead of retrying forever.
-  if (res.status === 409
-      && parsed
-      && (parsed.error === 'duplicate'
-        || parsed.reason === 'duplicate'
-        || parsed.error === 'already_synced'
-        || parsed.reason === 'already_synced')) {
-    return { ok: false, code: 'duplicate' };
-  }
-
-  if (res.status >= 500) {
-    return {
-      ok: false, code: 'server_error',
-      message: (parsed && (parsed.error || parsed.message)) || `HTTP ${res.status}`,
-    };
-  }
-  return {
-    ok: false,
-    code: (parsed && (parsed.error || parsed.reason)) || 'validation_error',
-    message: (parsed && parsed.message) || `HTTP ${res.status}`,
-  };
+  return result;
 }
 
 function globalFetch(...args) {
@@ -180,12 +199,21 @@ function globalFetch(...args) {
 }
 
 /**
- * makeTransport({ fetchFn? }) — returns the `{ send }` shape the
- * syncEngine expects, with an optional injected fetch for tests.
+ * makeTransport({ fetchFn?, refreshAuth? }) — returns the `{ send }`
+ * shape the syncEngine expects.
+ *
+ *   refreshAuth: async () => boolean   // returns true when refresh
+ *                                       // succeeded; false otherwise
+ *   fetchFn:     test-injected fetch (defaults to global fetch)
+ *
+ * On a 401 response from the server, send() invokes refreshAuth()
+ * once and retries. If refresh fails (or isn't supplied), the 401
+ * is surfaced unchanged and the syncEngine treats it like any other
+ * non-retryable failure.
  */
-export function makeTransport({ fetchFn } = {}) {
+export function makeTransport({ fetchFn, refreshAuth } = {}) {
   return Object.freeze({
-    send: (action) => send(action, { fetchFn }),
+    send: (action) => send(action, { fetchFn, refreshAuth }),
   });
 }
 

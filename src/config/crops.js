@@ -1,4 +1,17 @@
 /**
+ * @deprecated Use src/config/crops/cropRegistry.js (canonical source).
+ *   This file is kept as a legacy compatibility shim used by ~10
+ *   pages/components that haven't been migrated yet. New code MUST
+ *   NOT import from here. The CI guard
+ *   scripts/ci/check-duplicate-crop-sources.mjs tracks the entry
+ *   count baseline; new entries fail the build.
+ *
+ *   Migration mapping:
+ *     normalizeCrop(x)      → normalizeCropId(x)   (config/crops/index.js)
+ *     getCropLabel(c, lang) → getCropLabel(c, lang)  (config/crops/index.js)
+ *     useCropLabel(c)       → useCropLabel(c)       (still re-exported here)
+ *     COMMON_CROPS          → listRegisteredCrops() (config/crops/index.js)
+ *
  * crops.js — searchable catalog of common crops, shared by every
  * "pick a crop" input (NewFarmScreen, EditFarmScreen, CropFit).
  *

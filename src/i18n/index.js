@@ -165,27 +165,49 @@ function humanizeKey(key) {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
 
+// Fix 3 — Production-stability hardening §3:
+// Strict mode surfaces missing translations as [MISSING:key] so QA
+// can see them during pilot. Production builds keep the friendly
+// English fallback so a missing Hindi string doesn't break the
+// dashboard. Set VITE_I18N_STRICT=1 in dev/staging to opt in.
+function isStrictI18n() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      if (import.meta.env.VITE_I18N_STRICT === '1') return true;
+      if (import.meta.env.DEV) return true;
+    }
+  } catch { /* SSR */ }
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.VITE_I18N_STRICT === '1') return true;
+      if (process.env.NODE_ENV === 'test')      return true;
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+
 export function t(key, lang, vars) {
   if (!key) return '';
   const entry = T[key];
   const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV === 'development';
+  const strict = isStrictI18n();
   if (!entry) {
-    if (isDev) {
+    if (isDev || strict) {
       _warnedMissing ??= new Set();
       if (!_warnedMissing.has(key)) {
         _warnedMissing.add(key);
         console.warn(`[i18n] Missing key: "${key}"`);
       }
     }
-    // Never leak the raw key to the UI — humanize instead.
+    // Strict mode (dev/QA): make the gap visible. Production: stay
+    // user-friendly with the humanised key.
+    if (strict) return `[MISSING:${key}]`;
     return humanizeKey(key);
   }
   let text = entry[lang];
   if (!text && lang !== 'en') {
     text = entry.en || '';
-    // In dev: warn about English fallback so translators can fix it
-    if (isDev && text) {
-      // Throttle: only warn once per key per session
+    if (isDev || strict) {
       _warnedFallbacks ??= new Set();
       const warnKey = `${key}:${lang}`;
       if (!_warnedFallbacks.has(warnKey)) {
@@ -193,6 +215,8 @@ export function t(key, lang, vars) {
         console.warn(`[i18n] Falling back to English for "${key}" (lang="${lang}")`);
       }
     }
+    // Strict + non-English: surface the gap so QA catches it.
+    if (strict && text) text = `[MISSING:${key}|fallback]`;
   } else if (!text) {
     text = entry.en || '';
   }
