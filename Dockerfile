@@ -25,5 +25,5 @@ ENV PORT=4000
 EXPOSE 4000
 
 WORKDIR /app/server
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node scripts/init-admin.mjs && node src/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/init-admin.mjs && node src/server.js"]
 # NOTE: init-admin.mjs only creates admin if not exists. Set FORCE_ADMIN_RESET=1 to overwrite password once.

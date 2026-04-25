@@ -7,9 +7,16 @@
 import { describe, it, expect } from 'vitest';
 
 import {
-  buildNotifications, SMS_DAILY_CAP, WA_DAILY_CAP, VOICE_DAILY_CAP,
-  _internal,
+  buildNotifications as rawBuildNotifications,
+  SMS_DAILY_CAP, WA_DAILY_CAP, VOICE_DAILY_CAP, _internal,
 } from '../../../src/lib/notifications/insightNotificationAdapter.js';
+
+// Channel routing tests opt into every live channel at the boundary;
+// production callers default to in_app only (Fix 4 in sprint).
+const ALL_LIVE_CHANNELS = ['in_app', 'sms', 'whatsapp', 'voice'];
+function buildNotifications(ctx) {
+  return rawBuildNotifications({ liveChannels: ALL_LIVE_CHANNELS, ...ctx });
+}
 import {
   sendWhatsApp, isWhatsAppConfigured, _internal as waInt,
 } from '../../services/whatsAppService.js';

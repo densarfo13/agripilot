@@ -751,6 +751,8 @@ const HI = {
   'econ.reason.costConvertedLocal':        'लागत आपकी स्थानीय मुद्रा में बदली गई',
   'econ.reason.costUsdFallback':           'लागत USD में दिखाई गई',
   'econ.reason.costUsdBase':               'लागत USD में (इंजन डिफ़ॉल्ट)',
+  'econ.reason.profitInUsdFallback':       'लाभ USD में — स्थानीय विनिमय दर उपलब्ध नहीं',
+  'econ.reason.profitUnavailable':         'इस फसल / स्थान के लिए लाभ अनुमान उपलब्ध नहीं',
   'econ.reason.commercialOverhead':        'व्यावसायिक संचालन में अधिक खर्च',
   'econ.reason.backyardLowInput':          'घरेलू बगीचा कम आदानों पर चलता है',
   'econ.reason.costProfileFallback':       'सूचीबद्ध लागत नहीं — सुरक्षित डिफ़ॉल्ट',

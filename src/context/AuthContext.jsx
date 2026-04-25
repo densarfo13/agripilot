@@ -11,6 +11,7 @@ import {
   verifyPhoneOtp as verifyPhoneOtpApi,
 } from '../lib/api.js';
 import { logActivity } from '../services/activityLogger.js';
+import { clearSessionState } from '../lib/auth/clearSessionState.js';
 
 const AuthContext = createContext(null);
 
@@ -187,11 +188,23 @@ export function AuthProvider({ children }) {
   async function logout(reason) {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
     if (isDev) console.log('[AUTH] Logout, reason:', reason || 'explicit');
+    // Drop server-side session first; ignore failures (we still need
+    // to wipe local state regardless of network outcome).
     await logoutUser().catch(() => {});
     setUser(null);
     setIsOfflineSession(false);
+    // Legacy in-memory hooks — kept so older callers don't break.
     clearSessionCache();
-    try { localStorage.removeItem('farroway:last_email'); } catch { /* ignore */ }
+    // Comprehensive shared-device purge: every known auth + farm +
+    // notification key, sessionStorage, and every Cache Storage entry
+    // (the service worker's API/asset caches). See
+    // src/lib/auth/clearSessionState.js for the full sweep list.
+    try {
+      const result = await clearSessionState();
+      if (isDev) console.log('[AUTH] cleared session state:', result);
+    } catch (err) {
+      if (isDev) console.warn('[AUTH] clearSessionState threw:', err && err.message);
+    }
   }
 
   async function resendEmailVerification() {

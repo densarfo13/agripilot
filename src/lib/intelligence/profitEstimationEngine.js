@@ -33,6 +33,7 @@ import {
   getCropCostProfile, hasCropCostProfile,
 } from '../../config/crops/cropCostProfiles.js';
 import { normalizeCropId } from '../../config/crops/index.js';
+import { getCropPrice } from '../../config/cropPrices.js';
 
 const f = Object.freeze;
 
@@ -63,35 +64,72 @@ export function estimateProfit({
   const lowCostUsd  = area * cost.baseCostPerSqmLow;
   const highCostUsd = area * cost.baseCostPerSqmHigh;
 
-  // Convert to the farmer's currency by using the same scale the
-  // valueEstimate used. valueEstimate.source tells us whether the
-  // numbers are already in the local currency or in USD.
+  // ─── Currency resolution (safe-mode — no silent mixing) ──────
+  // The audit found the previous FX path silently fell back to USD
+  // cost while keeping value in local currency, producing mixed-
+  // currency profit ranges. We choose safe over clever:
+  //   (a) Try to convert cost to the value's local currency.
+  //       Requires the price band to carry an explicit USD reference
+  //       (`typicalUsd`). Not currently populated anywhere → rare.
+  //   (b) If (a) fails, rebuild the value range in USD using the
+  //       global USD price band. Profit math then runs entirely in
+  //       USD — no mixing, no fake precision. The UI can label this
+  //       with econ.reason.profitInUsdFallback.
+  //   (c) If even the global USD band is missing, surface NULL
+  //       profit + a reason. Better than a wrong number.
   let lowCost, highCost, currency;
-  if (valueEstimate.source && valueEstimate.source.startsWith('country:')
-      && valueEstimate.priceBand
-      && valueEstimate.priceBand.currency
-      && valueEstimate.priceBand.currency !== 'USD') {
-    // Use the local price band's typical rate to estimate a rough
-    // USD↔local FX ratio. globalFor(crop) is always USD; we compare
-    // the localized price band's typical vs GLOBAL_USD's typical for
-    // the same crop. When that ratio isn't available fall back to USD
-    // display so we never show a misleading number.
+  let lowValue, highValue, typValue;
+  let profitAvailable = true;
+
+  const ratio = deriveUsdToLocalRatio(valueEstimate);
+  const valueIsLocal = valueEstimate.source
+    && valueEstimate.source.startsWith('country:')
+    && valueEstimate.currency && valueEstimate.currency !== 'USD';
+
+  if (valueIsLocal && ratio && ratio > 0) {
+    // Path (a) — FX available: display both sides in local currency.
     currency = valueEstimate.currency;
-    const ratio = deriveUsdToLocalRatio(valueEstimate);
-    if (ratio && ratio > 0) {
-      lowCost  = round2(lowCostUsd  * ratio);
-      highCost = round2(highCostUsd * ratio);
-      reasons.push('econ.reason.costConvertedLocal');
+    lowCost  = round2(lowCostUsd  * ratio);
+    highCost = round2(highCostUsd * ratio);
+    lowValue  = Number(valueEstimate.lowValue)     || 0;
+    highValue = Number(valueEstimate.highValue)    || 0;
+    typValue  = Number(valueEstimate.typicalValue) || ((lowValue + highValue) / 2);
+    reasons.push('econ.reason.costConvertedLocal');
+  } else if (valueIsLocal) {
+    // Path (b) — FX unavailable: rebuild VALUE in USD so both sides
+    // of the profit equation are in the same currency. This is the
+    // critical safe-mode path that removes the audit's mixed-
+    // currency bug (value in GHS vs cost in USD).
+    const usdBand = getCropPrice(id, null);           // null → global USD
+    if (usdBand && Number.isFinite(usdBand.low) && Number.isFinite(usdBand.high)) {
+      const yieldLow  = Number(yieldPrediction && yieldPrediction.lowYield)  || 0;
+      const yieldHigh = Number(yieldPrediction && yieldPrediction.highYield) || 0;
+      const yieldTyp  = Number(yieldPrediction && yieldPrediction.typicalYield)
+                      || ((yieldLow + yieldHigh) / 2);
+      currency  = 'USD';
+      lowCost   = round2(lowCostUsd);
+      highCost  = round2(highCostUsd);
+      lowValue  = round2(yieldLow  * usdBand.low);
+      highValue = round2(yieldHigh * usdBand.high);
+      typValue  = round2(yieldTyp  * usdBand.typical);
+      reasons.push('econ.reason.profitInUsdFallback');
     } else {
-      currency = 'USD';
-      lowCost  = round2(lowCostUsd);
-      highCost = round2(highCostUsd);
-      reasons.push('econ.reason.costUsdFallback');
+      // Path (c) — no price data at all; suppress profit cleanly.
+      profitAvailable = false;
+      currency  = valueEstimate.currency;
+      lowCost   = round2(lowCostUsd);
+      highCost  = round2(highCostUsd);
+      lowValue = highValue = typValue = 0;
+      reasons.push('econ.reason.profitUnavailable');
     }
   } else {
+    // Value was already in USD (or currency-less) → everything lines up.
     currency = valueEstimate.currency || 'USD';
     lowCost  = round2(lowCostUsd);
     highCost = round2(highCostUsd);
+    lowValue  = Number(valueEstimate.lowValue)     || 0;
+    highValue = Number(valueEstimate.highValue)    || 0;
+    typValue  = Number(valueEstimate.typicalValue) || ((lowValue + highValue) / 2);
     reasons.push('econ.reason.costUsdBase');
   }
 
@@ -104,13 +142,10 @@ export function estimateProfit({
                              : 'econ.reason.backyardLowInput');
   }
 
-  const lowValue  = Number(valueEstimate.lowValue)     || 0;
-  const highValue = Number(valueEstimate.highValue)    || 0;
-  const typValue  = Number(valueEstimate.typicalValue) || ((lowValue + highValue) / 2);
-
-  const lowProfit     = round2(lowValue  - highCost);
-  const highProfit    = round2(highValue - lowCost);
-  const typicalProfit = round2(typValue  - ((lowCost + highCost) / 2));
+  const lowProfit     = profitAvailable ? round2(lowValue  - highCost) : null;
+  const highProfit    = profitAvailable ? round2(highValue - lowCost)  : null;
+  const typicalProfit = profitAvailable
+    ? round2(typValue - ((lowCost + highCost) / 2)) : null;
 
   // Confidence: cap at value confidence; downgrade one step when we
   // had to fall back to the generic cost profile.

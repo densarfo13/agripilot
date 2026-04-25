@@ -187,9 +187,14 @@ describe('estimateProfit', () => {
     expect(p.lowCost).toBeGreaterThan(0);
     expect(p.highCost).toBeGreaterThanOrEqual(p.lowCost);
     expect(p.highProfit).toBeGreaterThanOrEqual(p.lowProfit);
-    // Low profit = lowValue − highCost; high profit = highValue − lowCost.
-    expect(p.lowProfit).toBeLessThanOrEqual(v.lowValue);
-    expect(p.highProfit).toBeGreaterThanOrEqual(v.highValue - p.lowCost - 0.01);
+    // Safe-mode: value is in GHS but cost fell back to USD, so the
+    // engine rebuilds value in USD too. Profit is computed entirely
+    // in USD — never mixed — and the currency field reflects that.
+    expect(p.currency).toBe('USD');
+    expect(p.reasons).toContain('econ.reason.profitInUsdFallback');
+    // Profit math sanity: lowProfit and highProfit bracket zero
+    // consistently with the computed cost range.
+    expect(p.highProfit - p.lowProfit).toBeGreaterThanOrEqual(p.highCost - p.lowCost);
   });
 
   it('backyard multiplier lowers cost vs commercial', () => {

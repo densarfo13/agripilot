@@ -2,6 +2,24 @@
  * insightNotificationAdapter.js — turns insightEngine output +
  * daily tasks into a prioritised list of spec-shape notifications.
  *
+ * ⚠ LIVE-CHANNEL SCOPE
+ *   The daily server cron (server/src/modules/autoNotifications/)
+ *   is the single production dispatch path. This adapter is
+ *   consumed today ONLY by the dashboard's in-app insight render.
+ *
+ *   To prevent duplicate delivery engines running side-by-side,
+ *   buildNotifications() defaults to `liveChannels: ['in_app']` —
+ *   it will never emit sms/whatsapp/voice rows unless the caller
+ *   explicitly opts in. The channel-routing logic, caps, dedup,
+ *   and test coverage are all still here and exercised by the
+ *   channelRouting.test.js suite; they're simply gated so they
+ *   can't accidentally fire against real farmers before the
+ *   dispatcher is wired to honour them.
+ *
+ *   When the cron is migrated to consume this adapter, pass
+ *   `liveChannels: ['in_app','sms','whatsapp','voice']` and wire
+ *   delivery + persistent dedup (Fix 5) in one step.
+ *
  *   buildNotifications({
  *     userId, farms, insights, tasks,
  *     timeOfDay?, userPreferences?, now?,
@@ -49,6 +67,11 @@ export const MAX_INSIGHTS_AS_NOTIFS = 5; // cap to match dashboard
 // and the insight is high priority.
 export const CHANNELS = f(['in_app', 'whatsapp', 'sms', 'voice']);
 
+// Default live channels — see the module header. Callers can widen
+// this to include sms/whatsapp/voice, but production code currently
+// consumes the in-app list only.
+export const DEFAULT_LIVE_CHANNELS = f(['in_app']);
+
 const PRI = f({ high: 3, medium: 2, low: 1 });
 
 // ─── Helpers ───────────────────────────────────────────────────
@@ -70,6 +93,13 @@ function truncate(msg, max = MAX_SMS_CHARS) {
 export function buildNotifications(rawCtx) {
   const ctx = (rawCtx && typeof rawCtx === 'object') ? rawCtx : {};
   const prefs = normalisePrefs(ctx.userPreferences);
+  // Live-channel gate (see module header). Callers can override to
+  // unlock sms/whatsapp/voice once the dispatcher owns those paths.
+  const liveChannels = new Set(
+    Array.isArray(ctx.liveChannels) && ctx.liveChannels.length > 0
+      ? ctx.liveChannels
+      : DEFAULT_LIVE_CHANNELS,
+  );
   const now = ctx.now instanceof Date ? ctx.now : new Date(ctx.now || Date.now());
   const date = ymd(now);
   const timestamp = now.toISOString();
@@ -187,8 +217,12 @@ export function buildNotifications(rawCtx) {
     }
   }
 
-  // Filter disabled channels.
+  // Filter disabled channels + gate off any channel the caller hasn't
+  // declared live. This is the boundary that stops the adapter from
+  // emitting sms/whatsapp/voice rows while the server cron uses a
+  // different engine.
   const finalOut = withChannels.filter((n) => {
+    if (!liveChannels.has(n.type)) return false;
     if (n.type === 'in_app'   && !prefs.receiveNotifications) return false;
     if (n.type === 'sms'      && !prefs.receiveSMS)           return false;
     if (n.type === 'whatsapp' && !prefs.receiveWhatsApp)      return false;

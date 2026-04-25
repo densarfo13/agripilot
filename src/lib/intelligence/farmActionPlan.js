@@ -294,10 +294,13 @@ export function buildFarmActionPlan(ctx = {}) {
   if (!farm) return null;
 
   const canonicalCrop = normalizeCropKey(farm.crop || farm.cropType);
-  const stageKey = farm.cropStage
+  // Compute the stored fallback first; we prefer the timeline's
+  // computed stage below, but fall back to the stored value when
+  // the timeline can't resolve (no plantingDate + no lifecycle).
+  const storedStageKey = farm.cropStage
     ? normalizeStageKey(farm.cropStage) || String(farm.cropStage).toLowerCase()
     : null;
-  if (!canonicalCrop && !stageKey && !farm.id) return null;
+  if (!canonicalCrop && !storedStageKey && !farm.id) return null;
 
   const dateStr = ymd(ctx.date);
   const now = ctx.date instanceof Date ? ctx.date : new Date(dateStr);
@@ -310,6 +313,20 @@ export function buildFarmActionPlan(ctx = {}) {
 
   // Lifecycle projection (handles partial inputs safely).
   const timeline = getCropTimeline({ farm, now: dateStr });
+
+  // Stage source-of-truth precedence (Fix 7 — production-stability sprint):
+  //   1. timeline.currentStage      → computed from plantingDate+lifecycle
+  //                                   (already respects manualStageOverride)
+  //   2. farm.cropStage              → stored field, used only when the
+  //                                   timeline engine returned nothing
+  // Using the stored field as the primary source caused stage task
+  // leakage: a farm last edited at "vegetative" but actually 6+ weeks
+  // past planting kept showing vegetative weed-row tasks while the
+  // computed stage was already flowering or harvest.
+  const computedStageKey = timeline && timeline.currentStage
+    ? normalizeStageKey(timeline.currentStage) || String(timeline.currentStage).toLowerCase()
+    : null;
+  const stageKey = computedStageKey || storedStageKey;
 
   // Buckets — each one is self-contained and can return [].
   const nowBucket     = buildNowBucket({ farm, weather: ctx.weather, date: dateStr, tasks: ctx.tasks });

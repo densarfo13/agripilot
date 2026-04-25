@@ -18,9 +18,19 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import {
-  buildNotifications, SMS_DAILY_CAP, MAX_SMS_CHARS, _internal,
+  buildNotifications as rawBuildNotifications,
+  SMS_DAILY_CAP, MAX_SMS_CHARS, _internal,
 } from '../../../src/lib/notifications/insightNotificationAdapter.js';
 import { sendSMS, _internal as smsInternal } from '../../services/smsService.js';
+
+// The adapter gates non-in_app channels behind an explicit
+// `liveChannels` set (see Fix 4 in the production-stability
+// sprint). These tests exercise the full channel-routing surface,
+// so we opt into every channel at the test boundary.
+const ALL_LIVE_CHANNELS = ['in_app', 'sms', 'whatsapp', 'voice'];
+function buildNotifications(ctx) {
+  return rawBuildNotifications({ liveChannels: ALL_LIVE_CHANNELS, ...ctx });
+}
 
 // ─── Fixture helpers ───────────────────────────────────────────
 const FARM = Object.freeze({ id: 'farm-1', farmType: 'small_farm',

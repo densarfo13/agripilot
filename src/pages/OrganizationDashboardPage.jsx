@@ -9,6 +9,7 @@ import {
 } from '../lib/organizations.js';
 import TrustBadge from '../components/TrustBadge.jsx';
 import { trustColor } from '../lib/verification/trustSignals.js';
+import { withTimeout } from '../lib/api/withTimeout.js';
 
 /**
  * OrganizationDashboardPage — institutional-admin / super-admin
@@ -48,24 +49,45 @@ export default function OrganizationDashboardPage() {
     return v && v !== k ? v : fb;
   };
 
+  // ─── Loading-timeout safety (Fix 8 — production-stability sprint) ─
+  // Three independent loaders each previously had no timeout. On a
+  // flaky network any one of them could leave its `loading=true`
+  // state forever. We wrap every top-level fetch with withTimeout
+  // so the spinner ALWAYS unblocks within the budget; the UI shows
+  // a typed error code (timeout / network / http / parse / unknown)
+  // and a retry path stays available because the loader is a stable
+  // useCallback the user can re-trigger.
   const loadDashboard = useCallback(async () => {
     setLoading(true); setError(null);
-    const out = await fetchOrganizationDashboard(orgId, { windowDays });
-    if (!out) setError('unavailable');
-    setDashboard(out);
+    const res = await withTimeout(
+      () => fetchOrganizationDashboard(orgId, { windowDays }),
+      { ms: 15000, label: 'org-dashboard' });
+    if (!res.ok) {
+      setError(res.code || 'unavailable');
+      setDashboard(null);
+    } else {
+      setDashboard(res.data);
+      if (!res.data) setError('unavailable');
+    }
     setLoading(false);
   }, [orgId, windowDays]);
 
   const loadFarmers = useCallback(async () => {
     setFarmersLoading(true);
-    const out = await listOrganizationFarmers(orgId, {
-      region:   farmerFilters.region   || undefined,
-      crop:     farmerFilters.crop     || undefined,
-      scoreMin: farmerFilters.scoreMin || undefined,
-      scoreMax: farmerFilters.scoreMax || undefined,
-      limit:    100,
-    });
-    setFarmers(Array.isArray(out.data) ? out.data : []);
+    const res = await withTimeout(
+      () => listOrganizationFarmers(orgId, {
+        region:   farmerFilters.region   || undefined,
+        crop:     farmerFilters.crop     || undefined,
+        scoreMin: farmerFilters.scoreMin || undefined,
+        scoreMax: farmerFilters.scoreMax || undefined,
+        limit:    100,
+      }),
+      { ms: 15000, label: 'org-farmers' });
+    if (res.ok && res.data) {
+      setFarmers(Array.isArray(res.data.data) ? res.data.data : []);
+    } else {
+      setFarmers([]);
+    }
     setFarmersLoading(false);
   }, [orgId, farmerFilters]);
 
@@ -74,8 +96,10 @@ export default function OrganizationDashboardPage() {
 
   const loadMetrics = useCallback(async () => {
     setMetricsLoading(true);
-    const out = await fetchOrganizationMetrics(orgId, { windowDays });
-    setMetrics(out);
+    const res = await withTimeout(
+      () => fetchOrganizationMetrics(orgId, { windowDays }),
+      { ms: 15000, label: 'org-metrics' });
+    setMetrics(res.ok ? res.data : null);
     setMetricsLoading(false);
   }, [orgId, windowDays]);
   useEffect(() => { loadMetrics(); }, [loadMetrics]);

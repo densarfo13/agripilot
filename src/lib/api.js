@@ -181,10 +181,32 @@ export function getFarmProfile() {
   return request('/api/v2/farm-profile');
 }
 
+/**
+ * canonicalizeFarmPayload(payload)
+ *   Boundary helper: server v2 farm-profile endpoints validate
+ *   `payload.crop`, but many legacy client forms still send
+ *   `cropType`. Rather than chase 200+ call sites, we alias at the
+ *   one chokepoint every write-path goes through. Canonical wins:
+ *   if both are present, `crop` beats `cropType`. `cropType` is
+ *   stripped from the outgoing body so it can never be double-written.
+ *
+ *   Also normalises size+unit pairs into the canonical `crop` field
+ *   when only legacy-shape inputs are present.
+ */
+function canonicalizeFarmPayload(payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const out = { ...payload };
+  if (out.crop == null && out.cropType != null) {
+    out.crop = out.cropType;
+  }
+  if ('cropType' in out) delete out.cropType;
+  return out;
+}
+
 export function saveFarmProfile(payload, { headers } = {}) {
   return request('/api/v2/farm-profile', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(canonicalizeFarmPayload(payload)),
     headers: headers || {},
   });
 }
@@ -204,7 +226,7 @@ export function getFarms() {
 export function createNewFarm(payload) {
   return request('/api/v2/farm-profile/new', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(canonicalizeFarmPayload(payload)),
   });
 }
 
@@ -254,7 +276,7 @@ export function completeTask(farmId, taskId, body = {}) {
 export function updateFarm(farmId, payload) {
   return request(`/api/v2/farm-profile/${farmId}`, {
     method: 'PATCH',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(canonicalizeFarmPayload(payload)),
   });
 }
 
