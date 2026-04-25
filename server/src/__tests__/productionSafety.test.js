@@ -361,9 +361,22 @@ describe('resolveApiBase', () => {
     expect(resolveApiBase({ isProd: false, env: {}, capacitor: false }))
       .toBe('');
   });
-  it('prod mode + missing env → throws with actionable message', () => {
-    expect(() => resolveApiBase({ isProd: true, env: {}, capacitor: false }))
-      .toThrow(/VITE_API_BASE_URL is required/);
+  it('prod mode + missing env (browser) → warns + returns "" (same-origin)', () => {
+    // Same-origin is the correct default on the common Railway monolith
+    // deploy where the Express server hosts both the API and the frontend.
+    // Throwing here would crash the bundle at module load (blank page).
+    const warns = [];
+    const origWarn = typeof console !== 'undefined' ? console.warn : null;
+    if (typeof console !== 'undefined') {
+      console.warn = (...args) => warns.push(args.join(' '));
+    }
+    try {
+      const out = resolveApiBase({ isProd: true, env: {}, capacitor: false });
+      expect(out).toBe('');
+      expect(warns.some((m) => /VITE_API_BASE_URL/.test(m))).toBe(true);
+    } finally {
+      if (typeof console !== 'undefined' && origWarn) console.warn = origWarn;
+    }
   });
   it('prod mode + env present → returns trimmed value', () => {
     expect(resolveApiBase({

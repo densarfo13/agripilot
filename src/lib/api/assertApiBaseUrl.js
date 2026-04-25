@@ -2,18 +2,21 @@
  * assertApiBaseUrl.js — production-mode assertion that the frontend
  * build knows where the API lives.
  *
- * The audit found that `src/lib/api.js` defaults `VITE_API_BASE_URL`
- * to an empty string, silently making every API call a same-origin
- * request. On Capacitor the UI runs from `capacitor://localhost` so
- * same-origin goes nowhere; on a split-origin Railway deploy the UI
- * is served from a different subdomain than the API. Both break
- * silently — login succeeds against the wrong origin or 404s a path
- * the static server doesn't know about.
+ *   resolveApiBase({ isProd, env, capacitor }) → string
  *
- *   resolveApiBase({ isProd, env }) → string
- *     throws when isProd && VITE_API_BASE_URL is empty / missing.
+ * Behaviour
+ *   • Capacitor + missing → THROW. The app shell runs from
+ *     capacitor://localhost which has no server; an empty base URL
+ *     is unrecoverable.
+ *   • Browser + production + missing → console.warn and return ''.
+ *     Same-origin requests are the correct default for the common
+ *     Railway monolith deploy where the Express server serves both
+ *     the API and the frontend bundle from one origin. Throwing
+ *     here crashed the bundle at module load → blank page.
+ *   • Browser + production + set → return trimmed (and trailing-
+ *     slash-normalised) base URL.
  *
- * The helper is pure + testable: it takes `env` + `isProd` as args
+ * Pure + testable: it takes `env` + `isProd` + `capacitor` as args
  * so tests don't have to mutate `import.meta.env`.
  */
 
@@ -30,6 +33,7 @@ export function resolveApiBase({
 
   // Capacitor native builds ALWAYS need an explicit base URL — the
   // app shell runs from a capacitor:// origin that has no server.
+  // This is the ONE case where we throw, because no fallback works.
   if (capacitor && !raw) {
     throw new Error(
       'VITE_API_BASE_URL is required for Capacitor native builds. '
@@ -37,13 +41,18 @@ export function resolveApiBase({
     );
   }
 
-  if (isProd && !raw) {
-    throw new Error(
-      'VITE_API_BASE_URL is required in production builds. '
-      + 'Browser would otherwise make same-origin requests that break '
-      + 'on split-origin deploys. Set VITE_API_BASE_URL in your '
-      + 'hosting environment (Railway/Vercel/etc) and redeploy.',
-    );
+  // Browser production with no base URL → fall through to same-origin.
+  // Most Railway deploys serve the bundle from the same Express that
+  // hosts /api/* — empty base URL is correct. Log a warning so an
+  // operator can tell "intentional same-origin" from "forgot the env
+  // var" in dev tools, but never crash the bundle at module load.
+  if (isProd && !raw && typeof console !== 'undefined' && console.warn) {
+    try {
+      console.warn(
+        '[api] VITE_API_BASE_URL not set; falling back to same-origin requests. '
+        + 'Set it explicitly if your frontend and API live on different origins.',
+      );
+    } catch { /* ignore */ }
   }
 
   // Normalise: trim a trailing slash so callers can safely concat
