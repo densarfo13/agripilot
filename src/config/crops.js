@@ -1,16 +1,23 @@
 /**
- * @deprecated Use src/config/crops/cropRegistry.js (canonical source).
- *   This file is kept as a legacy compatibility shim used by ~10
- *   pages/components that haven't been migrated yet. New code MUST
- *   NOT import from here. The CI guard
- *   scripts/ci/check-duplicate-crop-sources.mjs tracks the entry
- *   count baseline; new entries fail the build.
+ * crops.js — multilingual label table + searchable catalog layer.
  *
- *   Migration mapping:
- *     normalizeCrop(x)      → normalizeCropId(x)   (config/crops/index.js)
- *     getCropLabel(c, lang) → getCropLabel(c, lang)  (config/crops/index.js)
- *     useCropLabel(c)       → useCropLabel(c)       (still re-exported here)
- *     COMMON_CROPS          → listRegisteredCrops() (config/crops/index.js)
+ * NOTE on prior "deprecated" framing
+ *   An earlier sprint marked this file as a duplicate-of-registry to
+ *   be deleted. That was incorrect. This file owns the per-language
+ *   crop label tables (CROP_LABELS_BY_LANG, accessed via _internal)
+ *   that src/config/crops/cropRegistry.js consumes at composition
+ *   time (registry.js:58). It is a LAYER beneath the registry, not
+ *   a duplicate.
+ *
+ *   Surface area used by the registry:
+ *     getCropLabel(code, lang)  → resolves localised labels
+ *     _internal.CROP_LABELS_BY_LANG → canonical i18n source for crops
+ *     normalizeCrop(value)      → normalises legacy uppercase codes
+ *
+ *   New UI code should still prefer src/config/crops/index.js (the
+ *   canonical barrel) so call sites are insulated from this
+ *   internal shape, but THIS file is permanent infrastructure, not
+ *   legacy code waiting for deletion.
  *
  * crops.js — searchable catalog of common crops, shared by every
  * "pick a crop" input (NewFarmScreen, EditFarmScreen, CropFit).

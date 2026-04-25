@@ -1,4 +1,9 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+// Gap C — production-safety: fail-fast at module load if the API
+// base URL is missing in a production build. The helper throws with
+// an actionable message so a misconfigured deploy crashes the bundle
+// at startup rather than silently sending requests to same-origin.
+import { resolveApiBase } from './api/assertApiBaseUrl.js';
+const API_BASE = resolveApiBase();
 
 async function parseJson(res) {
   let data = null;

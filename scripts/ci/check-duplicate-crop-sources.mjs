@@ -30,14 +30,29 @@ const STRICT = process.argv.includes('--strict');
 
 // Baseline entry counts captured at audit time (2026-04-22).
 // Numbers are measured by matching the entry-delimiting regex below.
-// If a count EXCEEDS the baseline, the guard fails — someone grew a
-// legacy list instead of migrating. Counts may DROP (migration); we
-// update the baseline here when they do.
+// If a count EXCEEDS the baseline, the guard fails — someone grew
+// the legacy list instead of using the registry. Counts may DROP
+// (migration); we update the baseline here when they do.
+//
+// NOTE on labeling
+//   src/config/crops.js was originally tagged 'deprecate' but was
+//   later confirmed to be the canonical multilingual label table
+//   that the registry depends on (registry.js:58 imports
+//   _internal.CROP_LABELS_BY_LANG from here). It's been retagged
+//   'i18n_layer' — permanent infrastructure, not deletion-pending.
+//
+//   src/utils/crops.js owns UI form metadata (icons, categories,
+//   parseCropValue) the registry deliberately doesn't carry.
+//   Tagged 'ui_layer' — also permanent.
+//
+// The guard's job is now "don't grow the rows beyond baseline" —
+// new crop ROWS go into the registry; this file only catches
+// regressions where someone adds back the duplicate-data pattern.
 const BASELINE = {
   'src/utils/crops.js':        { pattern: /^\s*\{\s*code:\s*'[A-Z_]+',/m, max: 98,
-                                   target: 'deprecate' },
+                                   target: 'ui_layer' },
   'src/config/crops.js':       { pattern: /^\s*['"][a-z_-]+['"]\s*:\s*\{/m, max: 60,
-                                   target: 'deprecate' },
+                                   target: 'i18n_layer' },
   'src/config/crops/cropRegistry.js': { pattern: /^/, max: Infinity,
                                           target: 'canonical' },
 };

@@ -4,19 +4,29 @@ import {
 import { useTranslation } from '../i18n/index.js';
 
 /**
- * @deprecated Use src/config/crops/cropRegistry.js (canonical source).
- *   This file is the legacy uppercase CROPS list (~98 entries) used
- *   by older selectors and analytics. New code MUST import from
- *   src/config/crops/index.js. The CI guard
- *   scripts/ci/check-duplicate-crop-sources.mjs tracks the entry
- *   count baseline.
+ * utils/crops.js — UI-layer crop catalog + form helpers.
  *
- *   Migration mapping:
- *     CROPS / ALL_CROPS_WITH_OTHER  → listRegisteredCrops()
- *     getCropByCode(code)            → getCrop(normalizeCropId(code))
- *     getCropLabel(value, lang)      → getCropLabel(id, lang)  (registry)
- *     normalizeCropName / Code(value)→ normalizeCropId(value)
- *     parseCropValue(stored)         → normalizeCropId(stored)
+ * Owns concerns the canonical registry deliberately doesn't:
+ *   • CROPS array of UI-friendly { code, name, category } rows for
+ *     dropdown/grid selectors
+ *   • CATEGORY_LABELS / CATEGORY_ICONS / CROP_ICONS — emoji + group
+ *     metadata used by FarmForm, CropPicker, etc.
+ *   • parseCropValue / buildOtherCropValue — handles the special
+ *     "OTHER:Custom Name" sentinel form storage uses
+ *   • getCropIcon / useCropLabel — React-friendly accessors
+ *
+ * Relationship to src/config/crops/cropRegistry.js (canonical):
+ *   • The registry composes intelligence-layer data (lifecycle,
+ *     yield, water profile, harvest profile, regions). It does not
+ *     own UI form metadata (icons, dropdown rows).
+ *   • This file calls into the canonical multilingual table via
+ *     `getLangCropLabel` from `src/config/crops.js`, so all label
+ *     resolution flows through one source.
+ *
+ * New UI components SHOULD prefer `src/config/crops/index.js` for
+ * label/image/lifecycle resolution, and only fall back to this
+ * file for the icon/category UI metadata it owns. The CI drift
+ * guard tracks any growth in this file's CROPS array.
  *
  * Shared Crop Dataset — single source of truth for all crop selectors.
  *

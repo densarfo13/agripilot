@@ -123,6 +123,30 @@ describe('markFailure — backoff + terminal FAILED', () => {
   });
 });
 
+// ─── Contract: makeTransport threads refreshAuth into send ─────
+describe('makeTransport ↔ refreshAuth wiring', () => {
+  it('passes refreshAuth callback through to send()', async () => {
+    const { makeTransport } = await loadTransport();
+    let calls = 0;
+    let refreshed = 0;
+    const fetchFn = async () => {
+      calls += 1;
+      if (calls === 1) {
+        return { ok: false, status: 401, json: async () => ({}) };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const refreshAuth = async () => { refreshed += 1; return true; };
+    const transport = makeTransport({ fetchFn, refreshAuth });
+    const out = await transport.send({
+      id: 'a', type: 'task_complete', payload: {},
+    });
+    expect(out.ok).toBe(true);
+    expect(refreshed).toBe(1);
+    expect(calls).toBe(2);
+  });
+});
+
 // ─── 401 → refresh → retry ─────────────────────────────────────
 describe('transport — 401 refresh', () => {
   it('retries once after a successful refresh', async () => {
