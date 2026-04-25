@@ -78,8 +78,29 @@ export async function runNotificationCycle() {
       continue;
     }
 
+    // Resolve farmer notification preferences (Fix P2.7) so the
+    // dispatcher can honour SMS/WhatsApp/voice opt-outs persisted
+    // in the Farmer table. Failure is non-fatal — fall back to the
+    // legacy "all channels enabled" behaviour.
+    let preferences = null;
+    if (farmerId && prisma?.farmer?.findUnique) {
+      try {
+        preferences = await prisma.farmer.findUnique({
+          where: { id: farmerId },
+          select: {
+            receiveSMS: true,
+            receiveWhatsApp: true,
+            receiveVoiceAlerts: true,
+            literacyMode: true,
+            preferredReminderTime: true,
+            preferredLanguage: true,
+          },
+        });
+      } catch { preferences = null; }
+    }
+
     // Attempt delivery
-    await deliverRecord(record, { phone, email, farmerId, preferredChannel });
+    await deliverRecord(record, { phone, email, farmerId, preferredChannel, preferences });
 
     const updated = await prisma.autoNotification.findUnique({ where: { id: record.id }, select: { status: true } });
     if (updated?.status === 'sent')   sent++;
@@ -92,7 +113,7 @@ export async function runNotificationCycle() {
 
 // ─── Deliver a single record ──────────────────────────────
 
-async function deliverRecord(record, { phone, email, farmerId, preferredChannel }) {
+async function deliverRecord(record, { phone, email, farmerId, preferredChannel, preferences = null }) {
   const attempts = (record.attempts || 0) + 1;
 
   try {
@@ -103,6 +124,7 @@ async function deliverRecord(record, { phone, email, farmerId, preferredChannel 
       phone,
       email,
       farmerId,
+      preferences,
     });
 
     await prisma.autoNotification.update({

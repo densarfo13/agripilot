@@ -21,26 +21,64 @@ const DB_VERSION = 1;
 
 let _dbPromise = null;
 
+// Fix P3.9 — IndexedDB open wrapped in try/catch so private-mode
+// browsers, quota-exceeded errors, and permission denials degrade
+// gracefully instead of crashing the photo capture flow. When IDB
+// is unavailable we expose a `_unavailable` sentinel; downstream
+// reads/writes resolve with no-op semantics so the UI keeps
+// working (image just isn't persisted).
 function openDB() {
   if (_dbPromise) return _dbPromise;
-  _dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+  _dbPromise = new Promise((resolve) => {
+    try {
+      if (typeof indexedDB === 'undefined' || !indexedDB) {
+        console.warn('[imageStore] IndexedDB not available — running with no local persistence');
+        resolve({ _unavailable: true });
+        return;
       }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        try {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+          }
+        } catch (err) {
+          console.warn('[imageStore] onupgradeneeded threw:', err && err.message);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => {
+        console.warn('[imageStore] open() error:',
+          (req.error && req.error.message) || 'unknown');
+        resolve({ _unavailable: true });
+      };
+      req.onblocked = () => {
+        console.warn('[imageStore] open() blocked');
+        resolve({ _unavailable: true });
+      };
+    } catch (err) {
+      console.warn('[imageStore] openDB threw:', err && err.message);
+      resolve({ _unavailable: true });
+    }
   });
   return _dbPromise;
 }
 
 function tx(mode) {
-  return openDB().then(db => {
-    const t = db.transaction(STORE_NAME, mode);
-    return t.objectStore(STORE_NAME);
+  return openDB().then((db) => {
+    if (db && db._unavailable) {
+      // No persistence available — return a stub object store whose
+      // ops resolve to no-op values so callers don't crash.
+      return null;
+    }
+    try {
+      const t = db.transaction(STORE_NAME, mode);
+      return t.objectStore(STORE_NAME);
+    } catch (err) {
+      console.warn('[imageStore] tx() failed:', err && err.message);
+      return null;
+    }
   });
 }
 

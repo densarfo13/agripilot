@@ -210,6 +210,10 @@ export async function createFarmProfile(data, farmerId) {
       landSizeValue: landSize.landSizeValue,
       landSizeUnit: landSize.landSizeUnit,
       landSizeHectares: landSize.landSizeHectares,
+      // Persist normalizedAreaSqm at write time (Fix P1.4) so every
+      // intelligence engine reads from a single canonical column
+      // instead of recomputing on the fly.
+      normalizedAreaSqm: landSize.normalizedAreaSqm,
       stage: data.stage || 'planting',
     },
     include: { recommendations: { take: 3, orderBy: { createdAt: 'desc' } } },
@@ -295,6 +299,7 @@ export async function atomicFarmSetup(data, farmerId, userId) {
         landSizeValue: landSize.landSizeValue,
         landSizeUnit: landSize.landSizeUnit,
         landSizeHectares: landSize.landSizeHectares,
+        normalizedAreaSqm: landSize.normalizedAreaSqm,
         stage: data.stage || 'planting',
       },
       include: { recommendations: { take: 3, orderBy: { createdAt: 'desc' } } },
@@ -403,6 +408,9 @@ export async function updateFarmProfile(farmProfileId, data) {
     updateData.landSizeValue = ls.landSizeValue;
     updateData.landSizeUnit = ls.landSizeUnit;
     updateData.landSizeHectares = ls.landSizeHectares;
+    // Persist normalizedAreaSqm at every write (Fix P1.4) so it never
+    // drifts out of sync with the displayed size.
+    updateData.normalizedAreaSqm = ls.normalizedAreaSqm;
     // Always keep farmSizeAcres in sync for backward compat
     updateData.farmSizeAcres = ls.landSizeHectares != null ? fromHectares(ls.landSizeHectares, 'ACRE') : null;
   }

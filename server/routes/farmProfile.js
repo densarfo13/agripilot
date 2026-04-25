@@ -14,6 +14,29 @@ import { recordCropUsage } from './cropSuggestions.js';
 
 const router = express.Router();
 
+// ─── Helper: P4.13 — reject planting dates that are in the future.
+// 24h leeway (86_400_000 ms) covers the farmer's local clock being
+// ahead of the server. Throws a 400 with a translatable error code
+// the frontend can match — `validateFutureDate('2099-01-01')`.
+// Returns the parsed Date when valid, null when input was empty.
+function parsePlantingDateOrThrow(raw) {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) {
+    const err = new Error('Invalid planting date');
+    err.statusCode = 400;
+    err.code = 'plantedAt_invalid';
+    throw err;
+  }
+  if (d.getTime() > Date.now() + 86_400_000) {
+    const err = new Error('Planting date cannot be in the future');
+    err.statusCode = 400;
+    err.code = 'plantedAt_future';
+    throw err;
+  }
+  return d;
+}
+
 // ─── Helper: parse stored crop value into structured fields ──
 function parseCrop(stored) {
   if (!stored) return { cropType: null, cropCategory: null, cropName: null };
@@ -187,8 +210,9 @@ router.post('/', authenticate, async (req, res) => {
         profileData.stage = stageResult.data;
       }
     }
+    // P4.13 — reject future planting dates (24h leeway).
     if (req.body?.plantedAt) {
-      profileData.plantedAt = new Date(req.body.plantedAt);
+      profileData.plantedAt = parsePlantingDateOrThrow(req.body.plantedAt);
     }
 
     // Store cached location label if provided by frontend
@@ -238,6 +262,9 @@ router.post('/', authenticate, async (req, res) => {
 
     return res.json({ success: true, profile: mapProfile(profile) });
   } catch (error) {
+    if (error && error.statusCode === 400) {
+      return res.status(400).json({ success: false, error: error.message, code: error.code });
+    }
     console.error('POST /api/v2/farm-profile failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to save farm profile' });
   }
@@ -345,8 +372,9 @@ router.post('/new', authenticate, async (req, res) => {
         profileData.stage = stageResult.data;
       }
     }
+    // P4.13 — reject future planting dates (24h leeway).
     if (req.body?.plantedAt) {
-      profileData.plantedAt = new Date(req.body.plantedAt);
+      profileData.plantedAt = parsePlantingDateOrThrow(req.body.plantedAt);
     }
 
     // Store cached location label if provided by frontend
@@ -383,6 +411,9 @@ router.post('/new', authenticate, async (req, res) => {
 
     return res.status(201).json({ success: true, profile: mapProfile(profile) });
   } catch (error) {
+    if (error && error.statusCode === 400) {
+      return res.status(400).json({ success: false, error: error.message, code: error.code });
+    }
     console.error('POST /api/v2/farm-profile/new failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to create new farm profile' });
   }
@@ -697,7 +728,8 @@ router.patch('/:id', authenticate, async (req, res) => {
       }
     }
     if (patch.plantedAt !== undefined) {
-      data.plantedAt = patch.plantedAt ? new Date(patch.plantedAt) : null;
+      // P4.13 — reject future planting dates (24h leeway).
+      data.plantedAt = patch.plantedAt ? parsePlantingDateOrThrow(patch.plantedAt) : null;
     }
 
     // Seasonal timing — Zod-validated
@@ -747,6 +779,9 @@ router.patch('/:id', authenticate, async (req, res) => {
 
     return res.json({ success: true, profile: mapProfile(updated) });
   } catch (error) {
+    if (error && error.statusCode === 400) {
+      return res.status(400).json({ success: false, error: error.message, code: error.code });
+    }
     console.error('PATCH /api/v2/farm-profile/:id failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to update farm' });
   }

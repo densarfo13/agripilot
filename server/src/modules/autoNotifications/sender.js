@@ -80,8 +80,15 @@ async function sendInApp({ farmerId, subject, message }) {
  * @param {string|null} params.farmerId
  * @returns {Promise<{ channel: string, fallback: boolean }>}
  */
-export async function dispatch({ preferredChannel, subject, message, phone, email, farmerId }) {
-  const channels = buildChannelOrder(preferredChannel, { phone, email, farmerId });
+export async function dispatch({
+  preferredChannel, subject, message, phone, email, farmerId,
+  // Fix P2.7 — farmer-level notification preferences. When supplied,
+  // these gate sms/whatsapp/voice channels at dispatch time so the
+  // cron honours opt-outs persisted in the Farmer table.
+  preferences = null,
+}) {
+  const channels = buildChannelOrder(preferredChannel,
+    { phone, email, farmerId, preferences });
 
   let lastError;
   for (const channel of channels) {
@@ -102,7 +109,7 @@ export async function dispatch({ preferredChannel, subject, message, phone, emai
   throw lastError || new Error('All channels failed');
 }
 
-function buildChannelOrder(preferred, { phone, email, farmerId }) {
+function buildChannelOrder(preferred, { phone, email, farmerId, preferences }) {
   const all = ['sms', 'email', 'in_app'];
 
   // Start from preferred, then continue through remaining channels
@@ -111,9 +118,16 @@ function buildChannelOrder(preferred, { phone, email, farmerId }) {
     ? [...all.slice(idx), ...all.slice(0, idx)]
     : all;
 
-  // Filter out channels that have no target
-  return ordered.filter(ch => {
-    if (ch === 'sms')    return !!phone;
+  // Filter out channels that have no target — and respect farmer
+  // preferences when supplied. SMS opt-out blocks SMS even when a
+  // phone is on file. in_app is always allowed (it's the dashboard
+  // notification list, not an outbound channel).
+  return ordered.filter((ch) => {
+    if (ch === 'sms') {
+      if (!phone) return false;
+      if (preferences && preferences.receiveSMS === false) return false;
+      return true;
+    }
     if (ch === 'email')  return !!email;
     if (ch === 'in_app') return !!farmerId;
     return false;

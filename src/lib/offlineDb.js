@@ -5,68 +5,123 @@ const QUEUE_STORE = 'sync_queue';
 const PREFS_STORE = 'user_prefs';
 const META_STORE = 'sync_meta';
 
+// Fix P3.9 — IndexedDB open wrapped so private-mode + quota-
+// exceeded + permission-denied paths return a sentinel rather than
+// rejecting. Callers (put / get / del / list) check for the
+// sentinel and fall through to in-memory no-op semantics — the
+// app keeps running without offline persistence rather than
+// crashing the sync layer.
 function openDb() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+  return new Promise((resolve) => {
+    try {
+      if (typeof indexedDB === 'undefined' || !indexedDB) {
+        console.warn('[offlineDb] IndexedDB not available — running without offline cache');
+        resolve({ _unavailable: true });
+        return;
+      }
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(PROFILE_STORE)) {
-        db.createObjectStore(PROFILE_STORE, { keyPath: 'key' });
-      }
-      if (!db.objectStoreNames.contains(QUEUE_STORE)) {
-        db.createObjectStore(QUEUE_STORE, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(PREFS_STORE)) {
-        db.createObjectStore(PREFS_STORE, { keyPath: 'key' });
-      }
-      if (!db.objectStoreNames.contains(META_STORE)) {
-        db.createObjectStore(META_STORE, { keyPath: 'key' });
-      }
-    };
+      request.onupgradeneeded = () => {
+        try {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(PROFILE_STORE)) {
+            db.createObjectStore(PROFILE_STORE, { keyPath: 'key' });
+          }
+          if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+            db.createObjectStore(QUEUE_STORE, { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains(PREFS_STORE)) {
+            db.createObjectStore(PREFS_STORE, { keyPath: 'key' });
+          }
+          if (!db.objectStoreNames.contains(META_STORE)) {
+            db.createObjectStore(META_STORE, { keyPath: 'key' });
+          }
+        } catch (err) {
+          console.warn('[offlineDb] onupgradeneeded threw:', err && err.message);
+        }
+      };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => {
+        console.warn('[offlineDb] open() error:',
+          (request.error && request.error.message) || 'unknown');
+        resolve({ _unavailable: true });
+      };
+      request.onblocked = () => {
+        console.warn('[offlineDb] open() blocked');
+        resolve({ _unavailable: true });
+      };
+    } catch (err) {
+      console.warn('[offlineDb] openDb threw:', err && err.message);
+      resolve({ _unavailable: true });
+    }
   });
 }
 
+// All ops short-circuit when openDb resolved with the sentinel —
+// no persistence available, return safe defaults so the UI keeps
+// working in private mode / quota-exceeded scenarios.
 async function put(storeName, value) {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readwrite');
-    tx.objectStore(storeName).put(value);
-    tx.oncomplete = () => resolve(value);
-    tx.onerror = () => reject(tx.error);
+  if (db._unavailable) return value;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(storeName, 'readwrite');
+      tx.objectStore(storeName).put(value);
+      tx.oncomplete = () => resolve(value);
+      tx.onerror = () => { console.warn('[offlineDb] put error', tx.error); resolve(value); };
+    } catch (err) {
+      console.warn('[offlineDb] put threw:', err && err.message);
+      resolve(value);
+    }
   });
 }
 
 async function get(storeName, key) {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readonly');
-    const req = tx.objectStore(storeName).get(key);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
+  if (db._unavailable) return null;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(storeName, 'readonly');
+      const req = tx.objectStore(storeName).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => { console.warn('[offlineDb] get error', req.error); resolve(null); };
+    } catch (err) {
+      console.warn('[offlineDb] get threw:', err && err.message);
+      resolve(null);
+    }
   });
 }
 
 async function getAll(storeName) {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readonly');
-    const req = tx.objectStore(storeName).getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
+  if (db._unavailable) return [];
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(storeName, 'readonly');
+      const req = tx.objectStore(storeName).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => { console.warn('[offlineDb] getAll error', req.error); resolve([]); };
+    } catch (err) {
+      console.warn('[offlineDb] getAll threw:', err && err.message);
+      resolve([]);
+    }
   });
 }
 
 async function remove(storeName, key) {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readwrite');
-    tx.objectStore(storeName).delete(key);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
+  if (db._unavailable) return true;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(storeName, 'readwrite');
+      tx.objectStore(storeName).delete(key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => { console.warn('[offlineDb] remove error', tx.error); resolve(false); };
+    } catch (err) {
+      console.warn('[offlineDb] remove threw:', err && err.message);
+      resolve(false);
+    }
   });
 }
 

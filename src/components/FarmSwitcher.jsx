@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useTranslation } from '../i18n/index.js';
+import { getCropLabel } from '../config/crops/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
 
@@ -15,7 +16,7 @@ import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/ind
 export default function FarmSwitcher() {
   const { profile, activeFarms, switchFarm, refreshProfile, farmSwitching } = useProfile();
   const { isOnline } = useNetwork();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -68,8 +69,10 @@ export default function FarmSwitcher() {
         <span style={S.farmIcon}>{'\uD83C\uDFE1'}</span>
         <div style={S.triggerLeft}>
           <span style={S.farmName}>{defaultFarm?.farmName || defaultFarm?.location || t('farm.activeFarm')}</span>
-          {defaultFarm?.cropType && (
-            <span style={S.farmCrop}>{defaultFarm.cropType}</span>
+          {(defaultFarm?.crop || defaultFarm?.cropType) && (
+            <span style={S.farmCrop}>
+              {getCropLabel(defaultFarm.crop || defaultFarm.cropType, lang)}
+            </span>
           )}
         </div>
         <div style={S.triggerRight}>
@@ -94,7 +97,9 @@ export default function FarmSwitcher() {
               data-testid={`farm-item-${farm.id}`}
             >
               <span style={S.itemName}>{farm.farmName || farm.location || t('farm.unnamed')}</span>
-              {farm.cropType && <span style={S.itemCrop}>{farm.cropType}</span>}
+              {(farm.crop || farm.cropType) && (
+                <span style={S.itemCrop}>{getCropLabel(farm.crop || farm.cropType, lang)}</span>
+              )}
               <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
             </button>
           ))}

@@ -131,8 +131,15 @@ export async function syncPending({
  * attachAutoSync — wires `syncPending` to the "online" event and
  * runs an immediate drain when already online. Returns a detach
  * function; safe to call repeatedly.
+ *
+ * Fix P3.10 — also polls every 60s as a belt-and-braces fallback.
+ * Some PWAs / proxies / mobile browsers don't fire the `online`
+ * event reliably. The poll only drains when:
+ *   • there's a pending row
+ *   • the navigator reports online
+ * so an idle queue costs nothing.
  */
-export function attachAutoSync({ transport = DEFAULT_TRANSPORT } = {}) {
+export function attachAutoSync({ transport = DEFAULT_TRANSPORT, pollIntervalMs = 60_000 } = {}) {
   if (typeof window === 'undefined') return () => {};
   const handler = () => {
     // Fire-and-forget — sync failures never bubble.
@@ -143,7 +150,24 @@ export function attachAutoSync({ transport = DEFAULT_TRANSPORT } = {}) {
   // online but the queue still has leftover items from a previous
   // tab's offline stretch, they'll sync right away.
   if (getNetworkStatus().online) handler();
-  return () => window.removeEventListener('online', handler);
+
+  // Polling fallback. Skips the drain when offline OR queue empty
+  // so a long-lived tab doesn't burn the network.
+  let intervalId = null;
+  if (typeof setInterval === 'function' && pollIntervalMs > 0) {
+    intervalId = setInterval(() => {
+      try {
+        if (!getNetworkStatus().online) return;
+        if (pendingCount() === 0) return;
+        handler();
+      } catch { /* never propagate */ }
+    }, pollIntervalMs);
+  }
+
+  return () => {
+    try { window.removeEventListener('online', handler); } catch { /* ignore */ }
+    if (intervalId) { try { clearInterval(intervalId); } catch { /* ignore */ } intervalId = null; }
+  };
 }
 
 export const _internal = Object.freeze({ DEFAULT_TRANSPORT });

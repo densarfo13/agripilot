@@ -509,6 +509,103 @@ export async function ruleFeedbackFollowup() {
     .filter(Boolean);
 }
 
+// ─── Rule 9: Weather / water-stress alerts (Fix P2.8) ─────
+// Mirrors the dashboard insight engine's high-priority weather
+// rules into the SMS/WhatsApp dispatch path so a farmer who sees
+// "Flooding risk — clear drainage today" on the dashboard ALSO
+// receives an outbound alert. Reads recent smart-alert
+// FarmerNotification rows the intelligence layer wrote, since
+// they already encode the {water_stress | flood_risk | season_
+// mismatch} state per farmer.
+
+export async function ruleWeatherAlerts() {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  if (!prisma?.farmerNotification?.findMany) return [];
+
+  const candidates = await prisma.farmerNotification.findMany({
+    where: {
+      createdAt: { gte: cutoff },
+      // Only the high-priority weather/water/season rules from the
+      // smart-alert engine. The metadata.kind discriminator was
+      // established when the smart-alert layer first shipped.
+    },
+    take: BATCH_LIMIT,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      farmerId: true,
+      notificationType: true,
+      metadata: true,
+      title: true,
+      message: true,
+      createdAt: true,
+      farmer: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          organizationId: true,
+          // P2.7 — read prefs so dispatch honours them
+          receiveSMS: true,
+          receiveWhatsApp: true,
+          receiveVoiceAlerts: true,
+          literacyMode: true,
+          preferredLanguage: true,
+        },
+      },
+    },
+  });
+
+  // Filter down to weather/risk smart-alerts at high priority. The
+  // metadata column may be a JSON string or an object depending on
+  // the writer; coerce safely.
+  const out = [];
+  const seen = new Set();
+  for (const row of candidates) {
+    if (!row || !row.farmer) continue;
+    const meta = coerceMeta(row.metadata);
+    if (!meta) continue;
+    if (meta.kind !== 'smart_alert') continue;
+    const ruleTag = (meta.triggeredBy && meta.triggeredBy.rule) || meta.rule || '';
+    const isWeatherRule = /flood|water_stress|heavy_rain|drought|heat_stress|season_mismatch/i.test(ruleTag);
+    if (!isWeatherRule) continue;
+    if ((meta.priority || meta.severity || '').toLowerCase() !== 'high') continue;
+
+    // Per-farmer-per-day dedup so multiple alerts in 24h roll up.
+    const dedup = `${row.farmer.id}:${ruleTag}:${row.createdAt.toISOString().slice(0, 10)}`;
+    if (seen.has(dedup)) continue;
+    seen.add(dedup);
+
+    out.push({
+      type: 'weather_alert',
+      organizationId: row.farmer.organizationId,
+      userId: null,
+      roleTarget: 'farmer',
+      farmerId: row.farmer.id,
+      seasonId: null,
+      preferredChannel: 'sms',
+      phone: row.farmer.phone || null,
+      email: null,
+      templateCtx: {
+        farmerName: row.farmer.fullName || null,
+        ruleTag,
+        title: row.title || null,
+        body:  row.message || null,
+      },
+    });
+  }
+  return out;
+}
+
+function coerceMeta(m) {
+  if (!m) return null;
+  if (typeof m === 'string') {
+    try { return JSON.parse(m); } catch { return null; }
+  }
+  return typeof m === 'object' ? m : null;
+}
+
 // ─── Run all rules ────────────────────────────────────────
 
 export async function collectAllTriggers() {
@@ -521,6 +618,7 @@ export async function collectAllTriggers() {
     highRisk,
     onboardingReminders,
     feedbackFollowups,
+    weatherAlerts,
   ] = await Promise.allSettled([
     ruleInviteReminder(),
     ruleNoFirstUpdate(),
@@ -530,10 +628,11 @@ export async function collectAllTriggers() {
     ruleHighRiskAlert(),
     ruleOnboardingReminder(),
     ruleFeedbackFollowup(),
+    ruleWeatherAlerts(),
   ]);
 
   const all = [];
-  for (const result of [inviteReminders, noFirstUpdates, staleActivity, validationPending, reviewerBacklog, highRisk, onboardingReminders, feedbackFollowups]) {
+  for (const result of [inviteReminders, noFirstUpdates, staleActivity, validationPending, reviewerBacklog, highRisk, onboardingReminders, feedbackFollowups, weatherAlerts]) {
     if (result.status === 'fulfilled') {
       all.push(...result.value);
     } else {

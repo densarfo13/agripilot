@@ -208,7 +208,15 @@ function ProtectedRoute({ children, allowSetup }) {
       const cached = localStorage.getItem('farroway:session_cache');
       cachedHasUser = !!(cached && JSON.parse(cached)?.user);
     } catch { /* ignore */ }
-    if (cachedHasUser || true) {  // always wait — the cookie may validate
+    if (cachedHasUser) {
+      // Cached session present → render immediately from the cached
+      // user role; the bootstrap /me call validates the cookie in the
+      // background and AuthContext will swap state when it lands.
+      // (Removed the `|| true` short-circuit that forced every load
+      // to wait for the slow bootstrap even with a valid cache.)
+    } else {
+      // No cache + still hydrating → safe to show the loader; the
+      // bootstrap will resolve it within a few seconds.
       console.log('[GUARD]', Date.now(), 'Waiting for auth bootstrap…');
       return <PageLoader />;
     }

@@ -5,6 +5,11 @@
 import { resolveApiBase } from './api/assertApiBaseUrl.js';
 const API_BASE = resolveApiBase();
 
+// P5.15 — re-export the normalizer so callers can `import { ...
+// normalizeApiResponse, safeCall } from '../lib/api.js'` instead of
+// having to know about the deeper module path.
+export { normalizeApiResponse, safeCall } from './api/normalizeApiResponse.js';
+
 async function parseJson(res) {
   let data = null;
 

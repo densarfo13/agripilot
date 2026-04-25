@@ -100,7 +100,17 @@ export function getCropTimeline({ farm = null, now = null } = {}) {
   // ── 2) plantingDate-driven estimate ─────────────────────────
   const plantingDate = parseDate(farm.plantingDate);
   if (plantingDate) {
-    const elapsed = Math.max(0, daysBetween(plantingDate, nowTs) || 0);
+    // P4.13 — guard against future plantingDates. The form rejects
+    // them, but legacy rows or imported data may still slip through.
+    // Clamp to 0 and surface an assumption note so the UI can warn
+    // the farmer ("Your planting date is in the future — please
+    // correct it") rather than silently pretending day 0 is correct.
+    const rawDays = daysBetween(plantingDate, nowTs) || 0;
+    const elapsed = Math.max(0, rawDays);
+    if (rawDays < 0) {
+      assumptions.push({ tag: 'future_planting_date', detail:
+        `Planting date is in the future (${Math.abs(rawDays)} day(s) ahead) — assuming day 0 of the cycle. Please correct the planting date if this is wrong.` });
+    }
     const at = stageAt(elapsed, lifecycle);
     if (at) {
       assumptions.push({ tag: 'planting_date', detail:

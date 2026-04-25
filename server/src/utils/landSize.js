@@ -73,22 +73,27 @@ export function unitLabel(unit) {
 
 /**
  * Compute all land size fields from a value + unit pair.
- * Returns an object with landSizeValue, landSizeUnit, landSizeHectares,
- * and farmSizeAcres (backward compat).
+ * Returns landSizeValue, landSizeUnit, landSizeHectares, AND
+ * normalizedAreaSqm (m², persisted server-side per Fix P1.4 so the
+ * intelligence engines never have to recompute area on read).
  */
 export function computeLandSizeFields(value, unit) {
   if (value == null || value === '' || isNaN(Number(value))) {
-    return { landSizeValue: null, landSizeUnit: null, landSizeHectares: null };
+    return {
+      landSizeValue: null, landSizeUnit: null,
+      landSizeHectares: null, normalizedAreaSqm: null,
+    };
   }
   const numVal = parseFloat(value);
   const u = (unit || 'ACRE').toUpperCase();
-  if (!VALID_UNITS.includes(u)) {
-    return { landSizeValue: numVal, landSizeUnit: 'ACRE', landSizeHectares: toHectares(numVal, 'ACRE') };
-  }
+  const safeUnit = VALID_UNITS.includes(u) ? u : 'ACRE';
+  const hectares = toHectares(numVal, safeUnit);
+  const sqm = hectares == null ? null : Math.round(hectares * 10000 * 100) / 100;
   return {
     landSizeValue: numVal,
-    landSizeUnit: u,
-    landSizeHectares: toHectares(numVal, u),
+    landSizeUnit: safeUnit,
+    landSizeHectares: hectares,
+    normalizedAreaSqm: sqm,
   };
 }
 

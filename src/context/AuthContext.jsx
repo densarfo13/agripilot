@@ -189,22 +189,28 @@ export function AuthProvider({ children }) {
   async function logout(reason) {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
     if (isDev) console.log('[AUTH] Logout, reason:', reason || 'explicit');
-    // Drop server-side session first; ignore failures (we still need
-    // to wipe local state regardless of network outcome).
-    await logoutUser().catch(() => {});
-    setUser(null);
-    setIsOfflineSession(false);
-    // Legacy in-memory hooks — kept so older callers don't break.
-    clearSessionCache();
+    // Fire-and-forget the server-side session drop so a slow / dead
+    // network never makes the logout button feel broken. Any failure
+    // here doesn't matter: local state has already been wiped below
+    // and the cookie will be invalidated by the next login attempt
+    // anyway (or never, if the user just walks away).
+    try { logoutUser().catch(() => {}); } catch { /* never throw */ }
+    // Clear local state IMMEDIATELY so the UI flips to logged-out
+    // before any async work — no 30s hang, no shared-device leak.
+    try { setUser(null); setIsOfflineSession(false); clearSessionCache(); }
+    catch (err) {
+      if (isDev) console.warn('[AUTH] state-clear threw:', err && err.message);
+    }
     // Comprehensive shared-device purge: every known auth + farm +
-    // notification key, sessionStorage, and every Cache Storage entry
-    // (the service worker's API/asset caches). See
-    // src/lib/auth/clearSessionState.js for the full sweep list.
+    // notification key, sessionStorage, and every Cache Storage entry.
+    // Wrap the whole thing in try/catch and on ANY failure force a
+    // hard reload — that way a failed purge never leaves the kiosk
+    // in a half-cleared state where farmer A's data is still visible.
     try {
-      const result = await clearSessionState();
-      if (isDev) console.log('[AUTH] cleared session state:', result);
+      await clearSessionState();
     } catch (err) {
-      if (isDev) console.warn('[AUTH] clearSessionState threw:', err && err.message);
+      if (isDev) console.warn('[AUTH] clearSessionState threw — forcing reload:', err && err.message);
+      try { if (typeof location !== 'undefined') location.reload(); } catch { /* ignore */ }
     }
   }
 

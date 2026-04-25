@@ -47,6 +47,35 @@ const templates = {
     subject: 'Did your crop issue improve?',
     message: `Hi ${fullName || 'there'}, a few days ago you reported ${issueDescription || 'a crop issue'}. How is your crop doing? Open Farroway to share your feedback — it helps improve advice for all farmers.`,
   }),
+
+  // Fix P2.8 — mirror dashboard insight engine's high-priority
+  // weather/water-stress/flood/season-mismatch alerts into the
+  // SMS dispatch path so farmers without dashboards (low literacy,
+  // low connectivity, SMS-only) still receive actionable alerts.
+  weather_alert: ({ farmerName, ruleTag, title, body }) => {
+    const subjectByRule = {
+      water_stress: 'Water stress risk',
+      flood:        'Flooding risk on your farm',
+      heavy_rain:   'Heavy rain warning',
+      drought:      'Drought conditions',
+      heat_stress:  'Heat stress warning',
+      season_mismatch: 'Crop timing alert',
+    };
+    let key = 'weather_alert';
+    for (const k of Object.keys(subjectByRule)) {
+      if (ruleTag && ruleTag.toLowerCase().includes(k)) { key = k; break; }
+    }
+    const subject = subjectByRule[key] || title || 'Farm alert';
+    // Keep the SMS body short (≤160) — title from the insight engine
+    // is already concise; recommendedAction lives in `body` if set.
+    const fallbackBody = body || title || subject;
+    const greeting = farmerName ? `${farmerName.split(' ')[0]}: ` : '';
+    const out = `${greeting}${fallbackBody}`;
+    return {
+      subject,
+      message: out.length > 160 ? `${out.slice(0, 159)}\u2026` : out,
+    };
+  },
 };
 
 /**

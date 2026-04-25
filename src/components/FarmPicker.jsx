@@ -1,5 +1,6 @@
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
+import { getCropLabel } from '../config/crops/index.js';
 
 /**
  * FarmPicker — simple farm selection step for multi-farm users.
@@ -8,7 +9,7 @@ import { useTranslation } from '../i18n/index.js';
  */
 export default function FarmPicker({ onSelect, onCancel }) {
   const { activeFarms } = useProfile();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   return (
     <div style={S.container} data-testid="farm-picker">
@@ -34,7 +35,11 @@ export default function FarmPicker({ onSelect, onCancel }) {
                 <span style={S.farmNameText}>
                   {farm.farmName || farm.location || t('farm.unnamed')}
                 </span>
-                {farm.cropType && <span style={S.farmCrop}>{farm.cropType}</span>}
+                {(farm.crop || farm.cropType) && (
+                  <span style={S.farmCrop}>
+                    {getCropLabel(farm.crop || farm.cropType, lang)}
+                  </span>
+                )}
                 {farm.location && <span style={S.farmLoc}>{farm.location}</span>}
               </div>
               {farm.isDefault && (

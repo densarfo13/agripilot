@@ -17,6 +17,7 @@ import { getHarvestSummary } from '../lib/harvest/harvestSummaryEngine.js';
 import {
   recordHarvest, getLatestHarvest, HARVEST_UNITS,
 } from '../lib/harvest/harvestRecordStore.js';
+import { updateFarm } from '../lib/api.js';
 
 function normaliseFarm(farm) {
   if (!farm || typeof farm !== 'object') return null;
@@ -128,6 +129,17 @@ export default function HarvestCard({ farm, onRecorded = null } = {}) {
           ? t('harvest.err.save')
           : 'Could not save the record. Please try again.');
         return;
+      }
+      // P4.12 — Reset manualStageOverride after harvest completes so
+      // the next cycle flows through the computed timeline cleanly.
+      // Override leaks across cycles otherwise (the engine keeps the
+      // pinned stage forever even after a new plantingDate is set).
+      // Fire-and-forget; failure here must NOT block the local
+      // record being saved (the farmer already sees the success UI).
+      if (mapped.id && mapped.manualStageOverride) {
+        try {
+          updateFarm(mapped.id, { manualStageOverride: null }).catch(() => {});
+        } catch { /* never throw from here */ }
       }
       setAmount(''); setNotes('');
       setTick((n) => n + 1);

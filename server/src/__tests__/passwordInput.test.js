@@ -68,9 +68,11 @@ describe('PasswordInput — component source contract', () => {
 
 // ─── Integration: every target page uses the component ──────────
 describe('PasswordInput — wired into target pages', () => {
+  // P5.14 — LoginPage is now a redirect to /login (V2Login), so it
+  // no longer hosts a password field. The canonical login is V2Login
+  // (src/pages/Login.jsx) which is still asserted below.
   const cases = [
     ['src/pages/Login.jsx',               'login page'],
-    ['src/pages/LoginPage.jsx',           'alternate login page'],
     ['src/pages/Register.jsx',            'signup page'],
     ['src/pages/ResetPassword.jsx',       'reset password (new + confirm)'],
     ['src/pages/ForgotPasswordSms.jsx',   'SMS reset (new + confirm)'],
