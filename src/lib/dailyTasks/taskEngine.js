@@ -198,7 +198,7 @@ export function generateDailyTasks({
     usedIds.add(lowPool[0].id);
   }
 
-  return Object.freeze({
+  const result = Object.freeze({
     date:  dateStr,
     farmId,
     farmType,
@@ -207,6 +207,19 @@ export function generateDailyTasks({
     weatherTrigger: highTpl && highTpl === weatherTpl ? weatherKey : null,
     tasks: Object.freeze(tasks),
   });
+
+  // [WIRING] confirms the daily-task engine actually fires for each
+  // farm × date pair. One log per generation; the scheduler caches
+  // the result so this won't spam the console.
+  try {
+    if (typeof console !== 'undefined') {
+      console.log(`[WIRING] task.generated farmId=${farmId || 'n/a'} `
+        + `date=${dateStr} stage=${stageKey} cycle=${cycle.state} `
+        + `tasks=${tasks.length}`);
+    }
+  } catch { /* never propagate */ }
+
+  return result;
 }
 
 export const _internal = Object.freeze({

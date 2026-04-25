@@ -1,12 +1,29 @@
 /**
- * Notification sender — channel dispatch with SMS→email→in_app fallback.
+ * Notification sender — channel dispatch with full fallback chain.
  *
- * Priority order: sms → email → in_app
- * Falls back to the next available channel when delivery fails or is unconfigured.
+ *   Priority order: voice → whatsapp → sms → email → in_app
+ *
+ * Voice + WhatsApp were previously orphaned in `server/services/`
+ * (test-only — adapter never wired to runtime). The wiring sprint
+ * pulled them into the canonical dispatch path so insight cron rows
+ * actually deliver to opt-in channels.
+ *
+ * Falls back to the next available channel when delivery fails or
+ * is unconfigured. Each channel is gated by:
+ *   • the matching configured-* check (env vars present)
+ *   • the matching farmer preference flag (when supplied)
+ *   • the existence of the channel target (phone / email / farmerId)
  */
 
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
 import { sendEmail as smtpSendEmail } from '../../../lib/mailer.js';
+import { sendWhatsApp, isWhatsAppConfigured } from '../../../services/whatsAppService.js';
+import { sendVoiceAlert, isVoiceConfigured } from '../../../services/voiceAlertService.js';
+
+// [WIRING] runtime tag — kept on by default so prod ops can grep
+// `[WIRING] notification.sent` and confirm the cron actually
+// reached a channel. Cheap; one log line per attempted dispatch.
+const WIRING_LOG = '[WIRING] notification';
 
 // ─── SMS ──────────────────────────────────────────────────
 
@@ -51,6 +68,31 @@ async function sendEmail(toEmail, subject, message) {
   }
 }
 
+// ─── WhatsApp (Twilio Messages) ──────────────────────────
+
+async function sendWhatsAppChannel(toPhone, message) {
+  if (!toPhone) throw new Error('No phone number');
+  if (!isWhatsAppConfigured()) throw new Error('WhatsApp not configured');
+  const result = await sendWhatsApp(toPhone, message);
+  if (!result || !result.ok) {
+    throw new Error(result?.code || 'whatsapp_send_failed');
+  }
+}
+
+// ─── Voice (Twilio Programmable Voice) ───────────────────
+
+async function sendVoiceChannel(toPhone, subject, message, language) {
+  if (!toPhone) throw new Error('No phone number');
+  if (!isVoiceConfigured()) throw new Error('Voice not configured');
+  // Subject is prepended so a literacy-mode farmer hears the headline
+  // before the body. The voice service truncates safely.
+  const spoken = subject ? `${subject}. ${message}` : message;
+  const result = await sendVoiceAlert(toPhone, spoken, language || 'en');
+  if (!result || !result.ok) {
+    throw new Error(result?.code || 'voice_send_failed');
+  }
+}
+
 // ─── In-app (FarmerNotification) ─────────────────────────
 
 async function sendInApp({ farmerId, subject, message }) {
@@ -86,23 +128,37 @@ export async function dispatch({
   // these gate sms/whatsapp/voice channels at dispatch time so the
   // cron honours opt-outs persisted in the Farmer table.
   preferences = null,
+  // Voice channel needs the spoken-language code so Twilio TTS picks
+  // the right accent. Defaults to English when not provided.
+  language = 'en',
 }) {
   const channels = buildChannelOrder(preferredChannel,
     { phone, email, farmerId, preferences });
 
+  console.log(`${WIRING_LOG}.dispatch farmerId=${farmerId || 'n/a'} `
+    + `preferred=${preferredChannel || 'n/a'} order=${channels.join('>') || 'none'}`);
+
   let lastError;
   for (const channel of channels) {
     try {
-      if (channel === 'sms') {
+      if (channel === 'voice') {
+        await sendVoiceChannel(phone, subject, message, language);
+      } else if (channel === 'whatsapp') {
+        await sendWhatsAppChannel(phone, message);
+      } else if (channel === 'sms') {
         await sendSms(phone, message);
       } else if (channel === 'email') {
         await sendEmail(email, subject, message);
       } else if (channel === 'in_app') {
         await sendInApp({ farmerId, subject, message });
       }
+      console.log(`${WIRING_LOG}.sent channel=${channel} `
+        + `fallback=${channel !== preferredChannel} farmerId=${farmerId || 'n/a'}`);
       return { channel, fallback: channel !== preferredChannel };
     } catch (err) {
       lastError = err;
+      console.warn(`${WIRING_LOG}.failed channel=${channel} `
+        + `reason=${err && err.message ? err.message : 'unknown'}`);
     }
   }
 
@@ -110,7 +166,11 @@ export async function dispatch({
 }
 
 function buildChannelOrder(preferred, { phone, email, farmerId, preferences }) {
-  const all = ['sms', 'email', 'in_app'];
+  // Voice and WhatsApp added (P-WIRE) so cron-driven smart alerts
+  // reach the channels the farmer opted into. Order matters: when a
+  // farmer prefers voice (literacy_mode='audio'), we try voice
+  // first; otherwise the chain remains text-first.
+  const all = ['voice', 'whatsapp', 'sms', 'email', 'in_app'];
 
   // Start from preferred, then continue through remaining channels
   const idx = all.indexOf(preferred);
@@ -119,10 +179,20 @@ function buildChannelOrder(preferred, { phone, email, farmerId, preferences }) {
     : all;
 
   // Filter out channels that have no target — and respect farmer
-  // preferences when supplied. SMS opt-out blocks SMS even when a
-  // phone is on file. in_app is always allowed (it's the dashboard
-  // notification list, not an outbound channel).
+  // preferences when supplied. SMS / WA / Voice opt-outs block the
+  // matching channel even when a phone is on file. in_app is always
+  // allowed (it's the dashboard notification list, not outbound).
   return ordered.filter((ch) => {
+    if (ch === 'voice') {
+      if (!phone) return false;
+      if (preferences && preferences.receiveVoiceAlerts === false) return false;
+      return true;
+    }
+    if (ch === 'whatsapp') {
+      if (!phone) return false;
+      if (preferences && preferences.receiveWhatsApp === false) return false;
+      return true;
+    }
     if (ch === 'sms') {
       if (!phone) return false;
       if (preferences && preferences.receiveSMS === false) return false;

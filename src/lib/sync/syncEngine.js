@@ -64,6 +64,16 @@ export async function syncPending({
     const batch = listQueue({ pendingOnly: true, limit: maxBatch });
     if (batch.length === 0) return report;
 
+    // [WIRING] surface every non-empty drain so prod ops can confirm
+    // the sync engine actually runs after the page comes back online
+    // (not just attaches handlers). Skipped runs stay silent.
+    try {
+      if (typeof console !== 'undefined') {
+        console.log(`[WIRING] sync.run pending=${batch.length} `
+          + `maxBatch=${maxBatch} online=${online}`);
+      }
+    } catch { /* never propagate */ }
+
     for (const action of batch) {
       report.attempted += 1;
       let result = { ok: false, code: 'transport_error' };

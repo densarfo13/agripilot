@@ -632,13 +632,32 @@ export async function collectAllTriggers() {
   ]);
 
   const all = [];
-  for (const result of [inviteReminders, noFirstUpdates, staleActivity, validationPending, reviewerBacklog, highRisk, onboardingReminders, feedbackFollowups, weatherAlerts]) {
+  // [WIRING] count per-rule contribution so we can confirm at runtime
+  // that every insight rule survived the wiring sprint (especially
+  // ruleWeatherAlerts, the new flood / water-stress / drought path).
+  const tally = {};
+  const ruleNames = [
+    'inviteReminders', 'noFirstUpdates', 'staleActivity',
+    'validationPending', 'reviewerBacklog', 'highRisk',
+    'onboardingReminders', 'feedbackFollowups', 'weatherAlerts',
+  ];
+  const results = [
+    inviteReminders, noFirstUpdates, staleActivity, validationPending,
+    reviewerBacklog, highRisk, onboardingReminders, feedbackFollowups,
+    weatherAlerts,
+  ];
+  results.forEach((result, i) => {
     if (result.status === 'fulfilled') {
+      tally[ruleNames[i]] = result.value.length;
       all.push(...result.value);
     } else {
-      console.error('[triggerEngine] rule failed:', result.reason?.message);
+      tally[ruleNames[i]] = 'error';
+      console.error('[triggerEngine] rule failed:',
+        ruleNames[i], result.reason?.message);
     }
-  }
+  });
+  console.log('[WIRING] insight.collected total=' + all.length
+    + ' breakdown=' + JSON.stringify(tally));
 
   return all;
 }

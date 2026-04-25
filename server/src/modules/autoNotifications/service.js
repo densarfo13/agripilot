@@ -99,8 +99,29 @@ export async function runNotificationCycle() {
       } catch { preferences = null; }
     }
 
+    // Literacy mode 'audio' → upgrade preferred channel to voice so
+    // the cron honours the farmer's pick. Without this, a farmer who
+    // selected audio in the UI would still get text first because
+    // the trigger engine doesn't know about the per-farmer setting.
+    let resolvedChannel = preferredChannel;
+    if (preferences && preferences.literacyMode === 'audio'
+        && preferences.receiveVoiceAlerts !== false) {
+      resolvedChannel = 'voice';
+    }
+
+    // [WIRING] every triggered insight that survives rate-limit ends
+    // up here — log so prod ops can confirm the cron actually
+    // produced enqueued rows. One line per row.
+    console.log(`[WIRING] insight.fired type=${type} farmerId=${farmerId || 'n/a'} `
+      + `channel=${resolvedChannel || 'n/a'} literacy=${preferences?.literacyMode || 'text'}`);
+
     // Attempt delivery
-    await deliverRecord(record, { phone, email, farmerId, preferredChannel, preferences });
+    await deliverRecord(record, {
+      phone, email, farmerId,
+      preferredChannel: resolvedChannel,
+      preferences,
+      language: preferences?.preferredLanguage || 'en',
+    });
 
     const updated = await prisma.autoNotification.findUnique({ where: { id: record.id }, select: { status: true } });
     if (updated?.status === 'sent')   sent++;
@@ -113,7 +134,7 @@ export async function runNotificationCycle() {
 
 // ─── Deliver a single record ──────────────────────────────
 
-async function deliverRecord(record, { phone, email, farmerId, preferredChannel, preferences = null }) {
+async function deliverRecord(record, { phone, email, farmerId, preferredChannel, preferences = null, language = 'en' }) {
   const attempts = (record.attempts || 0) + 1;
 
   try {
@@ -125,6 +146,7 @@ async function deliverRecord(record, { phone, email, farmerId, preferredChannel,
       email,
       farmerId,
       preferences,
+      language,
     });
 
     await prisma.autoNotification.update({
