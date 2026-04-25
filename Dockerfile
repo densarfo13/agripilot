@@ -24,6 +24,6 @@ ENV NODE_ENV=production
 ENV PORT=4000
 EXPOSE 4000
 
-WORKDIR /app/server
-CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/init-admin.mjs && node src/server.js"]
+WORKDIR /app
+CMD ["sh", "-c", "node scripts/prisma-deploy-with-baseline.mjs && cd server && node scripts/init-admin.mjs && node src/server.js"]
 # NOTE: init-admin.mjs only creates admin if not exists. Set FORCE_ADMIN_RESET=1 to overwrite password once.

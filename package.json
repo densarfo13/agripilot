@@ -9,7 +9,7 @@
     "build": "vite build && cd server && npx prisma generate && npx tsc -p intelligence/tsconfig.json",
     "postbuild": "node scripts/bake-sw-version.mjs",
     "build:intelligence": "cd server && npx tsc -p intelligence/tsconfig.json",
-    "start": "cd server && npx prisma migrate deploy && node scripts/init-admin.mjs && node src/server.js",
+    "start": "node scripts/prisma-deploy-with-baseline.mjs && cd server && node scripts/init-admin.mjs && node src/server.js",
     "postinstall": "[ -d server ] && cd server && npm install || true",
     "db:push": "cd server && npx prisma db push",
     "db:seed": "cd server && node prisma/seed.js",
