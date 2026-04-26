@@ -13,9 +13,23 @@
 
 const DEFAULT_TIMEOUT_MS = 3500;
 const CACHE_TTL_MS = 8000;
-const PING_URL = '/api/ping';
+// HOTFIX (Apr 2026): switched from `/api/ping` to a guaranteed
+// static asset. Pilot console screenshot showed the deployed
+// server returns 404 on /api/ping, which:
+//   • spammed the browser's network log every 5s,
+//   • caused the offline-queue auto-flush to falsely think we
+//     were offline and refuse to drain the queue.
+// `/manifest.json` is part of the PWA shell — every deployed
+// build serves it (verified in public/). HEAD against it is a
+// proper reachability probe that works without any new backend
+// endpoint, satisfying the "no backend changes" strict rule.
+const PING_URL = '/manifest.json';
 
 let lastCheck = { at: 0, ok: null };
+// Surface a one-time dev warning when the ping endpoint 404s so
+// the team knows to deploy it; suppress repeated noise after the
+// first hit.
+let _pingMissingWarned = false;
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
@@ -58,7 +72,32 @@ export async function isReallyOnline(opts = {}) {
       }),
       timeoutMs,
     );
-    const ok = !!(res && (res.ok || res.status === 204 || res.status === 304));
+    // HOTFIX (Apr 2026): per pilot console screenshot, the deployed
+    // server may not have /api/ping (404). The previous logic
+    // treated any non-2xx as "offline", which:
+    //   • spammed every 5-second auto-flush tick with 404 fetches,
+    //   • caused the offline queue to refuse to drain even though
+    //     the server WAS reachable,
+    //   • surfaced as user-visible console errors.
+    //
+    // A reachable server (any HTTP response — including 4xx — proves
+    // TCP/TLS/HTTP layers are alive) means we're "really online" for
+    // the purpose of this probe. Only network failures / aborts /
+    // timeouts (the catch branch) and 5xx (server down) imply real
+    // offline.
+    const status = res && Number.isFinite(res.status) ? res.status : 0;
+    const ok =
+      !!res &&
+      status >= 100 &&        // got any response → server reachable
+      status < 500;            // 5xx is server-down; treat as offline
+    if (status === 404 && !_pingMissingWarned) {
+      _pingMissingWarned = true;
+      try {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[isReallyOnline] ' + url + ' → 404. Server reachable but ping endpoint missing — treating as online. Deploy a 200/204 ping to silence this warning.');
+        }
+      } catch { /* never propagate */ }
+    }
     lastCheck = { at: now, ok };
     return ok;
   } catch {
