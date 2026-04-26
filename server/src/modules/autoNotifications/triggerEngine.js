@@ -337,7 +337,13 @@ export async function ruleHighRiskAlert() {
     let risk;
     try {
       risk = await computeSeasonRisk(season.id);
-    } catch {
+    } catch (err) {
+      // B3 — never silent: if risk compute fails for a season, the
+      // farmer in actual danger is skipped. Log so ops can spot
+      // missing alerts and chase the underlying error rather than
+      // discovering it days later via complaint.
+      console.warn('[triggerEngine] ruleHighRiskAlert: risk compute failed for season',
+        season.id, err && err.message ? err.message : 'unknown');
       continue; // skip if risk can't be computed
     }
     if (!risk || !['Critical', 'High'].includes(risk.riskLevel)) continue;

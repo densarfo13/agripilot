@@ -103,6 +103,11 @@ export const IMAGE_STATUS = {
  */
 export async function saveImage({ blob, farmId, context = 'pest_check', fileName = null, metadata = null }) {
   const store = await tx('readwrite');
+  // B1 — IndexedDB unavailable (private mode / quota / blocked).
+  // Return null so the caller can fall through to its in-memory
+  // path; without this guard `store.add(...)` crashes the capture
+  // flow on any browser where the P3.9 sentinel kicked in.
+  if (!store) return null;
   return new Promise((resolve, reject) => {
     const req = store.add({
       blob,
@@ -128,6 +133,9 @@ export async function saveImage({ blob, farmId, context = 'pest_check', fileName
  */
 export async function getImages(status = null) {
   const store = await tx('readonly');
+  // B1 — IndexedDB unavailable. Return an empty array so the UI
+  // renders as if no images are queued (vs crashing at .getAll()).
+  if (!store) return [];
   return new Promise((resolve, reject) => {
     const req = store.getAll();
     req.onsuccess = () => {
@@ -149,6 +157,8 @@ export async function getPendingImages() {
 /** Get a single image by ID */
 export async function getImage(id) {
   const store = await tx('readonly');
+  // B1 — graceful degrade when IDB unavailable.
+  if (!store) return null;
   return new Promise((resolve, reject) => {
     const req = store.get(id);
     req.onsuccess = () => resolve(req.result || null);
@@ -200,6 +210,8 @@ export async function markFailed(id) {
  */
 export async function removeImage(id) {
   const store = await tx('readwrite');
+  // B1 — graceful degrade when IDB unavailable.
+  if (!store) return;
   return new Promise((resolve, reject) => {
     const req = store.delete(id);
     req.onsuccess = () => resolve();
@@ -231,6 +243,10 @@ export async function pendingCount() {
 async function _update(record) {
   try {
     const store = await tx('readwrite');
+    // B1 — graceful degrade when IDB unavailable. _update is
+    // best-effort, so silently no-op rather than crash the
+    // status-transition callers (markUploading/Uploaded/Failed).
+    if (!store) return;
     return new Promise((resolve) => {
       const req = store.put(record);
       req.onsuccess = () => resolve();

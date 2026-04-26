@@ -119,6 +119,18 @@ export async function sendWhatsApp(to, message, { requestId = null } = {}) {
     console.warn(`${tag} refusing to send — missing to/message`);
     return { ok: false, code: 'missing_to_or_body' };
   }
+  // B6 — E.164 sanity check before we burn a Twilio API call. The
+  // dispatcher's fallback chain treats `recipient_invalid` as a
+  // skip-this-channel signal, so failing fast here saves a network
+  // round-trip and a potential billing event for an obviously bad
+  // number. Strip the `whatsapp:` prefix + any non-digits, then
+  // require 8–15 digits (E.164 minimum is 8, max is 15).
+  const digits = String(to).replace(/^whatsapp:/i, '').replace(/[^\d]/g, '');
+  if (digits.length < 8 || digits.length > 15) {
+    console.warn(`${tag} refusing to send — bad recipient format to=${maskPhone(to)}`);
+    return { ok: false, code: 'recipient_invalid',
+      details: 'Recipient phone is not a valid E.164 number.' };
+  }
   if (!isWhatsAppConfigured()) {
     return {
       ok: false, code: 'not_configured',

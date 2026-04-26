@@ -132,9 +132,19 @@ export function listQueue({
   const list = readRaw();
   let out = list;
   if (pendingOnly) {
-    out = out.filter((e) => e && !e.synced
-      && (includeFailed || !e.failed)
-      && (!e.nextAttemptAt || e.nextAttemptAt <= now));
+    // B5 — `nextAttemptAt` may be null/undefined on legacy rows
+    // (predates the backoff schema) or 0 on freshly enqueued rows.
+    // Treat both as "due now" via numeric coercion so we don't
+    // accidentally include rows that markFailure scheduled into
+    // the future. The previous `!e.nextAttemptAt` short-circuit
+    // would slip those through if a legacy row happened to land
+    // back in the queue after a partial sync.
+    out = out.filter((e) => {
+      if (!e || e.synced) return false;
+      if (!includeFailed && e.failed) return false;
+      const due = Number(e.nextAttemptAt) || 0;
+      return due <= now;
+    });
   }
   if (type) out = out.filter((e) => e && e.type === type);
   return out.slice(0, Math.max(0, Math.min(MAX_ENTRIES, limit)));

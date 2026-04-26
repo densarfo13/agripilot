@@ -191,8 +191,15 @@ export function generateDailyTasks({
   // ─── Optional LOW priority task ──────────────────────────────
   // Included on roughly half the days (deterministic per farm × date)
   // so the list doesn't feel overwhelming every single morning.
+  // B9 — when farmId is null (unsaved farm preview), dayHash falls
+  // back to a global seed and every previewing user sees the same
+  // low-priority task on the same day. Skip the low slot entirely
+  // for unsaved farms — the preview should look minimal until the
+  // real farm exists.
   const lowPool = pickByPriority(pool, 'low').filter((x) => !usedIds.has(x.id));
-  const includeLow = (dayHash(farmId, dateStr) % 2) === 0;
+  const includeLow = farmId
+    ? (dayHash(farmId, dateStr) % 2) === 0
+    : false;
   if (includeLow && lowPool.length > 0) {
     tasks.push(toTask({ template: lowPool[0], farmId, date: dateStr }));
     usedIds.add(lowPool[0].id);

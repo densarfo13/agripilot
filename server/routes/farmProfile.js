@@ -258,7 +258,13 @@ router.post('/', authenticate, async (req, res) => {
     });
 
     // Record crop usage for adaptive suggestions (non-blocking)
-    recordCropUsage(profile.crop, profile.country, profile.locationName);
+    // B2 — async, fire-and-forget. Without .catch, a rejection here
+    // becomes an UnhandledPromiseRejection — fatal in Node 20+. The
+    // farm was already saved, so we log and move on.
+    Promise.resolve()
+      .then(() => recordCropUsage(profile.crop, profile.country, profile.locationName))
+      .catch((err) => console.warn('[farmProfile] recordCropUsage failed:',
+        err && err.message ? err.message : 'unknown'));
 
     return res.json({ success: true, profile: mapProfile(profile) });
   } catch (error) {
@@ -407,7 +413,13 @@ router.post('/new', authenticate, async (req, res) => {
     });
 
     // Record crop usage for adaptive suggestions (non-blocking)
-    recordCropUsage(profile.crop, profile.country, profile.locationName);
+    // B2 — async, fire-and-forget. Without .catch, a rejection here
+    // becomes an UnhandledPromiseRejection — fatal in Node 20+. The
+    // farm was already saved, so we log and move on.
+    Promise.resolve()
+      .then(() => recordCropUsage(profile.crop, profile.country, profile.locationName))
+      .catch((err) => console.warn('[farmProfile] recordCropUsage failed:',
+        err && err.message ? err.message : 'unknown'));
 
     return res.status(201).json({ success: true, profile: mapProfile(profile) });
   } catch (error) {
@@ -772,9 +784,12 @@ router.patch('/:id', authenticate, async (req, res) => {
       metadata: { fields: Object.keys(data) },
     });
 
-    // Record crop usage if crop changed
+    // Record crop usage if crop changed (B2 — guarded async fire-and-forget)
     if (data.crop) {
-      recordCropUsage(data.crop, updated.country, updated.locationName);
+      Promise.resolve()
+        .then(() => recordCropUsage(data.crop, updated.country, updated.locationName))
+        .catch((err) => console.warn('[farmProfile] recordCropUsage failed:',
+          err && err.message ? err.message : 'unknown'));
     }
 
     return res.json({ success: true, profile: mapProfile(updated) });

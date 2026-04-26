@@ -76,12 +76,12 @@ export function stageAt(elapsedDays, lifecycle) {
     }
     acc += dur;
   }
-  const last = lifecycle.length - 1;
-  const dur = lifecycle[last].durationDays || 0;
-  return {
-    index: last, daysIntoStage: dur, stageDurationDays: dur,
-    daysRemaining: 0, overshoot: true,
-  };
+  // B8 — the for-loop's `i === lifecycle.length - 1` branch always
+  // returns on the final iteration, so any code after the loop was
+  // unreachable. Returning null here preserves the function's
+  // documented contract (caller already null-checks the result)
+  // while making the dead-code intent explicit.
+  return null;
 }
 
 /**

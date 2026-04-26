@@ -114,6 +114,11 @@ export function getTodayTasks({ farm = null, weather = null, now = null } = {}) 
   // both match. A stage drift (auto-advance or a correction to
   // plantingDate / manualStageOverride) forces regeneration so
   // today's tasks reflect reality.
+  // B4 — when timelineStage is null (e.g. no plantingDate yet) and
+  // the cached snapshot is also null, sameStage stays true — that's
+  // intentional: two consecutive days with no anchor shouldn't burn
+  // CPU regenerating an identical no-stage plan. The first non-null
+  // resolution after a save flips sameStage false → regen → cache.
   const sameDate  = existing && existing.date === today;
   const sameStage = existing && existing.stageSnapshot === timelineStage;
 

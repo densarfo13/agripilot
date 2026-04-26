@@ -32,11 +32,15 @@ const UNIT_LABELS = {
  * @returns {number} value in hectares, rounded to 6 decimal places
  */
 export function toHectares(value, unit) {
-  if (value == null || isNaN(value)) return null;
+  // B7 — `isNaN("abc")` returns true via JS coercion which works by
+  // accident. Use Number.isNaN(Number(x)) so the check is explicit
+  // about coercing once and rejecting non-numeric input.
+  const n = Number(value);
+  if (value == null || Number.isNaN(n)) return null;
   const u = (unit || 'ACRE').toUpperCase();
   const factor = TO_HECTARES[u];
   if (!factor) return null;
-  return Math.round(value * factor * 1e6) / 1e6;
+  return Math.round(n * factor * 1e6) / 1e6;
 }
 
 /**
@@ -46,11 +50,13 @@ export function toHectares(value, unit) {
  * @returns {number}
  */
 export function fromHectares(hectares, unit) {
-  if (hectares == null || isNaN(hectares)) return null;
+  // B7 — same explicit coercion as toHectares.
+  const n = Number(hectares);
+  if (hectares == null || Number.isNaN(n)) return null;
   const u = (unit || 'ACRE').toUpperCase();
   const factor = FROM_HECTARES[u];
   if (!factor) return null;
-  return Math.round(hectares * factor * 1e6) / 1e6;
+  return Math.round(n * factor * 1e6) / 1e6;
 }
 
 /**
