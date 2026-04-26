@@ -21,6 +21,7 @@ import { getFullDashboard, getNewFarmersByDay } from '../services/activityAggreg
 import InvestorMetricsCard from '../components/admin/InvestorMetricsCard.jsx';
 import SummaryCards from '../components/admin/SummaryCards.jsx';
 import InsightCards from '../components/admin/InsightCards.jsx';
+import SystemDesignAdvantages from '../components/admin/SystemDesignAdvantages.jsx';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
@@ -499,6 +500,11 @@ export default function AdminAnalyticsPage() {
         averageProgressScore={null}
         predictedYieldTotal={null}
       />
+
+      {/* ═══ System Design Advantages — closing reassurance section
+              describing how the dashboard produces its numbers.
+              Pure presentational, no props, no API. */}
+      <SystemDesignAdvantages />
 
       {/* ═══ G. Recent Activity Feed ══════════════════════ */}
       <div className="card" style={{ marginTop: '1rem' }}>
