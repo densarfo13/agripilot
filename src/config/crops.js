@@ -267,14 +267,40 @@ export function normalizeCrop(value) {
   if (CODES.has(squashed)) return squashed;
   // i18n upgrade — consult the canonical alias map so synonyms like
   // `corn → maize`, `manioc → cassava`, `peanut → groundnut`,
-  // `chili → pepper` resolve to a localisable code instead of
-  // falling through to the unknown-crop branch. The alias map is
-  // already the source of truth for the rest of the codebase
-  // (cropRegistry, FarmForm), so we just adopt the same lookup.
-  const aliased = ALIAS_MAP.get(raw) || ALIAS_MAP.get(squashed);
-  if (aliased && CODES.has(aliased)) return aliased;
-  if (aliased && CODES.has(String(aliased).replace(/-/g, '_'))) {
-    return String(aliased).replace(/-/g, '_');
+  // `chili → pepper`, `okro → okra`, plus legacy free-text labels
+  // like `Cassava root` or `Groundnut (peanut)` all resolve to a
+  // canonical code. The alias map is the source of truth for the
+  // rest of the codebase (cropRegistry, FarmForm).
+  //
+  // Normalisation ladder (tried in order until one hits):
+  //   1. raw (already lowercased + trimmed)
+  //   2. squashed (spaces → underscores) — matches CODES uniformly
+  //   3. hyphenated (spaces / underscores → hyphens) — matches the
+  //      alias map's canonical "kebab-case" key shape
+  //   4. paren-stripped — drops trailing parenthetical synonyms
+  //      like " (peanut)" / " (corn)" before re-running the chain
+  const candidates = [raw, squashed];
+  const hyphenated = raw.replace(/[\s_]+/g, '-');
+  if (hyphenated !== raw) candidates.push(hyphenated);
+  const parenStripped = raw.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  if (parenStripped && parenStripped !== raw) {
+    candidates.push(parenStripped);
+    candidates.push(parenStripped.replace(/\s+/g, '_'));
+    candidates.push(parenStripped.replace(/[\s_]+/g, '-'));
+  }
+
+  for (const c of candidates) {
+    // Direct CODES hit on a derived candidate (e.g. paren-stripped
+    // "groundnut (peanut)" → "groundnut" is a canonical code).
+    if (CODES.has(c)) return c;
+    const cUnderscored = c.replace(/-/g, '_');
+    if (cUnderscored !== c && CODES.has(cUnderscored)) return cUnderscored;
+    // Alias-map hit.
+    const aliased = ALIAS_MAP.get(c);
+    if (!aliased) continue;
+    if (CODES.has(aliased)) return aliased;
+    const aliasUnderscored = String(aliased).replace(/-/g, '_');
+    if (CODES.has(aliasUnderscored)) return aliasUnderscored;
   }
   // Try to reverse-map from any known label in any language back to
   // a code. Handles legacy records that saved the display label.
@@ -337,15 +363,67 @@ export function searchCrops(query, { limit = 20, lang = 'en' } = {}) {
  *   2. English label
  *   3. Code capitalised as a human-readable last resort
  */
+// Dev-mode flag — true when running under Vite dev or a Node test
+// runner (NODE_ENV=test). Production bundles return false.
+function _isDevForCropLabel() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) return true;
+  } catch { /* SSR / non-Vite */ }
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.NODE_ENV === 'development') return true;
+      if (process.env.NODE_ENV === 'test')        return true;
+      if (process.env.VITE_I18N_STRICT === '1')   return true;
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+const _warnedMissingCrop = new Set();
+
 export function getCropLabel(code, lang = 'en') {
   if (!code) return '';
   const norm = normalizeCrop(code);
   if (!norm) return String(code);
   const table = CROP_LABELS_BY_LANG[lang] || CROP_LABELS_BY_LANG.en;
   if (table[norm]) return table[norm];
-  if (CROP_LABELS_BY_LANG.en[norm]) return CROP_LABELS_BY_LANG.en[norm];
-  // Last resort — never return empty, never return the raw code
-  // verbatim if we can humanise it slightly.
+  // Per-language miss but English present — production: silently
+  // fall back; dev: surface the gap as `[MISSING_CROP_LABEL:id]`
+  // so QA spots untranslated crops in screenshots.
+  const enLabel = CROP_LABELS_BY_LANG.en[norm];
+  if (enLabel) {
+    if (_isDevForCropLabel()) {
+      // Only mark as missing if the requested language wasn't English.
+      if (lang && lang !== 'en') {
+        const key = `${norm}:${lang}`;
+        if (!_warnedMissingCrop.has(key)) {
+          _warnedMissingCrop.add(key);
+          try { console.warn(`[getCropLabel] missing crop label: "${norm}" (lang="${lang}") — falling back to English.`); }
+          catch { /* never crash */ }
+        }
+        return `[MISSING_CROP_LABEL:${norm}]`;
+      }
+    } else if (lang && lang !== 'en') {
+      // Production: log once + return English fallback so the UI
+      // never renders a marker to a real farmer.
+      const key = `${norm}:${lang}`;
+      if (!_warnedMissingCrop.has(key)) {
+        _warnedMissingCrop.add(key);
+        try { console.warn(`[getCropLabel] missing crop label: "${norm}" (lang="${lang}") — falling back to English.`); }
+        catch { /* never crash */ }
+      }
+    }
+    return enLabel;
+  }
+  // No English entry either — completely unknown crop. Return a
+  // humanised form (never empty, never raw uppercase code).
+  if (_isDevForCropLabel()) {
+    const k = `unknown:${norm}`;
+    if (!_warnedMissingCrop.has(k)) {
+      _warnedMissingCrop.add(k);
+      try { console.warn(`[getCropLabel] unknown crop id: "${norm}" — humanising.`); }
+      catch { /* ignore */ }
+    }
+  }
   return norm.replace(/_/g, ' ').replace(/^./, (ch) => ch.toUpperCase());
 }
 

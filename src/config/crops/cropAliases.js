@@ -60,6 +60,7 @@ const ALIASES = Object.freeze({
 
   // ─── Roots & tubers ───────────────────────────────────────────
   manioc: 'cassava',
+  'cassava-root': 'cassava',
   yuca: 'cassava',
   tapioca: 'cassava',
 
@@ -79,6 +80,10 @@ const ALIASES = Object.freeze({
   peanuts: 'groundnut',
   'ground-nut': 'groundnut',
   'ground-nuts': 'groundnut',
+  // Legacy free-text labels seen in old farm rows ("Groundnut (peanut)").
+  // The hyphenation step in normalizeCropKey collapses spaces +
+  // parens to hyphens, so we just need the post-collapse form here.
+  'groundnut-peanut': 'groundnut',
 
   bean: 'beans',
   'common-bean': 'beans',
@@ -109,6 +114,7 @@ const ALIASES = Object.freeze({
   'lady-finger': 'okra',
   bhindi: 'okra',
   gombo: 'okra',
+  okro: 'okra',          // West African spelling
 
   // ─── Fruit ────────────────────────────────────────────────────
   bananas: 'banana',

@@ -129,6 +129,24 @@ const SMS_SHORT = Object.freeze({
     ha: 'Ƙara hoto ko bayanin yau don kiyaye makin ku.',
     fr: 'Ajoutez photo ou note aujourd\u2019hui pour garder votre score.',
   }),
+
+  // ─── Connectivity / sync feedback (in-app banner + SMS) ──
+  'sms.offline_saved': Object.freeze({
+    en: 'Saved offline. We will sync when you are back online.',
+    hi: 'ऑफ़लाइन सहेजा गया। ऑनलाइन होने पर सिंक होगा।',
+    tw: 'Yɛakora wɔ offline. Ɛbɛsync sɛ wofa intanɛt bio a.',
+    sw: 'Imehifadhiwa nje ya mtandao. Itasawazishwa unaporejea.',
+    ha: 'An ajiye ba haɗi. Za a daidaita lokacin da ka dawo intanet.',
+    fr: 'Enregistr\u00E9 hors ligne. Synchro au retour de la connexion.',
+  }),
+  'sms.sync_completed': Object.freeze({
+    en: 'All changes synced.',
+    hi: 'सभी बदलाव सिंक हो गए।',
+    tw: 'Nsesaeɛ no nyinaa async.',
+    sw: 'Mabadiliko yote yamesawazishwa.',
+    ha: 'An daidaita duk canje-canje.',
+    fr: 'Toutes les modifications synchronis\u00E9es.',
+  }),
 });
 
 /**

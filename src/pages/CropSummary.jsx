@@ -15,6 +15,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
+import { getCropLabel } from '../utils/crops.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getCropProfile } from '../data/cropProfiles.js';
@@ -58,7 +59,7 @@ const DIFF_COLORS = {
 export default function CropSummary() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { profile, refreshProfile, refreshFarms } = useProfile();
   const { isOnline } = useNetwork();
 
@@ -205,7 +206,7 @@ export default function CropSummary() {
         {/* ═══ A. OVERVIEW ═══ */}
         <div style={S.overviewCard}>
           <span style={S.overviewIcon}>{cp.icon}</span>
-          <h1 style={S.cropName}>{crop.name}</h1>
+          <h1 style={S.cropName}>{getCropLabel(crop.code || crop.name, lang) || crop.name}</h1>
           {isBetaCrop(crop.code) && (
             <div style={S.betaChip}>{t('beta.label')}</div>
           )}
