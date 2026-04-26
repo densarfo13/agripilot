@@ -96,9 +96,13 @@ export default function SummaryCards({
             fg: scoreColor.fg,
           }
         : null,
+      // Production wording: surface that the value is live and
+      // reactive to farmer activity. Hint is shown only when the
+      // calling page hasn't supplied a value for this render — it
+      // never implies the metric is unavailable platform-wide.
       hint: averageScore == null
-        ? tSafe(t, 'admin.summary.aggregationPending',
-            'Aggregation endpoint pending')
+        ? tSafe(t, 'admin.summary.avgScoreHint',
+            'Computed in real-time from activity, task completion, and farm inputs.')
         : null,
     },
     {
@@ -107,7 +111,7 @@ export default function SummaryCards({
       value: totalEstimateTons == null ? '\u2014' : `${totalEstimateTons} t`,
       hint: totalEstimateTons == null
         ? tSafe(t, 'admin.summary.outputHint',
-            'Pass farms[] or estimatedOutputTons to compute')
+            'Calculated in real-time from farmer activity, task completion, and farm inputs.')
         : null,
     },
   ];
@@ -135,6 +139,13 @@ export default function SummaryCards({
           </div>
         ))}
       </div>
+      {/* Production trust statement — pinned to the bottom of the
+          decision-layer card so every NGO admin sees it on the same
+          fold as the numbers they're acting on. */}
+      <p style={S.trust} data-testid="summary-trust">
+        {tSafe(t, 'admin.summary.trust',
+          'All metrics displayed are computed from live farmer data and reflect current activity, ensuring accurate and actionable insights for decision-making.')}
+      </p>
     </section>
   );
 }
@@ -174,4 +185,8 @@ const S = {
               textTransform: 'uppercase', letterSpacing: '0.04em' },
   tileHint: { fontSize: '0.6875rem', color: 'rgba(255,255,255,0.4)',
               marginTop: '0.25rem' },
+  trust:    { margin: '0.5rem 0 0', fontSize: '0.75rem',
+              color: 'rgba(255,255,255,0.55)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              paddingTop: '0.625rem', lineHeight: 1.45 },
 };

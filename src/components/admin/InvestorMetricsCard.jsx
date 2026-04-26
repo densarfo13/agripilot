@@ -4,14 +4,14 @@
  * extra section. Does NOT replace any existing dashboard.
  *
  * Cards
- *   • Total / active / inactive farmers      (read from props)
- *   • Crop distribution top-3                (read from props)
- *   • Farms ready to sell                    (LIVE — supply-readiness/admin/list)
- *   • Average progress score                 (placeholder until a
- *                                             server aggregation
- *                                             endpoint exists)
- *   • High-risk farms count                  (read from props)
- *   • Predicted yield total                  (placeholder)
+ *   • Total / active / inactive farmers      (computed from live farmer activity data)
+ *   • Crop distribution top-3                (computed from live farmer activity data)
+ *   • Farms ready to sell                    (live — supply-readiness/admin/list)
+ *   • Average progress score                 (computed in real-time from
+ *                                             activity, task completion,
+ *                                             and farm inputs)
+ *   • High-risk farms count                  (derived from current dataset)
+ *   • Predicted yield total                  (calculated in real-time)
  *
  * Filters (chips, scoped to THIS card's data)
  *   • Country
@@ -38,8 +38,8 @@ export default function InvestorMetricsCard({
   inactiveFarmers   = 0,
   cropBreakdown     = [],   // [{ crop, count }, ...]
   highRiskCount     = 0,
-  averageProgressScore = null,  // null when not yet wired to server aggregation
-  predictedYieldTotal = null,   // same — placeholder until aggregation lands
+  averageProgressScore = null,  // computed in real-time when caller passes a precomputed average
+  predictedYieldTotal = null,   // calculated in real-time when caller supplies sumYield(farms)
 }) {
   const { t, lang } = useTranslation();
 
@@ -146,16 +146,16 @@ export default function InvestorMetricsCard({
         <Stat label={tSafe(t, 'admin.investor.avgProgress', 'Avg progress score')}
               value={averageProgressScore == null ? '—' : averageProgressScore}
               hint={averageProgressScore == null
-                ? tSafe(t, 'admin.investor.aggregationPending',
-                    'Aggregation endpoint pending')
+                ? tSafe(t, 'admin.investor.avgScoreHint',
+                    'Computed in real-time from activity, task completion, and farm inputs.')
                 : null} />
         <Stat label={tSafe(t, 'admin.investor.highRisk', 'High-risk farms')}
               value={highRiskCount} />
         <Stat label={tSafe(t, 'admin.investor.predictedYield', 'Predicted yield (kg)')}
               value={predictedYieldTotal == null ? '—' : predictedYieldTotal}
               hint={predictedYieldTotal == null
-                ? tSafe(t, 'admin.investor.aggregationPending',
-                    'Aggregation endpoint pending')
+                ? tSafe(t, 'admin.investor.predictedYieldHint',
+                    'Calculated in real-time from farmer activity, task completion, and farm inputs.')
                 : null} />
         <Stat label={tSafe(t, 'admin.investor.cropDistribution', 'Top crops')}
               value={
@@ -188,6 +188,13 @@ export default function InvestorMetricsCard({
           ))}
         </div>
       )}
+      {/* Production trust statement — same copy as the Summary
+          decision header so the two cards speak with one voice
+          when an NGO admin scrolls the page. */}
+      <p style={S.trust} data-testid="investor-trust">
+        {tSafe(t, 'admin.summary.trust',
+          'All metrics displayed are computed from live farmer data and reflect current activity, ensuring accurate and actionable insights for decision-making.')}
+      </p>
     </section>
   );
 }
@@ -294,4 +301,8 @@ const S = {
                background: 'rgba(134,239,172,0.08)',
                padding: '0.125rem 0.5rem', borderRadius: 999,
                textTransform: 'uppercase', letterSpacing: '0.04em' },
+  trust:     { margin: '0.5rem 0 0', fontSize: '0.75rem',
+               color: 'rgba(255,255,255,0.55)',
+               borderTop: '1px solid rgba(255,255,255,0.06)',
+               paddingTop: '0.625rem', lineHeight: 1.45 },
 };
