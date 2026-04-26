@@ -55,6 +55,71 @@
 
 import voiceService from '../services/voiceService.js';
 import { resolvePromptId, getPromptClip } from '../services/voicePrompts.js';
+import { nativeAudioFor } from './nativeVoiceManifest.js';
+
+// Singleton <Audio> for native-tier playback. One element keeps
+// background tabs from accumulating elements across taps and lets
+// us cancel in-flight playback before starting a new one.
+let _nativeAudioEl = null;
+function _getNativeAudio() {
+  if (typeof Audio === 'undefined') return null;
+  if (!_nativeAudioEl) {
+    try { _nativeAudioEl = new Audio(); _nativeAudioEl.preload = 'auto'; }
+    catch { _nativeAudioEl = null; }
+  }
+  return _nativeAudioEl;
+}
+
+function _isDevEnv() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) return true;
+  } catch { /* SSR */ }
+  return false;
+}
+
+/**
+ * Tier 0 — native voice manifest. Returns true when playback was
+ * initiated (the underlying <Audio> resolves async; we don't block
+ * the caller). Returns false when no manifest entry, no Audio API,
+ * or the file fails to load — in any of those cases the caller
+ * MUST fall through to the next tier.
+ */
+function _tryNativeManifest(key, lang) {
+  if (!key) return false;
+  const path = nativeAudioFor(lang, key);
+  if (!path) {
+    // Dev-only warning when a non-English farmer language has NO
+    // native recording for a key the UI is asking to speak. Helps
+    // the recording team prioritise the missing slots.
+    if (_isDevEnv() && (lang === 'tw' || lang === 'ha')) {
+      try { console.warn('[voice missing native audio]', lang, key); }
+      catch { /* ignore */ }
+    }
+    return false;
+  }
+  const el = _getNativeAudio();
+  if (!el) return false;
+  try {
+    // Cancel anything currently playing before starting the new clip.
+    try { voiceService.stop && voiceService.stop(); } catch { /* ignore */ }
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { /* ignore */ }
+    try { el.pause(); el.currentTime = 0; } catch { /* ignore */ }
+    el.src = path;
+    // play() returns a Promise that rejects on missing file / autoplay
+    // block. We swallow rejection — caller already returned `true`
+    // optimistically. Treating a rejection as "fall back" would race
+    // with the tier-1 attempt; instead, log in dev and accept silence.
+    el.play().catch((err) => {
+      if (_isDevEnv()) {
+        try { console.warn('[voice native playback failed]', lang, key, err && err.message); }
+        catch { /* ignore */ }
+      }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const LANG_BCP47 = Object.freeze({
   en: 'en-US',
@@ -207,6 +272,16 @@ export function speak(text, lang = 'en') {
  */
 export function speakKey(key, lang = 'en', fallbackText = '') {
   const short = _shortLang(lang);
+
+  // ─── Tier 0 — native voice manifest ─────────────────────────
+  // Highest fidelity: a hand-recorded native-speaker mp3 indexed
+  // directly by the i18n key. When present, this beats every other
+  // tier (no provider TTS or browser TTS can match a real voice).
+  // When absent, we fall through to the existing 3-tier pipeline.
+  if (_tryNativeManifest(key, short)) {
+    return true;
+  }
+
   // Try the prompt path first — gets us the prerecorded Twi clip
   // when one exists, and provider TTS for en/fr/sw automatically.
   if (key && _voiceServiceAvailable()) {
@@ -243,6 +318,14 @@ export function speakKey(key, lang = 'en', fallbackText = '') {
  * Stop any in-flight speech immediately (clip + browser TTS).
  */
 export function stopSpeaking() {
+  // Stop the tier-0 native <Audio> element first — it's the only
+  // path the voiceService.stop() chain doesn't cover.
+  try {
+    if (_nativeAudioEl) {
+      _nativeAudioEl.pause();
+      _nativeAudioEl.currentTime = 0;
+    }
+  } catch { /* ignore */ }
   try {
     if (_voiceServiceAvailable() && typeof voiceService.stop === 'function') {
       voiceService.stop();
