@@ -196,6 +196,19 @@ export function getCropByValue(value) {
  * render can use the `useCropLabel` hook instead for automatic
  * re-render on language switch.
  */
+// Local copy of the humanise routine the resolver uses to detect
+// "the localised lookup just gave us back a humanised form" — used
+// to reject bogus matches like "Black Pepper" for unknown code
+// "BLACK_PEPPER" without rejecting real translations like "मक्का"
+// for known code "MAIZE".
+function _humanize(value) {
+  if (!value) return '';
+  const tail = String(value).split('.').pop() || value;
+  const spaced = tail.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!spaced) return '';
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
 export function getCropLabel(value, lang = 'en') {
   if (!value) return '';
   // Structured "Other" → extract custom name (language-agnostic)
@@ -209,12 +222,24 @@ export function getCropLabel(value, lang = 'en') {
   //    lowercases the code internally via normalizeCrop, so
   //    'MAIZE' / 'Maize' / 'maize' all resolve to the same row.
   const localised = getLangCropLabel(value, lang);
-  // getLangCropLabel returns a humanised fallback for unknown codes
-  // (e.g. "Black Pepper" for "BLACK_PEPPER"). We only accept it when
-  // it maps to a recognised row — otherwise fall through to the
-  // richer legacy catalog below so crops like APPLE / ALMOND that
-  // live only in CROPS still display correctly.
-  if (localised && localised !== value && !/^[A-Z_]+$/.test(value)) return localised;
+  // PILOT BUG (Apr 2026): the previous version had
+  //   `localised && localised !== value && !/^[A-Z_]+$/.test(value)`
+  // The uppercase guard was meant to skip stale humanised
+  // results for unmapped codes — but it ALSO rejected valid
+  // localised values for known uppercase storage codes. Hindi
+  // UIs were showing "MAIZE → Maize" instead of "मक्का"
+  // because `localised` was correctly 'मक्का' but the regex
+  // matched 'MAIZE' and the branch refused to return it.
+  //
+  // New rule: accept the localised value whenever it differs
+  // from the raw input AND from the input's humanised form
+  // (the catch for unmapped codes still works — humanise(BLACK_
+  // PEPPER) = "Black Pepper", and we won't accept that bogus
+  // hit; getCropByValue then resolves it via the legacy CROPS
+  // catalog below).
+  if (localised && localised !== value && localised !== _humanize(value)) {
+    return localised;
+  }
 
   // 2) Legacy English catalog (uppercase codes). Still the only
   //    source of truth for crops we haven't added to the
