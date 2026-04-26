@@ -3,7 +3,7 @@ import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 
 const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'pesticide', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
@@ -169,7 +169,7 @@ export default function FarmerActivitiesTab() {
                       <tr key={a.id}>
                         <td className="text-sm">{new Date(a.activityDate).toLocaleDateString()}</td>
                         <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
-                        <td>{a.cropType ? getCropLabel(a.cropType) : '-'}</td>
+                        <td>{a.cropType ? getCropLabelSafe(a.cropType) : '-'}</td>
                         <td>{a.quantityKg ? `${a.quantityKg} kg` : '-'}</td>
                         <td className="text-sm text-muted">
                           {a.activityType === 'pesticide' && a.metadata?.pesticideName

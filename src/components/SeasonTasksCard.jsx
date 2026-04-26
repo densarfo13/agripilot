@@ -5,7 +5,7 @@ import { calculateFarmScore } from '../lib/farmScore.js';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
 
 function formatDate(value) {
@@ -87,7 +87,7 @@ export default function SeasonTasksCard() {
               crop name + translated stage so a Hindi farmer sees the
               entire line in Hindi. */}
           <p style={S.subtitle}>
-            {t('season.crop')}: {getCropLabel(season.cropType, lang) || season.cropType}
+            {t('season.crop')}: {getCropLabelSafe(season.cropType, lang) || season.cropType}
             {' \u2022 '}
             {t('season.stage')}: {season.stage ? t(`stage.${season.stage}`) : ''}
           </p>

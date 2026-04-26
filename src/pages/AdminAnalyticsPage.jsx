@@ -16,7 +16,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from '../i18n/index.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { getFullDashboard, getNewFarmersByDay } from '../services/activityAggregator.js';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -339,7 +339,7 @@ export default function AdminAnalyticsPage() {
                 const pct = (count / maxCrop) * 100;
                 return (
                   <div key={crop} style={S.cropRow}>
-                    <div style={S.cropName}>{getCropLabel(crop, lang) || formatCropName(crop)}</div>
+                    <div style={S.cropName}>{getCropLabelSafe(crop, lang) || formatCropName(crop)}</div>
                     <div style={S.cropBarTrack}>
                       <div style={{ ...S.cropBar, width: `${Math.max(4, pct)}%` }} />
                     </div>

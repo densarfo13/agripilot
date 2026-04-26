@@ -17,7 +17,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getFarmTasks } from '../lib/api.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
@@ -245,7 +245,7 @@ export default function FarmerProgressPage() {
                 <span style={S.sectionLabel}>{t('progress.cropProgress')}</span>
               </div>
               <div style={S.cropRow}>
-                <span style={S.cropName}>{getCropLabel(cropType)}</span>
+                <span style={S.cropName}>{getCropLabelSafe(cropType)}</span>
                 {cropStage && (
                   <span style={S.stageBadge}>
                     {STAGE_EMOJIS[cropStage] || SECTION_ICONS.growth}{' '}

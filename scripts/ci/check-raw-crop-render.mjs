@@ -181,10 +181,12 @@ function scanLine(file, lineIdx, line) {
       // Allowed: the offending token itself sits inside a DOM-hook
       // attribute on the same line (data-testid={`X-${row.crop}`}).
       if (ATTR_LINE_HINT.test(line)) continue;
-      // Allowed: already wrapped in getCropLabel( … the offending token … ).
+      // Allowed: already wrapped in getCropLabel(…) or getCropLabelSafe(…).
+      // Both are approved label resolvers; the Safe variant adds
+      // dev-mode leak detection on top of the same canonical map.
       const lastOpenParen = before.lastIndexOf('(');
       if (lastOpenParen >= 0) {
-        const callBefore = before.slice(0, lastOpenParen).match(/getCropLabel\s*$/);
+        const callBefore = before.slice(0, lastOpenParen).match(/getCropLabel(?:Safe)?\s*$/);
         if (callBefore) continue;
       }
       violations.push({
@@ -223,7 +225,7 @@ function scanLine(file, lineIdx, line) {
   if (templHit
       && !NON_DISPLAY_CALL_BEFORE.test(line)
       && !ATTR_LINE_HINT.test(line)
-      && !/getCropLabel\s*\(/.test(line)
+      && !/getCropLabel(?:Safe)?\s*\(/.test(line)
       && !/\.cropName\b/.test(line)) {
     violations.push({
       file, line: lineIdx + 1, rule: 'template-literal-crop',

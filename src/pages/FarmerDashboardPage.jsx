@@ -12,7 +12,7 @@ import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
-import { getCropLabel, getCropIcon } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe, getCropIcon } from '../utils/crops.js';
 import CropImage from '../components/CropImage.jsx';
 import FarmActionPlan from '../components/FarmActionPlan.jsx';
 import MarketplaceCard from '../components/MarketplaceCard.jsx';
@@ -557,7 +557,7 @@ export default function FarmerDashboardPage() {
                 <div style={styles.detailRow}><span>{t('home.name')}</span> <span>{profile.fullName}</span></div>
                 <div style={styles.detailRow}><span>{t('home.phone')}</span> <span>{profile.phone}</span></div>
                 <div style={styles.detailRow}><span>{t('home.region')}</span> <span>{profile.region}{profile.district ? `, ${profile.district}` : ''}</span></div>
-                {profile.primaryCrop && <div style={styles.detailRow}><span>{t('home.crop')}</span> <span>{getCropLabel(profile.primaryCrop)}</span></div>}
+                {profile.primaryCrop && <div style={styles.detailRow}><span>{t('home.crop')}</span> <span>{getCropLabelSafe(profile.primaryCrop)}</span></div>}
                 {(profile.landSizeValue || profile.farmSizeAcres) && <div style={styles.detailRow}><span>{t('home.farmSize')}</span> <span>{formatLandSize(profile.landSizeValue || profile.farmSizeAcres, profile.landSizeUnit)}</span></div>}
               </div>
             )}
@@ -609,7 +609,7 @@ export default function FarmerDashboardPage() {
             {(() => {
               const activeSeason = seasons?.[0];
               const cropCode = activeSeason?.cropType || farmProfile?.crop;
-              const cropName = cropCode ? getCropLabel(cropCode) : null;
+              const cropName = cropCode ? getCropLabelSafe(cropCode) : null;
               const cropIcon = cropCode ? getCropIcon(cropCode) : '🌱';
               const stage = lifecycle?.currentStage;
               const stageLabel = stage ? tLifecycleStage(stage) : null;
@@ -973,7 +973,7 @@ export default function FarmerDashboardPage() {
               {seasons && seasons.length > 0 && seasons.map(s => (
                 <div key={s.id} style={{ padding: '0.4rem 0', borderBottom: '1px solid #243041', fontSize: '0.85rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 600 }}>{getCropLabel(s.cropType)}</span>
+                    <span style={{ fontWeight: 600 }}>{getCropLabelSafe(s.cropType)}</span>
                     <span style={{ color: '#22C55E' }}>{s.status}</span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>
@@ -1082,7 +1082,7 @@ export default function FarmerDashboardPage() {
                   <div key={app.id} style={{ ...styles.detailRow, padding: '0.5rem 0' }}>
                     {/* Use language-aware crop label so non-English farmers
                         don't see raw codes like "MAIZE" / "tomato". */}
-                    <span style={{ fontWeight: 500 }}>{getCropLabel(app.cropType, lang) || app.cropType}</span>
+                    <span style={{ fontWeight: 500 }}>{getCropLabelSafe(app.cropType, lang) || app.cropType}</span>
                     <span>{tStatus(app.status)}</span>
                   </div>
                 ))}

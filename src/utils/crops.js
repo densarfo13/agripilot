@@ -1,7 +1,10 @@
 import {
   getCropLabel as getLangCropLabel,
+  normalizeCrop,
+  _internal as _cropsInternal,
 } from '../config/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import { assertNormalizedCrop } from '../config/crops/assertNormalizedCrop.js';
 
 /**
  * utils/crops.js — UI-layer crop catalog + form helpers.
@@ -495,6 +498,95 @@ export function parseCropValue(stored) {
 export function buildOtherCropValue(customName) {
   const trimmed = (customName || '').trim();
   return trimmed ? `OTHER:${trimmed}` : 'OTHER';
+}
+
+/**
+ * getCropLabelSafe — leak-aware label resolver.
+ *
+ * Wraps the existing `getCropLabel` so callers in farmer-facing
+ * surfaces get:
+ *   1. A dev-time `[CROP_LEAK]` warning when a non-canonical value
+ *      slips through (via `assertNormalizedCrop`).
+ *   2. A stricter dev marker `[MISSING_CROP_LABEL:<id>]` when the
+ *      requested language has no entry, so screenshot QA spots
+ *      the gap. Production: silently falls back to English label,
+ *      then to the normalised id, never empty, never throws.
+ *
+ * Architecture
+ *   • Does NOT replace `getCropLabel`. Plain `getCropLabel` stays
+ *     the canonical resolver; this is a safety wrapper.
+ *   • Does NOT mutate stored data — operates on display values.
+ *   • Optional `t` parameter is reserved for callers that want to
+ *     route through the i18n table for an exotic label key. The
+ *     shipped CROP_LABELS_BY_LANG already has full coverage so
+ *     `t` is effectively unused today; kept for API forward-compat.
+ *
+ *   getCropLabelSafe('corn', 'hi')         → "मक्का"
+ *   getCropLabelSafe('Cassava root', 'tw') → "Bankye"
+ *   getCropLabelSafe('spaghetti', 'hi')    → "Spaghetti" + dev [CROP_LEAK]
+ *   getCropLabelSafe('', 'hi')             → ""
+ */
+function _isDevForCropLabelSafe() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) return true;
+  } catch { /* SSR / non-Vite */ }
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.NODE_ENV === 'development') return true;
+      if (process.env.NODE_ENV === 'test')        return true;
+      if (process.env.VITE_I18N_STRICT === '1')   return true;
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+const _warnedLabelMisses = new Set();
+
+export function getCropLabelSafe(value, lang = 'en', t = null) {
+  if (!value) return '';
+  // 1. Leak detection (dev-only console.warn; returns value unchanged).
+  assertNormalizedCrop(value);
+
+  // 2. Existing label resolver. It already handles alias resolution,
+  //    locale fallback, English fallback, and humanised last-resort.
+  const label = getCropLabel(value, lang);
+  if (label && !label.startsWith('[MISSING_CROP_LABEL:')) return label;
+
+  // 3. The inner resolver returned its dev marker. Re-emit with the
+  //    normalised id so screenshot QA sees the canonical form.
+  const norm = normalizeCrop(value) || String(value);
+  const dev = _isDevForCropLabelSafe();
+
+  // Production: prefer the English label from the canonical map,
+  // then the normalised id, then the raw value. Never empty.
+  if (!dev) {
+    try {
+      const enLabel = _cropsInternal.CROP_LABELS_BY_LANG.en[norm];
+      if (enLabel) return enLabel;
+    } catch { /* defensive */ }
+    return norm || String(value);
+  }
+
+  // Dev: surface the gap, but warn once per id × lang.
+  const memoKey = `${norm}:${lang}`;
+  if (!_warnedLabelMisses.has(memoKey)) {
+    _warnedLabelMisses.add(memoKey);
+    try {
+      console.warn(`[getCropLabelSafe] no label for "${norm}" in lang="${lang}". `
+        + 'Add an entry to CROP_LABELS_BY_LANG in src/config/crops.js.');
+    } catch { /* never crash */ }
+  }
+  // Optional t() route for callers that wanted a key lookup. We do
+  // NOT call t() unless the caller passed one in, so we don't
+  // accidentally hit the translation table for crop ids the
+  // canonical map already owns.
+  if (typeof t === 'function') {
+    try {
+      const tKey = `crop.${norm}`;
+      const tVal = t(tKey);
+      if (tVal && !tVal.startsWith('[MISSING:') && tVal !== tKey) return tVal;
+    } catch { /* ignore */ }
+  }
+  return `[MISSING_CROP_LABEL:${norm}]`;
 }
 
 /**

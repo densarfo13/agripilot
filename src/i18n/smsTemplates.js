@@ -187,6 +187,39 @@ function interpolate(text, vars) {
 }
 
 /**
+ * tShortSafe — defensive wrapper around tShort for SMS / voice
+ * dispatch paths where a missing key MUST NOT result in an
+ * `[MISSING:…]` literal going out over Twilio. Unlike `tSafe`,
+ * this never returns the dev marker — the cost of leaking a
+ * marker into a real SMS is higher than the dev-QA benefit.
+ *
+ *   tShortSafe(tShort, 'sms.flood_risk', 'tw')
+ *     → "Nsuyiri asiane nnawɔtwe yi. …"   (translated)
+ *   tShortSafe(tShort, 'sms.unknown_key', 'hi')
+ *     → English short fallback if available, else the bare key
+ *
+ * The receiver (smsService / voiceAlertService) already truncates
+ * to 640 / 240 chars respectively — this wrapper only worries
+ * about resolution.
+ */
+export function tShortSafe(tShortFn, key, lang = 'en', vars = null) {
+  if (!key) return '';
+  const fn = typeof tShortFn === 'function' ? tShortFn : tShort;
+  let value = '';
+  try { value = fn(key, lang, vars); }
+  catch { return key; }
+  if (!value || (typeof value === 'string' && value.startsWith('[MISSING'))) {
+    // Try the English short variant directly.
+    try {
+      const entry = SMS_SHORT[key];
+      if (entry && entry.en) return interpolate(entry.en, vars);
+    } catch { /* fall through */ }
+    return key;
+  }
+  return value;
+}
+
+/**
  * Keys exposed for the SMS-pipeline integration test so it can
  * assert that every SMS key has all 3 launch languages plus the
  * source English.

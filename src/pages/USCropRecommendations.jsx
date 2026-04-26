@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useUSRecommendations } from '../hooks/useUSRecommendations.js';
 import USStateSelector from '../components/onboarding/USStateSelector.jsx';
 
@@ -212,7 +212,7 @@ function CropCard({ crop, muted, t, onOpenPlan }) {
   return (
     <article style={{ ...S.card, ...(muted ? S.cardMuted : null) }}>
       <header style={S.cardHeader}>
-        <h4 style={S.cardTitle}>{getCropLabel(crop.code || crop.name, lang) || crop.name}</h4>
+        <h4 style={S.cardTitle}>{getCropLabelSafe(crop.code || crop.name, lang) || crop.name}</h4>
         <span style={S.score}>{crop.score}</span>
       </header>
 

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useTranslation } from '../i18n/index.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import SeasonTasksCard from '../components/SeasonTasksCard.jsx';
 
 export default function SeasonStart() {
@@ -42,7 +42,7 @@ export default function SeasonStart() {
             <div style={S.detailGrid}>
               <div style={S.label}>{t('season.crop')}:</div>
               {/* BUG-1 fix — language-aware crop label instead of raw enum */}
-              <div>{getCropLabel(season.cropType, lang) || season.cropType}</div>
+              <div>{getCropLabelSafe(season.cropType, lang) || season.cropType}</div>
 
               <div style={S.label}>{t('season.stage')}:</div>
               {/* BUG-2 fix — translated stage. t() falls back to humanized

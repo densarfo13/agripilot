@@ -8,7 +8,7 @@ import TapSelector from '../components/TapSelector.jsx';
 import LocationDetect from '../components/LocationDetect.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
 import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
@@ -482,7 +482,7 @@ export default function FarmerProgressTab() {
           {/* Season header + score */}
           <div className="card" style={{ marginBottom: '1rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{t('progress.season')} {getCropLabel(activeSeason.cropType)} ({activeSeason.landSizeValue ? formatLandSize(activeSeason.landSizeValue, activeSeason.landSizeUnit) : `${activeSeason.farmSizeAcres} ${activeSeason.areaUnit || 'acres'}`})</span>
+              <span>{t('progress.season')} {getCropLabelSafe(activeSeason.cropType)} ({activeSeason.landSizeValue ? formatLandSize(activeSeason.landSizeValue, activeSeason.landSizeUnit) : `${activeSeason.farmSizeAcres} ${activeSeason.areaUnit || 'acres'}`})</span>
               {score?.performanceClassification && (
                 <span style={{ padding: '0.25rem 0.75rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, background: CLASS_COLORS[score.performanceClassification] + '18', color: CLASS_COLORS[score.performanceClassification] }}>
                   {CLASS_LABELS[score.performanceClassification]} — {score.progressScore}/100
@@ -986,7 +986,7 @@ export default function FarmerProgressTab() {
                 <tbody>
                   {seasons.filter(s => s.status !== 'active').map(s => (
                     <tr key={s.id}>
-                      <td style={{ fontWeight: 500 }}>{getCropLabel(s.cropType)}</td>
+                      <td style={{ fontWeight: 500 }}>{getCropLabelSafe(s.cropType)}</td>
                       <td className="text-sm">{new Date(s.plantingDate).toLocaleDateString()}</td>
                       <td><span style={{ textTransform: 'capitalize' }}>{s.status}</span></td>
                       <td>{s.harvestReport ? `${s.harvestReport.totalHarvestKg} kg` : '—'}</td>
@@ -1098,7 +1098,7 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          {t('reopen.title')} — {getCropLabel(season.cropType)}
+          {t('reopen.title')} — {getCropLabelSafe(season.cropType)}
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
@@ -1184,7 +1184,7 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
                 </div>
               </div>
               <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#0EA5E9', marginBottom: '0.75rem' }}>
-                This will reopen the <strong>{getCropLabel(season.cropType)}</strong> season (planted{' '}
+                This will reopen the <strong>{getCropLabelSafe(season.cropType)}</strong> season (planted{' '}
                 {new Date(season.plantingDate).toLocaleDateString()}) for further data entry.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>

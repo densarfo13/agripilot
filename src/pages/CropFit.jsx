@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useTranslation } from '../i18n/index.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { showToast } from '../core/farm/unified.js';
@@ -132,7 +132,7 @@ export default function CropFit() {
 
       {/* ─── Primary recommendation ───────────────────── */}
       <section style={S.primaryCard} data-testid="cropfit-best">
-        <h3 style={S.cropName}>{getCropLabel(best.code || best.name, lang) || best.name}</h3>
+        <h3 style={S.cropName}>{getCropLabelSafe(best.code || best.name, lang) || best.name}</h3>
         <div style={S.statsRow}>
           <span style={S.statPill}>{scoreLbl}: <strong>{best.score}</strong></span>
           <span style={{ ...S.statPill, ...riskStyleFor(best.risk) }}>

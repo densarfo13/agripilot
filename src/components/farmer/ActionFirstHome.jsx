@@ -16,7 +16,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
-import { getCropLabel } from '../../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../../utils/crops.js';
 import {
   localizeTaskTitle,
   localizeTaskDetail,
@@ -105,7 +105,7 @@ export default function ActionFirstHome({ today, progress, cropStage, onTaskComp
           {cropStage ? (
             <div style={S.stageRow}>
               <span style={S.stageLabel}>{t(`cropStage.${cropStage.stage || 'planting'}`)}</span>
-              {cropStage.cropName && <span style={S.stageCrop}>• {getCropLabel(cropStage.cropName, lang) || cropStage.cropName}</span>}
+              {cropStage.cropName && <span style={S.stageCrop}>• {getCropLabelSafe(cropStage.cropName, lang) || cropStage.cropName}</span>}
             </div>
           ) : (
             <p style={S.muted}>{t('actionHome.stage.none')}</p>

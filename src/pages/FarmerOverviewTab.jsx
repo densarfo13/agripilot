@@ -4,7 +4,7 @@ import { useFarmerContext } from './FarmerHomePage.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import api from '../api/client.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
@@ -122,7 +122,7 @@ export default function FarmerOverviewTab() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Crop</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType ? getCropLabel(lifecycle.cropType) : 'Not set'}</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType ? getCropLabelSafe(lifecycle.cropType) : 'Not set'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Trust Status</div>
@@ -241,7 +241,7 @@ export default function FarmerOverviewTab() {
                   {summary.recentActivities.map(a => (
                     <tr key={a.id}>
                       <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
-                      <td>{a.cropType ? getCropLabel(a.cropType) : '-'}</td>
+                      <td>{a.cropType ? getCropLabelSafe(a.cropType) : '-'}</td>
                       <td className="text-sm text-muted">{new Date(a.activityDate).toLocaleDateString()}</td>
                     </tr>
                   ))}
@@ -269,7 +269,7 @@ export default function FarmerOverviewTab() {
                   <tbody>
                     {recentApps.map(app => (
                       <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                        <td>{getCropLabel(app.cropType)}</td>
+                        <td>{getCropLabelSafe(app.cropType)}</td>
                         <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                         <td><StatusBadge value={app.status} /></td>
                         <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>
