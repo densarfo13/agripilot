@@ -19,6 +19,7 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getCropProfile } from '../data/cropProfiles.js';
+import CropImage from '../components/CropImage.jsx';
 import { saveFarmProfile, createNewFarm, saveFarmerType, updateCropStage } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { getInitialTask, getContextAwareInitialTask } from '../engine/cropTaskMap.js';
@@ -205,7 +206,22 @@ export default function CropSummary() {
 
         {/* ═══ A. OVERVIEW ═══ */}
         <div style={S.overviewCard}>
-          <span style={S.overviewIcon}>{cp.icon}</span>
+          {/* Pilot bug (Apr 2026): the previous emoji-only render
+              fell through to the `cp.icon` field from cropProfiles,
+              which used the potato emoji 🥔 as a stand-in for
+              cassava (no Unicode emoji exists for cassava). The
+              compact list view used the real /crops/cassava.webp
+              asset via CropImage — so the same crop showed two
+              different visuals across surfaces. Route this card
+              through the same canonical CropImage helper so the
+              app is visually consistent everywhere. */}
+          <CropImage
+            cropKey={crop.code || crop.name}
+            alt={getCropLabelSafe(crop.code || crop.name, lang) || crop.name}
+            size={96}
+            circular
+            style={S.overviewIcon}
+          />
           <h1 style={S.cropName}>{getCropLabelSafe(crop.code || crop.name, lang) || crop.name}</h1>
           {isBetaCrop(crop.code) && (
             <div style={S.betaChip}>{t('beta.label')}</div>
@@ -384,7 +400,10 @@ const S = {
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     animation: 'farroway-fade-in 0.3s ease-out',
   },
-  overviewIcon: { fontSize: '3rem' },
+  // Was `{ fontSize: '3rem' }` for the emoji-span layout. CropImage
+  // is a sized div + <img>; we just need a small bottom margin so
+  // the headline sits below it cleanly.
+  overviewIcon: { marginBottom: '0.5rem' },
   cropName: {
     fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#EAF2FF',
   },
