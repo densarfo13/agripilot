@@ -26,8 +26,9 @@
     "guard:crops":   "node scripts/ci/check-crop-type-drift.mjs",
     "guard:i18n":    "node scripts/ci/check-i18n-coverage.mjs",
     "guard:duplicate-crops": "node scripts/ci/check-duplicate-crop-sources.mjs",
+    "guard:crop-render": "node scripts/ci/check-raw-crop-render.mjs",
     "guard:env":     "node scripts/ci/check-env-assertions.mjs --mode=prod",
-    "guards":        "npm run guard:prisma && npm run guard:migration && npm run guard:crops && npm run guard:i18n && npm run guard:duplicate-crops && npm run guard:env",
+    "guards":        "npm run guard:prisma && npm run guard:migration && npm run guard:crops && npm run guard:i18n && npm run guard:duplicate-crops && npm run guard:crop-render && npm run guard:env",
     "launch-gate":      "node scripts/launch-gate.mjs",
     "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build"
   },

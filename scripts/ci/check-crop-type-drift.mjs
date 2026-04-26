@@ -47,7 +47,15 @@ const SKIP_FILE_PATTERNS = [
 // files; the guard will complain if you forget to update the number.
 // Ratchet UP (with a PR-comment justification) only in absolute
 // emergencies. The goal is monotonic decrease.
-const BASELINE = 267;
+//
+// 2026-04-26 ratcheted up by 1 (267 → 268). Reason: the new
+// raw-crop-render guard forces previously-raw `{X.cropType}`
+// renders to wrap as `{getCropLabel(X.cropType, lang) || X.cropType}`
+// — each wrap adds ONE cropType reference (canonical source + safe
+// fallback). The drift guard's intent (catch new RAW references)
+// still holds; the +1 is a one-time migration cost, not a
+// regression in raw-crop usage.
+const BASELINE = 268;
 
 // Maximum growth tolerated per PR when you legitimately extend a
 // bridge module during the migration. Set to 0 to be strict.
