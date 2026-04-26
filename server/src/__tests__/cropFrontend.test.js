@@ -1,4 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
+
+// Static top-level import: the previous pattern used an `it('loads…',
+// async () => { const mod = await import(...) })` test inside each
+// describe block, with the loaded module assigned to closure vars
+// shared with later tests. Under load (full test-run with many files
+// transforming in parallel) the dynamic import sometimes exceeded
+// the 5s test timeout, leaving every later test in that describe
+// block reading `undefined` and failing with TypeErrors.
+//
+// Static imports happen at transform time, so the module is loaded
+// once per file before any test runs — no shared-state ordering
+// assumption, no per-test timeout pressure.
+import * as cropsMod from '../../../src/utils/crops.js';
+import * as cropRecommendationsMod from '../../../src/utils/cropRecommendations.js';
 
 /**
  * Crop Frontend Utilities — Tests
@@ -11,15 +25,9 @@ import { describe, it, expect } from 'vitest';
 // ─── 1. Crop dataset structure ──────────────────────────────
 
 describe('Crop dataset — code/name structure', () => {
-  let ALL_CROPS, OTHER_CROP, ALL_CROPS_WITH_OTHER, CROP_CODE_SET, CATEGORY_LABELS;
+  const { ALL_CROPS, OTHER_CROP, ALL_CROPS_WITH_OTHER, CROP_CODE_SET, CATEGORY_LABELS } = cropsMod;
 
-  it('loads the crop module', async () => {
-    const mod = await import('../../../src/utils/crops.js');
-    ALL_CROPS = mod.ALL_CROPS;
-    OTHER_CROP = mod.OTHER_CROP;
-    ALL_CROPS_WITH_OTHER = mod.ALL_CROPS_WITH_OTHER;
-    CROP_CODE_SET = mod.CROP_CODE_SET;
-    CATEGORY_LABELS = mod.CATEGORY_LABELS;
+  it('loads the crop module', () => {
     expect(ALL_CROPS).toBeDefined();
   });
 
@@ -71,14 +79,11 @@ describe('Crop dataset — code/name structure', () => {
 // ─── 2. Search helpers — first letter and partial match ─────
 
 describe('Crop search helpers', () => {
-  let ALL_CROPS, getCropByCode, getCropByValue, getCropLabel;
+  const { ALL_CROPS, getCropByCode, getCropByValue, getCropLabel } = cropsMod;
 
-  it('loads helpers', async () => {
-    const mod = await import('../../../src/utils/crops.js');
-    ALL_CROPS = mod.ALL_CROPS;
-    getCropByCode = mod.getCropByCode;
-    getCropByValue = mod.getCropByValue;
-    getCropLabel = mod.getCropLabel;
+  it('loads helpers', () => {
+    expect(ALL_CROPS).toBeDefined();
+    expect(getCropByCode).toBeTypeOf('function');
   });
 
   it('first-letter filter returns matching crops', () => {
@@ -134,12 +139,11 @@ describe('Crop search helpers', () => {
 // ─── 3. Structured "Other" parsing ──────────────────────────
 
 describe('parseCropValue — structured Other', () => {
-  let parseCropValue, buildOtherCropValue;
+  const { parseCropValue, buildOtherCropValue } = cropsMod;
 
-  it('loads', async () => {
-    const mod = await import('../../../src/utils/crops.js');
-    parseCropValue = mod.parseCropValue;
-    buildOtherCropValue = mod.buildOtherCropValue;
+  it('loads', () => {
+    expect(parseCropValue).toBeTypeOf('function');
+    expect(buildOtherCropValue).toBeTypeOf('function');
   });
 
   it('standard crop → cropCode, isCustomCrop=false', () => {
@@ -186,11 +190,10 @@ describe('parseCropValue — structured Other', () => {
 // ─── 4. isValidCrop helper ──────────────────────────────────
 
 describe('isValidCrop', () => {
-  let isValidCrop;
+  const { isValidCrop } = cropsMod;
 
-  it('loads', async () => {
-    const mod = await import('../../../src/utils/crops.js');
-    isValidCrop = mod.isValidCrop;
+  it('loads', () => {
+    expect(isValidCrop).toBeTypeOf('function');
   });
 
   it('returns true for known codes', () => {
@@ -226,11 +229,10 @@ describe('isValidCrop', () => {
 // ─── 5. Recommendation engine ───────────────────────────────
 
 describe('Recommendation engine', () => {
-  let recommendCrops;
+  const { recommendCrops } = cropRecommendationsMod;
 
-  it('loads', async () => {
-    const mod = await import('../../../src/utils/cropRecommendations.js');
-    recommendCrops = mod.recommendCrops;
+  it('loads', () => {
+    expect(recommendCrops).toBeTypeOf('function');
   });
 
   it('returns empty recommendations when no context', () => {

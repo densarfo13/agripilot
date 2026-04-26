@@ -1,9 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Resolve project paths relative to the repository root, not
+// process.cwd() — the test runner is invoked with cwd=server/,
+// which broke 'src/components/X.jsx' style relative paths.
+const REPO_ROOT_FOR_TEST_READS = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)), "..", "..", ".."
+);
 
 function readFile(relPath) {
-  return fs.readFileSync(path.resolve(relPath), 'utf-8');
+  return fs.readFileSync(path.resolve(REPO_ROOT_FOR_TEST_READS, relPath), 'utf-8');
 }
 
 // ─── Structure & Imports ────────────────────────────────
