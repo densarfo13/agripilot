@@ -1094,13 +1094,19 @@ const T = {
 
   // Crop stage labels (used by getCropStage)
   'stage.planned':           { en: 'Planned',           fr: 'Planifié',     sw: 'Imepangwa',       ha: 'Tsara',         tw: 'Nhyehyɛe',      hi: 'योजना' },
+  // Server uses `planning` (cropStages.js); kept distinct from
+  // `stage.planned` so a farmer in the planning phase sees the
+  // active-tense "Planning" rather than the past-tense "Planned".
+  'stage.planning':          { en: 'Planning',          fr: 'Planification', sw: 'Kupanga',        ha: 'Shirye-shirye', tw: 'Nhyehyɛeɛ',     hi: 'योजना बनाना' },
   'stage.land_preparation':  { en: 'Land preparation',  fr: 'Préparation',  sw: 'Kuandaa ardhi',   ha: 'Shirya ƙasa',   tw: 'Asase siesieɛ', hi: 'भूमि तैयारी' },
   'stage.planting':          { en: 'Planting',          fr: 'Plantation',   sw: 'Kupanda',         ha: 'Shuki',         tw: 'Dua',           hi: 'रोपण' },
+  'stage.germination':       { en: 'Germination',       fr: 'Germination',  sw: 'Kuota',           ha: 'Tsiro',         tw: 'Afifirie',      hi: 'अंकुरण' },
   'stage.early_growth':      { en: 'Early growth',      fr: 'Croissance précoce', sw: 'Ukuaji wa awali', ha: 'Girma na farko', tw: 'Nyin ahyɛaseɛ', hi: 'शुरुआती वृद्धि' },
   'stage.active_growth':     { en: 'Active growth',     fr: 'Croissance active', sw: 'Ukuaji amilifu', ha: 'Girma mai ƙarfi', tw: 'Nyin kɛseɛ', hi: 'सक्रिय वृद्धि' },
   'stage.flowering':         { en: 'Flowering',         fr: 'Floraison',    sw: 'Kuchanua',        ha: 'Fure',          tw: 'Nhwiren',        hi: 'फूल आना' },
   'stage.harvest_ready':     { en: 'Harvest ready',     fr: 'Prêt à récolter', sw: 'Tayari kuvuna', ha: 'A shirye girbi', tw: 'Yɛtumi atwa',   hi: 'कटाई के लिए तैयार' },
   'stage.harvested':         { en: 'Harvested',         fr: 'Récolté',      sw: 'Imevunwa',        ha: 'An girbe',      tw: 'Wɔatwa',         hi: 'कटाई हो गई' },
+  'stage.post_harvest':      { en: 'Post-harvest',      fr: 'Post-récolte', sw: 'Baada ya kuvuna', ha: 'Bayan girbi',   tw: 'Otwa akyi',     hi: 'कटाई के बाद' },
 
   // Risk-alert one-liners (feed from buildRiskAlerts)
   'actionHome.risks.overdueCount':       { en: '{n} overdue tasks',           fr: '{n} tâches en retard',       sw: 'Kazi {n} zimechelewa',    ha: 'Ayyuka {n} sun makara',     tw: 'Adwuma {n} a atwam',         hi: '{n} कार्य समय से पीछे' },
