@@ -9153,6 +9153,26 @@ const T = {
   // progress.allDone* (referenced by spec §5)
   'progress.allDoneTitle':        { en: 'All done for now',                    fr: 'Terminé pour l\'instant',             sw: 'Imeisha kwa sasa',             ha: 'An gama a yanzu',                    tw: 'Awie seesei',                 hi: 'अभी सब हो गया' },
   'progress.allDoneSubtitle':     { en: 'Great work — come back tomorrow',     fr: 'Beau travail — revenez demain',       sw: 'Kazi nzuri — rudi kesho',      ha: 'Aiki mai kyau — ka dawo gobe',       tw: 'Adwuma pa — bra ɔkyena',      hi: 'बहुत अच्छा — कल वापस आएँ' },
+
+  // ─── Final-leak global patch — spec key shape ────────────────
+  // Generic section / label / helper namespaces used by future
+  // call sites that route through tSafe(key, '') with strict no-leak.
+  // Twi/Hausa kept short and simple — strict rule: never English.
+  'labels.title':                 { en: 'Title',           fr: 'Titre',                 sw: 'Kichwa',                 ha: 'Take',                       tw: 'Nsɛm tiawa',              hi: 'शीर्षक' },
+  'labels.subtitle':              { en: 'Subtitle',        fr: 'Sous-titre',            sw: 'Kichwa kidogo',          ha: 'Ƙaramin take',               tw: 'Nsɛm a edi hɔ',           hi: 'उपशीर्षक' },
+
+  'sections.daily':               { en: 'Daily',           fr: 'Quotidien',             sw: 'Kila siku',              ha: 'Kowace rana',                tw: 'Da biara',                hi: 'दैनिक' },
+  'sections.weather':             { en: 'Weather',         fr: 'Météo',                 sw: 'Hali ya hewa',           ha: 'Yanayi',                     tw: 'Ewiem tebea',             hi: 'मौसम' },
+  'sections.risk':                { en: 'Risk',            fr: 'Risque',                sw: 'Hatari',                 ha: 'Haɗari',                     tw: 'Asiane',                  hi: 'जोखिम' },
+  'sections.missed':              { en: 'Missed',          fr: 'Manqué',                sw: 'Imekosa',                ha: 'An rasa',                    tw: 'Atomi',                   hi: 'छूटा' },
+
+  // helpers.* — the spec's clean-UI rule says short/empty hints
+  // are better than long English fallbacks. helpers.generic is
+  // intentionally empty across languages so a missing context
+  // hint renders nothing rather than visible noise.
+  'helpers.sms':                  { en: 'Receive reminders by SMS', fr: 'Recevoir les rappels par SMS', sw: 'Pokea vikumbusho kwa SMS', ha: 'Karɓi tunatarwa ta SMS', tw: 'Nya nkae denam SMS so', hi: 'एसएमएस से अनुस्मारक पाएँ' },
+  'helpers.reminder':             { en: 'When to send reminders',   fr: 'Quand envoyer les rappels',   sw: 'Wakati wa kutuma vikumbusho', ha: 'Lokacin aika tunatarwa', tw: 'Berɛ a yɛde nkae bɛkɔ', hi: 'अनुस्मारक कब भेजें' },
+  'helpers.generic':              { en: '',                fr: '',                      sw: '',                       ha: '',                            tw: '',                        hi: '' },
 };
 
 export default T;
