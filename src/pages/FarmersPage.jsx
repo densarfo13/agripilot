@@ -8,6 +8,7 @@ import CountrySelect from '../components/CountrySelect.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
+import ProgressScoreChip from '../components/farmer/ProgressScoreChip.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
@@ -294,6 +295,7 @@ export default function FarmersPage() {
                       {isSuperAdmin && <th>Organization</th>}
                       <th>Primary Crop</th>
                       <th>Farm Size</th>
+                      <th>Score</th>
                       <th>Applications</th>
                       <th></th>
                     </tr>
@@ -314,6 +316,21 @@ export default function FarmersPage() {
                         {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
                         <td>{f.primaryCrop ? getCropLabelSafe(f.primaryCrop) : '-'}</td>
                         <td>{f.landSizeValue ? formatLandSize(f.landSizeValue, f.landSizeUnit) : f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
+                        <td>
+                          {/* Progress score chip — pure-function compute on
+                              whatever signals the farmer payload exposes.
+                              Missing inputs are gracefully treated as 0
+                              (the chip surfaces "data incomplete" via its
+                              own tooltip). Server-side aggregation would
+                              be the next step; for now this compiles a
+                              live signal from existing fields. */}
+                          <ProgressScoreChip
+                            taskCompletionRate={f.taskCompletionRate}
+                            cropHealthScore={f.cropHealthScore}
+                            consistencyScore={f.consistencyScore}
+                            weatherAdaptationScore={f.weatherAdaptationScore}
+                          />
+                        </td>
                         <td>{f._count?.applications || 0}</td>
                         <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                           {f.inviteStatus === 'LINK_GENERATED' && <RowCopyLinkButton farmerId={f.id} />}

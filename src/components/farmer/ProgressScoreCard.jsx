@@ -17,10 +17,10 @@ import { useTranslation } from '../../i18n/index.js';
 import { tSafe } from '../../i18n/tSafe.js';
 
 const LABEL_COLORS = Object.freeze({
-  Low:       { bg: 'rgba(239,68,68,0.15)',  fg: '#FCA5A5' },
-  Medium:    { bg: 'rgba(245,158,11,0.15)', fg: '#FDE68A' },
-  High:      { bg: 'rgba(34,197,94,0.15)',  fg: '#86EFAC' },
-  Excellent: { bg: 'rgba(34,197,94,0.25)',  fg: '#22C55E' },
+  'High Risk': { bg: 'rgba(239,68,68,0.15)',  fg: '#FCA5A5' },
+  Medium:      { bg: 'rgba(245,158,11,0.15)', fg: '#FDE68A' },
+  Good:        { bg: 'rgba(34,197,94,0.15)',  fg: '#86EFAC' },
+  Excellent:   { bg: 'rgba(34,197,94,0.25)',  fg: '#22C55E' },
 });
 
 const REASON_LABEL_FALLBACK = {
@@ -56,7 +56,9 @@ export default function ProgressScoreCard({
             {tSafe(t, 'progressScore.title', 'Farm progress')}
           </h3>
           <span style={{ ...S.labelChip, background: colour.bg, color: colour.fg }}>
-            {tSafe(t, `progressScore.label.${result.label.toLowerCase()}`, result.label)}
+            {tSafe(t,
+              `progressScore.label.${result.label.toLowerCase().replace(/\s+/g, '_')}`,
+              result.label)}
           </span>
         </div>
         <div style={S.scoreBlock}>

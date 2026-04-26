@@ -24,11 +24,19 @@
  *   consistency            20%
  *   weatherAdaptation      10%
  *
- * Label thresholds:
- *   < 40   Low
+ * Label thresholds (NGO-monetisation aligned, 2026-04 sprint):
+ *   < 40   High Risk
  *   < 60   Medium
- *   < 80   High
+ *   < 80   Good
  *   ≥ 80   Excellent
+ *
+ * Why "High Risk" instead of "Low"
+ *   The score is also surfaced on NGO / investor dashboards where
+ *   risk language is the canonical signal. "Low" was ambiguous —
+ *   "low activity" vs "low risk" — so this sprint renames the band
+ *   to match how the rest of the dashboard already speaks. The
+ *   numeric ranges are unchanged, so any caller storing a snapshot
+ *   number is compatible.
  *
  * Safety contract
  *   • Pure function. Never throws. Never reads localStorage / fetch.
@@ -97,9 +105,9 @@ function bandFor(value01) {
 
 function labelForScore(score) {
   if (score >= 80) return 'Excellent';
-  if (score >= 60) return 'High';
+  if (score >= 60) return 'Good';
   if (score >= 40) return 'Medium';
-  return 'Low';
+  return 'High Risk';
 }
 
 /**

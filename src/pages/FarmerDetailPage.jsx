@@ -11,6 +11,7 @@ import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { formatLandSize } from '../utils/landSize.js';
+import ProgressScoreCard from '../components/farmer/ProgressScoreCard.jsx';
 
 const STATUS_COLORS = {
   pending_approval: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Pending Approval' },
@@ -74,6 +75,20 @@ export default function FarmerDetailPage() {
         </div>
       </div>
       <div className="page-body">
+        {/* Progress score (NGO monetisation surface). Pure-function
+            compute on whichever signals the farmer payload exposes;
+            missing inputs surface the "data incomplete" badge so the
+            score is never silently zero. Reasons list explains
+            "Low activity" / "Missed tasks" / "Good consistency". */}
+        <div style={{ marginBottom: '1rem' }}>
+          <ProgressScoreCard
+            taskCompletionRate={farmer.taskCompletionRate}
+            cropHealthScore={farmer.cropHealthScore}
+            consistencyScore={farmer.consistencyScore}
+            weatherAdaptationScore={farmer.weatherAdaptationScore}
+          />
+        </div>
+
         {/* Next Action Card — answers "what should I do next?" within 3 seconds */}
         {(isAdmin || isCreator) && (
           <NextActionCard farmer={farmer} navigate={navigate} isAdmin={isAdmin} />
