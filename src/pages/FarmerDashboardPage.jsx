@@ -1080,7 +1080,9 @@ export default function FarmerDashboardPage() {
               <ExpandableSection title={t('home.myApplications')} icon="📄" testId="applications-section">
                 {profile.applications.map(app => (
                   <div key={app.id} style={{ ...styles.detailRow, padding: '0.5rem 0' }}>
-                    <span style={{ fontWeight: 500 }}>{app.cropType}</span>
+                    {/* Use language-aware crop label so non-English farmers
+                        don't see raw codes like "MAIZE" / "tomato". */}
+                    <span style={{ fontWeight: 500 }}>{getCropLabel(app.cropType, lang) || app.cropType}</span>
                     <span>{tStatus(app.status)}</span>
                   </div>
                 ))}

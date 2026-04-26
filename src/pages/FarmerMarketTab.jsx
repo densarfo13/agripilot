@@ -5,8 +5,10 @@ import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel } from '../utils/crops.js';
+import { useTranslation } from '../i18n/index.js';
 
 export default function FarmerMarketTab() {
+  const { lang } = useTranslation();
   const { farmerId, farmer } = useFarmerContext();
   const country = farmer?.countryCode || DEFAULT_COUNTRY_CODE;
   const [prices, setPrices] = useState([]);
@@ -116,7 +118,9 @@ export default function FarmerMarketTab() {
                 <tbody>
                   {prices.map((p, i) => (
                     <tr key={i}>
-                      <td style={{ fontWeight: 500 }}>{p.crop}</td>
+                      {/* Language-aware crop label so Hindi / Hausa /
+                          Twi / Swahili farmers don't see raw codes. */}
+                      <td style={{ fontWeight: 500 }}>{getCropLabel(p.crop, lang) || p.crop}</td>
                       <td>{p.currency || 'KES'} {p.minPrice?.toLocaleString()}</td>
                       <td>{p.currency || 'KES'} {p.maxPrice?.toLocaleString()}</td>
                       <td>{p.unit || 'per kg'}</td>
@@ -141,7 +145,7 @@ export default function FarmerMarketTab() {
       {tips && selectedCrop && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            Selling Tips: {getCropLabel(tips.cropType || selectedCrop)}
+            Selling Tips: {getCropLabel(tips.cropType || selectedCrop, lang)}
             <button className="btn btn-outline btn-sm" onClick={() => { setTips(null); setSelectedCrop(''); }}>Close</button>
           </div>
           <div className="card-body">
@@ -239,7 +243,7 @@ export default function FarmerMarketTab() {
                 <tbody>
                   {interests.map(interest => (
                     <tr key={interest.id}>
-                      <td style={{ fontWeight: 500 }}>{getCropLabel(interest.cropType)}</td>
+                      <td style={{ fontWeight: 500 }}>{getCropLabel(interest.cropType, lang)}</td>
                       <td>{interest.quantityKg ? `${interest.quantityKg} kg` : '-'}</td>
                       <td>{interest.priceExpectation ? `${interest.currencyCode || 'KES'} ${interest.priceExpectation}` : '-'}</td>
                       <td>{interest.preferredBuyerType || '-'}</td>

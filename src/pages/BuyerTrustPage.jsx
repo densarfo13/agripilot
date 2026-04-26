@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getBuyerTrustFarms } from '../lib/api.js';
 import { useTranslation } from '../i18n/index.js';
+import { getCropLabel } from '../utils/crops.js';
 
 const FILTERS = [
   { key: '', label: 'buyer.allFarms' },
@@ -28,7 +29,10 @@ function fmtDate(iso) {
 }
 
 export default function BuyerTrustPage() {
-  const t = useTranslation();
+  // useTranslation() returns { t, lang, ... } — destructure rather
+  // than aliasing the whole object as `t`, otherwise `t('key')`
+  // throws `TypeError: t is not a function` at render time.
+  const { t, lang } = useTranslation();
   const [farms, setFarms] = useState([]);
   const [summary, setSummary] = useState({ total: 0, safe: 0, needsReview: 0, notSafe: 0 });
   const [filter, setFilter] = useState('');
@@ -113,7 +117,7 @@ export default function BuyerTrustPage() {
             <div style={S.cardHeader}>
               <div style={S.cardMain}>
                 <div style={S.farmName}>{farm.farmName}</div>
-                <div style={S.cropLine}>{farm.crop}{farm.location ? ` \u00B7 ${farm.location}` : ''}</div>
+                <div style={S.cropLine}>{getCropLabel(farm.crop, lang) || farm.crop}{farm.location ? ` \u00B7 ${farm.location}` : ''}</div>
               </div>
               <div style={{ ...S.statusBadge, background: sc.bg, color: sc.text }}>
                 {farm.buyerLabel}
