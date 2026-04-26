@@ -56,6 +56,9 @@ export default function NewFarmScreen() {
   const { t, lang } = useTranslation();
   const {
     saveProfile, switchFarm, refreshFarms, refreshProfile,
+    profile,  // pulled in for farmerName — server requires it on
+              // every farm-profile POST (pilot 400 diagnostic
+              // confirmed: fieldErrors: { farmerName: 'required' }).
   } = useProfile();
 
   const [form, setForm] = useState({
@@ -226,11 +229,27 @@ export default function NewFarmScreen() {
     setSubmitError('');
     setSaving(true);
     try {
+      // Server-side validation requires `farmerName` and `location`
+      // on every farm-profile POST. The form here doesn't collect
+      // them (they were captured during onboarding), so we pull
+      // them from the existing profile context. If still empty,
+      // the existing diagnostic in saveFarmProfile will surface
+      // the gap with a clear console.error.
+      const farmerNameFromProfile =
+        (profile && (profile.farmerName || profile.fullName || profile.name)) || '';
+      const stateLabel = form.stateCode
+        ? (getStateLabel(form.country, form.stateCode) || form.stateCode)
+        : '';
+      const countryLabel = getCountryLabel(form.country) || form.country.trim();
+      const locationStr = [stateLabel, countryLabel].filter(Boolean).join(', ');
+
       const payload = {
+        farmerName: farmerNameFromProfile,
         farmName:  form.farmName.trim() || 'My New Farm',
         cropType:  cropCode.toUpperCase(),
         country:   form.country.trim(),
         stateCode: form.stateCode.trim() || undefined,
+        location:  locationStr,
         size:      Number(form.size),
         sizeUnit:  form.sizeUnit,
         cropStage: form.stage || 'land_prep',
