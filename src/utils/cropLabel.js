@@ -51,17 +51,33 @@ const EMPTY = '—';
  * @returns {string}
  */
 export function cropLabel(value, lang = 'en') {
-  if (!value || (typeof value === 'string' && !value.trim())) return EMPTY;
-  let normalised = value;
+  // STABILITY HOTFIX: full-function try/catch so a render path
+  // that hits a transiently malformed crop row never throws into
+  // React's reconciler. Returns the EMPTY sentinel on any failure.
   try {
-    const id = normalizeCrop(value);
-    if (id) normalised = id;
-  } catch {
-    // normalizeCrop should never throw, but be defensive — the
-    // caller's render must not break on an oddly-shaped legacy row.
+    if (!value || (typeof value === 'string' && !value.trim())) return EMPTY;
+    let normalised = value;
+    try {
+      const id = normalizeCrop(value);
+      if (id) normalised = id;
+    } catch {
+      // normalizeCrop should never throw, but be defensive.
+    }
+    let label;
+    try {
+      label = getCropLabelSafe(normalised, lang);
+    } catch {
+      label = '';
+    }
+    return (typeof label === 'string' && label) ? label : EMPTY;
+  } catch (err) {
+    try {
+      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+        console.warn('[cropLabel error]', value, err && err.message);
+      }
+    } catch { /* ignore */ }
+    return EMPTY;
   }
-  const label = getCropLabelSafe(normalised, lang);
-  return label || EMPTY;
 }
 
 export default cropLabel;

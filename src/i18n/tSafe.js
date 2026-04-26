@@ -130,15 +130,22 @@ export function tSafe(arg1, arg2, arg3, arg4) {
       const entry = T && T[key];
       const nativeValue = entry && entry[lang];
       if (!nativeValue) {
+        // STABILITY HOTFIX: previously returned `[MISSING:key|lang]`
+        // in dev to surface gaps visually. The visible markers were
+        // suspected of crashing components that pass tSafe output
+        // into APIs expecting clean strings (intl, dom-attr lengths,
+        // hash maps). Switch to a pure-fallback return + a single
+        // console.warn per (key,lang). Always returns a string —
+        // never undefined, null, or an object.
         if (_isDev()) {
           if (!_warnedKeys.has('strict:' + key + ':' + lang)) {
             _warnedKeys.add('strict:' + key + ':' + lang);
-            try { console.warn(`[tSafe strict] no native ${lang} for "${key}" — using fallback="${fallback}"`); }
+            try { console.warn(`[i18n missing]`, key, '(lang=' + lang + ')'); }
             catch { /* ignore */ }
           }
-          return `[MISSING:${key}|${lang}]`;
         }
-        return fallback || '';
+        const safeFallback = typeof fallback === 'string' ? fallback : '';
+        return safeFallback;
       }
     } catch { /* fall through to translator path */ }
   }
@@ -166,16 +173,20 @@ export function tSafe(arg1, arg2, arg3, arg4) {
       if (!_warnedKeys.has(memoKey)) {
         _warnedKeys.add(memoKey);
         try {
-          console.warn(`[tSafe] missing key "${key}" — using fallback="${fallback}"`);
+          console.warn(`[i18n missing]`, key);
         } catch { /* ignore */ }
       }
-      // In dev, surface the gap visibly so QA spots untranslated
-      // copy. Production stays silent + uses fallback.
-      return `[MISSING:${key}]`;
+      // STABILITY HOTFIX: previously returned `[MISSING:key]` in
+      // dev to surface gaps visually. Switched to pure-fallback so
+      // tSafe is non-destructive — always a clean string.
+      const safeFallback = typeof fallback === 'string' ? fallback : '';
+      return safeFallback;
     }
-    return fallback || key;
+    return typeof fallback === 'string' ? fallback : '';
   }
-  return value;
+  // STABILITY HOTFIX: coerce to string in case some upstream code
+  // path returns a non-string. tSafe contract: always return string.
+  return typeof value === 'string' ? value : String(value || '');
 }
 
 export default tSafe;

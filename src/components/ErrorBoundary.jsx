@@ -37,7 +37,9 @@ export default class ErrorBoundary extends React.Component {
         .catch(() => { /* swallow */ });
     } catch { /* never propagate from a catch handler */ }
 
-    try { console.error('[ErrorBoundary] Caught error:', error, info); }
+    // STABILITY HOTFIX log prefix per spec §2 — operators grep for
+    // FARROWAY_CRASH in Sentry / Railway log drains.
+    try { console.error('[FARROWAY_CRASH]', error, info); }
     catch { /* console missing in some sandboxes */ }
   }
 

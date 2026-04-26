@@ -21,16 +21,31 @@ initSyncCoordinator();
 // to the console. Vite tree-shakes the dynamic import out of the
 // production bundle because `import.meta.env.DEV` is statically
 // false there, so this code never ships to farmers.
-if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+// STABILITY HOTFIX (emergency stability patch §8):
+// Auto-loaded dev scanners are temporarily disabled while the
+// crash + login-kickout investigation continues. The scanners
+// only READ window.location and document.body.innerText; they do
+// NOT navigate, change language, or touch localStorage. But to
+// match the spec's "if scanner is touching anything, comment it
+// out" rule, the auto-loads are gated behind a separate opt-in
+// flag (FARROWAY_AUDIT_AUTOLOAD). Set `localStorage['farroway:audit'] = '1'`
+// in DevTools to re-enable for the current session.
+//
+// Manual on-demand entry points still work:
+//   import('./i18n/scanRenderedTextForEnglish.js')
+//     .then(m => m.scanRenderedTextForEnglish('hi', '/progress'));
+//   import('./dev/i18nLeakScanner.js')
+//     .then(m => m.scanForLeaks('hi', '/progress'));
+function _auditAutoloadEnabled() {
+  try {
+    if (typeof import.meta === 'undefined' || !import.meta.env || !import.meta.env.DEV) return false;
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('farroway:audit') === '1';
+  } catch { return false; }
+}
+if (_auditAutoloadEnabled()) {
   import('./i18n/devTextAudit.js').catch(() => { /* never block boot */ });
-  // Cleanup §7 — route-scoped + lang-scoped text audit. Side-effect
-  // import: registers `window.__farrowayLangAudit(lang, route)` so
-  // QA can run on demand from DevTools after switching language.
-  // Tree-shaken in production via the same DEV gate above.
   import('./i18n/scanRenderedTextForEnglish.js').catch(() => { /* never block boot */ });
-  // Cleanup §9 — focused phrase-list leak scanner. Side-effect
-  // import: registers `window.__farrowayLeakScan(lang, route)`.
-  // Tree-shaken in production via the same DEV gate above.
   import('./dev/i18nLeakScanner.js').catch(() => { /* never block boot */ });
 }
 
