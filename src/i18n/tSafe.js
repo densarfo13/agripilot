@@ -15,14 +15,47 @@
  *     already warned once. Dev mode also returns the marker so QA
  *     screenshots show the gap.
  *
- *   tSafe(t, 'home.greeting', 'Welcome')
- *     → 'Welcome'  (when home.greeting is missing in current lang)
+ * Two supported call shapes (overloaded — pick whichever fits the
+ * call site, both behave identically except for re-render behaviour
+ * — see "React reactivity" below):
+ *
+ *   1. Bound form (existing — preferred inside React components):
+ *
+ *        const { t } = useTranslation();
+ *        tSafe(t, 'home.greeting', 'Welcome');
+ *
+ *      The component subscribes to `farroway:langchange` via
+ *      `useTranslation()`'s internal `useState`, so a language
+ *      switch re-renders the component and `tSafe` returns fresh
+ *      text on the next pass.
+ *
+ *   2. Short form (new — for non-component or top-level utility code):
+ *
+ *        tSafe('home.greeting', 'Welcome');
+ *
+ *      Reads the active language via the module-level `t` exported
+ *      from src/i18n/index.js. Useful in:
+ *        • non-React utility modules (no hooks available)
+ *        • one-shot string composition (toast strings, console
+ *          messages, error.message values that are then surfaced
+ *          by a component that DOES re-render)
+ *
+ *      ⚠ React reactivity: a component that uses ONLY the short
+ *      form does NOT subscribe to language-change events. Mixing
+ *      the short form into a render path means: when the user
+ *      switches language, the surrounding component must also
+ *      re-render via some other path (parent re-render, a
+ *      `useTranslation()` call elsewhere in the same component,
+ *      a key change, etc.) for the short-form text to update.
+ *      For pure render usage, prefer the bound form.
  *
  * tSafe does NOT replace `t()` globally. Use it only at risky
  * visible spots where a missing key previously caused a visible
  * mismatch (e.g. raw key leaking, blank text). For everything else
  * the existing `t()` is already safe.
  */
+
+import { t as moduleT } from './index.js';
 
 const _warnedKeys = new Set();
 
@@ -41,22 +74,36 @@ function _isDev() {
 }
 
 /**
- * tSafe(t, key, fallback)
+ * tSafe — overloaded.
  *
- * @param {Function} t — the bound translator from useTranslation()
- *                       or the raw t from src/i18n/index.js
- * @param {string}   key — dot-notation translation key
- * @param {string}   fallback — value to substitute when the key is
- *                              missing or the result is the marker
- * @returns string — never empty, never throws
+ *   tSafe(t, key, fallback)   ← bound form (preferred in components)
+ *   tSafe(key, fallback)      ← short form (uses module-level t)
+ *
+ * Detection: if the first arg is a function, treat it as the bound
+ * translator; otherwise, treat the first arg as the key and route
+ * through the module-level `t` import.
  */
-export function tSafe(t, key, fallback = '') {
+export function tSafe(arg1, arg2, arg3) {
+  // ── Overload resolution ──────────────────────────────────
+  let translator, key, fallback;
+  if (typeof arg1 === 'function') {
+    // Bound form: tSafe(t, key, fallback)
+    translator = arg1;
+    key        = arg2;
+    fallback   = arg3 != null ? arg3 : '';
+  } else {
+    // Short form: tSafe(key, fallback)
+    translator = moduleT;
+    key        = arg1;
+    fallback   = arg2 != null ? arg2 : '';
+  }
+
   if (!key) return fallback || '';
-  if (typeof t !== 'function') return fallback || key;
+  if (typeof translator !== 'function') return fallback || key;
 
   let value = '';
   try {
-    value = t(key);
+    value = translator(key);
   } catch {
     // Inner t() already wraps in try/catch, but be defensive.
     return fallback || key;
