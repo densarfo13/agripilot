@@ -214,10 +214,34 @@ function canonicalizeFarmPayload(payload) {
 }
 
 export function saveFarmProfile(payload, { headers } = {}) {
+  const body = canonicalizeFarmPayload(payload);
+  // DIAGNOSTIC: surface the exact server rejection reason when
+  // farm-profile POSTs return non-2xx. The browser's automatic
+  // `Failed to load resource: 400` console log doesn't show the
+  // field-level error from the server — past pilot screenshots
+  // showed only the generic 400 line, with no diagnostic info to
+  // act on. With this wrap, the next failure prints:
+  //   [saveFarmProfile 400] <server msg> — payload fields: a, b, c
+  //                                      — fieldErrors: { ... }
+  // Field VALUES are deliberately not logged (PII safety); only
+  // the field NAMES + the server's structured fieldErrors response.
   return request('/api/v2/farm-profile', {
     method: 'POST',
-    body: JSON.stringify(canonicalizeFarmPayload(payload)),
+    body: JSON.stringify(body),
     headers: headers || {},
+  }).catch((err) => {
+    try {
+      const fieldNames = body && typeof body === 'object'
+        ? Object.keys(body).join(', ')
+        : '(non-object)';
+      console.error(
+        '[saveFarmProfile ' + (err && err.status ? err.status : '?') + ']',
+        (err && err.message) || 'unknown',
+        '— payload fields:', fieldNames,
+        '— fieldErrors:', (err && err.fieldErrors) || {},
+      );
+    } catch { /* never propagate from diagnostic */ }
+    throw err;
   });
 }
 

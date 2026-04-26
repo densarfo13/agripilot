@@ -99,7 +99,14 @@ export function WeatherProvider({ children }) {
         setFetchedAt(now);
         setResolvedLocation(data.resolvedLocation || null);
       } catch (err) {
-        console.error('Weather fetch failed:', err);
+        // Downgrade from console.error to console.warn — weather
+        // 5xx is a backend issue (out of frontend scope); the UI
+        // already gracefully keeps stale data. console.error here
+        // surfaces as a red error in DevTools on every farmer
+        // pageview, which was alarming pilot users (visible in
+        // recent console screenshots).
+        try { console.warn('[weather] fetch failed (keeping stale data):', err && err.message); }
+        catch { /* ignore */ }
         // Keep stale data — don't clear weather on error
       } finally {
         setWeatherLoading(false);
