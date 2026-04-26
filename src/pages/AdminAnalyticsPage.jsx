@@ -23,6 +23,9 @@ import SummaryCards from '../components/admin/SummaryCards.jsx';
 import InsightCards from '../components/admin/InsightCards.jsx';
 import SystemDesignAdvantages from '../components/admin/SystemDesignAdvantages.jsx';
 import {
+  PitchModeProvider, PitchModeToggle, PitchModeOverlay, PitchModeHighlight,
+} from '../components/admin/PitchMode.jsx';
+import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts';
@@ -170,36 +173,44 @@ export default function AdminAnalyticsPage() {
 
   // ─── Render ─────────────────────────────────────────────
   return (
+    <PitchModeProvider>
     <div className="page-body" style={{ paddingTop: 0 }}>
       {/* Header */}
       <div className="page-header" style={S.header}>
         <h1>{t('admin.analytics')}</h1>
-        <button onClick={refresh} className="btn btn-outline btn-sm">{t('admin.refresh')}</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <PitchModeToggle />
+          <button onClick={refresh} className="btn btn-outline btn-sm">{t('admin.refresh')}</button>
+        </div>
       </div>
 
       {/* ═══ Decision Header — Farmer Intelligence Summary ═══ */}
       {/* Sits above every existing section so an NGO admin lands on
           the decision-layer cards first. Reuses the existing metrics
           object we already fetch — no second API call. */}
-      <SummaryCards
-        totalFarmers={metrics.totalFarmers}
-        activeFarmers={metrics.activeFarmersWeek}
-        highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
-        readyToSellCount={null /* filled by InvestorMetricsCard's live fetch below */}
-        averageScore={null /* placeholder until server aggregation lands */}
-        farms={null}
-      />
+      <PitchModeHighlight stepId={0}>
+        <SummaryCards
+          totalFarmers={metrics.totalFarmers}
+          activeFarmers={metrics.activeFarmersWeek}
+          highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
+          readyToSellCount={null /* filled by InvestorMetricsCard's live fetch below */}
+          averageScore={null /* placeholder until server aggregation lands */}
+          farms={null}
+        />
+      </PitchModeHighlight>
 
       {/* ═══ Insight Cards — heuristic, no ML ════════════════ */}
-      <InsightCards
-        totalFarmers={metrics.totalFarmers}
-        activeFarmers={metrics.activeFarmersWeek}
-        highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
-        readyToSellCount={null}
-        readyToSellTopCrop={cropBreakdown[0]?.crop || null}
-        complianceRate={null}
-        bestPerformingCrop={cropBreakdown[0]?.crop || null}
-      />
+      <PitchModeHighlight stepId={1}>
+        <InsightCards
+          totalFarmers={metrics.totalFarmers}
+          activeFarmers={metrics.activeFarmersWeek}
+          highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
+          readyToSellCount={null}
+          readyToSellTopCrop={cropBreakdown[0]?.crop || null}
+          complianceRate={null}
+          bestPerformingCrop={cropBreakdown[0]?.crop || null}
+        />
+      </PitchModeHighlight>
 
       {/* ═══ A. Summary Cards ══════════════════════════════ */}
       <div style={S.statsGrid}>
@@ -489,22 +500,31 @@ export default function AdminAnalyticsPage() {
       {/* ═══ Investor metrics (additive — uses ONLY existing
               endpoints + derived counts; never replaces the cards
               above). Card hosts country / crop / risk / ready-to-sell
-              filters scoped to itself. */}
-      <InvestorMetricsCard
-        totalFarmers={metrics.totalFarmers}
-        activeFarmers={metrics.activeFarmersToday || metrics.activeFarmersWeek}
-        inactiveFarmers={Math.max(0,
-          (metrics.totalFarmers || 0) - (metrics.activeFarmersWeek || 0))}
-        cropBreakdown={cropBreakdown}
-        highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
-        averageProgressScore={null}
-        predictedYieldTotal={null}
-      />
+              filters scoped to itself. Step 2 of Pitch Mode lands here
+              because this is where "Market Opportunities" lives —
+              ready-to-sell signal + buyer-discovery filters. */}
+      <PitchModeHighlight stepId={2}>
+        <InvestorMetricsCard
+          totalFarmers={metrics.totalFarmers}
+          activeFarmers={metrics.activeFarmersToday || metrics.activeFarmersWeek}
+          inactiveFarmers={Math.max(0,
+            (metrics.totalFarmers || 0) - (metrics.activeFarmersWeek || 0))}
+          cropBreakdown={cropBreakdown}
+          highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
+          averageProgressScore={null}
+          predictedYieldTotal={null}
+        />
+      </PitchModeHighlight>
 
       {/* ═══ System Design Advantages — closing reassurance section
               describing how the dashboard produces its numbers.
-              Pure presentational, no props, no API. */}
-      <SystemDesignAdvantages />
+              Pure presentational, no props, no API. Step 3 of Pitch
+              Mode highlights this block as it includes the "Real-Time
+              Yield Estimation" panel that explains how output is
+              derived. */}
+      <PitchModeHighlight stepId={3}>
+        <SystemDesignAdvantages />
+      </PitchModeHighlight>
 
       {/* ═══ G. Recent Activity Feed ══════════════════════ */}
       <div className="card" style={{ marginTop: '1rem' }}>
@@ -530,7 +550,13 @@ export default function AdminAnalyticsPage() {
           )}
         </div>
       </div>
+
+      {/* Pitch Mode floating overlay — only renders when active.
+          Lives outside the main content flow so the auto-scroll
+          to the highlighted section never collides with it. */}
+      <PitchModeOverlay />
     </div>
+    </PitchModeProvider>
   );
 }
 
