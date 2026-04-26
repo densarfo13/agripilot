@@ -738,6 +738,23 @@ const KEY_TO_PROMPT = {
   'wxConflict.protectHarvestVoice': 'task.protectHarvest',
   'wxConflict.skipWateringVoice':   'task.skipWatering',
   'wxConflict.skipSprayingVoice':   'task.skipSpraying',
+
+  // ─── farmerActions.* (low-literacy farmer hub tiles) ────────
+  // Each mapping points at the closest existing prompt id so that
+  // VoiceButton / IconActionCard can hit the prerecorded native-
+  // speaker Twi clip + provider neural TTS for en/fr/sw without
+  // shipping new audio assets. Mappings are intentionally
+  // approximate — the prompts already had short action-first
+  // wording compatible with the new keys.
+  'farmerActions.home':             'nav.welcomeBack',
+  'farmerActions.myFarm':           'nav.farmReady',
+  'farmerActions.tasks':            'nav.addUpdate',
+  'farmerActions.progress':         'status.onTrack',
+  'farmerActions.scanCrop':         'task.scout',
+  'farmerActions.takePhoto':        'nav.takePhoto',
+  'farmerActions.recordHarvest':    'task.harvest',
+  'farmerActions.checkWeather':     'weather.safe',
+  'farmerActions.help':             'help.needSupport',
 };
 
 // ═══════════════════════════════════════════════════════════════

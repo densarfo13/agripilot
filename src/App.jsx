@@ -16,6 +16,9 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
+import VoiceAssistant from './components/VoiceAssistant.jsx';
+import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
+import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
 
@@ -286,6 +289,78 @@ export default function App() {
     try { ensureDemoSeed(); } catch { /* never blocks app boot */ }
   }, []);
 
+  // Lightweight offline-action queue auto-flush (additive — sits
+  // alongside the existing IndexedDB sync engine). Every 5s, when
+  // online, drain `farroway_offline_queue` by handing each entry's
+  // `action` to a tiny dispatcher that maps action types to their
+  // existing API helpers. The dispatcher is intentionally small
+  // and stateless — it does NOT replace any sync logic, just gives
+  // the new low-literacy farmer flows a path home.
+  useEffect(() => {
+    let cancelled = false;
+    async function dispatchOne(action, meta) {
+      // Fire-and-forget mapping. Any unrecognised type is dropped
+      // silently to avoid jamming the queue on shape drift.
+      if (!action || typeof action !== 'object') return;
+      const { default: api } = await import('./api/client.js');
+      // The queue mints an idempotency key per entry; forward it as
+      // a header so any server endpoint that respects it can dedupe
+      // a re-fired action after a lost network response. Headers are
+      // strictly additive — no existing endpoint is required to
+      // implement them, but those that do get exactly-once semantics
+      // for free.
+      const headers = {};
+      if (meta && meta.idempotencyKey) {
+        headers['Idempotency-Key'] = meta.idempotencyKey;
+      }
+      const cfg = Object.keys(headers).length ? { headers } : undefined;
+      switch (action.type) {
+        case 'task_complete': {
+          const { farmId, taskId, body } = action.payload || {};
+          if (!farmId || !taskId) return;
+          return api.post(
+            `/farm-tasks/${farmId}/tasks/${encodeURIComponent(taskId)}/complete`,
+            body || {},
+            cfg,
+          );
+        }
+        case 'farm_update': {
+          const { farmId, payload } = action.payload || {};
+          if (!farmId || !payload) return;
+          return api.patch(`/farm-profile/${farmId}`, payload, cfg);
+        }
+        case 'harvest_record': {
+          const { cycleId, payload } = action.payload || {};
+          if (!cycleId || !payload) return;
+          return api.post(`/crop-cycles/${cycleId}/harvest`, payload, cfg);
+        }
+        default:
+          return undefined;
+      }
+    }
+    const tick = () => {
+      if (cancelled) return;
+      // Best-effort. Any error is already isolated per-entry by
+      // syncQueue itself, so we don't await here.
+      syncQueue(dispatchOne).catch(() => { /* never propagate */ });
+    };
+    const id = setInterval(tick, 5000);
+    // Also flush opportunistically when the browser flips back to
+    // online — getting an instant retry on reconnect, not waiting
+    // for the next 5s tick.
+    const onOnline = () => tick();
+    if (typeof window !== 'undefined') window.addEventListener('online', onOnline);
+    // Run once shortly after mount in case the queue has stale
+    // entries from a previous session.
+    const bootId = setTimeout(tick, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      clearTimeout(bootId);
+      if (typeof window !== 'undefined') window.removeEventListener('online', onOnline);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <NetworkProvider>
@@ -454,6 +529,14 @@ export default function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
+      {/* Floating voice-first navigator — fixed bottom-centre across
+          every route. Hides itself when speech I/O is unavailable
+          (Firefox / iOS Safari today). */}
+      <VoiceAssistant />
+      {/* Tiny status pill for the lightweight offline queue at
+          src/offline/*. Coexists with the existing OfflineBanner
+          (which serves the heavy IndexedDB sync engine). */}
+      <OfflineSyncBanner />
       </AuthLoadingGate>
       </SeasonProvider>
       </MarketProvider>

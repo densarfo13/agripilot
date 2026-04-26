@@ -32,6 +32,7 @@ import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { getCropLabelSafe } from '../utils/crops.js';
 import ScoreBadge from '../components/farmer/ScoreBadge.jsx';
+import RiskBadge from '../components/admin/RiskBadge.jsx';
 import { computeProgressScore } from '../lib/farmer/progressScore.js';
 
 // "High priority" cutoff per spec: score >= 70 AND status='available'.
@@ -264,7 +265,15 @@ function BuyerRow({ row, score, reasons, lang, priority = false }) {
           {' \u00B7 '}{harvestDate}
         </span>
       </div>
-      <ScoreBadge score={score} reasons={reasons} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Simple NGO-decision risk band, in addition to the
+            richer 4-band ScoreBadge already shown. The two coexist:
+            ScoreBadge surfaces the score number + tooltip reasons,
+            RiskBadge gives buyers the at-a-glance High/Med/Low
+            decision call. */}
+        <RiskBadge score={score} />
+        <ScoreBadge score={score} reasons={reasons} />
+      </div>
     </li>
   );
 }

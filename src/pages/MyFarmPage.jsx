@@ -25,6 +25,7 @@ import DailyProgressCard from '../components/DailyProgressCard.jsx';
 import CropImage from '../components/CropImage.jsx';
 import CropTimelineCard from '../components/CropTimelineCard.jsx';
 import HarvestCard from '../components/HarvestCard.jsx';
+import VoiceButton from '../components/VoiceButton.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -171,6 +172,8 @@ export default function MyFarmPage() {
       <div style={S.header}>
         <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
         <h1 style={S.pageTitle}>{t('myFarm.title')}</h1>
+        {/* Tap-to-hear: speaks the page title in the active language. */}
+        <VoiceButton labelKey="myFarm.title" />
       </div>
 
       {/* Farm details */}

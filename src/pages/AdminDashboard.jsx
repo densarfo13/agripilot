@@ -13,6 +13,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { isFeatureEnabled } from '../config/features.js';
+import KeyInsightsSection from '../components/admin/KeyInsightsSection.jsx';
+import FarmerIntelligenceSummary from '../components/admin/FarmerIntelligenceSummary.jsx';
+import InterventionList from '../components/admin/InterventionList.jsx';
+import PrioritySupplyList from '../components/admin/PrioritySupplyList.jsx';
+import RiskBadge from '../components/admin/RiskBadge.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -111,6 +116,46 @@ export default function AdminDashboard() {
           value={`${Math.round((summary?.completionRate ?? 0) * 100)}%`}
         />
       </section>
+
+      {/* ─── Key Insights — decision-level summary derived
+              client-side from the aggregates already loaded above.
+              Self-hides individual cards when their inputs are
+              missing, and the whole section when none qualify. ── */}
+      <KeyInsightsSection
+        summary={summary}
+        farmers={farmers}
+        performance={performance}
+        scoring={scoring}
+        marketplace={marketplace}
+      />
+
+      {/* ─── Farmer Intelligence Summary — five-tile decision row
+              (total / active% / high risk / ready to sell / yield).
+              See src/components/admin/FarmerIntelligenceSummary.jsx
+              for the per-tile derivation. ─────────────────────── */}
+      <FarmerIntelligenceSummary
+        summary={summary}
+        farmers={farmers}
+        performance={performance}
+        scoring={scoring}
+        marketplace={marketplace}
+      />
+
+      {/* ─── Farmers needing intervention (score<40, low activity,
+              or server-flagged). Self-hides when zero rows. ─── */}
+      <InterventionList
+        scoring={scoring}
+        interventions={interventions}
+        performance={performance}
+      />
+
+      {/* ─── Priority supply (readyToSell + score>60, sorted high→low).
+              Self-hides when zero rows. ──────────────────────── */}
+      <PrioritySupplyList
+        scoring={scoring}
+        farmers={farmers}
+        performance={performance}
+      />
 
       {/* ─── Risk by region ─────────────────────────────── */}
       <section style={S.section}>
@@ -261,6 +306,7 @@ export default function AdminDashboard() {
                   <th style={S.th}>{resolve(t, 'admin.dashboard.col.crop',    'Crop')}</th>
                   <th style={S.th}>{resolve(t, 'admin.dashboard.col.region',  'Region')}</th>
                   <th style={S.th}>{resolve(t, 'admin.dashboard.col.score',   'Score')}</th>
+                  <th style={S.th}>{resolve(t, 'admin.dashboard.col.risk',    'Risk')}</th>
                   <th style={S.th}>{resolve(t, 'admin.dashboard.col.tier',    'Funding')}</th>
                 </tr>
               </thead>
@@ -271,6 +317,11 @@ export default function AdminDashboard() {
                     <td style={S.td}>{s.crop || '—'}</td>
                     <td style={S.td}>{s.region || '—'}</td>
                     <td style={{ ...S.td, fontWeight: 700 }}>{s.score}</td>
+                    <td style={S.td}>
+                      {/* Simple NGO-decision risk band derived from the
+                          numeric score via riskFromScore(score). */}
+                      <RiskBadge score={s.score} />
+                    </td>
                     <td style={{ ...S.td, ...tierStyleFor(s.funding?.tier) }}>
                       <strong>{s.funding?.tier || '—'}</strong>
                       {s.funding?.eligible === false && (

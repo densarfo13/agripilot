@@ -25,6 +25,7 @@ import {
 } from '../config/crops/index.js';
 import { recommendTopCrops } from '../lib/recommendations/topCropEngine.js';
 import { getWeatherState } from '../lib/weather/weatherState.js';
+import VoiceButton from '../components/VoiceButton.jsx';
 
 /**
  * deriveWeatherSummary(farmCtx, answers)
@@ -276,7 +277,14 @@ export default function CropRecommendations() {
           {'\u2190'} {t('common.back')}
         </button>
 
-        <h1 style={S.title}>{t('cropFit.results.title')}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h1 style={S.title}>{t('cropFit.results.title')}</h1>
+          {/* Tap-to-hear: speaks the localized recommendations
+              headline + subtitle in the active UI language. */}
+          <VoiceButton
+            text={`${t('cropFit.results.title')}. ${t('cropFit.results.subtitle')}`}
+          />
+        </div>
         <p style={S.subtitle}>{t('cropFit.results.subtitle')}</p>
 
         {/* Recommendation cards — spec §5: one featured + two compact */}

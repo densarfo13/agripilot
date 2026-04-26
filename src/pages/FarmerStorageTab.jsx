@@ -6,6 +6,7 @@ import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import { tStrict } from '../i18n/strictT.js';
 
 const STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse', 'silo', 'traditional', 'cold_storage', 'other'];
 const STORAGE_CONDITIONS = ['good', 'fair', 'poor', 'deteriorating', 'unknown'];
@@ -101,7 +102,7 @@ export default function FarmerStorageTab() {
             <div className="stat-value">{dashboard.totalQuantityKg?.toLocaleString() || 0} kg</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Ready to Sell</div>
+            <div className="stat-label">{tStrict('farmerActions.readyToSell', 'Ready to Sell')}</div>
             <div className="stat-value" style={{ color: '#16a34a' }}>{dashboard.readyToSell}</div>
           </div>
           <div className="stat-card">
@@ -154,7 +155,7 @@ export default function FarmerStorageTab() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
                   <input type="checkbox" id="readyToSell" checked={form.readyToSell} onChange={e => setForm({ ...form, readyToSell: e.target.checked })} />
-                  <label htmlFor="readyToSell">Ready to sell</label>
+                  <label htmlFor="readyToSell">{tStrict('farmerActions.readyToSell', 'Ready to sell')}</label>
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Notes</label>
@@ -200,7 +201,7 @@ export default function FarmerStorageTab() {
                             {tStorageCondition(item.storageCondition)}
                           </span>
                           {item.readyToSell && (
-                            <span style={{ color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>Ready to sell</span>
+                            <span style={{ color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>{tStrict('farmerActions.readyToSell', 'Ready to sell')}</span>
                           )}
                           {item.isOverStorageLimit && (
                             <span style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 600 }}>Over storage limit!</span>

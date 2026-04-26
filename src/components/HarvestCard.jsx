@@ -18,6 +18,7 @@ import {
   recordHarvest, getLatestHarvest, HARVEST_UNITS,
 } from '../lib/harvest/harvestRecordStore.js';
 import { updateFarm } from '../lib/api.js';
+import { safeAction } from '../offline/syncManager.js';
 
 function normaliseFarm(farm) {
   if (!farm || typeof farm !== 'object') return null;
@@ -136,9 +137,20 @@ export default function HarvestCard({ farm, onRecorded = null } = {}) {
       // pinned stage forever even after a new plantingDate is set).
       // Fire-and-forget; failure here must NOT block the local
       // record being saved (the farmer already sees the success UI).
+      //
+      // Additive offline-safety: route through `safeAction` so an
+      // offline tap queues the override-reset for the next online
+      // sync tick (App.jsx auto-flushes every 5s) instead of being
+      // silently lost in the existing `.catch(() => {})`.
       if (mapped.id && mapped.manualStageOverride) {
         try {
-          updateFarm(mapped.id, { manualStageOverride: null }).catch(() => {});
+          safeAction(
+            {
+              type: 'farm_update',
+              payload: { farmId: mapped.id, payload: { manualStageOverride: null } },
+            },
+            (a) => updateFarm(a.payload.farmId, a.payload.payload).catch(() => {}),
+          );
         } catch { /* never throw from here */ }
       }
       setAmount(''); setNotes('');

@@ -457,3 +457,114 @@ select option:checked {
 .crop-image--medium { width: 96px !important;  height: 96px !important; }
 .crop-image--small  { width: 72px !important;  height: 72px !important; }
 .crop-image--tiny   { width: 40px !important;  height: 40px !important; }
+
+/* ─── Low-literacy farmer UI layer ───────────────────────────────
+   Styles for VoiceButton, MicInput, IconActionCard, and the
+   .low-literacy-mode body class set by useLowLiteracyMode. Mobile
+   first; visual scale increases when body.low-literacy-mode is on. */
+
+.voice-btn {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(34,197,94,0.12);
+  color: #fff;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: transform 120ms ease, background 120ms ease;
+}
+.voice-btn:hover { background: rgba(34,197,94,0.22); }
+.voice-btn:active { transform: scale(0.96); }
+.voice-btn--sm { width: 28px; height: 28px; font-size: 14px; }
+.voice-btn--md { width: 36px; height: 36px; font-size: 18px; }
+.voice-btn--lg { width: 52px; height: 52px; font-size: 26px; }
+
+.mic-input-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mic-btn {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(14,165,233,0.14);
+  color: #fff;
+  border-radius: 999px;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 120ms ease, background 120ms ease;
+}
+.mic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.mic-btn--active {
+  background: rgba(239,68,68,0.22);
+  animation: micPulse 1100ms ease-in-out infinite;
+}
+@keyframes micPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+}
+.mic-hint { color: rgba(255,255,255,0.6); font-size: 11px; }
+.mic-hint--unsupported { color: rgba(245,158,11,0.85); }
+.mic-hint--error       { color: rgba(239,68,68,0.85); }
+
+.icon-action-card {
+  background: var(--card, rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 116px;
+  outline: none;
+}
+.icon-action-card--clickable { cursor: pointer; }
+.icon-action-card--clickable:hover { border-color: rgba(34,197,94,0.45); }
+.icon-action-card--clickable:focus-visible {
+  border-color: var(--primary, #22C55E);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+}
+.icon-action-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.icon-action-card__icon { font-size: 36px; line-height: 1; }
+.icon-action-card__voice { flex: 0 0 auto; }
+.icon-action-card__title    { font-size: 16px; font-weight: 600; color: #fff; }
+.icon-action-card__subtitle { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+body.low-literacy-mode .icon-action-card {
+  padding: 22px;
+  min-height: 144px;
+  border-radius: 20px;
+}
+body.low-literacy-mode .icon-action-card__icon    { font-size: 56px; }
+body.low-literacy-mode .icon-action-card__title   { font-size: 20px; }
+body.low-literacy-mode .voice-btn--md             { width: 44px; height: 44px; font-size: 22px; }
+
+.low-literacy-toggle {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.low-literacy-toggle--on { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.45); }
+.low-literacy-toggle__label { font-weight: 600; }

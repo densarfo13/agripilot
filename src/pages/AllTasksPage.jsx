@@ -29,6 +29,7 @@ import { loadTasksSafe, getFallbackTodayAction } from '../services/loadTasksSafe
 import { formatRelativeUpdate } from '../lib/relativeTime.js';
 import { isReallyOnline } from '../services/isReallyOnline.js';
 import { offlineEvents } from '../services/offlineLogger.js';
+import VoiceButton from '../components/VoiceButton.jsx';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -202,6 +203,10 @@ export default function AllTasksPage() {
       <div style={S.header}>
         <span style={S.pageIcon}>{NAV_ICONS.tasks}</span>
         <h1 style={S.pageTitle}>{t('nav.tasks')}</h1>
+        {/* Tap-to-hear: localized page title + today's progress count. */}
+        <VoiceButton
+          text={`${t('nav.tasks')}${totalAll > 0 ? '. ' + t('loop.progressToday', { done: totalDone, total: totalAll }) : ''}`}
+        />
         {totalAll > 0 && (
           <span style={S.headerCount}>
             {t('loop.progressToday', { done: totalDone, total: totalAll })}

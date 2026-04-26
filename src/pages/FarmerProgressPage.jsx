@@ -25,6 +25,7 @@ import { getStageEconomics } from '../engine/economicsSignal.js';
 import { computeProgress, STATUS_LABEL_KEY } from '../lib/progress/progressEngine.js';
 import { generateTasks } from '../lib/tasks/taskEngine.js';
 import { getTaskCompletions, getFeedback } from '../store/farrowayLocal.js';
+import VoiceButton from '../components/VoiceButton.jsx';
 
 const STAGE_ORDER = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -149,7 +150,16 @@ export default function FarmerProgressPage() {
           {/* ═══ 1. STATUS HEADLINE ═══ */}
           <div style={S.heroCard}>
             <span style={S.heroIcon}>{statusIcon}</span>
-            <div style={S.heroTitle}>{t(statusKey)}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+              <div style={S.heroTitle}>{t(statusKey)}</div>
+              {/* Tap-to-hear: speaks the localized status headline +
+                  today's completion count in the active UI language.
+                  Hidden when speech synthesis is unavailable. */}
+              <VoiceButton
+                text={`${t(statusKey)}${completedCount > 0 ? '. ' + t('progress.doneToday', { count: completedCount }) : ''}`}
+                size="md"
+              />
+            </div>
             {completedCount > 0 && (
               <div style={S.heroSubtext}>
                 {t('progress.doneToday', { count: completedCount })}

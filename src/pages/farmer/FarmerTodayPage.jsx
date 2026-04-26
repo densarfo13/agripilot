@@ -25,6 +25,7 @@ import RiskAlertsPanel from '../../components/farmer/RiskAlertsPanel.jsx';
 import ProgressSummaryCard from '../../components/farmer/ProgressSummaryCard.jsx';
 import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
+import FarmerActionGrid from '../../components/farmer/FarmerActionGrid.jsx';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
 import TaskFeedbackModal from '../../components/farmer/TaskFeedbackModal.jsx';
 import { recordOutcome } from '../../lib/outcomes/outcomeStore.js';
@@ -959,6 +960,11 @@ export default function FarmerTodayPage() {
         cropKey={activeCycle?.cropType}
         cropName={activeCycle?.cropDisplayName}
       />
+
+      {/* Icon-first action grid for low-literacy farmers — mounts the
+          10 primary actions as voice-enabled tiles. The toggle in its
+          header switches the whole UI to simple/icon mode. */}
+      <FarmerActionGrid />
 
       <SupportSection />
     </Shell>

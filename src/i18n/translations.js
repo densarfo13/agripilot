@@ -8921,6 +8921,99 @@ const T = {
   'progress.score.farmStatus':      { en: 'Farm status',         fr: 'État de la ferme',  sw: 'Hali ya shamba',      ha: 'Yanayin gona',           tw: 'Afuom tebea',         hi: 'खेत की स्थिति' },
   'progress.streak.noneShort':      { en: 'No streak yet',       fr: 'Aucune série',      sw: 'Hakuna mfululizo',    ha: 'Babu jeri tukuna',       tw: 'Saa biara nni hɔ',    hi: 'अभी कोई स्ट्रीक नहीं' },
   'tasks.loadSafeResult':           { en: 'Loaded safely from cache.', fr: 'Chargé depuis le cache.', sw: 'Imepakuliwa kutoka kwa cache.', ha: 'An ɗora daga ma\'aji.', tw: 'Wɔde aba so firi sika so.', hi: 'कैश से सुरक्षित रूप से लोड किया गया।' },
+
+  // ─── Low-literacy farmer UI layer (icon-first action cards, voice
+  //    buttons, mic input, simple-mode toggle). All strings kept short
+  //    and action-first so a single 🔊 playback finishes in under
+  //    ~2 seconds across all 6 languages.
+  'common.listen':                  { en: 'Listen',              fr: 'Écouter',           sw: 'Sikiliza',            ha: 'Saurara',                tw: 'Tie',                 hi: 'सुनें' },
+  'common.startVoiceInput':         { en: 'Speak to type',       fr: 'Parlez pour saisir', sw: 'Sema ili uandike',   ha: 'Yi magana don rubutawa', tw: 'Kasa kyerɛw',         hi: 'बोलकर लिखें' },
+  'common.voiceInputUnsupported':   { en: 'Voice input not available on this device', fr: 'Saisie vocale indisponible sur cet appareil', sw: 'Sauti haipatikani kwenye kifaa hiki', ha: 'Shigar da murya ba ya samuwa a wannan na\'urar', tw: 'Nne fa adi nyɛ adwuma wɔ saa afidie yi so', hi: 'इस डिवाइस पर वॉइस इनपुट उपलब्ध नहीं' },
+  'common.voiceInputFailed':        { en: 'Could not hear you, try again', fr: 'Impossible de vous entendre, réessayez', sw: 'Hatukukusikia, jaribu tena', ha: 'Ba mu ji ka ba, sake gwadawa', tw: 'Yɛante wo, san hwehwɛ', hi: 'आपको सुन नहीं सके, दोबारा कोशिश करें' },
+
+  'farmerActions.home':             { en: 'Home',                fr: 'Accueil',           sw: 'Nyumbani',            ha: 'Gida',                   tw: 'Fie',                 hi: 'घर' },
+  'farmerActions.myFarm':           { en: 'My farm',             fr: 'Ma ferme',          sw: 'Shamba langu',        ha: 'Gonata',                 tw: 'M\'afuo',             hi: 'मेरा खेत' },
+  'farmerActions.tasks':            { en: 'Tasks',               fr: 'Tâches',            sw: 'Kazi',                ha: 'Ayyuka',                 tw: 'Nnwuma',              hi: 'कार्य' },
+  'farmerActions.progress':         { en: 'Progress',            fr: 'Progrès',           sw: 'Maendeleo',           ha: 'Cigaba',                 tw: 'Nkɔanim',             hi: 'प्रगति' },
+  'farmerActions.weather':          { en: 'Weather',             fr: 'Météo',             sw: 'Hali ya hewa',        ha: 'Yanayi',                 tw: 'Ewiem tebea',         hi: 'मौसम' },
+  'farmerActions.scanCrop':         { en: 'Scan crop',           fr: 'Scanner la culture', sw: 'Skani zao',          ha: 'Duba shuka',             tw: 'Hwehwɛ aduane',       hi: 'फसल जाँचें' },
+  'farmerActions.recordHarvest':    { en: 'Record harvest',      fr: 'Saisir la récolte', sw: 'Andika mavuno',       ha: 'Rubuta girbi',           tw: 'Kyerɛw nnɔbae',       hi: 'फसल दर्ज करें' },
+  'farmerActions.readyToSell':      { en: 'Ready to sell',       fr: 'Prêt à vendre',     sw: 'Tayari kuuza',        ha: 'Shirye don sayarwa',     tw: 'Krado sɛ wɔbɛtɔn',    hi: 'बेचने के लिए तैयार' },
+  'farmerActions.reminders':        { en: 'Reminders',           fr: 'Rappels',           sw: 'Vikumbusho',          ha: 'Tunatarwa',              tw: 'Nkae',                hi: 'अनुस्मारक' },
+  'farmerActions.help':             { en: 'Help',                fr: 'Aide',              sw: 'Msaada',              ha: 'Taimako',                tw: 'Mmoa',                hi: 'सहायता' },
+
+  'farmerActions.addFarm':          { en: 'Add farm',            fr: 'Ajouter une ferme', sw: 'Ongeza shamba',       ha: 'Ƙara gona',              tw: 'Fa afuo ka ho',       hi: 'खेत जोड़ें' },
+  'farmerActions.changeFarm':       { en: 'Change farm',         fr: 'Changer de ferme',  sw: 'Badilisha shamba',    ha: 'Canza gona',             tw: 'Sesa afuo',           hi: 'खेत बदलें' },
+  'farmerActions.nextAction':       { en: 'Next action',         fr: 'Action suivante',   sw: 'Hatua inayofuata',    ha: 'Mataki na gaba',         tw: 'Ade a edi hɔ',        hi: 'अगला कदम' },
+  'farmerActions.viewTomorrowTask': { en: 'See tomorrow\'s task', fr: 'Voir la tâche de demain', sw: 'Ona kazi ya kesho', ha: 'Duba aikin gobe',     tw: 'Hwɛ ɔkyena adwuma',   hi: 'कल का काम देखें' },
+  'farmerActions.cropStarting':     { en: 'Your crop is just starting', fr: 'Votre culture commence à peine', sw: 'Zao lako linaanza tu', ha: 'Shukarka tana farawa kawai', tw: 'W\'aduane refi ase', hi: 'आपकी फसल अभी शुरू हो रही है' },
+  'farmerActions.completeTasksToday': { en: 'Finish today\'s tasks', fr: 'Terminez les tâches du jour', sw: 'Maliza kazi za leo', ha: 'Kammala ayyukan yau', tw: 'Wie nnɛ nnwuma', hi: 'आज के काम पूरे करें' },
+  'farmerActions.takePhoto':        { en: 'Take photo',          fr: 'Prendre une photo', sw: 'Piga picha',          ha: 'Ɗauki hoto',             tw: 'Twa mfoni',           hi: 'फोटो लें' },
+  'farmerActions.checkWeather':     { en: 'Check weather',       fr: 'Voir la météo',     sw: 'Angalia hali ya hewa', ha: 'Duba yanayi',           tw: 'Hwɛ ewiem tebea',     hi: 'मौसम देखें' },
+
+  'farmerActions.simpleMode':       { en: 'Simple',              fr: 'Simple',            sw: 'Rahisi',              ha: 'Mai sauƙi',              tw: 'Ɔkwan tiawa',         hi: 'आसान' },
+  'farmerActions.standardMode':     { en: 'Standard',            fr: 'Standard',          sw: 'Kawaida',             ha: 'Na yau da kullum',       tw: 'Daa daa',             hi: 'मानक' },
+  'farmerActions.switchToSimple':   { en: 'Use simple mode',     fr: 'Passer en mode simple', sw: 'Tumia hali rahisi', ha: 'Yi amfani da sauƙi',   tw: 'Fa ɔkwan tiawa di dwuma', hi: 'आसान मोड का उपयोग करें' },
+  'farmerActions.switchToStandard': { en: 'Use standard mode',   fr: 'Passer en mode standard', sw: 'Tumia hali ya kawaida', ha: 'Yi amfani da daidaitacce', tw: 'Fa daa daa di dwuma', hi: 'मानक मोड का उपयोग करें' },
+
+  // ─── Voice-first navigation (VoiceAssistant.jsx) ─────────────
+  // Spoken prompts MUST stay short — recognition starts ~2s after
+  // playback begins. The "notUnderstood" line is the only string
+  // the spec explicitly requires; the rest are status chip labels
+  // that appear briefly above the floating button.
+  'voiceNav.prompt':         { en: 'What do you want to do?',     fr: 'Que voulez-vous faire ?',          sw: 'Unataka kufanya nini?',                 ha: 'Me kake son yi?',                     tw: 'Dɛn na wopɛ sɛ woyɛ?',         hi: 'आप क्या करना चाहते हैं?' },
+  'voiceNav.notUnderstood':  { en: "I didn't understand. Try saying tasks or farm.", fr: "Je n'ai pas compris. Dites tâches ou ferme.", sw: 'Sikuelewa. Sema kazi au shamba.', ha: 'Ban gane ba. Ka ce ayyuka ko gona.', tw: 'Mante aseɛ. Ka nnwuma anaa afuo.', hi: 'मैं समझा नहीं। काम या खेत बोलें।' },
+  'voiceNav.tap':            { en: 'Voice assistant',             fr: 'Assistant vocal',                  sw: 'Msaidizi wa sauti',                     ha: 'Mai taimakon murya',                  tw: 'Nne mmoa',                     hi: 'वॉइस सहायक' },
+  'voiceNav.prompting':      { en: 'Speaking…',                   fr: 'Je parle…',                        sw: 'Inazungumza…',                          ha: 'Ana magana…',                         tw: 'Yɛrekasa…',                    hi: 'बोल रहा है…' },
+  'voiceNav.listening':      { en: 'Listening… speak now',        fr: 'J’écoute… parlez',                 sw: 'Inasikiliza… sema sasa',                ha: 'Ina saurara… yi magana yanzu',        tw: 'Yɛretie… kasa seesei',         hi: 'सुन रहा है… अब बोलें' },
+  'voiceNav.resolving':      { en: 'One moment…',                 fr: 'Un instant…',                      sw: 'Subiri kidogo…',                        ha: 'Ɗan jira…',                           tw: 'Twɛn kakra…',                  hi: 'एक पल…' },
+
+  // ─── Lightweight offline queue banner (OfflineSyncBanner.jsx) ─
+  // Distinct from the heavy `offline.*` namespace already used by
+  // OfflineBanner — these strings are deliberately short so the
+  // pill fits at the top-right of the screen.
+  'offlineSync.offline':     { en: 'You are offline. Actions will sync later.', fr: 'Vous êtes hors ligne. Les actions se synchroniseront plus tard.', sw: 'Uko nje ya mtandao. Vitendo vitaoanishwa baadaye.', ha: 'Babu yanar gizo. Ayyuka za su daidaita daga baya.', tw: 'Wonni intanɛt. Yɛbɛkora wo nneyɛeɛ akɔ akyiri.', hi: 'आप ऑफ़लाइन हैं। बाद में सिंक होगा।' },
+  'offlineSync.syncing':     { en: 'Back online. Syncing data…',                fr: 'De retour en ligne. Synchronisation…',                              sw: 'Umerudi mtandaoni. Inaoanisha data…',              ha: 'Ka koma yanar gizo. Ana daidaita bayanai…',         tw: 'Wo san ba intanɛt so. Yɛrekora data…',           hi: 'फिर से ऑनलाइन। डेटा सिंक हो रहा है…' },
+  'offlineSync.abandoned':   { en: 'Some actions could not sync. Please check your connection.', fr: 'Certaines actions n’ont pas pu se synchroniser. Vérifiez votre connexion.', sw: 'Vitendo kadhaa havijaweza kuoanishwa. Angalia muunganisho.', ha: 'Wasu ayyuka ba su daidaita ba. Duba haɗin yanar gizo.', tw: 'Nneyɛeɛ bi antumi ankɔ. Hwɛ wo intanɛt no.', hi: 'कुछ क्रियाएँ सिंक नहीं हो सकीं। कनेक्शन जाँचें।' },
+
+  // ─── Admin "Key Insights" section (KeyInsightsSection.jsx) ────
+  // {pct}/{count} are interpolated by the component before the
+  // string is rendered, so translators only need to keep the
+  // placeholder tokens intact. Strings stay short and declarative.
+  'admin.insights.sectionTitle':              { en: 'Key Insights',           fr: 'Insights clés',                       sw: 'Maarifa Muhimu',                            ha: 'Mabuɗin Fahimta',                          tw: 'Nsɛm Titriw',                          hi: 'मुख्य अंतर्दृष्टि' },
+  'admin.insights.highRisk.title':            { en: 'High Risk Alert',        fr: 'Alerte risque élevé',                 sw: 'Onyo la Hatari Kubwa',                      ha: 'Faɗakarwar Babban Haɗari',                 tw: 'Asiane Kɛseɛ Kɔkɔbɔ',                 hi: 'उच्च जोखिम चेतावनी' },
+  'admin.insights.highRisk.body':             { en: '{pct}% of farmers may underperform due to low activity', fr: '{pct}% des agriculteurs pourraient sous-performer en raison d’une faible activité', sw: 'Asilimia {pct} ya wakulima wanaweza kufanya vibaya kutokana na shughuli ndogo', ha: 'Kashi {pct} na manoma na iya yin rauni saboda ƙarancin aiki', tw: 'Akuafoɔ {pct}% bɛtumi ayɛ adwuma kakra ɛsiane sɛ wɔnyɛ adwuma pii', hi: '{pct}% किसान कम गतिविधि के कारण कमज़ोर प्रदर्शन कर सकते हैं' },
+  'admin.insights.market.title':              { en: 'Market Opportunity',     fr: 'Opportunité de marché',               sw: 'Fursa ya Soko',                             ha: 'Damar Kasuwa',                             tw: 'Adwadie Akwannya',                     hi: 'बाज़ार अवसर' },
+  'admin.insights.market.body':               { en: '{count} farms are ready to sell within 2 weeks', fr: '{count} fermes sont prêtes à vendre dans les 2 semaines', sw: 'Mashamba {count} yako tayari kuuza ndani ya wiki 2', ha: 'Gonaki {count} sun shirya sayarwa cikin makonni 2', tw: 'Mfuo {count} akrado sɛ wɔbɛtɔn wɔ adapɛn 2 mu', hi: '{count} खेत 2 हफ्तों में बेचने को तैयार हैं' },
+  'admin.insights.performance.title':         { en: 'Performance Insight',    fr: 'Aperçu de performance',               sw: 'Maarifa ya Utendaji',                       ha: 'Fahimtar Aiki',                            tw: 'Adwumayɛ Nsɛm',                        hi: 'प्रदर्शन अंतर्दृष्टि' },
+  'admin.insights.performance.bodyLift':      { en: 'Farmers completing tasks have {pct}% higher success rate', fr: 'Les agriculteurs qui terminent leurs tâches ont {pct}% de réussite en plus', sw: 'Wakulima wanaomaliza kazi wana kiwango cha mafanikio {pct}% cha juu', ha: 'Manoman da suke kammala ayyuka suna da nasara {pct}% sama', tw: 'Akuafoɔ a wɔwie nnwuma no nya nkonimdie {pct}% ɛboro', hi: 'काम पूरा करने वाले किसानों की सफलता दर {pct}% अधिक है' },
+  'admin.insights.performance.bodyCompletion': { en: 'Farmers completing tasks have a {pct}% completion rate', fr: 'Les agriculteurs ont un taux d’achèvement de {pct}%',                          sw: 'Wakulima wana kiwango cha kumaliza cha {pct}%',                ha: 'Manoma suna da kashi {pct} na kammala ayyuka',          tw: 'Akuafoɔ wie wɔn nnwuma {pct}%',                        hi: 'किसानों की कार्य पूर्ण दर {pct}% है' },
+
+  // ─── NGO decision-layer: risk band labels (RiskBadge.jsx) ────
+  // Bands: high (<40), medium (40–59), low (60+).
+  'risk.label.high':         { en: 'High Risk',  fr: 'Risque élevé',  sw: 'Hatari Kubwa',     ha: 'Babban Haɗari',     tw: 'Asiane Kɛseɛ',   hi: 'उच्च जोखिम' },
+  'risk.label.medium':       { en: 'Medium',     fr: 'Moyen',         sw: 'Wastani',          ha: 'Matsakaici',        tw: 'Mfimfini',       hi: 'मध्यम' },
+  'risk.label.low':          { en: 'Low',        fr: 'Faible',        sw: 'Chini',            ha: 'Ƙananan',           tw: 'Akakraa',        hi: 'कम' },
+
+  // ─── Farmer Intelligence Summary (FarmerIntelligenceSummary) ─
+  'admin.intelligence.title':   { en: 'Farmer Intelligence Summary', fr: 'Synthèse intelligence agriculteurs', sw: 'Muhtasari wa Maarifa ya Wakulima', ha: 'Taƙaitaccen Bayanai na Manoma', tw: 'Akuafoɔ Nimdeɛ Tiawa', hi: 'किसान इंटेलिजेंस सारांश' },
+  'admin.summary.totalFarmers': { en: 'Total Farmers',           fr: 'Total agriculteurs', sw: 'Jumla ya Wakulima',     ha: 'Jimillar Manoma',         tw: 'Akuafoɔ Nyinaa',          hi: 'कुल किसान' },
+  'admin.summary.activePct':    { en: 'Active %',                fr: 'Actifs %',           sw: 'Hai %',                  ha: 'Masu Aiki %',             tw: 'Wɔn a wɔreyɛ adwuma %',   hi: 'सक्रिय %' },
+  'admin.summary.highRisk':     { en: 'High Risk',               fr: 'Risque élevé',       sw: 'Hatari Kubwa',           ha: 'Babban Haɗari',           tw: 'Asiane Kɛseɛ',            hi: 'उच्च जोखिम' },
+  'admin.summary.readyToSell':  { en: 'Ready to Sell',           fr: 'Prêts à vendre',     sw: 'Tayari Kuuza',           ha: 'Shirye don Sayarwa',      tw: 'Krado sɛ wɔbɛtɔn',        hi: 'बेचने को तैयार' },
+  'admin.summary.estTotalYield':{ en: 'Est. Total Yield',        fr: 'Rendement total est.', sw: 'Mavuno Yote (Tathmini)', ha: 'Jimillar Girbi (Kiyasi)', tw: 'Nnɔbae Nyinaa (Akontaabuo)', hi: 'अनुमानित कुल उपज' },
+
+  // ─── Intervention list (InterventionList.jsx) ────────────────
+  'admin.intervention.title':           { en: 'Farmers Needing Intervention', fr: 'Agriculteurs nécessitant un suivi', sw: 'Wakulima Wanaohitaji Msaada', ha: 'Manoman da ke Bukatar Taimako', tw: 'Akuafoɔ a Wɔhia Mmoa', hi: 'सहायता की आवश्यकता वाले किसान' },
+  'admin.intervention.reason.missedTasks': { en: 'Missed tasks',     fr: 'Tâches manquées',   sw: 'Kazi zilizokosa',      ha: 'Ayyukan da aka rasa',    tw: 'Nnwuma a wɔato',         hi: 'छूटे हुए कार्य' },
+  'admin.intervention.reason.lowActivity': { en: 'Low activity',     fr: 'Faible activité',   sw: 'Shughuli ndogo',        ha: 'Ƙarancin aiki',          tw: 'Adwumayɛ Sua',           hi: 'कम गतिविधि' },
+  'admin.intervention.reason.server':      { en: 'Follow up with farmer', fr: 'Suivi avec l’agriculteur', sw: 'Fuatilia mkulima', ha: 'Bi diddigin manomi',  tw: 'Kɔ akyiri ne okuafoɔ no', hi: 'किसान से संपर्क करें' },
+
+  // ─── Priority supply list (PrioritySupplyList.jsx) ───────────
+  'admin.prioritySupply.title': { en: 'Priority Supply (Ready & High Score)', fr: 'Approvisionnement prioritaire (prêts et bien notés)', sw: 'Ugavi wa Kipaumbele (Tayari & Alama Juu)', ha: 'Babban Tanadi (Shirye & Maki Sama)', tw: 'Adwadie Titriw (Akrado & Maki Sɔronko)', hi: 'प्राथमिक आपूर्ति (तैयार और उच्च स्कोर)' },
+
+  // Existing scoring table just got a new "Risk" column header.
+  'admin.dashboard.col.risk':   { en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Haɗari', tw: 'Asiane', hi: 'जोखिम' },
 };
 
 export default T;
