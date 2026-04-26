@@ -195,23 +195,47 @@ export function AuthProvider({ children }) {
     // and the cookie will be invalidated by the next login attempt
     // anyway (or never, if the user just walks away).
     try { logoutUser().catch(() => {}); } catch { /* never throw */ }
-    // Clear local state IMMEDIATELY so the UI flips to logged-out
+    // Clear React state IMMEDIATELY so the UI flips to logged-out
     // before any async work — no 30s hang, no shared-device leak.
     try { setUser(null); setIsOfflineSession(false); clearSessionCache(); }
     catch (err) {
       if (isDev) console.warn('[AUTH] state-clear threw:', err && err.message);
     }
-    // Comprehensive shared-device purge: every known auth + farm +
-    // notification key, sessionStorage, and every Cache Storage entry.
-    // Wrap the whole thing in try/catch and on ANY failure force a
-    // hard reload — that way a failed purge never leaves the kiosk
-    // in a half-cleared state where farmer A's data is still visible.
+
+    // ── HARD RESET (per spec #1) ───────────────────────────
+    // Wipe localStorage + sessionStorage + Cache Storage in full.
+    // Each step independently try/catch-wrapped so one failing
+    // surface (e.g. caches API absent) never blocks the others.
+    // We deliberately do NOT rely on the curated clearSessionState
+    // here — explicit hard reset has no allow-list to drift out of
+    // sync with new feature keys.
     try {
-      await clearSessionState();
+      if (typeof localStorage !== 'undefined') localStorage.clear();
     } catch (err) {
-      if (isDev) console.warn('[AUTH] clearSessionState threw — forcing reload:', err && err.message);
-      try { if (typeof location !== 'undefined') location.reload(); } catch { /* ignore */ }
+      if (isDev) console.warn('[AUTH] localStorage.clear threw:', err && err.message);
     }
+    try {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.clear();
+    } catch (err) {
+      if (isDev) console.warn('[AUTH] sessionStorage.clear threw:', err && err.message);
+    }
+    try {
+      if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
+        const names = await caches.keys();
+        await Promise.allSettled(names.map((n) => caches.delete(n)));
+      }
+    } catch (err) {
+      if (isDev) console.warn('[AUTH] caches purge threw:', err && err.message);
+    }
+
+    // Belt-and-braces — also run the curated sweep in case any
+    // future surface is added there but not here. Non-fatal.
+    try { await clearSessionState(); } catch { /* already hard-cleared above */ }
+
+    // Force a reload so any in-memory state outside React (e.g. a
+    // module-level cache, an open WebSocket) starts from zero.
+    try { if (typeof location !== 'undefined') location.reload(); }
+    catch { /* ignore — best-effort */ }
   }
 
   async function resendEmailVerification() {

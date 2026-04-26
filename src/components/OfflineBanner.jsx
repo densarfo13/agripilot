@@ -37,7 +37,21 @@ export default function OfflineBanner({ transport = null } = {}) {
       if (e.key === 'farroway.offlineQueue.v1') refresh();
     };
     window.addEventListener('storage', onStorage);
-    const t = setInterval(refresh, 5000);  // cheap belt-and-braces
+    // Polling safety (per spec #4) — 60s minimum, and only ticks
+    // when there is actually something pending. The `storage` event
+    // already covers 99% of cross-tab updates; this interval is a
+    // belt-and-braces refresh for the same-tab case where the
+    // engine drains a row and we want the count to drop without
+    // waiting for the next user interaction. Skipping the read when
+    // pending===0 keeps long-lived idle tabs off the localStorage
+    // hot path (mobile data + battery).
+    const POLL_MS = 60000;
+    const t = setInterval(() => {
+      try {
+        if (pendingCount() === 0) return;
+        refresh();
+      } catch { /* never propagate */ }
+    }, POLL_MS);
     return () => {
       detach();
       window.removeEventListener('storage', onStorage);
