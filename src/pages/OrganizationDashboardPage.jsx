@@ -28,7 +28,7 @@ import { withTimeout } from '../lib/api/withTimeout.js';
 export default function OrganizationDashboardPage() {
   const { orgId } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   const [dashboard, setDashboard] = useState(null);
   const [loading,  setLoading]    = useState(true);
@@ -195,7 +195,7 @@ export default function OrganizationDashboardPage() {
                   <li key={row.crop} style={styles.distRow}
                       data-testid={`org-crop-${row.crop}`}>
                     <div style={styles.distLabel}>
-                      {getCropLabelSafe(row.crop)}
+                      {getCropLabelSafe(row.crop, lang)}
                       <span style={styles.distCount}>{row.farms}</span>
                     </div>
                     <div style={styles.distTrack}>
@@ -415,7 +415,7 @@ export default function OrganizationDashboardPage() {
                     <td style={styles.td}>{f.fullName}</td>
                     <td style={styles.td}>{f.region || '—'}</td>
                     <td style={styles.td}>
-                      {f.primaryCrop ? getCropLabelSafe(f.primaryCrop) : '—'}
+                      {f.primaryCrop ? getCropLabelSafe(f.primaryCrop, lang) : '—'}
                     </td>
                     <td style={styles.td}>
                       {f.score

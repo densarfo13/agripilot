@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n/index.js';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
@@ -7,6 +8,7 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 const STATUSES = ['', 'draft', 'submitted', 'under_review', 'needs_more_evidence', 'field_review_required', 'fraud_hold', 'approved', 'conditional_approved', 'rejected', 'escalated', 'disbursed'];
 
 export default function ApplicationsPage() {
+  const { lang } = useTranslation();
   const [apps, setApps] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -68,7 +70,7 @@ export default function ApplicationsPage() {
                       <tr key={a.id} onClick={() => navigate(`/applications/${a.id}`)} style={{ cursor: 'pointer' }}>
                         <td style={{ fontWeight: 500 }}>{a.farmer?.fullName}</td>
                         <td>{a.farmer?.region}</td>
-                        <td>{getCropLabelSafe(a.cropType)}</td>
+                        <td>{getCropLabelSafe(a.cropType, lang)}</td>
                         <td>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</td>
                         <td><StatusBadge value={a.status} /></td>
                         <td>{a.verificationResult ? `${a.verificationResult.verificationScore}/100` : '-'}</td>

@@ -78,7 +78,7 @@ export default function MyFarmPage() {
   const navigate = useNavigate();
   const { profile, farms, currentFarmId, loading: profileLoading } = useProfile();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const fileInputRef = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState(getAvatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -221,13 +221,13 @@ export default function MyFarmPage() {
               <div style={S.tile}>
                 <CropImage
                   cropKey={farm.cropType || farm.crop}
-                  alt={getCropLabelSafe(farm.cropType || farm.crop)}
+                  alt={getCropLabelSafe(farm.cropType || farm.crop, lang)}
                   size={56}
                   circular
                   style={{ marginBottom: '0.5rem' }}
                 />
                 <span style={S.tileLabel}>{t('myFarm.crop')}</span>
-                <span style={S.tileValue}>{getCropLabelSafe(farm.cropType || farm.crop)}</span>
+                <span style={S.tileValue}>{getCropLabelSafe(farm.cropType || farm.crop, lang)}</span>
               </div>
             )}
 

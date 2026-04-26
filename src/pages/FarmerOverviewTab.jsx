@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n/index.js';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -16,6 +17,7 @@ const STAGE_META = {
 };
 
 export default function FarmerOverviewTab() {
+  const { lang } = useTranslation();
   const { farmer, summary, reminderSummary, unread, farmerId, refresh } = useFarmerContext();
   const navigate = useNavigate();
   const recentApps = farmer?.applications?.slice(0, 5) || [];
@@ -122,7 +124,7 @@ export default function FarmerOverviewTab() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Crop</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType ? getCropLabelSafe(lifecycle.cropType) : 'Not set'}</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{lifecycle.cropType ? getCropLabelSafe(lifecycle.cropType, lang) : 'Not set'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Trust Status</div>
@@ -241,7 +243,7 @@ export default function FarmerOverviewTab() {
                   {summary.recentActivities.map(a => (
                     <tr key={a.id}>
                       <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
-                      <td>{a.cropType ? getCropLabelSafe(a.cropType) : '-'}</td>
+                      <td>{a.cropType ? getCropLabelSafe(a.cropType, lang) : '-'}</td>
                       <td className="text-sm text-muted">{new Date(a.activityDate).toLocaleDateString()}</td>
                     </tr>
                   ))}
@@ -269,7 +271,7 @@ export default function FarmerOverviewTab() {
                   <tbody>
                     {recentApps.map(app => (
                       <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                        <td>{getCropLabelSafe(app.cropType)}</td>
+                        <td>{getCropLabelSafe(app.cropType, lang)}</td>
                         <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                         <td><StatusBadge value={app.status} /></td>
                         <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>

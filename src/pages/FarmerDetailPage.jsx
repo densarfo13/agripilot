@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n/index.js';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
@@ -21,6 +22,7 @@ const STATUS_COLORS = {
 };
 
 export default function FarmerDetailPage() {
+  const { lang } = useTranslation();
   const { id } = useParams();
   const [farmer, setFarmer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -159,7 +161,7 @@ export default function FarmerDetailPage() {
                 <tbody>
                   {farmer.applications?.map(app => (
                     <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                      <td>{getCropLabelSafe(app.cropType)}</td>
+                      <td>{getCropLabelSafe(app.cropType, lang)}</td>
                       <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                       <td><StatusBadge value={app.status} /></td>
                       <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>
@@ -1173,7 +1175,7 @@ function PerformanceProfileSection({ farmerId }) {
           </div>
           <div style={metricBox}>
             <div style={metricLabel}>Crops</div>
-            <div style={metricValue}>{summary.cropTypes.map(c => getCropLabelSafe(c)).join(', ') || 'None'}</div>
+            <div style={metricValue}>{summary.cropTypes.map(c => getCropLabelSafe(c, lang)).join(', ') || 'None'}</div>
           </div>
         </div>
 
@@ -1252,7 +1254,7 @@ function PerformanceProfileSection({ farmerId }) {
                   <tbody>
                     {yieldHistory.map((y, i) => (
                       <tr key={i}>
-                        <td style={tdStyle}>{getCropLabelSafe(y.cropType)}</td>
+                        <td style={tdStyle}>{getCropLabelSafe(y.cropType, lang)}</td>
                         <td style={tdStyle}>{new Date(y.plantingDate).toLocaleDateString()}</td>
                         <td style={tdStyle}>{y.yieldPerAcre}</td>
                         <td style={tdStyle}>{y.totalHarvestKg}</td>
@@ -1277,7 +1279,7 @@ function PerformanceProfileSection({ farmerId }) {
                       const clsColor = CLASSIFICATION_COLORS[cls] || { bg: '#1E293B', color: '#A1A1AA' };
                       return (
                         <tr key={s.id}>
-                          <td style={tdStyle}>{getCropLabelSafe(s.cropType)}</td>
+                          <td style={tdStyle}>{getCropLabelSafe(s.cropType, lang)}</td>
                           <td style={tdStyle}>{new Date(s.plantingDate).toLocaleDateString()}</td>
                           <td style={tdStyle}><StatusBadge value={s.status} /></td>
                           <td style={tdStyle}>{s.progressScore?.score ?? '-'}</td>
@@ -1648,7 +1650,7 @@ function HistoricalPerformanceSection({ farmerId, userRole }) {
                             ? new Date(s.plantingDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
                             : `Season ${i + 1}`}
                         </td>
-                        <td style={tdStyle}>{getCropLabelSafe(s.cropType)}</td>
+                        <td style={tdStyle}>{getCropLabelSafe(s.cropType, lang)}</td>
                         <td style={tdStyle}>
                           <span style={{
                             display: 'inline-block', padding: '1px 6px', borderRadius: 10,

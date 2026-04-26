@@ -33,7 +33,7 @@ const STAGE_ORDER = [
 
 export default function FarmerProgressPage() {
   const { currentFarmId, profile } = useProfile();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { isOnline } = useNetwork();
 
   const [taskCount, setTaskCount] = useState(0);
@@ -245,7 +245,7 @@ export default function FarmerProgressPage() {
                 <span style={S.sectionLabel}>{t('progress.cropProgress')}</span>
               </div>
               <div style={S.cropRow}>
-                <span style={S.cropName}>{getCropLabelSafe(cropType)}</span>
+                <span style={S.cropName}>{getCropLabelSafe(cropType, lang)}</span>
                 {cropStage && (
                   <span style={S.stageBadge}>
                     {STAGE_EMOJIS[cropStage] || SECTION_ICONS.growth}{' '}

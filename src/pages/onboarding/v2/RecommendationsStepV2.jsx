@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '../../../i18n/index.js';
 import OnboardingShell from '../../../components/onboarding/v2/OnboardingShell.jsx';
 import RecommendationCropCard from '../../../components/onboarding/v2/RecommendationCropCard.jsx';
 import { ONBOARDING_STEPS } from '../../../utils/onboardingV2/stepIds.js';

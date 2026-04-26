@@ -413,7 +413,7 @@ export default function EditFarmScreen() {
                 onClick={() => pickCrop(c.code)}
                 style={{
                   ...S.chip,
-                  ...(form.cropType === c.code || (c.code === CROP_OTHER && form.cropType && !getCropLabelSafe(form.cropType))
+                  ...(form.cropType === c.code || (c.code === CROP_OTHER && form.cropType && !getCropLabelSafe(form.cropType, lang))
                     ? S.chipActive : null),
                 }}
                 data-testid={`edit-farm-crop-${c.code}`}

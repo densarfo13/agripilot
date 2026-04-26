@@ -139,7 +139,7 @@ export default function FarmForm({
   onSuccess,
   onCancel,
 } = {}) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const isEditing = mode === 'edit';
 
   const [form,         setForm]         = useState(() => buildInitialForm(initialData));
@@ -460,7 +460,7 @@ export default function FarmForm({
             <option value="">{t('farm.fields.cropPlaceholder') || 'Select crop'}</option>
             {cropOptions.map((c) => (
               <option key={c.code} value={c.code}>
-                {getCropLabelSafe(c.code)}
+                {getCropLabelSafe(c.code, lang)}
               </option>
             ))}
           </select>

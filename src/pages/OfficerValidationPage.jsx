@@ -44,7 +44,7 @@ export default function OfficerValidationPage() {
   const submitGuardRef = useRef(false);
   const noteInputRef = useRef(null);
   const startTimeRef = useRef(null);
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const STAGE_LABELS = getStageLabelsOfficer(t);
 
   // ─── Load queue ─────────────────────────────────────────
@@ -306,7 +306,7 @@ export default function OfficerValidationPage() {
                 <div>
                   <div style={VS.farmerName}>{current.farmerName}</div>
                   <div style={VS.farmMeta}>
-                    {getCropLabelSafe(current.cropType)}
+                    {getCropLabelSafe(current.cropType, lang)}
                     {current.currentStage ? ` · ${STAGE_LABELS[current.currentStage] || current.currentStage}` : ''}
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
+import { useTranslation } from '../i18n/index.js';
 import api, { formatApiError } from '../api/client.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -8,6 +9,7 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 const ACTIVITY_TYPES = ['planting', 'fertilizing', 'spraying', 'pesticide', 'weeding', 'irrigation', 'harvesting', 'storage', 'selling', 'other'];
 
 export default function FarmerActivitiesTab() {
+  const { lang } = useTranslation();
   const { farmerId, farmer, refresh, activeSeason } = useFarmerContext();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,7 +171,7 @@ export default function FarmerActivitiesTab() {
                       <tr key={a.id}>
                         <td className="text-sm">{new Date(a.activityDate).toLocaleDateString()}</td>
                         <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
-                        <td>{a.cropType ? getCropLabelSafe(a.cropType) : '-'}</td>
+                        <td>{a.cropType ? getCropLabelSafe(a.cropType, lang) : '-'}</td>
                         <td>{a.quantityKg ? `${a.quantityKg} kg` : '-'}</td>
                         <td className="text-sm text-muted">
                           {a.activityType === 'pesticide' && a.metadata?.pesticideName

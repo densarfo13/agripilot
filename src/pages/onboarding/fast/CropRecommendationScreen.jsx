@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from '../../../i18n/index.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;

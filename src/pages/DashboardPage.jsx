@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n/index.js';
 import api from '../api/client.js';
 import { PriorityBadge } from '../components/TrustRiskBadge.jsx';
 import { SkeletonDashboard } from '../components/SkeletonLoader.jsx';
@@ -40,6 +41,7 @@ const TASK_ICONS = {
 };
 
 export default function DashboardPage() {
+  const { lang } = useTranslation();
   const [portfolio, setPortfolio] = useState(null);
   const [queues, setQueues] = useState({ verification: 0, fraud: 0, escalated: 0 });
   const [pendingCount, setPendingCount] = useState(0);
@@ -529,7 +531,7 @@ export default function DashboardPage() {
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.4rem' }}>Crop & Land</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   {adoption.cropDistribution.slice(0, 6).map(c => (
-                    <span key={c.crop} style={DS.queueTag}>{getCropLabelSafe(c.crop)}: {c.count}</span>
+                    <span key={c.crop} style={DS.queueTag}>{getCropLabelSafe(c.crop, lang)}: {c.count}</span>
                   ))}
                 </div>
                 {adoption.landSize && (
@@ -554,7 +556,7 @@ export default function DashboardPage() {
                 {portfolio.recentApplications.slice(0, 5).map(app => (
                   <div key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={DS.recentRow}>
                     <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{app.farmer.fullName}</span>
-                    <span style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>{getCropLabelSafe(app.cropType)}</span>
+                    <span style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>{getCropLabelSafe(app.cropType, lang)}</span>
                     <span style={{ fontSize: '0.8rem', color: '#22C55E' }}>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</span>
                   </div>
                 ))}
