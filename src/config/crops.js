@@ -382,7 +382,16 @@ const _warnedMissingCrop = new Set();
 
 export function getCropLabel(code, lang = 'en') {
   if (!code) return '';
-  const norm = normalizeCrop(code);
+  // Pilot leak (Apr 2026): Hindi UI showed "Maize" raw because
+  // the user's farm has cropType = 'Maize' (Title Case) and the
+  // alias lookup is case-sensitive — normalizeCrop('Maize') ≠
+  // normalizeCrop('maize'). Retry with lowercase before giving up.
+  // We don't modify normalizeCrop or cropAliases (strict rule);
+  // we just call them with a normalised input shape.
+  let norm = normalizeCrop(code);
+  if (!norm && typeof code === 'string' && code.trim()) {
+    norm = normalizeCrop(code.trim().toLowerCase());
+  }
   if (!norm) return String(code);
   const table = CROP_LABELS_BY_LANG[lang] || CROP_LABELS_BY_LANG.en;
   if (table[norm]) return table[norm];

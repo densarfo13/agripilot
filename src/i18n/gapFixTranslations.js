@@ -90,6 +90,24 @@ export const GAP_FIX_TRANSLATIONS = Object.freeze({
     'loop.outcome.not_sure':   'Sijui',
     'today.done.nextAction':   'Angalia kesho',
     'today.done.reviewProgress':'Angalia maendeleo',
+    'progress.explain.ontrack_early':
+      'Umeanza vizuri. Endelea na kazi za leo ili kutunza alama.',
+    'progress.explain.ontrack_mid':
+      'Unaendelea vyema. Maliza kazi za leo ili kuendelea kutia alama.',
+    'progress.explain.ontrack_late':
+      'Hatua ya mavuno inakaribia. Maliza ukaguzi wa leo.',
+    'progress.explain.ontrack_done':
+      'Umemaliza kazi za leo. Angalia mwongozo wa kesho au kagua maendeleo.',
+    'progress.explain.ontrack_default':
+      'Uko njia nzuri. Maliza kazi za leo kuweka alama imara.',
+    'progress.explain.slight_delay':
+      'Uko karibu na njia. Maliza kazi za leo ili kufikia.',
+    'progress.explain.highrisk_early':
+      'Zao lako linaanza tu. Maliza kazi za leo kurudi kwenye njia.',
+    'progress.explain.highrisk_mid':
+      'Una kazi zilizosalia. Kazi chache leo zitarudisha alama juu.',
+    'progress.explain.highrisk_late':
+      'Hatua ya mavuno inahitaji uangalifu. Maliza ukaguzi wa leo kulinda mavuno.',
   },
 
   ha: {
@@ -99,6 +117,24 @@ export const GAP_FIX_TRANSLATIONS = Object.freeze({
     'loop.outcome.not_sure':   'Ban tabbata ba',
     'today.done.nextAction':   'Duba gobe',
     'today.done.reviewProgress':'Duba cigaba',
+    'progress.explain.ontrack_early':
+      'Ka fara da kyau. Ci gaba da ayyukan yau don kiyaye makin.',
+    'progress.explain.ontrack_mid':
+      'Kana kan hanya. Kammala ayyukan yau don ci gaba da yin maki.',
+    'progress.explain.ontrack_late':
+      'Lokacin girbi yana gabatowa. Kammala duba na yau.',
+    'progress.explain.ontrack_done':
+      'Kun gama ayyukan yau. Duba shirin gobe ko bita cigaba.',
+    'progress.explain.ontrack_default':
+      'Kuna kan hanya. Kammala ayyukan yau don kiyaye makin daidai.',
+    'progress.explain.slight_delay':
+      'Kuna kusa da kan hanya. Kammala ayyukan yau don kammalawa.',
+    'progress.explain.highrisk_early':
+      'Shukarka tana farawa kawai. Kammala ayyukan yau don dawowa kan hanya.',
+    'progress.explain.highrisk_mid':
+      'Akwai aiki da bai cika ba. Wasu ayyuka yau za su \u0257aga makin.',
+    'progress.explain.highrisk_late':
+      'Lokacin girbi yana bukatar kulawa. Kammala duba na yau don kiyaye girbi.',
   },
 
   tw: {
@@ -108,6 +144,51 @@ export const GAP_FIX_TRANSLATIONS = Object.freeze({
     'loop.outcome.not_sure':   'Mennim',
     'today.done.nextAction':   'Hw\u025B \u0254kyena',
     'today.done.reviewProgress':'San hw\u025B w\u2019anim nk\u0254so',
+    'progress.explain.ontrack_early':
+      'Wofiri ase yiye. Toa nnɛ nnwuma so na ma maki no nkɔ so.',
+    'progress.explain.ontrack_mid':
+      'Worekɔ kwan pa so. Wie nnɛ nnwuma na maki no nkɔ so.',
+    'progress.explain.ontrack_late':
+      'Otwa berɛ rebɛn. Wie nnɛ nhwehwɛmu.',
+    'progress.explain.ontrack_done':
+      'Woawie nnɛ nnwuma. Hwɛ ɔkyena anaa san hwɛ wo nkɔso.',
+    'progress.explain.ontrack_default':
+      'Wowɔ ɛkwan pa so. Wie nnɛ nnwuma na maki no nkɔ so daa.',
+    'progress.explain.slight_delay':
+      'Wobɛn ɛkwan pa no. Wie nnɛ nnwuma na to ho.',
+    'progress.explain.highrisk_early':
+      'W\u2019aduane refi ase. Wie nnɛ nnwuma na san kɔ ɛkwan pa so.',
+    'progress.explain.highrisk_mid':
+      'Adwuma bi atwa wo. Nnwuma kakra nnɛ bɛma maki no nkɔ soro.',
+    'progress.explain.highrisk_late':
+      'Otwa berɛ hia hwɛyie. Wie nnɛ nhwehwɛmu na bɔ wo nnɔbae ho ban.',
+  },
+
+  hi: {
+    'loop.did_this_help':      'क्या यह मदद की?',
+    'loop.outcome.yes':        'हाँ',
+    'loop.outcome.no':         'नहीं',
+    'loop.outcome.not_sure':   'पता नहीं',
+    'today.done.nextAction':   'कल का देखें',
+    'today.done.reviewProgress':'प्रगति देखें',
+    'progress.explain.ontrack_early':
+      'अच्छी शुरुआत। आज के काम पूरे करें ताकि स्कोर बना रहे।',
+    'progress.explain.ontrack_mid':
+      'आप सही दिशा में हैं। आज के काम पूरे करके स्कोर बनाए रखें।',
+    'progress.explain.ontrack_late':
+      'फसल पकने वाली है। आज की जाँच पूरी करें।',
+    'progress.explain.ontrack_done':
+      'आज के काम पूरे हो गए। कल का पूर्वावलोकन देखें या प्रगति की समीक्षा करें।',
+    'progress.explain.ontrack_default':
+      'आप सही दिशा में हैं। आज के काम पूरे करें ताकि स्कोर स्थिर रहे।',
+    'progress.explain.slight_delay':
+      'आप लगभग सही दिशा में हैं। आज के काम पूरे करके भरपाई करें।',
+    'progress.explain.highrisk_early':
+      'आपकी फसल अभी शुरू हो रही है। आज के काम पूरे करके वापस सही दिशा में आएँ।',
+    'progress.explain.highrisk_mid':
+      'कुछ काम बाकी हैं। आज कुछ काम पूरे करके स्कोर वापस ऊपर लाएँ।',
+    'progress.explain.highrisk_late':
+      'फसल चरण को ध्यान चाहिए। आज की जाँच पूरी करके अपनी उपज की रक्षा करें।',
   },
 });
 
