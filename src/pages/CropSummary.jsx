@@ -337,6 +337,7 @@ export default function CropSummary() {
       {showBetaWarning && (
         <BetaWarningModal
           cropName={crop.name}
+          cropCode={crop.code}
           cropIcon={cp.icon}
           onConfirm={() => { setShowBetaWarning(false); handleStart(); }}
           onCancel={() => { setShowBetaWarning(false); navigate(-1); }}

@@ -12,7 +12,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
-import { getCropLabel, getCropIcon, getCropLabelSafe } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
@@ -34,41 +34,15 @@ import {
   assertFindBestCropNotOnboarding,
 } from '../core/multiFarm/index.js';
 
-const CROP_EMOJIS = {
-  maize: '🌽',
-  corn: '🌽',
-  wheat: '🌾',
-  rice: '🍚',
-  cassava: '🥔',
-  potato: '🥔',
-  tomato: '🍅',
-  coffee: '☕',
-  tea: '🍵',
-  sugarcane: '🎋',
-  banana: '🍌',
-  bean: '🫘',
-  beans: '🫘',
-  soybean: '🫘',
-  groundnut: '🥜',
-  peanut: '🥜',
-  cotton: '🧶',
-  sunflower: '🌻',
-  mango: '🥭',
-  orange: '🍊',
-  avocado: '🥑',
-  onion: '🧅',
-  pepper: '🌶️',
-  cabbage: '🥬',
-  carrot: '🥕',
-};
-
 // STAGE_EMOJIS and STAGE_KEYS imported from utils/cropStages.js
-
-function getCropEmoji(crop) {
-  if (!crop) return '🌱';
-  const key = crop.toLowerCase().trim();
-  return CROP_EMOJIS[key] || '🌱';
-}
+//
+// Removed (Apr 2026 pilot fix): a local CROP_EMOJIS map +
+// getCropEmoji() helper that mapped cassava/potato to the same
+// 🥔 emoji (Unicode has no cassava glyph). The map and helper
+// were dead code — the page already renders crop visuals via
+// <CropImage> below, which reads the canonical .webp catalog
+// in src/config/cropImages.js. Keeping the dead emoji map
+// risked re-introducing the inconsistency.
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;

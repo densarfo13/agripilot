@@ -13,8 +13,18 @@
  */
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import CropImage from './CropImage.jsx';
 
-export default function BetaWarningModal({ cropName, cropIcon, onConfirm, onCancel }) {
+/**
+ * Props
+ *   cropName  — display name (analytics + image alt text)
+ *   cropCode  — canonical crop id (preferred); when set, renders
+ *               the canonical CropImage artwork.
+ *   cropIcon  — legacy emoji fallback for callers that haven't
+ *               migrated to cropCode yet. Used only when cropCode
+ *               is absent.
+ */
+export default function BetaWarningModal({ cropName, cropCode, cropIcon, onConfirm, onCancel }) {
   const { t } = useTranslation();
 
   function handleConfirm() {
@@ -30,9 +40,14 @@ export default function BetaWarningModal({ cropName, cropIcon, onConfirm, onCanc
   return (
     <div style={S.backdrop} role="dialog" aria-modal="true" data-testid="beta-warning">
       <div style={S.card}>
-        {/* Icon + beta chip */}
+        {/* Icon + beta chip — prefer canonical CropImage when the
+            caller passes cropCode (visually consistent with the
+            list view + detail card). Falls back to the legacy
+            emoji prop for callers still on the old API. */}
         <div style={S.iconRow}>
-          <span style={S.icon} aria-hidden="true">{cropIcon || '\uD83E\uDDEA'}</span>
+          {cropCode
+            ? <CropImage cropKey={cropCode} alt={cropName || ''} size={48} circular />
+            : <span style={S.icon} aria-hidden="true">{cropIcon || '\uD83E\uDDEA'}</span>}
           <span style={S.betaChip}>{t('beta.label')}</span>
         </div>
 
