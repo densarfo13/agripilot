@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useTranslation } from '../i18n/index.js';
+import { getCropLabel } from '../utils/crops.js';
 import SeasonTasksCard from '../components/SeasonTasksCard.jsx';
 
 export default function SeasonStart() {
   const navigate = useNavigate();
   const { season, finishSeason } = useSeason();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   async function handleCompleteSeason() {
     try {
@@ -40,10 +41,14 @@ export default function SeasonStart() {
           {season && (
             <div style={S.detailGrid}>
               <div style={S.label}>{t('season.crop')}:</div>
-              <div>{season.cropType}</div>
+              {/* BUG-1 fix — language-aware crop label instead of raw enum */}
+              <div>{getCropLabel(season.cropType, lang) || season.cropType}</div>
 
               <div style={S.label}>{t('season.stage')}:</div>
-              <div>{season.stage}</div>
+              {/* BUG-2 fix — translated stage. t() falls back to humanized
+                  English when the stage key isn't in translations.js, which
+                  is strictly better than raw "vegetative" / "harvest_ready". */}
+              <div>{season.stage ? t(`stage.${season.stage}`) : ''}</div>
 
               <div style={S.label}>{t('season.startDate')}:</div>
               <div>{new Date(season.startDate).toLocaleDateString()}</div>

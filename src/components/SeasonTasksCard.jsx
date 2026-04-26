@@ -5,6 +5,7 @@ import { calculateFarmScore } from '../lib/farmScore.js';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
+import { getCropLabel } from '../utils/crops.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
 
 function formatDate(value) {
@@ -81,7 +82,15 @@ export default function SeasonTasksCard() {
       <div style={S.headerRow}>
         <div>
           <h3 style={S.title}>{t('tasks.title')}</h3>
-          <p style={S.subtitle}>Crop: {season.cropType} \u2022 Stage: {season.stage}</p>
+          {/* BUG-3 fix — was: "Crop: {raw} • Stage: {raw}" hardcoded
+              in English. Now uses translated labels + language-aware
+              crop name + translated stage so a Hindi farmer sees the
+              entire line in Hindi. */}
+          <p style={S.subtitle}>
+            {t('season.crop')}: {getCropLabel(season.cropType, lang) || season.cropType}
+            {' \u2022 '}
+            {t('season.stage')}: {season.stage ? t(`stage.${season.stage}`) : ''}
+          </p>
         </div>
         <div style={S.pendingBadge}>{pendingTasks.length} {t('tasks.pending')}</div>
       </div>
