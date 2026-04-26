@@ -17,7 +17,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   getDailyProgress, acknowledgeMilestone,
 } from '../lib/progress/progressTracker.js';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — see useStrictTranslation.js.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
 
 function hasStorage() { return typeof window !== 'undefined' && !!window.localStorage; }

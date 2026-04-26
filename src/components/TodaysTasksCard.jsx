@@ -18,7 +18,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getTodayTasks, markTaskComplete, skipTask,
 } from '../lib/dailyTasks/taskScheduler.js';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — see useStrictTranslation.js.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
 
 const TONE_BY_PRIORITY = {

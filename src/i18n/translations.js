@@ -6597,43 +6597,43 @@ const T = {
 
   // ─── Settings card ─────────────────────────────
   'notification.settings.title': {
-    en: 'Daily notifications', fr: 'Notifications quotidiennes', sw: 'Taarifa za kila siku', ha: 'Sanarwar yau da kullum', tw: 'Daa nkra',
+    en: 'Daily notifications', fr: 'Notifications quotidiennes', sw: 'Taarifa za kila siku', ha: 'Sanarwar yau da kullum', tw: 'Daa nkra', hi: 'दैनिक सूचनाएँ',
   },
   'notification.settings.subtitle': {
-    en: 'Useful guidance, not spam.', fr: 'Des conseils utiles, pas de spam.', sw: 'Mwongozo wa manufaa, si ghasia.', ha: 'Jagora mai fa\'ida, ba spam ba.', tw: 'Akwankyerɛ a ɛho hia, ɛnyɛ nkwanhyia.',
+    en: 'Useful guidance, not spam.', fr: 'Des conseils utiles, pas de spam.', sw: 'Mwongozo wa manufaa, si ghasia.', ha: 'Jagora mai fa\'ida, ba spam ba.', tw: 'Akwankyerɛ a ɛho hia, ɛnyɛ nkwanhyia.', hi: 'उपयोगी सूचना, स्पैम नहीं।',
   },
   'notification.settings.daily': {
-    en: 'Daily task reminder', fr: 'Rappel quotidien', sw: 'Kumbusho la kila siku', ha: 'Tunatarwa ta yau da kullum', tw: 'Daa adwuma nkae',
+    en: 'Daily task reminder', fr: 'Rappel quotidien', sw: 'Kumbusho la kila siku', ha: 'Tunatarwa ta yau da kullum', tw: 'Daa adwuma nkae', hi: 'दैनिक कार्य अनुस्मारक',
   },
   'notification.settings.dailyHint': {
-    en: 'One morning nudge about what to do today', fr: 'Un rappel matinal sur ce qu\'il faut faire aujourd\'hui', sw: 'Ukumbusho mmoja asubuhi kuhusu cha kufanya leo', ha: 'Tunatarwa ɗaya da safe game da abin da za a yi yau', tw: 'Anɔpa nkae baako fa deɛ wobɛyɛ nnɛ ho',
+    en: 'One morning nudge about what to do today', fr: 'Un rappel matinal sur ce qu\'il faut faire aujourd\'hui', sw: 'Ukumbusho mmoja asubuhi kuhusu cha kufanya leo', ha: 'Tunatarwa ɗaya da safe game da abin da za a yi yau', tw: 'Anɔpa nkae baako fa deɛ wobɛyɛ nnɛ ho', hi: 'सुबह एक संदेश — आज क्या करना है',
   },
   'notification.settings.weather': {
-    en: 'Weather alerts', fr: 'Alertes météo', sw: 'Tahadhari za hali ya hewa', ha: 'Sanarwar yanayi', tw: 'Ewim tebea kɔkɔbɔ',
+    en: 'Weather alerts', fr: 'Alertes météo', sw: 'Tahadhari za hali ya hewa', ha: 'Sanarwar yanayi', tw: 'Ewim tebea kɔkɔbɔ', hi: 'मौसम चेतावनी',
   },
   'notification.settings.weatherHint': {
-    en: 'Only when weather changes your next action', fr: 'Seulement si la météo change votre prochaine action', sw: 'Tu wakati hali ya hewa inabadilisha hatua yako', ha: 'Kawai lokacin da yanayi ya canza mataki na gaba', tw: 'Bere a ewim tebea sesa adeɛ a ɛdi hɔ nko ara',
+    en: 'Only when weather changes your next action', fr: 'Seulement si la météo change votre prochaine action', sw: 'Tu wakati hali ya hewa inabadilisha hatua yako', ha: 'Kawai lokacin da yanayi ya canza mataki na gaba', tw: 'Bere a ewim tebea sesa adeɛ a ɛdi hɔ nko ara', hi: 'केवल जब मौसम अगला कदम बदले',
   },
   'notification.settings.critical': {
-    en: 'Critical risk alerts', fr: 'Alertes critiques', sw: 'Tahadhari muhimu', ha: 'Sanarwar haɗari', tw: 'Asiane kɔkɔbɔ',
+    en: 'Critical risk alerts', fr: 'Alertes critiques', sw: 'Tahadhari muhimu', ha: 'Sanarwar haɗari', tw: 'Asiane kɔkɔbɔ', hi: 'गंभीर जोखिम चेतावनी',
   },
   'notification.settings.criticalHint': {
-    en: 'Rare — only when delay could cause loss', fr: 'Rares — seulement si un retard peut causer une perte', sw: 'Nadra — tu wakati kuchelewa kunaweza kusababisha hasara', ha: 'Ba safai ba — kawai idan jinkiri zai iya haifar da asara', tw: 'Ɛnyɛ daa — bere a akyire-kyire bɛma wɔahwere nneɛma nko',
+    en: 'Rare — only when delay could cause loss', fr: 'Rares — seulement si un retard peut causer une perte', sw: 'Nadra — tu wakati kuchelewa kunaweza kusababisha hasara', ha: 'Ba safai ba — kawai idan jinkiri zai iya haifar da asara', tw: 'Ɛnyɛ daa — bere a akyire-kyire bɛma wɔahwere nneɛma nko', hi: 'बहुत कम — केवल जब देरी से हानि हो',
   },
   'notification.settings.time': {
-    en: 'Morning time', fr: 'Heure du matin', sw: 'Wakati wa asubuhi', ha: 'Lokacin safe', tw: 'Anɔpa bere',
+    en: 'Morning time', fr: 'Heure du matin', sw: 'Wakati wa asubuhi', ha: 'Lokacin safe', tw: 'Anɔpa bere', hi: 'सुबह का समय',
   },
   'notification.settings.timeHint': {
-    en: 'When to receive your daily reminder', fr: 'Quand recevoir votre rappel quotidien', sw: 'Wakati wa kupokea ukumbusho wako', ha: 'Lokacin da za ku sami tunatarwa', tw: 'Bere a wobɛnya wo daa nkae',
+    en: 'When to receive your daily reminder', fr: 'Quand recevoir votre rappel quotidien', sw: 'Wakati wa kupokea ukumbusho wako', ha: 'Lokacin da za ku sami tunatarwa', tw: 'Bere a wobɛnya wo daa nkae', hi: 'दैनिक अनुस्मारक कब पाएँ',
   },
   'notification.settings.enableBrowser': {
-    en: 'Enable phone notifications', fr: 'Activer les notifications', sw: 'Wezesha taarifa za simu', ha: 'Kunna sanarwar waya', tw: 'Ma fon nkra nyɛ adwuma',
+    en: 'Enable phone notifications', fr: 'Activer les notifications', sw: 'Wezesha taarifa za simu', ha: 'Kunna sanarwar waya', tw: 'Ma fon nkra nyɛ adwuma', hi: 'फ़ोन सूचनाएँ चालू करें',
   },
   'notification.settings.deniedHint': {
-    en: 'Phone notifications are off. In-app reminders still work.', fr: 'Les notifications sont désactivées. Les rappels dans l\'app fonctionnent.', sw: 'Taarifa za simu zimezimwa. Vikumbusho vya ndani ya programu bado vinafanya kazi.', ha: 'An kashe sanarwar waya. Tunatarwa a cikin app na ci gaba.', tw: 'Fon nkra no adum. App mu nkae da so yɛ adwuma.',
+    en: 'Phone notifications are off. In-app reminders still work.', fr: 'Les notifications sont désactivées. Les rappels dans l\'app fonctionnent.', sw: 'Taarifa za simu zimezimwa. Vikumbusho vya ndani ya programu bado vinafanya kazi.', ha: 'An kashe sanarwar waya. Tunatarwa a cikin app na ci gaba.', tw: 'Fon nkra no adum. App mu nkae da so yɛ adwuma.', hi: 'फ़ोन सूचनाएँ बंद हैं। ऐप में अनुस्मारक चलते रहेंगे।',
   },
   'notification.settings.unsupportedHint': {
-    en: 'Your phone does not support notifications. In-app reminders still work.', fr: 'Votre téléphone ne prend pas en charge les notifications.', sw: 'Simu yako haitumii taarifa. Vikumbusho vya ndani vinafanya kazi.', ha: 'Wayarku ba ta tallafawa sanarwa. Tunatarwa a app na ci gaba.', tw: 'Wo fon no nsusuw nkra so. App mu nkae da so yɛ adwuma.',
+    en: 'Your phone does not support notifications. In-app reminders still work.', fr: 'Votre téléphone ne prend pas en charge les notifications.', sw: 'Simu yako haitumii taarifa. Vikumbusho vya ndani vinafanya kazi.', ha: 'Wayarku ba ta tallafawa sanarwa. Tunatarwa a app na ci gaba.', tw: 'Wo fon no nsusuw nkra so. App mu nkae da so yɛ adwuma.', hi: 'आपका फ़ोन सूचनाएँ सहायक नहीं है। ऐप अनुस्मारक चलते हैं।',
   },
 
   // ─── Daily notification copy ───────────────────

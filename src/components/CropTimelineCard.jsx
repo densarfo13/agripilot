@@ -14,7 +14,8 @@ import { useMemo } from 'react';
 import { getCropTimeline } from '../lib/timeline/cropTimelineEngine.js';
 import { getStageProgress } from '../lib/timeline/stageProgressEngine.js';
 import { getCropCycleState } from '../lib/harvest/cropCycleCompletionEngine.js';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — see useStrictTranslation.js.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
 
 function prettyStage(key) {

@@ -6,7 +6,8 @@
  * existing FarmerSettingsPanel as a routable destination.
  */
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — see useStrictTranslation.js.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import FarmerSettingsPanel from '../components/FarmerSettingsPanel.jsx';
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel.jsx';
 

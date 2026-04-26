@@ -11,7 +11,8 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — see useStrictTranslation.js.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getCropCycleState } from '../lib/harvest/cropCycleCompletionEngine.js';
 import { getHarvestSummary } from '../lib/harvest/harvestSummaryEngine.js';
 import {

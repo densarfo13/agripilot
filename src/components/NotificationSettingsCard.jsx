@@ -12,7 +12,10 @@
  * regardless of permission state.
  */
 import { useState, useEffect } from 'react';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — every t() call here returns '' instead of
+// English fallback when a key is missing in the active language.
+// One-line reversal by swapping back to '../i18n/index.js'.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getPreferences, setPreferences } from '../services/notificationPreferences.js';
 import { isSupported, getPermission, requestPermission } from '../services/notificationService.js';
 import { safeTrackEvent } from '../lib/analytics.js';

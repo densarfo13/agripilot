@@ -10,7 +10,8 @@
  */
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-leak alias — see useStrictTranslation.js.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import NotificationSettingsCard from './NotificationSettingsCard.jsx';
 
 export default function FarmerSettingsPanel() {
