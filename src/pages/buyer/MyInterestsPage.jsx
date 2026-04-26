@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { listBuyerInterests } from '../../hooks/useMarket.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const STATUS_COLOR = {
   pending:  '#F59E0B',
@@ -46,24 +47,24 @@ export default function MyInterestsPage() {
     <div style={S.page}>
       <div style={S.container}>
         <header style={S.header}>
-          <h1 style={S.title}>{t('market.myInterests.title') || 'My interests'}</h1>
+          <h1 style={S.title}>{tSafe('market.myInterests.title', '')}</h1>
           <button type="button" style={S.link} onClick={() => navigate('/market/browse')}>
-            {t('market.myInterests.browse') || 'Browse listings'}
+            {tSafe('market.myInterests.browse', '')}
           </button>
         </header>
 
         {state.loading && <p style={S.muted}>{t('common.loading')}</p>}
-        {state.error && <p style={S.err}>{t('market.myInterests.error') || 'Could not load.'}</p>}
+        {state.error && <p style={S.err}>{tSafe('market.myInterests.error', '')}</p>}
 
         {empty && (
           <div style={S.emptyCard}>
             <div style={S.emptyIcon}>{'\uD83D\uDCE2'}</div>
-            <h2 style={S.emptyTitle}>{t('market.myInterests.empty') || 'No interests yet'}</h2>
+            <h2 style={S.emptyTitle}>{tSafe('market.myInterests.empty', '')}</h2>
             <p style={S.emptyBody}>
-              {t('market.myInterests.emptyHint') || 'Browse listings and tap Interested to start a conversation.'}
+              {tSafe('market.myInterests.emptyHint', '')}
             </p>
             <button type="button" style={S.primaryBtn} onClick={() => navigate('/market/browse')}>
-              {t('market.myInterests.browse') || 'Browse listings'}
+              {tSafe('market.myInterests.browse', '')}
             </button>
           </div>
         )}
@@ -109,7 +110,7 @@ export default function MyInterestsPage() {
 
                   {i.farmerResponseNote && (
                     <div style={S.responseNote}>
-                      <span style={S.metaLabel}>{t('market.interest.farmerNote') || 'Farmer note'}:</span>
+                      <span style={S.metaLabel}>{tSafe('market.interest.farmerNote', '')}:</span>
                       <span> {i.farmerResponseNote}</span>
                     </div>
                   )}
@@ -119,14 +120,12 @@ export default function MyInterestsPage() {
                   )}
                   {i.status === 'accepted' && !i.farmerContact && (
                     <div style={S.awaitingContact}>
-                      {t('market.interest.awaitingContact')
-                        || 'Farmer accepted. Contact details will appear here shortly.'}
+                      {tSafe('market.interest.awaitingContact', '')}
                     </div>
                   )}
                   {i.status === 'declined' && (
                     <div style={S.declinedNote}>
-                      {t('market.interest.declinedBody')
-                        || 'This interest was declined. Browse other listings to keep going.'}
+                      {tSafe('market.interest.declinedBody', '')}
                     </div>
                   )}
 
@@ -137,7 +136,7 @@ export default function MyInterestsPage() {
                         style={S.btnGhost}
                         onClick={() => navigate(`/market/listings/${i.listing.id}`)}
                       >
-                        {t('market.action.viewDetail') || 'View listing'}
+                        {tSafe('market.action.viewDetail', '')}
                       </button>
                     )}
                   </div>
@@ -163,27 +162,26 @@ function ApprovedContactCard({ contact, t }) {
   return (
     <div style={S.approved} data-testid="approved-contact">
       <strong style={S.approvedTitle}>
-        {t('market.interest.contactReady') || 'You can now contact the farmer'}
+        {tSafe('market.interest.contactReady', '')}
       </strong>
       <ul style={S.approvedList}>
         {lines.map((l, i) => <li key={i} style={S.approvedLine}>{l}</li>)}
         {contact.contactPhone && (
           <li style={S.approvedLine}>
-            <span style={S.metaLabel}>{t('market.interest.phone') || 'Phone'}:</span>{' '}
+            <span style={S.metaLabel}>{tSafe('market.interest.phone', '')}:</span>{' '}
             <a href={`tel:${contact.contactPhone}`} style={S.link}>{contact.contactPhone}</a>
           </li>
         )}
         {contact.contactEmail && (
           <li style={S.approvedLine}>
-            <span style={S.metaLabel}>{t('market.interest.email') || 'Email'}:</span>{' '}
+            <span style={S.metaLabel}>{tSafe('market.interest.email', '')}:</span>{' '}
             <a href={`mailto:${contact.contactEmail}`} style={S.link}>{contact.contactEmail}</a>
           </li>
         )}
       </ul>
       {!hasDirectContact && (
         <p style={S.approvedHint}>
-          {t('market.interest.contactHint')
-            || 'The farmer has not shared direct contact details — you can message them in the next release.'}
+          {tSafe('market.interest.contactHint', '')}
         </p>
       )}
     </div>

@@ -18,6 +18,7 @@
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const TYPE_ACCENT = {
   repeat_improved:  '#22C55E',
@@ -33,7 +34,7 @@ export default function NextCycleOptions({ data, onPick }) {
   return (
     <section style={S.section} data-testid="next-cycle-options">
       <h3 style={S.title}>
-        {t(data.headlineKey) || t('nextCycle.title') || 'What\'s next?'}
+        {t(data.headlineKey) || tSafe('nextCycle.title', '')}
       </h3>
 
       <div style={S.list}>

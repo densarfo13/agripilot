@@ -10,6 +10,7 @@ import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
 import LoadingButton from '../components/auth/LoadingButton.jsx';
 import OTPInput from '../components/auth/OTPInput.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
+import { tSafe } from '../i18n/tSafe.js';
 
 // Lightweight, user-safe email shape check. The server still
 // validates strictly — this just catches obvious typos before submit.
@@ -119,12 +120,10 @@ export default function Login() {
   const [sessionNotice, setSessionNotice] = useState(() => {
     const reason = location.state && location.state.reason;
     if (reason === 'session_expired') {
-      return t('auth.sessionExpired')
-        || 'Your session expired. Please sign in again.';
+      return tSafe('auth.sessionExpired', '');
     }
     if (reason === 'signed_out') {
-      return t('auth.signedOut')
-        || 'You\u2019ve been signed out. Sign in to continue.';
+      return tSafe('auth.signedOut', '');
     }
     return '';
   });
@@ -134,12 +133,12 @@ export default function Login() {
     const e = {};
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      e.email = t('auth.emailRequired') || 'Email is required.';
+      e.email = tSafe('auth.emailRequired', '');
     } else if (!isLikelyEmail(trimmedEmail)) {
-      e.email = t('auth.emailInvalid') || 'Enter a valid email address.';
+      e.email = tSafe('auth.emailInvalid', '');
     }
     if (!password) {
-      e.password = t('auth.passwordRequired') || 'Password is required.';
+      e.password = tSafe('auth.passwordRequired', '');
     }
     return e;
   };
@@ -189,7 +188,7 @@ export default function Login() {
     e.preventDefault();
     const trimmed = mfaCode.trim();
     if (!trimmed) {
-      setMfaError(t('auth.mfa.enterCode') || 'Enter the 6-digit code from your authenticator app.');
+      setMfaError(tSafe('auth.mfa.enterCode', ''));
       return;
     }
     setMfaError('');
@@ -201,7 +200,7 @@ export default function Login() {
       // Server error messages here are already user-safe ("Code is
       // invalid or expired"). We surface them as-is, with a calm
       // fallback if the message is missing.
-      setMfaError(err.message || t('auth.mfa.invalidCode') || 'That code did not match. Try again with a fresh 6-digit code from your app.');
+      setMfaError(err.message || tSafe('auth.mfa.invalidCode', ''));
       setMfaCode('');
       safeTrackEvent('auth.mfa.failed', {});
       setTimeout(() => mfaInputRef.current?.focus(), 50);
@@ -222,12 +221,11 @@ export default function Login() {
     setPhoneError('');
     const trimmed = String(phone || '').trim();
     if (!trimmed) {
-      setErrors({ phone: t('auth.phoneRequired') || 'Phone number is required.' });
+      setErrors({ phone: tSafe('auth.phoneRequired', '') });
       return;
     }
     if (!isLikelyE164(trimmed)) {
-      setErrors({ phone: t('auth.phoneInvalid')
-        || 'Enter a full phone number including country code, e.g. +254712345678.' });
+      setErrors({ phone: tSafe('auth.phoneInvalid', '') });
       return;
     }
     setErrors({});
@@ -239,7 +237,7 @@ export default function Login() {
       // the code is queued. Provider / rate-limit errors throw.
       if (r && r.ok === false) {
         setPhoneError(friendlyPhoneError({ code: r.code, message: r.message },
-          t('auth.phone.sendFailed') || 'We could not send a code right now. Try again in a moment.'));
+          tSafe('auth.phone.sendFailed', '')));
         return;
       }
       safeTrackEvent('auth.phone.otp_requested', {});
@@ -249,7 +247,7 @@ export default function Login() {
     } catch (err) {
       safeTrackEvent('auth.phone.otp_failed', {});
       setPhoneError(friendlyPhoneError(err,
-        t('auth.phone.sendFailed') || 'We could not send a code right now. Try again in a moment.'));
+        tSafe('auth.phone.sendFailed', '')));
     } finally {
       setPhoneLoading(false);
       phoneSubmittingRef.current = false;
@@ -283,30 +281,29 @@ export default function Login() {
           <form onSubmit={handleMfaSubmit} style={S.form}>
             <div>
               <label style={S.label}>
-                {t('auth.mfa.codeLabel') || 'Verification code'}
+                {tSafe('auth.mfa.codeLabel', '')}
               </label>
               <OTPInput
                 ref={mfaInputRef}
                 value={mfaCode}
                 onChange={(v) => setMfaCode(v)}
                 length={6}
-                ariaLabel={t('auth.mfa.codeLabel') || 'Verification code'}
+                ariaLabel={tSafe('auth.mfa.codeLabel', '')}
                 testId="login-mfa-code"
                 disabled={mfaLoading}
                 autoFocus
               />
               <p style={S.mfaHint}>
-                {t('auth.mfa.backupCodeHint')
-                  || 'You can also use a 10-character backup code.'}
+                {tSafe('auth.mfa.backupCodeHint', '')}
               </p>
             </div>
 
             <LoadingButton
               loading={mfaLoading}
-              loadingText={t('auth.verifying') || 'Verifying\u2026'}
+              loadingText={tSafe('auth.verifying', '')}
               testId="login-mfa-submit"
             >
-              {t('auth.verify') || 'Verify'}
+              {tSafe('auth.verify', '')}
             </LoadingButton>
           </form>
 
@@ -317,7 +314,7 @@ export default function Login() {
             testId="login-mfa-back"
             style={{ marginTop: '1rem' }}
           >
-            {t('auth.backToLogin') || 'Back to login'}
+            {tSafe('auth.backToLogin', '')}
           </LoadingButton>
         </div>
       </div>
@@ -348,7 +345,7 @@ export default function Login() {
             style={{ ...S.methodBtn, ...(method === 'email' ? S.methodBtnActive : {}) }}
             data-testid="login-method-email"
           >
-            {t('auth.method.email') || 'Email'}
+            {tSafe('auth.method.email', '')}
           </button>
           <button
             type="button"
@@ -364,7 +361,7 @@ export default function Login() {
             style={{ ...S.methodBtn, ...(method === 'phone' ? S.methodBtnActive : {}) }}
             data-testid="login-method-phone"
           >
-            {t('auth.method.phone') || 'Phone'}
+            {tSafe('auth.method.phone', '')}
           </button>
         </div>
 
@@ -379,7 +376,7 @@ export default function Login() {
           <form onSubmit={handlePhoneSubmit} style={S.form} noValidate>
             <div>
               <label style={S.label} htmlFor="login-phone">
-                {t('auth.phone') || 'Phone number'}
+                {tSafe('auth.phone', '')}
               </label>
               <PhoneInput
                 value={phone}
@@ -393,8 +390,7 @@ export default function Login() {
                 data-testid="login-phone"
               />
               <p style={S.mfaHint}>
-                {t('auth.phoneHint')
-                  || 'Include your country code, e.g. +254712345678.'}
+                {tSafe('auth.phoneHint', '')}
               </p>
               {errors.phone && (
                 <span style={S.fieldError} data-testid="login-phone-error-inline">
@@ -405,16 +401,16 @@ export default function Login() {
 
             <LoadingButton
               loading={phoneLoading}
-              loadingText={t('auth.phone.sending') || 'Sending code\u2026'}
+              loadingText={tSafe('auth.phone.sending', '')}
               testId="login-phone-submit"
             >
-              {t('auth.phone.sendCode') || 'Send code'}
+              {tSafe('auth.phone.sendCode', '')}
             </LoadingButton>
 
             <p style={S.footerText}>
-              {t('auth.noAccount') || 'New to Farroway?'}{' '}
+              {tSafe('auth.noAccount', '')}{' '}
               <Link to="/register" style={S.link}>
-                {t('auth.createOne') || 'Create account'}
+                {tSafe('auth.createOne', '')}
               </Link>
             </p>
           </form>
@@ -422,7 +418,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
             <label style={S.label} htmlFor="login-email">
-              {t('auth.email') || 'Email address'}
+              {tSafe('auth.email', '')}
             </label>
             <input
               id="login-email"
@@ -439,10 +435,10 @@ export default function Login() {
                 const trimmed = email.trim();
                 if (trimmed && !isLikelyEmail(trimmed)) {
                   setErrors((s) => ({ ...s, email:
-                    t('auth.emailInvalid') || 'Enter a valid email address.' }));
+                    tSafe('auth.emailInvalid', '') }));
                 }
               }}
-              placeholder={t('auth.emailPlaceholder') || 'Email address'}
+              placeholder={tSafe('auth.emailPlaceholder', '')}
               autoComplete="email"
               inputMode="email"
               aria-invalid={!!errors.email}
@@ -462,13 +458,13 @@ export default function Login() {
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={t('auth.passwordPlaceholder') || 'Password'}
+              placeholder={tSafe('auth.passwordPlaceholder', '')}
               autoComplete="current-password"
               style={S.input}
               testIdPrefix="login-password"
               toggleAriaLabels={{
-                show: t('auth.showPassword') || 'Show password',
-                hide: t('auth.hidePassword') || 'Hide password',
+                show: tSafe('auth.showPassword', ''),
+                hide: tSafe('auth.hidePassword', ''),
               }}
             />
             {errors.password && <span style={S.fieldError}>{errors.password}</span>}
@@ -476,16 +472,16 @@ export default function Login() {
 
           <div style={S.forgotRow}>
             <Link to="/forgot-password" style={S.link} data-testid="login-forgot-link">
-              {t('auth.forgotPassword') || 'Forgot your password?'}
+              {tSafe('auth.forgotPassword', '')}
             </Link>
           </div>
 
           <LoadingButton
             loading={loading}
-            loadingText={t('auth.signingIn') || 'Signing in\u2026'}
+            loadingText={tSafe('auth.signingIn', '')}
             testId="login-submit"
           >
-            {t('auth.signIn') || 'Sign in'}
+            {tSafe('auth.signIn', '')}
           </LoadingButton>
         </form>
         )}

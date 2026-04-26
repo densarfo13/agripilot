@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { listNotifications, markNotificationRead } from '../../hooks/useMarket.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const TYPE_ICON = {
   interest_accepted:   '\u2705',       // ✅
@@ -65,7 +66,7 @@ export default function BuyerNotificationsPage() {
     <div style={S.page}>
       <div style={S.container}>
         <header style={S.header}>
-          <h1 style={S.title}>{t('notifications.title') || 'Notifications'}</h1>
+          <h1 style={S.title}>{tSafe('notifications.title', '')}</h1>
           {state.unread > 0 && (
             <span style={S.badge}>
               {t('notifications.unread', { count: state.unread }) || `${state.unread} new`}
@@ -74,12 +75,12 @@ export default function BuyerNotificationsPage() {
         </header>
 
         {state.loading && <p style={S.muted}>{t('common.loading')}</p>}
-        {state.error && <p style={S.err}>{t('notifications.error') || 'Could not load.'}</p>}
+        {state.error && <p style={S.err}>{tSafe('notifications.error', '')}</p>}
 
         {!state.loading && state.notifications.length === 0 && (
           <div style={S.empty}>
             <div style={S.emptyIcon}>{'\uD83D\uDD14'}</div>
-            <p style={S.emptyBody}>{t('notifications.empty') || 'No notifications yet.'}</p>
+            <p style={S.emptyBody}>{tSafe('notifications.empty', '')}</p>
           </div>
         )}
 

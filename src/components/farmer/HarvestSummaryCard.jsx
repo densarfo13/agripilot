@@ -16,6 +16,7 @@
  * correctly when the user switches language.
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function HarvestSummaryCard({ summary }) {
   const { t } = useAppSettings();
@@ -29,7 +30,7 @@ export default function HarvestSummaryCard({ summary }) {
     <section style={S.section} data-testid="harvest-summary-card">
       {wentWell.length > 0 && (
         <div>
-          <h3 style={S.hGood}>{t('postHarvest.whatWentWell') || 'What went well'}</h3>
+          <h3 style={S.hGood}>{tSafe('postHarvest.whatWentWell', '')}</h3>
           <ul style={S.list}>
             {wentWell.map((k) => (
               <li key={k} style={S.item}>
@@ -42,7 +43,7 @@ export default function HarvestSummaryCard({ summary }) {
 
       {couldImprove.length > 0 && (
         <div>
-          <h3 style={S.hImprove}>{t('postHarvest.whatCouldImprove') || 'What could improve'}</h3>
+          <h3 style={S.hImprove}>{tSafe('postHarvest.whatCouldImprove', '')}</h3>
           <ul style={S.list}>
             {couldImprove.map((k) => (
               <li key={k} style={S.item}>
@@ -55,26 +56,26 @@ export default function HarvestSummaryCard({ summary }) {
 
       <div style={S.metricsGrid}>
         {completionPct !== null && (
-          <Metric label={t('postHarvest.metrics.completion') || 'Completion'} value={`${completionPct}%`} />
+          <Metric label={tSafe('postHarvest.metrics.completion', '')} value={`${completionPct}%`} />
         )}
         {metrics.skippedTasksCount > 0 && (
-          <Metric label={t('postHarvest.metrics.skipped') || 'Skipped'} value={metrics.skippedTasksCount} />
+          <Metric label={tSafe('postHarvest.metrics.skipped', '')} value={metrics.skippedTasksCount} />
         )}
         {metrics.issueCount > 0 && (
-          <Metric label={t('postHarvest.metrics.issues') || 'Issues'} value={metrics.issueCount} />
+          <Metric label={tSafe('postHarvest.metrics.issues', '')} value={metrics.issueCount} />
         )}
         {metrics.qualityBand && (
-          <Metric label={t('postHarvest.metrics.quality') || 'Quality'} value={t(`harvest.quality.${metrics.qualityBand}`) || metrics.qualityBand} />
+          <Metric label={tSafe('postHarvest.metrics.quality', '')} value={t(`harvest.quality.${metrics.qualityBand}`) || metrics.qualityBand} />
         )}
         {Number.isFinite(metrics.yieldKg) && metrics.yieldKg > 0 && (
-          <Metric label={t('postHarvest.metrics.yield') || 'Yield'} value={`${metrics.yieldKg} kg`} />
+          <Metric label={tSafe('postHarvest.metrics.yield', '')} value={`${metrics.yieldKg} kg`} />
         )}
         {Number.isFinite(metrics.durationDays) && metrics.durationDays > 0 && (
-          <Metric label={t('postHarvest.metrics.duration') || 'Duration'} value={`${metrics.durationDays} d`} />
+          <Metric label={tSafe('postHarvest.metrics.duration', '')} value={`${metrics.durationDays} d`} />
         )}
         {Number.isFinite(metrics.timingDeltaDays) && Math.abs(metrics.timingDeltaDays) > 3 && (
           <Metric
-            label={t('postHarvest.metrics.timing') || 'Timing vs plan'}
+            label={tSafe('postHarvest.metrics.timing', '')}
             value={metrics.timingDeltaDays > 0
               ? `+${metrics.timingDeltaDays} d`
               : `${metrics.timingDeltaDays} d`}

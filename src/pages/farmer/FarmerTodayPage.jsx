@@ -78,6 +78,7 @@ import {
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 import { getTodayScreenState } from '../../utils/getTodayScreenState.js';
 import { getAppMode } from '../../utils/getAppMode.js';
@@ -768,7 +769,7 @@ export default function FarmerTodayPage() {
               t(reminder.messageKey) || reminderFallback(reminder.kind),
             )}
             style={S.reminderDismiss}
-            aria-label={t('common.dismiss') || 'Dismiss'}
+            aria-label={tSafe('common.dismiss', '')}
             data-testid="reminder-banner-dismiss"
           >
             {'\u2715'}
@@ -783,8 +784,7 @@ export default function FarmerTodayPage() {
         <div style={S.permissionCard} data-testid="browser-permission-ask">
           <span style={S.permissionText}>
             {t('notifications.permission_prompt')
-              || t('reminder.permission_ask')
-              || 'Would you like daily farm reminders on this device?'}
+              || tSafe('reminder.permission_ask', '')}
           </span>
           <div style={S.permissionRow}>
             <button
@@ -793,7 +793,7 @@ export default function FarmerTodayPage() {
               style={S.permissionAccept}
               data-testid="browser-permission-accept"
             >
-              {t('common.yes') || 'Yes'}
+              {tSafe('common.yes', '')}
             </button>
             <button
               type="button"
@@ -801,7 +801,7 @@ export default function FarmerTodayPage() {
               style={S.permissionDismiss}
               data-testid="browser-permission-dismiss"
             >
-              {t('common.no') || 'No'}
+              {tSafe('common.no', '')}
             </button>
           </div>
         </div>
@@ -815,7 +815,7 @@ export default function FarmerTodayPage() {
           {loopFacts.streak > 0
             ? (t('loop.streak_label', { days: loopFacts.streak })
                 || `${loopFacts.streak}-day streak`)
-            : (t('loop.streak_start') || 'Start your streak today')}
+            : (tSafe('loop.streak_start', ''))}
         </span>
         <span style={S.loopEntry} data-testid="loop-entry-message">
           {t(loopFacts.entryMessageKey) || ''}
@@ -928,7 +928,7 @@ export default function FarmerTodayPage() {
           {nextBestActionText && (
             <div style={S.bridgeCard} data-testid="next-best-action">
               <span style={S.bridgeLabel}>
-                {t('progress.next_best_action') || 'Next best action'}
+                {tSafe('progress.next_best_action', '')}
               </span>
               <span style={S.bridgeText}>{nextBestActionText}</span>
             </div>
@@ -939,7 +939,7 @@ export default function FarmerTodayPage() {
           {nextDayHint && (
             <div style={S.bridgeCard} data-testid="next-day-preview">
               <span style={S.bridgeLabel}>
-                {t('loop.check_tomorrow') || 'Next: check tomorrow'}
+                {tSafe('loop.check_tomorrow', '')}
               </span>
               <span style={S.bridgeText}>
                 {nextDayHint.kind === 'bridge'

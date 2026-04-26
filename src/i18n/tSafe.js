@@ -55,7 +55,14 @@
  * the existing `t()` is already safe.
  */
 
-import { t as moduleT } from './index.js';
+import { t as moduleT, getLanguage } from './index.js';
+// Direct dictionary import so we can detect "no native value in
+// this language" without relying on the production-mode marker
+// from t() (which silently falls back to English by design).
+// The mutations applied by mergePacks() in index.js happen at
+// index.js module-load and persist on the same object reference,
+// so reading T at call-time reflects the merged dictionary.
+import T from './translations.js';
 
 const _warnedKeys = new Set();
 
@@ -83,29 +90,68 @@ function _isDev() {
  * translator; otherwise, treat the first arg as the key and route
  * through the module-level `t` import.
  */
-export function tSafe(arg1, arg2, arg3) {
+export function tSafe(arg1, arg2, arg3, arg4) {
   // ── Overload resolution ──────────────────────────────────
-  let translator, key, fallback;
+  // Bound form:  tSafe(t, key, fallback, vars?)
+  // Short form:  tSafe(key, fallback, vars?)
+  // The optional vars object is forwarded to the underlying t()
+  // for {placeholder} interpolation.
+  let translator, key, fallback, vars;
   if (typeof arg1 === 'function') {
-    // Bound form: tSafe(t, key, fallback)
     translator = arg1;
     key        = arg2;
     fallback   = arg3 != null ? arg3 : '';
+    vars       = arg4;
   } else {
-    // Short form: tSafe(key, fallback)
     translator = moduleT;
     key        = arg1;
     fallback   = arg2 != null ? arg2 : '';
+    vars       = arg3;
   }
 
   if (!key) return fallback || '';
   if (typeof translator !== 'function') return fallback || key;
 
+  // Active language, used by both branches for the strict-no-leak
+  // dictionary check below.
+  let lang = 'en';
+  try { lang = getLanguage() || 'en'; } catch { /* keep en */ }
+
+  // STRICT NO-LEAK CHECK
+  // ────────────────────
+  // For non-English UI we look up the entry directly in T and
+  // verify a native value exists for the active language. The
+  // existing t() helper silently falls back to entry.en in
+  // production (no marker), which is exactly the leak we're
+  // closing. Reading T directly is the only reliable detector.
+  // Skipped for English UI (entry.en or humanized key is fine).
+  if (lang !== 'en') {
+    try {
+      const entry = T && T[key];
+      const nativeValue = entry && entry[lang];
+      if (!nativeValue) {
+        if (_isDev()) {
+          if (!_warnedKeys.has('strict:' + key + ':' + lang)) {
+            _warnedKeys.add('strict:' + key + ':' + lang);
+            try { console.warn(`[tSafe strict] no native ${lang} for "${key}" — using fallback="${fallback}"`); }
+            catch { /* ignore */ }
+          }
+          return `[MISSING:${key}|${lang}]`;
+        }
+        return fallback || '';
+      }
+    } catch { /* fall through to translator path */ }
+  }
+
   let value = '';
   try {
-    value = translator(key);
+    if (typeof arg1 === 'function') {
+      value = vars != null ? translator(key, vars) : translator(key);
+    } else {
+      // Short form — moduleT signature is `t(key, lang, vars)`.
+      value = translator(key, lang, vars);
+    }
   } catch {
-    // Inner t() already wraps in try/catch, but be defensive.
     return fallback || key;
   }
 

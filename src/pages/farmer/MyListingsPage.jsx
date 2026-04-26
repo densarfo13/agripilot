@@ -14,6 +14,7 @@ import {
 } from '../../hooks/useMarket.js';
 import ListingCard from '../../components/market/ListingCard.jsx';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function MyListingsPage() {
   const { t, language } = useAppSettings();
@@ -67,32 +68,32 @@ export default function MyListingsPage() {
     <div style={S.page}>
       <div style={S.container}>
         <header style={S.header}>
-          <h1 style={S.title}>{t('market.myListings.title') || 'My listings'}</h1>
+          <h1 style={S.title}>{tSafe('market.myListings.title', '')}</h1>
           <button
             type="button"
             onClick={() => navigate('/farmer/listings/new')}
             style={S.createBtn}
             data-testid="create-listing"
           >
-            {t('market.myListings.create') || 'New listing'}
+            {tSafe('market.myListings.create', '')}
           </button>
         </header>
 
         {state.loading && <p style={S.muted}>{t('common.loading')}</p>}
-        {state.error && <p style={S.err}>{t('market.myListings.error') || 'Could not load.'}</p>}
+        {state.error && <p style={S.err}>{tSafe('market.myListings.error', '')}</p>}
 
         {!state.loading && state.listings.length === 0 && (
           <div style={S.empty} data-testid="my-listings-empty">
             <div style={S.emptyIcon}>{'\uD83D\uDED2'}</div>
-            <h2 style={S.emptyTitle}>{t('market.myListings.empty') || 'No listings yet'}</h2>
-            <p style={S.emptyBody}>{t('market.myListings.emptyHint') || 'Post your next harvest to reach buyers.'}</p>
+            <h2 style={S.emptyTitle}>{tSafe('market.myListings.empty', '')}</h2>
+            <p style={S.emptyBody}>{tSafe('market.myListings.emptyHint', '')}</p>
           </div>
         )}
 
         {pendingInterests.length > 0 && (
           <section style={S.section} data-testid="pending-interests-section">
             <h2 style={S.sectionTitle}>
-              {t('market.pending.title') || 'Waiting for your response'}
+              {tSafe('market.pending.title', '')}
             </h2>
             <ul style={S.pendingList}>
               {pendingInterests.map((i) => {
@@ -127,7 +128,7 @@ export default function MyListingsPage() {
                         style={S.accept}
                         data-testid={`accept-${i.id}`}
                       >
-                        {t('market.action.accept') || 'Accept'}
+                        {tSafe('market.action.accept', '')}
                       </button>
                       <button
                         type="button" disabled={busyId === i.id}
@@ -135,7 +136,7 @@ export default function MyListingsPage() {
                         style={S.decline}
                         data-testid={`decline-${i.id}`}
                       >
-                        {t('market.action.decline') || 'Decline'}
+                        {tSafe('market.action.decline', '')}
                       </button>
                     </div>
                   </li>
@@ -146,7 +147,7 @@ export default function MyListingsPage() {
         )}
 
         <section style={S.section}>
-          <h2 style={S.sectionTitle}>{t('market.myListings.all') || 'All listings'}</h2>
+          <h2 style={S.sectionTitle}>{tSafe('market.myListings.all', '')}</h2>
           <div style={S.list}>
             {state.listings.map((l) => (
               <ListingCard
@@ -161,7 +162,7 @@ export default function MyListingsPage() {
                       onClick={() => handleSold(l.id)}
                       style={S.btnSold}
                     >
-                      {t('market.action.markSold') || 'Mark as sold'}
+                      {tSafe('market.action.markSold', '')}
                     </button>
                     <button
                       type="button"
@@ -169,7 +170,7 @@ export default function MyListingsPage() {
                       onClick={() => handleClose(l.id)}
                       style={S.btnClose}
                     >
-                      {t('market.action.close') || 'Close'}
+                      {tSafe('market.action.close', '')}
                     </button>
                   </>
                 ) : null}

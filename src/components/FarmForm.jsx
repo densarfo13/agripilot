@@ -53,6 +53,7 @@ import {
 import { normalizeCropKey as normalizeI18nCropKey } from '../utils/localization.js';
 import { createNewFarm, updateFarm } from '../lib/api.js';
 import { formatApiError } from '../api/client.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 const DEFAULT_FORM = Object.freeze({
   farmName:            '',
@@ -182,8 +183,7 @@ export default function FarmForm({
         const converted = fromSquareMeters(oldSqm, defaultUnit);
         if (converted != null && Number.isFinite(converted)) {
           next.farmSize = String(Number(converted.toFixed(2)));
-          setInfoMessage(t('farm.sizeConverted')
-            || 'Farm size converted to match the selected farm type.');
+          setInfoMessage(tSafe('farm.sizeConverted', ''));
         }
       }
       return next;
@@ -228,8 +228,7 @@ export default function FarmForm({
       const converted = fromSquareMeters(sqm, nextUnit);
       if (converted != null && Number.isFinite(converted)) {
         nextSize = String(Number(converted.toFixed(2)));
-        setInfoMessage(t('farm.sizeConverted')
-          || 'Farm size converted to match the selected unit.');
+        setInfoMessage(tSafe('farm.sizeConverted', ''));
       }
     }
     setForm((prev) => ({ ...prev, sizeUnit: nextUnit, farmSize: nextSize }));
@@ -240,47 +239,43 @@ export default function FarmForm({
   function validate() {
     const next = {};
     if (!form.farmName.trim()) {
-      next.farmName = t('farm.err.nameRequired') || 'Farm name is required.';
+      next.farmName = tSafe('farm.err.nameRequired', '');
     }
     if (!form.crop) {
-      next.crop = t('farm.err.cropRequired') || 'Main crop is required.';
+      next.crop = tSafe('farm.err.cropRequired', '');
     }
     if (form.crop === 'OTHER' && !form.otherCropName.trim()) {
-      next.otherCropName = t('farm.err.otherCropRequired')
-        || 'Please enter the crop name.';
+      next.otherCropName = tSafe('farm.err.otherCropRequired', '');
     }
     if (!form.country) {
-      next.country = t('farm.err.countryRequired') || 'Country is required.';
+      next.country = tSafe('farm.err.countryRequired', '');
     }
     if (availableStates.length > 0 && !form.state) {
-      next.state = t('farm.err.stateRequired') || 'State is required.';
+      next.state = tSafe('farm.err.stateRequired', '');
     }
     if (!form.farmType) {
-      next.farmType = t('farm.err.farmTypeRequired') || 'Farm type is required.';
+      next.farmType = tSafe('farm.err.farmTypeRequired', '');
     }
     if (!form.farmSize) {
-      next.farmSize = t('farm.err.sizeRequired') || 'Farm size is required.';
+      next.farmSize = tSafe('farm.err.sizeRequired', '');
     } else {
       const n = Number(form.farmSize);
       if (!Number.isFinite(n) || n <= 0) {
-        next.farmSize = t('farm.err.sizePositive')
-          || 'Farm size must be a number greater than 0.';
+        next.farmSize = tSafe('farm.err.sizePositive', '');
       }
     }
     if (!form.sizeUnit) {
-      next.sizeUnit = t('farm.err.unitRequired') || 'Size unit is required.';
+      next.sizeUnit = tSafe('farm.err.unitRequired', '');
     }
     if (!form.cropStage) {
-      next.cropStage = t('farm.err.stageRequired') || 'Crop stage is required.';
+      next.cropStage = tSafe('farm.err.stageRequired', '');
     }
     if (form.plantingDate) {
       const d = new Date(form.plantingDate);
       if (!Number.isFinite(d.getTime())) {
-        next.plantingDate = t('farm.err.plantingDateInvalid')
-          || 'Planting date is not valid.';
+        next.plantingDate = tSafe('farm.err.plantingDateInvalid', '');
       } else if (d.getTime() > Date.now() + 86400000) {
-        next.plantingDate = t('farm.err.plantingDateFuture')
-          || 'Planting date cannot be in the future.';
+        next.plantingDate = tSafe('farm.err.plantingDateFuture', '');
       }
     }
     setErrors(next);
@@ -351,8 +346,7 @@ export default function FarmForm({
   async function handleSubmit(event) {
     event.preventDefault();
     if (!validate()) {
-      setSubmitError(t('farm.err.fixHighlighted')
-        || 'Please fix the highlighted fields.');
+      setSubmitError(tSafe('farm.err.fixHighlighted', ''));
       return;
     }
     setIsSubmitting(true);
@@ -394,8 +388,7 @@ export default function FarmForm({
         }
       }
       setSubmitError(formatApiError(error,
-        t('farm.err.saveFailed')
-          || 'Unable to save the farm right now. Please check your inputs.'));
+        tSafe('farm.err.saveFailed', '')));
       // Swallow the console noise in prod, keep it in dev.
       if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
         // eslint-disable-next-line no-console
@@ -408,13 +401,11 @@ export default function FarmForm({
 
   // ─── Display helpers ──────────────────────────────────────
   const sizeLabel = form.farmType === 'backyard'
-    ? (t('farm.sizeLabelBackyard') || 'Farm Size (Small Area)')
-    : (t('farm.sizeLabelLand')     || 'Farm Size (Land Area)');
+    ? (tSafe('farm.sizeLabelBackyard', ''))
+    : (tSafe('farm.sizeLabelLand', ''));
   const sizeHelpText = form.farmType === 'backyard'
-    ? (t('farm.sizeHelpBackyard')
-        || 'Use square feet or square meters for home or backyard farms.')
-    : (t('farm.sizeHelpLand')
-        || 'Use acres or hectares for larger farms.');
+    ? (tSafe('farm.sizeHelpBackyard', ''))
+    : (tSafe('farm.sizeHelpLand', ''));
 
   const cropOptions = ALL_CROPS_WITH_OTHER;
 
@@ -425,28 +416,28 @@ export default function FarmForm({
       <div style={styles.card}>
         <h2 style={styles.title}>
           {isEditing
-            ? (t('farm.editTitle') || 'Edit Farm')
-            : (t('farm.createTitle') || 'Add New Farm')}
+            ? (tSafe('farm.editTitle', ''))
+            : (tSafe('farm.createTitle', ''))}
         </h2>
         <p style={styles.subtitle}>
           {isEditing
-            ? (t('farm.editSubtitle') || 'Update your farm details without restarting setup.')
-            : (t('farm.createSubtitle') || 'Add a farm using clean, validated values that match the system.')}
+            ? (tSafe('farm.editSubtitle', ''))
+            : (tSafe('farm.createSubtitle', ''))}
         </p>
 
-        <Field label={t('farm.fields.name') || 'Farm Name'}
+        <Field label={tSafe('farm.fields.name', '')}
                required error={errors.farmName}>
           <input
             type="text"
             value={form.farmName}
             onChange={(e) => updateField('farmName', e.target.value)}
-            placeholder={t('farm.fields.namePlaceholder') || 'Enter farm name'}
+            placeholder={tSafe('farm.fields.namePlaceholder', '')}
             style={styles.input}
             data-testid="farm-name"
           />
         </Field>
 
-        <Field label={t('farm.fields.crop') || 'Main Crop'}
+        <Field label={tSafe('farm.fields.crop', '')}
                required error={errors.crop}>
           <select
             value={form.crop === 'OTHER' ? 'OTHER' : (form.crop || '').toUpperCase()}
@@ -457,7 +448,7 @@ export default function FarmForm({
             style={styles.input}
             data-testid="farm-crop"
           >
-            <option value="">{t('farm.fields.cropPlaceholder') || 'Select crop'}</option>
+            <option value="">{tSafe('farm.fields.cropPlaceholder', '')}</option>
             {cropOptions.map((c) => (
               <option key={c.code} value={c.code}>
                 {getCropLabelSafe(c.code, lang)}
@@ -467,20 +458,20 @@ export default function FarmForm({
         </Field>
 
         {form.crop === 'OTHER' && (
-          <Field label={t('farm.fields.otherCrop') || 'Other Crop Name'}
+          <Field label={tSafe('farm.fields.otherCrop', '')}
                  required error={errors.otherCropName}>
             <input
               type="text"
               value={form.otherCropName}
               onChange={(e) => updateField('otherCropName', e.target.value)}
-              placeholder={t('farm.fields.otherCropPlaceholder') || 'Enter crop name'}
+              placeholder={tSafe('farm.fields.otherCropPlaceholder', '')}
               style={styles.input}
               data-testid="farm-other-crop"
             />
           </Field>
         )}
 
-        <Field label={t('farm.fields.country') || 'Country'}
+        <Field label={tSafe('farm.fields.country', '')}
                required error={errors.country}>
           <select
             value={form.country}
@@ -488,7 +479,7 @@ export default function FarmForm({
             style={styles.input}
             data-testid="farm-country"
           >
-            <option value="">{t('farm.fields.countryPlaceholder') || 'Select country'}</option>
+            <option value="">{tSafe('farm.fields.countryPlaceholder', '')}</option>
             {COUNTRIES.map(([code]) => (
               <option key={code} value={code}>
                 {getCountryLabel(code)}
@@ -498,7 +489,7 @@ export default function FarmForm({
         </Field>
 
         {hasStatesForCountry(form.country) && (
-          <Field label={t('farm.fields.state') || 'State'}
+          <Field label={tSafe('farm.fields.state', '')}
                  required error={errors.state}>
             <select
               value={form.state}
@@ -506,7 +497,7 @@ export default function FarmForm({
               style={styles.input}
               data-testid="farm-state"
             >
-              <option value="">{t('farm.fields.statePlaceholder') || 'Select state'}</option>
+              <option value="">{tSafe('farm.fields.statePlaceholder', '')}</option>
               {availableStates.map((s) => (
                 <option key={s.code} value={s.code}>{s.label}</option>
               ))}
@@ -514,7 +505,7 @@ export default function FarmForm({
           </Field>
         )}
 
-        <Field label={t('farm.fields.farmType') || 'Farm Type'}
+        <Field label={tSafe('farm.fields.farmType', '')}
                required error={errors.farmType}>
           <div style={styles.chipRow}>
             {FARM_TYPES.map((code) => {
@@ -543,14 +534,14 @@ export default function FarmForm({
               step="any"
               value={form.farmSize}
               onChange={(e) => updateField('farmSize', e.target.value)}
-              placeholder={t('farm.fields.sizePlaceholder') || 'Enter farm size'}
+              placeholder={tSafe('farm.fields.sizePlaceholder', '')}
               style={styles.input}
               data-testid="farm-size"
             />
             <small style={styles.helpText}>{sizeHelpText}</small>
           </Field>
 
-          <Field label={t('farm.fields.sizeUnit') || 'Size Unit'}
+          <Field label={tSafe('farm.fields.sizeUnit', '')}
                  required error={errors.sizeUnit}>
             <select
               value={form.sizeUnit}
@@ -559,7 +550,7 @@ export default function FarmForm({
               disabled={!form.farmType}
               data-testid="farm-unit"
             >
-              <option value="">{t('farm.fields.sizeUnitPlaceholder') || 'Select unit'}</option>
+              <option value="">{tSafe('farm.fields.sizeUnitPlaceholder', '')}</option>
               {allowedUnits.map((u) => (
                 <option key={u} value={u}>{getAreaUnitLabel(u)}</option>
               ))}
@@ -567,7 +558,7 @@ export default function FarmForm({
           </Field>
         </div>
 
-        <Field label={t('farm.fields.plantingDate') || 'Planting Date (optional)'}
+        <Field label={tSafe('farm.fields.plantingDate', '')}
                error={errors.plantingDate}>
           <input
             type="date"
@@ -578,12 +569,11 @@ export default function FarmForm({
             data-testid="farm-planting-date"
           />
           <small style={styles.helpText}>
-            {t('farm.fields.plantingDateHelp')
-              || 'Helps us estimate the current growth stage and remaining days until harvest.'}
+            {tSafe('farm.fields.plantingDateHelp', '')}
           </small>
         </Field>
 
-        <Field label={t('farm.fields.cropStage') || 'Crop Stage'}
+        <Field label={tSafe('farm.fields.cropStage', '')}
                required error={errors.cropStage}>
           <select
             value={form.cropStage}
@@ -591,7 +581,7 @@ export default function FarmForm({
             style={styles.input}
             data-testid="farm-stage"
           >
-            <option value="">{t('farm.fields.stagePlaceholder') || 'Select crop stage'}</option>
+            <option value="">{tSafe('farm.fields.stagePlaceholder', '')}</option>
             {/*
               Crop Intelligence Layer: per-crop lifecycle stages.
               Cassava shows planting/establishment/vegetative/bulking/
@@ -618,8 +608,7 @@ export default function FarmForm({
             data-testid="farm-manual-override"
           />
           <span>
-            {t('farm.fields.manualOverride')
-              || 'Lock this stage — don\u2019t auto-advance it based on planting date.'}
+            {tSafe('farm.fields.manualOverride', '')}
           </span>
         </label>
 
@@ -631,8 +620,7 @@ export default function FarmForm({
             data-testid="farm-active"
           />
           <span>
-            {t('farm.fields.activeFarm')
-              || 'Set this as my active farm after saving.'}
+            {tSafe('farm.fields.activeFarm', '')}
           </span>
         </label>
 
@@ -647,7 +635,7 @@ export default function FarmForm({
             disabled={isSubmitting}
             data-testid="farm-cancel"
           >
-            {t('common.cancel') || 'Cancel'}
+            {tSafe('common.cancel', '')}
           </button>
           <button
             type="submit"
@@ -657,11 +645,11 @@ export default function FarmForm({
           >
             {isSubmitting
               ? (isEditing
-                  ? (t('farm.saving') || 'Saving\u2026')
-                  : (t('farm.creating') || 'Creating\u2026'))
+                  ? (tSafe('farm.saving', ''))
+                  : (tSafe('farm.creating', '')))
               : (isEditing
-                  ? (t('farm.saveChanges') || 'Save Changes')
-                  : (t('farm.saveNew') || 'Save New Farm'))}
+                  ? (tSafe('farm.saveChanges', ''))
+                  : (tSafe('farm.saveNew', '')))}
           </button>
         </div>
 

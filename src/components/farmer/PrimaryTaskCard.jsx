@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function PrimaryTaskCard({ task, warning, onComplete, onSkip, onReportIssue, onHarvest, harvestEligible = false }) {
   const { t } = useAppSettings();
@@ -23,8 +24,8 @@ export default function PrimaryTaskCard({ task, warning, onComplete, onSkip, onR
     || (task && task.whyKey && t(task.whyKey))
     || null;
 
-  const urgencyLabel = urgency === 'urgent'   ? (t('actionHome.urgency.urgent')    || 'Urgent')
-                     : urgency === 'important' ? (t('actionHome.urgency.important') || 'Important')
+  const urgencyLabel = urgency === 'urgent'   ? (tSafe('actionHome.urgency.urgent', ''))
+                     : urgency === 'important' ? (tSafe('actionHome.urgency.important', ''))
                      : null;
 
   async function handleComplete() {

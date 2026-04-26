@@ -19,6 +19,7 @@
 
 import { useFarmInsight } from '../lib/intelligence/useFarmInsight.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 const TONE = {
   danger: { bg: 'rgba(252,165,165,0.08)', border: 'rgba(252,165,165,0.35)', fg: '#FCA5A5' },
@@ -55,9 +56,9 @@ export default function FarmInsightCard({
   if (!insight || !insight.summaryCards || insight.summaryCards.length === 0) {
     return hideWhenEmpty ? null : (
       <div style={S.wrap}>
-        <div style={S.header}>{title || (t('farmer.insight.panel.title') || 'Today on your farm')}</div>
+        <div style={S.header}>{title || (tSafe('farmer.insight.panel.title', ''))}</div>
         <div style={S.emptyText}>
-          {t('farmer.insight.panel.empty') || 'Nothing urgent right now. Check back tomorrow.'}
+          {tSafe('farmer.insight.panel.empty', '')}
         </div>
       </div>
     );
@@ -66,10 +67,10 @@ export default function FarmInsightCard({
   return (
     <div style={S.wrap} data-testid="farm-insight-panel">
       <div style={S.header}>
-        <span>{title || (t('farmer.insight.panel.title') || 'Today on your farm')}</span>
+        <span>{title || (tSafe('farmer.insight.panel.title', ''))}</span>
         {insight.confidenceLevel && (
           <span style={S.confidence}>
-            {`${t('farmer.insight.panel.confidence') || 'Confidence'}: ${insight.confidenceLevel}`}
+            {`${tSafe('farmer.insight.panel.confidence', '')}: ${insight.confidenceLevel}`}
           </span>
         )}
       </div>
@@ -130,7 +131,7 @@ export default function FarmInsightCard({
               {card.why && (
                 <div style={S.why}>
                   <span style={S.whyLabel}>
-                    {t('farmer.insight.panel.why') || 'Why this?'}
+                    {tSafe('farmer.insight.panel.why', '')}
                   </span>
                   {' '}{card.why}
                 </div>

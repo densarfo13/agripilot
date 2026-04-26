@@ -14,6 +14,7 @@
  */
 
 import { useAppSettings } from '../context/AppSettingsContext.jsx';
+import { tSafe } from '../i18n/tSafe.js';
 
 const STATE_LABEL_KEY = Object.freeze({
   onboarding:     'journey.state.onboarding',
@@ -62,13 +63,13 @@ export default function JourneySummaryCard({
     ? Math.max(0, Math.min(100, Math.round(stagePercent)))
     : null;
 
-  const cropLbl = cropLabel || (t('journey.unknown_crop') || '—');
+  const cropLbl = cropLabel || (tSafe('journey.unknown_crop', ''));
   const stageLbl = stageLabel || stateText;
 
-  const headerLabel = t('journey.summary.header') || 'Your farm today';
-  const stageHeader = t('journey.summary.stage') || 'Stage';
-  const cropHeader  = t('journey.summary.crop')  || 'Crop';
-  const nextHeader  = t('journey.summary.next_step') || 'Next step';
+  const headerLabel = tSafe('journey.summary.header', '');
+  const stageHeader = tSafe('journey.summary.stage', '');
+  const cropHeader  = tSafe('journey.summary.crop', '');
+  const nextHeader  = tSafe('journey.summary.next_step', '');
 
   return (
     <section style={S.card} data-testid="journey-summary-card"
@@ -116,7 +117,7 @@ export default function JourneySummaryCard({
           style={S.ctaBtn}
           data-testid="journey-continue"
         >
-          {t('journey.summary.continue') || 'Continue'}
+          {tSafe('journey.summary.continue', '')}
         </button>
       )}
     </section>

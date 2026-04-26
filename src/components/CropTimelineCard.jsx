@@ -15,6 +15,7 @@ import { getCropTimeline } from '../lib/timeline/cropTimelineEngine.js';
 import { getStageProgress } from '../lib/timeline/stageProgressEngine.js';
 import { getCropCycleState } from '../lib/harvest/cropCycleCompletionEngine.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 function prettyStage(key) {
   if (!key) return '';
@@ -88,8 +89,7 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
       <div style={S.header}>
         <div>
           <div style={S.title}>
-            {t('timeline.title') !== 'timeline.title'
-              ? t('timeline.title') : 'Crop journey'}
+            {tSafe('timeline.title', '')}
           </div>
           <div style={S.headline}>{headline}</div>
         </div>
@@ -102,8 +102,7 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
       {progress.journeyPercent != null && (
         <div style={S.journeyRow}>
           <div style={S.journeyLabel}>
-            {(t('timeline.journey') !== 'timeline.journey'
-              ? t('timeline.journey') : 'Journey')}
+            {(tSafe('timeline.journey', ''))}
             <span style={S.journeyPct}>{` ${progress.journeyPercent}%`}</span>
           </div>
           <div style={S.barWrap} aria-hidden="true">
@@ -119,8 +118,7 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
       <div style={S.grid}>
         <div style={S.cell}>
           <div style={S.cellLabel}>
-            {t('timeline.stageNow') !== 'timeline.stageNow'
-              ? t('timeline.stageNow') : 'Stage'}
+            {tSafe('timeline.stageNow', '')}
           </div>
           <div style={S.cellValue} data-testid="timeline-current-stage">
             {currentLabel}
@@ -129,8 +127,7 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
         {nextLabel && (
           <div style={S.cell}>
             <div style={S.cellLabel}>
-              {t('timeline.next') !== 'timeline.next'
-                ? t('timeline.next') : 'Next'}
+              {tSafe('timeline.next', '')}
             </div>
             <div style={S.cellValueSecondary} data-testid="timeline-next-stage">
               {nextLabel}
@@ -140,8 +137,7 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
         {daysCopy && (
           <div style={S.cell}>
             <div style={S.cellLabel}>
-              {t('timeline.daysLeft') !== 'timeline.daysLeft'
-                ? t('timeline.daysLeft') : 'Days left in stage'}
+              {tSafe('timeline.daysLeft', '')}
             </div>
             <div style={S.cellValueSecondary} data-testid="timeline-days-left">
               {daysCopy}
@@ -152,9 +148,7 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
 
       {timeline.manualOverride && (
         <div style={S.overrideHint} data-testid="timeline-override-hint">
-          {t('timeline.manualOverride') !== 'timeline.manualOverride'
-            ? t('timeline.manualOverride')
-            : 'Stage manually set — the timeline won\u2019t auto-advance until you clear the override.'}
+          {tSafe('timeline.manualOverride', '')}
         </div>
       )}
     </div>

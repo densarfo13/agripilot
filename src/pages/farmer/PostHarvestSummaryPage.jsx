@@ -25,6 +25,7 @@ import { getCycleSummary, getNextCycleOptions } from '../../hooks/useCropCycles.
 import HarvestSummaryCard from '../../components/farmer/HarvestSummaryCard.jsx';
 import NextCycleOptions from '../../components/farmer/NextCycleOptions.jsx';
 import { shouldShowSellCta } from '../../utils/featureGates.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const OUTCOME_COLOR = {
   successful: '#22C55E',
@@ -104,7 +105,7 @@ export default function PostHarvestSummaryPage() {
   if (state.error || !state.summary) {
     return (
       <Shell>
-        <p style={S.muted}>{t('postHarvest.loadError') || 'Could not load your summary.'}</p>
+        <p style={S.muted}>{tSafe('postHarvest.loadError', '')}</p>
         <button style={S.btnGhost} onClick={() => navigate('/today')}>
           {t('common.back')}
         </button>
@@ -116,7 +117,7 @@ export default function PostHarvestSummaryPage() {
     <Shell>
       <header style={S.header}>
         <div style={S.celebration}>{'\uD83C\uDF3E'}</div>
-        <h1 style={S.title}>{t('postHarvest.title') || 'Harvest recorded'}</h1>
+        <h1 style={S.title}>{tSafe('postHarvest.title', '')}</h1>
         <span
           style={{ ...S.classPill, color: outcomeColor, borderColor: outcomeColor }}
           data-testid="post-harvest-class"
@@ -143,7 +144,7 @@ export default function PostHarvestSummaryPage() {
           })}
           data-testid="post-harvest-sell"
         >
-          {t('postHarvest.sellPrompt') || 'Do you want to sell this harvest?'}
+          {tSafe('postHarvest.sellPrompt', '')}
         </button>
       )}
 
@@ -157,7 +158,7 @@ export default function PostHarvestSummaryPage() {
           onClick={() => handleOptionPick(state.nextCycle.options[0])}
           data-testid="post-harvest-start-next"
         >
-          {t('postHarvest.startNext') || 'Start next crop'}
+          {tSafe('postHarvest.startNext', '')}
         </button>
       )}
 
@@ -172,7 +173,7 @@ export default function PostHarvestSummaryPage() {
         onClick={() => navigate('/today')}
         data-testid="post-harvest-back-today"
       >
-        {t('postHarvest.backToToday') || 'Back to Today'}
+        {tSafe('postHarvest.backToToday', '')}
       </button>
     </Shell>
   );

@@ -21,6 +21,7 @@ import api from '../api/client.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { useTranslation, LANGUAGES as I18N_LANGUAGES } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import { tSafe } from '../i18n/tSafe.js';
 
 const LANGUAGES = I18N_LANGUAGES;
 
@@ -290,8 +291,8 @@ export default function AcceptInvitePage() {
                 autoComplete="new-password"
                 testIdPrefix="invite-password"
                 toggleAriaLabels={{
-                  show: t('auth.showPassword') || 'Show password',
-                  hide: t('auth.hidePassword') || 'Hide password',
+                  show: tSafe('auth.showPassword', ''),
+                  hide: tSafe('auth.hidePassword', ''),
                 }}
               />
             </div>
@@ -307,8 +308,8 @@ export default function AcceptInvitePage() {
                 autoComplete="new-password"
                 testIdPrefix="invite-confirm"
                 toggleAriaLabels={{
-                  show: t('auth.showPassword') || 'Show password',
-                  hide: t('auth.hidePassword') || 'Hide password',
+                  show: tSafe('auth.showPassword', ''),
+                  hide: tSafe('auth.hidePassword', ''),
                 }}
               />
             </div>

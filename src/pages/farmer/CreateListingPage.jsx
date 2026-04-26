@@ -13,6 +13,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { createListing, createListingFromHarvest, updateListing } from '../../hooks/useMarket.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const UNITS = ['kg', 'lb', 'bag', 'crate', 'bushel'];
 const QUALITIES = ['high', 'medium', 'low'];
@@ -80,7 +81,7 @@ export default function CreateListingPage() {
   return (
     <div style={S.page}>
       <div style={S.container}>
-        <h1 style={S.title}>{t('market.create.title') || 'List this harvest'}</h1>
+        <h1 style={S.title}>{tSafe('market.create.title', '')}</h1>
         {cropLabel && (
           <p style={S.subtitle}>
             {t('market.create.for', { crop: cropLabel }) || `For ${cropLabel}`}
@@ -88,7 +89,7 @@ export default function CreateListingPage() {
         )}
 
         <form onSubmit={handleSubmit} style={S.form}>
-          <Field label={t('market.field.crop') || 'Crop'}>
+          <Field label={tSafe('market.field.crop', '')}>
             <input
               required
               value={form.cropKey}
@@ -99,14 +100,14 @@ export default function CreateListingPage() {
           </Field>
 
           <div style={S.row}>
-            <Field label={t('market.field.quantity') || 'Quantity'} flex={2}>
+            <Field label={tSafe('market.field.quantity', '')} flex={2}>
               <input
                 required type="number" min="0" step="0.1"
                 value={form.quantity} onChange={set('quantity')}
                 style={S.input}
               />
             </Field>
-            <Field label={t('market.field.unit') || 'Unit'} flex={1}>
+            <Field label={tSafe('market.field.unit', '')} flex={1}>
               <select value={form.unit} onChange={set('unit')} style={S.select}>
                 {UNITS.map((u) => (
                   <option key={u} value={u}>{t(`harvest.unit.${u}`) || u}</option>
@@ -115,7 +116,7 @@ export default function CreateListingPage() {
             </Field>
           </div>
 
-          <Field label={t('market.field.quality') || 'Quality'}>
+          <Field label={tSafe('market.field.quality', '')}>
             <div style={S.chipRow}>
               {QUALITIES.map((q) => {
                 const active = form.quality === q;
@@ -133,14 +134,14 @@ export default function CreateListingPage() {
           </Field>
 
           <div style={S.row}>
-            <Field label={t('market.field.price') || 'Price (optional)'} flex={2}>
+            <Field label={tSafe('market.field.price', '')} flex={2}>
               <input
                 type="number" min="0" step="0.01"
                 value={form.price} onChange={set('price')}
                 style={S.input}
               />
             </Field>
-            <Field label={t('market.field.pricingMode') || 'Pricing'} flex={2}>
+            <Field label={tSafe('market.field.pricingMode', '')} flex={2}>
               <select value={form.pricingMode} onChange={set('pricingMode')} style={S.select}>
                 {PRICING.map((p) => (
                   <option key={p} value={p}>{t(`market.pricingMode.${p}`) || p}</option>
@@ -149,7 +150,7 @@ export default function CreateListingPage() {
             </Field>
           </div>
 
-          <Field label={t('market.field.deliveryMode') || 'Delivery'}>
+          <Field label={tSafe('market.field.deliveryMode', '')}>
             <div style={S.chipRow}>
               {DELIVERY.map((d) => {
                 const active = form.deliveryMode === d;
@@ -165,7 +166,7 @@ export default function CreateListingPage() {
             </div>
           </Field>
 
-          <Field label={t('market.field.notes') || 'Notes (optional)'}>
+          <Field label={tSafe('market.field.notes', '')}>
             <textarea
               value={form.notes} onChange={set('notes')}
               maxLength={800} rows={3}
@@ -173,14 +174,14 @@ export default function CreateListingPage() {
             />
           </Field>
 
-          {err && <p style={S.err}>{t(`market.err.${err}`) || t('issue.err.generic') || 'Could not save.'}</p>}
+          {err && <p style={S.err}>{t(`market.err.${err}`) || tSafe('issue.err.generic', '')}</p>}
 
           <div style={S.ctaRow}>
             <button type="button" onClick={() => navigate(-1)} style={S.btnGhost}>
               {t('common.cancel')}
             </button>
             <button type="submit" disabled={busy} style={S.btnPrimary}>
-              {busy ? t('common.saving') : (t('market.create.submit') || 'Publish listing')}
+              {busy ? t('common.saving') : (tSafe('market.create.submit', ''))}
             </button>
           </div>
         </form>

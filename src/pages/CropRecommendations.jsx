@@ -26,6 +26,7 @@ import {
 import { recommendTopCrops } from '../lib/recommendations/topCropEngine.js';
 import { getWeatherState } from '../lib/weather/weatherState.js';
 import VoiceButton from '../components/VoiceButton.jsx';
+import { tSafe } from '../i18n/tSafe.js';
 
 /**
  * deriveWeatherSummary(farmCtx, answers)
@@ -219,9 +220,7 @@ export default function CropRecommendations() {
     const legacyCode = crop?.code
       || (canonicalId ? canonicalId.toUpperCase().replace(/-/g, '_') : null);
     if (!farmId || !legacyCode) {
-      showToast(t('cropFit.results.useCropFailed') && t('cropFit.results.useCropFailed') !== 'cropFit.results.useCropFailed'
-        ? t('cropFit.results.useCropFailed')
-        : 'Could not update your farm.');
+      showToast(t('cropFit.results.useCropFailed') && tSafe('cropFit.results.useCropFailed', ''));
       return;
     }
     setApplyingCode(legacyCode);
@@ -239,9 +238,7 @@ export default function CropRecommendations() {
         intent: { cropSwitched: true },
         deps: { refreshProfile, refreshFarms },
       });
-      const msg = t('cropFit.results.farmUpdated') && t('cropFit.results.farmUpdated') !== 'cropFit.results.farmUpdated'
-        ? t('cropFit.results.farmUpdated')
-        : 'Farm updated successfully';
+      const msg = t('cropFit.results.farmUpdated') && tSafe('cropFit.results.farmUpdated', '');
       showToast(msg);
       navigate('/dashboard');
     } catch (err) {
@@ -376,10 +373,8 @@ export default function CropRecommendations() {
                   data-testid="rec-use-this-crop"
                 >
                   {applyingCode === featuredLegacyCode
-                    ? (t('common.saving') || 'Saving\u2026')
-                    : (t('cropFit.results.useThisCrop') && t('cropFit.results.useThisCrop') !== 'cropFit.results.useThisCrop'
-                        ? t('cropFit.results.useThisCrop')
-                        : 'Use this crop')}
+                    ? (tSafe('common.saving', ''))
+                    : (t('cropFit.results.useThisCrop') && tSafe('cropFit.results.useThisCrop', ''))}
                 </button>
                 <button
                   type="button"

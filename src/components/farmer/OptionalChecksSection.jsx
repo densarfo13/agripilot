@@ -10,6 +10,7 @@
  * owns the list so adding a new check doesn't require a UI change.
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function OptionalChecksSection({ items = [], onPick }) {
   const { t } = useAppSettings();
@@ -18,8 +19,8 @@ export default function OptionalChecksSection({ items = [], onPick }) {
   return (
     <section style={S.section} data-testid="optional-checks-section">
       <div style={S.header}>
-        <h3 style={S.title}>{t('today.optional.title') || 'Optional checks'}</h3>
-        <span style={S.badge}>{t('today.optional.badge') || 'optional'}</span>
+        <h3 style={S.title}>{tSafe('today.optional.title', '')}</h3>
+        <span style={S.badge}>{tSafe('today.optional.badge', '')}</span>
       </div>
 
       <ul style={S.list}>

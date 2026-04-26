@@ -17,6 +17,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const ISSUE_CATEGORIES = ['pest', 'disease', 'water', 'soil', 'weather', 'other'];
 const SEVERITIES = ['low', 'medium', 'high'];
@@ -143,7 +144,7 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
 
         {mode === 'harvest' && (
           <>
-            <Field label={t('actionHome.harvest.datePrompt') || 'Harvest date'}>
+            <Field label={tSafe('actionHome.harvest.datePrompt', '')}>
               <input
                 ref={firstFieldRef}
                 type="date"
@@ -169,7 +170,7 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
                 />
               </div>
               <div style={{ ...S.fieldInline, flex: 1 }}>
-                <span style={S.label}>{t('actionHome.harvest.unitPrompt') || 'Unit'}</span>
+                <span style={S.label}>{tSafe('actionHome.harvest.unitPrompt', '')}</span>
                 <select
                   value={form.yieldUnit || 'kg'}
                   onChange={set('yieldUnit')}
@@ -200,7 +201,7 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
                 })}
               </div>
             </Field>
-            <Field label={t('actionHome.harvest.issuesPrompt') || 'Issues encountered (optional)'}>
+            <Field label={tSafe('actionHome.harvest.issuesPrompt', '')}>
               <div style={S.chipRow} data-testid="harvest-issues">
                 {HARVEST_ISSUES.map((iss) => {
                   const selected = Array.isArray(form.issues) && form.issues.includes(iss);
@@ -237,7 +238,7 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
           </>
         )}
 
-        {err && <div style={S.err}>{t('issue.err.generic') || 'Something went wrong'}</div>}
+        {err && <div style={S.err}>{tSafe('issue.err.generic', '')}</div>}
 
         <div style={S.ctaRow}>
           <button
@@ -247,7 +248,7 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
             style={S.btnGhost}
             data-testid="feedback-modal-cancel"
           >
-            {t('common.cancel') || 'Cancel'}
+            {tSafe('common.cancel', '')}
           </button>
           <button
             type="submit"
@@ -255,7 +256,7 @@ export default function FeedbackModal({ open, mode, onClose, onSubmit }) {
             style={{ ...S.btnPrimary, ...(busy ? S.btnBusy : null) }}
             data-testid="feedback-modal-submit"
           >
-            {busy ? (t('common.saving') || 'Saving…') : (t('common.submit') || 'Submit')}
+            {busy ? (tSafe('common.saving', '')) : (tSafe('common.submit', ''))}
           </button>
         </div>
       </form>

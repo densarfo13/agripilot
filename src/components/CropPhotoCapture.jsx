@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { detectCrop } from '../lib/vision/cropDetector.js';
 import { getCropLabel, getCropImage } from '../config/crops/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 /**
  * CropPhotoCapture — foundation for "take a photo of your crop".
@@ -76,11 +77,11 @@ export default function CropPhotoCapture({
     const f = e && e.target && e.target.files && e.target.files[0];
     if (!f) return;
     if (!ACCEPTED_TYPES.includes(f.type)) {
-      setError(t('cropPhoto.err.type') || 'Unsupported image type. Use JPEG, PNG, or WebP.');
+      setError(tSafe('cropPhoto.err.type', ''));
       return;
     }
     if (f.size > MAX_FILE_SIZE) {
-      setError(t('cropPhoto.err.size') || 'Image is too large (8 MB max).');
+      setError(tSafe('cropPhoto.err.size', ''));
       return;
     }
     setFile(f);
@@ -100,7 +101,7 @@ export default function CropPhotoCapture({
     } catch (err) {
       // Shouldn't happen — detectCrop swallows provider errors — but
       // be defensive so we never leave the user stuck on a spinner.
-      setError(t('cropPhoto.err.detect') || 'Could not analyse the photo. Pick your crop manually.');
+      setError(tSafe('cropPhoto.err.detect', ''));
       setMode('manual');
     } finally {
       setDetecting(false);
@@ -139,21 +140,21 @@ export default function CropPhotoCapture({
         <div style={styles.ctaBlock}>
           <div style={styles.iconCircle} aria-hidden>📷</div>
           <h3 style={styles.title}>
-            {t('cropPhoto.title') || 'Identify your crop'}
+            {tSafe('cropPhoto.title', '')}
           </h3>
           <p style={styles.sub}>
-            {t('cropPhoto.sub') || 'Take or upload a clear photo of a single plant or field row.'}
+            {tSafe('cropPhoto.sub', '')}
           </p>
           <button type="button" style={styles.primaryBtn} onClick={openPicker}
                   data-testid="crop-photo-start">
-            {t('cropPhoto.takePhoto') || 'Take a photo'}
+            {tSafe('cropPhoto.takePhoto', '')}
           </button>
           <button type="button" style={styles.ghostBtn} onClick={openPicker}>
-            {t('cropPhoto.upload') || 'Upload from device'}
+            {tSafe('cropPhoto.upload', '')}
           </button>
           {onCancel && (
             <button type="button" style={styles.ghostBtn} onClick={onCancel}>
-              {t('common.cancel') || 'Cancel'}
+              {tSafe('common.cancel', '')}
             </button>
           )}
         </div>
@@ -165,7 +166,7 @@ export default function CropPhotoCapture({
           <img src={previewUrl} alt="" style={styles.previewImg} data-testid="crop-photo-preview" />
           {detecting && (
             <div style={styles.detectingBar} data-testid="crop-photo-detecting">
-              {t('cropPhoto.detecting') || 'Looking at your photo…'}
+              {tSafe('cropPhoto.detecting', '')}
             </div>
           )}
         </div>
@@ -175,7 +176,7 @@ export default function CropPhotoCapture({
       {mode === 'confirm' && detection && detection.best && (
         <div style={styles.confirmBlock} data-testid="crop-photo-confirm">
           <p style={styles.sub}>
-            {t('cropPhoto.looksLike') || 'Looks like:'}
+            {tSafe('cropPhoto.looksLike', '')}
           </p>
           <div style={styles.cropCard}>
             <img src={getCropImage(detection.best.cropKey)} alt=""
@@ -185,23 +186,22 @@ export default function CropPhotoCapture({
                 {getCropLabelSafe(detection.best.cropKey, lang)}
               </div>
               <div style={styles.cropConf}>
-                {t('cropPhoto.lowConfidence')
-                  || 'Low confidence — please confirm or pick a different crop.'}
+                {tSafe('cropPhoto.lowConfidence', '')}
               </div>
             </div>
           </div>
           <button type="button" style={styles.primaryBtn}
                   onClick={() => handleConfirm(detection.best.cropKey)}
                   data-testid="crop-photo-accept">
-            {t('cropPhoto.confirm') || 'Yes, that\u2019s my crop'}
+            {tSafe('cropPhoto.confirm', '')}
           </button>
           <button type="button" style={styles.ghostBtn}
                   onClick={() => setMode('manual')}
                   data-testid="crop-photo-different">
-            {t('cropPhoto.pickDifferent') || 'Pick a different crop'}
+            {tSafe('cropPhoto.pickDifferent', '')}
           </button>
           <button type="button" style={styles.ghostBtn} onClick={reset}>
-            {t('cropPhoto.retake') || 'Take another photo'}
+            {tSafe('cropPhoto.retake', '')}
           </button>
         </div>
       )}
@@ -211,8 +211,8 @@ export default function CropPhotoCapture({
         <div style={styles.manualBlock} data-testid="crop-photo-manual">
           <p style={styles.sub}>
             {detection && detection.best
-              ? (t('cropPhoto.pickInsteadOf') || 'Pick your crop:')
-              : (t('cropPhoto.pickYours') || 'Pick your crop from the list:')}
+              ? (tSafe('cropPhoto.pickInsteadOf', ''))
+              : (tSafe('cropPhoto.pickYours', ''))}
           </p>
           <div style={styles.grid}>
             {manualOptions.map((key) => (
@@ -225,7 +225,7 @@ export default function CropPhotoCapture({
             ))}
           </div>
           <button type="button" style={styles.ghostBtn} onClick={reset}>
-            {t('cropPhoto.retake') || 'Take another photo'}
+            {tSafe('cropPhoto.retake', '')}
           </button>
         </div>
       )}

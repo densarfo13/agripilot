@@ -5,6 +5,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useFarmHotspots } from '../hooks/useIntelligence.js';
 import RiskLevelBadge from '../components/intelligence/RiskLevelBadge.jsx';
 import { COLORS } from '../constants/intelligence.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 const SEVERITY_COLORS = {
   high: { bg: 'rgba(239,68,68,0.25)', border: COLORS.red, text: COLORS.red },
@@ -80,7 +81,7 @@ export default function FieldHotspotAlert() {
         <div style={S.container}>
           <div style={S.errorBox}>{errorMsg}</div>
           <button style={S.retryBtn} onClick={() => refetch()}>
-            {t('pest.retry') || 'Retry'}
+            {tSafe('pest.retry', '')}
           </button>
         </div>
       </div>
@@ -125,7 +126,7 @@ export default function FieldHotspotAlert() {
           <div style={S.refreshIndicator}>
             <div style={S.spinnerSmall} />
             <span style={{ color: COLORS.subtext, fontSize: '0.8rem' }}>
-              {t('pest.refreshing') || 'Refreshing...'}
+              {tSafe('pest.refreshing', '')}
             </span>
           </div>
         )}
@@ -149,11 +150,11 @@ export default function FieldHotspotAlert() {
 
         {/* Header */}
         <h1 style={S.title}>
-          {isEmpty ? (t('pest.noHotspotsTitle') || 'Field Status') : t('pest.stressDetected')}
+          {isEmpty ? (tSafe('pest.noHotspotsTitle', '')) : t('pest.stressDetected')}
         </h1>
         <p style={S.subtitle}>
           {isEmpty
-            ? (t('pest.noHotspotsSubtitle') || 'No hotspots detected in your fields. Keep monitoring regularly.')
+            ? (tSafe('pest.noHotspotsSubtitle', ''))
             : t('pest.stressSubtitle')}
         </p>
 
@@ -161,12 +162,12 @@ export default function FieldHotspotAlert() {
         {isEmpty && (
           <div style={S.emptyCard}>
             <div style={S.emptyIcon}>{'\u2705'}</div>
-            <h2 style={S.emptyTitle}>{t('pest.noHotspots') || 'No Hotspots Detected'}</h2>
+            <h2 style={S.emptyTitle}>{tSafe('pest.noHotspots', '')}</h2>
             <p style={S.emptyText}>
-              {t('pest.noHotspotsMsg') || 'Your fields look healthy. Continue regular scouting to catch issues early.'}
+              {tSafe('pest.noHotspotsMsg', '')}
             </p>
             <button style={S.ctaBtn} onClick={() => navigate('/pest-risk-check')}>
-              {t('pest.runCheck') || 'Run a Pest Check'}
+              {tSafe('pest.runCheck', '')}
             </button>
           </div>
         )}
@@ -175,7 +176,7 @@ export default function FieldHotspotAlert() {
         {!isEmpty && (
           <>
             <div style={S.mapCard}>
-              <h3 style={S.sectionTitle}>{t('pest.fieldOverview') || 'Field Overview'}</h3>
+              <h3 style={S.sectionTitle}>{tSafe('pest.fieldOverview', '')}</h3>
               <div style={S.mapGrid}>
                 {gridZones.map((hs, i) => {
                   const sev = hs.severity || 'low';
@@ -222,7 +223,7 @@ export default function FieldHotspotAlert() {
                       </h3>
                       {hs.areaAffected && (
                         <span style={S.hotspotArea}>
-                          {t('pest.areaAffected') || 'Area affected'}: {hs.areaAffected}
+                          {tSafe('pest.areaAffected', '')}: {hs.areaAffected}
                         </span>
                       )}
                     </div>
@@ -230,7 +231,7 @@ export default function FieldHotspotAlert() {
                   </div>
                   {hs.detectedAt && (
                     <span style={S.hotspotDate}>
-                      {t('pest.detected') || 'Detected'}: {new Date(hs.detectedAt).toLocaleDateString()}
+                      {tSafe('pest.detected', '')}: {new Date(hs.detectedAt).toLocaleDateString()}
                     </span>
                   )}
                   {hs.description && (
@@ -241,7 +242,7 @@ export default function FieldHotspotAlert() {
                       style={S.actionBtn}
                       onClick={() => navigate('/pest-risk-check')}
                     >
-                      {t('pest.reportPest') || 'Report Pest'}
+                      {tSafe('pest.reportPest', '')}
                     </button>
                   </div>
                 </div>
@@ -282,7 +283,7 @@ export default function FieldHotspotAlert() {
 
             {/* Report pest CTA */}
             <button style={S.ctaBtn} onClick={() => navigate('/pest-risk-check')}>
-              {t('pest.uploadFromArea') || 'Report Pest from This Area'}
+              {tSafe('pest.uploadFromArea', '')}
             </button>
           </>
         )}

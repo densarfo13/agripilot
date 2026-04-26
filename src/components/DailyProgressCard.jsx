@@ -18,6 +18,7 @@ import {
   getDailyProgress, acknowledgeMilestone,
 } from '../lib/progress/progressTracker.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 function hasStorage() { return typeof window !== 'undefined' && !!window.localStorage; }
 
@@ -101,13 +102,13 @@ export default function DailyProgressCard({
     <div style={S.wrap} data-testid="daily-progress-panel">
       <div style={S.headerRow}>
         <div style={S.title}>
-          {t('progress.title') || 'Today\u2019s progress'}
+          {tSafe('progress.title', '')}
         </div>
         <div style={{ ...S.streakPill, borderColor: color, color }}>
           <span style={S.streakDot} />
           {streak.currentStreak > 0
             ? `${streak.currentStreak} day streak`
-            : (t('progress.streak.noneShort') || 'No streak yet')}
+            : (tSafe('progress.streak.noneShort', ''))}
         </div>
       </div>
 
@@ -123,7 +124,7 @@ export default function DailyProgressCard({
       <div style={S.scoreRow}>
         <div style={S.scoreLabelCol}>
           <div style={S.scoreLabel}>
-            {t('progress.score.farmStatus') || 'Farm status'}
+            {tSafe('progress.score.farmStatus', '')}
           </div>
           <div style={{ ...S.scoreValue, color }}>
             {t(score.labelKey) !== score.labelKey ? t(score.labelKey) : score.labelFallback}
@@ -143,7 +144,7 @@ export default function DailyProgressCard({
       {/* Today summary */}
       <div style={S.section}>
         <div style={S.sectionLabel}>
-          {t('progress.today.label') || 'Today'}
+          {tSafe('progress.today.label', '')}
         </div>
         <div style={S.sectionBody}>
           {t(today.summary.key) !== today.summary.key
@@ -155,7 +156,7 @@ export default function DailyProgressCard({
       {/* Next best action */}
       <div style={S.section}>
         <div style={S.sectionLabel}>
-          {t('progress.next.label') || 'Next'}
+          {tSafe('progress.next.label', '')}
         </div>
         <div style={S.nextAction}>
           → {t(nextAction.key) !== nextAction.key ? t(nextAction.key) : nextAction.fallback}

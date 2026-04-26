@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { COUNTRY_REGIONS, COUNTRIES } from '../../utils/locationData.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 // Light built-in list so the selector works out of the box even when
 // the caller doesn't pass `allRegions`. Country-only entries first,
@@ -51,7 +52,7 @@ function regionKey(r) {
 }
 
 function regionLabel(r, t) {
-  if (!r) return t('market.location.none') || 'Any location';
+  if (!r) return tSafe('market.location.none', '');
   if (r.label) return r.label;
   if (r.stateCode) return `${r.stateCode}, ${r.country}`;
   return String(r.country || '').toUpperCase();
@@ -131,7 +132,7 @@ export default function LocationSelector({
       >
         <span style={S.triggerIcon}>{'\uD83D\uDCCD'}</span>
         <span style={S.triggerText}>
-          {value ? regionLabel(value, t) : (t('market.location.any') || 'Any location')}
+          {value ? regionLabel(value, t) : (tSafe('market.location.any', ''))}
         </span>
         <span style={S.triggerCaret}>▾</span>
       </button>
@@ -142,7 +143,7 @@ export default function LocationSelector({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('market.location.searchPlaceholder') || 'Search regions…'}
+            placeholder={tSafe('market.location.searchPlaceholder', '')}
             style={S.search}
             data-testid="location-search"
           />
@@ -155,7 +156,7 @@ export default function LocationSelector({
                 onClick={() => { onReset?.(); setOpen(false); }}
                 data-testid="location-reset"
               >
-                {t('market.location.reset') || 'Reset to default region'}
+                {tSafe('market.location.reset', '')}
               </button>
             )}
             {onExpand && (
@@ -165,13 +166,13 @@ export default function LocationSelector({
                 onClick={() => { onExpand?.(); setOpen(false); }}
                 data-testid="location-expand"
               >
-                {t('market.location.expand') || 'Expand to more regions'}
+                {tSafe('market.location.expand', '')}
               </button>
             )}
           </div>
 
           {(preferredRegions?.length > 0 && !query) && (
-            <GroupHeader label={t('market.location.preferred') || 'Your regions'} />
+            <GroupHeader label={tSafe('market.location.preferred', '')} />
           )}
 
           <ul style={S.list}>
@@ -187,7 +188,7 @@ export default function LocationSelector({
               return (
                 <li key={`${key}:${idx}`}>
                   {showDivider && (
-                    <GroupHeader label={t('market.location.other') || 'Other regions'} />
+                    <GroupHeader label={tSafe('market.location.other', '')} />
                   )}
                   <button
                     type="button"
@@ -197,14 +198,14 @@ export default function LocationSelector({
                   >
                     <span>{regionLabel(r, t)}</span>
                     {r._preferred && (
-                      <span style={S.pillPreferred}>{t('market.location.preferredPill') || 'Preferred'}</span>
+                      <span style={S.pillPreferred}>{tSafe('market.location.preferredPill', '')}</span>
                     )}
                   </button>
                 </li>
               );
             })}
             {filtered.length === 0 && (
-              <li style={S.empty}>{t('market.location.noResults') || 'No regions match.'}</li>
+              <li style={S.empty}>{tSafe('market.location.noResults', '')}</li>
             )}
           </ul>
         </div>

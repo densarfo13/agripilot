@@ -29,6 +29,7 @@ import {
   buildProfileForValidation,
 } from '../../utils/onboardingFlow.js';
 import { validateFarmProfile, VALIDATION_I18N_KEYS } from '../../utils/validateFarmProfile.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 // Pre-fill farmType from the size answer when the mapping is obvious
 // (only used as a fallback — users answer farmType first now).
@@ -177,7 +178,7 @@ function ValidationSummary({ errors, t }) {
   if (!items.length) return null;
   return (
     <div style={S.errBox} role="alert" data-testid="onboarding-validation-errors">
-      <div style={S.errTitle}>{t('onboarding.validation.title') || 'Please fix these issues:'}</div>
+      <div style={S.errTitle}>{tSafe('onboarding.validation.title', '')}</div>
       <ul style={S.errList}>
         {items.map(([field, code]) => {
           const key = VALIDATION_I18N_KEYS[code] || 'validation.required';

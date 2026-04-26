@@ -13,6 +13,7 @@ import {
   getNotificationPreferences, setNotificationPreferences,
 } from '../lib/notifications/notificationPreferences.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 function Toggle({ label, helper, value, onChange, testid }) {
   return (
@@ -44,44 +45,39 @@ export default function NotificationPreferencesCard() {
   return (
     <div style={S.wrap} data-testid="notification-prefs-card">
       <div style={S.title}>
-        {t('notif.prefs.title') || 'Notification settings'}
+        {tSafe('notif.prefs.title', '')}
       </div>
       <div style={S.subtitle}>
-        {t('notif.prefs.subtitle')
-          || 'Pick when and how Farroway can reach you.'}
+        {tSafe('notif.prefs.subtitle', '')}
       </div>
 
       <Toggle
-        label={t('notif.prefs.daily') || 'Daily task reminders'}
-        helper={t('notif.prefs.dailyHelper')
-          || 'One short nudge when today\u2019s task is ready.'}
+        label={tSafe('notif.prefs.daily', '')}
+        helper={tSafe('notif.prefs.dailyHelper', '')}
         value={prefs.dailyReminderEnabled}
         onChange={(v) => update({ dailyReminderEnabled: v })}
         testid="notif-pref-daily"
       />
 
       <Toggle
-        label={t('notif.prefs.weather') || 'Weather alerts'}
-        helper={t('notif.prefs.weatherHelper')
-          || 'Dry spells, heavy rain and heat alerts for your farm.'}
+        label={tSafe('notif.prefs.weather', '')}
+        helper={tSafe('notif.prefs.weatherHelper', '')}
         value={prefs.weatherAlertsEnabled}
         onChange={(v) => update({ weatherAlertsEnabled: v })}
         testid="notif-pref-weather"
       />
 
       <Toggle
-        label={t('notif.prefs.risk') || 'Risk alerts'}
-        helper={t('notif.prefs.riskHelper')
-          || 'Heads-up when pest, disease or water stress risk rises.'}
+        label={tSafe('notif.prefs.risk', '')}
+        helper={tSafe('notif.prefs.riskHelper', '')}
         value={prefs.riskAlertsEnabled}
         onChange={(v) => update({ riskAlertsEnabled: v })}
         testid="notif-pref-risk"
       />
 
       <Toggle
-        label={t('notif.prefs.missed') || 'Missed task reminders'}
-        helper={t('notif.prefs.missedHelper')
-          || 'A soft nudge when a few tasks slip by.'}
+        label={tSafe('notif.prefs.missed', '')}
+        helper={tSafe('notif.prefs.missedHelper', '')}
         value={prefs.missedTaskRemindersEnabled}
         onChange={(v) => update({ missedTaskRemindersEnabled: v })}
         testid="notif-pref-missed"
@@ -90,16 +86,15 @@ export default function NotificationPreferencesCard() {
       <div style={S.sep} />
 
       <Toggle
-        label={t('notif.prefs.email') || 'Email notifications'}
+        label={tSafe('notif.prefs.email', '')}
         value={prefs.emailEnabled}
         onChange={(v) => update({ emailEnabled: v })}
         testid="notif-pref-email"
       />
 
       <Toggle
-        label={t('notif.prefs.sms') || 'SMS notifications'}
-        helper={t('notif.prefs.smsHelper')
-          || 'Short text messages for urgent alerts only.'}
+        label={tSafe('notif.prefs.sms', '')}
+        helper={tSafe('notif.prefs.smsHelper', '')}
         value={prefs.smsEnabled}
         onChange={(v) => update({ smsEnabled: v })}
         testid="notif-pref-sms"
@@ -108,11 +103,10 @@ export default function NotificationPreferencesCard() {
       <label style={S.row}>
         <div style={S.labelCol}>
           <div style={S.label}>
-            {t('notif.prefs.reminderTime') || 'Preferred reminder time'}
+            {tSafe('notif.prefs.reminderTime', '')}
           </div>
           <div style={S.helper}>
-            {t('notif.prefs.reminderTimeHelper')
-              || 'We aim to send the daily nudge around this time.'}
+            {tSafe('notif.prefs.reminderTimeHelper', '')}
           </div>
         </div>
         <input

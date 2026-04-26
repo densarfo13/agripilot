@@ -8,6 +8,7 @@
  * when this renders; the parent page just drops it in.
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function DoneStateCard({
   progressPercent = null,
@@ -25,12 +26,12 @@ export default function DoneStateCard({
 
   // Stable English fallbacks ensure we never render the raw key even
   // if the active language is missing this block.
-  const title    = t('today.done.title') || 'All done for today';
+  const title    = tSafe('today.done.title', '');
   const body     = t('today.done.body')  || "You're on track. Great work.";
   const nextLbl  = nextActionLabel
-                || t('today.done.nextAction') || 'Check tomorrow\u2019s preview';
+                || tSafe('today.done.nextAction', '');
   const revLbl   = reviewLabel
-                || t('today.done.reviewProgress') || 'Review progress';
+                || tSafe('today.done.reviewProgress', '');
 
   return (
     <section style={S.card} data-testid="done-state-card">

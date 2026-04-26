@@ -18,6 +18,7 @@ import { useAppSettings } from '../context/AppSettingsContext.jsx';
 import {
   getSettings, updateSettings, requestBrowserPush,
 } from '../lib/notifications/reminderEngine.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 export default function NotificationSettingsPanel() {
   const { t } = useAppSettings();
@@ -66,17 +67,17 @@ export default function NotificationSettingsPanel() {
 
   const browserDisabled = permState === 'denied' || permState === 'unsupported';
   const hint = permState === 'denied'
-    ? (t('settings.notifications.permissionDenied') || 'Notifications blocked by the browser.')
+    ? (tSafe('settings.notifications.permissionDenied', ''))
     : permState === 'unsupported'
-      ? (t('settings.notifications.unsupported') || 'This browser does not support notifications.')
+      ? (tSafe('settings.notifications.unsupported', ''))
       : null;
 
   return (
     <section style={S.panel} data-testid="notification-settings">
-      <h2 style={S.h2}>{t('settings.notifications.title') || 'Notifications'}</h2>
+      <h2 style={S.h2}>{tSafe('settings.notifications.title', '')}</h2>
 
       <Row
-        label={t('settings.notifications.daily') || 'Daily reminders'}
+        label={tSafe('settings.notifications.daily', '')}
         testId="notif-daily"
       >
         <Toggle
@@ -86,7 +87,7 @@ export default function NotificationSettingsPanel() {
       </Row>
 
       <Row
-        label={t('settings.notifications.time') || 'Reminder time'}
+        label={tSafe('settings.notifications.time', '')}
         testId="notif-time"
       >
         <input
@@ -99,7 +100,7 @@ export default function NotificationSettingsPanel() {
       </Row>
 
       <Row
-        label={t('settings.notifications.browser') || 'Browser notifications'}
+        label={tSafe('settings.notifications.browser', '')}
         testId="notif-browser"
       >
         <Toggle
@@ -111,7 +112,7 @@ export default function NotificationSettingsPanel() {
       {hint && <p style={S.hint} data-testid="notif-browser-hint">{hint}</p>}
 
       <Row
-        label={t('settings.notifications.email') || 'Email reminders'}
+        label={tSafe('settings.notifications.email', '')}
         testId="notif-email"
       >
         <Toggle
@@ -121,7 +122,7 @@ export default function NotificationSettingsPanel() {
       </Row>
 
       <Row
-        label={t('settings.notifications.criticalOnly') || 'Critical alerts only'}
+        label={tSafe('settings.notifications.criticalOnly', '')}
         testId="notif-critical"
       >
         <Toggle

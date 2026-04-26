@@ -29,6 +29,7 @@ import { computeProgress, STATUS_LABEL_KEY } from '../lib/progress/progressEngin
 import { generateTasks } from '../lib/tasks/taskEngine.js';
 import { getTaskCompletions, getFeedback } from '../store/farrowayLocal.js';
 import VoiceButton from '../components/VoiceButton.jsx';
+import { tSafe } from '../i18n/tSafe.js';
 
 const STAGE_ORDER = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -195,14 +196,14 @@ export default function FarmerProgressPage() {
                 {progressSnapshot.completedCount} / {progressSnapshot.totalCount}
               </span>
               <span style={S.engineMetaLabel}>
-                {t('progress.stage_progress') || 'Stage progress'}:{' '}
+                {tSafe('progress.stage_progress', '')}:{' '}
                 {progressSnapshot.stageCompletionPercent}%
               </span>
             </div>
             {engineNextActionText && (
               <div style={S.engineNextAction} data-testid="progress-next-best-action">
                 <span style={S.engineNextLabel}>
-                  {t('progress.next_best_action') || 'Next best action'}
+                  {tSafe('progress.next_best_action', '')}
                 </span>
                 <span style={S.engineNextText}>{engineNextActionText}</span>
               </div>

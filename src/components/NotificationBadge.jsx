@@ -14,6 +14,7 @@ import { useAppSettings } from '../context/AppSettingsContext.jsx';
 import {
   getTopNotification, markAsRead as storeMarkRead,
 } from '../lib/notifications/notificationStore.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 function resolveMessage(t, n) {
   if (!n) return '';
@@ -45,8 +46,8 @@ export default function NotificationBadge({
     else storeMarkRead(n.id);
   }
 
-  const viewAll = t('notifications.feed.view_all') || 'View all';
-  const markRead = t('notifications.feed.mark_read') || 'Mark as read';
+  const viewAll = tSafe('notifications.feed.view_all', '');
+  const markRead = tSafe('notifications.feed.mark_read', '');
 
   const priorityCol = n.priority === 'high'   ? { fg: '#b71c1c', bg: 'rgba(239,68,68,0.10)', border: 'rgba(239,68,68,0.28)' }
                     : n.priority === 'low'    ? { fg: '#78909c', bg: 'rgba(100,116,139,0.10)', border: 'rgba(100,116,139,0.24)' }

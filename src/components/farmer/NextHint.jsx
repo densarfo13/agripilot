@@ -8,13 +8,14 @@
  * never fills with placeholder noise.
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function NextHint({ text }) {
   const { t } = useAppSettings();
   if (!text) return null;
   return (
     <p style={S.row} data-testid="today-next-hint">
-      <span style={S.label}>{t('actionHome.nextHint.label') || 'Next:'}</span>
+      <span style={S.label}>{tSafe('actionHome.nextHint.label', '')}</span>
       <span style={S.text}>{text}</span>
     </p>
   );

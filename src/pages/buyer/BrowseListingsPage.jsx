@@ -23,6 +23,7 @@ import {
 } from '../../hooks/useMarket.js';
 import ListingCard from '../../components/market/ListingCard.jsx';
 import BuyerFiltersBar from '../../components/market/BuyerFiltersBar.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const EMPTY_FILTERS = {
   crop: '', country: '', stateCode: '', quantity: '', minQuality: '', deliveryMode: '',
@@ -106,8 +107,8 @@ export default function BrowseListingsPage() {
   const resultCount = state.listings.length;
   const resultHeader = useMemo(() => {
     if (state.loading) return t('common.loading');
-    if (state.error) return t('market.browse.error') || 'Could not search.';
-    if (resultCount === 0) return t('market.browse.noResults') || 'No matching listings yet';
+    if (state.error) return tSafe('market.browse.error', '');
+    if (resultCount === 0) return tSafe('market.browse.noResults', '');
     return t('market.browse.results', { count: resultCount })
       || `${resultCount} listings`;
   }, [state.loading, state.error, resultCount, t]);
@@ -116,14 +117,14 @@ export default function BrowseListingsPage() {
     <div style={S.page}>
       <div style={S.container}>
         <header style={S.header}>
-          <h1 style={S.title}>{t('market.browse.title') || 'Browse listings'}</h1>
+          <h1 style={S.title}>{tSafe('market.browse.title', '')}</h1>
           <button
             type="button"
             onClick={() => navigate('/buyer/interests')}
             style={S.linkBtn}
             data-testid="go-my-interests"
           >
-            {t('market.myInterests.link') || 'My interests'}
+            {tSafe('market.myInterests.link', '')}
           </button>
         </header>
 
@@ -148,7 +149,7 @@ export default function BrowseListingsPage() {
               onClick={() => navigate(`/market/listings/${l.id}`)}
               actions={
                 <button type="button" style={S.detailBtn}>
-                  {t('market.action.viewDetail') || 'View details'}
+                  {tSafe('market.action.viewDetail', '')}
                 </button>
               }
             />

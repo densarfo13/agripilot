@@ -23,6 +23,7 @@ import {
   markAllAsRead as storeMarkAll,
 } from '../lib/notifications/notificationStore.js';
 import { formatRelativeTime } from '../lib/time/relativeTime.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 function resolveMessage(t, n) {
   if (!n) return '';
@@ -69,9 +70,9 @@ export default function NotificationCenter({
     setList((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
-  const titleText     = t('notifications.feed.title')     || 'Notifications';
-  const markAllText   = t('notifications.feed.mark_all')  || 'Mark all as read';
-  const closeText     = t('common.close')                 || 'Close';
+  const titleText     = tSafe('notifications.feed.title', '');
+  const markAllText   = tSafe('notifications.feed.mark_all', '');
+  const closeText     = tSafe('common.close', '');
   const emptyText     = t(emptyKey)                       || 'You have no notifications yet.';
 
   const priorityColor = (p) => {
@@ -131,7 +132,7 @@ export default function NotificationCenter({
                         onClick={() => handleMarkRead(n.id)}
                         style={S.markBtn}
                         data-testid={`notification-mark-${n.id}`}>
-                  {t('notifications.feed.mark_read') || 'Mark as read'}
+                  {tSafe('notifications.feed.mark_read', '')}
                 </button>
               )}
             </li>

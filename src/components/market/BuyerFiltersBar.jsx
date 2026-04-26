@@ -9,6 +9,7 @@
  */
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import LocationSelector from './LocationSelector.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function BuyerFiltersBar({
   filters,
@@ -37,14 +38,14 @@ export default function BuyerFiltersBar({
         <input
           value={filters.crop || ''}
           onChange={set('crop')}
-          placeholder={t('market.field.cropPlaceholder') || 'tomato'}
+          placeholder={tSafe('market.field.cropPlaceholder', '')}
           style={S.input}
           data-testid="filter-crop"
         />
       </label>
 
       <label style={S.field}>
-        <span style={S.label}>{t('market.field.location') || 'Location'}</span>
+        <span style={S.label}>{tSafe('market.field.location', '')}</span>
         <LocationSelector
           value={selectedLocation}
           preferredRegions={preferredRegions}
@@ -70,7 +71,7 @@ export default function BuyerFiltersBar({
       </label>
 
       <button type="submit" style={S.searchBtn} disabled={busy}>
-        {busy ? t('common.loading') : (t('market.browse.search') || 'Search')}
+        {busy ? t('common.loading') : (tSafe('market.browse.search', ''))}
       </button>
     </form>
   );

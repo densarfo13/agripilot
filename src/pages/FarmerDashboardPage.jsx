@@ -33,6 +33,7 @@ import {
 } from '../core/multiFarm/index.js';
 import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 /** Collapsible section — keeps secondary content below the fold */
 function ExpandableSection({ title, icon, children, testId }) {
@@ -1127,7 +1128,7 @@ export default function FarmerDashboardPage() {
                 }}
                 data-testid="farmer-account-refresh"
               >
-                {t('common.refresh') || 'Retry'}
+                {tSafe('common.refresh', '')}
               </button>
               <button
                 type="button"
@@ -1145,7 +1146,7 @@ export default function FarmerDashboardPage() {
                 }}
                 data-testid="farmer-account-login"
               >
-                {t('auth.backToLogin') || 'Login again'}
+                {tSafe('auth.backToLogin', '')}
               </button>
             </div>
           </div>

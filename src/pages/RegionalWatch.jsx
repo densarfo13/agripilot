@@ -3,6 +3,7 @@ import { useTranslation } from '../i18n/index.js';
 import { useMyAlerts } from '../hooks/useIntelligence.js';
 import AlertCard from '../components/intelligence/AlertCard.jsx';
 import { COLORS } from '../constants/intelligence.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 const PAGE_SIZE = 10;
 
@@ -78,7 +79,7 @@ export default function RegionalWatch() {
         <div style={S.container}>
           <div style={S.errorBox}>{errorMsg}</div>
           <button style={S.retryBtn} onClick={() => refetch()}>
-            {t('pest.retry') || 'Retry'}
+            {tSafe('pest.retry', '')}
           </button>
         </div>
       </div>
@@ -97,7 +98,7 @@ export default function RegionalWatch() {
           <div style={S.refreshIndicator}>
             <div style={S.spinnerSmall} />
             <span style={{ color: COLORS.subtext, fontSize: '0.8rem' }}>
-              {t('pest.refreshing') || 'Refreshing...'}
+              {tSafe('pest.refreshing', '')}
             </span>
           </div>
         )}
@@ -109,7 +110,7 @@ export default function RegionalWatch() {
         {/* Last updated */}
         {lastUpdated && (
           <div style={S.lastUpdated}>
-            {t('regional.lastUpdated') || 'Last updated'}: {lastUpdated.toLocaleString()}
+            {tSafe('regional.lastUpdated', '')}: {lastUpdated.toLocaleString()}
           </div>
         )}
 
@@ -124,7 +125,7 @@ export default function RegionalWatch() {
             }}
             onClick={() => handleTabSwitch('active')}
           >
-            {t('regional.active') || 'Active'} ({activeAlerts.length})
+            {tSafe('regional.active', '')} ({activeAlerts.length})
           </button>
           <button
             style={{
@@ -135,7 +136,7 @@ export default function RegionalWatch() {
             }}
             onClick={() => handleTabSwitch('past')}
           >
-            {t('regional.past') || 'Past'} ({pastAlerts.length})
+            {tSafe('regional.past', '')} ({pastAlerts.length})
           </button>
         </div>
 
@@ -147,13 +148,13 @@ export default function RegionalWatch() {
             </div>
             <h2 style={S.emptyTitle}>
               {activeTab === 'active'
-                ? (t('regional.allClear') || 'All Clear in Your Area')
-                : (t('regional.noPast') || 'No Past Alerts')}
+                ? (tSafe('regional.allClear', ''))
+                : (tSafe('regional.noPast', ''))}
             </h2>
             <p style={S.emptyText}>
               {activeTab === 'active'
-                ? (t('regional.allClearMsg') || 'There are no active pest alerts in your region right now. We will notify you if conditions change.')
-                : (t('regional.noPastMsg') || 'No expired or resolved alerts to show.')}
+                ? (tSafe('regional.allClearMsg', ''))
+                : (tSafe('regional.noPastMsg', ''))}
             </p>
           </div>
         ) : (
@@ -170,7 +171,7 @@ export default function RegionalWatch() {
             {/* Load more */}
             {hasMore && (
               <button style={S.loadMoreBtn} onClick={handleLoadMore}>
-                {t('regional.loadMore') || 'Load More'} ({currentList.length - visibleCount} {t('regional.remaining') || 'remaining'})
+                {tSafe('regional.loadMore', '')} ({currentList.length - visibleCount} {tSafe('regional.remaining', '')})
               </button>
             )}
           </>

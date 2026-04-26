@@ -17,6 +17,7 @@ import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 import { getListing, expressInterest } from '../../hooks/useMarket.js';
 import ListingCard from '../../components/market/ListingCard.jsx';
 import BuyerInterestForm from '../../components/market/BuyerInterestForm.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function ListingDetailPage() {
   const { t } = useAppSettings();
@@ -52,7 +53,7 @@ export default function ListingDetailPage() {
     return <Shell><p style={S.muted}>{t('common.loading')}</p></Shell>;
   }
   if (!state.listing) {
-    return <Shell><p style={S.muted}>{t('market.detail.notFound') || 'Listing not found.'}</p></Shell>;
+    return <Shell><p style={S.muted}>{tSafe('market.detail.notFound', '')}</p></Shell>;
   }
 
   const isActive = state.listing.status === 'active';
@@ -67,13 +68,13 @@ export default function ListingDetailPage() {
 
       {state.listing.notes && (
         <div style={S.notes}>
-          <h3 style={S.notesTitle}>{t('market.detail.notes') || 'Seller notes'}</h3>
+          <h3 style={S.notesTitle}>{tSafe('market.detail.notes', '')}</h3>
           <p style={S.notesBody}>{state.listing.notes}</p>
         </div>
       )}
 
       <div style={S.contactNote}>
-        {t('market.detail.contactNote') || 'Contact info will be shared after the farmer accepts your interest.'}
+        {tSafe('market.detail.contactNote', '')}
       </div>
 
       {isActive ? (
@@ -88,16 +89,16 @@ export default function ListingDetailPage() {
         <div style={S.closed} data-testid="listing-unavailable">
           <strong>
             {state.listing.status === 'reserved'
-              ? (t('market.detail.reservedTitle') || 'Currently reserved')
-              : (t('market.detail.unavailableTitle') || 'No longer available')}
+              ? (tSafe('market.detail.reservedTitle', ''))
+              : (tSafe('market.detail.unavailableTitle', ''))}
           </strong>
           <p style={S.closedBody}>
             {state.listing.status === 'reserved'
-              ? (t('market.detail.reservedBody') || 'Another buyer is finalizing this listing. It may re-open if that falls through.')
-              : (t('market.detail.unavailableBody') || 'This listing is no longer accepting new interest.')}
+              ? (tSafe('market.detail.reservedBody', ''))
+              : (tSafe('market.detail.unavailableBody', ''))}
           </p>
           <button type="button" onClick={() => navigate('/market/browse')} style={S.browseBtn}>
-            {t('market.interest.browseMore') || 'Browse more'}
+            {tSafe('market.interest.browseMore', '')}
           </button>
         </div>
       )}

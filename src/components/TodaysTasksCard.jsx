@@ -67,7 +67,7 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
 
   if (!mapped || !plan || !plan.tasks || plan.tasks.length === 0) return null;
 
-  const heading = t('farmer.dailyTasks.title') || 'Today\u2019s tasks';
+  const heading = tSafe('farmer.dailyTasks.title', '');
   const dateStr = plan.date;
 
   const totalOpen = plan.tasks.filter((x) => x.status === 'pending').length;
@@ -81,8 +81,8 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
         </div>
         <div style={S.counter}>
           {totalOpen === 0
-            ? (t('farmer.dailyTasks.allDone') || 'All done \u2713')
-            : `${totalOpen} ${t('farmer.dailyTasks.open') || 'open'}`}
+            ? (tSafe('farmer.dailyTasks.allDone', ''))
+            : `${totalOpen} ${tSafe('farmer.dailyTasks.open', '')}`}
         </div>
       </div>
 
@@ -105,8 +105,8 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
                 <span style={{ ...S.priorityPill, color: tone.fg, borderColor: tone.border }}>
                   {tone.label}
                 </span>
-                {done && <span style={S.status}>{t('farmer.dailyTasks.done') || 'Completed'}</span>}
-                {skipped && <span style={S.status}>{t('farmer.dailyTasks.skipped') || 'Skipped'}</span>}
+                {done && <span style={S.status}>{tSafe('farmer.dailyTasks.done', '')}</span>}
+                {skipped && <span style={S.status}>{tSafe('farmer.dailyTasks.skipped', '')}</span>}
               </div>
               <div style={{ ...S.taskTitle, textDecoration: done ? 'line-through' : 'none' }}>
                 {task.title}
@@ -117,7 +117,7 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
               {task.why && (
                 <div style={S.why}>
                   <span style={S.whyLabel}>
-                    {t('farmer.dailyTasks.why') || 'Why'}:
+                    {tSafe('farmer.dailyTasks.why', '')}:
                   </span>{' '}{task.why}
                 </div>
               )}
