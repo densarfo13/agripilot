@@ -10,6 +10,7 @@ import {
 import TrustBadge from '../components/TrustBadge.jsx';
 import { trustColor } from '../lib/verification/trustSignals.js';
 import { withTimeout } from '../lib/api/withTimeout.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * OrganizationDashboardPage — institutional-admin / super-admin

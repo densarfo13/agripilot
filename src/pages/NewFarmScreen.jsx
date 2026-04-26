@@ -38,6 +38,7 @@ import { convertArea } from '../lib/units/areaConversion.js';
 
 const UNIT_UC_TO_LC = { ACRE: 'acres', HECTARE: 'hectares', SQFT: 'sqft', SQM: 'sqm' };
 import { reverseGeocode } from '../lib/location/reverseGeocode.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 const STAGE_OPTIONS = [
   'land_prep', 'planting', 'early_growth',

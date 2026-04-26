@@ -19,6 +19,7 @@ import OnboardingShell from '../../../components/onboarding/v2/OnboardingShell.j
 import RecommendationCropCard from '../../../components/onboarding/v2/RecommendationCropCard.jsx';
 import { ONBOARDING_STEPS } from '../../../utils/onboardingV2/stepIds.js';
 import { filterRecommendations } from '../../../utils/onboardingV2/filterRecommendations.js';
+import { getCropLabelSafe } from '../../../utils/crops.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;

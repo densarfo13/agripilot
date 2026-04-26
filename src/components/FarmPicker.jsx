@@ -1,6 +1,7 @@
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getCropLabel } from '../config/crops/index.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * FarmPicker — simple farm selection step for multi-farm users.

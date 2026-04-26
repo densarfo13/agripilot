@@ -4,6 +4,7 @@ import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import {
   listBulkLots, requestBulkLot, formatPickupWindow,
 } from '../lib/bulkLots.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * BulkLotsCard — buyer-facing browser of aggregated bulk lots.

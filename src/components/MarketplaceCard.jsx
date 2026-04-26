@@ -15,6 +15,7 @@ import {
   formatTrend,
   PRICE_SOURCE_LABELS,
 } from '../lib/priceIntelligence.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * MarketplaceCard — one widget that renders either:

@@ -6,6 +6,7 @@ import {
   fetchBulkLotStatus,
   REQUEST_STATUS,
 } from '../lib/marketplace.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * BuyerRequestsList — "My requests" view for buyers.

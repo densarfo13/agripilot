@@ -46,6 +46,7 @@ import {
 import { convertArea } from '../../lib/units/areaConversion.js';
 import COUNTRIES from '../../utils/countries.js';
 import { detectCountryByIP } from '../../utils/geolocation.js';
+import { getCropLabelSafe } from '../../utils/crops.js';
 
 const ONBOARDING_KEY = 'farroway.onboardingV3';
 const DRAFT_KEY      = 'farroway.onboardingV3.draft';

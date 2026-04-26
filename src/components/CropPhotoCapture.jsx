@@ -3,6 +3,7 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import { detectCrop } from '../lib/vision/cropDetector.js';
 import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * CropPhotoCapture — foundation for "take a photo of your crop".

@@ -10,6 +10,7 @@
 import OnboardingShell from '../../../components/onboarding/v2/OnboardingShell.jsx';
 import { useTranslation } from '../../../i18n/index.js';
 import { ONBOARDING_STEPS } from '../../../utils/onboardingV2/stepIds.js';
+import { getCropLabelSafe } from '../../../utils/crops.js';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;

@@ -4,6 +4,7 @@ import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import {
   fetchPriceInsight, formatPriceRange, formatTrend, PRICE_SOURCE_LABELS,
 } from '../lib/priceIntelligence.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * PriceTrendsCard — "Price trends in your region" dashboard section.

@@ -6,6 +6,7 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import { getCropLabel } from '../config/crops/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * FarmSwitcher — always visible. Shows active farm, allows switching.

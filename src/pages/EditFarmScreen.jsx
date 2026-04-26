@@ -46,6 +46,13 @@ const UNIT_UC_TO_LC = { ACRE: 'acres', HECTARE: 'hectares', SQFT: 'sqft', SQM: '
 import {
   searchCrops, normalizeCrop, CROP_OTHER, getCropLabel,
 } from '../config/crops.js';
+// Pilot crash root cause (Apr 2026): EditFarmScreen used
+// `getCropLabelSafe(value, lang)` in 5 places without importing
+// it, surfacing as a runtime `ReferenceError: getCropLabelSafe is
+// not defined` → ErrorBoundary "Something went wrong". The
+// helper lives in utils/crops.js (different module from the
+// config/crops.js block above).
+import { getCropLabelSafe } from '../utils/crops.js';
 
 const CROP_STAGES = [
   'planning', 'land_preparation', 'planting', 'germination',

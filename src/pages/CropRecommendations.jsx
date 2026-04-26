@@ -27,6 +27,7 @@ import { recommendTopCrops } from '../lib/recommendations/topCropEngine.js';
 import { getWeatherState } from '../lib/weather/weatherState.js';
 import VoiceButton from '../components/VoiceButton.jsx';
 import { tSafe } from '../i18n/tSafe.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * deriveWeatherSummary(farmCtx, answers)

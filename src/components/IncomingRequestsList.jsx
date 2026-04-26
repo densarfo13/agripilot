@@ -8,6 +8,7 @@ import {
   respondToBulkRequest,
   REQUEST_STATUS,
 } from '../lib/marketplace.js';
+import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
  * IncomingRequestsList — farmer-side inbox for buyer requests.
