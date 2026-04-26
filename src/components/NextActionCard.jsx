@@ -9,7 +9,7 @@
  * Decision logic lives in src/engine/decisionEngine.js.
  * Loop state comes from useFarmerLoop via props.
  */
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { LOOP_STATE } from '../services/farmerLoopService.js';
 import TaskCard from './farmer/TaskCard.jsx';
 import CompletionCard from './farmer/CompletionCard.jsx';

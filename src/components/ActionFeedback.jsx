@@ -1,6 +1,6 @@
 import React from 'react';
 import { ACTION_STATE } from '../hooks/useGuaranteedAction.js';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 /**
  * ActionFeedback — standardized UI for guarantee-layer states.

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore } from '../lib/farmScore.js';
 import { useSeason } from '../context/SeasonContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';

@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useUserMode } from '../context/UserModeContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 export default function ModeIndicator() {
   const { mode, setMode, allowedModes, isFarmer } = useUserMode();

@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';

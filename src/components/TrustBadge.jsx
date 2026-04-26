@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import {
   computeTrustLevel, trustColor, trustLabel,
 } from '../lib/verification/trustSignals.js';

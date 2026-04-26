@@ -15,7 +15,7 @@
  * component is purely rendering; the page that hosts it fetches.
  */
 import { useState } from 'react';
-import { useTranslation } from '../../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { getCropLabel, getCropLabelSafe } from '../../utils/crops.js';
 import {
   localizeTaskTitle,

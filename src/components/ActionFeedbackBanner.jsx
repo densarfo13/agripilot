@@ -12,7 +12,7 @@
  * Optional haptic feedback on success (navigator.vibrate).
  */
 import { useEffect } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 /**
  * @param {'success'|'offline'|'syncing'|'synced'|'failed'} status

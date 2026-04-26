@@ -6,7 +6,7 @@
  * Compact: fits in settings or header area.
  */
 import { useUserMode } from '../context/UserModeContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 export default function ModeSwitcher() {
   const { mode, setMode, allowedModes } = useUserMode();

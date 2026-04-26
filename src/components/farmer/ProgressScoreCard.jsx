@@ -16,7 +16,7 @@
  */
 
 import { computeProgressScore } from '../../lib/farmer/progressScore.js';
-import { useTranslation } from '../../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
 
 const LABEL_COLORS = Object.freeze({

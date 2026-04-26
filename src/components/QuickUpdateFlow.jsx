@@ -7,7 +7,7 @@ import VoiceBar from './VoiceBar.jsx';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 import useGuaranteedAction, { ACTION_STATE } from '../hooks/useGuaranteedAction.js';
 import ActionFeedback from './ActionFeedback.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 /**
  * QuickUpdateFlow — frictionless, camera-first "Add Update".

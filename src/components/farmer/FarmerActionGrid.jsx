@@ -18,7 +18,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tStrict } from '../../i18n/strictT.js';
 import IconActionCard from '../IconActionCard.jsx';
 import LowLiteracyToggle from '../LowLiteracyToggle.jsx';

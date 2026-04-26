@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getCropLabel } from '../config/crops/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';

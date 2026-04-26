@@ -6,7 +6,7 @@
  * Large tap targets, mobile-first, premium dark styling.
  */
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useTranslation } from '../../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { NAV_ICONS } from '../../lib/farmerIcons.js';
 

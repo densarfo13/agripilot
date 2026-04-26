@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { saveCropStage } from '../services/cropStageService.js';
 import { STAGES, STAGE_KEYS } from '../utils/cropStages.js';
 

@@ -44,7 +44,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tStrict } from '../i18n/strictT.js';
 import VoiceButton from './VoiceButton.jsx';
 import useLowLiteracyMode from '../hooks/useLowLiteracyMode.js';

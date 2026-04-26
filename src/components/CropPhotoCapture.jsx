@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { detectCrop } from '../lib/vision/cropDetector.js';
 import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import { tSafe } from '../i18n/tSafe.js';

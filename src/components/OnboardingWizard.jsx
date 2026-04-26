@@ -12,7 +12,7 @@ import { getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
 import { getLocalizedCropList } from '../data/cropRegionCatalog.js';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import NewFarmerRecommendation from './NewFarmerRecommendation.jsx';
 import { assessSeasonProfit } from '../engine/seasonProfitRules.js';
 import { detectCountryByIP } from '../utils/geolocation.js';

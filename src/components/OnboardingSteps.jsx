@@ -9,7 +9,7 @@
  *   onCancel()           — called when farmer exits early
  */
 import { useState, useCallback } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 // ── Top 12 crops for icon-grid selection ──────────────────────
 const TOP_CROPS = [

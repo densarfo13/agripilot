@@ -14,7 +14,7 @@
  * wizard that already exists in the app.
  */
 import { useEffect, useState } from 'react';
-import { useTranslation } from '../../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import {
   resolveLanguage, confirmLanguage, detectBrowserLanguage,
 } from '../../lib/languageResolver.js';

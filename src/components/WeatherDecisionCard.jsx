@@ -1,5 +1,5 @@
 import { useWeather } from '../context/WeatherContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import VoicePromptButton from './VoicePromptButton.jsx';
 
 function getWeatherDecisionKey(weather) {

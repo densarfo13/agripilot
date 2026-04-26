@@ -6,7 +6,7 @@
  * error so the farmer sees a clear retry instead of a spinner).
  */
 import { useState } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 const CATEGORIES = ['pest', 'disease', 'weather', 'water', 'soil', 'other'];
 const SEVERITIES = ['low', 'medium', 'high'];

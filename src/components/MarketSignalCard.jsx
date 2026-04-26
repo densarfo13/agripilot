@@ -13,7 +13,7 @@
  * Only renders when market data exists for the country.
  */
 import { useMarket } from '../context/MarketContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 /**
  * Convert crop code to i18n key.

@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 
 const CROP_STAGES = [

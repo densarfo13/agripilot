@@ -19,7 +19,7 @@
  * ARCHITECTURE: Renders ONLY from taskViewModel. No raw task access.
  */
 import { useEffect, useRef } from 'react';
-import { useTranslation } from '../../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { useAppPrefs } from '../../context/AppPrefsContext.jsx';
 import { useNetwork } from '../../context/NetworkContext.jsx';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';

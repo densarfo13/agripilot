@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { computeFarrowayScore } from '../lib/intelligence/farrowayScoreEngine.js';
 import { postScoreSnapshot, fetchScoreHistory } from '../lib/farrowayScore.js';
 

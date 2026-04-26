@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import {
   fetchPriceInsight, formatPriceRange, formatTrend, PRICE_SOURCE_LABELS,

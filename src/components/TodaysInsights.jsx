@@ -20,7 +20,7 @@
  */
 
 import { useMemo } from 'react';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { buildFarmInsights } from '../lib/intelligence/insightEngine.js';
 
 const ICONS = {

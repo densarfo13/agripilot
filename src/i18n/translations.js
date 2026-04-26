@@ -25,91 +25,91 @@ const T = {
     en: 'Ready', fr: 'Prêt', sw: 'Tayari', ha: 'A shirye', tw: 'Krado', hi: 'तैयार',
   },
   'common.stepN': {
-    en: 'Step {n}', fr: 'Étape {n}', sw: 'Hatua {n}', ha: 'Mataki {n}', tw: 'Anammɔn {n}',
+    en: 'Step {n}', fr: 'Étape {n}', sw: 'Hatua {n}', ha: 'Mataki {n}', tw: 'Anammɔn {n}', hi: 'चरण {n}',
   },
 
   // ─── Offline safety / Tasks fallback ────────────────────────
   'offline.showingCached': {
-    en: 'Offline — showing your last saved tasks',
+    en: 'Offline — showing your last saved tasks', hi: 'ऑफ़लाइन — आपके सहेजे गए कार्य दिख रहे हैं',
     fr: 'Hors ligne — affichage de vos dernières tâches enregistrées',
     sw: 'Nje ya mtandao — inaonyesha kazi zako zilizohifadhiwa mwisho',
     ha: 'Babu yanar gizo — ana nuna ayyukanku na ƙarshe',
     tw: 'Wonni intanɛt — yɛrekyerɛ wo nnwuma a etwa toɔ',
   },
   'offline.syncOnReconnect': {
-    en: 'Changes will sync when you reconnect',
+    en: 'Changes will sync when you reconnect', hi: 'दोबारा कनेक्ट होने पर बदलाव सिंक होंगे',
     fr: 'Les changements se synchroniseront à la reconnexion',
     sw: 'Mabadiliko yataoanishwa utakaposimama tena',
     ha: 'Canje-canje za su daidaita lokacin da za ka sake haɗawa',
     tw: 'Nsesaeɛ bɛkɔ so bere a wosan ba intanɛt so',
   },
   'offline.rightNow': {
-    en: "You're offline right now",
+    en: "You're offline right now", hi: 'आप अभी ऑफ़लाइन हैं',
     fr: 'Vous êtes hors ligne actuellement',
     sw: 'Uko nje ya mtandao sasa',
     ha: 'Ba ka cikin yanar gizo a yanzu',
     tw: 'Wonni intanɛt seesei',
   },
   'offline.stillOffline': {
-    en: "You're still offline",
+    en: "You're still offline", hi: 'आप अब भी ऑफ़लाइन हैं',
     fr: 'Vous êtes toujours hors ligne',
     sw: 'Bado uko nje ya mtandao',
     ha: 'Har yanzu ba ka cikin yanar gizo ba',
     tw: 'Woda so nni intanɛt',
   },
   'offline.stillOfflineShort': {
-    en: 'Offline', fr: 'Hors ligne', sw: 'Nje', ha: 'Babu', tw: 'Nni intanɛt',
+    en: 'Offline', fr: 'Hors ligne', sw: 'Nje', ha: 'Babu', tw: 'Nni intanɛt', hi: 'ऑफ़लाइन',
   },
   'offline.tryAgain': {
-    en: 'Try again', fr: 'Réessayer', sw: 'Jaribu tena', ha: 'Sake gwadawa', tw: 'San hwehwɛ',
+    en: 'Try again', fr: 'Réessayer', sw: 'Jaribu tena', ha: 'Sake gwadawa', tw: 'San hwehwɛ', hi: 'फिर से कोशिश करें',
   },
   'offline.retrying': {
-    en: 'Trying again…', fr: 'Nouvelle tentative…', sw: 'Inajaribu tena…', ha: 'Ana sake gwadawa…', tw: 'Yɛresan hwehwɛ…',
+    en: 'Trying again…', fr: 'Nouvelle tentative…', sw: 'Inajaribu tena…', ha: 'Ana sake gwadawa…', tw: 'Yɛresan hwehwɛ…', hi: 'फिर से कोशिश की जा रही है…',
   },
   'offline.lastSaved': {
-    en: 'Last saved tasks', fr: 'Dernières tâches enregistrées', sw: 'Kazi zilizohifadhiwa mwisho', ha: 'Ayyuka na ƙarshe da aka adana', tw: 'Nnwuma a ɛtwa toɔ',
+    en: 'Last saved tasks', fr: 'Dernières tâches enregistrées', sw: 'Kazi zilizohifadhiwa mwisho', ha: 'Ayyuka na ƙarshe da aka adana', tw: 'Nnwuma a ɛtwa toɔ', hi: 'अंतिम सहेजे गए कार्य',
   },
   'offline.fallback.title': {
-    en: 'Check your farm today',
+    en: 'Check your farm today', hi: 'आज अपना खेत देखें',
     fr: 'Vérifiez votre ferme aujourd\'hui',
     sw: 'Kagua shamba lako leo',
     ha: 'Duba gonarka yau',
     tw: 'Hwɛ w\'afuo nnɛ',
   },
   'offline.fallback.why': {
-    en: 'We could not load your latest tasks',
+    en: 'We could not load your latest tasks', hi: 'हम नवीनतम कार्य लोड नहीं कर सके',
     fr: "Nous n'avons pas pu charger vos dernières tâches",
     sw: 'Hatukuweza kupakia kazi zako za hivi karibuni',
     ha: 'Ba za mu iya loda ayyukanku na ƙarshe ba',
     tw: 'Yɛantumi amfa wo nnwuma foforɔ aba',
   },
   'offline.fallback.next': {
-    en: 'Reconnect to update your guidance',
+    en: 'Reconnect to update your guidance', hi: 'मार्गदर्शन अपडेट करने के लिए दोबारा कनेक्ट करें',
     fr: 'Reconnectez-vous pour mettre à jour vos conseils',
     sw: 'Unganisha tena ili kusasisha mwongozo',
     ha: 'Sake haɗawa don sabunta jagora',
     tw: 'San bɔ intanɛt mu na akwankyerɛ ɛyɛ foforɔ',
   },
   'offline.connection': {
-    en: 'Connection', fr: 'Connexion', sw: 'Muunganisho', ha: 'Haɗin kai', tw: 'Nkitahodie',
+    en: 'Connection', fr: 'Connexion', sw: 'Muunganisho', ha: 'Haɗin kai', tw: 'Nkitahodie', hi: 'कनेक्शन',
   },
   'offline.lastSavedOnline': {
-    en: 'Last saved online', fr: 'Dernière sauvegarde en ligne', sw: 'Imehifadhiwa mwisho mtandaoni', ha: 'An ajiye na ƙarshe yanar gizo', tw: 'Wɔakora ntanɛt so bere a ɛtwa toɔ',
+    en: 'Last saved online', fr: 'Dernière sauvegarde en ligne', sw: 'Imehifadhiwa mwisho mtandaoni', ha: 'An ajiye na ƙarshe yanar gizo', tw: 'Wɔakora ntanɛt so bere a ɛtwa toɔ', hi: 'अंतिम बार ऑनलाइन सहेजा गया',
   },
   'offline.notYet': {
-    en: 'Not yet', fr: 'Pas encore', sw: 'Bado', ha: 'Ba tukuna', tw: 'Ɛnyɛ nnɛ',
+    en: 'Not yet', fr: 'Pas encore', sw: 'Bado', ha: 'Ba tukuna', tw: 'Ɛnyɛ nnɛ', hi: 'अभी नहीं',
   },
   'status.online': {
-    en: 'Online', fr: 'En ligne', sw: 'Mtandaoni', ha: 'Yanar gizo', tw: 'Intanɛt so',
+    en: 'Online', fr: 'En ligne', sw: 'Mtandaoni', ha: 'Yanar gizo', tw: 'Intanɛt so', hi: 'ऑनलाइन',
   },
   'status.offline': {
-    en: 'Offline', fr: 'Hors ligne', sw: 'Nje ya mtandao', ha: 'Babu yanar gizo', tw: 'Wonni intanɛt',
+    en: 'Offline', fr: 'Hors ligne', sw: 'Nje ya mtandao', ha: 'Babu yanar gizo', tw: 'Wonni intanɛt', hi: 'ऑफ़लाइन',
   },
   'mode.simple': {
-    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Mai sauƙi', tw: 'Ɛyɛ mmerɛw',
+    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Mai sauƙi', tw: 'Ɛyɛ mmerɛw', hi: 'आसान',
   },
   'mode.full': {
-    en: 'Full', fr: 'Complet', sw: 'Kamili', ha: 'Cikakke', tw: 'Nyinaa',
+    en: 'Full', fr: 'Complet', sw: 'Kamili', ha: 'Cikakke', tw: 'Nyinaa', hi: 'पूर्ण',
   },
 
   // ─── U.S. crop recommendation screen ──────────────────────
@@ -1233,105 +1233,105 @@ const T = {
 
   // Context-aware offline fallback tasks (generated by buildOfflineFallbackTask)
   'offline.fallback.land_rest.title': {
-    en: 'Rest and plan your next crop',
+    en: 'Rest and plan your next crop', hi: 'आराम करें और अगली फसल की योजना बनाएँ',
     fr: 'Reposez la terre et planifiez la prochaine culture',
     sw: 'Pumzisha ardhi na panga zao lijalo',
     ha: 'Ka huta ka shirya amfani na gaba',
     tw: 'Ma asase nhome na yɛ nhyehyɛeɛ ma afudeɛ foforɔ',
   },
   'offline.fallback.land_rest.why': {
-    en: 'Your land is resting — this is the time to plan',
+    en: 'Your land is resting — this is the time to plan', hi: 'आपकी ज़मीन आराम पर है — यही योजना का समय है',
     fr: 'Votre terre se repose — c\'est le moment de planifier',
     sw: 'Ardhi yako inapumzika — huu ni wakati wa kupanga',
     ha: 'Gonarka tana hutawa — lokacin shirya ne',
     tw: 'Wo asase rehome — ɛyɛ bere a wo yɛ nhyehyɛeɛ',
   },
   'offline.fallback.land_rest.next': {
-    en: 'Pick what to plant next and when',
+    en: 'Pick what to plant next and when', hi: 'चुनें कि अगला क्या और कब बोना है',
     fr: 'Choisissez la prochaine culture et sa date',
     sw: 'Chagua cha kupanda baadaye na lini',
     ha: 'Zaɓi abin shuka na gaba da lokaci',
     tw: 'Yi deɛ wobɛdua bio ne bere a wobɛyɛ',
   },
   'offline.fallback.land_prep.title': {
-    en: 'Prepare your land for planting',
+    en: 'Prepare your land for planting', hi: 'रोपण के लिए ज़मीन तैयार करें',
     fr: 'Préparez votre terre pour les semis',
     sw: 'Tayarisha ardhi yako kwa kupanda',
     ha: 'Shirya gonarka don shuki',
     tw: 'Siesie w\'asase ma nnua',
   },
   'offline.fallback.land_prep.why': {
-    en: 'Good soil prep sets up a strong season',
+    en: 'Good soil prep sets up a strong season', hi: 'अच्छी मिट्टी की तैयारी मज़बूत मौसम बनाती है',
     fr: 'Un bon travail du sol lance une saison solide',
     sw: 'Utayarishaji mzuri huanzisha msimu imara',
     ha: 'Kyakkyawan shiri yana bayar da ƙarfi ga kakar',
     tw: 'Siesie asase yie na ɛbere no ayɛ papa',
   },
   'offline.fallback.land_prep.next': {
-    en: 'Clear debris and check soil moisture',
+    en: 'Clear debris and check soil moisture', hi: 'मलबा हटाएँ और मिट्टी की नमी जाँचें',
     fr: 'Dégagez les débris et vérifiez l\'humidité',
     sw: 'Ondoa takataka na angalia unyevu wa udongo',
     ha: 'Share shara ka duba laima',
     tw: 'Yi nwura fi hɔ na hwɛ asase no mu nsuo',
   },
   'offline.fallback.maize_scout.title': {
-    en: 'Scout your maize field',
+    en: 'Scout your maize field', hi: 'अपने मक्के के खेत की जाँच करें',
     fr: 'Inspectez votre champ de maïs',
     sw: 'Kagua shamba lako la mahindi',
     ha: 'Bincika gonar masara',
     tw: 'Kɔhwɛ wo aburow afuo',
   },
   'offline.fallback.maize_scout.why': {
-    en: 'Main growing season — pests move fast now',
+    en: 'Main growing season — pests move fast now', hi: 'मुख्य उगाने का समय — कीट तेज़ी से फैलते हैं',
     fr: 'Saison de croissance principale — les ravageurs se propagent vite',
     sw: 'Msimu mkuu wa ukuaji — wadudu husambaa haraka',
     ha: 'Babban lokacin girma — kwari suna yaɗuwa da sauri',
     tw: 'Aburow nyin berɛ — mmoawa nso mu ntɛm',
   },
   'offline.fallback.maize_scout.next': {
-    en: 'Walk rows, look for leaf damage or wilting',
+    en: 'Walk rows, look for leaf damage or wilting', hi: 'पंक्तियों में चलें, पत्तियों को देखें',
     fr: 'Marchez dans les rangs, cherchez dégâts ou flétrissement',
     sw: 'Tembea safu, angalia uharibifu wa majani au kunyauka',
     ha: 'Ka yi yawo ka duba lalacewar ganye ko bushewa',
     tw: 'Nantew sɛn mu, hwɛ nhahanam mu hwɛ sɛ ayɛ dɛm',
   },
   'offline.fallback.rice_water.title': {
-    en: 'Check water level in your paddy',
+    en: 'Check water level in your paddy', hi: 'धान के पानी का स्तर जाँचें',
     fr: 'Vérifiez le niveau d\'eau dans votre rizière',
     sw: 'Angalia kiwango cha maji shambani',
     ha: 'Duba matakin ruwa a cikin gonar shinkafa',
     tw: 'Hwɛ nsuo dodoɔ a ɛwɔ wo mogya afuo mu',
   },
   'offline.fallback.rice_water.why': {
-    en: 'Monsoon window — water management matters most',
+    en: 'Monsoon window — water management matters most', hi: 'मानसून के दौरान पानी प्रबंधन सबसे ज़रूरी है',
     fr: 'Mousson — la gestion de l\'eau est cruciale',
     sw: 'Msimu wa mvua — usimamizi wa maji ni muhimu',
     ha: 'Lokacin damina — sarrafa ruwa yana da muhimmanci',
     tw: 'Osutɔ berɛ — nsu hwɛsoɔ ho hia kɛseɛ',
   },
   'offline.fallback.rice_water.next': {
-    en: 'Keep 2–5 cm above soil during tillering',
+    en: 'Keep 2–5 cm above soil during tillering', hi: 'बढ़ने के दौरान मिट्टी से 2–5 सेमी ऊपर पानी रखें',
     fr: 'Maintenez 2–5 cm au-dessus du sol au tallage',
     sw: 'Dumisha sm 2–5 juu ya udongo wakati wa kuchanua',
     ha: 'Ajiye 2–5 cm sama da ƙasa lokacin reshe',
     tw: 'Ma nsuo no nkɔsoro 2–5 cm wɔ asase no so',
   },
   'offline.fallback.root_weed.title': {
-    en: 'Weed around your root crops',
+    en: 'Weed around your root crops', hi: 'जड़ वाली फसलों के पास निराई करें',
     fr: 'Désherbez autour de vos cultures de racines',
     sw: 'Ng\'oa magugu karibu na mazao ya mizizi',
     ha: 'Tsare ciyawa kewaye da amfanin tushe',
     tw: 'Yi nwura fi wo nhini afudeɛ ho',
   },
   'offline.fallback.root_weed.why': {
-    en: 'Weeds steal nutrients from tubers all year',
+    en: 'Weeds steal nutrients from tubers all year', hi: 'खरपतवार पूरे साल कंद से पोषक तत्व चुराते हैं',
     fr: 'Les mauvaises herbes volent les nutriments des tubercules',
     sw: 'Magugu huiba virutubisho kutoka kwa mizizi',
     ha: 'Ciyawa tana sata sinadarai daga tubers',
     tw: 'Nwura gye nhini afudeɛ mu aduane',
   },
   'offline.fallback.root_weed.next': {
-    en: 'Clear weeds, loose soil gently at the base',
+    en: 'Clear weeds, loose soil gently at the base', hi: 'खरपतवार साफ़ करें, जड़ के पास मिट्टी ढीली करें',
     fr: 'Enlevez mauvaises herbes, ameublissez le sol',
     sw: 'Ondoa magugu, lainisha udongo taratibu',
     ha: 'Share ciyawa, sassauta ƙasa a hankali',
@@ -1854,16 +1854,16 @@ const T = {
     en: 'Planting', fr: 'Plantation', sw: 'Kupanda', ha: 'Shuka', tw: 'Dua',
   },
   'stage.growing': {
-    en: 'Growing', fr: 'Croissance', sw: 'Kukua', ha: 'Girma', tw: 'Nyin',
+    en: 'Growing', fr: 'Croissance', sw: 'Kukua', ha: 'Girma', tw: 'Nyin', hi: 'बढ़ रहा है',
   },
   'stage.flowering': {
     en: 'Flowering', fr: 'Floraison', sw: 'Kuchanua', ha: 'Fure', tw: 'Nhwiren',
   },
   'stage.harvest': {
-    en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa',
+    en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa', hi: 'कटाई',
   },
   'stage.harvesting': {
-    en: 'Harvesting', fr: 'Récolte en cours', sw: 'Kuvuna', ha: 'Ana girbi', tw: 'Ɛretwa',
+    en: 'Harvesting', fr: 'Récolte en cours', sw: 'Kuvuna', ha: 'Ana girbi', tw: 'Ɛretwa', hi: 'कटाई हो रही है',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -3201,13 +3201,13 @@ const T = {
 
   // ── Stage labels (full set for FarmerProgressTab) ──
   'stage.prePlanting': {
-    en: 'Pre-Planting', fr: 'Pré-plantation', sw: 'Kabla ya Kupanda', ha: 'Kafin Shuka', tw: 'Ansa Dua',
+    en: 'Pre-Planting', fr: 'Pré-plantation', sw: 'Kabla ya Kupanda', ha: 'Kafin Shuka', tw: 'Ansa Dua', hi: 'रोपण-पूर्व',
   },
   'stage.vegetative': {
-    en: 'Vegetative', fr: 'Végétatif', sw: 'Mimea', ha: 'Girma', tw: 'Nyin',
+    en: 'Vegetative', fr: 'Végétatif', sw: 'Mimea', ha: 'Girma', tw: 'Nyin', hi: 'वानस्पतिक',
   },
   'stage.postHarvest': {
-    en: 'Post-Harvest', fr: 'Post-récolte', sw: 'Baada ya Mavuno', ha: 'Bayan Girbi', tw: 'Otwa Akyi',
+    en: 'Post-Harvest', fr: 'Post-récolte', sw: 'Baada ya Mavuno', ha: 'Bayan Girbi', tw: 'Otwa Akyi', hi: 'कटाई के बाद',
   },
 
   // ── Classification labels ──
@@ -4078,22 +4078,22 @@ const T = {
   // ═══════════════════════════════════════════════════════════
 
   'offline.savedLocally': {
-    en: 'Offline — your work is saved locally', fr: 'Hors ligne — votre travail est enregistré localement', sw: 'Nje ya mtandao — kazi yako imehifadhiwa kwenye simu', ha: 'Babu yanar gizo — an ajiye aikin ka a wayar ka', tw: 'Wo nni intanɛt — wo adwuma akora wɔ wo fon so',
+    en: 'Offline — your work is saved locally', fr: 'Hors ligne — votre travail est enregistré localement', sw: 'Nje ya mtandao — kazi yako imehifadhiwa kwenye simu', ha: 'Babu yanar gizo — an ajiye aikin ka a wayar ka', tw: 'Wo nni intanɛt — wo adwuma akora wɔ wo fon so', hi: 'ऑफ़लाइन — आपका काम स्थानीय रूप से सहेजा गया है',
   },
   'offline.pendingSync': {
-    en: '{count} unsaved changes waiting to sync', fr: '{count} modifications en attente de synchronisation', sw: '{count} mabadiliko yanasubiri kusawazishwa', ha: '{count} canje-canje suna jiran haɗawa', tw: '{count} nsakrae retwɛn sync',
+    en: '{count} unsaved changes waiting to sync', fr: '{count} modifications en attente de synchronisation', sw: '{count} mabadiliko yanasubiri kusawazishwa', ha: '{count} canje-canje suna jiran haɗawa', tw: '{count} nsakrae retwɛn sync', hi: '{count} सिंक के लिए लंबित बदलाव',
   },
   'offline.willSync': {
-    en: 'Changes will sync automatically when you reconnect', fr: 'Les modifications se synchroniseront automatiquement à la reconnexion', sw: 'Mabadiliko yatasawazishwa moja kwa moja utakapounganishwa tena', ha: 'Canje-canje za su haɗu da kansu idan ka sami haɗi', tw: 'Nsakrae no bɛyɛ sync ankasa sɛ wo san ka bom',
+    en: 'Changes will sync automatically when you reconnect', fr: 'Les modifications se synchroniseront automatiquement à la reconnexion', sw: 'Mabadiliko yatasawazishwa moja kwa moja utakapounganishwa tena', ha: 'Canje-canje za su haɗu da kansu idan ka sami haɗi', tw: 'Nsakrae no bɛyɛ sync ankasa sɛ wo san ka bom', hi: 'दोबारा कनेक्ट होने पर बदलाव अपने आप सिंक होंगे',
   },
   'offline.syncing': {
-    en: 'Syncing...', fr: 'Synchronisation...', sw: 'Inasawazisha...', ha: 'Ana haɗawa...', tw: 'Ɛre-sync...',
+    en: 'Syncing...', fr: 'Synchronisation...', sw: 'Inasawazisha...', ha: 'Ana haɗawa...', tw: 'Ɛre-sync...', hi: 'सिंक हो रहा है…',
   },
   'offline.synced': {
-    en: 'All changes synced', fr: 'Toutes les modifications sont synchronisées', sw: 'Mabadiliko yote yamesawazishwa', ha: 'An haɗa duk canje-canje', tw: 'Nsakrae nyinaa ayɛ sync',
+    en: 'All changes synced', fr: 'Toutes les modifications sont synchronisées', sw: 'Mabadiliko yote yamesawazishwa', ha: 'An haɗa duk canje-canje', tw: 'Nsakrae nyinaa ayɛ sync', hi: 'सभी बदलाव सिंक हो गए',
   },
   'offline.failed': {
-    en: 'Sync failed. Your data is safe locally.', fr: 'Échec de synchronisation. Vos données sont en sécurité localement.', sw: 'Kusawazisha kumeshindikana. Data yako iko salama kwenye simu.', ha: 'Haɗawa ta gaza. Bayanan ka suna lafiya a wayar ka.', tw: 'Sync no annyɛ yie. Wo data no te asomdwoe wɔ wo fon so.',
+    en: 'Sync failed. Your data is safe locally.', fr: 'Échec de synchronisation. Vos données sont en sécurité localement.', sw: 'Kusawazisha kumeshindikana. Data yako iko salama kwenye simu.', ha: 'Haɗawa ta gaza. Bayanan ka suna lafiya a wayar ka.', tw: 'Sync no annyɛ yie. Wo data no te asomdwoe wɔ wo fon so.', hi: 'सिंक विफल। आपका डेटा स्थानीय रूप से सुरक्षित है।',
   },
   'offline.retrying': {
     en: 'Retrying...', fr: 'Nouvelle tentative...', sw: 'Inajaribu tena...', ha: 'Ana sake gwadawa...', tw: 'Ɛresan ahwehwɛ...',
@@ -4788,10 +4788,10 @@ const T = {
   'guided.planTreat': { en: 'Apply treatment', fr: 'Appliquer le traitement', sw: 'Tumia dawa', ha: 'Yi magani', tw: 'Fa aduro to so' },
 
   // ─── Farm Status Labels ──────────────────────────────────
-  'status.profile': { en: 'Profile', fr: 'Profil', sw: 'Wasifu', ha: 'Bayani', tw: 'Nsɛm' },
-  'status.cropStage': { en: 'Crop stage', fr: 'Étape culture', sw: 'Hatua ya mazao', ha: 'Matakin amfani', tw: 'Nnɔbae anammɔn' },
-  'status.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma' },
-  'status.activity': { en: 'Activity', fr: 'Activité', sw: 'Shughuli', ha: 'Aiki', tw: 'Dwumadi' },
+  'status.profile': { en: 'Profile', fr: 'Profil', sw: 'Wasifu', ha: 'Bayani', tw: 'Nsɛm', hi: 'प्रोफ़ाइल', },
+  'status.cropStage': { en: 'Crop stage', fr: 'Étape culture', sw: 'Hatua ya mazao', ha: 'Matakin amfani', tw: 'Nnɔbae anammɔn', hi: 'फसल का चरण', },
+  'status.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma', hi: 'कार्य', },
+  'status.activity': { en: 'Activity', fr: 'Activité', sw: 'Shughuli', ha: 'Aiki', tw: 'Dwumadi', hi: 'गतिविधि', },
   'status.good': { en: 'Farm healthy', fr: 'Ferme en bonne santé', sw: 'Shamba zuri', ha: 'Gona lafiyayye', tw: 'Afuo apɔ mu yie' },
 
   // ─── Retention indicators ─────────────────────────────────
@@ -4799,13 +4799,13 @@ const T = {
   'retention.overdue': { en: 'OVERDUE', fr: 'EN RETARD', sw: 'IMECHELEWA', ha: 'AN WUCE LOKACI', tw: 'ATWAM BERE' },
   'retention.lastUpdated': { en: 'Updated {days}d ago', fr: 'Mis à jour il y a {days}j', sw: 'Ilisasishwa siku {days} zilizopita', ha: 'An sabunta kwanaki {days} da suka wuce', tw: 'Wɔsesaa no nnansa {days} a atwam\'' },
   'retention.updatedToday': { en: 'Updated today', fr: 'Mis à jour aujourd\'hui', sw: 'Ilisasishwa leo', ha: 'An sabunta yau', tw: 'Wɔsesaa no ɛnnɛ' },
-  'status.goodDesc': { en: 'All systems on track.', fr: 'Tout est en ordre.', sw: 'Kila kitu kiko sawa.', ha: 'Komai yana daidai.', tw: 'Biribiara kɔ yie.' },
-  'status.onTrack': { en: 'On track', fr: 'En bonne voie', sw: 'Inakwenda vizuri', ha: 'Yana tafiya daidai', tw: 'Ɛkɔ yie' },
-  'status.onTrackDesc': { en: 'Almost everything is up to date.', fr: 'Presque tout est à jour.', sw: 'Karibu kila kitu kimesasishwa.', ha: 'Kusan komai an sabunta.', tw: 'Biribiara sua sesa.' },
-  'status.almostReady': { en: 'Almost ready', fr: 'Presque prêt', sw: 'Karibu tayari', ha: 'Kusan shirye', tw: 'Sua ayɛ krado' },
-  'status.almostReadyDesc': { en: 'A few things need your attention.', fr: 'Quelques éléments nécessitent votre attention.', sw: 'Mambo machache yanahitaji umakini wako.', ha: 'Wasu abubuwa suna buƙatar hankalin ku.', tw: 'Nneɛma kakraa bi hia wo adwene.' },
-  'status.needsWork': { en: 'Needs attention', fr: 'Nécessite attention', sw: 'Inahitaji umakini', ha: 'Yana buƙatar kulawa', tw: 'Ɛhia adwene' },
-  'status.needsWorkDesc': { en: 'Several items need updating.', fr: 'Plusieurs éléments doivent être mis à jour.', sw: 'Mambo kadhaa yanahitaji kusasishwa.', ha: 'Abubuwa da yawa suna buƙatar sabuntawa.', tw: 'Nneɛma pii hia sɛ wɔsesa wɔn.' },
+  'status.goodDesc': { en: 'All systems on track.', fr: 'Tout est en ordre.', sw: 'Kila kitu kiko sawa.', ha: 'Komai yana daidai.', tw: 'Biribiara kɔ yie.', hi: 'सब कुछ सही दिशा में है।', },
+  'status.onTrack': { en: 'On track', fr: 'En bonne voie', sw: 'Inakwenda vizuri', ha: 'Yana tafiya daidai', tw: 'Ɛkɔ yie', hi: 'सही रास्ते पर', },
+  'status.onTrackDesc': { en: 'Almost everything is up to date.', fr: 'Presque tout est à jour.', sw: 'Karibu kila kitu kimesasishwa.', ha: 'Kusan komai an sabunta.', tw: 'Biribiara sua sesa.', hi: 'लगभग सब कुछ अद्यतन है।', },
+  'status.almostReady': { en: 'Almost ready', fr: 'Presque prêt', sw: 'Karibu tayari', ha: 'Kusan shirye', tw: 'Sua ayɛ krado', hi: 'लगभग तैयार', },
+  'status.almostReadyDesc': { en: 'A few things need your attention.', fr: 'Quelques éléments nécessitent votre attention.', sw: 'Mambo machache yanahitaji umakini wako.', ha: 'Wasu abubuwa suna buƙatar hankalin ku.', tw: 'Nneɛma kakraa bi hia wo adwene.', hi: 'कुछ चीज़ों पर ध्यान देने की ज़रूरत है।', },
+  'status.needsWork': { en: 'Needs attention', fr: 'Nécessite attention', sw: 'Inahitaji umakini', ha: 'Yana buƙatar kulawa', tw: 'Ɛhia adwene', hi: 'ध्यान चाहिए', },
+  'status.needsWorkDesc': { en: 'Several items need updating.', fr: 'Plusieurs éléments doivent être mis à jour.', sw: 'Mambo kadhaa yanahitaji kusasishwa.', ha: 'Abubuwa da yawa suna buƙatar sabuntawa.', tw: 'Nneɛma pii hia sɛ wɔsesa wɔn.', hi: 'कई वस्तुओं को अद्यतन करने की ज़रूरत है।', },
 
   'guided.todaysPlan': { en: "Today's plan", fr: "Plan du jour", sw: 'Mpango wa leo', ha: 'Tsarin yau', tw: 'Ɛnnɛ nhyehyɛe' },
   'guided.now': { en: 'NOW', fr: 'MAINTENANT', sw: 'SASA', ha: 'YANZU', tw: 'SEESEI' },
@@ -5327,13 +5327,13 @@ const T = {
 
   // ─── Location display (farmer-friendly) ───────────────────
   'location.farmLocation': {
-    en: 'Farm Location', fr: 'Emplacement de la ferme', sw: 'Mahali pa shamba', ha: 'Wurin gona', tw: 'Afuo beae',
+    en: 'Farm Location', fr: 'Emplacement de la ferme', sw: 'Mahali pa shamba', ha: 'Wurin gona', tw: 'Afuo beae', hi: 'खेत का स्थान',
   },
   'location.captured': {
-    en: 'Location captured', fr: 'Emplacement enregistré', sw: 'Mahali pamehifadhiwa', ha: 'An adana wuri', tw: 'Wɔde beae ahyɛ',
+    en: 'Location captured', fr: 'Emplacement enregistré', sw: 'Mahali pamehifadhiwa', ha: 'An adana wuri', tw: 'Wɔde beae ahyɛ', hi: 'स्थान कैप्चर हो गया',
   },
   'location.capturedCheck': {
-    en: 'Location saved ✅', fr: 'Emplacement enregistré ✅', sw: 'Mahali pamehifadhiwa ✅', ha: 'An adana wuri ✅', tw: 'Wɔde beae ahyɛ ✅',
+    en: 'Location saved ✅', fr: 'Emplacement enregistré ✅', sw: 'Mahali pamehifadhiwa ✅', ha: 'An adana wuri ✅', tw: 'Wɔde beae ahyɛ ✅', hi: 'स्थान सहेज लिया गया ✅',
   },
   'location.detecting': {
     en: 'Detecting location...', fr: 'Détection en cours...', sw: 'Inatafuta mahali...', ha: 'Ana neman wuri...', tw: 'Rehwehwɛ beae...',
@@ -5951,11 +5951,11 @@ const T = {
   'market.note.fallDemand': { en: 'Fall demand rising — fresh greens popular', fr: 'Demande d\'automne en hausse', sw: 'Mahitaji ya vuli yanaongezeka', ha: 'Buƙatar kaka tana ƙaruwa', tw: 'Bere a ɛresa no nhia rekɔ soro' },
 
   // ─── Growth stages ────────────────────────────────────────
-  'stage.seedling': { en: 'Seedling', fr: 'Semis', sw: 'Mche', ha: 'Shuka', tw: 'Aba' },
+  'stage.seedling': { en: 'Seedling', fr: 'Semis', sw: 'Mche', ha: 'Shuka', tw: 'Aba', hi: 'अंकुर', },
   'stage.vegetative': { en: 'Vegetative', fr: 'Végétatif', sw: 'Ukuaji', ha: 'Girma', tw: 'Nkɔso' },
   'stage.flowering': { en: 'Flowering', fr: 'Floraison', sw: 'Maua', ha: 'Fure', tw: 'Nhwiren' },
-  'stage.fruiting': { en: 'Fruiting', fr: 'Fructification', sw: 'Matunda', ha: 'Ɗan itace', tw: 'Aba' },
-  'stage.maturity': { en: 'Maturity', fr: 'Maturité', sw: 'Kukomaa', ha: 'Balaguro', tw: 'Anyin' },
+  'stage.fruiting': { en: 'Fruiting', fr: 'Fructification', sw: 'Matunda', ha: 'Ɗan itace', tw: 'Aba', hi: 'फल आना', },
+  'stage.maturity': { en: 'Maturity', fr: 'Maturité', sw: 'Kukomaa', ha: 'Balaguro', tw: 'Anyin', hi: 'परिपक्वता', },
 
   // ─── Risk level badges ────────────────────────────────────
   'risk.low': { en: 'Low Risk', fr: 'Risque Faible', sw: 'Hatari Ndogo', ha: 'Ƙaramin Haɗari', tw: 'Asiane Ketewa' },
@@ -6422,22 +6422,22 @@ const T = {
   // ═══════════════════════════════════════════════════════════
 
   'mode.basic': {
-    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Sauƙi', tw: 'Mmerɛw',
+    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Sauƙi', tw: 'Mmerɛw', hi: 'सरल',
   },
   'mode.simple': {
     en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Sauƙi', tw: 'Mmerɛw',
   },
   'mode.standard': {
-    en: 'Standard', fr: 'Standard', sw: 'Kawaida', ha: 'Daidai', tw: 'Nhyehyɛe',
+    en: 'Standard', fr: 'Standard', sw: 'Kawaida', ha: 'Daidai', tw: 'Nhyehyɛe', hi: 'मानक',
   },
   'mode.advanced': {
-    en: 'Advanced', fr: 'Avancé', sw: 'Kwa kina', ha: 'Ci gaba', tw: 'Nea ɛkɔ anim',
+    en: 'Advanced', fr: 'Avancé', sw: 'Kwa kina', ha: 'Ci gaba', tw: 'Nea ɛkɔ anim', hi: 'उन्नत',
   },
   'mode.switchToBasic': {
-    en: 'Switch to simple view', fr: 'Vue simple', sw: 'Badilisha kuwa rahisi', ha: 'Canja zuwa sauƙi', tw: 'Sesa kɔ mmerɛw',
+    en: 'Switch to simple view', fr: 'Vue simple', sw: 'Badilisha kuwa rahisi', ha: 'Canja zuwa sauƙi', tw: 'Sesa kɔ mmerɛw', hi: 'सरल दृश्य पर जाएँ',
   },
   'mode.switchToStandard': {
-    en: 'Switch to standard view', fr: 'Vue standard', sw: 'Badilisha kuwa kawaida', ha: 'Canja zuwa daidai', tw: 'Sesa kɔ nhyehyɛe',
+    en: 'Switch to standard view', fr: 'Vue standard', sw: 'Badilisha kuwa kawaida', ha: 'Canja zuwa daidai', tw: 'Sesa kɔ nhyehyɛe', hi: 'मानक दृश्य पर जाएँ',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -7615,11 +7615,11 @@ const T = {
   'milestone.streak30':           { en: '30-day streak!',                             fr: 'Série de 30 jours !',                       sw: 'Mfululizo wa siku 30!',                        ha: 'Jerin kwanaki 30!',                      tw: 'Nna 30 saa!' },
 
   // ─── Offline banner (Fix P4.11) ─────────────────────
-  'offline.banner.offline':       { en: 'Offline — changes are queued',               fr: 'Hors ligne — modifications en file',         sw: 'Nje ya mtandao — mabadiliko yanasubiri',      ha: 'Ba haɗi — canje-canje a layi',           tw: 'Wonni intanɛt — nsesaeɛ retwɛn' },
-  'offline.banner.syncing':       { en: 'Syncing…',                                    fr: 'Synchronisation…',                          sw: 'Inasawazisha…',                                ha: 'Ana daidaitawa…',                        tw: 'Ɛrekɔ so…' },
-  'offline.banner.synced':        { en: 'All synced',                                 fr: 'Tout synchronisé',                          sw: 'Vyote vimesawazishwa',                         ha: 'An daidaita duka',                       tw: 'Nyinaa awie' },
-  'offline.banner.failed':        { en: 'Some syncs failed — tap to retry',           fr: 'Échec — toucher pour réessayer',             sw: 'Baadhi haijasawazishwa — gusa upya',          ha: 'Wasu sun gaza — danna sake gwadawa',     tw: 'Bi annwie — fa wo nsa ka so' },
-  'offline.banner.retry':         { en: 'Retry',                                      fr: 'Réessayer',                                 sw: 'Jaribu tena',                                  ha: 'Sake gwadawa',                           tw: 'Sɔ hwɛ' },
+  'offline.banner.offline':       { en: 'Offline — changes are queued',               fr: 'Hors ligne — modifications en file',         sw: 'Nje ya mtandao — mabadiliko yanasubiri',      ha: 'Ba haɗi — canje-canje a layi',           tw: 'Wonni intanɛt — nsesaeɛ retwɛn', hi: 'ऑफ़लाइन — बदलाव कतार में हैं', },
+  'offline.banner.syncing':       { en: 'Syncing…',                                    fr: 'Synchronisation…',                          sw: 'Inasawazisha…',                                ha: 'Ana daidaitawa…',                        tw: 'Ɛrekɔ so…', hi: 'सिंक हो रहा है…', },
+  'offline.banner.synced':        { en: 'All synced',                                 fr: 'Tout synchronisé',                          sw: 'Vyote vimesawazishwa',                         ha: 'An daidaita duka',                       tw: 'Nyinaa awie', hi: 'सब सिंक हो गया', },
+  'offline.banner.failed':        { en: 'Some syncs failed — tap to retry',           fr: 'Échec — toucher pour réessayer',             sw: 'Baadhi haijasawazishwa — gusa upya',          ha: 'Wasu sun gaza — danna sake gwadawa',     tw: 'Bi annwie — fa wo nsa ka so', hi: 'कुछ सिंक विफल — फिर से करने के लिए टैप करें', },
+  'offline.banner.retry':         { en: 'Retry',                                      fr: 'Réessayer',                                 sw: 'Jaribu tena',                                  ha: 'Sake gwadawa',                           tw: 'Sɔ hwɛ', hi: 'फिर से करें', },
 
   // ─── Farm economics (yield + value + profit) ──
   'econ.label.estimatedYield':        { en: 'Estimated yield',            fr: 'Rendement estimé',             sw: 'Mavuno yanayokadiriwa',           ha: 'Ƙididdigar amfanin gona',              tw: 'Mfasoɔ a yɛhwɛ anim' },

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import api from '../api/client.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 import { compressImage, formatFileSize } from '../utils/imageCompress.js';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 /**
  * ProfilePhotoUpload — modal for uploading/updating farmer profile photo.

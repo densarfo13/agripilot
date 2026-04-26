@@ -1,5 +1,5 @@
 import { useProfile } from '../context/ProfileContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getCropLabel } from '../config/crops/index.js';
 
 /**

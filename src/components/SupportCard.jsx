@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createSupportRequest } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 /**
  * SupportCard — farmer contact form. Optionally auto-attaches a

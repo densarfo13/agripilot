@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import {
   getNotificationPreferences, setNotificationPreferences,
 } from '../lib/notifications/notificationPreferences.js';
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
 
 function Toggle({ label, helper, value, onChange, testid }) {

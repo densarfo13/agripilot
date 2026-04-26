@@ -11,7 +11,7 @@
  * No tracking of acceptance beyond one analytics event — the engine
  * treats beta and supported crops the same once the user confirms.
  */
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 
 export default function BetaWarningModal({ cropName, cropIcon, onConfirm, onCancel }) {

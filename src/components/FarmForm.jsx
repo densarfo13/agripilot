@@ -37,7 +37,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { useTranslation } from '../i18n/index.js';
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { CROPS, ALL_CROPS_WITH_OTHER, OTHER_CROP, getCropLabel, normalizeCropCode, parseCropValue, buildOtherCropValue, getCropLabelSafe } from '../utils/crops.js';
 import { STAGES, STAGE_KEYS, resolveStage, getStagesForCrop } from '../utils/cropStages.js';
 import {
