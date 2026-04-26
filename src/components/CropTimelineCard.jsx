@@ -73,9 +73,14 @@ export default function CropTimelineCard({ farm, now = null } = {}) {
   const headline = t(progress.headline.key) !== progress.headline.key
     ? t(progress.headline.key) : progress.headline.fallback;
 
+  // Cleanup §5: never show the bare English fallback "Estimated"
+  // when a non-English UI is missing the timeline.confidence.low
+  // key — route through the new farm.estimated key (full 6-lang
+  // coverage) so the chip stays localized.
   const confBadge = timeline.confidenceLevel === 'low'
     ? (t('timeline.confidence.low') !== 'timeline.confidence.low'
-        ? t('timeline.confidence.low') : 'Estimated')
+        ? t('timeline.confidence.low')
+        : (t('farm.estimated') !== 'farm.estimated' ? t('farm.estimated') : ''))
     : null;
 
   return (

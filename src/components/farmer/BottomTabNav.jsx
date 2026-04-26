@@ -7,6 +7,7 @@
  */
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
+import { tSafe } from '../../i18n/tSafe.js';
 import { NAV_ICONS } from '../../lib/farmerIcons.js';
 
 const TABS = [
@@ -19,7 +20,11 @@ const TABS = [
 export default function BottomTabNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  // Subscribe to farroway:langchange so the labels refresh on flip.
+  // We don't use the bound `t` here — the cleanup spec mandates
+  // tSafe for every nav label so a missing key shows the visible
+  // tab key fallback rather than humanised English.
+  useTranslation();
 
   const currentPath = location.pathname;
 
@@ -27,13 +32,16 @@ export default function BottomTabNav() {
     <nav style={S.nav} data-testid="bottom-tab-nav">
       {TABS.map((tab) => {
         const isActive = currentPath === tab.path;
+        // tSafe: missing key → visible tab key fallback (never an
+        // English humanised value in non-English UIs).
+        const label = tSafe(tab.labelKey, tab.key);
         return (
           <button
             key={tab.key}
             type="button"
             onClick={() => navigate(tab.path)}
             style={S.tab}
-            aria-label={t(tab.labelKey) || tab.key}
+            aria-label={label}
             aria-current={isActive ? 'page' : undefined}
             data-testid={`tab-${tab.key}`}
           >
@@ -49,7 +57,7 @@ export default function BottomTabNav() {
               ...S.label,
               ...(isActive ? S.labelActive : {}),
             }}>
-              {t(tab.labelKey) || tab.key}
+              {label}
             </span>
           </button>
         );

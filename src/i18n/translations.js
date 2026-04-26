@@ -9026,6 +9026,72 @@ const T = {
   // Keep them generic so a tile can drop one in regardless of metric.
   'admin.live.computed':        { en: 'Computed from live data',  fr: 'Calculé à partir de données en direct', sw: 'Imehesabiwa kutoka data hai',     ha: 'An yi lissafin daga rayayyun bayanai', tw: 'Wɔayɛ ho akontaabu firi nokware nsɛm so', hi: 'लाइव डेटा से गणना' },
   'admin.live.realtime':        { en: 'Updated in real-time',     fr: 'Mis à jour en temps réel',              sw: 'Imesasishwa kwa wakati halisi',   ha: 'An sabunta a ainihin lokaci',           tw: 'Yɛasakra no seesei ara',                hi: 'रीयल-टाइम में अपडेट' },
+
+  // ─── Final language cleanup §2 — required key map ────────────
+  // Keys requested by the cleanup spec. Short, farmer-friendly
+  // copy in every launch language. Twi / Hausa are deliberate
+  // simple approximations where polished phrasing is unavailable —
+  // strict rule: never an English string in a non-English UI.
+
+  // progress.*
+  'progress.cropStartingMessage': { en: 'Your crop is just getting started', fr: 'Votre culture commence à peine',          sw: 'Zao lako linaanza tu',          ha: 'Shukarka tana farawa kawai',         tw: 'W\'aduane refi ase',          hi: 'आपकी फसल अभी शुरू हो रही है' },
+  'progress.nextAction':          { en: 'Next action',                       fr: 'Action suivante',                          sw: 'Hatua inayofuata',              ha: 'Mataki na gaba',                     tw: 'Ade a edi hɔ',                hi: 'अगला कदम' },
+  'progress.viewTomorrowTask':    { en: 'See tomorrow\'s task',              fr: 'Voir la tâche de demain',                  sw: 'Ona kazi ya kesho',             ha: 'Duba aikin gobe',                    tw: 'Hwɛ ɔkyena adwuma',           hi: 'कल का काम देखें' },
+  'progress.stageProgress':       { en: 'Stage progress',                    fr: 'Progrès de l\'étape',                      sw: 'Maendeleo ya hatua',            ha: 'Cigaban mataki',                     tw: 'Anammɔn nkɔanim',             hi: 'चरण प्रगति' },
+  'progress.cropProgress':        { en: 'Crop progress',                     fr: 'Progrès de la culture',                    sw: 'Maendeleo ya zao',              ha: 'Cigaban shuka',                      tw: 'Aduane nkɔanim',              hi: 'फसल प्रगति' },
+  'progress.completedToday':      { en: 'Completed today',                   fr: 'Terminé aujourd\'hui',                     sw: 'Imekamilika leo',               ha: 'An kammala yau',                     tw: 'Wie nnɛ',                     hi: 'आज पूरा हुआ' },
+  'progress.remainingToday':      { en: 'Remaining today',                   fr: 'Restant aujourd\'hui',                     sw: 'Iliyobaki leo',                 ha: 'Sauran yau',                         tw: 'Aka nnɛ',                     hi: 'आज शेष' },
+  'progress.updatedToday':        { en: 'Updated today',                     fr: 'Mis à jour aujourd\'hui',                  sw: 'Imesasishwa leo',               ha: 'An sabunta yau',                     tw: 'Yɛasakra nnɛ',                hi: 'आज अद्यतन' },
+  'progress.allDone':             { en: 'All done',                          fr: 'Tout est fait',                            sw: 'Yote yamekamilika',             ha: 'An gama duka',                       tw: 'Ne nyinaa awie',              hi: 'सब हो गया' },
+  'progress.excellent':           { en: 'Excellent',                         fr: 'Excellent',                                sw: 'Bora kabisa',                   ha: 'Mai kyau ƙwarai',                    tw: 'Eye paa',                     hi: 'उत्कृष्ट' },
+  'progress.aheadThisWeek':       { en: 'Ahead this week',                   fr: 'En avance cette semaine',                  sw: 'Mbele wiki hii',                ha: 'A gaba wannan mako',                 tw: 'Anim wɔ saa nnawɔtwe yi',     hi: 'इस हफ्ते आगे' },
+
+  // farm.*
+  'farm.addFarm':                 { en: 'Add farm',                          fr: 'Ajouter une ferme',                        sw: 'Ongeza shamba',                 ha: 'Ƙara gona',                          tw: 'Fa afuo ka ho',               hi: 'खेत जोड़ें' },
+  'farm.changeFarm':              { en: 'Change farm',                       fr: 'Changer de ferme',                         sw: 'Badilisha shamba',              ha: 'Canza gona',                         tw: 'Sesa afuo',                   hi: 'खेत बदलें' },
+  'farm.timelineTitle':           { en: 'Crop timeline',                     fr: 'Chronologie de la culture',                sw: 'Ratiba ya zao',                 ha: 'Jadawalin shuka',                    tw: 'Aduane mmerɛ',                hi: 'फसल समयरेखा' },
+  'farm.estimated':               { en: 'Estimated',                         fr: 'Estimé',                                   sw: 'Inakadiriwa',                   ha: 'An kiyasta',                         tw: 'Akontaabuo',                  hi: 'अनुमानित' },
+  'farm.journey':                 { en: 'Journey',                           fr: 'Parcours',                                 sw: 'Safari',                        ha: 'Tafiya',                             tw: 'Akwantuo',                    hi: 'यात्रा' },
+  'farm.stageNow':                { en: 'Stage now',                         fr: 'Étape actuelle',                           sw: 'Hatua sasa',                    ha: 'Mataki yanzu',                       tw: 'Anammɔn seesei',              hi: 'अभी का चरण' },
+  'farm.nextStage':               { en: 'Next stage',                        fr: 'Étape suivante',                           sw: 'Hatua inayofuata',              ha: 'Mataki na gaba',                     tw: 'Anammɔn a edi hɔ',            hi: 'अगला चरण' },
+  'farm.planting':                { en: 'Planting',                          fr: 'Plantation',                               sw: 'Upandaji',                      ha: 'Shuka',                              tw: 'Aduadua',                     hi: 'रोपण' },
+  'farm.establishment':           { en: 'Establishment',                     fr: 'Établissement',                            sw: 'Uthibitisho',                   ha: 'Kafawa',                             tw: 'Ntoɔ',                        hi: 'स्थापना' },
+  'farm.myProgress':              { en: 'My progress',                       fr: 'Mes progrès',                              sw: 'Maendeleo yangu',               ha: 'Ci gaban da',                        tw: 'Me nkɔso',                    hi: 'मेरी प्रगति' },
+  'farm.noStreak':                { en: 'No streak yet',                     fr: 'Pas encore de série',                      sw: 'Hakuna mfululizo bado',         ha: 'Babu jeri tukuna',                   tw: 'Saa biara nni hɔ',            hi: 'अभी कोई स्ट्रीक नहीं' },
+  'farm.farmStatus':              { en: 'Farm status',                       fr: 'État de la ferme',                         sw: 'Hali ya shamba',                ha: 'Yanayin gona',                       tw: 'Afuom tebea',                 hi: 'खेत की स्थिति' },
+  'farm.correct':                 { en: 'Correct',                           fr: 'Correct',                                  sw: 'Sahihi',                        ha: 'Daidai',                             tw: 'Eye',                         hi: 'सही' },
+  'farm.progressInMotion':        { en: 'Progress in motion',                fr: 'Progrès en cours',                         sw: 'Maendeleo yanaendelea',         ha: 'Ci gaba yana ci gaba',               tw: 'Nkɔso rekɔ so',               hi: 'प्रगति जारी' },
+  'farm.startYourDay':            { en: 'Start your day',                    fr: 'Commencez votre journée',                  sw: 'Anza siku yako',                ha: 'Fara ranarka',                       tw: 'Hyɛ wo da no ase',            hi: 'अपना दिन शुरू करें' },
+  'farm.sowToday':                { en: 'Sow today',                         fr: 'Semez aujourd\'hui',                       sw: 'Panda leo',                     ha: 'Shuka yau',                          tw: 'Dua nnɛ',                     hi: 'आज बोएँ' },
+
+  // settings.*
+  'settings.weather':             { en: 'Weather',                           fr: 'Météo',                                    sw: 'Hali ya hewa',                  ha: 'Yanayi',                             tw: 'Ewiem tebea',                 hi: 'मौसम' },
+  'settings.weatherHelper':       { en: 'Get weather updates for your area', fr: 'Recevez la météo pour votre région',       sw: 'Pata habari za hali ya hewa',   ha: 'Karɓi sabuntawa game da yanayi',     tw: 'Nya ewiem tebea ho nsɛm',     hi: 'अपने क्षेत्र की मौसम जानकारी पाएँ' },
+  'settings.risk':                { en: 'Risk alerts',                       fr: 'Alertes de risque',                        sw: 'Maonyo ya hatari',              ha: 'Faɗakarwar haɗari',                  tw: 'Asiane kɔkɔbɔ',               hi: 'जोखिम चेतावनी' },
+  'settings.riskHelper':          { en: 'Get warnings about pests and risks', fr: 'Recevez des alertes ravageurs et risques', sw: 'Pata maonyo ya wadudu na hatari', ha: 'Sami gargadi game da kwari',       tw: 'Nya kɔkɔbɔ fa nkekaboa ho',   hi: 'कीटों और जोखिमों की चेतावनी' },
+  'settings.missed':              { en: 'Missed task reminders',             fr: 'Rappels de tâches manquées',               sw: 'Vikumbusho vya kazi zilizokosa', ha: 'Tunatarwar ayyukan da aka rasa',    tw: 'Adwuma a wɔato no nkae',      hi: 'छूटे कार्यों के अनुस्मारक' },
+  'settings.missedHelper':        { en: 'Reminders for tasks you missed',    fr: 'Rappels pour les tâches manquées',         sw: 'Vikumbusho vya kazi ulizokosa', ha: 'Tunatarwa don ayyukan da kuka rasa', tw: 'Nkae a ɛfa nnwuma a woto ho', hi: 'जो काम छूट गए, उनके अनुस्मारक' },
+  'settings.email':               { en: 'Email',                             fr: 'E-mail',                                   sw: 'Barua pepe',                    ha: 'Imel',                               tw: 'Email',                       hi: 'ईमेल' },
+  'settings.sms':                 { en: 'SMS',                               fr: 'SMS',                                      sw: 'SMS',                           ha: 'SMS',                                tw: 'SMS',                         hi: 'एसएमएस' },
+  'settings.smsHelper':           { en: 'Receive reminders by SMS',          fr: 'Recevez des rappels par SMS',              sw: 'Pokea vikumbusho kwa SMS',      ha: 'Karɓi tunatarwa ta SMS',             tw: 'Nya nkae denam SMS so',       hi: 'एसएमएस से अनुस्मारक पाएँ' },
+  'settings.reminderTime':        { en: 'Reminder time',                     fr: 'Heure du rappel',                          sw: 'Saa ya kikumbusho',             ha: 'Lokacin tunatarwa',                  tw: 'Nkae berɛ',                   hi: 'अनुस्मारक समय' },
+  'settings.reminderTimeHelper':  { en: 'When to send reminders each day',   fr: 'Quand envoyer les rappels chaque jour',    sw: 'Wakati wa kutuma vikumbusho',   ha: 'Lokacin aika tunatarwa kowace rana', tw: 'Berɛ a yɛde nkae bɛkɔ ɛda biara', hi: 'हर दिन अनुस्मारक कब भेजें' },
+
+  // support.*
+  'support.needHelp':             { en: 'Need help?',                        fr: 'Besoin d\'aide ?',                         sw: 'Unahitaji msaada?',             ha: 'Kana bukatar taimako?',              tw: 'Wohia mmoa?',                 hi: 'मदद चाहिए?' },
+  'support.helpText':             { en: 'Contact our support team',          fr: 'Contactez notre équipe de support',        sw: 'Wasiliana na timu yetu',        ha: 'Tuntuɓi tawagar tallafi',            tw: 'Frɛ yɛn mmoa kuo',            hi: 'सहायता टीम से संपर्क करें' },
+  'support.subject':              { en: 'Subject',                           fr: 'Sujet',                                    sw: 'Mada',                          ha: 'Batun',                              tw: 'Asɛm no',                     hi: 'विषय' },
+  'support.describeProblem':      { en: 'Describe your problem',             fr: 'Décrivez votre problème',                  sw: 'Eleza tatizo lako',             ha: 'Bayyana matsalarka',                 tw: 'Ka wo haw no',                hi: 'अपनी समस्या बताएँ' },
+  'support.send':                 { en: 'Send',                              fr: 'Envoyer',                                  sw: 'Tuma',                          ha: 'Aika',                               tw: 'Soma',                        hi: 'भेजें' },
+
+  // actions.* — short namespace aliases requested by the spec.
+  // The existing farmerActions.* keys remain valid; these aliases
+  // make the cleanup spec match call-site verbatim.
+  'actions.readyToSell':          { en: 'Ready to sell',                     fr: 'Prêt à vendre',                            sw: 'Tayari kuuza',                  ha: 'Shirye don sayarwa',                 tw: 'Krado sɛ wɔbɛtɔn',            hi: 'बेचने के लिए तैयार' },
+  'actions.scanCrop':             { en: 'Scan crop',                         fr: 'Scanner la culture',                       sw: 'Skani zao',                     ha: 'Duba shuka',                         tw: 'Hwehwɛ aduane',               hi: 'फसल जाँचें' },
+  'actions.recordHarvest':        { en: 'Record harvest',                    fr: 'Saisir la récolte',                        sw: 'Andika mavuno',                 ha: 'Rubuta girbi',                       tw: 'Kyerɛw nnɔbae',               hi: 'फसल दर्ज करें' },
+  'actions.takePhoto':            { en: 'Take photo',                        fr: 'Prendre une photo',                        sw: 'Piga picha',                    ha: 'Ɗauki hoto',                         tw: 'Twa mfoni',                   hi: 'फोटो लें' },
+  'actions.checkWeather':         { en: 'Check weather',                     fr: 'Voir la météo',                            sw: 'Angalia hali ya hewa',          ha: 'Duba yanayi',                        tw: 'Hwɛ ewiem tebea',             hi: 'मौसम देखें' },
 };
 
 export default T;

@@ -23,6 +23,11 @@ initSyncCoordinator();
 // false there, so this code never ships to farmers.
 if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
   import('./i18n/devTextAudit.js').catch(() => { /* never block boot */ });
+  // Cleanup §7 — route-scoped + lang-scoped text audit. Side-effect
+  // import: registers `window.__farrowayLangAudit(lang, route)` so
+  // QA can run on demand from DevTools after switching language.
+  // Tree-shaken in production via the same DEV gate above.
+  import('./i18n/scanRenderedTextForEnglish.js').catch(() => { /* never block boot */ });
 }
 
 // Register the service worker with new-version detection. The helper
