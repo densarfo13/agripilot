@@ -10,7 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-English-leak alias — see useStrictTranslation.js header.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getCropLabel, getCropIcon, getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';

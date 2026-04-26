@@ -14,7 +14,8 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-English-leak alias — see useStrictTranslation.js header.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';

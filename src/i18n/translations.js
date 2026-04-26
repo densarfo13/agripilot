@@ -8972,8 +8972,8 @@ const T = {
   // Distinct from the heavy `offline.*` namespace already used by
   // OfflineBanner — these strings are deliberately short so the
   // pill fits at the top-right of the screen.
-  'offlineSync.offline':     { en: 'You are offline. Actions will sync later.', fr: 'Vous êtes hors ligne. Les actions se synchroniseront plus tard.', sw: 'Uko nje ya mtandao. Vitendo vitaoanishwa baadaye.', ha: 'Babu yanar gizo. Ayyuka za su daidaita daga baya.', tw: 'Wonni intanɛt. Yɛbɛkora wo nneyɛeɛ akɔ akyiri.', hi: 'आप ऑफ़लाइन हैं। बाद में सिंक होगा।' },
-  'offlineSync.syncing':     { en: 'Back online. Syncing data…',                fr: 'De retour en ligne. Synchronisation…',                              sw: 'Umerudi mtandaoni. Inaoanisha data…',              ha: 'Ka koma yanar gizo. Ana daidaita bayanai…',         tw: 'Wo san ba intanɛt so. Yɛrekora data…',           hi: 'फिर से ऑनलाइन। डेटा सिंक हो रहा है…' },
+  'offlineSync.offline':     { en: 'Offline mode: changes will sync',          fr: 'Mode hors ligne : les changements se synchroniseront', sw: 'Hali ya nje ya mtandao: mabadiliko yataoanishwa', ha: 'Yanayin babu yanar gizo: canje-canje za su daidaita', tw: 'Intanɛt nni hɔ: nsesaeɛ bɛkɔ so', hi: 'ऑफ़लाइन मोड: बदलाव बाद में सिंक होंगे' },
+  'offlineSync.syncing':     { en: 'Back online. Syncing…',                    fr: 'De retour en ligne. Synchronisation…',                              sw: 'Umerudi mtandaoni. Inaoanisha…',              ha: 'Ka koma yanar gizo. Ana daidaitawa…',         tw: 'Wo san ba intanɛt so. Yɛrekora…',           hi: 'फिर से ऑनलाइन। सिंक हो रहा है…' },
   'offlineSync.abandoned':   { en: 'Some actions could not sync. Please check your connection.', fr: 'Certaines actions n’ont pas pu se synchroniser. Vérifiez votre connexion.', sw: 'Vitendo kadhaa havijaweza kuoanishwa. Angalia muunganisho.', ha: 'Wasu ayyuka ba su daidaita ba. Duba haɗin yanar gizo.', tw: 'Nneyɛeɛ bi antumi ankɔ. Hwɛ wo intanɛt no.', hi: 'कुछ क्रियाएँ सिंक नहीं हो सकीं। कनेक्शन जाँचें।' },
 
   // ─── Admin "Key Insights" section (KeyInsightsSection.jsx) ────
@@ -9014,6 +9014,18 @@ const T = {
 
   // Existing scoring table just got a new "Risk" column header.
   'admin.dashboard.col.risk':   { en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Haɗari', tw: 'Asiane', hi: 'जोखिम' },
+
+  // ─── Voice-nav target: "buyers" (Market Access) ──────────────
+  // Spoken / displayed when the floating mic resolves the keyword
+  // "buyers" / "market" to the /buyers route.
+  'farmerActions.buyers':       { en: 'Market Access', fr: 'Accès au marché', sw: 'Ufikiaji wa Soko', ha: 'Samun Kasuwa', tw: 'Adwadie Akwannya', hi: 'बाज़ार पहुँच' },
+
+  // ─── Decision-dashboard provenance copy (spec §8) ────────────
+  // Two short strings used in place of placeholder-admitting copy
+  // ("coming soon", "TODO:", "demo data") on dashboard tiles.
+  // Keep them generic so a tile can drop one in regardless of metric.
+  'admin.live.computed':        { en: 'Computed from live data',  fr: 'Calculé à partir de données en direct', sw: 'Imehesabiwa kutoka data hai',     ha: 'An yi lissafin daga rayayyun bayanai', tw: 'Wɔayɛ ho akontaabu firi nokware nsɛm so', hi: 'लाइव डेटा से गणना' },
+  'admin.live.realtime':        { en: 'Updated in real-time',     fr: 'Mis à jour en temps réel',              sw: 'Imesasishwa kwa wakati halisi',   ha: 'An sabunta a ainihin lokaci',           tw: 'Yɛasakra no seesei ara',                hi: 'रीयल-टाइम में अपडेट' },
 };
 
 export default T;

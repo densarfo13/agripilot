@@ -14,7 +14,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { useTranslation } from '../i18n/index.js';
+// Strict no-English-leak alias — every t() call here returns ''
+// instead of an English fallback when a key is missing in the
+// active language. Reversible by swapping back to '../i18n/index.js'.
+import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getFarmTasks } from '../lib/api.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';

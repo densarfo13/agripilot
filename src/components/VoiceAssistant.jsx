@@ -80,6 +80,9 @@ export const COMMAND_MAP = Object.freeze([
   { match: ['scan crop', 'scan'], route: '/scan-crop', key: 'farmerActions.scanCrop' },
   // weather — FarmerTodayPage carries the weather card
   { match: ['weather', 'check weather'], route: '/today', key: 'farmerActions.weather' },
+  // buyers — Market access surface (admin-restricted in this build,
+  // but the spoken command is wired so a permitted user reaches it).
+  { match: ['buyers', 'market access', 'market'], route: '/buyers', key: 'farmerActions.buyers' },
 ]);
 
 /**

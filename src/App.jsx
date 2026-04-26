@@ -511,7 +511,16 @@ export default function App() {
             {/* Read-only buyer / market-access view of farms ready
                 to sell. Mirrors `/admin/supply` but stripped down to
                 the discovery surface (no buyer-link workflow). */}
-            <Route path="buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerView /></RoleRoute>} />
+            {/* /buyers — buyer-facing supply index. Spec §7 calls
+                for the route to be "exposed". Widened from
+                ADMIN_ROLES (super_admin + institutional_admin only)
+                to the full institutional staff set + investor_viewer
+                so field officers, reviewers, and investors can also
+                browse ready-to-sell supply. There is no `buyer`
+                role in this system; non-staff visibility would
+                require a public-buyer auth flow that's out of scope
+                for this UI-only sprint. */}
+            <Route path="buyers" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><BuyerView /></RoleRoute>} />
             <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
             <Route path="admin/ngo-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><AdminDashboard /></RoleRoute>} />
             <Route path="admin/ngo-program" element={<RoleRoute roles={ADMIN_ROLES}><NgoDashboardPage /></RoleRoute>} />

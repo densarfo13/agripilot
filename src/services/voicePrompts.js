@@ -755,6 +755,31 @@ const KEY_TO_PROMPT = {
   'farmerActions.recordHarvest':    'task.harvest',
   'farmerActions.checkWeather':     'weather.safe',
   'farmerActions.help':             'help.needSupport',
+  // Extended bridge: each mapping unlocks the prerecorded Twi clip
+  // (when the target prompt ships one) for additional UI keys that
+  // VoiceButton / IconActionCard / VoiceAssistant render. The
+  // semantic match is deliberate — short imperative phrasing on
+  // the prompt side, short imperative phrasing on the i18n side.
+  'farmerActions.readyToSell':      'task.harvest',
+  'farmerActions.reminders':        'status.needsUpdate',
+  'farmerActions.weather':          'weather.safe',
+  'farmerActions.addFarm':          'nav.setupFarm',
+  'farmerActions.changeFarm':       'nav.chooseStage',
+  'farmerActions.nextAction':       'nav.addUpdate',
+  'farmerActions.viewTomorrowTask': 'nav.addUpdate',
+  'farmerActions.cropStarting':     'status.needsSetup',
+  'farmerActions.completeTasksToday': 'task.allDone',
+  'farmerActions.checkWeather':     'weather.safe',
+  'farmerActions.simpleMode':       'nav.tapContinue',
+  'farmerActions.standardMode':     'nav.tapContinue',
+  // Voice navigator prompts — speak the floating-mic prompts
+  // through the prerecorded path where one exists.
+  'voiceNav.prompt':                'nav.tapContinue',
+  'voiceNav.notUnderstood':         'help.retry',
+  'voiceNav.listening':             'nav.tapContinue',
+  // Common controls heard during the low-literacy flows.
+  'common.listen':                  'nav.tapContinue',
+  'common.startVoiceInput':         'nav.tapContinue',
 };
 
 // ═══════════════════════════════════════════════════════════════
