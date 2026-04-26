@@ -217,6 +217,29 @@ function canonicalizeFarmPayload(payload) {
 
 export function saveFarmProfile(payload, { headers } = {}) {
   const body = canonicalizeFarmPayload(payload);
+
+  // PRE-FLIGHT GUARD (Apr 2026, after pilot 400 with cropType
+  // required). Even after canonicalize mirrors both field names,
+  // the server rejects when the value is empty. If the caller
+  // didn't supply a crop, blocking the POST locally is preferable
+  // to spamming the server + ErrorBoundary. Throws a structured
+  // client error so the caller's existing catch handler can react
+  // (show a "pick a crop first" message, etc.).
+  const cropValue = body && (body.crop || body.cropType);
+  if (!cropValue || (typeof cropValue === 'string' && !cropValue.trim())) {
+    const err = new Error('Crop type is required');
+    err.status = 400;
+    err.fieldErrors = { cropType: 'Crop type is required' };
+    err.skippedNetwork = true;  // signals "we didn't even try"
+    try {
+      console.warn(
+        '[saveFarmProfile skipped] empty crop — payload fields:',
+        body && typeof body === 'object' ? Object.keys(body).join(', ') : '(non-object)',
+      );
+    } catch { /* ignore */ }
+    return Promise.reject(err);
+  }
+
   // DIAGNOSTIC: surface the exact server rejection reason when
   // farm-profile POSTs return non-2xx. The browser's automatic
   // `Failed to load resource: 400` console log doesn't show the

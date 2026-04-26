@@ -291,8 +291,33 @@ export function ProfileProvider({ children }) {
             await saveFarmProfile(item.payload, { headers });
             await removeSyncQueueItem(item.id);
             safeTrackEvent('profile.sync.success', { itemId: item.id });
-          } catch {
+          } catch (err) {
+            // STALE-ITEM DETECTION (Apr 2026 pilot fix)
+            // saveFarmProfile's pre-flight guard rejects queue
+            // items with empty crop using `err.skippedNetwork`.
+            // These can never succeed — the queued payload itself
+            // is malformed — so drop them immediately instead of
+            // looping the user through 400-retry backoff forever.
+            if (err && err.skippedNetwork) {
+              try { console.warn('[profile.sync] dropped unsendable item', item.id, err.fieldErrors); }
+              catch { /* ignore */ }
+              await removeSyncQueueItem(item.id);
+              safeTrackEvent('profile.sync.dropped', { itemId: item.id, reason: 'skipped_network' });
+              continue;
+            }
             const retryCount = (item.retryCount || 0) + 1;
+            // MAX-ATTEMPTS GIVE-UP: 8 retries with exponential
+            // backoff is plenty. After that the queue item is
+            // almost certainly stale or schema-mismatched —
+            // drop it rather than retry forever.
+            const MAX_RETRIES = 8;
+            if (retryCount >= MAX_RETRIES) {
+              try { console.warn('[profile.sync] gave up after', retryCount, 'retries — dropping item', item.id); }
+              catch { /* ignore */ }
+              await removeSyncQueueItem(item.id);
+              safeTrackEvent('profile.sync.abandoned', { itemId: item.id, retryCount });
+              continue;
+            }
             const delay = nextBackoffMs(retryCount);
             await updateSyncQueueItem(item.id, {
               retryCount,
