@@ -19,6 +19,7 @@ import {
   getTodayTasks, markTaskComplete, skipTask,
 } from '../lib/dailyTasks/taskScheduler.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 
 const TONE_BY_PRIORITY = {
   high:   { border: 'rgba(252,165,165,0.35)', fg: '#FCA5A5', label: 'High' },
@@ -128,7 +129,11 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
                     onClick={() => onComplete(task.id)}
                     data-testid={`todays-task-complete-${task.templateId}`}
                   >
-                    {t('farmer.dailyTasks.markDone') || 'Mark done'}
+                    {/* Cleanup: route through tSafe + the populated
+                        actions.markDone key so a missing
+                        farmer.dailyTasks.markDone key cannot leak
+                        the English literal in non-English UIs. */}
+                    {tSafe('actions.markDone', '')}
                   </button>
                   <button
                     type="button"
@@ -136,7 +141,7 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
                     onClick={() => onSkip(task.id)}
                     data-testid={`todays-task-skip-${task.templateId}`}
                   >
-                    {t('farmer.dailyTasks.skip') || 'Skip'}
+                    {tSafe('actions.skip', '')}
                   </button>
                 </div>
               )}

@@ -28,6 +28,10 @@ if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
   // QA can run on demand from DevTools after switching language.
   // Tree-shaken in production via the same DEV gate above.
   import('./i18n/scanRenderedTextForEnglish.js').catch(() => { /* never block boot */ });
+  // Cleanup §9 — focused phrase-list leak scanner. Side-effect
+  // import: registers `window.__farrowayLeakScan(lang, route)`.
+  // Tree-shaken in production via the same DEV gate above.
+  import('./dev/i18nLeakScanner.js').catch(() => { /* never block boot */ });
 }
 
 // Register the service worker with new-version detection. The helper

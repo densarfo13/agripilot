@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { buildFarmActionPlan } from '../lib/intelligence/farmActionPlan.js';
 import { useTaskCompletion } from '../lib/intelligence/taskCompletion.js';
 
@@ -191,8 +192,8 @@ function ActionRow({ action, onTap, t, showPriority, done = false, onToggleDone 
                 onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
                 style={done ? styles.checkDone : styles.check}
                 aria-label={done
-                  ? (t('farmPlan.undo') !== 'farmPlan.undo' ? t('farmPlan.undo') : 'Undo')
-                  : (t('farmPlan.markDone') !== 'farmPlan.markDone' ? t('farmPlan.markDone') : 'Mark done')}
+                  ? tSafe('farmPlan.undo', '')
+                  : tSafe('actions.markDone', '')}
                 data-testid={`action-done-${action.templateId || action.id}`}>
           {done ? '✓' : ''}
         </button>
@@ -203,13 +204,15 @@ function ActionRow({ action, onTap, t, showPriority, done = false, onToggleDone 
           <span style={titleStyle}>{action.title}</span>
           {showPriority && action.priority === 'high' && !done && (
             <span style={styles.priorityChip}>
-              {t('farmPlan.priorityHigh') !== 'farmPlan.priorityHigh'
-                ? t('farmPlan.priorityHigh') : 'Do this first'}
+              {/* Cleanup §4: route through tSafe so a missing key
+                  in non-English UI returns '' rather than the
+                  English fallback chip text. */}
+              {tSafe('farmPlan.priorityHigh', '')}
             </span>
           )}
           {done && (
             <span style={styles.doneChip}>
-              {t('farmPlan.done') !== 'farmPlan.done' ? t('farmPlan.done') : 'Done'}
+              {tSafe('farmPlan.done', '')}
             </span>
           )}
         </div>

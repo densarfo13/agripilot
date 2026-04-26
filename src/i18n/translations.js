@@ -7103,7 +7103,13 @@ const T = {
   'farmPlan.riskWatchSub':      { en: 'Watch for these in your area', fr: 'Surveillez ceci dans votre région', sw: 'Angalia haya katika eneo lako', ha: 'Kula da waɗannan a yankinka', tw: 'Hwɛ yeinom wɔ wo man mu' },
   'farmPlan.recommendations':   { en: 'What most affects your yield', fr: 'Ce qui pèse le plus sur votre rendement', sw: 'Kinachoathiri zaidi mavuno yako', ha: 'Abin da ya fi shafar amfaninka', tw: 'Nea ɛka wo aba kɛse' },
   'farmPlan.recommendationsSub':{ en: 'One or two small changes that lift the harvest', fr: 'Un ou deux gestes qui augmentent la récolte', sw: 'Mabadiliko madogo moja au mawili ya kuongeza mavuno', ha: 'Sauye-sauye ƙanana guda ɗaya ko biyu da ke ƙara girbi', tw: 'Nsesaeɛ kakra baako anaa mmienu a ɛma aba boro so' },
-  'farmPlan.priorityHigh':      { en: 'Do this first', fr: 'À faire en priorité', sw: 'Fanya hili kwanza', ha: 'Yi wannan tukuna', tw: 'Yɛ yei kane' },
+  'farmPlan.priorityHigh':      { en: 'Do this first', fr: 'À faire en priorité', sw: 'Fanya hili kwanza', ha: 'Yi wannan tukuna', tw: 'Yɛ yei kane', hi: 'इसे पहले करें' },
+  // farmPlan.undo / farmPlan.done — referenced by FarmActionPlan
+  // ActionRow chips. Previously had no entry, so tSafe(...,'') was
+  // returning '' in every non-English UI (chip invisible). Filled
+  // for all 6 launch languages.
+  'farmPlan.undo':              { en: 'Undo',          fr: 'Annuler',             sw: 'Tendua',            ha: 'Soke',             tw: 'San yɛ',  hi: 'पूर्ववत' },
+  'farmPlan.done':              { en: 'Done',          fr: 'Fait',                sw: 'Imekamilika',       ha: 'An gama',          tw: 'Awie',    hi: 'हो गया' },
   'farmPlan.why':               { en: 'Why this plan?', fr: 'Pourquoi ce plan ?', sw: 'Kwa nini mpango huu?', ha: 'Me ya sa wannan shiri?', tw: 'Deɛn nti saa nhyehyɛe yi?' },
   'farmPlan.conf.high':         { en: 'High confidence', fr: 'Confiance élevée', sw: 'Uhakika mkubwa', ha: 'Babban tabbaci', tw: 'Nkyinhyim kɛse' },
   'farmPlan.conf.medium':       { en: 'Medium confidence', fr: 'Confiance moyenne', sw: 'Uhakika wa wastani', ha: 'Matsakaicin tabbaci', tw: 'Nkyinhyim ntam' },
@@ -9092,6 +9098,61 @@ const T = {
   'actions.recordHarvest':        { en: 'Record harvest',                    fr: 'Saisir la récolte',                        sw: 'Andika mavuno',                 ha: 'Rubuta girbi',                       tw: 'Kyerɛw nnɔbae',               hi: 'फसल दर्ज करें' },
   'actions.takePhoto':            { en: 'Take photo',                        fr: 'Prendre une photo',                        sw: 'Piga picha',                    ha: 'Ɗauki hoto',                         tw: 'Twa mfoni',                   hi: 'फोटो लें' },
   'actions.checkWeather':         { en: 'Check weather',                     fr: 'Voir la météo',                            sw: 'Angalia hali ya hewa',          ha: 'Duba yanayi',                        tw: 'Hwɛ ewiem tebea',             hi: 'मौसम देखें' },
+
+  // ─── Strict cleanup patch — task / priority / status / weather
+  //    helpers required by src/data/taskLibrary.js + the rendering
+  //    contract in the spec. All 6 launch languages populated. Twi
+  //    / Hausa values are deliberately short approximations where
+  //    polished phrasing isn't available; strict no-leak rule.
+  'tasks.generic.title':          { en: 'Today\'s task',                       fr: 'Tâche du jour',                       sw: 'Kazi ya leo',                  ha: 'Aikin yau',                          tw: 'Nnɛ adwuma',                  hi: 'आज का काम' },
+  'tasks.generic.desc':           { en: 'Check your farm today',               fr: 'Vérifiez votre ferme aujourd\'hui',   sw: 'Angalia shamba lako leo',      ha: 'Duba gonarka yau',                   tw: 'Hwɛ w\'afuo nnɛ',             hi: 'आज अपना खेत देखें' },
+  'tasks.generic.why':            { en: 'Daily check keeps your crop healthy', fr: 'Une vérification quotidienne garde la culture en bonne santé', sw: 'Ukaguzi wa kila siku huweka zao lako salama', ha: 'Duba na yau da kullum yana kiyaye amfanin gona', tw: 'Daa daa nhwehwɛmu boa wo nnɔbae', hi: 'दैनिक जाँच फसल स्वस्थ रखती है' },
+
+  'tasks.scout.title':            { en: 'Scout the field',                     fr: 'Inspecter le champ',                  sw: 'Kagua shamba',                 ha: 'Bincika gona',                       tw: 'Hwehwɛ afuo no mu',           hi: 'खेत की जाँच करें' },
+  'tasks.scout.desc':             { en: 'Walk the rows and look for pests or damage', fr: 'Parcourez les rangs pour chercher ravageurs ou dégâts', sw: 'Tembea katika mistari ukitafuta wadudu au uharibifu', ha: 'Yi tafiya cikin layuka don neman kwari ko lalacewa', tw: 'Nantenante hwɛ nnoboa anaa ɔsɛeɛ', hi: 'पंक्तियों में चलें और कीट या नुकसान देखें' },
+  'tasks.scout.why':              { en: 'Early spotting prevents bigger damage', fr: 'Une détection précoce évite des dégâts plus grands', sw: 'Kugundua mapema huzuia uharibifu mkubwa', ha: 'Gano da wuri yana hana lalacewa mai girma', tw: 'Sɛ wo hu ntɛm a, ɛsi ɔsɛeɛ kɛseɛ ano', hi: 'जल्दी पहचान बड़े नुकसान से बचाती है' },
+
+  'tasks.weed.title':             { en: 'Weed the rows',                       fr: 'Désherber les rangs',                 sw: 'Palilia mistari',              ha: 'Cire ciyawa daga layuka',            tw: 'Tu wura firi nfuoɔ no mu',    hi: 'पंक्तियों की निराई करें' },
+  'tasks.weed.desc':              { en: 'Remove the most crowded weeds first', fr: 'Enlevez d\'abord les mauvaises herbes les plus denses', sw: 'Toa magugu yenye wengi kwanza', ha: 'Cire ciyawa mafi yawa da farko',   tw: 'Tu wura a ɛyɛ pii kane',      hi: 'पहले सबसे घनी खरपतवार हटाएँ' },
+  'tasks.weed.why':               { en: 'Weeds steal water and nutrients',     fr: 'Les mauvaises herbes volent eau et nutriments', sw: 'Magugu hunyang\'anya maji na virutubisho', ha: 'Ciyawa tana sace ruwa da abinci mai gina jiki', tw: 'Wura wia nsuo ne aduane', hi: 'खरपतवार पानी और पोषक तत्व चुराती है' },
+
+  'tasks.moisture.title':         { en: 'Check soil moisture',                 fr: 'Vérifier l\'humidité du sol',         sw: 'Angalia unyevu wa udongo',     ha: 'Duba zafi na ƙasa',                  tw: 'Hwɛ asase mu nsuo',           hi: 'मिट्टी की नमी जाँचें' },
+  'tasks.moisture.desc':          { en: 'Squeeze a handful — it should crumble', fr: 'Pressez une poignée — elle doit s\'émietter', sw: 'Bonyeza mkono mmoja — udongo ufunguke', ha: 'Matse hannu ɗaya — ya kamata ya rabu', tw: 'Mia asase wɔ wo nsa mu — ɛsɛ sɛ ɛsɛe', hi: 'मुट्ठी भर लें — उसे टूटना चाहिए' },
+  'tasks.moisture.why':           { en: 'Plants need moist, not soggy soil',   fr: 'Les plantes veulent un sol humide, pas détrempé', sw: 'Mimea inahitaji udongo wenye unyevu, sio uliojaa maji', ha: 'Tsiro suna bukatar ƙasa mai laima, ba mai jika ba', tw: 'Aduane hia asase a ɛyɛ fɔm, na ɛnyɛ asase a nsuo ahyɛ mu ma', hi: 'पौधे नम मिट्टी चाहते हैं, गीली नहीं' },
+
+  'tasks.sow.title':              { en: 'Sow today',                           fr: 'Semer aujourd\'hui',                   sw: 'Panda leo',                    ha: 'Shuka yau',                          tw: 'Dua nnɛ',                     hi: 'आज बोएँ' },
+  'tasks.sow.desc':               { en: 'Plant the next section of seed',      fr: 'Plantez la section suivante de semences', sw: 'Panda sehemu inayofuata ya mbegu', ha: 'Shuka sashe na gaba na iri',         tw: 'Dua aba a edi hɔ no',         hi: 'बीज का अगला भाग बोएँ' },
+  'tasks.sow.why':                { en: 'Staggered sowing keeps harvest steady', fr: 'Semer en plusieurs fois lisse la récolte', sw: 'Kupanda kwa awamu hutoa mavuno endelevu', ha: 'Shuka a matakai yana sa girbi ya zama mai daidaitawa', tw: 'Sɛ wodua mmerɛ-mmerɛ a, otwa berɛ no kɔ so', hi: 'चरणबद्ध बुआई फसल स्थिर रखती है' },
+
+  // priority chips on task cards
+  'priority.high':                { en: 'High',                                fr: 'Élevée',                              sw: 'Juu',                          ha: 'Babba',                              tw: 'Kɛseɛ',                       hi: 'उच्च' },
+  'priority.medium':              { en: 'Medium',                              fr: 'Moyenne',                             sw: 'Wastani',                      ha: 'Matsakaici',                         tw: 'Mfimfini',                    hi: 'मध्यम' },
+  'priority.low':                 { en: 'Low',                                 fr: 'Faible',                              sw: 'Chini',                        ha: 'Ƙananan',                            tw: 'Akakraa',                     hi: 'कम' },
+
+  // shared labels
+  'labels.why':                   { en: 'Why',                                 fr: 'Pourquoi',                            sw: 'Kwa nini',                     ha: 'Me yasa',                            tw: 'Adɛn',                        hi: 'क्यों' },
+
+  // additional progress / actions strings spec'd for task cards
+  'actions.markDone':             { en: 'Mark done',                           fr: 'Marquer fait',                        sw: 'Weka alama imekamilika',       ha: 'Yi alama an gama',                   tw: 'De ho nsɛnkyerɛnneɛ — awie',  hi: 'पूरा चिह्नित करें' },
+  'actions.skip':                 { en: 'Skip',                                fr: 'Passer',                              sw: 'Ruka',                         ha: 'Tsallake',                           tw: 'Bu so',                       hi: 'छोड़ें' },
+  'actions.send':                 { en: 'Send',                                fr: 'Envoyer',                             sw: 'Tuma',                         ha: 'Aika',                               tw: 'Soma',                        hi: 'भेजें' },
+
+  // weather chips on the home / today surfaces
+  'weather.rain':                 { en: 'Rain',                                fr: 'Pluie',                               sw: 'Mvua',                         ha: 'Ruwan sama',                         tw: 'Nsuo',                        hi: 'बारिश' },
+  'weather.mixed':                { en: 'Mixed weather',                       fr: 'Météo variable',                      sw: 'Hali ya hewa mchanganyiko',    ha: 'Yanayi mai gauraya',                 tw: 'Ewiem tebea adi afra',        hi: 'मिश्रित मौसम' },
+  'weather.good':                 { en: 'Good',                                fr: 'Bonne',                               sw: 'Nzuri',                        ha: 'Mai kyau',                           tw: 'Eye',                         hi: 'अच्छा' },
+  'weather.updatedJustNow':       { en: 'Updated just now',                    fr: 'Mis à jour à l\'instant',             sw: 'Imesasishwa sasa hivi',        ha: 'An sabunta yanzun nan',              tw: 'Yɛasakra no seesei ara',      hi: 'अभी अपडेट किया गया' },
+  'weather.more':                 { en: 'More',                                fr: 'Plus',                                sw: 'Zaidi',                        ha: 'Ƙari',                               tw: 'Bebree',                      hi: 'अधिक' },
+  'weather.today':                { en: 'Today',                               fr: 'Aujourd\'hui',                        sw: 'Leo',                          ha: 'Yau',                                tw: 'Nnɛ',                         hi: 'आज' },
+
+  // status chips
+  'status.good':                  { en: 'Good',                                fr: 'Bon',                                 sw: 'Vyema',                        ha: 'Mai kyau',                           tw: 'Eye',                         hi: 'अच्छा' },
+  'status.correct':               { en: 'On track',                            fr: 'Sur la bonne voie',                   sw: 'Kwenye njia sahihi',           ha: 'A kan hanya',                        tw: 'Ɛkwan pa so',                 hi: 'सही दिशा में' },
+  'status.needsAttention':        { en: 'Needs attention',                     fr: 'Demande de l\'attention',             sw: 'Inahitaji uangalifu',          ha: 'Yana bukatar kulawa',                tw: 'Hia hwɛ',                     hi: 'ध्यान चाहिए' },
+
+  // progress.allDone* (referenced by spec §5)
+  'progress.allDoneTitle':        { en: 'All done for now',                    fr: 'Terminé pour l\'instant',             sw: 'Imeisha kwa sasa',             ha: 'An gama a yanzu',                    tw: 'Awie seesei',                 hi: 'अभी सब हो गया' },
+  'progress.allDoneSubtitle':     { en: 'Great work — come back tomorrow',     fr: 'Beau travail — revenez demain',       sw: 'Kazi nzuri — rudi kesho',      ha: 'Aiki mai kyau — ka dawo gobe',       tw: 'Adwuma pa — bra ɔkyena',      hi: 'बहुत अच्छा — कल वापस आएँ' },
 };
 
 export default T;

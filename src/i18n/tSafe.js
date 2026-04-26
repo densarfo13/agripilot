@@ -133,3 +133,21 @@ export function tSafe(arg1, arg2, arg3) {
 }
 
 export default tSafe;
+
+/**
+ * UI({ k, fallback }) — tiny render helper requested by the strict
+ * language cleanup spec. Renders a localized string in JSX without
+ * the caller having to import + call `tSafe` separately:
+ *
+ *   <UI k="nav.home" fallback="Home" />
+ *
+ * Returns the resolved string (or fallback) as plain text. Identical
+ * behaviour to the short-form `tSafe(k, fallback)` — pick whichever
+ * fits the call site. Note: like the short form, this DOES NOT
+ * subscribe to language change on its own — the surrounding
+ * component should call `useTranslation()` so React re-renders
+ * <UI/> on `farroway:langchange`.
+ */
+export function UI({ k, fallback = '' }) {
+  return tSafe(k, fallback);
+}
