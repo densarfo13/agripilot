@@ -117,12 +117,18 @@ const STATE = Object.freeze({
 });
 
 export default function VoiceAssistant() {
+  // HOTFIX (Apr 2026): hooks must be called unconditionally at the
+  // top of the component (Rules of Hooks). The previous
+  // `try { useNavigate(); } catch { return null }` IIFE looked
+  // safe — useNavigate doesn't actually throw at call-time when
+  // mounted inside a Router — but conditional hook invocation
+  // desyncs React's internal hook counter under StrictMode dev
+  // re-renders, surfacing as "Rendered more hooks than during the
+  // previous render" → ErrorBoundary fires → "Something went wrong".
+  // Mounted inside <BrowserRouter> in App.jsx so this is safe.
+  const navigate = useNavigate();
   const { lang } = useTranslation();
   const { enabled: simpleMode } = useLowLiteracyMode();
-  const navigate = (() => {
-    try { return useNavigate(); } catch { return null; }
-  })();
-
   const [state, setState] = useState(STATE.IDLE);
   const abortRef = useRef(null);
 

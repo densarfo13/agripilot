@@ -37,20 +37,20 @@ const ACTIONS = [
 ];
 
 export default function FarmerActionGrid({ onNavigate }) {
-  // Subscribe to language change.
+  // HOTFIX (Apr 2026): hooks must be unconditional. The IIFE-with-
+  // try/catch around useNavigate desynced React's hook counter under
+  // StrictMode dev re-renders → "Rendered more hooks…" crash. The
+  // grid is always mounted inside FarmerTodayPage which is inside
+  // <BrowserRouter>, so a plain top-level call is safe.
+  const navigate = useNavigate();
+  // Subscribe to language change so labels refresh on flip.
   useTranslation();
-  const navigate = (() => {
-    try { return useNavigate(); }
-    catch { return null; }
-  })();
 
   const go = (path) => {
     if (typeof onNavigate === 'function') {
       try { onNavigate(path); return; } catch { /* fall through */ }
     }
-    if (navigate) {
-      try { navigate(path); } catch { /* ignore */ }
-    }
+    try { navigate(path); } catch { /* ignore — navigator is stable, but defensively swallow */ }
   };
 
   return (

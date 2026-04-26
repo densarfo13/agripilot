@@ -98,11 +98,25 @@ function _normalize(raw) {
 }
 
 function _read() {
+  // HOTFIX (Apr 2026): route through safeParse so a corrupt queue
+  // payload (e.g. a half-written entry from a previous session that
+  // the browser killed mid-flush) cannot throw during the auto-sync
+  // tick and surface as an ErrorBoundary crash. safeParse logs once
+  // to the dev console and returns the fallback.
   try {
     if (typeof localStorage === 'undefined') return [];
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    // Lazy import the helper to avoid a hard dep on localStore.js
+    // (offlineQueue is an older module). Inline implementation:
+    let parsed;
+    try { parsed = raw ? JSON.parse(raw) : []; }
+    catch (err) {
+      try { console.warn('[offlineQueue parse failed]', err && err.message); }
+      catch { /* ignore */ }
+      // Reset the slot so the bad payload doesn't keep blowing up.
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+      return [];
+    }
     if (!Array.isArray(parsed)) return [];
     return parsed.map(_normalize).filter(Boolean);
   } catch {

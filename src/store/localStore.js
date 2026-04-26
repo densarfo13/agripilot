@@ -47,6 +47,28 @@
 const PREFIX = 'farroway:store:';
 const EVENT  = 'farroway:localstore:change';
 
+/**
+ * safeParse — JSON.parse that NEVER throws. Used by `loadData` here
+ * and by other modules that need to read potentially-corrupt
+ * localStorage payloads. Re-exported so callers don't have to
+ * duplicate the try/catch.
+ *
+ * Per HOTFIX requirement: a corrupt JSON value must not be allowed
+ * to crash the React render tree. Returning `fallback` keeps the UI
+ * alive; a single console.warn surfaces the issue in dev without
+ * spamming on every re-render.
+ */
+export function safeParse(raw, fallback = null) {
+  try {
+    if (raw == null || raw === '') return fallback;
+    return JSON.parse(raw);
+  } catch (err) {
+    try { console.warn('[storage parse failed]', err && err.message); }
+    catch { /* never propagate from a warn */ }
+    return fallback;
+  }
+}
+
 function _key(name) {
   return PREFIX + String(name || '');
 }
@@ -67,8 +89,7 @@ export function loadData(name, fallback = null) {
   try {
     if (typeof localStorage === 'undefined') return fallback;
     const raw = localStorage.getItem(_key(name));
-    if (raw == null) return fallback;
-    return JSON.parse(raw);
+    return safeParse(raw, fallback);
   } catch {
     return fallback;
   }

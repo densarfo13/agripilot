@@ -18,16 +18,27 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Log to analytics if available
+    // HOTFIX (Apr 2026): the previous version used CommonJS
+    // `require('../lib/analytics.js')` inside an ES-module project —
+    // throws `ReferenceError: require is not defined` at runtime,
+    // masking the original error and (in some bundlers) breaking
+    // the recovery render. Switch to a fire-and-forget dynamic
+    // import so the error boundary never trips its own analytics.
     try {
-      const { safeTrackEvent } = require('../lib/analytics.js');
-      safeTrackEvent('app.crash', {
-        error: error?.message,
-        stack: info?.componentStack?.slice(0, 500),
-      });
-    } catch { /* analytics not critical */ }
+      import('../lib/analytics.js')
+        .then((mod) => {
+          try {
+            mod.safeTrackEvent?.('app.crash', {
+              error: error?.message,
+              stack: info?.componentStack?.slice(0, 500),
+            });
+          } catch { /* analytics never critical */ }
+        })
+        .catch(() => { /* swallow */ });
+    } catch { /* never propagate from a catch handler */ }
 
-    console.error('[ErrorBoundary] Caught error:', error, info);
+    try { console.error('[ErrorBoundary] Caught error:', error, info); }
+    catch { /* console missing in some sandboxes */ }
   }
 
   handleReload = () => {

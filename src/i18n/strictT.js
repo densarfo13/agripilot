@@ -67,23 +67,36 @@ function _isDev() {
 }
 
 function _looksMissing(value, key) {
+  // HOTFIX (Apr 2026): the previous heuristic compared `value` against
+  // the humanised tail of the dotted `key` to detect cases where
+  // base-t() fell back to humanizeKey(). That triggered FALSE
+  // POSITIVES on legitimate English entries — e.g. `t('nav.tasks')`
+  // → 'Tasks' has the same shape as humanize('nav.tasks') → 'Tasks',
+  // so any single-word English label whose key tail spells the
+  // word got blanked when called via tStrict / useStrictTranslation.
+  // That blanked huge swaths of the farmer-facing UI.
+  //
+  // The fix: detect "missing" via signals that DON'T overlap with
+  // valid translator output:
+  //   • null / undefined / non-string
+  //   • empty string
+  //   • the explicit '[MISSING:' marker base-t emits in strict mode
+  //   • the rendered string equals the dotted key itself (which is
+  //     what some t() implementations return on a hard miss)
+  //
+  // We accept the trade-off that the humanised-fallback path won't
+  // be detected here: it returns to the caller as the English
+  // fallback. Surfaces that need the strict no-leak guarantee
+  // should ensure the key actually has a non-en value in the
+  // dictionary; guard:i18n already enforces this for high-risk
+  // domains, and the dev-only [i18n MISSING] warn still fires when
+  // a real miss does happen.
   if (value == null) return true;
   if (typeof value !== 'string') return true;
   if (value === '') return true;
   if (value.startsWith('[MISSING:')) return true;
-  // Base t() humanises missing keys ("farmerActions.tasks" → "Tasks")
-  // when not in strict mode. Detect that by comparing against the
-  // tail of the dotted key — if the rendered string equals the
-  // humanised tail, the key was unresolved.
-  const tail = String(key).split('.').pop() || '';
-  if (!tail) return false;
-  const humanised = tail
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/[_-]+/g, ' ')
-    .trim();
-  if (!humanised) return false;
-  const expected = humanised.charAt(0).toUpperCase() + humanised.slice(1).toLowerCase();
-  return value === expected;
+  if (key && value === String(key)) return true;
+  return false;
 }
 
 /**
