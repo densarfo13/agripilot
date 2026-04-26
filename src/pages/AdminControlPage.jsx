@@ -463,7 +463,7 @@ function DemandIntelligence() {
                 <tbody>
                   {cropDemand.map(d => (
                     <tr key={d.cropType}>
-                      <td style={{ fontWeight: 500 }}>{getCropLabelSafe(d.cropType, lang) || d.cropType}</td>
+                      <td style={{ fontWeight: 500 }}>{getCropLabelSafe(d.cropType, lang)}</td>
                       <td>{d.totalInterests}</td>
                       <td>{d.totalQuantityKg?.toLocaleString() || 0}</td>
                       <td>{d.averagePriceExpectation ? d.averagePriceExpectation.toFixed(2) : '-'}</td>

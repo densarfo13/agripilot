@@ -25,7 +25,11 @@ function normaliseFarm(farm) {
   if (!farm || typeof farm !== 'object') return null;
   return {
     id:                   farm.id || farm._id || null,
-    crop:                 farm.crop || farm.cropType || null,
+    // Server v2 endpoints + canonicalizeFarmPayload (lib/api.js)
+    // strip the legacy `cropType` write-path; `crop` is the
+    // canonical field. Drop the legacy fallback to satisfy the
+    // crop-type-drift guard.
+    crop:                 farm.crop || null,
     cropStage:            farm.cropStage || farm.stage || null,
     plantingDate:         farm.plantingDate || farm.plantedAt || null,
     stageStartedAt:       farm.stageStartedAt || null,

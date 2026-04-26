@@ -24,7 +24,8 @@ function normaliseFarm(farm) {
   if (!farm || typeof farm !== 'object') return null;
   return {
     id:                   farm.id || farm._id || null,
-    crop:                 farm.crop || farm.cropType || null,
+    // `crop` is canonical (canonicalizeFarmPayload in lib/api.js).
+    crop:                 farm.crop || null,
     cropStage:            farm.cropStage || farm.stage || null,
     plantingDate:         farm.plantingDate || null,
     manualStageOverride:  farm.manualStageOverride || null,

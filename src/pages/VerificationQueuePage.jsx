@@ -281,7 +281,7 @@ export default function VerificationQueuePage() {
                               <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{a.farmer.organization.name}</div>
                             )}
                           </td>
-                          <td>{getCropLabelSafe(a.cropType, lang) || a.cropType}</td>
+                          <td>{getCropLabelSafe(a.cropType, lang)}</td>
                           <td>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</td>
                           <td><StatusBadge value={a.status} /></td>
                           <td>

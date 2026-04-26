@@ -88,7 +88,7 @@ export default function FraudQueuePage() {
                     <div>
                       <strong>{a.farmer?.fullName}</strong>
                       <span className="text-muted" style={{ marginLeft: '0.75rem' }}>{a.farmer?.region}</span>
-                      <span className="text-muted" style={{ marginLeft: '0.75rem' }}>{getCropLabelSafe(a.cropType, lang) || a.cropType}</span>
+                      <span className="text-muted" style={{ marginLeft: '0.75rem' }}>{getCropLabelSafe(a.cropType, lang)}</span>
                       <span style={{ marginLeft: '0.75rem' }}>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -168,7 +168,7 @@ export default function InvestorIntelligencePage() {
                 <tbody>
                   {yieldHistory.map((y, i) => (
                     <tr key={i}>
-                      <td>{getCropLabelSafe(y.cropType, lang) || y.cropType}</td>
+                      <td>{getCropLabelSafe(y.cropType, lang)}</td>
                       <td>{new Date(y.plantingDate).toLocaleDateString()}</td>
                       <td>{y.landSizeValue ? formatLandSize(y.landSizeValue, y.landSizeUnit) : `${y.farmSizeAcres} acres`}</td>
                       <td style={{ fontWeight: 600 }}>{y.yieldPerAcre}</td>

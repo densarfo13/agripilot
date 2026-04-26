@@ -33,7 +33,8 @@ function normaliseFarmForEngine(farm) {
   return {
     id:                 farm.id || farm._id || null,
     name:               farm.name || farm.farmName || null,
-    crop:               farm.crop || farm.cropType || null,
+    // `crop` is canonical (canonicalizeFarmPayload in lib/api.js).
+    crop:               farm.crop || null,
     farmType:           farm.farmType || farm.farm_type || 'small_farm',
     cropStage:          farm.cropStage || farm.stage || null,
     normalizedAreaSqm:  farm.normalizedAreaSqm || null,

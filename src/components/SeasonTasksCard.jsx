@@ -87,7 +87,7 @@ export default function SeasonTasksCard() {
               crop name + translated stage so a Hindi farmer sees the
               entire line in Hindi. */}
           <p style={S.subtitle}>
-            {t('season.crop')}: {getCropLabelSafe(season.cropType, lang) || season.cropType}
+            {t('season.crop')}: {getCropLabelSafe(season.cropType, lang)}
             {' \u2022 '}
             {t('season.stage')}: {season.stage ? t(`stage.${season.stage}`) : ''}
           </p>

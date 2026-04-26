@@ -42,7 +42,7 @@ export default function SeasonStart() {
             <div style={S.detailGrid}>
               <div style={S.label}>{t('season.crop')}:</div>
               {/* BUG-1 fix — language-aware crop label instead of raw enum */}
-              <div>{getCropLabelSafe(season.cropType, lang) || season.cropType}</div>
+              <div>{getCropLabelSafe(season.cropType, lang)}</div>
 
               <div style={S.label}>{t('season.stage')}:</div>
               {/* BUG-2 fix — translated stage. t() falls back to humanized
