@@ -16,6 +16,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
+import { getCropLabel } from '../../utils/crops.js';
 import {
   localizeTaskTitle,
   localizeTaskDetail,
@@ -26,7 +27,7 @@ import { completeCycleTask } from '../../hooks/useCropCycles.js';
 import SupportCard from '../SupportCard.jsx';
 
 export default function ActionFirstHome({ today, progress, cropStage, onTaskCompleted, onReportIssue }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   // Support both the new today payload (primaryTask/secondaryTasks/
   // riskAlerts/nextActionSummary) AND the legacy shape
@@ -104,7 +105,7 @@ export default function ActionFirstHome({ today, progress, cropStage, onTaskComp
           {cropStage ? (
             <div style={S.stageRow}>
               <span style={S.stageLabel}>{t(`cropStage.${cropStage.stage || 'planting'}`)}</span>
-              {cropStage.cropName && <span style={S.stageCrop}>• {cropStage.cropName}</span>}
+              {cropStage.cropName && <span style={S.stageCrop}>• {getCropLabel(cropStage.cropName, lang) || cropStage.cropName}</span>}
             </div>
           ) : (
             <p style={S.muted}>{t('actionHome.stage.none')}</p>

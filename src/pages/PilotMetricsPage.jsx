@@ -4,6 +4,8 @@ import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
+import { getCropLabel } from '../utils/crops.js';
+import { useTranslation } from '../i18n/index.js';
 
 const PRIORITY_COLOR = { high: 'rgba(239,68,68,0.15)', medium: 'rgba(245,158,11,0.15)', low: 'rgba(34,197,94,0.15)' };
 const PRIORITY_BORDER = { high: '#243041', medium: '#243041', low: '#243041' };
@@ -40,6 +42,7 @@ function FunnelBar({ step, label, count, pct, maxCount }) {
 }
 
 function AttentionGroup({ group }) {
+  const { lang } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   return (
     <div style={{
@@ -66,7 +69,7 @@ function AttentionGroup({ group }) {
             <div key={i} style={{ padding: '0.35rem 0', borderBottom: i < group.items.length - 1 ? '1px solid #243041' : 'none', fontSize: '0.8rem' }}>
               <span style={{ fontWeight: 500 }}>{item.name || item.farmerName || item.id}</span>
               {item.region && <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>· {item.region}</span>}
-              {item.cropType && <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>· {item.cropType}</span>}
+              {item.cropType && <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>· {getCropLabel(item.cropType, lang) || item.cropType}</span>}
               {item.lastActivity && (
                 <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>
                   · last active {new Date(item.lastActivity).toLocaleDateString()}

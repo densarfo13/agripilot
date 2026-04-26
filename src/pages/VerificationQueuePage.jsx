@@ -4,6 +4,8 @@ import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import { SkeletonTable } from '../components/SkeletonLoader.jsx';
+import { getCropLabel } from '../utils/crops.js';
+import { useTranslation } from '../i18n/index.js';
 
 // Compute a single human-readable "next action" for each application
 function getNextAction(app) {
@@ -36,6 +38,7 @@ function getNextAction(app) {
 }
 
 export default function VerificationQueuePage() {
+  const { lang } = useTranslation();
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scoring, setScoring] = useState({});
@@ -278,7 +281,7 @@ export default function VerificationQueuePage() {
                               <div style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{a.farmer.organization.name}</div>
                             )}
                           </td>
-                          <td>{a.cropType}</td>
+                          <td>{getCropLabel(a.cropType, lang) || a.cropType}</td>
                           <td>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</td>
                           <td><StatusBadge value={a.status} /></td>
                           <td>

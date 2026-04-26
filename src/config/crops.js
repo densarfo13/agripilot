@@ -39,6 +39,11 @@
  */
 
 import { useTranslation } from '../i18n/index.js';
+// Import the canonical alias map so normalizeCrop resolves
+// synonyms (corn/manioc/peanut/chili/...) without duplicating the
+// table here. The alias map is read-only at load time.
+import { _internal as _aliasInternal } from './crops/cropAliases.js';
+const ALIAS_MAP = new Map(Object.entries(_aliasInternal.ALIASES));
 
 // Keep labels English here so operators can audit raw data easily.
 // UI components should call getCropLabel(code, lang) or useCropLabel
@@ -81,6 +86,15 @@ export const COMMON_CROPS = Object.freeze([
   ['sunflower',  'Sunflower'],
   ['sesame',     'Sesame'],
   ['tobacco',    'Tobacco'],
+  // Newly added — canonical crops that previously had no entry in
+  // CROP_LABELS_BY_LANG and only resolved via the fallback humaniser.
+  // Adding them here AND in the per-language tables below gives Hindi
+  // / Twi / Swahili / Hausa / French farmers a real localised label.
+  ['eggplant',   'Eggplant'],
+  ['ginger',     'Ginger'],
+  ['garlic',     'Garlic'],
+  ['lettuce',    'Lettuce'],
+  ['oil_palm',   'Oil palm'],
   ['other',      'Other'],
 ].map(([code, label]) => Object.freeze({ code, label })));
 
@@ -118,6 +132,8 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     avocado: 'Avocat', coffee: 'Caf\u00E9', tea: 'Th\u00E9',
     cocoa: 'Cacao', cotton: 'Coton', sugarcane: 'Canne \u00E0 sucre',
     sunflower: 'Tournesol', sesame: 'S\u00E9same', tobacco: 'Tabac',
+    eggplant: 'Aubergine', ginger: 'Gingembre', garlic: 'Ail',
+    lettuce: 'Laitue', oil_palm: 'Palmier \u00E0 huile',
     other: 'Autre',
   }),
 
@@ -126,7 +142,9 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sorghum: 'Mtama', millet: 'Uwele', cassava: 'Muhogo',
     yam: 'Viazi vikuu', potato: 'Viazi', sweet_potato: 'Viazi vitamu',
     beans: 'Maharagwe', soybean: 'Soya', groundnut: 'Karanga',
-    cowpea: 'Kunde', tomato: 'Nyanya', onion: 'Vitunguu',
+    cowpea: 'Kunde',
+    chickpea: 'Mbaazi', lentil: 'Dengu',
+    tomato: 'Nyanya', onion: 'Vitunguu',
     pepper: 'Pilipili', cabbage: 'Kabeji', carrot: 'Karoti',
     okra: 'Bamia', spinach: 'Mchicha', cucumber: 'Tango',
     watermelon: 'Tikiti maji', plantain: 'Ndizi za kupika',
@@ -134,6 +152,8 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     avocado: 'Parachichi', coffee: 'Kahawa', tea: 'Chai',
     cocoa: 'Kakao', cotton: 'Pamba', sugarcane: 'Miwa',
     sunflower: 'Alizeti', sesame: 'Ufuta', tobacco: 'Tumbaku',
+    eggplant: 'Bilinganya', ginger: 'Tangawizi', garlic: 'Kitunguu saumu',
+    lettuce: 'Saladi', oil_palm: 'Mchikichi',
     other: 'Nyingine',
   }),
 
@@ -142,7 +162,9 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sorghum: 'Dawa', millet: 'Gero', cassava: 'Rogo',
     yam: 'Doya', potato: 'Dankali', sweet_potato: 'Dankalin Turawa',
     beans: 'Wake', soybean: 'Soya', groundnut: 'Gy\u1E0Da',
-    cowpea: 'Wake', tomato: 'Tumatur', onion: 'Albasa',
+    cowpea: 'Wake',
+    chickpea: 'Wake na Indiya', lentil: 'Wake na lentil',
+    tomato: 'Tumatur', onion: 'Albasa',
     pepper: 'Barkono', cabbage: 'Kabeji', carrot: 'Karas',
     okra: 'Kubewa', spinach: 'Alayyaho', cucumber: 'Kukumba',
     watermelon: 'Kankana', plantain: 'Ayaba ta dafawa',
@@ -150,6 +172,8 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     avocado: 'Afokado', coffee: 'Kofi', tea: 'Shayi',
     cocoa: 'Koko', cotton: 'Auduga', sugarcane: 'Rake',
     sunflower: 'Furen rana', sesame: 'Ri\u1E0Di', tobacco: 'Taba',
+    eggplant: 'Yalo', ginger: 'Citta', garlic: 'Tafarnuwa',
+    lettuce: 'Latas', oil_palm: 'Itacen man ja',
     other: 'Sauran',
   }),
 
@@ -158,7 +182,9 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     millet: 'Nafo', cassava: 'Bankye', yam: 'Ɛbayerɛ',
     potato: 'Nkat\u025B', sweet_potato: 'Santom bankye',
     beans: 'Aduwa', soybean: 'Soya', groundnut: 'Nkat\u025B',
-    cowpea: 'Aduwa', tomato: 'Nt\u0254s', onion: 'Gyeene',
+    cowpea: 'Aduwa',
+    chickpea: 'Akukɔbene', lentil: 'Adua nketewa',
+    tomato: 'Nt\u0254s', onion: 'Gyeene',
     pepper: 'Mak\u0254', cabbage: 'Kabeji',
     carrot: 'Karɔɔt', okra: 'Nkruma',
     spinach: 'Bɔdwomaa', cucumber: 'Nk\u0254k\u0254haabaa',
@@ -167,6 +193,8 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     avocado: 'Paya', coffee: 'Kɔfe', tea: 'Tii',
     cocoa: 'Koko', cotton: 'Asaawa', sugarcane: 'Mpatre',
     sunflower: 'Awia nhwiren', sesame: 'Sesimi', tobacco: 'Taa',
+    eggplant: 'Nyaadewa', ginger: 'Akakaduro', garlic: 'Gyeene-fitaa',
+    lettuce: 'Lɛtas', oil_palm: 'Abɛ',
     other: 'Foforɔ',
   }),
 
@@ -208,6 +236,11 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sunflower: '\u0938\u0942\u0930\u091C\u092E\u0941\u0916\u0940',
     sesame: '\u0924\u093F\u0932',
     tobacco: '\u0924\u092E\u093E\u0916\u0942',
+    eggplant: '\u092C\u0948\u0902\u0917\u0928',
+    ginger: '\u0905\u0926\u0930\u0915',
+    garlic: '\u0932\u0939\u0938\u0941\u0928',
+    lettuce: '\u0938\u0932\u093E\u0926 \u092A\u0924\u094D\u0924\u093E',
+    oil_palm: '\u0924\u093E\u0921 \u0915\u093E \u0924\u0947\u0932',
     other: '\u0905\u0928\u094D\u092F',
   }),
 });
@@ -232,6 +265,17 @@ export function normalizeCrop(value) {
   // Accept common label-to-code collapses (spaces → underscores).
   const squashed = raw.replace(/\s+/g, '_');
   if (CODES.has(squashed)) return squashed;
+  // i18n upgrade — consult the canonical alias map so synonyms like
+  // `corn → maize`, `manioc → cassava`, `peanut → groundnut`,
+  // `chili → pepper` resolve to a localisable code instead of
+  // falling through to the unknown-crop branch. The alias map is
+  // already the source of truth for the rest of the codebase
+  // (cropRegistry, FarmForm), so we just adopt the same lookup.
+  const aliased = ALIAS_MAP.get(raw) || ALIAS_MAP.get(squashed);
+  if (aliased && CODES.has(aliased)) return aliased;
+  if (aliased && CODES.has(String(aliased).replace(/-/g, '_'))) {
+    return String(aliased).replace(/-/g, '_');
+  }
   // Try to reverse-map from any known label in any language back to
   // a code. Handles legacy records that saved the display label.
   const fromLabel = collapseLabelToCode(raw);
