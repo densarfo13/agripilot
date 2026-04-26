@@ -31,10 +31,11 @@ import { getAdminSupplyList } from '../lib/api.js';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { getCropLabelSafe } from '../utils/crops.js';
-import ProgressScoreChip from '../components/farmer/ProgressScoreChip.jsx';
+import ScoreBadge from '../components/farmer/ScoreBadge.jsx';
 import { computeProgressScore } from '../lib/farmer/progressScore.js';
 
-const SCORE_BANDS = ['all', 'High Risk', 'Medium', 'Good', 'Excellent'];
+// "High priority" cutoff per spec: score >= 70 AND status='available'.
+const HIGH_PRIORITY_MIN_SCORE = 70;
 
 export default function BuyerView() {
   const { t, lang } = useTranslation();
@@ -45,7 +46,7 @@ export default function BuyerView() {
 
   const [crop,         setCrop]         = useState('all');
   const [locationText, setLocationText] = useState('');
-  const [scoreBand,    setScoreBand]    = useState('all');
+  const [minScore,     setMinScore]     = useState(0);   // 0 = no filter
 
   // Load once. We intentionally pull only the ready-to-sell rows so
   // a buyer view doesn't surface farms that aren't signalling.
@@ -78,29 +79,42 @@ export default function BuyerView() {
     return Array.from(set);
   }, [rows]);
 
-  // Apply local filters. Score band uses the same compute function
-  // as everywhere else — single source of truth.
+  // Decorate each row with its computed score once so the high-
+  // priority section + the filter step + the row render all read
+  // the same number. Pure / deterministic.
+  const decorated = useMemo(() => rows.map((r) => {
+    const f = (r && r.farmer) || {};
+    const computed = computeProgressScore({
+      taskCompletionRate:     f.taskCompletionRate,
+      cropHealthScore:        f.cropHealthScore,
+      consistencyScore:       f.consistencyScore,
+      weatherAdaptationScore: f.weatherAdaptationScore,
+    });
+    return { row: r, score: computed.score, reasons: computed.reasons };
+  }), [rows]);
+
+  // Apply local filters.
   const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      if (!r) return false;
-      if (crop !== 'all' && r.crop !== crop) return false;
+    return decorated.filter(({ row, score }) => {
+      if (!row) return false;
+      if (crop !== 'all' && row.crop !== crop) return false;
       if (locationText) {
-        const hay = `${r.location || ''} ${r.region || ''} ${r.farmer?.region || ''} ${r.farmer?.location || ''}`.toLowerCase();
+        const hay = `${row.location || ''} ${row.region || ''} ${row.farmer?.region || ''} ${row.farmer?.location || ''}`.toLowerCase();
         if (!hay.includes(locationText.toLowerCase())) return false;
       }
-      if (scoreBand !== 'all') {
-        const f = r.farmer || {};
-        const score = computeProgressScore({
-          taskCompletionRate:    f.taskCompletionRate,
-          cropHealthScore:       f.cropHealthScore,
-          consistencyScore:      f.consistencyScore,
-          weatherAdaptationScore: f.weatherAdaptationScore,
-        });
-        if (score.label !== scoreBand) return false;
-      }
+      if (minScore > 0 && score < minScore) return false;
       return true;
     });
-  }, [rows, crop, locationText, scoreBand]);
+  }, [decorated, crop, locationText, minScore]);
+
+  // Spec: "🔥 High Priority" — score >= 70 AND status='available'.
+  // Computed AFTER filters so adjusting the filters narrows both
+  // sections together (predictable behaviour).
+  const highPriority = useMemo(() => filtered.filter(({ row, score }) => {
+    if (score < HIGH_PRIORITY_MIN_SCORE) return false;
+    const status = (row && (row.status || (row.readyToSell ? 'available' : ''))) || '';
+    return status === 'available' || row.readyToSell === true;
+  }), [filtered]);
 
   return (
     <div style={S.page}>
@@ -147,20 +161,18 @@ export default function BuyerView() {
         </div>
 
         <div style={S.filterGroup}>
-          <span style={S.filterLabel}>{tSafe(t, 'admin.filter.score', 'Score')}</span>
-          <div style={S.chipRow}>
-            {SCORE_BANDS.map((band) => (
-              <button key={band} type="button"
-                onClick={() => setScoreBand(band)}
-                style={scoreBand === band ? { ...S.chip, ...S.chipActive } : S.chip}
-                data-testid={`buyer-filter-score-${band}`}
-              >
-                {band === 'all'
-                  ? tSafe(t, 'admin.filter.all', 'All')
-                  : tSafe(t, `progressScore.label.${band.toLowerCase().replace(/\s+/g, '_')}`, band)}
-              </button>
-            ))}
-          </div>
+          <span style={S.filterLabel}>
+            {tSafe(t, 'admin.filter.minScore', 'Min Farmer Status')}
+            {minScore > 0 && <span style={S.filterValue}> ≥ {minScore}</span>}
+          </span>
+          <input
+            type="range"
+            min={0} max={100} step={10}
+            value={minScore}
+            onChange={(e) => setMinScore(Number(e.target.value))}
+            style={S.slider}
+            data-testid="buyer-filter-min-score"
+          />
         </div>
       </div>
 
@@ -175,41 +187,49 @@ export default function BuyerView() {
                 : tSafe(t, 'buyerView.farms', 'farms')}`}
       </div>
 
-      {/* Rows */}
+      {/* High-Priority section — score ≥ 70 AND status=available.
+          Renders only when there's at least one match so we never
+          show an empty "🔥" header. */}
+      {!loading && !error && highPriority.length > 0 && (
+        <section style={S.priorityBlock} data-testid="high-priority-block">
+          <h2 style={S.priorityTitle}>
+            <span aria-hidden>{'\uD83D\uDD25 '}</span>
+            {tSafe(t, 'buyerView.highPriority',
+              `High Priority (${highPriority.length})`).replace('{count}', String(highPriority.length))}
+          </h2>
+          <ul style={S.list}>
+            {highPriority.map(({ row, score, reasons }) => (
+              <BuyerRow
+                key={row.id}
+                row={row}
+                score={score}
+                reasons={reasons}
+                lang={lang}
+                priority
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Full filtered list */}
       {!loading && !error && filtered.length > 0 && (
-        <ul style={S.list}>
-          {filtered.map((row) => {
-            const f = row.farmer || {};
-            const farmerName = f.fullName || row.farmerName || '—';
-            const location   = row.location || row.region
-                             || f.location || f.region || '—';
-            const harvestDate = row.expectedHarvestDate
-              ? new Date(row.expectedHarvestDate).toLocaleDateString()
-              : '—';
-            const qty = row.estimatedQuantity != null
-              ? `${row.estimatedQuantity} ${row.quantityUnit || 'kg'}`
-              : '—';
-            return (
-              <li key={row.id} style={S.row}>
-                <div style={S.rowMain}>
-                  <strong style={S.rowName}>{farmerName}</strong>
-                  <span style={S.rowMeta}>
-                    {getCropLabelSafe(row.crop, lang) || row.crop}
-                    {' \u00B7 '}{location}
-                    {' \u00B7 '}{qty}
-                    {' \u00B7 '}{harvestDate}
-                  </span>
-                </div>
-                <ProgressScoreChip
-                  taskCompletionRate={f.taskCompletionRate}
-                  cropHealthScore={f.cropHealthScore}
-                  consistencyScore={f.consistencyScore}
-                  weatherAdaptationScore={f.weatherAdaptationScore}
-                />
-              </li>
-            );
-          })}
-        </ul>
+        <section style={S.allBlock}>
+          <h2 style={S.sectionTitle}>
+            {tSafe(t, 'buyerView.marketReady', 'Market Ready')}
+          </h2>
+          <ul style={S.list}>
+            {filtered.map(({ row, score, reasons }) => (
+              <BuyerRow
+                key={row.id}
+                row={row}
+                score={score}
+                reasons={reasons}
+                lang={lang}
+              />
+            ))}
+          </ul>
+        </section>
       )}
 
       {!loading && !error && filtered.length === 0 && (
@@ -219,6 +239,33 @@ export default function BuyerView() {
         </p>
       )}
     </div>
+  );
+}
+
+function BuyerRow({ row, score, reasons, lang, priority = false }) {
+  const f = row.farmer || {};
+  const farmerName = f.fullName || row.farmerName || '\u2014';
+  const location   = row.location || row.region
+                  || f.location || f.region || '\u2014';
+  const harvestDate = row.expectedHarvestDate
+    ? new Date(row.expectedHarvestDate).toLocaleDateString()
+    : '\u2014';
+  const qty = row.estimatedQuantity != null
+    ? `${row.estimatedQuantity} ${row.quantityUnit || 'kg'}`
+    : '\u2014';
+  return (
+    <li style={priority ? { ...S.row, ...S.rowPriority } : S.row}>
+      <div style={S.rowMain}>
+        <strong style={S.rowName}>{farmerName}</strong>
+        <span style={S.rowMeta}>
+          {getCropLabelSafe(row.crop, lang) || row.crop}
+          {' \u00B7 '}{location}
+          {' \u00B7 '}{qty}
+          {' \u00B7 '}{harvestDate}
+        </span>
+      </div>
+      <ScoreBadge score={score} reasons={reasons} />
+    </li>
   );
 }
 
@@ -268,4 +315,27 @@ const S = {
              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   empty:  { color: 'rgba(255,255,255,0.55)', fontSize: '0.875rem',
             padding: '1rem 0' },
+
+  // High-priority block — gentle accent, not a screaming red banner.
+  priorityBlock: {
+    border: '1px solid rgba(245,158,11,0.35)',
+    background: 'rgba(245,158,11,0.06)',
+    borderRadius: 12, padding: '0.75rem 0.875rem',
+    marginBottom: '1rem', display: 'flex',
+    flexDirection: 'column', gap: '0.5rem',
+  },
+  priorityTitle: { margin: 0, fontSize: '0.9375rem', fontWeight: 700,
+                   color: '#FDE68A', display: 'flex', alignItems: 'center' },
+  rowPriority: {
+    border: '1px solid rgba(245,158,11,0.35)',
+    background: 'rgba(245,158,11,0.04)',
+  },
+  allBlock: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  sectionTitle: { margin: 0, fontSize: '0.875rem', fontWeight: 700,
+                  color: 'rgba(255,255,255,0.65)',
+                  textTransform: 'uppercase', letterSpacing: '0.04em' },
+
+  // Slider input visuals.
+  slider: { width: '180px', accentColor: '#22C55E' },
+  filterValue: { color: '#86EFAC', fontWeight: 700, marginLeft: '0.25rem' },
 };

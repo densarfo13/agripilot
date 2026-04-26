@@ -19,6 +19,8 @@ import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { getFullDashboard, getNewFarmersByDay } from '../services/activityAggregator.js';
 import InvestorMetricsCard from '../components/admin/InvestorMetricsCard.jsx';
+import SummaryCards from '../components/admin/SummaryCards.jsx';
+import InsightCards from '../components/admin/InsightCards.jsx';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
@@ -173,6 +175,30 @@ export default function AdminAnalyticsPage() {
         <h1>{t('admin.analytics')}</h1>
         <button onClick={refresh} className="btn btn-outline btn-sm">{t('admin.refresh')}</button>
       </div>
+
+      {/* ═══ Decision Header — Farmer Intelligence Summary ═══ */}
+      {/* Sits above every existing section so an NGO admin lands on
+          the decision-layer cards first. Reuses the existing metrics
+          object we already fetch — no second API call. */}
+      <SummaryCards
+        totalFarmers={metrics.totalFarmers}
+        activeFarmers={metrics.activeFarmersWeek}
+        highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
+        readyToSellCount={null /* filled by InvestorMetricsCard's live fetch below */}
+        averageScore={null /* placeholder until server aggregation lands */}
+        farms={null}
+      />
+
+      {/* ═══ Insight Cards — heuristic, no ML ════════════════ */}
+      <InsightCards
+        totalFarmers={metrics.totalFarmers}
+        activeFarmers={metrics.activeFarmersWeek}
+        highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
+        readyToSellCount={null}
+        readyToSellTopCrop={cropBreakdown[0]?.crop || null}
+        complianceRate={null}
+        bestPerformingCrop={cropBreakdown[0]?.crop || null}
+      />
 
       {/* ═══ A. Summary Cards ══════════════════════════════ */}
       <div style={S.statsGrid}>

@@ -162,4 +162,32 @@ export function computeProgressScore(input = {}) {
   });
 }
 
+/**
+ * getScoreLabel — public mapper from a numeric score to the
+ * decision-layer band + display colour. Single source of truth
+ * for the four label-bands so dashboards / chips / cards / SMS
+ * voice all read the same thing.
+ *
+ *   getScoreLabel(72) → { score:72, label:'Good', color:'green',
+ *                         band:'good' }
+ *
+ * `band` is the lowercase machine form ('high_risk' / 'medium' /
+ * 'good' / 'excellent') — useful for translation keys + CSS
+ * class names. `color` is one of 'red' / 'yellow' / 'green' /
+ * 'purple' (per spec); UI components map it to their own design
+ * tokens. `label` is the English display text.
+ *
+ * Pure / never throws. Out-of-range numbers clamp to [0..100].
+ */
+export function getScoreLabel(score) {
+  let n = Number(score);
+  if (!Number.isFinite(n)) n = 0;
+  if (n < 0)   n = 0;
+  if (n > 100) n = 100;
+  if (n >= 80) return Object.freeze({ score: n, label: 'Excellent', color: 'purple', band: 'excellent' });
+  if (n >= 60) return Object.freeze({ score: n, label: 'Good',      color: 'green',  band: 'good' });
+  if (n >= 40) return Object.freeze({ score: n, label: 'Medium',    color: 'yellow', band: 'medium' });
+  return         Object.freeze({ score: n, label: 'High Risk', color: 'red',    band: 'high_risk' });
+}
+
 export const _internal = Object.freeze({ WEIGHTS, REASON_KEYS, labelForScore, bandFor });

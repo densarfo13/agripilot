@@ -8,7 +8,7 @@ import CountrySelect from '../components/CountrySelect.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
-import ProgressScoreChip from '../components/farmer/ProgressScoreChip.jsx';
+import ScoreBadge from '../components/farmer/ScoreBadge.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
@@ -295,7 +295,7 @@ export default function FarmersPage() {
                       {isSuperAdmin && <th>Organization</th>}
                       <th>Primary Crop</th>
                       <th>Farm Size</th>
-                      <th>Score</th>
+                      <th>Farmer Status</th>
                       <th>Applications</th>
                       <th></th>
                     </tr>
@@ -324,7 +324,7 @@ export default function FarmersPage() {
                               own tooltip). Server-side aggregation would
                               be the next step; for now this compiles a
                               live signal from existing fields. */}
-                          <ProgressScoreChip
+                          <ScoreBadge
                             taskCompletionRate={f.taskCompletionRate}
                             cropHealthScore={f.cropHealthScore}
                             consistencyScore={f.consistencyScore}
