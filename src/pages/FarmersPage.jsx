@@ -10,7 +10,7 @@ import { AccessBadge, InviteBadge } from '../components/InviteAccessBadge.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { UNIT_OPTIONS, computeLandSizeFields, formatLandSize } from '../utils/landSize.js';
 import { useDraft } from '../utils/useDraft.js';
 
@@ -312,7 +312,7 @@ export default function FarmersPage() {
                         <td><AccessBadge value={f.accessStatus} /></td>
                         <td>{!f.selfRegistered ? <InviteBadge value={f.inviteStatus} /> : <span className="text-sm text-muted">—</span>}</td>
                         {isSuperAdmin && <td className="text-sm text-muted">{f.organization?.name || '-'}</td>}
-                        <td>{f.primaryCrop ? getCropLabel(f.primaryCrop) : '-'}</td>
+                        <td>{f.primaryCrop ? getCropLabelSafe(f.primaryCrop) : '-'}</td>
                         <td>{f.landSizeValue ? formatLandSize(f.landSizeValue, f.landSizeUnit) : f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>{f._count?.applications || 0}</td>
                         <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
@@ -842,7 +842,7 @@ function CreateFarmerModal({ onClose, onCreated }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem 1rem' }}>
                   {[['Name', form.fullName], ['Phone', form.phone], ['Region', form.region], ['Country', form.countryCode],
                     form.district && ['District', form.district], form.village && ['Village', form.village],
-                    form.nationalId && ['National ID', form.nationalId], form.primaryCrop && ['Crop', getCropLabel(form.primaryCrop)],
+                    form.nationalId && ['National ID', form.nationalId], form.primaryCrop && ['Crop', getCropLabelSafe(form.primaryCrop)],
                     form.farmSizeAcres && ['Farm Size', formatLandSize(form.farmSizeAcres, form.landSizeUnit)],
                     form.yearsExperience && ['Experience', `${form.yearsExperience} yrs`],
                   ].filter(Boolean).map(([k, v]) => (

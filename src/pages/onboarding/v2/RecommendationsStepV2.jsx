@@ -7,7 +7,7 @@
  *
  * Caller supplies:
  *   getRecommendations(state) → Promise<crops[]>
- *   getCropLabel(crop, language) → string
+ *   getCropLabelSafe(crop, language) → string
  *
  * The screen deliberately renders nothing beyond these sections —
  * no generic "all crops" grid per the spec.
@@ -101,7 +101,7 @@ export default function RecommendationsStepV2({
             <RecommendationCropCard
               key={c.crop}
               crop={c.crop}
-              label={getCropLabel(c.crop, state.language)}
+              label={getCropLabelSafe(c.crop, state.language)}
               tier="best"
               beginnerFriendly={c.beginnerFriendly}
               supportDepth={c.supportDepth}
@@ -121,7 +121,7 @@ export default function RecommendationsStepV2({
             <RecommendationCropCard
               key={c.crop}
               crop={c.crop}
-              label={getCropLabel(c.crop, state.language)}
+              label={getCropLabelSafe(c.crop, state.language)}
               tier="also"
               beginnerFriendly={c.beginnerFriendly}
               supportDepth={c.supportDepth}
@@ -155,7 +155,7 @@ export default function RecommendationsStepV2({
                 <RecommendationCropCard
                   key={c.crop}
                   crop={c.crop}
-                  label={getCropLabel(c.crop, state.language)}
+                  label={getCropLabelSafe(c.crop, state.language)}
                   tier="not"
                   reasons={c.reasons}
                   selected={state.selectedCrop === c.crop}

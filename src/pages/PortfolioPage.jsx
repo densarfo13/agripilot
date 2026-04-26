@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
@@ -124,7 +124,7 @@ export default function PortfolioPage() {
                 <tbody>
                   {data.cropBreakdown.map(c => (
                     <tr key={c.crop}>
-                      <td style={{ fontWeight: 500 }}>{getCropLabel(c.crop, lang) || c.crop}</td>
+                      <td style={{ fontWeight: 500 }}>{getCropLabelSafe(c.crop, lang) || c.crop}</td>
                       <td>{c.count}</td>
                       <td>{fmt(c.totalAmount)}</td>
                       <td>{fmt(c.avgAmount)}</td>

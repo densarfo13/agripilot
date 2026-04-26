@@ -541,19 +541,41 @@ function _isDevForCropLabelSafe() {
 }
 const _warnedLabelMisses = new Set();
 
+// Track which (id × lang) pairs have already issued a "fallback used"
+// warning, so a busy dashboard doesn't flood the console.
+const _warnedFallbackUsed = new Set();
+
 export function getCropLabelSafe(value, lang = 'en', t = null) {
   if (!value) return '';
   // 1. Leak detection (dev-only console.warn; returns value unchanged).
   assertNormalizedCrop(value);
 
+  // Pre-compute the normalised id once — used for both the
+  // fallback-detection check and any miss path.
+  const norm = normalizeCrop(value) || String(value);
+
   // 2. Existing label resolver. It already handles alias resolution,
   //    locale fallback, English fallback, and humanised last-resort.
   const label = getCropLabel(value, lang);
-  if (label && !label.startsWith('[MISSING_CROP_LABEL:')) return label;
+  if (label && !label.startsWith('[MISSING_CROP_LABEL:')) {
+    // 2a. Spec hardening — if the resolved label is identical to the
+    //     normalised id (e.g. resolver fell through to humanised
+    //     code form because no entry exists), surface a one-time
+    //     `[FALLBACK_USED]` warning so QA can see when an English
+    //     fallback / humanised id is shipping to a non-English user.
+    if (label === norm) {
+      const memoKey = `${norm}:${lang}`;
+      if (!_warnedFallbackUsed.has(memoKey)) {
+        _warnedFallbackUsed.add(memoKey);
+        try { console.warn('[FALLBACK_USED]', norm, '(lang=' + lang + ')'); }
+        catch { /* never crash */ }
+      }
+    }
+    return label;
+  }
 
   // 3. The inner resolver returned its dev marker. Re-emit with the
   //    normalised id so screenshot QA sees the canonical form.
-  const norm = normalizeCrop(value) || String(value);
   const dev = _isDevForCropLabelSafe();
 
   // Production: prefer the English label from the canonical map,

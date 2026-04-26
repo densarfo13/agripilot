@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import api from '../api/client.js';
-import { getCropLabel, getCropIcon } from '../utils/crops.js';
+import { getCropLabel, getCropIcon, getCropLabelSafe } from '../utils/crops.js';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
@@ -306,7 +306,7 @@ export default function OfficerValidationPage() {
                 <div>
                   <div style={VS.farmerName}>{current.farmerName}</div>
                   <div style={VS.farmMeta}>
-                    {getCropLabel(current.cropType)}
+                    {getCropLabelSafe(current.cropType)}
                     {current.currentStage ? ` · ${STAGE_LABELS[current.currentStage] || current.currentStage}` : ''}
                   </div>
                 </div>

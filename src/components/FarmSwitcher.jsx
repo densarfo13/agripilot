@@ -71,7 +71,7 @@ export default function FarmSwitcher() {
           <span style={S.farmName}>{defaultFarm?.farmName || defaultFarm?.location || t('farm.activeFarm')}</span>
           {(defaultFarm?.crop || defaultFarm?.cropType) && (
             <span style={S.farmCrop}>
-              {getCropLabel(defaultFarm.crop || defaultFarm.cropType, lang)}
+              {getCropLabelSafe(defaultFarm.crop || defaultFarm.cropType, lang)}
             </span>
           )}
         </div>
@@ -98,7 +98,7 @@ export default function FarmSwitcher() {
             >
               <span style={S.itemName}>{farm.farmName || farm.location || t('farm.unnamed')}</span>
               {(farm.crop || farm.cropType) && (
-                <span style={S.itemCrop}>{getCropLabel(farm.crop || farm.cropType, lang)}</span>
+                <span style={S.itemCrop}>{getCropLabelSafe(farm.crop || farm.cropType, lang)}</span>
               )}
               <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
             </button>

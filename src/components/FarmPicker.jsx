@@ -37,7 +37,7 @@ export default function FarmPicker({ onSelect, onCancel }) {
                 </span>
                 {(farm.crop || farm.cropType) && (
                   <span style={S.farmCrop}>
-                    {getCropLabel(farm.crop || farm.cropType, lang)}
+                    {getCropLabelSafe(farm.crop || farm.cropType, lang)}
                   </span>
                 )}
                 {farm.location && <span style={S.farmLoc}>{farm.location}</span>}

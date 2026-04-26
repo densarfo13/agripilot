@@ -122,7 +122,7 @@ export default function BuyerRequestsList({
             <img src={getCropImage(row.crop)} alt="" style={styles.thumb} />
             <div style={styles.rowMain}>
               <div style={styles.rowTitle}>
-                {getCropLabel(row.crop, lang)} · {row.quantity} kg
+                {getCropLabelSafe(row.crop, lang)} · {row.quantity} kg
                 {bulk && (
                   <span style={styles.bulkPill}
                         data-testid={`my-request-bulk-${row.id}`}>

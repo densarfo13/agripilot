@@ -6,7 +6,7 @@ import { SkeletonDashboard } from '../components/SkeletonLoader.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 // Voice controls removed from the admin dashboard. Admin UI is
 // kept distraction-free per the voice/audio scope rule —
 // see src/lib/voice/adminGuard.js.
@@ -529,7 +529,7 @@ export default function DashboardPage() {
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#A1A1AA', marginBottom: '0.4rem' }}>Crop & Land</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   {adoption.cropDistribution.slice(0, 6).map(c => (
-                    <span key={c.crop} style={DS.queueTag}>{getCropLabel(c.crop)}: {c.count}</span>
+                    <span key={c.crop} style={DS.queueTag}>{getCropLabelSafe(c.crop)}: {c.count}</span>
                   ))}
                 </div>
                 {adoption.landSize && (
@@ -554,7 +554,7 @@ export default function DashboardPage() {
                 {portfolio.recentApplications.slice(0, 5).map(app => (
                   <div key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={DS.recentRow}>
                     <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{app.farmer.fullName}</span>
-                    <span style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>{getCropLabel(app.cropType)}</span>
+                    <span style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>{getCropLabelSafe(app.cropType)}</span>
                     <span style={{ fontSize: '0.8rem', color: '#22C55E' }}>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</span>
                   </div>
                 ))}

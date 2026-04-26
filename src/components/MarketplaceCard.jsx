@@ -145,7 +145,7 @@ function BuyerBrowseMode({ filters, onRequest, farm, t, tr, styles, lang }) {
           <li key={l.id} style={styles.row} data-testid={`listing-${l.id}`}>
             <img src={getCropImage(l.crop)} alt="" style={styles.thumb} />
             <div style={styles.rowMain}>
-              <div style={styles.rowTitle}>{getCropLabel(l.crop, lang)}</div>
+              <div style={styles.rowTitle}>{getCropLabelSafe(l.crop, lang)}</div>
               <div style={styles.rowMeta}>
                 <span>{l.quantity} kg</span>
                 {l.region && <span> · {l.region}</span>}

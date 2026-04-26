@@ -143,7 +143,7 @@ export default function CropRecommendations() {
       const reg = registryScores.get(canonicalId);
       // Prefer the registry label for the current language; fall back
       // to the legacy English name so the screen never goes blank.
-      const label = getCropLabel(canonicalId, lang) || c.name || canonicalId;
+      const label = getCropLabelSafe(canonicalId, lang) || c.name || canonicalId;
       const image = getCropImage(canonicalId);
       const mergedReasons = Array.from(new Set([
         ...(c.fitReasons || []),
@@ -175,8 +175,8 @@ export default function CropRecommendations() {
       merged.push({
         code: recs.best.cropId.toUpperCase(),
         cropId: recs.best.cropId,
-        name: getCropLabel(recs.best.cropId, 'en'),
-        label: getCropLabel(recs.best.cropId, lang),
+        name: getCropLabelSafe(recs.best.cropId, 'en'),
+        label: getCropLabelSafe(recs.best.cropId, lang),
         image: getCropImage(recs.best.cropId),
         icon: '',
         difficulty: recs.best.difficulty,

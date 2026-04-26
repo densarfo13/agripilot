@@ -128,7 +128,7 @@ function PriceRow({ crop, insight, primary, lang, tr, styles }) {
       <img src={getCropImage(crop)} alt="" style={styles.thumb} />
       <div style={styles.main}>
         <div style={styles.titleLine}>
-          <span style={styles.cropLabel}>{getCropLabel(crop, lang)}</span>
+          <span style={styles.cropLabel}>{getCropLabelSafe(crop, lang)}</span>
           {primary && (
             <span style={styles.primaryPill}>
               {tr('priceInsight.yourCrop', 'Your crop')}

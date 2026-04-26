@@ -2,7 +2,7 @@
  * CropConfirmStep — step 7. A small confirmation surface that
  * summarises the farmer's choice before they see the first value.
  * Caller supplies:
- *   getCropLabel(crop, language)   → string
+ *   getCropLabelSafe(crop, language)   → string
  *   getPlantingStatus(crop, state) → { stage, label }  (optional)
  *   getReasons(crop, state)        → string[]          (optional)
  */
@@ -24,7 +24,7 @@ export default function CropConfirmStep({
   getReasons = null,
 }) {
   const crop = state.selectedCrop;
-  const cropLabel = crop ? getCropLabel(crop, state.language) : '';
+  const cropLabel = crop ? getCropLabelSafe(crop, state.language) : '';
   const status = crop && typeof getPlantingStatus === 'function'
     ? getPlantingStatus(crop, state) : null;
   const reasons = crop && typeof getReasons === 'function'

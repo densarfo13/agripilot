@@ -114,7 +114,7 @@ export default function OnboardingV3() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [cropQuery, setCropQuery] = useState(() =>
-    form.mainCrop ? getCropLabel(form.mainCrop, lang) : '');
+    form.mainCrop ? getCropLabelSafe(form.mainCrop, lang) : '');
 
   // Persist the form to localStorage so a refresh mid-flow doesn't
   // wipe entered values. Never save passwords / tokens — this is a
@@ -319,10 +319,10 @@ export default function OnboardingV3() {
         crop:      cropCode,
         // Store the English label so cached data is stable across
         // language switches; UI translates on render via
-        // useCropLabel / getCropLabel(code, lang).
+        // useCropLabel / getCropLabelSafe(code, lang).
         cropLabel: form.mainCrop === CROP_OTHER
           ? (form.cropOther.trim() || 'Other')
-          : getCropLabel(cropCode, 'en'),
+          : getCropLabelSafe(cropCode, 'en'),
         country:   form.country,
         farmSize:  Number(form.farmSize),
         sizeUnit:  normalizeSizeUnit(form.sizeUnit),
@@ -597,10 +597,10 @@ export default function OnboardingV3() {
                       onClick={() => {
                         update('mainCrop', c.code);
                         if (c.code !== CROP_OTHER) {
-                          setCropQuery(getCropLabel(c.code, lang));
+                          setCropQuery(getCropLabelSafe(c.code, lang));
                         }
                       }}
-                      label={getCropLabel(c.code, lang)}
+                      label={getCropLabelSafe(c.code, lang)}
                       testid={`onboarding-crop-${c.code}`}
                     />
                   );

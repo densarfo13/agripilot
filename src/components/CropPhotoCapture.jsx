@@ -182,7 +182,7 @@ export default function CropPhotoCapture({
                  style={styles.cropThumb} />
             <div style={styles.cropText}>
               <div style={styles.cropLabel}>
-                {getCropLabel(detection.best.cropKey, lang)}
+                {getCropLabelSafe(detection.best.cropKey, lang)}
               </div>
               <div style={styles.cropConf}>
                 {t('cropPhoto.lowConfidence')
@@ -220,7 +220,7 @@ export default function CropPhotoCapture({
                       onClick={() => handleConfirm(key)}
                       data-testid={`crop-photo-manual-${key}`}>
                 <img src={getCropImage(key)} alt="" style={styles.chipImg} />
-                <span>{getCropLabel(key, lang)}</span>
+                <span>{getCropLabelSafe(key, lang)}</span>
               </button>
             ))}
           </div>

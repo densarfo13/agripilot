@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import StatusBadge from '../components/StatusBadge.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 export default function FraudQueuePage() {
@@ -88,7 +88,7 @@ export default function FraudQueuePage() {
                     <div>
                       <strong>{a.farmer?.fullName}</strong>
                       <span className="text-muted" style={{ marginLeft: '0.75rem' }}>{a.farmer?.region}</span>
-                      <span className="text-muted" style={{ marginLeft: '0.75rem' }}>{getCropLabel(a.cropType, lang) || a.cropType}</span>
+                      <span className="text-muted" style={{ marginLeft: '0.75rem' }}>{getCropLabelSafe(a.cropType, lang) || a.cropType}</span>
                       <span style={{ marginLeft: '0.75rem' }}>{a.currencyCode || 'KES'} {a.requestedAmount?.toLocaleString()}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

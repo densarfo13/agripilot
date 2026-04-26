@@ -195,7 +195,7 @@ export default function OrganizationDashboardPage() {
                   <li key={row.crop} style={styles.distRow}
                       data-testid={`org-crop-${row.crop}`}>
                     <div style={styles.distLabel}>
-                      {getCropLabel(row.crop)}
+                      {getCropLabelSafe(row.crop)}
                       <span style={styles.distCount}>{row.farms}</span>
                     </div>
                     <div style={styles.distTrack}>
@@ -415,7 +415,7 @@ export default function OrganizationDashboardPage() {
                     <td style={styles.td}>{f.fullName}</td>
                     <td style={styles.td}>{f.region || '—'}</td>
                     <td style={styles.td}>
-                      {f.primaryCrop ? getCropLabel(f.primaryCrop) : '—'}
+                      {f.primaryCrop ? getCropLabelSafe(f.primaryCrop) : '—'}
                     </td>
                     <td style={styles.td}>
                       {f.score

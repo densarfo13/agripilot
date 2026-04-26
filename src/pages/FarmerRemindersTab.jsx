@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import api, { formatApiError } from '../api/client.js';
 import EmptyState from '../components/EmptyState.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 export default function FarmerRemindersTab() {
@@ -74,7 +74,7 @@ export default function FarmerRemindersTab() {
       setGenForm({ cropType: '', plantingDate: '' });
       loadReminders();
       refresh();
-      setSuccess(`Generated ${res.data.generated} reminders for ${getCropLabel(genForm.cropType, lang) || genForm.cropType}`);
+      setSuccess(`Generated ${res.data.generated} reminders for ${getCropLabelSafe(genForm.cropType, lang) || genForm.cropType}`);
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to generate reminders');

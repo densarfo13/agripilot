@@ -4,7 +4,7 @@ import api from '../api/client.js';
 import { tStorageMethod, tStorageCondition } from '../utils/i18n.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 import EmptyState from '../components/EmptyState.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 const STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse', 'silo', 'traditional', 'cold_storage', 'other'];
@@ -177,12 +177,12 @@ export default function FarmerStorageTab() {
           {/* Proactive alerts for items over storage limit or in poor condition */}
           {dashboard?.items?.filter(i => i.isOverStorageLimit).length > 0 && (
             <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>
-              <strong>Storage limit exceeded:</strong> {dashboard.items.filter(i => i.isOverStorageLimit).map(i => `${getCropLabel(i.cropType, lang) || i.cropType} (${i.daysSinceHarvest}/${i.maxRecommendedDays} days)`).join(', ')}. Consider selling to avoid quality loss.
+              <strong>Storage limit exceeded:</strong> {dashboard.items.filter(i => i.isOverStorageLimit).map(i => `${getCropLabelSafe(i.cropType, lang) || i.cropType} (${i.daysSinceHarvest}/${i.maxRecommendedDays} days)`).join(', ')}. Consider selling to avoid quality loss.
             </div>
           )}
           {dashboard?.items?.filter(i => ['poor', 'deteriorating'].includes(i.storageCondition)).length > 0 && (
             <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
-              <strong>Condition alert:</strong> {dashboard.items.filter(i => ['poor', 'deteriorating'].includes(i.storageCondition)).map(i => `${getCropLabel(i.cropType, lang) || i.cropType} (${tStorageCondition(i.storageCondition)})`).join(', ')}. Check storage and consider selling or improving conditions.
+              <strong>Condition alert:</strong> {dashboard.items.filter(i => ['poor', 'deteriorating'].includes(i.storageCondition)).map(i => `${getCropLabelSafe(i.cropType, lang) || i.cropType} (${tStorageCondition(i.storageCondition)})`).join(', ')}. Check storage and consider selling or improving conditions.
             </div>
           )}
           {(!dashboard || dashboard.totalItems === 0) ? (
@@ -195,7 +195,7 @@ export default function FarmerStorageTab() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                          <strong style={{ fontSize: '1.1rem' }}>{getCropLabel(item.cropType, lang) || item.cropType}</strong>
+                          <strong style={{ fontSize: '1.1rem' }}>{getCropLabelSafe(item.cropType, lang) || item.cropType}</strong>
                           <span style={{ color: CONDITION_COLORS[item.storageCondition], fontWeight: 600, fontSize: '0.85rem', padding: '0.15rem 0.5rem', borderRadius: 4, background: `${CONDITION_COLORS[item.storageCondition]}15`, border: `1px solid ${CONDITION_COLORS[item.storageCondition]}30` }}>
                             {tStorageCondition(item.storageCondition)}
                           </span>
@@ -232,7 +232,7 @@ export default function FarmerStorageTab() {
           {guidance && selectedCrop && (
             <div className="card">
               <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                Storage Guidance: {getCropLabel(guidance.cropType, lang) || guidance.cropType}
+                Storage Guidance: {getCropLabelSafe(guidance.cropType, lang) || guidance.cropType}
                 <button className="btn btn-outline btn-sm" onClick={() => { setGuidance(null); setSelectedCrop(null); }}>Close</button>
               </div>
               <div className="card-body">

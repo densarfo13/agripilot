@@ -38,10 +38,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '../i18n/index.js';
-import {
-  CROPS, ALL_CROPS_WITH_OTHER, OTHER_CROP,
-  getCropLabel, normalizeCropCode, parseCropValue, buildOtherCropValue,
-} from '../utils/crops.js';
+import { CROPS, ALL_CROPS_WITH_OTHER, OTHER_CROP, getCropLabel, normalizeCropCode, parseCropValue, buildOtherCropValue, getCropLabelSafe } from '../utils/crops.js';
 import { STAGES, STAGE_KEYS, resolveStage, getStagesForCrop } from '../utils/cropStages.js';
 import {
   COUNTRIES, getCountryLabel, getStatesForCountry, hasStatesForCountry,
@@ -463,7 +460,7 @@ export default function FarmForm({
             <option value="">{t('farm.fields.cropPlaceholder') || 'Select crop'}</option>
             {cropOptions.map((c) => (
               <option key={c.code} value={c.code}>
-                {getCropLabel(c.code)}
+                {getCropLabelSafe(c.code)}
               </option>
             ))}
           </select>

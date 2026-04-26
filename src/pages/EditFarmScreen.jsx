@@ -102,9 +102,9 @@ export default function EditFarmScreen() {
   // list. These two pieces of local state stay out of the form + patch
   // because they're UI, not data.
   const initialCrop = (original.cropType || original.crop || '').toString().toLowerCase();
-  const [cropQuery, setCropQuery] = useState(() => getCropLabel(initialCrop, lang));
+  const [cropQuery, setCropQuery] = useState(() => getCropLabelSafe(initialCrop, lang));
   const [cropOther, setCropOther] = useState(
-    () => (initialCrop && !getCropLabel(initialCrop, lang) ? initialCrop : ''),
+    () => (initialCrop && !getCropLabelSafe(initialCrop, lang) ? initialCrop : ''),
   );
   // Brief "Farm updated — your guidance has been refreshed" flash
   // shown after a successful save, before navigating back to Home.
@@ -221,7 +221,7 @@ export default function EditFarmScreen() {
   function pickCrop(code) {
     setForm((prev) => ({ ...prev, cropType: code }));
     if (code !== CROP_OTHER) {
-      setCropQuery(getCropLabel(code, lang));
+      setCropQuery(getCropLabelSafe(code, lang));
       setCropOther('');
     }
     if (fieldErrors.cropType) {
@@ -413,14 +413,14 @@ export default function EditFarmScreen() {
                 onClick={() => pickCrop(c.code)}
                 style={{
                   ...S.chip,
-                  ...(form.cropType === c.code || (c.code === CROP_OTHER && form.cropType && !getCropLabel(form.cropType))
+                  ...(form.cropType === c.code || (c.code === CROP_OTHER && form.cropType && !getCropLabelSafe(form.cropType))
                     ? S.chipActive : null),
                 }}
                 data-testid={`edit-farm-crop-${c.code}`}
               >
                 {/* Render the localised label — auto-updates when
                     the user flips the language toggle. */}
-                {getCropLabel(c.code, lang)}
+                {getCropLabelSafe(c.code, lang)}
               </button>
             ))}
           </div>

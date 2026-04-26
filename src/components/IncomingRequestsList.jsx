@@ -130,7 +130,7 @@ export default function IncomingRequestsList({
             <img src={getCropImage(row.crop)} alt="" style={styles.thumb} />
             <div style={styles.rowMain}>
               <div style={styles.rowTitle}>
-                {getCropLabel(row.crop, lang)} · {row.quantity} kg
+                {getCropLabelSafe(row.crop, lang)} · {row.quantity} kg
                 {row.isBulk && (
                   <span style={styles.bulkPill}
                         data-testid={`bulk-pill-${row.request.id}`}>

@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
-import { getCropLabel, getCropIcon } from '../utils/crops.js';
+import { getCropLabel, getCropIcon, getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
@@ -221,13 +221,13 @@ export default function MyFarmPage() {
               <div style={S.tile}>
                 <CropImage
                   cropKey={farm.cropType || farm.crop}
-                  alt={getCropLabel(farm.cropType || farm.crop)}
+                  alt={getCropLabelSafe(farm.cropType || farm.crop)}
                   size={56}
                   circular
                   style={{ marginBottom: '0.5rem' }}
                 />
                 <span style={S.tileLabel}>{t('myFarm.crop')}</span>
-                <span style={S.tileValue}>{getCropLabel(farm.cropType || farm.crop)}</span>
+                <span style={S.tileValue}>{getCropLabelSafe(farm.cropType || farm.crop)}</span>
               </div>
             )}
 

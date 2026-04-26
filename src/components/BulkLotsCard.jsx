@@ -159,7 +159,7 @@ function LotRow({ lot, expanded, onToggleExpand, onRequest, busy,
         <img src={getCropImage(lot.crop)} alt="" style={styles.thumb} />
         <div style={styles.main}>
           <div style={styles.titleLine}>
-            <span style={styles.cropLabel}>{getCropLabel(lot.crop, lang)}</span>
+            <span style={styles.cropLabel}>{getCropLabelSafe(lot.crop, lang)}</span>
             <span style={styles.qty}>{lot.totalQuantity} kg</span>
           </div>
           <div style={styles.meta}>

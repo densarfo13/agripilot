@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../api/client.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 
 const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
@@ -463,7 +463,7 @@ function DemandIntelligence() {
                 <tbody>
                   {cropDemand.map(d => (
                     <tr key={d.cropType}>
-                      <td style={{ fontWeight: 500 }}>{getCropLabel(d.cropType, lang) || d.cropType}</td>
+                      <td style={{ fontWeight: 500 }}>{getCropLabelSafe(d.cropType, lang) || d.cropType}</td>
                       <td>{d.totalInterests}</td>
                       <td>{d.totalQuantityKg?.toLocaleString() || 0}</td>
                       <td>{d.averagePriceExpectation ? d.averagePriceExpectation.toFixed(2) : '-'}</td>

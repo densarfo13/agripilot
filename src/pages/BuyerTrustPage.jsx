@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getBuyerTrustFarms } from '../lib/api.js';
 import { useTranslation } from '../i18n/index.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 
 const FILTERS = [
   { key: '', label: 'buyer.allFarms' },
@@ -117,7 +117,7 @@ export default function BuyerTrustPage() {
             <div style={S.cardHeader}>
               <div style={S.cardMain}>
                 <div style={S.farmName}>{farm.farmName}</div>
-                <div style={S.cropLine}>{getCropLabel(farm.crop, lang) || farm.crop}{farm.location ? ` \u00B7 ${farm.location}` : ''}</div>
+                <div style={S.cropLine}>{getCropLabelSafe(farm.crop, lang) || farm.crop}{farm.location ? ` \u00B7 ${farm.location}` : ''}</div>
               </div>
               <div style={{ ...S.statusBadge, background: sc.bg, color: sc.text }}>
                 {farm.buyerLabel}

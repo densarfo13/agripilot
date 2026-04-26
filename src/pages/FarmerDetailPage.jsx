@@ -9,7 +9,7 @@ import { ADMIN_ROLES, CREATOR_ROLES } from '../utils/roles.js';
 import { getCountryName } from '../utils/countries.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { formatLandSize } from '../utils/landSize.js';
 
 const STATUS_COLORS = {
@@ -145,7 +145,7 @@ export default function FarmerDetailPage() {
                 <tbody>
                   {farmer.applications?.map(app => (
                     <tr key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={{ cursor: 'pointer' }}>
-                      <td>{getCropLabel(app.cropType)}</td>
+                      <td>{getCropLabelSafe(app.cropType)}</td>
                       <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                       <td><StatusBadge value={app.status} /></td>
                       <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>
@@ -1159,7 +1159,7 @@ function PerformanceProfileSection({ farmerId }) {
           </div>
           <div style={metricBox}>
             <div style={metricLabel}>Crops</div>
-            <div style={metricValue}>{summary.cropTypes.map(c => getCropLabel(c)).join(', ') || 'None'}</div>
+            <div style={metricValue}>{summary.cropTypes.map(c => getCropLabelSafe(c)).join(', ') || 'None'}</div>
           </div>
         </div>
 
@@ -1238,7 +1238,7 @@ function PerformanceProfileSection({ farmerId }) {
                   <tbody>
                     {yieldHistory.map((y, i) => (
                       <tr key={i}>
-                        <td style={tdStyle}>{getCropLabel(y.cropType)}</td>
+                        <td style={tdStyle}>{getCropLabelSafe(y.cropType)}</td>
                         <td style={tdStyle}>{new Date(y.plantingDate).toLocaleDateString()}</td>
                         <td style={tdStyle}>{y.yieldPerAcre}</td>
                         <td style={tdStyle}>{y.totalHarvestKg}</td>
@@ -1263,7 +1263,7 @@ function PerformanceProfileSection({ farmerId }) {
                       const clsColor = CLASSIFICATION_COLORS[cls] || { bg: '#1E293B', color: '#A1A1AA' };
                       return (
                         <tr key={s.id}>
-                          <td style={tdStyle}>{getCropLabel(s.cropType)}</td>
+                          <td style={tdStyle}>{getCropLabelSafe(s.cropType)}</td>
                           <td style={tdStyle}>{new Date(s.plantingDate).toLocaleDateString()}</td>
                           <td style={tdStyle}><StatusBadge value={s.status} /></td>
                           <td style={tdStyle}>{s.progressScore?.score ?? '-'}</td>
@@ -1634,7 +1634,7 @@ function HistoricalPerformanceSection({ farmerId, userRole }) {
                             ? new Date(s.plantingDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
                             : `Season ${i + 1}`}
                         </td>
-                        <td style={tdStyle}>{getCropLabel(s.cropType)}</td>
+                        <td style={tdStyle}>{getCropLabelSafe(s.cropType)}</td>
                         <td style={tdStyle}>
                           <span style={{
                             display: 'inline-block', padding: '1px 6px', borderRadius: 10,

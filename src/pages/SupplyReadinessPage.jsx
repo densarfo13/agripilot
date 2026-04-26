@@ -4,7 +4,7 @@ import {
   getBuyers, createBuyer, createBuyerLink, updateBuyerLink,
   exportBuyerLinksCSV,
 } from '../lib/api.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 const LINK_STATUSES = ['buyer_linked', 'buyer_contacted', 'in_discussion', 'matched', 'closed', 'cancelled'];
@@ -219,7 +219,7 @@ export default function SupplyReadinessPage() {
                         {r.farmer?.location || ''}{r.farmer?.country ? `, ${r.farmer.country}` : ''}
                       </div>
                     </td>
-                    <td style={S.td}>{getCropLabel(r.crop, lang) || r.crop}</td>
+                    <td style={S.td}>{getCropLabelSafe(r.crop, lang) || r.crop}</td>
                     <td style={S.td}>{r.estimatedQuantity != null ? `${r.estimatedQuantity} ${r.quantityUnit}` : '-'}</td>
                     <td style={S.td}>{r.expectedHarvestDate ? new Date(r.expectedHarvestDate).toLocaleDateString() : '-'}</td>
                     <td style={S.td}>{r.priceExpectation != null ? `${r.priceExpectation} ${r.currency}` : '-'}</td>
@@ -270,7 +270,7 @@ export default function SupplyReadinessPage() {
           <div style={S.modal} onClick={(e) => e.stopPropagation()}>
             <h2 style={S.modalTitle}>Link Buyer</h2>
             <div style={S.modalInfo}>
-              <strong>{linkTarget.farmer?.name}</strong> — {getCropLabel(linkTarget.crop, lang) || linkTarget.crop}
+              <strong>{linkTarget.farmer?.name}</strong> — {getCropLabelSafe(linkTarget.crop, lang) || linkTarget.crop}
               {linkTarget.estimatedQuantity != null && ` — ${linkTarget.estimatedQuantity} ${linkTarget.quantityUnit}`}
             </div>
 

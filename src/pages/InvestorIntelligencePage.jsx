@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { formatLandSize } from '../utils/landSize.js';
-import { getCropLabel } from '../utils/crops.js';
+import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 const CLASSIFICATION_COLORS = {
@@ -168,7 +168,7 @@ export default function InvestorIntelligencePage() {
                 <tbody>
                   {yieldHistory.map((y, i) => (
                     <tr key={i}>
-                      <td>{getCropLabel(y.cropType, lang) || y.cropType}</td>
+                      <td>{getCropLabelSafe(y.cropType, lang) || y.cropType}</td>
                       <td>{new Date(y.plantingDate).toLocaleDateString()}</td>
                       <td>{y.landSizeValue ? formatLandSize(y.landSizeValue, y.landSizeUnit) : `${y.farmSizeAcres} acres`}</td>
                       <td style={{ fontWeight: 600 }}>{y.yieldPerAcre}</td>
@@ -196,7 +196,7 @@ export default function InvestorIntelligencePage() {
                     const clsInfo = CLASSIFICATION_COLORS[cls];
                     return (
                       <tr key={i}>
-                        <td>{getCropLabel(s.cropType, lang) || s.cropType}</td>
+                        <td>{getCropLabelSafe(s.cropType, lang) || s.cropType}</td>
                         <td>{new Date(s.plantingDate).toLocaleDateString()}</td>
                         <td>{s.landSizeValue ? formatLandSize(s.landSizeValue, s.landSizeUnit) : s.farmSizeAcres}</td>
                         <td>

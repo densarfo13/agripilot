@@ -114,7 +114,7 @@ export default function CropRecommendationScreen({
 
   const selected = state.selectedCrop;
   const selectedLabel = selected
-    ? getCropLabel(selected, state.setup?.language)
+    ? getCropLabelSafe(selected, state.setup?.language)
     : null;
 
   return (
@@ -139,7 +139,7 @@ export default function CropRecommendationScreen({
       <div style={{ display: 'grid', gap: 10, marginTop: 8 }}>
         {crops.map((c) => {
           const id = c.crop || c.id;
-          const label = c.label || getCropLabel(id, state.setup?.language);
+          const label = c.label || getCropLabelSafe(id, state.setup?.language);
           const active = selected === id;
           const conf = c.confidence && confLabels[c.confidence] ? c.confidence : null;
           const badge = conf ? { label: confLabels[conf], color: confColors[conf] } : null;
