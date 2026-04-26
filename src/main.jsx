@@ -16,6 +16,15 @@ import './i18n/i18next.js';
 // Initialize offline sync coordinator (auto-flushes on reconnect + visibility)
 initSyncCoordinator();
 
+// Dev-only DOM text audit — runs ONCE on first idle, scans for
+// likely hardcoded English literals, reports a single grouped block
+// to the console. Vite tree-shakes the dynamic import out of the
+// production bundle because `import.meta.env.DEV` is statically
+// false there, so this code never ships to farmers.
+if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+  import('./i18n/devTextAudit.js').catch(() => { /* never block boot */ });
+}
+
 // Register the service worker with new-version detection. The helper
 // listens for `updatefound` and broadcasts `farroway:sw_activated`;
 // any UI surface that wants to show "Reload to update" can listen for
