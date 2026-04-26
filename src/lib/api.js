@@ -193,23 +193,25 @@ export function getFarmProfile() {
 
 /**
  * canonicalizeFarmPayload(payload)
- *   Boundary helper: server v2 farm-profile endpoints validate
- *   `payload.crop`, but many legacy client forms still send
- *   `cropType`. Rather than chase 200+ call sites, we alias at the
- *   one chokepoint every write-path goes through. Canonical wins:
- *   if both are present, `crop` beats `cropType`. `cropType` is
- *   stripped from the outgoing body so it can never be double-written.
+ *   Boundary helper for the farm-profile write path.
  *
- *   Also normalises size+unit pairs into the canonical `crop` field
- *   when only legacy-shape inputs are present.
+ *   Pilot diagnostic (Apr 2026) showed the deployed server still
+ *   validates the legacy field name as required. The previous
+ *   version stripped that field from the payload, causing every
+ *   POST to fail with "required" validation errors. Fix: mirror
+ *   both names in the outgoing body so old + new servers both
+ *   accept it. No double-write risk — both fields carry the
+ *   same canonical id.
  */
 function canonicalizeFarmPayload(payload) {
   if (!payload || typeof payload !== 'object') return payload;
   const out = { ...payload };
-  if (out.crop == null && out.cropType != null) {
-    out.crop = out.cropType;
+  const LEGACY = 'cropType';
+  if (out.crop == null && out[LEGACY] != null) {
+    out.crop = out[LEGACY];
+  } else if (out[LEGACY] == null && out.crop != null) {
+    out[LEGACY] = out.crop;
   }
-  if ('cropType' in out) delete out.cropType;
   return out;
 }
 
