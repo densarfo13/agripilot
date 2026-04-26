@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { getFullDashboard, getNewFarmersByDay } from '../services/activityAggregator.js';
+import InvestorMetricsCard from '../components/admin/InvestorMetricsCard.jsx';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
@@ -457,6 +458,21 @@ export default function AdminAnalyticsPage() {
           )}
         </div>
       )}
+
+      {/* ═══ Investor metrics (additive — uses ONLY existing
+              endpoints + derived counts; never replaces the cards
+              above). Card hosts country / crop / risk / ready-to-sell
+              filters scoped to itself. */}
+      <InvestorMetricsCard
+        totalFarmers={metrics.totalFarmers}
+        activeFarmers={metrics.activeFarmersToday || metrics.activeFarmersWeek}
+        inactiveFarmers={Math.max(0,
+          (metrics.totalFarmers || 0) - (metrics.activeFarmersWeek || 0))}
+        cropBreakdown={cropBreakdown}
+        highRiskCount={(risk.noPestCheck || 0) + (risk.inactive || 0)}
+        averageProgressScore={null}
+        predictedYieldTotal={null}
+      />
 
       {/* ═══ G. Recent Activity Feed ══════════════════════ */}
       <div className="card" style={{ marginTop: '1rem' }}>

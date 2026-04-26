@@ -1,0 +1,157 @@
+/**
+ * progressScore.js — investor-grade per-farmer progress score.
+ *
+ * Distinct from `src/lib/farmScore.js` which scores PROFILE
+ * COMPLETENESS (did the farmer fill out the required fields?).
+ * This module scores ONGOING ACTIVITY — how is the farmer
+ * actually doing once their farm is set up?
+ *
+ *   computeProgressScore({
+ *     taskCompletionRate,     // 0..1 — % of tasks done in last 14d
+ *     cropHealthScore,        // 0..1 — derived from intelligence engines
+ *     consistencyScore,       // 0..1 — % of days the farmer logged something
+ *     weatherAdaptationScore, // 0..1 — did they adapt tasks when alerts fired
+ *   })  →  {
+ *     score:      0..100,
+ *     label:      'Low' | 'Medium' | 'High' | 'Excellent',
+ *     reasons:    [{ key, weightPct, contributionPts, detail }],
+ *     dataMissing: string[],   // names of inputs that fell back to default
+ *   }
+ *
+ * Weights (sum = 100%):
+ *   taskCompletion         40%
+ *   cropHealth             30%
+ *   consistency            20%
+ *   weatherAdaptation      10%
+ *
+ * Label thresholds:
+ *   < 40   Low
+ *   < 60   Medium
+ *   < 80   High
+ *   ≥ 80   Excellent
+ *
+ * Safety contract
+ *   • Pure function. Never throws. Never reads localStorage / fetch.
+ *   • Missing input → treated as 0 AND added to `dataMissing` so the
+ *     caller can render a "data incomplete" badge.
+ *   • Negative or out-of-range input → clamped to [0, 1].
+ *   • All numeric outputs rounded to whole points so the UI never
+ *     shows "73.4242" — the score is a display number, not a metric.
+ */
+
+const WEIGHTS = Object.freeze({
+  taskCompletion:    0.40,
+  cropHealth:        0.30,
+  consistency:       0.20,
+  weatherAdaptation: 0.10,
+});
+
+const REASON_KEYS = Object.freeze({
+  taskCompletion:    'progressScore.reason.taskCompletion',
+  cropHealth:        'progressScore.reason.cropHealth',
+  consistency:       'progressScore.reason.consistency',
+  weatherAdaptation: 'progressScore.reason.weatherAdaptation',
+});
+
+const REASON_DETAILS = Object.freeze({
+  taskCompletion: {
+    high:    'Task completion is strong this period.',
+    medium:  'Task completion is moderate — finish a few more this week.',
+    low:     'Many tasks were skipped; pick the highest-priority one to act on.',
+    missing: 'No task data available yet.',
+  },
+  cropHealth: {
+    high:    'Crop health signals look healthy.',
+    medium:  'Crop health is mixed — review the latest alerts.',
+    low:     'Crop health flags need attention.',
+    missing: 'No crop-health signal yet (early in the cycle?).',
+  },
+  consistency: {
+    high:    'Showing up consistently — almost daily activity.',
+    medium:  'Logging activity on most days.',
+    low:     'Few activity entries; consider a daily check-in.',
+    missing: 'No activity logs to score consistency.',
+  },
+  weatherAdaptation: {
+    high:    'Adapted tasks well to weather alerts.',
+    medium:  'Some weather alerts were acted on; others missed.',
+    low:     'Weather alerts mostly went unaddressed.',
+    missing: 'No weather alerts triggered yet.',
+  },
+});
+
+function clamp01(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;       // null = missing, not zero
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
+}
+
+function bandFor(value01) {
+  if (value01 == null) return 'missing';
+  if (value01 >= 0.7)  return 'high';
+  if (value01 >= 0.4)  return 'medium';
+  return 'low';
+}
+
+function labelForScore(score) {
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'High';
+  if (score >= 40) return 'Medium';
+  return 'Low';
+}
+
+/**
+ * Pure compute. See header for input/output contract.
+ */
+export function computeProgressScore(input = {}) {
+  const dataMissing = [];
+  const reasons = [];
+
+  // Normalise + flag-missing each weighted input.
+  const norm = {};
+  for (const key of Object.keys(WEIGHTS)) {
+    const camel = key === 'taskCompletion' ? 'taskCompletionRate'
+                : key === 'cropHealth' ? 'cropHealthScore'
+                : key === 'consistency' ? 'consistencyScore'
+                : 'weatherAdaptationScore';
+    const raw = input[camel];
+    const v = clamp01(raw);
+    if (v == null) {
+      norm[key] = 0;
+      dataMissing.push(camel);
+    } else {
+      norm[key] = v;
+    }
+  }
+
+  let score = 0;
+  for (const [key, weight] of Object.entries(WEIGHTS)) {
+    const v = norm[key];
+    const contribution = v * weight * 100;          // 0..weight*100 pts
+    score += contribution;
+    const camel = key === 'taskCompletion' ? 'taskCompletionRate'
+                : key === 'cropHealth' ? 'cropHealthScore'
+                : key === 'consistency' ? 'consistencyScore'
+                : 'weatherAdaptationScore';
+    const isMissing = dataMissing.includes(camel);
+    const band = isMissing ? 'missing' : bandFor(v);
+    reasons.push(Object.freeze({
+      key:             REASON_KEYS[key],
+      weightPct:       Math.round(weight * 100),
+      contributionPts: Math.round(contribution),
+      band,
+      detail:          REASON_DETAILS[key][band],
+    }));
+  }
+
+  return Object.freeze({
+    score:       Math.round(score),
+    label:       labelForScore(Math.round(score)),
+    reasons:     Object.freeze(reasons),
+    dataMissing: Object.freeze(dataMissing),
+  });
+}
+
+export const _internal = Object.freeze({ WEIGHTS, REASON_KEYS, labelForScore, bandFor });

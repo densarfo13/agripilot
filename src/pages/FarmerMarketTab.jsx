@@ -6,6 +6,7 @@ import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import SellReadinessInput from '../components/SellReadinessInput.jsx';
 
 export default function FarmerMarketTab() {
   const { lang } = useTranslation();
@@ -96,6 +97,17 @@ export default function FarmerMarketTab() {
       {/* Advisory disclaimer */}
       <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#F59E0B' }}>
         <strong>Advisory only:</strong> Prices shown are estimated ranges for general guidance. They are not live market prices. Always verify current prices with local buyers before making selling decisions.
+      </div>
+
+      {/* Ready to sell — buyer-matching signal. Mounts the existing
+          SellReadinessInput component (was orphan in the codebase
+          before this sprint) so the farmer can flip a yes/no flag
+          + capture quantity / harvest date / price expectation. The
+          backend at POST /api/v2/supply-readiness/mine handles
+          persistence + admin discovery. We do NOT build a new
+          marketplace pipeline. */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <SellReadinessInput />
       </div>
 
       {/* Market prices */}
