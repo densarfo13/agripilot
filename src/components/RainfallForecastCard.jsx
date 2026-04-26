@@ -14,12 +14,23 @@ import { useState } from 'react';
 import { useForecast } from '../context/ForecastContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function shortDayLabel(dateStr) {
+// Locale-aware short day name. Replaces the previous hardcoded
+// English `['Sun', 'Mon', ...]` array which leaked into French /
+// Hindi / Twi / Hausa screens (visible in pilot screenshots — the
+// rainfall card showed "AUJ. MON TUESDAY WEDNESDAY THU FRI SAT"
+// instead of consistent localized abbreviations).
+const _BCP47_BY_LANG = Object.freeze({
+  en: 'en-US', fr: 'fr-FR', sw: 'sw-KE', ha: 'ha-NG', tw: 'ak', hi: 'hi-IN',
+});
+function shortDayLabel(dateStr, lang) {
   try {
     const d = new Date(dateStr + 'T00:00:00');
-    return DAY_LABELS[d.getDay()] || '?';
+    if (Number.isNaN(d.getTime())) return '?';
+    const locale = _BCP47_BY_LANG[lang] || _BCP47_BY_LANG.en;
+    // Intl gives proper locale-aware short weekday names for every
+    // supported language. Fall through to en-US on any platform-
+    // specific Intl miss.
+    return d.toLocaleDateString(locale, { weekday: 'short' });
   } catch {
     return '?';
   }
@@ -42,7 +53,7 @@ function rainBarColor(rainMm, rainProb) {
 
 export default function RainfallForecastCard() {
   const { rainfall, forecast, forecastLoading } = useForecast();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   // Don't render if no data yet
@@ -90,7 +101,7 @@ export default function RainfallForecastCard() {
                 <div style={{ ...S.bar, height: `${height}px`, background: barBg }} />
               </div>
               <span style={{ ...S.dayLabel, fontWeight: i === 0 ? 700 : 400 }}>
-                {i === 0 ? t('rainfall.today') : shortDayLabel(d.date)}
+                {i === 0 ? t('rainfall.today') : shortDayLabel(d.date, lang)}
               </span>
             </div>
           );
@@ -110,7 +121,7 @@ export default function RainfallForecastCard() {
         <div style={S.detailList}>
           {dailyRain.map((d) => (
             <div key={d.date} style={S.detailRow}>
-              <span style={S.detailDay}>{shortDayLabel(d.date)} {d.date.slice(5)}</span>
+              <span style={S.detailDay}>{shortDayLabel(d.date, lang)} {d.date.slice(5)}</span>
               <span style={S.detailRain}>
                 {d.rainMm >= 1 ? `${Math.round(d.rainMm)}mm` : '-'}
               </span>

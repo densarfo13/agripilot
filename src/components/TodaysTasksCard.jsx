@@ -21,11 +21,16 @@ import {
 // Strict no-leak alias — see useStrictTranslation.js.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { getLocalizedTaskTitle, getLocalizedTaskDescription } from '../utils/taskTranslations.js';
 
+// Style only — labels routed through tSafe('priority.*') below so the
+// chip text honours the active language. Hardcoded English labels
+// here previously leaked into French / Hindi / Twi / Hausa screens
+// (visible in pilot screenshots).
 const TONE_BY_PRIORITY = {
-  high:   { border: 'rgba(252,165,165,0.35)', fg: '#FCA5A5', label: 'High' },
-  medium: { border: 'rgba(253,224,71,0.35)',  fg: '#FDE68A', label: 'Medium' },
-  low:    { border: 'rgba(134,239,172,0.25)', fg: '#86EFAC', label: 'Low' },
+  high:   { border: 'rgba(252,165,165,0.35)', fg: '#FCA5A5' },
+  medium: { border: 'rgba(253,224,71,0.35)',  fg: '#FDE68A' },
+  low:    { border: 'rgba(134,239,172,0.25)', fg: '#86EFAC' },
 };
 
 function normaliseFarm(farm) {
@@ -41,7 +46,7 @@ function normaliseFarm(farm) {
 }
 
 export default function TodaysTasksCard({ farm, weather = null } = {}) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const mapped = useMemo(() => normaliseFarm(farm), [farm]);
   const [plan, setPlan] = useState(null);
 
@@ -89,7 +94,9 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
 
       <div style={S.stack}>
         {plan.tasks.map((task) => {
-          const tone = TONE_BY_PRIORITY[task.priority] || TONE_BY_PRIORITY.medium;
+          const priority = String(task.priority || 'low').toLowerCase();
+          const tone = TONE_BY_PRIORITY[priority] || TONE_BY_PRIORITY.medium;
+          const priorityLabel = tSafe('priority.' + priority, '');
           const done = task.status === 'complete';
           const skipped = task.status === 'skipped';
           return (
@@ -104,18 +111,30 @@ export default function TodaysTasksCard({ farm, weather = null } = {}) {
             >
               <div style={S.taskHeader}>
                 <span style={{ ...S.priorityPill, color: tone.fg, borderColor: tone.border }}>
-                  {tone.label}
+                  {priorityLabel}
                 </span>
                 {done && <span style={S.status}>{tSafe('farmer.dailyTasks.done', '')}</span>}
                 {skipped && <span style={S.status}>{tSafe('farmer.dailyTasks.skipped', '')}</span>}
               </div>
               <div style={{ ...S.taskTitle, textDecoration: done ? 'line-through' : 'none' }}>
-                {task.title}
+                {/* Route through the existing localizer (covers ~50
+                    server task IDs in en/fr/sw/ha/tw). Falls back
+                    to the original English title for unmapped IDs —
+                    accepted partial leak until the full task-template
+                    map is filled (translator content work). */}
+                {getLocalizedTaskTitle(task.templateId || task.id, task.title, lang)}
               </div>
               {task.description && (
-                <div style={S.taskBody}>{task.description}</div>
+                <div style={S.taskBody}>
+                  {getLocalizedTaskDescription(task.templateId || task.id, task.description, lang)}
+                </div>
               )}
-              {task.why && (
+              {task.why && lang === 'en' && (
+                /* `why` text only renders for English UI. There is no
+                   localizer for the why field today, so showing the
+                   raw English in non-English UI would be a leak.
+                   Hidden in non-en UI per strict no-leak rule until
+                   a why-translation map ships. */
                 <div style={S.why}>
                   <span style={S.whyLabel}>
                     {tSafe('farmer.dailyTasks.why', '')}:
