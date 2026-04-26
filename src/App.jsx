@@ -127,6 +127,7 @@ const AdminOpsPage = lazy(() => import('./pages/AdminOpsPage.jsx'));
 const SupplyReadinessPage = lazy(() => import('./pages/SupplyReadinessPage.jsx'));
 const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx'));
 const BuyerTrustPage = lazy(() => import('./pages/BuyerTrustPage.jsx'));
+const BuyerView = lazy(() => import('./pages/BuyerView.jsx'));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage.jsx'));
 const AdminImportFarmersPage = lazy(() => import('./pages/AdminImportFarmersPage.jsx'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
@@ -432,6 +433,10 @@ export default function App() {
             <Route path="admin/supply" element={<RoleRoute roles={ADMIN_ROLES}><SupplyReadinessPage /></RoleRoute>} />
             <Route path="admin/buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerManagementPage /></RoleRoute>} />
             <Route path="admin/buyer-trust" element={<RoleRoute roles={ADMIN_ROLES}><BuyerTrustPage /></RoleRoute>} />
+            {/* Read-only buyer / market-access view of farms ready
+                to sell. Mirrors `/admin/supply` but stripped down to
+                the discovery surface (no buyer-link workflow). */}
+            <Route path="buyers" element={<RoleRoute roles={ADMIN_ROLES}><BuyerView /></RoleRoute>} />
             <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
             <Route path="admin/ngo-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><AdminDashboard /></RoleRoute>} />
             <Route path="admin/ngo-program" element={<RoleRoute roles={ADMIN_ROLES}><NgoDashboardPage /></RoleRoute>} />

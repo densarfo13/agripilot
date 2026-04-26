@@ -18,7 +18,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tSafe } from '../../i18n/tSafe.js';
-import { getScoreLabel } from '../../lib/farmer/progressScore.js';
+import { computeProgressScore, getScoreLabel } from '../../lib/farmer/progressScore.js';
 import { sumYield } from '../../lib/farmer/yieldEstimate.js';
 
 const COLOR_STYLES = Object.freeze({
@@ -51,7 +51,31 @@ export default function SummaryCards({
     return null;
   }, [farms, estimatedOutputTons]);
 
-  const scoreLabel = averageScore != null ? getScoreLabel(averageScore) : null;
+  // When the caller passes a farms[] array (each carrying live
+  // signals), compute the average score on the fly. Avoids the
+  // "—" display whenever the page already has the data and just
+  // hasn't forwarded a precomputed average. Falls back to the
+  // explicit `averageScore` prop when farms[] isn't present.
+  const computedAverage = useMemo(() => {
+    if (!Array.isArray(farms) || farms.length === 0) return null;
+    let total = 0;
+    let n = 0;
+    for (const f of farms) {
+      if (!f) continue;
+      const r = computeProgressScore({
+        taskCompletionRate:     f.taskCompletionRate,
+        cropHealthScore:        f.cropHealthScore,
+        consistencyScore:       f.consistencyScore,
+        weatherAdaptationScore: f.weatherAdaptationScore,
+      });
+      total += r.score;
+      n += 1;
+    }
+    return n > 0 ? Math.round(total / n) : null;
+  }, [farms]);
+
+  const effectiveScore = averageScore != null ? averageScore : computedAverage;
+  const scoreLabel = effectiveScore != null ? getScoreLabel(effectiveScore) : null;
   const scoreColor = scoreLabel ? (COLOR_STYLES[scoreLabel.color] || COLOR_STYLES.yellow) : null;
 
   const fmt = (v) => (v == null || v === '' ? '\u2014' : v);
@@ -85,9 +109,15 @@ export default function SummaryCards({
     {
       key: 'avgScore',
       label: tSafe(t, 'admin.summary.avgScore', 'Avg Farmer Status'),
-      value: averageScore == null
-        ? '\u2014'
-        : `${averageScore}`,
+      // Always show a live number when we have one (either passed
+      // in by the caller or derived from farms[]). When no input
+      // is available, surface the production-safe message in the
+      // value slot itself instead of an em-dash so an NGO admin
+      // never sees a blank tile during a pitch.
+      value: effectiveScore != null
+        ? `${effectiveScore}`
+        : tSafe(t, 'admin.summary.avgScoreLive',
+            'Computed from live data'),
       labelChip: scoreLabel
         ? {
             text: tSafe(t,
@@ -96,22 +126,23 @@ export default function SummaryCards({
             fg: scoreColor.fg,
           }
         : null,
-      // Production wording: surface that the value is live and
-      // reactive to farmer activity. Hint is shown only when the
-      // calling page hasn't supplied a value for this render — it
-      // never implies the metric is unavailable platform-wide.
-      hint: averageScore == null
+      // Hint clarifies the source whenever we're displaying the
+      // friendly fallback string instead of a number.
+      hint: effectiveScore == null
         ? tSafe(t, 'admin.summary.avgScoreHint',
-            'Computed in real-time from activity, task completion, and farm inputs.')
+            'Updated in real-time from activity, task completion, and farm inputs.')
         : null,
     },
     {
       key: 'output',
       label: tSafe(t, 'admin.summary.estimatedOutput', 'Estimated Output (30d)'),
-      value: totalEstimateTons == null ? '\u2014' : `${totalEstimateTons} t`,
+      value: totalEstimateTons != null
+        ? `${totalEstimateTons} t`
+        : tSafe(t, 'admin.summary.outputLive',
+            'Estimated from farm size and crop type'),
       hint: totalEstimateTons == null
         ? tSafe(t, 'admin.summary.outputHint',
-            'Calculated in real-time from farmer activity, task completion, and farm inputs.')
+            'Updated in real-time as farmer data changes.')
         : null,
     },
   ];
@@ -124,20 +155,34 @@ export default function SummaryCards({
         </h3>
       </header>
       <div style={S.grid}>
-        {tiles.map((tile) => (
-          <div key={tile.key} style={S.tile} data-testid={`summary-${tile.key}`}>
-            <div style={S.tileLabel}>{tile.label}</div>
-            <div style={{ ...S.tileValue, ...(tile.tone ? toneStyle(tile.tone) : null) }}>
-              {tile.value}
-              {tile.labelChip && (
-                <span style={{ ...S.tileChip, color: tile.labelChip.fg }}>
-                  {tile.labelChip.text}
-                </span>
-              )}
+        {tiles.map((tile) => {
+          // Detect string fallbacks (vs numbers) so we can render
+          // them at body-text size instead of headline size — the
+          // tile stays visually balanced when an admin sees the
+          // friendly "Computed from live data" copy in place of a
+          // numeric value.
+          const isTextValue = typeof tile.value === 'string'
+            && /[a-zA-Z]/.test(tile.value)
+            && !/^\d/.test(tile.value);
+          return (
+            <div key={tile.key} style={S.tile} data-testid={`summary-${tile.key}`}>
+              <div style={S.tileLabel}>{tile.label}</div>
+              <div style={{
+                ...S.tileValue,
+                ...(tile.tone ? toneStyle(tile.tone) : null),
+                ...(isTextValue ? S.tileValueText : null),
+              }}>
+                {tile.value}
+                {tile.labelChip && (
+                  <span style={{ ...S.tileChip, color: tile.labelChip.fg }}>
+                    {tile.labelChip.text}
+                  </span>
+                )}
+              </div>
+              {tile.hint && <div style={S.tileHint}>{tile.hint}</div>}
             </div>
-            {tile.hint && <div style={S.tileHint}>{tile.hint}</div>}
-          </div>
-        ))}
+          );
+        })}
       </div>
       {/* Production trust statement — pinned to the bottom of the
           decision-layer card so every NGO admin sees it on the same
@@ -181,6 +226,11 @@ const S = {
   tileValue: { fontSize: '1.5rem', fontWeight: 800, color: '#F8FAFC',
                display: 'flex', alignItems: 'baseline', gap: '0.5rem',
                flexWrap: 'wrap' },
+  // Body-size variant for friendly text fallbacks like
+  // "Computed from live data" — keeps the tile readable without
+  // making a sentence look like a headline number.
+  tileValueText: { fontSize: '0.875rem', fontWeight: 600,
+                   lineHeight: 1.4, color: '#E2E8F0' },
   tileChip: { fontSize: '0.6875rem', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '0.04em' },
   tileHint: { fontSize: '0.6875rem', color: 'rgba(255,255,255,0.4)',

@@ -53,7 +53,7 @@ export default function NeedsAttentionPanel({
   allClearLabel      = 'Everything looks clear \u2014 no urgent follow-ups.',
   labels = {
     inactive:   'Inactive farmers',
-    incomplete: 'Profiles incomplete',
+    incomplete: 'Profiles in setup',
     missed:     'Missed tasks',
     highRisk:   'High risk',
   },

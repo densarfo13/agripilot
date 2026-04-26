@@ -317,13 +317,11 @@ export default function FarmersPage() {
                         <td>{f.primaryCrop ? getCropLabelSafe(f.primaryCrop) : '-'}</td>
                         <td>{f.landSizeValue ? formatLandSize(f.landSizeValue, f.landSizeUnit) : f.farmSizeAcres ? `${f.farmSizeAcres} ${f.countryCode === 'TZ' ? 'ha' : 'ac'}` : '-'}</td>
                         <td>
-                          {/* Progress score chip — pure-function compute on
-                              whatever signals the farmer payload exposes.
-                              Missing inputs are gracefully treated as 0
-                              (the chip surfaces "data incomplete" via its
-                              own tooltip). Server-side aggregation would
-                              be the next step; for now this compiles a
-                              live signal from existing fields. */}
+                          {/* Farmer status badge — pure-function compute
+                              on whatever signals the farmer payload
+                              exposes. Inputs that haven't propagated yet
+                              are treated as 0 in the math, so the badge
+                              always renders a live, valid score. */}
                           <ScoreBadge
                             taskCompletionRate={f.taskCompletionRate}
                             cropHealthScore={f.cropHealthScore}

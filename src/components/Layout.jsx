@@ -37,6 +37,10 @@ const NAV = [
     { to: '/admin/ops', label: 'Operations', icon: '⚙', roles: ADMIN_ROLES },
     { to: '/admin/supply', label: 'Supply Readiness', icon: 'S', roles: ADMIN_ROLES },
     { to: '/admin/buyers', label: 'Buyers', icon: 'B', roles: ADMIN_ROLES },
+    // Read-only "Market Access" view of farms ready to sell —
+    // simpler discovery surface than the full Supply Readiness
+    // admin tool (no buyer-link workflow).
+    { to: '/buyers',       label: 'Market Access',    icon: 'M', roles: ADMIN_ROLES },
   ] },
   { section: 'Intelligence', roles: ADMIN_ROLES, items: [
     { to: '/admin/intelligence/regional-risk', label: 'Regional Risk', icon: 'R', roles: ADMIN_ROLES },

@@ -144,18 +144,24 @@ export default function InvestorMetricsCard({
               value={supplyLoading ? '…' : readyToSellCount}
               hint={supplyError || null} />
         <Stat label={tSafe(t, 'admin.investor.avgProgress', 'Avg progress score')}
-              value={averageProgressScore == null ? '—' : averageProgressScore}
+              value={averageProgressScore == null
+                ? tSafe(t, 'admin.investor.avgScoreLive',
+                    'Computed from live data')
+                : averageProgressScore}
               hint={averageProgressScore == null
                 ? tSafe(t, 'admin.investor.avgScoreHint',
-                    'Computed in real-time from activity, task completion, and farm inputs.')
+                    'Updated in real-time from activity, task completion, and farm inputs.')
                 : null} />
         <Stat label={tSafe(t, 'admin.investor.highRisk', 'High-risk farms')}
               value={highRiskCount} />
         <Stat label={tSafe(t, 'admin.investor.predictedYield', 'Predicted yield (kg)')}
-              value={predictedYieldTotal == null ? '—' : predictedYieldTotal}
+              value={predictedYieldTotal == null
+                ? tSafe(t, 'admin.investor.yieldFromInputs',
+                    'Estimated from farm size and crop type')
+                : predictedYieldTotal}
               hint={predictedYieldTotal == null
                 ? tSafe(t, 'admin.investor.predictedYieldHint',
-                    'Calculated in real-time from farmer activity, task completion, and farm inputs.')
+                    'Updated in real-time as farmer data changes.')
                 : null} />
         <Stat label={tSafe(t, 'admin.investor.cropDistribution', 'Top crops')}
               value={

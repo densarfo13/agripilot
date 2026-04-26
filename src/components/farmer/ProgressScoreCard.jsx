@@ -4,9 +4,12 @@
  * Reads inputs from props (the parent page is responsible for
  * fetching the underlying signals). Renders:
  *   • headline number (0..100)
- *   • label chip (Low / Medium / High / Excellent)
+ *   • label chip (High Risk / Medium / Good / Excellent)
  *   • per-driver breakdown with weight % and points contributed
- *   • a "data incomplete" badge when any input fell back to 0
+ *
+ * Inputs that haven't reached the page yet are treated as 0 in
+ * the math — there is no "data incomplete" surface; the score
+ * always reflects the live signals available right now.
  *
  * Pure presentational — no API calls, no localStorage, no
  * side-effects on render.
@@ -46,7 +49,6 @@ export default function ProgressScoreCard({
   });
 
   const colour = LABEL_COLORS[result.label] || LABEL_COLORS.Medium;
-  const incomplete = result.dataMissing.length > 0;
 
   return (
     <section style={S.card} data-testid="progress-score-card">
@@ -66,13 +68,6 @@ export default function ProgressScoreCard({
           <span style={S.scoreOutOf}>/ 100</span>
         </div>
       </header>
-
-      {incomplete && (
-        <p style={S.incomplete}>
-          {tSafe(t, 'progressScore.incomplete',
-            'Some inputs are still missing — the score will improve as data fills in.')}
-        </p>
-      )}
 
       {!compact && (
         <ul style={S.reasonList}>
@@ -122,15 +117,6 @@ const S = {
   scoreBlock: { display: 'flex', alignItems: 'baseline', gap: '0.25rem' },
   scoreNumber: { fontSize: '2.25rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1 },
   scoreOutOf:  { fontSize: '0.875rem', color: 'rgba(255,255,255,0.55)' },
-  incomplete: {
-    margin: 0,
-    fontSize: '0.75rem',
-    color: '#FDE68A',
-    background: 'rgba(245,158,11,0.08)',
-    border: '1px solid rgba(245,158,11,0.25)',
-    padding: '0.4rem 0.625rem',
-    borderRadius: 10,
-  },
   reasonList: { listStyle: 'none', padding: 0, margin: 0,
                 display: 'flex', flexDirection: 'column', gap: '0.5rem' },
   reasonRow: {

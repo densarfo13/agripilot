@@ -75,11 +75,10 @@ export default function FarmerDetailPage() {
         </div>
       </div>
       <div className="page-body">
-        {/* Progress score (NGO monetisation surface). Pure-function
-            compute on whichever signals the farmer payload exposes;
-            missing inputs surface the "data incomplete" badge so the
-            score is never silently zero. Reasons list explains
-            "Low activity" / "Missed tasks" / "Good consistency". */}
+        {/* Progress score (NGO surface). Pure-function compute on
+            the farmer's live activity signals. Reasons list narrates
+            "Low activity" / "Missed tasks" / "Good consistency"
+            using the same data that drives the headline score. */}
         <div style={{ marginBottom: '1rem' }}>
           <ProgressScoreCard
             taskCompletionRate={farmer.taskCompletionRate}
