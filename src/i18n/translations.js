@@ -8905,6 +8905,16 @@ const T = {
   'economics.task.nutrientsBoostYield': { en: 'Right nutrients boost your yield.', fr: 'Les bons nutriments augmentent le rendement.', sw: 'Virutubisho sahihi vinaboresha mavuno.', ha: 'Takin da ya dace na ƙara amfani.', tw: 'Nkwan pa ma wo nnɔbae dɔɔso.' },
   'economics.task.qualitySeedMatters': { en: 'Quality seeds give better harvest.', fr: 'Les semences de qualité donnent une meilleure récolte.', sw: 'Mbegu bora hutoa mavuno bora.', ha: 'Iri mai inganci na ba da girbi mafi kyau.', tw: 'Aba pa ma wotwa adeɛ pii.' },
   'economics.task.sortingRaisesPrice': { en: 'Sorting raises your selling price.', fr: 'Le tri augmente votre prix de vente.', sw: 'Kupanga kunaongeza bei ya kuuza.', ha: 'Tsarawa na ƙara farashin sayarwa.', tw: 'Pae mu ma wo bo kɔ soro.' },
+
+  // ── i18n gap-fill: keys called via t() but previously undefined.
+  //    Audit pass found these on src/components/DailyProgressCard.jsx
+  //    and src/pages/AllTasksPage.jsx. Adding them here so non-Hindi
+  //    languages don't fall through to humanizeKey output.
+  'progress.next.label':            { en: 'Next',                fr: 'Suivant',           sw: 'Inayofuata',          ha: 'Na gaba',                tw: 'Nea ɛdi hɔ',          hi: 'अगला' },
+  'progress.today.label':           { en: 'Today',               fr: 'Aujourd\'hui',     sw: 'Leo',                 ha: 'Yau',                    tw: 'Nnɛ',                 hi: 'आज' },
+  'progress.score.farmStatus':      { en: 'Farm status',         fr: 'État de la ferme',  sw: 'Hali ya shamba',      ha: 'Yanayin gona',           tw: 'Afuom tebea',         hi: 'खेत की स्थिति' },
+  'progress.streak.noneShort':      { en: 'No streak yet',       fr: 'Aucune série',      sw: 'Hakuna mfululizo',    ha: 'Babu jeri tukuna',       tw: 'Saa biara nni hɔ',    hi: 'अभी कोई स्ट्रीक नहीं' },
+  'tasks.loadSafeResult':           { en: 'Loaded safely from cache.', fr: 'Chargé depuis le cache.', sw: 'Imepakuliwa kutoka kwa cache.', ha: 'An ɗora daga ma\'aji.', tw: 'Wɔde aba so firi sika so.', hi: 'कैश से सुरक्षित रूप से लोड किया गया।' },
 };
 
 export default T;

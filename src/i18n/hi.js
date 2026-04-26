@@ -910,6 +910,21 @@ const HI = {
   'count.hoursAgo_other': '{count} घंटे पहले',
   'count.daysAgo_one': '1 दिन पहले',
   'count.daysAgo_other': '{count} दिन पहले',
+
+  // ─── Gap-fill: progress.* keys whose translations.js entries
+  //     have en/fr/sw/ha/tw but no `hi:` slot. The merge logic in
+  //     index.js fills empty Hindi slots from this overlay; entries
+  //     already covered in translations.js are intentionally NOT
+  //     duplicated here (the merge would no-op them anyway and the
+  //     duplicate misleads future readers about which file owns the
+  //     canonical Hindi string).
+  'progress.status':                      'स्थिति',
+  'progress.loadError':                   'प्रगति लोड नहीं हुई — दोबारा कोशिश करें।',
+  'progress.seasonCreated':               'मौसम शुरू हो गया!',
+  'progress.createSeasonError':           'मौसम शुरू नहीं हो सका — दोबारा कोशिश करें।',
+  'progress.duplicateWarning':            'यह गतिविधि पहले ही दर्ज है।',
+  'progress.firstActivityRecorded':       'पहली गतिविधि दर्ज हुई!',
+  'progress.activityRecorded':            'गतिविधि दर्ज हुई।',
 };
 
 export default HI;

@@ -187,49 +187,65 @@ function isStrictI18n() {
 }
 
 export function t(key, lang, vars) {
-  if (!key) return '';
-  const entry = T[key];
-  const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV === 'development';
-  const strict = isStrictI18n();
-  if (!entry) {
-    if (isDev || strict) {
-      _warnedMissing ??= new Set();
-      if (!_warnedMissing.has(key)) {
-        _warnedMissing.add(key);
-        console.warn(`[i18n] Missing key: "${key}"`);
+  // Outer try/catch — t() must NEVER throw. If anything exotic
+  // happens (corrupted translations object, vars iteration error,
+  // unexpected non-string value), return the [MISSING:key] marker
+  // so the UI renders a debuggable string instead of crashing the
+  // React tree. This is the canonical "fallback never crashes"
+  // guarantee callers rely on.
+  try {
+    if (!key) return '';
+    const entry = T[key];
+    const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV === 'development';
+    const strict = isStrictI18n();
+    if (!entry) {
+      if (isDev || strict) {
+        _warnedMissing ??= new Set();
+        if (!_warnedMissing.has(key)) {
+          _warnedMissing.add(key);
+          console.warn(`[i18n] Missing key: "${key}"`);
+        }
+      }
+      // Strict mode (dev/QA): make the gap visible. Production: stay
+      // user-friendly with the humanised key.
+      if (strict) return `[MISSING:${key}]`;
+      return humanizeKey(key);
+    }
+    let text = entry[lang];
+    if (!text && lang !== 'en') {
+      text = entry.en || '';
+      if (isDev || strict) {
+        _warnedFallbacks ??= new Set();
+        const warnKey = `${key}:${lang}`;
+        if (!_warnedFallbacks.has(warnKey)) {
+          _warnedFallbacks.add(warnKey);
+          console.warn(`[i18n] Falling back to English for "${key}" (lang="${lang}")`);
+        }
+      }
+      // Strict + non-English: surface the gap so QA catches it.
+      if (strict && text) text = `[MISSING:${key}|fallback]`;
+    } else if (!text) {
+      text = entry.en || '';
+    }
+    if (!text) {
+      // Still nothing — humanize rather than leak blank to UI.
+      text = humanizeKey(key);
+    }
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
       }
     }
-    // Strict mode (dev/QA): make the gap visible. Production: stay
-    // user-friendly with the humanised key.
-    if (strict) return `[MISSING:${key}]`;
-    return humanizeKey(key);
-  }
-  let text = entry[lang];
-  if (!text && lang !== 'en') {
-    text = entry.en || '';
-    if (isDev || strict) {
-      _warnedFallbacks ??= new Set();
-      const warnKey = `${key}:${lang}`;
-      if (!_warnedFallbacks.has(warnKey)) {
-        _warnedFallbacks.add(warnKey);
-        console.warn(`[i18n] Falling back to English for "${key}" (lang="${lang}")`);
+    return text;
+  } catch (err) {
+    try {
+      if (typeof console !== 'undefined') {
+        console.warn('[i18n] t() threw — returning [MISSING] marker:',
+          err && err.message ? err.message : 'unknown');
       }
-    }
-    // Strict + non-English: surface the gap so QA catches it.
-    if (strict && text) text = `[MISSING:${key}|fallback]`;
-  } else if (!text) {
-    text = entry.en || '';
+    } catch { /* don't even propagate from the warn */ }
+    return `[MISSING:${key || 'unknown'}]`;
   }
-  if (!text) {
-    // Still nothing — humanize rather than leak blank to UI.
-    text = humanizeKey(key);
-  }
-  if (vars) {
-    for (const [k, v] of Object.entries(vars)) {
-      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
-    }
-  }
-  return text;
 }
 
 let _warnedFallbacks = null;
