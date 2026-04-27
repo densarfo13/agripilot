@@ -49,6 +49,7 @@ const FarmerWelcome = lazy(() => import('./pages/FarmerWelcome.jsx'));
 const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
 const BeginnerReassurance = lazy(() => import('./pages/BeginnerReassurance.jsx'));
 const FarmerSettingsPage = lazy(() => import('./pages/FarmerSettingsPage.jsx'));
+const Settings = lazy(() => import('./pages/Settings.jsx'));
 const CameraScanPage = lazy(() => import('./pages/CameraScanPage.jsx'));
 const LandCheckPage = lazy(() => import('./pages/LandCheckPage.jsx'));
 const VerifyOtp = lazy(() => import('./pages/VerifyOtp.jsx'));
@@ -452,7 +453,16 @@ export default function App() {
             <Route path="/welcome-farmer" element={<WelcomeScreen />} />
             <Route path="/crop-fit/quick" element={<CropFitQuick />} />
             <Route path="/program-dashboard" element={<ProgramDashboardPage />} />
-            <Route path="/settings" element={<FarmerSettingsPage />} />
+            {/*
+              /settings now resolves to the unified Settings page
+              (notifications + communication + farmer ID), backed by
+              the farroway_settings store. The legacy
+              FarmerSettingsPage stays exported so any external
+              deep-links to /farmer-settings keep resolving — but the
+              gear icon and primary route land on Settings.
+            */}
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/farmer-settings" element={<FarmerSettingsPage />} />
             <Route path="/scan-crop" element={<CameraScanPage />} />
             <Route path="/land-check" element={<LandCheckPage />} />
             <Route path="/crop-recommendations" element={<CropRecommendations />} />

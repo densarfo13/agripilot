@@ -17,11 +17,12 @@ import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
-import FarmerIdCard from '../components/FarmerIdCard.jsx';
 import SupportCard from '../components/SupportCard.jsx';
 import FarmInsightCard from '../components/FarmInsightCard.jsx';
 import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
-import NotificationPreferencesCard from '../components/NotificationPreferencesCard.jsx';
+// NotificationPreferencesCard + FarmerIdCard intentionally not
+// imported here — both moved into the unified Settings page at
+// /settings as part of the UI cleanup pass.
 import DailyProgressCard from '../components/DailyProgressCard.jsx';
 import CropImage from '../components/CropImage.jsx';
 import CropTimelineCard from '../components/CropTimelineCard.jsx';
@@ -333,13 +334,12 @@ export default function MyFarmPage() {
         />
       )}
 
-      {/* Notification preferences */}
-      <NotificationPreferencesCard />
-
-      {/* Farmer ID + Support — moved here from dashboard */}
-      <div style={S.cardWrap}>
-        <FarmerIdCard />
-      </div>
+      {/*
+        NotificationPreferencesCard + FarmerIdCard removed — both
+        moved into /settings (Settings page). The gear icon in
+        FarmerHeader is the entry point. Help/support stays here so
+        farmers reach it without leaving the farm view.
+      */}
       <div style={S.cardWrap}>
         <SupportCard />
       </div>
