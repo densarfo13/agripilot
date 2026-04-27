@@ -458,16 +458,126 @@ const TASK_DESCRIPTIONS = {
   },
 };
 
+// PHRASE-BASED FALLBACK MAP (Apr 2026 pilot fix)
+// ─────────────────────────────────────────────────────────────
+// The server farmTaskEngine generates task titles + descriptions
+// dynamically. Some strings (e.g. "Prepare rows for maize",
+// "Weed the most crowded rows", "Side-dress fertiliser if due")
+// arrive at the client as raw English; the underlying server
+// task ID isn't always stable enough to add to TASK_TITLES.
+//
+// This map keys on the EXACT English title text. When the
+// id-based lookup misses, we fall through to a phrase lookup
+// before giving up to the raw original. Strict rule: no
+// backend change — we localise on the client by recognising
+// the strings the engine emits.
+const TASK_TITLE_PHRASE_MAP = {
+  'Prepare rows for maize': {
+    fr: 'Préparer les rangs pour le maïs',
+    sw: 'Andaa mistari kwa mahindi',
+    ha: 'Shirya layuka don masara',
+    tw: 'Siesie nsensanee ma aburo',
+    hi: 'मक्का के लिए पंक्तियाँ तैयार करें',
+  },
+  'Prepare soil amendments for maize': {
+    fr: 'Préparer les amendements pour le maïs',
+    sw: 'Andaa virutubisho vya udongo kwa mahindi',
+    ha: 'Shirya gyaran ƙasa don masara',
+    tw: 'Siesie asase nsiesie ma aburo',
+    hi: 'मक्का के लिए मिट्टी सुधार तैयार करें',
+  },
+  'Weed the most crowded rows': {
+    fr: 'Désherber les rangs les plus denses',
+    sw: 'Palilia mistari yenye magugu mengi',
+    ha: 'Cire ciyawa daga layukan da suka cika',
+    tw: 'Tu wura firi nsensanee a ɛyɛ pii mu',
+    hi: 'सबसे घनी पंक्तियों की निराई करें',
+  },
+  'Check soil moisture in 3 spots': {
+    fr: 'Vérifier l\u2019humidité du sol en 3 points',
+    sw: 'Angalia unyevu wa udongo sehemu 3',
+    ha: 'Duba zafin ƙasa a wurare 3',
+    tw: 'Hwɛ asase mu nsuo wɔ mmeae 3',
+    hi: '3 जगहों पर मिट्टी की नमी जाँचें',
+  },
+  'Side-dress fertiliser if due': {
+    fr: 'Apporter l\u2019engrais de surface si nécessaire',
+    sw: 'Weka mbolea ya pembeni ikiwa ni wakati',
+    ha: 'Sa taki gefe idan ya kai lokaci',
+    tw: 'Fa ayaresa nsiesie nkyɛn sɛ berɛ adu',
+    hi: 'समय पर साइड-ड्रेस उर्वरक डालें',
+  },
+  'Side-dress fertilizer if due': {
+    fr: 'Apporter l\u2019engrais de surface si nécessaire',
+    sw: 'Weka mbolea ya pembeni ikiwa ni wakati',
+    ha: 'Sa taki gefe idan ya kai lokaci',
+    tw: 'Fa ayaresa nsiesie nkyɛn sɛ berɛ adu',
+    hi: 'समय पर साइड-ड्रेस उर्वरक डालें',
+  },
+  'Scout the field for pests and damage': {
+    fr: 'Inspecter le champ pour ravageurs et dégâts',
+    sw: 'Kagua shamba kuangalia wadudu na uharibifu',
+    ha: 'Bincika gona don kwari da lalacewa',
+    tw: 'Hwehwɛ afuo no mu nnoboa ne ɔsɛeɛ',
+    hi: 'खेत में कीट और नुकसान की जाँच करें',
+  },
+};
+
+const TASK_DESC_PHRASE_MAP = {
+  'Pull or hoe weeds in the rows where the crop looks smallest.': {
+    fr: 'Arrachez ou binez les mauvaises herbes dans les rangs où la culture est la plus chétive.',
+    sw: 'Ng\u2019oa au lima magugu kwenye mistari ambapo zao linaonekana dogo zaidi.',
+    ha: 'Cire ko fid da ciyawa a layuka inda amfanin ya fi ƙanƙanta.',
+    tw: 'Tu anaa pa wura wɔ nsensanee a aduane no sua mu.',
+    hi: 'जिन पंक्तियों में फसल सबसे छोटी दिखे, वहाँ खरपतवार उखाड़ें या कुदाल चलाएँ।',
+  },
+  'Push a finger 5 cm into the soil; it should feel cool and slightly damp.': {
+    fr: 'Enfoncez un doigt de 5 cm dans le sol ; il doit être frais et légèrement humide.',
+    sw: 'Sukuma kidole sm 5 ndani ya udongo; lazima uwe baridi na unyevu kidogo.',
+    ha: 'Tura yatsa 5 cm cikin ƙasa; ya kamata ta zama mai sanyi da ɗan jika.',
+    tw: 'Hwɛ wo nsateaa cm 5 wɔ asase mu; ɛsɛ sɛ ɛyɛ nwunu na nsuo wɔ mu kakra.',
+    hi: 'मिट्टी में उँगली 5 सेमी डालें; ठंडी और हल्की नम लगनी चाहिए।',
+  },
+  'Apply your second-round fertiliser along the rows if the schedule says so.': {
+    fr: 'Appliquez votre deuxième apport d\u2019engrais le long des rangs si le calendrier l\u2019indique.',
+    sw: 'Weka mbolea yako ya raundi ya pili kwenye mistari kama ratiba inavyosema.',
+    ha: 'Sa taki na zagaye na biyu a layuka idan jadawalin ya ce haka.',
+    tw: 'Fa wo ayaresa a ɛtɔ so mienu ka nsensanee no ho sɛ nhyehyɛeɛ no se saa.',
+    hi: 'कार्यक्रम के अनुसार पंक्तियों में दूसरा उर्वरक डालें।',
+  },
+  'Apply your second-round fertilizer along the rows if the schedule says so.': {
+    fr: 'Appliquez votre deuxième apport d\u2019engrais le long des rangs si le calendrier l\u2019indique.',
+    sw: 'Weka mbolea yako ya raundi ya pili kwenye mistari kama ratiba inavyosema.',
+    ha: 'Sa taki na zagaye na biyu a layuka idan jadawalin ya ce haka.',
+    tw: 'Fa wo ayaresa a ɛtɔ so mienu ka nsensanee no ho sɛ nhyehyɛeɛ no se saa.',
+    hi: 'कार्यक्रम के अनुसार पंक्तियों में दूसरा उर्वरक डालें।',
+  },
+  'Walk the rows and check underside of leaves for eggs, holes or unusual spots.': {
+    fr: 'Parcourez les rangs et vérifiez le dessous des feuilles : œufs, trous ou taches inhabituelles.',
+    sw: 'Tembea kwenye mistari na kagua chini ya majani kuangalia mayai, mashimo au madoa.',
+    ha: 'Yi tafiya cikin layuka kuma duba ƙasan ganye don ƙwai, ramuka ko tabo na ban mamaki.',
+    tw: 'Nantenante nsensanee no so na hwɛ nhaban ase nkesua, atokuro anaa nkyerɛnneɛ foforɔ.',
+    hi: 'पंक्तियों में चलें और पत्तियों के नीचे अंडे, छेद या असामान्य धब्बे देखें।',
+  },
+};
+
 /**
  * Get the localized task title if available, else return original.
  * @param {string} taskId - Server task ID
  * @param {string} originalTitle - Original English title from server
- * @param {string} lang - Current language code (en, fr, sw, ha, tw)
+ * @param {string} lang - Current language code (en, fr, sw, ha, tw, hi)
  * @returns {string} Localized title or original
  */
 export function getLocalizedTaskTitle(taskId, originalTitle, lang) {
+  // 1. ID-based lookup (preferred — stable, locale-complete)
   const entry = TASK_TITLES[taskId];
   if (entry && entry[lang]) return entry[lang];
+  // 2. Phrase-based fallback for engine-generated titles whose IDs
+  //    aren't in the static map. Keyed on exact English text.
+  if (originalTitle && lang && lang !== 'en') {
+    const phrase = TASK_TITLE_PHRASE_MAP[String(originalTitle).trim()];
+    if (phrase && phrase[lang]) return phrase[lang];
+  }
   if (entry && entry.en) return entry.en; // fallback to our short English
   return originalTitle || '';
 }
@@ -476,12 +586,17 @@ export function getLocalizedTaskTitle(taskId, originalTitle, lang) {
  * Get the localized task description if available, else shorten original.
  * @param {string} taskId - Server task ID
  * @param {string} originalDesc - Original English description from server
- * @param {string} lang - Current language code (en, fr, sw, ha, tw)
+ * @param {string} lang - Current language code (en, fr, sw, ha, tw, hi)
  * @returns {string} Localized description or shortened original
  */
 export function getLocalizedTaskDescription(taskId, originalDesc, lang) {
   const entry = TASK_DESCRIPTIONS[taskId];
   if (entry && entry[lang]) return entry[lang];
+  // Phrase-based fallback for engine-generated descriptions.
+  if (originalDesc && lang && lang !== 'en') {
+    const phrase = TASK_DESC_PHRASE_MAP[String(originalDesc).trim()];
+    if (phrase && phrase[lang]) return phrase[lang];
+  }
   if (entry && entry.en) return entry.en;
   return shortenDescription(originalDesc, 60);
 }
