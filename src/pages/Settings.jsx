@@ -24,6 +24,12 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import {
   loadSettings, updateSetting, SETTINGS_CHANGE_EVENT,
 } from '../store/settingsStore.js';
+// Logout + reset flows. Both modules are pure storage utilities;
+// the buttons wire them through a ConfirmModal so a stray tap
+// can't wipe a farmer's data.
+import { logout } from '../utils/logout.js';
+import { resetApp } from '../utils/resetApp.js';
+import ConfirmModal from '../components/ConfirmModal.jsx';
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -31,6 +37,8 @@ export default function Settings() {
   const { profile } = useProfile();
   const [settings, setSettings] = useState(() => loadSettings());
   const [copied, setCopied] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [resetOpen,  setResetOpen]  = useState(false);
 
   // Sync across tabs / cross-component updates.
   useEffect(() => {
@@ -179,7 +187,69 @@ export default function Settings() {
             </div>
           </section>
         )}
+
+        {/* ─── D. Account actions (Logout + Reset) ──────────── */}
+        <section style={S.card} data-testid="settings-account-actions">
+          <h2 style={S.h2}>{tSafe(t, 'settings.account', 'Account')}</h2>
+
+          <button
+            type="button"
+            onClick={() => setLogoutOpen(true)}
+            style={S.actionBtn}
+            data-testid="settings-logout"
+          >
+            <span style={S.actionIcon} aria-hidden="true">{'\u2192'}</span>
+            <span style={S.actionLabel}>
+              {tSafe(t, 'settings.logout', 'Logout')}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setResetOpen(true)}
+            style={S.dangerBtn}
+            data-testid="settings-reset"
+          >
+            <span style={S.actionIcon} aria-hidden="true">{'\u26A0\uFE0F'}</span>
+            <span style={S.actionLabel}>
+              {tSafe(t, 'settings.reset', 'Reset App')}
+            </span>
+          </button>
+        </section>
       </div>
+
+      <ConfirmModal
+        open={logoutOpen}
+        title={tSafe(t, 'settings.logout.confirmTitle',
+          'Are you sure you want to logout?')}
+        body={tSafe(t, 'settings.logout.confirmBody',
+          'You can sign back in any time \u2014 your farm data stays on this device.')}
+        confirmLabel={tSafe(t, 'settings.logout', 'Logout')}
+        cancelLabel={tSafe(t, 'common.cancel', 'Cancel')}
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={() => {
+          setLogoutOpen(false);
+          try { logout(navigate); } catch { /* swallow */ }
+        }}
+        testId="settings-logout-modal"
+      />
+
+      <ConfirmModal
+        open={resetOpen}
+        destructive
+        title={tSafe(t, 'settings.reset.confirmTitle',
+          'Reset Farroway on this device?')}
+        body={tSafe(t, 'settings.reset.confirmBody',
+          'This will remove all your data on this device. Continue?')}
+        confirmLabel={tSafe(t, 'settings.reset', 'Reset App')}
+        cancelLabel={tSafe(t, 'common.cancel', 'Cancel')}
+        onCancel={() => setResetOpen(false)}
+        onConfirm={() => {
+          setResetOpen(false);
+          try { resetApp(navigate); } catch { /* swallow */ }
+        }}
+        testId="settings-reset-modal"
+      />
     </main>
   );
 }
@@ -353,5 +423,52 @@ const S = {
     cursor: 'pointer',
     flexShrink: 0,
     WebkitTapHighlightColor: 'transparent',
+  },
+  actionBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: '0.625rem',
+    width: '100%',
+    minHeight: '52px',
+    marginTop: '0.5rem',
+    padding: '0.75rem 1rem',
+    borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.14)',
+    background: 'rgba(255,255,255,0.05)',
+    color: '#EAF2FF',
+    fontSize: '0.9375rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    textAlign: 'left',
+  },
+  dangerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: '0.625rem',
+    width: '100%',
+    minHeight: '52px',
+    marginTop: '0.625rem',
+    padding: '0.75rem 1rem',
+    borderRadius: '14px',
+    border: '1px solid rgba(239,68,68,0.45)',
+    background: 'rgba(239,68,68,0.10)',
+    color: '#FCA5A5',
+    fontSize: '0.9375rem',
+    fontWeight: 800,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    textAlign: 'left',
+  },
+  actionIcon: {
+    fontSize: '1.125rem',
+    lineHeight: 1,
+    flexShrink: 0,
+  },
+  actionLabel: {
+    flex: 1,
+    minWidth: 0,
   },
 };
