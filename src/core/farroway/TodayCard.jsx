@@ -24,13 +24,12 @@ import { markTaskDone } from './progressStore.js';
 import { speak } from './voice.js';
 import { getCurrentFarm } from './farmStore.js';
 import { tSafe } from '../../i18n/tSafe.js';
-// Outcome-labeling prompt. Non-intrusive bottom sheet that
-// appears at most once per local day, gated behind 1-in-3
-// sampling so the farmer never feels nagged. Saves a
-// medium-confidence label when answered, low-confidence on
-// "Not sure". The whole subtree is opt-in - if no farm is set
-// we never even render the modal element.
-import LabelPromptModal from '../../components/ai/LabelPromptModal.jsx';
+// Single-question post-task labeling modal (v1.5). One tap,
+// auto-closes ~1.2s after a selection, voice feedback. Replaces
+// the v1.4 kind-specific LabelPromptModal that asked pest OR
+// drought separately. The legacy modal stays exported under
+// src/components/ai/ for any consumer that still imports it.
+import LabelPrompt from '../../components/LabelPrompt.jsx';
 import { usePostTaskLabelPrompt } from '../../components/ai/usePostTaskLabelPrompt.js';
 
 export default function TodayCard({ farm: farmProp = null, onDone = null }) {
@@ -40,7 +39,10 @@ export default function TodayCard({ farm: farmProp = null, onDone = null }) {
   // Hook order matters - call BEFORE the early return so React's
   // rules-of-hooks aren't violated when the empty state renders.
   const farmIdForPrompt = farm && farm.id ? farm.id : null;
-  const { promptOpen, promptKind, openPrompt, closePrompt } =
+  // v1.5 LabelPrompt is a single combined question, so we ignore
+  // `promptKind` from the hook. The dedupe + sampling logic
+  // around `openPrompt` still applies.
+  const { promptOpen, openPrompt, closePrompt } =
     usePostTaskLabelPrompt({ farmId: farmIdForPrompt });
 
   if (!data) {
@@ -88,10 +90,14 @@ export default function TodayCard({ farm: farmProp = null, onDone = null }) {
           {tSafe('farroway.today.done', 'Done')}
         </button>
       </div>
-      <LabelPromptModal
+      {/* v1.5 LabelPrompt - one combined question; the
+          promptKind from the hook is now unused but the hook
+          itself still gates dedupe + sampling. */}
+      <LabelPrompt
         open={promptOpen}
-        kind={promptKind}
         farmId={farmIdForPrompt}
+        taskId={taskId}
+        taskType={taskId}
         onClose={closePrompt}
       />
     </>

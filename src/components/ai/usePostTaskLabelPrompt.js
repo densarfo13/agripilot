@@ -53,7 +53,12 @@ function _kindForDay() {
 
 export function usePostTaskLabelPrompt({
   farmId      = null,
-  probability = 1 / 3,
+  // v1.5 default: 1.0. The single-question LabelPrompt is fast
+  // (<3s, one tap) so we want it to fire reliably on the first
+  // task completion of each day. hasPromptedToday() still caps
+  // at one prompt per farm per local day, so a farmer who
+  // completes 5 tasks doesn't see 5 prompts.
+  probability = 1.0,
 } = {}) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [promptKind, setPromptKind] = useState(LABEL_KIND.PEST);
