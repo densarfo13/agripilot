@@ -29,6 +29,7 @@ import { calculateNGOCost } from '../utils/pricingCalculator.js';
 import { CURRENCY } from '../config/pricing.js';
 import { tSafe } from '../i18n/tSafe.js';
 import OutbreakWatchPanel from '../components/ngo/OutbreakWatchPanel.jsx';
+import RiskSummaryPanel from '../components/ngo/RiskSummaryPanel.jsx';
 // PestClusterPanel removed - the v0 surface was superseded by
 // OutbreakWatchPanel below. The component file stays in the
 // repo (back-compat for any external consumer), but /ngo/value
@@ -117,6 +118,12 @@ export default function NgoValueDashboard({ farms: farmsProp = null }) {
             mirror + runs the pure cluster engine with region
             normalisation + opt-in GIS proximity merge. */}
         <OutbreakWatchPanel farms={farms} />
+
+        {/* Risk Summary panel (v1.2 predictive layer): per-region
+            roll-up of farms at HIGH pest / drought risk. Reads
+            from the same outbreak mirror + computes risks per
+            farm via riskEngine.computeFarmRisks(). */}
+        <RiskSummaryPanel farms={farms} />
       </div>
     </main>
   );

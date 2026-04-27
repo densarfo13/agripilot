@@ -35,6 +35,7 @@ import { NOTIFICATION_PREFS_TRANSLATIONS } from './notificationPrefsTranslations
 import { SETTINGS_PAGE_TRANSLATIONS }      from './settingsPageTranslations.js';
 import { I18N_GAPS_TRANSLATIONS }          from './i18nGapsTranslations.js';
 import { OUTBREAK_TRANSLATIONS }           from './outbreakTranslations.js';
+import { RISK_TRANSLATIONS }               from './riskTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -81,6 +82,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     SETTINGS_PAGE_TRANSLATIONS,
     I18N_GAPS_TRANSLATIONS,
     OUTBREAK_TRANSLATIONS,
+    RISK_TRANSLATIONS,
   ]);
 })();
 
