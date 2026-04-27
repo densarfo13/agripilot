@@ -46,18 +46,30 @@ export function resolveApiBase({
   // hosts /api/* — empty base URL is correct. Log a warning so an
   // operator can tell "intentional same-origin" from "forgot the env
   // var" in dev tools, but never crash the bundle at module load.
-  if (isProd && !raw && typeof console !== 'undefined' && console.warn) {
-    try {
-      console.warn(
-        '[api] VITE_API_BASE_URL not set; falling back to same-origin requests. '
-        + 'Set it explicitly if your frontend and API live on different origins.',
-      );
-    } catch { /* ignore */ }
-  }
+  //
+  // De-duped: the previous shape fired the warning on every call to
+  // resolveApiBase, which in practice meant once per module that
+  // imports api.js — turning DevTools into noise on every page load.
+  // The flag below means the warning surfaces ONCE per session;
+  // ops still sees it, the farmer's console doesn't get spammed.
+  if (isProd && !raw) _maybeWarnSameOrigin();
 
   // Normalise: trim a trailing slash so callers can safely concat
   // `${base}/api/v2/...` without doubling up.
   return raw.replace(/\/+$/, '');
+}
+
+let _sameOriginWarned = false;
+function _maybeWarnSameOrigin() {
+  if (_sameOriginWarned) return;
+  _sameOriginWarned = true;
+  if (typeof console === 'undefined' || !console.warn) return;
+  try {
+    console.warn(
+      '[api] VITE_API_BASE_URL not set; falling back to same-origin requests. '
+      + 'Set it explicitly if your frontend and API live on different origins.',
+    );
+  } catch { /* ignore */ }
 }
 
 export const _internal = Object.freeze({ /* reserved */ });

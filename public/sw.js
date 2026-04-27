@@ -50,6 +50,36 @@ self.addEventListener('activate', (event) => {
       keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE)
         .map((k) => caches.delete(k))
     );
+
+    // Force-evict any stale PWA-manifest assets cached under the
+    // CURRENT version. Cache-version bumps already drop OLD-version
+    // caches above, but if a previous deploy ever cached a non-
+    // image response on /icons/icon-192.png (an SPA HTML fallback
+    // from a misconfigured static-asset middleware in early
+    // rollout), the bad entry can persist under the same cache
+    // name across version bumps. The new fetch handler already
+    // bypasses /icons/* (commit 3fcbd65), but Chrome's manifest
+    // validator still surfaces the cached error until the entry
+    // is explicitly removed. Sweeping these on every activate
+    // makes the recovery deterministic.
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const cachedReqs = await cache.keys();
+      for (const req of cachedReqs) {
+        let url;
+        try { url = new URL(req.url); } catch { continue; }
+        if (
+          url.pathname === '/manifest.json' ||
+          url.pathname === '/manifest.webmanifest' ||
+          url.pathname === '/favicon.ico' ||
+          url.pathname.startsWith('/icons/') ||
+          url.pathname === '/apple-touch-icon.png'
+        ) {
+          try { await cache.delete(req); } catch { /* swallow */ }
+        }
+      }
+    } catch { /* cache may not exist yet on first activate — fine */ }
+
     await self.clients.claim();
     // Announce activation to every controlled client.
     const allClients = await self.clients.matchAll({ includeUncontrolled: true });
