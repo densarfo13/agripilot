@@ -1136,13 +1136,25 @@ export default function FarmerDashboardPage() {
               >
                 {tSafe('common.refresh', '')}
               </button>
+              {/*
+                Was a "Back to login" button that force-called
+                useAuthStore.logout() before navigating. That fired
+                even when the underlying error was transient (a 503
+                from the new defensive route, a network blip, a
+                deadline hit on a slow Wi-Fi) — destroying a
+                perfectly-good session over noise. Replaced with a
+                "Continue" CTA that navigates to /today (the
+                farmer-friendly route that runs without the full
+                profile JOIN result) WITHOUT touching auth state.
+                The user keeps their session and can keep working;
+                if the server-side issue was permanent, the next
+                /me call from /today will surface a real 401 and
+                AuthContext will logout cleanly through the right
+                code path.
+              */}
               <button
                 type="button"
-                onClick={() => {
-                  try { useAuthStore.getState().logout?.(); } catch { /* noop */ }
-                  navigate('/login', { replace: true,
-                    state: { reason: 'session_expired' } });
-                }}
+                onClick={() => navigate('/today', { replace: true })}
                 style={{
                   flex: 1, minHeight: 44, borderRadius: 12,
                   border: '1px solid rgba(255,255,255,0.18)',
@@ -1150,9 +1162,9 @@ export default function FarmerDashboardPage() {
                   cursor: 'pointer', touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
                 }}
-                data-testid="farmer-account-login"
+                data-testid="farmer-account-continue"
               >
-                {tSafe('auth.backToLogin', '')}
+                {tSafe('common.continue', 'Continue')}
               </button>
             </div>
           </div>
