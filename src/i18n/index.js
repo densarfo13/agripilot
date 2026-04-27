@@ -39,6 +39,7 @@ import { RISK_TRANSLATIONS }               from './riskTranslations.js';
 import { NGO_CONTROL_TRANSLATIONS }        from './ngoControlTranslations.js';
 import { LABEL_TRANSLATIONS }              from './labelTranslations.js';
 import { NGO_INSIGHTS_TRANSLATIONS }       from './ngoInsightsTranslations.js';
+import { ROI_TRANSLATIONS }                from './roiTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -89,6 +90,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     NGO_CONTROL_TRANSLATIONS,
     LABEL_TRANSLATIONS,
     NGO_INSIGHTS_TRANSLATIONS,
+    ROI_TRANSLATIONS,
   ]);
 })();
 

@@ -37,6 +37,7 @@ import { getInsightForCluster } from '../outbreak/actionableInsights.js';
 import { normaliseRegion, normaliseCountry } from '../outbreak/regionNormaliser.js';
 import MapErrorBoundary from '../components/MapErrorBoundary.jsx';
 import NgoInsightsPanel from '../components/ngo/NgoInsightsPanel.jsx';
+import RoiPanel from '../components/ngo/RoiPanel.jsx';
 
 // Heavy: leaflet + tile layer + circles. Code-split so the
 // dashboard chunk stays tiny on low-end devices.
@@ -254,7 +255,10 @@ export default function NgoControlPanel({ farms: farmsProp = null }) {
           )}
         </section>
 
-        {/* ─── Section 4: Insights & Actions (NGO-friendly) ────── */}
+        {/* ─── Section 4: ROI / Programme impact ─────────────── */}
+        <RoiPanel windowDays={7} />
+
+        {/* ─── Section 5: Insights & Actions (NGO-friendly) ────── */}
         <NgoInsightsPanel farms={farms} />
       </div>
     </main>
