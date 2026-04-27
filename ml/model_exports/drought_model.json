@@ -1,0 +1,20 @@
+{
+  "features": [
+    "daysSincePlanting",
+    "temperatureHigh",
+    "rainLast3Days",
+    "humidityHigh",
+    "nearbyPestReports",
+    "inactiveDays",
+    "tasksCompleted7d"
+  ],
+  "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "bias": 0.0,
+  "thresholds": { "medium": 0.4, "high": 0.7 },
+  "trainedAt": "1970-01-01T00:00:00.000Z",
+  "version": "baseline_v1",
+  "datasetRows": 0,
+  "label": "labelDrought",
+  "metrics": null,
+  "warning": "Baseline model only \u2014 more data needed."
+}
