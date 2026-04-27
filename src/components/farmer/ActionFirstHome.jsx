@@ -24,6 +24,17 @@ import {
   localizeRiskAlert,
 } from '../../lib/taskWording.js';
 import { completeCycleTask } from '../../hooks/useCropCycles.js';
+// Offline-first parity with FarmerTodayPage.handleComplete: persist
+// the completion locally + opportunistic queue drain BEFORE the
+// network call, so a flight-mode tap still survives a refresh and
+// drains automatically when connectivity returns. Imports stay
+// narrow — only the two helpers we use here.
+import {
+  saveTaskCompletion,
+  drainQueue,
+  defaultSender,
+  getActiveFarmId,
+} from '../../store/farrowayLocal.js';
 import SupportCard from '../SupportCard.jsx';
 
 export default function ActionFirstHome({ today, progress, cropStage, onTaskCompleted, onReportIssue }) {
@@ -132,13 +143,35 @@ function PrimaryTaskCard({ task, t, onCompleted, onReportIssue }) {
   async function handleComplete() {
     if (!task || busy) return;
     setBusy(true); setErr(null);
+    // Offline-first: persist locally + queue for sync FIRST so a
+    // refresh preserves the completion even if the network call
+    // never reaches the server. Mirrors FarmerTodayPage.handleComplete
+    // so both farmer entry points behave the same offline.
+    try {
+      const farmId = (task && (task.farmId || task.cycleId)) || getActiveFarmId();
+      saveTaskCompletion({ taskId: task.id, farmId });
+    } catch { /* never block the user on local-save bookkeeping */ }
     try {
       await completeCycleTask(task.id);
       onCompleted?.(task);
     } catch (e) {
-      setErr(e?.code || 'error');
+      // Local save above already covers persistence; the network
+      // attempt failing is fine (server returns 5xx OR offline).
+      // Surface the error code only when it's not a transient
+      // network blip — those drain on the next online tick.
+      const code = e?.code || 'error';
+      if (code !== 'network_error' && code !== 'offline') {
+        setErr(code);
+      }
+      // Still call onCompleted so the UI advances optimistically
+      // (the local store is the source of truth for "is this task
+      // marked done"; the queue handles the eventual server sync).
+      try { onCompleted?.(task); } catch { /* swallow */ }
     } finally {
       setBusy(false);
+      // Opportunistic drain — if connectivity is back, flush queue.
+      try { drainQueue(defaultSender).catch(() => {}); }
+      catch { /* no-op when sender unavailable */ }
     }
   }
 

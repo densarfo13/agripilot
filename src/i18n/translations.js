@@ -5185,7 +5185,7 @@ const T = {
   'wx.updated.mins': { en: 'Updated {mins} min ago', fr: 'Mis à jour il y a {mins} min', sw: 'Imesasishwa dakika {mins} zilizopita', ha: 'An sabunta minti {mins} da suka wuce', tw: 'Wɔayɛ no foforɔ simma {mins} a atwam' },
   'wx.updated.1hour': { en: 'Updated 1 hour ago', fr: 'Mis à jour il y a 1 heure', sw: 'Imesasishwa saa 1 iliyopita', ha: 'An sabunta awa 1 da ya wuce', tw: 'Wɔayɛ no foforɔ dɔnhwere 1 a atwam' },
   'wx.updated.hours': { en: 'Updated {hours} hours ago', fr: 'Mis à jour il y a {hours} heures', sw: 'Imesasishwa masaa {hours} yaliyopita', ha: 'An sabunta awanni {hours} da suka wuce', tw: 'Wɔayɛ no foforɔ dɔnhwere {hours} a atwam' },
-  'wx.updated.never': { en: '', fr: '', sw: '', ha: '', tw: '' },
+  'wx.updated.never': { en: 'Not updated yet', fr: 'Pas encore mis à jour', sw: 'Bado haijasasishwa', ha: 'Ba a sabunta ba tukuna', tw: 'Wɔnnyɛɛ no foforɔ ɛda' },
 
   // ─── Stale weather indicators ────────────────────
   'wx.stale': { en: 'Weather may be outdated', fr: 'Météo peut-être obsolète', sw: 'Hali ya hewa inaweza kuwa ya zamani', ha: 'Yanayi na iya zama tsoho', tw: 'Wim tebea ebia ayɛ dada' },

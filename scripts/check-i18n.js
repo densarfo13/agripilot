@@ -40,9 +40,27 @@ const ROOT = path.resolve(HERE, '..');
 const SRC_DIRS  = ['src'];
 const TRANSLATIONS_FILE = path.join(ROOT, 'src/i18n/translations.js');
 const HI_FILE  = path.join(ROOT, 'src/i18n/hi.js');
+const I18N_DIR = path.join(ROOT, 'src/i18n');
 
 // Active launch languages
 const LAUNCH_LANGUAGES = ['en', 'tw', 'hi'];
+
+// Locale-overlay convention: every file matching this pattern in
+// the i18n/ directory is merged into the runtime dictionary by
+// `mergeManyOverlays` in src/i18n/index.js. Reading them here keeps
+// this status report aligned with what the app actually renders;
+// otherwise overlays land at runtime but this script reports them
+// as missing forever.
+function listOverlayFiles() {
+  const out = [];
+  try {
+    for (const name of fs.readdirSync(I18N_DIR)) {
+      if (!/Translations\.js$/.test(name)) continue;
+      out.push(path.join(I18N_DIR, name));
+    }
+  } catch { /* dir missing — no overlays */ }
+  return out;
+}
 
 // Soft warning threshold (per spec #7).
 const WARN_BELOW = 0.95;
@@ -71,6 +89,26 @@ function walkSrc(dir, out) {
 // We accept the function names that bind to the central `t()` helper.
 const T_CALL_RE = /\b(?:t|tShort|tPlural)\s*\(\s*['"]([a-zA-Z_][\w.]+)['"]/g;
 
+// Skip false-positive matches we know are not real call sites:
+//   1. Dynamic-prefix keys constructed via `t('status.' + value, fb)`
+//      — the regex captures the bare prefix `status.` which can never
+//      be a real leaf key. Trailing `.` is the tell.
+//   2. Generic doc-comment keys (`'key'`, `'some.key'`) used in
+//      JSDoc usage examples in tSafe.js / useStrictTranslation.js.
+//   3. SMS template doc-comment keys (`'sms.flood_risk'` etc.)
+//      shown inside the JSDoc block of tShort() — the actual
+//      runtime call uses a real key from SMS_SHORT, not these.
+function isFalsePositiveKey(key, line) {
+  if (!key) return true;
+  if (key.endsWith('.')) return true;
+  if (key === 'key' || key === 'some.key') return true;
+  // JSDoc / line comment context — `*` at start (after whitespace)
+  // or `//` before the match means the call lives in a comment.
+  const trimmed = line.trimStart();
+  if (trimmed.startsWith('*') || trimmed.startsWith('//')) return true;
+  return false;
+}
+
 function collectUsedKeys(files) {
   const used = new Map(); // key → first file:line
   for (const f of files) {
@@ -82,6 +120,7 @@ function collectUsedKeys(files) {
       let m;
       T_CALL_RE.lastIndex = 0;
       while ((m = T_CALL_RE.exec(line))) {
+        if (isFalsePositiveKey(m[1], line)) continue;
         if (!used.has(m[1])) {
           used.set(m[1], `${path.relative(ROOT, f).replace(/\\/g, '/')}:${i + 1}`);
         }
@@ -99,6 +138,38 @@ function extractKeys(text) {
   let m;
   while ((m = re.exec(text))) set.add(m[1]);
   return set;
+}
+
+// Locale-first overlay shape:
+//
+//   export const FOO_TRANSLATIONS = Object.freeze({
+//     en: { 'home.greet': 'Hello' },
+//     fr: { 'home.greet': 'Bonjour' },
+//   });
+//
+// extractKeysInLangBlock returns the set of `'key'` literals nested
+// inside the given top-level locale block (`en:` / `fr:` / etc.).
+// We match the literal `lang:` token followed by `{` and balance
+// braces to find the block end.
+function extractKeysInLangBlock(text, lang) {
+  const out = new Set();
+  const headerRe = new RegExp(`(?:^|[\\s,])${lang}\\s*:\\s*\\{`, 'g');
+  let h;
+  while ((h = headerRe.exec(text))) {
+    let depth = 1;
+    let i = h.index + h[0].length;
+    while (i < text.length && depth > 0) {
+      const ch = text[i];
+      if (ch === '{') depth += 1;
+      else if (ch === '}') depth -= 1;
+      i += 1;
+    }
+    const block = text.slice(h.index + h[0].length, i - 1);
+    const keyRe = /^\s*['"]([a-zA-Z][\w.]+)['"]\s*:/gm;
+    let k;
+    while ((k = keyRe.exec(block))) out.add(k[1]);
+  }
+  return out;
 }
 
 function extractKeysWithLangSlot(text, lang) {
@@ -148,6 +219,23 @@ function main() {
   const enDefined = extractKeys(enText);
   const hiDefined = extractKeys(hiText);
   const twDefined = extractKeysWithLangSlot(enText, 'tw');
+
+  // Overlay files (locale-first shape: `{en: {...}, fr: {...}}`)
+  // are merged at runtime by mergeManyOverlays. Walk them here so
+  // this script reports what the user actually renders, not what's
+  // physically in translations.js. Missing slots are still surfaced
+  // because each overlay block is parsed per-language.
+  for (const overlayPath of listOverlayFiles()) {
+    let txt;
+    try { txt = fs.readFileSync(overlayPath, 'utf8'); }
+    catch { continue; }
+    const enKeys = extractKeysInLangBlock(txt, 'en');
+    for (const k of enKeys) enDefined.add(k);
+    const twKeys = extractKeysInLangBlock(txt, 'tw');
+    for (const k of twKeys) twDefined.add(k);
+    const hiKeys = extractKeysInLangBlock(txt, 'hi');
+    for (const k of hiKeys) hiDefined.add(k);
+  }
 
   const definedByLang = { en: enDefined, tw: twDefined, hi: hiDefined };
 

@@ -23,12 +23,17 @@ export const USE_CROP_TRANSLATIONS = Object.freeze({
   sw: {
     'cropFit.results.useThisCrop':    'Tumia zao hili',
     'cropFit.results.farmUpdated':    'Shamba limesasishwa',
+    'cropFit.results.useCropFailed':  'Imeshindikana kusasisha shamba lako. Jaribu tena.',
   },
   tw: {
     'cropFit.results.useThisCrop':    'Fa saa aduan yi',
+    'cropFit.results.farmUpdated':    'Wɔayɛ w\u02BCafuo no foforɔ',
+    'cropFit.results.useCropFailed':  'Yɛantumi ansiesie w\u02BCafuo no. S\u025Br\u025B s\u0254 mu.',
   },
   ha: {
     'cropFit.results.useThisCrop':    'Yi amfani da wannan amfani',
+    'cropFit.results.farmUpdated':    'An sabunta gonarka cikin nasara',
+    'cropFit.results.useCropFailed':  'Ba a iya sabunta gonarka ba. Ka sake gwadawa.',
   },
 });
 

@@ -43,6 +43,7 @@ import { ROI_TRANSLATIONS }                from './roiTranslations.js';
 import { TODAY_QUICK_TRANSLATIONS }        from './todayQuickTranslations.js';
 import { RECOVERY_TRANSLATIONS }           from './recoveryTranslations.js';
 import { SESSION_TRANSLATIONS }            from './sessionTranslations.js';
+import { GAP_KEYS_TRANSLATIONS }           from './gapKeysTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -97,6 +98,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     TODAY_QUICK_TRANSLATIONS,
     RECOVERY_TRANSLATIONS,
     SESSION_TRANSLATIONS,
+    GAP_KEYS_TRANSLATIONS,
   ]);
 })();
 
