@@ -32,10 +32,11 @@ export default function ProfileGuard({ children }) {
   }
 
   // Always let the onboarding / setup destinations render themselves.
-  if (location.pathname === '/onboarding/fast') return children;
-  if (location.pathname === '/onboarding')      return children;
-  if (location.pathname === '/onboarding/v3')   return children;
-  if (location.pathname === '/profile/setup')   return children;
+  if (location.pathname === '/onboarding/quick') return children;
+  if (location.pathname === '/onboarding/fast')  return children;
+  if (location.pathname === '/onboarding')       return children;
+  if (location.pathname === '/onboarding/v3')    return children;
+  if (location.pathname === '/profile/setup')    return children;
 
   // If the profile is already complete, no routing work needed.
   if (isProfileComplete(profile || {})) return children;
@@ -44,8 +45,12 @@ export default function ProfileGuard({ children }) {
   const firstTime = isFirstTimeFarmer({ profile, farms });
 
   if (firstTime) {
-    // ─── First-time path: go to the fast flow, NOT the legacy form. ─
-    return <Navigate to="/onboarding/fast" replace />;
+    // ─── First-time path: frictionless QuickStart screen ───────
+    // Single-tap setup that auto-creates a default farm + auto-
+    // detects country + lands the user in /tasks. The legacy
+    // /onboarding/fast remains reachable for QA + any deep links
+    // that were previously documented.
+    return <Navigate to="/onboarding/quick" replace />;
   }
 
   // ─── Returning user with an incomplete legacy profile: the old

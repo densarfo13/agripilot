@@ -31,6 +31,13 @@ import { formatRelativeUpdate } from '../lib/relativeTime.js';
 import { isReallyOnline } from '../services/isReallyOnline.js';
 import { offlineEvents } from '../services/offlineLogger.js';
 import VoiceButton from '../components/VoiceButton.jsx';
+// Quick-onboarding voice-first hook. Plays the day's task once
+// per session for users who came through the new QuickStart
+// welcome screen. Existing /tasks visitors are unaffected.
+import {
+  isQuickOnboarded, hasFiredQuickVoice, markQuickVoiceFired,
+} from '../utils/quickOnboarding.js';
+import { speak } from '../core/farroway/voice.js';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -195,6 +202,29 @@ export default function AllTasksPage() {
   const restTasks = sorted.slice(3);
   const totalDone = completedCount + completedTasks.length;
   const totalAll = totalDone + tasks.length;
+
+  // ─── Quick-onboarding voice-first hook ─────────────────────────
+  // Spec section 7: when /tasks loads for a user who came through
+  // QuickStart, auto-play the day's first task once. Browsers
+  // require a user gesture for speechSynthesis - the gesture is
+  // the "Start farming" tap that just navigated here, so this
+  // works on the first paint after that handler fires. Subsequent
+  // visits no-op (markQuickVoiceFired stamps localStorage).
+  useEffect(() => {
+    if (loading) return;
+    if (!currentTask) return;
+    if (!isQuickOnboarded()) return;
+    if (hasFiredQuickVoice()) return;
+    const title = (vmByTaskId[currentTask.id] && vmByTaskId[currentTask.id].title)
+      || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)
+      || '';
+    if (!title) return;
+    try { speak(title); } catch { /* never propagate */ }
+    markQuickVoiceFired();
+    // We intentionally depend only on the loaded-state signals -
+    // re-running this on every tab refocus would re-fire the voice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, currentTask && currentTask.id]);
 
   if (!profile) return null;
 
