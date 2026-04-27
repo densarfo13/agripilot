@@ -29,6 +29,7 @@
  */
 
 import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
+import { distanceKm, centroid } from '../utils/geo.js';
 
 export const CLUSTER_TUNING = Object.freeze({
   WINDOW_DAYS:        7,
@@ -39,6 +40,10 @@ export const CLUSTER_TUNING = Object.freeze({
   // pest-cluster bucket (0.5deg ≈ 55 km) so geoMerge doesn't
   // over-collapse adjacent regions.
   GEO_BUCKET_DEG:     0.25,
+  // proximityKm mode default - haversine distance threshold
+  // for the "are these reports nearby?" check. Spec section 4
+  // calls for 20-50km; 30km is the demo-friendly default.
+  PROXIMITY_KM:       30,
 });
 
 const MS_PER_DAY = 86_400_000;
@@ -250,6 +255,96 @@ function _mergeAdjacentGeo(groups, bucketDeg) {
   return merged;
 }
 
+/**
+ * Haversine-based proximity merge (limitation 1 v2 fix).
+ *
+ *   For every pair of base groups with the same country + crop +
+ *   issueType, compute the haversine distance between their
+ *   centroids; merge when distance <= proximityKm. Uses the
+ *   union-find primitive above so the merge is order-independent.
+ *
+ * Use this mode when reports carry real lat/lng (Open-Meteo +
+ * geolocation are wired). Falls through gracefully for
+ * coordinates-less groups: they're left as-is, never merged
+ * across by mistake.
+ */
+function _mergeByProximity(groups, proximityKm) {
+  const enriched = [];
+  for (const g of groups.values()) {
+    const c = _centroid(g.reports);
+    enriched.push({ g, centroid: c });
+  }
+
+  const parent = enriched.map((_, i) => i);
+  const find = (i) => {
+    while (parent[i] !== i) {
+      parent[i] = parent[parent[i]];
+      i = parent[i];
+    }
+    return i;
+  };
+  const union = (a, b) => {
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent[ra] = rb;
+  };
+
+  for (let i = 0; i < enriched.length; i += 1) {
+    for (let j = i + 1; j < enriched.length; j += 1) {
+      const A = enriched[i], B = enriched[j];
+      if (A.g.country  !== B.g.country)   continue;
+      if (A.g.crop     !== B.g.crop)      continue;
+      if (A.g.issueType !== B.g.issueType) continue;
+      if (!A.centroid || !B.centroid)      continue;
+      const d = distanceKm(A.centroid, B.centroid);
+      if (!Number.isFinite(d) || d > proximityKm) continue;
+      union(i, j);
+    }
+  }
+
+  const merged = new Map();
+  for (let i = 0; i < enriched.length; i += 1) {
+    const root = find(i);
+    const A = enriched[i].g;
+    if (!merged.has(root)) {
+      merged.set(root, {
+        id:        A.id,
+        country:   A.country,
+        region:    A.region,
+        crop:      A.crop,
+        issueType: A.issueType,
+        reports:   [...A.reports],
+        count:     A.count,
+        firstReportedAt: A.firstReportedAt,
+        lastReportedAt:  A.lastReportedAt,
+        regions:   new Set(A.regions),
+        regionCounts: new Map([[A.region, A.count]]),
+      });
+    } else {
+      const M = merged.get(root);
+      M.reports.push(...A.reports);
+      M.count += A.count;
+      M.firstReportedAt = Math.min(M.firstReportedAt, A.firstReportedAt);
+      M.lastReportedAt  = Math.max(M.lastReportedAt,  A.lastReportedAt);
+      for (const r of A.regions) M.regions.add(r);
+      M.regionCounts.set(A.region, (M.regionCounts.get(A.region) || 0) + A.count);
+    }
+  }
+
+  // Same canonicalisation as _mergeAdjacentGeo: pick the
+  // highest-count region and tag the cluster id with `|prox`.
+  for (const M of merged.values()) {
+    let best = '', bestCount = -1;
+    for (const [region, count] of M.regionCounts) {
+      if (count > bestCount) { best = region; bestCount = count; }
+    }
+    if (best) M.region = best;
+    M.id = `${M.country}|${M.region}|${M.crop}|${M.issueType}|prox`;
+    delete M.regionCounts;
+  }
+
+  return merged;
+}
+
 /* ─── public ───────────────────────────────────────────────────── */
 
 /**
@@ -260,8 +355,12 @@ function _mergeAdjacentGeo(groups, bucketDeg) {
  *   windowDays  (number)
  *   minActive   (number)
  *   onlyActive  (boolean)
- *   geoMerge    (boolean)         — enable GIS proximity merge
+ *   geoMerge    (boolean)         — enable bucket-adjacency merge
  *   bucketDeg   (number)          — geo bucket size
+ *   proximityKm (number)           — when supplied, runs the
+ *                                    haversine-based merge
+ *                                    (limitation 1 v2 fix). Wins
+ *                                    over `geoMerge`.
  */
 export function detectOutbreakClusters(reports, farms = [], opts = {}) {
   const {
@@ -271,12 +370,23 @@ export function detectOutbreakClusters(reports, farms = [], opts = {}) {
     onlyActive     = false,
     geoMerge       = false,
     bucketDeg      = CLUSTER_TUNING.GEO_BUCKET_DEG,
+    proximityKm    = null,
   } = opts || {};
 
   if (!Array.isArray(reports) || reports.length === 0) return [];
 
   const baseGroups = _buildBaseGroups(reports, { now, windowDays });
-  const groups = geoMerge ? _mergeAdjacentGeo(baseGroups, bucketDeg) : baseGroups;
+
+  // Mode pick: explicit proximityKm wins; then geoMerge bucket
+  // adjacency; then no merge at all.
+  let groups;
+  if (Number.isFinite(Number(proximityKm)) && Number(proximityKm) > 0) {
+    groups = _mergeByProximity(baseGroups, Number(proximityKm));
+  } else if (geoMerge) {
+    groups = _mergeAdjacentGeo(baseGroups, bucketDeg);
+  } else {
+    groups = baseGroups;
+  }
 
   const result = [];
   for (const g of groups.values()) {
@@ -284,6 +394,11 @@ export function detectOutbreakClusters(reports, farms = [], opts = {}) {
     const active = g.count >= minActive;
     if (onlyActive && !active) continue;
     const key = { country: g.country, region: g.region, crop: g.crop };
+    // Cluster centroid - derived from the reports' lat/lng. Used
+    // by the NGO panel + farmer banner to surface "within Xkm"
+    // copy. Reports without coords yield null here; consumers
+    // hide the lat/lng row in that case.
+    const c = _centroid(g.reports);
     result.push(Object.freeze({
       id:                g.id,
       country:           g.country,
@@ -294,6 +409,8 @@ export function detectOutbreakClusters(reports, farms = [], opts = {}) {
       reportCount:       g.count,
       severity,
       active,
+      lat:               c ? c.lat : null,
+      lng:               c ? c.lng : null,
       firstReportedAt:   Number.isFinite(g.firstReportedAt) ? g.firstReportedAt : null,
       lastReportedAt:    Number.isFinite(g.lastReportedAt)  ? g.lastReportedAt  : null,
       affectedFarmIds:   Object.freeze(_affectedFarms(farms, key)),

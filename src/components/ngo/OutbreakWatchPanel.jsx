@@ -137,6 +137,14 @@ export default function OutbreakWatchPanel({ farms = [] }) {
                     <span style={S.rowIssue}>
                       {tSafe(`outbreak.issue${c.issueType[0].toUpperCase()}${c.issueType.slice(1)}`, c.issueType)}
                     </span>
+                    {Number.isFinite(Number(c.lat)) && Number.isFinite(Number(c.lng)) && (
+                      <>
+                        <span style={S.rowDot} aria-hidden="true">{'\u2022'}</span>
+                        <span style={S.rowGeo} title={`${c.lat}, ${c.lng}`}>
+                          {Number(c.lat).toFixed(2)}, {Number(c.lng).toFixed(2)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div style={S.rowMetrics}>
@@ -229,6 +237,11 @@ const S = {
   rowDot: { color: 'rgba(255,255,255,0.4)' },
   rowCrop: { fontWeight: 700, color: '#86EFAC' },
   rowIssue: { fontWeight: 600, color: '#FCD34D' },
+  rowGeo: {
+    fontFamily: 'monospace',
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.45)',
+  },
   rowMetrics: {
     display: 'flex', alignItems: 'center', gap: '0.625rem',
     flexWrap: 'wrap',

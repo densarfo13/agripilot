@@ -25,6 +25,7 @@ import React, { useEffect, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { speak } from '../../core/farroway/voice.js';
 import { computeFarmRisks } from '../../outbreak/riskEngine.js';
+import { distanceKm } from '../../utils/geo.js';
 
 const VOICE_LEDGER_KEY = 'farroway_risk_voice_ledger';
 
@@ -80,6 +81,23 @@ export default function RiskAlertBanner({
     : 'Dry conditions. Water your crops.';
   const ctaFb    = isPest ? 'Check crop' : 'Water crops';
 
+  // Compute the "within Xkm" hint when both the farm and the
+  // cluster have lat/lng. Distance is rounded up so a 24.6km
+  // figure renders as "25km" - matches the way farmers think.
+  let proximityKm = null;
+  if (isPest && cluster
+      && Number.isFinite(Number(cluster.lat))
+      && Number.isFinite(Number(cluster.lng))
+      && farm.location
+      && Number.isFinite(Number(farm.location.lat))
+      && Number.isFinite(Number(farm.location.lng))) {
+    const d = distanceKm(
+      { lat: Number(farm.location.lat), lng: Number(farm.location.lng) },
+      { lat: Number(cluster.lat),        lng: Number(cluster.lng)        },
+    );
+    if (Number.isFinite(d)) proximityKm = Math.max(1, Math.ceil(d));
+  }
+
   // ── one-shot voice per (farm, kind, day) ─────────────────────
   const voiceKey = `${farm && farm.id ? farm.id : 'anon'}:${risks.top.kind}`;
   useEffect(() => {
@@ -117,8 +135,12 @@ export default function RiskAlertBanner({
           {tSafe(titleKey, titleFb)}
         </strong>
         <span style={S.body}>
-          {tSafe('risk.takeAction',
-            'High risk on your farm. Take action today.')}
+          {proximityKm != null
+            ? tSafe('risk.pestNearbyKm',
+                'Pest activity reported within {km}km. Check your crops today.')
+                .replace('{km}', String(proximityKm))
+            : tSafe('risk.takeAction',
+                'High risk on your farm. Take action today.')}
         </span>
       </div>
       <div style={S.actions}>
