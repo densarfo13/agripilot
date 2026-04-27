@@ -38,6 +38,7 @@ import { OUTBREAK_TRANSLATIONS }           from './outbreakTranslations.js';
 import { RISK_TRANSLATIONS }               from './riskTranslations.js';
 import { NGO_CONTROL_TRANSLATIONS }        from './ngoControlTranslations.js';
 import { LABEL_TRANSLATIONS }              from './labelTranslations.js';
+import { NGO_INSIGHTS_TRANSLATIONS }       from './ngoInsightsTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -87,6 +88,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     RISK_TRANSLATIONS,
     NGO_CONTROL_TRANSLATIONS,
     LABEL_TRANSLATIONS,
+    NGO_INSIGHTS_TRANSLATIONS,
   ]);
 })();
 
