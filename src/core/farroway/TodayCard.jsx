@@ -44,7 +44,11 @@ export default function TodayCard({ farm: farmProp = null, onDone = null }) {
   const message = getTaskMessage(taskId);
 
   function handleDone() {
-    markTaskDone(taskId);
+    // markTaskDone is now async (IDB + outbox). The mirror inside
+    // the store updates synchronously before the await, so we can
+    // fire-and-forget without blocking the UI on the IDB write -
+    // any failure is swallowed by the store wrapper.
+    Promise.resolve(markTaskDone(taskId)).catch(() => { /* swallow */ });
     speak(tSafe('farroway.today.praise', 'Good job'));
     if (typeof onDone === 'function') {
       try { onDone(taskId, data); }

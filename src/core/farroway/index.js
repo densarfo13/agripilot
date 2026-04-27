@@ -26,7 +26,10 @@ export {
   getCurrentFarm,
   saveFarm,
   updateFarm,
+  hydrateFarm,
   FARM_KEY,
+  FARM_IDB_KEY,
+  FARM_STORE,
 } from './farmStore.js';
 
 // 2. SETTINGS STORE — re-export the existing canonical store so
@@ -55,7 +58,10 @@ export {
   getProgress,
   resetProgress,
   getCompletedCount,
+  hydrateProgress,
   PROGRESS_KEY,
+  PROGRESS_IDB_KEY,
+  PROGRESS_STORE,
 } from './progressStore.js';
 
 // 5. VOICE
@@ -68,7 +74,17 @@ export { sendSMS } from './smsService.js';
 export {
   runDailyReminder,
   LAST_NOTIFICATION_KEY,
+  LAST_NOTIFICATION_TASK_KEY,
 } from './notificationSystem.js';
+
+// Production sync layer (IndexedDB outbox + 15s drainer)
+export { enqueueAction } from '../../sync/actionQueue.js';
+export {
+  runSync,
+  useSyncLoop,
+  SYNC_ENDPOINT,
+  SYNC_INTERVAL_MS,
+} from '../../sync/syncWorker.js';
 export { getTaskMessage, TASK_MESSAGE_MAP } from './taskMessages.js';
 
 // 8. NGO ALERT ENGINE

@@ -30,21 +30,27 @@ import { getTaskMessage } from './taskMessages.js';
 import { speak } from './voice.js';
 import { sendSMS } from './smsService.js';
 
-export const LAST_NOTIFICATION_KEY = 'farroway_last_notification';
+export const LAST_NOTIFICATION_KEY      = 'farroway_last_notification';
+export const LAST_NOTIFICATION_TASK_KEY = 'farroway_last_notification_task';
 
-function safeReadLastNotificationStamp() {
+function _safeRead(key) {
   try {
     if (typeof localStorage === 'undefined') return '';
-    return localStorage.getItem(LAST_NOTIFICATION_KEY) || '';
+    return localStorage.getItem(key) || '';
   } catch { return ''; }
 }
 
-function safeWriteLastNotificationStamp(stamp) {
+function _safeWrite(key, value) {
   try {
     if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(LAST_NOTIFICATION_KEY, stamp);
+    localStorage.setItem(key, String(value || ''));
   } catch { /* swallow - quota / private mode */ }
 }
+
+function safeReadLastNotificationStamp() { return _safeRead(LAST_NOTIFICATION_KEY); }
+function safeWriteLastNotificationStamp(stamp) { _safeWrite(LAST_NOTIFICATION_KEY, stamp); }
+function safeReadLastNotificationTask() { return _safeRead(LAST_NOTIFICATION_TASK_KEY); }
+function safeWriteLastNotificationTask(task) { _safeWrite(LAST_NOTIFICATION_TASK_KEY, task); }
 
 function parseHM(value) {
   // settings.reminderTime is the canonical "HH:MM" the Settings
@@ -84,13 +90,23 @@ export function runDailyReminder(now = new Date()) {
   const [targetH, targetM] = parseHM(settings.reminderTime);
   if (now.getHours() !== targetH || now.getMinutes() !== targetM) return;
 
+  // Anti-spam (spec section 7):
+  //   1. Do NOT send if no farm
   const farm = getCurrentFarm();
   if (!farm) return;
 
   const data = generateDailyTask(farm);
-  // Even if data is null, fall through to the generic message so
-  // the farmer still gets a check-in.
-  const msg = getTaskMessage(data && data.mainTask);
+  const taskId = (data && data.mainTask) || 'check_farm';
+
+  //   2. Do NOT send a duplicate task we already sent today.
+  //      The day-stamp guard above already enforces "1/day max"
+  //      after a successful fire, but if a previous tick wrote
+  //      ONLY the task stamp (e.g. browser closed mid-write),
+  //      this second guard keeps us from re-firing the same task.
+  const lastTaskKey = `${today}:${taskId}`;
+  if (safeReadLastNotificationTask() === lastTaskKey) return;
+
+  const msg = getTaskMessage(taskId);
 
   showBrowserNotification(msg);
   speak(msg);
@@ -100,5 +116,8 @@ export function runDailyReminder(now = new Date()) {
     sendSMS(farm.phone, msg);
   }
 
+  // Stamp BOTH guards. Day-stamp first - it's the cheaper
+  // short-circuit on the next tick.
   safeWriteLastNotificationStamp(today);
+  safeWriteLastNotificationTask(lastTaskKey);
 }

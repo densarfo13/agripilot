@@ -21,6 +21,17 @@ import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
 import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
+// Production-readiness: drains the IndexedDB outbox at /api/sync.
+// Sits alongside the existing offline-queue + sync-manager systems
+// without replacing them - it's the path the new Farroway core
+// (TodayCard / progressStore / actionQueue) writes into.
+import { useSyncLoop } from './sync/syncWorker.js';
+// Hydrate the IDB-backed farm + progress mirrors on boot so the
+// first synchronous getCurrentFarm() / getProgress() call after
+// reload is fresh, even when another tab updated IDB while this
+// tab was closed.
+import { hydrateFarm } from './core/farroway/farmStore.js';
+import { hydrateProgress } from './core/farroway/progressStore.js';
 
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -278,6 +289,10 @@ export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
   const stepUpRequired = useAuthStore((s) => s.stepUpRequired);
 
+  // Drain the new IndexedDB outbox at /api/sync on a 15s tick.
+  // Single-flight guard inside; safe to mount once at the root.
+  useSyncLoop();
+
   useEffect(() => {
     loadTranslations(getCurrentLang())
       .then(() => setI18nReady(true))
@@ -288,6 +303,11 @@ export default function App() {
     // renders real data on first load. No-ops outside demo mode and
     // when the store already has real data (see demoSeed.isStoreEmpty).
     try { ensureDemoSeed(); } catch { /* never blocks app boot */ }
+    // Refresh the synchronous mirrors of the IDB-backed farm +
+    // progress stores. Both helpers swallow their own errors so
+    // boot is never blocked by a missing IndexedDB.
+    try { hydrateFarm(); } catch { /* never blocks app boot */ }
+    try { hydrateProgress(); } catch { /* never blocks app boot */ }
   }, []);
 
   // Lightweight offline-action queue auto-flush (additive — sits
