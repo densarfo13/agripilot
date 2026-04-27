@@ -40,6 +40,7 @@ import { NGO_CONTROL_TRANSLATIONS }        from './ngoControlTranslations.js';
 import { LABEL_TRANSLATIONS }              from './labelTranslations.js';
 import { NGO_INSIGHTS_TRANSLATIONS }       from './ngoInsightsTranslations.js';
 import { ROI_TRANSLATIONS }                from './roiTranslations.js';
+import { TODAY_QUICK_TRANSLATIONS }        from './todayQuickTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -91,6 +92,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     LABEL_TRANSLATIONS,
     NGO_INSIGHTS_TRANSLATIONS,
     ROI_TRANSLATIONS,
+    TODAY_QUICK_TRANSLATIONS,
   ]);
 })();
 

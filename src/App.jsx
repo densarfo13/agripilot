@@ -86,6 +86,10 @@ const NgoValueDashboard = lazy(() => import('./pages/NgoValueDashboard.jsx'));
 // devices that never expand the map.
 const NgoControlPanel = lazy(() => import('./pages/NgoControlPanel.jsx'));
 const Pricing = lazy(() => import('./pages/Pricing.jsx'));
+// Optimised single-task farmer screen. Mounted at /today/quick
+// so the existing /today (FarmerTodayPage) keeps working for
+// users who depend on its richer surfaces.
+const TodayQuick = lazy(() => import('./pages/Today.jsx'));
 // Frictionless one-screen onboarding for low-literacy farmers.
 // Lives alongside the legacy OnboardingV3 / FastOnboarding routes -
 // nothing is replaced; ProfileGuard now points first-time users
@@ -523,6 +527,7 @@ export default function App() {
             <Route path="/ngo/value"   element={<NgoValueDashboard />} />
             <Route path="/ngo/control" element={<NgoControlPanel />} />
             <Route path="/today" element={<FarmerTodayPage />} />
+            <Route path="/today/quick" element={<TodayQuick />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
             <Route path="/farmer/listings" element={<MyListingsPage />} />
             <Route path="/farmer/listings/new" element={<CreateListingPage />} />
