@@ -16,6 +16,7 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import NewFarmerRecommendation from './NewFarmerRecommendation.jsx';
 import { assessSeasonProfit } from '../engine/seasonProfitRules.js';
 import { detectCountryByIP } from '../utils/geolocation.js';
+import { safeParse } from '../utils/safeParse.js';
 
 // ─── Step definitions ────────────────────────────────────────
 const STEP_KEYS = ['welcome', 'farmName', 'country', 'usFarmType', 'experience', 'recommendation', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
@@ -120,10 +121,16 @@ function logOnboarding(event, detail = {}) {
   try {
     const entry = { ts: new Date().toISOString(), event, ...detail };
     const LOG_KEY = 'farroway:onboarding_log';
-    const prev = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-    prev.push(entry);
-    if (prev.length > 50) prev.splice(0, prev.length - 50);
-    localStorage.setItem(LOG_KEY, JSON.stringify(prev));
+    // safeParse instead of bare JSON.parse — corrupt log values
+    // (interrupted writes, third-party storage cleaners) used to
+    // throw here. The outer try/catch caught it but threw away
+    // the new event silently; safeParse recovers with [] so the
+    // event still lands and onboarding telemetry stays continuous.
+    const prev = safeParse(localStorage.getItem(LOG_KEY), []);
+    const list = Array.isArray(prev) ? prev : [];
+    list.push(entry);
+    if (list.length > 50) list.splice(0, list.length - 50);
+    localStorage.setItem(LOG_KEY, JSON.stringify(list));
   } catch { /* storage full or unavailable */ }
 }
 

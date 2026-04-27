@@ -44,8 +44,18 @@ export default class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
+    // Reset our local state first so React doesn't render the
+    // recovery card on top of the new navigation. Then go to "/"
+    // (NOT location.reload) so a corrupt route + a corrupt cached
+    // state can't keep re-throwing on the same path. Going home
+    // also lets AuthContext re-bootstrap from cookies cleanly
+    // instead of replaying whatever broken state caused the crash.
     this.setState({ hasError: false, error: null });
-    window.location.reload();
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.href = '/';
+      }
+    } catch { /* never throw from a recovery handler */ }
   };
 
   render() {
