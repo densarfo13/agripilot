@@ -39,6 +39,10 @@ import { hydrateProgress } from './core/farroway/progressStore.js';
 // without going through setup again.
 import { getSavedLanguage } from './utils/onboarding.js';
 import { setLanguage as setLangGlobally, getLanguage as getActiveLanguage } from './i18n/index.js';
+// Dev-only / opt-in session-state snapshot. Gated behind
+// import.meta.env.DEV OR localStorage['farroway:debug'] = '1' so
+// production users never see the line.
+import { logSessionState } from './utils/sessionDebug.js';
 
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -336,6 +340,8 @@ export default function App() {
         if (saved !== active) setLangGlobally(saved);
       }
     } catch { /* never blocks app boot */ }
+    // Dev/opt-in console snapshot. Production: silent no-op.
+    try { logSessionState('boot'); } catch { /* never blocks app boot */ }
   }, []);
 
   // Lightweight offline-action queue auto-flush (additive — sits
