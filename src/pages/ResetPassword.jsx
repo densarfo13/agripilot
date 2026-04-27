@@ -1,20 +1,27 @@
 /**
  * ResetPassword — /reset-password?token=…
  *
- * Three explicit states:
- *   1. default  — token present, user enters new password + confirm
- *   2. success  — password updated; CTA goes to /login
- *   3. expired  — token missing / invalid / expired; CTA goes to
+ * Four explicit states (user-spec §6):
+ *   1. loading  — pre-flight verifying the URL token. Shown until
+ *                 POST /api/v2/auth/verify-reset-token resolves.
+ *                 Without this, a dead link still renders the form
+ *                 and the user only finds out on submit.
+ *   2. default  — token verified valid; user enters new password
+ *                 + confirm.
+ *   3. success  — password updated; CTA goes to /login.
+ *   4. expired  — token missing / invalid / expired / used /
+ *                 belongs to a deactivated account. CTA goes to
  *                 /forgot-password so the user can request a new
- *                 link without retyping their email from memory
+ *                 link without retyping their email from memory.
  *
- * Server contract (server/routes/auth.js POST /api/v2/auth/reset-
- * password): requires { token, password } — anything else fails the
- * validateResetPasswordPayload check. An invalid or expired token
- * returns `error: 'Invalid or expired reset token'` (deliberately
- * opaque — no enumeration surface). We map that error string + any
- * 4xx bucket into the expired state so the UI offers a recovery
- * path instead of asking the user to guess.
+ * Server contract (server/routes/auth.js):
+ *   POST /api/v2/auth/verify-reset-token { token }     -> { valid: boolean }
+ *   POST /api/v2/auth/reset-password     { token, password }
+ *
+ * Both endpoints are uniformly opaque about WHY a token is bad
+ * (missing / wrong / expired / used / inactive all collapse to
+ * one signal). The page mirrors that: every failure mode lands
+ * on the same recovery CTA without leaking detail.
  *
  * Farroway styling: dark #0F172A background, #1B2330 card, #22C55E
  * primary CTA, #EAF2FF body text, mobile-first (centered card,
@@ -24,7 +31,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { resetPassword } from '../lib/api';
+import { resetPassword, verifyResetToken } from '../lib/api';
 import { useTranslation } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';
 import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
@@ -64,11 +71,37 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirm,  setConfirm]  = useState('');
   const [loading,  setLoading]  = useState(false);
-  const [view,     setView]     = useState(() => (token ? 'default' : 'expired'));
+  // Initial view depends on whether the URL even carries a token.
+  // Missing token short-circuits to 'expired' immediately so we
+  // don't waste a network round-trip on a guaranteed failure.
+  // Otherwise we start on 'verifying' and the on-mount effect
+  // below resolves to 'default' or 'expired'.
+  const [view,     setView]     = useState(() => (token ? 'verifying' : 'expired'));
   const [fieldErrors, setFieldErrors] = useState({}); // { password?, confirm? }
   const [formError, setFormError] = useState(''); // generic banner when not field-scoped
   const submittingRef = useRef(false);
   const newPwRef = useRef(null);
+
+  // Pre-flight verify on mount — fail closed (treat any non-true
+  // response, including network errors, as expired) so a dead link
+  // surfaces the recovery CTA before the user types a new password.
+  // The endpoint itself is uniformly opaque about WHY (no enumeration
+  // surface); the page mirrors that opacity in its single 'expired'
+  // view.
+  useEffect(() => {
+    if (!token) return; // already on 'expired'
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await verifyResetToken({ token });
+        if (cancelled) return;
+        setView(result && result.valid === true ? 'default' : 'expired');
+      } catch {
+        if (!cancelled) setView('expired');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
 
   // Autofocus the first password field on default view.
   useEffect(() => {
@@ -95,6 +128,11 @@ export default function ResetPassword() {
     submitLbl:        resolve(t, 'auth.resetPassword.submit',      'Reset Password'),
     submittingLbl:    resolve(t, 'auth.resetPassword.submitting',  'Resetting\u2026'),
     backToLoginLbl:   resolve(t, 'auth.resetPassword.backToLogin', 'Back to login'),
+    // Loading (pre-flight verify on mount)
+    verifyingTitle:   resolve(t, 'auth.resetPassword.verifyingTitle',
+      'Checking your reset link\u2026'),
+    verifyingSubtitle: resolve(t, 'auth.resetPassword.verifyingSubtitle',
+      'One moment while we make sure this link is still valid.'),
     // Validation
     errPwRequired:    resolve(t, 'auth.resetPassword.errNewPwRequired',
       'New password is required'),
@@ -175,6 +213,30 @@ export default function ResetPassword() {
       setLoading(false);
       submittingRef.current = false;
     }
+  }
+
+  // ─── Render: verifying (pre-flight) ────────────────────────────
+  // Must NOT show the password form here — submitting against an
+  // unverified token would leak detail about the failure mode via
+  // the timing of /reset-password's response.
+  if (view === 'verifying') {
+    return (
+      <div style={S.page}>
+        <div
+          style={S.card}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          data-testid="reset-password-verifying"
+        >
+          <div style={S.iconWrap} aria-hidden="true">
+            <Spinner />
+          </div>
+          <h1 style={S.title}>{L.verifyingTitle}</h1>
+          <p style={S.subtitle}>{L.verifyingSubtitle}</p>
+        </div>
+      </div>
+    );
   }
 
   // ─── Render: success ───────────────────────────────────────────
@@ -334,6 +396,28 @@ export default function ResetPassword() {
 }
 
 // ─── Inline SVG icons (no dependency on an icon library) ─────────
+function Spinner() {
+  // Pure-CSS spinner — keyed off the `farroway-spin` keyframe used
+  // elsewhere in the app (ProfileGuard / OnboardingSteps). No CSS
+  // animation library, no extra import. The keyframe is registered
+  // in the global stylesheet that ships with the auth pages so we
+  // can reference it directly.
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-block',
+        width: '1.5rem',
+        height: '1.5rem',
+        border: '3px solid rgba(255,255,255,0.16)',
+        borderTopColor: '#22C55E',
+        borderRadius: '50%',
+        animation: 'farroway-spin 0.8s linear infinite',
+      }}
+    />
+  );
+}
+
 function CheckIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">

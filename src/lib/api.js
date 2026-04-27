@@ -168,6 +168,30 @@ export function resetPassword(payload) {
   }, false);
 }
 
+/**
+ * verifyResetToken — pre-flight check used by ResetPassword on
+ * mount. Returns `{ valid: boolean }` ONLY; never the user id,
+ * email, or reason. The endpoint fails closed on every error mode
+ * (missing token, wrong token, expired, used, inactive user, DB
+ * blip) so the UI can decide between "show form" and "show
+ * recovery CTA" without ever leaking enumeration data.
+ *
+ * Caller contract: returns `{ valid: false }` on network error
+ * too (so the UI lands on the dead-link view rather than
+ * crashing on a refresh from a captive-portal Wi-Fi).
+ */
+export async function verifyResetToken({ token }) {
+  try {
+    const data = await request('/api/v2/auth/verify-reset-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }, false);
+    return { valid: !!(data && data.valid) };
+  } catch {
+    return { valid: false };
+  }
+}
+
 // ─── SMS verification (provider-agnostic OTP) ──────────────
 // Works for password reset, account recovery, and optional login
 // verification. The server delegates to an active Twilio-Verify /

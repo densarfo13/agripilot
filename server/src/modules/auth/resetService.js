@@ -142,6 +142,53 @@ export async function initiatePasswordReset({ email }) {
   return { message: 'If that email exists, a reset link has been sent.' };
 }
 
+// ─── Verify Reset Token (pre-flight) ───────────────────────
+
+/**
+ * Pre-flight check for a reset token. Used by the ResetPassword
+ * page on mount so a dead link surfaces the recovery CTA before
+ * the user types a new password and only finds out on submit.
+ *
+ * Security rules
+ *   * Returns ONLY `{ valid: boolean }` — never the user id, the
+ *     email, or any reason ("expired" vs "used" vs "wrong"). Every
+ *     failure mode collapses to `{ valid: false }` so the endpoint
+ *     can't be used as an oracle.
+ *   * The token in the body is the RAW value from the URL; we hash
+ *     it before lookup just like /reset-password does.
+ *   * Does NOT mark the token used. The caller still has to POST
+ *     /reset-password with the new password to consume the token.
+ *   * Inactive users: token is treated as invalid (consistent with
+ *     /reset-password behaviour).
+ */
+export async function verifyResetToken({ rawToken }) {
+  if (!rawToken || typeof rawToken !== 'string') {
+    return { valid: false };
+  }
+
+  let resetToken = null;
+  try {
+    const tokenHash = hashToken(rawToken);
+    resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: { select: { active: true } } },
+    });
+  } catch {
+    // DB blip — fail closed so a transient lookup error doesn't
+    // pretend a real token was valid.
+    return { valid: false };
+  }
+
+  if (!resetToken) return { valid: false };
+  if (resetToken.usedAt) return { valid: false };
+  if (new Date() > resetToken.expiresAt) return { valid: false };
+  if (resetToken.user && resetToken.user.active === false) {
+    return { valid: false };
+  }
+
+  return { valid: true };
+}
+
 // ─── Complete Reset ────────────────────────────────────────
 
 /**

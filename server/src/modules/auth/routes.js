@@ -7,7 +7,7 @@ import { registrationLimiter, loginLimiter, mfaVerifyLimiter, passwordResetLimit
 import { idempotencyCheck } from '../../middleware/idempotency.js';
 import * as authService from './service.js';
 import { farmerSelfRegister, getFarmerProfile } from './farmer-registration.js';
-import { initiatePasswordReset, completePasswordReset } from './resetService.js';
+import { initiatePasswordReset, completePasswordReset, verifyResetToken } from './resetService.js';
 import { writeAuditLog } from '../audit/service.js';
 import { logAuthEvent } from '../../utils/opsLogger.js';
 import * as federated from './federated.js';
@@ -190,6 +190,21 @@ router.post('/forgot-password', passwordResetLimiter, asyncHandler(async (req, r
   if (!isValidEmail(email)) return res.status(400).json({ error: 'Invalid email format' });
 
   const result = await initiatePasswordReset({ email });
+  res.json(result);
+}));
+
+// ─── Verify Reset Token (pre-flight, no side effects) ─
+// The ResetPassword page calls this on mount so a dead link
+// surfaces the recovery CTA before the farmer enters a new
+// password. Returns ONLY { valid: boolean } — never the reason,
+// never the user id, never the email. Same rate limiter as the
+// other reset paths so token guessing pays the same cost.
+
+router.post('/verify-reset-token', passwordResetLimiter, asyncHandler(async (req, res) => {
+  const { token } = req.body || {};
+  // Empty / missing token → uniformly invalid (no error code so the
+  // endpoint can't be used to distinguish "not sent" from "wrong").
+  const result = await verifyResetToken({ rawToken: token });
   res.json(result);
 }));
 

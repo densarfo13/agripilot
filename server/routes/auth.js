@@ -687,6 +687,47 @@ router.get('/recovery-methods', (_req, res) => {
   return res.json({ email, sms });
 });
 
+// ─── Verify Reset Token (pre-flight, no side effects) ─────
+// Pre-flight check used by the ResetPassword page on mount so a
+// dead link surfaces the recovery CTA before the farmer types a
+// new password. Returns ONLY `{ valid: boolean }` — every failure
+// mode (missing / wrong / expired / used / inactive) collapses to
+// `{ valid: false }` so the endpoint can't be turned into an
+// existence oracle. No email, no user id, no reason ever leaks.
+//
+// Rate-limited identically to /reset-password so token guessing
+// pays the same cost on either path. Does NOT mark the token used
+// — the consume step still happens on POST /reset-password with
+// the new password.
+router.post('/verify-reset-token', passwordResetLimiter, async (req, res) => {
+  try {
+    const token = (req.body && typeof req.body.token === 'string')
+      ? req.body.token.trim()
+      : '';
+    if (!token) return res.json({ valid: false });
+
+    const tokenHash = sha256(token);
+    const record = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: { select: { active: true } } },
+    });
+
+    if (!record) return res.json({ valid: false });
+    if (record.usedAt) return res.json({ valid: false });
+    if (record.expiresAt < new Date()) return res.json({ valid: false });
+    if (record.user && record.user.active === false) {
+      return res.json({ valid: false });
+    }
+
+    return res.json({ valid: true });
+  } catch (error) {
+    // Fail closed: a DB blip must NOT pretend a wrong token was
+    // valid. The client treats `valid: false` as the dead-link UX.
+    console.error('POST /api/v2/auth/verify-reset-token failed:', error);
+    return res.json({ valid: false });
+  }
+});
+
 // ─── Reset Password ────────────────────────────────────────
 // Rate-limited same envelope as forgot-password so token guessing
 // pays the same price as initiation. Single-use + explicit expiry
