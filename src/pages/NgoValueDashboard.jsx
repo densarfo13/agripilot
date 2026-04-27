@@ -28,6 +28,7 @@ import { aggregateNGO } from '../metrics/ngoMetrics.js';
 import { calculateNGOCost } from '../utils/pricingCalculator.js';
 import { CURRENCY } from '../config/pricing.js';
 import { tSafe } from '../i18n/tSafe.js';
+import PestClusterPanel from '../components/ngo/PestClusterPanel.jsx';
 
 function StatTile({ label, value, accent }) {
   return (
@@ -106,6 +107,11 @@ export default function NgoValueDashboard({ farms: farmsProp = null }) {
             </span>
           </strong>
         </section>
+
+        {/* Pest activity panel - reads the local pest-report
+            mirror so it works offline + on the demo data set
+            without a backend. */}
+        <PestClusterPanel />
       </div>
     </main>
   );
