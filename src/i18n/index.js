@@ -45,6 +45,7 @@ import { RECOVERY_TRANSLATIONS }           from './recoveryTranslations.js';
 import { SESSION_TRANSLATIONS }            from './sessionTranslations.js';
 import { GAP_KEYS_TRANSLATIONS }           from './gapKeysTranslations.js';
 import { RESET_PASSWORD_TRANSLATIONS }     from './resetPasswordTranslations.js';
+import { WEEKLY_AND_NGO_ACTIONS_TRANSLATIONS } from './weeklyAndNgoActionsTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -101,6 +102,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     SESSION_TRANSLATIONS,
     GAP_KEYS_TRANSLATIONS,
     RESET_PASSWORD_TRANSLATIONS,
+    WEEKLY_AND_NGO_ACTIONS_TRANSLATIONS,
   ]);
 })();
 
