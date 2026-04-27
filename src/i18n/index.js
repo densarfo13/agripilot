@@ -41,6 +41,7 @@ import { LABEL_TRANSLATIONS }              from './labelTranslations.js';
 import { NGO_INSIGHTS_TRANSLATIONS }       from './ngoInsightsTranslations.js';
 import { ROI_TRANSLATIONS }                from './roiTranslations.js';
 import { TODAY_QUICK_TRANSLATIONS }        from './todayQuickTranslations.js';
+import { RECOVERY_TRANSLATIONS }           from './recoveryTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -93,6 +94,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     NGO_INSIGHTS_TRANSLATIONS,
     ROI_TRANSLATIONS,
     TODAY_QUICK_TRANSLATIONS,
+    RECOVERY_TRANSLATIONS,
   ]);
 })();
 

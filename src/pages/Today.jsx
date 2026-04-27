@@ -56,6 +56,8 @@ import MainTaskCard from '../components/MainTaskCard.jsx';
 import TaskActions  from '../components/TaskActions.jsx';
 import RiskBadge    from '../components/RiskBadge.jsx';
 import ProgressBar  from '../components/ProgressBar.jsx';
+import RecoveryCard, { RECOVERY_TASK_ID } from '../components/RecoveryCard.jsx';
+import { detectMissedDay } from '../utils/missedDay.js';
 
 function _greetingKey() {
   const h = new Date().getHours();
@@ -73,6 +75,11 @@ export default function Today() {
   try { farm = getCurrentFarm(); } catch { /* keep null */ }
   let data = null;
   try { data = generateDailyTask(farm); } catch { /* keep null */ }
+
+  // Missed-day detector - if true, the recovery flow takes
+  // over the main render branch below.
+  let missed = { missedDays: 0, needsRecovery: false };
+  try { missed = detectMissedDay(); } catch { /* keep defaults */ }
 
   // Resolve task / reason / icon. Spec section 9: never show an
   // empty screen - fall back to "check your farm today" with a
@@ -155,6 +162,22 @@ export default function Today() {
     catch { /* swallow */ }
   }
 
+  // Recovery flow: when needsRecovery is true, the
+  // RecoveryCard takes over the main task slot. The farmer
+  // sees a supportive welcome-back + ONE simple task. Tapping
+  // Done writes a TASK_COMPLETED for the canonical
+  // 'check_farm' id, which:
+  //   * the streak engine will read on next boot and reset
+  //     to 1 (anchor was older than yesterday)
+  //   * the event log + outcomes mirror pick up automatically
+  //   * the LabelPrompt still opens via openPrompt() so the
+  //     ML pipeline doesn't lose this re-engagement signal
+  function handleRecoveryDone(recoveryTaskId) {
+    Promise.resolve(markTaskDone(recoveryTaskId || RECOVERY_TASK_ID))
+      .catch(() => { /* swallow */ });
+    try { openPrompt(); } catch { /* swallow */ }
+  }
+
   return (
     <main style={S.page} data-testid="today-quick-page">
       <div style={S.container}>
@@ -167,15 +190,22 @@ export default function Today() {
           </h1>
         </header>
 
-        {/* 2. Main task card */}
-        <MainTaskCard task={taskMsg} />
-
-        {/* 3. Action buttons */}
-        <TaskActions
-          onListen={handleListen}
-          onDone={handleDone}
-          busy={busy}
-        />
+        {/* 2 + 3. Recovery branch OR normal task + actions */}
+        {missed.needsRecovery ? (
+          <RecoveryCard
+            missedDays={missed.missedDays}
+            onDone={handleRecoveryDone}
+          />
+        ) : (
+          <>
+            <MainTaskCard task={taskMsg} />
+            <TaskActions
+              onListen={handleListen}
+              onDone={handleDone}
+              busy={busy}
+            />
+          </>
+        )}
 
         {/* Confirmation pulse after a Done tap. Stays on
             screen briefly so the farmer sees something happen
