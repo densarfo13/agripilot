@@ -28,20 +28,60 @@ import { getCachedModel, loadModel, MODEL_TASK } from './modelStore.js';
 import { runModelSpec } from './modelRunner.js';
 import { mapRisk } from './riskMapper.js';
 import { topReasons } from './explainability.js';
+import { getWeights } from './weightsStore.js';
+
+/**
+ * Apply the adaptive deltas (from weightsStore) on top of the
+ * cold-start / trained spec. Pure: returns a new spec; never
+ * mutates the input.
+ *
+ * Adaptive layer is OFF when getWeights returns all-zeros (no
+ * labels confirmed yet) - the runtime sees the original model
+ * untouched.
+ */
+function _applyAdaptiveOverrides(modelSpec, task) {
+  if (!modelSpec
+      || !Array.isArray(modelSpec.feature_order)
+      || !Array.isArray(modelSpec.weights)) {
+    return modelSpec;
+  }
+  let deltas;
+  try { deltas = getWeights(task); }
+  catch { return modelSpec; }
+  if (!deltas) return modelSpec;
+
+  // Hot path: avoid building a new array if nothing changed.
+  let touched = false;
+  const next = modelSpec.weights.slice();
+  for (let i = 0; i < modelSpec.feature_order.length && i < next.length; i += 1) {
+    const name = modelSpec.feature_order[i];
+    const d = Number(deltas[name]);
+    if (!Number.isFinite(d) || d === 0) continue;
+    next[i] = Number(next[i] || 0) + d;
+    touched = true;
+  }
+  if (!touched) return modelSpec;
+  return {
+    ...modelSpec,
+    weights: next,
+    source:  (modelSpec.source ? `${modelSpec.source}+adaptive` : 'adaptive'),
+  };
+}
 
 function _shape(task, featuresMap, modelSpec) {
-  const prob   = runModelSpec(featuresMap, modelSpec);
-  const risk   = mapRisk(prob);
-  const reasons = topReasons(featuresMap, modelSpec, { limit: 2, onlyPositive: true });
+  const adapted = _applyAdaptiveOverrides(modelSpec, task);
+  const prob    = runModelSpec(featuresMap, adapted);
+  const risk    = mapRisk(prob);
+  const reasons = topReasons(featuresMap, adapted, { limit: 2, onlyPositive: true });
   return Object.freeze({
     task,
     prob,
     risk,
     reasons,
     model: Object.freeze({
-      source:        modelSpec.source        || null,
-      trainedAt:     modelSpec.trainedAt     || null,
-      schemaVersion: modelSpec.schemaVersion || null,
+      source:        adapted.source        || null,
+      trainedAt:     adapted.trainedAt     || null,
+      schemaVersion: adapted.schemaVersion || null,
     }),
   });
 }

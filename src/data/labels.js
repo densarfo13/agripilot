@@ -196,6 +196,27 @@ export function saveLabel(input) {
     } catch { /* never block the label save */ }
   }
 
+  // v1.6 adaptive learning: nudge the per-feature weights in
+  // weightsStore based on this confirmed label. Low-confidence
+  // labels are intentionally skipped inside learnFromLabel
+  // (passive negatives are too noisy to drive learning). Wrapped
+  // in try/catch so a learner failure never blocks the label
+  // save or the outcomes mirror.
+  try {
+    // Lazy import to avoid a circular dependency between
+    // src/data/labels.js and src/ai/learningEngine.js
+    // (learningEngine imports labels for the LABEL_KIND /
+    // CONFIDENCE enums).
+    /* eslint-disable global-require */
+    import('../ai/learningEngine.js')
+      .then((mod) => {
+        try { mod.learnFromLabel(record); }
+        catch { /* swallow */ }
+      })
+      .catch(() => { /* swallow */ });
+    /* eslint-enable global-require */
+  } catch { /* swallow */ }
+
   return record;
 }
 
