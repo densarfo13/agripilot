@@ -145,8 +145,18 @@ async function getProviderStatus() {
 
   _providerStatusPromise = (async () => {
     try {
-      const token = localStorage.getItem('farroway:token') || '';
+      // V2 auth is httpOnly-cookie-based; `credentials: 'include'`
+      // is the source of truth. The `farroway_token` (underscore,
+      // not colon) bearer header is the V1 admin session fallback
+      // — kept for back-compat with admin-tools call sites that
+      // never migrated to cookies. NOTE: prior versions read
+      // `farroway:token` (colon) which is NEVER written anywhere,
+      // so the auth header was always empty and provider-TTS auth
+      // silently fell back to the unauthenticated path.
+      const token = (typeof localStorage !== 'undefined' &&
+        localStorage.getItem('farroway_token')) || '';
       const res = await fetch('/api/v2/tts/status', {
+        credentials: 'include',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error(res.status);
@@ -171,9 +181,16 @@ async function fetchProviderAudio(text, lang) {
   if (_blobCache.has(cacheKey)) return _blobCache.get(cacheKey);
 
   try {
-    const token = localStorage.getItem('farroway:token') || '';
+    // Same auth pattern as getProviderStatus above — cookie-first
+    // via credentials: 'include', with a bearer-token fallback for
+    // V1 admin sessions. `farroway_token` (underscore) is the
+    // canonical V1 key; the older `farroway:token` (colon) was
+    // never written anywhere and produced an empty header.
+    const token = (typeof localStorage !== 'undefined' &&
+      localStorage.getItem('farroway_token')) || '';
     const res = await fetch('/api/v2/tts/synthesize', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
