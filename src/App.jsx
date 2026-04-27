@@ -43,6 +43,10 @@ import { setLanguage as setLangGlobally, getLanguage as getActiveLanguage } from
 // import.meta.env.DEV OR localStorage['farroway:debug'] = '1' so
 // production users never see the line.
 import { logSessionState } from './utils/sessionDebug.js';
+// Daily engagement loop. One small, idempotent call: marks the
+// per-day check-in flag, advances or resets the streak, and arms
+// the soft 6h reminder. Safe to mount once at the App root.
+import { initDailyLoop } from './utils/dailyLoop.js';
 
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -347,6 +351,12 @@ export default function App() {
     } catch { /* never blocks app boot */ }
     // Dev/opt-in console snapshot. Production: silent no-op.
     try { logSessionState('boot'); } catch { /* never blocks app boot */ }
+    // Daily engagement loop. Returns a teardown for the soft
+    // reminder timer; we don't capture it here because the timer
+    // is itself idempotent across re-mounts (single-flight inside
+    // scheduleReminder). On HMR the previous timer is replaced
+    // automatically.
+    try { initDailyLoop(); } catch { /* never blocks app boot */ }
   }, []);
 
   // Lightweight offline-action queue auto-flush (additive — sits
