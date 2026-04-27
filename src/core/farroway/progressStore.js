@@ -29,6 +29,10 @@
 import { dbGet, dbSet } from '../../db/indexedDB.js';
 import { safeRead, safeWrite } from './safeStorage.js';
 import { enqueueAction } from '../../sync/actionQueue.js';
+// Auto-log TASK_COMPLETED into the ML data pipeline. Fire-and-
+// forget; logEvent itself never throws and the tiny try/catch
+// around the call is belt-and-braces.
+import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
 export const PROGRESS_KEY      = 'farroway_progress';   // localStorage mirror
 export const PROGRESS_IDB_KEY  = 'main';                // IDB row id
@@ -110,6 +114,18 @@ export async function markTaskDone(task) {
 
   // 3. Outbox the server-side replay. Idempotent on action.id.
   enqueueAction('TASK_DONE', { task, date: entry.date });
+
+  // 4. Append to the ML event log. Never blocks; never throws.
+  try {
+    logEvent(EVENT_TYPES.TASK_COMPLETED, {
+      task,
+      // farmId is forwarded by callers that pass it as part of
+      // the task identifier; fall back to null so the row still
+      // lands in the global event stream.
+      farmId: (task && typeof task === 'object' && task.farmId) || null,
+      date:   entry.date,
+    });
+  } catch { /* swallow */ }
 
   return next;
 }

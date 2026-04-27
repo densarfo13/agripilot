@@ -25,6 +25,9 @@
 import { dbGet, dbSet, STORE } from '../db/indexedDB.js';
 import { enqueueAction } from '../sync/actionQueue.js';
 import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
+// Auto-log PEST_REPORTED (also disease + unknown) into the ML
+// event stream. Fire-and-forget; never throws.
+import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
 
 export const MIRROR_KEY = 'farroway_outbreak_reports';
 export const IDB_KEY    = 'outbreakReports';
@@ -182,6 +185,27 @@ export async function saveOutbreakReport(input = {}) {
   //    no /sync handler is wired yet.
   try { console.log('[outbreak report queued]', record.id); }
   catch { /* console missing */ }
+
+  // 5. ML event stream. We always log PEST_REPORTED for the
+  //    pest + disease + unknown issueTypes so the same event
+  //    feeds both the pest-prediction and disease-prediction
+  //    training sets. Payload is a flat, PII-free projection
+  //    of the report.
+  try {
+    logEvent(EVENT_TYPES.PEST_REPORTED, {
+      reportId:  record.id,
+      farmId:    record.farmId,
+      farmerId:  record.farmerId,
+      crop:      record.crop,
+      issueType: record.issueType,
+      severity:  record.severity,
+      symptoms:  record.symptoms,
+      country:   record.location && record.location.country,
+      region:    record.location && record.location.region,
+      lat:       record.location && record.location.lat,
+      lng:       record.location && record.location.lng,
+    });
+  } catch { /* swallow */ }
 
   return record;
 }
