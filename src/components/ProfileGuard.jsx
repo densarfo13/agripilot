@@ -2,10 +2,20 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { isProfileComplete } from '../lib/farmScore.js';
 import { isFirstTimeFarmer } from '../utils/fastOnboarding/index.js';
+import { isOnboardingComplete } from '../utils/onboarding.js';
 
 export default function ProfileGuard({ children }) {
   const location = useLocation();
   const { profile, farms, loading, initialized } = useProfile();
+
+  // ─── Onboarding-loop fix (Apr 2026 hotfix) ──────────────────────
+  // Once a farmer has been through setup ONCE on this device, never
+  // automatically route them back. The server profile remains the
+  // source of truth for incomplete-data prompts inside the app, but
+  // the top-of-router redirect is gated on this client flag so a
+  // partial / slow / cold-cache server response can't bounce the
+  // user into a redirect loop.
+  if (isOnboardingComplete()) return children;
 
   // Show loading while profile hasn't been initialized for current auth session.
   // This prevents flashing /profile/setup when profile fetch is still in-flight.
@@ -21,12 +31,11 @@ export default function ProfileGuard({ children }) {
     );
   }
 
-  // Always let the fast flow render itself — it IS the first-time destination.
+  // Always let the onboarding / setup destinations render themselves.
   if (location.pathname === '/onboarding/fast') return children;
-  // Legacy setup page is still allowed for users who navigate to it directly
-  // (e.g. editing an existing farm), but first-time farmers are kicked out
-  // inside that page via its own short-circuit.
-  if (location.pathname === '/profile/setup') return children;
+  if (location.pathname === '/onboarding')      return children;
+  if (location.pathname === '/onboarding/v3')   return children;
+  if (location.pathname === '/profile/setup')   return children;
 
   // If the profile is already complete, no routing work needed.
   if (isProfileComplete(profile || {})) return children;

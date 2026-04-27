@@ -32,6 +32,13 @@ import { useSyncLoop } from './sync/syncWorker.js';
 // tab was closed.
 import { hydrateFarm } from './core/farroway/farmStore.js';
 import { hydrateProgress } from './core/farroway/progressStore.js';
+// Onboarding-loop fix (Apr 2026): restore the user's saved
+// language preference on app boot. The setup screen persists this
+// at the same time it sets the onboarding-done flag, so a
+// returning user lands on the app in their last chosen language
+// without going through setup again.
+import { getSavedLanguage } from './utils/onboarding.js';
+import { setLanguage as setLangGlobally, getLanguage as getActiveLanguage } from './i18n/index.js';
 
 // Landing page (marketing homepage)
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -313,6 +320,22 @@ export default function App() {
     // boot is never blocked by a missing IndexedDB.
     try { hydrateFarm(); } catch { /* never blocks app boot */ }
     try { hydrateProgress(); } catch { /* never blocks app boot */ }
+    // Restore the user's saved UI language. Only applied when:
+    //   (a) we have a saved value
+    //   (b) the active language differs (avoid re-dispatching
+    //       langchange events into a no-op)
+    // This complements the existing i18n storage key ('farroway:lang')
+    // by surfacing the user's deliberate setup-screen choice even
+    // when the i18n key is missing (e.g. fresh install on a new
+    // browser that imported localStorage from a backup).
+    try {
+      const saved = getSavedLanguage();
+      if (saved) {
+        let active = '';
+        try { active = getActiveLanguage(); } catch { /* keep '' */ }
+        if (saved !== active) setLangGlobally(saved);
+      }
+    } catch { /* never blocks app boot */ }
   }, []);
 
   // Lightweight offline-action queue auto-flush (additive — sits

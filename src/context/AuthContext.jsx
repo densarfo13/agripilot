@@ -202,30 +202,25 @@ export function AuthProvider({ children }) {
       if (isDev) console.warn('[AUTH] state-clear threw:', err && err.message);
     }
 
-    // ── HARD RESET (per spec #1) ───────────────────────────
-    // Wipe localStorage + sessionStorage + Cache Storage in full.
-    // Each step independently try/catch-wrapped so one failing
-    // surface (e.g. caches API absent) never blocks the others.
-    // We deliberately do NOT rely on the curated clearSessionState
-    // here — explicit hard reset has no allow-list to drift out of
-    // sync with new feature keys.
+    // ── CURATED RESET (Apr 2026 onboarding-loop hotfix) ─────────
+    // Previous version called `localStorage.clear()` which wiped
+    // the onboarding-done flag, language preference, and farm
+    // record alongside the auth tokens. Net effect: every logout
+    // sent the user back through the setup screen on next login -
+    // the redirect-loop the user reported.
+    //
+    // We now route through `clearSessionState` (a curated allow-
+    // list that targets auth + session-context keys only) and
+    // sessionStorage stays a hard clear since none of the
+    // onboarding signals live there.
     try {
-      if (typeof localStorage !== 'undefined') localStorage.clear();
-    } catch (err) {
-      if (isDev) console.warn('[AUTH] localStorage.clear threw:', err && err.message);
-    }
-    try {
-      if (typeof sessionStorage !== 'undefined') sessionStorage.clear();
-    } catch (err) {
-      if (isDev) console.warn('[AUTH] sessionStorage.clear threw:', err && err.message);
-    }
-    try {
-      if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
-        const names = await caches.keys();
-        await Promise.allSettled(names.map((n) => caches.delete(n)));
+      const { clearSessionState } = await import('../lib/auth/clearSessionState.js');
+      const result = await clearSessionState();
+      if (isDev && result && result.errors && result.errors.length) {
+        console.warn('[AUTH] clearSessionState errors:', result.errors);
       }
     } catch (err) {
-      if (isDev) console.warn('[AUTH] caches purge threw:', err && err.message);
+      if (isDev) console.warn('[AUTH] clearSessionState import/call threw:', err && err.message);
     }
 
     // Belt-and-braces — also run the curated sweep in case any

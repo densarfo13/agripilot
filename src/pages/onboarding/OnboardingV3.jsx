@@ -47,6 +47,9 @@ import { convertArea } from '../../lib/units/areaConversion.js';
 import COUNTRIES from '../../utils/countries.js';
 import { detectCountryByIP } from '../../utils/geolocation.js';
 import { getCropLabelSafe } from '../../utils/crops.js';
+import {
+  setOnboardingComplete, setSavedLanguage, setSavedCountry,
+} from '../../utils/onboarding.js';
 
 const ONBOARDING_KEY = 'farroway.onboardingV3';
 const DRAFT_KEY      = 'farroway.onboardingV3.draft';
@@ -81,6 +84,10 @@ function markOnboardingComplete({ isNewFarmer }) {
       completedAt:         Date.now(),
     }));
   } catch { /* ignore */ }
+  // ALSO write the canonical farroway_onboarding_done flag the new
+  // ProfileGuard short-circuit reads. Both are kept additive so any
+  // existing reader of the legacy ONBOARDING_KEY keeps working.
+  try { setOnboardingComplete(); } catch { /* ignore */ }
 }
 
 const resolve = (t, key, fallback) => {
@@ -334,6 +341,12 @@ export default function OnboardingV3() {
       if (farm && farm.id) { try { setActiveFarmId(farm.id); } catch { /* ignore */ } }
 
       markOnboardingComplete({ isNewFarmer: form.isNewFarmer === true });
+      // Persist the user's onboarding choices so the next launch
+      // can restore them without an extra round-trip. These are
+      // independent of the auth session - they survive logout per
+      // the new "do not clear onboarding" policy.
+      try { setSavedLanguage(lang); }              catch { /* ignore */ }
+      try { setSavedCountry(form.country || ''); } catch { /* ignore */ }
       safeClearDraft();
 
       // New farmers land on /today with the beginner task card; more

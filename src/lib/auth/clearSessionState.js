@@ -43,13 +43,35 @@ const LOCAL_STORAGE_KEYS = Object.freeze([
   'agripilot_currentFarmId',
   'agripilot:current_farm',
   'farroway:currentFarm',
-  // Onboarding + tour flags
-  'farroway:onboarding_complete',
+  // Tour flags - safe to reset; they only suppress first-run UI.
   'farroway:tour_seen',
   // Offline queue metadata — drop stale queue pointers, not the
   // IndexedDB store itself. Queue rows survive; just the cursor.
   'farroway:sync_cursor',
   'farroway:sync_dedup',
+  // ── Apr 2026 onboarding-loop fix ─────────────────────────────
+  // Removed:
+  //   'farroway:onboarding_complete'
+  // The legacy onboarding flag MUST survive logout, otherwise the
+  // farmer sees the setup screen on every re-login. The new
+  // canonical flag (`farroway_onboarding_done`) is also explicitly
+  // preserved via PROTECTED_PREFIXES below, and the OnboardingV3
+  // completion path writes both for back-compat.
+]);
+
+// Keys that must NEVER be cleared by this helper, even if a future
+// edit accidentally adds them above. Acts as a last-line guard for
+// the onboarding-loop fix.
+const PROTECTED_KEYS = Object.freeze([
+  'farroway_onboarding_done',   // canonical flag (utils/onboarding.js)
+  'farroway:onboarding_complete', // legacy flag (OnboardingV3 ONBOARDING_KEY-style readers)
+  'farroway.onboardingV3',      // OnboardingV3 detail record
+  'farroway_language',          // user's saved UI language
+  'farroway_country',           // user's saved country
+  'farroway:lang',              // i18n storage key
+  'farroway_settings',          // notification + comm prefs
+  'farroway_farm',              // farm record (Farroway core)
+  'farroway_progress',          // progress mirror
 ]);
 
 // Prefixes we sweep (for per-user scoped caches like `farroway:crop_insight:<id>`).
@@ -69,6 +91,10 @@ export async function clearSessionState({
   // ─── localStorage ─────────────────────────────────────────
   if (localStorageRef) {
     for (const key of LOCAL_STORAGE_KEYS) {
+      // Last-line guard for the onboarding-loop fix - even if a
+      // session key creeps onto the protected list by accident,
+      // skip it here.
+      if (PROTECTED_KEYS.includes(key)) continue;
       try {
         if (localStorageRef.getItem(key) != null) {
           localStorageRef.removeItem(key);
@@ -83,7 +109,9 @@ export async function clearSessionState({
       const keys = [];
       for (let i = 0; i < localStorageRef.length; i += 1) {
         const k = localStorageRef.key(i);
-        if (k && LOCAL_STORAGE_PREFIXES.some((p) => k.startsWith(p))) keys.push(k);
+        if (!k) continue;
+        if (PROTECTED_KEYS.includes(k)) continue;
+        if (LOCAL_STORAGE_PREFIXES.some((p) => k.startsWith(p))) keys.push(k);
       }
       for (const k of keys) {
         try { localStorageRef.removeItem(k); cleared.clearedKeys.push(k); }
@@ -126,5 +154,5 @@ export async function clearSessionState({
 
 // Exported for tests so we can assert the exact sweep list.
 export const _internal = Object.freeze({
-  LOCAL_STORAGE_KEYS, LOCAL_STORAGE_PREFIXES,
+  LOCAL_STORAGE_KEYS, LOCAL_STORAGE_PREFIXES, PROTECTED_KEYS,
 });
