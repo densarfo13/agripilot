@@ -445,21 +445,53 @@ export async function inviteFarmer({
 
 /**
  * Get farmer profile for a logged-in farmer user.
+ *
+ * Production hardening: a Prisma error in either the applications
+ * or notifications JOIN used to take the whole call down (e.g. a
+ * migration drift on FarmerNotification.read column would 500 the
+ * dashboard for every farmer). The bare farmer record is the
+ * source of truth for the dashboard's primary content; the joined
+ * collections are decorative. If the JOIN throws we fall back to
+ * the bare lookup so the dashboard still renders, just without
+ * the notification badge / application history.
  */
 export async function getFarmerProfile(userId) {
-  const farmer = await prisma.farmer.findUnique({
-    where: { userId },
-    include: {
-      applications: {
-        select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
+  if (!userId) return null;
+  try {
+    const farmer = await prisma.farmer.findUnique({
+      where: { userId },
+      include: {
+        applications: {
+          select: { id: true, status: true, cropType: true, requestedAmount: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        notifications: {
+          where: { read: false },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
       },
-      notifications: {
-        where: { read: false },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      },
-    },
-  });
-  return farmer;
+    });
+    return farmer;
+  } catch (err) {
+    // JOIN failed (schema drift, missing relation, etc.) — log and
+    // try the bare farmer record so the dashboard still loads.
+    try {
+      // eslint-disable-next-line no-console
+      console.warn('[FARMER_PROFILE] include-join failed, falling back to bare record:',
+        err && err.message ? String(err.message).slice(0, 200) : 'unknown');
+    } catch { /* ignore */ }
+    try {
+      const bare = await prisma.farmer.findUnique({ where: { userId } });
+      if (!bare) return null;
+      // Return the bare record with empty collections so callers
+      // that destructure profile.applications / profile.notifications
+      // don't crash on undefined.
+      return Object.assign({}, bare, { applications: [], notifications: [] });
+    } catch (innerErr) {
+      // Bare lookup also failed — let the route handler turn this
+      // into a 503 + log entry rather than a silent null.
+      throw innerErr;
+    }
+  }
 }

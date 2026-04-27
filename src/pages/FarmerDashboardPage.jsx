@@ -532,9 +532,15 @@ export default function FarmerDashboardPage() {
           />
         )}
 
-        {profileError && (
-          <InlineAlert variant="danger" onDismiss={() => setProfileError('')} action={{ label: t('common.retry'), onClick: () => { setLoading(true); setProfileError(''); api.get('/auth/farmer-profile').then(r => { setProfile(r.data); setProfileError(''); }).catch(() => setProfileError(t('error.loadProfile'))).finally(() => setLoading(false)); } }}>{profileError}</InlineAlert>
-        )}
+        {/*
+          Duplicate-error fix: the InlineAlert that used to live here
+          rendered the SAME profileError string that the recovery card
+          (lines ~1116) also renders, so a 500 on /farmer-profile painted
+          the message twice ("Unable to load account…" red banner +
+          identical card with Refresh / Back to login buttons). The
+          recovery card has the full set of recovery actions so it owns
+          the surface alone. Keeping the inline alert hidden here.
+        */}
         {loading ? (
           <SkeletonFarmerDashboard />
         ) : isPending ? (

@@ -303,14 +303,53 @@ router.post('/farmer-register', registrationLimiter, idempotencyCheck, asyncHand
   res.status(201).json(result);
 }));
 
-// Get own farmer profile (authenticated farmer)
+// Get own farmer profile (authenticated farmer).
+//
+// Production hardening: a Prisma error inside getFarmerProfile used
+// to bubble up to the global errorHandler as a bare 500 with no
+// body context, which the dashboard then surfaced as a doomsday
+// "Unable to load account" panel even when the underlying issue
+// was transient (DB blip, connection-pool exhaustion, schema-vs-
+// migration drift). We now:
+//   1. Guard the userId — a missing sub claim means a malformed
+//      token; return 401 so the client re-auths instead of
+//      flashing a 500
+//   2. Catch Prisma errors specifically, log enough context to
+//      Railway logs to debug live, and return a 503 (transient)
+//      with a code the client can branch on
+//   3. Keep 404 reserved for the legitimate "no farmer record yet"
+//      case so the client can route the user to onboarding rather
+//      than an error screen
 router.get('/farmer-profile', authenticate, asyncHandler(async (req, res) => {
-  if (req.user.role !== 'farmer') {
-    return res.status(403).json({ error: 'Only farmer accounts can access this' });
+  if (!req.user || !req.user.sub) {
+    return res.status(401).json({ error: 'Session invalid', code: 'no_subject' });
   }
-  const profile = await getFarmerProfile(req.user.sub);
+  if (req.user.role !== 'farmer') {
+    return res.status(403).json({ error: 'Only farmer accounts can access this', code: 'wrong_role' });
+  }
+  let profile;
+  try {
+    profile = await getFarmerProfile(req.user.sub);
+  } catch (err) {
+    // Log the real Prisma message so live debugging works. Don't
+    // leak the message to the client (could include schema info).
+    try {
+      logAuthEvent('farmer_profile_query_failed', {
+        userId: req.user.sub,
+        message: err && err.message ? String(err.message).slice(0, 200) : 'unknown',
+        code: err && err.code ? err.code : null,
+      });
+    } catch { /* never propagate from a logger */ }
+    return res.status(503).json({
+      error: 'Profile lookup temporarily unavailable. Please try again.',
+      code: 'profile_lookup_failed',
+    });
+  }
   if (!profile) {
-    return res.status(404).json({ error: 'Farmer profile not found' });
+    return res.status(404).json({
+      error: 'Farmer profile not found',
+      code: 'no_farmer_profile',
+    });
   }
   res.json(profile);
 }));
