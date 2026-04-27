@@ -28,6 +28,12 @@ import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
 // Auto-log PEST_REPORTED (also disease + unknown) into the ML
 // event stream. Fire-and-forget; never throws.
 import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
+// Spec section 3: a pest/disease report IS a high-confidence
+// positive label. Save it so the trainer gets ground truth
+// without any farmer prompt.
+import {
+  saveLabel, LABEL_KIND, LABEL_VALUE, CONFIDENCE,
+} from '../data/labels.js';
 
 export const MIRROR_KEY = 'farroway_outbreak_reports';
 export const IDB_KEY    = 'outbreakReports';
@@ -206,6 +212,23 @@ export async function saveOutbreakReport(input = {}) {
       lng:       record.location && record.location.lng,
     });
   } catch { /* swallow */ }
+
+  // 6. Auto-label. A pest / disease report IS a high-
+  //    confidence positive label for the trainer. Skip when
+  //    issueType is 'unknown' (the farmer wasn't sure) so the
+  //    trainer doesn't see noisy positives.
+  if (record.farmId && (record.issueType === 'pest' || record.issueType === 'disease')) {
+    try {
+      saveLabel({
+        farmId:     record.farmId,
+        kind:       LABEL_KIND.PEST,
+        value:      LABEL_VALUE.PEST_YES,
+        confidence: CONFIDENCE.HIGH,
+        source:     'auto_report',
+        extra:      { farmState: { reportId: record.id, severity: record.severity } },
+      });
+    } catch { /* swallow */ }
+  }
 
   return record;
 }

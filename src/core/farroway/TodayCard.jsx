@@ -24,10 +24,24 @@ import { markTaskDone } from './progressStore.js';
 import { speak } from './voice.js';
 import { getCurrentFarm } from './farmStore.js';
 import { tSafe } from '../../i18n/tSafe.js';
+// Outcome-labeling prompt. Non-intrusive bottom sheet that
+// appears at most once per local day, gated behind 1-in-3
+// sampling so the farmer never feels nagged. Saves a
+// medium-confidence label when answered, low-confidence on
+// "Not sure". The whole subtree is opt-in - if no farm is set
+// we never even render the modal element.
+import LabelPromptModal from '../../components/ai/LabelPromptModal.jsx';
+import { usePostTaskLabelPrompt } from '../../components/ai/usePostTaskLabelPrompt.js';
 
 export default function TodayCard({ farm: farmProp = null, onDone = null }) {
   const farm = farmProp || getCurrentFarm();
   const data = generateDailyTask(farm);
+
+  // Hook order matters - call BEFORE the early return so React's
+  // rules-of-hooks aren't violated when the empty state renders.
+  const farmIdForPrompt = farm && farm.id ? farm.id : null;
+  const { promptOpen, promptKind, openPrompt, closePrompt } =
+    usePostTaskLabelPrompt({ farmId: farmIdForPrompt });
 
   if (!data) {
     return (
@@ -54,21 +68,33 @@ export default function TodayCard({ farm: farmProp = null, onDone = null }) {
       try { onDone(taskId, data); }
       catch { /* never propagate from a click handler */ }
     }
+    // Post-task label prompt. Hook handles dedupe (once/day)
+    // + 1-in-3 sampling internally; calling openPrompt() here
+    // is safe + cheap. Returns false silently when skipping.
+    try { openPrompt(); } catch { /* never propagate */ }
   }
 
   return (
-    <div style={S.card} data-testid="farroway-today-card">
-      <span style={S.kicker}>{tSafe('farroway.today.title', 'Today')}</span>
-      <h1 style={S.h1} data-testid="farroway-today-task">{message}</h1>
-      <button
-        type="button"
-        onClick={handleDone}
-        style={S.btn}
-        data-testid="farroway-today-done"
-      >
-        {tSafe('farroway.today.done', 'Done')}
-      </button>
-    </div>
+    <>
+      <div style={S.card} data-testid="farroway-today-card">
+        <span style={S.kicker}>{tSafe('farroway.today.title', 'Today')}</span>
+        <h1 style={S.h1} data-testid="farroway-today-task">{message}</h1>
+        <button
+          type="button"
+          onClick={handleDone}
+          style={S.btn}
+          data-testid="farroway-today-done"
+        >
+          {tSafe('farroway.today.done', 'Done')}
+        </button>
+      </div>
+      <LabelPromptModal
+        open={promptOpen}
+        kind={promptKind}
+        farmId={farmIdForPrompt}
+        onClose={closePrompt}
+      />
+    </>
   );
 }
 

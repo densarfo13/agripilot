@@ -26,6 +26,10 @@
 import { hasCheckedInToday, markCheckedIn, getTodayKey } from './dailyCheckin.js';
 import { updateStreak, getStreak, hasMissedYesterday } from './streak.js';
 import { scheduleReminder } from './reminder.js';
+// Passive labeling - boot-time, idempotent inside a local day.
+// Harvests low-confidence labels from the existing event stream
+// so the trainer has weak negatives to balance the dataset.
+import { runPassiveLabeling } from '../data/passiveLabeler.js';
 
 const NOOP = () => { /* teardown noop */ };
 
@@ -63,6 +67,12 @@ export function initDailyLoop({ schedule = true } = {}) {
     try { teardown = scheduleReminder() || NOOP; }
     catch { teardown = NOOP; }
   }
+
+  // 5. Run the passive labeler. Idempotent within a local day
+  //    (its own ledger). Never blocks - we don't await; the
+  //    function is sync + cheap (O(N) over events).
+  try { runPassiveLabeling(); }
+  catch { /* swallow - passive labeling is best-effort */ }
 
   return Object.freeze({ missed, streak, today, teardown });
 }
