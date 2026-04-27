@@ -33,6 +33,7 @@ import { SIGNAL_TRANSLATIONS }          from './signalTranslations.js';
 import { GAP_FIX_TRANSLATIONS }         from './gapFixTranslations.js';
 import { NOTIFICATION_PREFS_TRANSLATIONS } from './notificationPrefsTranslations.js';
 import { SETTINGS_PAGE_TRANSLATIONS }      from './settingsPageTranslations.js';
+import { I18N_GAPS_TRANSLATIONS }          from './i18nGapsTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -77,6 +78,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     GAP_FIX_TRANSLATIONS,
     NOTIFICATION_PREFS_TRANSLATIONS,
     SETTINGS_PAGE_TRANSLATIONS,
+    I18N_GAPS_TRANSLATIONS,
   ]);
 })();
 

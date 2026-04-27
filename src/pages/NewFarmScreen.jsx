@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import {
   saveFarm as farrowaySaveFarm,
@@ -243,9 +244,16 @@ export default function NewFarmScreen() {
       const countryLabel = getCountryLabel(form.country) || form.country.trim();
       const locationStr = [stateLabel, countryLabel].filter(Boolean).join(', ');
 
+      // When the farmer leaves the field blank, store a localized
+      // default rather than the English literal "My New Farm" — the
+      // value persists in the DB and bleeds into every farm card on
+      // every page until the farmer renames the farm. tSafe routes
+      // through the active language; falls back to the English
+      // literal if the key is missing.
+      const defaultFarmName = tSafe(t, 'farm.newFarm.defaultName', 'My New Farm');
       const payload = {
         farmerName: farmerNameFromProfile,
-        farmName:  form.farmName.trim() || 'My New Farm',
+        farmName:  form.farmName.trim() || defaultFarmName,
         cropType:  cropCode.toUpperCase(),
         country:   form.country.trim(),
         stateCode: form.stateCode.trim() || undefined,

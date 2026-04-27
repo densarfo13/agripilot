@@ -521,6 +521,21 @@ const TASK_TITLE_PHRASE_MAP = {
     tw: 'Hwehwɛ afuo no mu nnoboa ne ɔsɛeɛ',
     hi: 'खेत में कीट और नुकसान की जाँच करें',
   },
+  // Engine-generated planting / sowing actions
+  'Sow today': {
+    fr: 'Semer aujourd\u2019hui',
+    sw: 'Panda leo',
+    ha: 'Shuka yau',
+    tw: 'Dua nnɛ',
+    hi: 'आज बोएँ',
+  },
+  'Prepare soil for planting': {
+    fr: 'Pr\u00E9parer le sol pour la plantation',
+    sw: 'Andaa udongo kwa kupanda',
+    ha: 'Shirya ƙasa don shuka',
+    tw: 'Siesie asase no ma dua',
+    hi: 'बुवाई के लिए मिट्टी तैयार करें',
+  },
 };
 
 const TASK_DESC_PHRASE_MAP = {
@@ -558,6 +573,13 @@ const TASK_DESC_PHRASE_MAP = {
     ha: 'Yi tafiya cikin layuka kuma duba ƙasan ganye don ƙwai, ramuka ko tabo na ban mamaki.',
     tw: 'Nantenante nsensanee no so na hwɛ nhaban ase nkesua, atokuro anaa nkyerɛnneɛ foforɔ.',
     hi: 'पंक्तियों में चलें और पत्तियों के नीचे अंडे, छेद या असामान्य धब्बे देखें।',
+  },
+  'Prepare soil for planting.': {
+    fr: 'Pr\u00E9parez le sol pour la plantation.',
+    sw: 'Andaa udongo kwa kupanda.',
+    ha: 'Shirya ƙasa don shuka.',
+    tw: 'Siesie asase no ma dua.',
+    hi: 'बुवाई के लिए मिट्टी तैयार करें।',
   },
 };
 

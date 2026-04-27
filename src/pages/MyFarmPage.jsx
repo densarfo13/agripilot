@@ -12,6 +12,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
+import { getCountryLabel } from '../config/countriesStates.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
@@ -49,6 +50,37 @@ function formatSize(size, unit) {
   if (!size && size !== 0) return null;
   const u = unit || 'acres';
   return `${size} ${u}`;
+}
+
+/**
+ * localizeCountry — turn a country code or name into a human-
+ * readable, locale-aware label. Tries `Intl.DisplayNames` first
+ * (Node 14+ / every modern browser), falls back to the curated
+ * English labels in countriesStates.js, finally to the input.
+ *
+ * Important: only uses Intl when the input looks like a 2-letter
+ * country code. A free-form name (e.g. "United States") would
+ * confuse Intl, so we pass it straight to the curated lookup.
+ */
+function localizeCountry(input, lang) {
+  if (!input) return '';
+  const value = String(input).trim();
+  if (!value) return '';
+  const looksLikeCode = /^[A-Za-z]{2}$/.test(value);
+  if (looksLikeCode) {
+    const upper = value.toUpperCase();
+    try {
+      if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+        const localized = new Intl.DisplayNames([lang || 'en'], { type: 'region' }).of(upper);
+        if (localized && localized !== upper) return localized;
+      }
+    } catch { /* Intl not supported for this locale — fall through */ }
+    return getCountryLabel(upper) || upper;
+  }
+  // Free-form text — leave as is. The curated dataset stores
+  // English labels; we don't try to translate "United States" to
+  // Hindi at runtime (no clean reverse-map).
+  return value;
 }
 
 export default function MyFarmPage() {
@@ -176,7 +208,7 @@ export default function MyFarmPage() {
               <div>
                 <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm')}</h2>
                 {(farm.country || farm.countryCode) && (
-                  <span style={S.farmSubline}>{SECTION_ICONS.country} {farm.country || farm.countryCode}</span>
+                  <span style={S.farmSubline}>{SECTION_ICONS.country} {localizeCountry(farm.country || farm.countryCode, lang)}</span>
                 )}
               </div>
             </div>
