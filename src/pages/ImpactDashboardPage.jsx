@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import api from '../api/client.js';
 import { useOrgStore } from '../store/orgStore.js';
+import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
 // ─── Labels & Colors ────────────────────────────────────
 
@@ -305,17 +306,19 @@ export default function ImpactDashboardPage() {
             <div className="card-header">Gender Distribution</div>
             <div className="card-body">
               {genderData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                      outerRadius={75} innerRadius={40}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      labelLine={{ stroke: '#475569' }}>
-                      {genderData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                    </Pie>
-                    <Tooltip {...CHART_TOOLTIP} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart>
+                      <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                        outerRadius={75} innerRadius={40}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        labelLine={{ stroke: '#475569' }}>
+                        {genderData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                      </Pie>
+                      <Tooltip {...CHART_TOOLTIP} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               ) : <Empty msg="No gender data recorded yet. Add gender when registering farmers." />}
             </div>
           </div>
@@ -323,15 +326,17 @@ export default function ImpactDashboardPage() {
             <div className="card-header">Age Group Distribution</div>
             <div className="card-body">
               {ageData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={ageData} margin={{ top: 5, right: 15, bottom: 5, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="name" stroke="#A1A1AA" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#A1A1AA" tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <Tooltip {...CHART_TOOLTIP} />
-                    <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Farmers" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={ageData} margin={{ top: 5, right: 15, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="name" stroke="#A1A1AA" tick={{ fontSize: 12 }} />
+                      <YAxis stroke="#A1A1AA" tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <Tooltip {...CHART_TOOLTIP} />
+                      <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Farmers" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               ) : <Empty msg="No date of birth recorded yet. Add birthdate when registering farmers." />}
             </div>
           </div>
@@ -396,17 +401,19 @@ export default function ImpactDashboardPage() {
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div className="card-header">Trends</div>
           <div className="card-body">
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={trendPts} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="period" stroke="#A1A1AA" tick={{ fontSize: 12 }} />
-                <YAxis stroke="#A1A1AA" tick={{ fontSize: 12 }} allowDecimals={false} />
-                <Tooltip {...CHART_TOOLTIP} />
-                <Legend />
-                <Line type="monotone" dataKey="activeFarmers" stroke="#3B82F6" name="Active Farmers" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="validatedFarmers" stroke="#22C55E" name="Validated" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={trendPts} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="period" stroke="#A1A1AA" tick={{ fontSize: 12 }} />
+                  <YAxis stroke="#A1A1AA" tick={{ fontSize: 12 }} allowDecimals={false} />
+                  <Tooltip {...CHART_TOOLTIP} />
+                  <Legend />
+                  <Line type="monotone" dataKey="activeFarmers" stroke="#3B82F6" name="Active Farmers" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="validatedFarmers" stroke="#22C55E" name="Validated" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
           </div>
         </div>
       ) : trendsError && !isEmpty ? (

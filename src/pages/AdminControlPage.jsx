@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n/index.js';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../api/client.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
+import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
 const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
@@ -186,17 +187,19 @@ function SystemOverview({ navigate }) {
               </div>
             ))}
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={pipeline}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {pipeline.map((p, i) => <Cell key={i} fill={p.color} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <ChartErrorBoundary>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={pipeline}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {pipeline.map((p, i) => <Cell key={i} fill={p.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartErrorBoundary>
         </div>
       </div>
 
@@ -448,15 +451,17 @@ function DemandIntelligence() {
         <div className="card">
           <div className="card-header">Demand by Crop</div>
           <div className="card-body">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={cropDemand}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-                <XAxis dataKey="cropType" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="totalInterests" fill="#7c3aed" radius={[4, 4, 0, 0]} name="Interests" />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={cropDemand}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
+                  <XAxis dataKey="cropType" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="totalInterests" fill="#7c3aed" radius={[4, 4, 0, 0]} name="Interests" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
             <div className="table-wrap" style={{ marginTop: '1rem' }}>
               <table>
                 <thead><tr><th>Crop</th><th>Interests</th><th>Total Qty (kg)</th><th>Avg Price Expectation</th></tr></thead>

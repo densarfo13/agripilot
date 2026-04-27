@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import api from '../api/client.js';
+import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
 /**
  * ReportsPage — NGO / admin portfolio report.
@@ -163,15 +164,17 @@ export default function ReportsPage() {
               {cropBreakdown.length === 0 ? (
                 <EmptyHint text="No crop breakdown available yet." />
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={cropBreakdown}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-                    <XAxis dataKey="cropType" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="_count" fill="#22C55E" radius={[4, 4, 0, 0]} name="Count" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={cropBreakdown}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
+                      <XAxis dataKey="cropType" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="_count" fill="#22C55E" radius={[4, 4, 0, 0]} name="Count" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               )}
             </div>
           </div>
@@ -208,18 +211,20 @@ export default function ReportsPage() {
               {monthlyTrend.length === 0 ? (
                 <EmptyHint text="Not enough history yet for a monthly trend." />
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={monthlyTrend.map((m) => ({
-                    month: new Date(m.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-                    count: m.count,
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={monthlyTrend.map((m) => ({
+                      month: new Date(m.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                      count: m.count,
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               )}
             </div>
           </div>

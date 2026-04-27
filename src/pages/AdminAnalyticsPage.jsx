@@ -29,6 +29,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts';
+import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
 // ─── Event icons & labels ───────────────────────────────────
 
@@ -260,30 +261,32 @@ export default function AdminAnalyticsPage() {
             {/* Chart */}
             {chartData.length > 0 && (
               <div style={{ marginTop: '0.75rem' }}>
-                <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: '#A1A1AA', fontSize: 10 }}
-                      axisLine={{ stroke: '#243041' }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fill: '#A1A1AA', fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={S.tooltipStyle}
-                      labelStyle={{ color: '#94A3B8' }}
-                      itemStyle={{ color: '#22C55E' }}
-                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                    />
-                    <Bar dataKey="count" fill="#22C55E" radius={[3, 3, 0, 0]} maxBarSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: '#A1A1AA', fontSize: 10 }}
+                        axisLine={{ stroke: '#243041' }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: '#A1A1AA', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={S.tooltipStyle}
+                        labelStyle={{ color: '#94A3B8' }}
+                        itemStyle={{ color: '#22C55E' }}
+                        cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                      />
+                      <Bar dataKey="count" fill="#22C55E" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
 const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
@@ -86,15 +87,19 @@ export default function PortfolioPage() {
           <div className="card">
             <div className="card-header">Status Distribution</div>
             <div className="card-body">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={data.statusBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
-                  <XAxis dataKey="status" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={70} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {Array.isArray(data.statusBreakdown) && data.statusBreakdown.length > 0 ? (
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={data.statusBreakdown}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#243041" />
+                      <XAxis dataKey="status" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={70} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
+              ) : <div className="empty-state">No status data yet</div>}
             </div>
           </div>
 
@@ -102,14 +107,16 @@ export default function PortfolioPage() {
             <div className="card-header">Risk Distribution</div>
             <div className="card-body">
               {data.riskBreakdown.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie data={data.riskBreakdown} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={100} label={({ level, count }) => `${level} (${count})`}>
-                      {data.riskBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart>
+                      <Pie data={data.riskBreakdown} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={100} label={({ level, count }) => `${level} (${count})`}>
+                        {data.riskBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               ) : <div className="empty-state">No risk data yet</div>}
             </div>
           </div>
