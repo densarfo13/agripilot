@@ -29,6 +29,7 @@ import { calculateNGOCost } from '../utils/pricingCalculator.js';
 import { CURRENCY } from '../config/pricing.js';
 import { tSafe } from '../i18n/tSafe.js';
 import PestClusterPanel from '../components/ngo/PestClusterPanel.jsx';
+import OutbreakWatchPanel from '../components/ngo/OutbreakWatchPanel.jsx';
 
 function StatTile({ label, value, accent }) {
   return (
@@ -108,9 +109,15 @@ export default function NgoValueDashboard({ farms: farmsProp = null }) {
           </strong>
         </section>
 
-        {/* Pest activity panel - reads the local pest-report
-            mirror so it works offline + on the demo data set
-            without a backend. */}
+        {/* Outbreak Watch panel - the v1 Outbreak Intelligence
+            System surface. Reads the structured outbreak-report
+            mirror + runs the pure cluster engine. Sits next to
+            the simpler v0 PestClusterPanel during transition;
+            both are demo-ready. */}
+        <OutbreakWatchPanel farms={farms} />
+
+        {/* Pest activity panel (v0). Kept until every consumer
+            migrates onto the v1 outbreak surface. */}
         <PestClusterPanel />
       </div>
     </main>
