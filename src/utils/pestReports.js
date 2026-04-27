@@ -1,23 +1,29 @@
 /**
- * pestReports.js — local-first pest report log.
+ * @deprecated  v0 pest-report stack. Superseded by the Outbreak
+ *              Intelligence System v1 under src/outbreak/.
+ *              Migration:
+ *                submitPestReport(...) -> saveOutbreakReport(...)
+ *                getPestReports()      -> getOutbreakReports()
+ *                shouldAlertForRegion  -> getAlertsForFarm
+ *                topClusters           -> detectActiveClusters
+ *              Kept for back-compat with any consumer that
+ *              still imports from this file. Will be removed in
+ *              the v2 outbreak follow-up. New code MUST import
+ *              from src/outbreak/* instead.
+ *
+ * pestReports.js — local-first pest report log (legacy v0).
  *
  * Storage:
  *   * Primary:  IndexedDB store `progress`, key `pestReports`
- *               (durable, survives quota pressure better than
- *               localStorage; piggy-backs on the existing
- *               farroway_db schema rather than adding a new store)
- *   * Mirror:   localStorage `farroway_pest_reports` so render
- *               paths can read synchronously
- *   * Outbox:   each submit also enqueues a PEST_REPORT action
- *               via the existing sync layer so the server gets
- *               the report on next online drain
+ *   * Mirror:   localStorage `farroway_pest_reports`
+ *   * Outbox:   each submit enqueues a PEST_REPORT action
  *
  * Strict rules respected:
- *   * works offline      - every helper is local-first
- *   * never throws       - every storage call try/catch wrapped
- *   * idempotent         - report ids are unique per submit
- *   * additive surface   - no existing module touched
+ *   * works offline / never throws / idempotent / additive
  */
+
+import { warnDeprecatedV0Pest } from './pestDeprecationWarning.js';
+warnDeprecatedV0Pest('pestReports.js');
 
 import { dbGet, dbSet, STORE } from '../db/indexedDB.js';
 import { enqueueAction } from '../sync/actionQueue.js';

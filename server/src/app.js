@@ -65,6 +65,11 @@ import impactRoutes from './modules/impact/routes.js';
 import issueRoutes from './modules/issues/routes.js';
 import onboardingRoutes from './modules/onboarding/routes.js';
 import emailRoutes from './modules/email/routes.js';
+// Outbox-drainer endpoint for the local-first action queue
+// (src/sync/actionQueue.js + src/sync/syncWorker.js on the
+// client). Idempotent on action.id; first handler wired:
+// OUTBREAK_REPORT.
+import syncRoutes from './modules/sync/routes.js';
 
 // ─── V2 enterprise auth routes (cookie-based) ──────────────
 import v2AuthRoutes from '../routes/auth.js';
@@ -420,6 +425,7 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/auto-notifications', autoNotificationRoutes);
 app.use('/api/email', authenticate, emailRoutes);
+app.use('/api/sync', syncRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/v1/farms', farmProfileRoutes);
 app.use('/api/programs', programRoutes);

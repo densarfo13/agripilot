@@ -4,9 +4,11 @@
  *   getAlertsForFarm(farm, clusters)
  *     -> Array<Cluster>
  *
- * Rules (per spec section 4):
+ * Rules:
  *   * same country
- *   * same region
+ *   * region matches the cluster's canonical region OR any region
+ *     in cluster.regions[] (populated when the GIS proximity
+ *     merge collapses several adjacent regions into one cluster)
  *   * same crop
  *   * cluster.active === true
  *
@@ -14,7 +16,12 @@
  *   * pure: no I/O, no global reads
  *   * never throws on missing inputs (returns [])
  *   * stable order: highest-severity first, then most recent
+ *   * uses the same regionNormaliser the store + engine use, so
+ *     the farm-side comparison stays robust to suffix / casing
+ *     drift.
  */
+
+import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
 
 function _norm(s) {
   if (s == null) return '';
@@ -35,8 +42,8 @@ export function getAlertsForFarm(farm, clusters) {
   if (!farm || typeof farm !== 'object') return [];
   if (!Array.isArray(clusters) || clusters.length === 0) return [];
 
-  const country = _norm(farm.country);
-  const region  = _norm(farm.region || farm.stateCode);
+  const country = normaliseCountry(farm.country);
+  const region  = normaliseRegion(farm.region || farm.stateCode, country);
   const crop    = _norm(farm.crop || farm.cropType);
   if (!country || !region || !crop) return [];
 
@@ -44,9 +51,14 @@ export function getAlertsForFarm(farm, clusters) {
   for (const c of clusters) {
     if (!c || typeof c !== 'object') continue;
     if (c.active === false) continue;
-    if (_norm(c.country)   !== country) continue;
-    if (_norm(c.region)    !== region)  continue;
-    if (_norm(c.crop)      !== crop)    continue;
+    if (_norm(c.country) !== country) continue;
+    if (_norm(c.crop)    !== crop)    continue;
+    // Match the cluster's canonical region OR any region in the
+    // merged cluster's regions[] (set by the GIS proximity merge).
+    const regions = Array.isArray(c.regions) && c.regions.length > 0
+      ? c.regions.map((x) => _norm(x))
+      : [_norm(c.region)];
+    if (!regions.includes(region)) continue;
     matched.push(c);
   }
 

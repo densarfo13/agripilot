@@ -28,8 +28,11 @@ import { aggregateNGO } from '../metrics/ngoMetrics.js';
 import { calculateNGOCost } from '../utils/pricingCalculator.js';
 import { CURRENCY } from '../config/pricing.js';
 import { tSafe } from '../i18n/tSafe.js';
-import PestClusterPanel from '../components/ngo/PestClusterPanel.jsx';
 import OutbreakWatchPanel from '../components/ngo/OutbreakWatchPanel.jsx';
+// PestClusterPanel removed - the v0 surface was superseded by
+// OutbreakWatchPanel below. The component file stays in the
+// repo (back-compat for any external consumer), but /ngo/value
+// only renders the v1 surface now.
 
 function StatTile({ label, value, accent }) {
   return (
@@ -111,14 +114,9 @@ export default function NgoValueDashboard({ farms: farmsProp = null }) {
 
         {/* Outbreak Watch panel - the v1 Outbreak Intelligence
             System surface. Reads the structured outbreak-report
-            mirror + runs the pure cluster engine. Sits next to
-            the simpler v0 PestClusterPanel during transition;
-            both are demo-ready. */}
+            mirror + runs the pure cluster engine with region
+            normalisation + opt-in GIS proximity merge. */}
         <OutbreakWatchPanel farms={farms} />
-
-        {/* Pest activity panel (v0). Kept until every consumer
-            migrates onto the v1 outbreak surface. */}
-        <PestClusterPanel />
       </div>
     </main>
   );

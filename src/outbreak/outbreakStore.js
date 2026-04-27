@@ -24,6 +24,7 @@
 
 import { dbGet, dbSet, STORE } from '../db/indexedDB.js';
 import { enqueueAction } from '../sync/actionQueue.js';
+import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
 
 export const MIRROR_KEY = 'farroway_outbreak_reports';
 export const IDB_KEY    = 'outbreakReports';
@@ -212,10 +213,15 @@ function _normaliseLocation(loc) {
   }
   const lat = Number(loc.lat);
   const lng = Number(loc.lng);
+  // Apr 2026 hotfix: collapse country + region to canonical
+  // forms at write time so the cluster engine's grouping match
+  // is robust to suffix / casing / abbreviation drift between
+  // capture surfaces.
+  const country = normaliseCountry(loc.country);
   return {
-    country:  loc.country  ? String(loc.country)  : '',
-    region:   loc.region   ? String(loc.region)   : '',
-    district: loc.district ? String(loc.district) : '',
+    country,
+    region:   normaliseRegion(loc.region, country),
+    district: loc.district ? String(loc.district).trim() : '',
     lat:      Number.isFinite(lat) ? lat : null,
     lng:      Number.isFinite(lng) ? lng : null,
   };

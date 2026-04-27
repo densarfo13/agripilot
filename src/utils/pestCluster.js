@@ -1,26 +1,20 @@
 /**
+ * @deprecated  v0 pest cluster. Superseded by
+ *              src/outbreak/outbreakClusterEngine.js
+ *              (richer report shape, GIS proximity merge,
+ *              region normaliser, severity rules). Kept for
+ *              back-compat. Will be removed in the v2
+ *              follow-up.
+ *
  * pestCluster.js — pure clustering over a flat pest-report list.
- *
- * Two grouping strategies live side by side; both return the
- * SAME shape so consumers can swap freely:
- *
- *   { region, count, latest, reports }
- *
- *   region    canonical group key (location string OR
- *             "lat,lng-bucket")
- *   count     reports in the cluster within `windowDays`
- *   latest    most-recent timestamp in the cluster (ms)
- *   reports   the source report records
- *
- * Tunables are exported in `CLUSTER_TUNING` so demos can adjust
- * the threshold + window without hunting through code.
+ * Two grouping strategies (region / geo) live side by side.
  *
  * Strict rules respected:
- *   * pure       - no I/O, no localStorage read, no Date.now
- *                  inside the function (callers pass `now`)
- *   * never throws on missing / malformed inputs
- *   * lightweight - O(N) over the report list
+ *   * pure / never throws / lightweight (O(N))
  */
+
+import { warnDeprecatedV0Pest } from './pestDeprecationWarning.js';
+warnDeprecatedV0Pest('pestCluster.js');
 
 export const CLUSTER_TUNING = Object.freeze({
   WINDOW_DAYS:        7,    // reports older than this don't count

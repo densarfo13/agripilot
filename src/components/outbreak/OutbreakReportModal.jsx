@@ -23,6 +23,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { getCropLabelSafe } from '../../utils/crops.js';
 import { saveOutbreakReport } from '../../outbreak/outbreakStore.js';
+import { compressImageFile } from '../../outbreak/photoCompress.js';
 
 const ISSUES = [
   { id: 'pest',    icon: '\uD83D\uDC1B', key: 'outbreak.issuePest'    },
@@ -87,24 +88,16 @@ export default function OutbreakReportModal({
       : [...prev, id]);
   }
 
-  function handlePhotoChange(e) {
+  async function handlePhotoChange(e) {
     const file = e && e.target && e.target.files && e.target.files[0];
     if (!file) return;
+    // Apr 2026 hotfix (limitation 2): downscale + recompress to a
+    // budget-fit JPEG before storing. compressImageFile resolves
+    // null on any failure path, so the report still saves with
+    // photoUrl: null - we never block the submit on a photo.
     try {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const url = String(reader.result || '');
-        // Soft cap: refuse to store > ~250KB so IDB writes don't
-        // hit quota on low-end devices. We still accept the
-        // sighting; we just drop the photo blob.
-        if (url.length > 250 * 1024) {
-          setPhotoUrl(null);
-        } else {
-          setPhotoUrl(url);
-        }
-      };
-      reader.onerror = () => setPhotoUrl(null);
-      reader.readAsDataURL(file);
+      const url = await compressImageFile(file);
+      setPhotoUrl(url || null);
     } catch { setPhotoUrl(null); }
   }
 
