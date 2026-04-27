@@ -8,6 +8,7 @@ import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 import { useTranslation, LANGUAGES } from '../i18n/index.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
 import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import AccountLoadFallback from '../components/AccountLoadFallback.jsx';
 import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
@@ -1120,54 +1121,17 @@ export default function FarmerDashboardPage() {
             <p>{t('home.loadingAccount')}</p>
           </div>
         ) : profileError ? (
-          <div style={styles.card} data-testid="farmer-account-error" role="alert">
-            <p style={{ margin: 0, marginBottom: '0.75rem' }}>{profileError}</p>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={handleBootstrapRetry}
-                style={{
-                  flex: 1, minHeight: 44, borderRadius: 12, border: 'none',
-                  background: '#22C55E', color: '#fff', fontWeight: 700,
-                  cursor: 'pointer', touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-                data-testid="farmer-account-refresh"
-              >
-                {tSafe('common.refresh', '')}
-              </button>
-              {/*
-                Was a "Back to login" button that force-called
-                useAuthStore.logout() before navigating. That fired
-                even when the underlying error was transient (a 503
-                from the new defensive route, a network blip, a
-                deadline hit on a slow Wi-Fi) — destroying a
-                perfectly-good session over noise. Replaced with a
-                "Continue" CTA that navigates to /today (the
-                farmer-friendly route that runs without the full
-                profile JOIN result) WITHOUT touching auth state.
-                The user keeps their session and can keep working;
-                if the server-side issue was permanent, the next
-                /me call from /today will surface a real 401 and
-                AuthContext will logout cleanly through the right
-                code path.
-              */}
-              <button
-                type="button"
-                onClick={() => navigate('/today', { replace: true })}
-                style={{
-                  flex: 1, minHeight: 44, borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  background: 'transparent', color: '#EAF2FF', fontWeight: 600,
-                  cursor: 'pointer', touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-                data-testid="farmer-account-continue"
-              >
-                {tSafe('common.continue', 'Continue')}
-              </button>
-            </div>
-          </div>
+          // Extracted into <AccountLoadFallback /> so the strict
+          // contract (Retry calls runBootstrap, Continue allows
+          // app entry without logout, Back-to-login is the only
+          // path that touches auth state) lives in one place and
+          // can't drift back to the inlined logout-on-tap shape.
+          <AccountLoadFallback
+            message={profileError}
+            onRetry={handleBootstrapRetry}
+            continuePath="/today"
+            testIdPrefix="farmer-account-error"
+          />
         ) : (
           <div style={styles.card} data-testid="farmer-account-empty">
             <p>{t('home.loadingAccount')}</p>
