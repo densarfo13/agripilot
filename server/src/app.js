@@ -353,17 +353,36 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', adminUserRoutes);
 
 // ─── /me endpoint ───────────────────────────────────────
+// V1 admin /me (used by older admin tools). V2 farmer-facing
+// /me lives at /api/v2/auth/me with its own hardening.
+// Both share the never-throw + JSON-always envelope so a Prisma
+// blip can't break either client's boot sequence.
 app.get('/api/me', authenticate, async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.sub },
-    select: {
-      id: true, email: true, fullName: true, role: true, active: true, createdAt: true,
-      organizationId: true,
-      organization: { select: { id: true, name: true, type: true } },
-    },
-  });
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json(user);
+  try {
+    if (!req.user || !req.user.sub) {
+      return res.status(401).json({ error: 'Unauthorized', code: 'no_subject' });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.sub },
+      select: {
+        id: true, email: true, fullName: true, role: true, active: true, createdAt: true,
+        organizationId: true,
+        organization: { select: { id: true, name: true, type: true } },
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found', code: 'user_not_found' });
+    }
+    return res.json(user);
+  } catch (err) {
+    const msg = err && err.message ? String(err.message).slice(0, 200) : 'unknown';
+    // eslint-disable-next-line no-console
+    console.error('[ME V1 ERROR]', msg, err);
+    return res.status(503).json({
+      error: 'Failed to load user. Please try again.',
+      code: 'me_lookup_failed',
+    });
+  }
 });
 
 // ─── Protected API Routes ───────────────────────────────

@@ -386,19 +386,87 @@ router.post('/logout', async (req, res) => {
 });
 
 // ─── Current User ──────────────────────────────────────────
+//
+// Production hardening: this endpoint is the single source of
+// truth for AuthContext.bootstrap on every page load. Any code
+// path that throws an unhandled rejection here breaks the
+// frontend boot sequence with a hung request / "Unexpected end
+// of JSON input" / forced-logout chain. New shape guarantees:
+//   * Always responds with valid JSON (no thrown promise can
+//     escape the try/catch and leave the connection hanging)
+//   * Never returns `user: null` with success=true (the spec
+//     reads that as "user exists but is null" and crashes
+//     downstream destructure paths). Missing user -> 404.
+//   * Token verification stays in the authenticate middleware
+//     where it already returns 401 on expired / invalid /
+//     missing cookies — handler only runs after a valid token
+//   * Transient DB error -> 503 with a code the client can
+//     branch on, not a 500 the client treats as fatal
+//   * `name` slot defaults to "Farmer" so the UI welcome line
+//     always has a non-empty string to render
 router.get('/me', authenticate, async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    select: {
-      id: true,
-      email: true,
-      fullName: true,
-      role: true,
-      emailVerifiedAt: true,
-    },
-  });
+  try {
+    if (!req.user || !req.user.id) {
+      // authenticate middleware should have caught this, but
+      // belt-and-braces — never trust the upstream completely.
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        code: 'no_subject',
+      });
+    }
 
-  return res.json({ success: true, user });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        emailVerifiedAt: true,
+      },
+    });
+
+    if (!user) {
+      // Token decoded fine but the user record vanished (rare —
+      // happens on hard-deleted accounts or DBs restored from a
+      // pre-signup snapshot). 404 lets the client clear the
+      // stale session deliberately rather than show a blank
+      // dashboard.
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+        code: 'user_not_found',
+      });
+    }
+
+    // Always-non-null shape. The `name` field is what the
+    // client's "Welcome, …" header renders; keep it defined so
+    // a record with a null fullName doesn't paint a blank.
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName || 'Farmer',
+        name: user.fullName || 'Farmer',
+        role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt,
+      },
+    });
+  } catch (err) {
+    // Truncate the message before logging — Prisma errors can
+    // include schema column names which we don't want in the
+    // ops log line indefinitely. The full err object still goes
+    // to console.error for the stack trace.
+    const msg = err && err.message ? String(err.message).slice(0, 200) : 'unknown';
+    console.error('[ME ERROR]', msg, err);
+    return res.status(503).json({
+      success: false,
+      error: 'Failed to load user. Please try again.',
+      code: 'me_lookup_failed',
+    });
+  }
 });
 
 // ─── Verify Email ──────────────────────────────────────────
