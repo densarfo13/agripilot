@@ -92,7 +92,7 @@ export default function RoiPanel({ windowDays = 7 }) {
           style={S.secondaryBtn}
           data-testid="ngo-roi-download-json"
         >
-          {'JSON'}
+          {tSafe('roi.download.json', 'JSON')}
         </button>
       </div>
     </section>

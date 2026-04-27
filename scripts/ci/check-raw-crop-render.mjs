@@ -82,8 +82,18 @@ const UPPER_CROPS = new Set([
 // strings, error messages). Add file paths only after auditing the
 // flagged line and confirming it can't go through getCropLabel.
 const BASELINE_OK = Object.freeze(new Set([
-  // (currently empty — every farmer-facing crop render goes through
-  // getCropLabel as of commit f623cb1)
+  // src/components/ngo/OutbreakWatchPanel.jsx — line 107 passes the
+  // raw `crop` state to a generic <Filter /> component as a value
+  // binding, but the user-visible label is rendered via
+  // `renderOption={(c) => getCropLabelSafe(c, lang) || c}` on
+  // line 109. The script can't see through the renderOption
+  // indirection so we exempt the file. Verified safe 2026-04-27.
+  'src/components/ngo/OutbreakWatchPanel.jsx',
+  // src/pages/NgoControlPanel.jsx — same pattern at line 191:
+  // options={optionSets.crop} but the visible text comes from
+  // `renderOption={(c) => getCropLabelSafe(c, lang) || c}` on
+  // line 193. Exempt for the same reason.
+  'src/pages/NgoControlPanel.jsx',
 ]));
 
 // ─── Walk + collect candidate files ──────────────────────────────

@@ -730,8 +730,18 @@ function scoreVoice(voice) {
 }
 
 function selectBestVoice(langTag) {
+  // Browser-guard: Safari mobile, Firefox private windows, and SSR
+  // contexts can all expose `window` without `speechSynthesis`. A
+  // bare `.getVoices()` would throw and crash any caller that
+  // hasn't wrapped their call in try/catch (e.g. the bound voice
+  // helpers further down the file). Returning null lets the caller
+  // fall through to the silent no-op path.
+  if (typeof window === 'undefined' || !window.speechSynthesis ||
+      typeof window.speechSynthesis.getVoices !== 'function') {
+    return null;
+  }
   const voices = window.speechSynthesis.getVoices();
-  if (!voices.length) return null;
+  if (!voices || !voices.length) return null;
   const version = voices.length;
   if (version !== _voiceListVersion) { _voiceCache = new Map(); _voiceListVersion = version; }
   if (_voiceCache.has(langTag)) return _voiceCache.get(langTag);

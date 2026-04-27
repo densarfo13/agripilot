@@ -55,7 +55,21 @@ const SKIP_FILE_PATTERNS = [
 // fallback). The drift guard's intent (catch new RAW references)
 // still holds; the +1 is a one-time migration cost, not a
 // regression in raw-crop usage.
-const BASELINE = 268;
+//
+// 2026-04-27 ratcheted up by 4 (268 → 272). Reason: the Outbreak
+// Intelligence System v1 (commit 4b5325c) introduced three modules
+// that read crop off a farm record:
+//   src/outbreak/outbreakClusterEngine.js
+//   src/outbreak/farmerOutbreakAlerts.js
+//   src/components/outbreak/OutbreakReportModal.jsx
+// All four references use the canonical-first defensive shape
+// `farm.crop || farm.cropType` — exactly the pattern this guard is
+// supposed to encourage during the migration window. None render
+// raw cropType to UI without a getCropLabelSafe() wrap. Treating
+// them as drift would punish the very migration shape the codebase
+// is moving toward, so we capture them in the baseline and keep
+// the ratchet trending DOWN from here.
+const BASELINE = 272;
 
 // Maximum growth tolerated per PR when you legitimately extend a
 // bridge module during the migration. Set to 0 to be strict.

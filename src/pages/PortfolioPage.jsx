@@ -106,12 +106,12 @@ export default function PortfolioPage() {
           <div className="card">
             <div className="card-header">Risk Distribution</div>
             <div className="card-body">
-              {data.riskBreakdown.length > 0 ? (
+              {Array.isArray(data.riskBreakdown) && data.riskBreakdown.length > 0 ? (
                 <ChartErrorBoundary>
                   <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
                       <Pie data={data.riskBreakdown} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={100} label={({ level, count }) => `${level} (${count})`}>
-                        {data.riskBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        {(data.riskBreakdown || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
                       <Tooltip />
                     </PieChart>
@@ -129,7 +129,7 @@ export default function PortfolioPage() {
               <table>
                 <thead><tr><th>Crop</th><th>Count</th><th>Total Amount</th><th>Avg Amount</th></tr></thead>
                 <tbody>
-                  {data.cropBreakdown.map(c => (
+                  {(data.cropBreakdown || []).map(c => (
                     <tr key={c.crop}>
                       <td style={{ fontWeight: 500 }}>{getCropLabelSafe(c.crop, lang) || c.crop}</td>
                       <td>{c.count}</td>
@@ -148,7 +148,7 @@ export default function PortfolioPage() {
               <table>
                 <thead><tr><th>Region</th><th>Farmers</th></tr></thead>
                 <tbody>
-                  {data.regionBreakdown.map(r => (
+                  {(data.regionBreakdown || []).map(r => (
                     <tr key={r.region}>
                       <td style={{ fontWeight: 500 }}>{r.region}</td>
                       <td>{r.farmerCount}</td>
