@@ -48,6 +48,18 @@ export const I18N_GAPS_TRANSLATIONS = Object.freeze({
 
     // ── Default farm name when the farmer leaves it blank ─────
     'farm.newFarm.defaultName':           'मेरा नया खेत',
+
+    // ── Critical-alert CTA on the home target-card (decisionEngine) ─
+    // Different from `home.cta.actNow` — this one is fired by the
+    // alert path (decisionEngine.js lines 106 / 131) for crops in
+    // critical / weather-overridden state. Has en/fr/sw/ha/tw in
+    // translations.js but no hi.
+    'guided.alertCta':                    'अभी कार्रवाई करें',
+
+    // ── Progress counter beneath the target-card / tasks list ──
+    // Used by NextActionCard, BasicFarmerHome, and AllTasksPage.
+    // Existing translations.js entry has en/fr/sw/ha/tw, no hi.
+    'loop.progressToday':                 'आज {done}/{total} पूरे',
   },
 
   fr: {
