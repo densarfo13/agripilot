@@ -30,7 +30,7 @@ import React from 'react';
 export default class ChartErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorKey: 0 };
   }
 
   static getDerivedStateFromError() {
@@ -41,9 +41,38 @@ export default class ChartErrorBoundary extends React.Component {
     // Log with the same prefix the app-wide boundary uses — operators
     // grep [FARROWAY_CRASH] in Sentry / Railway. Tagged "chart" so a
     // chart misfire is distinguishable from a real page crash.
+    //
+    // console.warn instead of console.error: a chart misfire is a
+    // contained, non-fatal recovery — the surrounding page stays
+    // interactive. Using warn keeps DevTools from painting the
+    // line red on every farmer's tab while still letting ops grep
+    // the prefix in Railway logs (warn writes to the same drain).
     try {
-      console.error('[FARROWAY_CRASH][chart]', error, info?.componentStack);
+      console.warn('[FARROWAY_CRASH][chart]', error, info?.componentStack);
     } catch { /* console missing — never propagate */ }
+  }
+
+  componentDidUpdate(prevProps) {
+    // Auto-recover on prop change: if the parent re-renders with
+    // fresh data (e.g. an API fetch resolved with valid payload
+    // after a transient empty/NaN state caused recharts to throw),
+    // try mounting the children again. Without this, a one-time
+    // crash leaves the chart permanently stuck on the fallback
+    // even after good data arrives, which the farmer experiences
+    // as "the chart is dead until I reload the page".
+    //
+    // We compare the children reference rather than deep-equality
+    // because callers always re-create the chart subtree when
+    // data changes (Bar / Line / Pie components are returned
+    // fresh from the parent's render). A reference swap is the
+    // strongest "the parent did a meaningful re-render" signal
+    // we have without forcing every caller to pass a key prop.
+    if (this.state.hasError && prevProps.children !== this.props.children) {
+      this.setState((s) => ({
+        hasError: false,
+        errorKey: s.errorKey + 1,
+      }));
+    }
   }
 
   render() {
