@@ -30,6 +30,7 @@ import { generateTasks } from '../lib/tasks/taskEngine.js';
 import { getTaskCompletions, getFeedback } from '../store/farrowayLocal.js';
 import VoiceButton from '../components/VoiceButton.jsx';
 import { tSafe } from '../i18n/tSafe.js';
+import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 
 const STAGE_ORDER = [
   'planning', 'land_preparation', 'planting', 'germination',
@@ -125,12 +126,22 @@ export default function FarmerProgressPage() {
   });
   const engineStatusLabel = t(STATUS_LABEL_KEY[progressSnapshot.status])
     || progressSnapshot.status;
-  const engineNextActionText = progressSnapshot.nextBestAction.kind === 'bridge'
-    ? (t(progressSnapshot.nextBestAction.bridgeKey) || null)
-    : (progressSnapshot.nextBestAction.title
-        || (progressSnapshot.nextBestAction.titleKey
-            ? t(progressSnapshot.nextBestAction.titleKey)
-            : null));
+  // Localise the next-best-action title. Bridge actions use a stable
+  // i18n key; task actions come from the server with English titles
+  // (or a titleKey on the engine path), so we route through
+  // getLocalizedTaskTitle which consults the task-id map first and
+  // then the phrase-based fallback (gap-fix bc23833) before giving up.
+  const engineNextActionText = (() => {
+    const nba = progressSnapshot.nextBestAction;
+    if (nba.kind === 'bridge') {
+      return t(nba.bridgeKey) || null;
+    }
+    if (nba.titleKey) {
+      const fromKey = t(nba.titleKey);
+      if (fromKey) return fromKey;
+    }
+    return getLocalizedTaskTitle(nba.taskId, nba.title, lang) || nba.title || null;
+  })();
 
   if (!profile) return null;
 

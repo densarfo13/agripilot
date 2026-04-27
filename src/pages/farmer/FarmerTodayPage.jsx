@@ -80,6 +80,7 @@ import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
+import { getLocalizedTaskTitle } from '../../utils/taskTranslations.js';
 import { getTodayScreenState } from '../../utils/getTodayScreenState.js';
 import { getAppMode } from '../../utils/getAppMode.js';
 import { shapeTodayPayloadForMode } from '../../utils/modeAwareTasks.js';
@@ -670,12 +671,22 @@ export default function FarmerTodayPage() {
 
   const progressStatusLabel = t(STATUS_LABEL_KEY[progressSnapshot.status])
     || progressSnapshot.status;
-  const nextBestActionText = progressSnapshot.nextBestAction.kind === 'bridge'
-    ? (t(progressSnapshot.nextBestAction.bridgeKey) || null)
-    : (progressSnapshot.nextBestAction.title
-        || (progressSnapshot.nextBestAction.titleKey
-            ? t(progressSnapshot.nextBestAction.titleKey)
-            : null));
+  // Localise the next-best-action title. Bridge actions use a stable
+  // i18n key; task actions come from the server with English titles
+  // (or a titleKey on the engine path), so we route through
+  // getLocalizedTaskTitle which consults the task-id map first and
+  // then the phrase-based fallback (gap-fix bc23833) before giving up.
+  const nextBestActionText = (() => {
+    const nba = progressSnapshot.nextBestAction;
+    if (nba.kind === 'bridge') {
+      return t(nba.bridgeKey) || null;
+    }
+    if (nba.titleKey) {
+      const fromKey = t(nba.titleKey);
+      if (fromKey) return fromKey;
+    }
+    return getLocalizedTaskTitle(nba.taskId, nba.title, language) || nba.title || null;
+  })();
 
   function handleOptionalCheck(item) {
     // Re-use the issue-reporter modal for "Scan crop for issues" so
