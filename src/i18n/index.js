@@ -36,6 +36,7 @@ import { SETTINGS_PAGE_TRANSLATIONS }      from './settingsPageTranslations.js';
 import { I18N_GAPS_TRANSLATIONS }          from './i18nGapsTranslations.js';
 import { OUTBREAK_TRANSLATIONS }           from './outbreakTranslations.js';
 import { RISK_TRANSLATIONS }               from './riskTranslations.js';
+import { NGO_CONTROL_TRANSLATIONS }        from './ngoControlTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -83,6 +84,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     I18N_GAPS_TRANSLATIONS,
     OUTBREAK_TRANSLATIONS,
     RISK_TRANSLATIONS,
+    NGO_CONTROL_TRANSLATIONS,
   ]);
 })();
 

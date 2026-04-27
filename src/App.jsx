@@ -80,6 +80,11 @@ const Settings = lazy(() => import('./pages/Settings.jsx'));
 // Distinct from the existing NgoDashboard which is the server-fed
 // program admin view.
 const NgoValueDashboard = lazy(() => import('./pages/NgoValueDashboard.jsx'));
+// Outbreak control panel: KPIs + (lazy) map + alerts table.
+// The map subtree inside the page is also code-split via
+// React.lazy so the page chunk stays small even on low-end
+// devices that never expand the map.
+const NgoControlPanel = lazy(() => import('./pages/NgoControlPanel.jsx'));
 const Pricing = lazy(() => import('./pages/Pricing.jsx'));
 // Frictionless one-screen onboarding for low-literacy farmers.
 // Lives alongside the legacy OnboardingV3 / FastOnboarding routes -
@@ -515,7 +520,8 @@ export default function App() {
                 + pricing config so it works in demos / offline.
                 /pricing itself lives outside this protected block
                 so it can be demo'd without an account. */}
-            <Route path="/ngo/value" element={<NgoValueDashboard />} />
+            <Route path="/ngo/value"   element={<NgoValueDashboard />} />
+            <Route path="/ngo/control" element={<NgoControlPanel />} />
             <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
             <Route path="/farmer/listings" element={<MyListingsPage />} />
