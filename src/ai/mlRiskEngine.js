@@ -34,10 +34,17 @@
 import { runModelSpec, contributions } from './modelRunner.js';
 import { mapRisk, RISK_LEVEL } from './riskMapper.js';
 import { computeFarmRisks } from '../outbreak/riskEngine.js';
+import { getModelStatus, combineStatuses, MODEL_STATUS } from './modelStatus.js';
 
 const SAFE_DEFAULT = Object.freeze({
   pest:    { risk: RISK_LEVEL.LOW, probability: 0, reasons: [], source: 'unknown' },
   drought: { risk: RISK_LEVEL.LOW, probability: 0, reasons: [], source: 'unknown' },
+  meta: {
+    pestStatus:    null,
+    droughtStatus: null,
+    warning:       null,
+    isTrustworthy: false,
+  },
 });
 
 let _modelCache = { pest: null, drought: null, loaded: false };
@@ -232,15 +239,23 @@ export async function computeMLRisk(farm, context = {}) {
 
   const featuresMap = _buildFeatures(farm, context);
 
+  // Per-domain model classification — covers the spec § 9
+  // guardrail. Even if the model has non-zero weights, callers
+  // need to know whether it was trained on enough data to
+  // trust prominently or whether the warning banner should
+  // ride alongside any ML number we surface.
+  const pestStatus    = getModelStatus(models.pest);
+  const droughtStatus = getModelStatus(models.drought);
+
   // ── Pest ───────────────────────────────────────────────────
   let pest = null;
-  if (_isUsableModel(models.pest)) {
+  if (_isUsableModel(models.pest) && pestStatus.status !== MODEL_STATUS.PLACEHOLDER) {
     pest = _modelBranch(models.pest, featuresMap, 'pest');
   }
 
   // ── Drought ────────────────────────────────────────────────
   let drought = null;
-  if (_isUsableModel(models.drought)) {
+  if (_isUsableModel(models.drought) && droughtStatus.status !== MODEL_STATUS.PLACEHOLDER) {
     drought = _modelBranch(models.drought, featuresMap, 'drought');
   }
 
@@ -253,9 +268,21 @@ export async function computeMLRisk(farm, context = {}) {
     }
   }
 
+  // Worst-of-two warning so the surface that shows a single
+  // banner picks the most-conservative wording. Trustworthy
+  // overall only when BOTH domains come from a trusted model.
+  const combined = combineStatuses(pestStatus, droughtStatus);
+  const meta = Object.freeze({
+    pestStatus,
+    droughtStatus,
+    warning:       combined && combined.warning ? combined.warning : null,
+    isTrustworthy: pestStatus.isTrustworthy && droughtStatus.isTrustworthy,
+  });
+
   return {
     pest:    pest    || SAFE_DEFAULT.pest,
     drought: drought || SAFE_DEFAULT.drought,
+    meta,
   };
 }
 
@@ -267,8 +294,23 @@ export async function computeMLRisk(farm, context = {}) {
 export function computeMLRiskSync(farm, context = {}) {
   if (!farm) return SAFE_DEFAULT;
   const ruleOut = _ruleEngineBranch(farm, context);
-  if (ruleOut) return ruleOut;
-  return SAFE_DEFAULT;
+  if (!ruleOut) return SAFE_DEFAULT;
+  // Sync surface always uses the rule engine, so no model is in
+  // play — meta reflects that with a placeholder-style status so
+  // a banner caller can still display "using rule-based risk".
+  return {
+    pest:    ruleOut.pest,
+    drought: ruleOut.drought,
+    meta: Object.freeze({
+      pestStatus:    null,
+      droughtStatus: null,
+      warning: {
+        messageKey: 'ml.warning.placeholder',
+        fallback:   'No model trained yet. Using rule-based risk.',
+      },
+      isTrustworthy: false,
+    }),
+  };
 }
 
 // Test seam: lets unit tests inject fake models without going
