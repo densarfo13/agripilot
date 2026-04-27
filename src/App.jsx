@@ -61,6 +61,11 @@ const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
 const BeginnerReassurance = lazy(() => import('./pages/BeginnerReassurance.jsx'));
 const FarmerSettingsPage = lazy(() => import('./pages/FarmerSettingsPage.jsx'));
 const Settings = lazy(() => import('./pages/Settings.jsx'));
+// NGO value dashboard + pricing screens (monetisation layer).
+// Distinct from the existing NgoDashboard which is the server-fed
+// program admin view.
+const NgoValueDashboard = lazy(() => import('./pages/NgoValueDashboard.jsx'));
+const Pricing = lazy(() => import('./pages/Pricing.jsx'));
 const CameraScanPage = lazy(() => import('./pages/CameraScanPage.jsx'));
 const LandCheckPage = lazy(() => import('./pages/LandCheckPage.jsx'));
 const VerifyOtp = lazy(() => import('./pages/VerifyOtp.jsx'));
@@ -435,6 +440,11 @@ export default function App() {
           <Route path="/officer/issues"   element={<OfficerIssuesPage />} />
           <Route path="/verify-email" element={<V2VerifyEmail />} />
           <Route path="/profile/setup" element={<V2ProfileSetup />} />
+          {/* Public pricing page - reachable without auth so it can
+              be demo'd / linked from sales emails. The companion
+              /ngo/value dashboard sits inside the protected layout
+              below since it reads the user's farm roster. */}
+          <Route path="/pricing" element={<Pricing />} />
           <Route element={<V2ProtectedLayout />}>
             <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
             <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />
@@ -451,6 +461,12 @@ export default function App() {
             <Route path="/ngo/interventions" element={<InterventionCenter />} />
             <Route path="/ngo/scores" element={<FarmerScoring />} />
             <Route path="/ngo/funding" element={<FundingReadiness />} />
+            {/* Monetisation layer (additive). Distinct from the
+                server-fed NGOOverview above; reads local metrics
+                + pricing config so it works in demos / offline.
+                /pricing itself lives outside this protected block
+                so it can be demo'd without an account. */}
+            <Route path="/ngo/value" element={<NgoValueDashboard />} />
             <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
             <Route path="/farmer/listings" element={<MyListingsPage />} />
