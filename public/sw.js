@@ -76,6 +76,25 @@ self.addEventListener('fetch', (event) => {
   // Only cache GET requests
   if (request.method !== 'GET') return;
 
+  // PWA manifest + icon + favicon assets: bypass the SW completely
+  // and let the browser fetch direct from the network. The manifest
+  // icon resolver in Chrome is strict — if a previous deploy ever
+  // cached a non-image response on this path (e.g. an SPA HTML
+  // fallback from a misconfigured static-asset middleware), every
+  // subsequent app launch re-uses that bad cache and the
+  // installability check fails with "Download error or resource
+  // isn't a valid image". Letting these requests pass through the
+  // SW unmodified means cache poisoning here is impossible.
+  if (
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/manifest.webmanifest' ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname === '/apple-touch-icon.png'
+  ) {
+    return; // no respondWith — browser handles the fetch directly
+  }
+
   // Cacheable API calls: network-first, fall back to cached
   if (url.pathname.startsWith('/api/') && isApiCacheable(url.pathname)) {
     event.respondWith(

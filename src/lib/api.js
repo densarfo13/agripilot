@@ -503,7 +503,32 @@ export function completeV2Task(taskId) {
   });
 }
 
+// Cheap auth-presence probe used by the analytics fire-and-forget
+// helpers. We can't read the V2 httpOnly access cookie from JS, so
+// the next-best signal is the localStorage session-cache mirror
+// that AuthContext writes on every successful /me. If neither the
+// V1 admin token nor the V2 session cache is present the user is
+// almost certainly logged out — firing /analytics/track in that
+// state guarantees a 401 and surfaces an unsuppressable
+// "Failed to load resource" line in the browser console.
+function _hasAuthSignal() {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    if (localStorage.getItem('farroway_token')) return true;
+    if (localStorage.getItem('farroway:session_cache')) return true;
+    return false;
+  } catch { return false; }
+}
+
 export function trackEvent(event, metadata) {
+  // Guard: avoid the guaranteed-401 call from anonymous routes
+  // (login / forgot-password / public landing). A logged-out
+  // farmer never has a valid analytics session anyway, so the
+  // call is a pure browser-console-noise generator. Caller still
+  // gets a thenable so existing `.then` chains don't crash.
+  if (!_hasAuthSignal()) {
+    return Promise.resolve({ skipped: true, reason: 'no_auth' });
+  }
   return request('/api/v2/analytics/track', {
     method: 'POST',
     body: JSON.stringify({ event, metadata }),
@@ -515,6 +540,13 @@ export function trackEvent(event, metadata) {
  * Logs to the analytics endpoint but never throws or blocks the caller.
  */
 export function trackPilotEvent(event, metadata = {}) {
+  // Same anonymous-skip as trackEvent above. The previous shape
+  // fired the request, the server returned 401, and the browser
+  // logged "Failed to load resource: .../analytics/track 401" on
+  // every public-route render. The fire-and-forget catch swallows
+  // the JS error but cannot suppress the browser's own console
+  // line — gating the call is the only way to silence the noise.
+  if (!_hasAuthSignal()) return;
   try {
     request('/api/v2/analytics/track', {
       method: 'POST',
