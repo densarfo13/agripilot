@@ -446,14 +446,35 @@ export async function inviteFarmer({
 /**
  * Get farmer profile for a logged-in farmer user.
  *
- * Production hardening: a Prisma error in either the applications
- * or notifications JOIN used to take the whole call down (e.g. a
- * migration drift on FarmerNotification.read column would 500 the
- * dashboard for every farmer). The bare farmer record is the
- * source of truth for the dashboard's primary content; the joined
- * collections are decorative. If the JOIN throws we fall back to
- * the bare lookup so the dashboard still renders, just without
- * the notification badge / application history.
+ * Three-tier defensive lookup
+ *   1. Eager findUnique with applications + notifications JOIN
+ *      (fast, single round-trip, the happy path)
+ *   2. Bare findUnique with no includes (catches JOIN-only errors:
+ *      a missing relation column, a renamed nested table, a
+ *      migration drift on FarmerNotification.read, etc.)
+ *   3. Return null on bare-lookup throw (catches Farmer-table
+ *      level errors: missing userId column, broken connection,
+ *      schema-versus-migration mismatch). The route then renders
+ *      a 404 instead of a 503, and the frontend's existing
+ *      "no farmer record" path routes the user to onboarding
+ *      where a fresh record can be created.
+ *
+ * Why three tiers, not two
+ *   The previous shape (a5566bb / cfbe66b) re-threw on bare-lookup
+ *   failure, which surfaced a 503 to the frontend. The retry-once
+ *   logic on the dashboard then ran a second 503, then surfaced
+ *   the recovery card. Net farmer experience: blank dashboard
+ *   with "Unable to load account" on EVERY load when the schema
+ *   is drifted — not transient. Routing persistent errors to
+ *   onboarding gives the farmer a path forward; ops still gets
+ *   the underlying error in Railway logs via the warn calls
+ *   below + the route-level logAuthEvent('farmer_profile_query_
+ *   failed') which now ALSO fires on the null path so a real
+ *   schema drift is operationally visible.
+ *
+ * Always logs the underlying Prisma error to console.warn (with
+ * truncated message + Prisma code if present) so ops can see
+ * which migration is missing without farmers reporting it.
  */
 export async function getFarmerProfile(userId) {
   if (!userId) return null;
@@ -474,11 +495,11 @@ export async function getFarmerProfile(userId) {
     });
     return farmer;
   } catch (err) {
-    // JOIN failed (schema drift, missing relation, etc.) — log and
-    // try the bare farmer record so the dashboard still loads.
+    // Tier 2: JOIN failed — log + try the bare farmer record.
     try {
       // eslint-disable-next-line no-console
       console.warn('[FARMER_PROFILE] include-join failed, falling back to bare record:',
+        err && err.code ? `code=${err.code}` : '',
         err && err.message ? String(err.message).slice(0, 200) : 'unknown');
     } catch { /* ignore */ }
     try {
@@ -489,9 +510,19 @@ export async function getFarmerProfile(userId) {
       // don't crash on undefined.
       return Object.assign({}, bare, { applications: [], notifications: [] });
     } catch (innerErr) {
-      // Bare lookup also failed — let the route handler turn this
-      // into a 503 + log entry rather than a silent null.
-      throw innerErr;
+      // Tier 3: bare lookup also failed — schema drift on the
+      // Farmer table itself, missing column, or broken Prisma
+      // client. Returning null lets the route render a 404,
+      // which the frontend treats as "no farmer record yet"
+      // and routes to onboarding. Always log so ops sees the
+      // underlying problem; never re-throw.
+      try {
+        // eslint-disable-next-line no-console
+        console.error('[FARMER_PROFILE] bare lookup also failed — returning null:',
+          innerErr && innerErr.code ? `code=${innerErr.code}` : '',
+          innerErr && innerErr.message ? String(innerErr.message).slice(0, 200) : 'unknown');
+      } catch { /* ignore */ }
+      return null;
     }
   }
 }
