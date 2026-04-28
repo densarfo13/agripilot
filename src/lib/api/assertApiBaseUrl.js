@@ -43,16 +43,13 @@ export function resolveApiBase({
 
   // Browser production with no base URL → fall through to same-origin.
   // Most Railway deploys serve the bundle from the same Express that
-  // hosts /api/* — empty base URL is correct. Log a warning so an
-  // operator can tell "intentional same-origin" from "forgot the env
-  // var" in dev tools, but never crash the bundle at module load.
-  //
-  // De-duped: the previous shape fired the warning on every call to
-  // resolveApiBase, which in practice meant once per module that
-  // imports api.js — turning DevTools into noise on every page load.
-  // The flag below means the warning surfaces ONCE per session;
-  // ops still sees it, the farmer's console doesn't get spammed.
-  if (isProd && !raw) _maybeWarnSameOrigin();
+  // hosts /api/* — empty base URL is correct. We do NOT warn in
+  // production: same-origin is the documented Railway monolith pattern
+  // and the warning has no operational value to a farmer opening
+  // DevTools — it just looks like an error. Dev still gets the warn so
+  // a developer running `vite preview` against a misconfigured .env
+  // sees the hint immediately.
+  if (!isProd && !raw) _maybeWarnSameOrigin();
 
   // Normalise: trim a trailing slash so callers can safely concat
   // `${base}/api/v2/...` without doubling up.

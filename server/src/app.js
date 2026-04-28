@@ -149,9 +149,38 @@ if (config.isProduction) {
 // ─── Production Static Assets (served early, before API middleware) ─────
 // Must be registered before API routes so asset requests never hit the API
 // middleware chain. The SPA fallback (app.get('*')) remains at the bottom.
+//
+// PWA-critical assets (icons, manifest, favicon) are mounted UNCONDITIONALLY
+// when dist/ exists on disk. Why: if NODE_ENV drifts from 'production' on the
+// deploy host (Railway/Render env-var drift), config.isProduction reads
+// false, the static handler below never mounts, and the SPA catch-all at the
+// bottom returns index.html for /icons/icon-192.png. Chrome then tries to
+// parse HTML as PNG and the manifest icon fails with "Download error or
+// resource isn't a valid image". Mounting the PWA paths unconditionally
+// guarantees they always serve real bytes from disk.
+const _distPath = path.join(__dirname, '../../dist');
+if (fs.existsSync(_distPath)) {
+  // Long-cache PWA assets — they are content-hashed at the icon path (size in
+  // filename) and the manifest is cheap to revalidate.
+  const pwaCache = { maxAge: '7d', immutable: false };
+  app.use('/icons', express.static(path.join(_distPath, 'icons'), pwaCache));
+  app.use('/manifest.json',
+    express.static(path.join(_distPath, 'manifest.json'), pwaCache));
+  app.use('/manifest.webmanifest',
+    express.static(path.join(_distPath, 'manifest.webmanifest'), pwaCache));
+  app.use('/favicon.ico',
+    express.static(path.join(_distPath, 'favicon.ico'), pwaCache));
+  app.use('/apple-touch-icon.png',
+    express.static(path.join(_distPath, 'apple-touch-icon.png'), pwaCache));
+  app.use('/sw.js',
+    express.static(path.join(_distPath, 'sw.js'),
+      { maxAge: '0', etag: true })); // SW must always revalidate
+  app.use('/robots.txt',
+    express.static(path.join(_distPath, 'robots.txt'), pwaCache));
+}
+
 if (config.isProduction) {
-  const clientDist = path.join(__dirname, '../../dist');
-  app.use(express.static(clientDist));
+  app.use(express.static(_distPath));
 }
 
 // ─── Security Headers ──────────────────────────────────
@@ -523,8 +552,20 @@ app.use(errorHandler);
 if (config.isProduction) {
   const clientDist = path.join(__dirname, '../../dist');
   app.use(express.static(clientDist));
-  // SPA fallback: serve index.html for non-API routes (React Router handles client-side routing)
+  // SPA fallback: serve index.html for non-API routes (React Router handles
+  // client-side routing).
+  //
+  // Defensive guard: if an asset request slips past the static handlers above
+  // (e.g. the file doesn't exist on disk because of a botched build), DO NOT
+  // return index.html. Returning HTML for an image / manifest URL is what
+  // caused Chrome's "isn't a valid image" PWA manifest error in the first
+  // place. Return a real 404 so the browser knows the asset is missing
+  // instead of trying to parse HTML as PNG/JSON.
+  const _ASSET_RX = /\.(png|jpg|jpeg|gif|svg|webp|ico|json|webmanifest|js|mjs|css|map|woff2?|ttf|eot|wasm|txt|xml)$/i;
   app.get('*', (req, res) => {
+    if (_ASSET_RX.test(req.path)) {
+      return res.status(404).type('text/plain').send('Not found');
+    }
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }
