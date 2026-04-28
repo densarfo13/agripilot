@@ -10,8 +10,9 @@
  * stored record carries the lat/lng of the farm it was fetched
  * for, so when a caller passes their own lat/lng we can verify
  * the cache is for "their" locale (within ~5km) before returning
- * it - prevents a Ghana farmer from seeing Nairobi weather
- * after switching active farm.
+ * it - prevents a farmer who switched active farm from seeing
+ * the previous farm's weather (e.g. Accra cache leaking into a
+ * Nairobi farm view).
  *
  * Strict-rule audit:
  *   * works offline (localStorage only)

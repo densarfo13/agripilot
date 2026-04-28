@@ -1,10 +1,14 @@
 /**
- * Landing — production-ready single-file landing page for Farroway.
+ * Landing — DEPRECATED.
  *
- * Route target: mount at `/landing` (or the public root) in your
- * router. Pure UI, no app-side dependencies; drops straight in.
+ * This is the v2 dark-themed marketing page. The v3 marketing
+ * surface lives in `src/pages/LandingPage.jsx` and is now
+ * served on both /welcome and /landing (see App.jsx). This
+ * file is retained in tree as a design backup; do not link
+ * to it from new code.
  *
- *   <Route path="/landing" element={<Landing />} />
+ * Route target (legacy): was mounted at `/landing` — replaced
+ * by LandingPage in v3. Pure UI, no app-side dependencies.
  *
  * Design notes
  *   • Dark gradient background matching the Farroway app theme

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Farroway brand mark, v3.
+
+  Standalone vector copy of the leaf-shape arrow-path mark
+  drawn inline by src/components/FarrowayLogo.jsx — kept in
+  sync by hand. Used by browsers that prefer an SVG icon
+  (rel="icon" type="image/svg+xml") and as a transparent
+  source asset for any PWA/app-icon raster export.
+
+  Composition (top → bottom inside the leaf silhouette):
+    1. light-green slice (#A3E635)
+    2. medium-green body (#22C55E)
+    3. white diagonal stripe (#FFFFFF)
+    4. navy wedge (#0B1220)
+    5. white upward-right arrow with thin navy outline
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 100 100"
+     role="img"
+     aria-label="Farroway">
+  <title>Farroway</title>
+
+  <defs>
+    <clipPath id="leafClip">
+      <path d="M 88 14
+               Q 70 6, 48 12
+               Q 22 22, 10 50
+               Q 4 80, 28 90
+               Q 50 92, 66 76
+               Q 82 56, 88 14 Z" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#leafClip)">
+    <!-- 1. medium green base -->
+    <rect x="0" y="0" width="100" height="100" fill="#22C55E" />
+
+    <!-- 2. light green slice at the top -->
+    <polygon points="-10,-20 110,-20 110,4 -10,30" fill="#A3E635" />
+
+    <!-- 3. thin white diagonal stripe -->
+    <polygon points="-10,76 110,30 110,40 -10,82" fill="#FFFFFF" />
+
+    <!-- 4. navy wedge filling the lower-right -->
+    <polygon points="-10,82 110,40 110,120 -10,120" fill="#0B1220" />
+  </g>
+
+  <!-- 5. white upward arrow, drawn on top of the leaf -->
+  <g transform="rotate(28 52 52)">
+    <path d="M 46 78
+             L 46 48
+             L 38 48
+             L 52 28
+             L 66 48
+             L 56 48
+             L 56 78 Z"
+          fill="#FFFFFF"
+          stroke="#0B1220"
+          stroke-width="1.2"
+          stroke-linejoin="round" />
+  </g>
+</svg>

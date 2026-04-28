@@ -49,8 +49,13 @@ import { logSessionState } from './utils/sessionDebug.js';
 import { initDailyLoop } from './utils/dailyLoop.js';
 
 // Landing page (marketing homepage)
+//
+// LandingPage.jsx is the v3 marketing surface (white bg,
+// global pilot copy). It serves both /welcome and /landing
+// so external links to either path land on the canonical
+// page. The earlier Landing.jsx (dark v2 design language)
+// is retained in tree as a backup but no longer routed.
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
-const Landing = lazy(() => import('./pages/Landing.jsx'));
 
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
@@ -465,9 +470,11 @@ export default function App() {
       <AuthLoadingGate>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Marketing landing page (farroways.com homepage) */}
+          {/* Marketing landing page (farroway.app homepage).
+              Both /welcome and /landing render the same v3
+              page so external links keep working. */}
           <Route path="/welcome" element={<LandingPage />} />
-          <Route path="/landing" element={<Landing />} />
+          <Route path="/landing" element={<LandingPage />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
           <Route path="/start" element={<FarmerEntry />} />

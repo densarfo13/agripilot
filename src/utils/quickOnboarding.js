@@ -34,11 +34,19 @@ export const FARM_CREATED_FLAG     = 'farroway_farm_created';
 export const QUICK_VOICE_FIRED_KEY = 'farroway_quick_voice_fired';
 
 const DEFAULT_CROP    = 'cassava';
-const DEFAULT_COUNTRY = 'GH';   // Ghana - matches the primary pilot region
+// Last-resort country fallback when IP geo + browser locale both
+// fail. Picked because the bulk of v1 supported crops (cassava,
+// maize, cocoa) are in this band — geolocation overrides it on
+// almost every real session, so the user-facing impact is tiny.
+// Farroway is global; this is a fallback, NOT a "pilot region".
+const DEFAULT_COUNTRY = 'GH';
 const SUPPORTED_FALLBACK_COUNTRIES = Object.freeze([
-  'GH', 'NG', 'KE', 'TZ', 'UG', 'ZA',  // SSA pilot roster
-  'IN', 'PK', 'BD',                     // South Asia
-  'GB', 'US', 'CA', 'FR',               // diaspora / dev
+  // Sub-Saharan Africa
+  'GH', 'NG', 'KE', 'TZ', 'UG', 'ZA',
+  // South Asia
+  'IN', 'PK', 'BD',
+  // Diaspora / dev
+  'GB', 'US', 'CA', 'FR',
 ]);
 
 function _safeGet(key) {
@@ -59,8 +67,11 @@ function _safeSet(key, value) {
 
 /**
  * Auto-detect the user's country. Uses the existing IP-based
- * detector (no permission prompt, fast). Falls back to Ghana if
- * the network is offline or every provider rejects.
+ * detector (no permission prompt, fast). Falls back to
+ * `DEFAULT_COUNTRY` when the network is offline or every
+ * provider rejects — the fallback is intentionally generic
+ * (Farroway is a global product) and gets overridden by
+ * geolocation on every real session.
  *
  * Returns the country code (uppercase, e.g. 'GH'). Always returns
  * a usable value - never null.

@@ -62,7 +62,11 @@ function _centerOf(circles) {
 export default function OutbreakMap({
   clusters = [],
   height   = 400,
-  defaultCenter = [6.5, -1.5],     // Ghana - matches the pilot region
+  // Default centre is a calm West-Africa anchor that keeps the
+  // map filled when the operator hasn't supplied coordinates.
+  // Geolocation / cluster centroid overrides it whenever there's
+  // real data — see `_centroid()` above.
+  defaultCenter = [6.5, -1.5],
   defaultZoom   = 6,
 }) {
   // Filter + cap once per render. Sort by severity desc + count

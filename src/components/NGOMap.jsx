@@ -91,9 +91,10 @@ export default function NGOMap({ farms = [], clusters = [] }) {
   }
 
   // Center on the first GPS farm; fall back to the first
-  // cluster centroid; ultimate fallback is a calm "rough
-  // West Africa" anchor (Ghana center) so the map still
-  // shows tiles even with malformed inputs.
+  // cluster centroid; ultimate fallback is a calm
+  // West-Africa anchor so the map still shows tiles even
+  // with malformed inputs (real org data overrides this on
+  // every real render).
   const center = gpsFarms.length > 0
     ? [Number(gpsFarms[0].location.lat),
        Number(gpsFarms[0].location.lng)]
