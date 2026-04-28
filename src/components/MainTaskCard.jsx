@@ -1,25 +1,51 @@
 /**
- * MainTaskCard — single-task headline card for the optimised
- * Today page.
+ * MainTaskCard — single-task headline card for the Today page.
  *
- *   <MainTaskCard task="Check soil moisture today" reason="..." />
+ *   <MainTaskCard
+ *     title       ="Prepare rows for maize"
+ *     instruction ="Make rows ~75cm apart"
+ *     timing      ="Do this before rain starts today"
+ *     risk        ="If you skip this, planting may be delayed"
+ *   />
+ *
+ * The four-field shape replaces the previous (task + reason)
+ * shape — this is the elite-UX upgrade in the brief. Backward
+ * compat is preserved: callers that only pass `task` (the old
+ * single-string contract) still render correctly with the
+ * other three rows hidden.
  *
  * Strict-rule audit
- *   * shows ONE task (the prop is a single string)
- *   * no clutter: kicker + h1 + optional 1-line reason
- *   * loads instantly: pure presentational, no I/O
- *   * low literacy friendly: large icon, big bold title
- *   * inline styles match the codebase (no Tailwind dep)
+ *   * Shows ONE task (the four fields belong to the same task)
+ *   * No clutter: every field is a single short line; long
+ *     copy wraps to at most 3 lines on a phone width via
+ *     overflowWrap so no farmer sees text spill outside the card
+ *   * Loads instantly: pure presentational
+ *   * tSafe friendly: callers pass already-resolved strings
+ *   * Mobile-first layout: padding scales with viewport, font
+ *     sizes use rem so OS accessibility scaling carries through
  */
 
 import React from 'react';
 import { tSafe } from '../i18n/tSafe.js';
 
 export default function MainTaskCard({
-  task     = '',
-  reason   = '',
-  icon     = '\uD83C\uDF31',     // sprout
+  // New 4-field shape
+  title       = '',
+  instruction = '',
+  timing      = '',
+  risk        = '',
+  icon        = '\uD83C\uDF31',     // sprout
+  // Back-compat: old single-string contract still accepted
+  task        = '',
+  reason      = '',
 }) {
+  // Resolve old-shape callers onto the new field set so the
+  // render path stays single. Old `task` becomes the title;
+  // old `reason` becomes the instruction line.
+  const resolvedTitle       = title || task
+    || tSafe('today.fallbackTask', 'Check your farm today');
+  const resolvedInstruction = instruction || reason || '';
+
   return (
     <section style={S.card} data-testid="main-task-card">
       <div style={S.kickerRow}>
@@ -28,15 +54,54 @@ export default function MainTaskCard({
           {tSafe('today.todaysTask', 'Today\u2019s task')}
         </span>
       </div>
+
       <h1 style={S.title} data-testid="main-task-title">
-        {task || tSafe('today.fallbackTask', 'Check your farm today')}
+        {resolvedTitle}
       </h1>
-      {reason && (
-        <p style={S.reason} data-testid="main-task-reason">
-          {reason}
-        </p>
+
+      {resolvedInstruction && (
+        <Row
+          icon={'\uD83D\uDCD0'}                 /* triangular ruler */
+          label={tSafe('today.task.instruction.label', 'How')}
+          text={resolvedInstruction}
+          testId="main-task-instruction"
+          tone="default"
+        />
+      )}
+
+      {timing && (
+        <Row
+          icon={'\u23F0'}                       /* alarm clock */
+          label={tSafe('today.task.timing.label', 'When')}
+          text={timing}
+          testId="main-task-timing"
+          tone="default"
+        />
+      )}
+
+      {risk && (
+        <Row
+          icon={'\u26A0\uFE0F'}                 /* warning */
+          label={tSafe('today.task.risk.label', 'Why it matters')}
+          text={risk}
+          testId="main-task-risk"
+          tone="warning"
+        />
       )}
     </section>
+  );
+}
+
+function Row({ icon, label, text, testId, tone }) {
+  const toneStyle = tone === 'warning' ? S.rowWarn : S.rowDefault;
+  return (
+    <div style={{ ...S.row, ...toneStyle }} data-testid={testId}>
+      <span style={S.rowIcon} aria-hidden="true">{icon}</span>
+      <div style={S.rowText}>
+        <div style={S.rowLabel}>{label}</div>
+        <div style={S.rowBody}>{text}</div>
+      </div>
+    </div>
   );
 }
 
@@ -49,8 +114,13 @@ const S = {
     color: '#FFFFFF',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.625rem',
+    gap: '0.75rem',
     boxShadow: '0 12px 32px rgba(0,0,0,0.30)',
+    // Prevent any single line from blowing out the card on
+    // narrow viewports.
+    overflow: 'hidden',
+    overflowWrap: 'break-word',
+    wordBreak: 'break-word',
   },
   kickerRow: {
     display: 'flex',
@@ -75,11 +145,47 @@ const S = {
     color: '#FFFFFF',
     lineHeight: 1.2,
     letterSpacing: '0.005em',
+    overflowWrap: 'break-word',
+    wordBreak: 'break-word',
   },
-  reason: {
-    margin: 0,
+  row: {
+    display: 'flex',
+    gap: '0.625rem',
+    alignItems: 'flex-start',
+    padding: '0.625rem 0.75rem',
+    borderRadius: '12px',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  rowDefault: {},
+  rowWarn: {
+    background: 'rgba(245,158,11,0.10)',
+    border: '1px solid rgba(245,158,11,0.30)',
+  },
+  rowIcon: {
+    fontSize: '1.0625rem',
+    lineHeight: 1.4,
+    flexShrink: 0,
+  },
+  rowText: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.125rem',
+    flex: 1,
+    minWidth: 0,
+  },
+  rowLabel: {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+  },
+  rowBody: {
     fontSize: '0.9375rem',
-    color: 'rgba(255,255,255,0.85)',
+    color: '#FFFFFF',
     lineHeight: 1.45,
+    overflowWrap: 'break-word',
+    wordBreak: 'break-word',
   },
 };

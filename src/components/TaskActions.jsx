@@ -39,11 +39,11 @@ export default function TaskActions({
         onClick={onDone}
         style={{ ...S.doneBtn, ...(busy ? S.btnBusy : null) }}
         disabled={busy}
-        aria-label={tSafe('today.done', 'Done')}
+        aria-label={tSafe('today.doneNow', 'Done now')}
         data-testid="task-actions-done"
       >
         <span style={S.icon} aria-hidden="true">{'\u2705'}</span>
-        <span style={S.label}>{tSafe('today.done', 'Done')}</span>
+        <span style={S.label}>{tSafe('today.doneNow', 'Done now')}</span>
       </button>
     </div>
   );

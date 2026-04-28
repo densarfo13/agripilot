@@ -48,6 +48,7 @@ import { RESET_PASSWORD_TRANSLATIONS }     from './resetPasswordTranslations.js'
 import { WEEKLY_AND_NGO_ACTIONS_TRANSLATIONS } from './weeklyAndNgoActionsTranslations.js';
 import { ML_WARNING_TRANSLATIONS }            from './mlWarningTranslations.js';
 import { ACCOUNT_LOAD_TRANSLATIONS }          from './accountLoadTranslations.js';
+import { TODAY_ELITE_TRANSLATIONS }            from './todayElitTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -107,6 +108,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     WEEKLY_AND_NGO_ACTIONS_TRANSLATIONS,
     ML_WARNING_TRANSLATIONS,
     ACCOUNT_LOAD_TRANSLATIONS,
+    TODAY_ELITE_TRANSLATIONS,
   ]);
 })();
 
