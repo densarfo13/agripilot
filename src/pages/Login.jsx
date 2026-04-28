@@ -11,7 +11,7 @@ import LoadingButton from '../components/auth/LoadingButton.jsx';
 import OTPInput from '../components/auth/OTPInput.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import { tSafe } from '../i18n/tSafe.js';
-import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 // Lightweight, user-safe email shape check. The server still
@@ -107,7 +107,7 @@ export default function Login() {
     return (
       <div style={S.page}>
         <div style={S.loadingInner}>
-          <FarrowayLogo size={56} variant="onDark" />
+          <BrandLogo variant="light" size="lg" />
           <p style={S.splashTagline}>{FARROWAY_BRAND.tagline}</p>
           <div style={S.spinner} />
         </div>
@@ -335,7 +335,7 @@ export default function Login() {
             Sits above the existing welcome heading so the page
             opens with the brand voice before the auth controls. */}
         <div style={S.brandRow}>
-          <FarrowayLogo size={36} variant="onDark" />
+          <BrandLogo variant="light" size="md" />
         </div>
         <p style={S.brandTagline}>{FARROWAY_BRAND.tagline}</p>
 

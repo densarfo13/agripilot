@@ -7,7 +7,7 @@ import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.j
 import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 import { useTranslation, LANGUAGES } from '../i18n/index.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
-import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import AccountLoadFallback from '../components/AccountLoadFallback.jsx';
 import { SkeletonFarmerDashboard } from '../components/SkeletonLoader.jsx';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
@@ -516,7 +516,7 @@ export default function FarmerDashboardPage() {
         </div>
       )}
       <div style={styles.header}>
-        <FarrowayLogo size={28} />
+        <BrandLogo variant="light" size="md" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             {LANGUAGES.map(l => (

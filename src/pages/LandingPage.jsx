@@ -26,7 +26,7 @@
  *     about "your farmers" / "1 or more regions" only.
  *   * Tagline = the v3 phrase verbatim, sourced from
  *     `FARROWAY_BRAND.tagline`. Old taglines never appear.
- *   * Logo via the central `FarrowayLogo` component so the
+ *   * Logo via the central `BrandLogo` component so the
  *     mark stays in lockstep with the rest of the app.
  *   * Pure marketing surface — no router hooks, no auth
  *     calls. Drops in / out without affecting routing.
@@ -35,7 +35,7 @@
  */
 
 import { useState } from 'react';
-import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 const C = FARROWAY_BRAND.colors;
@@ -56,7 +56,7 @@ function Header() {
     <header style={S.header}>
       <div style={S.headerInner}>
         <a href="/" style={S.logoLink} aria-label="Farroway home">
-          <FarrowayLogo size={28} variant="onLight" />
+          <BrandLogo variant="dark" size="md" />
         </a>
 
         <nav className="landing-desktop-nav" style={S.desktopNav}>
@@ -114,7 +114,7 @@ function HeroSection() {
         <div className="landing-hero-split">
           <div>
             <div style={S.heroBadge}>
-              <FarrowayLogo size={20} variant="onLight" iconOnly />
+              <BrandLogo variant="dark" size="sm" iconOnly />
               <span>Farroway</span>
             </div>
 
@@ -146,7 +146,7 @@ function HeroSection() {
             <div style={S.mockupPhone}>
               <div style={S.mockupScreen}>
                 <div style={S.mockupHeader}>
-                  <FarrowayLogo size={16} variant="onDark" />
+                  <BrandLogo variant="light" size="sm" />
                 </div>
                 <div style={S.mockupTagline}>
                   Today&rsquo;s Task
@@ -515,7 +515,7 @@ function Footer() {
     <footer style={S.footer}>
       <div style={S.footerInner} data-fw-footer-grid="1">
         <div style={S.footerBrandBlock}>
-          <FarrowayLogo size={28} variant="onDark" />
+          <BrandLogo variant="light" size="md" />
           <p style={S.footerTagline}>{FARROWAY_BRAND.tagline}</p>
           <p style={S.footerDescription}>
             A daily decision engine for farmers.

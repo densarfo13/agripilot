@@ -37,6 +37,21 @@ export const FARROWAY_BRAND = Object.freeze({
     darkPanel:   '#111A2E', // raised surface on dark bg
     white:       '#FFFFFF',
   }),
+  // Static asset paths for surfaces that prefer a file over
+  // the inline SVG (PDFs, email templates, og:image, etc.).
+  // The inline `BrandLogo` / `FarrowayLogo` component is the
+  // primary mark used across the React app — these paths are
+  // here for non-React consumers.
+  logo: Object.freeze({
+    icon:          '/icons/farroway-mark.svg',     // standalone leaf, no wordmark
+    wordmarkLight: '/icons/farroway-mark.svg',     // (vector mark; wordmark
+    wordmarkDark:  '/icons/farroway-mark.svg',     //  is a system font on top)
+    fullLight:     '/icons/farroway-mark.svg',
+    fullDark:      '/icons/farroway-mark.svg',
+    raster192:     '/icons/icon-192.png',          // PWA install
+    raster512:     '/icons/icon-512.png',
+    appleTouch:    '/icons/apple-touch-icon.png',
+  }),
 });
 
 export default FARROWAY_BRAND;

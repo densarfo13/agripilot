@@ -45,7 +45,7 @@ import { getNGOAction } from '../ngo/actionRecommendations.js';
 import NGOMap from '../components/NGOMap.jsx';
 import { getFarms } from '../api/ngoApi.js';
 import { hasGPS, getRegionKey } from '../location/geoUtils.js';
-import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
@@ -191,7 +191,7 @@ export default function NGOMapDashboard({
             voice. The dashboard's section titles (h2) carry the
             specific surface labels below. */}
         <header style={S.brandHeader} data-testid="ngo-brand-header">
-          <FarrowayLogo size={32} variant="onDark" />
+          <BrandLogo variant="light" size="md" />
           <p style={S.brandSubtitle}>{FARROWAY_BRAND.tagline}</p>
         </header>
 

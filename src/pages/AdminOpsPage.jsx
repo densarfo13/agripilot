@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/client.js';
 import EmptyState from '../components/EmptyState.jsx';
+import AdminNotice from '../components/admin/AdminNotice.jsx';
+import { classifyAdminError } from '../utils/adminErrors.js';
 
 const TABS = ['Analytics', 'Export', 'Bulk Import', 'Activity'];
 
@@ -25,27 +27,44 @@ const S = {
 function AnalyticsTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null); // classified
   const [regionFilter, setRegionFilter] = useState('');
   const [cropFilter, setCropFilter] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
-    setError('');
+    setError(null);
     const params = new URLSearchParams();
     if (regionFilter) params.set('region', regionFilter);
     if (cropFilter) params.set('primaryCrop', cropFilter);
     const qs = params.toString();
     api.get(`/v2/analytics-summary${qs ? '?' + qs : ''}`)
       .then(r => setData(r.data))
-      .catch(() => setError('Failed to load analytics summary'))
+      .catch((err) => setError(classifyAdminError(err)))
       .finally(() => setLoading(false));
   }, [regionFilter, cropFilter]);
 
   useEffect(() => { load(); }, [load]);
 
   if (loading) return <div className="loading">Loading analytics...</div>;
-  if (error) return <div className="alert alert-danger">{error} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>;
+  if (error) {
+    return (
+      <AdminNotice
+        type={error.isAuthError ? 'auth'
+            : error.isMfaRequired ? 'mfa'
+            : 'error'}
+        message={
+          error.isAuthError || error.isMfaRequired
+            ? undefined
+            : 'We could not load the analytics summary. Your data is safe — try again in a moment.'
+        }
+        onRetry={
+          error.isAuthError || error.isMfaRequired ? undefined : load
+        }
+        testId="admin-ops-analytics-error"
+      />
+    );
+  }
   if (!data) return null;
 
   const pct = (num, den) => den ? ((num / den) * 100).toFixed(1) + '%' : '0%';
@@ -287,22 +306,39 @@ function ActivityTab() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null); // classified
   const limit = 25;
 
   const load = useCallback(() => {
     setLoading(true);
-    setError('');
+    setError(null);
     api.get('/audit', { params: { page, limit } })
       .then(r => { setLogs(r.data.logs ?? r.data.items ?? []); setTotal(r.data.total ?? 0); })
-      .catch(() => setError('Failed to load activity log'))
+      .catch((err) => setError(classifyAdminError(err)))
       .finally(() => setLoading(false));
   }, [page]);
 
   useEffect(() => { load(); }, [load]);
 
   if (loading) return <div className="loading">Loading activity...</div>;
-  if (error) return <div className="alert alert-danger">{error} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>;
+  if (error) {
+    return (
+      <AdminNotice
+        type={error.isAuthError ? 'auth'
+            : error.isMfaRequired ? 'mfa'
+            : 'error'}
+        message={
+          error.isAuthError || error.isMfaRequired
+            ? undefined
+            : 'We could not load the activity log. Try again in a moment.'
+        }
+        onRetry={
+          error.isAuthError || error.isMfaRequired ? undefined : load
+        }
+        testId="admin-ops-activity-error"
+      />
+    );
+  }
 
   if (logs.length === 0 && page === 1) {
     return <EmptyState message="No activity recorded yet" />;

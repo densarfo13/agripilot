@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import api, { formatApiError } from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
+import AdminNotice from '../components/admin/AdminNotice.jsx';
+import { classifyAdminError } from '../utils/adminErrors.js';
 
 const TYPE_LABELS = {
   season_reopen:    'Season Reopen',
@@ -56,7 +58,8 @@ function timeLeft(expiresAt) {
 export default function SecurityRequestsPage() {
   const [requests, setRequests]     = useState([]);
   const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
+  // Classified error so AdminNotice can render auth/MFA CTAs.
+  const [error, setError]           = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter]     = useState('');
   const [modal, setModal]           = useState(null); // { req, action }
@@ -74,8 +77,8 @@ export default function SecurityRequestsPage() {
     if (statusFilter) params.status = statusFilter;
     if (typeFilter)   params.requestType = typeFilter;
     api.get('/security/requests', { params })
-      .then(r => { setRequests(r.data.requests ?? r.data ?? []); setError(''); })
-      .catch(err => setError(formatApiError(err, 'Failed to load security requests')))
+      .then(r => { setRequests(r.data.requests ?? r.data ?? []); setError(null); })
+      .catch(err => setError(classifyAdminError(err)))
       .finally(() => setLoading(false));
   }, [statusFilter, typeFilter]);
 
@@ -131,9 +134,21 @@ export default function SecurityRequestsPage() {
 
       <div className="page-body">
         {error && (
-          <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>{error}</span>
-            <button className="btn btn-sm btn-outline" style={{ marginLeft: '0.75rem', flexShrink: 0 }} onClick={load}>Retry</button>
+          <div style={{ marginBottom: '1rem' }}>
+            <AdminNotice
+              type={error.isAuthError ? 'auth'
+                  : error.isMfaRequired ? 'mfa'
+                  : 'error'}
+              message={
+                error.isAuthError || error.isMfaRequired
+                  ? undefined
+                  : 'We could not load security requests. Try again in a moment.'
+              }
+              onRetry={
+                error.isAuthError || error.isMfaRequired ? undefined : load
+              }
+              testId="security-requests-load-error"
+            />
           </div>
         )}
 

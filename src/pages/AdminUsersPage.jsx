@@ -4,6 +4,8 @@ import { useAuthStore } from '../store/authStore.js';
 import { INSTITUTIONAL_ROLES } from '../utils/roles.js';
 import EmptyState from '../components/EmptyState.jsx';
 import { useTranslation } from '../i18n/index.js';
+import AdminNotice from '../components/admin/AdminNotice.jsx';
+import { classifyAdminError } from '../utils/adminErrors.js';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -64,6 +66,10 @@ export default function AdminUsersPage() {
   const [editTarget, setEditTarget] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [actionError, setActionError] = useState('');
+  // Separate classified state for the LOAD failure (vs. the
+  // generic `actionError` which doubles as form-action error
+  // surface). AdminNotice reads this to render auth/MFA CTAs.
+  const [loadError, setLoadError] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { user, action: 'disable'|'enable' }
   const { t } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
@@ -77,8 +83,12 @@ export default function AdminUsersPage() {
     if (status) params.status = status;
     if (obFilter) params.onboardingStatus = obFilter;
     api.get('/users', { params })
-      .then(r => { setUsers(r.data.users || r.data || []); setActionError(''); })
-      .catch(err => setActionError(formatApiError(err, 'Failed to load users')))
+      .then(r => {
+        setUsers(r.data.users || r.data || []);
+        setActionError('');
+        setLoadError(null);
+      })
+      .catch(err => setLoadError(classifyAdminError(err)))
       .finally(() => setLoading(false));
   };
 
@@ -199,6 +209,26 @@ export default function AdminUsersPage() {
           </div>
         )}
 
+        {loadError && (
+          <div style={{ marginBottom: '1rem' }}>
+            <AdminNotice
+              type={loadError.isAuthError ? 'auth'
+                  : loadError.isMfaRequired ? 'mfa'
+                  : 'error'}
+              message={
+                loadError.isAuthError || loadError.isMfaRequired
+                  ? undefined
+                  : 'We could not load the users list. Try again in a moment.'
+              }
+              onRetry={
+                loadError.isAuthError || loadError.isMfaRequired
+                  ? undefined
+                  : () => load()
+              }
+              testId="admin-users-load-error"
+            />
+          </div>
+        )}
         {actionError && (
           <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{actionError}</span>

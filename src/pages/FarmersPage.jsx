@@ -12,6 +12,8 @@ import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import ScoreBadge from '../components/farmer/ScoreBadge.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import AdminNotice from '../components/admin/AdminNotice.jsx';
+import { classifyAdminError } from '../utils/adminErrors.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { UNIT_OPTIONS, computeLandSizeFields, formatLandSize } from '../utils/landSize.js';
 import { useDraft } from '../utils/useDraft.js';
@@ -51,7 +53,10 @@ export default function FarmersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [quickFilter, setQuickFilter] = useState(searchParams.get('filter') || ''); // '', 'no_officer', 'invite_pending', 'no_apps', 'needs_attention'
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  // Full error object (not just a string) so AdminNotice can
+  // distinguish 401 / MFA / generic failure and render the
+  // right CTA (Sign in again / Verify MFA / Retry).
+  const [loadError, setLoadError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [quickCounts, setQuickCounts] = useState({ noOfficer: 0, invitePending: 0, noApps: 0 });
@@ -73,10 +78,10 @@ export default function FarmersPage() {
       .then(r => {
         setFarmers(r.data.farmers);
         setTotal(r.data.total);
-        setLoadError('');
+        setLoadError(null);
         setQuickCounts(computeQuickFilterCounts(r.data.farmers, user?.sub));
       })
-      .catch(() => setLoadError('Failed to load farmers list'))
+      .catch((err) => setLoadError(classifyAdminError(err)))
       .finally(() => setLoading(false));
   };
 
@@ -281,7 +286,26 @@ export default function FarmersPage() {
           </div>
         )}
 
-        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError}</div>}
+        {loadError && (
+          <div style={{ marginBottom: '1rem' }}>
+            <AdminNotice
+              type={loadError.isAuthError ? 'auth'
+                  : loadError.isMfaRequired ? 'mfa'
+                  : 'error'}
+              message={
+                loadError.isAuthError || loadError.isMfaRequired
+                  ? undefined
+                  : 'We could not load the farmers list. Your data is safe — try again in a moment.'
+              }
+              onRetry={
+                loadError.isAuthError || loadError.isMfaRequired
+                  ? undefined
+                  : () => load()
+              }
+              testId="farmers-load-error"
+            />
+          </div>
+        )}
         {loading ? <div className="loading">Loading...</div> : (
           <div className="card">
             <div className="card-body" style={{ padding: 0 }}>

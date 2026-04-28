@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import CropSelect from '../components/CropSelect.jsx';
-import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
 import LocationDetect from '../components/LocationDetect.jsx';
@@ -132,7 +132,7 @@ export default function FarmerRegisterPage() {
     <div style={styles.container}>
       <div style={{ ...styles.card, maxWidth: '480px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-          <FarrowayLogo size={36} />
+          <BrandLogo variant="light" size="md" />
         </div>
         <p style={styles.subtitle}>Farmer Registration</p>
 

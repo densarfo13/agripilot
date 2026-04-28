@@ -3,6 +3,8 @@ import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { formatLandSize } from '../utils/landSize.js';
 import EmptyState from '../components/EmptyState.jsx';
+import AdminNotice from '../components/admin/AdminNotice.jsx';
+import { classifyAdminError } from '../utils/adminErrors.js';
 
 export default function PendingRegistrationsPage() {
   const currentUser = useAuthStore((s) => s.user);
@@ -11,13 +13,19 @@ export default function PendingRegistrationsPage() {
   const [filter, setFilter] = useState('pending');
   const [actionTarget, setActionTarget] = useState(null);
   const [officers, setOfficers] = useState([]);
-  const [loadError, setLoadError] = useState('');
+  // Full classified error so the AdminNotice can route the
+  // user to Sign-in / Verify-MFA / Retry rather than a flat
+  // "Failed to load" string.
+  const [loadError, setLoadError] = useState(null);
 
   const load = () => {
     setLoading(true);
-    setLoadError('');
+    setLoadError(null);
     const endpoint = filter === 'pending' ? '/farmers/pending-registrations' : '/farmers/self-registered';
-    api.get(endpoint).then(r => setRegistrations(r.data)).catch(() => setLoadError('Failed to load registrations')).finally(() => setLoading(false));
+    api.get(endpoint)
+      .then(r => setRegistrations(r.data))
+      .catch((err) => setLoadError(classifyAdminError(err)))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [filter]);
@@ -43,7 +51,26 @@ export default function PendingRegistrationsPage() {
         </div>
       </div>
       <div className="page-body">
-        {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
+        {loadError && (
+          <div style={{ marginBottom: '1rem' }}>
+            <AdminNotice
+              type={loadError.isAuthError ? 'auth'
+                  : loadError.isMfaRequired ? 'mfa'
+                  : 'error'}
+              message={
+                loadError.isAuthError || loadError.isMfaRequired
+                  ? undefined
+                  : 'We could not load registrations. Your data is safe — try again in a moment.'
+              }
+              onRetry={
+                loadError.isAuthError || loadError.isMfaRequired
+                  ? undefined
+                  : load
+              }
+              testId="registrations-load-error"
+            />
+          </div>
+        )}
         {loading ? <div className="loading">Loading registrations...</div> : registrations.length === 0 ? (
           <div className="card">
             <div className="card-body">

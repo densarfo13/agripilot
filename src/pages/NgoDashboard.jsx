@@ -26,7 +26,7 @@ import {
   MetricCard, MetricGrid, SoftBanner, AdminEmptyState, SectionHeader,
 } from '../components/admin/AdminPolish.jsx';
 import NeedsAttentionPanel from '../components/admin/NeedsAttentionPanel.jsx';
-import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 /**
@@ -44,7 +44,7 @@ function BrandHeader() {
       }}
       data-testid="ngo-brand-header"
     >
-      <FarrowayLogo size={32} variant="onDark" />
+      <BrandLogo variant="light" size="md" />
       <p style={{
         margin: 0, color: 'rgba(255,255,255,0.65)',
         fontSize: '0.875rem',

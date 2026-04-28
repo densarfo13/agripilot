@@ -5,7 +5,7 @@ import { useOrgStore } from '../store/orgStore.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../api/client.js';
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
-import FarrowayLogo from './FarrowayLogo.jsx';
+import BrandLogo from './BrandLogo.jsx';
 import ReportIssueButton from './ReportIssueButton.jsx';
 
 const NAV = [
@@ -180,7 +180,9 @@ export default function Layout() {
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-        <div className="sidebar-brand"><FarrowayLogo size={22} /></div>
+        <div className="sidebar-brand">
+          <BrandLogo variant="light" size="sm" />
+        </div>
 
         {/* Org context: super_admin gets switcher, others see read-only org name */}
         {isSuperAdmin ? (
