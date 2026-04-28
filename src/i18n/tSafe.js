@@ -66,6 +66,26 @@ import T from './translations.js';
 
 const _warnedKeys = new Set();
 
+// Mirror of the production-mode humanizer in src/i18n/index.js.
+// When `t(key)` can't find a translation in production it falls
+// through to humanizeKey() and returns e.g. "Title" for
+// "account.loadFailed.title" — a non-empty string that the
+// previous `looksMissing` check accepted as a real translation,
+// letting the leak slip past tSafe's fallback. We compute the
+// same string here and treat a match as "this is the humanized
+// fallback, not a real value" so the caller's explicit fallback
+// kicks in instead.
+function _humanizeKey(key) {
+  if (!key) return '';
+  const tail = String(key).split('.').pop() || key;
+  const spaced = String(tail)
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  if (!spaced) return '';
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
 function _isDev() {
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) return true;
@@ -165,7 +185,14 @@ export function tSafe(arg1, arg2, arg3, arg4) {
   const looksMissing =
     !value
     || (typeof value === 'string' && value.startsWith('[MISSING:'))
-    || value === key;
+    || value === key
+    // Humanized-key fallback detection: production t() returns
+    // humanizeKey(key) (e.g. "Title" for "account.loadFailed.title")
+    // when the dictionary is empty for that key. Without this check
+    // tSafe accepts the humanized string as a real translation and
+    // never substitutes the caller's explicit fallback — the
+    // capitalized-tail-of-key visibly leaks to the UI.
+    || (typeof value === 'string' && value === _humanizeKey(key));
 
   if (looksMissing) {
     if (_isDev()) {

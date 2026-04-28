@@ -136,9 +136,31 @@ export default function FarmerDashboardPage() {
       }
 
       // ─── Farmer profile fetch ────────────────────────────────
+      // 503 retry contract: the hardened backend route (commit
+      // cfbe66b) returns 503 + code:"profile_lookup_failed" for
+      // transient Prisma errors instead of a bare 500. A 503
+      // means "try again in a moment", so we auto-retry the
+      // request ONCE with a 1.5s delay before surfacing the
+      // recovery card. If the retry also fails the user lands
+      // on AccountLoadFallback (which has its own user-driven
+      // Retry button — bounded retry, no infinite loop).
       let r;
+      const fetchProfile = () => api.get('/auth/farmer-profile',
+        { signal: controller.signal });
       try {
-        r = await api.get('/auth/farmer-profile', { signal: controller.signal });
+        try {
+          r = await fetchProfile();
+        } catch (firstErr) {
+          const firstStatus = firstErr && firstErr.response && firstErr.response.status;
+          if (firstStatus !== 503) throw firstErr;
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] 503 — retrying once after 1500ms');
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          if (!aliveRef.current) return;
+          // The retry may itself throw — let it propagate to the
+          // outer catch which knows how to render the error card.
+          r = await fetchProfile();
+        }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('[BOOT] bootstrap failed', err);
@@ -187,9 +209,18 @@ export default function FarmerDashboardPage() {
           setProfile(currentUser);
           setProfileError('');
         } else {
+          // i18n the visible message: AccountLoadFallback already
+          // has its own tSafe('account.loadFailed.body', ...)
+          // fallback when message is empty, but setting it here
+          // explicitly via tSafe means the dashboard's own logging
+          // surface (tests, ops) sees a stable string regardless of
+          // active language. The 503 path also lands here when the
+          // retry above also failed.
           setProfileError(aborted
-            ? 'Unable to load account. The request timed out. Please refresh or login again.'
-            : 'Unable to load account. Please refresh or login again.');
+            ? tSafe('account.loadFailed.timeout',
+                'Unable to load account. The request timed out. Please refresh or continue.')
+            : tSafe('account.loadFailed.body',
+                'Unable to load account. Please refresh or continue.'));
         }
         return;   // skip downstream steps when the fetch failed
       }
