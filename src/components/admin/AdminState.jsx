@@ -264,6 +264,71 @@ export function MfaRequiredState({
   );
 }
 
+/* ─── 5b. InlineFormError ─────────────────────────── */
+/*
+ * Compact form-error pill for tight contexts (modal forms,
+ * narrow side panels) where the full-width StateCard would
+ * visually dominate the surrounding controls. Same brand
+ * colour palette, same accessibility role, just a smaller
+ * footprint. Used for per-action errors (Save, Disable,
+ * Approve) where the failure is bound to ONE field/button
+ * rather than the whole page.
+ *
+ *   <InlineFormError message="Could not update profile" />
+ *   <InlineFormError message="…" onRetry={save} compact />
+ */
+export function InlineFormError({
+  message,
+  onRetry,
+  compact = false,
+  testId  = 'admin-state-inline',
+  style,
+}) {
+  if (!message) return null;
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      data-testid={testId}
+      style={{
+        display:       'flex',
+        alignItems:    'center',
+        gap:           '0.5rem',
+        padding:       compact ? '0.4rem 0.75rem' : '0.6rem 0.85rem',
+        borderRadius:  '8px',
+        background:    'rgba(239,68,68,0.08)',
+        border:        '1px solid rgba(239,68,68,0.30)',
+        color:         '#FCA5A5',
+        fontSize:      compact ? '0.84rem' : '0.875rem',
+        lineHeight:    1.45,
+        ...(style || {}),
+      }}
+    >
+      <span aria-hidden="true">⚠️</span>
+      <span style={{ flex: 1, minWidth: 0, color: C.white }}>
+        {message}
+      </span>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          data-testid={`${testId}-retry`}
+          style={{
+            display: 'inline-flex', alignItems: 'center',
+            padding: '0.2rem 0.55rem', borderRadius: '6px',
+            border: '1px solid rgba(255,255,255,0.18)',
+            background: 'transparent', color: C.white,
+            fontSize: '0.78rem', fontWeight: 700,
+            cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ─── 6. NetworkErrorState ────────────────────────── */
 /* Bonus state for the NETWORK_ERROR errorType — same look
    as ErrorState but with copy that hints at connectivity

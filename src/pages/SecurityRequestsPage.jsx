@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore.js';
 import AdminNotice from '../components/admin/AdminNotice.jsx';
 import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+  InlineFormError,
 } from '../components/admin/AdminState.jsx';
 import { classifyAdminError, API_ERROR_TYPES } from '../utils/adminErrors.js';
 
@@ -348,20 +349,15 @@ export default function SecurityRequestsPage() {
               <button className="btn btn-outline btn-sm" onClick={() => setModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              {/* Inline modal action error — kept compact (small
-                  margin) but rendered via AdminNotice so the
-                  banner colour + iconography match the rest of
-                  the v3 admin surfaces. */}
-              {actionError && (
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <AdminNotice
-                    type="error"
-                    title="Could not complete that action"
-                    message={actionError}
-                    testId="security-modal-action-error"
-                  />
-                </div>
-              )}
+              {/* Inline modal action error — InlineFormError is
+                  the compact v3 variant (single line, small
+                  padding) so it doesn't overpower the modal's
+                  Approve/Reject controls below. */}
+              <InlineFormError
+                message={actionError}
+                style={{ marginBottom: '0.75rem' }}
+                testId="security-modal-action-error"
+              />
               <div style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                 <span style={{ fontWeight: 600 }}>{TYPE_LABELS[modal.req.requestType]}</span>
                 {' '}requested by{' '}

@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useIntelligenceStore } from '../store/intelligenceStore.js';
+import { structureError } from '../api/apiClient.js';
 
 /**
  * useRegionalRisk — regional risk map + outbreak clusters.
@@ -79,6 +80,13 @@ export function useAdminHotspots(initialFilters = {}) {
 
 /**
  * useAdminAlerts — paginated alert list with suppress action.
+ *
+ * Returns a `errorType` field alongside the legacy `error`
+ * string so AlertControlCenter can render the v3 named state
+ * components (SessionExpired / MfaRequired / NetworkError /
+ * generic Error). The classifier handles either an Error
+ * object or a flat string from the store — strings collapse
+ * to `API_ERROR` since we can't infer status from text.
  */
 export function useAdminAlerts(initialFilters = {}) {
   const { data: alerts, pagination } = useIntelligenceStore(s => s.adminAlerts);
@@ -106,7 +114,41 @@ export function useAdminAlerts(initialFilters = {}) {
     total: pagination?.total || alerts.length,
   };
 
-  return { alerts, loading, error, refetch, suppressAlert: suppressAlertAction, pagination, stats, filters, setFilters: (f) => refetch(f) };
+  // Classify the error for the v3 stability layer. The store
+  // may surface either an Error object or a flat string; both
+  // are handled by structureError without throwing.
+  const classified = error ? _classifyAlertError(error) : null;
+
+  return {
+    alerts, loading, error,
+    errorType:    classified ? classified.errorType : null,
+    refetch,
+    suppressAlert: suppressAlertAction,
+    pagination, stats,
+    filters, setFilters: (f) => refetch(f),
+  };
+}
+
+function _classifyAlertError(err) {
+  // structureError accepts any shape and never throws.
+  try {
+    if (err && typeof err === 'object') return structureError(err);
+    if (typeof err === 'string') {
+      // Best-effort sniff for common server messages — the
+      // store currently surfaces a flat string so we have to
+      // pattern-match instead of reading status/code.
+      const upper = err.toUpperCase();
+      if (/SESSION|UNAUTHORIZED|401/.test(upper))
+        return { errorType: 'SESSION_EXPIRED', message: err };
+      if (/MFA|STEP[ _-]?UP/.test(upper))
+        return { errorType: 'MFA_REQUIRED',    message: err };
+      if (/NETWORK|OFFLINE|ECONN/.test(upper))
+        return { errorType: 'NETWORK_ERROR',   message: err };
+    }
+    return { errorType: 'API_ERROR', message: String(err || 'Request failed') };
+  } catch {
+    return { errorType: 'API_ERROR', message: String(err || 'Request failed') };
+  }
 }
 
 /**

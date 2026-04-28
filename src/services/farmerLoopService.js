@@ -83,10 +83,25 @@ export async function getCurrentFarmerTask({ farmId, isOnline, onBackgroundUpdat
       log('farm', 'task_served_from_cache', { farmId, stale: true });
     }
 
-    return { task, tasks, taskCount: tasks.length, completedCount, error: null };
+    return { task, tasks, taskCount: tasks.length, completedCount,
+             error: null, errorType: null };
   } catch (err) {
     log('farm', 'task_fetch_failed', { farmId, error: err.message });
-    return { task: null, tasks: [], taskCount: 0, completedCount: 0, error: err.message || 'fetch_failed' };
+    // Classify so the consuming hook (useFarmerLoop) can route
+    // 401 / MFA / network failures into the right v3 state
+    // component instead of dropping the user on an empty
+    // dashboard with no signal of what went wrong.
+    let errorType = 'API_ERROR';
+    try {
+      const mod = await import('../api/apiClient.js');
+      const cls = mod.structureError(err);
+      errorType = cls.errorType;
+    } catch { /* dynamic import only — never block */ }
+    return {
+      task: null, tasks: [], taskCount: 0, completedCount: 0,
+      error:     err.message || 'fetch_failed',
+      errorType,
+    };
   }
 }
 

@@ -7,6 +7,7 @@ import { useTranslation } from '../i18n/index.js';
 import AdminNotice from '../components/admin/AdminNotice.jsx';
 import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+  InlineFormError,
 } from '../components/admin/AdminState.jsx';
 import { classifyAdminError, API_ERROR_TYPES } from '../utils/adminErrors.js';
 
@@ -526,7 +527,9 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
           <div style={{ marginBottom: '1.5rem' }}>
             {sectionHeading('Basic Profile')}
             <form onSubmit={saveProfile}>
-              {profileError && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{profileError}</div>}
+              <InlineFormError compact message={profileError}
+                style={{ marginBottom: '0.6rem' }} />
+              {/* (was: alert-danger pill — now branded InlineFormError) */}
               {profileSuccess && successBanner(profileSuccess)}
               <div className="form-group">
                 <label className="form-label">{t('adminUser.fullName')}</label>
@@ -570,7 +573,8 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
               </p>
             ) : (
               <form onSubmit={saveRole}>
-                {roleError && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{roleError}</div>}
+                <InlineFormError compact message={roleError}
+                  style={{ marginBottom: '0.6rem' }} />
                 {roleSuccess && successBanner(roleSuccess)}
                 <div className="form-group">
                   <label className="form-label">{t('adminUser.role')}</label>
@@ -618,7 +622,8 @@ function EditUserModal({ user, currentUser, onClose, onSaved }) {
               <div style={{ marginBottom: '1.5rem' }}>
                 {sectionHeading('Organization')}
                 <form onSubmit={saveOrg}>
-                  {orgError && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{orgError}</div>}
+                  <InlineFormError compact message={orgError}
+                    style={{ marginBottom: '0.6rem' }} />
                   {orgSuccess && successBanner(orgSuccess)}
                   <div style={{ fontSize: '0.78rem', color: '#F59E0B', marginBottom: '0.6rem' }}>
                     ⚠ Organization transfers require SoD approval from a second admin.
@@ -721,7 +726,8 @@ function AccessOffboardingSection({ user, onDone }) {
 
   return (
     <div>
-      {error && <div className="alert alert-danger" style={{ padding: '0.4rem 0.75rem', fontSize: '0.84rem', marginBottom: '0.6rem' }}>{error}</div>}
+      <InlineFormError compact message={error}
+        style={{ marginBottom: '0.6rem' }} />
       {success && <div className="alert-inline alert-inline-success">{success}</div>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
@@ -824,7 +830,8 @@ function ResetPasswordModal({ user, onClose }) {
                 ⚠ <strong>{ROLE_LABELS[user.role]}</strong> account — resetting this password requires SoD approval.
               </div>
             )}
-            {error && <div className="alert alert-danger">{error}</div>}
+            <InlineFormError message={error}
+              style={{ marginBottom: '0.75rem' }} />
             {success && <div className="alert-inline alert-inline-success">{success}</div>}
             <div className="form-group">
               <label className="form-label">{t('adminUser.newPassword')} — {user.email}</label>
@@ -904,7 +911,8 @@ function CreateUserModal({ onClose, onCreated }) {
         <div className="modal-header">{t('adminUser.createUser')} <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button></div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {error && <div className="alert alert-danger">{error}</div>}
+            <InlineFormError message={error}
+              style={{ marginBottom: '0.75rem' }} />
             <div className="form-group">
               <label className="form-label">{t('adminUser.fullName')}</label>
               <input className="form-input" required value={form.fullName} onChange={set('fullName')} />
@@ -1020,7 +1028,8 @@ function SodActionModal({ title, description, requestType, targetField, targetId
             then return here to execute.
           </div>
 
-          {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
+          <InlineFormError message={error}
+            style={{ marginBottom: '0.75rem' }} />
           {execSuccess && (
             <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '0.75rem', fontSize: '0.85rem' }}>
               {execSuccess}

@@ -34,6 +34,10 @@ import TaskCorrectionModal from '../components/farmer/TaskCorrectionModal.jsx';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';
 import NextActionCard from '../components/NextActionCard.jsx';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
+import { API_ERROR_TYPES } from '../api/apiClient.js';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
@@ -418,6 +422,39 @@ export default function Dashboard() {
       <div style={S.container}>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
         {weatherLine}
+
+        {/* v3 stability layer: classified load-error banner.
+            Renders ABOVE the data sections so a 401 / MFA /
+            network failure surfaces a calm CTA instead of a
+            silent empty dashboard. The rest of the page
+            (weather, forecast, market signal, beginner
+            prompt) keeps rendering through the failure. */}
+        {loop.loadErrorType === API_ERROR_TYPES.SESSION_EXPIRED && (
+          <div style={{ marginBottom: '1rem' }}>
+            <SessionExpiredState testId="dashboard-load-error" />
+          </div>
+        )}
+        {loop.loadErrorType === API_ERROR_TYPES.MFA_REQUIRED && (
+          <div style={{ marginBottom: '1rem' }}>
+            <MfaRequiredState testId="dashboard-load-error" />
+          </div>
+        )}
+        {loop.loadErrorType === API_ERROR_TYPES.NETWORK_ERROR && (
+          <div style={{ marginBottom: '1rem' }}>
+            <NetworkErrorState onRetry={loop.refreshLoop}
+                               testId="dashboard-load-error" />
+          </div>
+        )}
+        {loop.loadErrorType === API_ERROR_TYPES.API_ERROR && (
+          <div style={{ marginBottom: '1rem' }}>
+            <ErrorState
+              message="We could not load your tasks. Your data is safe — try again in a moment."
+              onRetry={loop.refreshLoop}
+              testId="dashboard-load-error"
+            />
+          </div>
+        )}
+
         <RainfallForecastCard />
         <MarketSignalCard />
         {emptyState}

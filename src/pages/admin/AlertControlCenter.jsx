@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useAdminAlerts } from '../../hooks/useIntelligenceAdmin.js';
-import { ErrorState } from '../../components/admin/AdminState.jsx';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../../components/admin/AdminState.jsx';
+import { API_ERROR_TYPES } from '../../api/apiClient.js';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -44,7 +47,7 @@ function truncate(str, len = 60) {
 // ─── Component ──────────────────────────────────────────────
 
 export default function AlertControlCenter() {
-  const { alerts, loading, error, refetch, suppressAlert, pagination, stats, filters, setFilters } = useAdminAlerts();
+  const { alerts, loading, error, errorType, refetch, suppressAlert, pagination, stats, filters, setFilters } = useAdminAlerts();
   const [levelFilter, setLevelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
@@ -101,14 +104,25 @@ export default function AlertControlCenter() {
 
       {error && (
         <div style={{ marginBottom: '1rem' }}>
-          {/* useAdminAlerts surfaces a flat string error; we show
-              the calm v3 ErrorState with retry so the rest of
-              the page (stats, filters, table) keeps rendering. */}
-          <ErrorState
-            message="We could not load the alerts list. Try again in a moment."
-            onRetry={() => refetch()}
-            testId="alerts-load-error"
-          />
+          {/* useAdminAlerts now classifies the error so we can
+              render the right v3 state component. The page's
+              stats / filters / table keep rendering through
+              transient failures (table will be empty until
+              retry succeeds). */}
+          {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+            <SessionExpiredState testId="alerts-load-error" />
+          ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+            <MfaRequiredState testId="alerts-load-error" />
+          ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+            <NetworkErrorState onRetry={() => refetch()}
+                               testId="alerts-load-error" />
+          ) : (
+            <ErrorState
+              message="We could not load the alerts list. Try again in a moment."
+              onRetry={() => refetch()}
+              testId="alerts-load-error"
+            />
+          )}
         </div>
       )}
 

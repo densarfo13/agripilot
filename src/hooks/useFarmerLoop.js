@@ -60,6 +60,14 @@ export function useFarmerLoop() {
   const [feedbackMessage, setFeedbackMessage] = useState(null);
   const [lastSuccessText, setLastSuccessText] = useState(null);
   const [completionState, setCompletionState] = useState(null);
+  // v3 stability layer: track classified load errors so the
+  // Dashboard can surface SessionExpired / MfaRequired /
+  // NetworkError state components when the loop's primary
+  // fetch fails. `loadError` stays null on the happy path
+  // and on intentional offline (LOOP_STATE.COME_BACK already
+  // signals offline visually).
+  const [loadError, setLoadError] = useState(null);
+  const [loadErrorType, setLoadErrorType] = useState(null);
   // Holds the server-returned next task during completion display (not loaded yet)
   const pendingNextRef = useRef(null);
 
@@ -103,6 +111,11 @@ export function useFarmerLoop() {
   const fetchTask = useCallback(async (farmId) => {
     if (!farmId) return;
     setTaskLoading(true);
+    // Reset classified error state on every fresh fetch so a
+    // recovery attempt clears the previous SessionExpired /
+    // MfaRequired notice once data comes back.
+    setLoadError(null);
+    setLoadErrorType(null);
 
     const result = await getCurrentFarmerTask({ farmId, isOnline });
 
@@ -111,6 +124,19 @@ export function useFarmerLoop() {
     setTaskCount(result.taskCount);
     setCompletedCount(result.completedCount);
     setTaskLoading(false);
+
+    // Surface classified errors UPWARD so the dashboard can
+    // render the v3 state components. We DON'T treat 'offline'
+    // / 'no_farm' as load errors — those are normal flow
+    // states that the loop already paints (COME_BACK + farm
+    // picker respectively).
+    if (result.error
+        && result.error !== 'offline'
+        && result.error !== 'no_farm'
+        && result.errorType) {
+      setLoadError(result.error);
+      setLoadErrorType(result.errorType);
+    }
 
     // Determine loop state from fetch result
     if (result.task) {
@@ -398,6 +424,13 @@ export function useFarmerLoop() {
     // Feedback
     feedbackStatus,
     feedbackMessage,
+
+    // v3 stability layer: classified load error + retry. The
+    // Dashboard branches on `loadErrorType` to render
+    // SessionExpired / MfaRequired / NetworkError states.
+    // `loadError` is null on the happy path.
+    loadError,
+    loadErrorType,
 
     // Actions
     completeTask,
