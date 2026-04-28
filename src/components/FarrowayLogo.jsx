@@ -1,38 +1,46 @@
 /**
- * FarrowayLogo — the v3 brand mark.
+ * FarrowayLogo — v3 brand mark, redrawn to match the official
+ * brand sheet (April 2026):
  *
- *   <FarrowayLogo />                  // 32px, dark-bg variant, with wordmark
- *   <FarrowayLogo size={48} />        // larger
- *   <FarrowayLogo showText={false} /> // icon-only (use this on small headers,
- *                                      // PWA tiles, favicons in-app)
- *   <FarrowayLogo variant="onLight"/> // navy wordmark on a light backdrop
- *   <FarrowayLogo iconOnly />         // alias for showText={false}
+ *   * Leaf-shaped silhouette (pointed top-right tip, rounded base)
+ *   * Inside the leaf, three faceted green slabs (lightest top
+ *     → medium green → darker green) plus a navy wedge at the
+ *     lower-left
+ *   * A white upward arrow piercing through the leaf from
+ *     lower-left to upper-right
  *
- * Design — per the v3 brand spec:
- *   * Icon: rounded-square navy tile + green farmland hill +
- *     a lime arrow-path curving up through the field, ending
- *     in an upward arrow head. Communicates "guidance through
- *     the field that ends in growth".
- *   * Wordmark: bold modern sans-serif, navy on light bg /
- *     white on dark bg. Tracking tightened slightly so the
- *     mark reads as one unit.
+ * Two-tone tagline support: "Know what to do." (navy on light
+ * surfaces, white on dark) + "Grow better." (always green).
+ *
+ * App-icon contexts wrap the bare mark in a rounded square
+ * tile via `tileVariant="light"` or `"dark"`. The PRIMARY
+ * logo is the bare leaf — no tile — so it sits naturally on
+ * white pages or dark dashboards alike.
+ *
+ * Backwards-compatible API:
+ *   size       — icon edge in px (default 32)
+ *   showText   — wordmark on/off (default true)
+ *   textColor  — explicit wordmark colour (overrides variant)
+ *   variant    — "onDark" (white wordmark) | "onLight" (navy)
+ *   iconOnly   — alias for showText={false}
+ *   withTile   — legacy alias; if true, behaves like
+ *                tileVariant="dark"
+ *
+ * New props:
+ *   tileVariant — "none" (default) | "light" | "dark"
+ *   showTagline — render the two-tone tagline beneath the
+ *                 wordmark (default false; set on splash /
+ *                 email-signature presentations)
  *
  * Strict-rule audit
- *   * Inline SVG so it ships in the bundle — no second network
- *     request, no race with the service worker, no broken
- *     image at first paint. (The PWA installer + apple-touch
- *     still uses the rasterised PNG under /icons/ — that's a
- *     separate asset, not this component.)
- *   * Backwards-compatible: the previous shape took
- *     `size / showText / textColor` and that contract is
- *     preserved so every existing call site (FarmerDashboard,
- *     FarmerRegister, sidebar Layout) keeps rendering.
- *   * Works on both light and dark backgrounds — the icon
- *     carries its own navy tile so it never visually melts
- *     into a dark page; the wordmark colour adapts via
- *     `variant` (or the legacy `textColor` prop).
- *   * Accessibility: <svg> has role="img" + an <title> so
- *     screen readers announce "Farroway logo".
+ *   * Inline SVG — no second network request, ships in the
+ *     bundle, works offline. (Rasterised PWA tile lives at
+ *     /icons/icon-{192,512}.png — that's a separate asset.)
+ *   * Works on light AND dark backgrounds without an external
+ *     tile: the leaf's own navy section + lime arrow keep it
+ *     readable in both contexts.
+ *   * Accessibility: <svg role="img"> + <title>; tagline keys
+ *     read by screen readers in source order.
  */
 
 import React from 'react';
@@ -40,105 +48,154 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 const C = FARROWAY_BRAND.colors;
 
+// Stable IDs prefixed with the component name so multiple
+// instances on the same page never collide on clip-path refs.
+let _uid = 0;
+function nextId(prefix) {
+  _uid += 1;
+  return `${prefix}_${_uid}`;
+}
+
 /**
- * Pure SVG icon — the arrow-path farmland mark, no wordmark.
+ * The bare leaf mark — no wordmark, no tile.
  *
- * The viewBox is 0 0 64 64. All coordinates are tuned to
- * read clearly down to ~20 px and still stay crisp at 192 px.
+ * viewBox is 0 0 100 100. All coordinates tuned so the mark
+ * stays crisp from ~20 px (sidebar) up to 192 px (PWA tile).
  */
-export function FarrowayIcon({
+export function FarrowayMark({
   size = 32,
-  // Whether to draw the navy tile background. Keep ON by
-  // default so the mark is recognisable on both light and
-  // dark surfaces without extra wrapping.
-  withTile = true,
+  tileVariant = 'none', // 'none' | 'light' | 'dark'
   ariaLabel = 'Farroway',
   style,
   ...rest
 }) {
-  const tileColor = C.navy;
-  const fieldGreen = C.green;
-  const arrowGreen = C.lightGreen;
+  // One unique id per render — required because clipPath refs
+  // are scoped to the document, not the SVG.
+  const clipId = React.useMemo(() => nextId('farrowayLeaf'), []);
 
+  const tileFill =
+    tileVariant === 'dark'  ? C.navy  :
+    tileVariant === 'light' ? C.white : null;
+
+  // Leaf silhouette: pointed top-right tip ~(88, 14), bulging
+  // upper-left around (10, 50), rounded bottom curve through
+  // (28, 90), back up the right side.
+  const LEAF_PATH =
+    'M 88 14 '
+    + 'Q 70 6, 48 12 '
+    + 'Q 22 22, 10 50 '
+    + 'Q 4 80, 28 90 '
+    + 'Q 50 92, 66 76 '
+    + 'Q 82 56, 88 14 Z';
+
+  // Inside the leaf, draw faceted slabs from back (lightest)
+  // to front (navy wedge). Each polygon extends past the
+  // leaf bounds; the clipPath trims them to the silhouette.
   return (
     <svg
       role="img"
       aria-label={ariaLabel}
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
       style={{ display: 'block', flexShrink: 0, ...(style || {}) }}
       {...rest}
     >
       <title>{ariaLabel}</title>
 
-      {/* 1) navy tile (rounded square) — only drawn when
-            withTile is on. Gives the icon its own colour
-            context so it works on light + dark bg. */}
-      {withTile && (
+      <defs>
+        <clipPath id={clipId}>
+          <path d={LEAF_PATH} />
+        </clipPath>
+      </defs>
+
+      {/* Optional rounded-square tile (app-icon variants). */}
+      {tileFill && (
         <rect
-          x="1" y="1" width="62" height="62"
-          rx="14" ry="14"
-          fill={tileColor}
+          x="0" y="0" width="100" height="100"
+          rx="22" ry="22"
+          fill={tileFill}
         />
       )}
 
-      {/* 2) green field — top-right hill curving down to the
-            left. The shape evokes "rolling farmland" while
-            keeping a lot of negative space for the path. */}
-      <path
-        d="
-          M 6 38
-          C 18 28, 28 22, 40 22
-          C 50 22, 56 26, 60 30
-          L 60 8
-          L 6 8
-          Z
-        "
-        fill={fieldGreen}
-        opacity="0.92"
-      />
+      {/* Leaf body — clipped facets.
+          Composition (per the v3 brand sheet, app-icon panel):
+            * top thin slice  : lightest green  (#A3E635)
+            * main body       : medium green    (#22C55E)
+            * thin diagonal   : white stripe    (#FFFFFF)
+            * bottom-right    : navy wedge      (#0B1220)
+          All cut lines slope UP to the right (higher y on the
+          left, lower y on the right) so the navy wedge sits
+          in the lower-right of the leaf, exactly where the
+          brand sheet shows it. */}
+      <g clipPath={`url(#${clipId})`}>
+        {/* 1. medium green base — fills the whole leaf */}
+        <rect x="0" y="0" width="100" height="100" fill={C.green} />
 
-      {/* 3) the arrow-path — a curved guide that starts at the
-            lower-left of the field, sweeps up through the
-            green, and exits with an upward arrowhead at the
-            top-right. This is the "know what to do → grow
-            better" gesture in geometry. */}
-      <path
-        d="M 10 52 C 22 48, 28 40, 34 34 S 48 22, 56 14"
-        fill="none"
-        stroke={arrowGreen}
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* arrow head */}
-      <path
-        d="M 48 14 L 56 14 L 56 22"
-        fill="none"
-        stroke={arrowGreen}
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+        {/* 2. light green slice at the top — the cut runs from
+              (-10, 30) on the left up to (110, 4) on the right
+              so the lighter band hugs the upper-right tip. */}
+        <polygon
+          points="-10,-20 110,-20 110,4 -10,30"
+          fill={C.lightGreen}
+        />
+
+        {/* 3. white diagonal stripe — thin band from lower-left
+              to upper-right of the leaf, separating the green
+              body from the navy wedge below. */}
+        <polygon
+          points="-10,76 110,30 110,40 -10,82"
+          fill={C.white}
+        />
+
+        {/* 4. navy wedge — everything BELOW the white stripe.
+              Because the cut slopes up to the right, this fills
+              the lower-RIGHT portion of the leaf interior. */}
+        <polygon
+          points="-10,82 110,40 110,120 -10,120"
+          fill={C.navy}
+        />
+      </g>
+
+      {/* White upward arrow — drawn AFTER the clipped group so
+          it can extend slightly past the leaf without being
+          trimmed. Rotated only ~28° so it sits roughly along
+          the medium-green band, matching the brand sheet's
+          horizontal-ish arrow orientation rather than a sharp
+          diagonal. */}
+      <g transform="rotate(28 52 52)">
+        {/* single arrow polygon: rectangular stem + triangular
+            arrowhead on top. Thin dark outline gives it the
+            crisp definition seen on the brand sheet. */}
+        <path
+          d="
+            M 46 78
+            L 46 48
+            L 38 48
+            L 52 28
+            L 66 48
+            L 56 48
+            L 56 78
+            Z
+          "
+          fill={C.white}
+          stroke={C.navy}
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </g>
     </svg>
   );
 }
 
+// Legacy export name preserved so any caller still importing
+// `FarrowayIcon` keeps working.
+export const FarrowayIcon = FarrowayMark;
+
 /**
- * Full lockup: icon + Farroway wordmark.
- *
- * Backwards-compatible props:
- *   size       — icon edge length in px (default 32)
- *   showText   — render the "Farroway" wordmark (default true)
- *   textColor  — explicit wordmark colour (overrides variant)
- *
- * New props:
- *   variant    — "onDark" (default, white wordmark) or
- *                "onLight" (navy wordmark)
- *   iconOnly   — alias for showText={false}, reads cleaner at
- *                call sites that just want the mark.
+ * Full lockup: mark + Farroway wordmark + (optional) two-tone
+ * tagline.
  */
 export default function FarrowayLogo({
   size       = 32,
@@ -146,40 +203,88 @@ export default function FarrowayLogo({
   textColor,
   variant    = 'onDark',
   iconOnly   = false,
-  withTile   = true,
+  withTile,                   // legacy: maps to tileVariant
+  tileVariant,                // 'none' | 'light' | 'dark'
+  showTagline = false,
   ...rest
 }) {
+  // Resolve effective tile mode. Old callers passed
+  // `withTile=true/false`; new callers pass `tileVariant`.
+  const effectiveTile =
+    tileVariant
+      ? tileVariant
+      : (withTile === true ? 'dark' : 'none');
+
+  const onDark = variant !== 'onLight';
   const wordmarkColor = textColor
-    || (variant === 'onLight' ? C.navy : C.white);
+    || (onDark ? C.white : C.navy);
+
+  // Tagline colours: the brand sheet shows
+  //   "Know what to do." in navy (light bg) / white (dark bg)
+  //   "Grow better."     always in brand green
+  const taglinePrimary  = onDark ? C.white : C.navy;
+  const taglineAccent   = C.green;
 
   const renderText = showText && !iconOnly;
+  const fontStack =
+    'Inter, system-ui, -apple-system, "Segoe UI", Roboto, '
+    + '"Helvetica Neue", Arial, sans-serif';
 
   return (
     <span
       style={{
         display: 'inline-flex',
-        alignItems: 'center',
-        gap: Math.max(6, Math.round(size * 0.28)),
+        alignItems: showTagline ? 'center' : 'center',
+        gap: Math.max(8, Math.round(size * 0.32)),
         lineHeight: 1,
       }}
       {...rest}
     >
-      <FarrowayIcon size={size} withTile={withTile} />
+      <FarrowayMark size={size} tileVariant={effectiveTile} />
+
       {renderText && (
         <span
           style={{
-            fontSize: Math.round(size * 0.72),
-            fontWeight: 800,
-            color: wordmarkColor,
-            letterSpacing: '-0.015em',
-            // Stay on a single line even in tight headers.
-            whiteSpace: 'nowrap',
-            fontFamily:
-              'system-ui, -apple-system, "Segoe UI", Roboto, '
-              + '"Helvetica Neue", Arial, sans-serif',
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: Math.max(2, Math.round(size * 0.08)),
           }}
         >
-          Farroway
+          <span
+            style={{
+              fontSize: Math.round(size * 0.95),
+              fontWeight: 800,
+              color: wordmarkColor,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              fontFamily: fontStack,
+              lineHeight: 1,
+            }}
+          >
+            Farroway
+          </span>
+
+          {showTagline && (
+            <span
+              style={{
+                fontSize: Math.round(size * 0.34),
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                fontFamily: fontStack,
+                lineHeight: 1.1,
+                marginTop: Math.round(size * 0.08),
+              }}
+            >
+              <span style={{ color: taglinePrimary }}>
+                Know what to do.
+              </span>
+              {' '}
+              <span style={{ color: taglineAccent, fontWeight: 700 }}>
+                Grow better.
+              </span>
+            </span>
+          )}
         </span>
       )}
     </span>
