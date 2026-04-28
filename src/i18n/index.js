@@ -52,6 +52,7 @@ import { TODAY_ELITE_TRANSLATIONS }            from './todayElitTranslations.js'
 import { SIMPLE_MODE_TRANSLATIONS }            from './simpleModeTranslations.js';
 import { SIMPLE_UX_TRANSLATIONS }              from './simpleUxTranslations.js';
 import { RETENTION_TRANSLATIONS }              from './retentionTranslations.js';
+import { NGO_MAP_DASHBOARD_TRANSLATIONS }      from './ngoMapDashboardTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -115,6 +116,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     SIMPLE_MODE_TRANSLATIONS,
     SIMPLE_UX_TRANSLATIONS,
     RETENTION_TRANSLATIONS,
+    NGO_MAP_DASHBOARD_TRANSLATIONS,
   ]);
 })();
 
