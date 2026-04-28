@@ -45,6 +45,8 @@ import { getNGOAction } from '../ngo/actionRecommendations.js';
 import NGOMap from '../components/NGOMap.jsx';
 import { getFarms } from '../api/ngoApi.js';
 import { hasGPS, getRegionKey } from '../location/geoUtils.js';
+import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
 
@@ -183,6 +185,16 @@ export default function NGOMapDashboard({
   return (
     <main style={S.page} data-testid="ngo-map-dashboard">
       <div style={S.container}>
+        {/* v3 brand header — Farroway logo top-left, tagline as
+            the dashboard subtitle. Replaces the old plain "NGO
+            Dashboard" h1 so operators always see the brand
+            voice. The dashboard's section titles (h2) carry the
+            specific surface labels below. */}
+        <header style={S.brandHeader} data-testid="ngo-brand-header">
+          <FarrowayLogo size={32} variant="onDark" />
+          <p style={S.brandSubtitle}>{FARROWAY_BRAND.tagline}</p>
+        </header>
+
         <h1 style={S.h1}>
           {tSafe('ngo.dashboard.title', 'NGO Dashboard')}
         </h1>
@@ -351,6 +363,18 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '1.25rem',
+  },
+  brandHeader: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '0.35rem',
+    paddingBottom: '0.25rem',
+  },
+  brandSubtitle: {
+    margin: 0,
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: '0.875rem',
   },
   h1: {
     margin: 0,

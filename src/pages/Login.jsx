@@ -11,6 +11,8 @@ import LoadingButton from '../components/auth/LoadingButton.jsx';
 import OTPInput from '../components/auth/OTPInput.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import { tSafe } from '../i18n/tSafe.js';
+import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 // Lightweight, user-safe email shape check. The server still
 // validates strictly — this just catches obvious typos before submit.
@@ -99,11 +101,15 @@ export default function Login() {
 
   // ─── Gate 1: Auth still loading ───
   if (authLoading) {
+    // Splash treatment per the v3 brand spec: logo + Farroway
+    // wordmark + tagline. Calmer than a bare spinner so a slow
+    // /me roundtrip never feels like the app is broken.
     return (
       <div style={S.page}>
         <div style={S.loadingInner}>
+          <FarrowayLogo size={56} variant="onDark" />
+          <p style={S.splashTagline}>{FARROWAY_BRAND.tagline}</p>
           <div style={S.spinner} />
-          <span style={S.brand}>Farroway</span>
         </div>
       </div>
     );
@@ -325,6 +331,14 @@ export default function Login() {
   return (
     <div style={S.page}>
       <div style={S.card}>
+        {/* v3 brand header — logo + Farroway wordmark + tagline.
+            Sits above the existing welcome heading so the page
+            opens with the brand voice before the auth controls. */}
+        <div style={S.brandRow}>
+          <FarrowayLogo size={36} variant="onDark" />
+        </div>
+        <p style={S.brandTagline}>{FARROWAY_BRAND.tagline}</p>
+
         <h1 style={S.title}>{t('auth.welcomeBack')}</h1>
         <p style={S.subtitle}>{t('auth.signInPrompt')}</p>
 
@@ -499,9 +513,22 @@ export default function Login() {
 
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', color: '#EAF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
-  loadingInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' },
+  loadingInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' },
   spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
   brand: { fontSize: '1.25rem', fontWeight: 700, color: '#EAF2FF', letterSpacing: '0.02em' },
+  splashTagline: {
+    margin: 0, color: 'rgba(255,255,255,0.72)',
+    fontSize: '0.9375rem', textAlign: 'center', maxWidth: '20rem',
+  },
+  // v3 login card brand block
+  brandRow: {
+    display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
+    marginBottom: '0.5rem',
+  },
+  brandTagline: {
+    margin: '0 0 1.25rem', color: 'rgba(255,255,255,0.72)',
+    fontSize: '0.875rem',
+  },
   card: { width: '100%', maxWidth: '28rem', borderRadius: '22px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', padding: '2.25rem', boxShadow: '0 16px 48px rgba(0,0,0,0.4)' },
   title: { fontSize: '1.5rem', fontWeight: 700, margin: 0, color: '#EAF2FF' },
   subtitle: { color: '#9FB3C8', fontSize: '0.875rem', marginTop: '0.25rem', marginBottom: '1.5rem' },

@@ -53,16 +53,16 @@ function HeroSection() {
             <div style={S.heroBadge}>Farroway</div>
 
             <h1 style={S.heroTitle}>
-              Know what to do every day on your farm
+              Know what to do. Grow better.
             </h1>
 
             <p style={S.heroSub}>
-              Farroway guides farmers step by step, helps them track their work, and gives organizations real-time, verified data.
+              Simple daily guidance for farmers. Real-time visibility for organizations.
             </p>
 
             <div className="landing-btn-row" style={{ marginTop: '1.75rem' }}>
-              <a href="#demo" style={S.btnPrimary}>Request Demo</a>
-              <a href="#pilot" style={S.btnOutline}>Start Pilot</a>
+              <a href="#pilot" style={S.btnPrimary}>Run a 90-day pilot</a>
+              <a href="#demo" style={S.btnOutline}>Request Demo</a>
             </div>
 
             <p style={S.trustLine}>
@@ -300,7 +300,7 @@ function FinalCTASection() {
         </div>
 
         <p style={S.finalTagline}>
-          From farmer actions to trusted data.
+          Know what to do. Grow better.
         </p>
       </div>
     </section>
@@ -314,7 +314,7 @@ function Footer() {
       <div style={S.footerInner}>
         <div>
           <div style={S.footerBrand}>Farroway</div>
-          <div style={S.footerTagline}>Know what to do every day</div>
+          <div style={S.footerTagline}>Know what to do. Grow better.</div>
         </div>
         <div style={S.footerRight}>
           <a href="mailto:hello@farroways.com" style={S.footerLink}>hello@farroways.com</a>

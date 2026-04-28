@@ -26,6 +26,34 @@ import {
   MetricCard, MetricGrid, SoftBanner, AdminEmptyState, SectionHeader,
 } from '../components/admin/AdminPolish.jsx';
 import NeedsAttentionPanel from '../components/admin/NeedsAttentionPanel.jsx';
+import FarrowayLogo from '../components/FarrowayLogo.jsx';
+import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+
+/**
+ * Brand header reused across NGO loading / error / success states
+ * so the operator always sees the v3 mark + tagline at the top of
+ * the surface, never a bare "NGO Dashboard" label.
+ */
+function BrandHeader() {
+  return (
+    <header
+      style={{
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'flex-start', gap: '0.35rem',
+        marginBottom: '0.75rem',
+      }}
+      data-testid="ngo-brand-header"
+    >
+      <FarrowayLogo size={32} variant="onDark" />
+      <p style={{
+        margin: 0, color: 'rgba(255,255,255,0.65)',
+        fontSize: '0.875rem',
+      }}>
+        {FARROWAY_BRAND.tagline}
+      </p>
+    </header>
+  );
+}
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -121,7 +149,12 @@ export default function NgoDashboard() {
   const emptyLbl = resolve(t, 'ngo.dashboard.empty',        'No farmers in this program yet.');
 
   if (loading) {
-    return <main style={S.page} data-screen="ngo-dashboard">{resolve(t, 'common.loading', 'Loading\u2026')}</main>;
+    return (
+      <main style={S.page} data-screen="ngo-dashboard">
+        <BrandHeader />
+        {resolve(t, 'common.loading', 'Loading\u2026')}
+      </main>
+    );
   }
 
   // Demo-safe soft recovery: when the dashboard endpoint fails and
@@ -137,6 +170,7 @@ export default function NgoDashboard() {
       const fb = getFallbackNgoSummary();
       return (
         <main style={S.page} data-screen="ngo-dashboard" data-state="demo-fallback">
+          <BrandHeader />
           <h2 style={S.title}>{title}</h2>
           <SoftBanner tone="info" testId="ngo-soft-recovery">
             {resolve(t, soft.key, soft.fallback)}
@@ -153,6 +187,7 @@ export default function NgoDashboard() {
     }
     return (
       <main style={S.page} data-screen="ngo-dashboard" data-state="error">
+        <BrandHeader />
         <h2 style={S.title}>{title}</h2>
         <SoftBanner tone="critical" role="alert" testId="ngo-error-banner">
           {errLbl}: {error}
@@ -165,6 +200,7 @@ export default function NgoDashboard() {
 
   return (
     <main style={S.page} data-screen="ngo-dashboard">
+      <BrandHeader />
       <h2 style={S.title}>{title}</h2>
 
       {/* Program picker — optional */}

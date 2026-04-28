@@ -1,7 +1,7 @@
 {
   "name": "Farroway",
   "short_name": "Farroway",
-  "description": "Institutional agricultural credit platform",
+  "description": "Farroway — Know what to do. Grow better.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

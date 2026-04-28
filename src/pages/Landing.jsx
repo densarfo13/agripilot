@@ -227,29 +227,27 @@ function HeroSection() {
         <FadeIn>
           <div style={S.pill}>
             <span style={S.pillDot} />
-            Launching a smarter farming assistant
+            Know what to do. Grow better.
           </div>
         </FadeIn>
 
         <FadeIn delay={60}>
           <h1 style={S.h1}>
-            Farming decisions made <span style={S.gradText}>simple</span>,
-            from first seed to harvest.
+            <span style={S.gradText}>Know what to do.</span> Grow better.
           </h1>
         </FadeIn>
 
         <FadeIn delay={120}>
           <p style={S.heroSub}>
-            Farroway turns crop data, weather, and local practice into a
-            daily plan every farmer can follow on a phone — even offline.
-            No experience required. No jargon. Just what to do today.
+            Simple daily guidance for farmers. Real-time visibility
+            for organizations. Works on a phone, even offline.
           </p>
         </FadeIn>
 
         <FadeIn delay={180}>
           <div style={S.ctaRow}>
             <a href="#cta" style={S.ctaPrimary} className="fw-btn-primary">
-              Get early access
+              Run a 90-day pilot
             </a>
             <a href="#how" style={S.ctaGhost} className="fw-btn-ghost">
               See how it works

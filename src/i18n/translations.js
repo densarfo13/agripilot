@@ -4556,11 +4556,11 @@ const T = {
 
   // ─── Farmer Entry (Welcome gate — §2) ─────────────────────
   'entry.valueLine': {
-    en: 'Know what to do on your farm every day',
-    fr: 'Sachez quoi faire chaque jour sur votre ferme',
-    sw: 'Jua cha kufanya shambani kwako kila siku',
-    ha: 'San abin da za ka yi a gonarka kowace rana',
-    tw: 'Hu nea wobɛyɛ wɔ w\'afuo so da biara',
+    en: 'Know what to do. Grow better.',
+    fr: 'Savoir quoi faire. Mieux cultiver.',
+    sw: 'Jua cha kufanya. Lima vizuri zaidi.',
+    ha: 'San abin da za ka yi. Noma da kyau.',
+    tw: 'Hu nea wobɛyɛ. Yɛ kuayɛ pa.',
   },
   'entry.startNewCrop': {
     en: 'Start a new crop',

@@ -7,7 +7,10 @@
 export const brand = {
   name: 'Farroway',
   shortName: 'Farroway',
-  tagline: 'The smarter way to farm.',
+  // v3 brand phrase — must stay in lock-step with the
+  // frontend's src/brand/farrowayBrand.js. Used in
+  // server-rendered emails / pdf headers / SMS signatures.
+  tagline: 'Know what to do. Grow better.',
   website: 'https://farroway.app',
   supportEmail: 'support@farroways.com',
   colors: {
