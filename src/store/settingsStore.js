@@ -80,6 +80,13 @@ export function saveSettings(settings) {
  * `farroway:settingsChanged` CustomEvent so every mounted listener
  * (Settings page, future feature flags) can react without prop-
  * drilling. Returns the merged object for the caller.
+ *
+ * Event tracking (data foundation v2): a simpleMode toggle
+ * fires SIMPLE_MODE_ENABLED / SIMPLE_MODE_DISABLED into the
+ * event log so the NGO aggregates can count low-literacy
+ * adoption without instrumenting the Settings page directly.
+ * Done via dynamic import to avoid pulling the eventLogger at
+ * module-load time for stores that don't need it.
  */
 export function updateSetting(key, value) {
   const current = loadSettings();
@@ -90,6 +97,19 @@ export function updateSetting(key, value) {
       window.dispatchEvent(new CustomEvent('farroway:settingsChanged', { detail: updated }));
     }
   } catch { /* dispatch is best-effort */ }
+
+  if (key === 'simpleMode' && current.simpleMode !== value) {
+    try {
+      import('../data/eventLogger.js').then((m) => {
+        try {
+          m.logEvent(value
+            ? m.EVENT_TYPES.SIMPLE_MODE_ENABLED
+            : m.EVENT_TYPES.SIMPLE_MODE_DISABLED, {});
+        } catch { /* swallow */ }
+      }).catch(() => { /* swallow */ });
+    } catch { /* swallow */ }
+  }
+
   return updated;
 }
 

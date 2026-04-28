@@ -30,17 +30,56 @@ export const SCHEMA_VERSION = 1;
 export const MAX_EVENTS     = 5000;
 
 /**
- * Canonical event types per spec section 2. Adding a new type
- * here keeps the Python schema and the JS callers from drifting.
+ * Canonical event types. Adding a new type here keeps the
+ * Python schema and the JS callers from drifting.
+ *
+ * The original v1 set (TASK_VIEWED, TASK_COMPLETED, etc.) is
+ * preserved for back-compat. The v2 data-foundation spec adds
+ * 15 more types covering auth, sync, location, language,
+ * accessibility, and explicit risk-alert / outcome events.
  */
 export const EVENT_TYPES = Object.freeze({
-  TASK_VIEWED:           'TASK_VIEWED',
+  // ── Auth / lifecycle ──────────────────────────────────────
+  AUTH_LOGIN:            'AUTH_LOGIN',
+  APP_OPENED:            'APP_OPENED',
+
+  // ── Today / task interaction ──────────────────────────────
+  TODAY_VIEWED:          'TODAY_VIEWED',
+  TASK_VIEWED:           'TASK_VIEWED',           // legacy alias
+  TASK_GENERATED:        'TASK_GENERATED',
+  TASK_LISTENED:         'TASK_LISTENED',
   TASK_COMPLETED:        'TASK_COMPLETED',
+  TASK_SKIPPED:          'TASK_SKIPPED',
+
+  // ── Label + outcome ───────────────────────────────────────
+  LABEL_SUBMITTED:       'LABEL_SUBMITTED',
+  OUTCOME_SUBMITTED:     'OUTCOME_SUBMITTED',
+
+  // ── Location ──────────────────────────────────────────────
+  LOCATION_CAPTURED:     'LOCATION_CAPTURED',
+  LOCATION_DENIED:       'LOCATION_DENIED',
+
+  // ── Risk alerts ───────────────────────────────────────────
+  WEATHER_ALERT_SHOWN:   'WEATHER_ALERT_SHOWN',
+  RISK_ALERT_SHOWN:      'RISK_ALERT_SHOWN',
   PEST_REPORTED:         'PEST_REPORTED',
-  DROUGHT_ALERT_SHOWN:   'DROUGHT_ALERT_SHOWN',
-  FARM_INACTIVE:         'FARM_INACTIVE',
+  DROUGHT_REPORTED:      'DROUGHT_REPORTED',
+  DROUGHT_ALERT_SHOWN:   'DROUGHT_ALERT_SHOWN',   // legacy alias
   WEATHER_FETCHED:       'WEATHER_FETCHED',
   RISK_COMPUTED:         'RISK_COMPUTED',
+
+  // ── Sync / offline ────────────────────────────────────────
+  OFFLINE_ACTION_QUEUED: 'OFFLINE_ACTION_QUEUED',
+  SYNC_SUCCESS:          'SYNC_SUCCESS',
+  SYNC_FAILED:           'SYNC_FAILED',
+
+  // ── Accessibility / preferences ───────────────────────────
+  LANGUAGE_CHANGED:      'LANGUAGE_CHANGED',
+  SIMPLE_MODE_ENABLED:   'SIMPLE_MODE_ENABLED',
+  SIMPLE_MODE_DISABLED:  'SIMPLE_MODE_DISABLED',
+
+  // ── Misc ──────────────────────────────────────────────────
+  FARM_INACTIVE:         'FARM_INACTIVE',
 });
 
 function _safeGet(key) {
@@ -102,12 +141,34 @@ function _mintId() {
   return `${ts}_${rand}`;
 }
 
+function _isOnline() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') {
+      return navigator.onLine;
+    }
+  } catch { /* ignore */ }
+  return true;
+}
+
 /**
  * logEvent(type, payload)
  *
  * Append a single event. Returns the stored record (frozen).
  * Always succeeds in the sense that a corrupt store is reset
  * and the new event is the only entry rather than throwing.
+ *
+ * Records gained two flags in the v2 data-foundation pass:
+ *   * offline — true when navigator.onLine === false at write
+ *               time. Lets the trainer + NGO aggregates
+ *               distinguish "logged on a flight-mode tap" from
+ *               "logged on a connected device".
+ *   * synced  — false until markEventSynced(id) flips it to
+ *               true. The sync drainer pulls
+ *               getUnsyncedEvents() and only marks rows it
+ *               successfully shipped to the server.
+ *
+ * Both flags are additive; existing v1 callers (which only
+ * read type / payload / timestamp / id) keep working unchanged.
  */
 export function logEvent(type, payload) {
   const record = Object.freeze({
@@ -115,6 +176,8 @@ export function logEvent(type, payload) {
     type:      String(type || 'UNKNOWN'),
     payload:   payload == null ? null : payload,
     timestamp: Date.now(),
+    offline:   !_isOnline(),
+    synced:    false,
     v:         SCHEMA_VERSION,
   });
   const events = _read();
@@ -134,6 +197,59 @@ export function getEventsForFarm(farmId) {
     const p = e && e.payload;
     return p && p.farmId != null && String(p.farmId) === target;
   });
+}
+
+/**
+ * getUnsyncedEvents() → Array<event>
+ *
+ * Returns every event whose `synced` flag is not true. Used by
+ * the offline sync drainer: pull, ship to server, then call
+ * markEventSynced(id) for each successful response. v1 records
+ * (no `synced` field) are returned too — they predate the flag
+ * and the sync layer should treat them as unsynced for safety.
+ */
+export function getUnsyncedEvents() {
+  return _read().filter((e) => e && e.synced !== true);
+}
+
+/**
+ * markEventSynced(id) → boolean
+ *
+ * Flip a single event's `synced` flag to true. Returns true
+ * when the row was found + updated, false otherwise. The flag
+ * is set in-place on a NEW frozen record (we replace the entry
+ * rather than mutate the frozen original) so concurrent readers
+ * can't observe a half-written record.
+ */
+export function markEventSynced(id) {
+  if (!id) return false;
+  const events = _read();
+  const idx = events.findIndex((e) => e && e.id === id);
+  if (idx < 0) return false;
+  const prev = events[idx] || {};
+  events[idx] = Object.freeze({ ...prev, synced: true });
+  _write(events);
+  return true;
+}
+
+/**
+ * markEventsSynced(ids) → number of rows updated.
+ * Convenience for batch callers — single read + single write.
+ */
+export function markEventsSynced(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  const set = new Set(ids.map(String));
+  const events = _read();
+  let n = 0;
+  for (let i = 0; i < events.length; i += 1) {
+    const e = events[i];
+    if (e && set.has(String(e.id)) && e.synced !== true) {
+      events[i] = Object.freeze({ ...e, synced: true });
+      n += 1;
+    }
+  }
+  if (n > 0) _write(events);
+  return n;
 }
 
 /** Test / admin "clear" helper. */

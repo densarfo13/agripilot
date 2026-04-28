@@ -147,6 +147,18 @@ export function getLocation(opts = {}) {
               timestamp: new Date().toISOString(),
             });
             _cachedFix = fix;
+            // Event tracking — fire-and-forget; never block the
+            // resolve path on logger work.
+            try {
+              import('../data/eventLogger.js').then((m) => {
+                try {
+                  m.logEvent(m.EVENT_TYPES.LOCATION_CAPTURED, {
+                    source:   'gps',
+                    accuracy: fix.accuracy,
+                  });
+                } catch { /* swallow */ }
+              }).catch(() => { /* swallow */ });
+            } catch { /* swallow */ }
             _settle(fix);
           } catch {
             _settle(null);
@@ -157,6 +169,12 @@ export function getLocation(opts = {}) {
           // every error mode collapses to null per the calm
           // contract. Callers that need to distinguish should
           // use src/lib/location/browserLocation.js instead.
+          try {
+            import('../data/eventLogger.js').then((m) => {
+              try { m.logEvent(m.EVENT_TYPES.LOCATION_DENIED, {}); }
+              catch { /* swallow */ }
+            }).catch(() => { /* swallow */ });
+          } catch { /* swallow */ }
           _settle(null);
         },
         positionOptions,

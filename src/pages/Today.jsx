@@ -75,6 +75,8 @@ import { getLanguage } from '../i18n/index.js';
 import DailyMessage      from '../components/DailyMessage.jsx';
 import YesterdayMemory   from '../components/YesterdayMemory.jsx';
 import { getDailyMessage } from '../retention/dailyMessage.js';
+// Event-tracking layer (data foundation v2)
+import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
 
 function _greetingKey() {
   const h = new Date().getHours();
@@ -174,6 +176,24 @@ export default function Today() {
   // sees the ledger is already stamped and the voice stays silent;
   // the next calendar day's first paint plays again. Combined
   // with the in-memory ref so a single mount can never double-fire.
+  // ── Event tracking (data foundation v2) ────────────────────
+  // TODAY_VIEWED fires once per mount so a re-render from a
+  // language switch or risk re-compute doesn't double-count.
+  // Wrapped in try/catch so a corrupt event log NEVER crashes
+  // the screen.
+  const viewLoggedRef = useRef(false);
+  useEffect(() => {
+    if (viewLoggedRef.current) return;
+    viewLoggedRef.current = true;
+    try {
+      logEvent(EVENT_TYPES.TODAY_VIEWED, {
+        farmId: (farm && farm.id) || null,
+        taskId,
+      });
+    } catch { /* never block render on logging */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const autoSpokenRef = useRef(false);
   useEffect(() => {
     if (!simple) return undefined;
@@ -215,6 +235,11 @@ export default function Today() {
     // visible title + timing pair so the spoken text matches
     // what the farmer is reading.
     const lang = (() => { try { return getLanguage() || 'en'; } catch { return 'en'; } })();
+    try {
+      logEvent(EVENT_TYPES.TASK_LISTENED, {
+        farmId: (farm && farm.id) || null, taskId,
+      });
+    } catch { /* never block on logging */ }
     if (simple) {
       const script = getTaskVoiceScript(taskId, lang);
       try { speak(script); } catch { /* swallow */ }

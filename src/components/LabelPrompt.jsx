@@ -41,6 +41,8 @@ import {
   LABEL_KIND, LABEL_VALUE, CONFIDENCE,
 } from '../data/labels.js';
 import { compressImageFile } from '../outbreak/photoCompress.js';
+// Event-tracking layer (data foundation v2)
+import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
 
 const CHOICES = [
   { id: 'pest',    icon: '\uD83D\uDC1B', tone: 'danger',  key: 'labelPrompt.pest',     fb: 'Pests'      },
@@ -174,6 +176,29 @@ export default function LabelPrompt({
     try { saved = _persistChoice({ choice: choiceId, farmId, taskType, photoUrl }); }
     catch { /* swallow - keep flow alive */ }
     try { markPromptedToday(farmId); } catch { /* ignore */ }
+
+    // Event-tracking: LABEL_SUBMITTED carries the calm shape
+    // the spec defines (label / confidence / photoAttached).
+    // Map the four UI choice ids onto the canonical labels:
+    //   pest    -> 'pest'     drought -> 'drought'
+    //   none    -> 'none'     unknown -> 'unknown'
+    // Confidence is HIGH when a photo accompanies the choice,
+    // MEDIUM otherwise — same heuristic the labels store uses.
+    try {
+      const choiceMap = {
+        pest:    'pest',
+        drought: 'drought',
+        none:    'none',
+        unknown: 'unknown',
+      };
+      logEvent(EVENT_TYPES.LABEL_SUBMITTED, {
+        farmId,
+        taskId:        taskType || null,
+        label:         choiceMap[choiceId] || 'unknown',
+        confidence:    photoUrl ? 'HIGH' : 'MEDIUM',
+        photoAttached: !!photoUrl,
+      });
+    } catch { /* never block on logging */ }
 
     // Voice feedback - spec section 4.
     try {

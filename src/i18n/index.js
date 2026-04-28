@@ -178,6 +178,16 @@ export function setLanguage(code) {
   // before the resolver existed.
   try { window.dispatchEvent(new CustomEvent('farroway:langchange', { detail: code })); }
   catch { /* ignore */ }
+  // Event tracking (data foundation v2): LANGUAGE_CHANGED.
+  // Dynamic import so the i18n module doesn't pull eventLogger
+  // at boot — the import cost is only paid the first time the
+  // user changes language.
+  try {
+    import('../data/eventLogger.js').then((m) => {
+      try { m.logEvent(m.EVENT_TYPES.LANGUAGE_CHANGED, { code: String(code || '') }); }
+      catch { /* swallow */ }
+    }).catch(() => { /* swallow */ });
+  } catch { /* swallow */ }
 }
 
 // On module load, mirror the persisted language onto <html lang> so
