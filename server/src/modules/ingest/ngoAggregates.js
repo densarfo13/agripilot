@@ -29,17 +29,26 @@ function _since7d() { return new Date(Date.now() - WEEK_MS); }
 // Helpers shared by the three builders
 // ─────────────────────────────────────────────────────────────
 
-async function _activeFarmers7d(prisma, regionFilter = null) {
+// All four helpers accept `orgId` as the first scope filter.
+// When orgId is null/undefined the query stays unscoped — but
+// every public builder REQUIRES orgId, so this only happens
+// in tests. The route layer enforces orgId presence before
+// calling into these helpers.
+
+async function _activeFarmers7d(prisma, orgId, regionFilter = null) {
   const where = {
     createdAt: { gte: _since7d() },
     type: { in: ['TASK_COMPLETED', 'TODAY_VIEWED'] },
   };
+  if (orgId) where.orgId = orgId;
   // Region filter goes through farms join — when region is
   // supplied we narrow to events whose farmId resolves to a
-  // farm in that region.
+  // farm in that region within the SAME org.
   if (regionFilter) {
+    const farmFilter = { region: regionFilter };
+    if (orgId) farmFilter.organizationId = orgId;
     const farms = await prisma.farmer.findMany({
-      where: { region: regionFilter },
+      where:  farmFilter,
       select: { id: true },
     });
     const farmIds = farms.map((f) => f.id);
@@ -49,7 +58,6 @@ async function _activeFarmers7d(prisma, regionFilter = null) {
       { farmId:   { in: farmIds } },
     ];
   }
-  // distinct farmerId via Prisma's groupBy — single roundtrip
   const grouped = await prisma.clientEvent.groupBy({
     by: ['farmerId'],
     where: { ...where, farmerId: { not: null } },
@@ -57,14 +65,17 @@ async function _activeFarmers7d(prisma, regionFilter = null) {
   return grouped.length;
 }
 
-async function _tasksCompleted7d(prisma, regionFilter = null) {
+async function _tasksCompleted7d(prisma, orgId, regionFilter = null) {
   const where = {
     createdAt: { gte: _since7d() },
     type: 'TASK_COMPLETED',
   };
+  if (orgId) where.orgId = orgId;
   if (regionFilter) {
+    const farmFilter = { region: regionFilter };
+    if (orgId) farmFilter.organizationId = orgId;
     const farms = await prisma.farmer.findMany({
-      where: { region: regionFilter },
+      where:  farmFilter,
       select: { id: true },
     });
     where.farmId = { in: farms.map((f) => f.id) };
@@ -72,26 +83,24 @@ async function _tasksCompleted7d(prisma, regionFilter = null) {
   return prisma.clientEvent.count({ where });
 }
 
-async function _labelReports7d(prisma, label, regionFilter = null) {
-  // Postgres jsonb path filter: payload->>'label' = $1.
-  // Prisma supports this via the `path` + `equals` shape on
-  // a Json column — written via prisma.$queryRaw to keep the
-  // index on (type, createdAt) usable.
+async function _labelReports7d(prisma, orgId, label, regionFilter = null) {
   const where = {
     createdAt: { gte: _since7d() },
     type: 'LABEL_SUBMITTED',
   };
+  if (orgId) where.orgId = orgId;
   if (regionFilter) {
+    const farmFilter = { region: regionFilter };
+    if (orgId) farmFilter.organizationId = orgId;
     const farms = await prisma.farmer.findMany({
-      where: { region: regionFilter },
+      where:  farmFilter,
       select: { id: true },
     });
     where.farmId = { in: farms.map((f) => f.id) };
   }
   // Pull and filter in JS rather than a JSON-path query — the
   // dataset is small enough at v1, and avoiding a raw SQL path
-  // keeps Prisma migrations simple. Future scale-up can add a
-  // generated column for payload->>'label'.
+  // keeps Prisma migrations simple.
   const rows = await prisma.clientEvent.findMany({
     where,
     select: { payload: true },
@@ -107,18 +116,13 @@ async function _labelReports7d(prisma, label, regionFilter = null) {
   return n;
 }
 
-async function _highRiskFarms(prisma, regionFilter = null) {
-  // Latest risk per (farmId, riskType). Postgres window
-  // functions are clean here but Prisma doesn't expose them
-  // directly — we approximate with a "rows within 24h with
-  // risk_level=HIGH" filter, which matches the rule engine's
-  // refresh cadence. Trade-off: a stale HIGH older than 24h
-  // doesn't surface; ops can tune via the constant below.
+async function _highRiskFarms(prisma, orgId, regionFilter = null) {
   const since = new Date(Date.now() - 7 * DAY_MS);
   const where = {
     createdAt: { gte: since },
     riskLevel: 'HIGH',
   };
+  if (orgId) where.orgId = orgId;
   if (regionFilter) where.region = regionFilter;
   const rows = await prisma.riskSnapshot.groupBy({
     by: ['farmId'],
@@ -136,9 +140,17 @@ async function _highRiskFarms(prisma, regionFilter = null) {
  *
  * Returns the headline numbers the NGO dashboard renders at
  * the top. Optional `region` filter narrows to one region.
+ *
+ * orgId is REQUIRED — the route layer enforces presence and
+ * pulls it from req.user.organizationId. Every internal
+ * helper filters by orgId so cross-org leaks are impossible
+ * at the SQL level.
  */
-export async function buildSummary({ prisma, region = null } = {}) {
-  const totalFarmersWhere = region ? { region } : {};
+export async function buildSummary({ prisma, orgId = null, region = null } = {}) {
+  const totalFarmersWhere = {};
+  if (orgId)  totalFarmersWhere.organizationId = orgId;
+  if (region) totalFarmersWhere.region = region;
+
   const [
     totalFarmers,
     activeFarmers7d,
@@ -148,17 +160,14 @@ export async function buildSummary({ prisma, region = null } = {}) {
     highRiskFarms,
   ] = await Promise.all([
     prisma.farmer.count({ where: totalFarmersWhere }),
-    _activeFarmers7d(prisma, region),
-    _tasksCompleted7d(prisma, region),
-    _labelReports7d(prisma, 'pest', region),
-    _labelReports7d(prisma, 'drought', region),
-    _highRiskFarms(prisma, region),
+    _activeFarmers7d(prisma, orgId, region),
+    _tasksCompleted7d(prisma, orgId, region),
+    _labelReports7d(prisma, orgId, 'pest', region),
+    _labelReports7d(prisma, orgId, 'drought', region),
+    _highRiskFarms(prisma, orgId, region),
   ]);
 
-  // clusters count = a quick aggregate that doesn't pull the
-  // full cluster list. We surface only the count here; the
-  // dashboard fetches the full list via /ngo/clusters.
-  const clusters = await _activeClusterCount({ prisma, region });
+  const clusters = await _activeClusterCount({ prisma, orgId, region });
 
   return {
     totalFarmers,
@@ -172,9 +181,8 @@ export async function buildSummary({ prisma, region = null } = {}) {
   };
 }
 
-async function _activeClusterCount({ prisma, region = null }) {
-  // Reuse the cluster builder + count the non-LOW entries.
-  const list = await buildClusters({ prisma, region });
+async function _activeClusterCount({ prisma, orgId = null, region = null }) {
+  const list = await buildClusters({ prisma, orgId, region });
   return list.filter((c) => c.severity !== 'LOW').length;
 }
 
@@ -186,10 +194,11 @@ async function _activeClusterCount({ prisma, region = null }) {
  * pestReports + droughtReports) desc so the most-actionable
  * region surfaces first.
  */
-export async function buildRegionTable({ prisma } = {}) {
-  // Step 1: per-region farmer counts
+export async function buildRegionTable({ prisma, orgId = null } = {}) {
+  // Step 1: per-region farmer counts (org-scoped).
   const farmerByRegion = await prisma.farmer.groupBy({
     by: ['region', 'countryCode'],
+    where: orgId ? { organizationId: orgId } : {},
     _count: { _all: true },
   });
 
@@ -209,20 +218,24 @@ export async function buildRegionTable({ prisma } = {}) {
     });
   }
 
-  // Step 2: active farmers per region (last 7d)
+  // Step 2: active farmers per region (last 7d), org-scoped.
   const since = _since7d();
   const activeRows = await prisma.clientEvent.findMany({
     where: {
       createdAt: { gte: since },
       type: { in: ['TASK_COMPLETED', 'TODAY_VIEWED'] },
       farmId: { not: null },
+      ...(orgId ? { orgId } : {}),
     },
     select: { farmId: true, farmerId: true },
   });
   const farmIdToRegion = new Map();
   if (activeRows.length > 0) {
     const farms = await prisma.farmer.findMany({
-      where: { id: { in: [...new Set(activeRows.map((r) => r.farmId))] } },
+      where: {
+        id: { in: [...new Set(activeRows.map((r) => r.farmId))] },
+        ...(orgId ? { organizationId: orgId } : {}),
+      },
       select: { id: true, region: true, countryCode: true },
     });
     for (const f of farms) {
@@ -240,12 +253,13 @@ export async function buildRegionTable({ prisma } = {}) {
     if (rows.has(key)) rows.get(key).active7d = set.size;
   }
 
-  // Step 3: pest + drought labels per region (last 7d)
+  // Step 3: pest + drought labels per region (last 7d), org-scoped.
   const labelRows = await prisma.clientEvent.findMany({
     where: {
       createdAt: { gte: since },
       type: 'LABEL_SUBMITTED',
       farmId: { not: null },
+      ...(orgId ? { orgId } : {}),
     },
     select: { farmId: true, payload: true },
   });
@@ -274,6 +288,7 @@ export async function buildRegionTable({ prisma } = {}) {
     where: {
       createdAt: { gte: since },
       riskLevel: 'HIGH',
+      ...(orgId ? { orgId } : {}),
     },
   });
   const exactByKey     = new Map();   // 'country|region' -> Set<farmId>
@@ -348,15 +363,17 @@ function _pickRegionAction(row) {
  *   - 5+ reports OR 8+ high-risk farms -> HIGH
  *   - else LOW (returned but flagged)
  */
-export async function buildClusters({ prisma, region = null } = {}) {
+export async function buildClusters({ prisma, orgId = null, region = null } = {}) {
   const since = _since7d();
 
-  // Pull label events + risk snapshots in parallel.
+  // Pull label events + risk snapshots in parallel — both
+  // filtered by orgId so cross-org leaks are impossible.
   const labelWhere = {
     createdAt: { gte: since },
     type: 'LABEL_SUBMITTED',
     farmId: { not: null },
   };
+  if (orgId) labelWhere.orgId = orgId;
   const [labelRows, riskRows] = await Promise.all([
     prisma.clientEvent.findMany({
       where: labelWhere,
@@ -366,6 +383,7 @@ export async function buildClusters({ prisma, region = null } = {}) {
       where: {
         createdAt: { gte: since },
         riskLevel: 'HIGH',
+        ...(orgId ? { orgId } : {}),
         ...(region ? { region } : {}),
       },
       select: { farmId: true, riskType: true, region: true,
@@ -373,12 +391,18 @@ export async function buildClusters({ prisma, region = null } = {}) {
     }),
   ]);
 
-  // Resolve farmId -> region for label rows.
+  // Resolve farmId -> region for label rows. Same-org farms
+  // only — a label event whose farmId belongs to a different
+  // org (shouldn't happen if ingest is correct, but defensive)
+  // is dropped at this resolve step.
   const farmIds = new Set();
   for (const r of labelRows) farmIds.add(r.farmId);
   const farmMeta = farmIds.size > 0
     ? await prisma.farmer.findMany({
-        where: { id: { in: [...farmIds] } },
+        where: {
+          id: { in: [...farmIds] },
+          ...(orgId ? { organizationId: orgId } : {}),
+        },
         select: { id: true, region: true, countryCode: true,
                   district: true, primaryCrop: true },
       })

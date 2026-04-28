@@ -149,3 +149,38 @@ export const loginLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true, // successful login doesn't count toward limit
 });
+
+/**
+ * ingestLimiter — per-IP cap on POST /api/ingest.
+ *
+ * 120 batches/min is generous: a farmer at the upper bound
+ * (200 events/batch * 2 batches/s) ships ~24k events/min,
+ * well above any organic device. The cap catches a
+ * misconfigured client retrying on every render or a
+ * compromised token replaying captured batches; legitimate
+ * field officers uploading offline-collected events from
+ * multiple devices stay under it.
+ */
+export const ingestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max:      120,
+  message:  { error: 'Ingest rate limit exceeded. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders:   false,
+});
+
+/**
+ * readLimiter — per-IP cap on read-heavy NGO endpoints.
+ *
+ * 300 reads/min covers a busy operator refreshing the
+ * dashboard every 0.2s without throttling. The cap exists
+ * mainly to prevent a buggy client polling in a tight loop
+ * from exhausting the Postgres connection pool.
+ */
+export const readLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max:      300,
+  message:  { error: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders:   false,
+});

@@ -79,10 +79,15 @@ function _coerceCreatedAt(raw) {
 
 /**
  * Per-event validator. Returns the normalised row when valid,
- * null when the row should be dropped. Reasons are reported in
- * the rejected[] tally so ops can see why drops happened.
+ * null when the row should be dropped.
+ *
+ * orgId is set from the AUTHENTICATED REQUEST, never the
+ * client payload. The validator additionally rejects rows
+ * whose embedded orgId mismatches the authenticated value
+ * (a hard-stop guard against a captured token replaying a
+ * batch into a different org).
  */
-export function validateEvent(raw, appVersion = null) {
+export function validateEvent(raw, appVersion = null, orgId = null) {
   if (!raw || typeof raw !== 'object') return null;
   if (!_isValidId(raw.id))                       return null;
   if (!_isValidType(raw.type))                   return null;
@@ -93,6 +98,19 @@ export function validateEvent(raw, appVersion = null) {
     ? raw.payload
     : null;
 
+  // Hard-stop on client-supplied orgId mismatch so a malicious
+  // client can't smuggle events into another org by stuffing
+  // payload.orgId. The service still always WRITES the request
+  // user's orgId (parameter `orgId` here) — this guard catches
+  // the rare case where a client tries to mix orgs in a batch.
+  if (orgId && payload && payload.orgId
+      && String(payload.orgId) !== String(orgId)) {
+    return null;
+  }
+  if (orgId && raw.orgId && String(raw.orgId) !== String(orgId)) {
+    return null;
+  }
+
   // farmerId / farmId are pulled from payload OR top-level so
   // older clients (which only put them in payload) still index
   // correctly. Both are nullable per schema — events like
@@ -102,6 +120,7 @@ export function validateEvent(raw, appVersion = null) {
 
   return {
     id:         raw.id,
+    orgId:      orgId ? String(orgId) : null,
     farmerId:   farmerId ? String(farmerId) : null,
     farmId:     farmId ? String(farmId) : null,
     type:       raw.type,
@@ -117,12 +136,22 @@ export function validateEvent(raw, appVersion = null) {
  *
  * @param events           Array of raw client events
  * @param appVersion       optional version tag from the batch
+ * @param orgId            ORG ID FROM THE AUTHENTICATED REQUEST.
+ *                         Never trust client-supplied org_id —
+ *                         the route handler MUST pass the value
+ *                         from req.user.organizationId here.
+ *                         null is acceptable for legacy callers
+ *                         that haven't migrated, but every NGO
+ *                         read filters on org_id so unscoped
+ *                         events become invisible to dashboards
+ *                         until they're re-attributed.
  * @param prismaClient     prisma client (or stub in tests)
  * @param logger           optional ops logger; defaults to console
  */
 export async function ingestEvents({
   events,
   appVersion = null,
+  orgId = null,
   prismaClient,
   logger = console,
 } = {}) {
@@ -143,7 +172,7 @@ export async function ingestEvents({
   // can't fail the whole batch.
   const valid = [];
   for (const raw of events) {
-    const normalised = validateEvent(raw, appVersion);
+    const normalised = validateEvent(raw, appVersion, orgId);
     if (!normalised) rejected += 1;
     else valid.push(normalised);
   }

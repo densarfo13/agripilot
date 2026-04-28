@@ -24,6 +24,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate } from '../../middleware/auth.js';
+import { ingestLimiter } from '../../middleware/rateLimiters.js';
 import prisma from '../../config/database.js';
 import { opsEvent } from '../../utils/opsLogger.js';
 import { ingestEvents, MAX_BATCH_SIZE } from './service.js';
@@ -52,16 +53,23 @@ router.get('/health', (_req, res) => {
  *     serverTime: '<ISO>',
  *   }
  */
-router.post('/', authenticate, asyncHandler(async (req, res) => {
+router.post('/', ingestLimiter, authenticate, asyncHandler(async (req, res) => {
   const body = req.body || {};
   const events = Array.isArray(body.events) ? body.events : [];
   const appVersion = typeof body.appVersion === 'string'
     ? body.appVersion.slice(0, 32)   // hard cap on the column
     : null;
+  // Org scoping: the value persisted to the DB ALWAYS comes
+  // from the authenticated user. The client cannot smuggle a
+  // different org via payload.orgId (the validator
+  // hard-rejects mismatches; the route never reads body.orgId).
+  const orgId = req.user && req.user.organizationId
+    ? String(req.user.organizationId)
+    : null;
 
   if (events.length === 0) {
     return res.json({
-      accepted: 0, duplicates: 0, rejected: 0,
+      accepted: 0, duplicates: 0, skipped: 0, rejected: 0,
       serverTime: new Date().toISOString(),
     });
   }
@@ -75,18 +83,19 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
   const result = await ingestEvents({
     events,
     appVersion,
+    orgId,
     prismaClient: prisma,
   });
 
   // Observability: structured ops event so a Railway log search
   // for "ingest_batch" surfaces every ingest call with its
-  // accepted/duplicate/rejected breakdown. Useful for spotting
-  // a misbehaving client (e.g. all-rejected batches from a
-  // legacy app version).
+  // accepted/duplicate/rejected breakdown. orgId tagged so
+  // per-org ingest patterns are queryable.
   try {
     opsEvent('ingest', 'ingest_batch',
       result.rejected > 0 ? 'warn' : 'info', {
         userId:     req.user && req.user.sub ? req.user.sub : null,
+        orgId,
         appVersion,
         size:       events.length,
         accepted:   result.accepted,
@@ -95,10 +104,15 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
       });
   } catch { /* logger never blocks the response */ }
 
+  // The brief defines the response as { accepted, duplicates,
+  // skipped, serverTime }. We expose `rejected` (= the original
+  // term we used) AS `skipped` per the spec wording so
+  // dashboards reading this field see the spec's name.
   res.json({
     accepted:   result.accepted,
     duplicates: result.duplicates,
-    rejected:   result.rejected,
+    skipped:    result.rejected,
+    rejected:   result.rejected,   // alias, kept for back-compat
     serverTime: new Date().toISOString(),
   });
 }));

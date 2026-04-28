@@ -3009,6 +3009,7 @@ model MarketplacePayment {
 // LOCATION_CAPTURED, etc. They evolve independently.
 model ClientEvent {
   id          String   @id                                            // client-minted UUID
+  orgId       String?                                                  @map("org_id")     // SET FROM JWT — never trust client
   farmerId    String?  @map("farmer_id")
   farmId      String?  @map("farm_id")
   type        String                                                  // EVENT_TYPES enum value
@@ -3023,6 +3024,9 @@ model ClientEvent {
   @@index([farmId],                              map: "idx_client_events_farm")
   @@index([farmerId, createdAt],                 map: "idx_client_events_farmer_time")
   @@index([type, createdAt],                     map: "idx_client_events_type_time")
+  @@index([orgId],                               map: "idx_client_events_org")
+  @@index([orgId, type],                         map: "idx_client_events_org_type")
+  @@index([orgId, createdAt],                    map: "idx_client_events_org_created")
   @@map("client_events")
 }
 
@@ -3033,6 +3037,7 @@ model ClientEvent {
 // risk per region across all farms).
 model RiskSnapshot {
   id         String   @id @default(uuid())
+  orgId      String?                                @map("org_id")    // SET BY ENGINE — never trust caller
   farmId     String   @map("farm_id")
   riskType   String   @map("risk_type")             // 'pest' | 'drought' | 'weather'
   riskLevel  String   @map("risk_level")            // 'LOW' | 'MEDIUM' | 'HIGH'
@@ -3048,5 +3053,6 @@ model RiskSnapshot {
   @@index([region,   createdAt], map: "idx_risk_region_time")
   @@index([riskLevel],           map: "idx_risk_level")
   @@index([riskType, riskLevel], map: "idx_risk_type_level")
+  @@index([orgId],               map: "idx_risk_org")
   @@map("risk_snapshots")
 }
