@@ -127,6 +127,25 @@ export async function markTaskDone(task) {
     });
   } catch { /* swallow */ }
 
+  // 5. Retention bookkeeping — streak + memory mirror. The streak
+  //    helper is idempotent within a calendar day so multiple
+  //    completions on the same day count as one streak day.
+  //    Wrapped in dynamic import so the (large) retention module
+  //    loads on first completion, not at app boot, and a missing
+  //    helper never blocks the primary persist path.
+  try {
+    const taskId = (task && typeof task === 'object' && task.id) || task;
+    const { updateStreak } = await import('../../utils/streak.js');
+    try { updateStreak(); } catch { /* never block on retention */ }
+    const memoryMod = await import('../../retention/memoryStore.js');
+    try {
+      memoryMod.recordLastTask({
+        taskId: taskId != null ? String(taskId) : null,
+        date:   entry.date,
+      });
+    } catch { /* never block on memory */ }
+  } catch { /* dynamic import failure is non-fatal */ }
+
   return next;
 }
 

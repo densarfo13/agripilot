@@ -71,6 +71,10 @@ import { safeParse } from '../utils/safeParse.js';
 // No-Reading-Required voice scripts + per-day playback ledger
 import { getTaskVoiceScript, getPraiseVoiceScript } from '../voice/voiceScripts.js';
 import { getLanguage } from '../i18n/index.js';
+// Retention engine
+import DailyMessage      from '../components/DailyMessage.jsx';
+import YesterdayMemory   from '../components/YesterdayMemory.jsx';
+import { getDailyMessage } from '../retention/dailyMessage.js';
 
 function _greetingKey() {
   const h = new Date().getHours();
@@ -125,6 +129,14 @@ export default function Today() {
     const cluster  = matched && matched.length ? matched[0] : null;
     risks = computeFarmRisks(farm, cluster);
   } catch { /* keep defaults */ }
+
+  // ── Daily message (top-of-Today retention banner) ──────────
+  // Pure function — never throws. Falls through to "Check your
+  // farm today" when no risk and no weather signal is available.
+  let dailyMessage = null;
+  try {
+    dailyMessage = getDailyMessage({ risks, farm, weather: {} });
+  } catch { /* keep null — banner just won't render */ }
 
   // ── Streak + tasks-done-today (sync) ────────────────────────
   let streak = 0;
@@ -286,6 +298,16 @@ export default function Today() {
             <span aria-hidden="true">{'\u2699\uFE0F'}</span>
           </button>
         </header>
+
+        {/* 1.5. Daily retention message — weather/risk/fallback.
+              Sits BETWEEN the header and the task card so the
+              farmer sees the day's most actionable signal first.
+              Self-hides when the descriptor is null. */}
+        <DailyMessage descriptor={dailyMessage} />
+
+        {/* 1.6. Yesterday memory — supportive recall, hidden
+              when memory is empty / today / older than yesterday. */}
+        <YesterdayMemory />
 
         {/* 2 + 3. Recovery branch OR Simple Mode card OR
               standard task + actions. Mutually exclusive — never

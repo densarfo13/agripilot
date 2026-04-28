@@ -51,6 +51,7 @@ import { ACCOUNT_LOAD_TRANSLATIONS }          from './accountLoadTranslations.js
 import { TODAY_ELITE_TRANSLATIONS }            from './todayElitTranslations.js';
 import { SIMPLE_MODE_TRANSLATIONS }            from './simpleModeTranslations.js';
 import { SIMPLE_UX_TRANSLATIONS }              from './simpleUxTranslations.js';
+import { RETENTION_TRANSLATIONS }              from './retentionTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -113,6 +114,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     TODAY_ELITE_TRANSLATIONS,
     SIMPLE_MODE_TRANSLATIONS,
     SIMPLE_UX_TRANSLATIONS,
+    RETENTION_TRANSLATIONS,
   ]);
 })();
 
