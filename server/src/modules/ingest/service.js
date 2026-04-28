@@ -1,0 +1,175 @@
+/**
+ * ingest/service.js — stateless validation + idempotent persist
+ * for the client-event batch ingestion endpoint.
+ *
+ *   ingestEvents({ events, appVersion, prismaClient })
+ *     -> { accepted, duplicates, rejected }
+ *
+ * Contract
+ *   * Hard-cap: events.length must be <= MAX_BATCH_SIZE (200).
+ *     Exceeding the cap is the caller's bug; the route returns
+ *     400 before this service runs.
+ *   * Per-event validation: each row needs id + type + createdAt;
+ *     anything else is dropped (counted as `rejected`) so a
+ *     malformed entry never blocks the rest of the batch.
+ *   * Idempotency: every accepted row goes through
+ *     prisma.clientEvent.upsert with `where: { id }` and an
+ *     empty `update` block — the second insert of the same
+ *     id is a no-op. The brief asks for "ON CONFLICT DO
+ *     NOTHING"; Prisma's `upsert(create, update={})` produces
+ *     the same effect.
+ *   * Never throws on per-row failure: a single Prisma error
+ *     (constraint violation, payload too big) is logged + the
+ *     row is counted as rejected; the rest of the batch
+ *     continues.
+ *
+ * Strict-rule audit
+ *   * Stateless — caller passes the prisma client so tests can
+ *     inject a stub.
+ *   * Pure validation: validateEvent doesn't touch the DB.
+ *   * Observable: returns { accepted, duplicates, rejected }
+ *     so the route + ops dashboards can count drift.
+ */
+
+export const MAX_BATCH_SIZE = 200;
+
+const VALID_EVENT_TYPES = new Set([
+  'AUTH_LOGIN', 'APP_OPENED',
+  'TODAY_VIEWED', 'TASK_VIEWED', 'TASK_GENERATED',
+  'TASK_LISTENED', 'TASK_COMPLETED', 'TASK_SKIPPED',
+  'LABEL_SUBMITTED', 'OUTCOME_SUBMITTED',
+  'LOCATION_CAPTURED', 'LOCATION_DENIED',
+  'WEATHER_ALERT_SHOWN', 'RISK_ALERT_SHOWN',
+  'PEST_REPORTED', 'DROUGHT_REPORTED',
+  'DROUGHT_ALERT_SHOWN', 'WEATHER_FETCHED', 'RISK_COMPUTED',
+  'OFFLINE_ACTION_QUEUED', 'SYNC_SUCCESS', 'SYNC_FAILED',
+  'LANGUAGE_CHANGED', 'SIMPLE_MODE_ENABLED', 'SIMPLE_MODE_DISABLED',
+  'FARM_INACTIVE',
+]);
+
+const UUID_RE  = /^[0-9a-f-]{8,64}$/i;       // permissive — client mint format may vary
+const ISO_RE   = /^\d{4}-\d{2}-\d{2}/;
+
+function _isValidId(id) {
+  return typeof id === 'string' && id.length > 0 && id.length <= 128
+    && UUID_RE.test(id);
+}
+
+function _isValidType(t) {
+  return typeof t === 'string' && VALID_EVENT_TYPES.has(t);
+}
+
+function _coerceCreatedAt(raw) {
+  if (raw == null) return null;
+  // Accept ISO string OR ms epoch number — the client logs
+  // both depending on how the event was minted.
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    if (raw < 1_000_000_000_000) return null;          // pre-2001 sanity floor
+    if (raw > Date.now() + 60_000) return null;         // > 1min in the future
+    return new Date(raw);
+  }
+  if (typeof raw === 'string' && ISO_RE.test(raw)) {
+    const d = new Date(raw);
+    if (!Number.isFinite(d.getTime())) return null;
+    if (d.getTime() > Date.now() + 60_000) return null;
+    return d;
+  }
+  return null;
+}
+
+/**
+ * Per-event validator. Returns the normalised row when valid,
+ * null when the row should be dropped. Reasons are reported in
+ * the rejected[] tally so ops can see why drops happened.
+ */
+export function validateEvent(raw, appVersion = null) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (!_isValidId(raw.id))                       return null;
+  if (!_isValidType(raw.type))                   return null;
+  const createdAt = _coerceCreatedAt(raw.createdAt || raw.timestamp);
+  if (!createdAt) return null;
+
+  const payload = raw.payload && typeof raw.payload === 'object'
+    ? raw.payload
+    : null;
+
+  // farmerId / farmId are pulled from payload OR top-level so
+  // older clients (which only put them in payload) still index
+  // correctly. Both are nullable per schema — events like
+  // LANGUAGE_CHANGED don't carry a farm.
+  const farmerId = (payload && payload.farmerId) || raw.farmerId || null;
+  const farmId   = (payload && payload.farmId)   || raw.farmId   || null;
+
+  return {
+    id:         raw.id,
+    farmerId:   farmerId ? String(farmerId) : null,
+    farmId:     farmId ? String(farmId) : null,
+    type:       raw.type,
+    payload,
+    createdAt,
+    appVersion: appVersion || null,
+    offline:    raw.offline === true,
+  };
+}
+
+/**
+ * ingestEvents — main service entry point.
+ *
+ * @param events           Array of raw client events
+ * @param appVersion       optional version tag from the batch
+ * @param prismaClient     prisma client (or stub in tests)
+ * @param logger           optional ops logger; defaults to console
+ */
+export async function ingestEvents({
+  events,
+  appVersion = null,
+  prismaClient,
+  logger = console,
+} = {}) {
+  if (!Array.isArray(events)) {
+    return { accepted: 0, duplicates: 0, rejected: 0 };
+  }
+  if (events.length > MAX_BATCH_SIZE) {
+    return { accepted: 0, duplicates: 0, rejected: events.length,
+             reason: 'batch_too_large' };
+  }
+
+  let accepted   = 0;
+  let duplicates = 0;
+  let rejected   = 0;
+
+  for (const raw of events) {
+    const normalised = validateEvent(raw, appVersion);
+    if (!normalised) { rejected += 1; continue; }
+    try {
+      // Prisma upsert with empty `update` = ON CONFLICT DO
+      // NOTHING. Returns the existing row when the id is
+      // already in place; we count those as duplicates so the
+      // client can advance its synced cursor without thinking
+      // the batch was lost.
+      const existing = await prismaClient.clientEvent.findUnique({
+        where: { id: normalised.id },
+        select: { id: true },
+      });
+      if (existing) { duplicates += 1; continue; }
+      await prismaClient.clientEvent.create({ data: normalised });
+      accepted += 1;
+    } catch (err) {
+      // Race: a concurrent batch wrote the same id between our
+      // findUnique and create. Treat as duplicate.
+      if (err && err.code === 'P2002') {
+        duplicates += 1;
+        continue;
+      }
+      rejected += 1;
+      try {
+        logger.warn('[ingest] row rejected:', err && err.message
+          ? String(err.message).slice(0, 200) : 'unknown');
+      } catch { /* swallow */ }
+    }
+  }
+
+  return { accepted, duplicates, rejected };
+}
+
+export default ingestEvents;

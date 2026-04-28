@@ -2994,3 +2994,59 @@ model MarketplacePayment {
   @@index([status],    map: "idx_marketplace_payments_status")
   @@map("marketplace_payments")
 }
+
+// ─── Client event ingest (data foundation v2) ──────────────
+//
+// Mirror of the on-device farroway_events log shipped to the
+// server via POST /api/ingest. Idempotent on `id` — the client
+// mints a stable UUID per event at log time so re-shipping a
+// batch (after a network blip + retry) is a no-op.
+//
+// Deliberately separate from the existing EventLog model.
+// EventLog is server-side activity (admin actions, login
+// auditing). ClientEvent is the farmer-driven training-data
+// stream: TODAY_VIEWED, TASK_COMPLETED, LABEL_SUBMITTED,
+// LOCATION_CAPTURED, etc. They evolve independently.
+model ClientEvent {
+  id          String   @id                                            // client-minted UUID
+  farmerId    String?  @map("farmer_id")
+  farmId      String?  @map("farm_id")
+  type        String                                                  // EVENT_TYPES enum value
+  payload     Json?
+  createdAt   DateTime                                                  @map("created_at")
+  receivedAt  DateTime @default(now())                                 @map("received_at")
+  appVersion  String?                                                  @map("app_version")
+  offline     Boolean  @default(false)
+
+  @@index([type],                                map: "idx_client_events_type")
+  @@index([createdAt],                           map: "idx_client_events_created_at")
+  @@index([farmId],                              map: "idx_client_events_farm")
+  @@index([farmerId, createdAt],                 map: "idx_client_events_farmer_time")
+  @@index([type, createdAt],                     map: "idx_client_events_type_time")
+  @@map("client_events")
+}
+
+// ─── Risk snapshots ────────────────────────────────────────
+//
+// Per-farm risk computations the rule engine + future ML
+// models emit. Indexed for region-level NGO queries (latest
+// risk per region across all farms).
+model RiskSnapshot {
+  id         String   @id @default(uuid())
+  farmId     String   @map("farm_id")
+  riskType   String   @map("risk_type")             // 'pest' | 'drought' | 'weather'
+  riskLevel  String   @map("risk_level")            // 'LOW' | 'MEDIUM' | 'HIGH'
+  score      Float?
+  reasons    Json?
+  region     String?
+  country    String?
+  district   String?
+  clusterId  String?  @map("cluster_id")
+  createdAt  DateTime @default(now())               @map("created_at")
+
+  @@index([farmId,   createdAt], map: "idx_risk_farm_time")
+  @@index([region,   createdAt], map: "idx_risk_region_time")
+  @@index([riskLevel],           map: "idx_risk_level")
+  @@index([riskType, riskLevel], map: "idx_risk_type_level")
+  @@map("risk_snapshots")
+}

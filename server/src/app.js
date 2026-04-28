@@ -18,6 +18,9 @@ import { checkUploadDirHealth, listDiskFiles } from './utils/uploadHealth.js';
 // Route imports
 import authRoutes from './modules/auth/routes.js';
 import adminUserRoutes from './modules/auth/admin-routes.js';
+// Client-event ingestion (data foundation v2) + NGO read APIs
+import ingestRoutes from './modules/ingest/routes.js';
+import ngoRoutes    from './modules/ingest/ngoRoutes.js';
 import farmersRoutes from './modules/farmers/routes.js';
 import applicationsRoutes from './modules/applications/routes.js';
 import locationRoutes from './modules/location/routes.js';
@@ -351,6 +354,16 @@ app.get('/api/ops/metrics', authenticate, async (req, res) => {
 // ─── Auth (public — with stricter rate limiting) ────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', adminUserRoutes);
+
+// ─── Ingest + NGO aggregates (data foundation v2) ───────
+// /api/ingest accepts batched client events idempotently.
+// /api/ngo/* serves the NGO dashboard summary / regions /
+// clusters from the same store. Both auth-gated inside their
+// own route modules; mounted at the root /api so the spec's
+// path (/ingest, /ngo/summary, /ngo/regions, /ngo/clusters)
+// matches verbatim.
+app.use('/api/ingest', ingestRoutes);
+app.use('/api/ngo',    ngoRoutes);
 
 // ─── /me endpoint ───────────────────────────────────────
 // V1 admin /me (used by older admin tools). V2 farmer-facing
