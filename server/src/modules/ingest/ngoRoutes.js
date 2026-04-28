@@ -99,4 +99,106 @@ router.get('/clusters',
   }),
 );
 
+/**
+ * GET /api/ngo/farms
+ *
+ * Returns the org's farm points for the map. Each row
+ * carries:
+ *   { id, farmerId, crop, riskLevel,
+ *     location: { lat, lng, country, region, district } }
+ *
+ * Privacy contract (per brief § 8 + the existing
+ * "no farmer PII" rule):
+ *   * NEVER includes phone, fullName, nationalId, email
+ *   * Returns ONLY farms with finite (lat, lng) — region-only
+ *     farms are surfaced through the existing /ngo/regions
+ *     table, not the map
+ *   * Hard-cap at MAX_FARMS rows so a sprawling org doesn't
+ *     blow up the leaflet bundle's per-circle work
+ *
+ * Risk level is derived from the latest HIGH/MEDIUM/LOW
+ * RiskSnapshot per farm in the last 7 days. Farms without a
+ * snapshot default to LOW (calm green dot) which is the same
+ * convention NGOMap uses internally.
+ */
+const MAX_FARMS = 500;
+
+router.get('/farms',
+  authorize(...NGO_ROLES),
+  asyncHandler(async (req, res) => {
+    const orgId = _requireOrgId(req, res);
+    if (!orgId) return;
+
+    // 1) Pull farms with finite coordinates, narrowed to
+    //    org. Select ONLY the projection the map needs;
+    //    PII columns (phone, fullName, nationalId, email)
+    //    never leave the DB.
+    const farmRows = await prisma.farmer.findMany({
+      where: {
+        organizationId: orgId,
+        latitude:  { not: null },
+        longitude: { not: null },
+      },
+      select: {
+        id:           true,
+        primaryCrop:  true,
+        latitude:     true,
+        longitude:    true,
+        countryCode:  true,
+        region:       true,
+        district:     true,
+      },
+      take: MAX_FARMS,
+    });
+
+    if (farmRows.length === 0) {
+      return res.json({ farms: [], serverTime: new Date().toISOString() });
+    }
+
+    // 2) Latest risk per farm in last 7 days. We keep this
+    //    cheap by selecting only (farmId, riskLevel,
+    //    createdAt) and resolving the max riskLevel per
+    //    farm in JS.
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const riskRows = await prisma.riskSnapshot.findMany({
+      where: {
+        orgId,
+        createdAt: { gte: since },
+        farmId: { in: farmRows.map((f) => f.id) },
+      },
+      select: { farmId: true, riskLevel: true, createdAt: true },
+    });
+    // Pick the highest tier per farm: HIGH > MEDIUM > LOW
+    const TIER = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+    const bestRisk = new Map();
+    for (const r of riskRows) {
+      const cur = bestRisk.get(r.farmId);
+      const lvl = String(r.riskLevel || 'LOW').toUpperCase();
+      if (!cur || (TIER[lvl] || 0) > (TIER[cur] || 0)) {
+        bestRisk.set(r.farmId, lvl);
+      }
+    }
+
+    const farms = farmRows.map((f) => ({
+      id:        f.id,
+      farmerId:  f.id,                    // farm == farmer in current model
+      crop:      f.primaryCrop || '',
+      riskLevel: bestRisk.get(f.id) || 'LOW',
+      location: {
+        lat:      Number(f.latitude),
+        lng:      Number(f.longitude),
+        country:  f.countryCode || '',
+        region:   f.region   || '',
+        district: f.district || '',
+      },
+    }));
+
+    res.json({
+      farms,
+      truncated:  farmRows.length === MAX_FARMS,
+      serverTime: new Date().toISOString(),
+    });
+  }),
+);
+
 export default router;

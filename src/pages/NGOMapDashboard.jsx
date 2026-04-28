@@ -32,12 +32,18 @@
  *   * tSafe friendly throughout.
  */
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { tSafe } from '../i18n/tSafe.js';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { detectClusters } from '../ngo/outbreakClusterEngine.js';
 import { getNGOAction } from '../ngo/actionRecommendations.js';
-import NGOMap from '../ngo/NGOMap.jsx';
+// Map: use the new direct-leaflet variant at src/components/NGOMap.jsx.
+// The older lazy-loaded src/ngo/NGOMap.jsx remains exported for
+// callers that prefer Suspense-based code-splitting; this dashboard
+// pays the leaflet chunk cost up-front because the map is the
+// primary surface.
+import NGOMap from '../components/NGOMap.jsx';
+import { getFarms } from '../api/ngoApi.js';
 import { hasGPS, getRegionKey } from '../location/geoUtils.js';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
@@ -120,21 +126,42 @@ function _regionTable({ farms, reports, perFarmRisks }) {
 }
 
 export default function NGOMapDashboard({
-  farms        = [],
+  farms        = null,         // null = auto-fetch via getFarms()
   reports      = [],
   perFarmRisks = null,
   inactiveFarms = 0,
 }) {
   useTranslation();   // subscribe to language change
 
+  // Auto-fetch the farm list via /api/ngo/farms when the
+  // caller didn't supply one. getFarms() is fail-safe — it
+  // returns [] on any error so a 404 (deployment lag, missing
+  // route on a downstream env) renders the map's calm
+  // "Map data unavailable" fallback instead of crashing.
+  // When the caller passes farms via prop (existing host /
+  // tests), we skip the network round-trip entirely.
+  const [fetchedFarms, setFetchedFarms] = useState(
+    Array.isArray(farms) ? farms : [],
+  );
+  useEffect(() => {
+    if (Array.isArray(farms)) return;
+    let alive = true;
+    getFarms()
+      .then((rows) => { if (alive) setFetchedFarms(rows || []); })
+      .catch(() => { /* getFarms already swallows; defensive */ });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const effectiveFarms = Array.isArray(farms) ? farms : fetchedFarms;
+
   const clusters = useMemo(
-    () => detectClusters({ farms, reports, risks: perFarmRisks }),
-    [farms, reports, perFarmRisks],
+    () => detectClusters({ farms: effectiveFarms, reports, risks: perFarmRisks }),
+    [effectiveFarms, reports, perFarmRisks],
   );
 
   const summary = useMemo(
-    () => _summarise({ farms, perFarmRisks }),
-    [farms, perFarmRisks],
+    () => _summarise({ farms: effectiveFarms, perFarmRisks }),
+    [effectiveFarms, perFarmRisks],
   );
 
   const activeClusterCount = useMemo(
@@ -149,8 +176,8 @@ export default function NGOMapDashboard({
   }), [summary.highPest, summary.highDrought, inactiveFarms]);
 
   const regionRows = useMemo(
-    () => _regionTable({ farms, reports, perFarmRisks }),
-    [farms, reports, perFarmRisks],
+    () => _regionTable({ farms: effectiveFarms, reports, perFarmRisks }),
+    [effectiveFarms, reports, perFarmRisks],
   );
 
   return (
@@ -192,15 +219,18 @@ export default function NGOMapDashboard({
           />
         </section>
 
-        {/* 2. Map */}
+        {/* 2. Map — direct leaflet via src/components/NGOMap.jsx.
+              Receives the auto-fetched (or prop-supplied) farms
+              + the in-memory clusters. The component handles its
+              own no-GPS fallback ("Map data unavailable...") so
+              the dashboard's other sections always render below. */}
         <section style={S.section} data-testid="ngo-map-section">
           <h2 style={S.h2}>
-            {tSafe('ngo.dashboard.mapTitle', 'Farm locations')}
+            {tSafe('ngo.dashboard.mapTitle', 'Risk Map')}
           </h2>
           <NGOMap
-            farms={farms}
+            farms={effectiveFarms}
             clusters={clusters}
-            height={420}
           />
         </section>
 
