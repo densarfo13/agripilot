@@ -50,6 +50,7 @@ import { ML_WARNING_TRANSLATIONS }            from './mlWarningTranslations.js';
 import { ACCOUNT_LOAD_TRANSLATIONS }          from './accountLoadTranslations.js';
 import { TODAY_ELITE_TRANSLATIONS }            from './todayElitTranslations.js';
 import { SIMPLE_MODE_TRANSLATIONS }            from './simpleModeTranslations.js';
+import { SIMPLE_UX_TRANSLATIONS }              from './simpleUxTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -111,6 +112,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     ACCOUNT_LOAD_TRANSLATIONS,
     TODAY_ELITE_TRANSLATIONS,
     SIMPLE_MODE_TRANSLATIONS,
+    SIMPLE_UX_TRANSLATIONS,
   ]);
 })();
 

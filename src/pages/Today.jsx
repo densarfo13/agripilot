@@ -59,14 +59,18 @@ import { computeFarmRisks } from '../outbreak/riskEngine.js';
 import LabelPrompt from '../components/LabelPrompt.jsx';
 import { usePostTaskLabelPrompt } from '../components/ai/usePostTaskLabelPrompt.js';
 // UI bits
-import MainTaskCard from '../components/MainTaskCard.jsx';
-import TaskActions  from '../components/TaskActions.jsx';
-import RiskBadge    from '../components/RiskBadge.jsx';
-import ProgressBar  from '../components/ProgressBar.jsx';
-import ScanCropCta  from '../components/ScanCropCta.jsx';
+import MainTaskCard      from '../components/MainTaskCard.jsx';
+import SimpleTodayCard   from '../components/SimpleTodayCard.jsx';
+import TaskActions       from '../components/TaskActions.jsx';
+import RiskBadge         from '../components/RiskBadge.jsx';
+import ProgressBar       from '../components/ProgressBar.jsx';
+import ScanCropCta       from '../components/ScanCropCta.jsx';
 import RecoveryCard, { RECOVERY_TASK_ID } from '../components/RecoveryCard.jsx';
 import { detectMissedDay } from '../utils/missedDay.js';
 import { safeParse } from '../utils/safeParse.js';
+// No-Reading-Required voice scripts + per-day playback ledger
+import { getTaskVoiceScript, getPraiseVoiceScript } from '../voice/voiceScripts.js';
+import { getLanguage } from '../i18n/index.js';
 
 function _greetingKey() {
   const h = new Date().getHours();
@@ -152,31 +156,61 @@ export default function Today() {
   const [success, setSuccess] = useState(false);
   const simple                = isSimpleMode();
 
-  // Auto-play voice on first paint when Simple Mode is on. Wraps
-  // in a one-shot ref guard so a re-render mid-speech doesn't
-  // restart the utterance. Stop speech on unmount so navigating
-  // to /settings doesn't trail the task voice into the next page.
+  // Once-per-day auto-play ledger (per spec § 7). The localStorage
+  // key embeds today's date so the gate auto-resets at midnight
+  // local time without any cron / cleanup. A re-render mid-day
+  // sees the ledger is already stamped and the voice stays silent;
+  // the next calendar day's first paint plays again. Combined
+  // with the in-memory ref so a single mount can never double-fire.
   const autoSpokenRef = useRef(false);
   useEffect(() => {
     if (!simple) return undefined;
     if (autoSpokenRef.current) return undefined;
     if (missed.needsRecovery) return undefined;
+
+    // Check the per-day ledger BEFORE setting the in-memory ref so
+    // a tab-reload on a day that already fired stays silent.
+    const dateKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const ledgerKey = `farroway_voice_played_${dateKey}`;
+    let alreadyPlayed = false;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        alreadyPlayed = localStorage.getItem(ledgerKey) === '1';
+      }
+    } catch { /* lockdown — fall through to play */ }
+    if (alreadyPlayed) {
+      autoSpokenRef.current = true;
+      return undefined;
+    }
+
     autoSpokenRef.current = true;
+    const lang = (() => { try { return getLanguage() || 'en'; } catch { return 'en'; } })();
+    const script = getTaskVoiceScript(taskId, lang);
+    try { speak(script); } catch { /* swallow */ }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(ledgerKey, '1');
+      }
+    } catch { /* lockdown — accept that next reload may re-play */ }
+
+    return () => { try { stopSpeech(); } catch { /* swallow */ } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simple, missed.needsRecovery, taskId]);
+
+  function handleListen() {
+    // In Simple Mode the listen button speaks the SHORT script
+    // tuned for TTS cadence; in standard mode it speaks the
+    // visible title + timing pair so the spoken text matches
+    // what the farmer is reading.
+    const lang = (() => { try { return getLanguage() || 'en'; } catch { return 'en'; } })();
+    if (simple) {
+      const script = getTaskVoiceScript(taskId, lang);
+      try { speak(script); } catch { /* swallow */ }
+      return;
+    }
     const title  = tSafe(detail.titleKey,  detail.titleFb);
     const timing = tSafe(detail.timingKey, detail.timingFb);
     try { speak(`${title}. ${timing}`); } catch { /* swallow */ }
-    return () => { try { stopSpeech(); } catch { /* swallow */ } };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simple, missed.needsRecovery]);
-
-  function handleListen() {
-    // Speak the title + the timing line so a low-literacy
-    // farmer hears WHAT to do and WHEN. Concatenated with a
-    // breath pause so TTS engines don't run them together.
-    const title  = tSafe(detail.titleKey,  detail.titleFb);
-    const timing = tSafe(detail.timingKey, detail.timingFb);
-    const text   = `${title}. ${timing}`;
-    try { speak(text); } catch { /* swallow */ }
   }
 
   function handleDone() {
@@ -188,10 +222,15 @@ export default function Today() {
         setSuccess(true);
         setBusy(false);
       });
-    // Per-spec voice praise on Done. Wraps in try/catch so a
-    // browser without speechSynthesis (Safari mobile in some
-    // configs) doesn't crash the click handler.
-    const praise = tSafe('today.feedback.body', 'Good work. Progress updated.');
+    // Voice praise on Done. Simple Mode uses the short
+    // localised praise script ("Thank you. Good work."); standard
+    // mode reads the visible feedback line. Wraps in try/catch
+    // so a browser without speechSynthesis doesn't crash the
+    // click handler.
+    const lang = (() => { try { return getLanguage() || 'en'; } catch { return 'en'; } })();
+    const praise = simple
+      ? getPraiseVoiceScript(lang)
+      : tSafe('today.feedback.body', 'Good work. Progress updated.');
     try { speak(praise); } catch { /* swallow */ }
     // Open the post-task label prompt — it auto-closes in ~1.2s
     // after a selection so the farmer is back in flow quickly.
@@ -248,11 +287,32 @@ export default function Today() {
           </button>
         </header>
 
-        {/* 2 + 3. Recovery branch OR normal task + actions */}
+        {/* 2 + 3. Recovery branch OR Simple Mode card OR
+              standard task + actions. Mutually exclusive — never
+              renders both surfaces, never duplicates the task UI.
+              Order:
+                1. Recovery (missed-day) takes precedence
+                2. SimpleTodayCard when Simple Mode is on (its own
+                   Listen + Done buttons replace TaskActions)
+                3. Standard MainTaskCard + TaskActions otherwise
+        */}
         {missed.needsRecovery ? (
           <RecoveryCard
             missedDays={missed.missedDays}
             onDone={handleRecoveryDone}
+          />
+        ) : simple ? (
+          <SimpleTodayCard
+            taskId={taskId}
+            taskText={tSafe(detail.titleKey, detail.titleFb)}
+            onListen={handleListen}
+            onDone={handleDone}
+            busy={busy}
+            riskKind={
+              risks.pest === 'HIGH' ? 'pest'
+              : risks.drought === 'HIGH' ? 'drought'
+              : null
+            }
           />
         ) : (
           <>
@@ -261,7 +321,7 @@ export default function Today() {
               instruction ={tSafe(detail.instructionKey, detail.instructionFb)}
               timing      ={tSafe(detail.timingKey,      detail.timingFb)}
               risk        ={tSafe(detail.riskKey,        detail.riskFb)}
-              simple      ={simple}
+              simple      ={false}
             />
             <TaskActions
               onListen={handleListen}
