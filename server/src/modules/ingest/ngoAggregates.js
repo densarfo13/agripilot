@@ -257,22 +257,48 @@ export async function buildRegionTable({ prisma } = {}) {
     if (label === 'drought') rows.get(key).droughtReports7d += 1;
   }
 
-  // Step 4: highRisk per region (last 7d, level=HIGH)
+  // Step 4: highRisk per region (last 7d, level=HIGH).
+  //
+  // Tightened join: when the snapshot carries `country`, match
+  // exactly on (country, region) so a region name colliding
+  // across countries doesn't double-count. When the snapshot's
+  // country is missing (legacy rows), fall back to a region-
+  // only match — but dedupe against farmId so a farm with
+  // both a precise + a legacy snapshot is counted once.
+  //
+  // groupBy adds `country` to the by-key so a farm with both
+  // pest HIGH and drought HIGH still produces ONE row (per
+  // (farmId, region, country)).
   const riskRows = await prisma.riskSnapshot.groupBy({
-    by: ['farmId', 'region'],
+    by: ['farmId', 'region', 'country'],
     where: {
       createdAt: { gte: since },
       riskLevel: 'HIGH',
     },
   });
+  const exactByKey     = new Map();   // 'country|region' -> Set<farmId>
+  const fallbackRegion = new Map();   // 'region'         -> Set<farmId>
   for (const r of riskRows) {
     if (!r.region) continue;
-    // Region rows in the farms table live under (country, region)
-    // — we don't have country on the snapshot here, so we sum
-    // into all matching region keys.
-    for (const [key, row] of rows) {
-      if (row.region === r.region) row.highRisk += 1;
+    if (r.country) {
+      const key = `${r.country}|${r.region}`;
+      if (!exactByKey.has(key)) exactByKey.set(key, new Set());
+      exactByKey.get(key).add(r.farmId);
+    } else {
+      if (!fallbackRegion.has(r.region)) fallbackRegion.set(r.region, new Set());
+      fallbackRegion.get(r.region).add(r.farmId);
     }
+  }
+  for (const [key, row] of rows) {
+    const exact = exactByKey.get(key);
+    let count = exact ? exact.size : 0;
+    const fallback = fallbackRegion.get(row.region);
+    if (fallback) {
+      for (const farmId of fallback) {
+        if (!exact || !exact.has(farmId)) count += 1;
+      }
+    }
+    row.highRisk = count;
   }
 
   // Step 5: per-row recommended action

@@ -138,34 +138,92 @@ export async function ingestEvents({
   let duplicates = 0;
   let rejected   = 0;
 
+  // ── Phase 1: validate every row (in-process) ──────────────
+  // Drops malformed entries before any DB work so a bad row
+  // can't fail the whole batch.
+  const valid = [];
   for (const raw of events) {
     const normalised = validateEvent(raw, appVersion);
-    if (!normalised) { rejected += 1; continue; }
+    if (!normalised) rejected += 1;
+    else valid.push(normalised);
+  }
+  if (valid.length === 0) {
+    return { accepted, duplicates, rejected };
+  }
+
+  // ── Phase 2: prefetch existing ids in ONE query ───────────
+  // Reduces N findUnique roundtrips to a single SELECT IN.
+  // The N can never exceed MAX_BATCH_SIZE (200) so the
+  // parameter list stays well under Postgres's 32k limit.
+  // Matched rows are counted as duplicates and dropped from
+  // the insert set.
+  let existingIds = new Set();
+  let prefetchOk = true;
+  try {
+    const ids = valid.map((v) => v.id);
+    const found = await prismaClient.clientEvent.findMany({
+      where:  { id: { in: ids } },
+      select: { id: true },
+    });
+    existingIds = new Set(found.map((r) => r.id));
+  } catch (err) {
+    prefetchOk = false;
     try {
-      // Prisma upsert with empty `update` = ON CONFLICT DO
-      // NOTHING. Returns the existing row when the id is
-      // already in place; we count those as duplicates so the
-      // client can advance its synced cursor without thinking
-      // the batch was lost.
-      const existing = await prismaClient.clientEvent.findUnique({
-        where: { id: normalised.id },
-        select: { id: true },
-      });
-      if (existing) { duplicates += 1; continue; }
-      await prismaClient.clientEvent.create({ data: normalised });
-      accepted += 1;
-    } catch (err) {
-      // Race: a concurrent batch wrote the same id between our
-      // findUnique and create. Treat as duplicate.
-      if (err && err.code === 'P2002') {
-        duplicates += 1;
-        continue;
-      }
-      rejected += 1;
+      logger.warn('[ingest] prefetch failed; per-row fallback:',
+        err && err.message ? String(err.message).slice(0, 200) : 'unknown');
+    } catch { /* swallow */ }
+  }
+  if (prefetchOk) duplicates += existingIds.size;
+  const toInsert = prefetchOk
+    ? valid.filter((v) => !existingIds.has(v.id))
+    : valid;
+
+  if (toInsert.length === 0) {
+    return { accepted, duplicates, rejected };
+  }
+
+  // ── Phase 3: bulk insert via createMany ───────────────────
+  // skipDuplicates handles the race: if a concurrent batch
+  // wrote one of our ids between the prefetch and this call,
+  // Prisma silently drops it instead of throwing P2002. The
+  // returned `count` tells us exactly how many landed; the
+  // shortfall is folded into duplicates so the response
+  // counts stay consistent.
+  try {
+    const result = await prismaClient.clientEvent.createMany({
+      data:           toInsert,
+      skipDuplicates: true,
+    });
+    const inserted = Number(result && result.count) || 0;
+    accepted += inserted;
+    if (inserted < toInsert.length) {
+      duplicates += (toInsert.length - inserted);
+    }
+  } catch (err) {
+    // createMany failed entirely (e.g. one row's payload too
+    // large). Fall back to per-row writes so the rest of the
+    // batch still lands. The fallback path also catches the
+    // P2002 race (covered when the prefetch failed too).
+    try {
+      logger.warn('[ingest] createMany failed; per-row fallback:',
+        err && err.message ? String(err.message).slice(0, 200) : 'unknown');
+    } catch { /* swallow */ }
+    for (const row of toInsert) {
       try {
-        logger.warn('[ingest] row rejected:', err && err.message
-          ? String(err.message).slice(0, 200) : 'unknown');
-      } catch { /* swallow */ }
+        await prismaClient.clientEvent.create({ data: row });
+        accepted += 1;
+      } catch (innerErr) {
+        if (innerErr && innerErr.code === 'P2002') {
+          duplicates += 1;
+        } else {
+          rejected += 1;
+          try {
+            logger.warn('[ingest] row rejected:',
+              innerErr && innerErr.message
+                ? String(innerErr.message).slice(0, 200) : 'unknown');
+          } catch { /* swallow */ }
+        }
+      }
     }
   }
 
