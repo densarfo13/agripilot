@@ -22,6 +22,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
   email:        true,
   sms:          false,
   reminderTime: '07:00',
+  // ─── Simple Mode (low-literacy) ───────────────────────────
+  // When true, the Today screen condenses to icon-first layout,
+  // auto-plays the task voice on load, and the LabelPrompt
+  // renders icon-only options. Off by default — the farmer
+  // opts in via the Settings toggle.
+  simpleMode:   false,
 });
 
 function safeParse(raw, fallback) {
@@ -89,3 +95,16 @@ export function updateSetting(key, value) {
 
 export const SETTINGS_STORAGE_KEY = KEY;
 export const SETTINGS_CHANGE_EVENT = 'farroway:settingsChanged';
+
+/**
+ * isSimpleMode — synchronous probe used by the Today screen,
+ * LabelPrompt, and RiskBadge to decide whether to auto-play
+ * voice + collapse to icon-first layout. Wraps the read in
+ * try/catch so a corrupt settings entry returns false (the
+ * safer default — full UI, no surprise auto-speech).
+ */
+export function isSimpleMode() {
+  try {
+    return loadSettings().simpleMode === true;
+  } catch { return false; }
+}

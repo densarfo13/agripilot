@@ -93,6 +93,23 @@ export default function Settings() {
         </button>
         <h1 style={S.h1}>{tSafe(t, 'settings.title', 'Settings')}</h1>
 
+        {/* ─── 0. Accessibility (Simple Mode) ─────────────────
+            Sits at the TOP of the page so a low-literacy farmer
+            who needs it most finds it before scrolling through
+            notification toggles. Single switch — no sub-options. */}
+        <section style={S.card} data-testid="settings-accessibility">
+          <h2 style={S.h2}>{tSafe(t, 'settings.accessibility', 'Accessibility')}</h2>
+          <SettingToggle
+            label={tSafe(t, 'settings.simpleMode', 'Simple Mode')}
+            helper={tSafe(t, 'settings.simpleModeHelper',
+              'Bigger icons, fewer words, voice plays automatically.')}
+            value={settings.simpleMode}
+            onChange={(v) => setValue('simpleMode', v)}
+            testId="setting-simple-mode"
+            isLast
+          />
+        </section>
+
         {/* ─── A. Notifications ─────────────────────────────── */}
         <section style={S.card} data-testid="settings-notifications">
           <h2 style={S.h2}>{tSafe(t, 'settings.notifications', 'Notifications')}</h2>

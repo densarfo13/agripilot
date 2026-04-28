@@ -109,6 +109,10 @@ export default function LabelPrompt({
   taskType  = null,
   onClose   = null,
   onSaved   = null,
+  // Simple Mode (low-literacy): collapses options to icon-only
+  // and speaks the question on open. Caller (Today.jsx) reads
+  // isSimpleMode from settingsStore and passes it through.
+  simple    = false,
 }) {
   const [busy, setBusy]         = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -133,6 +137,18 @@ export default function LabelPrompt({
       setConfirmed(false);
     }
   }, [open]);
+
+  // Simple Mode: speak the question on open so a non-reading
+  // farmer hears the prompt without tapping anything. Wraps in
+  // try/catch so a browser without speechSynthesis silently
+  // shows the visual prompt (per the spec's fallback rule:
+  // "If voice fails -> show text").
+  useEffect(() => {
+    if (!open) return;
+    if (!simple) return;
+    const q = tSafe('labelPrompt.question', 'Did you see any problem?');
+    try { speak(q); } catch { /* swallow */ }
+  }, [open, simple]);
 
   if (!open) return null;
   if (!farmId) return null;
@@ -205,19 +221,40 @@ export default function LabelPrompt({
             </h2>
 
             <div style={S.grid}>
-              {CHOICES.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handlePick(c.id)}
-                  disabled={busy}
-                  style={{ ...S.choice, ...S[`choice_${c.tone}`], ...(busy ? S.choiceBusy : null) }}
-                  data-testid={`label-prompt-${c.id}`}
-                >
-                  <span style={S.choiceIcon} aria-hidden="true">{c.icon}</span>
-                  <span style={S.choiceLabel}>{tSafe(c.key, c.fb)}</span>
-                </button>
-              ))}
+              {CHOICES.map((c) => {
+                const label = tSafe(c.key, c.fb);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handlePick(c.id)}
+                    disabled={busy}
+                    style={{
+                      ...S.choice,
+                      ...S[`choice_${c.tone}`],
+                      ...(simple ? S.choiceSimple : null),
+                      ...(busy ? S.choiceBusy : null),
+                    }}
+                    // aria-label always carries the text so screen
+                    // readers + voice tests can announce the
+                    // option even when the visual label is hidden
+                    // in Simple Mode.
+                    aria-label={label}
+                    title={simple ? label : undefined}
+                    data-testid={`label-prompt-${c.id}`}
+                  >
+                    <span
+                      style={{ ...S.choiceIcon, ...(simple ? S.choiceIconSimple : null) }}
+                      aria-hidden="true"
+                    >
+                      {c.icon}
+                    </span>
+                    {!simple && (
+                      <span style={S.choiceLabel}>{label}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             <label style={{ ...S.photoBtn, ...(photoUrl ? S.photoBtnDone : null) }}>
@@ -319,6 +356,11 @@ const S = {
   choiceBusy: { opacity: 0.7, cursor: 'wait' },
   choiceIcon: { fontSize: '1.875rem', lineHeight: 1 },
   choiceLabel: { textAlign: 'center' },
+  // ── Simple Mode (low-literacy) overrides ──────────────────
+  // Bigger button + bigger icon, label text dropped from the
+  // visual surface so a non-reading farmer can pick by glyph.
+  choiceSimple: { minHeight: '88px', padding: '1rem' },
+  choiceIconSimple: { fontSize: '2.625rem' },
 
   photoBtn: {
     display: 'inline-flex',

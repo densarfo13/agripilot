@@ -35,7 +35,7 @@
  *     card ONCE, label prompt ONCE
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -45,7 +45,9 @@ import { generateDailyTask } from '../core/farroway/taskEngine.js';
 import { getTaskDetail } from '../core/farroway/taskDetails.js';
 import { markTaskDone } from '../core/farroway/progressStore.js';
 import { getCompletedCount } from '../core/farroway/progressStore.js';
-import { speak } from '../core/farroway/voice.js';
+import { speak, stopSpeech } from '../core/farroway/voice.js';
+// Simple Mode (low-literacy)
+import { isSimpleMode } from '../store/settingsStore.js';
 // Streak
 import { getStreak } from '../utils/streak.js';
 // Risk + outbreak
@@ -148,6 +150,24 @@ export default function Today() {
 
   const [busy, setBusy]       = useState(false);
   const [success, setSuccess] = useState(false);
+  const simple                = isSimpleMode();
+
+  // Auto-play voice on first paint when Simple Mode is on. Wraps
+  // in a one-shot ref guard so a re-render mid-speech doesn't
+  // restart the utterance. Stop speech on unmount so navigating
+  // to /settings doesn't trail the task voice into the next page.
+  const autoSpokenRef = useRef(false);
+  useEffect(() => {
+    if (!simple) return undefined;
+    if (autoSpokenRef.current) return undefined;
+    if (missed.needsRecovery) return undefined;
+    autoSpokenRef.current = true;
+    const title  = tSafe(detail.titleKey,  detail.titleFb);
+    const timing = tSafe(detail.timingKey, detail.timingFb);
+    try { speak(`${title}. ${timing}`); } catch { /* swallow */ }
+    return () => { try { stopSpeech(); } catch { /* swallow */ } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simple, missed.needsRecovery]);
 
   function handleListen() {
     // Speak the title + the timing line so a low-literacy
@@ -241,6 +261,7 @@ export default function Today() {
               instruction ={tSafe(detail.instructionKey, detail.instructionFb)}
               timing      ={tSafe(detail.timingKey,      detail.timingFb)}
               risk        ={tSafe(detail.riskKey,        detail.riskFb)}
+              simple      ={simple}
             />
             <TaskActions
               onListen={handleListen}
@@ -266,7 +287,7 @@ export default function Today() {
         )}
 
         {/* 5. Risk indicator (renders only when something is HIGH) */}
-        <RiskBadge pest={risks.pest} drought={risks.drought} />
+        <RiskBadge pest={risks.pest} drought={risks.drought} simple={simple} />
 
         {/* 6. Progress strip */}
         <ProgressBar streak={streak} tasksDone={tasksDone} />
@@ -282,6 +303,7 @@ export default function Today() {
         farmId={farmIdForPrompt}
         taskType={taskId}
         onClose={closePrompt}
+        simple={simple}
       />
     </main>
   );

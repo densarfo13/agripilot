@@ -49,6 +49,7 @@ import { WEEKLY_AND_NGO_ACTIONS_TRANSLATIONS } from './weeklyAndNgoActionsTransl
 import { ML_WARNING_TRANSLATIONS }            from './mlWarningTranslations.js';
 import { ACCOUNT_LOAD_TRANSLATIONS }          from './accountLoadTranslations.js';
 import { TODAY_ELITE_TRANSLATIONS }            from './todayElitTranslations.js';
+import { SIMPLE_MODE_TRANSLATIONS }            from './simpleModeTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -109,6 +110,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     ML_WARNING_TRANSLATIONS,
     ACCOUNT_LOAD_TRANSLATIONS,
     TODAY_ELITE_TRANSLATIONS,
+    SIMPLE_MODE_TRANSLATIONS,
   ]);
 })();
 

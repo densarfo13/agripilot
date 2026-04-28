@@ -35,16 +35,42 @@ export default function MainTaskCard({
   timing      = '',
   risk        = '',
   icon        = '\uD83C\uDF31',     // sprout
+  // Simple Mode (low-literacy): collapses to icon-first layout
+  // — bigger task icon, only the title rendered, instruction +
+  // timing + risk dropped from the visual surface (they're still
+  // spoken via the auto-play voice in Today.jsx). The voice is
+  // the canonical channel in Simple Mode; the visible card is
+  // an iconographic anchor, not a paragraph.
+  simple      = false,
   // Back-compat: old single-string contract still accepted
   task        = '',
   reason      = '',
 }) {
-  // Resolve old-shape callers onto the new field set so the
-  // render path stays single. Old `task` becomes the title;
-  // old `reason` becomes the instruction line.
   const resolvedTitle       = title || task
     || tSafe('today.fallbackTask', 'Check your farm today');
   const resolvedInstruction = instruction || reason || '';
+
+  // Simple Mode render path — large icon, large title, no
+  // labelled rows. The Listen button below the card stays the
+  // re-play affordance.
+  if (simple) {
+    return (
+      <section
+        style={{ ...S.card, ...S.cardSimple }}
+        data-testid="main-task-card"
+      >
+        <div style={S.simpleIconWrap} aria-hidden="true">
+          <span style={S.simpleIcon}>{icon}</span>
+        </div>
+        <h1
+          style={{ ...S.title, ...S.titleSimple }}
+          data-testid="main-task-title"
+        >
+          {resolvedTitle}
+        </h1>
+      </section>
+    );
+  }
 
   return (
     <section style={S.card} data-testid="main-task-card">
@@ -187,5 +213,30 @@ const S = {
     lineHeight: 1.45,
     overflowWrap: 'break-word',
     wordBreak: 'break-word',
+  },
+
+  // ── Simple Mode (low-literacy) overrides ──────────────────
+  cardSimple: {
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: '1rem',
+    padding: '1.5rem 1rem 1.75rem',
+  },
+  simpleIconWrap: {
+    width: '5rem',
+    height: '5rem',
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.10)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  simpleIcon: {
+    fontSize: '3rem',
+    lineHeight: 1,
+  },
+  titleSimple: {
+    fontSize: '1.625rem',
+    textAlign: 'center',
   },
 };
