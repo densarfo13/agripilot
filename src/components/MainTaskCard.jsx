@@ -29,14 +29,20 @@ import React from 'react';
 import { tSafe } from '../i18n/tSafe.js';
 
 export default function MainTaskCard({
-  // New 4-field shape
+  // Habit-forming v2 shape: title + urgency + timing + risk
   title       = '',
-  instruction = '',
+  urgency     = '',                  // short chip text e.g. "Urgent today"
+  urgencyLevel = 'today',            // 'urgent' | 'today' | 'thisWeek'
   timing      = '',
   risk        = '',
   icon        = '\uD83C\uDF31',     // sprout
+  // Legacy v1 instruction line — still accepted for back-compat.
+  // The v2 card prefers `urgency` over `instruction`; if BOTH
+  // are passed, urgency wins. Callers that haven't migrated
+  // yet still see their instruction text.
+  instruction = '',
   // Simple Mode (low-literacy): collapses to icon-first layout
-  // — bigger task icon, only the title rendered, instruction +
+  // — bigger task icon, only the title rendered, urgency +
   // timing + risk dropped from the visual surface (they're still
   // spoken via the auto-play voice in Today.jsx). The voice is
   // the canonical channel in Simple Mode; the visible card is
@@ -72,6 +78,16 @@ export default function MainTaskCard({
     );
   }
 
+  // v2 chooses urgency over instruction. The legacy instruction
+  // row only renders when the caller is on the v1 contract
+  // (passing `instruction` but NOT `urgency`).
+  const showUrgency    = !!urgency;
+  const showLegacyInstr = !showUrgency && !!resolvedInstruction;
+  const urgencyToneStyle =
+      urgencyLevel === 'urgent'   ? S.urgencyChipUrgent
+    : urgencyLevel === 'thisWeek' ? S.urgencyChipMild
+    : S.urgencyChipDefault;
+
   return (
     <section style={S.card} data-testid="main-task-card">
       <div style={S.kickerRow}>
@@ -79,13 +95,21 @@ export default function MainTaskCard({
         <span style={S.kicker}>
           {tSafe('today.todaysTask', 'Today\u2019s task')}
         </span>
+        {showUrgency && (
+          <span
+            style={{ ...S.urgencyChip, ...urgencyToneStyle }}
+            data-testid="main-task-urgency"
+          >
+            {urgency}
+          </span>
+        )}
       </div>
 
       <h1 style={S.title} data-testid="main-task-title">
         {resolvedTitle}
       </h1>
 
-      {resolvedInstruction && (
+      {showLegacyInstr && (
         <Row
           icon={'\uD83D\uDCD0'}                 /* triangular ruler */
           label={tSafe('today.task.instruction.label', 'How')}
@@ -213,6 +237,41 @@ const S = {
     lineHeight: 1.45,
     overflowWrap: 'break-word',
     wordBreak: 'break-word',
+  },
+
+  // ── Urgency chip (v2 habit-forming flow) ──────────────────
+  // Sits inline with the kicker row so the card stays tight on
+  // phone width. Tone reflects urgencyLevel: urgent = amber,
+  // today = green, thisWeek = neutral.
+  urgencyChip: {
+    marginLeft: 'auto',
+    fontSize: '0.6875rem',
+    fontWeight: 800,
+    padding: '0.1875rem 0.5rem',
+    borderRadius: '999px',
+    border: '1px solid',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+    maxWidth: '8rem',
+    flexShrink: 0,
+  },
+  urgencyChipUrgent: {
+    color: '#FCD34D',
+    background: 'rgba(245,158,11,0.16)',
+    borderColor: 'rgba(245,158,11,0.45)',
+  },
+  urgencyChipDefault: {
+    color: '#86EFAC',
+    background: 'rgba(34,197,94,0.16)',
+    borderColor: 'rgba(34,197,94,0.45)',
+  },
+  urgencyChipMild: {
+    color: 'rgba(255,255,255,0.85)',
+    background: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.18)',
   },
 
   // ── Simple Mode (low-literacy) overrides ──────────────────

@@ -339,11 +339,12 @@ export default function Today() {
         ) : (
           <>
             <MainTaskCard
-              title       ={tSafe(detail.titleKey,       detail.titleFb)}
-              instruction ={tSafe(detail.instructionKey, detail.instructionFb)}
-              timing      ={tSafe(detail.timingKey,      detail.timingFb)}
-              risk        ={tSafe(detail.riskKey,        detail.riskFb)}
-              simple      ={false}
+              title        ={tSafe(detail.titleKey,    detail.titleFb)}
+              urgency      ={tSafe(detail.urgencyKey,  detail.urgencyFb)}
+              urgencyLevel ={detail.urgencyLevel}
+              timing       ={tSafe(detail.timingKey,   detail.timingFb)}
+              risk         ={tSafe(detail.riskKey,     detail.riskFb)}
+              simple       ={false}
             />
             <TaskActions
               onListen={handleListen}
@@ -473,11 +474,20 @@ const S = {
     fontSize: '0.9375rem',
     fontWeight: 700,
     overflowWrap: 'break-word',
+    // v2 reward animation: gentle scale-in + fade so the
+    // farmer's eye lands on the banner without it feeling
+    // jarring. Reuses the existing farroway-scale-in keyframe
+    // declared in src/index.css.
+    animation: 'farroway-scale-in 280ms ease-out',
+    willChange: 'transform, opacity',
   },
   feedbackIcon: {
     fontSize: '1rem',
     fontWeight: 800,
     flexShrink: 0,
+    // Subtle pulse on the check icon — calm, not distracting.
+    // Two cycles is enough to draw the eye then settle.
+    animation: 'farroway-pulse 700ms ease-in-out 2',
   },
   feedbackText: {
     flex: 1,

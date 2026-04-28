@@ -34,6 +34,10 @@ export const TODAY_ELITE_TRANSLATIONS = Object.freeze({
     'today.doneNow':                 'Done now',
     'today.feedback.body':           'Good work. Progress updated.',
     'today.scan.cta':                'See something wrong? Scan your crop',
+    // Urgency chip (habit-forming v2)
+    'today.urgency.urgent':          'Urgent today',
+    'today.urgency.today':           'Today',
+    'today.urgency.thisWeek':        'This week',
 
     // Progress
     'today.progress.tasksDoneToday':     '{count} tasks done today',
@@ -87,6 +91,9 @@ export const TODAY_ELITE_TRANSLATIONS = Object.freeze({
     'today.doneNow':                 'Termin\u00E9',
     'today.feedback.body':           'Bon travail. Progression mise \u00E0 jour.',
     'today.scan.cta':                'Vous voyez un probl\u00E8me\u00A0? Scannez votre culture',
+    'today.urgency.urgent':          'Urgent aujourd\u2019hui',
+    'today.urgency.today':           'Aujourd\u2019hui',
+    'today.urgency.thisWeek':        'Cette semaine',
 
     'today.progress.tasksDoneToday':     '{count} t\u00E2ches faites aujourd\u2019hui',
     'today.progress.tasksDoneSingular':  '1 t\u00E2che faite aujourd\u2019hui',
@@ -133,6 +140,9 @@ export const TODAY_ELITE_TRANSLATIONS = Object.freeze({
     'today.doneNow':                 'Imekamilika',
     'today.feedback.body':           'Kazi nzuri. Maendeleo yamesasishwa.',
     'today.scan.cta':                'Umeona tatizo? Skani mazao yako',
+    'today.urgency.urgent':          'Haraka leo',
+    'today.urgency.today':           'Leo',
+    'today.urgency.thisWeek':        'Wiki hii',
 
     'today.progress.tasksDoneToday':     'Kazi {count} zimekamilika leo',
     'today.progress.tasksDoneSingular':  'Kazi 1 imekamilika leo',
@@ -179,6 +189,9 @@ export const TODAY_ELITE_TRANSLATIONS = Object.freeze({
     'today.doneNow':                 'An kammala',
     'today.feedback.body':           'Aiki nagari. An sabunta ci gaba.',
     'today.scan.cta':                'Ka ga matsala? Duba amfanin gonarka',
+    'today.urgency.urgent':          'Gaggawa yau',
+    'today.urgency.today':           'Yau',
+    'today.urgency.thisWeek':        'Wannan mako',
 
     'today.progress.tasksDoneToday':     'Ayyuka {count} an gama yau',
     'today.progress.tasksDoneSingular':  'Aiki 1 an gama yau',
@@ -225,6 +238,9 @@ export const TODAY_ELITE_TRANSLATIONS = Object.freeze({
     'today.doneNow':                 'Aw\u02BDie',
     'today.feedback.body':           'Adwuma pa. Anidaso\u025B nso.',
     'today.scan.cta':                'Wo h\u02BC asɛm? Hw\u025B w\u02BCafoa',
+    'today.urgency.urgent':          'Ntɛm nn\u025B',
+    'today.urgency.today':           'Nn\u025B',
+    'today.urgency.thisWeek':        'Nnawɔtwe yi',
 
     'today.progress.tasksDoneToday':     'Adwuma {count} aw\u02BDie nn\u025B',
     'today.progress.tasksDoneSingular':  'Adwuma 1 aw\u02BDie nn\u025B',
@@ -271,6 +287,9 @@ export const TODAY_ELITE_TRANSLATIONS = Object.freeze({
     'today.doneNow':                 'अभी हो गया',
     'today.feedback.body':           'अच्छा काम। प्रगति अपडेट हो गई।',
     'today.scan.cta':                'कुछ गलत दिख रहा है? अपनी फसल स्कैन करें',
+    'today.urgency.urgent':          'आज ज़रूरी',
+    'today.urgency.today':           'आज',
+    'today.urgency.thisWeek':        'इस सप्ताह',
 
     'today.progress.tasksDoneToday':     'आज {count} काम पूरे',
     'today.progress.tasksDoneSingular':  'आज 1 काम पूरा',
