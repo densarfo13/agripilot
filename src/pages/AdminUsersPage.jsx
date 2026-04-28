@@ -230,9 +230,14 @@ export default function AdminUsersPage() {
           </div>
         )}
         {actionError && (
-          <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>{actionError}</span>
-            <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={() => load()}>Try again</button>
+          <div style={{ marginBottom: '1rem' }}>
+            <AdminNotice
+              type="error"
+              title="That action did not complete"
+              message={actionError}
+              onRetry={() => load()}
+              testId="admin-users-action-error"
+            />
           </div>
         )}
         {loading ? <div className="loading">{t('admin.loading')}</div> : (

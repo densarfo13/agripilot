@@ -345,8 +345,19 @@ export default function SecurityRequestsPage() {
               <button className="btn btn-outline btn-sm" onClick={() => setModal(null)}>✕</button>
             </div>
             <div className="modal-body">
+              {/* Inline modal action error — kept compact (small
+                  margin) but rendered via AdminNotice so the
+                  banner colour + iconography match the rest of
+                  the v3 admin surfaces. */}
               {actionError && (
-                <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{actionError}</div>
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <AdminNotice
+                    type="error"
+                    title="Could not complete that action"
+                    message={actionError}
+                    testId="security-modal-action-error"
+                  />
+                </div>
               )}
               <div style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                 <span style={{ fontWeight: 600 }}>{TYPE_LABELS[modal.req.requestType]}</span>

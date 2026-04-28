@@ -6,8 +6,10 @@
   "scripts": {
     "test": "cd server && npm test",
     "dev": "vite",
+    "prebuild": "node scripts/build-icons.mjs",
     "build": "vite build && cd server && npx prisma generate && npx tsc -p intelligence/tsconfig.json",
     "postbuild": "node scripts/bake-sw-version.mjs",
+    "build:icons": "node scripts/build-icons.mjs",
     "build:intelligence": "cd server && npx tsc -p intelligence/tsconfig.json",
     "start": "node scripts/prisma-deploy-with-baseline.mjs && cd server && node scripts/init-admin.mjs && node src/server.js",
     "postinstall": "[ -d server ] && cd server && npm install || true",

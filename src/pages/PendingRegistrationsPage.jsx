@@ -4,34 +4,47 @@ import { useAuthStore } from '../store/authStore.js';
 import { formatLandSize } from '../utils/landSize.js';
 import EmptyState from '../components/EmptyState.jsx';
 import AdminNotice from '../components/admin/AdminNotice.jsx';
-import { classifyAdminError } from '../utils/adminErrors.js';
+import useAdminData from '../hooks/useAdminData.js';
 
 export default function PendingRegistrationsPage() {
   const currentUser = useAuthStore((s) => s.user);
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
   const [actionTarget, setActionTarget] = useState(null);
   const [officers, setOfficers] = useState([]);
-  // Full classified error so the AdminNotice can route the
-  // user to Sign-in / Verify-MFA / Retry rather than a flat
-  // "Failed to load" string.
-  const [loadError, setLoadError] = useState(null);
 
-  const load = () => {
-    setLoading(true);
-    setLoadError(null);
-    const endpoint = filter === 'pending' ? '/farmers/pending-registrations' : '/farmers/self-registered';
-    api.get(endpoint)
-      .then(r => setRegistrations(r.data))
-      .catch((err) => setLoadError(classifyAdminError(err)))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, [filter]);
+  // The defensive useAdminData hook owns the lifecycle:
+  //   * runs the fetcher on mount + on every filter change
+  //   * never throws into render — every error is caught
+  //     and surfaced via `loadError` (the message string)
+  //   * `_error` carries the FULL classified shape
+  //     (isAuthError / isMfaRequired) so AdminNotice can
+  //     render the right CTA (Sign-in / Verify-MFA / Retry).
+  //   * `retry` is a stable callback the AdminNotice button
+  //     wires to.
+  const {
+    data: registrations = [],
+    loading,
+    error: loadError,
+    isAuthError,
+    isMfaRequired,
+    retry: load,
+  } = useAdminData(
+    () => {
+      const endpoint = filter === 'pending'
+        ? '/farmers/pending-registrations'
+        : '/farmers/self-registered';
+      return api.get(endpoint).then((r) => r.data || []);
+    },
+    {
+      fallback: [],
+      deps:     [filter],
+    },
+  );
 
   useEffect(() => {
-    // Load field officers for assignment
+    // Load field officers for assignment. Failures here are
+    // non-fatal — the assignment dropdown just becomes empty
+    // and the rest of the page keeps working.
     api.get('/users').then(r => {
       setOfficers(r.data.filter(u => u.role === 'field_officer' && u.active));
     }).catch(() => {});
@@ -54,19 +67,15 @@ export default function PendingRegistrationsPage() {
         {loadError && (
           <div style={{ marginBottom: '1rem' }}>
             <AdminNotice
-              type={loadError.isAuthError ? 'auth'
-                  : loadError.isMfaRequired ? 'mfa'
+              type={isAuthError ? 'auth'
+                  : isMfaRequired ? 'mfa'
                   : 'error'}
               message={
-                loadError.isAuthError || loadError.isMfaRequired
+                isAuthError || isMfaRequired
                   ? undefined
                   : 'We could not load registrations. Your data is safe — try again in a moment.'
               }
-              onRetry={
-                loadError.isAuthError || loadError.isMfaRequired
-                  ? undefined
-                  : load
-              }
+              onRetry={isAuthError || isMfaRequired ? undefined : load}
               testId="registrations-load-error"
             />
           </div>
