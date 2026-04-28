@@ -119,13 +119,12 @@ export default class ErrorBoundary extends React.Component {
         <div style={S.card}>
           <BrandLogo variant="light" size="md" />
 
-          <h1 style={S.title}>Something went wrong.</h1>
+          <h1 style={S.title}>We hit a temporary issue.</h1>
           <p style={S.lead}>Your data is safe.</p>
 
           <p style={S.desc}>
-            We hit an unexpected error rendering this page.
-            You can reload to try again, or jump back to the
-            dashboard.
+            Something went wrong rendering this page. You can
+            reload to try again, or jump back to the dashboard.
           </p>
 
           {page && (

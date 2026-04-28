@@ -12,8 +12,10 @@ import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import ScoreBadge from '../components/farmer/ScoreBadge.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-import AdminNotice from '../components/admin/AdminNotice.jsx';
-import { classifyAdminError } from '../utils/adminErrors.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
+import { classifyAdminError, API_ERROR_TYPES } from '../utils/adminErrors.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { UNIT_OPTIONS, computeLandSizeFields, formatLandSize } from '../utils/landSize.js';
 import { useDraft } from '../utils/useDraft.js';
@@ -288,22 +290,20 @@ export default function FarmersPage() {
 
         {loadError && (
           <div style={{ marginBottom: '1rem' }}>
-            <AdminNotice
-              type={loadError.isAuthError ? 'auth'
-                  : loadError.isMfaRequired ? 'mfa'
-                  : 'error'}
-              message={
-                loadError.isAuthError || loadError.isMfaRequired
-                  ? undefined
-                  : 'We could not load the farmers list. Your data is safe — try again in a moment.'
-              }
-              onRetry={
-                loadError.isAuthError || loadError.isMfaRequired
-                  ? undefined
-                  : () => load()
-              }
-              testId="farmers-load-error"
-            />
+            {loadError.errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+              <SessionExpiredState testId="farmers-load-error" />
+            ) : loadError.errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+              <MfaRequiredState testId="farmers-load-error" />
+            ) : loadError.errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+              <NetworkErrorState onRetry={() => load()}
+                                 testId="farmers-load-error" />
+            ) : (
+              <ErrorState
+                message="We could not load the farmers list. Your data is safe — try again in a moment."
+                onRetry={() => load()}
+                testId="farmers-load-error"
+              />
+            )}
           </div>
         )}
         {loading ? <div className="loading">Loading...</div> : (

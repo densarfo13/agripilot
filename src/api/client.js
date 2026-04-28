@@ -162,9 +162,30 @@ api.interceptors.response.use(
         }
       }
 
-      // Refresh failed or was already attempted — session is truly invalid
+      // Refresh failed or was already attempted — session is truly invalid.
+      // Always clear auth store, but ONLY redirect when we're not already
+      // on a public auth route — otherwise a 401 from /me on the login
+      // page itself would loop the browser back to /login forever.
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      try {
+        const here = (typeof window !== 'undefined' && window.location)
+          ? String(window.location.pathname || '/')
+          : '/';
+        const PUBLIC_AUTH = [
+          '/login', '/register', '/forgot-password', '/reset-password',
+          '/verify-otp', '/welcome', '/landing', '/start',
+        ];
+        const onAuthPage = PUBLIC_AUTH.some(
+          (p) => here === p || here.startsWith(p + '/'),
+        );
+        if (!onAuthPage && typeof window !== 'undefined' && window.location) {
+          // Preserve where the user was so /login can return them after
+          // re-auth. Avoids the "I clicked into farmers, got bounced to
+          // login, then dumped on the dashboard" papercut.
+          const ret = `${here}${window.location.search || ''}`;
+          window.location.href = `/login?from=${encodeURIComponent(ret)}`;
+        }
+      } catch { /* never throw from a recovery handler */ }
       return Promise.reject(error);
     }
 

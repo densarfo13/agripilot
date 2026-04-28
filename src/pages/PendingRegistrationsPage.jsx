@@ -3,8 +3,10 @@ import api from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import { formatLandSize } from '../utils/landSize.js';
 import EmptyState from '../components/EmptyState.jsx';
-import AdminNotice from '../components/admin/AdminNotice.jsx';
-import useAdminData from '../hooks/useAdminData.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
+import useSafeData, { API_ERROR_TYPES } from '../hooks/useSafeData.js';
 
 export default function PendingRegistrationsPage() {
   const currentUser = useAuthStore((s) => s.user);
@@ -21,14 +23,17 @@ export default function PendingRegistrationsPage() {
   //     render the right CTA (Sign-in / Verify-MFA / Retry).
   //   * `retry` is a stable callback the AdminNotice button
   //     wires to.
+  // useSafeData owns the fetch lifecycle — never throws into
+  // render, classifies errors into errorType strings, and
+  // exposes a stable `retry`. The dep on `filter` reruns the
+  // fetcher whenever the user toggles Pending / All Self-Reg.
   const {
     data: registrations = [],
     loading,
-    error: loadError,
-    isAuthError,
-    isMfaRequired,
+    error,
+    errorType,
     retry: load,
-  } = useAdminData(
+  } = useSafeData(
     () => {
       const endpoint = filter === 'pending'
         ? '/farmers/pending-registrations'
@@ -36,8 +41,8 @@ export default function PendingRegistrationsPage() {
       return api.get(endpoint).then((r) => r.data || []);
     },
     {
-      fallback: [],
-      deps:     [filter],
+      fallbackData: [],
+      deps:         [filter],
     },
   );
 
@@ -64,20 +69,24 @@ export default function PendingRegistrationsPage() {
         </div>
       </div>
       <div className="page-body">
-        {loadError && (
+        {/* v3 spec error states — explicit components per
+            errorType so the user always gets the right CTA. */}
+        {error && (
           <div style={{ marginBottom: '1rem' }}>
-            <AdminNotice
-              type={isAuthError ? 'auth'
-                  : isMfaRequired ? 'mfa'
-                  : 'error'}
-              message={
-                isAuthError || isMfaRequired
-                  ? undefined
-                  : 'We could not load registrations. Your data is safe — try again in a moment.'
-              }
-              onRetry={isAuthError || isMfaRequired ? undefined : load}
-              testId="registrations-load-error"
-            />
+            {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+              <SessionExpiredState testId="registrations-load-error" />
+            ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+              <MfaRequiredState testId="registrations-load-error" />
+            ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+              <NetworkErrorState onRetry={load}
+                                 testId="registrations-load-error" />
+            ) : (
+              <ErrorState
+                message="We could not load registrations. Your data is safe — try again in a moment."
+                onRetry={load}
+                testId="registrations-load-error"
+              />
+            )}
           </div>
         )}
         {loading ? <div className="loading">Loading registrations...</div> : registrations.length === 0 ? (

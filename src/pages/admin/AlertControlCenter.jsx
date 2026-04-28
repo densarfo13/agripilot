@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAdminAlerts } from '../../hooks/useIntelligenceAdmin.js';
+import { ErrorState } from '../../components/admin/AdminState.jsx';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -99,9 +100,15 @@ export default function AlertControlCenter() {
       <p style={S.subtitle}>Manage, review, and suppress intelligence alerts.</p>
 
       {error && (
-        <div style={S.errorBanner}>
-          <span>Error: {error}</span>
-          <button style={{ ...S.btn, ...S.btnOutline }} onClick={() => refetch()}>Retry</button>
+        <div style={{ marginBottom: '1rem' }}>
+          {/* useAdminAlerts surfaces a flat string error; we show
+              the calm v3 ErrorState with retry so the rest of
+              the page (stats, filters, table) keeps rendering. */}
+          <ErrorState
+            message="We could not load the alerts list. Try again in a moment."
+            onRetry={() => refetch()}
+            testId="alerts-load-error"
+          />
         </div>
       )}
 

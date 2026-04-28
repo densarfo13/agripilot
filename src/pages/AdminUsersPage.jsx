@@ -5,7 +5,10 @@ import { INSTITUTIONAL_ROLES } from '../utils/roles.js';
 import EmptyState from '../components/EmptyState.jsx';
 import { useTranslation } from '../i18n/index.js';
 import AdminNotice from '../components/admin/AdminNotice.jsx';
-import { classifyAdminError } from '../utils/adminErrors.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
+import { classifyAdminError, API_ERROR_TYPES } from '../utils/adminErrors.js';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -211,22 +214,20 @@ export default function AdminUsersPage() {
 
         {loadError && (
           <div style={{ marginBottom: '1rem' }}>
-            <AdminNotice
-              type={loadError.isAuthError ? 'auth'
-                  : loadError.isMfaRequired ? 'mfa'
-                  : 'error'}
-              message={
-                loadError.isAuthError || loadError.isMfaRequired
-                  ? undefined
-                  : 'We could not load the users list. Try again in a moment.'
-              }
-              onRetry={
-                loadError.isAuthError || loadError.isMfaRequired
-                  ? undefined
-                  : () => load()
-              }
-              testId="admin-users-load-error"
-            />
+            {loadError.errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+              <SessionExpiredState testId="admin-users-load-error" />
+            ) : loadError.errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+              <MfaRequiredState testId="admin-users-load-error" />
+            ) : loadError.errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+              <NetworkErrorState onRetry={() => load()}
+                                 testId="admin-users-load-error" />
+            ) : (
+              <ErrorState
+                message="We could not load the users list. Try again in a moment."
+                onRetry={() => load()}
+                testId="admin-users-load-error"
+              />
+            )}
           </div>
         )}
         {actionError && (

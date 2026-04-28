@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/client.js';
 import EmptyState from '../components/EmptyState.jsx';
-import AdminNotice from '../components/admin/AdminNotice.jsx';
-import { classifyAdminError } from '../utils/adminErrors.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
+import { classifyAdminError, API_ERROR_TYPES } from '../utils/adminErrors.js';
 
 const TABS = ['Analytics', 'Export', 'Bulk Import', 'Activity'];
 
@@ -48,19 +50,20 @@ function AnalyticsTab() {
 
   if (loading) return <div className="loading">Loading analytics...</div>;
   if (error) {
+    if (error.errorType === API_ERROR_TYPES.SESSION_EXPIRED) {
+      return <SessionExpiredState testId="admin-ops-analytics-error" />;
+    }
+    if (error.errorType === API_ERROR_TYPES.MFA_REQUIRED) {
+      return <MfaRequiredState testId="admin-ops-analytics-error" />;
+    }
+    if (error.errorType === API_ERROR_TYPES.NETWORK_ERROR) {
+      return <NetworkErrorState onRetry={load}
+                                testId="admin-ops-analytics-error" />;
+    }
     return (
-      <AdminNotice
-        type={error.isAuthError ? 'auth'
-            : error.isMfaRequired ? 'mfa'
-            : 'error'}
-        message={
-          error.isAuthError || error.isMfaRequired
-            ? undefined
-            : 'We could not load the analytics summary. Your data is safe — try again in a moment.'
-        }
-        onRetry={
-          error.isAuthError || error.isMfaRequired ? undefined : load
-        }
+      <ErrorState
+        message="We could not load the analytics summary. Your data is safe — try again in a moment."
+        onRetry={load}
         testId="admin-ops-analytics-error"
       />
     );
@@ -322,19 +325,20 @@ function ActivityTab() {
 
   if (loading) return <div className="loading">Loading activity...</div>;
   if (error) {
+    if (error.errorType === API_ERROR_TYPES.SESSION_EXPIRED) {
+      return <SessionExpiredState testId="admin-ops-activity-error" />;
+    }
+    if (error.errorType === API_ERROR_TYPES.MFA_REQUIRED) {
+      return <MfaRequiredState testId="admin-ops-activity-error" />;
+    }
+    if (error.errorType === API_ERROR_TYPES.NETWORK_ERROR) {
+      return <NetworkErrorState onRetry={load}
+                                testId="admin-ops-activity-error" />;
+    }
     return (
-      <AdminNotice
-        type={error.isAuthError ? 'auth'
-            : error.isMfaRequired ? 'mfa'
-            : 'error'}
-        message={
-          error.isAuthError || error.isMfaRequired
-            ? undefined
-            : 'We could not load the activity log. Try again in a moment.'
-        }
-        onRetry={
-          error.isAuthError || error.isMfaRequired ? undefined : load
-        }
+      <ErrorState
+        message="We could not load the activity log. Try again in a moment."
+        onRetry={load}
         testId="admin-ops-activity-error"
       />
     );

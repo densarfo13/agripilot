@@ -2,7 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import api, { formatApiError } from '../api/client.js';
 import { useAuthStore } from '../store/authStore.js';
 import AdminNotice from '../components/admin/AdminNotice.jsx';
-import { classifyAdminError } from '../utils/adminErrors.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
+import { classifyAdminError, API_ERROR_TYPES } from '../utils/adminErrors.js';
 
 const TYPE_LABELS = {
   season_reopen:    'Season Reopen',
@@ -135,20 +138,20 @@ export default function SecurityRequestsPage() {
       <div className="page-body">
         {error && (
           <div style={{ marginBottom: '1rem' }}>
-            <AdminNotice
-              type={error.isAuthError ? 'auth'
-                  : error.isMfaRequired ? 'mfa'
-                  : 'error'}
-              message={
-                error.isAuthError || error.isMfaRequired
-                  ? undefined
-                  : 'We could not load security requests. Try again in a moment.'
-              }
-              onRetry={
-                error.isAuthError || error.isMfaRequired ? undefined : load
-              }
-              testId="security-requests-load-error"
-            />
+            {error.errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+              <SessionExpiredState testId="security-requests-load-error" />
+            ) : error.errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+              <MfaRequiredState testId="security-requests-load-error" />
+            ) : error.errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+              <NetworkErrorState onRetry={load}
+                                 testId="security-requests-load-error" />
+            ) : (
+              <ErrorState
+                message="We could not load security requests. Try again in a moment."
+                onRetry={load}
+                testId="security-requests-load-error"
+              />
+            )}
           </div>
         )}
 
