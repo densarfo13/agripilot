@@ -245,6 +245,23 @@ export default function AllTasksPage() {
         )}
       </div>
 
+      {/* Snippet ref: visual progress bar under the header.
+          Same data as the header count — just rendered as a
+          green fill over a navy track + a one-line
+          encouragement. Hidden when totalAll === 0. */}
+      {totalAll > 0 && (
+        <div style={S.progressBlock} data-testid="tasks-progress-block">
+          <div style={S.progressTrack} aria-hidden="true">
+            <div
+              style={{
+                ...S.progressFill,
+                width: `${Math.min(100, Math.round((totalDone / totalAll) * 100))}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && mode !== 'retrying' && (
         <div style={S.loadingWrap}>
@@ -340,9 +357,13 @@ export default function AllTasksPage() {
           {/* ═══ A. CURRENT TASK ═══ */}
           {currentTask && (
             <>
-              <div style={S.sectionLabel}>
-                <span style={S.sectionIcon}>{'\uD83C\uDFAF'}</span>
-                <span style={S.sectionText}>{t('tasks.currentTask')}</span>
+              {/* Visual restyle (snippet ref): replace the emoji+grey
+                  eyebrow with a small uppercase green "TODAY'S TASK"
+                  label. i18n key `tasks.currentTask` is unchanged. */}
+              <div style={S.sectionLabelToday}>
+                <span style={S.sectionTextToday}>
+                  {t('tasks.currentTask')}
+                </span>
               </div>
               <div style={S.currentCard}>
                 <button
@@ -372,6 +393,19 @@ export default function AllTasksPage() {
                       <span style={S.currentTiming}>{vmByTaskId[currentTask.id].timingText}</span>
                     )}
                   </div>
+                  {/* Snippet ref: small Listen button on the current
+                      card. Reads the task title aloud via the
+                      existing voiceEngine (3-tier fallback). The
+                      complete-circle on the left stays as the
+                      primary "act now" affordance — adding a
+                      redundant Act-Now button would conflict. */}
+                  <VoiceButton
+                    text={vmByTaskId[currentTask.id]?.title
+                       || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)
+                       || ''}
+                    size="sm"
+                    className="all-tasks-listen-btn"
+                  />
                 </div>
               </div>
             </>
@@ -380,9 +414,11 @@ export default function AllTasksPage() {
           {/* ═══ B. NEXT UP ═══ */}
           {nextUpTasks.length > 0 && (
             <>
-              <div style={S.sectionLabel}>
-                <span style={S.sectionIcon}>{'\uD83D\uDCCB'}</span>
-                <span style={S.sectionText}>{t('tasks.nextUp')}</span>
+              {/* Snippet ref: drop the clipboard emoji; keep the
+                  plain grey eyebrow. i18n key `tasks.nextUp`
+                  unchanged. */}
+              <div style={S.sectionLabelOther}>
+                <span style={S.sectionTextOther}>{t('tasks.nextUp')}</span>
               </div>
               {nextUpTasks.map((task) => (
                 <div key={task.id} style={S.compactRow}>
@@ -574,6 +610,47 @@ const S = {
   sectionLabel: { display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.75rem', marginBottom: '0.125rem' },
   sectionIcon: { fontSize: '0.875rem' },
   sectionText: { fontSize: '0.6875rem', fontWeight: 700, color: '#6F8299', textTransform: 'uppercase', letterSpacing: '0.04em' },
+  // Visual restyle (snippet ref): small green eyebrow above the
+  // current-task card so "TODAY'S TASK" reads at a glance.
+  sectionLabelToday: { marginTop: '0.75rem', marginBottom: '0.25rem' },
+  sectionTextToday: {
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    color: '#86EFAC',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  },
+  // Plain grey eyebrow for the "Other tasks" group — no emoji,
+  // no chevron, just a clean section header.
+  sectionLabelOther: { marginTop: '0.75rem', marginBottom: '0.25rem' },
+  sectionTextOther: {
+    fontSize: '0.7rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  // Progress bar block — same data as the header count, shown
+  // visually so the farmer feels momentum.
+  progressBlock: {
+    margin: '8px 0 12px',
+    padding: '10px 12px',
+    borderRadius: 10,
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    background: '#22C55E',
+    borderRadius: 999,
+    transition: 'width 240ms ease',
+  },
 
   // ─── Current task card (full size) ──────
   currentCard: {
