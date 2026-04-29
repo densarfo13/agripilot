@@ -26,13 +26,10 @@ import { tSafe } from '../i18n/tSafe.js';
 import { getCountryLabel } from '../config/countriesStates.js';
 import { getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_KEYS } from '../utils/cropStages.js';
-// Farm helpers — getFarmStatus returns the 3-state code
-// (on_track / needs_attention / setup_incomplete) the new
-// status section maps onto Good / Needs attention / Setup
-// incomplete per spec §3.
-import {
-  getFarmStatus, FARM_STATUS,
-} from '../lib/farm/farmFallbacks.js';
+// Farm helpers (kept available for any downstream surface that
+// wants the 3-state code). MyFarm itself no longer renders a
+// status pill — Today's Action card carries the only progress
+// indicator on this page.
 import QuickActionsCard from '../components/farm/QuickActionsCard.jsx';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import NextBestActionCard from '../components/farm/NextBestActionCard.jsx';
@@ -163,19 +160,11 @@ export default function MyFarmPage() {
   // lives in marketStore + fundingStore for any caller that
   // needs it.
 
-  // ─── Farm Status (per spec §3) ──────────────────────────
-  // Reuses existing getFarmStatus helper which returns the same
-  // 3-state code spec asks for: on_track / needs_attention /
-  // setup_incomplete. Mapped to: Good / Needs attention / Setup
-  // incomplete. Progress bar percentage is derived from the
-  // status code so the calm UX never "flashes" between numbers.
-  const status = getFarmStatus(farm, todayTasks, null);
-  const statusPct = status.code === FARM_STATUS.ON_TRACK ? 80
-                  : status.code === FARM_STATUS.NEEDS_ATTENTION ? 50
-                  : 25;
-  const statusTone = status.code === FARM_STATUS.ON_TRACK ? '#22C55E'
-                   : status.code === FARM_STATUS.NEEDS_ATTENTION ? '#F59E0B'
-                   : '#9FB3C8';
+  // Status pill / progress bar removed in spec polish — Today's
+  // Action card (NextBestActionCard) owns the only progress
+  // indicator on this page now. The page-level status helper is
+  // still imported for any downstream reuse but no longer fires
+  // here.
 
   // Per-row farm details — only render rows whose data is set.
   // Avoids "Unknown" strings; an unset field simply hides.
@@ -211,31 +200,27 @@ export default function MyFarmPage() {
           available. Reuse it instead of inlining. */}
       {farm && <NextBestActionCard farm={farm} />}
 
-      {/* ─── 3. Farm Status + Details (per spec §3-4) ───────
-          Single card combining the status pill + progress bar +
-          one-sentence summary AND the 4 detail rows. Replaces
-          the old Identity card + 4-tile grid + FarmHealthCard
-          stack — same data, much less visual noise. */}
+      {/* ─── 3. My Farm Details (per spec §2 polish) ────────
+          Plain detail list (Crop / Location / Farm size / Stage)
+          + Edit button. Status pill + progress bar removed —
+          status now lives ONLY inside Today's Action card per
+          spec ("no duplicate progress"). Order: Crop, Location,
+          Farm size, Stage to match spec §2 list ordering. */}
       {farm && (
-        <section style={S.statusCard} data-testid="my-farm-status">
-          <div style={S.statusRow}>
-            <span style={{ ...S.statusPill, color: statusTone, borderColor: statusTone + '55' }}>
-              {tSafe(status.key, status.fallback)}
-            </span>
-            <div style={S.progressTrack}>
-              <div style={{ ...S.progressFill, width: `${statusPct}%`, background: statusTone }} />
-            </div>
+        <section style={S.detailsCard} data-testid="my-farm-details">
+          <div style={S.detailsHead}>
+            <h2 style={S.detailsTitle}>
+              {tSafe('myFarm.details.title', 'My Farm Details')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate(editFarmUrl)}
+              style={S.detailsEditBtn}
+              data-testid="my-farm-edit"
+            >
+              {t('myFarm.edit')}
+            </button>
           </div>
-          <p style={S.statusLine}>
-            {status.code === FARM_STATUS.ON_TRACK
-              ? tSafe('myFarm.status.line.good',
-                  'You\u2019re making good progress.')
-              : status.code === FARM_STATUS.NEEDS_ATTENTION
-                ? tSafe('myFarm.status.line.needsAttention',
-                    'Complete today\u2019s task to stay on track.')
-                : tSafe('myFarm.status.line.setupIncomplete',
-                    'Update your farm details for better guidance.')}
-          </p>
           <ul style={S.detailList}>
             {cropValue && (
               <li style={S.detailRow}>
@@ -243,16 +228,16 @@ export default function MyFarmPage() {
                 <span style={S.detailValue}>{cropValue}</span>
               </li>
             )}
-            {sizeValue && (
-              <li style={S.detailRow}>
-                <span style={S.detailLabel}>{t('myFarm.size')}</span>
-                <span style={S.detailValue}>{sizeValue}</span>
-              </li>
-            )}
             {locationValue && (
               <li style={S.detailRow}>
                 <span style={S.detailLabel}>{t('myFarm.location')}</span>
                 <span style={S.detailValue}>{locationValue}</span>
+              </li>
+            )}
+            {sizeValue && (
+              <li style={S.detailRow}>
+                <span style={S.detailLabel}>{t('myFarm.size')}</span>
+                <span style={S.detailValue}>{sizeValue}</span>
               </li>
             )}
             {stageValue && (
@@ -273,55 +258,32 @@ export default function MyFarmPage() {
           re-enable it without touching this page. */}
       {farm && <QuickActionsCard />}
 
-      {/* ─── 6. Compact Help (per spec §6) ──────────────────
-          Single-tap help: title + one line + Contact Us button.
-          NO subject / message form fields — those moved to a
-          dedicated /support route in earlier work. */}
+      {/* ─── 5. Compact Help row (per spec §5 polish) ───────
+          Single line: "Need help?  Contact our team →".
+          Whole row is tappable — no separate button. Keeps
+          the page short and the Today's Action CTA the only
+          large green primary on screen. */}
       {farm && (
-        <section style={S.helpCard} data-testid="my-farm-help">
-          <div>
-            <h2 style={S.helpTitle}>
-              {tSafe('myFarm.help.title', 'Need help?')}
-            </h2>
-            <p style={S.helpLead}>
-              {tSafe('myFarm.help.lead', 'Chat with our team.')}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/support')}
-            style={S.helpBtn}
-            data-testid="my-farm-help-contact"
-          >
-            {tSafe('myFarm.help.contact', 'Contact Us')}
-          </button>
-        </section>
+        <button
+          type="button"
+          onClick={() => navigate('/support')}
+          style={S.helpRow}
+          data-testid="my-farm-help"
+        >
+          <span style={S.helpRowLead}>
+            {tSafe('myFarm.help.title', 'Need help?')}
+          </span>
+          <span style={S.helpRowAction}>
+            {tSafe('myFarm.help.contactRow', 'Contact our team')}
+            <span aria-hidden="true" style={{ marginLeft: 6 }}>→</span>
+          </span>
+        </button>
       )}
 
-      {/* ─── 7. Empty state (per spec §7) ───────────────────
-          Single setup CTA. AddFarmEmpty already implements the
-          calm "Set up your farm" card — reused here so first-
-          time farmers see exactly one clear next step (no
-          progress / records / verification stubs). */}
+      {/* Empty state — single setup CTA when no farm exists. */}
       {!farm && (
         <div style={S.emptyWrap} data-testid="my-farm-empty">
           <AddFarmEmpty />
-        </div>
-      )}
-
-      {/* Single Edit shortcut at the bottom — per spec the only
-          farm-mutating action that stays on this screen.
-          Add/switch/find-best-crop moved to dedicated surfaces. */}
-      {farm && (
-        <div style={S.editRow}>
-          <button
-            type="button"
-            onClick={() => navigate(editFarmUrl)}
-            style={S.editLink}
-            data-testid="my-farm-edit"
-          >
-            {t('myFarm.edit')}
-          </button>
         </div>
       )}
     </div>
@@ -355,10 +317,12 @@ const S = {
     letterSpacing: '-0.01em',
   },
 
-  // Single Farm Status card combining status pill + progress
-  // bar + sentence + 4 detail rows (per spec §3-4). Same navy
-  // farmer palette as the rest of the app.
-  statusCard: {
+  // ─── My Farm Details card (spec §2 polish) ───────────────
+  // Plain list-only card: title row with Edit button, then 4
+  // detail rows. No status pill / progress bar — that lives
+  // exclusively inside Today's Action card per "no duplicate
+  // progress" rule.
+  detailsCard: {
     margin: '0.5rem 1rem',
     background: '#102C47',
     border: '1px solid #1F3B5C',
@@ -366,52 +330,41 @@ const S = {
     padding: '0.95rem 1rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.65rem',
+    gap: '0.5rem',
   },
-  statusRow: {
+  detailsHead: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
+    marginBottom: '0.25rem',
   },
-  statusPill: {
-    flex: '0 0 auto',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    border: '1px solid rgba(255,255,255,0.15)',
-    background: 'rgba(255,255,255,0.04)',
-    whiteSpace: 'nowrap',
-  },
-  progressTrack: {
-    flex: '1 1 auto',
-    height: 8,
-    borderRadius: 999,
-    background: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    transition: 'width 0.4s ease',
-  },
-  statusLine: {
+  detailsTitle: {
     margin: 0,
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+  },
+  detailsEditBtn: {
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.18)',
     color: 'rgba(255,255,255,0.78)',
-    fontSize: '0.875rem',
-    lineHeight: 1.45,
+    borderRadius: 8,
+    padding: '5px 12px',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 32,
+    flex: '0 0 auto',
   },
   detailList: {
     listStyle: 'none',
-    margin: '0.25rem 0 0',
+    margin: 0,
     padding: 0,
     display: 'flex',
     flexDirection: 'column',
     gap: 4,
-    borderTop: '1px solid rgba(255,255,255,0.06)',
-    paddingTop: '0.6rem',
   },
   detailRow: {
     display: 'flex',
@@ -435,62 +388,34 @@ const S = {
     whiteSpace: 'nowrap',
   },
 
-  // Compact help card (per spec §6) — title + lead + single
-  // Contact Us button. No subject/message form fields.
-  helpCard: {
-    margin: '0.75rem 1rem 0',
-    background: '#102C47',
-    border: '1px solid #1F3B5C',
-    borderRadius: 14,
-    padding: '0.95rem 1rem',
+  // ─── Single-row Help (spec §5 polish) ──────────────────
+  // "Need help?  Contact our team →" — entire row is the tap
+  // target. Ghost styling so it doesn't compete with the
+  // Today's Action green primary CTA.
+  helpRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  helpTitle: {
-    margin: 0,
-    fontSize: '0.95rem',
-    fontWeight: 700,
-    color: '#FFFFFF',
-  },
-  helpLead: {
-    margin: '2px 0 0',
-    fontSize: '0.825rem',
-    color: 'rgba(255,255,255,0.65)',
-  },
-  helpBtn: {
-    appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.55)',
-    background: 'rgba(34,197,94,0.10)',
-    color: '#86EFAC',
-    borderRadius: 999,
-    padding: '8px 14px',
-    fontSize: '0.8125rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    minHeight: 36,
-    flex: '0 0 auto',
-  },
-
-  // Bottom Edit shortcut — secondary navy ghost link.
-  editRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '0.75rem 1rem 1.5rem',
-  },
-  editLink: {
+    width: 'calc(100% - 2rem)',
+    margin: '0.75rem 1rem 1.5rem',
     appearance: 'none',
     background: 'transparent',
-    border: '1px solid rgba(255,255,255,0.18)',
-    color: 'rgba(255,255,255,0.72)',
+    border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 10,
-    padding: '8px 16px',
-    fontSize: '0.8125rem',
-    fontWeight: 600,
+    padding: '0.75rem 1rem',
     cursor: 'pointer',
-    minHeight: 36,
+    color: '#FFFFFF',
+    fontSize: '0.875rem',
+    minHeight: 44,
+    gap: 12,
+  },
+  helpRowLead: {
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: 500,
+  },
+  helpRowAction: {
+    color: '#86EFAC',
+    fontWeight: 700,
   },
 
   header: {

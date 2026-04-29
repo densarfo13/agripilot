@@ -66,27 +66,24 @@ export default function NextBestActionCard({ farm }) {
   const bodyText = task.title;
   const detailText = task.instruction || '';
 
-  // CTA route + label come from the engine's source rule. Setup →
-  // /edit-farm to fix the gap; everything else routes to /tasks
-  // which already has the rich task UI.
-  let ctaKey, ctaFallback, ctaRoute;
+  // CTA route still comes from the engine's source rule (setup
+  // → /edit-farm, harvest → /sell, funding → /opportunities,
+  // default → /tasks) so the button leads to the right surface
+  // for what the farmer needs next. The LABEL is unified to
+  // "Do this now →" per spec — one consistent CTA so the
+  // farmer doesn't have to re-read on every visit.
+  let ctaRoute;
   if (task.source === 'setup_incomplete') {
-    ctaKey      = 'farm.next.cta.updateFarm';
-    ctaFallback = 'Update farm';
-    ctaRoute    = '/edit-farm';
+    ctaRoute = '/edit-farm';
   } else if (task.source === 'harvest_sell') {
-    ctaKey      = 'farm.next.cta.markReady';
-    ctaFallback = 'Mark ready to sell';
-    ctaRoute    = '/sell';
+    ctaRoute = '/sell';
   } else if (task.source === 'funding_match') {
-    ctaKey      = 'farm.next.cta.viewFunding';
-    ctaFallback = 'View funding';
-    ctaRoute    = '/opportunities';
+    ctaRoute = '/opportunities';
   } else {
-    ctaKey      = 'farm.next.cta.startTask';
-    ctaFallback = 'Start task';
-    ctaRoute    = '/tasks';
+    ctaRoute = '/tasks';
   }
+  const ctaKey      = 'farm.next.cta.doThisNow';
+  const ctaFallback = 'Do this now';
 
   return (
     <section style={S.card} data-testid="next-best-action-card">

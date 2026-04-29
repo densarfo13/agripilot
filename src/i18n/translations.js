@@ -6498,6 +6498,11 @@ const T = {
   'myFarm.help.title':                  { en: 'Need help?',                                                      fr: 'Besoin d\u2019aide ?',                                              sw: 'Unahitaji msaada?',                                  ha: 'Kana buƙatar taimako?',                                     tw: 'Wohia mmoa?',                                                       hi: 'मदद चाहिए?' },
   'myFarm.help.lead':                   { en: 'Chat with our team.',                                            fr: 'Discutez avec notre \u00E9quipe.',                                  sw: 'Ongea na timu yetu.',                                ha: 'Yi hira da kungiyarmu.',                                     tw: 'Kasa ne y\u025Bn kuw no.',                                          hi: 'हमारी टीम से चैट करें।' },
   'myFarm.help.contact':                { en: 'Contact Us',                                                      fr: 'Nous contacter',                                                    sw: 'Wasiliana Nasi',                                     ha: 'Tuntuɓe Mu',                                                tw: 'Kasa ne Y\u025Bn',                                                  hi: 'संपर्क करें' },
+  // Spec polish (Apr 2026): single-row Help format inside the
+  // simplified My Farm. "Need help?  Contact our team \u2192"
+  // — no separate button, the whole row is the tap target.
+  'myFarm.help.contactRow':             { en: 'Contact our team',                                                fr: 'Contactez notre \u00E9quipe',                                       sw: 'Wasiliana na timu yetu',                             ha: 'Tuntuɓi tawagarmu',                                          tw: 'Kasa ne y\u025Bn kuw no',                                           hi: 'हमारी टीम से संपर्क करें' },
+  'myFarm.details.title':               { en: 'My Farm Details',                                                 fr: 'D\u00E9tails de ma ferme',                                          sw: 'Maelezo ya Shamba Langu',                            ha: 'Bayanan Gonata',                                             tw: 'M\u2019afuo ho nsɛm',                                                hi: 'मेरे खेत का विवरण' },
   'myFarm.location': {
     en: 'Location', fr: 'Emplacement', sw: 'Eneo', ha: 'Wuri', tw: 'Beae\u025B',
   },
@@ -9761,6 +9766,12 @@ const T = {
 
   // Extra NextBestActionCard CTA labels
   'farm.next.cta.startTask':       { en: 'Start task',          fr: 'Commencer',             sw: 'Anza kazi',           ha: 'Fara aiki',                  tw: 'Hyɛ adwuma ase',         hi: 'कार्य शुरू करें' },
+  // Spec polish (Apr 2026): single uniform CTA on the My Farm
+  // Today's Action card. Replaces the per-source labels above
+  // (Start task / Mark ready / View funding / Update farm) so
+  // the farmer always sees the same green button text. Route
+  // still varies by task source.
+  'farm.next.cta.doThisNow':       { en: 'Do this now',         fr: 'Faire maintenant',      sw: 'Fanya sasa',          ha: 'Yi yanzu',                   tw: 'Yɛ seesei',              hi: 'अभी करें' },
   'farm.next.cta.markReady':       { en: 'Mark ready to sell',  fr: 'Marquer prêt à vendre', sw: 'Tia tayari kuuza',    ha: 'Sa a shirye don sayarwa',    tw: 'Hyɛ krado sɛ wɔbɛtɔn',   hi: 'बेचने को तैयार करें' },
   'farm.next.cta.viewFunding':     { en: 'View funding',        fr: 'Voir le financement',   sw: 'Ona ufadhili',        ha: 'Duba tallafi',                tw: 'Hwɛ sika boa',           hi: 'फंडिंग देखें' },
 
