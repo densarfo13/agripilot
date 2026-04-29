@@ -39,6 +39,7 @@ import { resolveStage }      from './cropStageModel.js';
 import { forecastYield }     from './yieldForecast.js';
 import { rankCandidates }    from './recommendationRanker.js';
 import { scoreConfidence }   from './confidenceScoring.js';
+import { recommendForFarm, generateCandidatesFromSignals } from './recommendationEngine.js';
 
 export {
   getSatelliteSignals,        // async — for callers wiring a real provider
@@ -50,7 +51,20 @@ export {
   forecastYield,
   rankCandidates,
   scoreConfidence,
+  // Signals-only generator (works without taskEngine candidates).
+  recommendForFarm,
+  generateCandidatesFromSignals,
 };
+
+// Spec-named alias surface — same code paths, friendlier names for
+// callers that follow the public-API wording.
+export {
+  riskEngine,
+  cropStageEngine,
+  satelliteMock,
+  recommendationEngine,
+  priorityEngine,
+} from './aliases.js';
 
 /**
  * Rank a set of candidate tasks for a farm using the intelligence
