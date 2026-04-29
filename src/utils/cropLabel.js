@@ -39,7 +39,13 @@
  * call sites stay valid until migrated.
  */
 
-import { normalizeCrop } from '../config/crops/index.js';
+// HOTFIX: the canonical export is `normalizeCropId` (spec alias for
+// `normalizeCropKey`). The previous import name `normalizeCrop`
+// didn't exist, which broke `npx vite build` with:
+//   "normalizeCrop is not exported by src/config/crops/index.js"
+// `normalizeCropId` has the same behaviour — it returns the
+// canonical crop key for any alias / display name / legacy code.
+import { normalizeCropId } from '../config/crops/index.js';
 import { getCropLabelSafe } from './crops.js';
 
 const EMPTY = '—';
@@ -58,10 +64,10 @@ export function cropLabel(value, lang = 'en') {
     if (!value || (typeof value === 'string' && !value.trim())) return EMPTY;
     let normalised = value;
     try {
-      const id = normalizeCrop(value);
+      const id = normalizeCropId(value);
       if (id) normalised = id;
     } catch {
-      // normalizeCrop should never throw, but be defensive.
+      // normalizeCropId should never throw, but be defensive.
     }
     let label;
     try {
