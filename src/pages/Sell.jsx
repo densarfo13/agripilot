@@ -31,8 +31,12 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth }    from '../context/AuthContext.jsx';
-import { saveListing } from '../market/marketStore.js';
+import {
+  saveListing, getActiveListings, getBuyerInterests,
+} from '../market/marketStore.js';
 import { syncListing } from '../market/marketSync.js';
+import { useTranslation } from '../i18n/index.js';
+import { cropLabel } from '../utils/cropLabel.js';
 import {
   saveVerification, tryReadGeolocation, ACTION_TYPES,
 } from '../verification/verificationStore.js';
@@ -47,6 +51,9 @@ export default function Sell() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, farms } = useProfile();
+  // Subscribe to language change so the status card's localised
+  // crop name + buyer-count line refresh on flip.
+  const { lang } = useTranslation();
 
   // Pick the first active farm — every farmer starts with at
   // least one farm if they've completed onboarding. Caller
@@ -56,6 +63,33 @@ export default function Sell() {
     if (profile && profile.farmId) return profile;
     return null;
   }, [farms, profile]);
+
+  // Active listings on this farm — read-only summary at the top
+  // of the page. Filtered by farmId so multi-farm households only
+  // see the relevant farm's listings. Buyer interests counted per
+  // listing via marketStore. Both stores are localStorage-backed
+  // so this is sync + offline-safe.
+  const myActiveListings = useMemo(() => {
+    const fid = activeFarm?.id || profile?.farmId || null;
+    if (!fid) return [];
+    let all;
+    try { all = getActiveListings() || []; } catch { all = []; }
+    return all.filter((l) => l && l.farmId === fid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFarm && activeFarm.id, profile && profile.farmId]);
+
+  const interestsByListing = useMemo(() => {
+    if (myActiveListings.length === 0) return {};
+    let all;
+    try { all = getBuyerInterests() || []; } catch { all = []; }
+    const map = {};
+    for (const i of all) {
+      if (!i || !i.listingId) continue;
+      map[i.listingId] = (map[i.listingId] || 0) + 1;
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myActiveListings.length]);
 
   // Prefill from the active farm so the farmer just confirms
   // and adjusts the quantity / date.
@@ -225,6 +259,64 @@ export default function Sell() {
 
   return (
     <main style={S.page}>
+      {/* Spec §2: status overlay above the form. Renders one card
+          per active listing on this farm (usually 0 or 1), with the
+          buyer-interest count + a "View buyers" CTA. The form below
+          stays as the create-listing surface — farmers can still
+          add a NEW listing for a different crop / season. */}
+      {myActiveListings.length > 0 && (
+        <div
+          style={S.statusWrap}
+          data-testid="sell-active-listings-status"
+        >
+          {myActiveListings.map((l) => {
+            const interestCount = interestsByListing[l.id] || 0;
+            const cropText = cropLabel(l.crop, lang);
+            const region = l.location?.region || '';
+            const country = l.location?.country || '';
+            const placeText = [region, country].filter(Boolean).join(', ');
+            return (
+              <article
+                key={l.id}
+                style={S.statusCard}
+                data-testid={`sell-status-${l.id}`}
+              >
+                <h2 style={S.statusEyebrow}>
+                  {tSafe('market.status.yourListing', 'Your listing')}
+                </h2>
+                <h3 style={S.statusTitle}>
+                  {cropText || tSafe('market.unknownCrop', 'Crop')}
+                  {' • '}
+                  {l.quantity || 0} {l.unit || 'kg'}
+                </h3>
+                {placeText ? (
+                  <p style={S.statusMeta}>{placeText}</p>
+                ) : null}
+                <p style={S.statusInterest}>
+                  {tSafe(
+                    'market.status.buyersInterested',
+                    `${interestCount} buyers interested`,
+                  ).replace('{count}', String(interestCount))}
+                </p>
+                <button
+                  type="button"
+                  style={S.statusCta}
+                  data-testid={`sell-status-view-buyers-${l.id}`}
+                  onClick={() => {
+                    // Route to the marketplace listing detail.
+                    // Works for any role (no STAFF_ROLES gate).
+                    try { navigate(`/marketplace?listing=${l.id}`); }
+                    catch { /* ignore */ }
+                  }}
+                >
+                  {tSafe('market.status.viewBuyers', 'View buyers')}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
       <div style={S.card}>
         <BrandLogo variant="light" size="md" />
         <h1 style={S.title}>
@@ -366,9 +458,71 @@ const S = {
     background: `linear-gradient(180deg, ${C.navy} 0%, ${C.darkPanel} 100%)`,
     color: C.white,
     display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
+    // Switched from row to column so the status overlay can stack
+    // ABOVE the existing form card without being pushed sideways.
+    flexDirection: 'column',
+    alignItems: 'center',
     padding: '1.5rem 1rem 4rem',
+  },
+  // Status overlay container — sits above the form card, same
+  // 32rem max-width so the visual rhythm matches.
+  statusWrap: {
+    width: '100%',
+    maxWidth: '32rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    marginBottom: '0.75rem',
+  },
+  statusCard: {
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 12,
+    padding: '14px 16px',
+    color: C.white,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  statusEyebrow: {
+    margin: 0,
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    color: '#86EFAC',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  },
+  statusTitle: {
+    margin: 0,
+    fontSize: '1.0625rem',
+    fontWeight: 700,
+    color: C.white,
+  },
+  statusMeta: {
+    margin: 0,
+    fontSize: '0.85rem',
+    color: 'rgba(255,255,255,0.65)',
+  },
+  statusInterest: {
+    margin: '4px 0 0',
+    fontSize: '0.85rem',
+    color: '#86EFAC',
+    fontWeight: 600,
+  },
+  statusCta: {
+    marginTop: 8,
+    width: '100%',
+    appearance: 'none',
+    border: 'none',
+    background: '#22C55E',
+    color: C.white,
+    borderRadius: 10,
+    padding: '0.625rem 1rem',
+    fontSize: '0.9rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 44,
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
   },
   // Visual restyle: card surface aligned with the rest of the
   // farmer-facing pages (#102C47 panel, #1F3B5C border) and a
