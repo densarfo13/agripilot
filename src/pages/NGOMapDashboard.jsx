@@ -51,6 +51,7 @@ import FundingImpact            from '../components/ngo/FundingImpact.jsx';
 import MarketActivity           from '../components/ngo/MarketActivity.jsx';
 import FundingOpportunitiesPanel from '../components/ngo/FundingOpportunitiesPanel.jsx';
 import FundingInterestPanel      from '../components/ngo/FundingInterestPanel.jsx';
+import ProgramPerformancePanel   from '../components/ngo/ProgramPerformancePanel.jsx';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
 
@@ -305,6 +306,12 @@ export default function NGOMapDashboard({
               farmer contact ONLY for ASSISTANCE_REQUESTED
               rows; other statuses are counts only. */}
         <FundingInterestPanel testId="ngo-map-funding-interests" />
+
+        {/* 5d. NGO Program Distribution — funnel of programs
+              the operator has sent (sent → opened → acted).
+              Read-only; full management lives at
+              /admin/programs (or /ngo/programs). */}
+        <ProgramPerformancePanel testId="ngo-map-program-perf" />
 
         {/* 6. Region table */}
         <section style={S.section} data-testid="ngo-region-section">

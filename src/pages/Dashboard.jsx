@@ -42,6 +42,10 @@ import { API_ERROR_TYPES } from '../api/apiClient.js';
 import { getActiveFundingOpportunities, FUNDING_EVENTS } from '../funding/fundingStore.js';
 import { matchFundingForFarm } from '../funding/fundingMatcher.js';
 import { bumpVerificationWithLocation } from '../verification/verificationStore.js';
+import {
+  getProgramsForFarmer, markOpened, markActed,
+} from '../programs/programStore.js';
+import ProgramCard from '../components/farmer/ProgramCard.jsx';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
@@ -101,6 +105,11 @@ export default function Dashboard() {
   // Tracks the per-task bump state so the chip flips to a
   // confirmation after a successful GPS read.
   const [verifyBumpStatus, setVerifyBumpStatus] = useState('idle'); // 'idle' | 'busy' | 'done' | 'denied'
+
+  // v3 NGO Program Distribution: bump on every status
+  // change so the Today cards re-read without forcing a
+  // page reload.
+  const [programTick, setProgramTick] = useState(0);
   // Reset whenever a NEW task is completed so the chip can
   // re-appear for the next one. Keying on the task id so
   // the same id doesn't reset the user's prior choice.
@@ -628,6 +637,44 @@ export default function Dashboard() {
             <span style={S.scanEntryChevron}>{'\u203A'}</span>
           </button>
         )}
+
+        {/* v3 NGO Program Distribution: render up to
+            ACTIVE_LIMIT (2) delivered programs for this
+            farmer. Secondary priority — sits BELOW the
+            Today task and verification chip, ABOVE the
+            scan-crop / sell / funding entries. Anti-spam
+            cap is enforced inside the store, not the UI. */}
+        {loop.profile && (() => {
+          const fid = loop.profile.userId
+                   || loop.profile.farmerId
+                   || loop.profile.id
+                   || null;
+          if (!fid) return null;
+          let programs = [];
+          try { programs = getProgramsForFarmer({ id: fid,
+                                                   ...loop.profile }); }
+          catch { programs = []; }
+          if (programs.length === 0) return null;
+          return programs.map(({ program, delivery }) => (
+            <ProgramCard
+              key={delivery.id}
+              program={program}
+              delivery={delivery}
+              onView={() => {
+                markOpened(program.id, fid);
+                setProgramTick((n) => n + 1);
+              }}
+              onAck={() => {
+                markActed(program.id, fid);
+                setProgramTick((n) => n + 1);
+              }}
+            />
+          ));
+        })()}
+        {/* tick consumed above — keeps the IIFE re-running
+            on each status change without re-rendering the
+            rest of the Dashboard. */}
+        <span style={{ display: 'none' }} data-program-tick={programTick} />
 
         {/* Scan-crop entry point — compact, single line, non-intrusive */}
         {loop.profile && (

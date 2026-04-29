@@ -71,6 +71,7 @@ const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
+const CreateProgram  = lazy(() => import('./pages/admin/CreateProgram.jsx'));
 
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
@@ -591,6 +592,22 @@ export default function App() {
                    element={
                      <RoleRoute roles={STAFF_ROLES}>
                        <FundingAdmin />
+                     </RoleRoute>
+                   } />
+
+            {/* NGO Program Distribution — Send a program
+                to matched farmers. Same surface mounted
+                on both /admin/programs and /ngo/programs. */}
+            <Route path="/admin/programs"
+                   element={
+                     <RoleRoute roles={STAFF_ROLES}>
+                       <CreateProgram />
+                     </RoleRoute>
+                   } />
+            <Route path="/ngo/programs"
+                   element={
+                     <RoleRoute roles={STAFF_ROLES}>
+                       <CreateProgram />
                      </RoleRoute>
                    } />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
