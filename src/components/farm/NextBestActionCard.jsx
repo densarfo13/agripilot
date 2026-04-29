@@ -24,8 +24,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
+import { tSafe } from '../../i18n/tSafe.js';
 import { getFarmStatus } from '../../lib/farm/farmFallbacks.js';
 import useTodayTask from '../../hooks/useTodayTask.js';
+import { getEffectiveStreak } from '../../lib/loop/dailyLoop.js';
 import { CheckCircle, AlertTriangle, Sprout, ArrowRight } from '../icons/lucide.jsx';
 
 const TONE_STYLES = Object.freeze({
@@ -59,6 +61,13 @@ export default function NextBestActionCard({ farm }) {
   const status = getFarmStatus(farm, [], /* risks */ []);
   const tone = TONE_STYLES[status.tone] || TONE_STYLES.info;
   const StatusIcon = tone.icon;
+
+  // Streak chip (Apr 2026): subtle motivation read directly from
+  // the localStorage-backed dailyLoop store. getEffectiveStreak
+  // already returns 0 when the streak has lapsed (>1 day gap), so
+  // the hide-on-zero rule is a single comparison below.
+  let streakDays = 0;
+  try { streakDays = getEffectiveStreak() || 0; } catch { /* ignore */ }
 
   // Body line is the engine's resolved title (always non-empty per
   // contract). The engine's `instruction` is also available; the
@@ -98,12 +107,23 @@ export default function NextBestActionCard({ farm }) {
   return (
     <section style={S.card} data-testid="next-best-action-card">
       <header style={S.header}>
-        <span style={{ ...S.statusPill, background: tone.background, borderColor: tone.border, color: tone.fg }}>
-          <StatusIcon size={14} />
-          <span style={{ marginLeft: 6 }}>
-            {tStrict(status.key, status.fallback)}
+        <div style={S.headerTopRow}>
+          <span style={{ ...S.statusPill, background: tone.background, borderColor: tone.border, color: tone.fg }}>
+            <StatusIcon size={14} />
+            <span style={{ marginLeft: 6 }}>
+              {tStrict(status.key, status.fallback)}
+            </span>
           </span>
-        </span>
+          {/* Streak chip — small, subtle, top-right. Hidden when
+              the farmer has no active streak so a first-day user
+              never sees a misleading "0-day" indicator. */}
+          {streakDays > 0 && (
+            <span style={S.streakChip} data-testid="next-action-streak-chip">
+              {tSafe('streak.day', '\uD83D\uDD25 {n}-day streak', { n: streakDays })
+                .replace('{n}', String(streakDays))}
+            </span>
+          )}
+        </div>
         <h2 style={S.title}>
           {tStrict('farm.next.title', 'Next best action')}
         </h2>
@@ -144,6 +164,26 @@ const S = {
     flexDirection: 'column',
     gap: 6,
     marginBottom: 8,
+  },
+  headerTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  // Streak chip — small subtle amber pill, no background flash so
+  // it sits beside the status pill without competing for attention.
+  streakChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '3px 8px',
+    borderRadius: 999,
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    color: '#FB923C',
+    background: 'rgba(251,146,60,0.10)',
+    border: '1px solid rgba(251,146,60,0.30)',
+    whiteSpace: 'nowrap',
   },
   statusPill: {
     display: 'inline-flex',

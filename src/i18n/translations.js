@@ -5541,6 +5541,38 @@ const T = {
     en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Hadari', tw: 'Asiane', hi: 'जोखिम',
   },
 
+  // Streak / motivation (Apr 2026): lightweight client-side
+  // streak shown on the Home task card and on the success
+  // surface after completing a task. No coins, no levels —
+  // just a subtle "🔥 N-day streak" line and an optional
+  // one-line encouragement when the streak grew or restarted.
+  // {n} is interpolated by the caller via .replace('{n}', ...)
+  // so the key remains a single string per language.
+  'streak.day': {
+    en: '\uD83D\uDD25 {n}-day streak',
+    fr: '\uD83D\uDD25 S\u00E9rie de {n} jours',
+    sw: '\uD83D\uDD25 Mfululizo wa siku {n}',
+    ha: '\uD83D\uDD25 Jeri na kwana {n}',
+    tw: '\uD83D\uDD25 Nna {n} mu nkonimdie',
+    hi: '\uD83D\uDD25 {n}-दिन की लकीर',
+  },
+  'streak.keepGoing': {
+    en: 'Keep it going!',
+    fr: 'Continuez\u00A0!',
+    sw: 'Endelea hivyo!',
+    ha: 'Ci gaba da haka!',
+    tw: 'K\u0254 so!',
+    hi: 'जारी रखें!',
+  },
+  'streak.newStreak': {
+    en: 'New streak started',
+    fr: 'Nouvelle s\u00E9rie commenc\u00E9e',
+    sw: 'Mfululizo mpya umeanza',
+    ha: 'An fara sabon jeri',
+    tw: 'Wo afi nkonimdie f\u0254f\u0254 ase',
+    hi: 'नई लकीर शुरू हुई',
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  FARMER ID
   // ═══════════════════════════════════════════════════════════

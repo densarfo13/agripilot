@@ -17,6 +17,12 @@ import { useProfile } from '../context/ProfileContext.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
+// Lightweight client-side streak (reuses the existing dailyLoop
+// helpers — same store FarmerTodayPage already uses, so the
+// streak survives across pages and surfaces).
+import {
+  markTaskCompletedForStreak, getEffectiveStreak,
+} from '../lib/loop/dailyLoop.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
@@ -58,6 +64,11 @@ export default function AllTasksPage() {
   const [completing, setCompleting] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [taskCompletionState, setTaskCompletionState] = useState(null);
+  // Streak snapshot captured at the moment of completion — drives
+  // the optional "🔥 N-day streak" + "Keep it going!" lines on
+  // the success surface. Cleared when the user advances or
+  // dismisses the completion card.
+  const [streakSnapshot, setStreakSnapshot] = useState(null);
   const completionTimerRef = useRef(null);
 
   const fetchTasks = useCallback(async () => {
@@ -146,6 +157,21 @@ export default function AllTasksPage() {
     setCompletedTasks((prev) => [...prev, { ...task, completedAt: new Date().toISOString() }]);
     setCompletedCount(newCompletedCount);
 
+    // Streak (client-side, localStorage-backed). The helper is
+    // idempotent for same-day completions — multiple tasks in one
+    // day still bump the streak only once. We capture before/after
+    // values so the success surface can show "Keep it going!" only
+    // when the streak actually grew.
+    let streakBefore = 0;
+    let streakAfter  = 0;
+    try { streakBefore = getEffectiveStreak() || 0; } catch { /* ignore */ }
+    try { streakAfter  = markTaskCompletedForStreak() || 0; } catch { /* ignore */ }
+    setStreakSnapshot({
+      after:    streakAfter,
+      grew:     streakAfter > streakBefore,
+      restarted: streakBefore > 0 && streakAfter === 1,
+    });
+
     safeTrackEvent('task_completed', { farmId: currentFarmId, taskId: task.id, source: 'tasks_page', offline: savedOffline });
     if (savedOffline) safeTrackEvent('saved_offline_after_completion', { taskId: task.id });
 
@@ -178,11 +204,13 @@ export default function AllTasksPage() {
   function handleCompletionContinue() {
     safeTrackEvent('continue_clicked', { source: 'tasks_page' });
     setTaskCompletionState(null);
+    setStreakSnapshot(null);
   }
 
   function handleCompletionLater() {
     safeTrackEvent('later_clicked', { source: 'tasks_page' });
     setTaskCompletionState(null);
+    setStreakSnapshot(null);
     navigate('/dashboard');
   }
 
@@ -344,6 +372,29 @@ export default function AllTasksPage() {
             onLater={handleCompletionLater}
             variant="standard"
           />
+          {/* Streak chip (Apr 2026): subtle "🔥 N-day streak" line
+              + optional "Keep it going!" / "New streak started"
+              encouragement. Hidden when the streak is 0 so a
+              first-day user doesn't see a chip claiming a streak
+              they haven't earned. */}
+          {streakSnapshot && streakSnapshot.after > 0 && (
+            <div style={S.streakChip} data-testid="tasks-streak-chip">
+              <span style={S.streakLine}>
+                {tSafe('streak.day', '\uD83D\uDD25 {n}-day streak', { n: streakSnapshot.after })
+                  .replace('{n}', String(streakSnapshot.after))}
+              </span>
+              {streakSnapshot.grew && !streakSnapshot.restarted && (
+                <span style={S.streakSub}>
+                  {tSafe('streak.keepGoing', 'Keep it going!')}
+                </span>
+              )}
+              {streakSnapshot.restarted && (
+                <span style={S.streakSub}>
+                  {tSafe('streak.newStreak', 'New streak started')}
+                </span>
+              )}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => navigate('/progress')}
@@ -608,6 +659,33 @@ const S = {
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
     color: 'rgba(255,255,255,0.45)',
+  },
+
+  // Streak chip (Apr 2026): subtle motivation line on the
+  // success surface. No coins / badges / levels — just a small
+  // amber/orange "🔥 N-day streak" with an optional one-line
+  // encouragement when the streak grew or restarted.
+  streakChip: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+    padding: '0.5rem 0.75rem',
+    marginTop: '0.25rem',
+    borderRadius: 10,
+    background: 'rgba(251,146,60,0.08)',
+    border: '1px solid rgba(251,146,60,0.22)',
+  },
+  streakLine: {
+    fontSize: '0.875rem',
+    fontWeight: 800,
+    color: '#FB923C',
+    letterSpacing: '0.01em',
+  },
+  streakSub: {
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.72)',
   },
 
   // Reward-loop spec (Apr 2026): secondary "View progress"
