@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { formatApiError } from '../api/client.js';
 import { STAFF_ROLES } from '../utils/roles.js';
 import { consumeReturnTo } from '../core/auth/returnToStorage.js';
 import PasswordInput from '../components/PasswordInput.jsx';
@@ -190,10 +191,38 @@ export default function Login() {
       safeTrackEvent('auth.login.success', {});
     } catch (err) {
       safeTrackEvent('auth.login.failed', {});
-      if (err.fieldErrors && Object.keys(err.fieldErrors).length) {
+      // Login error path now handles three shapes defensively
+      // (P0 audit fix). Previous code read `.fieldErrors` then
+      // fell back to a raw `.message`, which surfaced technical
+      // strings like "Failed to fetch" on connectivity blips.
+      //
+      //   1. Per-field validation errors → render inline. The
+      //      lib/api.js fetch wrapper sets `.fieldErrors` on the
+      //      thrown Error; this short-circuit predates this fix.
+      //   2. Network / connectivity (no .status, no .response,
+      //      or interceptor-tagged .isNetworkError) → calm,
+      //      localized "no signal" message.
+      //   3. Anything else → run through formatApiError so the
+      //      user sees the backend's per-field summary or a
+      //      user-safe message, never a raw stack/message.
+      if (err && err.fieldErrors && Object.keys(err.fieldErrors).length) {
         setErrors(err.fieldErrors);
+      } else if (err && (
+        err.isNetworkError
+          || (!err.status && !err.response && !err.fieldErrors)
+      )) {
+        setGeneralError(
+          tSafe(
+            'auth.networkError',
+            'No network connection — check your signal and try again.',
+          ),
+        );
       } else {
-        setGeneralError(err.message || t('auth.loginFailed'));
+        const fallback = tSafe(
+          'auth.loginFailed',
+          'Login failed. Please check your credentials.',
+        );
+        setGeneralError(formatApiError(err, fallback));
       }
     } finally {
       setLoading(false);

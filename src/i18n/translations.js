@@ -4549,6 +4549,11 @@ const T = {
   'auth.signedOut': {
     en: 'You have been signed out.', fr: 'Vous avez été déconnecté.', sw: 'Umetolewa nje.', ha: 'An fitar da kai.', tw: 'Wɔayi wo afi mu.', hi: 'आप साइन आउट कर दिए गए हैं।',
   },
+  // Login form's connectivity-failure path. Previously fell back
+  // to err.message which could surface a raw "Failed to fetch".
+  'auth.networkError': {
+    en: 'No network connection — check your signal and try again.', fr: 'Pas de connexion réseau — vérifiez votre signal et réessayez.', sw: 'Hakuna muunganisho wa mtandao — angalia ishara yako kisha ujaribu tena.', ha: 'Babu haɗin yanar gizo — duba siginar ka kuma sake gwadawa.', tw: 'Network nni hɔ — hwɛ wo signal na sɔ hwɛ bio.', hi: 'नेटवर्क कनेक्शन नहीं है — अपना सिग्नल जाँचें और पुनः प्रयास करें।',
+  },
   'auth.forgotPassword': {
     en: 'Forgot password?', fr: 'Mot de passe oublié ?', sw: 'Umesahau nenosiri?', ha: 'Ka manta kalmar sirri?', tw: 'Wo werɛ afi password?',
   },
