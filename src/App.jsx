@@ -261,17 +261,32 @@ function ProtectedRoute({ children, allowSetup }) {
     authLoading, path: window.location.pathname,
   });
 
-  // Bridge V2 cookie-auth user into the V1 zustand store SYNCHRONOUSLY so
-  // RoleRoute and DashboardPage see the user on the very first render.
-  // Do NOT set a fake token — V1 API calls now use httpOnly cookies directly.
-  if (v2User && v2User.role && v2User.role !== 'farmer' && !storeUser) {
-    console.log('[GUARD]', Date.now(), 'Bridging V2 user to V1 store, role:', v2User.role);
-    useAuthStore.setState({ user: v2User });
-  }
+  // Bridge V2 cookie-auth user into the V1 zustand store via effect.
+  //
+  // The previous implementation called `useAuthStore.setState()` during
+  // render, which violates React's render-purity contract: it double-
+  // fires in strict mode and risks cascading re-renders / inconsistent
+  // state across components reading from the store. Moving the write
+  // into a useEffect makes it a true post-commit side effect.
+  //
+  // Downstream components that read ONLY from useAuthStore (15 pages)
+  // see the bridged user one render after the effect lands — a one-
+  // frame delay we accept in exchange for render-purity. ProtectedRoute
+  // and RoleRoute themselves read from BOTH sources via the
+  // `storeUser || v2User` fallback below, so the redirect decision on
+  // the very first render is unaffected.
+  useEffect(() => {
+    if (v2User && v2User.role && v2User.role !== 'farmer' && !storeUser) {
+      console.log('[GUARD]', Date.now(), 'Bridging V2 user to V1 store, role:', v2User.role);
+      useAuthStore.setState({ user: v2User });
+    }
+  }, [v2User, storeUser]);
 
-  // Re-read after potential sync write
-  const user = useAuthStore.getState().user || v2User;
-  const hasSession = useAuthStore.getState().token || (v2User && v2User.role);
+  // Defensive fallback: read from BOTH sources so this component +
+  // downstream RoleRoute see the v2User on the very first render
+  // even before the bridge effect runs.
+  const user = storeUser || v2User;
+  const hasSession = !!token || (v2User && v2User.role);
 
   // Wait for the auth context to finish its /me bootstrap BEFORE
   // making a redirect decision. On a page reload, authLoading=true
