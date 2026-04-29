@@ -76,7 +76,9 @@ export default function FraudQueuePage() {
       <div className="page-body">
         {actionError && <div className="alert-inline alert-inline-danger" style={{ marginBottom: '1rem' }}>{actionError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => setActionError('')}>Dismiss</button></div>}
         {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>}
-        {loading ? <div className="loading">Loading fraud queue...</div> : apps.length === 0 ? (
+        {/* F11 fix: hide empty-state when an error banner is
+            also rendered above — they contradict each other. */}
+        {loading ? <div className="loading">Loading fraud queue...</div> : (!loadError && apps.length === 0) ? (
           <div className="card"><div className="card-body"><div className="empty-state">No applications on fraud hold</div></div></div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

@@ -369,7 +369,13 @@ export default function FarmersPage() {
                         </td>
                       </tr>
                     ))}
-                    {displayFarmers.length === 0 && !quickFilter && (
+                    {/* F11 fix (interactive smoke test): suppress
+                        the empty-state row when an error is set
+                        above. Otherwise the user sees "We hit a
+                        snag" + "No farmers yet" simultaneously,
+                        which contradict each other. With !loadError
+                        guard, error state owns the surface alone. */}
+                    {!loadError && displayFarmers.length === 0 && !quickFilter && (
                       <tr><td colSpan={isSuperAdmin ? 10 : 9}>
                         <EmptyState
                           icon="👨‍🌾"
@@ -384,7 +390,7 @@ export default function FarmersPage() {
                         />
                       </td></tr>
                     )}
-                    {displayFarmers.length === 0 && quickFilter && (
+                    {!loadError && displayFarmers.length === 0 && quickFilter && (
                       <tr><td colSpan={isSuperAdmin ? 10 : 9}>
                         <EmptyState
                           icon="🔍"

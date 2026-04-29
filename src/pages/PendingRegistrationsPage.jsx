@@ -89,7 +89,13 @@ export default function PendingRegistrationsPage() {
             )}
           </div>
         )}
-        {loading ? <div className="loading">Loading registrations...</div> : registrations.length === 0 ? (
+        {/* F11 fix (interactive smoke test): suppress the
+            empty-state card when an error is set above so the
+            user doesn't see "We hit a snag" + "No pending
+            registrations" simultaneously (contradictory copy).
+            When error is set the table block also self-hides
+            below; the page reads as: error banner + retry only. */}
+        {loading ? <div className="loading">Loading registrations...</div> : (!error && registrations.length === 0) ? (
           <div className="card">
             <div className="card-body">
               {filter === 'pending' ? (

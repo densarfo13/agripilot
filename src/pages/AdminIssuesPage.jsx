@@ -604,7 +604,9 @@ export default function AdminIssuesPage() {
           </div>
         )}
 
-        {loading ? <div className="loading">Loading issues...</div> : issues.length === 0 ? (
+        {/* F11 fix: hide empty-state when an error banner is
+            also rendered above — they contradict each other. */}
+        {loading ? <div className="loading">Loading issues...</div> : (!loadError && issues.length === 0) ? (
           <div className="card"><div className="card-body" style={{ textAlign: 'center', color: '#71717A', padding: '2rem' }}>
             {hasFilters ? 'No issues match the current filters.' : 'No issues reported yet.'}
           </div></div>
