@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
@@ -393,12 +394,10 @@ export default function AllTasksPage() {
                       <span style={S.currentTiming}>{vmByTaskId[currentTask.id].timingText}</span>
                     )}
                   </div>
-                  {/* Snippet ref: small Listen button on the current
-                      card. Reads the task title aloud via the
-                      existing voiceEngine (3-tier fallback). The
-                      complete-circle on the left stays as the
-                      primary "act now" affordance — adding a
-                      redundant Act-Now button would conflict. */}
+                  {/* Listen button — reads the task title aloud
+                      via the existing voiceEngine (3-tier
+                      fallback). Stays in the top-right of the
+                      card body as a secondary affordance. */}
                   <VoiceButton
                     text={vmByTaskId[currentTask.id]?.title
                        || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)
@@ -407,6 +406,28 @@ export default function AllTasksPage() {
                     className="all-tasks-listen-btn"
                   />
                 </div>
+                {/* Single-action-flow spec (Apr 2026): explicit
+                    "COMPLETE TASK" green primary button below
+                    the task body. The complete-circle on the
+                    left stays as the quick-tap affordance, but
+                    the prominent button is the obvious primary
+                    action so a low-literacy farmer doesn't have
+                    to discover the circle's purpose. Both
+                    routes call the same handleComplete handler
+                    so the completion lifecycle (success card,
+                    auto-load next task, progress increment,
+                    verification bump) is identical. */}
+                <button
+                  type="button"
+                  onClick={() => handleComplete(currentTask)}
+                  disabled={completing === currentTask.id}
+                  style={S.completeBtn}
+                  data-testid="tasks-complete-task-btn"
+                >
+                  {completing === currentTask.id
+                    ? tSafe('tasks.completing', 'Completing\u2026')
+                    : tSafe('tasks.completeTask', 'Complete task')}
+                </button>
               </div>
             </>
           )}
@@ -506,6 +527,32 @@ const S = {
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
     padding: '0 0 5rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
+  },
+
+  // Single-action-flow spec (Apr 2026): explicit primary CTA
+  // on the current task card. Sits below the task body; same
+  // green palette + shadow profile as other primary CTAs in
+  // the app (Sell submit, NextActionCard CTA).
+  completeBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // width: 100% + flexBasis: 100% forces the button onto a
+    // new line below the body row inside the flex-wrap card.
+    width: '100%',
+    flexBasis: '100%',
+    appearance: 'none',
+    border: 'none',
+    background: '#22C55E',
+    color: '#FFFFFF',
+    borderRadius: 12,
+    padding: '0.75rem 1rem',
+    marginTop: '0.75rem',
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 48,
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
   },
   header: {
     display: 'flex',
@@ -653,6 +700,12 @@ const S = {
   },
 
   // ─── Current task card (full size) ──────
+  // Single-action-flow spec: card now stacks the existing
+  // body row (circle + content + voice) ABOVE the new
+  // explicit Complete Task button so the primary CTA reads
+  // as a clear next step. flex-wrap on the body row keeps
+  // the row layout — only the new button shifts to the
+  // line below thanks to its width: 100%.
   currentCard: {
     display: 'flex', alignItems: 'center', gap: '0.75rem',
     padding: '1.125rem 1rem',
@@ -660,6 +713,7 @@ const S = {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.06)',
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+    flexWrap: 'wrap',
   },
   currentContent: { display: 'flex', alignItems: 'flex-start', gap: '0.625rem', flex: 1, minWidth: 0 },
   currentIcon: { fontSize: '1.375rem', flexShrink: 0, marginTop: '0.125rem' },

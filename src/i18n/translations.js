@@ -5513,6 +5513,17 @@ const T = {
   'tasks.completed': {
     en: 'Completed', fr: 'Terminé', sw: 'Imekamilika', ha: 'An gama', tw: 'Wie',
   },
+  // Single-action-flow spec (Apr 2026): explicit primary
+  // "Complete task" button on the current task card. The
+  // existing tasks.markDone is the aria-label for the
+  // complete-circle quick-tap affordance; this is the
+  // visible label on the prominent green CTA.
+  'tasks.completeTask': {
+    en: 'Complete task', fr: 'Terminer la t\u00E2che', sw: 'Maliza kazi', ha: 'Kammala aikin', tw: 'Wie adwuma no', hi: 'कार्य पूरा करें',
+  },
+  'tasks.completing': {
+    en: 'Completing\u2026', fr: 'Termine\u2026', sw: 'Inakamilisha\u2026', ha: 'Ana kammalawa\u2026', tw: 'Ɛrewie\u2026', hi: 'पूरा कर रहे हैं\u2026',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  FARMER ID
@@ -9785,7 +9796,11 @@ const T = {
   // (Start task / Mark ready / View funding / Update farm) so
   // the farmer always sees the same green button text. Route
   // still varies by task source.
-  'farm.next.cta.doThisNow':       { en: 'Do this now',         fr: 'Faire maintenant',      sw: 'Fanya sasa',          ha: 'Yi yanzu',                   tw: 'Yɛ seesei',              hi: 'अभी करें' },
+  //
+  // Single-action-flow spec (Apr 2026): label was "Do this now",
+  // updated to "Act now" per spec — shorter, more imperative,
+  // same key so call sites don't need touching.
+  'farm.next.cta.doThisNow':       { en: 'Act now',             fr: 'Agir maintenant',       sw: 'Chukua hatua sasa',   ha: 'Yi aiki yanzu',              tw: 'Yɛ seesei ara',          hi: 'अभी कार्य करें' },
   'farm.next.cta.markReady':       { en: 'Mark ready to sell',  fr: 'Marquer prêt à vendre', sw: 'Tia tayari kuuza',    ha: 'Sa a shirye don sayarwa',    tw: 'Hyɛ krado sɛ wɔbɛtɔn',   hi: 'बेचने को तैयार करें' },
   'farm.next.cta.viewFunding':     { en: 'View funding',        fr: 'Voir le financement',   sw: 'Ona ufadhili',        ha: 'Duba tallafi',                tw: 'Hwɛ sika boa',           hi: 'फंडिंग देखें' },
 
