@@ -147,6 +147,36 @@ const SMS_SHORT = Object.freeze({
     ha: 'An daidaita duk canje-canje.',
     fr: 'Toutes les modifications synchronis\u00E9es.',
   }),
+
+  // ─── Funding / Program action confirmations ─────────────
+  // Spec §5: SMS confirmations for the three farmer-side
+  // program actions. Each fits one 160-char SMS segment after
+  // {title} is interpolated. Trust-safe: no "approved", no
+  // "guaranteed" — only confirms the action was logged.
+  'sms.funding.applied': Object.freeze({
+    en: 'You opened {title}. Tap Request Help in the app if you need assistance.',
+    hi: 'आपने {title} खोला। सहायता चाहिए तो ऐप में Request Help टैप करें।',
+    tw: 'Wobuee {title}. Pɛn Request Help wɔ app no mu sɛ wohia mmoa a.',
+    sw: 'Umefungua {title}. Bofya Request Help kwenye programu ukihitaji msaada.',
+    ha: 'Ka buɗe {title}. Danna Request Help a app idan kana buƙatar taimako.',
+    fr: 'Vous avez ouvert {title}. Appuyez sur Demander de l\u2019aide si besoin.',
+  }),
+  'sms.funding.helpRequested': Object.freeze({
+    en: 'Help received for {title}. A partner may contact you soon.',
+    hi: '{title} के लिए सहायता प्राप्त। कोई साथी जल्द संपर्क कर सकता है।',
+    tw: 'Wɔanya mmoa abisadeɛ ma {title}. Ɔboafoɔ bi bɛkasa wo ankyɛ.',
+    sw: 'Tumepokea ombi la msaada kwa {title}. Mshirika anaweza kuwasiliana hivi karibuni.',
+    ha: 'An karɓi neman taimako don {title}. Abokin haɗin gwiwa na iya tuntuɓarka nan ba da daɗewa ba.',
+    fr: 'Demande d\u2019aide re\u00E7ue pour {title}. Un partenaire pourra vous contacter.',
+  }),
+  'sms.program.acted': Object.freeze({
+    en: 'Thanks for acting on {title}. The program team has been notified.',
+    hi: '{title} पर कार्य करने के लिए धन्यवाद। कार्यक्रम टीम को सूचित किया गया।',
+    tw: 'Yɛda wo ase sɛ wofaa {title} dwumadie no so. Yɛabɔ kuw no amaneɛ.',
+    sw: 'Asante kwa kuchukua hatua kuhusu {title}. Timu ya programu imejulishwa.',
+    ha: 'Na gode da aikatawa kan {title}. An sanar da ƙungiyar shirin.',
+    fr: 'Merci d\u2019avoir agi sur {title}. L\u2019\u00E9quipe du programme a \u00E9t\u00E9 inform\u00E9e.',
+  }),
 });
 
 /**

@@ -45,6 +45,7 @@ import { bumpVerificationWithLocation } from '../verification/verificationStore.
 import {
   getProgramsForFarmer, markOpened, markActed,
 } from '../programs/programStore.js';
+import { confirmProgramActed } from '../notifications/smsConfirmations.js';
 import ProgramCard from '../components/farmer/ProgramCard.jsx';
 import NotificationBell from '../components/NotificationBell.jsx';
 import {
@@ -73,7 +74,7 @@ export default function Dashboard() {
   const { mode, isBasic } = useUserMode();
   const { season, refreshSeason } = useSeason();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang: language } = useTranslation();
 
   // ─── THE LOOP ────────────────────────────────────────────
   const loop = useFarmerLoop();
@@ -749,6 +750,11 @@ export default function Dashboard() {
               onAck={() => {
                 markActed(program.id, _userId);
                 setProgramTick((n) => n + 1);
+                // Spec §5: SMS confirmation when the farmer
+                // commits to a program. Fire-and-forget; if
+                // phone is missing or Twilio fails, no UX impact.
+                try { confirmProgramActed(loop.profile, program, language); }
+                catch { /* never block from a notification path */ }
               }}
             />
           ))}

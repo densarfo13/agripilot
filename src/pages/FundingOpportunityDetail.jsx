@@ -46,6 +46,10 @@ import {
 } from '../verification/verificationStore.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { useTranslation } from '../i18n/index.js';
+import {
+  confirmFundingApplied, confirmFundingHelpRequested,
+} from '../notifications/smsConfirmations.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 
@@ -64,6 +68,9 @@ export default function FundingOpportunityDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, farms } = useProfile();
+  // SMS confirmations are localized via the active language;
+  // helper falls back to 'en' if undefined.
+  const { lang: language } = useTranslation();
 
   const activeFarm = useMemo(() => {
     if (Array.isArray(farms) && farms.length) return farms[0];
@@ -158,6 +165,10 @@ export default function FundingOpportunityDetail() {
       farmerPhone:   profile?.phoneE164 || profile?.phone || '',
     });
     if (interest) setExistingInterest(interest);
+    // Spec §5: SMS confirmation when farmer commits to applying.
+    // Fire-and-forget; no UX impact if phone missing or Twilio fails.
+    try { confirmFundingApplied(profile, o, language); }
+    catch { /* never block the apply flow */ }
     showFlash(o.sourceUrl
       ? tSafe('funding.openingSource',
           'Opening official source. Apply through their site.')
@@ -350,6 +361,11 @@ export default function FundingOpportunityDetail() {
           onSubmitted={(stored) => {
             setExistingInterest(stored);
             setHelpModalOpen(false);
+            // Spec §5: SMS confirmation when help request is
+            // submitted. Honest expectation — "may contact you",
+            // not a guarantee. Fire-and-forget.
+            try { confirmFundingHelpRequested(profile, o, language); }
+            catch { /* never block the help-submit flow */ }
             showFlash(tSafe('funding.requestSent',
               'Request sent. A program officer or support team may follow up.'));
           }}
