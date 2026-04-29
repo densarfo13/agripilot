@@ -9255,6 +9255,7 @@ const T = {
   'funding.applyNow':              { en: 'Apply Now',            fr: 'Postuler maintenant',    sw: 'Omba Sasa',             ha: 'Nemi Yanzu',             tw: 'Pɔ Mprenpren',          hi: 'अभी आवेदन करें' },
   'funding.requestHelp':           { en: 'Request Help',         fr: 'Demander de l\'aide',    sw: 'Omba Msaada',           ha: 'Nemi Taimako',           tw: 'Bisa Mmoa',             hi: 'सहायता का अनुरोध करें' },
   'funding.markApplied':           { en: 'I applied',            fr: 'J\'ai postulé',          sw: 'Nimeomba',              ha: 'Na nema',                tw: 'Mapɔ',                  hi: 'मैंने आवेदन किया' },
+  'funding.otherOpportunities':    { en: 'Other Opportunities',  fr: 'Autres opportunités',    sw: 'Fursa Nyingine',        ha: 'Sauran Damarmaki',       tw: 'Akwannya Foforɔ',       hi: 'अन्य अवसर' },
   'funding.mayQualifyWarning':     { en: 'You may qualify. Check requirements before applying. Always confirm with the official source.', fr: 'Vous pourriez être éligible. Vérifiez les conditions avant de postuler. Confirmez toujours auprès de la source officielle.', sw: 'Unaweza kustahiki. Angalia mahitaji kabla ya kuomba. Daima thibitisha na chanzo rasmi.', ha: 'Za ka iya cancanta. Duba sharudda kafin ka nemi. Koyaushe tabbatar da tushe na hukuma.', tw: 'Wobɛtumi anya. Hwehwɛ ɔhwɛhwɛ ansa na woapɔ. Daa hyɛ wo den wɔ nipa a wɔde maaeɛ no nkyɛn.', hi: 'आप योग्य हो सकते हैं। आवेदन करने से पहले आवश्यकताएँ जाँचें। हमेशा आधिकारिक स्रोत से पुष्टि करें।' },
   'funding.requestHelpTitle':      { en: 'Request help applying',           fr: 'Demander de l\'aide pour postuler',     sw: 'Omba msaada wa kuomba',     ha: 'Nemi taimako wajen nema',  tw: 'Bisa mmoa wɔ pɔ ho',     hi: 'आवेदन में सहायता का अनुरोध करें' },
   'funding.requestHelpLead':       { en: 'Share your contact and a short note. A program officer or support team may follow up.', fr: 'Partagez votre contact et une courte note. Un agent de programme ou une équipe de soutien pourra vous recontacter.', sw: 'Shiriki mawasiliano yako na maelezo mafupi. Afisa wa programu au timu ya msaada inaweza kufuatilia.', ha: 'Raba lambar tuntuɓarka da takaitaccen bayani. Wani jami\'in shirin ko ƙungiyar tallafi na iya bibiya.', tw: 'Kyɛ wo nsɛnkyerɛnne ne nsɛm tiawa. Nhyehyɛeɛ panyin anaa boafoɔ kuw bɛtumi adi akyi.', hi: 'अपना संपर्क और एक छोटा नोट साझा करें। एक कार्यक्रम अधिकारी या समर्थन टीम संपर्क कर सकती है।' },
@@ -9383,6 +9384,75 @@ const T = {
   'notifications.taskFallback': { en: 'A new task is waiting on your home screen.', fr: 'Une nouvelle tâche vous attend sur l\'écran d\'accueil.', sw: 'Kazi mpya inakusubiri kwenye skrini yako ya mwanzo.', ha: 'Sabon aiki yana jiranka a allon farko.', tw: 'Adwuma foforɔ retwɛn wo wɔ wo home screen so.', hi: 'आपकी होम स्क्रीन पर एक नया कार्य प्रतीक्षारत है।' },
   'notifications.fundingTitle': { en: 'Funding match available', fr: 'Opportunité de financement disponible', sw: 'Ufadhili unaolingana unapatikana', ha: 'Daidaitawar tallafi tana samuwa', tw: 'Sika hokwan a ɛfata wɔ hɔ', hi: 'फंडिंग मिलान उपलब्ध' },
   'notifications.fundingFallback': { en: 'A program may support your farm — check requirements.', fr: 'Un programme pourrait soutenir votre ferme — vérifiez les conditions.', sw: 'Programu inaweza kusaidia shamba lako — angalia mahitaji.', ha: 'Shiri zai iya tallafa wa gonarka — duba sharudda.', tw: 'Nhyehyɛeɛ bi bɛtumi aboa w\'afuo — hwehwɛ ɔhwɛhwɛ.', hi: 'एक कार्यक्रम आपके खेत का समर्थन कर सकता है — आवश्यकताएँ जाँचें।' },
+
+  // ─── Farm intelligence hub (My Farm screen — spec §1–§7) ──────
+  // Section titles, row labels, suggestion templates, action labels,
+  // health pills, verification card, and empty-state copy. Every
+  // key carries the full 6-language coverage (en/fr/sw/ha/tw/hi).
+  // {crop} is interpolated by SmartSuggestionsCard.
+
+  // Summary card
+  'farm.summaryTitle':            { en: 'Farm summary',           fr: 'Résumé de la ferme',         sw: 'Muhtasari wa shamba',          ha: 'Taƙaitaccen gona',                  tw: 'Afuom ho asɛm tiawa',           hi: 'खेत सारांश' },
+  'farm.cropLabel':               { en: 'Crop',                   fr: 'Culture',                    sw: 'Zao',                          ha: 'Shuka',                              tw: 'Aduane',                        hi: 'फसल' },
+  'farm.size':                    { en: 'Farm size',              fr: 'Taille de la ferme',         sw: 'Ukubwa wa shamba',             ha: 'Girman gona',                       tw: 'Afuo kɛseɛ',                    hi: 'खेत का आकार' },
+  'farm.location':                { en: 'Location',               fr: 'Lieu',                       sw: 'Mahali',                       ha: 'Wuri',                              tw: 'Bea',                           hi: 'स्थान' },
+  'farm.gpsStatus':               { en: 'GPS',                    fr: 'GPS',                        sw: 'GPS',                          ha: 'GPS',                                tw: 'GPS',                           hi: 'जीपीएस' },
+  'farm.gpsPresent':              { en: 'On',                     fr: 'Activé',                     sw: 'Imewashwa',                    ha: 'A buɗe',                            tw: 'Ɛsɔ',                           hi: 'चालू' },
+  'farm.gpsMissing':              { en: 'Missing',                fr: 'Manquant',                   sw: 'Haipo',                        ha: 'Babu',                              tw: 'Nni hɔ',                        hi: 'अनुपलब्ध' },
+  'farm.lastUpdated':             { en: 'Last updated',           fr: 'Mis à jour',                 sw: 'Imesasishwa mwisho',           ha: 'An sabunta na ƙarshe',              tw: 'Yɛsesa no berɛ a etwa toɔ',     hi: 'अंतिम अद्यतन' },
+
+  // Health card
+  'farm.health.title':            { en: 'Farm health',            fr: 'Santé de la ferme',          sw: 'Afya ya shamba',               ha: 'Lafiyar gona',                       tw: 'Afuom apɔmuden',                hi: 'खेत स्वास्थ्य' },
+  'farm.health.onTrack':          { en: 'On track',               fr: 'Sur la bonne voie',          sw: 'Njia nzuri',                   ha: 'Akan hanya',                         tw: 'Ɛkwan pa so',                   hi: 'सही दिशा में' },
+  'farm.health.needsAttention':   { en: 'Needs attention',        fr: 'À surveiller',               sw: 'Inahitaji uangalifu',          ha: 'Yana bukatar kulawa',                tw: 'Ɛhia hwɛ',                      hi: 'ध्यान चाहिए' },
+  'farm.health.weather':          { en: 'Weather',                fr: 'Météo',                      sw: 'Hali ya hewa',                 ha: 'Yanayi',                             tw: 'Ewiem tebea',                   hi: 'मौसम' },
+  'farm.health.pest':             { en: 'Pests',                  fr: 'Ravageurs',                  sw: 'Wadudu',                       ha: 'Kwari',                              tw: 'Nkekaboa',                      hi: 'कीट' },
+  'farm.health.planting':         { en: 'Planting',               fr: 'Semis',                      sw: 'Upandaji',                     ha: 'Shuka',                              tw: 'Aduadua',                       hi: 'रोपण' },
+  'farm.health.level.high':       { en: 'High',                   fr: 'Élevé',                      sw: 'Juu',                          ha: 'Babba',                              tw: 'Kɛseɛ',                         hi: 'उच्च' },
+  'farm.health.level.medium':     { en: 'Medium',                 fr: 'Moyen',                      sw: 'Wastani',                      ha: 'Matsakaici',                         tw: 'Mfimfini',                      hi: 'मध्यम' },
+  'farm.health.level.low':        { en: 'Low',                    fr: 'Faible',                     sw: 'Chini',                        ha: 'Ƙarami',                             tw: 'Akakraa',                       hi: 'कम' },
+  'farm.health.level.unknown':    { en: 'No data',                fr: 'Pas de données',             sw: 'Hakuna data',                  ha: 'Babu bayanai',                       tw: 'Data nni hɔ',                   hi: 'डेटा नहीं' },
+  'farm.health.readiness.ready':  { en: 'Ready',                  fr: 'Prêt',                       sw: 'Tayari',                       ha: 'A shirye',                           tw: 'Krado',                         hi: 'तैयार' },
+  'farm.health.readiness.past':   { en: 'Already planted',        fr: 'Déjà planté',                sw: 'Tayari kupandwa',              ha: 'An riga an shuka',                   tw: 'Wɔadua dada',                   hi: 'पहले से लगाया' },
+  'farm.health.readiness.unknown': { en: 'No data',               fr: 'Pas de données',             sw: 'Hakuna data',                  ha: 'Babu bayanai',                       tw: 'Data nni hɔ',                   hi: 'डेटा नहीं' },
+
+  // Smart suggestions
+  'farm.suggest.title':           { en: 'Smart suggestions',      fr: 'Suggestions intelligentes',  sw: 'Mapendekezo mahiri',           ha: 'Shawarwari masu hankali',           tw: 'Afotuo a ɛyɛ',                  hi: 'स्मार्ट सुझाव' },
+  'farm.suggest.harvestReady':    { en: 'Your {crop} is near harvest. Prepare to list produce for buyers.', fr: 'Votre {crop} est près de la récolte. Préparez la mise en vente.', sw: '{crop} yako iko karibu na mavuno. Jiandae kuuza.', ha: '{crop} naka yana kusa da girbi. Shirya don sayarwa.', tw: 'Wo {crop} no rebɛn nnɔbae. Yɛ ho ahoboa fa tɔn.', hi: 'आपकी {crop} कटाई के पास है। बेचने की तैयारी करें।' },
+  'farm.suggest.listProduce':     { en: 'Your produce is ready to sell.',     fr: 'Votre production est prête à être vendue.', sw: 'Mavuno yako tayari kuuzwa.', ha: 'Amfanin gona shirye don sayarwa.',  tw: 'Wo nnɔbae akrado sɛ wɔbɛtɔn.',   hi: 'आपकी उपज बेचने को तैयार है।' },
+  'farm.suggest.fundingMatch':    { en: 'A funding opportunity matches your farm.', fr: 'Une opportunité de financement correspond.', sw: 'Fursa ya ufadhili imeendana.', ha: 'Damar tallafi ta dace da gonarka.', tw: 'Sika boa kwan bi fata wo afuo no.', hi: 'एक फंडिंग अवसर आपके खेत से मेल खाता है।' },
+  'farm.suggest.weatherRisk':     { en: 'Weather risk is high today. Check today\'s plan.', fr: 'Le risque météo est élevé aujourd\'hui.', sw: 'Hatari ya hali ya hewa ni juu leo.', ha: 'Haɗarin yanayi ya yi yawa yau.', tw: 'Ewiem tebea ho asiane wɔ hɔ nnɛ.', hi: 'आज मौसम का जोखिम अधिक है।' },
+  'farm.suggest.generic':         { en: 'Keep your tasks current to stay on track.', fr: 'Tenez vos tâches à jour.', sw: 'Endelea na kazi zako.',     ha: 'Ci gaba da ayyukan ka.',            tw: 'Toa so yɛ wo nnwuma.',          hi: 'अपने कार्य पूरे करते रहें।' },
+  'farm.suggest.cta.markReady':   { en: 'Mark ready',             fr: 'Marquer prêt',               sw: 'Tia tayari',                   ha: 'Sa a shirye',                        tw: 'Hyɛ krado',                     hi: 'तैयार करें' },
+  'farm.suggest.cta.viewBuyers':  { en: 'View buyers',            fr: 'Voir les acheteurs',         sw: 'Ona wanunuzi',                 ha: 'Duba masu siye',                     tw: 'Hwɛ aguafoɔ',                   hi: 'खरीदार देखें' },
+  'farm.suggest.cta.viewFunding': { en: 'View funding',           fr: 'Voir le financement',        sw: 'Ona ufadhili',                 ha: 'Duba tallafi',                       tw: 'Hwɛ sika boa',                  hi: 'फंडिंग देखें' },
+  'farm.suggest.cta.checkWeather': { en: 'Check weather',         fr: 'Voir la météo',              sw: 'Angalia hali ya hewa',         ha: 'Duba yanayi',                        tw: 'Hwɛ ewiem tebea',               hi: 'मौसम देखें' },
+  'farm.suggest.cta.viewTasks':   { en: 'View tasks',             fr: 'Voir les tâches',            sw: 'Ona kazi',                     ha: 'Duba ayyuka',                        tw: 'Hwɛ nnwuma',                    hi: 'कार्य देखें' },
+
+  // Quick actions
+  'farm.actions.title':           { en: 'Quick actions',          fr: 'Actions rapides',            sw: 'Vitendo vya haraka',           ha: 'Ayyukan gaggawa',                    tw: 'Nnwuma a ɛyɛ ntɛm',             hi: 'त्वरित कार्य' },
+  'farm.actions.updateFarm':      { en: 'Update farm',            fr: 'Mettre à jour',              sw: 'Sasisha shamba',               ha: 'Sabunta gona',                       tw: 'Sesa afuo',                     hi: 'खेत अद्यतन' },
+  'farm.actions.scanCrop':        { en: 'Scan crop',              fr: 'Scanner la culture',         sw: 'Skani zao',                    ha: 'Duba shuka',                         tw: 'Hwehwɛ aduane',                 hi: 'फसल जाँचें' },
+  'farm.actions.markReady':       { en: 'Mark ready to sell',     fr: 'Marquer prêt à vendre',      sw: 'Tia tayari kuuza',             ha: 'Sa a shirye don sayarwa',           tw: 'Hyɛ krado sɛ wɔbɛtɔn',          hi: 'बेचने को तैयार करें' },
+  'farm.actions.viewFunding':     { en: 'View funding',           fr: 'Voir le financement',        sw: 'Ona ufadhili',                 ha: 'Duba tallafi',                       tw: 'Hwɛ sika boa',                  hi: 'फंडिंग देखें' },
+
+  // Records
+  'farm.records.title':           { en: 'Farm records',           fr: 'Registres de la ferme',      sw: 'Rekodi za shamba',             ha: 'Bayanan gona',                       tw: 'Afuom nkrataa',                 hi: 'खेत रिकॉर्ड' },
+  'farm.records.tasksThisWeek':   { en: 'Tasks this week',        fr: 'Tâches cette semaine',       sw: 'Kazi wiki hii',                ha: 'Ayyuka wannan mako',                 tw: 'Nnwuma nnawɔtwe yi',            hi: 'इस हफ्ते के कार्य' },
+  'farm.records.verifiedActions': { en: 'Verified actions',       fr: 'Actions vérifiées',          sw: 'Vitendo vilivyothibitishwa',   ha: 'Ayyukan da aka tabbatar',           tw: 'Nnwuma a wɔahwehwɛ mu',         hi: 'सत्यापित क्रियाएँ' },
+  'farm.records.produceListings': { en: 'Produce listings',       fr: 'Annonces de produits',       sw: 'Orodha za mazao',              ha: 'Jerin amfanin gona',                 tw: 'Nnɔbae a wɔatɔn',               hi: 'उपज सूचियाँ' },
+  'farm.records.fundingInterests': { en: 'Funding interests',     fr: 'Intérêts de financement',    sw: 'Maslahi ya ufadhili',          ha: 'Sha\'awar tallafi',                  tw: 'Sika boa anidaso',              hi: 'फंडिंग रुचियाँ' },
+
+  // Verification
+  'farm.verify.title':            { en: 'Verification',           fr: 'Vérification',               sw: 'Uthibitishaji',                ha: 'Tabbatarwa',                         tw: 'Nhwehwɛmu',                     hi: 'सत्यापन' },
+  'farm.verify.level':            { en: 'Level',                  fr: 'Niveau',                     sw: 'Kiwango',                      ha: 'Matsayi',                            tw: 'Gyinaberɛ',                     hi: 'स्तर' },
+  'farm.verify.lastPhoto':        { en: 'Last photo',             fr: 'Dernière photo',             sw: 'Picha ya mwisho',              ha: 'Hoton ƙarshe',                       tw: 'Mfonini a etwa toɔ',            hi: 'अंतिम फोटो' },
+  'farm.verify.lastGps':          { en: 'Last GPS',               fr: 'Dernier GPS',                sw: 'GPS ya mwisho',                ha: 'GPS na ƙarshe',                      tw: 'GPS a etwa toɔ',                hi: 'अंतिम जीपीएस' },
+
+  // Empty state
+  'farm.empty.title':             { en: 'Add your farm',          fr: 'Ajoutez votre ferme',        sw: 'Ongeza shamba lako',           ha: 'Ƙara gonarka',                       tw: 'Fa w\'afuo ka ho',              hi: 'अपना खेत जोड़ें' },
+  'farm.empty.body':              { en: 'Add your farm to get daily guidance.', fr: 'Ajoutez votre ferme pour des conseils quotidiens.', sw: 'Ongeza shamba ili upate mwongozo wa kila siku.', ha: 'Ƙara gonarka don karɓar shawarwari na yau da kullum.', tw: 'Fa w\'afuo ka ho na nya akwankyerɛ ɛda biara.', hi: 'दैनिक मार्गदर्शन पाने के लिए खेत जोड़ें।' },
+  'farm.empty.cta':               { en: 'Add farm',               fr: 'Ajouter une ferme',          sw: 'Ongeza shamba',                ha: 'Ƙara gona',                          tw: 'Fa afuo ka ho',                 hi: 'खेत जोड़ें' },
 };
 
 export default T;

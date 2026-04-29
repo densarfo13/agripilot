@@ -37,6 +37,7 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
+import { ArrowRight } from '../components/icons/lucide.jsx';
 
 const C = FARROWAY_BRAND.colors;
 
@@ -111,20 +112,144 @@ export default function Opportunities() {
             </p>
           </div>
         ) : (
-          <ul style={S.grid} data-testid="opportunities-list">
-            {matches.map((m) => (
-              <li key={m.opportunity.id} style={S.tile}>
-                <OpportunityCard match={m} />
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* Priority card — the highest-scoring match is
+                promoted to a prominent card with Apply Now /
+                Request Help buttons (matches the visual ref).
+                The remaining matches render as a compact list
+                below. Same data, same routes — visual only. */}
+            <PriorityOpportunityCard match={matches[0]} />
+
+            {matches.length > 1 && (
+              <section
+                style={S.otherSection}
+                data-testid="opportunities-other"
+              >
+                <h2 style={S.otherTitle}>
+                  {tSafe('funding.otherOpportunities', 'Other Opportunities')}
+                </h2>
+                <ul style={S.otherList}>
+                  {matches.slice(1).map((m) => (
+                    <li key={m.opportunity.id}>
+                      <OpportunityListRow match={m} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
         )}
       </div>
     </main>
   );
 }
 
-/* ─── Card ────────────────────────────────────────────── */
+/* ─── Priority card (top match) ────────────────────────
+   Promotes match[0] to a dedicated card matching the visual
+   reference: title, benefit, deadline, why-matched bullets,
+   Apply Now (primary green) + Request Help (secondary navy).
+   Both buttons route through /opportunities/:id so the existing
+   detail-page Apply / Mark Applied flow remains the source of
+   truth. The `?intent=help` query is set on Request Help so the
+   detail page can surface a help affordance once wired. */
+
+function PriorityOpportunityCard({ match }) {
+  const { opportunity: o, reasons } = match;
+
+  const deadlineLabel = o.deadline
+    ? new Date(o.deadline).toLocaleDateString(undefined,
+        { month: 'short', day: 'numeric', year: 'numeric' })
+    : tSafe('funding.deadlineRolling', 'Rolling — no deadline');
+
+  function handleClick(intent) {
+    try {
+      safeTrackEvent(FUNDING_EVENTS.CLICKED, {
+        opportunityId: o.id, type: o.opportunityType,
+        from: 'priority', intent,
+      });
+    } catch { /* ignore */ }
+  }
+
+  return (
+    <article
+      style={priorityStyles.card}
+      data-testid={`opportunity-priority-${o.id}`}
+    >
+      <h2 style={priorityStyles.title}>{o.title}</h2>
+
+      {o.benefit && (
+        <p style={priorityStyles.benefit}>{o.benefit}</p>
+      )}
+
+      <p style={priorityStyles.deadline}>
+        {tSafe('funding.deadline', 'Deadline')}: {deadlineLabel}
+      </p>
+
+      {Array.isArray(reasons) && reasons.length > 0 && (
+        <ul style={priorityStyles.reasonList}>
+          {reasons.slice(0, 3).map((r) => (
+            <li key={r} style={priorityStyles.reasonItem}>
+              <span aria-hidden="true">✓</span> {r}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div style={priorityStyles.btnRow}>
+        <Link
+          to={`/opportunities/${o.id}?intent=apply`}
+          onClick={() => handleClick('apply')}
+          style={{ ...priorityStyles.btn, ...priorityStyles.btnPrimary }}
+          data-testid={`opportunity-priority-apply-${o.id}`}
+        >
+          {tSafe('funding.applyNow', 'Apply Now')}
+        </Link>
+        <Link
+          to={`/opportunities/${o.id}?intent=help`}
+          onClick={() => handleClick('help')}
+          style={{ ...priorityStyles.btn, ...priorityStyles.btnSecondary }}
+          data-testid={`opportunity-priority-help-${o.id}`}
+        >
+          {tSafe('funding.requestHelp', 'Request Help')}
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+/* ─── List row (secondary matches) ─────────────────────
+   Compact one-line entry — title on the left, ArrowRight on
+   the right. Tap routes to the existing detail page; same
+   analytics event as the full card click. */
+
+function OpportunityListRow({ match }) {
+  const { opportunity: o } = match;
+
+  function handleClick() {
+    try {
+      safeTrackEvent(FUNDING_EVENTS.CLICKED, {
+        opportunityId: o.id, type: o.opportunityType,
+        from: 'list_row',
+      });
+    } catch { /* ignore */ }
+  }
+
+  return (
+    <Link
+      to={`/opportunities/${o.id}`}
+      onClick={handleClick}
+      style={rowStyles.row}
+      data-testid={`opportunity-row-${o.id}`}
+    >
+      <span style={rowStyles.label}>{o.title}</span>
+      <span style={rowStyles.arrow} aria-hidden="true">
+        <ArrowRight size={16} />
+      </span>
+    </Link>
+  );
+}
+
+/* ─── Card (legacy — kept for any external caller) ───── */
 
 function OpportunityCard({ match }) {
   const { opportunity: o, reasons } = match;
@@ -230,6 +355,108 @@ function OpportunityCard({ match }) {
 }
 
 /* ─── Styles ──────────────────────────────────────────── */
+
+const priorityStyles = {
+  card: {
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 14,
+    padding: '1rem 1.1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.4rem',
+    marginBottom: '0.85rem',
+  },
+  title: {
+    margin: 0,
+    fontSize: '1.05rem',
+    fontWeight: 700,
+    color: C.white,
+    lineHeight: 1.3,
+  },
+  benefit: {
+    margin: 0,
+    fontSize: '0.9rem',
+    color: C.lightGreen,
+  },
+  deadline: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  reasonList: {
+    listStyle: 'none',
+    margin: '0.15rem 0 0',
+    padding: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.1rem',
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  reasonItem: {
+    display: 'inline-flex',
+    gap: '0.35rem',
+  },
+  btnRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.5rem',
+  },
+  btn: {
+    flex: 1,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0.625rem 1rem',
+    borderRadius: 10,
+    fontSize: '0.9rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    textDecoration: 'none',
+    minHeight: 44,
+  },
+  btnPrimary: {
+    background: '#22C55E',
+    color: C.white,
+    border: '1px solid #16A34A',
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+  },
+  btnSecondary: {
+    background: '#1A3B5D',
+    color: C.white,
+    border: '1px solid #1F3B5C',
+  },
+};
+
+const rowStyles = {
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    padding: '0.7rem 0.9rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 10,
+    color: C.white,
+    fontSize: '0.875rem',
+    textDecoration: 'none',
+    cursor: 'pointer',
+  },
+  label: {
+    color: C.white,
+    fontSize: '0.875rem',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  arrow: {
+    color: 'rgba(255,255,255,0.5)',
+    display: 'inline-flex',
+    flex: '0 0 auto',
+  },
+};
 
 const cardStyles = {
   card: {
@@ -363,6 +590,26 @@ const S = {
     gridTemplateColumns: 'repeat(auto-fill, minmax(18rem, 1fr))',
   },
   tile: { display: 'flex' },
+  otherSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    marginTop: '0.5rem',
+  },
+  otherTitle: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: 600,
+  },
+  otherList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
   empty: {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',

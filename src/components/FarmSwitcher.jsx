@@ -70,9 +70,11 @@ export default function FarmSwitcher() {
         <span style={S.farmIcon}>{'\uD83C\uDFE1'}</span>
         <div style={S.triggerLeft}>
           <span style={S.farmName}>{defaultFarm?.farmName || defaultFarm?.location || t('farm.activeFarm')}</span>
-          {(defaultFarm?.crop || defaultFarm?.cropType) && (
+          {/* `crop` is canonical — see canonicalizeFarmPayload in
+              lib/api.js. Read only the canonical field. */}
+          {defaultFarm?.crop && (
             <span style={S.farmCrop}>
-              {getCropLabelSafe(defaultFarm.crop || defaultFarm.cropType, lang)}
+              {getCropLabelSafe(defaultFarm.crop, lang)}
             </span>
           )}
         </div>
@@ -98,8 +100,9 @@ export default function FarmSwitcher() {
               data-testid={`farm-item-${farm.id}`}
             >
               <span style={S.itemName}>{farm.farmName || farm.location || t('farm.unnamed')}</span>
-              {(farm.crop || farm.cropType) && (
-                <span style={S.itemCrop}>{getCropLabelSafe(farm.crop || farm.cropType, lang)}</span>
+              {/* `crop` is canonical (canonicalizeFarmPayload). */}
+              {farm.crop && (
+                <span style={S.itemCrop}>{getCropLabelSafe(farm.crop, lang)}</span>
               )}
               <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
             </button>

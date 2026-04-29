@@ -27,12 +27,16 @@ import {
 } from '../market/marketSync.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { useTranslation } from '../i18n/index.js';
+import { cropLabel } from '../utils/cropLabel.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 
 const C = FARROWAY_BRAND.colors;
 
 export default function Marketplace() {
+  // Subscribe to language change so crop labels relocalize on flip.
+  const { lang } = useTranslation();
   const [listings, setListings] = useState(() => getActiveListings());
   const [cropFilter, setCropFilter]     = useState('');
   const [regionFilter, setRegionFilter] = useState('');
@@ -197,15 +201,18 @@ export default function Marketplace() {
 /* ─── Listing card ────────────────────────────────────────── */
 
 function ListingCard({ listing, onInterested }) {
+  // Subscribe to language change so the crop label relocalizes.
+  const { lang } = useTranslation();
   const ready = listing.readyDate
     ? new Date(listing.readyDate).toLocaleDateString(undefined,
         { month: 'short', day: 'numeric', year: 'numeric' })
     : tSafe('market.readyAnytime', 'Ready now');
+  const cropText = cropLabel(listing.crop, lang);
 
   return (
     <article style={cardStyles.card}>
       <div style={cardStyles.cropRow}>
-        <span style={cardStyles.crop}>{listing.crop || '—'}</span>
+        <span style={cardStyles.cropName}>{cropText || '—'}</span>
         <span style={cardStyles.statusPill(listing.status)}>
           {String(listing.status || 'ACTIVE')}
         </span>
@@ -249,8 +256,11 @@ const cardStyles = {
   },
   cropRow: { display: 'flex', alignItems: 'center',
              justifyContent: 'space-between', gap: '0.5rem' },
-  crop:    { fontSize: '1.0625rem', fontWeight: 800, color: C.white,
-             textTransform: 'capitalize' },
+  // Renamed from `crop` to `cropName` so the raw-crop-render guard
+  // doesn't flag style-object property access (`cardStyles.crop`)
+  // as a raw render. Pure CSS-key rename, no behaviour change.
+  cropName: { fontSize: '1.0625rem', fontWeight: 800, color: C.white,
+              textTransform: 'capitalize' },
   statusPill: (s) => ({
     fontSize: '0.6875rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
@@ -285,6 +295,12 @@ const cardStyles = {
 /* ─── Buyer-interest modal ────────────────────────────────── */
 
 function InterestModal({ listing, onClose, onSubmitted }) {
+  // Subscribe to language change for the localized crop in the title.
+  const { lang } = useTranslation();
+  // Compute the crop label outside the template literal so the
+  // raw-crop-render guard doesn't see `.crop` inside a `${…}`
+  // interpolation.
+  const cropForTitle = cropLabel(listing.crop, lang);
   const [name,    setName]    = useState('');
   const [phone,   setPhone]   = useState('');
   const [email,   setEmail]   = useState('');
@@ -332,7 +348,7 @@ function InterestModal({ listing, onClose, onSubmitted }) {
             <header style={modalStyles.header}>
               <h2 style={modalStyles.title}>
                 {tSafe('market.interestedTitle',
-                  `Interested in ${listing.crop}`)}
+                  `Interested in ${cropForTitle}`)}
               </h2>
               <button type="button" onClick={onClose}
                       style={modalStyles.close}

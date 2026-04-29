@@ -36,9 +36,11 @@ export default function FarmPicker({ onSelect, onCancel }) {
                 <span style={S.farmNameText}>
                   {farm.farmName || farm.location || t('farm.unnamed')}
                 </span>
-                {(farm.crop || farm.cropType) && (
+                {/* `crop` is canonical (canonicalizeFarmPayload in
+                    lib/api.js). Read only the canonical field. */}
+                {farm.crop && (
                   <span style={S.farmCrop}>
-                    {getCropLabelSafe(farm.crop || farm.cropType, lang)}
+                    {getCropLabelSafe(farm.crop, lang)}
                   </span>
                 )}
                 {farm.location && <span style={S.farmLoc}>{farm.location}</span>}

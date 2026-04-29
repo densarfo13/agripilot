@@ -27,6 +27,8 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { marketSummary } from '../../market/marketStore.js';
 import { tSafe } from '../../i18n/tSafe.js';
+import { useTranslation } from '../../i18n/index.js';
+import { cropLabel } from '../../utils/cropLabel.js';
 import { FARROWAY_BRAND } from '../../brand/farrowayBrand.js';
 
 const C = FARROWAY_BRAND.colors;
@@ -38,6 +40,8 @@ export default function MarketActivity({
   summary,
   testId = 'ngo-market-activity',
 }) {
+  // Subscribe to language change so chip labels relocalize on flip.
+  const { lang } = useTranslation();
   const view = useMemo(
     () => summary || marketSummary(),
     [summary],
@@ -100,7 +104,7 @@ export default function MarketActivity({
               <div style={S.chipRow}>
                 {view.topCrops.slice(0, 5).map((c) => (
                   <span key={c.crop} style={S.chip}>
-                    {c.crop}
+                    {cropLabel(c.crop, lang)}
                     <span style={S.chipCount}>{c.count}</span>
                   </span>
                 ))}

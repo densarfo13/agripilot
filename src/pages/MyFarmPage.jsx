@@ -29,6 +29,15 @@ import CropImage from '../components/CropImage.jsx';
 import CropTimelineCard from '../components/CropTimelineCard.jsx';
 import HarvestCard from '../components/HarvestCard.jsx';
 import VoiceButton from '../components/VoiceButton.jsx';
+// Farm intelligence hub — additive sub-components. Each self-hides
+// when its inputs are missing; never breaks the page.
+import FarmSummaryCard from '../components/farm/FarmSummaryCard.jsx';
+import FarmHealthCard from '../components/farm/FarmHealthCard.jsx';
+import SmartSuggestionsCard from '../components/farm/SmartSuggestionsCard.jsx';
+import QuickActionsCard from '../components/farm/QuickActionsCard.jsx';
+import VerificationStatusCard from '../components/farm/VerificationStatusCard.jsx';
+import FarmRecordsCard from '../components/farm/FarmRecordsCard.jsx';
+import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -167,7 +176,16 @@ export default function MyFarmPage() {
     );
   }
 
-  if (!profile) return null;
+  // Empty state: no farm profile yet → render the AddFarm CTA card
+  // (spec §7) instead of a blank page. Replaces the prior bare
+  // `return null` so first-time farmers get a clear next step.
+  if (!profile) {
+    return (
+      <div style={S.page} data-testid="my-farm-page-empty">
+        <AddFarmEmpty />
+      </div>
+    );
+  }
 
   // Use active profile as primary source (always has the current farm data),
   // fall back to farms array lookup
@@ -183,6 +201,24 @@ export default function MyFarmPage() {
         {/* Tap-to-hear: speaks the page title in the active language. */}
         <VoiceButton labelKey="myFarm.title" />
       </div>
+
+      {/* Farm intelligence hub (spec §1–§6) — additive cards that
+          render above the existing detail tiles. Each self-hides when
+          its inputs are missing so an empty pilot stays clean. */}
+      {farm ? (
+        <div style={S.intelligenceWrap}>
+          <QuickActionsCard />
+          <FarmSummaryCard
+            farm={farm}
+            lang={lang}
+            countryLabel={localizeCountry(farm.country || farm.countryCode, lang)}
+          />
+          <FarmHealthCard farm={farm} />
+          <SmartSuggestionsCard farm={farm} lang={lang} />
+          <FarmRecordsCard farm={farm} />
+          <VerificationStatusCard farm={farm} />
+        </div>
+      ) : null}
 
       {/* Farm details */}
       {farm ? (
@@ -407,6 +443,11 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
+  },
+  intelligenceWrap: {
+    padding: '0.5rem 1.25rem 0',
+    display: 'flex',
+    flexDirection: 'column',
   },
   cardWrap: {
     padding: '0 1.25rem 0.75rem',
