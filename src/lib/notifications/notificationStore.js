@@ -1,7 +1,28 @@
 /**
- * notificationStore.js — local append-only notification feed.
+ * notificationStore.js — RULE/REMINDER feed (internal layer).
  *
  *   localStorage["farroway.notifications"] = [ Notification, ... ]
+ *
+ * NOT a duplicate of `src/notifications/notificationStore.js`.
+ * The two stores serve different layers and intentionally do
+ * not share storage:
+ *
+ *   • THIS store (`src/lib/notifications/`) backs the rule and
+ *     reminder engines — daily reminders, missed-day, stage
+ *     transitions, harvest/inactivity nudges. Records are
+ *     i18n-keyed (messageKey + messageVars) and carry a
+ *     priority + channel for the dispatcher.
+ *
+ *   • `src/notifications/notificationStore.js` backs the
+ *     SPEC'd user-facing notification FEED — the bell, the
+ *     /notifications page, BUYER / FUNDING / PROGRAM / TASK
+ *     deliveries from external triggers. Records carry
+ *     pre-rendered title + message strings + userId.
+ *
+ * If you're adding a card the user reads in the bell or on the
+ * /notifications page, write to `src/notifications/`. If
+ * you're emitting a card from a rule engine for the reminder
+ * dispatcher, write here.
  *
  * Shape:
  *   Notification = {

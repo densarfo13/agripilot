@@ -1,7 +1,28 @@
 /**
- * notificationStore.js — local-first notification store.
+ * notificationStore.js — USER-FACING FEED (spec layer).
  *
  * Storage key: farroway_notifications
+ *
+ * NOT a duplicate of `src/lib/notifications/notificationStore.js`.
+ * The two stores serve different layers and intentionally do
+ * not share storage:
+ *
+ *   • THIS store (`src/notifications/`) backs the spec'd
+ *     user-facing feed — the bell, the /notifications page,
+ *     and external-trigger deliveries (BUYER interest,
+ *     FUNDING match, PROGRAM push, TASK assigned). Records
+ *     carry pre-rendered title + message strings + userId
+ *     and are read by humans on a list surface.
+ *
+ *   • `src/lib/notifications/notificationStore.js` backs the
+ *     internal rule/reminder dispatch layer — i18n-keyed
+ *     records consumed by the reminderEngine and
+ *     notificationDispatcher to fire daily / missed-day /
+ *     stage transition cards.
+ *
+ * Prefer importing from `src/notifications/index.js` for the
+ * user-facing feed; that re-export is the canonical entry
+ * point for the bell / notifications page surface.
  *
  * Spec contract (Notification System, § 1–7)
  *   * Notification shape (§ 1):
