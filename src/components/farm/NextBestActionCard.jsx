@@ -21,12 +21,11 @@
  * Visible text via tStrict. Lucide-style icons only.
  */
 
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { getTodayTasks } from '../../lib/dailyTasks/taskScheduler.js';
 import { getFarmStatus } from '../../lib/farm/farmFallbacks.js';
+import useTodayTask from '../../hooks/useTodayTask.js';
 import { CheckCircle, AlertTriangle, Sprout, ArrowRight } from '../icons/lucide.jsx';
 
 const TONE_STYLES = Object.freeze({
@@ -39,73 +38,53 @@ export default function NextBestActionCard({ farm }) {
   // Subscribe to language change.
   useTranslation();
   const navigate = useNavigate();
-  const [todayPlan, setTodayPlan] = useState(null);
 
-  // Run the same getTodayTasks call MyFarmPage uses for its
-  // notification scheduler — but here we keep the result in state
-  // so the card can render the first task title. The call is
-  // synchronous + offline-safe; the existing scheduler would have
-  // failed silently if the call threw.
-  useEffect(() => {
-    if (!farm || !farm.id) { setTodayPlan(null); return; }
-    try {
-      const plan = getTodayTasks({
-        farm: {
-          id:          farm.id,
-          crop:        farm.crop,
-          farmType:    farm.farmType,
-          cropStage:   farm.cropStage,
-          countryCode: farm.countryCode || farm.country,
-        },
-        weather: farm.weather || null,
-      });
-      setTodayPlan(plan && Array.isArray(plan.tasks) ? plan : { tasks: [] });
-    } catch {
-      setTodayPlan({ tasks: [] });
-    }
-    // re-run when the farm id changes; intentional narrow dep.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [farm && farm.id]);
+  // Production task engine — never returns null, always renderable.
+  // Receives the farm + whatever it knows; weather / risks /
+  // activity / funding / buyer signals are passed through when the
+  // parent has them. Today the parent (MyFarmPage) only has farm
+  // data here, so the engine falls through to its crop-stage or
+  // default rule based on what's set up.
+  const task = useTodayTask({
+    farm,
+    weather: farm?.weather || null,
+    risks: farm?.risks || null,
+    activity: farm?.activity || null,
+    fundingMatches: farm?.fundingMatches || null,
+    buyerSignals: farm?.buyerSignals || null,
+  });
 
-  const tasks = todayPlan?.tasks || [];
-  const status = getFarmStatus(farm, tasks, /* risks */ []);
+  // Status pill — derived independently of the engine so the chip
+  // tone reflects setup-completeness directly.
+  const status = getFarmStatus(farm, [], /* risks */ []);
   const tone = TONE_STYLES[status.tone] || TONE_STYLES.info;
   const StatusIcon = tone.icon;
 
-  // Pick the first non-completed task as the "next best action".
-  // Fall back to a localised stub when nothing is available.
-  const firstPending = tasks.find(t =>
-    t && !(t.completed || t.completedAt || t.done),
-  ) || null;
+  // Body line is the engine's resolved title (always non-empty per
+  // contract). The engine's `instruction` is also available; the
+  // card renders it as a secondary line when present.
+  const bodyText = task.title;
+  const detailText = task.instruction || '';
 
-  const taskTitleKey = firstPending?.titleKey || null;
-  const taskTitle = firstPending?.title
-    || (taskTitleKey ? tStrict(taskTitleKey, '') : '');
-
-  // Body line:
-  //   • If there's a pending task → its title (or i18n key).
-  //   • If there's no farm setup → setup-prompt fallback.
-  //   • Otherwise → "Your farm is being prepared" stub.
-  const bodyText = taskTitle
-    || (status.code === 'setup_incomplete'
-        ? tStrict('farm.next.setupBody',
-            'Add your crop and location to get daily guidance.')
-        : tStrict('farm.next.preparingBody',
-            'Your farm is being prepared. Check back soon or update your farm.'));
-
-  // CTA route + label depend on what we found.
+  // CTA route + label come from the engine's source rule. Setup →
+  // /edit-farm to fix the gap; everything else routes to /tasks
+  // which already has the rich task UI.
   let ctaKey, ctaFallback, ctaRoute;
-  if (taskTitle) {
-    ctaKey      = 'farm.next.cta.goToTask';
-    ctaFallback = 'Go to Today\u2019s Task';
-    ctaRoute    = '/tasks';
-  } else if (status.code === 'setup_incomplete') {
+  if (task.source === 'setup_incomplete') {
     ctaKey      = 'farm.next.cta.updateFarm';
     ctaFallback = 'Update farm';
     ctaRoute    = '/edit-farm';
+  } else if (task.source === 'harvest_sell') {
+    ctaKey      = 'farm.next.cta.markReady';
+    ctaFallback = 'Mark ready to sell';
+    ctaRoute    = '/sell';
+  } else if (task.source === 'funding_match') {
+    ctaKey      = 'farm.next.cta.viewFunding';
+    ctaFallback = 'View funding';
+    ctaRoute    = '/opportunities';
   } else {
-    ctaKey      = 'farm.next.cta.viewTasks';
-    ctaFallback = 'View tasks';
+    ctaKey      = 'farm.next.cta.startTask';
+    ctaFallback = 'Start task';
     ctaRoute    = '/tasks';
   }
 
@@ -124,6 +103,11 @@ export default function NextBestActionCard({ farm }) {
       </header>
 
       <p style={S.body}>{bodyText}</p>
+      {/* Secondary instruction line — renders when the engine
+          produced an explainer. Spec §10 (explainability). */}
+      {detailText && detailText !== bodyText ? (
+        <p style={S.detail}>{detailText}</p>
+      ) : null}
 
       <button
         type="button"
@@ -171,10 +155,17 @@ const S = {
     color: '#fff',
   },
   body: {
-    margin: '0 0 12px',
+    margin: '0 0 6px',
     fontSize: '0.95rem',
+    fontWeight: 600,
     lineHeight: 1.45,
-    color: 'rgba(255,255,255,0.85)',
+    color: '#fff',
+  },
+  detail: {
+    margin: '0 0 12px',
+    fontSize: '0.85rem',
+    lineHeight: 1.4,
+    color: 'rgba(255,255,255,0.65)',
   },
   cta: {
     display: 'inline-flex',
