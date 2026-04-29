@@ -370,26 +370,31 @@ const S = {
     justifyContent: 'center',
     padding: '1.5rem 1rem 4rem',
   },
+  // Visual restyle: card surface aligned with the rest of the
+  // farmer-facing pages (#102C47 panel, #1F3B5C border) and a
+  // tighter title cadence per the visual reference. No layout
+  // changes — the form stays in the same column with the same
+  // spacing and the same fields.
   card: {
     width: '100%',
     maxWidth: '32rem',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '20px',
-    padding: '1.75rem 1.5rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: '14px',
+    padding: '1.25rem 1.25rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.85rem',
+    gap: '0.75rem',
   },
   title: {
-    margin: '0.5rem 0 0',
-    fontSize: '1.5rem',
-    fontWeight: 800,
+    margin: '0.4rem 0 0',
+    fontSize: '1.25rem',
+    fontWeight: 700,
     color: C.white,
-    letterSpacing: '-0.01em',
+    letterSpacing: '-0.005em',
   },
-  lead:    { margin: 0, color: 'rgba(255,255,255,0.78)',
-             fontSize: '0.9375rem', lineHeight: 1.55 },
+  lead:    { margin: 0, color: 'rgba(255,255,255,0.6)',
+             fontSize: '0.875rem', lineHeight: 1.5 },
   successIcon: { fontSize: '2.25rem' },
   empty:   { margin: 0, color: 'rgba(255,255,255,0.78)',
              fontSize: '0.9375rem', lineHeight: 1.55 },
@@ -398,15 +403,20 @@ const S = {
   row:     { display: 'flex', gap: '0.65rem' },
   label:   { display: 'flex', flexDirection: 'column', gap: '0.35rem',
              color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' },
+  // Inputs use the snippet's `#1A3B5D` filled surface so the
+  // focusable controls read as a single clear group inside the
+  // card. Native `<select>` and `<input type="date">` inherit
+  // the same styling.
   input:   {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.10)',
-    borderRadius: '10px',
+    background: '#1A3B5D',
+    border: '1px solid #1F3B5C',
+    borderRadius: '8px',
     padding: '0.7rem 0.85rem',
     color: C.white,
     fontSize: '0.9375rem',
     outline: 'none',
     boxSizing: 'border-box',
+    width: '100%',
   },
   formError: {
     margin: 0,
@@ -435,11 +445,12 @@ const S = {
   btnPrimary: {
     display: 'inline-flex', alignItems: 'center',
     justifyContent: 'center',
-    padding: '0.85rem 1.25rem', borderRadius: '12px',
+    width: '100%',
+    padding: '0.875rem 1.25rem', borderRadius: '10px',
     border: 'none', background: C.green, color: C.white,
-    fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 8px 24px rgba(34,197,94,0.25)',
-    minHeight: '46px',
+    fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    minHeight: '48px',
   },
   btnGhost: {
     display: 'inline-flex', alignItems: 'center',
