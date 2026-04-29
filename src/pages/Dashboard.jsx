@@ -18,6 +18,7 @@ import { lazy, Suspense, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
@@ -581,6 +582,29 @@ export default function Dashboard() {
           >
             <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDF3E'}</span>
             <span>{t('land.entry.homeCta')}</span>
+            <span style={S.scanEntryChevron}>{'\u203A'}</span>
+          </button>
+        )}
+
+        {/* Buyer-layer entry point: secondary "Ready to sell?"
+            card. Sits at the same low priority as scan-crop /
+            land-check so it never competes with the primary
+            Today task. Shown to any farmer with a profile —
+            harvest-stage filtering is handled inside Sell.jsx
+            (prefills crop) so the card stays useful even
+            mid-season when a farmer wants to plan ahead. */}
+        {loop.profile && (
+          <button
+            type="button"
+            onClick={() => navigate('/sell')}
+            style={S.scanEntry}
+            data-testid="home-sell-entry"
+          >
+            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDFF7\uFE0F'}</span>
+            <span>
+              {tSafe('market.markProduceReady',
+                'Ready to sell? Mark produce ready')}
+            </span>
             <span style={S.scanEntryChevron}>{'\u203A'}</span>
           </button>
         )}

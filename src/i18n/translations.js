@@ -9173,6 +9173,39 @@ const T = {
   'helpers.sms':                  { en: 'Receive reminders by SMS', fr: 'Recevoir les rappels par SMS', sw: 'Pokea vikumbusho kwa SMS', ha: 'Karɓi tunatarwa ta SMS', tw: 'Nya nkae denam SMS so', hi: 'एसएमएस से अनुस्मारक पाएँ' },
   'helpers.reminder':             { en: 'When to send reminders',   fr: 'Quand envoyer les rappels',   sw: 'Wakati wa kutuma vikumbusho', ha: 'Lokacin aika tunatarwa', tw: 'Berɛ a yɛde nkae bɛkɔ', hi: 'अनुस्मारक कब भेजें' },
   'helpers.generic':              { en: '',                fr: '',                      sw: '',                       ha: '',                            tw: '',                        hi: '' },
+
+  // ─── Buyer + Funding/Impact layer (v3 merge) ───────────────
+  // Market — farmer Sell page + Marketplace buyer view.
+  'market.sellTitle':         { en: 'Sell your produce',                       fr: 'Vendez votre récolte',                          sw: 'Uza mazao yako',                              ha: 'Sayar da abin da ka noma',                tw: 'Tɔn w\'aduane',                              hi: 'अपनी उपज बेचें' },
+  'market.sellSubtitle':      { en: 'Let buyers know when your crop is ready.', fr: 'Indiquez aux acheteurs quand votre culture est prête.', sw: 'Wajulishe wanunuzi wakati mazao yako yamekomaa.', ha: 'Faɗa wa masu siyayya lokacin da amfanin gona ke shirye.', tw: 'Ma adetɔfoɔ nhunu sɛ wo nnɔbae no abere.', hi: 'खरीदारों को बताएं कि आपकी फसल कब तैयार है।' },
+  'market.crop':              { en: 'Crop',         fr: 'Culture',  sw: 'Zao',     ha: 'Amfani',   tw: 'Aduane',  hi: 'फसल' },
+  'market.quantity':          { en: 'Quantity',     fr: 'Quantité', sw: 'Kiasi',   ha: 'Adadi',    tw: 'Dodow',   hi: 'मात्रा' },
+  'market.unit':              { en: 'Unit',         fr: 'Unité',    sw: 'Kipimo',  ha: 'Awo',      tw: 'Susukoraa', hi: 'इकाई' },
+  'market.readyDate':         { en: 'Ready date',   fr: 'Date de disponibilité', sw: 'Tarehe ya utayari', ha: 'Ranar shirye', tw: 'Da a ɛbɛyɛ kraa', hi: 'तैयारी की तारीख' },
+  'market.priceRange':        { en: 'Price range (optional)', fr: 'Fourchette de prix (optionnel)', sw: 'Bei (hiari)', ha: 'Farashin (zaɓi)', tw: 'Boɔ a ɛhia', hi: 'मूल्य सीमा (वैकल्पिक)' },
+  'market.createListing':     { en: 'Create Listing',          fr: 'Créer une annonce',     sw: 'Tengeneza Orodha',     ha: 'Ƙirƙiri Talla',         tw: 'Yɛ Adetɔn',         hi: 'सूची बनाएँ' },
+  'market.availableProduce':  { en: 'Available Produce',       fr: 'Produits disponibles',  sw: 'Mazao Yanayopatikana',  ha: 'Amfanin gona da ake da shi', tw: 'Nnɔbae a ɛwɔ hɔ', hi: 'उपलब्ध उपज' },
+  'market.interested':        { en: 'I’m Interested',          fr: 'Je suis intéressé(e)',  sw: 'Nina Hamu',             ha: 'Ina Sha\'awa',           tw: 'Mepɛ',              hi: 'मुझे रुचि है' },
+  'market.noProduce':         { en: 'No produce available yet.', fr: 'Aucun produit disponible pour le moment.', sw: 'Hakuna mazao yanayopatikana bado.', ha: 'Babu amfanin gona da ke akwai tukuna.', tw: 'Nnɔbae biara nni hɔ ɛnnɛ.', hi: 'अभी कोई उपज उपलब्ध नहीं है।' },
+  'market.success':           { en: 'Your produce is now visible to buyers.',   fr: 'Vos produits sont maintenant visibles par les acheteurs.', sw: 'Mazao yako sasa yanaonekana kwa wanunuzi.', ha: 'Yanzu masu siyayya za su iya ganin amfaninka.', tw: 'Adetɔfoɔ tumi hu wo nnɔbae mprenpren ara.', hi: 'आपकी उपज अब खरीदारों को दिख रही है।' },
+  'market.readyToSell':       { en: 'Ready to sell?',          fr: 'Prêt à vendre ?',       sw: 'Tayari kuuza?',         ha: 'A shirye don sayarwa?',   tw: 'Wopɛ sɛ wotɔn?',     hi: 'बेचने के लिए तैयार?' },
+  'market.markProduceReady':  { en: 'Mark Produce Ready',      fr: 'Marquer comme prête',   sw: 'Onyesha Mazao Tayari',  ha: 'Sanya Amfani A Shirye',  tw: 'Kyerɛ sɛ aduane no asiesie', hi: 'उपज तैयार चिह्नित करें' },
+
+  // Impact — NGO funding & impact card.
+  'impact.title':             { en: 'Funding & Impact',        fr: 'Financement et impact', sw: 'Fedha na Athari',       ha: 'Tallafi da Tasiri',      tw: 'Sika ne Nkɔso',     hi: 'फंडिंग और प्रभाव' },
+  'impact.subtitle':          { en: 'Real-time program performance and donor-ready reporting.', fr: 'Performance du programme en temps réel et rapports prêts pour les donateurs.', sw: 'Utendaji wa programu kwa wakati halisi na ripoti zilizo tayari kwa wafadhili.', ha: 'Aikin shirin a ainihin lokaci da rahotannin shirye don masu ba da gudummawa.', tw: 'Nhyehyɛeɛ a ɛrekɔ so seesei ara ne nkɔmmɔdie a ɛbɛboa adɔeɛnimfo.', hi: 'वास्तविक समय में कार्यक्रम प्रदर्शन और दानदाता-तैयार रिपोर्टिंग।' },
+  'impact.totalFarmers':      { en: 'Total Farmers',           fr: 'Total des agriculteurs', sw: 'Jumla ya Wakulima',    ha: 'Jimillar Manoma',        tw: 'Akuafoɔ Nyinaa',     hi: 'कुल किसान' },
+  'impact.activeFarmers7d':   { en: 'Active Farmers (7d)',     fr: 'Agriculteurs actifs (7j)', sw: 'Wakulima Hai (siku 7)', ha: 'Manoma Masu Aiki (kwana 7)', tw: 'Akuafoɔ a Wɔreyɛ Adwuma (nna 7)', hi: 'सक्रिय किसान (7 दिन)' },
+  'impact.taskCompletionRate':{ en: 'Task Completion Rate',    fr: 'Taux de réalisation des tâches', sw: 'Kiwango cha Kukamilisha Kazi', ha: 'Adadin Cikar Aiki', tw: 'Adwuma a Awie ho Akontaa', hi: 'कार्य पूर्णता दर' },
+  'impact.avgTasksPerFarmer': { en: 'Avg Tasks / Farmer',      fr: 'Tâches moy. / agriculteur', sw: 'Wastani wa Kazi / Mkulima', ha: 'Matsakaicin Aiki / Manomi', tw: 'Adwuma Mfimfini / Okuafoɔ', hi: 'औसत कार्य / किसान' },
+  'impact.highRiskFarms':     { en: 'High Risk Farms',         fr: 'Fermes à haut risque',  sw: 'Mashamba ya Hatari Kubwa', ha: 'Gonaki Masu Babban Haɗari', tw: 'Mfuo Akwankyene a ɛsoso', hi: 'उच्च जोखिम वाले खेत' },
+  'impact.riskReports7d':     { en: 'Risk Reports (7d)',       fr: 'Rapports de risque (7j)', sw: 'Ripoti za Hatari (siku 7)', ha: 'Rahotannin Haɗari (kwana 7)', tw: 'Akwankyene Nkrataa (nna 7)', hi: 'जोखिम रिपोर्ट (7 दिन)' },
+  'impact.exportSummary':     { en: 'Export Impact Summary',   fr: 'Exporter le résumé d’impact', sw: 'Hamisha Muhtasari wa Athari', ha: 'Fitar da Taƙaitaccen Tasiri', tw: 'Yi Nkɔso Mua Adi', hi: 'प्रभाव सारांश निर्यात करें' },
+  'impact.donorNote':         { en: 'Use this data to support donor reporting, grant applications, and program monitoring.', fr: 'Utilisez ces données pour les rapports aux donateurs, les demandes de subvention et le suivi des programmes.', sw: 'Tumia data hii kusaidia ripoti za wafadhili, maombi ya ruzuku, na ufuatiliaji wa programu.', ha: 'Yi amfani da wannan bayanan don tallafa wa rahotannin masu ba da gudummawa, neman tallafi, da kula da shirin.', tw: 'Fa saa nsɛm yi yɛ adwuma ma adɔeɛnimfo nkrataa, sika nhwehwɛmu, ne nhyehyɛeɛ ho hwɛ.', hi: 'दानकर्ता रिपोर्टिंग, अनुदान आवेदन और कार्यक्रम निगरानी का समर्थन करने के लिए इस डेटा का उपयोग करें।' },
+
+  // NGO dashboard surface labels.
+  'ngo.marketActivity':       { en: 'Market activity',         fr: 'Activité du marché',    sw: 'Shughuli za Soko',      ha: 'Ayyukan Kasuwa',         tw: 'Gua so Adwuma',     hi: 'बाजार गतिविधि' },
+  'ngo.fundingImpact':        { en: 'Funding & impact',        fr: 'Financement et impact', sw: 'Fedha na Athari',       ha: 'Tallafi da Tasiri',      tw: 'Sika ne Nkɔso',     hi: 'फंडिंग और प्रभाव' },
 };
 
 export default T;

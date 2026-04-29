@@ -57,6 +57,14 @@ import { initDailyLoop } from './utils/dailyLoop.js';
 // is retained in tree as a backup but no longer routed.
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 
+// Buyer + Funding/Impact layer (v3 merge, local-first)
+//   /sell         — farmer creates a produce listing
+//   /marketplace  — buyer browses available produce
+//   /ngo/impact   — NGO funding + impact + market activity
+const Sell          = lazy(() => import('./pages/Sell.jsx'));
+const Marketplace   = lazy(() => import('./pages/Marketplace.jsx'));
+const NgoImpactPage = lazy(() => import('./pages/NgoImpactPage.jsx'));
+
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
 const V2Register = lazy(() => import('./pages/Register.jsx'));
@@ -476,6 +484,12 @@ export default function App() {
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
 
+          {/* Public Marketplace — buyers browse without an
+              account. Interest forms route to platform/admin
+              via marketStore.saveBuyerInterest; farmer phone
+              is never exposed publicly. */}
+          <Route path="/marketplace" element={<Marketplace />} />
+
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
           <Route path="/start" element={<FarmerEntry />} />
 
@@ -535,6 +549,13 @@ export default function App() {
             <Route path="/ngo/control" element={<NgoControlPanel />} />
             <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/today/quick" element={<TodayQuick />} />
+
+            {/* Buyer + Funding/Impact layer — v3 local-first
+                routes mounted alongside the legacy
+                /farmer/listings* + /market/* surfaces (those
+                stay for backend-driven flows). */}
+            <Route path="/sell"        element={<Sell />} />
+            <Route path="/ngo/impact"  element={<NgoImpactPage />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
             <Route path="/farmer/listings" element={<MyListingsPage />} />
             <Route path="/farmer/listings/new" element={<CreateListingPage />} />

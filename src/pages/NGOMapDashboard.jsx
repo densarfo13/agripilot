@@ -47,6 +47,8 @@ import { getFarms } from '../api/ngoApi.js';
 import { hasGPS, getRegionKey } from '../location/geoUtils.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+import FundingImpact   from '../components/ngo/FundingImpact.jsx';
+import MarketActivity  from '../components/ngo/MarketActivity.jsx';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
 
@@ -270,7 +272,24 @@ export default function NGOMapDashboard({
           )}
         </section>
 
-        {/* 4. Region table */}
+        {/* 4. Funding & Impact (v3 buyer + funding layer).
+              Reads the local event log + farms list to show
+              donor-ready impact metrics with a CSV export.
+              When server-side aggregates exist, the host can
+              pass `summary` directly to FundingImpact. */}
+        <FundingImpact
+          farms={effectiveFarms}
+          risks={perFarmRisks}
+          testId="ngo-map-funding"
+        />
+
+        {/* 5. Market Activity (v3 buyer + funding layer).
+              Reads marketStore so it works offline — listings
+              + buyer interests roll up into a calm summary
+              card pointing operators at /marketplace. */}
+        <MarketActivity testId="ngo-map-market" />
+
+        {/* 6. Region table */}
         <section style={S.section} data-testid="ngo-region-section">
           <h2 style={S.h2}>
             {tSafe('ngo.dashboard.regionTitle', 'Regions overview')}
