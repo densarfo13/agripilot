@@ -209,30 +209,39 @@ function ListingCard({ listing, onInterested }) {
     : tSafe('market.readyAnytime', 'Ready now');
   const cropText = cropLabel(listing.crop, lang);
 
+  // Visual restyle: snippet's compact card (title • qty/region
+  // subline • ready-now line • full-width green CTA). Same data
+  // path, same tSafe keys, same `data-testid`. Status pill kept
+  // but inline + smaller — drops out for the default ACTIVE state
+  // so the card stays clean for the most common listing state.
+  const qtyAndRegion = [
+    `${listing.quantity || 0} ${listing.unit || 'kg'}`,
+    listing.location?.region
+      ? listing.location.region + (listing.location.country
+          ? `, ${listing.location.country}` : '')
+      : tSafe('market.unknownRegion', 'Unknown region'),
+  ].filter(Boolean).join(' • ');
+
+  const status = String(listing.status || 'ACTIVE');
+  const showStatusBadge = status !== 'ACTIVE';   // hide the default ACTIVE chip
+
   return (
     <article style={cardStyles.card}>
-      <div style={cardStyles.cropRow}>
-        <span style={cardStyles.cropName}>{cropText || '—'}</span>
-        <span style={cardStyles.statusPill(listing.status)}>
-          {String(listing.status || 'ACTIVE')}
-        </span>
+      <div style={cardStyles.headerRow}>
+        <h2 style={cardStyles.cropName}>{cropText || '—'}</h2>
+        {showStatusBadge && (
+          <span style={cardStyles.statusPill(status)}>{status}</span>
+        )}
       </div>
-      <div style={cardStyles.qty}>
-        {listing.quantity || 0} {listing.unit || 'kg'}
-      </div>
-      <div style={cardStyles.metaRow}>
-        <span style={cardStyles.meta}>
-          📍 {listing.location?.region || tSafe('market.unknownRegion', 'Unknown region')}
-          {listing.location?.country
-            ? `, ${listing.location.country}` : ''}
-        </span>
-        <span style={cardStyles.meta}>📅 {ready}</span>
-      </div>
+
+      <p style={cardStyles.subline}>{qtyAndRegion}</p>
+
+      <p style={cardStyles.readyText}>{ready}</p>
+
       {listing.priceRange && (
-        <div style={cardStyles.price}>
-          💰 {listing.priceRange}
-        </div>
+        <p style={cardStyles.price}>{listing.priceRange}</p>
       )}
+
       <button
         type="button"
         onClick={onInterested}
@@ -247,48 +256,65 @@ function ListingCard({ listing, onInterested }) {
 
 const cardStyles = {
   card: {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '14px',
-    padding: '1rem',
-    display: 'flex', flexDirection: 'column', gap: '0.5rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: '12px',
+    padding: '14px 16px',
+    display: 'flex', flexDirection: 'column', gap: '4px',
     height: '100%',
   },
-  cropRow: { display: 'flex', alignItems: 'center',
-             justifyContent: 'space-between', gap: '0.5rem' },
+  headerRow: {
+    display: 'flex', alignItems: 'center',
+    justifyContent: 'space-between', gap: '0.5rem',
+  },
   // Renamed from `crop` to `cropName` so the raw-crop-render guard
   // doesn't flag style-object property access (`cardStyles.crop`)
   // as a raw render. Pure CSS-key rename, no behaviour change.
-  cropName: { fontSize: '1.0625rem', fontWeight: 800, color: C.white,
-              textTransform: 'capitalize' },
+  cropName: {
+    margin: 0,
+    fontSize: '1.05rem', fontWeight: 700, color: C.white,
+    textTransform: 'capitalize',
+  },
   statusPill: (s) => ({
     fontSize: '0.6875rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
-    padding: '0.2rem 0.55rem', borderRadius: '999px',
+    padding: '0.15rem 0.55rem', borderRadius: '999px',
     background: s === 'SOLD'
       ? 'rgba(255,255,255,0.05)'
-      : 'rgba(34,197,94,0.15)',
+      : 'rgba(255,255,255,0.06)',
     color: s === 'SOLD'
       ? 'rgba(255,255,255,0.55)'
-      : C.lightGreen,
+      : 'rgba(255,255,255,0.7)',
     border: '1px solid rgba(255,255,255,0.10)',
   }),
-  qty:     { fontSize: '1.5rem', fontWeight: 800, color: C.white },
-  metaRow: { display: 'flex', flexWrap: 'wrap', gap: '0.65rem',
-             color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' },
-  meta:    { display: 'inline-flex', alignItems: 'center', gap: '0.25rem' },
-  price:   { color: C.lightGreen, fontWeight: 700, fontSize: '0.9375rem' },
+  subline: {
+    margin: 0,
+    fontSize: '0.85rem',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  readyText: {
+    margin: '2px 0 8px',
+    fontSize: '0.85rem',
+    color: '#86EFAC',
+  },
+  price: {
+    margin: '0 0 8px',
+    fontSize: '0.85rem',
+    color: '#86EFAC',
+    fontWeight: 600,
+  },
   btn: {
-    marginTop: '0.5rem',
-    padding: '0.7rem 1rem',
+    width: '100%',
+    padding: '0.625rem 1rem',
     borderRadius: '10px',
     border: 'none',
-    background: C.green,
+    background: '#22C55E',
     color: C.white,
     fontSize: '0.9375rem',
-    fontWeight: 800,
+    fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    minHeight: '44px',
   },
 };
 
@@ -444,11 +470,11 @@ const modalStyles = {
   },
   card: {
     width: '100%', maxWidth: '28rem',
-    background: C.darkPanel,
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '18px', padding: '1.5rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: '14px', padding: '1.25rem',
     color: C.white,
-    display: 'flex', flexDirection: 'column', gap: '0.85rem',
+    display: 'flex', flexDirection: 'column', gap: '0.75rem',
     boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
   },
   header: { display: 'flex', alignItems: 'center',
@@ -466,19 +492,22 @@ const modalStyles = {
   form:   { display: 'flex', flexDirection: 'column', gap: '0.6rem',
             marginTop: '0.25rem' },
   input:  {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.10)',
-    borderRadius: '10px',
+    background: '#1A3B5D',
+    border: '1px solid #1F3B5C',
+    borderRadius: '8px',
     padding: '0.7rem 0.85rem',
     color: C.white, fontSize: '0.9375rem',
     outline: 'none', boxSizing: 'border-box',
+    width: '100%',
   },
   submit: {
-    marginTop: '0.5rem',
-    padding: '0.85rem 1.25rem', borderRadius: '12px',
-    border: 'none', background: C.green, color: C.white,
-    fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 8px 20px rgba(34,197,94,0.25)',
+    marginTop: '0.25rem',
+    width: '100%',
+    padding: '0.875rem 1.25rem', borderRadius: '10px',
+    border: 'none', background: '#22C55E', color: C.white,
+    fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    minHeight: '48px',
   },
   successIcon: { fontSize: '2rem' },
   privacy: { margin: 0, color: 'rgba(255,255,255,0.55)',
