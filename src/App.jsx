@@ -47,6 +47,10 @@ import { logSessionState } from './utils/sessionDebug.js';
 // per-day check-in flag, advances or resets the streak, and arms
 // the soft 6h reminder. Safe to mount once at the App root.
 import { initDailyLoop } from './utils/dailyLoop.js';
+// NGO impact event log (local-first). Used by the Farmer
+// Engagement section of NgoDashboard to count active /
+// inactive farmers + completion rates over a 7-day window.
+import { logEvent, EVENT_TYPES } from './data/eventLogger.js';
 
 // Landing page (marketing homepage)
 //
@@ -414,6 +418,14 @@ export default function App() {
     // scheduleReminder). On HMR the previous timer is replaced
     // automatically.
     try { initDailyLoop(); } catch { /* never blocks app boot */ }
+    // NGO impact: log APP_OPENED once per app boot. Kept lean —
+    // the active-farmer count uses ANY event in the 7-day window,
+    // so a single boot row is enough to mark the farmer alive.
+    try {
+      logEvent(EVENT_TYPES.APP_OPENED, {
+        openedAt: new Date().toISOString(),
+      });
+    } catch { /* never blocks app boot */ }
   }, []);
 
   // Lightweight offline-action queue auto-flush (additive — sits

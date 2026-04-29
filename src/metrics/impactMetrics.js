@@ -363,6 +363,271 @@ export function computeImpactSummary({
   };
 }
 
+/* ────────────────────────────────────────────────────────────
+ *  NGO Farmer Engagement (Apr 2026 spec)
+ *  ──────────────────────────────────────
+ *  Reads the same `farroway_events` log as the v1/v3 helpers
+ *  above and produces a single 8-field summary the
+ *  NgoDashboard's Farmer Engagement section consumes.
+ *
+ *  Active = ANY event in the last 7 days for that farmerId.
+ *  Inactive = totalFarmers - activeFarmers7d (clamped at 0).
+ *  Verified = TASK_COMPLETED events whose payload carries
+ *  a non-null `verificationLevel` (set when the task model
+ *  flags the action as photo/location/peer-confirmed). The
+ *  count is honest — no imputation, no projected verification.
+ *
+ *  Pure + sync. Never throws. All zeros on missing input.
+ * ──────────────────────────────────────────────────────────── */
+
+const SEVEN_DAYS_MS_NGO = 7 * 24 * 60 * 60 * 1000;
+
+function _ngoFarmerOf(e) {
+  if (!e) return null;
+  // Support both the v1 payload-nested shape and the v3 flat
+  // shape. The newer TASK_COMPLETED/STREAK_UPDATED events write
+  // farmerId inside payload; APP_OPENED has none. Prefer farmerId,
+  // fall back to farmId so single-farmer devices still count.
+  const p = e.payload || {};
+  const id = p.farmerId || e.farmerId || p.farmId || e.farmId || null;
+  return id != null ? String(id) : null;
+}
+
+function _ngoTs(e) {
+  if (!e) return 0;
+  if (Number.isFinite(e.timestamp)) return e.timestamp;
+  if (Number.isFinite(e.ts)) return e.ts;
+  return 0;
+}
+
+function _ngoIsType(e, type) {
+  return e && String(e.type || e.event || '').toUpperCase() === type;
+}
+
+/**
+ * computeTasksCompleted7d(events) → integer
+ * Count of TASK_COMPLETED rows with timestamp in the last 7 days.
+ */
+export function computeTasksCompleted7d(events) {
+  const cutoff = Date.now() - SEVEN_DAYS_MS_NGO;
+  let n = 0;
+  for (const e of (Array.isArray(events) ? events : [])) {
+    if (!_ngoIsType(e, 'TASK_COMPLETED')) continue;
+    if (_ngoTs(e) < cutoff) continue;
+    n += 1;
+  }
+  return n;
+}
+
+/**
+ * computeCurrentActiveStreaks(events) → integer
+ * Distinct farmerIds with a STREAK_UPDATED event in the last
+ * 7 days. A streak older than that has lapsed by definition
+ * (getEffectiveStreak returns 0 when the gap > 1 day).
+ */
+export function computeCurrentActiveStreaks(events) {
+  const cutoff = Date.now() - SEVEN_DAYS_MS_NGO;
+  const set = new Set();
+  for (const e of (Array.isArray(events) ? events : [])) {
+    if (!_ngoIsType(e, 'STREAK_UPDATED')) continue;
+    if (_ngoTs(e) < cutoff) continue;
+    const fid = _ngoFarmerOf(e);
+    if (fid) set.add(fid);
+  }
+  return set.size;
+}
+
+/**
+ * computeInactiveFarmers7d({events, totalFarmers}) → integer
+ * totalFarmers minus the count of distinct farmerIds active in
+ * the last 7 days. Clamped at 0 so an over-counted active set
+ * (e.g. duplicate farmer-ids from a noisy device) never returns
+ * a negative value.
+ */
+export function computeInactiveFarmers7d({ events, totalFarmers }) {
+  const cutoff = Date.now() - SEVEN_DAYS_MS_NGO;
+  const active = new Set();
+  for (const e of (Array.isArray(events) ? events : [])) {
+    if (_ngoTs(e) < cutoff) continue;
+    const fid = _ngoFarmerOf(e);
+    if (fid) active.add(fid);
+  }
+  const total = Math.max(0, Number(totalFarmers) || 0);
+  return Math.max(0, total - active.size);
+}
+
+/**
+ * computeVerifiedCompletions7d(events) → integer
+ * TASK_COMPLETED rows whose payload.verificationLevel is set
+ * (non-null, non-empty string) and timestamp is within 7 days.
+ */
+export function computeVerifiedCompletions7d(events) {
+  const cutoff = Date.now() - SEVEN_DAYS_MS_NGO;
+  let n = 0;
+  for (const e of (Array.isArray(events) ? events : [])) {
+    if (!_ngoIsType(e, 'TASK_COMPLETED')) continue;
+    if (_ngoTs(e) < cutoff) continue;
+    const v = e.payload && e.payload.verificationLevel;
+    if (v != null && String(v).trim() !== '') n += 1;
+  }
+  return n;
+}
+
+/**
+ * computeNgoEngagementSummary({ events, farms }) → summary
+ *
+ * Single call the NGO dashboard renders into the Farmer
+ * Engagement section + the CSV export.
+ *
+ * Returns:
+ *   {
+ *     totalFarmers, activeFarmers7d, inactiveFarmers7d,
+ *     tasksCompleted7d, taskCompletionRate,
+ *     avgTasksPerFarmer, currentActiveStreaks,
+ *     verifiedCompletions7d, generatedAt,
+ *     hasActivity: boolean,
+ *   }
+ *
+ * `hasActivity` is the empty-state signal for the dashboard:
+ * when false, render the "No activity yet" copy instead of a
+ * row of zero-cards.
+ */
+export function computeNgoEngagementSummary({
+  events = [],
+  farms  = [],
+} = {}) {
+  const evs   = Array.isArray(events) ? events : [];
+  const fs    = Array.isArray(farms)  ? farms  : [];
+  const total = fs.length;
+
+  const tasksCompleted7d        = computeTasksCompleted7d(evs);
+  const activeFarmers7d         = computeActiveFarmers7d(evs);
+  const inactiveFarmers7d       = computeInactiveFarmers7d({ events: evs, totalFarmers: total });
+  const taskCompletionRate      = computeTaskCompletionRate(evs);
+  const avgTasksPerFarmer       = total > 0
+    ? Number(computeAvgTasksPerFarmer(evs, total).toFixed(2))
+    : 0;
+  const currentActiveStreaks    = computeCurrentActiveStreaks(evs);
+  const verifiedCompletions7d   = computeVerifiedCompletions7d(evs);
+
+  return Object.freeze({
+    totalFarmers:           total,
+    activeFarmers7d,
+    inactiveFarmers7d,
+    tasksCompleted7d,
+    taskCompletionRate,
+    avgTasksPerFarmer,
+    currentActiveStreaks,
+    verifiedCompletions7d,
+    generatedAt:            new Date().toISOString(),
+    hasActivity:            tasksCompleted7d > 0
+                          || activeFarmers7d > 0
+                          || currentActiveStreaks > 0,
+  });
+}
+
+/**
+ * engagementToCsv({ events, farms }) → CSV string.
+ *
+ * Per-farmer roll-up suitable for the dashboard's "Download
+ * Engagement Report" button. Columns match the impact spec
+ * exactly: farmerId, crop, region, tasksCompleted, lastActive,
+ * streak, verifiedActions.
+ *
+ * lastActive is an ISO timestamp (or empty when the farmer has
+ * no events). streak is computed from the latest STREAK_UPDATED
+ * event for that farmer in the last 7 days; falls back to 0
+ * when no recent streak event exists.
+ */
+export function engagementToCsv({ events = [], farms = [] } = {}) {
+  const evs = Array.isArray(events) ? events : [];
+  const fs  = Array.isArray(farms)  ? farms  : [];
+
+  // Group events per farmerId in one pass.
+  const cutoff = Date.now() - SEVEN_DAYS_MS_NGO;
+  const perFarmer = new Map(); // id → { tasksCompleted, lastActive, streak, verifiedActions, crop, region }
+  function bucket(id) {
+    if (!perFarmer.has(id)) {
+      perFarmer.set(id, {
+        tasksCompleted: 0,
+        lastActive:     0,
+        streak:         0,
+        verifiedActions: 0,
+        crop:           '',
+        region:         '',
+      });
+    }
+    return perFarmer.get(id);
+  }
+
+  for (const e of evs) {
+    const id = _ngoFarmerOf(e);
+    if (!id) continue;
+    const ts = _ngoTs(e);
+    const b  = bucket(id);
+    if (ts > b.lastActive) b.lastActive = ts;
+    const p = e.payload || {};
+    if (p.crop && !b.crop)     b.crop   = String(p.crop);
+    if (p.region && !b.region) b.region = String(p.region);
+    if (_ngoIsType(e, 'TASK_COMPLETED')) {
+      b.tasksCompleted += 1;
+      if (p.verificationLevel != null
+          && String(p.verificationLevel).trim() !== '') {
+        b.verifiedActions += 1;
+      }
+    }
+    if (_ngoIsType(e, 'STREAK_UPDATED') && ts >= cutoff) {
+      // Latest streak for this farmer in the active window.
+      const after = Number((p.after != null) ? p.after : p.streak);
+      if (Number.isFinite(after) && after >= 0) b.streak = after;
+    }
+  }
+
+  // Pull crop/region off the canonical farms list when the events
+  // didn't carry it (older rows). Keeps the CSV usable even when
+  // the event log is sparse.
+  const farmRowById = new Map();
+  for (const f of fs) {
+    if (!f) continue;
+    const id = String(f.farmerId || f.id || '');
+    if (id) farmRowById.set(id, f);
+    // Also bucket so farmers with zero events still appear in CSV.
+    if (id && !perFarmer.has(id)) bucket(id);
+  }
+  for (const [id, b] of perFarmer) {
+    const f = farmRowById.get(id);
+    if (f) {
+      if (!b.crop)   b.crop   = String(f.crop || '');
+      if (!b.region) b.region = String(f.region || f.location || '');
+    }
+  }
+
+  const esc = (v) => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const isoOr = (ts) => {
+    if (!ts || !Number.isFinite(Number(ts))) return '';
+    try { return new Date(Number(ts)).toISOString(); } catch { return ''; }
+  };
+  const rows = [
+    ['farmerId', 'crop', 'region', 'tasksCompleted', 'lastActive', 'streak', 'verifiedActions']
+      .join(','),
+  ];
+  for (const [id, b] of perFarmer) {
+    rows.push([
+      esc(id),
+      esc(b.crop),
+      esc(b.region),
+      esc(b.tasksCompleted),
+      esc(isoOr(b.lastActive)),
+      esc(b.streak),
+      esc(b.verifiedActions),
+    ].join(','));
+  }
+  return rows.join('\n') + (rows.length > 1 ? '\n' : '');
+}
+
 /**
  * impactSummaryToCsv(summary) → CSV string. Used by the
  * "Export Impact Summary" button to build a Blob download.

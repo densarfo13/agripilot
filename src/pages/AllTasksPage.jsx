@@ -28,6 +28,12 @@ import { useUserMode } from '../context/UserModeContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+// Structured event log for the NGO impact dashboard. logEvent
+// writes to localStorage under `farroway_events`, the same
+// canonical store impactMetrics.js + ngo aggregations read.
+// safeTrackEvent (above) ships to the backend analytics
+// endpoint; the two are complementary, not redundant.
+import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
 import { buildTaskListViewModels } from '../domain/tasks/index.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
@@ -175,6 +181,44 @@ export default function AllTasksPage() {
     safeTrackEvent('task_completed', { farmId: currentFarmId, taskId: task.id, source: 'tasks_page', offline: savedOffline });
     if (savedOffline) safeTrackEvent('saved_offline_after_completion', { taskId: task.id });
 
+    // ── NGO impact event log (structured, local-first) ──────
+    // The NGO dashboard's Farmer Engagement section reads this
+    // store to compute completion counts, completion rate,
+    // verified actions, and inactive-farmer counts. Payload
+    // shape matches the impact-reporting spec exactly so the
+    // Python ingestion job + the JS aggregator stay aligned.
+    try {
+      const farmerId = profile?.userId || profile?.farmerId || null;
+      const region   = profile?.region || profile?.location || null;
+      const crop     = profile?.crop || null;
+      const verificationLevel =
+        (task && (task.verificationLevel || task.verification_level)) || null;
+      logEvent(EVENT_TYPES.TASK_COMPLETED, {
+        farmerId,
+        farmId:            currentFarmId,
+        crop,
+        region,
+        taskId:            task.id,
+        taskTitle:         task.title || null,
+        completedAt:       new Date().toISOString(),
+        verificationLevel,
+        offlineSynced:     !!savedOffline,
+      });
+      // STREAK_UPDATED only fires when the helper actually
+      // moved the streak forward (first task of the day);
+      // same-day completions keep streakAfter === streakBefore
+      // and we skip the log to avoid noise.
+      if (streakAfter !== streakBefore) {
+        logEvent(EVENT_TYPES.STREAK_UPDATED, {
+          farmerId,
+          farmId:    currentFarmId,
+          before:    streakBefore,
+          after:     streakAfter,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch { /* never break the completion path */ }
+
     // Determine next task from remaining
     const sortedRemaining = [...remainingTasks].sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 };
@@ -231,6 +275,28 @@ export default function AllTasksPage() {
   const restTasks = sorted.slice(3);
   const totalDone = completedCount + completedTasks.length;
   const totalAll = totalDone + tasks.length;
+
+  // ─── NGO impact: TASK_VIEWED log ───────────────────────────────
+  // Fires once per task-id transition on /tasks so the NGO
+  // dashboard can compute task_completion_rate honestly. Skipped
+  // while the page is loading so we never log a stale or null
+  // task ID. Mirrors the existing TODAY_VIEWED hook in
+  // pages/Today.jsx — same store, same payload shape.
+  useEffect(() => {
+    if (loading) return;
+    if (!currentTask) return;
+    try {
+      logEvent(EVENT_TYPES.TASK_VIEWED, {
+        farmerId:   profile?.userId || profile?.farmerId || null,
+        farmId:     currentFarmId,
+        crop:       profile?.crop || null,
+        region:     profile?.region || profile?.location || null,
+        taskId:     currentTask.id,
+        viewedAt:   new Date().toISOString(),
+      });
+    } catch { /* never propagate */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, currentTask && currentTask.id]);
 
   // ─── Quick-onboarding voice-first hook ─────────────────────────
   // Spec section 7: when /tasks loads for a user who came through

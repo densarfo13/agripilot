@@ -51,6 +51,14 @@ export const EVENT_TYPES = Object.freeze({
   TASK_COMPLETED:        'TASK_COMPLETED',
   TASK_SKIPPED:          'TASK_SKIPPED',
 
+  // ── Engagement / streak (NGO impact reporting) ────────────
+  // STREAK_UPDATED fires whenever markTaskCompletedForStreak
+  // returns a new value (i.e. the first task of a calendar
+  // day). Used by impactMetrics.computeCurrentActiveStreaks
+  // to count distinct farmers with an active streak in the
+  // last 7 days without re-deriving from TASK_COMPLETED.
+  STREAK_UPDATED:        'STREAK_UPDATED',
+
   // ── Label + outcome ───────────────────────────────────────
   LABEL_SUBMITTED:       'LABEL_SUBMITTED',
   OUTCOME_SUBMITTED:     'OUTCOME_SUBMITTED',

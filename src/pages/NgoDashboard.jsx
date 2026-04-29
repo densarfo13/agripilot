@@ -28,6 +28,16 @@ import {
 import NeedsAttentionPanel from '../components/admin/NeedsAttentionPanel.jsx';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+// NGO impact reporting — local-first event aggregation.
+// computeNgoEngagementSummary reads `farroway_events` (the
+// canonical event log written by AllTasksPage + App.jsx) and
+// returns the 8-field summary the Farmer Engagement section
+// renders. engagementToCsv produces the per-farmer roll-up
+// for the "Download Engagement Report" button.
+import { getEvents } from '../data/eventLogger.js';
+import {
+  computeNgoEngagementSummary, engagementToCsv,
+} from '../metrics/impactMetrics.js';
 
 /**
  * Brand header reused across NGO loading / error / success states
@@ -83,6 +93,11 @@ export default function NgoDashboard() {
   const [performance, setPerformance] = useState(null);
   const [error,      setError]      = useState('');
   const [loading,    setLoading]    = useState(true);
+  // NGO impact: engagement summary derived from the local event
+  // log. Recomputed whenever the program filter changes or the
+  // farmers list updates so totals stay aligned with the filtered
+  // cohort. Pure read of localStorage — no extra fetch.
+  const [engagement, setEngagement] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -108,6 +123,23 @@ export default function NgoDashboard() {
     return () => { alive = false; };
   }, [program]);
 
+  // NGO impact: compute the Farmer Engagement summary whenever
+  // the filtered farmers list updates. Reading the event log is
+  // synchronous + local; the summary helper handles missing data
+  // gracefully (returns all-zeros + hasActivity:false).
+  useEffect(() => {
+    let evs = [];
+    try { evs = getEvents() || []; } catch { evs = []; }
+    const farmList = Array.isArray(farmers) ? farmers : [];
+    try {
+      setEngagement(computeNgoEngagementSummary({
+        events: evs, farms: farmList,
+      }));
+    } catch {
+      setEngagement(null);
+    }
+  }, [farmers, program]);
+
   // Derive the list of known programs from the farmers payload
   // so the picker can offer concrete choices without a separate
   // endpoint.
@@ -128,6 +160,30 @@ export default function NgoDashboard() {
   function onProgramChange(next) {
     const q = next ? { program: next } : {};
     setParams(q, { replace: true });
+  }
+
+  // Download the per-farmer engagement CSV. Reuses the standard
+  // Blob → object-URL → click pattern used elsewhere in the app
+  // (FundingImpact, reportExport). Fully client-side; no API hop.
+  function handleEngagementExport() {
+    let evs = [];
+    try { evs = getEvents() || []; } catch { evs = []; }
+    const farmList = Array.isArray(farmers) ? farmers : [];
+    let csv = '';
+    try { csv = engagementToCsv({ events: evs, farms: farmList }); }
+    catch { csv = 'farmerId,crop,region,tasksCompleted,lastActive,streak,verifiedActions\n'; }
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `farroway-engagement-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch { /* never propagate from a click handler */ }
   }
 
   const title   = resolve(t, 'ngo.dashboard.title',   'NGO Dashboard');
@@ -258,6 +314,64 @@ export default function NgoDashboard() {
           </MetricGrid>
         </>
       )}
+
+      {/* ═══ FARMER ENGAGEMENT (NGO impact reporting) ═══
+          Built from the local event log (TASK_COMPLETED,
+          STREAK_UPDATED, APP_OPENED, TASK_VIEWED) so an NGO
+          operator can see, at a glance, whether their cohort
+          is actually using Farroway. Empty-state copy renders
+          when no events exist yet — never a row of zero-cards. */}
+      <section style={S.section} data-testid="ngo-engagement">
+        <SectionHeader title={resolve(t, 'ngo.dashboard.engagement.title', 'Farmer Engagement')} />
+        {engagement && engagement.hasActivity ? (
+          <>
+            <MetricGrid testId="ngo-engagement-grid">
+              <MetricCard
+                label={resolve(t, 'ngo.dashboard.engagement.active',    'Active Farmers')}
+                value={engagement.activeFarmers7d}
+                tone="info"
+              />
+              <MetricCard
+                label={resolve(t, 'ngo.dashboard.engagement.completed', 'Tasks Completed')}
+                value={engagement.tasksCompleted7d}
+                tone="good"
+              />
+              <MetricCard
+                label={resolve(t, 'ngo.dashboard.engagement.rate',      'Completion Rate')}
+                value={`${Math.round((engagement.taskCompletionRate ?? 0) * 100)}%`}
+                tone="good"
+              />
+              <MetricCard
+                label={resolve(t, 'ngo.dashboard.engagement.verified',  'Verified Actions')}
+                value={engagement.verifiedCompletions7d}
+                tone="neutral"
+              />
+              <MetricCard
+                label={resolve(t, 'ngo.dashboard.engagement.inactive',  'Inactive Farmers')}
+                value={engagement.inactiveFarmers7d}
+                tone="warn"
+              />
+            </MetricGrid>
+            <button
+              type="button"
+              onClick={handleEngagementExport}
+              style={S.exportBtn}
+              data-testid="ngo-engagement-export"
+            >
+              {resolve(t, 'ngo.dashboard.engagement.export', 'Download Engagement Report')}
+            </button>
+          </>
+        ) : (
+          <AdminEmptyState
+            tone="neutral"
+            icon={'\u2139'}
+            title={resolve(t, 'ngo.dashboard.engagement.empty.title', 'No activity yet')}
+            body={resolve(t, 'ngo.dashboard.engagement.empty.body',
+              'Data will appear here after farmers complete tasks.')}
+            testId="ngo-engagement-empty"
+          />
+        )}
+      </section>
 
       {/* Risk distribution */}
       {risk && (
