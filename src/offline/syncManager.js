@@ -95,11 +95,22 @@ export async function syncQueue(sendFn) {
   const result = { flushed: 0, failed: 0, abandoned: 0, skipped: 0 };
   if (typeof sendFn !== 'function') return result;
   if (_flushing) return result;
+  // F4 fix (interactive smoke test): the reachability probe used
+  // to run unconditionally on every 5s tick — even when the queue
+  // was empty — burning a HEAD against /manifest.json every 10s
+  // (probe self-caches for 8s) for the entire page lifetime. The
+  // smoke-test network panel showed ~30 manifest HEADs accumulated
+  // per 5-min session.
+  //
+  // Check queue FIRST, only probe reachability when there's work
+  // to do. For an empty queue (the common case for most farmers
+  // most of the time) we now skip the probe entirely, eliminating
+  // the wasteful HEAD traffic without changing flush behaviour.
+  const due = getDueEntries();
+  if (!due.length) return result;
   if (!(await _isOnline())) return result;
   _flushing = true;
   try {
-    const due = getDueEntries();
-    if (!due.length) return result;
     for (const entry of due) {
       const meta = {
         idempotencyKey: entry.idempotencyKey,
