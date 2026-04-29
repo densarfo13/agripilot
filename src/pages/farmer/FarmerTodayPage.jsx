@@ -88,6 +88,12 @@ import {
 import NextHint from '../../components/farmer/NextHint.jsx';
 import DoneStateCard from '../../components/farmer/DoneStateCard.jsx';
 import OptionalChecksSection from '../../components/farmer/OptionalChecksSection.jsx';
+// One-time "you can sell your crops here" banner. Renders only
+// for returning farmers (visit counter ≥ 2) and only until they
+// dismiss/Continue. Self-contained against localStorage — no
+// changes to user state shape, no new context wiring.
+import SellIntroBanner from '../../components/farm/SellIntroBanner.jsx';
+import { markTodayVisit } from '../../lib/farm/sellIntroFlag.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 import { getLocalizedTaskTitle } from '../../utils/taskTranslations.js';
@@ -114,6 +120,13 @@ export default function FarmerTodayPage() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // Bump the lifetime "Today visits" counter once per browser
+  // session. The helper is sessionStorage-debounced, so calling
+  // it on every mount is safe — only the first mount per tab
+  // actually writes. The counter feeds the SellIntroBanner's
+  // returning-user check below.
+  useEffect(() => { try { markTodayVisit(); } catch { /* ignore */ } }, []);
 
   // Offline-first sync drain — attempt on mount and whenever the
   // browser reports we're back online. Silently no-ops offline.
@@ -944,6 +957,13 @@ export default function FarmerTodayPage() {
           {state.today?.nextActionSummary && (
             <p style={S.pageSummary}>{state.today.nextActionSummary}</p>
           )}
+
+          {/* Returning-user "you can sell your crops here" intro
+              banner. Self-hides for first-timers (visit < 2) and
+              for anyone who has dismissed it; otherwise sits
+              above the primary task card. Tapping Continue
+              routes to /sell and persistently dismisses. */}
+          <SellIntroBanner />
 
           {/* 2. PRIMARY TASK CARD — server task preferred; if missing,
               fall back to the engine's stage/crop/weather-aware primary
