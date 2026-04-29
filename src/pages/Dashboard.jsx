@@ -14,7 +14,7 @@
  * All progress detail, analytics, and farm details live in their tabs.
  * Loop state managed by useFarmerLoop hook.
  */
-import { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { useTranslation } from '../i18n/index.js';
@@ -115,6 +115,32 @@ export default function Dashboard() {
   // page reload.
   const [programTick, setProgramTick] = useState(0);
 
+  // v3 stability: memoise per-render computations so they
+  // only re-run when their actual inputs change. Cuts down
+  // on per-render `safeTrackEvent` chatter and removes any
+  // accidental render-time side-effect risk.
+  const _farmer = loop?.profile || null;
+  const fundingMatchCount = useMemo(() => {
+    if (!_farmer) return 0;
+    try {
+      return matchFundingForFarm(
+        _farmer, getActiveFundingOpportunities(),
+      ).length;
+    } catch { return 0; }
+  }, [_farmer?.region, _farmer?.cropType, _farmer?.country]);
+
+  const dashboardPrograms = useMemo(() => {
+    const fid = _farmer
+      ? (_farmer.userId || _farmer.farmerId || _farmer.id)
+      : null;
+    if (!fid) return [];
+    try { return getProgramsForFarmer({ id: fid, ..._farmer }); }
+    catch { return []; }
+    // programTick lets a status update (Open / Ack) re-read
+    // the projection without re-rendering the whole tree.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_farmer?.userId, _farmer?.farmerId, _farmer?.id, programTick]);
+
   // v3 Notification System: fire deduped notifications
   // when the loop produces a new task / matched funding /
   // delivered program. The store handles dedupe per
@@ -149,6 +175,10 @@ export default function Dashboard() {
       );
     } catch { matches = []; }
     if (!matches.length) return;
+    // Track MATCH_SHOWN here ONCE per dep change (not on
+    // every Dashboard render — that was the previous bug).
+    try { safeTrackEvent(FUNDING_EVENTS.MATCH_SHOWN, { matches: matches.length }); }
+    catch { /* ignore */ }
     const top = matches[0];
     if (!top || !top.opportunity || !top.opportunity.id) return;
     addNotification({
@@ -700,42 +730,28 @@ export default function Dashboard() {
         )}
 
         {/* v3 NGO Program Distribution: render up to
-            ACTIVE_LIMIT (2) delivered programs for this
-            farmer. Secondary priority — sits BELOW the
-            Today task and verification chip, ABOVE the
-            scan-crop / sell / funding entries. Anti-spam
-            cap is enforced inside the store, not the UI. */}
-        {loop.profile && (() => {
-          const fid = loop.profile.userId
-                   || loop.profile.farmerId
-                   || loop.profile.id
-                   || null;
-          if (!fid) return null;
-          let programs = [];
-          try { programs = getProgramsForFarmer({ id: fid,
-                                                   ...loop.profile }); }
-          catch { programs = []; }
-          if (programs.length === 0) return null;
-          return programs.map(({ program, delivery }) => (
+            ACTIVE_LIMIT (2) delivered programs. Secondary
+            priority — sits BELOW the Today task and
+            verification chip, ABOVE the scan-crop / sell /
+            funding entries. Anti-spam cap enforced inside
+            the store. Reads from the memoised
+            `dashboardPrograms` so the JSX has zero work. */}
+        {dashboardPrograms.length > 0 && _userId
+          && dashboardPrograms.map(({ program, delivery }) => (
             <ProgramCard
               key={delivery.id}
               program={program}
               delivery={delivery}
               onView={() => {
-                markOpened(program.id, fid);
+                markOpened(program.id, _userId);
                 setProgramTick((n) => n + 1);
               }}
               onAck={() => {
-                markActed(program.id, fid);
+                markActed(program.id, _userId);
                 setProgramTick((n) => n + 1);
               }}
             />
-          ));
-        })()}
-        {/* tick consumed above — keeps the IIFE re-running
-            on each status change without re-rendering the
-            rest of the Dashboard. */}
-        <span style={{ display: 'none' }} data-program-tick={programTick} />
+          ))}
 
         {/* Scan-crop entry point — compact, single line, non-intrusive */}
         {loop.profile && (
@@ -788,41 +804,25 @@ export default function Dashboard() {
           </button>
         )}
 
-        {/* Funding opportunities entry — only renders when we
-            have at least one match for this farmer. Same low
-            priority as scan-crop/sell so the Today task
-            stays primary. Cheap inline match check (the
-            matcher is pure JS) keeps the dashboard responsive
-            even when the catalog grows. */}
-        {loop.profile && (() => {
-          let n = 0;
-          try {
-            n = matchFundingForFarm(
-              loop.profile,
-              getActiveFundingOpportunities(),
-            ).length;
-          } catch { n = 0; }
-          if (n === 0) return null;
-          // One MATCH_SHOWN log per render is fine — analytics
-          // dedupes on (event, opportunityId) downstream.
-          try { safeTrackEvent(FUNDING_EVENTS.MATCH_SHOWN, { matches: n }); }
-          catch { /* ignore */ }
-          return (
-            <button
-              type="button"
-              onClick={() => navigate('/opportunities')}
-              style={S.scanEntry}
-              data-testid="home-funding-entry"
-            >
-              <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDFAF'}</span>
-              <span>
-                {tSafe('funding.nearbyCardTitle',
-                  'Funding opportunity nearby')}
-              </span>
-              <span style={S.scanEntryChevron}>{'\u203A'}</span>
-            </button>
-          );
-        })()}
+        {/* Funding opportunities entry — renders only when
+            the memoised match count is > 0. The MATCH_SHOWN
+            analytics event fires from a useEffect (below)
+            so it doesn't run on every render. */}
+        {fundingMatchCount > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('/opportunities')}
+            style={S.scanEntry}
+            data-testid="home-funding-entry"
+          >
+            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDFAF'}</span>
+            <span>
+              {tSafe('funding.nearbyCardTitle',
+                'Funding opportunity nearby')}
+            </span>
+            <span style={S.scanEntryChevron}>{'\u203A'}</span>
+          </button>
+        )}
 
         {modals}
 

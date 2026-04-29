@@ -85,15 +85,30 @@ export default class ErrorBoundary extends React.Component {
 
   handleReload = () => {
     // Reset local state first so React doesn't render the
-    // recovery card on top of the new navigation. Reload the
-    // current page so the user stays where they were —
-    // useful when the crash was a transient render fault
-    // (race, late prop) rather than a corrupt route.
+    // recovery card on top of the new navigation.
     this.setState({ hasError: false, error: null, page: '' });
     try {
-      if (typeof window !== 'undefined' && window.location) {
-        window.location.reload();
+      if (typeof window === 'undefined' || !window.location) return;
+      // Loop guard: if the crash happened on /login (the
+      // redirect target the auth layer falls back to), a
+      // straight reload often reproduces the same fault on
+      // the same URL. Sending the user to "/" gives the
+      // app a clean bootstrap path through AuthContext —
+      // they'll either land on the dashboard (if a refresh
+      // succeeds) or be sent back to /login by the guard,
+      // but EITHER way without re-mounting the same broken
+      // tree from a stale state.
+      const here = String(window.location.pathname || '/');
+      const LOOP_RISKY = ['/login', '/register', '/forgot-password',
+                          '/reset-password', '/verify-otp'];
+      if (LOOP_RISKY.some((p) => here === p || here.startsWith(p + '/'))) {
+        window.location.href = '/';
+        return;
       }
+      // For every other page, reload — the crash was likely
+      // transient (race condition, late prop) and a reload
+      // recovers without losing the user's current route.
+      window.location.reload();
     } catch { /* never throw from a recovery handler */ }
   };
 
