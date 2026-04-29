@@ -9801,6 +9801,11 @@ const T = {
   // updated to "Act now" per spec — shorter, more imperative,
   // same key so call sites don't need touching.
   'farm.next.cta.doThisNow':       { en: 'Act now',             fr: 'Agir maintenant',       sw: 'Chukua hatua sasa',   ha: 'Yi aiki yanzu',              tw: 'Yɛ seesei ara',          hi: 'अभी कार्य करें' },
+  // Control-panel spec (Apr 2026): when the farmer's setup is
+  // incomplete, the CTA on Today's Action card swaps from the
+  // generic "Act now" to a clearer "Complete setup" so the
+  // farmer knows the next step is finishing onboarding.
+  'farm.next.cta.completeSetup':   { en: 'Complete setup',      fr: 'Terminer la configuration', sw: 'Maliza usanidi',     ha: 'Kammala saiti',              tw: 'Wie nsiesie no',         hi: 'सेटअप पूरा करें' },
   'farm.next.cta.markReady':       { en: 'Mark ready to sell',  fr: 'Marquer prêt à vendre', sw: 'Tia tayari kuuza',    ha: 'Sa a shirye don sayarwa',    tw: 'Hyɛ krado sɛ wɔbɛtɔn',   hi: 'बेचने को तैयार करें' },
   'farm.next.cta.viewFunding':     { en: 'View funding',        fr: 'Voir le financement',   sw: 'Ona ufadhili',        ha: 'Duba tallafi',                tw: 'Hwɛ sika boa',           hi: 'फंडिंग देखें' },
 

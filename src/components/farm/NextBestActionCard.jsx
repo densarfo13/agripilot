@@ -66,24 +66,34 @@ export default function NextBestActionCard({ farm }) {
   const bodyText = task.title;
   const detailText = task.instruction || '';
 
-  // CTA route still comes from the engine's source rule (setup
-  // → /edit-farm, harvest → /sell, funding → /opportunities,
+  // CTA route comes from the engine's source rule (setup →
+  // /edit-farm, harvest → /sell, funding → /opportunities,
   // default → /tasks) so the button leads to the right surface
-  // for what the farmer needs next. The LABEL is unified to
-  // "Do this now →" per spec — one consistent CTA so the
-  // farmer doesn't have to re-read on every visit.
+  // for what the farmer needs next.
+  //
+  // CTA label: usually "Act now" (the unified primary label)
+  // EXCEPT for setup-incomplete state — when the farmer hasn't
+  // finished onboarding their farm, "Complete setup" reads as
+  // a clearer next step than the generic "Act now". Same green
+  // primary styling either way; only the wording adapts.
   let ctaRoute;
+  let ctaKey;
+  let ctaFallback;
   if (task.source === 'setup_incomplete') {
-    ctaRoute = '/edit-farm';
-  } else if (task.source === 'harvest_sell') {
-    ctaRoute = '/sell';
-  } else if (task.source === 'funding_match') {
-    ctaRoute = '/opportunities';
+    ctaRoute    = '/edit-farm';
+    ctaKey      = 'farm.next.cta.completeSetup';
+    ctaFallback = 'Complete setup';
   } else {
-    ctaRoute = '/tasks';
+    if (task.source === 'harvest_sell') {
+      ctaRoute = '/sell';
+    } else if (task.source === 'funding_match') {
+      ctaRoute = '/opportunities';
+    } else {
+      ctaRoute = '/tasks';
+    }
+    ctaKey      = 'farm.next.cta.doThisNow';
+    ctaFallback = 'Act now';
   }
-  const ctaKey      = 'farm.next.cta.doThisNow';
-  const ctaFallback = 'Do this now';
 
   return (
     <section style={S.card} data-testid="next-best-action-card">

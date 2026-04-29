@@ -88,7 +88,9 @@ function localizeCountry(input, lang) {
 
 export default function MyFarmPage() {
   const navigate = useNavigate();
-  const { profile, farms, currentFarmId, loading: profileLoading } = useProfile();
+  const {
+    profile, farms, currentFarmId, loading: profileLoading, switchFarm,
+  } = useProfile();
   const { t, lang } = useTranslation();
   // Today's tasks feed both NextBestActionCard (via its own
   // internal read) and our local farm-status derivation.
@@ -215,14 +217,6 @@ export default function MyFarmPage() {
             <h2 style={S.detailsTitle}>
               {tSafe('myFarm.details.title', 'My Farm Details')}
             </h2>
-            <button
-              type="button"
-              onClick={() => navigate(editFarmUrl)}
-              style={S.detailsEditBtn}
-              data-testid="my-farm-edit"
-            >
-              {t('myFarm.edit')}
-            </button>
           </div>
           <ul style={S.detailList}>
             {cropValue && (
@@ -253,6 +247,57 @@ export default function MyFarmPage() {
         </section>
       )}
 
+      {/* ─── 4. Farm Action Row (control panel spec) ────────
+          Horizontal row: Edit / Add / Switch. Replaces the
+          small Edit button that previously lived in the
+          details card header — bigger tap targets, all three
+          farm-management actions visible at the same level.
+          Switch only renders for multi-farm households (a
+          native <select> is the lightest UI for the rare
+          case; opens modal-style on mobile). */}
+      {farm && (
+        <div style={S.actionRow} data-testid="my-farm-actions">
+          <button
+            type="button"
+            onClick={() => navigate(editFarmUrl)}
+            style={S.actionBtn}
+            data-testid="my-farm-edit"
+          >
+            {tSafe('myFarm.edit', 'Edit Farm')}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/farm/new')}
+            style={S.actionBtn}
+            data-testid="my-farm-add"
+          >
+            {tSafe('myFarm.addFarm', 'Add Farm')}
+          </button>
+          {Array.isArray(farms) && farms.length > 1 && (
+            <select
+              id="my-farm-switch"
+              name="myFarmSwitch"
+              aria-label={tSafe('myFarm.switchFarm', 'Switch Farm')}
+              value={currentFarmId || ''}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (!next || next === currentFarmId) return;
+                try { switchFarm && switchFarm(next); }
+                catch { /* swallow — never break the page */ }
+              }}
+              style={S.actionSelect}
+              data-testid="my-farm-switch"
+            >
+              {farms.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.farmName || f.name || tSafe('myFarm.unnamedFarm', 'Farm')}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       {/* Screen-role refactor (Apr 2026): QuickActionsCard
           removed from My Farm. The card surfaced Sell Produce
           + View Funding which duplicated their dedicated
@@ -262,15 +307,48 @@ export default function MyFarmPage() {
           action on this screen). Scan crop is reachable from
           Home; Sell + Funding from their bottom-nav tabs. */}
 
-      {/* ─── 5. Compact Help row (per spec §5 polish) ───────
+      {/* ─── 5. Compact Help row ─────────────────────────────
           Single line: "Need help?  Contact our team →".
-          Whole row is tappable — no separate button. Keeps
-          the page short and the Today's Action CTA the only
-          large green primary on screen. */}
+          Tries to navigate to /support first, but that route
+          doesn't currently exist in App.jsx — so the click
+          gracefully falls back to a mailto: link via the
+          handler below instead of dead-clicking. When the
+          /support route ships, the navigate call resolves
+          and the mailto branch never runs. */}
       {farm && (
         <button
           type="button"
-          onClick={() => navigate('/support')}
+          onClick={() => {
+            // Try the in-app support route first. If it 404s
+            // immediately (or is otherwise unmounted) the
+            // mailto fallback below opens the user's mail
+            // client. We can't synchronously detect a missing
+            // React Router route, so we attempt navigate AND
+            // schedule a mailto fallback IF the URL doesn't
+            // change within a beat — this avoids both dead
+            // clicks and double-firing on a real /support
+            // route.
+            const before = (typeof window !== 'undefined' && window.location)
+              ? String(window.location.pathname || '') : '';
+            try { navigate('/support'); }
+            catch { /* navigate threw — go straight to mailto */
+              try {
+                if (typeof window !== 'undefined') {
+                  window.location.href = 'mailto:support@farroway.app';
+                }
+              } catch { /* never propagate */ }
+              return;
+            }
+            setTimeout(() => {
+              try {
+                const after = (typeof window !== 'undefined' && window.location)
+                  ? String(window.location.pathname || '') : '';
+                if (after === before && typeof window !== 'undefined') {
+                  window.location.href = 'mailto:support@farroway.app';
+                }
+              } catch { /* never propagate */ }
+            }, 120);
+          }}
           style={S.helpRow}
           data-testid="my-farm-help"
         >
@@ -361,6 +439,47 @@ const S = {
     cursor: 'pointer',
     minHeight: 32,
     flex: '0 0 auto',
+  },
+
+  // ─── Farm action row (control-panel spec) ─────────────────
+  // Horizontal Edit / Add / Switch row sitting under the
+  // details card. Bigger 44px tap targets per spec §5.
+  // Switch (when shown) uses a native <select> styled to
+  // match the buttons so the visual rhythm stays consistent.
+  actionRow: {
+    margin: '0.5rem 1rem',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  actionBtn: {
+    flex: '1 1 auto',
+    appearance: 'none',
+    background: '#1A3B5D',
+    border: '1px solid #1F3B5C',
+    color: '#FFFFFF',
+    borderRadius: 10,
+    padding: '0.6rem 1rem',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 44,
+  },
+  actionSelect: {
+    flex: '1 1 auto',
+    appearance: 'none',
+    background: '#1A3B5D',
+    border: '1px solid #1F3B5C',
+    color: '#FFFFFF',
+    borderRadius: 10,
+    padding: '0.6rem 1rem',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 44,
+    // Color-scheme dark hint helps native option panels render
+    // legibly on Windows Chromium / Edge.
+    colorScheme: 'dark',
   },
   detailList: {
     listStyle: 'none',
