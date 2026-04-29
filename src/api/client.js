@@ -130,15 +130,32 @@ api.interceptors.response.use(
       // If the request wasn't already retried post step-up, park
       // it on the retry queue and return the pending promise so
       // the admin page auto-refetches once the user verifies.
-      if (code === 'STEP_UP_REQUIRED' || code === 'STEP_UP_EXPIRED') {
+      //
+      // F17 fix (interactive smoke test): MFA_CHALLENGE_REQUIRED
+      // mid-session is functionally identical to STEP_UP_REQUIRED
+      // — the user is already authenticated but the backend wants
+      // a fresh TOTP verification before serving sensitive data.
+      // Treating it as a step-up trigger lets the existing
+      // StepUpModal handle the prompt + retry chain instead of
+      // dead-ending the user on a "We hit a snag" admin page
+      // with no path forward. Initial-login MFA goes through a
+      // different path (Login.jsx reads `data.mfaChallengeRequired`
+      // off the 200 response, so login flow is unaffected).
+      if (
+           code === 'STEP_UP_REQUIRED'
+        || code === 'STEP_UP_EXPIRED'
+        || code === 'MFA_CHALLENGE_REQUIRED'
+      ) {
         useAuthStore.getState().setStepUpRequired(true);
         if (!config._stepUpRetried) {
           return enqueueStepUpRetry(config);
         }
         return Promise.reject(error);
       }
-      // MFA setup/challenge required — user has limited token; do NOT logout so they can enroll
-      if (code === 'MFA_SETUP_REQUIRED' || code === 'MFA_CHALLENGE_REQUIRED') {
+      // MFA setup required — user needs to ENROLL, not verify.
+      // The step-up modal can't help; user has to navigate to
+      // /account/mfa to set up their authenticator.
+      if (code === 'MFA_SETUP_REQUIRED') {
         return Promise.reject(error);
       }
 

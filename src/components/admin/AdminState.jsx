@@ -39,6 +39,7 @@
 
 import React from 'react';
 import { FARROWAY_BRAND } from '../../brand/farrowayBrand.js';
+import { useAuthStore } from '../../store/authStore.js';
 
 const C = FARROWAY_BRAND.colors;
 
@@ -242,9 +243,24 @@ export function SessionExpiredState({
 
 export function MfaRequiredState({
   message    = 'MFA verification required. Please complete verification to continue.',
-  verifyHref,                              // optional
+  verifyHref,                              // optional override
   testId     = 'admin-state-mfa',
 }) {
+  // F17 fix (interactive smoke test): the "Verify now" CTA used
+  // to be optional and hidden when no `verifyHref` was passed —
+  // which was every migrated page. Users saw the prompt with no
+  // way forward and had to sign out to refresh MFA.
+  //
+  // New default: when no verifyHref is provided, the button
+  // triggers the global StepUpModal by setting stepUpRequired on
+  // the auth store. The modal already handles the verify call,
+  // queues retries, and unblocks the failing request once the
+  // user types their TOTP code. Existing callers that passed
+  // verifyHref keep their navigation behaviour unchanged.
+  const handleVerifyClick = () => {
+    try { useAuthStore.getState().setStepUpRequired(true); }
+    catch { /* never throw from a render handler */ }
+  };
   return (
     <StateCard
       tone="mfa" icon="🔐"
@@ -259,7 +275,16 @@ export function MfaRequiredState({
         >
           Verify now
         </a>
-      ) : null}
+      ) : (
+        <button
+          type="button"
+          onClick={handleVerifyClick}
+          style={btnPrimary()}
+          data-testid={`${testId}-verify`}
+        >
+          Verify now
+        </button>
+      )}
     </StateCard>
   );
 }
