@@ -23,6 +23,13 @@ import { RefreshCw, Camera, ShoppingCart, Coins } from '../icons/lucide.jsx';
 // Each action carries a short label + a one-line helper subtext
 // (spec §5). The helpers explain the value of the action so a
 // low-literacy farmer knows WHY to tap, not just WHAT it does.
+//
+// Spec §5 simplification (Apr 2026): trimmed to 3 actions —
+// Update Farm / Sell Produce / View Funding. Scan Crop is gated
+// on "feature already works" per spec; flip SCAN_CROP_ENABLED
+// to true (or read from a feature flag) to surface it again
+// without re-importing.
+const SCAN_CROP_ENABLED = false;
 const ACTIONS = [
   {
     key: 'updateFarm',
@@ -32,14 +39,14 @@ const ACTIONS = [
     icon: RefreshCw,
     route: '/edit-farm',
   },
-  {
+  ...(SCAN_CROP_ENABLED ? [{
     key: 'scanCrop',
     labelKey: 'farm.actions.scanCrop',
     helperKey: 'farm.actions.scanCrop.help',
     helperFallback: 'Detect issues early.',
     icon: Camera,
     route: '/scan-crop',
-  },
+  }] : []),
   {
     key: 'markReady',
     labelKey: 'farm.actions.markReady',

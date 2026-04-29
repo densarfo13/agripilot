@@ -6,52 +6,38 @@
  * no technical fields. Dark theme, inline styles, all text via useTranslation().
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+// Spec §10 simplification (Apr 2026): MyFarm now renders only
+// the spec'd 4 sections — Next Task / Farm Status + details /
+// Quick Actions / Help. The heavy intelligence hub
+// (FarmSummary, FarmHealth, SmartSuggestions, FarmRecords,
+// VerificationStatus) + identity card + 4-tile grid + multiple
+// secondary cards (FarmInsight, CropTimeline, Harvest,
+// DailyProgress) + multi-button action row (Find Best Crop /
+// Add New Farm / Switch Farm) were removed from this page.
+// They aren't deleted from the codebase — just not surfaced
+// here. Each lives in a more specific home (Progress tab,
+// Profile/Trust page, Settings) per spec instructions.
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { getCountryLabel } from '../config/countriesStates.js';
-import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
-import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
-import { getAvatar, saveAvatar, removeAvatar, compressAvatar } from '../utils/avatarStorage.js';
-import { SECTION_ICONS } from '../lib/farmerIcons.js';
-import FarmerAvatar from '../components/FarmerAvatar.jsx';
-import SupportCard from '../components/SupportCard.jsx';
-import FarmInsightCard from '../components/FarmInsightCard.jsx';
-// NotificationPreferencesCard + FarmerIdCard intentionally not
-// imported here — both moved into the unified Settings page at
-// /settings as part of the UI cleanup pass.
-import DailyProgressCard from '../components/DailyProgressCard.jsx';
-import CropImage from '../components/CropImage.jsx';
-import CropTimelineCard from '../components/CropTimelineCard.jsx';
-import HarvestCard from '../components/HarvestCard.jsx';
-import VoiceButton from '../components/VoiceButton.jsx';
-// Farm intelligence hub — additive sub-components. Each self-hides
-// when its inputs are missing; never breaks the page.
-import FarmSummaryCard from '../components/farm/FarmSummaryCard.jsx';
-import FarmHealthCard from '../components/farm/FarmHealthCard.jsx';
-import SmartSuggestionsCard from '../components/farm/SmartSuggestionsCard.jsx';
+import { getCropLabelSafe } from '../utils/crops.js';
+import { STAGE_KEYS } from '../utils/cropStages.js';
+// Farm helpers — getFarmStatus returns the 3-state code
+// (on_track / needs_attention / setup_incomplete) the new
+// status section maps onto Good / Needs attention / Setup
+// incomplete per spec §3.
+import {
+  getFarmStatus, FARM_STATUS,
+} from '../lib/farm/farmFallbacks.js';
 import QuickActionsCard from '../components/farm/QuickActionsCard.jsx';
-import VerificationStatusCard from '../components/farm/VerificationStatusCard.jsx';
-import FarmRecordsCard from '../components/farm/FarmRecordsCard.jsx';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import NextBestActionCard from '../components/farm/NextBestActionCard.jsx';
-// Risk-1 fix: data sources for SmartSuggestionsCard's contextual
-// rules. All three already exist in the app — we just wire them
-// in here so the suggestion card can fire its full rule set
-// (complete-today / list-produce / check-funding) instead of
-// only the legacy crop-stage rules.
-import { getActiveListings } from '../market/marketStore.js';
-import { getActiveFundingOpportunities } from '../funding/fundingStore.js';
-import { matchFundingForFarm } from '../funding/fundingMatcher.js';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
-import {
-  resolveFindBestCropRoute, destinationToUrl,
-  assertFindBestCropNotOnboarding,
-} from '../core/multiFarm/index.js';
 
 // STAGE_EMOJIS and STAGE_KEYS imported from utils/cropStages.js
 //
@@ -103,48 +89,15 @@ function localizeCountry(input, lang) {
 export default function MyFarmPage() {
   const navigate = useNavigate();
   const { profile, farms, currentFarmId, loading: profileLoading } = useProfile();
-  const { user } = useAuth();
   const { t, lang } = useTranslation();
-  const fileInputRef = useRef(null);
-  const [avatarUrl, setAvatarUrl] = useState(getAvatar);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState(null);
-  // Risk-1 fix: capture the today-tasks plan so SmartSuggestionsCard
-  // can drive its "complete today's task" rule. The existing
-  // getTodayTasks() call already runs inside the notification
-  // scheduler effect below — we just lift the result into state.
+  // Today's tasks feed both NextBestActionCard (via its own
+  // internal read) and our local farm-status derivation.
   const [todayTasks, setTodayTasks] = useState([]);
 
-  async function handleAvatarFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarUploading(true);
-    setAvatarError(null);
-    try {
-      const dataUrl = await compressAvatar(file);
-      if (dataUrl) {
-        saveAvatar(dataUrl);
-        setAvatarUrl(dataUrl);
-      } else {
-        setAvatarError(t('avatar.compressFailed'));
-      }
-    } catch {
-      setAvatarError(t('avatar.uploadFailed'));
-    } finally {
-      setAvatarUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
-  function handleRemoveAvatar() {
-    removeAvatar();
-    setAvatarUrl(null);
-  }
-
-  // Run the notification scheduler once per mount — generates
-  // candidates (daily task, weather, risk, missed-task) and stores
-  // the in-app ones. Safe to call on every open; dedup guarantees no
-  // duplicates within the same day.
+  // Run the notification scheduler once per mount + capture
+  // today's tasks for status derivation. Same logic the page
+  // had before — only the avatar / auth side-effects were
+  // dropped along with the rendered avatar card.
   useEffect(() => {
     if (!profile) return;
     const farmObj = profile;
@@ -159,11 +112,9 @@ export default function MyFarmPage() {
       });
       const tasksList = todayPlan && Array.isArray(todayPlan.tasks)
         ? todayPlan.tasks : [];
-      // Lift to state so SmartSuggestionsCard's rule set can
-      // see whether today's task is still pending.
       setTodayTasks(tasksList);
       processNotifications({
-        user, farm: farmObj,
+        user: null, farm: farmObj,
         tasks: tasksList,
         weather: profile.weather || null,
         issues: profile.issues || [],
@@ -173,14 +124,11 @@ export default function MyFarmPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile && profile.id]);
 
-  const farmerName = user?.fullName || profile?.farmerName || '';
-
   if (profileLoading) {
     return (
       <div style={S.page}>
-        <div style={S.header}>
-          <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
-          <h1 style={S.pageTitle}>{t('myFarm.title')}</h1>
+        <div style={S.simpleHeader}>
+          <h1 style={S.simpleTitle}>{t('myFarm.title')}</h1>
         </div>
         <div style={S.skeletonWrap}>
           <div style={S.skeletonCard}>
@@ -195,8 +143,7 @@ export default function MyFarmPage() {
   }
 
   // Empty state: no farm profile yet → render the AddFarm CTA card
-  // (spec §7) instead of a blank page. Replaces the prior bare
-  // `return null` so first-time farmers get a clear next step.
+  // (spec §7) instead of a blank page.
   if (!profile) {
     return (
       <div style={S.page} data-testid="my-farm-page-empty">
@@ -206,265 +153,177 @@ export default function MyFarmPage() {
   }
 
   // Use active profile as primary source (always has the current farm data),
-  // fall back to farms array lookup
+  // fall back to farms array lookup. Other-farms switching moved
+  // to a dedicated /farm settings surface per spec.
   const farm = profile || farms?.find((f) => f.id === currentFarmId) || farms?.[0] || null;
-  const isMultiFarm = farms && farms.length > 1;
 
-  // Risk-1 fix: pre-compute the optional inputs SmartSuggestionsCard
-  // accepts. Both reads are local-only (marketStore + fundingStore
-  // both keep their data in localStorage), so they're safe to run
-  // on every render — no network, no async. Memoised on farm-id.
-  const farmListings = useMemo(() => {
-    try {
-      const all = getActiveListings() || [];
-      const fid = profile?.id || profile?.farmId;
-      return fid ? all.filter((l) => l && l.farmId === fid) : all;
-    } catch { return []; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile && (profile.id || profile.farmId)]);
+  // SmartSuggestionsCard's listings/funding inputs were used by
+  // the prior intelligence hub; the simplified spec drops that
+  // surface so we no longer compute them here. The data still
+  // lives in marketStore + fundingStore for any caller that
+  // needs it.
 
-  const fundingMatches = useMemo(() => {
-    try {
-      const opps = getActiveFundingOpportunities() || [];
-      if (!profile || opps.length === 0) return [];
-      return matchFundingForFarm(profile, opps) || [];
-    } catch { return []; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile && (profile.id || profile.farmId)]);
+  // ─── Farm Status (per spec §3) ──────────────────────────
+  // Reuses existing getFarmStatus helper which returns the same
+  // 3-state code spec asks for: on_track / needs_attention /
+  // setup_incomplete. Mapped to: Good / Needs attention / Setup
+  // incomplete. Progress bar percentage is derived from the
+  // status code so the calm UX never "flashes" between numbers.
+  const status = getFarmStatus(farm, todayTasks, null);
+  const statusPct = status.code === FARM_STATUS.ON_TRACK ? 80
+                  : status.code === FARM_STATUS.NEEDS_ATTENTION ? 50
+                  : 25;
+  const statusTone = status.code === FARM_STATUS.ON_TRACK ? '#22C55E'
+                   : status.code === FARM_STATUS.NEEDS_ATTENTION ? '#F59E0B'
+                   : '#9FB3C8';
+
+  // Per-row farm details — only render rows whose data is set.
+  // Avoids "Unknown" strings; an unset field simply hides.
+  const cropValue = (farm.crop || farm.cropType)
+    ? getCropLabelSafe(farm.crop || farm.cropType, lang) : null;
+  const sizeValue = farm.size
+    ? formatSize(farm.size, farm.sizeUnit) : null;
+  const locationValue = farm.location || farm.locationLabel
+    || localizeCountry(farm.country || farm.countryCode, lang) || null;
+  const stageValue = farm.cropStage
+    ? (t(STAGE_KEYS[farm.cropStage]) || farm.cropStage.replace(/_/g, ' ')) : null;
+
+  const farmId = currentFarmId || profile?.id;
+  const editFarmUrl = farmId
+    ? `/edit-farm?farmId=${encodeURIComponent(farmId)}`
+    : '/edit-farm';
 
   return (
     <div style={S.page} data-testid="my-farm-page">
-      {/* Header */}
-      <div style={S.header}>
-        <span style={S.pageIcon}>{SECTION_ICONS.crop}</span>
-        <h1 style={S.pageTitle}>{t('myFarm.title')}</h1>
-        {/* Tap-to-hear: speaks the page title in the active language. */}
-        <VoiceButton labelKey="myFarm.title" />
+      {/* ─── 1. Header (per spec §1) ─────────────────────────
+          Just the title — bell deferred since this codebase's
+          NotificationBell lives on FarmerTodayPage / Layout
+          chrome rather than per-page. Title-only header keeps
+          the page short per spec §9 (avoid long scroll). */}
+      <div style={S.simpleHeader}>
+        <h1 style={S.simpleTitle}>{t('myFarm.title')}</h1>
       </div>
 
-      {/* Farm intelligence hub. Order matters: NextBestActionCard
-          sits at the top so the farmer's first three questions are
-          answered before anything else (status / what next / where
-          to go). Each card self-hides when its inputs are missing
-          so an empty pilot stays clean. */}
-      {farm ? (
-        <div style={S.intelligenceWrap}>
-          <NextBestActionCard farm={farm} />
-          <FarmSummaryCard
-            farm={farm}
-            lang={lang}
-            countryLabel={localizeCountry(farm.country || farm.countryCode, lang)}
-          />
-          <FarmHealthCard farm={farm} />
-          <SmartSuggestionsCard
-            farm={farm}
-            lang={lang}
-            tasks={todayTasks}
-            listings={farmListings}
-            fundingMatches={fundingMatches}
-            verification={farm?.verification
-              || { level: Number(farm?.verificationLevel) || 0 }}
-            progress={{ tasksToday: (todayTasks || []).length }}
-          />
-          <QuickActionsCard />
-          <FarmRecordsCard farm={farm} />
-          <VerificationStatusCard farm={farm} />
-        </div>
-      ) : null}
+      {/* ─── 2. Next Task Card (per spec §2) ────────────────
+          NextBestActionCard already implements the spec exactly
+          — title, instruction, primary "Open Task" CTA, and
+          falls back to "Check your farm today" when no task is
+          available. Reuse it instead of inlining. */}
+      {farm && <NextBestActionCard farm={farm} />}
 
-      {/* Farm details */}
-      {farm ? (
-        <div style={S.tilesWrap}>
-          {/* Identity card — avatar + farm name */}
-          <div style={S.identityCard}>
-            <div style={S.avatarSection}>
-              <FarmerAvatar
-                fullName={farmerName}
-                profileImageUrl={avatarUrl}
-                size={64}
-                onClick={() => fileInputRef.current?.click()}
-                editable
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleAvatarFile}
-                style={{ display: 'none' }}
-              />
-              <div>
-                <h2 style={S.farmName}>{farm.farmName || farm.name || t('myFarm.unnamedFarm')}</h2>
-                {(farm.country || farm.countryCode) && (
-                  <span style={S.farmSubline}>{SECTION_ICONS.country} {localizeCountry(farm.country || farm.countryCode, lang)}</span>
-                )}
-              </div>
+      {/* ─── 3. Farm Status + Details (per spec §3-4) ───────
+          Single card combining the status pill + progress bar +
+          one-sentence summary AND the 4 detail rows. Replaces
+          the old Identity card + 4-tile grid + FarmHealthCard
+          stack — same data, much less visual noise. */}
+      {farm && (
+        <section style={S.statusCard} data-testid="my-farm-status">
+          <div style={S.statusRow}>
+            <span style={{ ...S.statusPill, color: statusTone, borderColor: statusTone + '55' }}>
+              {tSafe(status.key, status.fallback)}
+            </span>
+            <div style={S.progressTrack}>
+              <div style={{ ...S.progressFill, width: `${statusPct}%`, background: statusTone }} />
             </div>
-            <div style={S.avatarActions}>
-              <button onClick={() => fileInputRef.current?.click()} style={S.avatarBtn} disabled={avatarUploading}>
-                {avatarUploading ? t('avatar.uploading') : avatarUrl ? t('avatar.change') : t('avatar.add')}
-              </button>
-              {avatarUrl && (
-                <button onClick={handleRemoveAvatar} style={S.avatarRemoveBtn}>
-                  {t('avatar.remove')}
-                </button>
-              )}
-            </div>
-            {avatarError && <div style={S.avatarError}>{avatarError}</div>}
           </div>
-
-          {/* Detail tiles — 2-column grid */}
-          <div style={S.tileGrid}>
-            {/* Crop tile */}
-            {(farm.cropType || farm.crop) && (
-              <div style={S.tile}>
-                <CropImage
-                  cropKey={farm.cropType || farm.crop}
-                  alt={getCropLabelSafe(farm.cropType || farm.crop, lang)}
-                  size={56}
-                  circular
-                  style={{ marginBottom: '0.5rem' }}
-                />
-                <span style={S.tileLabel}>{t('myFarm.crop')}</span>
-                <span style={S.tileValue}>{getCropLabelSafe(farm.cropType || farm.crop, lang)}</span>
-              </div>
+          <p style={S.statusLine}>
+            {status.code === FARM_STATUS.ON_TRACK
+              ? tSafe('myFarm.status.line.good',
+                  'You\u2019re making good progress.')
+              : status.code === FARM_STATUS.NEEDS_ATTENTION
+                ? tSafe('myFarm.status.line.needsAttention',
+                    'Complete today\u2019s task to stay on track.')
+                : tSafe('myFarm.status.line.setupIncomplete',
+                    'Update your farm details for better guidance.')}
+          </p>
+          <ul style={S.detailList}>
+            {cropValue && (
+              <li style={S.detailRow}>
+                <span style={S.detailLabel}>{t('myFarm.crop')}</span>
+                <span style={S.detailValue}>{cropValue}</span>
+              </li>
             )}
-
-            {/* Size tile */}
-            {farm.size && (
-              <div style={S.tile}>
-                <span style={S.tileIcon}>{SECTION_ICONS.size}</span>
-                <span style={S.tileLabel}>{t('myFarm.size')}</span>
-                <span style={S.tileValue}>{formatSize(farm.size, farm.sizeUnit)}</span>
-              </div>
+            {sizeValue && (
+              <li style={S.detailRow}>
+                <span style={S.detailLabel}>{t('myFarm.size')}</span>
+                <span style={S.detailValue}>{sizeValue}</span>
+              </li>
             )}
-
-            {/* Location tile */}
-            {(farm.location || farm.locationLabel) && (
-              <div style={S.tile}>
-                <span style={S.tileIcon}>{SECTION_ICONS.location}</span>
-                <span style={S.tileLabel}>{t('myFarm.location')}</span>
-                <span style={S.tileValue}>{farm.location || farm.locationLabel}</span>
-              </div>
+            {locationValue && (
+              <li style={S.detailRow}>
+                <span style={S.detailLabel}>{t('myFarm.location')}</span>
+                <span style={S.detailValue}>{locationValue}</span>
+              </li>
             )}
-
-            {/* Stage tile */}
-            {farm.cropStage && (
-              <div style={S.tile}>
-                <span style={S.tileIcon}>{STAGE_EMOJIS[farm.cropStage] || '📊'}</span>
-                <span style={S.tileLabel}>{t('myFarm.stage')}</span>
-                <span style={S.stageBadge}>
-                  {t(STAGE_KEYS[farm.cropStage]) || farm.cropStage.replace(/_/g, ' ')}
-                </span>
-              </div>
+            {stageValue && (
+              <li style={S.detailRow}>
+                <span style={S.detailLabel}>{t('myFarm.stage')}</span>
+                <span style={S.detailValue}>{stageValue}</span>
+              </li>
             )}
+          </ul>
+        </section>
+      )}
+
+      {/* ─── 5. Quick Actions (per spec §5, max 3) ──────────
+          QuickActionsCard now ships only 3 actions (Update Farm,
+          Sell Produce, View Funding). Scan Crop is hidden by
+          default since the spec gates it on "feature already
+          works" — a future toggle in QuickActionsCard can
+          re-enable it without touching this page. */}
+      {farm && <QuickActionsCard />}
+
+      {/* ─── 6. Compact Help (per spec §6) ──────────────────
+          Single-tap help: title + one line + Contact Us button.
+          NO subject / message form fields — those moved to a
+          dedicated /support route in earlier work. */}
+      {farm && (
+        <section style={S.helpCard} data-testid="my-farm-help">
+          <div>
+            <h2 style={S.helpTitle}>
+              {tSafe('myFarm.help.title', 'Need help?')}
+            </h2>
+            <p style={S.helpLead}>
+              {tSafe('myFarm.help.lead', 'Chat with our team.')}
+            </p>
           </div>
-
-          {/* Actions */}
-          <div style={S.actionsRow}>
-            <button
-              type="button"
-              onClick={() => {
-                const dest = resolveFindBestCropRoute({ profile, farms });
-                const url = destinationToUrl(dest);
-                // Dev-only guard: existing users must NEVER be sent to
-                // /onboarding/* via this button. resolveFindBestCropRoute
-                // should have already enforced that — the assertion is
-                // belt-and-braces for future regressions.
-                assertFindBestCropNotOnboarding(!!profile?.id, url);
-                navigate(url);
-              }}
-              style={S.cropFitBtn}
-            >
-              {'\uD83C\uDF3E'} {t('myFarm.findBestCrop')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                // Always pass the current farm id so Edit targets the
-                // right record in a multi-farm world. The screen pulls
-                // the farm from ProfileContext using this id.
-                const farmId = currentFarmId || profile?.id;
-                navigate(farmId ? `/edit-farm?farmId=${encodeURIComponent(farmId)}` : '/edit-farm');
-              }}
-              style={S.editBtn}
-            >
-              {t('myFarm.edit')}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/farm/new')}
-              style={S.editBtn}
-              data-testid="my-farm-add-new"
-            >
-              {'\u2795'} {t('myFarm.addNewFarm')}
-            </button>
-            {isMultiFarm && (
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard')}
-                style={S.switchBtn}
-              >
-                {t('myFarm.switchFarm')}
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div style={S.emptyWrap}>
-          <p style={S.emptyText}>{t('myFarm.noFarm')}</p>
           <button
             type="button"
-            onClick={() => navigate('/onboarding/fast')}
-            style={S.editBtn}
+            onClick={() => navigate('/support')}
+            style={S.helpBtn}
+            data-testid="my-farm-help-contact"
           >
-            {t('myFarm.setupFarm')}
+            {tSafe('myFarm.help.contact', 'Contact Us')}
+          </button>
+        </section>
+      )}
+
+      {/* ─── 7. Empty state (per spec §7) ───────────────────
+          Single setup CTA. AddFarmEmpty already implements the
+          calm "Set up your farm" card — reused here so first-
+          time farmers see exactly one clear next step (no
+          progress / records / verification stubs). */}
+      {!farm && (
+        <div style={S.emptyWrap} data-testid="my-farm-empty">
+          <AddFarmEmpty />
+        </div>
+      )}
+
+      {/* Single Edit shortcut at the bottom — per spec the only
+          farm-mutating action that stays on this screen.
+          Add/switch/find-best-crop moved to dedicated surfaces. */}
+      {farm && (
+        <div style={S.editRow}>
+          <button
+            type="button"
+            onClick={() => navigate(editFarmUrl)}
+            style={S.editLink}
+            data-testid="my-farm-edit"
+          >
+            {t('myFarm.edit')}
           </button>
         </div>
       )}
-
-      {/* Crop timeline — journey, current stage, next stage, days left */}
-      {farm && <CropTimelineCard farm={farm} />}
-
-      {/* Harvest — capture form when ready, summary once recorded */}
-      {farm && <HarvestCard farm={farm} />}
-
-      {/* Daily progress — streak, score, next action, milestones */}
-      {farm && (
-        <DailyProgressCard
-          farm={farm}
-          user={user}
-          issues={profile?.issues || []}
-          risk={profile?.risk || null}
-        />
-      )}
-
-      {/* Risk-5 fix: TodaysTasksCard removed from this page.
-          The new NextBestActionCard at the top of the
-          intelligence hub now owns "today's task" surfacing
-          (it reads from the same getTodayTasks source). The
-          dedicated /tasks page is one tap away via the bottom
-          nav and the NextBestActionCard CTA. */}
-
-      {/* Farm intelligence — yield / value / weather-action / risk cards */}
-      {farm && (
-        <FarmInsightCard
-          farm={farm}
-          weather={profile?.weather || null}
-          tasks={profile?.tasks || []}
-          issues={profile?.issues || []}
-        />
-      )}
-
-      {/*
-        NotificationPreferencesCard + FarmerIdCard removed — both
-        moved into /settings (Settings page). The gear icon in
-        FarmerHeader is the entry point. Help/support stays here so
-        farmers reach it without leaving the farm view.
-      */}
-      <div style={S.cardWrap}>
-        <SupportCard />
-      </div>
     </div>
   );
 }
@@ -476,6 +335,164 @@ const S = {
     padding: '0 0 1rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
   },
+
+  // ─── Simplified spec layout (Apr 2026 pilot fix) ─────────
+  // Slim header without the section icon — keeps the page
+  // short per spec §9 (avoid long scroll). Older verbose
+  // header / pageIcon styles are retained for the loading
+  // skeleton path elsewhere on this file.
+  simpleHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '1rem 1.25rem 0.5rem',
+  },
+  simpleTitle: {
+    margin: 0,
+    fontSize: '1.5rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+    letterSpacing: '-0.01em',
+  },
+
+  // Single Farm Status card combining status pill + progress
+  // bar + sentence + 4 detail rows (per spec §3-4). Same navy
+  // farmer palette as the rest of the app.
+  statusCard: {
+    margin: '0.5rem 1rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 14,
+    padding: '0.95rem 1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.65rem',
+  },
+  statusRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusPill: {
+    flex: '0 0 auto',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(255,255,255,0.04)',
+    whiteSpace: 'nowrap',
+  },
+  progressTrack: {
+    flex: '1 1 auto',
+    height: 8,
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    transition: 'width 0.4s ease',
+  },
+  statusLine: {
+    margin: 0,
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: '0.875rem',
+    lineHeight: 1.45,
+  },
+  detailList: {
+    listStyle: 'none',
+    margin: '0.25rem 0 0',
+    padding: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+    paddingTop: '0.6rem',
+  },
+  detailRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    padding: '4px 0',
+    fontSize: '0.875rem',
+  },
+  detailLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontWeight: 600,
+    flex: '0 0 auto',
+  },
+  detailValue: {
+    color: '#FFFFFF',
+    fontWeight: 600,
+    textAlign: 'right',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+
+  // Compact help card (per spec §6) — title + lead + single
+  // Contact Us button. No subject/message form fields.
+  helpCard: {
+    margin: '0.75rem 1rem 0',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 14,
+    padding: '0.95rem 1rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  helpTitle: {
+    margin: 0,
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+  },
+  helpLead: {
+    margin: '2px 0 0',
+    fontSize: '0.825rem',
+    color: 'rgba(255,255,255,0.65)',
+  },
+  helpBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(34,197,94,0.55)',
+    background: 'rgba(34,197,94,0.10)',
+    color: '#86EFAC',
+    borderRadius: 999,
+    padding: '8px 14px',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 36,
+    flex: '0 0 auto',
+  },
+
+  // Bottom Edit shortcut — secondary navy ghost link.
+  editRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '0.75rem 1rem 1.5rem',
+  },
+  editLink: {
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.72)',
+    borderRadius: 10,
+    padding: '8px 16px',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 36,
+  },
+
   header: {
     display: 'flex',
     alignItems: 'center',

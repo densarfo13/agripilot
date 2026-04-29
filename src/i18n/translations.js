@@ -6488,6 +6488,16 @@ const T = {
   'myFarm.crop': {
     en: 'Crop', fr: 'Culture', sw: 'Mazao', ha: 'Amfanin gona', tw: 'Nn\u0254bae\u025B',
   },
+
+  // ─── My Farm spec §3-§6 — simplified layout copy ────────
+  // Status sentences (one per FARM_STATUS code) + compact help
+  // card. Trust-safe + farmer-readable per spec §8 copy rules.
+  'myFarm.status.line.good':            { en: 'You\u2019re making good progress.',                              fr: 'Vous progressez bien.',                                            sw: 'Unaendelea vizuri.',                                ha: 'Kana ci gaba sosai.',                                       tw: 'Wo nko\u00FE so y\u025B nyinaa.',                                  hi: 'आप अच्छी प्रगति कर रहे हैं।' },
+  'myFarm.status.line.needsAttention':  { en: 'Complete today\u2019s task to stay on track.',                   fr: 'Terminez la t\u00E2che du jour pour rester sur la bonne voie.',     sw: 'Maliza kazi ya leo ili uendelee kwenye njia sahihi.', ha: 'Kammala aikin yau don zama a kan hanya.',                  tw: 'Wie wo nn\u025B adwuma na kor so.',                              hi: 'सही रास्ते पर रहने के लिए आज का कार्य पूरा करें।' },
+  'myFarm.status.line.setupIncomplete': { en: 'Update your farm details for better guidance.',                  fr: 'Mettez \u00E0 jour les d\u00E9tails de votre ferme pour de meilleurs conseils.', sw: 'Sasisha maelezo ya shamba lako kwa mwongozo bora.',  ha: 'Sabunta cikakkun bayanan gonarka don samun jagora mafi kyau.', tw: 'Sesa wo afuo ho nsɛm na nya akwankyer\u025B pa.',           hi: 'बेहतर मार्गदर्शन के लिए अपने खेत का विवरण अपडेट करें।' },
+  'myFarm.help.title':                  { en: 'Need help?',                                                      fr: 'Besoin d\u2019aide ?',                                              sw: 'Unahitaji msaada?',                                  ha: 'Kana buƙatar taimako?',                                     tw: 'Wohia mmoa?',                                                       hi: 'मदद चाहिए?' },
+  'myFarm.help.lead':                   { en: 'Chat with our team.',                                            fr: 'Discutez avec notre \u00E9quipe.',                                  sw: 'Ongea na timu yetu.',                                ha: 'Yi hira da kungiyarmu.',                                     tw: 'Kasa ne y\u025Bn kuw no.',                                          hi: 'हमारी टीम से चैट करें।' },
+  'myFarm.help.contact':                { en: 'Contact Us',                                                      fr: 'Nous contacter',                                                    sw: 'Wasiliana Nasi',                                     ha: 'Tuntuɓe Mu',                                                tw: 'Kasa ne Y\u025Bn',                                                  hi: 'संपर्क करें' },
   'myFarm.location': {
     en: 'Location', fr: 'Emplacement', sw: 'Eneo', ha: 'Wuri', tw: 'Beae\u025B',
   },
