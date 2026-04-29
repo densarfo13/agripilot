@@ -58,6 +58,12 @@ import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
 import RainfallForecastCard from '../components/RainfallForecastCard.jsx';
 import MarketSignalCard from '../components/MarketSignalCard.jsx';
+// Lucide-style icons for the spec-polished 2x2 quick-actions
+// grid. Same hand-rolled SVG family used elsewhere in the app
+// (no extra bundle weight from importing the npm package).
+import {
+  Camera, Sprout, ShoppingCart, Wallet,
+} from '../components/icons/lucide.jsx';
 import {
   resolveProfileCompletionRoute, routeToUrl,
 } from '../core/multiFarm/index.js';
@@ -541,7 +547,14 @@ export default function Dashboard() {
           <NotificationBell userId={_userId} testId="home-bell" />
         </div>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
-        {weatherLine}
+        {/* Spec polish (Apr 2026): weatherLine removed here.
+            FarmerHeader's weather chip already shows
+            temp + icon + chipLabel ("Rain later"). The
+            separate weatherLine action banner duplicated
+            this; spec calls for ONE combined weather/action
+            insight surface so the chip carries it alone now.
+            The action-guidance line still appears via
+            FarmerHeader's expanded weather card on tap. */}
 
         {/* v3 stability layer: classified load-error banner.
             Renders ABOVE the data sections so a 401 / MFA /
@@ -575,8 +588,15 @@ export default function Dashboard() {
           </div>
         )}
 
-        <RainfallForecastCard />
-        <MarketSignalCard />
+        {/* Spec polish (Apr 2026): RainfallForecastCard +
+            MarketSignalCard removed from Home — they introduced
+            a second + third weather/signal surface above the
+            primary task, pushing the CTA below the fold on
+            mobile. Both components remain importable for any
+            other surface that wants the rich forecast. The
+            inline weather chip in FarmerHeader keeps the
+            "weather visible" requirement satisfied with a
+            fraction of the vertical real estate. */}
         {emptyState}
         {feedbackBanner}
 
@@ -759,75 +779,89 @@ export default function Dashboard() {
             />
           ))}
 
-        {/* Scan-crop entry point — compact, single line, non-intrusive */}
+        {/* Spec polish (Apr 2026): four entry rows compressed
+            into a 2x2 grid so all are visible without
+            excessive scroll. Same routes, same gating
+            (funding only renders when match count > 0; the
+            grid auto-fills the free slot). Lucide icons
+            replace the prior emoji glyphs per spec. */}
         {loop.profile && (
-          <button
-            type="button"
-            onClick={() => navigate('/scan-crop')}
-            style={S.scanEntry}
-            data-testid="home-scan-crop"
-          >
-            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83D\uDCF7'}</span>
-            <span>{t('camera.entry.homeCta')}</span>
-            <span style={S.scanEntryChevron}>{'\u203A'}</span>
-          </button>
-        )}
-
-        {/* Land-check entry point — same style, same hierarchy weight */}
-        {loop.profile && (
-          <button
-            type="button"
-            onClick={() => navigate('/land-check')}
-            style={S.scanEntry}
-            data-testid="home-land-check"
-          >
-            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDF3E'}</span>
-            <span>{t('land.entry.homeCta')}</span>
-            <span style={S.scanEntryChevron}>{'\u203A'}</span>
-          </button>
-        )}
-
-        {/* Buyer-layer entry point: secondary "Ready to sell?"
-            card. Sits at the same low priority as scan-crop /
-            land-check so it never competes with the primary
-            Today task. Shown to any farmer with a profile —
-            harvest-stage filtering is handled inside Sell.jsx
-            (prefills crop) so the card stays useful even
-            mid-season when a farmer wants to plan ahead. */}
-        {loop.profile && (
-          <button
-            type="button"
-            onClick={() => navigate('/sell')}
-            style={S.scanEntry}
-            data-testid="home-sell-entry"
-          >
-            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDFF7\uFE0F'}</span>
-            <span>
-              {tSafe('market.markProduceReady',
-                'Ready to sell? Mark produce ready')}
-            </span>
-            <span style={S.scanEntryChevron}>{'\u203A'}</span>
-          </button>
-        )}
-
-        {/* Funding opportunities entry — renders only when
-            the memoised match count is > 0. The MATCH_SHOWN
-            analytics event fires from a useEffect (below)
-            so it doesn't run on every render. */}
-        {fundingMatchCount > 0 && (
-          <button
-            type="button"
-            onClick={() => navigate('/opportunities')}
-            style={S.scanEntry}
-            data-testid="home-funding-entry"
-          >
-            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDFAF'}</span>
-            <span>
-              {tSafe('funding.nearbyCardTitle',
-                'Funding opportunity nearby')}
-            </span>
-            <span style={S.scanEntryChevron}>{'\u203A'}</span>
-          </button>
+          <div style={S.quickGrid} data-testid="home-quick-actions">
+            <button
+              type="button"
+              onClick={() => navigate('/scan-crop')}
+              style={S.quickTile}
+              data-testid="home-scan-crop"
+            >
+              <span style={S.quickTileIcon} aria-hidden="true">
+                <Camera size={20} />
+              </span>
+              <span style={S.quickTileLabel}>
+                {tSafe('home.quick.scanCrop', 'Scan crop')}
+              </span>
+              <span style={S.quickTileHelper}>
+                {tSafe('home.quick.scanCrop.helper',
+                  'Detect issues early.')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/land-check')}
+              style={S.quickTile}
+              data-testid="home-land-check"
+            >
+              <span style={S.quickTileIcon} aria-hidden="true">
+                <Sprout size={20} />
+              </span>
+              <span style={S.quickTileLabel}>
+                {tSafe('home.quick.checkLand', 'Check land')}
+              </span>
+              <span style={S.quickTileHelper}>
+                {tSafe('home.quick.checkLand.helper',
+                  'Quick farm check.')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/sell')}
+              style={S.quickTile}
+              data-testid="home-sell-entry"
+            >
+              <span style={S.quickTileIcon} aria-hidden="true">
+                <ShoppingCart size={20} />
+              </span>
+              <span style={S.quickTileLabel}>
+                {tSafe('home.quick.markReady', 'Mark ready')}
+              </span>
+              <span style={S.quickTileHelper}>
+                {tSafe('home.quick.markReady.helper',
+                  'List produce for buyers.')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/opportunities')}
+              style={{
+                ...S.quickTile,
+                ...(fundingMatchCount > 0 ? S.quickTileAccent : {}),
+              }}
+              data-testid="home-funding-entry"
+            >
+              <span style={S.quickTileIcon} aria-hidden="true">
+                <Wallet size={20} />
+              </span>
+              <span style={S.quickTileLabel}>
+                {tSafe('home.quick.funding', 'Funding')}
+              </span>
+              <span style={S.quickTileHelper}>
+                {fundingMatchCount > 0
+                  ? tSafe('home.quick.funding.match',
+                      'Match nearby.')
+                  : tSafe('home.quick.funding.helper',
+                      'Find support.')}
+              </span>
+            </button>
+          </div>
         )}
 
         {modals}
@@ -849,8 +883,62 @@ const S = {
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
     color: '#EAF2FF',
-    padding: '0.75rem 0.75rem 1rem',
+    // Bottom padding sized to clear BottomTabNav (~64px tall)
+    // plus a small breathing buffer so the last quick-action
+    // tile is never visually pinned under the fixed nav.
+    padding: '0.75rem 0.75rem 5rem',
   },
+
+  // ─── Spec polish (Apr 2026): 2x2 quick-actions grid ─────
+  // Replaces the four full-width vertical entry rows with a
+  // compact tile grid. Each tile is square-ish on mobile so
+  // all 4 are visible without excessive scroll. Navy palette
+  // matches the other farmer cards on the app.
+  quickGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '0.6rem',
+    marginTop: '0.75rem',
+  },
+  quickTile: {
+    appearance: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
+    padding: '0.85rem 0.85rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 12,
+    color: '#FFFFFF',
+    cursor: 'pointer',
+    minHeight: 96,
+    textAlign: 'left',
+  },
+  // Highlight the funding tile when there's an active match.
+  // Gentle accent — no aggressive yellow, just a green tint
+  // so it pops without competing with the primary CTA.
+  quickTileAccent: {
+    background: 'rgba(34,197,94,0.08)',
+    borderColor: 'rgba(34,197,94,0.35)',
+  },
+  quickTileIcon: {
+    color: 'rgba(255,255,255,0.85)',
+    display: 'inline-flex',
+  },
+  quickTileLabel: {
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+    lineHeight: 1.25,
+  },
+  quickTileHelper: {
+    fontSize: '0.75rem',
+    color: 'rgba(255,255,255,0.55)',
+    lineHeight: 1.35,
+  },
+
+
   notifyBar: {
     display: 'flex',
     justifyContent: 'flex-end',
