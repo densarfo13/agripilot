@@ -149,6 +149,10 @@ const FastOnboardingRoute = lazy(() => import('./pages/onboarding/fast/FastOnboa
 const OnboardingV3 = lazy(() => import('./pages/onboarding/OnboardingV3.jsx'));
 const EditFarmScreen = lazy(() => import('./pages/EditFarmScreen.jsx'));
 const NewFarmScreen  = lazy(() => import('./pages/NewFarmScreen.jsx'));
+// /farms — Manage Farms control panel for multi-farm households
+// (April 2026). Lazy because most farmers won't visit it; it
+// only matters once they have 2+ farms or want to archive.
+const ManageFarms    = lazy(() => import('./pages/ManageFarms.jsx'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 const WelcomeScreen  = lazy(() => import('./pages/WelcomeScreen.jsx'));
 const CropFitQuick   = lazy(() => import('./pages/CropFit.jsx'));
@@ -671,6 +675,7 @@ export default function App() {
             <Route path="/onboarding/v3" element={<OnboardingV3 />} />
             <Route path="/edit-farm" element={<EditFarmScreen />} />
             <Route path="/farm/new" element={<NewFarmScreen />} />
+            <Route path="/farms" element={<ManageFarms />} />
             <Route path="/welcome-farmer" element={<WelcomeScreen />} />
             <Route path="/crop-fit/quick" element={<CropFitQuick />} />
             <Route path="/program-dashboard" element={<ProgramDashboardPage />} />

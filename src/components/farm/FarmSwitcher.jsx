@@ -104,25 +104,11 @@ export default function FarmSwitcher() {
 
   function handleManage() {
     setOpen(false);
-    // Spec: navigate('/farms'). That route isn't registered
-    // in App.jsx today, so fall back to /farm/new (the
-    // nearest existing farm-management surface) when the
-    // navigate call doesn't move the URL within a beat. Same
-    // pattern the My Farm Help link uses for /support.
-    const before = (typeof window !== 'undefined' && window.location)
-      ? String(window.location.pathname || '') : '';
+    // /farms now exists (registered in App.jsx alongside the
+    // ManageFarms page). Direct navigate; the prior timeout-
+    // fallback to /farm/new is no longer needed.
     try { navigate('/farms'); }
-    catch {
-      try { navigate('/farm/new'); } catch { /* ignore */ }
-      return;
-    }
-    setTimeout(() => {
-      try {
-        const after = (typeof window !== 'undefined' && window.location)
-          ? String(window.location.pathname || '') : '';
-        if (after === before) navigate('/farm/new');
-      } catch { /* never propagate */ }
-    }, 120);
+    catch { /* never propagate from a click handler */ }
   }
 
   return (
