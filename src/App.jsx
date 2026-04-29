@@ -73,6 +73,10 @@ const FundingOpportunityDetail = lazy(() =>
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
 const CreateProgram  = lazy(() => import('./pages/admin/CreateProgram.jsx'));
 
+// v3 Field Agent Mode — dedicated /agent surface for the
+// 'agent' role. Local-first onboarding flow with retry sync.
+const AgentDashboard = lazy(() => import('./pages/AgentDashboard.jsx'));
+
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
 const V2Register = lazy(() => import('./pages/Register.jsx'));
@@ -608,6 +612,18 @@ export default function App() {
                    element={
                      <RoleRoute roles={STAFF_ROLES}>
                        <CreateProgram />
+                     </RoleRoute>
+                   } />
+
+            {/* v3 Field Agent Mode — gated to the 'agent'
+                role plus full staff (so super_admin can
+                preview the surface). Per spec § 6, the
+                page itself enforces "agents only see their
+                own farmers" via a per-call agentId filter. */}
+            <Route path="/agent"
+                   element={
+                     <RoleRoute roles={['agent', ...STAFF_ROLES]}>
+                       <AgentDashboard />
                      </RoleRoute>
                    } />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
