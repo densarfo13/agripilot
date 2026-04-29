@@ -29,6 +29,10 @@ import {
 } from '../../funding/fundingApplicationStore.js';
 import { getFundingOpportunities }
   from '../../funding/fundingStore.js';
+import { getMaxLevelForAction }
+  from '../../verification/verificationStore.js';
+import VerificationBadge
+  from '../verification/VerificationBadge.jsx';
 import { safeTrackEvent } from '../../lib/analytics.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../../brand/farrowayBrand.js';
@@ -42,6 +46,10 @@ export default function FundingInterestPanel({
   const [tick, setTick] = useState(0);
   const refresh = () => setTick((n) => n + 1);
 
+  // v3 Verification System: optional "Verified only" filter
+  // (level >= 2). Defaults off so the panel stays inclusive.
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+
   const summary       = useMemo(() => interestSummary(),    [tick]);
   const allInterests  = useMemo(() => getFundingInterests(), [tick]);
   const opportunities = useMemo(() => {
@@ -51,13 +59,21 @@ export default function FundingInterestPanel({
   }, [tick]);
 
   // Assistance-requested rows are the only ones that surface
-  // contact info on screen.
-  const assistanceRows = useMemo(
-    () => allInterests.filter(
+  // contact info on screen. Each row gets its highest known
+  // verification level computed from the verificationStore.
+  // The "Verified only" filter (level >= 2) hides rows
+  // without a witnessed location signal.
+  const assistanceRows = useMemo(() => {
+    const base = allInterests.filter(
       (i) => i.status === INTEREST_STATUS.ASSISTANCE_REQUESTED,
-    ),
-    [allInterests],
-  );
+    ).map((i) => ({
+      ...i,
+      verificationLevel: getMaxLevelForAction(i.id),
+    }));
+    return verifiedOnly
+      ? base.filter((r) => r.verificationLevel >= 2)
+      : base;
+  }, [allInterests, verifiedOnly]);
 
   function handleMarkContacted(id) {
     if (!id) return;
@@ -145,14 +161,34 @@ export default function FundingInterestPanel({
               'How farmers are engaging with funding programs')}
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={handleExportCsv}
-          style={S.cta}
-          data-testid={`${testId}-export`}
-        >
-          {tSafe('funding.exportInterests', 'Export CSV')}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center',
+                      gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* v3 Verification System: Verified-only filter
+              hides assistance rows whose attached
+              verification record is below level 2. Default
+              off so the panel is inclusive. */}
+          <label style={{
+            display: 'inline-flex', alignItems: 'center',
+            gap: '0.4rem', color: 'rgba(255,255,255,0.78)',
+            fontSize: '0.8125rem', fontWeight: 700,
+          }}>
+            <input
+              type="checkbox"
+              checked={verifiedOnly}
+              onChange={(e) => setVerifiedOnly(e.target.checked)}
+              data-testid={`${testId}-verified-only`}
+            />
+            {tSafe('verification.verifiedOnly', 'Verified only')}
+          </label>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            style={S.cta}
+            data-testid={`${testId}-export`}
+          >
+            {tSafe('funding.exportInterests', 'Export CSV')}
+          </button>
+        </div>
       </header>
 
       <div style={S.metricsGrid}>
@@ -223,8 +259,15 @@ export default function FundingInterestPanel({
                     <span style={S.assistOpp}>
                       {(o && o.title) || i.opportunityId}
                     </span>
-                    <span style={S.assistDate}>
-                      {String(i.createdAt || '').slice(0, 10)}
+                    <span style={{ display: 'inline-flex',
+                                   alignItems: 'center', gap: '0.4rem' }}>
+                      <VerificationBadge
+                        level={i.verificationLevel || 0}
+                        showLabel={false}
+                      />
+                      <span style={S.assistDate}>
+                        {String(i.createdAt || '').slice(0, 10)}
+                      </span>
                     </span>
                   </div>
                   <div style={S.assistContact}>

@@ -32,6 +32,8 @@ import { getSuccessTextKey } from '../engine/autopilot/textKeys.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { logActivity } from '../services/activityLogger.js';
 import { markTaskCompleted } from '../services/taskRepetitionMemory.js';
+import { saveVerification, ACTION_TYPES }
+  from '../verification/verificationStore.js';
 
 // Fallback auto-transition delay — only fires if user doesn't tap Continue/Later.
 // Long enough that it never fires during normal use (user always taps first).
@@ -215,6 +217,29 @@ export function useFarmerLoop() {
 
     if (result.success) {
       logActivity('action_completed', { taskType: task?.type, taskId: task?.id }, { farmId: currentFarmId });
+
+      // v3 Verification System: capture a best-effort
+      // record on every task complete. Reads cached weather
+      // location (no GPS prompt) so this stays non-blocking
+      // — never delays the success animation. Level computed
+      // automatically: timestamp-only → 1, +location → 2.
+      // Photo path lives on listing / request-help surfaces;
+      // task-complete keeps no UI surface for it.
+      try {
+        const lat = (weather && Number.isFinite(Number(weather.lat))) ? Number(weather.lat) : null;
+        const lng = (weather && Number.isFinite(Number(weather.lng))) ? Number(weather.lng) : null;
+        saveVerification({
+          farmerId:   profile?.userId || profile?.farmerId || null,
+          actionType: ACTION_TYPES.TASK_COMPLETE,
+          actionId:   String(task?.id || ''),
+          location: {
+            lat, lng,
+            region:  profile?.region  || '',
+            country: profile?.country || '',
+          },
+        });
+      } catch { /* never block on verification */ }
+
       setLastCompletedTask(task);
       setLoopState(LOOP_STATE.COMPLETED);
 

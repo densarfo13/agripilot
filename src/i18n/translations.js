@@ -9275,6 +9275,14 @@ const T = {
 
   // Bottom nav
   'nav.opportunities':          { en: 'Funding',             fr: 'Aides',              sw: 'Fursa',              ha: 'Dama',                  tw: 'Hokwan',             hi: 'फंडिंग' },
+
+  // ─── Verification System (v3 merge) ────────────────────────
+  'verification.verifiedOnly':  { en: 'Verified only',       fr: 'Vérifié uniquement', sw: 'Iliyothibitishwa pekee', ha: 'Tabbatattu kawai', tw: 'Nea wɔahwehwɛ mu nko ara', hi: 'केवल सत्यापित' },
+  'verification.noVerifiedRows':{ en: 'No interest records meet the Level-2 filter. Turn it off to see all rows.', fr: 'Aucun enregistrement d\'intérêt ne satisfait le filtre niveau 2. Désactivez-le pour voir toutes les lignes.', sw: 'Hakuna rekodi za maslahi zinazokidhi kichujio cha Kiwango cha 2. Zima ili uone safu zote.', ha: 'Babu rikodin sha\'awa da suka cika tace na Mataki na 2. Kashe shi don ganin duk sahu.', tw: 'Anidasoɔ ho nkrataa biara nhyia ɔdua 2 nhwehwɛmu no. Dum no na hu nkyerɛw nyinaa.', hi: 'कोई रुचि रिकॉर्ड स्तर-2 फ़िल्टर को पूरा नहीं करता। सभी पंक्तियाँ देखने के लिए इसे बंद करें।' },
+  'market.photoOptional':       { en: 'Photo of produce (optional)', fr: 'Photo de la récolte (optionnel)', sw: 'Picha ya mazao (hiari)', ha: 'Hoton amfanin gona (zaɓi)', tw: 'Mfoni a ɛkyerɛ aduane no (a ɛhia)', hi: 'उपज की तस्वीर (वैकल्पिक)' },
+  'market.photoAttached':       { en: 'Photo attached',      fr: 'Photo jointe',       sw: 'Picha imeambatishwa', ha: 'An haɗa hoto',        tw: 'Mfoni no aka ho',    hi: 'तस्वीर संलग्न' },
+  'funding.photoOptional':      { en: 'Photo (optional, e.g. of your farm)', fr: 'Photo (optionnel, ex. de votre ferme)', sw: 'Picha (hiari, mfano ya shamba lako)', ha: 'Hoto (zaɓi, misali na gonarka)', tw: 'Mfoni (a ɛhia, sɛ wo afuo)', hi: 'फोटो (वैकल्पिक, जैसे आपके खेत की)' },
+  'funding.photoAttached':      { en: 'Photo attached',      fr: 'Photo jointe',       sw: 'Picha imeambatishwa', ha: 'An haɗa hoto',        tw: 'Mfoni no aka ho',    hi: 'फोटो संलग्न' },
 };
 
 export default T;

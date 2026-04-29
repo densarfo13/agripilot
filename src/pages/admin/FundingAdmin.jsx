@@ -45,6 +45,10 @@ import {
 import {
   getFundingInterests, updateFundingInterest, INTEREST_STATUS,
 } from '../../funding/fundingApplicationStore.js';
+import { getMaxLevelForAction }
+  from '../../verification/verificationStore.js';
+import VerificationBadge
+  from '../../components/verification/VerificationBadge.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../../brand/farrowayBrand.js';
 import BrandLogo from '../../components/BrandLogo.jsx';
@@ -634,20 +638,56 @@ function TabButton({ active, onClick, testId, children }) {
 }
 
 function InterestsTab({ interests, opportunitiesById, onStatusChange }) {
-  if (!Array.isArray(interests) || interests.length === 0) {
-    return (
-      <EmptyState
-        title={tSafe('funding.noInterests', 'No application interest yet')}
-        message={tSafe('funding.noInterestsHint',
-          'Farmers who tap Apply Now or Request Help on an opportunity will appear here.')}
-        testId="funding-admin-interests-empty"
-      />
-    );
-  }
+  // v3 Verification System: Verified-only filter for admin.
+  const [verifiedOnly, setVerifiedOnly] = React.useState(false);
+
+  // Compute level per row up front so renders don't repeat
+  // the localStorage scan on every paint.
+  const enriched = React.useMemo(
+    () => (Array.isArray(interests) ? interests : []).map((i) => ({
+      ...i,
+      verificationLevel: getMaxLevelForAction(i.id),
+    })),
+    [interests],
+  );
+  const visible = verifiedOnly
+    ? enriched.filter((i) => i.verificationLevel >= 2)
+    : enriched;
+
   return (
-    <ul style={interestStyles.list}
-        data-testid="funding-admin-interests-list">
-      {interests.map((i) => {
+    <div data-testid="funding-admin-interests">
+      {/* Filter toolbar */}
+      <div style={interestStyles.filterRow}>
+        <label style={interestStyles.filter}>
+          <input
+            type="checkbox"
+            checked={verifiedOnly}
+            onChange={(e) => setVerifiedOnly(e.target.checked)}
+            data-testid="funding-admin-verified-only"
+          />
+          {tSafe('verification.verifiedOnly', 'Verified only')}
+        </label>
+        <span style={interestStyles.filterCount}>
+          {visible.length} / {enriched.length}
+        </span>
+      </div>
+
+      {visible.length === 0 ? (
+        <EmptyState
+          title={tSafe('funding.noInterests', 'No application interest yet')}
+          message={
+            verifiedOnly
+              ? tSafe('verification.noVerifiedRows',
+                  'No interest records meet the Level-2 filter. Turn it off to see all rows.')
+              : tSafe('funding.noInterestsHint',
+                  'Farmers who tap Apply Now or Request Help on an opportunity will appear here.')
+          }
+          testId="funding-admin-interests-empty"
+        />
+      ) : (
+      <ul style={interestStyles.list}
+          data-testid="funding-admin-interests-list">
+      {visible.map((i) => {
         const o = opportunitiesById.get(i.opportunityId);
         return (
           <li key={i.id} style={interestStyles.row}>
@@ -655,8 +695,13 @@ function InterestsTab({ interests, opportunitiesById, onStatusChange }) {
               <span style={interestStyles.opp}>
                 {(o && o.title) || i.opportunityId}
               </span>
-              <span style={interestStyles.date}>
-                {String(i.updatedAt || i.createdAt || '').slice(0, 10)}
+              <span style={{ display: 'inline-flex',
+                             alignItems: 'center', gap: '0.4rem' }}>
+                <VerificationBadge level={i.verificationLevel || 0}
+                                   showLabel={false} />
+                <span style={interestStyles.date}>
+                  {String(i.updatedAt || i.createdAt || '').slice(0, 10)}
+                </span>
               </span>
             </div>
             <div style={interestStyles.metaRow}>
@@ -691,7 +736,9 @@ function InterestsTab({ interests, opportunitiesById, onStatusChange }) {
           </li>
         );
       })}
-    </ul>
+      </ul>
+      )}
+    </div>
   );
 }
 
@@ -714,6 +761,20 @@ const tabStyles = {
 };
 
 const interestStyles = {
+  filterRow: {
+    display: 'flex', alignItems: 'center', flexWrap: 'wrap',
+    gap: '0.75rem', marginBottom: '0.6rem',
+  },
+  filter: {
+    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: '0.8125rem', fontWeight: 700,
+  },
+  filterCount: {
+    color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem',
+    background: 'rgba(255,255,255,0.05)',
+    padding: '0.2rem 0.5rem', borderRadius: '999px',
+  },
   list: {
     listStyle: 'none', padding: 0, margin: 0,
     display: 'flex', flexDirection: 'column', gap: '0.6rem',

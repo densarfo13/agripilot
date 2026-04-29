@@ -41,6 +41,10 @@ import {
   saveFundingInterest, recordApplyClick, findInterest,
   INTEREST_STATUS,
 } from '../funding/fundingApplicationStore.js';
+import {
+  saveVerification, readPhotoAsDataUrl, tryReadGeolocation,
+  ACTION_TYPES,
+} from '../verification/verificationStore.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
@@ -399,9 +403,10 @@ function RequestHelpModal({
   const [name,    setName]    = useState(prefillName);
   const [phone,   setPhone]   = useState(prefillPhone);
   const [message, setMessage] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
   const [err,     setErr]     = useState('');
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     setErr('');
     if (!String(name).trim()) {
@@ -424,6 +429,23 @@ function RequestHelpModal({
       farmerPhone:   phone,
       message,
     });
+
+    // v3 Verification System: attach a best-effort
+    // verification record so NGO operators can see whether
+    // the request came from a witnessed device. Photo is
+    // OPTIONAL — request still succeeds at level 0–2 without.
+    try {
+      const photoRes = photoFile ? await readPhotoAsDataUrl(photoFile) : null;
+      const gps      = await tryReadGeolocation(2500);
+      saveVerification({
+        farmerId,
+        actionType: ACTION_TYPES.FUNDING_REQUEST,
+        actionId:   stored ? stored.id : null,
+        photoUrl:   photoRes ? photoRes.dataUrl : null,
+        location:   gps ? { lat: gps.lat, lng: gps.lng } : null,
+      });
+    } catch { /* never block */ }
+
     if (stored) onSubmitted(stored);
   }
 
@@ -476,6 +498,32 @@ function RequestHelpModal({
           style={{ ...modalStyles.input, resize: 'vertical' }}
           data-testid="help-message"
         />
+
+        {/* Optional photo — boosts verification level. The
+            request succeeds without one. */}
+        <label style={{
+          display: 'flex', flexDirection: 'column',
+          gap: '0.25rem',
+          color: 'rgba(255,255,255,0.7)', fontSize: '0.8125rem',
+        }}>
+          <span style={{ fontWeight: 700 }}>
+            {tSafe('funding.photoOptional',
+              'Photo (optional, e.g. of your farm)')}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+            style={modalStyles.input}
+            data-testid="help-photo"
+          />
+          {photoFile && (
+            <span style={{ color: '#86EFAC', fontWeight: 700 }}>
+              ✓ {tSafe('funding.photoAttached', 'Photo attached')}
+            </span>
+          )}
+        </label>
 
         <button type="submit" style={modalStyles.submit}
                 data-testid="help-submit">

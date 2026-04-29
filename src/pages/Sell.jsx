@@ -33,6 +33,10 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth }    from '../context/AuthContext.jsx';
 import { saveListing } from '../market/marketStore.js';
 import { syncListing } from '../market/marketSync.js';
+import {
+  saveVerification, readPhotoAsDataUrl, tryReadGeolocation,
+  ACTION_TYPES,
+} from '../verification/verificationStore.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
@@ -69,6 +73,7 @@ export default function Sell() {
     return d.toISOString().slice(0, 10);
   });
   const [priceRange, setPriceRange] = useState('');
+  const [photoFile, setPhotoFile]   = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [successId, setSuccessId]   = useState(null);
   const [errMsg, setErrMsg]         = useState('');
@@ -138,7 +143,7 @@ export default function Sell() {
     );
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErrMsg('');
     if (submitting) return;
@@ -175,10 +180,35 @@ export default function Sell() {
       // Fire-and-forget backend sync. Resolves true if the
       // v3 endpoint exists; on 404 / network blip the local
       // listing stays the source of truth and the user
-      // never sees a failure. setSuccessId fires
-      // synchronously so the UI doesn't wait on the
-      // network round-trip.
+      // never sees a failure.
       try { syncListing(listing); } catch { /* never block */ }
+
+      // v3 Verification System: capture a best-effort
+      // record alongside the listing. Photo + GPS are both
+      // OPTIONAL — the listing succeeds at level 0 if the
+      // farmer skipped them. Non-blocking: we surface the
+      // success card after this resolves either way.
+      try {
+        const photoRes = photoFile ? await readPhotoAsDataUrl(photoFile) : null;
+        let lat = activeFarm?.lat ?? activeFarm?.location?.lat ?? null;
+        let lng = activeFarm?.lng ?? activeFarm?.location?.lng ?? null;
+        if (lat == null || lng == null) {
+          const gps = await tryReadGeolocation(2500);
+          if (gps) { lat = gps.lat; lng = gps.lng; }
+        }
+        saveVerification({
+          farmerId:   user?.sub || profile?.userId || null,
+          actionType: ACTION_TYPES.LISTING_CREATED,
+          actionId:   listing.id,
+          photoUrl:   photoRes ? photoRes.dataUrl : null,
+          location: {
+            lat, lng,
+            region:  activeFarm?.region  || profile?.region  || '',
+            country: activeFarm?.country || profile?.country || '',
+          },
+        });
+      } catch { /* never block on verification */ }
+
       setSuccessId(listing.id);
     } catch (err) {
       setErrMsg(tSafe('market.error.saveFailed',
@@ -269,6 +299,29 @@ export default function Sell() {
               style={S.input}
               data-testid="sell-price"
             />
+          </label>
+
+          {/* Optional photo — boosts verification level
+              from 2 → 3 when paired with location. The
+              listing still succeeds without one. */}
+          <label style={S.label}>
+            {tSafe('market.photoOptional', 'Photo of produce (optional)')}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+              style={S.input}
+              data-testid="sell-photo"
+            />
+            {photoFile && (
+              <span style={{
+                color: '#86EFAC', fontSize: '0.8125rem',
+                fontWeight: 700,
+              }}>
+                ✓ {tSafe('market.photoAttached', 'Photo attached')}
+              </span>
+            )}
           </label>
 
           <div style={S.regionPill} data-testid="sell-region">
