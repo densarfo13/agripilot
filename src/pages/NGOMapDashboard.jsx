@@ -50,6 +50,7 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import FundingImpact            from '../components/ngo/FundingImpact.jsx';
 import MarketActivity           from '../components/ngo/MarketActivity.jsx';
 import FundingOpportunitiesPanel from '../components/ngo/FundingOpportunitiesPanel.jsx';
+import FundingInterestPanel      from '../components/ngo/FundingInterestPanel.jsx';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
 
@@ -297,6 +298,13 @@ export default function NGOMapDashboard({
           farms={effectiveFarms}
           testId="ngo-map-funding-opps"
         />
+
+        {/* 5c. Funding Apply / Request Help (v3 funding-apply
+              layer). Surfaces application-interest counts +
+              the assistance-request contact list. Privacy:
+              farmer contact ONLY for ASSISTANCE_REQUESTED
+              rows; other statuses are counts only. */}
+        <FundingInterestPanel testId="ngo-map-funding-interests" />
 
         {/* 6. Region table */}
         <section style={S.section} data-testid="ngo-region-section">

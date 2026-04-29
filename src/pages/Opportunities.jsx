@@ -28,6 +28,7 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { getActiveFundingOpportunities, FUNDING_EVENTS }
   from '../funding/fundingStore.js';
@@ -133,10 +134,14 @@ function OpportunityCard({ match }) {
         { month: 'short', day: 'numeric', year: 'numeric' })
     : tSafe('funding.deadlineRolling', 'Rolling — no deadline');
 
-  function handleClick() {
+  function handleViewDetails() {
+    // Surface-side log so ops can grep how many cards
+    // converted from list → detail. Detail page fires its
+    // own VIEWED event on mount.
     try {
       safeTrackEvent(FUNDING_EVENTS.CLICKED, {
         opportunityId: o.id, type: o.opportunityType,
+        from: 'list',
       });
     } catch { /* ignore */ }
   }
@@ -208,27 +213,18 @@ function OpportunityCard({ match }) {
         )}
       </div>
 
-      {o.sourceUrl ? (
-        <a
-          href={o.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={handleClick}
-          style={cardStyles.btn}
-          data-testid={`opportunity-learn-${o.id}`}
-        >
-          {tSafe('funding.learnMore', 'Learn More')} →
-        </a>
-      ) : o.contactEmail ? (
-        <a
-          href={`mailto:${o.contactEmail}`}
-          onClick={handleClick}
-          style={cardStyles.btn}
-          data-testid={`opportunity-contact-${o.id}`}
-        >
-          {tSafe('funding.contactSource', 'Contact Source')} →
-        </a>
-      ) : null}
+      {/* Card CTA — always routes through the detail page so
+          farmers see the full Apply / Request Help / Mark
+          Applied flow before they leave Farroway. The detail
+          page handles the actual external Apply Now click. */}
+      <Link
+        to={`/opportunities/${o.id}`}
+        onClick={handleViewDetails}
+        style={cardStyles.btn}
+        data-testid={`opportunity-view-${o.id}`}
+      >
+        {tSafe('funding.viewDetails', 'View Details')} →
+      </Link>
     </article>
   );
 }

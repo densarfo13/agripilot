@@ -42,6 +42,9 @@ import {
 import {
   ErrorState, EmptyState, LoadingState,
 } from '../../components/admin/AdminState.jsx';
+import {
+  getFundingInterests, updateFundingInterest, INTEREST_STATUS,
+} from '../../funding/fundingApplicationStore.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../../brand/farrowayBrand.js';
 import BrandLogo from '../../components/BrandLogo.jsx';
@@ -74,6 +77,30 @@ export default function FundingAdmin() {
   const [err, setErr]         = useState(null);
   const [editing, setEditing] = useState(null);    // form state OR null
   const [savedFlash, setSavedFlash] = useState('');
+
+  // v3 Funding-Apply addition: top-level tab to switch
+  // between catalog management and application-interest
+  // review. Default to 'catalog' so existing admin
+  // muscle-memory still lands on the same screen.
+  const [tab, setTab] = useState('catalog'); // 'catalog' | 'interests'
+
+  // Interest tab state — refreshed via interestTick.
+  const [interestTick, setInterestTick] = useState(0);
+  const interests = useMemo(() => getFundingInterests(), [interestTick]);
+  const opportunitiesById = useMemo(() => {
+    const m = new Map();
+    for (const o of rows) m.set(o.id, o);
+    return m;
+  }, [rows]);
+
+  function refreshInterests() {
+    setInterestTick((n) => n + 1);
+  }
+  function handleInterestStatus(id, status) {
+    if (!id) return;
+    updateFundingInterest(id, { status });
+    refreshInterests();
+  }
 
   // Storage events fire in OTHER tabs only — useful for
   // multi-window admins. The store mutations in THIS tab
@@ -204,6 +231,28 @@ export default function FundingAdmin() {
           </p>
         </header>
 
+        {/* Tab strip — Catalog vs Application Interest */}
+        <nav style={S.tabBar} data-testid="funding-admin-tabs">
+          <TabButton
+            active={tab === 'catalog'}
+            onClick={() => setTab('catalog')}
+            testId="funding-admin-tab-catalog"
+          >
+            {tSafe('funding.tabCatalog', 'Catalog')}
+            <span style={S.tabCount}>{rows.length}</span>
+          </TabButton>
+          <TabButton
+            active={tab === 'interests'}
+            onClick={() => setTab('interests')}
+            testId="funding-admin-tab-interests"
+          >
+            {tSafe('funding.applicationInterest', 'Application Interest')}
+            <span style={S.tabCount}>{interests.length}</span>
+          </TabButton>
+        </nav>
+
+        {tab === 'catalog' && (
+        <>
         <section style={S.statsRow}>
           <Stat label="Total"    value={stats.total} />
           <Stat label="Active"   value={stats.active}   tone="good" />
@@ -222,9 +271,12 @@ export default function FundingAdmin() {
             <span style={S.flash}>{savedFlash}</span>
           )}
         </div>
+        </>
+        )}
 
-        {loading && <LoadingState message={tSafe('common.loading', 'Loading…')} />}
-        {err && (
+        {tab === 'catalog' && loading
+          && <LoadingState message={tSafe('common.loading', 'Loading…')} />}
+        {tab === 'catalog' && err && (
           <ErrorState
             message={err}
             onRetry={reload}
@@ -232,7 +284,7 @@ export default function FundingAdmin() {
           />
         )}
 
-        {!loading && !err && rows.length === 0 && (
+        {tab === 'catalog' && !loading && !err && rows.length === 0 && (
           <EmptyState
             title={tSafe('funding.adminEmpty', 'No opportunities yet')}
             message={tSafe('funding.adminEmptyHint',
@@ -241,7 +293,7 @@ export default function FundingAdmin() {
           />
         )}
 
-        {!loading && !err && rows.length > 0 && (
+        {tab === 'catalog' && !loading && !err && rows.length > 0 && (
           <ul style={S.list} data-testid="funding-admin-list">
             {rows.map((o) => (
               <li key={o.id}>
@@ -255,6 +307,15 @@ export default function FundingAdmin() {
               </li>
             ))}
           </ul>
+        )}
+
+        {/* ─── Application Interest tab ─────────────────── */}
+        {tab === 'interests' && (
+          <InterestsTab
+            interests={interests}
+            opportunitiesById={opportunitiesById}
+            onStatusChange={handleInterestStatus}
+          />
         )}
       </div>
 
@@ -553,6 +614,151 @@ function Stat({ label, value, tone = 'neutral' }) {
   );
 }
 
+/* ─── Tabs + InterestsTab ──────────────────────────── */
+
+function TabButton({ active, onClick, testId, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      aria-current={active ? 'page' : undefined}
+      style={{
+        ...tabStyles.tab,
+        ...(active ? tabStyles.tabActive : {}),
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function InterestsTab({ interests, opportunitiesById, onStatusChange }) {
+  if (!Array.isArray(interests) || interests.length === 0) {
+    return (
+      <EmptyState
+        title={tSafe('funding.noInterests', 'No application interest yet')}
+        message={tSafe('funding.noInterestsHint',
+          'Farmers who tap Apply Now or Request Help on an opportunity will appear here.')}
+        testId="funding-admin-interests-empty"
+      />
+    );
+  }
+  return (
+    <ul style={interestStyles.list}
+        data-testid="funding-admin-interests-list">
+      {interests.map((i) => {
+        const o = opportunitiesById.get(i.opportunityId);
+        return (
+          <li key={i.id} style={interestStyles.row}>
+            <div style={interestStyles.headerRow}>
+              <span style={interestStyles.opp}>
+                {(o && o.title) || i.opportunityId}
+              </span>
+              <span style={interestStyles.date}>
+                {String(i.updatedAt || i.createdAt || '').slice(0, 10)}
+              </span>
+            </div>
+            <div style={interestStyles.metaRow}>
+              <span style={interestStyles.meta}>
+                <strong>{i.farmerName || tSafe('funding.unnamedFarmer', 'Farmer')}</strong>
+              </span>
+              {i.farmerPhone && (
+                <a href={`tel:${i.farmerPhone}`}
+                   style={interestStyles.phone}>
+                  📞 {i.farmerPhone}
+                </a>
+              )}
+            </div>
+            {i.message && (
+              <p style={interestStyles.message}>{i.message}</p>
+            )}
+            <div style={interestStyles.statusRow}>
+              <label style={interestStyles.statusLabel}>
+                {tSafe('funding.status', 'Status')}:
+              </label>
+              <select
+                value={i.status}
+                onChange={(e) => onStatusChange(i.id, e.target.value)}
+                style={interestStyles.statusSelect}
+                data-testid={`funding-admin-status-${i.id}`}
+              >
+                {Object.values(INTEREST_STATUS).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+const tabStyles = {
+  tab: {
+    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+    padding: '0.5rem 0.95rem',
+    borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.10)',
+    background: 'rgba(255,255,255,0.03)',
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: '0.875rem', fontWeight: 700,
+    cursor: 'pointer',
+  },
+  tabActive: {
+    background: 'rgba(34,197,94,0.15)',
+    color: C.lightGreen,
+    borderColor: 'rgba(34,197,94,0.40)',
+  },
+};
+
+const interestStyles = {
+  list: {
+    listStyle: 'none', padding: 0, margin: 0,
+    display: 'flex', flexDirection: 'column', gap: '0.6rem',
+  },
+  row: {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '12px',
+    padding: '0.85rem 1rem',
+    display: 'flex', flexDirection: 'column', gap: '0.4rem',
+  },
+  headerRow: {
+    display: 'flex', justifyContent: 'space-between',
+    alignItems: 'center', gap: '0.5rem',
+  },
+  opp:  { color: C.white, fontWeight: 700,
+          fontSize: '0.9375rem' },
+  date: { color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem' },
+  metaRow: {
+    display: 'flex', flexWrap: 'wrap', gap: '0.5rem',
+    color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem',
+  },
+  meta:  { color: 'rgba(255,255,255,0.85)' },
+  phone: { color: C.lightGreen, textDecoration: 'none',
+           fontWeight: 700 },
+  message: {
+    margin: 0, color: 'rgba(255,255,255,0.78)',
+    fontSize: '0.8125rem', fontStyle: 'italic',
+  },
+  statusRow: { display: 'flex', alignItems: 'center', gap: '0.4rem' },
+  statusLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: '0.75rem', fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '0.06em',
+  },
+  statusSelect: {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: '8px', color: C.white,
+    padding: '0.35rem 0.5rem',
+    fontSize: '0.8125rem',
+    outline: 'none',
+  },
+};
+
 /* ─── Styles ──────────────────────────────────────── */
 
 const S = {
@@ -589,6 +795,17 @@ const S = {
                fontSize: '0.78rem',
                textTransform: 'uppercase',
                letterSpacing: '0.06em', fontWeight: 700 },
+  tabBar: {
+    display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
+    padding: '0.4rem 0', alignItems: 'center',
+  },
+  tabCount: {
+    background: 'rgba(255,255,255,0.10)',
+    color: C.white,
+    padding: '0.05rem 0.5rem',
+    borderRadius: '999px',
+    fontSize: '0.7rem', fontWeight: 800,
+  },
   toolbar: { display: 'flex', alignItems: 'center', gap: '0.6rem' },
   btnPrimary: {
     padding: '0.65rem 1.1rem', borderRadius: '10px',

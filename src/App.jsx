@@ -68,6 +68,8 @@ const Sell           = lazy(() => import('./pages/Sell.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
+const FundingOpportunityDetail = lazy(() =>
+  import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
 
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
@@ -567,8 +569,9 @@ export default function App() {
                 /ngo/impact is staff-only (NGO operators
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
-            <Route path="/sell"          element={<Sell />} />
-            <Route path="/opportunities" element={<Opportunities />} />
+            <Route path="/sell"               element={<Sell />} />
+            <Route path="/opportunities"      element={<Opportunities />} />
+            <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
                    element={
                      <RoleRoute roles={STAFF_ROLES}>
