@@ -553,9 +553,17 @@ export default function App() {
             {/* Buyer + Funding/Impact layer — v3 local-first
                 routes mounted alongside the legacy
                 /farmer/listings* + /market/* surfaces (those
-                stay for backend-driven flows). */}
+                stay for backend-driven flows).
+                /ngo/impact is staff-only (NGO operators
+                + super_admin) so a regular farmer who
+                stumbles onto the URL is redirected. */}
             <Route path="/sell"        element={<Sell />} />
-            <Route path="/ngo/impact"  element={<NgoImpactPage />} />
+            <Route path="/ngo/impact"
+                   element={
+                     <RoleRoute roles={STAFF_ROLES}>
+                       <NgoImpactPage />
+                     </RoleRoute>
+                   } />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
             <Route path="/farmer/listings" element={<MyListingsPage />} />
             <Route path="/farmer/listings/new" element={<CreateListingPage />} />

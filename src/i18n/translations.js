@@ -6753,6 +6753,7 @@ const T = {
   'nav.myFarm': { en: 'My Farm', fr: 'Ma ferme', sw: 'Shamba', ha: 'Gona', tw: 'Afuo' },
   'nav.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma' },
   'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo', ha: 'Ci gaba', tw: 'Nkɔso' },
+  'nav.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',       ha: 'Sayar',  tw: 'Tɔn',  hi: 'बेचें' },
 
   // ═══════════════════════════════════════════════════════════
   //  DASHBOARD — section labels (Home decision screen)

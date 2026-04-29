@@ -22,6 +22,9 @@ import { Link } from 'react-router-dom';
 import {
   getActiveListings, saveBuyerInterest, MARKET_EVENTS,
 } from '../market/marketStore.js';
+import {
+  syncBuyerInterest, refreshListingsFromServer,
+} from '../market/marketSync.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
@@ -55,6 +58,16 @@ export default function Marketplace() {
     // Track that this surface was viewed for the impact
     // metrics. Fire-and-forget; never blocks render.
     try { safeTrackEvent('MARKETPLACE_VIEWED', {}); } catch { /* ignore */ }
+
+    // Best-effort fetch from the v3 backend. Returns silently
+    // on 404 / network failure so a user with no backend
+    // still sees their local listings instantly. When server
+    // data lands we re-read storage so the UI updates.
+    refreshListingsFromServer().then((res) => {
+      if (res && res.ok && (res.count || 0) > 0) {
+        setListings(getActiveListings());
+      }
+    }).catch(() => {});
   }, []);
 
   // Build filter option lists from current data.
@@ -291,13 +304,19 @@ function InterestModal({ listing, onClose, onSubmitted }) {
         'Please enter a phone we can reach you on.'));
       return;
     }
-    saveBuyerInterest({
+    const stored = saveBuyerInterest({
       listingId:  listing.id,
       buyerName:  name,
       buyerPhone: phone,
       buyerEmail: email,
       message,
     });
+    // Fire-and-forget backend sync. Local store is already
+    // the source of truth; this just ensures platform/admin
+    // sees the interest when the v3 endpoint is live.
+    if (stored) {
+      try { syncBuyerInterest(stored); } catch { /* never block */ }
+    }
     setDone(true);
   }
 

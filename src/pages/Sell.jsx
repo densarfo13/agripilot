@@ -32,6 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth }    from '../context/AuthContext.jsx';
 import { saveListing } from '../market/marketStore.js';
+import { syncListing } from '../market/marketSync.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
@@ -171,6 +172,13 @@ export default function Sell() {
         },
         status: 'ACTIVE',
       });
+      // Fire-and-forget backend sync. Resolves true if the
+      // v3 endpoint exists; on 404 / network blip the local
+      // listing stays the source of truth and the user
+      // never sees a failure. setSuccessId fires
+      // synchronously so the UI doesn't wait on the
+      // network round-trip.
+      try { syncListing(listing); } catch { /* never block */ }
       setSuccessId(listing.id);
     } catch (err) {
       setErrMsg(tSafe('market.error.saveFailed',

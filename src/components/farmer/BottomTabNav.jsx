@@ -1,9 +1,16 @@
 /**
  * BottomTabNav — persistent bottom navigation for farmer-facing screens.
  *
- * 4 tabs: Home, My Farm, Tasks, Progress
- * Icons always visible, label under icon, active tab highlighted with green indicator.
- * Large tap targets, mobile-first, premium dark styling.
+ * 5 tabs: Home, My Farm, Tasks, Progress, Sell.
+ * Icons always visible, label under icon, active tab
+ * highlighted with green indicator. Large tap targets,
+ * mobile-first, premium dark styling.
+ *
+ * Sell is intentionally LAST in the row so the primary
+ * action surface (Home → My Farm → Tasks → Progress) keeps
+ * its existing position. Farmers who never list produce
+ * never see anything change about their daily flow; for
+ * those who do, the entry is one tap from anywhere.
  */
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
@@ -11,10 +18,11 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { NAV_ICONS } from '../../lib/farmerIcons.js';
 
 const TABS = [
-  { key: 'home', path: '/dashboard', icon: NAV_ICONS.home, labelKey: 'nav.home' },
-  { key: 'farm', path: '/my-farm', icon: NAV_ICONS.farm, labelKey: 'nav.myFarm' },
-  { key: 'tasks', path: '/tasks', icon: NAV_ICONS.tasks, labelKey: 'nav.tasks' },
-  { key: 'progress', path: '/progress', icon: NAV_ICONS.progress, labelKey: 'nav.progress' },
+  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
+  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'Farm' },
+  { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
+  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
+  { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell,     labelKey: 'nav.sell',     fallback: 'Sell' },
 ];
 
 export default function BottomTabNav() {
@@ -32,9 +40,13 @@ export default function BottomTabNav() {
     <nav style={S.nav} data-testid="bottom-tab-nav">
       {TABS.map((tab) => {
         const isActive = currentPath === tab.path;
-        // tSafe: missing key → visible tab key fallback (never an
-        // English humanised value in non-English UIs).
-        const label = tSafe(tab.labelKey, tab.key);
+        // tSafe: missing key → readable English fallback (the
+        // pre-v3 form used `tab.key` which surfaced literal
+        // "sell" / "tasks" strings — fine when keys exist for
+        // every locale, ugly when one is missing). The
+        // explicit `fallback` field keeps the surface readable
+        // in either case.
+        const label = tSafe(tab.labelKey, tab.fallback || tab.key);
         return (
           <button
             key={tab.key}
