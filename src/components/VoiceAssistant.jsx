@@ -48,7 +48,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tStrict } from '../i18n/strictT.js';
 import {
@@ -116,6 +116,27 @@ const STATE = Object.freeze({
   ERROR:     'error',
 });
 
+// F7 fix (interactive smoke test): pages where the floating
+// voice-nav button would be misleading or visually intrusive.
+// All commands route to authenticated farmer surfaces; on
+// these public/auth screens the button does nothing useful
+// and clutters calm landing layouts. ProtectedLayout adds
+// the FAB back implicitly on every authenticated route.
+const VOICE_FAB_HIDDEN_PATHS = [
+  '/login', '/register',
+  '/forgot-password', '/forgot-password-sms',
+  '/reset-password', '/verify-otp',
+  '/landing', '/welcome', '/start', '/farmer-welcome',
+  '/accept-invite', '/farmer-register',
+];
+
+function _isPublicAuthSurface(pathname) {
+  if (!pathname) return false;
+  return VOICE_FAB_HIDDEN_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  );
+}
+
 export default function VoiceAssistant() {
   // HOTFIX (Apr 2026): hooks must be called unconditionally at the
   // top of the component (Rules of Hooks). The previous
@@ -127,6 +148,7 @@ export default function VoiceAssistant() {
   // previous render" → ErrorBoundary fires → "Something went wrong".
   // Mounted inside <BrowserRouter> in App.jsx so this is safe.
   const navigate = useNavigate();
+  const location = useLocation();
   const { lang } = useTranslation();
   const { enabled: simpleMode } = useLowLiteracyMode();
   const [state, setState] = useState(STATE.IDLE);
@@ -225,6 +247,13 @@ export default function VoiceAssistant() {
   // floating button that can't speak or hear. Component still
   // mounts and unmounts cleanly.
   if (!supported) return null;
+
+  // F7 fix: hide on public/auth surfaces. The voice commands
+  // all target authenticated farmer routes (/my-farm, /tasks,
+  // etc.) which would just bounce the user back to /login —
+  // and the FAB visually overlapped the Sign In button on
+  // /login per the smoke-test screenshots.
+  if (_isPublicAuthSurface(location.pathname)) return null;
 
   const ariaLabel = tStrict('voiceNav.tap', 'Voice assistant');
   const status =
