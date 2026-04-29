@@ -39,6 +39,8 @@ import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
 } from '../components/admin/AdminState.jsx';
 import { API_ERROR_TYPES } from '../api/apiClient.js';
+import { getActiveFundingOpportunities, FUNDING_EVENTS } from '../funding/fundingStore.js';
+import { matchFundingForFarm } from '../funding/fundingMatcher.js';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
@@ -608,6 +610,42 @@ export default function Dashboard() {
             <span style={S.scanEntryChevron}>{'\u203A'}</span>
           </button>
         )}
+
+        {/* Funding opportunities entry — only renders when we
+            have at least one match for this farmer. Same low
+            priority as scan-crop/sell so the Today task
+            stays primary. Cheap inline match check (the
+            matcher is pure JS) keeps the dashboard responsive
+            even when the catalog grows. */}
+        {loop.profile && (() => {
+          let n = 0;
+          try {
+            n = matchFundingForFarm(
+              loop.profile,
+              getActiveFundingOpportunities(),
+            ).length;
+          } catch { n = 0; }
+          if (n === 0) return null;
+          // One MATCH_SHOWN log per render is fine — analytics
+          // dedupes on (event, opportunityId) downstream.
+          try { safeTrackEvent(FUNDING_EVENTS.MATCH_SHOWN, { matches: n }); }
+          catch { /* ignore */ }
+          return (
+            <button
+              type="button"
+              onClick={() => navigate('/opportunities')}
+              style={S.scanEntry}
+              data-testid="home-funding-entry"
+            >
+              <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83C\uDFAF'}</span>
+              <span>
+                {tSafe('funding.nearbyCardTitle',
+                  'Funding opportunity nearby')}
+              </span>
+              <span style={S.scanEntryChevron}>{'\u203A'}</span>
+            </button>
+          );
+        })()}
 
         {modals}
 

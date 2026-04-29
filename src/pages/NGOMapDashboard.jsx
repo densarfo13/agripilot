@@ -47,8 +47,9 @@ import { getFarms } from '../api/ngoApi.js';
 import { hasGPS, getRegionKey } from '../location/geoUtils.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
-import FundingImpact   from '../components/ngo/FundingImpact.jsx';
-import MarketActivity  from '../components/ngo/MarketActivity.jsx';
+import FundingImpact            from '../components/ngo/FundingImpact.jsx';
+import MarketActivity           from '../components/ngo/MarketActivity.jsx';
+import FundingOpportunitiesPanel from '../components/ngo/FundingOpportunitiesPanel.jsx';
 
 function _safeArr(v) { return Array.isArray(v) ? v.filter(Boolean) : []; }
 
@@ -288,6 +289,14 @@ export default function NGOMapDashboard({
               + buyer interests roll up into a calm summary
               card pointing operators at /marketplace. */}
         <MarketActivity testId="ngo-map-market" />
+
+        {/* 5b. Funding Opportunities (v3 funding layer).
+              Read-only panel; full management lives at
+              /admin/funding (or /ngo/funding). */}
+        <FundingOpportunitiesPanel
+          farms={effectiveFarms}
+          testId="ngo-map-funding-opps"
+        />
 
         {/* 6. Region table */}
         <section style={S.section} data-testid="ngo-region-section">

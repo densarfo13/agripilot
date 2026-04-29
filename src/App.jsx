@@ -58,12 +58,17 @@ import { initDailyLoop } from './utils/dailyLoop.js';
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 
 // Buyer + Funding/Impact layer (v3 merge, local-first)
-//   /sell         — farmer creates a produce listing
-//   /marketplace  — buyer browses available produce
-//   /ngo/impact   — NGO funding + impact + market activity
-const Sell          = lazy(() => import('./pages/Sell.jsx'));
-const Marketplace   = lazy(() => import('./pages/Marketplace.jsx'));
-const NgoImpactPage = lazy(() => import('./pages/NgoImpactPage.jsx'));
+//   /sell           — farmer creates a produce listing
+//   /marketplace    — buyer browses available produce
+//   /ngo/impact     — NGO funding + impact + market activity
+//   /opportunities  — farmer funding & support matches
+//   /admin/funding  — admin manages funding catalog
+//   /ngo/funding    — same management page, NGO entry point
+const Sell           = lazy(() => import('./pages/Sell.jsx'));
+const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
+const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
+const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
+const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
 
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
@@ -539,7 +544,12 @@ export default function App() {
             <Route path="/ngo" element={<NGOOverview />} />
             <Route path="/ngo/interventions" element={<InterventionCenter />} />
             <Route path="/ngo/scores" element={<FarmerScoring />} />
-            <Route path="/ngo/funding" element={<FundingReadiness />} />
+            {/* /ngo/funding now renders the v3 FundingAdmin
+                management surface (see route below). The
+                legacy FundingReadiness page is kept reachable
+                at /ngo/funding-readiness for any internal
+                links that still point at it. */}
+            <Route path="/ngo/funding-readiness" element={<FundingReadiness />} />
             {/* Monetisation layer (additive). Distinct from the
                 server-fed NGOOverview above; reads local metrics
                 + pricing config so it works in demos / offline.
@@ -557,11 +567,27 @@ export default function App() {
                 /ngo/impact is staff-only (NGO operators
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
-            <Route path="/sell"        element={<Sell />} />
+            <Route path="/sell"          element={<Sell />} />
+            <Route path="/opportunities" element={<Opportunities />} />
             <Route path="/ngo/impact"
                    element={
                      <RoleRoute roles={STAFF_ROLES}>
                        <NgoImpactPage />
+                     </RoleRoute>
+                   } />
+            {/* Funding Opportunities admin — same page on
+                /admin/funding and /ngo/funding so both staff
+                personas land on the same management surface. */}
+            <Route path="/admin/funding"
+                   element={
+                     <RoleRoute roles={STAFF_ROLES}>
+                       <FundingAdmin />
+                     </RoleRoute>
+                   } />
+            <Route path="/ngo/funding"
+                   element={
+                     <RoleRoute roles={STAFF_ROLES}>
+                       <FundingAdmin />
                      </RoleRoute>
                    } />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />

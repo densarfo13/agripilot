@@ -18,11 +18,12 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { NAV_ICONS } from '../../lib/farmerIcons.js';
 
 const TABS = [
-  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
-  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'Farm' },
-  { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
-  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
-  { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell,     labelKey: 'nav.sell',     fallback: 'Sell' },
+  { key: 'home',          path: '/dashboard',     icon: NAV_ICONS.home,          labelKey: 'nav.home',          fallback: 'Home' },
+  { key: 'farm',          path: '/my-farm',       icon: NAV_ICONS.farm,          labelKey: 'nav.myFarm',        fallback: 'Farm' },
+  { key: 'tasks',         path: '/tasks',         icon: NAV_ICONS.tasks,         labelKey: 'nav.tasks',         fallback: 'Tasks' },
+  { key: 'progress',      path: '/progress',      icon: NAV_ICONS.progress,      labelKey: 'nav.progress',      fallback: 'Progress' },
+  { key: 'opportunities', path: '/opportunities', icon: NAV_ICONS.opportunities, labelKey: 'nav.opportunities', fallback: 'Funding' },
+  { key: 'sell',          path: '/sell',          icon: NAV_ICONS.sell,          labelKey: 'nav.sell',          fallback: 'Sell' },
 ];
 
 export default function BottomTabNav() {

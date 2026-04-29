@@ -292,6 +292,49 @@ function FundingSection() {
   );
 }
 
+/* ─── Funding & Support Discovery ─────────────────── */
+function FundingDiscoverySection() {
+  const items = [
+    'Shows nearby funding/support opportunities',
+    'Matches by crop, location, and eligibility',
+    'Helps organizations distribute programs',
+    'Tracks interest for reporting',
+  ];
+
+  return (
+    <section id="funding-discovery" className="landing-section"
+             style={S.sectionLight}>
+      <div style={S.sectionInner}>
+        <p style={S.sectionLabel}>Funding & support discovery</p>
+        <h2 style={S.sectionHeading}>
+          Help farmers find programs they may qualify for
+        </h2>
+        <p style={S.sectionLead}>
+          Farroway helps farmers discover relevant programs,
+          input support, grants, training, and financing
+          opportunities based on crop, region, and farm
+          profile.
+        </p>
+
+        <div className="landing-grid-2" style={{ marginTop: '2rem' }}>
+          {items.map((item) => (
+            <div key={item} style={S.bulletCard}>
+              <span style={S.checkMarkGreen}>&#10003;</span>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+
+        <p style={S.fundingFootline}>
+          Conservative wording: "may qualify", "check
+          requirements". Never "guaranteed" or "approved".
+          Source + deadline shown on every opportunity.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Built for Global Farmers ────────────────────── */
 function GlobalSection() {
   const items = [
@@ -565,6 +608,7 @@ export default function LandingPage() {
       <HowItWorksSection />
       <BuyerSupportSection />
       <FundingSection />
+      <FundingDiscoverySection />
       <GlobalSection />
       <PilotSection />
       <PartnerValueSection />

@@ -11,7 +11,8 @@ export const NAV_ICONS = {
   farm: '\uD83C\uDF31',       // 🌱
   tasks: '\u2705',             // ✅
   progress: '\uD83D\uDCCA',   // 📊
-  sell: '\uD83C\uDFF7\uFE0F', // 🏷️  (v3 buyer layer entry point)
+  sell: '\uD83C\uDFF7\uFE0F',         // 🏷️  (v3 buyer layer)
+  opportunities: '\uD83C\uDFAF',      // 🎯  (v3 funding layer)
 };
 
 // ─── Section icons (used in headers / labels) ───────────────
