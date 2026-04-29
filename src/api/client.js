@@ -212,8 +212,16 @@ api.interceptors.response.use(
           // Preserve where the user was so /login can return them after
           // re-auth. Avoids the "I clicked into farmers, got bounced to
           // login, then dumped on the dashboard" papercut.
+          //
+          // The `reason=session_expired` query param makes the otherwise-
+          // unreachable session-expired banner in Login.jsx fire — pre-fix
+          // the banner code existed but no caller set the reason, so users
+          // got an unexplained jump back to /login. Hard-navigation can't
+          // pass router state, so we route the reason via search param and
+          // Login picks it up from URLSearchParams as a fallback.
           const ret = `${here}${window.location.search || ''}`;
-          window.location.href = `/login?from=${encodeURIComponent(ret)}`;
+          window.location.href = `/login?from=${encodeURIComponent(ret)}`
+            + `&reason=session_expired`;
         }
       } catch { /* never throw from a recovery handler */ }
       return Promise.reject(error);

@@ -4538,6 +4538,17 @@ const T = {
   'auth.loginFailed': {
     en: 'Login failed. Please check your credentials.', fr: 'Échec de connexion. Vérifiez vos identifiants.', sw: 'Imeshindikana kuingia. Tafadhali angalia taarifa zako.', ha: 'Ba a iya shiga ba. Da fatan a duba bayanan ka.', tw: 'Entumi ahyɛn mu. Yɛsrɛ wo hwɛ wo nsɛm.',
   },
+  // Surfaces above the login form when the api/client.js
+  // 401-refresh path hard-redirects the user back here. The
+  // reason travels via ?reason=session_expired query param so
+  // the banner fires across in-app navigation AND browser-
+  // level redirects from the interceptor.
+  'auth.sessionExpired': {
+    en: 'Session expired. Please sign in again.', fr: 'Session expirée. Veuillez vous reconnecter.', sw: 'Kipindi kimekwisha. Tafadhali ingia tena.', ha: 'Zaman ya ƙare. Don Allah shiga kuma.', tw: 'Session no atu. Yɛsrɛ wo hyɛn mu bio.', hi: 'सत्र समाप्त हो गया। कृपया पुनः साइन इन करें।',
+  },
+  'auth.signedOut': {
+    en: 'You have been signed out.', fr: 'Vous avez été déconnecté.', sw: 'Umetolewa nje.', ha: 'An fitar da kai.', tw: 'Wɔayi wo afi mu.', hi: 'आप साइन आउट कर दिए गए हैं।',
+  },
   'auth.forgotPassword': {
     en: 'Forgot password?', fr: 'Mot de passe oublié ?', sw: 'Umesahau nenosiri?', ha: 'Ka manta kalmar sirri?', tw: 'Wo werɛ afi password?',
   },

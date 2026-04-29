@@ -123,8 +123,20 @@ export default function Login() {
   // Surface a session-expired info banner when the protected route
   // sent the user back to /login with a `reason`. Cleared as soon as
   // the user starts typing.
+  //
+  // Two delivery channels — react-router state (used when an in-app
+  // navigation triggers the redirect) and URLSearchParams (used when
+  // the api/client.js interceptor hard-navigates after a 401, which
+  // can't carry router state). The interceptor sets ?reason=…; this
+  // hook reads either source so the banner fires in both paths.
   const [sessionNotice, setSessionNotice] = useState(() => {
-    const reason = location.state && location.state.reason;
+    const stateReason = location.state && location.state.reason;
+    let queryReason = '';
+    try {
+      const sp = new URLSearchParams(location.search || '');
+      queryReason = sp.get('reason') || '';
+    } catch { /* ignore malformed search string */ }
+    const reason = stateReason || queryReason;
     if (reason === 'session_expired') {
       return tSafe('auth.sessionExpired', '');
     }
