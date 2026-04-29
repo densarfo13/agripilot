@@ -13,49 +13,90 @@
  * Role-gated server-side — the route is 403 for non-reviewers, so
  * the UI treats 403 as an access-denied state rather than a spinner.
  */
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
+import useSafeData, { API_ERROR_TYPES } from '../hooks/useSafeData.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
 
+// Bare-fetch helper kept for the four NGO endpoints. The
+// useSafeData wrapper around it classifies the resulting
+// errors via apiClient.structureError, so the 403 / 401 /
+// network split is handled by the hook + AdminState UI rather
+// than ad-hoc state machine here.
 async function getJSON(path) {
   const res = await fetch(path, { credentials: 'include' });
-  if (res.status === 403) { const e = new Error('forbidden'); e.code = 'forbidden'; throw e; }
-  if (!res.ok) { const e = new Error(`failed_${res.status}`); e.code = `failed_${res.status}`; throw e; }
+  if (!res.ok) {
+    // Surface HTTP status on the thrown error so structureError
+    // (inside useSafeData) can map it into the right errorType.
+    const err = new Error(`failed_${res.status}`);
+    err.status   = res.status;
+    err.response = { status: res.status };
+    throw err;
+  }
   return res.json();
 }
 
 export default function NGOOverview() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [state, setState] = useState({ loading: true, error: null, overview: null, risk: null, crops: null, harvest: null });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [overview, risk, crops, harvest] = await Promise.all([
-          getJSON('/api/v2/ngo/overview'),
-          getJSON('/api/v2/ngo/risk-summary'),
-          getJSON('/api/v2/ngo/crop-analytics'),
-          getJSON('/api/v2/ngo/harvest-analytics'),
-        ]);
-        if (!cancelled) setState({ loading: false, error: null, overview, risk, crops, harvest });
-      } catch (err) {
-        if (!cancelled) setState((s) => ({ ...s, loading: false, error: err.code || 'error' }));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  if (state.loading) return <div style={S.page}><div style={S.container}><p>{t('common.loading')}</p></div></div>;
-  if (state.error === 'forbidden') return (
-    <div style={S.page}><div style={S.container}><p style={S.err}>{t('ngo.forbidden')}</p></div></div>
-  );
-  if (state.error) return (
-    <div style={S.page}><div style={S.container}><p style={S.err}>{t('ngo.error')}</p></div></div>
+  // Single combined fetcher — keeps the four endpoints in one
+  // lifecycle so retry re-runs all four together. Page renders
+  // a single error surface instead of four parallel banners.
+  const {
+    data, loading, error, errorType, retry,
+  } = useSafeData(
+    async () => {
+      const [overview, risk, crops, harvest] = await Promise.all([
+        getJSON('/api/v2/ngo/overview'),
+        getJSON('/api/v2/ngo/risk-summary'),
+        getJSON('/api/v2/ngo/crop-analytics'),
+        getJSON('/api/v2/ngo/harvest-analytics'),
+      ]);
+      return { overview, risk, crops, harvest };
+    },
+    { fallbackData: null },
   );
 
-  const { overview, risk, crops, harvest } = state;
+  if (loading) {
+    return (
+      <div style={S.page}><div style={S.container}>
+        <p>{t('common.loading')}</p>
+      </div></div>
+    );
+  }
+
+  // 403 stays special-cased — role-gated server-side, so it's
+  // an access-denied state, not a generic API error. Everything
+  // else routes through the v3 AdminState components so the
+  // user gets the right CTA per errorType.
+  if (error) {
+    const status = (typeof error === 'string' && error.match(/failed_(\d+)/));
+    const code   = status ? Number(status[1]) : null;
+    return (
+      <div style={S.page}><div style={S.container}>
+        {code === 403 ? (
+          <p style={S.err}>{t('ngo.forbidden')}</p>
+        ) : errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="ngo-overview-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="ngo-overview-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={retry} testId="ngo-overview-error" />
+        ) : (
+          <ErrorState
+            message={t('ngo.error') || 'We could not load the dashboard. Try again in a moment.'}
+            onRetry={retry}
+            testId="ngo-overview-error"
+          />
+        )}
+      </div></div>
+    );
+  }
+
+  const { overview, risk, crops, harvest } = data || {};
   const totals = harvest?.totals || { count: 0, totalQuantityKg: 0, totalLossesKg: 0 };
 
   return (

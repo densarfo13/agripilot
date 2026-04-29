@@ -10,7 +10,6 @@
  * page. Export button is a direct link to the CSV endpoint.
  */
 
-import { useEffect, useState } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { isFeatureEnabled } from '../config/features.js';
 import KeyInsightsSection from '../components/admin/KeyInsightsSection.jsx';
@@ -18,6 +17,10 @@ import FarmerIntelligenceSummary from '../components/admin/FarmerIntelligenceSum
 import InterventionList from '../components/admin/InterventionList.jsx';
 import PrioritySupplyList from '../components/admin/PrioritySupplyList.jsx';
 import RiskBadge from '../components/admin/RiskBadge.jsx';
+import useSafeData, { API_ERROR_TYPES } from '../hooks/useSafeData.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
 
 const resolve = (t, key, fallback) => {
   if (typeof t !== 'function' || !key) return fallback;
@@ -27,55 +30,50 @@ const resolve = (t, key, fallback) => {
 
 async function fetchJson(url) {
   const r = await fetch(url, { credentials: 'include' });
-  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  if (!r.ok) {
+    // Surface HTTP status so structureError (in useSafeData)
+    // can map it to the right errorType.
+    const err = new Error(`${r.status} ${r.statusText}`);
+    err.status   = r.status;
+    err.response = { status: r.status };
+    throw err;
+  }
   return r.json();
 }
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
 
-  const [summary, setSummary] = useState(null);
-  const [farmers, setFarmers] = useState(null);
-  const [risk, setRisk]       = useState(null);
-  const [performance, setPerformance] = useState(null);
-  const [interventions, setInterventions] = useState(null);
-  const [scoring, setScoring] = useState(null);
-  const [marketplace, setMarketplace] = useState(null);
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(true);
+  // Single combined fetcher. Required endpoints (summary /
+  // farmers / risk) bubble errors so the page renders a
+  // classified ErrorState with retry. Optional endpoints
+  // (performance / interventions / scoring / marketplace) keep
+  // their per-call .catch — a rollout mismatch on those tiles
+  // shouldn't blank the page.
+  const {
+    data, loading, error, errorType, retry,
+  } = useSafeData(
+    async () => {
+      const [s, f, r, p, iv, sc, mk] = await Promise.all([
+        fetchJson('/api/admin/summary'),
+        fetchJson('/api/admin/farmers'),
+        fetchJson('/api/admin/risk'),
+        fetchJson('/api/admin/performance').catch(() => null),
+        fetchJson('/api/admin/interventions').catch(() => null),
+        fetchJson('/api/admin/scoring').catch(() => null),
+        isFeatureEnabled('marketplace')
+          ? fetchJson('/api/admin/marketplace-stats').catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      return {
+        summary: s, farmers: f, risk: r,
+        performance: p, interventions: iv, scoring: sc, marketplace: mk,
+      };
+    },
+    { fallbackData: null },
+  );
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      setError('');
-      try {
-        // /performance, /interventions, /scoring, /marketplace-stats are new —
-        // catch each individually so a rollout mismatch doesn't blank the page.
-        const [s, f, r, p, iv, sc, mk] = await Promise.all([
-          fetchJson('/api/admin/summary'),
-          fetchJson('/api/admin/farmers'),
-          fetchJson('/api/admin/risk'),
-          fetchJson('/api/admin/performance').catch(() => null),
-          fetchJson('/api/admin/interventions').catch(() => null),
-          fetchJson('/api/admin/scoring').catch(() => null),
-          // Feature-flagged — skip the fetch entirely when disabled.
-          isFeatureEnabled('marketplace')
-            ? fetchJson('/api/admin/marketplace-stats').catch(() => null)
-            : Promise.resolve(null),
-        ]);
-        if (!alive) return;
-        setSummary(s); setFarmers(f); setRisk(r);
-        setPerformance(p); setInterventions(iv); setScoring(sc);
-        setMarketplace(mk);
-      } catch (e) {
-        if (alive) setError(e?.message || 'Failed to load');
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
+  const { summary, farmers, risk, performance, interventions, scoring, marketplace } = data || {};
 
   const title  = resolve(t, 'admin.dashboard.title',   'NGO Admin Dashboard');
   const lblTot = resolve(t, 'admin.dashboard.total',   'Total Farmers');
@@ -93,11 +91,25 @@ export default function AdminDashboard() {
     return <main style={S.page} data-screen="admin-dashboard">{loadT}</main>;
   }
 
+  // Classified error states — each gets the right CTA via
+  // AdminState components. Retry re-runs the combined fetcher.
   if (error) {
     return (
       <main style={S.page} data-screen="admin-dashboard" data-state="error">
         <h2 style={S.title}>{title}</h2>
-        <p style={S.errorLine} role="alert">{errLbl}: {error}</p>
+        {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="admin-dashboard-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="admin-dashboard-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={retry} testId="admin-dashboard-error" />
+        ) : (
+          <ErrorState
+            message={`${errLbl}: ${error}`}
+            onRetry={retry}
+            testId="admin-dashboard-error"
+          />
+        )}
       </main>
     );
   }

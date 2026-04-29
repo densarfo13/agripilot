@@ -1,12 +1,21 @@
 /**
  * FarmerScoring — table of per-farmer scorecards, filterable by band.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
+import useSafeData, { API_ERROR_TYPES } from '../../hooks/useSafeData.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../../components/admin/AdminState.jsx';
 
 async function getJSON(p) {
   const r = await fetch(p, { credentials: 'include' });
-  if (!r.ok) throw new Error(`failed_${r.status}`);
+  if (!r.ok) {
+    const err = new Error(`failed_${r.status}`);
+    err.status   = r.status;
+    err.response = { status: r.status };
+    throw err;
+  }
   return r.json();
 }
 
@@ -15,25 +24,26 @@ const BAND_COLOR = { excellent: '#22C55E', good: '#0EA5E9', fair: '#F59E0B', wea
 export default function FarmerScoring() {
   const { t } = useTranslation();
   const [band, setBand] = useState('');
-  const [state, setState] = useState({ loading: true, items: [], error: null });
 
-  useEffect(() => {
-    (async () => {
-      setState((s) => ({ ...s, loading: true }));
-      try {
-        const q = band ? `?band=${encodeURIComponent(band)}` : '';
-        const data = await getJSON(`/api/v2/ngo/farmer-scores${q}`);
-        setState({ loading: false, items: data.items, error: null });
-      } catch (err) {
-        setState({ loading: false, items: [], error: err.message });
-      }
-    })();
-  }, [band]);
+  // Reruns automatically via deps when band filter changes.
+  // retry() is also wired to the recompute() POST below so a
+  // successful recompute re-fetches the table.
+  const {
+    data, loading, error, errorType, retry,
+  } = useSafeData(
+    () => {
+      const q = band ? `?band=${encodeURIComponent(band)}` : '';
+      return getJSON(`/api/v2/ngo/farmer-scores${q}`).then((d) => d.items || []);
+    },
+    { fallbackData: [], deps: [band] },
+  );
+  const items = Array.isArray(data) ? data : [];
 
   async function recompute() {
-    await fetch('/api/v2/ngo/farmer-scores/recompute', { method: 'POST', credentials: 'include' });
-    // trigger reload
-    setBand((b) => b ? '' : '');
+    try {
+      await fetch('/api/v2/ngo/farmer-scores/recompute', { method: 'POST', credentials: 'include' });
+    } catch { /* ignore */ }
+    retry();
   }
 
   return (
@@ -54,14 +64,25 @@ export default function FarmerScoring() {
           <button type="button" onClick={recompute} style={S.btn}>{t('ngoV2.recompute')}</button>
         </div>
 
-        {state.loading && <p>{t('common.loading')}</p>}
-        {state.error && <p style={S.err}>{state.error === 'failed_403' ? t('ngo.forbidden') : t('ngo.error')}</p>}
+        {loading && <p>{t('common.loading')}</p>}
+        {error && (() => {
+          const m = (typeof error === 'string') && error.match(/failed_(\d+)/);
+          const code = m ? Number(m[1]) : null;
+          if (code === 403) return <p style={S.err}>{t('ngo.forbidden')}</p>;
+          if (errorType === API_ERROR_TYPES.SESSION_EXPIRED) return <SessionExpiredState testId="farmer-scoring-error" />;
+          if (errorType === API_ERROR_TYPES.MFA_REQUIRED)    return <MfaRequiredState testId="farmer-scoring-error" />;
+          if (errorType === API_ERROR_TYPES.NETWORK_ERROR)   return <NetworkErrorState onRetry={retry} testId="farmer-scoring-error" />;
+          return <ErrorState
+                   message={t('ngo.error') || 'We could not load farmer scores. Try again in a moment.'}
+                   onRetry={retry}
+                   testId="farmer-scoring-error" />;
+        })()}
 
-        {!state.loading && !state.error && state.items.length === 0 && (
+        {!loading && !error && items.length === 0 && (
           <p style={S.muted}>{t('ngoV2.scores.empty')}</p>
         )}
 
-        {!state.loading && state.items.length > 0 && (
+        {!loading && items.length > 0 && (
           <table style={S.table}>
             <thead>
               <tr>
@@ -74,7 +95,7 @@ export default function FarmerScoring() {
               </tr>
             </thead>
             <tbody>
-              {state.items.map((it) => (
+              {items.map((it) => (
                 <tr key={it.id}>
                   <td style={S.td}>
                     <span style={{ ...S.chip, background: BAND_COLOR[it.scoreBand] || '#9FB3C8' }}>

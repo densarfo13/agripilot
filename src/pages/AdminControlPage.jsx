@@ -5,6 +5,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import api from '../api/client.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
+import useSafeData, { API_ERROR_TYPES } from '../hooks/useSafeData.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../components/admin/AdminState.jsx';
 
 const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
@@ -55,23 +59,44 @@ export default function AdminControlPage() {
 //  TAB 1: System Overview
 // ═══════════════════════════════════════════════════════
 function SystemOverview({ navigate }) {
-  const [stats, setStats] = useState(null);
-  const [portfolio, setPortfolio] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-
-  useEffect(() => {
-    Promise.all([
-      api.get('/applications/stats'),
-      api.get('/portfolio/summary'),
-    ]).then(([sRes, pRes]) => {
-      setStats(sRes.data);
-      setPortfolio(pRes.data);
-    }).catch(() => { setLoadError('Failed to load system overview'); }).finally(() => setLoading(false));
-  }, []);
+  // Migrated to useSafeData so a 401 / MFA challenge / network
+  // blip surfaces the right CTA instead of a generic "Failed
+  // to load" line + reload-only fallback.
+  const {
+    data, loading, error, errorType, retry,
+  } = useSafeData(
+    async () => {
+      const [sRes, pRes] = await Promise.all([
+        api.get('/applications/stats'),
+        api.get('/portfolio/summary'),
+      ]);
+      return { stats: sRes.data, portfolio: pRes.data };
+    },
+    { fallbackData: null },
+  );
+  const stats     = data?.stats     ?? null;
+  const portfolio = data?.portfolio ?? null;
 
   if (loading) return <div className="loading">Loading system overview...</div>;
-  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button></div>;
+  if (error) {
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="system-overview-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="system-overview-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={retry} testId="system-overview-error" />
+        ) : (
+          <ErrorState
+            message="We could not load the system overview. Try again in a moment."
+            onRetry={retry}
+            testId="system-overview-error"
+          />
+        )}
+      </div>
+    );
+  }
 
   const statusMap = {};
   if (stats?.statusCounts) stats.statusCounts.forEach(s => { statusMap[s.status] = s._count; });

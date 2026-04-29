@@ -2,12 +2,20 @@
  * InterventionCenter — NGO triage queue.
  * Renders GET /api/v2/ngo/interventions + summary cards.
  */
-import { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
+import useSafeData, { API_ERROR_TYPES } from '../../hooks/useSafeData.js';
+import {
+  ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
+} from '../../components/admin/AdminState.jsx';
 
 async function getJSON(p) {
   const r = await fetch(p, { credentials: 'include' });
-  if (!r.ok) throw new Error(`failed_${r.status}`);
+  if (!r.ok) {
+    const err = new Error(`failed_${r.status}`);
+    err.status   = r.status;
+    err.response = { status: r.status };
+    throw err;
+  }
   return r.json();
 }
 async function patchJSON(p, body) {
@@ -26,20 +34,23 @@ const PRIORITY_COLOR = {
 
 export default function InterventionCenter() {
   const { t } = useTranslation();
-  const [state, setState] = useState({ loading: true, items: [], summary: null, error: null });
 
-  async function load() {
-    try {
+  // Combined fetcher for the queue + summary cards. Mutations
+  // (markStatus / recompute) call retry() to refresh the page
+  // — same UX as the previous load() helper, just plumbed
+  // through useSafeData so failures render the right state.
+  const {
+    data, loading, error, errorType, retry: load,
+  } = useSafeData(
+    async () => {
       const [items, summary] = await Promise.all([
         getJSON('/api/v2/ngo/interventions'),
         getJSON('/api/v2/ngo/interventions/summary'),
       ]);
-      setState({ loading: false, items: items.items, summary, error: null });
-    } catch (err) {
-      setState((s) => ({ ...s, loading: false, error: err.message }));
-    }
-  }
-  useEffect(() => { load(); }, []);
+      return { items: items.items || [], summary };
+    },
+    { fallbackData: { items: [], summary: null } },
+  );
 
   async function markStatus(id, status) {
     try {
@@ -55,11 +66,32 @@ export default function InterventionCenter() {
     } catch { /* ignore */ }
   }
 
-  if (state.loading) return <Shell><p>{t('common.loading')}</p></Shell>;
-  if (state.error === 'failed_403') return <Shell><p style={S.err}>{t('ngo.forbidden')}</p></Shell>;
-  if (state.error) return <Shell><p style={S.err}>{t('ngo.error')}</p></Shell>;
+  if (loading) return <Shell><p>{t('common.loading')}</p></Shell>;
+  if (error) {
+    const status = (typeof error === 'string' && error.match(/failed_(\d+)/));
+    const code   = status ? Number(status[1]) : null;
+    return (
+      <Shell>
+        {code === 403 ? (
+          <p style={S.err}>{t('ngo.forbidden')}</p>
+        ) : errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="ngo-interventions-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="ngo-interventions-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={load} testId="ngo-interventions-error" />
+        ) : (
+          <ErrorState
+            message={t('ngo.error') || 'We could not load interventions. Try again in a moment.'}
+            onRetry={load}
+            testId="ngo-interventions-error"
+          />
+        )}
+      </Shell>
+    );
+  }
 
-  const { items, summary } = state;
+  const { items = [], summary } = data || {};
   return (
     <Shell>
       <h1 style={S.title}>{t('ngoV2.interventions.title')}</h1>
