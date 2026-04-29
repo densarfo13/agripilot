@@ -5529,6 +5529,17 @@ const T = {
   'tasks.viewProgress': {
     en: 'View progress', fr: 'Voir la progression', sw: 'Tazama maendeleo', ha: 'Duba ci gaba', tw: 'Hwɛ nko\u00FE so', hi: 'प्रगति देखें',
   },
+  // Task page polish (Apr 2026): labeled sections that wrap
+  // the existing whyText / timingText so the card reads as
+  // discrete pieces. "What to do" omitted intentionally —
+  // the task title itself answers it; adding an empty
+  // section header would be noise.
+  'tasks.section.why': {
+    en: 'Why it matters', fr: 'Pourquoi c\u2019est important', sw: 'Kwa nini ni muhimu', ha: 'Me ya sa yake da muhimmanci', tw: 'Deɛ enti ɛho hia', hi: 'यह क्यों मायने रखता है',
+  },
+  'tasks.section.risk': {
+    en: 'Risk', fr: 'Risque', sw: 'Hatari', ha: 'Hadari', tw: 'Asiane', hi: 'जोखिम',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  FARMER ID

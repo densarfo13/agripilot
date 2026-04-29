@@ -397,6 +397,17 @@ export default function AllTasksPage() {
                 </button>
                 <div style={S.currentContent}>
                   <span style={S.currentIcon}>{getTaskActionIcon(currentTask.actionType)}</span>
+                  {/* Spec polish (Apr 2026): wrap the existing
+                      whyText / timingText in labeled sections
+                      ("Why it matters" / "Risk") so the card
+                      reads as a structured action sheet rather
+                      than free-form prose. No new data — same
+                      task fields, just clearer visual hierarchy.
+                      "What to do" section is intentionally
+                      omitted because the task model carries no
+                      step array — adding empty headings would be
+                      noise. The title itself answers "what to
+                      do" prominently above. */}
                   <div style={S.currentTextWrap}>
                     <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)}</span>
                     {vmByTaskId[currentTask.id]?.urgency && vmByTaskId[currentTask.id].urgency !== 'optional' && (
@@ -405,10 +416,20 @@ export default function AllTasksPage() {
                       </span>
                     )}
                     {vmByTaskId[currentTask.id]?.whyText && (
-                      <span style={S.currentWhy}>{vmByTaskId[currentTask.id].whyText}</span>
+                      <div style={S.taskSection}>
+                        <span style={S.taskSectionLabel}>
+                          {tSafe('tasks.section.why', 'Why it matters')}
+                        </span>
+                        <span style={S.currentWhy}>{vmByTaskId[currentTask.id].whyText}</span>
+                      </div>
                     )}
                     {vmByTaskId[currentTask.id]?.timingText && (
-                      <span style={S.currentTiming}>{vmByTaskId[currentTask.id].timingText}</span>
+                      <div style={S.taskSection}>
+                        <span style={S.taskSectionLabel}>
+                          {tSafe('tasks.section.risk', 'Risk')}
+                        </span>
+                        <span style={S.currentTiming}>{vmByTaskId[currentTask.id].timingText}</span>
+                      </div>
                     )}
                   </div>
                   {/* Listen button — reads the task title aloud
@@ -570,6 +591,23 @@ const S = {
     cursor: 'pointer',
     minHeight: 48,
     boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+  },
+
+  // Spec polish (Apr 2026): labeled sections inside the
+  // current task card so the body reads as discrete pieces
+  // (Why / Risk) rather than two stacked free-form lines.
+  taskSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    marginTop: 4,
+  },
+  taskSectionLabel: {
+    fontSize: '0.625rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'rgba(255,255,255,0.45)',
   },
 
   // Reward-loop spec (Apr 2026): secondary "View progress"
