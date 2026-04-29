@@ -208,26 +208,36 @@ const S = {
   sectionTitle: { fontSize: '0.875rem', fontWeight: 700, color: '#9FB3C8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 },
   list: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
   pendingList: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+  // Visual restyle (snippet reference): card moved to the navy
+  // panel surface used across the rest of the farmer pages, body
+  // stacks above a full-width 50/50 button row. Accept / Decline
+  // action model preserved — a Call / Contacted swap would be a
+  // workflow change beyond visual scope.
   pendingCard: {
-    padding: '0.875rem 1rem', borderRadius: '14px',
-    background: 'rgba(14,165,233,0.08)',
-    border: '1px solid rgba(14,165,233,0.22)',
-    display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center',
+    padding: '14px 16px', borderRadius: '12px',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    display: 'flex', flexDirection: 'column', gap: '10px',
   },
-  pendingCrop: { fontWeight: 700, fontSize: '0.9375rem' },
-  pendingMeta: { fontSize: '0.8125rem', color: '#9FB3C8' },
-  pendingNote: { fontSize: '0.8125rem', color: '#EAF2FF', marginTop: '0.25rem' },
-  pendingActions: { display: 'flex', gap: '0.375rem' },
+  pendingCrop: { fontWeight: 700, fontSize: '0.95rem', color: '#fff' },
+  pendingMeta: { fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' },
+  pendingNote: { fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', marginTop: '2px' },
+  pendingActions: { display: 'flex', gap: '8px' },
   accept: {
-    padding: '0.5rem 0.75rem', borderRadius: '10px',
+    flex: 1,
+    padding: '0.625rem 0.75rem', borderRadius: '10px',
     border: 'none', background: '#22C55E', color: '#fff',
-    fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', minHeight: '40px',
+    fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
+    minHeight: '44px',
+    boxShadow: '0 6px 16px rgba(34,197,94,0.18)',
   },
   decline: {
-    padding: '0.5rem 0.75rem', borderRadius: '10px',
-    border: '1px solid rgba(239,68,68,0.35)', background: 'transparent',
-    color: '#FCA5A5', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
-    minHeight: '40px',
+    flex: 1,
+    padding: '0.625rem 0.75rem', borderRadius: '10px',
+    border: '1px solid #1F3B5C', background: '#1A3B5D',
+    color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem',
+    fontWeight: 600, cursor: 'pointer',
+    minHeight: '44px',
   },
   btnSold: {
     padding: '0.5rem 0.75rem', borderRadius: '10px',
