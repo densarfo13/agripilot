@@ -14,7 +14,7 @@
  * All progress detail, analytics, and farm details live in their tabs.
  * Loop state managed by useFarmerLoop hook.
  */
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { useTranslation } from '../i18n/index.js';
@@ -41,6 +41,7 @@ import {
 import { API_ERROR_TYPES } from '../api/apiClient.js';
 import { getActiveFundingOpportunities, FUNDING_EVENTS } from '../funding/fundingStore.js';
 import { matchFundingForFarm } from '../funding/fundingMatcher.js';
+import { bumpVerificationWithLocation } from '../verification/verificationStore.js';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
@@ -96,6 +97,21 @@ export default function Dashboard() {
   // the scan page so newly added issue tasks land immediately on Home
   // without a full reload.
   const [cameraTask, setCameraTask] = useState(() => getActiveCameraTask());
+  // v3 Verification System: opt-in "Add location" affordance.
+  // Tracks the per-task bump state so the chip flips to a
+  // confirmation after a successful GPS read.
+  const [verifyBumpStatus, setVerifyBumpStatus] = useState('idle'); // 'idle' | 'busy' | 'done' | 'denied'
+  // Reset whenever a NEW task is completed so the chip can
+  // re-appear for the next one. Keying on the task id so
+  // the same id doesn't reset the user's prior choice.
+  const lastBumpedTaskId = useRef(null);
+  useEffect(() => {
+    const id = loop.lastCompletedTask?.id || null;
+    if (id && lastBumpedTaskId.current !== id) {
+      lastBumpedTaskId.current = id;
+      setVerifyBumpStatus('idle');
+    }
+  }, [loop.lastCompletedTask?.id]);
   useEffect(() => {
     const refresh = () => setCameraTask(getActiveCameraTask());
     refresh();
@@ -558,6 +574,59 @@ export default function Dashboard() {
             t={t}
             language={loop.language}
           />
+        )}
+
+        {/* v3 Verification System: opt-in "Add location"
+            chip. Surfaces only RIGHT AFTER a task complete
+            so the farmer can voluntarily upgrade the
+            verification level (1 → 2). Calm wording, no
+            pressure — the spec forbids blocking the farmer.
+            Tap → fire-and-forget GPS read +
+            bumpVerificationWithLocation(). */}
+        {loop.loopState === LOOP_STATE.COMPLETED
+          && loop.lastCompletedTask
+          && verifyBumpStatus !== 'done' && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (verifyBumpStatus === 'busy') return;
+              setVerifyBumpStatus('busy');
+              try {
+                const farmerId = loop.profile?.userId
+                              || loop.profile?.farmerId
+                              || null;
+                const r = await bumpVerificationWithLocation(
+                  String(loop.lastCompletedTask?.id || ''),
+                  farmerId,
+                );
+                // Helper returns the unchanged record on
+                // GPS denial; flip to 'denied' so the chip
+                // hides without claiming success.
+                if (r && r.location && r.location.lat) {
+                  setVerifyBumpStatus('done');
+                } else {
+                  setVerifyBumpStatus('denied');
+                }
+              } catch {
+                setVerifyBumpStatus('denied');
+              }
+            }}
+            style={S.scanEntry}
+            data-testid="home-verify-add-location"
+            disabled={verifyBumpStatus === 'busy'}
+          >
+            <span style={S.scanEntryIcon} aria-hidden="true">📍</span>
+            <span>
+              {verifyBumpStatus === 'busy'
+                ? tSafe('verification.checkingLocation', 'Checking location…')
+                : verifyBumpStatus === 'denied'
+                  ? tSafe('verification.locationDenied',
+                      'Location not available — that\u2019s OK')
+                  : tSafe('verification.addLocation',
+                      'Add location to this task (optional)')}
+            </span>
+            <span style={S.scanEntryChevron}>{'\u203A'}</span>
+          </button>
         )}
 
         {/* Scan-crop entry point — compact, single line, non-intrusive */}

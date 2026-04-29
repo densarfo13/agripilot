@@ -42,6 +42,7 @@
 
 import { safeParse } from '../utils/safeParse.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { putPhoto, getPhoto, deletePhoto } from './verificationDB.js';
 
 export const STORAGE_KEY = 'farroway_verifications';
 export const PHOTO_MAX_BYTES = 200 * 1024;   // 200 KB
@@ -183,25 +184,58 @@ export function getMaxLevelForAction(actionId) {
 
 /**
  * saveVerification(record) — writes the record locally and
- * computes the level. Returns the stored row. Never throws.
+ * computes the level. Returns a Promise resolving with the
+ * stored row. Never throws.
  *
- * Drops photo when it exceeds PHOTO_MAX_BYTES so the
- * localStorage quota stays safe — the record is still
- * saved, just at a lower level. The caller (UI) is
- * responsible for providing a small enough payload (resize
- * client-side before passing in).
+ * Photo handling:
+ *   * `photoBlob` (Blob/File) — PREFERRED. Persisted in
+ *     IndexedDB at full resolution; the record stores an
+ *     `idb:<id>` sentinel in `photoUrl`. No size cap.
+ *   * `photoUrl` (data URL) — fallback for private-mode
+ *     browsers without IDB. Capped at 200 KB; over-cap
+ *     URLs are dropped (record still saves at a lower
+ *     level).
+ *
+ * Callers should pass `photoBlob` when they have the raw
+ * File from a `<input type="file">`; the store handles
+ * conversion to data URL automatically when IDB is offline.
  */
-export function saveVerification(record) {
+export async function saveVerification(record) {
   const safe = record && typeof record === 'object' ? record : {};
   const now  = _now();
+  const id   = safe.id || _uid();
 
-  let photoUrl = safe.photoUrl || null;
-  if (photoUrl && _photoBytes(photoUrl) > PHOTO_MAX_BYTES) {
-    photoUrl = null;
+  // Photo path — try IDB first when a Blob is supplied.
+  let photoUrl = null;
+  if (safe.photoBlob && safe.photoBlob instanceof Blob) {
+    try {
+      const sentinel = await putPhoto(id, safe.photoBlob);
+      if (sentinel) {
+        photoUrl = sentinel;       // 'idb:<id>' — full-res
+      } else if (typeof FileReader !== 'undefined'
+                 && safe.photoBlob.size <= PHOTO_MAX_BYTES) {
+        // IDB unavailable; degrade to a data URL ONLY if
+        // the original blob is under the localStorage cap.
+        photoUrl = await new Promise((resolve) => {
+          try {
+            const fr = new FileReader();
+            fr.onload  = () => resolve(String(fr.result || ''));
+            fr.onerror = () => resolve(null);
+            fr.readAsDataURL(safe.photoBlob);
+          } catch { resolve(null); }
+        });
+      }
+    } catch { /* swallow → photoUrl stays null */ }
+  } else if (safe.photoUrl) {
+    // Caller already produced a data URL — accept only if
+    // it fits the localStorage cap. Otherwise drop the
+    // photo and keep the record at a lower level.
+    photoUrl = _photoBytes(safe.photoUrl) <= PHOTO_MAX_BYTES
+      ? safe.photoUrl : null;
   }
 
   const stored = {
-    id:         safe.id || _uid(),
+    id,
     farmerId:   safe.farmerId || null,
     actionType: String(safe.actionType || 'UNKNOWN'),
     actionId:   safe.actionId ? String(safe.actionId) : null,
@@ -214,13 +248,11 @@ export function saveVerification(record) {
       country: String(safe.location?.country || '').trim(),
     },
     createdAt:  safe.createdAt || now,
-    // computed below
     verificationLevel: 0,
   };
   stored.verificationLevel = computeVerificationLevel(stored);
 
   const rows = _read();
-  // Idempotent on id.
   const idx = rows.findIndex((r) => r && r.id === stored.id);
   if (idx >= 0) rows[idx] = stored;
   else          rows.push(stored);
@@ -232,11 +264,95 @@ export function saveVerification(record) {
       actionType:     stored.actionType,
       level:          stored.verificationLevel,
       hasPhoto:       Boolean(stored.photoUrl),
+      photoStore:     stored.photoUrl
+                       ? (String(stored.photoUrl).startsWith('idb:') ? 'idb' : 'data')
+                       : 'none',
       hasLocation:    Boolean(stored.location.lat),
     });
   } catch { /* analytics never blocks */ }
 
   return stored;
+}
+
+/**
+ * resolveVerificationPhoto(record) — returns a Blob (from
+ * IDB) or a data URL (from the record itself). Used by any
+ * future viewer surface; today nothing reads it but the
+ * wiring is here so a photo viewer can land without
+ * touching this module again.
+ */
+export async function resolveVerificationPhoto(record) {
+  if (!record || !record.photoUrl) return null;
+  const u = String(record.photoUrl);
+  if (u.startsWith('idb:')) {
+    try { return await getPhoto(u); }
+    catch { return null; }
+  }
+  // Data URL or http(s) URL — return as-is.
+  return u;
+}
+
+/**
+ * bumpVerificationWithLocation(actionId, farmerId) —
+ * upgrades the latest verification record for an action
+ * by attaching a fresh GPS read. Used by the opt-in
+ * "Add location" affordance on the task-complete surface
+ * so a farmer who didn't grant location at the start of
+ * the day can still witness a higher level after they
+ * tap the action card.
+ *
+ * Idempotent — re-runs are safe; the existing record's
+ * timestamp is preserved.
+ */
+export async function bumpVerificationWithLocation(actionId, farmerId) {
+  if (!actionId) return null;
+  // Find the most recent matching record. If none exists,
+  // create a new one — the helper is robust to missing
+  // history.
+  const all = _read();
+  const match = all
+    .filter((r) => r && r.actionId === String(actionId)
+                && (!farmerId || String(r.farmerId || '') === String(farmerId)))
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+    [0] || null;
+
+  // Best-effort GPS — the helper resolves null on denial
+  // / timeout / no API. Never throws.
+  // eslint-disable-next-line global-require
+  const gps = await tryReadGeolocation(4000);
+  if (!gps) {
+    // Caller can decide whether to surface a hint; we just
+    // return the record unchanged.
+    return match;
+  }
+
+  return saveVerification({
+    id:         match ? match.id : undefined,
+    farmerId:   farmerId || (match && match.farmerId) || null,
+    actionType: (match && match.actionType) || 'UNKNOWN',
+    actionId:   String(actionId),
+    photoUrl:   match ? match.photoUrl : null,
+    timestamp:  match ? match.timestamp : _now(),
+    createdAt:  match ? match.createdAt : _now(),
+    location:   {
+      lat: gps.lat, lng: gps.lng,
+      region:  match ? (match.location?.region  || '') : '',
+      country: match ? (match.location?.country || '') : '',
+    },
+  });
+}
+
+/**
+ * removeVerification(id) — clears both the row and any
+ * IDB-backed photo. Best-effort; never throws.
+ */
+export async function removeVerification(id) {
+  if (!id) return false;
+  try { await deletePhoto(id); } catch { /* ignore */ }
+  const rows = _read();
+  const next = rows.filter((r) => r && r.id !== id);
+  _write(next);
+  return true;
 }
 
 // ─── Helpers for upstream pages ───────────────────────────

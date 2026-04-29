@@ -42,8 +42,7 @@ import {
   INTEREST_STATUS,
 } from '../funding/fundingApplicationStore.js';
 import {
-  saveVerification, readPhotoAsDataUrl, tryReadGeolocation,
-  ACTION_TYPES,
+  saveVerification, tryReadGeolocation, ACTION_TYPES,
 } from '../verification/verificationStore.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -434,14 +433,15 @@ function RequestHelpModal({
     // verification record so NGO operators can see whether
     // the request came from a witnessed device. Photo is
     // OPTIONAL — request still succeeds at level 0–2 without.
+    // Photo passed as a raw File so IndexedDB can persist
+    // it at full resolution.
     try {
-      const photoRes = photoFile ? await readPhotoAsDataUrl(photoFile) : null;
-      const gps      = await tryReadGeolocation(2500);
+      const gps = await tryReadGeolocation(2500);
       saveVerification({
         farmerId,
         actionType: ACTION_TYPES.FUNDING_REQUEST,
         actionId:   stored ? stored.id : null,
-        photoUrl:   photoRes ? photoRes.dataUrl : null,
+        photoBlob:  photoFile || null,
         location:   gps ? { lat: gps.lat, lng: gps.lng } : null,
       });
     } catch { /* never block */ }

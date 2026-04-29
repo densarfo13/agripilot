@@ -34,8 +34,7 @@ import { useAuth }    from '../context/AuthContext.jsx';
 import { saveListing } from '../market/marketStore.js';
 import { syncListing } from '../market/marketSync.js';
 import {
-  saveVerification, readPhotoAsDataUrl, tryReadGeolocation,
-  ACTION_TYPES,
+  saveVerification, tryReadGeolocation, ACTION_TYPES,
 } from '../verification/verificationStore.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
@@ -188,19 +187,25 @@ export default function Sell() {
       // OPTIONAL — the listing succeeds at level 0 if the
       // farmer skipped them. Non-blocking: we surface the
       // success card after this resolves either way.
+      //
+      // Photo is passed as a raw File so IndexedDB can
+      // store it at full resolution. The store falls back
+      // to a 200 KB-capped data URL only when IDB is
+      // unavailable (private-mode browsers).
       try {
-        const photoRes = photoFile ? await readPhotoAsDataUrl(photoFile) : null;
         let lat = activeFarm?.lat ?? activeFarm?.location?.lat ?? null;
         let lng = activeFarm?.lng ?? activeFarm?.location?.lng ?? null;
         if (lat == null || lng == null) {
           const gps = await tryReadGeolocation(2500);
           if (gps) { lat = gps.lat; lng = gps.lng; }
         }
+        // Don't await — verification persists in background;
+        // the success card has already been queued below.
         saveVerification({
           farmerId:   user?.sub || profile?.userId || null,
           actionType: ACTION_TYPES.LISTING_CREATED,
           actionId:   listing.id,
-          photoUrl:   photoRes ? photoRes.dataUrl : null,
+          photoBlob:  photoFile || null,
           location: {
             lat, lng,
             region:  activeFarm?.region  || profile?.region  || '',
