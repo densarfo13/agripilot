@@ -43,6 +43,7 @@ import {
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
+import { ArrowRight } from '../components/icons/lucide.jsx';
 
 const C = FARROWAY_BRAND.colors;
 const UNITS = ['kg', 'bags', 'crates'];
@@ -284,33 +285,45 @@ export default function Sell() {
                 <h2 style={S.statusEyebrow}>
                   {tSafe('market.status.yourListing', 'Your listing')}
                 </h2>
-                <h3 style={S.statusTitle}>
-                  {cropText || tSafe('market.unknownCrop', 'Crop')}
-                  {' • '}
-                  {l.quantity || 0} {l.unit || 'kg'}
-                </h3>
-                {placeText ? (
-                  <p style={S.statusMeta}>{placeText}</p>
-                ) : null}
-                <p style={S.statusInterest}>
-                  {tSafe(
-                    'market.status.buyersInterested',
-                    `${interestCount} buyers interested`,
-                  ).replace('{count}', String(interestCount))}
-                </p>
-                <button
-                  type="button"
-                  style={S.statusCta}
-                  data-testid={`sell-status-view-buyers-${l.id}`}
-                  onClick={() => {
-                    // Route to the marketplace listing detail.
-                    // Works for any role (no STAFF_ROLES gate).
-                    try { navigate(`/marketplace?listing=${l.id}`); }
-                    catch { /* ignore */ }
-                  }}
-                >
-                  {tSafe('market.status.viewBuyers', 'View buyers')}
-                </button>
+                {/* Title + meta on the left, inline buyer-count
+                    chip on the right. The chip is the single tap
+                    target — replaces the prior stacked "N buyers
+                    interested" line + full-width "View buyers"
+                    button. Buyer phone is never exposed; the chip
+                    only shows the aggregate count and routes to
+                    the marketplace detail (which itself respects
+                    privacy). */}
+                <div style={S.statusBody}>
+                  <div style={S.statusInfo}>
+                    <h3 style={S.statusTitle}>
+                      {cropText || tSafe('market.unknownCrop', 'Crop')}
+                      {' • '}
+                      {l.quantity || 0} {l.unit || 'kg'}
+                    </h3>
+                    {placeText ? (
+                      <p style={S.statusMeta}>{placeText}</p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    style={S.statusChip}
+                    data-testid={`sell-status-view-buyers-${l.id}`}
+                    onClick={() => {
+                      // Route to the marketplace listing detail.
+                      // Works for any role (no STAFF_ROLES gate).
+                      try { navigate(`/marketplace?listing=${l.id}`); }
+                      catch { /* ignore */ }
+                    }}
+                  >
+                    <span>
+                      {tSafe(
+                        'market.status.viewBuyersChip',
+                        `View buyers (${interestCount})`,
+                      ).replace('{count}', String(interestCount))}
+                    </span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
               </article>
             );
           })}
@@ -503,26 +516,44 @@ const S = {
     fontSize: '0.85rem',
     color: 'rgba(255,255,255,0.65)',
   },
-  statusInterest: {
-    margin: '4px 0 0',
-    fontSize: '0.85rem',
-    color: '#86EFAC',
-    fontWeight: 600,
+  // Body row carries the title block on the left and the buyer
+  // chip on the right. `flexWrap: 'wrap'` keeps the chip from
+  // overflowing on narrow phones — it falls below the title
+  // block instead.
+  statusBody: {
+    marginTop: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
   },
-  statusCta: {
-    marginTop: 8,
-    width: '100%',
+  statusInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    minWidth: 0,
+    flex: '1 1 auto',
+  },
+  // Inline pill chip — green ghost so it reads as a tappable
+  // affordance without competing with the primary "Create
+  // Listing" CTA below the form. `minHeight: 36` keeps the
+  // tap target comfortable on mobile.
+  statusChip: {
     appearance: 'none',
-    border: 'none',
-    background: '#22C55E',
-    color: C.white,
-    borderRadius: 10,
-    padding: '0.625rem 1rem',
-    fontSize: '0.9rem',
+    border: '1px solid rgba(34,197,94,0.55)',
+    background: 'rgba(34,197,94,0.10)',
+    color: '#86EFAC',
+    borderRadius: 999,
+    padding: '6px 12px',
+    fontSize: '0.8125rem',
     fontWeight: 700,
     cursor: 'pointer',
-    minHeight: 44,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 36,
+    flex: '0 0 auto',
   },
   // Visual restyle: card surface aligned with the rest of the
   // farmer-facing pages (#102C47 panel, #1F3B5C border) and a

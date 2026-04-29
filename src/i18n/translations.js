@@ -9275,6 +9275,10 @@ const T = {
   'market.status.viewBuyers':        { en: 'View buyers',          fr: 'Voir les acheteurs',      sw: 'Ona wanunuzi',          ha: 'Duba masu siye',         tw: 'Hwɛ aguafoɔ',             hi: 'खरीदार देखें' },
   // {count} interpolated by the consumer
   'market.status.buyersInterested':  { en: '{count} buyers interested',  fr: '{count} acheteurs intéressés', sw: 'Wanunuzi {count} wamevutiwa', ha: 'Masu siye {count} suna sha\'awa', tw: 'Aguafoɔ {count} anya anidasoɔ', hi: '{count} खरीदार रुचि रखते हैं' },
+  // Inline chip variant — collapses "buyers interested" + "View
+  // buyers" CTA into one tap target on the listing status card.
+  // {count} interpolated by the consumer.
+  'market.status.viewBuyersChip':    { en: 'View buyers ({count})', fr: 'Voir acheteurs ({count})', sw: 'Ona wanunuzi ({count})', ha: 'Duba masu siye ({count})', tw: 'Hwɛ aguafoɔ ({count})', hi: 'खरीदार देखें ({count})' },
   'market.unknownCrop':              { en: 'Crop',                 fr: 'Culture',                  sw: 'Zao',                    ha: 'Shuka',                   tw: 'Aduane',                   hi: 'फसल' },
   'funding.mayQualifyWarning':     { en: 'You may qualify. Check requirements before applying. Always confirm with the official source.', fr: 'Vous pourriez être éligible. Vérifiez les conditions avant de postuler. Confirmez toujours auprès de la source officielle.', sw: 'Unaweza kustahiki. Angalia mahitaji kabla ya kuomba. Daima thibitisha na chanzo rasmi.', ha: 'Za ka iya cancanta. Duba sharudda kafin ka nemi. Koyaushe tabbatar da tushe na hukuma.', tw: 'Wobɛtumi anya. Hwehwɛ ɔhwɛhwɛ ansa na woapɔ. Daa hyɛ wo den wɔ nipa a wɔde maaeɛ no nkyɛn.', hi: 'आप योग्य हो सकते हैं। आवेदन करने से पहले आवश्यकताएँ जाँचें। हमेशा आधिकारिक स्रोत से पुष्टि करें।' },
   'funding.requestHelpTitle':      { en: 'Request help applying',           fr: 'Demander de l\'aide pour postuler',     sw: 'Omba msaada wa kuomba',     ha: 'Nemi taimako wajen nema',  tw: 'Bisa mmoa wɔ pɔ ho',     hi: 'आवेदन में सहायता का अनुरोध करें' },
