@@ -6514,6 +6514,12 @@ const T = {
   // — no separate button, the whole row is the tap target.
   'myFarm.help.contactRow':             { en: 'Contact our team',                                                fr: 'Contactez notre \u00E9quipe',                                       sw: 'Wasiliana na timu yetu',                             ha: 'Tuntuɓi tawagarmu',                                          tw: 'Kasa ne y\u025Bn kuw no',                                           hi: 'हमारी टीम से संपर्क करें' },
   'myFarm.details.title':               { en: 'My Farm Details',                                                 fr: 'D\u00E9tails de ma ferme',                                          sw: 'Maelezo ya Shamba Langu',                            ha: 'Bayanan Gonata',                                             tw: 'M\u2019afuo ho nsɛm',                                                hi: 'मेरे खेत का विवरण' },
+  // Multi-farm switcher (Apr 2026): top-of-page dropdown that
+  // labels the active farm and lets multi-farm households swap
+  // contexts without leaving My Farm.
+  'farmSwitcher.label':                 { en: 'Farm',                                                            fr: 'Ferme',                                                              sw: 'Shamba',                                              ha: 'Gona',                                                       tw: 'Afuo',                                                                hi: 'खेत' },
+  'farmSwitcher.addNew':                { en: '+ Add new farm',                                                  fr: '+ Ajouter une ferme',                                                sw: '+ Ongeza shamba jipya',                               ha: '+ Ƙara sabuwar gona',                                        tw: '+ Fa afuo foforɔ ka ho',                                              hi: '+ नया खेत जोड़ें' },
+  'farmSwitcher.manage':                { en: 'Manage farms',                                                    fr: 'G\u00E9rer les fermes',                                              sw: 'Dhibiti mashamba',                                    ha: 'Gudanar da gonaki',                                          tw: 'Hwɛ mfuo no so',                                                      hi: 'खेत प्रबंधित करें' },
 
   // ─── Home spec polish (Apr 2026): 2x2 quick-actions grid ─
   // Replaces the prior tall vertical entry rows. Each tile

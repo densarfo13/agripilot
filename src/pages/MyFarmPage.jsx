@@ -36,6 +36,7 @@ import { STAGE_KEYS } from '../utils/cropStages.js';
 // exported for any other surface that wants it.
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import NextBestActionCard from '../components/farm/NextBestActionCard.jsx';
+import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 
@@ -88,8 +89,10 @@ function localizeCountry(input, lang) {
 
 export default function MyFarmPage() {
   const navigate = useNavigate();
+  // switchFarm is consumed inside <FarmSwitcher /> via its
+  // own useProfile() call — no need to thread it through here.
   const {
-    profile, farms, currentFarmId, loading: profileLoading, switchFarm,
+    profile, farms, currentFarmId, loading: profileLoading,
   } = useProfile();
   const { t, lang } = useTranslation();
   // Today's tasks feed both NextBestActionCard (via its own
@@ -198,6 +201,14 @@ export default function MyFarmPage() {
         <h1 style={S.simpleTitle}>{t('myFarm.title')}</h1>
       </div>
 
+      {/* Farm switcher dropdown (multi-farm spec, Apr 2026).
+          Top-of-page surface so the active farm is identified
+          before the farmer reads anything else. Renders as a
+          static label for single-farm households; full dropdown
+          with Add / Manage footer for multi-farm. State + persist
+          handled by useProfile (switchFarm + currentFarmId). */}
+      <FarmSwitcher />
+
       {/* ─── 2. Next Task Card (per spec §2) ────────────────
           NextBestActionCard already implements the spec exactly
           — title, instruction, primary "Open Task" CTA, and
@@ -247,14 +258,14 @@ export default function MyFarmPage() {
         </section>
       )}
 
-      {/* ─── 4. Farm Action Row (control panel spec) ────────
-          Horizontal row: Edit / Add / Switch. Replaces the
-          small Edit button that previously lived in the
-          details card header — bigger tap targets, all three
-          farm-management actions visible at the same level.
-          Switch only renders for multi-farm households (a
-          native <select> is the lightest UI for the rare
-          case; opens modal-style on mobile). */}
+      {/* ─── 4. Farm Action Row ──────────────────────────────
+          Edit + Add. Switch was moved to the top-of-page
+          FarmSwitcher dropdown (above) so the active farm is
+          identifiable BEFORE any details card renders.
+          Add Farm stays here too (also reachable from the
+          dropdown footer); doubling it is acceptable since
+          this is a quick action surface and the dropdown
+          footer hides when only one farm exists. */}
       {farm && (
         <div style={S.actionRow} data-testid="my-farm-actions">
           <button
@@ -273,28 +284,6 @@ export default function MyFarmPage() {
           >
             {tSafe('myFarm.addFarm', 'Add Farm')}
           </button>
-          {Array.isArray(farms) && farms.length > 1 && (
-            <select
-              id="my-farm-switch"
-              name="myFarmSwitch"
-              aria-label={tSafe('myFarm.switchFarm', 'Switch Farm')}
-              value={currentFarmId || ''}
-              onChange={(e) => {
-                const next = e.target.value;
-                if (!next || next === currentFarmId) return;
-                try { switchFarm && switchFarm(next); }
-                catch { /* swallow — never break the page */ }
-              }}
-              style={S.actionSelect}
-              data-testid="my-farm-switch"
-            >
-              {farms.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.farmName || f.name || tSafe('myFarm.unnamedFarm', 'Farm')}
-                </option>
-              ))}
-            </select>
-          )}
         </div>
       )}
 
