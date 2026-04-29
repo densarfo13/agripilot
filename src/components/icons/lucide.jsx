@@ -288,9 +288,53 @@ export const HelpCircle = (p) => (
   </_Icon>
 );
 
+/** Ruler — farm size */
+export const Ruler = (p) => (
+  <_Icon {...p}>
+    <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z" />
+    <path d="m14.5 12.5 2-2" />
+    <path d="m11.5 9.5 2-2" />
+    <path d="m8.5 6.5 2-2" />
+    <path d="m17.5 15.5 2-2" />
+  </_Icon>
+);
+
+/** Tractor — crop stage / field work */
+export const Tractor = (p) => (
+  <_Icon {...p}>
+    <path d="M3 4h9l1 7" />
+    <path d="M4 11V4" />
+    <path d="M8 10V4" />
+    <path d="M18 5c-.6 0-1 .4-1 1v5.5" />
+    <circle cx="7" cy="15" r="4" />
+    <circle cx="17" cy="18" r="2" />
+    <path d="M11 15h2" />
+    <path d="M15 18h-3.5" />
+    <path d="M22 11h-7" />
+  </_Icon>
+);
+
+/** Heart-Pulse — farm health overall */
+export const HeartPulse = (p) => (
+  <_Icon {...p}>
+    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" />
+    <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
+  </_Icon>
+);
+
+/** Clipboard-Check — farm records */
+export const ClipboardCheck = (p) => (
+  <_Icon {...p}>
+    <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path d="m9 14 2 2 4-4" />
+  </_Icon>
+);
+
 export default {
   Sprout, Wheat, CloudSun, Bug, Activity, CheckCircle, AlertTriangle,
   MapPin, Camera, Calendar, TrendingUp, Coins, ShoppingCart, RefreshCw,
   ShieldCheck, Plus, Inbox, CloudOff, AlertCircle, Volume2,
   Lightbulb, CloudRain, ArrowRight, Wallet, HelpCircle,
+  Ruler, Tractor, HeartPulse, ClipboardCheck,
 };

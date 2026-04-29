@@ -23,10 +23,11 @@ export default function AddFarmEmpty() {
         <Sprout size={48} />
       </div>
       <h1 style={S.title}>
-        {tStrict('farm.empty.title', '')}
+        {tStrict('farm.empty.title', 'Set up your farm')}
       </h1>
       <p style={S.body}>
-        {tStrict('farm.empty.body', '')}
+        {tStrict('farm.empty.body',
+          'Add your crop, location, and farm size to get daily guidance.')}
       </p>
       <button
         type="button"
@@ -35,8 +36,16 @@ export default function AddFarmEmpty() {
         onClick={() => { try { navigate('/farm/new'); } catch { /* ignore */ } }}
       >
         <span style={S.ctaIcon} aria-hidden="true"><Plus size={18} /></span>
-        <span>{tStrict('farm.empty.cta', '')}</span>
+        <span>{tStrict('farm.empty.cta', 'Add Farm')}</span>
       </button>
+      {/* Risk-4 fix: the "Explore sample farm" secondary CTA was
+          removed. The original routed to /dashboard, but in
+          non-demo-mode that just lands on the same empty state
+          and doesn't actually showcase a sample — misleading.
+          When a real sample-farm flow ships, restore as a
+          secondary button here; the i18n key
+          `farm.empty.cta.exploreSample` is already populated
+          for all 6 launch languages. */}
     </section>
   );
 }

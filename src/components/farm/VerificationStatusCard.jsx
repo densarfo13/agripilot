@@ -20,7 +20,8 @@
 
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { ShieldCheck, Camera, MapPin } from '../icons/lucide.jsx';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, Camera, MapPin, CheckCircle } from '../icons/lucide.jsx';
 
 function _formatRel(ts, fmtRelative) {
   if (!ts) return null;
@@ -45,6 +46,7 @@ function _computeLevel({ photoAt, gpsAt, verifiedCount }) {
 
 export default function VerificationStatusCard({ farm }) {
   const { fmtRelative } = useTranslation();
+  const navigate = useNavigate();
   if (!farm) return null;
 
   const v = farm.verification && typeof farm.verification === 'object' ? farm.verification : null;
@@ -64,6 +66,33 @@ export default function VerificationStatusCard({ farm }) {
 
   const photoText = _formatRel(photoAt, fmtRelative);
   const gpsText   = _formatRel(gpsAt, fmtRelative);
+
+  // Spec §7 — explicit empty-state copy + a "Improve Verification"
+  // checklist of three tasks the farmer can act on. Each item has
+  // a `done` flag derived from the same signals the level uses.
+  const checklist = [
+    {
+      key:      'photoProof',
+      labelKey: 'farm.verify.checklist.photo',
+      fallback: 'Add photo proof',
+      done:     !!photoAt,
+    },
+    {
+      key:      'gpsProof',
+      labelKey: 'farm.verify.checklist.gps',
+      fallback: 'Allow GPS verification',
+      done:     !!gpsAt,
+    },
+    {
+      key:      'verifiedAction',
+      labelKey: 'farm.verify.checklist.action',
+      fallback: 'Complete verified task',
+      done:     (Number(verifiedCount) || 0) > 0,
+    },
+  ];
+
+  const photoEmpty = tStrict('farm.verify.lastPhoto.empty', 'No photo proof yet');
+  const gpsEmpty   = tStrict('farm.verify.lastGps.empty',   'No GPS proof yet');
 
   return (
     <section style={S.card} data-testid="verification-status-card">
@@ -87,18 +116,76 @@ export default function VerificationStatusCard({ farm }) {
           />
         ))}
       </div>
+      {/* Trust copy: explains WHY the level matters. */}
+      <p style={S.lead}>
+        {tStrict('farm.verify.lead',
+          'Increase trust with buyers, NGOs, and funding partners.')}
+      </p>
+
       <ul style={S.list}>
         <li style={S.row}>
           <span style={S.iconWrap} aria-hidden="true"><Camera size={16} /></span>
           <span style={S.label}>{tStrict('farm.verify.lastPhoto', '')}</span>
-          <span style={S.value}>{photoText || '—'}</span>
+          <span style={photoText ? S.value : S.valueMuted}>
+            {photoText || photoEmpty}
+          </span>
         </li>
         <li style={S.row}>
           <span style={S.iconWrap} aria-hidden="true"><MapPin size={16} /></span>
           <span style={S.label}>{tStrict('farm.verify.lastGps', '')}</span>
-          <span style={S.value}>{gpsText || '—'}</span>
+          <span style={gpsText ? S.value : S.valueMuted}>
+            {gpsText || gpsEmpty}
+          </span>
         </li>
       </ul>
+
+      {/* Improve-verification checklist — three tasks with green
+          ticks for the ones already done. */}
+      <ul style={S.checklist} data-testid="verification-checklist">
+        {checklist.map((item) => (
+          <li
+            key={item.key}
+            style={{ ...S.checkRow, opacity: item.done ? 0.7 : 1 }}
+            data-done={item.done || undefined}
+          >
+            <span
+              style={{
+                ...S.checkIcon,
+                color: item.done ? '#86EFAC' : 'rgba(255,255,255,0.35)',
+              }}
+              aria-hidden="true"
+            >
+              <CheckCircle size={14} />
+            </span>
+            <span
+              style={{
+                ...S.checkLabel,
+                textDecoration: item.done ? 'line-through' : 'none',
+              }}
+            >
+              {tStrict(item.labelKey, item.fallback)}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {/* CTA — disabled when level is already 3 (full).
+          Risk-2 fix: the most direct way to bump verification is
+          to complete a task with photo + GPS proof, which happens
+          on the Today page (PrimaryTaskCard's complete-with-photo
+          flow). Routing there is more action-oriented than
+          dropping the farmer into the edit-farm form. Edit-farm
+          is still reachable from the Quick Actions card. */}
+      {level < 3 && (
+        <button
+          type="button"
+          style={S.cta}
+          data-testid="verification-improve-cta"
+          onClick={() => { try { navigate('/today'); } catch { /* ignore */ } }}
+        >
+          {tStrict('farm.verify.cta.improve', 'Improve verification')}
+        </button>
+      )}
     </section>
   );
 }
@@ -136,4 +223,50 @@ const S = {
   iconWrap: { color: 'rgba(255,255,255,0.55)', display: 'inline-flex' },
   label:    { color: 'rgba(255,255,255,0.6)' },
   value:    { color: '#fff', fontWeight: 600, textAlign: 'right' },
+  // Empty-state value cell: subdued, italic, no decoration —
+  // distinguishes "No photo proof yet" from a real timestamp.
+  valueMuted: {
+    color: 'rgba(255,255,255,0.5)',
+    fontStyle: 'italic',
+    textAlign: 'right',
+    fontSize: '0.85rem',
+  },
+  lead: {
+    margin: '0 0 10px',
+    fontSize: '0.85rem',
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: 1.4,
+  },
+  checklist: {
+    listStyle: 'none',
+    margin: '12px 0 0',
+    padding: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  checkRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: '0.85rem',
+    color: 'rgba(255,255,255,0.85)',
+  },
+  checkIcon: { display: 'inline-flex' },
+  checkLabel: { lineHeight: 1.3 },
+  cta: {
+    marginTop: 14,
+    width: '100%',
+    appearance: 'none',
+    border: 'none',
+    background: '#22C55E',
+    color: '#fff',
+    borderRadius: 10,
+    padding: '0.75rem 1rem',
+    fontSize: '0.9rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 44,
+    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+  },
 };

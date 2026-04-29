@@ -26,6 +26,10 @@
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { cropLabel } from '../../utils/cropLabel.js';
+// Risk-3 fix: surface the resolved stage as a small Tractor-iconned
+// chip beneath the title. Spec §8 maps "Stage → Tractor"; without
+// this the icon was exported but unused.
+import { Tractor } from '../icons/lucide.jsx';
 
 function _formatSize(size, unit) {
   if (size == null || size === '') return null;
@@ -64,23 +68,26 @@ export default function FarmSummaryCard({ farm, lang = 'en', countryLabel = '' }
   // `crop` is the canonical field (canonicalizeFarmPayload in
   // lib/api.js strips the legacy alias on writes). Reading only
   // `farm.crop` here keeps the drift guard happy for new code.
-  const crop  = cropLabel(farm.crop, lang);
+  // Useful fallbacks per spec §2 — never show a blank cell.
+  const crop  = cropLabel(farm.crop, lang)
+              || tStrict('farm.fallback.crop',     'Not selected');
   const stage = farm.cropStage || farm.stage;
   const stageLabel = stage
-    ? tStrict(`stage.${stage}`, '')
-    : '';
-  const size  = _formatSize(farm.size || farm.farmSize, farm.sizeUnit);
-  const place = countryLabel || farm.region || farm.location || '';
+    ? (tStrict(`stage.${stage}`, '')
+       || tStrict('farm.fallback.stage', 'Planning'))
+    : tStrict('farm.fallback.stage', 'Planning');
+  const sizeRaw = _formatSize(farm.size || farm.farmSize, farm.sizeUnit);
+  const size  = sizeRaw || tStrict('farm.fallback.size', 'Add farm size');
+  const placeRaw = countryLabel || farm.region || farm.location || '';
+  const place = placeRaw || tStrict('farm.fallback.location', 'Add location');
   const gpsOk = _hasGps(farm);
-  const updated = _formatRelative(farm.updatedAt || farm.lastUpdatedAt || farm.lastUpdated, fmtRelative);
+  const updatedRaw = _formatRelative(farm.updatedAt || farm.lastUpdatedAt || farm.lastUpdated, fmtRelative);
+  const updated = updatedRaw || tStrict('farm.fallback.lastUpdated', 'Recently');
 
-  // Single condensed subline — joins whichever of stage / size /
-  // place are present with a `•` separator (matches the visual
-  // reference). Each piece is independently optional, so a brand-new
-  // farm with only a crop name still gets a clean header without a
-  // straggling separator.
-  const sublineParts = [stageLabel, size, place].filter(Boolean);
-  const subline = sublineParts.join(' • ');
+  // Subline always renders — every part has a fallback now, so we
+  // never produce a stripe of "—" placeholders. Stage / size /
+  // place stay in the same order as before.
+  const subline = [stageLabel, size, place].filter(Boolean).join(' • ');
 
   // GPS status sits on a tiny line beneath the updated timestamp
   // when it's missing — visually subdued (warn tone). When present
@@ -93,6 +100,15 @@ export default function FarmSummaryCard({ farm, lang = 'en', countryLabel = '' }
         <h2 style={S.title}>
           {crop || tStrict('farm.summaryTitle', '')}
         </h2>
+        {/* Stage chip — Tractor icon + localized stage label.
+            Renders alongside the title so the farmer sees what
+            phase their crop is in at a glance. */}
+        {stageLabel && (
+          <span style={S.stageChip} data-testid="farm-summary-stage">
+            <Tractor size={12} />
+            <span style={{ marginLeft: 4 }}>{stageLabel}</span>
+          </span>
+        )}
       </header>
       {subline && (
         <p style={S.subline} data-testid="farm-summary-subline">
@@ -132,6 +148,18 @@ const S = {
     fontSize: '1.0625rem',
     fontWeight: 700,
     color: '#fff',
+  },
+  stageChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '2px 8px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.8)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    fontSize: '0.7rem',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
   },
   subline: {
     margin: '4px 0 0',

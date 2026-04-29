@@ -19,7 +19,7 @@ import { useMemo } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { getTaskCompletions } from '../../store/farrowayLocal.js';
-import { CheckCircle, ShieldCheck, ShoppingCart, Coins } from '../icons/lucide.jsx';
+import { CheckCircle, ShieldCheck, ShoppingCart, Coins, ClipboardCheck } from '../icons/lucide.jsx';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -49,42 +49,74 @@ export default function FarmRecordsCard({ farm }) {
 
   const completedThisWeek = useMemo(() => _tasksThisWeek(farm.id), [farm?.id]);
 
+  // Spec §6 — keep the numeric count but ALSO surface a helpful
+  // empty-state line when the count is zero. The line tells the
+  // farmer what to do to grow the number, instead of showing
+  // a lifeless "0".
+  const verifiedCount = _coerceCount(farm.verifiedActions);
+  const listingsCount = _coerceCount(farm.listingsCount ?? farm.produceListings);
+  const fundingCount  = _coerceCount(farm.fundingInterestsCount ?? farm.fundingInterests);
+
   const tiles = [
     {
       key: 'tasks',
       icon: <CheckCircle size={18} />,
       label: tStrict('farm.records.tasksThisWeek', ''),
       value: completedThisWeek,
+      emptyHint: completedThisWeek === 0
+        ? tStrict('farm.records.tasksThisWeek.empty',
+            'Start with today\u2019s task')
+        : '',
     },
     {
       key: 'verified',
       icon: <ShieldCheck size={18} />,
       label: tStrict('farm.records.verifiedActions', ''),
-      value: _coerceCount(farm.verifiedActions),
+      value: verifiedCount,
+      emptyHint: verifiedCount === 0
+        ? tStrict('farm.records.verifiedActions.empty',
+            'Add photo or GPS proof when completing tasks')
+        : '',
     },
     {
       key: 'listings',
       icon: <ShoppingCart size={18} />,
       label: tStrict('farm.records.produceListings', ''),
-      value: _coerceCount(farm.listingsCount ?? farm.produceListings),
+      value: listingsCount,
+      emptyHint: listingsCount === 0
+        ? tStrict('farm.records.produceListings.empty',
+            'List produce when ready to sell')
+        : '',
     },
     {
       key: 'funding',
       icon: <Coins size={18} />,
       label: tStrict('farm.records.fundingInterests', ''),
-      value: _coerceCount(farm.fundingInterestsCount ?? farm.fundingInterests),
+      value: fundingCount,
+      emptyHint: fundingCount === 0
+        ? tStrict('farm.records.fundingInterests.empty',
+            'View funding opportunities')
+        : '',
     },
   ];
 
   return (
     <section style={S.card} data-testid="farm-records-card">
-      <h2 style={S.title}>{tStrict('farm.records.title', '')}</h2>
+      <h2 style={S.title}>
+        <span aria-hidden="true" style={{ display: 'inline-flex', marginRight: 6, verticalAlign: 'middle' }}>
+          <ClipboardCheck size={16} />
+        </span>
+        {tStrict('farm.records.title', '')}
+      </h2>
       <div style={S.grid}>
         {tiles.map((t) => (
           <div key={t.key} style={S.tile} data-record={t.key}>
             <span style={S.tileIcon} aria-hidden="true">{t.icon}</span>
             <span style={S.tileValue}>{t.value}</span>
             <span style={S.tileLabel}>{t.label || ''}</span>
+            {t.emptyHint ? (
+              <span style={S.tileEmpty}>{t.emptyHint}</span>
+            ) : null}
           </div>
         ))}
       </div>
@@ -128,4 +160,10 @@ const S = {
   tileIcon:  { color: '#86EFAC', display: 'inline-flex' },
   tileValue: { fontSize: '1.4rem', fontWeight: 800, color: '#fff', lineHeight: 1 },
   tileLabel: { fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.2 },
+  tileEmpty: {
+    fontSize: '0.7rem',
+    color: 'rgba(255,255,255,0.5)',
+    lineHeight: 1.3,
+    marginTop: 4,
+  },
 };

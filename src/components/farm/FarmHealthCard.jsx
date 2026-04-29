@@ -20,9 +20,10 @@
 
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
+import { getFarmHealth } from '../../lib/farm/farmFallbacks.js';
 import {
   CloudSun, CloudOff, CloudRain,
-  Bug, CheckCircle, AlertTriangle, Activity,
+  Bug, CheckCircle, AlertTriangle, Activity, HeartPulse,
 } from '../icons/lucide.jsx';
 
 // Heuristic: stages where planting work is current/imminent. Used
@@ -74,56 +75,60 @@ export default function FarmHealthCard({ farm }) {
   useTranslation();
   if (!farm) return null;
 
-  const weather = _weatherRisk(farm);
-  const pest    = _pestRisk(farm);
-  const ready   = _plantingReadiness(farm);
-  const overall = _overall(weather, pest);
+  // Spec §3 — never show "No data". Use farmFallbacks helpers to
+  // produce useful text for each row even when the live data is
+  // missing. Helper returns { state, key, fallback, tone } per row
+  // + an overall { code, key, fallback, tone } status used at the
+  // bottom of the card.
+  const health = getFarmHealth(farm, farm.weather, /* risks */ []);
 
-  const overallText = overall === 'needsAttention'
-    ? tStrict('farm.health.needsAttention', '')
-    : tStrict('farm.health.onTrack', '');
+  const overall = health.overall;
+  const overallText = tStrict(overall.key, overall.fallback);
+  const overallIsAttention = overall.code === 'needs_attention';
 
-  // Pick the matching weather icon from the existing set. Three
-  // outcomes (rain / clear / unknown) cover the three signals the
-  // health derivation produces.
+  // Weather icon picks itself from the helper's `state` so a
+  // "pending" weather still shows a meaningful glyph (CloudOff)
+  // rather than CloudSun on a gray empty state.
   const weatherIcon =
-    weather === 'unknown' ? <CloudOff size={14} /> :
-    weather === 'high'    ? <CloudRain size={14} /> :
-                            <CloudSun size={14} />;
+    health.weather.state === 'pending' ? <CloudOff size={14} /> :
+    health.weather.state === 'high'    ? <CloudRain size={14} /> :
+                                          <CloudSun size={14} />;
 
-  // Stacked text rows replace the 3-pill grid (visual reference §2).
-  // Each row keeps its own data path and tStrict key — only the
-  // layout changes.
   const rows = [
     {
       key: 'weather',
       icon: weatherIcon,
-      label: tStrict('farm.health.weather', ''),
-      value: tStrict(`farm.health.level.${weather}`, ''),
-      tone: _toneFor(weather),
-      attentionChip: weather === 'high',
+      // Single localised line ("Weather update pending" /
+      // "Weather risk high" / etc.) — replaces the prior
+      // "Weather: No data" pattern.
+      text: tStrict(health.weather.key, health.weather.fallback),
+      tone: health.weather.tone,
+      attentionChip: health.weather.state === 'high',
     },
     {
       key: 'pest',
       icon: <Bug size={14} />,
-      label: tStrict('farm.health.pest', ''),
-      value: tStrict(`farm.health.level.${pest}`, ''),
-      tone: _toneFor(pest),
-      attentionChip: pest === 'high',
+      text: tStrict(health.pest.key, health.pest.fallback),
+      tone: health.pest.tone,
+      attentionChip: health.pest.state === 'high',
     },
     {
       key: 'planting',
       icon: <Activity size={14} />,
-      label: tStrict('farm.health.planting', ''),
-      value: tStrict(`farm.health.readiness.${ready}`, ''),
-      tone: _toneFor(ready),
+      text: tStrict(health.planting.key, health.planting.fallback),
+      tone: health.planting.tone,
       attentionChip: false,
     },
   ];
 
   return (
     <section style={S.card} data-testid="farm-health-card">
-      <h2 style={S.title}>{tStrict('farm.health.title', '')}</h2>
+      <h2 style={S.title}>
+        <span aria-hidden="true" style={{ display: 'inline-flex', marginRight: 6, verticalAlign: 'middle' }}>
+          <HeartPulse size={16} />
+        </span>
+        {tStrict('farm.health.title', '')}
+      </h2>
       <ul style={S.list}>
         {rows.map((r, idx) => (
           <li
@@ -137,14 +142,11 @@ export default function FarmHealthCard({ farm }) {
           >
             <span style={S.rowLeft}>
               <span style={S.icon} aria-hidden="true">{r.icon}</span>
-              <span>
-                {r.label}{r.label && r.value ? ': ' : ''}{r.value || '—'}
-              </span>
+              <span>{r.text || ''}</span>
             </span>
-            {/* Inline "Needs Attention" chip when this row drives
-                the overall status (matches the visual reference's
-                weather row). */}
-            {r.attentionChip && overall === 'needsAttention' && (
+            {/* Inline attention chip when THIS row drives the overall
+                status (matches the visual reference's weather row). */}
+            {r.attentionChip && overallIsAttention && (
               <span style={S.attentionChip}>
                 <AlertTriangle size={12} />
                 <span style={{ marginLeft: 4 }}>{overallText || ''}</span>
@@ -154,11 +156,21 @@ export default function FarmHealthCard({ farm }) {
         ))}
       </ul>
       {/* Bottom-of-card overall status when no row carried the
-          attention chip — keeps the "On Track" affirmation visible
-          without the 3-pill clutter. */}
-      {overall !== 'needsAttention' && (
-        <div style={S.overallRow} data-testid="farm-health-overall">
-          <CheckCircle size={14} />
+          attention chip. Setup-incomplete farms show a neutral
+          info chip (per spec: "missing setup items should be
+          neutral, not red"); on-track farms stay green. */}
+      {!overallIsAttention && (
+        <div
+          style={{
+            ...S.overallRow,
+            ...(overall.tone === 'info' ? S.overallInfo : null),
+          }}
+          data-testid="farm-health-overall"
+          data-tone={overall.tone}
+        >
+          {overall.tone === 'info'
+            ? <Activity size={14} />
+            : <CheckCircle size={14} />}
           <span style={{ marginLeft: 6 }}>{overallText || ''}</span>
         </div>
       )}
@@ -224,5 +236,12 @@ const S = {
     background: 'rgba(34,197,94,0.15)',
     color: '#86EFAC',
     border: '1px solid rgba(34,197,94,0.35)',
+  },
+  // Neutral / info tone for "Setup incomplete" — per spec §9
+  // "missing setup items should be neutral, not red".
+  overallInfo: {
+    background: 'rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.85)',
+    border: '1px solid rgba(255,255,255,0.12)',
   },
 };

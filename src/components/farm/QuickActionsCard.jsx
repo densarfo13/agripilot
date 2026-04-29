@@ -20,11 +20,42 @@ import { tStrict } from '../../i18n/strictT.js';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Camera, ShoppingCart, Coins } from '../icons/lucide.jsx';
 
+// Each action carries a short label + a one-line helper subtext
+// (spec §5). The helpers explain the value of the action so a
+// low-literacy farmer knows WHY to tap, not just WHAT it does.
 const ACTIONS = [
-  { key: 'updateFarm',   labelKey: 'farm.actions.updateFarm',   icon: RefreshCw,    route: '/edit-farm' },
-  { key: 'scanCrop',     labelKey: 'farm.actions.scanCrop',     icon: Camera,       route: '/scan-crop' },
-  { key: 'markReady',    labelKey: 'farm.actions.markReady',    icon: ShoppingCart, route: '/sell' },
-  { key: 'viewFunding',  labelKey: 'farm.actions.viewFunding',  icon: Coins,        route: '/opportunities' },
+  {
+    key: 'updateFarm',
+    labelKey: 'farm.actions.updateFarm',
+    helperKey: 'farm.actions.updateFarm.help',
+    helperFallback: 'Keep your plan accurate.',
+    icon: RefreshCw,
+    route: '/edit-farm',
+  },
+  {
+    key: 'scanCrop',
+    labelKey: 'farm.actions.scanCrop',
+    helperKey: 'farm.actions.scanCrop.help',
+    helperFallback: 'Detect issues early.',
+    icon: Camera,
+    route: '/scan-crop',
+  },
+  {
+    key: 'markReady',
+    labelKey: 'farm.actions.markReady',
+    helperKey: 'farm.actions.markReady.help',
+    helperFallback: 'Let buyers find your produce.',
+    icon: ShoppingCart,
+    route: '/sell',
+  },
+  {
+    key: 'viewFunding',
+    labelKey: 'farm.actions.viewFunding',
+    helperKey: 'farm.actions.viewFunding.help',
+    helperFallback: 'Find support nearby.',
+    icon: Coins,
+    route: '/opportunities',
+  },
 ];
 
 export default function QuickActionsCard() {
@@ -38,6 +69,7 @@ export default function QuickActionsCard() {
         {ACTIONS.map((a, idx) => {
           const Icon = a.icon;
           const label = tStrict(a.labelKey, '');
+          const helper = tStrict(a.helperKey, a.helperFallback);
           // First action (Update Farm) is the primary CTA — green;
           // the rest sit on a darker navy surface (matches the
           // visual reference's 1-primary / 3-secondary grid).
@@ -57,6 +89,9 @@ export default function QuickActionsCard() {
                 <Icon size={20} />
               </span>
               <span style={S.btnLabel}>{label || ''}</span>
+              {helper ? (
+                <span style={S.btnHelper}>{helper}</span>
+              ) : null}
             </button>
           );
         })}
@@ -118,5 +153,12 @@ const S = {
     fontSize: '0.9rem',
     color: '#fff',
     lineHeight: 1.2,
+    fontWeight: 700,
+  },
+  btnHelper: {
+    fontSize: '0.7rem',
+    color: 'rgba(255,255,255,0.65)',
+    lineHeight: 1.2,
+    marginTop: 2,
   },
 };

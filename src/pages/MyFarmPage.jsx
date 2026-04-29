@@ -6,7 +6,7 @@
  * no technical fields. Dark theme, inline styles, all text via useTranslation().
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -20,7 +20,6 @@ import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import FarmerAvatar from '../components/FarmerAvatar.jsx';
 import SupportCard from '../components/SupportCard.jsx';
 import FarmInsightCard from '../components/FarmInsightCard.jsx';
-import TodaysTasksCard from '../components/TodaysTasksCard.jsx';
 // NotificationPreferencesCard + FarmerIdCard intentionally not
 // imported here — both moved into the unified Settings page at
 // /settings as part of the UI cleanup pass.
@@ -38,6 +37,15 @@ import QuickActionsCard from '../components/farm/QuickActionsCard.jsx';
 import VerificationStatusCard from '../components/farm/VerificationStatusCard.jsx';
 import FarmRecordsCard from '../components/farm/FarmRecordsCard.jsx';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
+import NextBestActionCard from '../components/farm/NextBestActionCard.jsx';
+// Risk-1 fix: data sources for SmartSuggestionsCard's contextual
+// rules. All three already exist in the app — we just wire them
+// in here so the suggestion card can fire its full rule set
+// (complete-today / list-produce / check-funding) instead of
+// only the legacy crop-stage rules.
+import { getActiveListings } from '../market/marketStore.js';
+import { getActiveFundingOpportunities } from '../funding/fundingStore.js';
+import { matchFundingForFarm } from '../funding/fundingMatcher.js';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import {
@@ -101,6 +109,11 @@ export default function MyFarmPage() {
   const [avatarUrl, setAvatarUrl] = useState(getAvatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState(null);
+  // Risk-1 fix: capture the today-tasks plan so SmartSuggestionsCard
+  // can drive its "complete today's task" rule. The existing
+  // getTodayTasks() call already runs inside the notification
+  // scheduler effect below — we just lift the result into state.
+  const [todayTasks, setTodayTasks] = useState([]);
 
   async function handleAvatarFile(e) {
     const file = e.target.files?.[0];
@@ -144,9 +157,14 @@ export default function MyFarmPage() {
         },
         weather: profile.weather || null,
       });
+      const tasksList = todayPlan && Array.isArray(todayPlan.tasks)
+        ? todayPlan.tasks : [];
+      // Lift to state so SmartSuggestionsCard's rule set can
+      // see whether today's task is still pending.
+      setTodayTasks(tasksList);
       processNotifications({
         user, farm: farmObj,
-        tasks: todayPlan && todayPlan.tasks ? todayPlan.tasks : [],
+        tasks: tasksList,
         weather: profile.weather || null,
         issues: profile.issues || [],
         language: profile.language || 'en',
@@ -192,6 +210,28 @@ export default function MyFarmPage() {
   const farm = profile || farms?.find((f) => f.id === currentFarmId) || farms?.[0] || null;
   const isMultiFarm = farms && farms.length > 1;
 
+  // Risk-1 fix: pre-compute the optional inputs SmartSuggestionsCard
+  // accepts. Both reads are local-only (marketStore + fundingStore
+  // both keep their data in localStorage), so they're safe to run
+  // on every render — no network, no async. Memoised on farm-id.
+  const farmListings = useMemo(() => {
+    try {
+      const all = getActiveListings() || [];
+      const fid = profile?.id || profile?.farmId;
+      return fid ? all.filter((l) => l && l.farmId === fid) : all;
+    } catch { return []; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile && (profile.id || profile.farmId)]);
+
+  const fundingMatches = useMemo(() => {
+    try {
+      const opps = getActiveFundingOpportunities() || [];
+      if (!profile || opps.length === 0) return [];
+      return matchFundingForFarm(profile, opps) || [];
+    } catch { return []; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile && (profile.id || profile.farmId)]);
+
   return (
     <div style={S.page} data-testid="my-farm-page">
       {/* Header */}
@@ -202,19 +242,28 @@ export default function MyFarmPage() {
         <VoiceButton labelKey="myFarm.title" />
       </div>
 
-      {/* Farm intelligence hub (spec §1–§6) — additive cards that
-          render above the existing detail tiles. Each self-hides when
-          its inputs are missing so an empty pilot stays clean. */}
+      {/* Farm intelligence hub. Order matters: NextBestActionCard
+          sits at the top so the farmer's first three questions are
+          answered before anything else (status / what next / where
+          to go). Each card self-hides when its inputs are missing
+          so an empty pilot stays clean. */}
       {farm ? (
         <div style={S.intelligenceWrap}>
-          <QuickActionsCard />
+          <NextBestActionCard farm={farm} />
           <FarmSummaryCard
             farm={farm}
             lang={lang}
             countryLabel={localizeCountry(farm.country || farm.countryCode, lang)}
           />
           <FarmHealthCard farm={farm} />
-          <SmartSuggestionsCard farm={farm} lang={lang} />
+          <SmartSuggestionsCard
+            farm={farm}
+            lang={lang}
+            tasks={todayTasks}
+            listings={farmListings}
+            fundingMatches={fundingMatches}
+          />
+          <QuickActionsCard />
           <FarmRecordsCard farm={farm} />
           <VerificationStatusCard farm={farm} />
         </div>
@@ -387,10 +436,12 @@ export default function MyFarmPage() {
         />
       )}
 
-      {/* Today's tasks — 1 high + 1–2 medium + optional low */}
-      {farm && (
-        <TodaysTasksCard farm={farm} weather={profile?.weather || null} />
-      )}
+      {/* Risk-5 fix: TodaysTasksCard removed from this page.
+          The new NextBestActionCard at the top of the
+          intelligence hub now owns "today's task" surfacing
+          (it reads from the same getTodayTasks source). The
+          dedicated /tasks page is one tap away via the bottom
+          nav and the NextBestActionCard CTA. */}
 
       {/* Farm intelligence — yield / value / weather-action / risk cards */}
       {farm && (

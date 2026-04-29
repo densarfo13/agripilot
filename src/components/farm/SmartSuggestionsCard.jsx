@@ -21,6 +21,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import { cropLabel } from '../../utils/cropLabel.js';
 import { useNavigate } from 'react-router-dom';
 import { Lightbulb } from '../icons/lucide.jsx';
+import { getSmartSuggestions } from '../../lib/farm/farmFallbacks.js';
 
 const HARVEST_NEAR_STAGES = new Set(['fruiting', 'harvest', 'post_harvest']);
 
@@ -106,12 +107,36 @@ function _buildSuggestions(farm, lang) {
   return out.slice(0, 3);
 }
 
-export default function SmartSuggestionsCard({ farm, lang = 'en' }) {
+export default function SmartSuggestionsCard({ farm, lang = 'en', tasks = null, listings = null, fundingMatches = null }) {
   useTranslation();
   const navigate = useNavigate();
   if (!farm) return null;
 
-  const suggestions = _buildSuggestions(farm, lang);
+  // Spec §4: replace the generic single nudge with up to 3
+  // contextual suggestions driven by missing-setup signals,
+  // ready-to-sell state, and funding matches. The original
+  // signal-based rules in `_buildSuggestions` (harvest-near
+  // crop-name nudge, weather-risk nudge) stay live — both
+  // sources merge here, sorted by priority, capped at 3.
+  const ctxSuggestions = getSmartSuggestions(farm, tasks, listings, fundingMatches)
+    .map((s) => ({
+      key:   s.key,
+      tone:  'info',
+      // Helper returns { key, fallback, route, priority }; map
+      // to the local shape used by the renderer.
+      text:  tStrict(s.key, s.fallback),
+      route: s.route,
+    }))
+    .filter((s) => s.text);
+
+  // Layer the legacy rule outputs (harvest-near, weather, etc.)
+  // beneath the contextual ones so we don't lose existing
+  // behaviour. Topic-dedupe by route so the same destination
+  // doesn't show twice.
+  const legacy = _buildSuggestions(farm, lang)
+    .filter((s) => !ctxSuggestions.some((c) => c.route === s.route));
+
+  const suggestions = [...ctxSuggestions, ...legacy].slice(0, 3);
   if (suggestions.length === 0) return null;
 
   return (
