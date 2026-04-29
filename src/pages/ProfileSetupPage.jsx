@@ -221,10 +221,17 @@ export default function ProfileSetupPage() {
 
         {/* Form */}
         <div style={S.card}>
+          {/* F21 a11y fix: every input has id + name + label
+              htmlFor so the DevTools accessibility audit stops
+              flagging "form field without id/name" / "no label
+              associated". Inputs were previously visually
+              labelled but not programmatically associated. */}
           {/* Farmer Name */}
           <div style={S.field}>
-            <label style={S.label}>Farmer Name</label>
+            <label style={S.label} htmlFor="profile-farmer-name">Farmer Name</label>
             <input
+              id="profile-farmer-name"
+              name="farmerName"
               style={S.input}
               value={form.farmerName}
               onChange={(e) => handleChange('farmerName', e.target.value)}
@@ -235,8 +242,10 @@ export default function ProfileSetupPage() {
 
           {/* Farm Name */}
           <div style={S.field}>
-            <label style={S.label}>Farm Name</label>
+            <label style={S.label} htmlFor="profile-farm-name">Farm Name</label>
             <input
+              id="profile-farm-name"
+              name="farmName"
               style={S.input}
               value={form.farmName}
               onChange={(e) => handleChange('farmName', e.target.value)}
@@ -245,10 +254,15 @@ export default function ProfileSetupPage() {
             {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
           </div>
 
-          {/* Country */}
+          {/* Country — CountrySelect is a custom component;
+              its internal <select> id/name is the component
+              author's responsibility. Label here is the
+              section heading; DevTools may still flag the
+              custom component but that's a separate fix. */}
           <div style={S.field}>
-            <label style={S.label}>Country</label>
+            <label style={S.label} htmlFor="profile-country">Country</label>
             <CountrySelect
+              id="profile-country"
               value={form.countryCode}
               onChange={(code) => handleChange('countryCode', code)}
             />
@@ -257,8 +271,10 @@ export default function ProfileSetupPage() {
 
           {/* Location */}
           <div style={S.field}>
-            <label style={S.label}>Location / Village</label>
+            <label style={S.label} htmlFor="profile-location">Location / Village</label>
             <input
+              id="profile-location"
+              name="locationName"
               style={S.input}
               value={form.locationName}
               onChange={(e) => handleChange('locationName', e.target.value)}
@@ -269,9 +285,11 @@ export default function ProfileSetupPage() {
 
           {/* Farm Size */}
           <div style={S.field}>
-            <label style={S.label}>Farm Size</label>
+            <label style={S.label} htmlFor="profile-land-size-value">Farm Size</label>
             <div style={S.sizeRow}>
               <input
+                id="profile-land-size-value"
+                name="landSizeValue"
                 style={{ ...S.input, flex: 1 }}
                 type="number"
                 min="0"
@@ -281,6 +299,9 @@ export default function ProfileSetupPage() {
                 placeholder="e.g. 5"
               />
               <select
+                id="profile-land-size-unit"
+                name="landSizeUnit"
+                aria-label="Land size unit"
                 style={S.unitSelect}
                 value={form.landSizeUnit}
                 onChange={(e) => handleChange('landSizeUnit', e.target.value)}

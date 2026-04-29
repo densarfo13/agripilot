@@ -344,11 +344,20 @@ export default function Sell() {
           <p style={S.formError} role="alert">{errMsg}</p>
         )}
 
+        {/* F21 a11y fix: every input has explicit id + name +
+            htmlFor on its label so the DevTools accessibility
+            audit stops flagging "form field without id/name"
+            and "no label associated with form field". The
+            implicit label nesting also still works for screen
+            readers — explicit htmlFor is just additionally
+            robust. */}
         <form onSubmit={handleSubmit} style={S.form} noValidate>
-          <label style={S.label}>
+          <label style={S.label} htmlFor="sell-crop">
             {tSafe('market.crop', 'Crop')}
             <input
               type="text"
+              id="sell-crop"
+              name="crop"
               value={crop}
               onChange={(e) => setCrop(e.target.value)}
               placeholder="e.g. maize"
@@ -359,10 +368,12 @@ export default function Sell() {
           </label>
 
           <div style={S.row}>
-            <label style={{ ...S.label, flex: 2 }}>
+            <label style={{ ...S.label, flex: 2 }} htmlFor="sell-qty">
               {tSafe('market.quantity', 'Quantity')}
               <input
                 type="number"
+                id="sell-qty"
+                name="quantity"
                 min="0"
                 step="0.5"
                 value={quantity}
@@ -373,9 +384,11 @@ export default function Sell() {
                 required
               />
             </label>
-            <label style={{ ...S.label, flex: 1 }}>
+            <label style={{ ...S.label, flex: 1 }} htmlFor="sell-unit">
               {tSafe('market.unit', 'Unit')}
               <select
+                id="sell-unit"
+                name="unit"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 style={S.input}
@@ -388,10 +401,12 @@ export default function Sell() {
             </label>
           </div>
 
-          <label style={S.label}>
+          <label style={S.label} htmlFor="sell-ready-date">
             {tSafe('market.readyDate', 'Ready date')}
             <input
               type="date"
+              id="sell-ready-date"
+              name="readyDate"
               value={readyDate}
               onChange={(e) => setReadyDate(e.target.value)}
               style={S.input}
@@ -399,10 +414,12 @@ export default function Sell() {
             />
           </label>
 
-          <label style={S.label}>
+          <label style={S.label} htmlFor="sell-price">
             {tSafe('market.priceRange', 'Price range (optional)')}
             <input
               type="text"
+              id="sell-price"
+              name="priceRange"
               value={priceRange}
               onChange={(e) => setPriceRange(e.target.value)}
               placeholder="e.g. 250–300 GHS / kg"
@@ -414,10 +431,12 @@ export default function Sell() {
           {/* Optional photo — boosts verification level
               from 2 → 3 when paired with location. The
               listing still succeeds without one. */}
-          <label style={S.label}>
+          <label style={S.label} htmlFor="sell-photo">
             {tSafe('market.photoOptional', 'Photo of produce (optional)')}
             <input
               type="file"
+              id="sell-photo"
+              name="photo"
               accept="image/*"
               capture="environment"
               onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
