@@ -182,13 +182,28 @@ export default function FarmerDashboardPage() {
           return;
         }
 
-        // 404 — user is authenticated but has no farmer row. Don't
-        // hang on "Loading" and don't show the error card either —
-        // bounce them to onboarding/profile setup.
+        // 404 — user is authenticated but has no farmer row.
+        // The previous version only flipped `showOnboarding=true`,
+        // but the in-page OnboardingWizard ALSO requires
+        // `isApproved` (registrationStatus === 'approved'),
+        // which is exactly the state a brand-new account does
+        // NOT have. The result was a permanent "Loading your
+        // account status…" dead-end. Now we actually navigate
+        // the user to the dedicated profile-setup route, which
+        // can run without an approved registration row.
         if (status === 404) {
           // eslint-disable-next-line no-console
-          console.log('[BOOT] farmer missing — routing to onboarding');
+          console.log('[BOOT] farmer missing — routing to /profile/setup');
+          // Belt-and-braces: still set the in-page flag in case
+          // the user lands on /profile/setup and bounces back
+          // to /dashboard before the navigate resolves.
           setShowOnboarding(true);
+          try {
+            navigate('/profile/setup', {
+              replace: true,
+              state: { reason: 'no_farmer_profile' },
+            });
+          } catch { /* navigate may throw inside an unmount race; safe to swallow */ }
           return;
         }
 
@@ -239,9 +254,19 @@ export default function FarmerDashboardPage() {
         try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(farmer)); }
         catch { /* quota */ }
       } else {
+        // 200 OK but empty payload — same dead-end as the
+        // 404 branch above. Route the user to /profile/setup
+        // so they can create their farmer row.
         // eslint-disable-next-line no-console
-        console.log('[BOOT] farmer missing');
+        console.log('[BOOT] farmer missing (empty payload) — routing to /profile/setup');
         setShowOnboarding(true);
+        try {
+          navigate('/profile/setup', {
+            replace: true,
+            state: { reason: 'no_farmer_profile' },
+          });
+        } catch { /* swallow unmount race */ }
+        return;
       }
 
       // ─── Farms (side-effect: onboarding gate) ────────────────
