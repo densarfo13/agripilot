@@ -33,6 +33,9 @@
 
 import { safeParse } from '../utils/safeParse.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import {
+  addNotification, NOTIFICATION_TYPES,
+} from '../notifications/notificationStore.js';
 
 export const STORAGE_KEYS = Object.freeze({
   PROGRAMS:   'farroway_programs',
@@ -292,6 +295,24 @@ export function createDeliveries(program, farmers) {
       total:     targets.length,
     });
   } catch { /* ignore */ }
+
+  // v3 Notification System: fire a PROGRAM notification
+  // PER newly-delivered farmer. Dedupe key = the
+  // delivery id so a re-run of createDeliveries against
+  // the same target set doesn't double-write.
+  try {
+    for (const dlv of out) {
+      addNotification({
+        userId:    String(dlv.farmerId),
+        type:      NOTIFICATION_TYPES.PROGRAM,
+        title:     program.title || 'New program',
+        message:   program.message
+                     ? String(program.message).slice(0, 140)
+                     : `A new ${program.type || 'program'} is available for you.`,
+        dedupeKey: `program:${dlv.id}`,
+      });
+    }
+  } catch { /* never block on notifications */ }
 
   return out;
 }

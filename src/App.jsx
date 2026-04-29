@@ -77,6 +77,10 @@ const CreateProgram  = lazy(() => import('./pages/admin/CreateProgram.jsx'));
 // 'agent' role. Local-first onboarding flow with retry sync.
 const AgentDashboard = lazy(() => import('./pages/AgentDashboard.jsx'));
 
+// v3 Notification System — full-page list of recent
+// notifications across TASK / FUNDING / BUYER / PROGRAM.
+const Notifications  = lazy(() => import('./pages/Notifications.jsx'));
+
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
 const V2Register = lazy(() => import('./pages/Register.jsx'));
@@ -626,6 +630,14 @@ export default function App() {
                        <AgentDashboard />
                      </RoleRoute>
                    } />
+
+            {/* v3 Notification System — full list. The
+                NotificationBell popover is mounted on the
+                farmer Dashboard; this is the deep-link
+                target for "View all". Auth-only via the
+                surrounding V2ProtectedLayout. */}
+            <Route path="/notifications"
+                   element={<Notifications />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
             <Route path="/farmer/listings" element={<MyListingsPage />} />
             <Route path="/farmer/listings/new" element={<CreateListingPage />} />

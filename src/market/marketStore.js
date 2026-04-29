@@ -33,6 +33,9 @@
 
 import { safeParse } from '../utils/safeParse.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import {
+  addNotification, NOTIFICATION_TYPES,
+} from '../notifications/notificationStore.js';
 
 export const STORAGE_KEYS = Object.freeze({
   LISTINGS:  'farroway_market_listings',
@@ -258,6 +261,31 @@ export function saveBuyerInterest(interest) {
       hasEmail:   !!stored.buyerEmail,
     });
   } catch { /* ignore */ }
+
+  // v3 Notification System: fire a BUYER notification for
+  // the LISTING OWNER (the farmer). Looks the listing up
+  // locally to find farmerId. Skips silently when the
+  // listing isn't on this device (cross-device sync is a
+  // future feature). Dedupe key = the interest id so a
+  // double-tap can't write twice.
+  try {
+    const owner = (function _findFarmerId(listingId) {
+      const all = _read(STORAGE_KEYS.LISTINGS);
+      const l = all.find((r) => r && r.id === listingId);
+      return l && l.farmerId ? String(l.farmerId) : null;
+    })(stored.listingId);
+    if (owner) {
+      addNotification({
+        userId:    owner,
+        type:      NOTIFICATION_TYPES.BUYER,
+        title:     'New buyer interest',
+        message:   stored.buyerName
+                     ? `${stored.buyerName} is interested in your listing.`
+                     : 'A buyer is interested in your produce.',
+        dedupeKey: `buyer:${stored.id}`,
+      });
+    }
+  } catch { /* never block on notifications */ }
 
   return stored;
 }

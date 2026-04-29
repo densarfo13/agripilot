@@ -9366,6 +9366,23 @@ const T = {
   'agent.action.addFarmer':  { en: 'Added farmer',            fr: 'Agriculteur ajouté',   sw: 'Mkulima ameongezwa',    ha: 'An ƙara manomi',          tw: 'Wɔde okuafoɔ akaa ho',   hi: 'किसान जोड़ा गया' },
   'agent.action.updateFarm': { en: 'Updated farm',            fr: 'Ferme mise à jour',    sw: 'Shamba limesasishwa',   ha: 'An sabunta gona',         tw: 'Wɔasakyera afuo',         hi: 'खेत अद्यतन किया गया' },
   'agent.action.logVisit':   { en: 'Logged visit',            fr: 'Visite enregistrée',   sw: 'Ziara imerekodiwa',     ha: 'An rubuta ziyara',        tw: 'Wɔakyerɛw nsra',          hi: 'यात्रा दर्ज की गई' },
+
+  // ─── Notification System (v3 merge) ───────────────────────
+  'notifications.aria':         { en: 'Open notifications',     fr: 'Ouvrir les notifications', sw: 'Fungua arifa',          ha: 'Buɗe sanarwa',           tw: 'Bue nkrabea',           hi: 'सूचनाएँ खोलें' },
+  'notifications.title':        { en: 'Notifications',          fr: 'Notifications',        sw: 'Arifa',                 ha: 'Sanarwa',                tw: 'Nkrabea',               hi: 'सूचनाएँ' },
+  'notifications.pageTitle':    { en: 'Notifications',          fr: 'Notifications',        sw: 'Arifa',                 ha: 'Sanarwa',                tw: 'Nkrabea',               hi: 'सूचनाएँ' },
+  'notifications.pageLead':     { en: 'The latest updates from your tasks, programs, funding matches, and buyer interest.', fr: 'Les dernières mises à jour de vos tâches, programmes, opportunités de financement et de l\'intérêt des acheteurs.', sw: 'Sasisho mpya kutoka kwa kazi, programu, ulinganifu wa ufadhili, na maslahi ya wanunuzi.', ha: 'Sabbin sabuntawa daga ayyukanka, shirye-shirye, daidaitawar tallafi, da sha\'awar masu siyayya.', tw: 'Nsɛm a aba seesei a ɛfa w\'adwuma, nhyehyɛeɛ, sika hokwan, ne adetɔfoɔ anidasoɔ ho.', hi: 'आपके कार्यों, कार्यक्रमों, फंडिंग मैच और खरीदार रुचि से नवीनतम अपडेट।' },
+  'notifications.markAll':      { en: 'Mark all read',          fr: 'Tout marquer lu',      sw: 'Weka alama zote zimesomwa', ha: 'Sanya alama duka an karanta', tw: 'Yɛ ne nyinaa sɛ wɔakenkan', hi: 'सभी पढ़े के रूप में चिह्नित करें' },
+  'notifications.empty':        { en: 'No notifications yet.',  fr: 'Aucune notification pour l\'instant.', sw: 'Hakuna arifa bado.',  ha: 'Babu sanarwa tukuna.', tw: 'Nkrabea biara nni hɔ ɛnnɛ.', hi: 'अभी तक कोई सूचना नहीं।' },
+  'notifications.emptyHint':    { en: 'New tasks, funding matches, buyer interest, and NGO programs will appear here.', fr: 'Les nouvelles tâches, les opportunités de financement, l\'intérêt des acheteurs et les programmes des ONG apparaîtront ici.', sw: 'Kazi mpya, ulinganifu wa ufadhili, maslahi ya wanunuzi, na programu za NGO zitaonekana hapa.', ha: 'Sabbin ayyuka, daidaitawar tallafi, sha\'awar masu siyayya, da shirye-shiryen NGO za su bayyana a nan.', tw: 'Adwuma foforɔ, sika hokwan, adetɔfoɔ anidasoɔ, ne NGO nhyehyɛeɛ bɛda adi wɔ ha.', hi: 'नए कार्य, फंडिंग मैच, खरीदार रुचि, और NGO कार्यक्रम यहाँ दिखाई देंगे।' },
+  'notifications.viewAll':      { en: 'View all',               fr: 'Tout voir',            sw: 'Ona zote',              ha: 'Duba duka',              tw: 'Hwɛ ne nyinaa',         hi: 'सभी देखें' },
+  'notifications.itemCount':    { en: 'items',                  fr: 'éléments',             sw: 'vipengee',              ha: 'abubuwa',                tw: 'nneɛma',                hi: 'आइटम' },
+
+  // Trigger copy used by the Dashboard
+  'notifications.taskTitle':    { en: 'New task ready',         fr: 'Nouvelle tâche prête', sw: 'Kazi mpya tayari',     ha: 'Sabon aiki a shirye',     tw: 'Adwuma foforɔ asiesie',  hi: 'नया कार्य तैयार' },
+  'notifications.taskFallback': { en: 'A new task is waiting on your home screen.', fr: 'Une nouvelle tâche vous attend sur l\'écran d\'accueil.', sw: 'Kazi mpya inakusubiri kwenye skrini yako ya mwanzo.', ha: 'Sabon aiki yana jiranka a allon farko.', tw: 'Adwuma foforɔ retwɛn wo wɔ wo home screen so.', hi: 'आपकी होम स्क्रीन पर एक नया कार्य प्रतीक्षारत है।' },
+  'notifications.fundingTitle': { en: 'Funding match available', fr: 'Opportunité de financement disponible', sw: 'Ufadhili unaolingana unapatikana', ha: 'Daidaitawar tallafi tana samuwa', tw: 'Sika hokwan a ɛfata wɔ hɔ', hi: 'फंडिंग मिलान उपलब्ध' },
+  'notifications.fundingFallback': { en: 'A program may support your farm — check requirements.', fr: 'Un programme pourrait soutenir votre ferme — vérifiez les conditions.', sw: 'Programu inaweza kusaidia shamba lako — angalia mahitaji.', ha: 'Shiri zai iya tallafa wa gonarka — duba sharudda.', tw: 'Nhyehyɛeɛ bi bɛtumi aboa w\'afuo — hwehwɛ ɔhwɛhwɛ.', hi: 'एक कार्यक्रम आपके खेत का समर्थन कर सकता है — आवश्यकताएँ जाँचें।' },
 };
 
 export default T;

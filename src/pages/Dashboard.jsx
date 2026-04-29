@@ -46,6 +46,10 @@ import {
   getProgramsForFarmer, markOpened, markActed,
 } from '../programs/programStore.js';
 import ProgramCard from '../components/farmer/ProgramCard.jsx';
+import NotificationBell from '../components/NotificationBell.jsx';
+import {
+  addNotification, NOTIFICATION_TYPES,
+} from '../notifications/notificationStore.js';
 import ActionFeedbackBanner from '../components/ActionFeedbackBanner.jsx';
 import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
@@ -110,6 +114,55 @@ export default function Dashboard() {
   // change so the Today cards re-read without forcing a
   // page reload.
   const [programTick, setProgramTick] = useState(0);
+
+  // v3 Notification System: fire deduped notifications
+  // when the loop produces a new task / matched funding /
+  // delivered program. The store handles dedupe per
+  // (userId, dedupeKey) so a re-render or refresh never
+  // double-writes.
+  const _userId = user?.sub
+                || loop?.profile?.userId
+                || loop?.profile?.farmerId
+                || null;
+
+  useEffect(() => {
+    const t = loop.primaryTask;
+    if (!t || !t.id || !_userId) return;
+    addNotification({
+      userId:    _userId,
+      type:      NOTIFICATION_TYPES.TASK,
+      title:     tSafe('notifications.taskTitle', 'New task ready'),
+      message:   t.title || tSafe('notifications.taskFallback',
+                  'A new task is waiting on your home screen.'),
+      dedupeKey: `task:${t.id}`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loop.primaryTask?.id, _userId]);
+
+  useEffect(() => {
+    if (!_userId || !loop.profile) return;
+    let matches = [];
+    try {
+      matches = matchFundingForFarm(
+        loop.profile,
+        getActiveFundingOpportunities(),
+      );
+    } catch { matches = []; }
+    if (!matches.length) return;
+    const top = matches[0];
+    if (!top || !top.opportunity || !top.opportunity.id) return;
+    addNotification({
+      userId:    _userId,
+      type:      NOTIFICATION_TYPES.FUNDING,
+      title:     tSafe('notifications.fundingTitle',
+                  'Funding match available'),
+      message:   top.opportunity.title
+                  || tSafe('notifications.fundingFallback',
+                    'A program may support your farm — check requirements.'),
+      dedupeKey: `funding:${top.opportunity.id}`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_userId, loop.profile?.region, loop.profile?.cropType]);
   // Reset whenever a NEW task is completed so the chip can
   // re-appear for the next one. Keying on the task id so
   // the same id doesn't reset the user's prior choice.
@@ -448,6 +501,14 @@ export default function Dashboard() {
   return (
     <div style={S.page}>
       <div style={S.container}>
+        {/* v3 Notification System: bell + unread badge.
+            Sits in the top-right of the standard surface
+            so it's reachable without disrupting the
+            FarmerHeader composition. Tap → popover →
+            tap row → markAsRead + navigate. */}
+        <div style={S.notifyBar} data-testid="home-notify-bar">
+          <NotificationBell userId={_userId} testId="home-bell" />
+        </div>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
         {weatherLine}
 
@@ -783,6 +844,11 @@ const S = {
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
     color: '#EAF2FF',
     padding: '0.75rem 0.75rem 1rem',
+  },
+  notifyBar: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: '0.4rem',
   },
   scanEntry: {
     display: 'flex',
