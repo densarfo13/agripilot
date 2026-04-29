@@ -9687,6 +9687,10 @@ const T = {
   'farm.suggest.listProduceCtx':   { en: 'List produce when your crop is ready for buyers.', fr: 'Listez les produits quand prêts pour les acheteurs.', sw: 'Orodhesha mazao yakiwa tayari.', ha: 'Jera amfanin gona idan a shirye don masu siye.', tw: 'Tɔn nnɔbae bere a w\'aduane akrado ma aguafoɔ.', hi: 'तैयार होने पर खरीदारों के लिए उपज सूचीबद्ध करें।' },
   'farm.suggest.checkFundingCtx':  { en: 'Check funding opportunities based on your crop and region.', fr: 'Voir les financements adaptés à votre culture et région.', sw: 'Angalia fursa za ufadhili kulingana na zao na eneo.', ha: 'Duba damarmakin tallafi bisa shuka da yankinka.', tw: 'Hwɛ sika boa akwannya a ɛfata w\'aduane ne wo mantam.', hi: 'फसल और क्षेत्र के आधार पर फंडिंग देखें।' },
   'farm.suggest.exploreFunding':   { en: 'Explore funding opportunities for your farm.', fr: 'Explorez les financements disponibles.', sw: 'Chunguza fursa za ufadhili.',  ha: 'Bincika damarmakin tallafi.',         tw: 'Hwehwɛ sika boa akwannya.',     hi: 'अपने खेत के लिए फंडिंग देखें।' },
+  // Smart-actions extras (spec rules — verification ≥ 2 funding
+  // eligibility nudge + zero-task-day engagement nudge).
+  'farm.suggest.fundingEligible':  { en: 'You qualify to explore funding opportunities.', fr: 'Vous pouvez explorer les financements.',           sw: 'Unastahili kuchunguza fursa za ufadhili.', ha: 'Kuna cancantar bincika damar tallafi.',  tw: 'Wofata sɛ wohwehwɛ sika boa akwannya.', hi: 'आप फंडिंग अवसर देख सकते हैं।' },
+  'farm.suggest.engagementZeroTasks': { en: 'Open today\u2019s tasks and stay on track.', fr: 'Ouvrez les tâches du jour et restez sur la bonne voie.', sw: 'Fungua kazi za leo na endelea vizuri.',     ha: 'Buɗe ayyukan yau ka ci gaba.',           tw: 'Bue nnɛ adwuma na kɔ so.',                  hi: 'आज के कार्य खोलें और सही दिशा में रहें।' },
 };
 
 export default T;

@@ -262,6 +262,9 @@ export default function MyFarmPage() {
             tasks={todayTasks}
             listings={farmListings}
             fundingMatches={fundingMatches}
+            verification={farm?.verification
+              || { level: Number(farm?.verificationLevel) || 0 }}
+            progress={{ tasksToday: (todayTasks || []).length }}
           />
           <QuickActionsCard />
           <FarmRecordsCard farm={farm} />

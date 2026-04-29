@@ -107,7 +107,18 @@ function _buildSuggestions(farm, lang) {
   return out.slice(0, 3);
 }
 
-export default function SmartSuggestionsCard({ farm, lang = 'en', tasks = null, listings = null, fundingMatches = null }) {
+export default function SmartSuggestionsCard({
+  farm,
+  lang = 'en',
+  tasks = null,
+  listings = null,
+  fundingMatches = null,
+  // Optional extras forwarded to the helper's verification +
+  // progress rules. Existing callers don't have to pass them —
+  // the rules are guarded against missing inputs.
+  verification = null,
+  progress = null,
+}) {
   useTranslation();
   const navigate = useNavigate();
   if (!farm) return null;
@@ -118,7 +129,10 @@ export default function SmartSuggestionsCard({ farm, lang = 'en', tasks = null, 
   // signal-based rules in `_buildSuggestions` (harvest-near
   // crop-name nudge, weather-risk nudge) stay live — both
   // sources merge here, sorted by priority, capped at 3.
-  const ctxSuggestions = getSmartSuggestions(farm, tasks, listings, fundingMatches)
+  const ctxSuggestions = getSmartSuggestions(
+    farm, tasks, listings, fundingMatches,
+    { verification, progress },
+  )
     .map((s) => ({
       key:   s.key,
       tone:  'info',

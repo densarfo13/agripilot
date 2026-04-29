@@ -155,9 +155,18 @@ export function getFarmHealth(farm, weather, risks) {
  * @param {object[]|null} tasks
  * @param {object[]|null} listings        marketplace listings (any state)
  * @param {object[]|null} fundingMatches  matched funding opportunities
+ * @param {object|null} [extras]          optional extra signals
+ * @param {object} [extras.verification]  { level: 0..3 } — when level
+ *                                         >= 2, surface a funding-
+ *                                         eligibility nudge per the
+ *                                         "smart actions" spec
+ * @param {object} [extras.progress]      { tasksToday: number } — when
+ *                                         the farmer's daily task list
+ *                                         shows zero, surface an
+ *                                         engagement nudge
  * @returns {Array<{ key: string, fallback: string, route: string|null, priority: number }>}
  */
-export function getSmartSuggestions(farm, tasks, listings, fundingMatches) {
+export function getSmartSuggestions(farm, tasks, listings, fundingMatches, extras = null) {
   const out = [];
   try {
     const safeFarm = farm && typeof farm === 'object' ? farm : null;
@@ -172,6 +181,11 @@ export function getSmartSuggestions(farm, tasks, listings, fundingMatches) {
                      || READY_STAGES.has(stage);
     const hasListings = Array.isArray(listings) && listings.length > 0;
     const hasFunding = Array.isArray(fundingMatches) && fundingMatches.length > 0;
+    // Optional signals. Defensive on every nested field.
+    const verifLevel  = Number(extras?.verification?.level);
+    const tasksToday  = Number(extras?.progress?.tasksToday);
+    const verifReady  = Number.isFinite(verifLevel) && verifLevel >= 2;
+    const zeroTaskDay = Number.isFinite(tasksToday) && tasksToday === 0;
 
     // Rule priorities — lower = higher priority. Sort + slice(0, 3).
 
@@ -220,6 +234,33 @@ export function getSmartSuggestions(farm, tasks, listings, fundingMatches) {
         fallback: 'Check funding opportunities based on your crop and region.',
         route:    '/opportunities',
         priority: 3,
+      });
+    }
+
+    // 4b) Verification-driven funding eligibility nudge (extras
+    //     spec — fires when verification.level >= 2 AND no
+    //     more-specific funding nudge is already queued so the
+    //     farmer doesn't see two funding lines in a row).
+    if (verifReady && !hasFunding) {
+      out.push({
+        key:      'farm.suggest.fundingEligible',
+        fallback: 'You qualify to explore funding opportunities.',
+        route:    '/opportunities',
+        priority: 3,
+      });
+    }
+
+    // 4c) Engagement nudge for a zero-task day. Fires only when
+    //     no pending task is queued (taskNotDone is the priority-1
+    //     rule above). The two are mutually exclusive on data:
+    //     taskNotDone implies tasksToday > 0; tasksToday === 0
+    //     implies no task to complete.
+    if (zeroTaskDay && !taskNotDone) {
+      out.push({
+        key:      'farm.suggest.engagementZeroTasks',
+        fallback: 'Open today\u2019s tasks and stay on track.',
+        route:    '/tasks',
+        priority: 2,
       });
     }
 
