@@ -178,7 +178,10 @@ export default function NGOOverview() {
         </Section>
 
         <div style={S.footerRow}>
-          <button style={S.linkBtn} onClick={() => navigate('/admin/farmers')}>
+          {/* Browse page lives at /farmers (STAFF_ROLES gate),
+              not /admin/farmers — the latter was a stale route
+              that didn't exist in App.jsx and 404'd on click. */}
+          <button style={S.linkBtn} onClick={() => navigate('/farmers')}>
             {t('ngo.openFarmers')}
           </button>
         </div>
