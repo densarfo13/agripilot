@@ -326,7 +326,15 @@ export default function AllTasksPage() {
         </div>
       )}
 
-      {/* ═══ COMPLETION CARD (after task completion) ═══ */}
+      {/* ═══ COMPLETION CARD (after task completion) ═══
+          CompletionCard already renders the spec's success
+          surface (success check, success title, outcome,
+          offline badge, progress signal, next-task preview,
+          Continue, Later). The dedicated "View progress"
+          link below it routes the farmer to the Progress tab
+          per the reward-loop spec — kept as a separate
+          element so the shared component stays untouched
+          (BasicFarmerHome reuses it). */}
       {taskCompletionState && (
         <div style={S.sections}>
           <CompletionCard
@@ -336,6 +344,15 @@ export default function AllTasksPage() {
             onLater={handleCompletionLater}
             variant="standard"
           />
+          <button
+            type="button"
+            onClick={() => navigate('/progress')}
+            style={S.viewProgressLink}
+            data-testid="tasks-view-progress"
+          >
+            {tSafe('tasks.viewProgress', 'View progress')}
+            <span aria-hidden="true" style={{ marginLeft: 6 }}>→</span>
+          </button>
         </div>
       )}
 
@@ -553,6 +570,28 @@ const S = {
     cursor: 'pointer',
     minHeight: 48,
     boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+  },
+
+  // Reward-loop spec (Apr 2026): secondary "View progress"
+  // link rendered below the CompletionCard. Ghost styling so
+  // it doesn't compete with the Continue / Later CTAs already
+  // inside the card.
+  viewProgressLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.78)',
+    borderRadius: 10,
+    padding: '0.6rem 1rem',
+    marginTop: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 40,
   },
   header: {
     display: 'flex',

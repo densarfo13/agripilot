@@ -5524,6 +5524,11 @@ const T = {
   'tasks.completing': {
     en: 'Completing\u2026', fr: 'Termine\u2026', sw: 'Inakamilisha\u2026', ha: 'Ana kammalawa\u2026', tw: 'Ɛrewie\u2026', hi: 'पूरा कर रहे हैं\u2026',
   },
+  // Reward-loop spec (Apr 2026): secondary link below the
+  // CompletionCard that takes the farmer straight to Progress.
+  'tasks.viewProgress': {
+    en: 'View progress', fr: 'Voir la progression', sw: 'Tazama maendeleo', ha: 'Duba ci gaba', tw: 'Hwɛ nko\u00FE so', hi: 'प्रगति देखें',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  FARMER ID
