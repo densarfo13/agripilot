@@ -12,11 +12,14 @@
     <meta name="theme-color" content="#0F172A" />
 
     <!-- Standard favicon / icons.
-         Modern browsers pick the SVG (vector, scales perfectly,
-         single small file). Older / iOS Safari fall through to
-         the rasterised PNG. -->
+         The SVG is the single source of truth — vector, scales
+         perfectly, served by the unconditional static mount in
+         server/src/app.js so it cannot 404 even on a stale
+         deploy. The previous PNG <link rel="icon"> was removed
+         because some deploys don't have the rasterised file
+         and Chrome was logging a 404 in the network panel
+         even though the SVG worked. -->
     <link rel="icon" type="image/svg+xml" href="/icons/farroway-mark.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <!-- Pinned-tab / mask icon for Safari macOS (renders as a
          single-colour silhouette using the navy brand colour). -->
     <link rel="mask-icon" href="/icons/farroway-mark.svg" color="#0B1220" />
