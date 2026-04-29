@@ -56,10 +56,22 @@ export function resolveApiBase({
   return raw.replace(/\/+$/, '');
 }
 
-let _sameOriginWarned = false;
+// F6 fix (interactive smoke test): the smoke-test console showed
+// this warning firing ~8 times on initial page load. Module-local
+// `let _sameOriginWarned` works for one ES module evaluation, but
+// Vite dev HMR re-evaluates modules on touch and resets the flag,
+// letting the warning re-fire on every re-eval. Persist the flag
+// on globalThis so it survives HMR boundaries within a single
+// browser tab — the warning now fires AT MOST once per page load.
+const _GLOBAL_KEY = '__farroway_apiBaseSameOriginWarned';
+
 function _maybeWarnSameOrigin() {
-  if (_sameOriginWarned) return;
-  _sameOriginWarned = true;
+  try {
+    const root = (typeof globalThis !== 'undefined') ? globalThis
+               : (typeof window     !== 'undefined') ? window : null;
+    if (root && root[_GLOBAL_KEY]) return;
+    if (root) root[_GLOBAL_KEY] = true;
+  } catch { /* ignore — globalThis access can throw under strict CSP */ }
   if (typeof console === 'undefined' || !console.warn) return;
   try {
     console.warn(
