@@ -30,7 +30,10 @@ import { STAGE_KEYS } from '../utils/cropStages.js';
 // wants the 3-state code). MyFarm itself no longer renders a
 // status pill — Today's Action card carries the only progress
 // indicator on this page.
-import QuickActionsCard from '../components/farm/QuickActionsCard.jsx';
+// QuickActionsCard removed from My Farm in the screen-role
+// refactor — Sell + Funding flows now live exclusively in
+// their bottom-nav tabs. The component itself is still
+// exported for any other surface that wants it.
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import NextBestActionCard from '../components/farm/NextBestActionCard.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
@@ -250,13 +253,14 @@ export default function MyFarmPage() {
         </section>
       )}
 
-      {/* ─── 5. Quick Actions (per spec §5, max 3) ──────────
-          QuickActionsCard now ships only 3 actions (Update Farm,
-          Sell Produce, View Funding). Scan Crop is hidden by
-          default since the spec gates it on "feature already
-          works" — a future toggle in QuickActionsCard can
-          re-enable it without touching this page. */}
-      {farm && <QuickActionsCard />}
+      {/* Screen-role refactor (Apr 2026): QuickActionsCard
+          removed from My Farm. The card surfaced Sell Produce
+          + View Funding which duplicated their dedicated
+          bottom-nav tabs. My Farm now owns farm-data
+          management only — the Edit Farm action lives in the
+          Farm Details card header above (single mutating
+          action on this screen). Scan crop is reachable from
+          Home; Sell + Funding from their bottom-nav tabs. */}
 
       {/* ─── 5. Compact Help row (per spec §5 polish) ───────
           Single line: "Need help?  Contact our team →".

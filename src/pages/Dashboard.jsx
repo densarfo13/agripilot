@@ -58,11 +58,13 @@ import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
 import RainfallForecastCard from '../components/RainfallForecastCard.jsx';
 import MarketSignalCard from '../components/MarketSignalCard.jsx';
-// Lucide-style icons for the spec-polished 2x2 quick-actions
-// grid. Same hand-rolled SVG family used elsewhere in the app
-// (no extra bundle weight from importing the npm package).
+// Lucide-style icons for the Home quick-checks grid (Scan
+// crop + Check land). ShoppingCart + Wallet imports dropped
+// alongside the Mark-ready + Funding tiles in the screen-
+// role refactor — Sell + Funding flows now live exclusively
+// in their dedicated bottom-nav tabs.
 import {
-  Camera, Sprout, ShoppingCart, Wallet,
+  Camera, Sprout,
 } from '../components/icons/lucide.jsx';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -779,12 +781,14 @@ export default function Dashboard() {
             />
           ))}
 
-        {/* Spec polish (Apr 2026): four entry rows compressed
-            into a 2x2 grid so all are visible without
-            excessive scroll. Same routes, same gating
-            (funding only renders when match count > 0; the
-            grid auto-fills the free slot). Lucide icons
-            replace the prior emoji glyphs per spec. */}
+        {/* Screen-role refactor (Apr 2026): Home owns daily-
+            action overview only. Funding + Mark-ready tiles
+            removed — those flows live exclusively in the
+            Funding and Sell tabs (still in bottom nav). Home
+            keeps two quick farm checks: Scan crop + Check
+            land. Same Lucide icons, same routes, just two
+            tiles in a 2-column grid that now fits naturally
+            without crowding the primary CTA. */}
         {loop.profile && (
           <div style={S.quickGrid} data-testid="home-quick-actions">
             <button
@@ -819,46 +823,6 @@ export default function Dashboard() {
               <span style={S.quickTileHelper}>
                 {tSafe('home.quick.checkLand.helper',
                   'Quick farm check.')}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/sell')}
-              style={S.quickTile}
-              data-testid="home-sell-entry"
-            >
-              <span style={S.quickTileIcon} aria-hidden="true">
-                <ShoppingCart size={20} />
-              </span>
-              <span style={S.quickTileLabel}>
-                {tSafe('home.quick.markReady', 'Mark ready')}
-              </span>
-              <span style={S.quickTileHelper}>
-                {tSafe('home.quick.markReady.helper',
-                  'List produce for buyers.')}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/opportunities')}
-              style={{
-                ...S.quickTile,
-                ...(fundingMatchCount > 0 ? S.quickTileAccent : {}),
-              }}
-              data-testid="home-funding-entry"
-            >
-              <span style={S.quickTileIcon} aria-hidden="true">
-                <Wallet size={20} />
-              </span>
-              <span style={S.quickTileLabel}>
-                {tSafe('home.quick.funding', 'Funding')}
-              </span>
-              <span style={S.quickTileHelper}>
-                {fundingMatchCount > 0
-                  ? tSafe('home.quick.funding.match',
-                      'Match nearby.')
-                  : tSafe('home.quick.funding.helper',
-                      'Find support.')}
               </span>
             </button>
           </div>
