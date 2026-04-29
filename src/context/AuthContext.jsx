@@ -277,12 +277,27 @@ export function AuthProvider({ children }) {
     setAuthLoading(false);
   }
 
-  // Fix 7 — Inactivity auto-logout (10 min default). Active only
-  // while the farmer is logged in; tears down on logout/unmount.
-  // Runs purely on the client; SSR returns a no-op stop.
+  // Inactivity auto-logout — STAFF / NGO / agent roles only.
+  //
+  // Farmers explicitly stay logged in. The product contract is
+  // "log in once, stay logged in" — a 10-minute kiosk timeout
+  // is the wrong UX for someone whose only device is the
+  // farm phone they leave on a charger overnight. The
+  // long-lived refresh cookie (1 year, server/lib/cookies.js)
+  // backs this up so even a farmer who doesn't open the app
+  // for months stays signed in.
+  //
+  // For institutional roles (super_admin, institutional_admin,
+  // reviewer, field_officer, agent, investor_viewer) we KEEP
+  // the 10-min idle-logout because those accounts often run
+  // on shared NGO kiosks where farmer A could walk away from
+  // an open admin session and farmer B stumble onto it.
   useEffect(() => {
     if (!user) return undefined;
     if (user.isOfflineOnly) return undefined;     // offline session never times out
+    const role = String(user.role || '').toLowerCase();
+    const FARMER_LIKE = role === 'farmer' || role === '' || role === 'guest';
+    if (FARMER_LIKE) return undefined;            // farmers never time out
     const stop = startInactivityWatcher({
       onTimeout: () => { logout('inactivity').catch(() => {}); },
       timeoutMs: 10 * 60 * 1000,

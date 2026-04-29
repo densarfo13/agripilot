@@ -4,7 +4,7 @@ import prisma from '../lib/prisma.js';
 import { sendEmail } from '../lib/mailer.js';
 import { sha256 } from '../lib/hash.js';
 import { env } from '../lib/env.js';
-import { setAuthCookies, clearAuthCookies } from '../lib/cookies.js';
+import { setAuthCookies, clearAuthCookies, REFRESH_TTL_MS } from '../lib/cookies.js';
 import { writeAuditLog } from '../lib/audit.js';
 import { isDemoMode } from '../lib/demoMode.js';
 import {
@@ -51,7 +51,9 @@ async function createSessionAndCookies(req, res, user) {
       refreshTokenId,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: req.ip || null,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      // Match the cookie TTL exactly so the DB session row
+      // doesn't expire before the cookie does. Default 1y.
+      expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
     },
   });
 
@@ -338,7 +340,11 @@ router.post('/refresh', async (req, res) => {
         refreshTokenId: newRefreshTokenId,
         userAgent: req.headers['user-agent'] || null,
         ipAddress: req.ip || null,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        // Rolling refresh: every successful /refresh extends
+        // the DB session row by another full TTL (default 1y).
+        // A farmer who opens the app at least once a year
+        // never gets logged out.
+        expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
       },
     });
 

@@ -142,30 +142,60 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // Before hard logout, try V2 cookie refresh — admin users log in via V2
-      // cookies and access V1 API endpoints. If the access_token cookie expired,
-      // refreshing it may restore the session.
+      // Before hard logout, try a v2 cookie refresh. The
+      // refresh cookie is long-lived (1 year by default,
+      // see server/lib/cookies.js) so an active farmer
+      // almost always has a valid one. We try the refresh
+      // up to 2 times with a tiny back-off — a transient
+      // network blip should NEVER kick a farmer out.
       if (!config._refreshing) {
         config._refreshing = true;
-        try {
-          const refreshRes = await fetch(
-            `${API_BASE.replace('/api', '')}/api/v2/auth/refresh`,
-            { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' } },
-          );
-          config._refreshing = false;
-          if (refreshRes.ok) {
-            // Refresh succeeded — retry the original request
-            return api(config);
+        const refreshUrl = `${API_BASE.replace('/api', '')}/api/v2/auth/refresh`;
+        let refreshOk      = false;
+        let refreshHadResp = false;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            const refreshRes = await fetch(refreshUrl, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+            });
+            refreshHadResp = true;
+            if (refreshRes.ok) { refreshOk = true; break; }
+            // Definitive 401 from refresh = session truly
+            // invalid; no point retrying.
+            if (refreshRes.status === 401) break;
+          } catch {
+            // Network error (offline, DNS, CORS): wait a beat
+            // and retry. Don't logout on this.
+            await new Promise((r) => setTimeout(r, 400));
           }
-        } catch {
-          config._refreshing = false;
+        }
+        config._refreshing = false;
+
+        if (refreshOk) {
+          // Refresh succeeded — retry the original request.
+          return api(config);
+        }
+
+        // If the refresh attempt NEVER got a real HTTP
+        // response (pure network error), reject WITHOUT
+        // logging the user out. The page will surface a
+        // network error notice; the next call after
+        // reconnection refreshes successfully and the
+        // farmer stays signed in.
+        if (!refreshHadResp) {
+          error.isNetworkError = true;
+          return Promise.reject(error);
         }
       }
 
-      // Refresh failed or was already attempted — session is truly invalid.
-      // Always clear auth store, but ONLY redirect when we're not already
-      // on a public auth route — otherwise a 401 from /me on the login
-      // page itself would loop the browser back to /login forever.
+      // Refresh got a definitive 401 (or two attempts both
+      // failed with HTTP errors). Session is truly invalid.
+      // Clear the auth store + redirect, BUT only when we're
+      // not already on a public auth route — otherwise a 401
+      // from /me on /login would loop the browser back to
+      // /login forever.
       useAuthStore.getState().logout();
       try {
         const here = (typeof window !== 'undefined' && window.location)
