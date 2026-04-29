@@ -30,9 +30,17 @@
 import React, { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { getActiveFundingOpportunities, FUNDING_EVENTS }
   from '../funding/fundingStore.js';
 import { matchFundingForFarm } from '../funding/fundingMatcher.js';
+// Spec §3 (now un-deferred): My Applications data source.
+// fundingApplicationStore is the canonical store for buyer-side
+// interest records — read-only here; nothing on this page mutates
+// the store.
+import {
+  getFarmerInterests, INTEREST_STATUS,
+} from '../funding/fundingApplicationStore.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
@@ -51,6 +59,11 @@ const TYPE_LABELS = Object.freeze({
 
 export default function Opportunities() {
   const { profile, farms } = useProfile();
+  const { user } = useAuth() || {};
+  // Same pattern FundingOpportunityDetail uses to identify the
+  // current farmer — falls through gracefully when offline / no
+  // session (returns []).
+  const farmerId = user?.sub || profile?.userId || null;
 
   // Pick the active farm (same convention as Sell.jsx). The
   // matcher is tolerant of missing fields so we still get
@@ -64,6 +77,30 @@ export default function Opportunities() {
     const opps = getActiveFundingOpportunities();
     return matchFundingForFarm(activeFarm, opps);
   }, [activeFarm]);
+
+  // My Applications — join the farmer's stored interests to the
+  // opportunity title so we can render `{title} — {status}` rows
+  // without a network call. Re-runs only when the farmerId
+  // changes; status updates from elsewhere will surface on the
+  // next mount (acceptable for a read-only summary surface).
+  const myApplications = useMemo(() => {
+    if (!farmerId) return [];
+    let interests;
+    try { interests = getFarmerInterests(farmerId); }
+    catch { interests = []; }
+    if (!Array.isArray(interests) || interests.length === 0) return [];
+    const opps = getActiveFundingOpportunities() || [];
+    const byId = new Map(opps.map((o) => [o.id, o]));
+    return interests.map((i) => ({
+      id:           i.id,
+      opportunityId:i.opportunityId,
+      title:        byId.get(i.opportunityId)?.title
+                    || tSafe('funding.app.unknownOpportunity', 'Funding opportunity'),
+      status:       i.status || INTEREST_STATUS.INTERESTED,
+      updatedAt:    i.updatedAt || i.createdAt || 0,
+    })).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [farmerId]);
 
   // Fire FUNDING_OPPORTUNITY_VIEWED once + FUNDING_MATCH_SHOWN
   // once-per-match so ops can grep how many farmers saw what.
@@ -139,9 +176,74 @@ export default function Opportunities() {
             )}
           </>
         )}
+
+        {/* Spec §3: My Applications. Read-only join of stored
+            interests × active opportunities. Always renders a
+            section (with an empty-state line when there are no
+            applications) so the farmer sees the slot's intent. */}
+        <MyApplicationsSection items={myApplications} />
       </div>
     </main>
   );
+}
+
+/* ─── My Applications (read-only summary) ──────────── */
+
+function MyApplicationsSection({ items }) {
+  const list = Array.isArray(items) ? items : [];
+  return (
+    <section
+      style={S.otherSection}
+      data-testid="opportunities-my-applications"
+    >
+      <h2 style={S.otherTitle}>
+        {tSafe('funding.myApplications.title', 'My applications')}
+      </h2>
+      {list.length === 0 ? (
+        <div
+          style={appStyles.empty}
+          data-testid="opportunities-my-applications-empty"
+        >
+          {tSafe('funding.myApplications.empty', 'No applications yet')}
+        </div>
+      ) : (
+        <ul style={S.otherList}>
+          {list.map((a) => (
+            <li key={a.id}>
+              <Link
+                to={`/opportunities/${a.opportunityId}`}
+                style={appStyles.row}
+                data-testid={`opportunities-my-app-${a.id}`}
+              >
+                <span style={appStyles.label}>{a.title}</span>
+                <span style={appStyles.status} data-status={a.status}>
+                  {_statusLabel(a.status)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Map INTEREST_STATUS values to localised labels. Each status
+// gets a short, farmer-readable string. Keys live under
+// `funding.myApplications.status.*`.
+function _statusLabel(status) {
+  switch (status) {
+    case INTEREST_STATUS.INTERESTED:
+      return tSafe('funding.myApplications.status.interested',           'Interested');
+    case INTEREST_STATUS.ASSISTANCE_REQUESTED:
+      return tSafe('funding.myApplications.status.assistanceRequested',  'Help requested');
+    case INTEREST_STATUS.APPLIED:
+      return tSafe('funding.myApplications.status.applied',              'Applied');
+    case INTEREST_STATUS.CONTACTED:
+      return tSafe('funding.myApplications.status.contacted',            'Contacted');
+    default:
+      return tSafe('funding.myApplications.status.unknown',              'Pending');
+  }
 }
 
 /* ─── Priority card (top match) ────────────────────────
@@ -454,6 +556,49 @@ const rowStyles = {
   arrow: {
     color: 'rgba(255,255,255,0.5)',
     display: 'inline-flex',
+    flex: '0 0 auto',
+  },
+};
+
+// My Applications section — slim list rows + neutral empty state.
+const appStyles = {
+  empty: {
+    padding: '0.7rem 0.9rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 10,
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: '0.875rem',
+    fontStyle: 'italic',
+  },
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    padding: '0.7rem 0.9rem',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 10,
+    color: '#fff',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+  },
+  label: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  status: {
+    padding: '2px 8px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
     flex: '0 0 auto',
   },
 };
