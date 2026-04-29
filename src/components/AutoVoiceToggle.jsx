@@ -5,13 +5,19 @@ export default function AutoVoiceToggle() {
   const { autoVoice, setAutoVoice, language } = useAppPrefs();
 
   return (
+    // F21 follow-up: type="button" prevents accidental form
+    // submits when this lives inside a parent <form>; aria-pressed
+    // exposes the toggle state to assistive tech (the icon swap
+    // 🔊↔🔇 is the only visual signal otherwise).
     <button
+      type="button"
       onClick={() => setAutoVoice(!autoVoice)}
       style={{
         ...S.btn,
         ...(autoVoice ? S.btnActive : {}),
       }}
       aria-label={t(language, 'autoVoice')}
+      aria-pressed={autoVoice ? 'true' : 'false'}
     >
       {autoVoice ? '🔊' : '🔇'}
     </button>

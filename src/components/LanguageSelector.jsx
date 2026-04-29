@@ -14,7 +14,12 @@ export default function LanguageSelector() {
   const { language, setLanguage } = useAppPrefs();
 
   return (
+    // F21 follow-up: id + name added so DevTools accessibility
+    // audit's "form field should have an id or name" stops
+    // flagging this header control. aria-label was already present.
     <select
+      id="app-header-language"
+      name="appLanguage"
       className="form-select"
       value={language}
       onChange={(e) => setLanguage(e.target.value)}

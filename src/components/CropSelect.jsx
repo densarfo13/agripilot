@@ -207,6 +207,10 @@ export default function CropSelect({
             required={required}
             disabled={disabled}
             autoFocus
+            /* F21 follow-up: programmatic label so DevTools a11y
+               audit doesn't flag this control as unlabeled. */
+            name="customCrop"
+            aria-label="Custom crop name"
           />
         </div>
       ) : (
@@ -226,6 +230,12 @@ export default function CropSelect({
               placeholder={placeholder}
               autoFocus
               disabled={disabled}
+              /* F21 follow-up: search input gets aria-label so
+                 the dropdown's filter control is identifiable
+                 by assistive tech. */
+              name="cropSearch"
+              aria-label="Search crops"
+              autoComplete="off"
             />
           ) : (
             <span style={{ flex: 1, color: displayText ? '#FFFFFF' : '#71717A', fontSize: '0.9rem' }}>
@@ -234,7 +244,12 @@ export default function CropSelect({
           )}
           <span style={{ color: '#71717A', fontSize: '0.7rem', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}>▼</span>
           {required && (
+            /* Hidden validation-only input — not a real form
+               field. aria-hidden + name added so DevTools a11y
+               doesn't flag a control the user can't see anyway. */
             <input type="text" value={value || ''} required
+              name="cropRequired"
+              aria-hidden="true"
               style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
               tabIndex={-1} onChange={() => {}} />
           )}

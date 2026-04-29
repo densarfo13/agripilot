@@ -36,6 +36,13 @@ export default function CountrySelect({
   required,
   disabled,
   name,
+  // F21 follow-up: callers can now pass `id` so the parent
+  // <label htmlFor> resolves correctly. Forwarded to the
+  // <select> element. The internal search input gets a
+  // derived `${id}-search` id when id is provided, so both
+  // controls satisfy the DevTools a11y "form field needs id
+  // or name" check without colliding with each other.
+  id,
 }) {
   const [search, setSearch] = useState('');
 
@@ -74,6 +81,8 @@ export default function CountrySelect({
     <div style={wrapperStyle}>
       <input
         type="text"
+        id={id ? `${id}-search` : undefined}
+        name={id ? `${id}-search` : undefined}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search country…"
@@ -87,7 +96,9 @@ export default function CountrySelect({
         aria-label="Search country"
       />
       <select
-        name={name}
+        id={id}
+        name={name || (id ? id : undefined)}
+        aria-label="Country"
         className={className}
         style={{ minHeight: '48px', fontSize: '16px', padding: '0.5rem', ...selectStyle }}
         value={value}
