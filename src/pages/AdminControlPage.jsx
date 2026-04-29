@@ -257,37 +257,58 @@ function SystemOverview({ navigate }) {
 //  TAB 2: Region Configuration
 // ═══════════════════════════════════════════════════════
 function RegionConfig() {
-  const [configs, setConfigs] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState('KE');
-  const [season, setSeason] = useState(null);
-  const [crops, setCrops] = useState([]);
-  const [regions, setRegions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
 
-  const loadCountry = (code) => {
-    setSelectedCountry(code);
-    setLoading(true);
-    setLoadError('');
-    Promise.all([
-      api.get(`/region-config/${code}`),
-      api.get(`/region-config/${code}/season`),
-      api.get(`/region-config/${code}/crops`),
-      api.get(`/region-config/${code}/regions`),
-    ]).then(([cfgRes, sRes, cRes, rRes]) => {
-      setConfigs([cfgRes.data]);
-      setSeason(sRes.data);
-      setCrops(cRes.data);
-      setRegions(rRes.data);
-    }).catch(() => { setLoadError('Failed to load region config'); }).finally(() => setLoading(false));
-  };
-
-  useEffect(() => { loadCountry('KE'); }, []);
+  // Re-fetches whenever the country switcher flips. Combined
+  // fetcher returns the four endpoints' data as one object so
+  // retry refreshes them together.
+  const {
+    data, loading, error, errorType, retry: load,
+  } = useSafeData(
+    async () => {
+      const code = selectedCountry;
+      const [cfgRes, sRes, cRes, rRes] = await Promise.all([
+        api.get(`/region-config/${code}`),
+        api.get(`/region-config/${code}/season`),
+        api.get(`/region-config/${code}/crops`),
+        api.get(`/region-config/${code}/regions`),
+      ]);
+      return {
+        cfg:     cfgRes.data,
+        season:  sRes.data,
+        crops:   cRes.data,
+        regions: rRes.data,
+      };
+    },
+    { fallbackData: null, deps: [selectedCountry] },
+  );
+  const loadCountry = (code) => setSelectedCountry(code);
 
   if (loading) return <div className="loading">Loading region config...</div>;
-  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => loadCountry(selectedCountry)}>Retry</button></div>;
+  if (error) {
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="region-config-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="region-config-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={load} testId="region-config-error" />
+        ) : (
+          <ErrorState
+            message="We could not load region config. Try again in a moment."
+            onRetry={load}
+            testId="region-config-error"
+          />
+        )}
+      </div>
+    );
+  }
 
-  const cfg = configs[0] || {};
+  const cfg     = (data && data.cfg)     || {};
+  const season  = (data && data.season)  || null;
+  const crops   = (data && data.crops)   || [];
+  const regions = (data && data.regions) || [];
 
   return (
     <>
@@ -385,33 +406,54 @@ function RegionConfig() {
 //  TAB 3: Demand Intelligence
 // ═══════════════════════════════════════════════════════
 function DemandIntelligence() {
-  const [demandKE, setDemandKE] = useState(null);
-  const [demandTZ, setDemandTZ] = useState(null);
-  const [cropDemand, setCropDemand] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-
-  const load = () => {
-    setLoading(true);
-    setLoadError('');
-    Promise.all([
-      api.get('/buyer-interest/demand/summary?country=KE'),
-      api.get('/buyer-interest/demand/summary?country=TZ'),
-      // Load per-crop for common crops
-      ...['maize', 'wheat', 'rice', 'coffee', 'tea', 'cashew'].map(c =>
-        api.get(`/buyer-interest/demand/summary?cropType=${c}`).catch(() => ({ data: { cropType: c, totalInterests: 0 } }))
-      ),
-    ]).then(([keRes, tzRes, ...cropResults]) => {
-      setDemandKE(keRes.data);
-      setDemandTZ(tzRes.data);
-      setCropDemand(cropResults.map(r => r.data).filter(d => d.totalInterests > 0));
-    }).catch(() => { setLoadError('Failed to load demand data'); }).finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
+  // Country totals (KE/TZ) bubble errors; per-crop fetches keep
+  // their per-call .catch so a missing crop endpoint doesn't
+  // blank the whole panel.
+  const {
+    data, loading, error, errorType, retry: load,
+  } = useSafeData(
+    async () => {
+      const [keRes, tzRes, ...cropResults] = await Promise.all([
+        api.get('/buyer-interest/demand/summary?country=KE'),
+        api.get('/buyer-interest/demand/summary?country=TZ'),
+        ...['maize', 'wheat', 'rice', 'coffee', 'tea', 'cashew'].map(c =>
+          api.get(`/buyer-interest/demand/summary?cropType=${c}`).catch(() => ({ data: { cropType: c, totalInterests: 0 } }))
+        ),
+      ]);
+      return {
+        demandKE:  keRes.data,
+        demandTZ:  tzRes.data,
+        cropDemand: cropResults.map((r) => r.data)
+                               .filter((d) => d.totalInterests > 0),
+      };
+    },
+    { fallbackData: null },
+  );
 
   if (loading) return <div className="loading">Loading demand intelligence...</div>;
-  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>;
+  if (error) {
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="demand-intel-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="demand-intel-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={load} testId="demand-intel-error" />
+        ) : (
+          <ErrorState
+            message="We could not load demand data. Try again in a moment."
+            onRetry={load}
+            testId="demand-intel-error"
+          />
+        )}
+      </div>
+    );
+  }
+
+  const demandKE   = (data && data.demandKE)   || null;
+  const demandTZ   = (data && data.demandTZ)   || null;
+  const cropDemand = (data && data.cropDemand) || [];
 
   return (
     <>
@@ -517,19 +559,27 @@ function DemandIntelligence() {
 //  TAB 4: Language Panel
 // ═══════════════════════════════════════════════════════
 function LanguagePanel() {
-  const [languages, setLanguages] = useState([]);
   const [selectedLang, setSelectedLang] = useState(null);
   const [translations, setTranslations] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
-    fetch('/api/localization/languages')
-      .then(r => r.json())
-      .then(setLanguages)
-      .catch(() => { setLoadError('Failed to load languages'); })
-      .finally(() => setLoading(false));
-  }, []);
+  // Languages list — primary fetch via useSafeData. Translation
+  // payloads (per-language click) stay as user-triggered fetches
+  // since they aren't a hard dependency of the list.
+  const {
+    data: languages, loading, error, errorType, retry,
+  } = useSafeData(
+    async () => {
+      const r = await fetch('/api/localization/languages');
+      if (!r.ok) {
+        const err = new Error(`failed_${r.status}`);
+        err.status = r.status; err.response = { status: r.status };
+        throw err;
+      }
+      return r.json();
+    },
+    { fallbackData: [] },
+  );
+  const langList = Array.isArray(languages) ? languages : [];
 
   const loadTranslations = (lang) => {
     setSelectedLang(lang);
@@ -540,7 +590,25 @@ function LanguagePanel() {
   };
 
   if (loading) return <div className="loading">Loading languages...</div>;
-  if (loadError) return <div className="alert-inline alert-inline-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={() => window.location.reload()}>Retry</button></div>;
+  if (error) {
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="languages-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="languages-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={retry} testId="languages-error" />
+        ) : (
+          <ErrorState
+            message="We could not load languages. Try again in a moment."
+            onRetry={retry}
+            testId="languages-error"
+          />
+        )}
+      </div>
+    );
+  }
 
   // Group translations by prefix
   const grouped = {};
@@ -556,7 +624,7 @@ function LanguagePanel() {
         <div className="card-header">Supported Languages</div>
         <div className="card-body">
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            {languages.map(lang => (
+            {langList.map(lang => (
               <div
                 key={lang.code}
                 onClick={() => loadTranslations(lang.code)}
@@ -606,34 +674,53 @@ function LanguagePanel() {
 //  TAB: Operations Health (Go-Live Monitoring)
 // ═══════════════════════════════════════════════════════
 function OperationsHealth() {
-  const [health, setHealth] = useState(null);
-  const [errors, setErrors] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
 
-  const load = () => {
-    setLoadError('');
-    Promise.all([
-      api.get('/system/health'),
-      api.get('/system/errors', { params: { limit: 50 } }),
-    ]).then(([hRes, eRes]) => {
-      setHealth(hRes.data);
-      setErrors(eRes.data);
-    }).catch(() => setLoadError('Failed to load operations data. Ensure you have super_admin access.'))
-      .finally(() => setLoading(false));
-  };
+  // Combined health + errors fetcher. retry() is also wired
+  // to the auto-refresh interval below so a 30s tick refreshes
+  // through the same code path the manual Retry button uses.
+  const {
+    data, loading, error, errorType, retry: load,
+  } = useSafeData(
+    async () => {
+      const [hRes, eRes] = await Promise.all([
+        api.get('/system/health'),
+        api.get('/system/errors', { params: { limit: 50 } }),
+      ]);
+      return { health: hRes.data, errors: eRes.data };
+    },
+    { fallbackData: null },
+  );
 
-  useEffect(() => { load(); }, []);
   useEffect(() => {
     if (!autoRefresh) return;
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
-  }, [autoRefresh]);
+  }, [autoRefresh, load]);
 
   if (loading) return <div className="loading">Loading operations health...</div>;
-  if (loadError) return <div className="alert alert-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>;
+  if (error) {
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
+          <SessionExpiredState testId="ops-health-error" />
+        ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
+          <MfaRequiredState testId="ops-health-error" />
+        ) : errorType === API_ERROR_TYPES.NETWORK_ERROR ? (
+          <NetworkErrorState onRetry={load} testId="ops-health-error" />
+        ) : (
+          <ErrorState
+            message="We could not load operations data. Ensure you have super_admin access."
+            onRetry={load}
+            testId="ops-health-error"
+          />
+        )}
+      </div>
+    );
+  }
 
+  const health = (data && data.health) || null;
+  const errorsData = (data && data.errors) || null;
   const h = health || {};
   const db = h.database || {};
   const prov = h.providers || {};
@@ -641,8 +728,8 @@ function OperationsHealth() {
   const notif = h.notifications || {};
   const plat = h.platform || {};
   const up = h.uploads || {};
-  const errSummary = errors?.summary || {};
-  const recentEvents = errors?.events || [];
+  const errSummary = errorsData?.summary || {};
+  const recentEvents = errorsData?.events || [];
 
   const statusColor = h.status === 'ok' ? '#22C55E' : '#F59E0B';
 
