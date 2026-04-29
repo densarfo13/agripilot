@@ -182,17 +182,38 @@ export function tSafe(arg1, arg2, arg3, arg4) {
     return fallback || key;
   }
 
+  // Humanized-key fallback detection: production t() returns
+  // humanizeKey(key) (e.g. "Title" for "account.loadFailed.title")
+  // when the dictionary is empty for that key. Without this check
+  // tSafe would accept the humanized string as a real translation
+  // and never substitute the caller's explicit fallback.
+  //
+  // BUG FIX (F2 from interactive smoke test): the previous version
+  // unconditionally rejected any value matching humanizeKey(key),
+  // which falsely flagged REAL translations whose value happened to
+  // equal the humanized last segment — `auth.email` → "Email",
+  // `auth.password` → "Password", `auth.phone` → "Phone", etc. all
+  // got wiped to the caller's empty fallback string, producing the
+  // visible "blank label" Login bug.
+  //
+  // The collision is a real fallback ONLY when the dict entry is
+  // genuinely absent for the active language (and lacks the `en`
+  // safety net). Reading T directly here is the only reliable way
+  // to tell "humanizeKey fallback" apart from "translation just
+  // happens to look humanizable."
+  let isHumanizeFallback = false;
+  if (typeof value === 'string' && value === _humanizeKey(key)) {
+    try {
+      const entry = T && T[key];
+      const nativeValue = entry && (entry[lang] || entry.en);
+      isHumanizeFallback = !nativeValue;
+    } catch { /* if read fails, assume the value is real */ }
+  }
   const looksMissing =
     !value
     || (typeof value === 'string' && value.startsWith('[MISSING:'))
     || value === key
-    // Humanized-key fallback detection: production t() returns
-    // humanizeKey(key) (e.g. "Title" for "account.loadFailed.title")
-    // when the dictionary is empty for that key. Without this check
-    // tSafe accepts the humanized string as a real translation and
-    // never substitutes the caller's explicit fallback — the
-    // capitalized-tail-of-key visibly leaks to the UI.
-    || (typeof value === 'string' && value === _humanizeKey(key));
+    || isHumanizeFallback;
 
   if (looksMissing) {
     if (_isDev()) {
