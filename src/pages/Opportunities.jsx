@@ -39,7 +39,7 @@ import { matchFundingForFarm } from '../funding/fundingMatcher.js';
 // interest records — read-only here; nothing on this page mutates
 // the store.
 import {
-  getFarmerInterests, INTEREST_STATUS,
+  getFarmerInterests, saveFundingInterest, findInterest, INTEREST_STATUS,
 } from '../funding/fundingApplicationStore.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -152,10 +152,16 @@ export default function Opportunities() {
           <>
             {/* Priority card — the highest-scoring match is
                 promoted to a prominent card with Apply Now /
-                Request Help buttons (matches the visual ref).
-                The remaining matches render as a compact list
-                below. Same data, same routes — visual only. */}
-            <PriorityOpportunityCard match={matches[0]} />
+                Request Help / Save for later buttons (matches
+                the funding spec §3 visual ref). The remaining
+                matches render as a compact list below, capped
+                at 3 per spec to keep the screen "max 1-2 cards
+                visible". Same data, same routes — visual only. */}
+            <PriorityOpportunityCard
+              match={matches[0]}
+              farmerId={farmerId}
+              farmId={activeFarm?.id || profile?.farmId || null}
+            />
 
             {matches.length > 1 && (
               <section
@@ -166,7 +172,7 @@ export default function Opportunities() {
                   {tSafe('funding.otherOpportunities', 'Other Opportunities')}
                 </h2>
                 <ul style={S.otherList}>
-                  {matches.slice(1).map((m) => (
+                  {matches.slice(1, 4).map((m) => (
                     <li key={m.opportunity.id}>
                       <OpportunityListRow match={m} />
                     </li>
@@ -255,8 +261,24 @@ function _statusLabel(status) {
    truth. The `?intent=help` query is set on Request Help so the
    detail page can surface a help affordance once wired. */
 
-function PriorityOpportunityCard({ match }) {
+function PriorityOpportunityCard({ match, farmerId, farmId }) {
   const { opportunity: o, reasons } = match;
+
+  // F-spec §3 "Save for later": secondary action that records the
+  // farmer's interest at INTERESTED status without leaving the
+  // page. Confirms inline via a 4-second toast so the farmer
+  // sees the save took effect. Initial state checks the store so
+  // a previously-saved opportunity shows "Saved" instead of the
+  // active CTA on subsequent visits.
+  const initialSaved = React.useMemo(() => {
+    if (!farmerId) return false;
+    try {
+      const existing = findInterest({ farmerId, opportunityId: o.id });
+      return Boolean(existing);
+    } catch { return false; }
+  }, [farmerId, o.id]);
+  const [saved, setSaved] = React.useState(initialSaved);
+  const [savedToast, setSavedToast] = React.useState(false);
 
   const deadlineLabel = o.deadline
     ? new Date(o.deadline).toLocaleDateString(undefined,
@@ -270,6 +292,28 @@ function PriorityOpportunityCard({ match }) {
         from: 'priority', intent,
       });
     } catch { /* ignore */ }
+  }
+
+  function handleSaveForLater() {
+    if (saved) return;
+    try {
+      saveFundingInterest({
+        farmerId, farmId,
+        opportunityId: o.id,
+        status: INTEREST_STATUS.INTERESTED,
+      });
+      setSaved(true);
+      setSavedToast(true);
+      // Hide toast after a beat — the persistent "Saved" pill on
+      // the button is the durable signal.
+      setTimeout(() => setSavedToast(false), 4000);
+      try {
+        safeTrackEvent(FUNDING_EVENTS.CLICKED, {
+          opportunityId: o.id, type: o.opportunityType,
+          from: 'priority', intent: 'save',
+        });
+      } catch { /* ignore */ }
+    } catch { /* never throw from a save click */ }
   }
 
   return (
@@ -297,6 +341,32 @@ function PriorityOpportunityCard({ match }) {
         </ul>
       )}
 
+      {/* What-to-expect — three bullet lines that set honest
+          expectations BEFORE the farmer taps Apply. Trust-safe
+          per spec §6: explicitly says "approval not guaranteed". */}
+      <div style={priorityStyles.expect}>
+        <p style={priorityStyles.expectLabel}>
+          {tSafe('funding.whatToExpect', 'What to expect')}
+        </p>
+        <ul style={priorityStyles.expectList}>
+          <li style={priorityStyles.expectItem}>
+            <span aria-hidden="true">•</span>
+            {tSafe('funding.whatToExpect.application',
+              'Application required')}
+          </li>
+          <li style={priorityStyles.expectItem}>
+            <span aria-hidden="true">•</span>
+            {tSafe('funding.whatToExpect.review',
+              'Review by organization')}
+          </li>
+          <li style={priorityStyles.expectItem}>
+            <span aria-hidden="true">•</span>
+            {tSafe('funding.whatToExpect.notGuaranteed',
+              'Approval not guaranteed')}
+          </li>
+        </ul>
+      </div>
+
       <div style={priorityStyles.btnRow}>
         <Link
           to={`/opportunities/${o.id}?intent=apply`}
@@ -315,6 +385,37 @@ function PriorityOpportunityCard({ match }) {
           {tSafe('funding.requestHelp', 'Request Help')}
         </Link>
       </div>
+
+      {/* Secondary "Save for later" — ghost button so it doesn't
+          compete with the primary CTAs. Disabled (and labelled
+          "Saved") once the farmer has saved this opportunity. */}
+      <button
+        type="button"
+        onClick={handleSaveForLater}
+        disabled={saved}
+        style={{
+          ...priorityStyles.saveBtn,
+          ...(saved ? priorityStyles.saveBtnSaved : {}),
+        }}
+        data-testid={`opportunity-priority-save-${o.id}`}
+        aria-pressed={saved ? 'true' : 'false'}
+      >
+        {saved
+          ? tSafe('funding.saved', 'Saved')
+          : tSafe('funding.saveForLater', 'Save for later')}
+      </button>
+
+      {savedToast && (
+        <p
+          style={priorityStyles.savedToast}
+          role="status"
+          aria-live="polite"
+          data-testid="opportunity-priority-saved-toast"
+        >
+          {tSafe('funding.savedToast',
+            'Saved to your applications. Open it any time to apply.')}
+        </p>
+      )}
     </article>
   );
 }
@@ -528,6 +629,74 @@ const priorityStyles = {
     background: '#1A3B5D',
     color: C.white,
     border: '1px solid #1F3B5C',
+  },
+  // What-to-expect block — calm, neutral container so it reads
+  // as informational, not as another CTA.
+  expect: {
+    marginTop: '0.4rem',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 10,
+    padding: '0.5rem 0.75rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.2rem',
+  },
+  expectLabel: {
+    margin: 0,
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: '0.6875rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+  },
+  expectList: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.1rem',
+  },
+  expectItem: {
+    display: 'inline-flex',
+    gap: '0.4rem',
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: '0.8125rem',
+    lineHeight: 1.45,
+  },
+  // Save-for-later — ghost button under the primary CTA pair.
+  // Same min-height for tap target; muted styling so it doesn't
+  // compete with Apply Now.
+  saveBtn: {
+    marginTop: '0.4rem',
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.78)',
+    borderRadius: 10,
+    padding: '0.5rem 1rem',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 38,
+  },
+  saveBtnSaved: {
+    background: 'rgba(34,197,94,0.10)',
+    borderColor: 'rgba(34,197,94,0.40)',
+    color: '#86EFAC',
+    cursor: 'default',
+  },
+  savedToast: {
+    margin: '0.4rem 0 0',
+    padding: '0.4rem 0.65rem',
+    borderRadius: 8,
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.30)',
+    color: '#86EFAC',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    lineHeight: 1.4,
   },
 };
 

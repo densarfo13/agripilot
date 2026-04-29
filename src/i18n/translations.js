@@ -9350,6 +9350,18 @@ const T = {
   'funding.markApplied':           { en: 'I applied',            fr: 'J\'ai postulé',          sw: 'Nimeomba',              ha: 'Na nema',                tw: 'Mapɔ',                  hi: 'मैंने आवेदन किया' },
   'funding.otherOpportunities':    { en: 'Other Opportunities',  fr: 'Autres opportunités',    sw: 'Fursa Nyingine',        ha: 'Sauran Damarmaki',       tw: 'Akwannya Foforɔ',       hi: 'अन्य अवसर' },
 
+  // ─── Funding spec §3 + §6 — UX gap-fill ─────────────────
+  // "What to expect" block + Save for later. Trust-safe wording:
+  // explicit "Approval not guaranteed" so the farmer knows the
+  // outcome is not promised before they tap Apply.
+  'funding.whatToExpect':                { en: 'What to expect',          fr: 'À quoi s\u2019attendre',                sw: 'Cha kutarajia',                  ha: 'Abin da za a yi tsammani',           tw: 'Deɛ ɛsɛ sɛ wohwɛ',                          hi: 'क्या उम्मीद करें' },
+  'funding.whatToExpect.application':    { en: 'Application required',    fr: 'Candidature requise',                    sw: 'Maombi yanahitajika',            ha: 'Ana buƙatar aikace-aikace',          tw: 'Application yɛ adwuma',                     hi: 'आवेदन आवश्यक' },
+  'funding.whatToExpect.review':         { en: 'Review by organization',  fr: 'Examen par l\u2019organisation',         sw: 'Kupitiwa na shirika',            ha: 'Bita ta ƙungiyar',                   tw: 'Asɔreyɛfoɔ no bɛhwɛ',                       hi: 'संगठन द्वारा समीक्षा' },
+  'funding.whatToExpect.notGuaranteed':  { en: 'Approval not guaranteed', fr: 'Approbation non garantie',               sw: 'Idhini haijahakikishwa',         ha: 'Ba a tabbatar da yarda ba',          tw: 'Wɔnhyɛ wo bɔ sɛ wɔbɛpene so',               hi: 'अनुमोदन की गारंटी नहीं' },
+  'funding.saveForLater':                { en: 'Save for later',          fr: 'Enregistrer pour plus tard',             sw: 'Hifadhi kwa baadaye',            ha: 'Ajiye don baya',                     tw: 'Kora so ma akyi',                           hi: 'बाद के लिए सहेजें' },
+  'funding.saved':                       { en: 'Saved',                   fr: 'Enregistré',                              sw: 'Imehifadhiwa',                    ha: 'An ajiye',                            tw: 'Wɔakora so',                                 hi: 'सहेज लिया' },
+  'funding.savedToast':                  { en: 'Saved to your applications. Open it any time to apply.', fr: 'Enregistré dans vos candidatures. Ouvrez-le à tout moment pour postuler.', sw: 'Imehifadhiwa kwenye maombi yako. Fungua wakati wowote ili kuomba.', ha: 'An ajiye a aikace-aikacenka. Buɗe duk lokacin da kake son nemi.', tw: 'Wɔakora ma w\u2019adwuma. Bue da biara na pɔ.', hi: 'आपके आवेदनों में सहेजा गया। आवेदन करने के लिए कभी भी खोलें।' },
+
   // ─── Opportunities — My Applications section ───────────────
   // Read-only summary surface on /opportunities. Joins
   // fundingApplicationStore interest rows × active opportunities.
