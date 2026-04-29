@@ -15,6 +15,16 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
+// Snippet ref §1+§2: greeting + weather alert pill above the
+// existing card stack. Both backed by data already on the page —
+// useDynamicGreeting consumes the same farmJourney + crop signals
+// the page already reads; the weather alert reads the existing
+// `liveWeather` state (line ~381) the rest of the engines already
+// see, so we don't subscribe to WeatherContext twice.
+import { useDynamicGreeting } from '../../hooks/useDynamicGreeting.js';
+import { deriveWeatherRisk } from '../../intelligence/weatherRiskModel.js';
+import { tStrict } from '../../i18n/strictT.js';
+import { CloudRain, AlertTriangle } from '../../components/icons/lucide.jsx';
 import { getTodayFeed, completeCycleTask, skipCycleTask, reportCycleIssue, submitCycleHarvest, listCropCycles } from '../../hooks/useCropCycles.js';
 import { usePreferenceSync } from '../../hooks/usePreferenceSync.js';
 import { localizeServerTask } from '../../utils/generateLocalizedTask.js';
@@ -696,8 +706,85 @@ export default function FarmerTodayPage() {
     if (item.code === 'scan_crop') openIssueModal();
   }
 
+  // ─── Snippet ref §1: dynamic greeting (Good morning / etc.) ──
+  // The hook is a thin wrapper around getDynamicGreeting; it
+  // returns { title, subtitle } already localised via t(). Inputs
+  // are derived from data already on the page so no new fetches.
+  const greeting = useDynamicGreeting({
+    hasCompletedOnboarding: journeySnapshot.state !== 'onboarding',
+    hasActiveCropCycle:     !!activeCycle,
+    todayState:
+      progressSnapshot?.status === 'great_progress'   ? 'all_done'
+      : progressSnapshot?.completedCount > 0          ? 'in_progress'
+      :                                                  'no_progress',
+    missedDays:             0,
+    hasJustCompletedHarvest: journeySnapshot.state === 'harvest_complete',
+    cropLabel:              cropLabel || '',
+  }, t);
+
+  // ─── Snippet ref §2: weather alert pill ───────────────────────
+  // Reuses the page's existing `liveWeather` state (declared
+  // above ~line 381) so we don't double-subscribe to the weather
+  // context. The page's status enum (`excessive_heat`, `low_rain`,
+  // `dry_ahead`) is mapped to the deriveWeatherRisk signal
+  // vocabulary so the alert pill reads from the same model the
+  // rest of the intelligence layer uses. Hidden on calm days.
+  const weatherForAlert = useMemo(() => {
+    if (!liveWeather || typeof liveWeather !== 'object') return null;
+    const s = liveWeather.status;
+    return {
+      hot:     s === 'excessive_heat',
+      dry:     s === 'low_rain' || s === 'dry_ahead',
+      drySpell:s === 'low_rain' || s === 'dry_ahead',
+      // Carry whatever booleans the upstream payload set, so a
+      // future heavy-rain status enum surfaces automatically.
+      heavyRain: !!liveWeather.heavyRain,
+      highWind:  !!liveWeather.highWind,
+      severe:    !!liveWeather.severe,
+    };
+  }, [liveWeather]);
+  const weatherRisk = useMemo(
+    () => deriveWeatherRisk(weatherForAlert),
+    [weatherForAlert],
+  );
+  const HIGH_IMPACT = ['heavy_rain', 'high_wind', 'hot', 'dry_spell'];
+  const alertSignal = (weatherRisk?.signals || [])
+    .find((s) => HIGH_IMPACT.includes(s));
+  const alertText = alertSignal
+    ? tStrict(`farm.suggest.weatherRisk.${alertSignal}`,
+        tStrict('farm.suggest.weatherRisk', ''))
+    : '';
+
   return (
     <Shell>
+      {/* Greeting block — small title + subtitle. Renders only
+          when the hook produced text; otherwise silent. */}
+      {(greeting?.title || greeting?.subtitle) && (
+        <div style={S.greetingWrap} data-testid="today-greeting">
+          {greeting.title && (
+            <h1 style={S.greetingTitle}>{greeting.title}</h1>
+          )}
+          {greeting.subtitle && (
+            <p style={S.greetingSubtitle}>{greeting.subtitle}</p>
+          )}
+        </div>
+      )}
+
+      {/* Weather alert pill — amber, dismissible-by-context (it
+          disappears when the underlying risk subsides). Hidden
+          on calm days. */}
+      {alertText && (
+        <div style={S.weatherAlert} data-testid="today-weather-alert"
+             role="status" aria-live="polite">
+          <span style={S.weatherAlertIcon} aria-hidden="true">
+            {alertSignal === 'heavy_rain'
+              ? <CloudRain size={16} />
+              : <AlertTriangle size={16} />}
+          </span>
+          <span>{alertText}</span>
+        </div>
+      )}
+
       <h1 style={S.pageTitle}>{t('actionHome.todayHeader')}</h1>
 
       {/* Top notification — rendered above everything else so high-
@@ -1049,6 +1136,42 @@ const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
   pageTitle: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
+  // Snippet ref §1: greeting block above the page title.
+  greetingWrap: { margin: '0 0 12px' },
+  greetingTitle: {
+    margin: 0,
+    fontSize: '1.1rem',
+    fontWeight: 600,
+    color: '#fff',
+    lineHeight: 1.3,
+  },
+  greetingSubtitle: {
+    margin: '2px 0 0',
+    fontSize: '0.85rem',
+    color: 'rgba(255,255,255,0.6)',
+    lineHeight: 1.4,
+  },
+  // Snippet ref §2: amber weather-alert pill. Sits between the
+  // greeting and the page title. Only renders when the weather
+  // model surfaces a high-impact signal; calm days stay silent.
+  weatherAlert: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    margin: '0 0 12px',
+    padding: '10px 14px',
+    borderRadius: 10,
+    background: '#2A1F1F',
+    border: '1px solid rgba(245,158,11,0.30)',
+    color: '#FDE68A',
+    fontSize: '0.85rem',
+    lineHeight: 1.4,
+  },
+  weatherAlertIcon: {
+    display: 'inline-flex',
+    color: '#FDE68A',
+    flex: '0 0 auto',
+  },
   pageSummary: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 0.5rem', lineHeight: 1.45 },
   muted: { color: '#9FB3C8' },
   progressChip: {
