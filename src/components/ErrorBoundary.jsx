@@ -41,6 +41,47 @@ function _currentPath() {
   } catch { return ''; }
 }
 
+/**
+ * Detect orphaned recharts errors (F19 root cause).
+ *
+ * Recharts uses a MessageChannel-backed scheduler for its
+ * ResponsiveContainer layout calc. When the user navigates away
+ * from an admin page that mounted a chart, a queued callback can
+ * fire AFTER the chart's React tree has already unmounted, calling
+ * setState on a torn-down recharts internal — surfaces as React
+ * error #300 ("Maximum update depth exceeded") with a stack
+ * entirely inside the recharts chunk and `MessagePort.D` at the
+ * bottom. The chart's local ChartErrorBoundary is gone by then,
+ * so the global boundary catches it and full-page-crashes the
+ * page the user just navigated TO (often /login on logout).
+ *
+ * The fix: detect this signature, log it as a warning, and reset
+ * the boundary so the new page renders normally instead of
+ * showing the calm-recovery card. This is a safety net for the
+ * orphaned-callback case — chart errors INSIDE a mounted page
+ * still get caught by ChartErrorBoundary as designed.
+ *
+ * Detection is conservative — we only downgrade when ALL of:
+ *   • the stack has a `recharts` frame, AND
+ *   • the current path is NOT one of the chart-using admin pages
+ *     (so a real crash on /admin/analytics still surfaces clearly)
+ */
+const RECHARTS_USING_PATHS = [
+  '/admin/control', '/admin/analytics', '/portfolio', '/reports', '/impact',
+];
+function _isOrphanedRechartsError(error) {
+  try {
+    if (!error) return false;
+    const stack = String(error.stack || '');
+    if (!/recharts/i.test(stack)) return false;
+    const here = _currentPath();
+    const onChartPage = RECHARTS_USING_PATHS.some(
+      (p) => here === p || here.startsWith(p + '/'),
+    );
+    return !onChartPage;
+  } catch { return false; }
+}
+
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -48,10 +89,20 @@ export default class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
+    // F19 fix: orphaned recharts callbacks (post-unmount) should
+    // NOT trigger the full-page recovery card — the chart that
+    // would have been wrapped by ChartErrorBoundary is already
+    // gone, but the running page is fine. Treat it as a warning
+    // and let the children render normally.
+    if (_isOrphanedRechartsError(error)) {
+      return { hasError: false, error: null, page: '' };
+    }
     return { hasError: true, error, page: _currentPath() };
   }
 
   componentDidCatch(error, info) {
+    const isOrphanChart = _isOrphanedRechartsError(error);
+
     // Fire-and-forget analytics — dynamic import so the
     // boundary never trips its own analytics path. Never
     // re-throws into React.
@@ -59,11 +110,14 @@ export default class ErrorBoundary extends React.Component {
       import('../lib/analytics.js')
         .then((mod) => {
           try {
-            mod.safeTrackEvent?.('app.crash', {
-              error: error?.message,
-              stack: info?.componentStack?.slice(0, 500),
-              page:  _currentPath(),
-            });
+            mod.safeTrackEvent?.(
+              isOrphanChart ? 'app.chart_orphan' : 'app.crash',
+              {
+                error: error?.message,
+                stack: info?.componentStack?.slice(0, 500),
+                page:  _currentPath(),
+              },
+            );
           } catch { /* analytics never critical */ }
         })
         .catch(() => { /* swallow */ });
@@ -73,11 +127,21 @@ export default class ErrorBoundary extends React.Component {
     // Dev console gets the full payload; production gets just
     // the prefixed message so we don't leak component stacks
     // into a user's DevTools.
+    //
+    // Orphan-chart variant uses [orphan-chart] tag + console.warn
+    // (matches ChartErrorBoundary's [chart] convention) so a
+    // post-unmount recharts callback doesn't paint DevTools red
+    // for every user — but still leaves a greppable trail in
+    // ops drains.
     try {
+      const tag = isOrphanChart
+        ? '[FARROWAY_CRASH][orphan-chart]'
+        : '[FARROWAY_CRASH]';
+      const log = isOrphanChart ? console.warn : console.error;
       if (_isDev()) {
-        console.error('[FARROWAY_CRASH]', error, info, _currentPath());
+        log.call(console, tag, error, info, _currentPath());
       } else {
-        console.error('[FARROWAY_CRASH]', error?.message || 'unknown',
+        log.call(console, tag, error?.message || 'unknown',
           _currentPath());
       }
     } catch { /* console missing in some sandboxes */ }
