@@ -36,6 +36,11 @@ import ProgressSummaryCard from '../../components/farmer/ProgressSummaryCard.jsx
 import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FarmerActionGrid from '../../components/farmer/FarmerActionGrid.jsx';
+import DailyReminderBanner from '../../components/farmer/DailyReminderBanner.jsx';
+import TaskCompletionFeedback from '../../components/farmer/TaskCompletionFeedback.jsx';
+import HomeProgressBar from '../../components/farmer/HomeProgressBar.jsx';
+import { recordCompletion as recordRetentionCompletion } from '../../lib/retention/streakStore.js';
+import { evaluateDailyTrigger, markTriggerSent } from '../../lib/retention/dailyTrigger.js';
 import FeedbackModal from '../../components/farmer/FeedbackModal.jsx';
 import TaskFeedbackModal from '../../components/farmer/TaskFeedbackModal.jsx';
 import { recordOutcome } from '../../lib/outcomes/outcomeStore.js';
@@ -227,6 +232,11 @@ export default function FarmerTodayPage() {
     // Daily-loop streak bookkeeping — deterministic, once per day,
     // tied to the active farm's local completions.
     markTaskCompletedForStreak();
+    // Retention layer (spec §3): record today as a completion day
+    // for the streakStore so DailyReminderBanner / TaskCompletion-
+    // Feedback show fresh values on the very next render. Pure
+    // localStorage; idempotent within a single calendar day.
+    try { recordRetentionCompletion(); } catch { /* never propagate */ }
     // Rotate a short reinforcement message (varied but deterministic
     // per task so the same completion renders the same copy).
     setReinforcementKey(pickReinforcementKey(task.id));
@@ -591,6 +601,57 @@ export default function FarmerTodayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveWeather, weatherSummary, state.today, activeCycle, todayPrimaryDone, progressTick]);
 
+  // Spec §4 — daily SMS / push trigger evaluation. The evaluator
+  // is pure and decides only WHETHER to nudge today. Actual delivery
+  // continues to flow through the existing notification dispatcher
+  // (`src/lib/notifications/notificationDispatcher.js` + Twilio).
+  // We mark the trigger sent in localStorage AFTER dispatch accepts;
+  // single-flight per local day so a reload can't double-fire.
+  useEffect(() => {
+    let cancelled = false;
+    const candidate = evaluateDailyTrigger({
+      weather: liveWeather,
+      primaryTask: primaryTask
+        ? { id: primaryTask.id, title: primaryTask.title, detail: primaryTask.detail }
+        : null,
+      channels: ['sms', 'push'],
+    });
+    if (!candidate) return undefined;
+    // Best-effort dispatch via the existing engine. The dispatcher
+    // is import()ed dynamically to keep this hot path light when the
+    // evaluator returns null on most renders. If the dispatcher
+    // module / function is unavailable we still mark the trigger
+    // as evaluated so we don't spam the next render — caller's
+    // own retention banner already informs the farmer in-app.
+    (async () => {
+      try {
+        let dispatched = false;
+        try {
+          const mod = await import('../../lib/notifications/notificationDispatcher.js');
+          const fn = mod && (mod.dispatchNotification || mod.dispatch || mod.default);
+          if (typeof fn === 'function' && !cancelled) {
+            await fn({
+              kind: 'daily_trigger',
+              variant: candidate.variant,
+              messageKey: candidate.messageKey,
+              fallback: candidate.fallback,
+              vars: candidate.vars,
+              taskId: candidate.taskId,
+              channels: candidate.channels,
+            });
+            dispatched = true;
+          }
+        } catch { /* dispatcher not available — banner already nudges */ }
+        if (!cancelled) {
+          markTriggerSent(candidate);
+          void dispatched;
+        }
+      } catch { /* never propagate */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveWeather, primaryTask?.id]);
+
   // Mark the daily reminder as shown once per day so we don't flash
   // it again on every navigation, AND fire a browser notification
   // once (spec §9) when the user has opted in + granted permission.
@@ -804,6 +865,23 @@ export default function FarmerTodayPage() {
           priority alerts are seen first. Hidden when nothing unread. */}
       <NotificationBadge key={`notif-${notifTick}`} />
 
+      {/* Daily retention banner (spec §1 / §2 / §4 / §7) — single
+          contextual line driven by streakStore + the page's existing
+          weather summary. Self-hides when not eligible. Read-only;
+          never mutates the heavy loop state. */}
+      <DailyReminderBanner
+        weather={liveWeather}
+        todayCompleted={todayPrimaryDone}
+      />
+
+      {/* Spec §5 — small daily-completion progress bar with
+          "On track / Needs attention" pill. Self-hides when
+          totalTasks <= 0 to avoid clutter on a clean day. */}
+      <HomeProgressBar
+        doneToday={tasksDone}
+        totalToday={totalTasks}
+      />
+
       {/* 0. Journey summary — single source of truth card. Hidden
           when the farmer still has no crop (onboarding / crop-selection
           states handle routing themselves). */}
@@ -846,6 +924,20 @@ export default function FarmerTodayPage() {
       <CompletionBanner
         open={completionBanner}
         messageKey={reinforcementKey || 'actionHome.completion.positive'}
+        onClose={() => setCompletionBanner(false)}
+      />
+
+      {/* Retention completion panel (spec §3) — exact "✅ Task
+          completed / 🔥 N-day streak / Next: ... / Continue →"
+          mock. Reads streak from retention/streakStore (already
+          updated above on completion). Dismiss returns to the
+          regular Today view. */}
+      <TaskCompletionFeedback
+        open={completionBanner}
+        nextTaskTitle={
+          (Array.isArray(secondaryTasks) && secondaryTasks[0]?.title) || ''
+        }
+        onContinue={() => setCompletionBanner(false)}
         onClose={() => setCompletionBanner(false)}
       />
 

@@ -9979,6 +9979,53 @@ const T = {
   // eligibility nudge + zero-task-day engagement nudge).
   'farm.suggest.fundingEligible':  { en: 'You qualify to explore funding opportunities.', fr: 'Vous pouvez explorer les financements.',           sw: 'Unastahili kuchunguza fursa za ufadhili.', ha: 'Kuna cancantar bincika damar tallafi.',  tw: 'Wofata sɛ wohwehwɛ sika boa akwannya.', hi: 'आप फंडिंग अवसर देख सकते हैं।' },
   'farm.suggest.engagementZeroTasks': { en: 'Open today\u2019s tasks and stay on track.', fr: 'Ouvrez les tâches du jour et restez sur la bonne voie.', sw: 'Fungua kazi za leo na endelea vizuri.',     ha: 'Buɗe ayyukan yau ka ci gaba.',           tw: 'Bue nnɛ adwuma na kɔ so.',                  hi: 'आज के कार्य खोलें और सही दिशा में रहें।' },
+
+  // ─── Daily retention loop (spec §1–§7) ───────────────────────
+  // Reminder banner messages — one is shown at a time, driven by
+  // pickReminderMessage() in src/lib/retention/reminderEngine.js.
+  // Short, action-first; never punishing.
+  'retention.reminder.default':   { en: "Today's farm task is ready",         fr: 'La tâche du jour est prête',                        sw: 'Kazi ya leo iko tayari',                  ha: 'Aikin yau a shirye yake',                    tw: 'Nnɛ adwuma akrado',                          hi: 'आज का काम तैयार है' },
+  'retention.reminder.weather':   { en: 'Rain today — check your farm plan',  fr: 'Pluie aujourd\'hui — vérifiez votre plan',          sw: 'Mvua leo — angalia mpango wa shamba',     ha: 'Ruwa yau — duba shirin gona',                tw: 'Nsuo bɛtɔ nnɛ — hwɛ w\'afuom nhyehyɛeɛ',     hi: 'आज बारिश — अपनी योजना देखें' },
+  'retention.reminder.missed':    { en: "You missed a task. Let's get back on track.", fr: 'Vous avez manqué une tâche. Reprenons.', sw: 'Ulikosa kazi. Turudi kwenye njia.',       ha: 'Kun rasa aiki. Mu koma kan hanya.',         tw: 'Woato adwuma bi. Yɛnsan nkɔ ɛkwan no so.',  hi: 'एक काम छूट गया। फिर शुरू करें।' },
+  'retention.reminder.newStreak': { en: "Let's start a new streak today",     fr: 'Recommençons une série aujourd\'hui',               sw: 'Tuanze mfululizo mpya leo',               ha: 'Mu fara sabuwar jeri yau',                  tw: 'Yɛmfa nnɛ mfi mfitiaseɛ foforɔ ase',         hi: 'आज नई स्ट्रीक शुरू करें' },
+  'retention.reminder.allDone':   { en: "You're done for today",              fr: 'Terminé pour aujourd\'hui',                         sw: 'Umemaliza kwa leo',                       ha: 'Kun gama yau',                              tw: 'Woawie nnɛ',                                  hi: 'आज के लिए हो गया' },
+  'retention.reminder.return':    { en: "We've prepared your next steps",     fr: 'Nous avons préparé vos prochaines étapes',          sw: 'Tumeandaa hatua zako zifuatazo',          ha: 'Mun shirya muku matakan na gaba',           tw: 'Yɛasiesie nea edi hɔ ama wo',                hi: 'हमने आपके अगले कदम तैयार किए हैं' },
+
+  // Completion panel (spec §3 mock).
+  'retention.completed.title':    { en: 'Task completed',                     fr: 'Tâche terminée',                                    sw: 'Kazi imekamilika',                        ha: 'An kammala aiki',                           tw: 'Adwuma awie',                                hi: 'काम पूरा हुआ' },
+  'retention.completed.streak':   { en: '{count}-day streak',                 fr: 'Série de {count} jours',                            sw: 'Mfululizo wa siku {count}',               ha: 'Jerin kwana {count}',                       tw: 'Nnafua {count} mfululizo',                   hi: '{count}-दिन की स्ट्रीक' },
+  'retention.completed.onTrack':  { en: "You're on track.",                   fr: 'Vous êtes sur la bonne voie.',                      sw: 'Uko njia nzuri.',                         ha: 'Kuna kan hanya.',                           tw: 'Wowɔ ɛkwan pa so.',                         hi: 'आप सही रास्ते पर हैं।' },
+  'retention.completed.next':     { en: 'Next:',                              fr: 'Suivant :',                                         sw: 'Inayofuata:',                             ha: 'Na gaba:',                                  tw: 'Nea ɛdi hɔ:',                                hi: 'अगला:' },
+
+  // Micro-rewards (spec §5) — subtle encouragement.
+  'retention.micro.goodProgress': { en: 'Good progress today',                fr: 'Bons progrès aujourd\'hui',                         sw: 'Maendeleo mazuri leo',                    ha: 'Ci gaba mai kyau yau',                      tw: 'Nkɔso pa nnɛ',                               hi: 'आज अच्छी प्रगति' },
+  'retention.micro.keepGoing':    { en: 'Keep it going',                      fr: 'Continuez',                                         sw: 'Endelea',                                 ha: 'Ci gaba da haka',                           tw: 'Toa so',                                     hi: 'जारी रखें' },
+  'retention.micro.doingGreat':   { en: "You're doing great",                 fr: 'Vous faites du bon travail',                        sw: 'Unafanya vizuri',                         ha: 'Kuna yin kyau',                             tw: 'Woreyɛ adwuma pa',                           hi: 'आप अच्छा कर रहे हैं' },
+
+  // Generic CTA reused by banner + completion panel.
+  'retention.cta.continue':       { en: 'Continue',                           fr: 'Continuer',                                         sw: 'Endelea',                                 ha: 'Ci gaba',                                   tw: 'Toa so',                                     hi: 'जारी रखें' },
+  'retention.cta.close':          { en: 'Close',                              fr: 'Fermer',                                            sw: 'Funga',                                   ha: 'Rufe',                                      tw: 'To mu',                                      hi: 'बंद करें' },
+
+  // Spec v2 §2 — explicit per-completion progress delta chip.
+  'retention.completed.progressDelta': { en: '+1 progress',                   fr: '+1 progression',                                    sw: '+1 maendeleo',                            ha: '+1 ci gaba',                                tw: '+1 nkɔso',                                   hi: '+1 प्रगति' },
+
+  // Spec v2 §5 — Home progress bar.
+  'retention.progressBar.today':           { en: 'Today',                     fr: "Aujourd'hui",                                        sw: 'Leo',                                     ha: 'Yau',                                       tw: 'Nnɛ',                                        hi: 'आज' },
+  'retention.progressBar.onTrack':         { en: 'On track',                  fr: 'Sur la bonne voie',                                  sw: 'Njia nzuri',                              ha: 'Kan hanya',                                 tw: 'Ɛkwan pa so',                                hi: 'सही रास्ते पर' },
+  'retention.progressBar.needsAttention':  { en: 'Needs attention',           fr: 'Besoin d\'attention',                                sw: 'Inahitaji umakini',                       ha: 'Yana bukatar kulawa',                       tw: 'Ehia adwen',                                 hi: 'ध्यान दें' },
+
+  // Spec v2 §4 — daily SMS / push trigger fallbacks. Used when the
+  // server-side renderer doesn't have the language pack and falls
+  // back to the literal string sent by the client. Caller passes
+  // `vars: { taskHint }` for interpolation.
+  'retention.trigger.inactivity':     { en: 'Your farm needs attention today. {taskHint}',          fr: 'Votre ferme a besoin d\'attention aujourd\'hui. {taskHint}', sw: 'Shamba lako linahitaji umakini leo. {taskHint}',   ha: 'Gonarka tana bukatar kulawa yau. {taskHint}',         tw: 'W\'afuom hia adwen nnɛ. {taskHint}',                hi: 'आज आपके खेत पर ध्यान चाहिए। {taskHint}' },
+  'retention.trigger.weather.rain':   { en: 'Rain today — protect your farm. {taskHint}',           fr: 'Pluie aujourd\'hui — protégez votre ferme. {taskHint}',      sw: 'Mvua leo — linda shamba lako. {taskHint}',         ha: 'Ruwa yau — kāre gonarka. {taskHint}',                 tw: 'Nsuo bɛtɔ nnɛ — bɔ w\'afuom ho ban. {taskHint}',    hi: 'आज बारिश — खेत की रक्षा करें। {taskHint}' },
+  'retention.trigger.weather.dry':    { en: 'Dry conditions today — good time to {taskHint}',       fr: 'Temps sec aujourd\'hui — bon moment pour {taskHint}',         sw: 'Hali kavu leo — wakati mzuri kwa {taskHint}',     ha: 'Yanayi bushewa yau — lokaci mai kyau don {taskHint}', tw: 'Mmerɛ a nsuo nni hɔ nnɛ — berɛ pa sɛ {taskHint}',  hi: 'आज सूखा — {taskHint} का अच्छा समय' },
+
+  // ─── My Farm — photo upload (redesign §3) ────────────────────
+  // Compact CTA labels under the circular farm photo.
+  'myFarm.uploadPhoto':   { en: 'Upload photo', fr: 'Téléverser une photo', sw: 'Pakia picha', ha: 'Loda hoto',  tw: 'Fa mfoni kɔ',  hi: 'फोटो अपलोड करें' },
+  'myFarm.uploadingPhoto':{ en: 'Uploading…',   fr: 'Téléversement…',       sw: 'Inapakia…',  ha: 'Ana lodawa…', tw: 'Yɛrekɔfa…',    hi: 'अपलोड हो रहा है…' },
 };
 
 export default T;

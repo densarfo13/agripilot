@@ -1,28 +1,34 @@
 /**
- * MyFarmPage — premium farm control panel at /my-farm.
+ * MyFarmPage — clean farm control panel at /my-farm.
  *
- * Layout (Apr 2026 polish spec):
+ * Redesign (Apr 2026 — spec "Redesign MyFarm.jsx" §1–§8):
  *   1. Header             — "My Farm" + sprout icon
- *   2. Farm Selector      — FarmSwitcher dropdown (green accent)
- *   3. Setup Card         — only when crop/location/size missing
- *   4. Farm Details Card  — Crop / Location / Size / Stage rows
- *                            (each with icon + label + value)
- *   5. Action Buttons     — Edit Farm + Add New Farm (exactly two)
- *   6. Help Card          — "Need help? Contact our team →"
+ *   2. Farm Selector      — FarmSwitcher dropdown
+ *   3. Farm Identity Card — circular photo + name + location +
+ *                            "Upload photo" CTA. NEW per spec §3.
+ *   4. Setup Card         — only when crop/location/size missing
+ *   5. Farm Details Card  — Crop / Location / Size / Stage rows
+ *   6. Action Buttons     — Edit Farm / Add New Farm / Switch Farm
+ *                            (exactly three per spec §5).
+ *   7. Help Card          — "Need help? Contact our team →" with
+ *                            /support route + mailto fallback.
  *
- * Removed from this page (per spec §8):
- *   • Today's Action card (NextBestActionCard) — owned by Home/Tasks
- *   • Funding / Sell / Scan crop / Check land / Progress / Records
- *   • Verification block / Long suggestions / Help form fields
- *   • Duplicate setup messages
+ * Removed from this page (per spec §1 — "must NOT show tasks"):
+ *   • Today's Action card (Home/Tasks own that surface)
+ *   • Weather intelligence block
+ *   • Task-related messaging — including the side-effect call to
+ *     `getTodayTasks` + `processNotifications` (those still run on
+ *     Home / FarmerTodayPage; running them HERE was unnecessary
+ *     coupling between the farm-management surface and the daily
+ *     task pipeline).
  *
- * The page is intentionally short — farm control panel only. Daily
- * actions live on Home (/dashboard) and Tasks (/tasks); selling on
- * /sell; funding on /opportunities. We keep them off this page so
- * each surface has a single role (screen-role refactor).
+ * Photo upload is local-only (no backend change required per the
+ * spec's strict rule). Stored as a compressed data URL keyed per
+ * farm id under `farroway:store:farmPhoto:<id>` so multiple farms
+ * each carry their own picture.
  */
 
-import { useEffect, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
@@ -36,8 +42,8 @@ import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
 import {
   Sprout, Wheat, MapPin, Ruler, Calendar, HelpCircle, Plus, ArrowRight,
 } from '../components/icons/lucide.jsx';
-import { processNotifications } from '../lib/notifications/notificationScheduler.js';
-import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
+import { compressAvatar } from '../utils/avatarStorage.js';
+import { loadData, saveData } from '../store/localStore.js';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -76,36 +82,27 @@ export default function MyFarmPage() {
   } = useProfile();
   const { t, lang } = useTranslation();
 
-  // Today's-tasks scheduler runs as a side effect to feed the
-  // notification scheduler — same logic the page had before. The
-  // tasks themselves are NOT rendered here anymore (Home/Tasks
-  // own that surface); we just kick the scheduler.
-  const [, setTodayTasks] = useState([]);
-  useEffect(() => {
-    if (!profile) return;
-    const farmObj = profile;
-    try {
-      const todayPlan = getTodayTasks({
-        farm: {
-          id: farmObj.id, crop: farmObj.crop,
-          farmType: farmObj.farmType, cropStage: farmObj.cropStage,
-          countryCode: farmObj.countryCode || farmObj.country,
-        },
-        weather: profile.weather || null,
-      });
-      const tasksList = todayPlan && Array.isArray(todayPlan.tasks)
-        ? todayPlan.tasks : [];
-      setTodayTasks(tasksList);
-      processNotifications({
-        user: null, farm: farmObj,
-        tasks: tasksList,
-        weather: profile.weather || null,
-        issues: profile.issues || [],
-        language: profile.language || 'en',
-      }).catch(() => { /* non-fatal — scheduler never breaks the page */ });
-    } catch { /* ignore — scheduler is best-effort */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile && profile.id]);
+  // Spec §1 redesign: removed the previous useEffect that ran
+  // `getTodayTasks` + `processNotifications`. Those side effects
+  // belong on Home / FarmerTodayPage where the daily task surface
+  // lives; firing them from My Farm coupled this management view
+  // to the task pipeline for no rendered benefit. This page now
+  // does pure presentation only.
+
+  // Photo upload state (spec §3) — local-only persistence keyed
+  // per farm id so each farm in a multi-farm household carries
+  // its own picture. Stored as a compressed data URL via the
+  // existing localStore (`farroway:store:*` namespace).
+  const farmIdForPhoto = currentFarmId || profile?.id || null;
+  const photoStoreKey = farmIdForPhoto ? `farmPhoto:${farmIdForPhoto}` : null;
+  const initialPhoto = useMemo(() => {
+    if (!photoStoreKey) return '';
+    try { return loadData(photoStoreKey, '') || ''; }
+    catch { return ''; }
+  }, [photoStoreKey]);
+  const [farmPhoto, setFarmPhoto] = useState(initialPhoto);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileInputRef = useRef(null);
 
   if (profileLoading) {
     return (
@@ -166,6 +163,50 @@ export default function MyFarmPage() {
                               || farm.country || farm.countryCode)
                        || !farm.size;
 
+  // ── Photo upload (spec §3) ─────────────────────────────────
+  // File picker → compressAvatar (existing helper, ~50 KB output)
+  // → optimistic preview → persist via localStore. Never throws;
+  // errors silently revert the busy flag so the UI stays usable.
+  function handlePhotoPick(file) {
+    if (!file || !photoStoreKey) return;
+    setPhotoBusy(true);
+    Promise.resolve()
+      .then(() => compressAvatar(file))
+      .then((dataUrl) => {
+        if (typeof dataUrl === 'string' && dataUrl) {
+          setFarmPhoto(dataUrl);
+          try { saveData(photoStoreKey, dataUrl); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* never propagate */ })
+      .finally(() => setPhotoBusy(false));
+  }
+
+  function handlePhotoInputChange(event) {
+    const file = event?.target?.files?.[0];
+    handlePhotoPick(file);
+    // Reset the input so picking the same file again still fires.
+    if (event?.target) event.target.value = '';
+  }
+
+  // Switch Farm CTA — scrolls back to the FarmSwitcher at the top
+  // of this page so the user can pick a different farm without
+  // leaving the management surface. Cleaner than a route change
+  // because the FarmSwitcher is already mounted right there.
+  function handleSwitchFarm() {
+    try {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      // Best-effort: if the FarmSwitcher exposes an open trigger
+      // via a custom event, kick it; otherwise the smooth scroll
+      // alone is enough to expose the dropdown.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('farroway:openFarmSwitcher'));
+      }
+    } catch { /* never propagate */ }
+  }
+
   function handleHelpClick() {
     // Try the in-app /support route first; if the URL hasn't
     // changed within a beat, fall back to a mailto. This avoids
@@ -205,7 +246,41 @@ export default function MyFarmPage() {
           icon + green accent border. */}
       <FarmSwitcher />
 
-      {/* ── 3. Setup Card (spec §3) ────────────────────────────
+      {/* ── 3. Farm Identity Card (spec §3 redesign) ───────────
+          Circular farm photo on the left + farm name + location
+          on the right. "Upload photo" button below the picture
+          opens the system file picker; the picked file is
+          compressed to ~50 KB via the existing avatar helper and
+          stored locally per farm id (no backend change). When no
+          photo has been picked yet, we render initials over the
+          green-tinted placeholder. */}
+      <FarmIdentityCard
+        farm={farm}
+        photo={farmPhoto}
+        busy={photoBusy}
+        onPickClick={() => fileInputRef.current?.click()}
+        farmName={farm.farmName || farm.name || tSafe('myFarm.unnamedFarm', 'My Farm')}
+        location={
+          farm.location || farm.locationLabel
+          || localizeCountry(farm.country || farm.countryCode, lang)
+          || ''
+        }
+        uploadLabel={tSafe('myFarm.uploadPhoto', 'Upload photo')}
+        uploadingLabel={tSafe('myFarm.uploadingPhoto', 'Uploading…')}
+      />
+      {/* Hidden file input — clicked imperatively from the card. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handlePhotoInputChange}
+        style={S.hiddenFileInput}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+
+      {/* ── 4. Setup Card (spec §4 redesign) ───────────────────
           Single unified card; renders ONLY when the farm is
           missing crop/location/size. Replaces the prior split
           messages (avoids "duplicated setup messages" — spec §8). */}
@@ -283,11 +358,11 @@ export default function MyFarmPage() {
         </ul>
       </section>
 
-      {/* ── 5. Action Buttons (spec §5) ────────────────────────
-          Exactly two large action buttons, full-width each.
-          Edit Farm = primary navy; Add New Farm = green accent.
-          Funding / Sell / Scan / Check land are intentionally
-          omitted — they live in their own surfaces (spec §8). */}
+      {/* ── 6. Action Buttons (spec §5 redesign) ───────────────
+          Exactly three same-size action buttons.
+          • Edit Farm     — primary green
+          • Add New Farm  — secondary outline
+          • Switch Farm   — tertiary (scrolls to FarmSwitcher) */}
       <div style={S.actionStack} data-testid="my-farm-actions">
         <button
           type="button"
@@ -310,6 +385,17 @@ export default function MyFarmPage() {
             <Plus size={16} />
           </span>
           <span>{tSafe('myFarm.addFarm', 'Add New Farm')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleSwitchFarm}
+          style={S.actionBtnSecondary}
+          data-testid="my-farm-switch"
+        >
+          <span style={S.actionBtnIcon} aria-hidden="true">
+            <ArrowRight size={16} />
+          </span>
+          <span>{tSafe('myFarm.switchFarm', 'Switch Farm')}</span>
         </button>
       </div>
 
@@ -363,6 +449,79 @@ function Header({ t }) {
   );
 }
 
+/**
+ * FarmIdentityCard — redesign §3.
+ *
+ * Composition:
+ *   ┌──────────────────────────────────────────────┐
+ *   │  ⬤ photo   │  Farm name                       │
+ *   │            │  Location · small text           │
+ *   │ [Upload   ]│                                  │
+ *   │  photo    ]│                                  │
+ *   └──────────────────────────────────────────────┘
+ *
+ * Photo:
+ *   • 88px circular; data URL when set, otherwise initials over a
+ *     green-tinted placeholder ring.
+ *   • "Upload photo" button below the photo, centred under the
+ *     circle. Disabled while compress is running.
+ *
+ * Behaviour:
+ *   • Pure presentational — the file input lives on MyFarmPage
+ *     so the click handler can keep the input ref tidy.
+ */
+function FarmIdentityCard({
+  farm, photo, busy, onPickClick,
+  farmName, location, uploadLabel, uploadingLabel,
+}) {
+  const initials = String(farmName || '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join('') || '🌱';
+
+  return (
+    <section style={S.identityCard} data-testid="my-farm-identity">
+      <div style={S.identityRow}>
+        <div style={S.identityLeft}>
+          <div style={S.photoWrap} aria-hidden="true">
+            {photo ? (
+              <img
+                src={photo}
+                alt=""
+                style={S.photoImg}
+                draggable={false}
+              />
+            ) : (
+              <span style={S.photoFallback}>
+                {initials}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onPickClick}
+            disabled={busy}
+            style={S.uploadBtn}
+            data-testid="my-farm-upload-photo"
+          >
+            {busy ? uploadingLabel : uploadLabel}
+          </button>
+        </div>
+        <div style={S.identityRight}>
+          <div style={S.identityName}>{farmName}</div>
+          {location ? (
+            <div style={S.identityLocation}>{location}</div>
+          ) : null}
+          {/* Hide the placeholder location string when we have nothing
+              meaningful — never render the literal "Add location" twice. */}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DetailRow({ icon, label, value, placeholder }) {
   return (
     <li style={S.detailRow}>
@@ -408,6 +567,92 @@ const S = {
     fontWeight: 800,
     color: '#FFFFFF',
     letterSpacing: '-0.01em',
+  },
+
+  // ── Farm Identity Card (spec §3 redesign) ──────────────────
+  identityCard: {
+    margin: '0.75rem 1rem 0',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 16,
+    padding: '1rem',
+  },
+  identityRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+  },
+  identityLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+    flex: '0 0 auto',
+  },
+  photoWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: '50%',
+    background: 'rgba(34,197,94,0.14)',
+    border: '2px solid rgba(34,197,94,0.45)',
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: '0 0 auto',
+  },
+  photoImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  photoFallback: {
+    fontSize: 28,
+    fontWeight: 800,
+    color: '#86EFAC',
+    letterSpacing: '0.02em',
+  },
+  uploadBtn: {
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(34,197,94,0.45)',
+    color: '#86EFAC',
+    borderRadius: 999,
+    padding: '6px 14px',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 32,
+    whiteSpace: 'nowrap',
+  },
+  identityRight: {
+    flex: '1 1 auto',
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  identityName: {
+    fontSize: '1.05rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  identityLocation: {
+    fontSize: '0.8125rem',
+    color: 'rgba(255,255,255,0.65)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  hiddenFileInput: {
+    position: 'absolute',
+    width: 1, height: 1, padding: 0, margin: -1,
+    overflow: 'hidden', clip: 'rect(0,0,0,0)',
+    border: 0,
   },
 
   // ── Setup Card (spec §3) ────────────────────────────────────

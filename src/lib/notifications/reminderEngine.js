@@ -12,7 +12,7 @@
  *
  *   {
  *     dailyReminderEnabled:    true,
- *     dailyReminderTime:       "07:00",
+ *     dailyReminderTime:       "08:00",
  *     browserPushEnabled:      false,
  *     emailReminderEnabled:    false,
  *     criticalAlertsOnly:      false,
@@ -35,7 +35,10 @@ export const REMINDER_KINDS = Object.freeze([
 
 export const DEFAULT_SETTINGS = Object.freeze({
   dailyReminderEnabled:    true,
-  dailyReminderTime:       '07:00',
+  // Daily-retention spec (Apr 2026): default 8 AM local time.
+  // The setting is still farmer-editable via /settings; this is
+  // just the seed value when no preference has been saved yet.
+  dailyReminderTime:       '08:00',
   browserPushEnabled:      false,
   emailReminderEnabled:    false,
   criticalAlertsOnly:      false,
