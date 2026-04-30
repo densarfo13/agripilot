@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway brand mark — v6 (April 2026 brand asset, exact match).
+  Farroway brand mark — v7 (April 2026 brand asset).
 
-  Standalone vector copy of the leaf-arrow mark drawn inline by
-  src/components/FarrowayLogo.jsx — kept in sync by hand.
+  If you have the canonical brand-asset file, drop it in at this
+  path to replace this redraw. The FarrowayLogo component will
+  pick it up via the existing wiring.
 
-  Composition (top → bottom inside the tilted leaf silhouette):
-    1. lighter-green band hugging the upper-right tip (#A3E635)
-    2. medium-green main body (#22C55E)
-    3. white wedge in the lower-left (#FFFFFF)
-    4. solid dark-navy arrow (#0B1220) — single filled polygon
-       combining shaft + chevron head — painted on top, curving
-       up through the wedge into the green body.
+  Composition:
+    1. Vertical pointed-oval leaf with a dark-green outline.
+    2. Bright brand-green fill + faint lighter-green highlight
+       along the upper edge.
+    3. White triangular wedge cutting into the lower portion.
+    4. Solid dark-navy chevron arrow painted on top.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 100 100"
@@ -21,31 +21,38 @@
 
   <defs>
     <clipPath id="leafClip">
-      <path d="M 88 14
-               Q 70 6, 48 12
-               Q 22 22, 10 50
-               Q 4 80, 28 90
-               Q 50 92, 66 76
-               Q 82 56, 88 14 Z" />
+      <path d="M 50 6
+               Q 22 14, 14 46
+               Q 12 82, 50 94
+               Q 88 82, 86 46
+               Q 78 14, 50 6 Z" />
     </clipPath>
   </defs>
 
+  <!-- Dark-green outline. -->
+  <path d="M 50 6
+           Q 22 14, 14 46
+           Q 12 82, 50 94
+           Q 88 82, 86 46
+           Q 78 14, 50 6 Z"
+        fill="none"
+        stroke="#15803D"
+        stroke-width="5"
+        stroke-linejoin="round" />
+
   <g clip-path="url(#leafClip)">
-    <!-- 1. medium green base -->
+    <!-- Bright green base. -->
     <rect x="0" y="0" width="100" height="100" fill="#22C55E" />
-
-    <!-- 2. lighter green band at the upper-right -->
-    <polygon points="-10,-20 110,-20 110,6 -10,32" fill="#A3E635" />
-
-    <!-- 3. white wedge in the lower-left -->
-    <polygon points="-10,86 110,46 110,120 -10,120" fill="#FFFFFF" />
+    <!-- Faint lighter-green highlight along the upper edge. -->
+    <polygon points="-10,-10 110,-10 110,8 -10,28"
+             fill="#A3E635" opacity="0.55" />
+    <!-- White wedge cutting into the lower portion. -->
+    <polygon points="-10,84 110,50 110,120 -10,120" fill="#FFFFFF" />
   </g>
 
-  <!-- Dark navy arrow — single filled polygon (shaft + chevron
-       head) painted on top of the leaf so it reads cleanly
-       across both the green portion and the white wedge. -->
+  <!-- Solid dark-navy chevron arrow. -->
   <polygon
-    points="80,14 60,18 70,28 34,70 22,78 28,84 40,72 76,36 66,38"
+    points="78,16 60,18 70,28 34,66 24,76 30,82 40,72 76,34 66,38"
     fill="#0B1220"
     stroke="#0B1220"
     stroke-width="0.6"

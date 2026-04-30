@@ -1,19 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway logo — 512x512 reference asset (v6, April 2026).
+  Farroway logo — 512x512 reference asset (v7, April 2026).
 
-  Aligned with the canonical leaf-arrow mark (see
-  src/components/FarrowayLogo.jsx and
-  public/icons/farroway-mark.svg). Same composition scaled
-  for the larger viewBox so raster generators
-  (scripts/generate-icons.js) produce a consistent app-icon
-  set at 192/512/1024.
-
-  Composition:
-    1. lighter-green band hugging the upper-right tip (#A3E635)
-    2. medium-green main body (#22C55E)
-    3. white wedge in the lower-left (#FFFFFF)
-    4. solid dark-navy arrow (#0B1220) painted on top.
+  Same composition as public/icons/farroway-mark.svg, scaled
+  for raster generators.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 512 512"
@@ -23,30 +13,35 @@
 
   <defs>
     <clipPath id="leafClip">
-      <path d="M 451 72
-               Q 358 31, 246 61
-               Q 113 113, 51 256
-               Q 20 410, 143 461
-               Q 256 471, 338 389
-               Q 420 287, 451 72 Z" />
+      <path d="M 256 31
+               Q 113 72, 72 235
+               Q 61 420, 256 481
+               Q 451 420, 440 235
+               Q 399 72, 256 31 Z" />
     </clipPath>
   </defs>
 
+  <!-- Dark-green outline. -->
+  <path d="M 256 31
+           Q 113 72, 72 235
+           Q 61 420, 256 481
+           Q 451 420, 440 235
+           Q 399 72, 256 31 Z"
+        fill="none"
+        stroke="#15803D"
+        stroke-width="26"
+        stroke-linejoin="round" />
+
   <g clip-path="url(#leafClip)">
-    <!-- 1. medium green base -->
     <rect x="0" y="0" width="512" height="512" fill="#22C55E" />
-
-    <!-- 2. lighter green band at the upper-right -->
-    <polygon points="-51,-102 563,-102 563,31 -51,164" fill="#A3E635" />
-
-    <!-- 3. white wedge in the lower-left -->
-    <polygon points="-51,440 563,235 563,614 -51,614" fill="#FFFFFF" />
+    <polygon points="-51,-51 563,-51 563,41 -51,143"
+             fill="#A3E635" opacity="0.55" />
+    <polygon points="-51,430 563,256 563,614 -51,614" fill="#FFFFFF" />
   </g>
 
-  <!-- Dark navy arrow — shaft + chevron head as a single
-       filled polygon, scaled to the 512 viewBox. -->
+  <!-- Solid dark-navy chevron arrow. -->
   <polygon
-    points="410,72 307,92 358,143 174,358 113,399 143,430 205,368 389,184 338,194"
+    points="399,82 307,92 358,143 174,338 123,389 154,420 205,368 389,174 338,194"
     fill="#0B1220"
     stroke="#0B1220"
     stroke-width="3"

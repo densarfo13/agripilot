@@ -1,43 +1,32 @@
 /**
- * FarrowayLogo — v6 brand mark, redrawn April 2026 to match the
- * supplied brand asset exactly:
+ * FarrowayLogo — v7 brand mark, redrawn April 2026 to better
+ * match the supplied brand asset.
  *
- *   * Tilted leaf silhouette — pointed top-right tip, rounded
- *     bottom curving back up the right side.
- *   * THREE colour zones inside the leaf:
- *       1. lighter-green band hugging the upper-right tip
- *          (#A3E635 — brand lightGreen)
- *       2. medium green main body (#22C55E — brand green)
- *       3. WHITE wedge in the lower-left (#FFFFFF)
- *   * Solid dark-navy arrow (#0B1220) painted on top, curving
- *     from the lower-left of the leaf up through the white wedge
- *     and into the green body, ending in a chevron arrowhead at
- *     the upper-right tip.
+ * If you have the brand asset as a finished SVG / PNG and
+ * want pixel-perfect fidelity, drop it in at
+ *   public/icons/farroway-mark.svg
+ * and either:
+ *   1. Replace the contents of `FarrowayMark` below with
+ *      <img src="/icons/farroway-mark.svg" ... /> — the
+ *      lockup, props, and tile variants will keep working.
+ *   2. Or paste the new SVG path data into LEAF_PATH /
+ *      ARROW_PATH below.
  *
- * Two-tone tagline support: "Know what to do." (navy on light
- * surfaces, white on dark) + "Grow better." (always green).
+ * Composition (v7):
+ *   * Vertical pointed-oval leaf — sharp tip at top, softer
+ *     point at the base, widest near the middle.
+ *   * Darker-green outline around the leaf edge so the
+ *     silhouette has depth on both light and dark surfaces.
+ *   * Bright brand-green fill with a faint lighter-green
+ *     highlight along the upper-right edge.
+ *   * White triangular wedge cutting into the lower-left of
+ *     the leaf body.
+ *   * Solid dark-navy chevron arrow painted on top, running
+ *     from the lower-left up through the white wedge to a
+ *     finned arrowhead near the upper-right of the leaf.
  *
- * App-icon contexts wrap the bare mark in a rounded square tile
- * via `tileVariant="light"` or `"dark"`. The PRIMARY logo is
- * the bare leaf — no tile.
- *
- * Backwards-compatible API:
- *   size       — icon edge in px (default 32)
- *   showText   — wordmark on/off (default true)
- *   textColor  — explicit wordmark colour (overrides variant)
- *   variant    — "onDark" (white wordmark) | "onLight" (navy)
- *   iconOnly   — alias for showText={false}
- *   withTile   — legacy alias; if true, behaves like
- *                tileVariant="dark"
- *   tileVariant — "none" (default) | "light" | "dark"
- *   showTagline — render the two-tone tagline beneath the
- *                 wordmark (default false)
- *
- * Strict-rule audit
- *   * Inline SVG — no second network request.
- *   * Accessibility: <svg role="img"> + <title>.
- *   * Stable IDs prefixed with the component name so multiple
- *     instances on the same page never collide on clip-path refs.
+ * API and tile variants are unchanged from v6 — props, the
+ * full lockup, and the tagline composition all keep working.
  */
 
 import React from 'react';
@@ -51,10 +40,6 @@ function nextId(prefix) {
   return `${prefix}_${_uid}`;
 }
 
-/**
- * The bare leaf mark — no wordmark, no tile.
- * viewBox 0 0 100 100.
- */
 export function FarrowayMark({
   size = 32,
   tileVariant = 'none', // 'none' | 'light' | 'dark'
@@ -68,56 +53,27 @@ export function FarrowayMark({
     tileVariant === 'dark'  ? C.navy  :
     tileVariant === 'light' ? C.white : null;
 
-  // Tilted leaf silhouette. Pointed top-right tip ~(88, 14),
-  // bulging upper-left around (10, 50), rounded bottom curve
-  // through (28, 90), back up the right side.
+  // Vertical pointed-oval leaf. Sharp tip at top (50, 6);
+  // widest around y ≈ 50; softly pointed base at (50, 94).
   const LEAF_PATH =
-    'M 88 14 '
-    + 'Q 70 6, 48 12 '
-    + 'Q 22 22, 10 50 '
-    + 'Q 4 80, 28 90 '
-    + 'Q 50 92, 66 76 '
-    + 'Q 82 56, 88 14 Z';
+    'M 50 6 '
+    + 'Q 22 14, 14 46 '   // upper-left curve down to widest
+    + 'Q 12 82, 50 94 '   // lower-left curve to base
+    + 'Q 88 82, 86 46 '   // lower-right curve up
+    + 'Q 78 14, 50 6 Z';  // upper-right curve back to top
 
-  // Dark navy arrow drawn as a single filled polygon so the
-  // shaft + chevron head read as one confident shape (matches
-  // the supplied brand asset). The polygon outlines the shaft
-  // along its lower edge, flares at the back-bottom of the
-  // arrowhead, runs to the tip, comes back through the
-  // back-top flange, then returns along the shaft's upper
-  // edge to close at the tail.
-  //
-  //          tip (80, 14)
-  //         /│
-  //  (60,18)*│  ← back-top flange
-  //         \│
-  //          *(70, 28)  ← shaft-top meets head
-  //           \
-  //            \  shaft (curved by sequential L points)
-  //             \
-  //              *(34, 70)
-  //              /
-  //  tail (22, 78)
-  //              \
-  //               *(28, 84)  ← tail bottom
-  //              /
-  //             /
-  //            /  shaft underside
-  //           /
-  //          *(76, 36)  ← shaft-bottom meets head
-  //         /│
-  //  (66,38)*│  ← back-bottom flange
-  //         \│
-  //          → back to tip
+  // Solid dark arrow as a single filled polygon. Runs from
+  // the lower-left of the leaf to the upper-right tip with a
+  // chevron-style head.
   const ARROW_POINTS =
-      '80,14 '       // tip
+      '78,16 '       // tip (top-right)
     + '60,18 '       // back-top flange
     + '70,28 '       // shaft-top meets head
-    + '34,70 '       // shaft top-edge tail
-    + '22,78 '       // tail
-    + '28,84 '       // tail bottom
+    + '34,66 '       // shaft top-edge tail
+    + '24,76 '       // tail (bottom-left)
+    + '30,82 '       // tail bottom
     + '40,72 '       // shaft bottom-edge
-    + '76,36 '       // shaft-bottom meets head
+    + '76,34 '       // shaft-bottom meets head
     + '66,38';       // back-bottom flange
 
   return (
@@ -148,32 +104,41 @@ export function FarrowayMark({
         />
       )}
 
-      {/* Three-zone leaf composition. Polygons extend past the
-          leaf bounds; the clipPath trims them to the silhouette. */}
+      {/* Dark-green outline behind the fill so the leaf has a
+          visible edge. Drawn first; the clipped fill overlays
+          it, leaving a thin outline visible around the path. */}
+      <path
+        d={LEAF_PATH}
+        fill="none"
+        stroke={C.darkGreen}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+
+      {/* Leaf interior — three zones clipped to the silhouette. */}
       <g clipPath={`url(#${clipId})`}>
-        {/* 1. Medium green base — fills the whole leaf */}
+        {/* 1. Bright green base fills the whole leaf. */}
         <rect x="0" y="0" width="100" height="100" fill={C.green} />
 
-        {/* 2. Lighter-green band hugging the upper-right tip.
-              Cut runs from (-10, 32) to (110, 6) so the band
-              sits along the top of the leaf. */}
+        {/* 2. Faint lighter-green highlight along the upper
+              edge — gives the leaf a subtle gradient instead
+              of a flat fill. */}
         <polygon
-          points="-10,-20 110,-20 110,6 -10,32"
+          points="-10,-10 110,-10 110,8 -10,28"
           fill={C.lightGreen}
+          opacity="0.55"
         />
 
-        {/* 3. White wedge — slants up to the right so it sits
-              in the lower-LEFT of the leaf. Cut runs from
-              (-10, 86) to (110, 46). */}
+        {/* 3. White triangular wedge cutting into the lower
+              portion of the leaf. The cut line runs from
+              roughly (-10, 84) up to (110, 50). */}
         <polygon
-          points="-10,86 110,46 110,120 -10,120"
+          points="-10,84 110,50 110,120 -10,120"
           fill={C.white}
         />
       </g>
 
-      {/* Dark navy arrow — single filled polygon (shaft + chevron
-          head) painted on top of the leaf so it reads cleanly
-          across both the green portion AND the white wedge. */}
+      {/* Solid dark-navy chevron arrow. */}
       <polygon
         points={ARROW_POINTS}
         fill={C.navy}
@@ -185,8 +150,6 @@ export function FarrowayMark({
   );
 }
 
-// Legacy export name preserved so any caller still importing
-// `FarrowayIcon` keeps working.
 export const FarrowayIcon = FarrowayMark;
 
 /**
@@ -199,8 +162,8 @@ export default function FarrowayLogo({
   textColor,
   variant    = 'onDark',
   iconOnly   = false,
-  withTile,                   // legacy: maps to tileVariant
-  tileVariant,                // 'none' | 'light' | 'dark'
+  withTile,
+  tileVariant,
   showTagline = false,
   ...rest
 }) {
