@@ -389,10 +389,14 @@ const S = {
     cursor: 'pointer',
     padding: '8px 0',
     marginBottom: '0.5rem',
-    display: 'block',
-    minHeight: '44px',
+    // Flex container so the back-arrow icon and label sit on
+    // the same baseline. Tap target padded to 44px min-height
+    // (a11y) — the earlier `display: 'block'` here was a
+    // duplicate key that shadowed this flex declaration and
+    // tripped esbuild's strict-duplicate-key check.
     display: 'flex',
     alignItems: 'center',
+    minHeight: '44px',
   },
   title: {
     fontSize: '1.4rem',
