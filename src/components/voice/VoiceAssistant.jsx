@@ -31,6 +31,11 @@ import {
   routeVoiceIntent, answerForIntent, getSuggestedQuestions,
 } from '../../utils/voiceIntents.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
+import { isFeatureEnabled } from '../../utils/featureFlags.js';
+import {
+  generateDailyPlan, getDailyPlanVoiceSummary,
+} from '../../core/dailyIntelligenceEngine.js';
+import { useProfile } from '../../context/ProfileContext.jsx';
 
 const STATE = {
   IDLE: 'idle',
@@ -43,6 +48,13 @@ const STATE = {
 export default function VoiceAssistant({ open, onClose }) {
   const { lang } = useTranslation();
   const navigate = useNavigate();
+  // Profile context — used by the today_tasks intent so the
+  // voice answer reflects the farmer's actual daily plan when
+  // FEATURE_DAILY_INTELLIGENCE is on.
+  let profile = null;
+  try { profile = useProfile()?.profile || null; }
+  catch { /* outside ProfileContext — voice still works with
+              the static intent answer. */ }
 
   const [state, setState] = React.useState(STATE.IDLE);
   const [transcript, setTranscript] = React.useState('');
@@ -130,7 +142,23 @@ export default function VoiceAssistant({ open, onClose }) {
     setTranscript(question.question);
     setState(STATE.THINKING);
     // Tapped questions bypass SR and route directly via intent id.
-    const result = answerForIntent(question.id, lang);
+    let result = answerForIntent(question.id, lang);
+    // Spec §10: when Daily Intelligence is enabled, the
+    // "today_tasks" intent reads the actual daily plan summary
+    // instead of the static template — keeps voice in sync
+    // with what the Home card shows.
+    if (question.id === 'today_tasks'
+        && profile
+        && isFeatureEnabled('FEATURE_DAILY_INTELLIGENCE')) {
+      try {
+        const plan = generateDailyPlan({
+          farm: profile,
+          weather: profile.weather || null,
+        });
+        const voice = getDailyPlanVoiceSummary(plan);
+        if (voice) result = voice;
+      } catch { /* fall back to the static template */ }
+    }
     applyIntentResult({
       id: question.id,
       matched: true,

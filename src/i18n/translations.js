@@ -11007,6 +11007,139 @@ const T = {
     hi: 'अब मुझे क्या करना चाहिए?',
     es: '¿Qué debo hacer a continuación?',
   },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DAILY INTELLIGENCE — Today's plan card (rollout v1)
+  // ═══════════════════════════════════════════════════════════
+  'daily.title': {
+    en: 'Today\u2019s plan', fr: 'Plan d\u2019aujourd\u2019hui', sw: 'Mpango wa leo',
+    ha: 'Tsarin yau', tw: 'Ɛnnɛ nhyehyɛe', hi: 'आज की योजना', es: 'Plan de hoy',
+  },
+  'daily.greeting': {
+    en: 'Good day,', fr: 'Bonjour,', sw: 'Habari,',
+    ha: 'Sannu,', tw: 'Maakye,', hi: 'नमस्ते,', es: 'Buen día,',
+  },
+  'daily.greetingNoName': {
+    en: 'Good day', fr: 'Bonjour', sw: 'Habari',
+    ha: 'Sannu', tw: 'Maakye', hi: 'नमस्ते', es: 'Buen día',
+  },
+  'daily.farmFallback': {
+    en: 'Your farm', fr: 'Votre ferme', sw: 'Shamba lako',
+    ha: 'Gonarka', tw: 'W\u2019afuo', hi: 'आपका खेत', es: 'Su finca',
+  },
+  'daily.topActions': {
+    en: 'Today\u2019s top actions',
+    fr: 'Actions principales du jour',
+    sw: 'Hatua bora za leo',
+    ha: 'Manyan ayyukan yau',
+    tw: 'Ɛnnɛ adwuma a ɛho hia',
+    hi: 'आज के मुख्य कार्य',
+    es: 'Acciones principales de hoy',
+  },
+  'daily.cropStage': {
+    en: 'Crop stage', fr: 'Stade de la culture', sw: 'Hatua ya zao',
+    ha: 'Matakin amfani', tw: 'Nnɔbae anammɔn', hi: 'फसल चरण', es: 'Etapa del cultivo',
+  },
+  'daily.weatherSummary': {
+    en: 'Weather summary', fr: 'Résumé météo', sw: 'Muhtasari wa hali ya hewa',
+    ha: 'Taƙaitaccen yanayi', tw: 'Wim tebea ti', hi: 'मौसम सारांश',
+    es: 'Resumen del clima',
+  },
+  'daily.markDone': {
+    en: 'Mark done', fr: 'Marquer comme fait', sw: 'Weka alama imekamilika',
+    ha: 'Yi alama an gama', tw: 'Hyɛ s\u025B awie', hi: 'पूर्ण चिह्नित करें',
+    es: 'Marcar como hecho',
+  },
+  'daily.remindLater': {
+    en: 'Remind me later', fr: 'Me le rappeler plus tard', sw: 'Nikumbushe baadaye',
+    ha: 'Tunatar da ni daga baya', tw: 'Kae me akyiri', hi: 'बाद में याद दिलाएँ',
+    es: 'Recordármelo más tarde',
+  },
+  'daily.askFarroway': {
+    en: 'Ask Farroway', fr: 'Demander à Farroway', sw: 'Uliza Farroway',
+    ha: 'Tambayi Farroway', tw: 'Bisa Farroway', hi: 'Farroway से पूछें',
+    es: 'Preguntar a Farroway',
+  },
+  'daily.scanCrop': {
+    en: 'Scan crop', fr: 'Scanner la culture', sw: 'Skani zao',
+    ha: 'Bincika amfani', tw: 'Hwehwɛ nnɔbae', hi: 'फसल स्कैन करें',
+    es: 'Escanear cultivo',
+  },
+  'daily.prepareToSell': {
+    en: 'Prepare to sell', fr: 'Préparer la vente', sw: 'Jiandae kuuza',
+    ha: 'Shirya don sayarwa', tw: 'Siesie wo ho tɔn', hi: 'बेचने की तैयारी करें',
+    es: 'Prepárese para vender',
+  },
+  'daily.missingPlantingDate': {
+    en: 'Add your planting date',
+    fr: 'Ajoutez votre date de plantation',
+    sw: 'Ongeza tarehe ya kupanda',
+    ha: 'Ƙara kwanan shuka',
+    tw: 'Ka da a wodua dua no',
+    hi: 'बुवाई की तारीख जोड़ें',
+    es: 'Agregue la fecha de siembra',
+  },
+  'daily.rainWarning': {
+    en: 'Rain expected today',
+    fr: 'Pluie attendue aujourd\u2019hui',
+    sw: 'Mvua inatarajiwa leo',
+    ha: 'Ana sa ran ruwan sama yau',
+    tw: 'Wɔrehwɛ kwan sɛ nsuo bɛtɔ ɛnnɛ',
+    hi: 'आज बारिश की संभावना',
+    es: 'Se espera lluvia hoy',
+  },
+  'daily.heatWarning': {
+    en: 'Hot, dry weather',
+    fr: 'Temps chaud et sec',
+    sw: 'Hali ya joto na ukame',
+    ha: 'Yanayi mai zafi da bushe',
+    tw: 'Wim ayɛ hyew na asuo nni hɔ',
+    hi: 'गर्म, सूखा मौसम',
+    es: 'Clima caluroso y seco',
+  },
+  'daily.harvestReady': {
+    en: 'Harvest ready',
+    fr: 'Prêt pour la récolte',
+    sw: 'Tayari kuvuna',
+    ha: 'Shirye don girbi',
+    tw: 'Wɔbɛtwa',
+    hi: 'कटाई के लिए तैयार',
+    es: 'Listo para cosechar',
+  },
+  'daily.noActions': {
+    en: 'No actions for today — keep watching the field and check back tomorrow.',
+    fr: 'Aucune action pour aujourd\u2019hui — surveillez votre champ et revenez demain.',
+    sw: 'Hakuna hatua za leo — endelea kufuatilia shamba na rudi kesho.',
+    ha: 'Babu ayyuka yau — ci gaba da kallon gona ka koma gobe.',
+    tw: 'Adwuma biara nni hɔ ɛnnɛ — kɔ so hwɛ afuo no na san hwehwɛ ɔkyena.',
+    hi: 'आज कोई कार्य नहीं — खेत पर नज़र रखें और कल फिर आएँ।',
+    es: 'No hay acciones para hoy — siga observando el campo y vuelva mañana.',
+  },
+  'daily.weatherStale': {
+    en: 'Weather data may be outdated — connect to refresh.',
+    fr: 'Les données météo peuvent être obsolètes — connectez-vous pour actualiser.',
+    sw: 'Data ya hali ya hewa inaweza kuwa imechelewa — unganisha ili kusasisha.',
+    ha: 'Bayanan yanayi na iya zama tsohuwa — haɗa don sabuntawa.',
+    tw: 'Wim tebea nsɛm bɛtumi ayɛ dadaw — kɔ intanɛt so na ma ɛnyɛ foforɔ.',
+    hi: 'मौसम डेटा पुराना हो सकता है — रिफ़्रेश के लिए कनेक्ट करें।',
+    es: 'Los datos del clima pueden estar desactualizados — conéctese para actualizar.',
+  },
+  'daily.confidence': {
+    en: 'Confidence', fr: 'Confiance', sw: 'Uhakika',
+    ha: 'Tabbas', tw: 'Gyidie', hi: 'विश्वास', es: 'Confianza',
+  },
+  'daily.confidence.low': {
+    en: 'Low', fr: 'Faible', sw: 'Chini',
+    ha: 'Ƙanƙani', tw: 'Kakra', hi: 'कम', es: 'Baja',
+  },
+  'daily.confidence.medium': {
+    en: 'Medium', fr: 'Moyen', sw: 'Wastani',
+    ha: 'Matsakaici', tw: 'Ntam', hi: 'मध्यम', es: 'Media',
+  },
+  'daily.confidence.high': {
+    en: 'High', fr: 'Élevé', sw: 'Juu',
+    ha: 'Babba', tw: 'Kɛse', hi: 'उच्च', es: 'Alta',
+  },
 };
 
 export default T;

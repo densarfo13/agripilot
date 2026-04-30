@@ -50,6 +50,7 @@ import ProgramCard from '../components/farmer/ProgramCard.jsx';
 import NotificationBell from '../components/NotificationBell.jsx';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
+import DailyPlanCard from '../components/daily/DailyPlanCard.jsx';
 import {
   addNotification, NOTIFICATION_TYPES,
 } from '../notifications/notificationStore.js';
@@ -589,6 +590,20 @@ export default function Dashboard() {
           <NotificationBell userId={_userId} testId="home-bell" />
         </div>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
+
+        {/* Daily Intelligence card (rollout v1) — surfaces the
+            top 3 actions for today plus a rolled-up Ask Farroway
+            / Scan crop footer. Hides quietly when
+            FEATURE_DAILY_INTELLIGENCE is off so the existing
+            Home composition is unchanged. */}
+        {loop.profile && (
+          <DailyPlanCard
+            farm={loop.profile}
+            weather={loop.weather || null}
+            weatherStale={!!loop.weatherStale}
+            greetingName={user?.name || user?.farmerName || null}
+          />
+        )}
 
         {/* ── Weather Intelligence Card (Home redesign §2) ─────
             One compact card with the weather condition + a

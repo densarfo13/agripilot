@@ -47,6 +47,21 @@ const DEFAULTS = Object.freeze({
   // app uses safe rule-based placeholder responses until a
   // medical-style review of the AI output lands.
   FEATURE_OPEN_AI_DIAGNOSIS: false,
+
+  // Daily Intelligence (rollout v1) — generates today's top
+  // 3 actions on Home from crop + planting date + weather +
+  // recent activity. Engine is rule-based; no AI claims.
+  FEATURE_DAILY_INTELLIGENCE: true,
+
+  // Auto-task generation — when on, the daily plan also
+  // surfaces tasks the farmer can mark done from the card.
+  // When off, the card still renders but the "Mark done"
+  // path no-ops (useful during pilot).
+  FEATURE_AUTO_TASK_GENERATION: true,
+
+  // Advanced AI recommendations — LLM-backed forward
+  // planning. Stays off until safety review lands.
+  FEATURE_ADVANCED_AI_RECOMMENDATIONS: false,
 });
 
 function safeWindowFlag(name) {
