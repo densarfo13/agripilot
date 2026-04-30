@@ -26,6 +26,7 @@ import {
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
+import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 // Structured event log for the NGO impact dashboard. logEvent
@@ -667,6 +668,11 @@ export default function AllTasksPage() {
           )}
         </div>
       )}
+
+      {/* Voice assistant launcher (rollout §1) — floating FAB
+          above the bottom-tab nav, hidden when
+          FEATURE_VOICE_ASSISTANT is off. */}
+      <VoiceLauncher variant="floating" />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { getFarmWeather } from '../lib/api.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
+import VoiceLauncher from './voice/VoiceLauncher.jsx';
 
 export default function FarmWeatherCard() {
   const { currentFarmId, profile } = useProfile();
@@ -146,6 +147,13 @@ export default function FarmWeatherCard() {
           )}
         </div>
       )}
+
+      {/* Voice assistant entry — inline so it sits under the
+          weather alerts without competing visually. Voice-rollout
+          spec §1: weather card is one of the five entry surfaces. */}
+      <div style={{ marginTop: '0.5rem' }}>
+        <VoiceLauncher variant="inline" />
+      </div>
     </div>
   );
 }

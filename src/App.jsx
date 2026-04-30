@@ -104,6 +104,7 @@ const V2ProfileSetup = lazy(() => import('./pages/ProfileSetup.jsx'));
 const V2FarmerType = lazy(() => import('./pages/FarmerType.jsx'));
 const V2StarterGuide = lazy(() => import('./pages/StarterGuide.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const HelpPage = lazy(() => import('./pages/HelpPage.jsx'));
 const FarmerWelcome = lazy(() => import('./pages/FarmerWelcome.jsx'));
 const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
 const BeginnerReassurance = lazy(() => import('./pages/BeginnerReassurance.jsx'));
@@ -591,6 +592,7 @@ export default function App() {
             <Route path="/dashboard" element={<V2Dashboard />} />
             <Route path="/tasks" element={<AllTasksPage />} />
             <Route path="/my-farm" element={<MyFarmPage />} />
+            <Route path="/help" element={<HelpPage />} />
             <Route path="/progress" element={<FarmerProgressPage />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />

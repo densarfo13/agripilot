@@ -48,6 +48,7 @@ import {
 import { confirmProgramActed } from '../notifications/smsConfirmations.js';
 import ProgramCard from '../components/farmer/ProgramCard.jsx';
 import NotificationBell from '../components/NotificationBell.jsx';
+import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import {
   addNotification, NOTIFICATION_TYPES,
 } from '../notifications/notificationStore.js';
@@ -1116,6 +1117,12 @@ export default function Dashboard() {
         )}
 
         {modals}
+
+        {/* Voice assistant launcher (rollout §1) — floating FAB
+            sits above the bottom-tab nav, hides itself when
+            FEATURE_VOICE_ASSISTANT is off so existing UI stays
+            unchanged. */}
+        <VoiceLauncher variant="floating" />
 
         {showCorrectionModal && (
           <TaskCorrectionModal

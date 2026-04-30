@@ -39,6 +39,7 @@ import { getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_KEYS } from '../utils/cropStages.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
+import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import {
   Sprout, Wheat, MapPin, Ruler, Calendar, HelpCircle, Plus, ArrowRight,
 } from '../components/icons/lucide.jsx';
@@ -520,6 +521,11 @@ export default function MyFarmPage() {
       {/* Bottom spacer so the bottom-nav doesn't cover the help
           card on phones with translucent nav (spec §7 mobile rule). */}
       <div style={S.bottomSpacer} aria-hidden="true" />
+
+      {/* Voice assistant launcher (rollout §1) — floating FAB
+          above the bottom-tab nav, hidden when
+          FEATURE_VOICE_ASSISTANT is off. */}
+      <VoiceLauncher variant="floating" />
     </div>
   );
 }
