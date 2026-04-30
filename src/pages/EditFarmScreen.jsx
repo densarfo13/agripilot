@@ -38,6 +38,7 @@ import {
 import {
   getAllowedSizeUnits, convertSize,
   getFarmSizeLabel, getUnitLabel, normalizeSizeUnit, normalizeFarmType,
+  getFarmTypeLabel,
 } from '../config/onboardingLabels.js';
 import { convertArea } from '../lib/units/areaConversion.js';
 
@@ -495,12 +496,19 @@ export default function EditFarmScreen() {
         {/* Farm type tier — drives downstream behaviour via
             farmTypeBehavior.js. Renders above Farm Size per spec §3. */}
         <label style={S.label}>
+          {/* Pilot Apr 2026: the farm-type chip labels were leaking
+              English in fr/sw/ha/tw/hi UIs because the
+              `setup.farmType.*` i18n keys never existed in
+              translations.js. Switch to `getFarmTypeLabel(code, lang)`
+              from onboardingLabels.js — that helper already ships
+              full translations for backyard / small_farm / commercial
+              across all five launch languages. */}
           {resolve(t, 'setup.farmType', 'Farm type')}{' *'}
           <div style={S.chipRow} data-testid="edit-farm-type-row">
             {[
-              { code: 'backyard',   label: resolve(t, 'setup.farmType.backyard',   'Backyard / Home') },
-              { code: 'small_farm', label: resolve(t, 'setup.farmType.small_farm', 'Small Farm') },
-              { code: 'commercial', label: resolve(t, 'setup.farmType.commercial', 'Commercial Farm') },
+              { code: 'backyard',   label: getFarmTypeLabel('backyard',   lang) },
+              { code: 'small_farm', label: getFarmTypeLabel('small_farm', lang) },
+              { code: 'commercial', label: getFarmTypeLabel('commercial', lang) },
             ].map((opt) => (
               <button
                 key={opt.code}

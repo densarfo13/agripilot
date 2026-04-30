@@ -211,11 +211,20 @@ function _humanize(value) {
 
 export function getCropLabel(value, lang = 'en') {
   if (!value) return '';
-  // Structured "Other" → extract custom name (language-agnostic)
+  // Structured "Other" → extract custom name (language-agnostic).
+  // The custom name was typed by the farmer — render verbatim.
   if (String(value).toUpperCase().startsWith('OTHER:')) {
-    return String(value).slice(6).trim() || 'Other';
+    return String(value).slice(6).trim()
+      || getLangCropLabel('other', lang) || 'Other';
   }
-  if (String(value).toUpperCase() === 'OTHER') return 'Other';
+  // Bare "Other" sentinel — route through the localised catalog so
+  // Hindi gets "अन्य", Twi gets "Foforɔ", etc. Pilot screenshot
+  // showed "Other" leaking on the Edit Farm crop chip across all
+  // five non-English UIs because this branch returned the literal
+  // 'Other' before the lang lookup.
+  if (String(value).toUpperCase() === 'OTHER') {
+    return getLangCropLabel('other', lang) || 'Other';
+  }
 
   // 1) Prefer the language-aware catalog in config/crops.js so every
   //    other language (hi/sw/ha/tw/fr) resolves correctly. It
