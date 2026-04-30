@@ -1,22 +1,27 @@
 /**
- * MyFarmPage — standalone page at /my-farm showing farmer's farm details.
+ * MyFarmPage — premium farm control panel at /my-farm.
  *
- * Reads from profile context, displays farm name, crop, location, size,
- * stage, and country in a clean card layout. No internal IDs, no lat/lng,
- * no technical fields. Dark theme, inline styles, all text via useTranslation().
+ * Layout (Apr 2026 polish spec):
+ *   1. Header             — "My Farm" + sprout icon
+ *   2. Farm Selector      — FarmSwitcher dropdown (green accent)
+ *   3. Setup Card         — only when crop/location/size missing
+ *   4. Farm Details Card  — Crop / Location / Size / Stage rows
+ *                            (each with icon + label + value)
+ *   5. Action Buttons     — Edit Farm + Add New Farm (exactly two)
+ *   6. Help Card          — "Need help? Contact our team →"
+ *
+ * Removed from this page (per spec §8):
+ *   • Today's Action card (NextBestActionCard) — owned by Home/Tasks
+ *   • Funding / Sell / Scan crop / Check land / Progress / Records
+ *   • Verification block / Long suggestions / Help form fields
+ *   • Duplicate setup messages
+ *
+ * The page is intentionally short — farm control panel only. Daily
+ * actions live on Home (/dashboard) and Tasks (/tasks); selling on
+ * /sell; funding on /opportunities. We keep them off this page so
+ * each surface has a single role (screen-role refactor).
  */
 
-// Spec §10 simplification (Apr 2026): MyFarm now renders only
-// the spec'd 4 sections — Next Task / Farm Status + details /
-// Quick Actions / Help. The heavy intelligence hub
-// (FarmSummary, FarmHealth, SmartSuggestions, FarmRecords,
-// VerificationStatus) + identity card + 4-tile grid + multiple
-// secondary cards (FarmInsight, CropTimeline, Harvest,
-// DailyProgress) + multi-button action row (Find Best Crop /
-// Add New Farm / Switch Farm) were removed from this page.
-// They aren't deleted from the codebase — just not surfaced
-// here. Each lives in a more specific home (Progress tab,
-// Profile/Trust page, Settings) per spec instructions.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
@@ -26,29 +31,13 @@ import { tSafe } from '../i18n/tSafe.js';
 import { getCountryLabel } from '../config/countriesStates.js';
 import { getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_KEYS } from '../utils/cropStages.js';
-// Farm helpers (kept available for any downstream surface that
-// wants the 3-state code). MyFarm itself no longer renders a
-// status pill — Today's Action card carries the only progress
-// indicator on this page.
-// QuickActionsCard removed from My Farm in the screen-role
-// refactor — Sell + Funding flows now live exclusively in
-// their bottom-nav tabs. The component itself is still
-// exported for any other surface that wants it.
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
-import NextBestActionCard from '../components/farm/NextBestActionCard.jsx';
 import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
+import {
+  Sprout, Wheat, MapPin, Ruler, Calendar, HelpCircle, Plus, ArrowRight,
+} from '../components/icons/lucide.jsx';
 import { processNotifications } from '../lib/notifications/notificationScheduler.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
-
-// STAGE_EMOJIS and STAGE_KEYS imported from utils/cropStages.js
-//
-// Removed (Apr 2026 pilot fix): a local CROP_EMOJIS map +
-// getCropEmoji() helper that mapped cassava/potato to the same
-// 🥔 emoji (Unicode has no cassava glyph). The map and helper
-// were dead code — the page already renders crop visuals via
-// <CropImage> below, which reads the canonical .webp catalog
-// in src/config/cropImages.js. Keeping the dead emoji map
-// risked re-introducing the inconsistency.
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -61,10 +50,6 @@ function formatSize(size, unit) {
  * readable, locale-aware label. Tries `Intl.DisplayNames` first
  * (Node 14+ / every modern browser), falls back to the curated
  * English labels in countriesStates.js, finally to the input.
- *
- * Important: only uses Intl when the input looks like a 2-letter
- * country code. A free-form name (e.g. "United States") would
- * confuse Intl, so we pass it straight to the curated lookup.
  */
 function localizeCountry(input, lang) {
   if (!input) return '';
@@ -81,35 +66,28 @@ function localizeCountry(input, lang) {
     } catch { /* Intl not supported for this locale — fall through */ }
     return getCountryLabel(upper) || upper;
   }
-  // Free-form text — leave as is. The curated dataset stores
-  // English labels; we don't try to translate "United States" to
-  // Hindi at runtime (no clean reverse-map).
   return value;
 }
 
 export default function MyFarmPage() {
   const navigate = useNavigate();
-  // switchFarm is consumed inside <FarmSwitcher /> via its
-  // own useProfile() call — no need to thread it through here.
   const {
     profile, farms, currentFarmId, loading: profileLoading,
   } = useProfile();
   const { t, lang } = useTranslation();
-  // Today's tasks feed both NextBestActionCard (via its own
-  // internal read) and our local farm-status derivation.
-  const [todayTasks, setTodayTasks] = useState([]);
 
-  // Run the notification scheduler once per mount + capture
-  // today's tasks for status derivation. Same logic the page
-  // had before — only the avatar / auth side-effects were
-  // dropped along with the rendered avatar card.
+  // Today's-tasks scheduler runs as a side effect to feed the
+  // notification scheduler — same logic the page had before. The
+  // tasks themselves are NOT rendered here anymore (Home/Tasks
+  // own that surface); we just kick the scheduler.
+  const [, setTodayTasks] = useState([]);
   useEffect(() => {
     if (!profile) return;
     const farmObj = profile;
     try {
       const todayPlan = getTodayTasks({
         farm: {
-          id: farmObj.id, crop: farmObj.crop || farmObj.cropType,
+          id: farmObj.id, crop: farmObj.crop,
           farmType: farmObj.farmType, cropStage: farmObj.cropStage,
           countryCode: farmObj.countryCode || farmObj.country,
         },
@@ -132,9 +110,7 @@ export default function MyFarmPage() {
   if (profileLoading) {
     return (
       <div style={S.page}>
-        <div style={S.simpleHeader}>
-          <h1 style={S.simpleTitle}>{t('myFarm.title')}</h1>
-        </div>
+        <Header t={t} />
         <div style={S.skeletonWrap}>
           <div style={S.skeletonCard}>
             <div style={S.skeletonLine} />
@@ -147,217 +123,262 @@ export default function MyFarmPage() {
     );
   }
 
-  // Empty state: no farm profile yet → render the AddFarm CTA card
-  // (spec §7) instead of a blank page.
+  // Empty state: no farm profile yet → render the AddFarm CTA card.
   if (!profile) {
     return (
       <div style={S.page} data-testid="my-farm-page-empty">
+        <Header t={t} />
         <AddFarmEmpty />
       </div>
     );
   }
 
-  // Use active profile as primary source (always has the current farm data),
-  // fall back to farms array lookup. Other-farms switching moved
-  // to a dedicated /farm settings surface per spec.
+  // Active farm — prefer profile (always carries the current farm
+  // data), fall back to the farms array lookup.
   const farm = profile || farms?.find((f) => f.id === currentFarmId) || farms?.[0] || null;
 
-  // SmartSuggestionsCard's listings/funding inputs were used by
-  // the prior intelligence hub; the simplified spec drops that
-  // surface so we no longer compute them here. The data still
-  // lives in marketStore + fundingStore for any caller that
-  // needs it.
-
-  // Status pill / progress bar removed in spec polish — Today's
-  // Action card (NextBestActionCard) owns the only progress
-  // indicator on this page now. The page-level status helper is
-  // still imported for any downstream reuse but no longer fires
-  // here.
-
-  // Per-row farm details — only render rows whose data is set.
-  // Avoids "Unknown" strings; an unset field simply hides.
-  const cropValue = (farm.crop || farm.cropType)
-    ? getCropLabelSafe(farm.crop || farm.cropType, lang) : null;
+  // Per-row farm details — values are non-null defaults per spec
+  // (no "No data" leaks; missing fields show "Add location" etc.).
+  const cropValue = farm.crop
+    ? getCropLabelSafe(farm.crop, lang)
+    : tSafe('myFarm.notSelected', 'Not selected');
   const sizeValue = farm.size
-    ? formatSize(farm.size, farm.sizeUnit) : null;
+    ? formatSize(farm.size, farm.sizeUnit)
+    : tSafe('myFarm.addSize', 'Add farm size');
   const locationValue = farm.location || farm.locationLabel
-    || localizeCountry(farm.country || farm.countryCode, lang) || null;
+    || localizeCountry(farm.country || farm.countryCode, lang)
+    || tSafe('myFarm.addLocation', 'Add location');
   const stageValue = farm.cropStage
-    ? (t(STAGE_KEYS[farm.cropStage]) || farm.cropStage.replace(/_/g, ' ')) : null;
+    ? (t(STAGE_KEYS[farm.cropStage]) || farm.cropStage.replace(/_/g, ' '))
+    : tSafe('myFarm.planning', 'Planning');
 
   const farmId = currentFarmId || profile?.id;
   const editFarmUrl = farmId
     ? `/edit-farm?farmId=${encodeURIComponent(farmId)}`
     : '/edit-farm';
 
+  // Setup-completeness signal. Considered complete when the three
+  // user-supplied fields the recommendation engine needs are all
+  // present (crop + location + size). Stage isn't required — it
+  // can be derived from a planting date later.
+  const setupIncomplete = !farm.crop
+                       || !(farm.location || farm.locationLabel
+                              || farm.country || farm.countryCode)
+                       || !farm.size;
+
+  function handleHelpClick() {
+    // Try the in-app /support route first; if the URL hasn't
+    // changed within a beat, fall back to a mailto. This avoids
+    // both dead clicks and double-firing on a real /support route.
+    const before = (typeof window !== 'undefined' && window.location)
+      ? String(window.location.pathname || '') : '';
+    try { navigate('/support'); }
+    catch {
+      try {
+        if (typeof window !== 'undefined') {
+          window.location.href = 'mailto:support@farroway.app';
+        }
+      } catch { /* never propagate */ }
+      return;
+    }
+    setTimeout(() => {
+      try {
+        const after = (typeof window !== 'undefined' && window.location)
+          ? String(window.location.pathname || '') : '';
+        if (after === before && typeof window !== 'undefined') {
+          window.location.href = 'mailto:support@farroway.app';
+        }
+      } catch { /* never propagate */ }
+    }, 120);
+  }
+
   return (
     <div style={S.page} data-testid="my-farm-page">
-      {/* ─── 1. Header (per spec §1) ─────────────────────────
-          Just the title — bell deferred since this codebase's
-          NotificationBell lives on FarmerTodayPage / Layout
-          chrome rather than per-page. Title-only header keeps
-          the page short per spec §9 (avoid long scroll). */}
-      <div style={S.simpleHeader}>
-        <h1 style={S.simpleTitle}>{t('myFarm.title')}</h1>
-      </div>
+      {/* ── 1. Header (spec §1) ─────────────────────────────── */}
+      <Header t={t} />
 
-      {/* Farm switcher dropdown (multi-farm spec, Apr 2026).
-          Top-of-page surface so the active farm is identified
-          before the farmer reads anything else. Renders as a
-          static label for single-farm households; full dropdown
-          with Add / Manage footer for multi-farm. State + persist
-          handled by useProfile (switchFarm + currentFarmId). */}
+      {/* ── 2. Farm Selector (spec §2) ─────────────────────────
+          Reuses the existing FarmSwitcher — single-farm farms
+          render a static label (dropdown disabled but visible);
+          multi-farm households open a popover with switch +
+          add + manage. Recently restyled with a sprout leading
+          icon + green accent border. */}
       <FarmSwitcher />
 
-      {/* ─── 2. Next Task Card (per spec §2) ────────────────
-          NextBestActionCard already implements the spec exactly
-          — title, instruction, primary "Open Task" CTA, and
-          falls back to "Check your farm today" when no task is
-          available. Reuse it instead of inlining. */}
-      {farm && <NextBestActionCard farm={farm} />}
-
-      {/* ─── 3. My Farm Details (per spec §2 polish) ────────
-          Plain detail list (Crop / Location / Farm size / Stage)
-          + Edit button. Status pill + progress bar removed —
-          status now lives ONLY inside Today's Action card per
-          spec ("no duplicate progress"). Order: Crop, Location,
-          Farm size, Stage to match spec §2 list ordering. */}
-      {farm && (
-        <section style={S.detailsCard} data-testid="my-farm-details">
-          <div style={S.detailsHead}>
-            <h2 style={S.detailsTitle}>
-              {tSafe('myFarm.details.title', 'My Farm Details')}
-            </h2>
-          </div>
-          <ul style={S.detailList}>
-            {cropValue && (
-              <li style={S.detailRow}>
-                <span style={S.detailLabel}>{t('myFarm.crop')}</span>
-                <span style={S.detailValue}>{cropValue}</span>
-              </li>
-            )}
-            {locationValue && (
-              <li style={S.detailRow}>
-                <span style={S.detailLabel}>{t('myFarm.location')}</span>
-                <span style={S.detailValue}>{locationValue}</span>
-              </li>
-            )}
-            {sizeValue && (
-              <li style={S.detailRow}>
-                <span style={S.detailLabel}>{t('myFarm.size')}</span>
-                <span style={S.detailValue}>{sizeValue}</span>
-              </li>
-            )}
-            {stageValue && (
-              <li style={S.detailRow}>
-                <span style={S.detailLabel}>{t('myFarm.stage')}</span>
-                <span style={S.detailValue}>{stageValue}</span>
-              </li>
-            )}
-          </ul>
-        </section>
-      )}
-
-      {/* ─── 4. Farm Action Row ──────────────────────────────
-          Edit + Add. Switch was moved to the top-of-page
-          FarmSwitcher dropdown (above) so the active farm is
-          identifiable BEFORE any details card renders.
-          Add Farm stays here too (also reachable from the
-          dropdown footer); doubling it is acceptable since
-          this is a quick action surface and the dropdown
-          footer hides when only one farm exists. */}
-      {farm && (
-        <div style={S.actionRow} data-testid="my-farm-actions">
+      {/* ── 3. Setup Card (spec §3) ────────────────────────────
+          Single unified card; renders ONLY when the farm is
+          missing crop/location/size. Replaces the prior split
+          messages (avoids "duplicated setup messages" — spec §8). */}
+      {setupIncomplete && (
+        <section style={S.setupCard} data-testid="my-farm-setup-card">
+          <span style={S.setupBadge}>
+            {tSafe('myFarm.setupBadge', 'Setup incomplete')}
+          </span>
+          <h2 style={S.setupTitle}>
+            {tSafe('myFarm.setupTitle', 'Complete your farm setup')}
+          </h2>
+          <p style={S.setupBody}>
+            {tSafe('myFarm.setupBody',
+              'Add crop, location, and farm size to get personalized tasks and smart guidance.')}
+          </p>
           <button
             type="button"
             onClick={() => navigate(editFarmUrl)}
-            style={S.actionBtn}
-            data-testid="my-farm-edit"
+            style={S.setupCta}
+            data-testid="my-farm-setup-cta"
           >
-            {tSafe('myFarm.edit', 'Edit Farm')}
+            <span>{tSafe('myFarm.setupCta', 'Complete setup')}</span>
+            <span aria-hidden="true" style={{ display: 'inline-flex', marginLeft: 8 }}>
+              <ArrowRight size={16} />
+            </span>
           </button>
+        </section>
+      )}
+
+      {/* ── 4. My Farm Details (spec §4) ───────────────────────
+          Premium detail block: title with Edit pill top-right,
+          then 4 rows (Crop / Location / Size / Stage). Each row
+          is icon + label + value. No "No data" — defaults like
+          "Not selected" / "Add location" replace empty fields. */}
+      <section style={S.detailsCard} data-testid="my-farm-details">
+        <div style={S.detailsHead}>
+          <h2 style={S.detailsTitle}>
+            {tSafe('myFarm.details.title', 'My Farm Details')}
+          </h2>
           <button
             type="button"
-            onClick={() => navigate('/farm/new')}
-            style={S.actionBtn}
-            data-testid="my-farm-add"
+            onClick={() => navigate(editFarmUrl)}
+            style={S.detailsEditBtn}
+            data-testid="my-farm-details-edit"
           >
-            {tSafe('myFarm.addFarm', 'Add Farm')}
+            {tSafe('myFarm.edit.short', 'Edit')}
           </button>
         </div>
-      )}
+        <ul style={S.detailList}>
+          <DetailRow
+            icon={<Wheat size={16} />}
+            label={t('myFarm.crop')}
+            value={cropValue}
+            placeholder={!farm.crop}
+          />
+          <DetailRow
+            icon={<MapPin size={16} />}
+            label={t('myFarm.location')}
+            value={locationValue}
+            placeholder={!(farm.location || farm.locationLabel
+                          || farm.country || farm.countryCode)}
+          />
+          <DetailRow
+            icon={<Ruler size={16} />}
+            label={t('myFarm.size')}
+            value={sizeValue}
+            placeholder={!farm.size}
+          />
+          <DetailRow
+            icon={<Calendar size={16} />}
+            label={t('myFarm.stage')}
+            value={stageValue}
+            placeholder={!farm.cropStage}
+          />
+        </ul>
+      </section>
 
-      {/* Screen-role refactor (Apr 2026): QuickActionsCard
-          removed from My Farm. The card surfaced Sell Produce
-          + View Funding which duplicated their dedicated
-          bottom-nav tabs. My Farm now owns farm-data
-          management only — the Edit Farm action lives in the
-          Farm Details card header above (single mutating
-          action on this screen). Scan crop is reachable from
-          Home; Sell + Funding from their bottom-nav tabs. */}
-
-      {/* ─── 5. Compact Help row ─────────────────────────────
-          Single line: "Need help?  Contact our team →".
-          Tries to navigate to /support first, but that route
-          doesn't currently exist in App.jsx — so the click
-          gracefully falls back to a mailto: link via the
-          handler below instead of dead-clicking. When the
-          /support route ships, the navigate call resolves
-          and the mailto branch never runs. */}
-      {farm && (
+      {/* ── 5. Action Buttons (spec §5) ────────────────────────
+          Exactly two large action buttons, full-width each.
+          Edit Farm = primary navy; Add New Farm = green accent.
+          Funding / Sell / Scan / Check land are intentionally
+          omitted — they live in their own surfaces (spec §8). */}
+      <div style={S.actionStack} data-testid="my-farm-actions">
         <button
           type="button"
-          onClick={() => {
-            // Try the in-app support route first. If it 404s
-            // immediately (or is otherwise unmounted) the
-            // mailto fallback below opens the user's mail
-            // client. We can't synchronously detect a missing
-            // React Router route, so we attempt navigate AND
-            // schedule a mailto fallback IF the URL doesn't
-            // change within a beat — this avoids both dead
-            // clicks and double-firing on a real /support
-            // route.
-            const before = (typeof window !== 'undefined' && window.location)
-              ? String(window.location.pathname || '') : '';
-            try { navigate('/support'); }
-            catch { /* navigate threw — go straight to mailto */
-              try {
-                if (typeof window !== 'undefined') {
-                  window.location.href = 'mailto:support@farroway.app';
-                }
-              } catch { /* never propagate */ }
-              return;
-            }
-            setTimeout(() => {
-              try {
-                const after = (typeof window !== 'undefined' && window.location)
-                  ? String(window.location.pathname || '') : '';
-                if (after === before && typeof window !== 'undefined') {
-                  window.location.href = 'mailto:support@farroway.app';
-                }
-              } catch { /* never propagate */ }
-            }, 120);
-          }}
-          style={S.helpRow}
-          data-testid="my-farm-help"
+          onClick={() => navigate(editFarmUrl)}
+          style={S.actionBtnPrimary}
+          data-testid="my-farm-edit"
         >
-          <span style={S.helpRowLead}>
+          <span style={S.actionBtnIcon} aria-hidden="true">
+            <Sprout size={16} />
+          </span>
+          <span>{tSafe('myFarm.edit', 'Edit Farm')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/farm/new')}
+          style={S.actionBtnSecondary}
+          data-testid="my-farm-add"
+        >
+          <span style={S.actionBtnIcon} aria-hidden="true">
+            <Plus size={16} />
+          </span>
+          <span>{tSafe('myFarm.addFarm', 'Add New Farm')}</span>
+        </button>
+      </div>
+
+      {/* ── 6. Help Card (spec §6) ─────────────────────────────
+          Compact card: headset/help icon on the left, "Need
+          help?" + sub-line, "Contact our team →" on the right.
+          Click tries /support first, mailto: fallback if that
+          route isn't mounted. Never a dead click. */}
+      <button
+        type="button"
+        onClick={handleHelpClick}
+        style={S.helpCard}
+        data-testid="my-farm-help"
+      >
+        <span style={S.helpCardIcon} aria-hidden="true">
+          <HelpCircle size={20} />
+        </span>
+        <span style={S.helpCardText}>
+          <span style={S.helpCardTitle}>
             {tSafe('myFarm.help.title', 'Need help?')}
           </span>
-          <span style={S.helpRowAction}>
-            {tSafe('myFarm.help.contactRow', 'Contact our team')}
-            <span aria-hidden="true" style={{ marginLeft: 6 }}>→</span>
+          <span style={S.helpCardSub}>
+            {tSafe('myFarm.help.sub', 'We\u2019re here to support you.')}
           </span>
-        </button>
-      )}
+        </span>
+        <span style={S.helpCardAction}>
+          {tSafe('myFarm.help.contactRow', 'Contact our team')}
+          <span aria-hidden="true" style={{ marginLeft: 6 }}>
+            <ArrowRight size={14} />
+          </span>
+        </span>
+      </button>
 
-      {/* Empty state — single setup CTA when no farm exists. */}
-      {!farm && (
-        <div style={S.emptyWrap} data-testid="my-farm-empty">
-          <AddFarmEmpty />
-        </div>
-      )}
+      {/* Bottom spacer so the bottom-nav doesn't cover the help
+          card on phones with translucent nav (spec §7 mobile rule). */}
+      <div style={S.bottomSpacer} aria-hidden="true" />
     </div>
+  );
+}
+
+// ─── Local components ──────────────────────────────────────────
+
+function Header({ t }) {
+  return (
+    <div style={S.header}>
+      <span style={S.headerIcon} aria-hidden="true">
+        <Sprout size={20} />
+      </span>
+      <h1 style={S.headerTitle}>{t('myFarm.title')}</h1>
+    </div>
+  );
+}
+
+function DetailRow({ icon, label, value, placeholder }) {
+  return (
+    <li style={S.detailRow}>
+      <span style={S.detailLeft}>
+        <span style={S.detailIcon} aria-hidden="true">{icon}</span>
+        <span style={S.detailLabel}>{label}</span>
+      </span>
+      <span
+        style={{
+          ...S.detailValue,
+          ...(placeholder ? S.detailValuePlaceholder : null),
+        }}
+      >
+        {value}
+      </span>
+    </li>
   );
 }
 
@@ -365,110 +386,123 @@ const S = {
   page: {
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
-    padding: '0 0 1rem 0',
+    padding: '0 0 1.5rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
   },
 
-  // ─── Simplified spec layout (Apr 2026 pilot fix) ─────────
-  // Slim header without the section icon — keeps the page
-  // short per spec §9 (avoid long scroll). Older verbose
-  // header / pageIcon styles are retained for the loading
-  // skeleton path elsewhere on this file.
-  simpleHeader: {
+  // ── Header (spec §1) ────────────────────────────────────────
+  header: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '1rem 1.25rem 0.5rem',
+    gap: 8,
+    padding: '1rem 1.25rem 0.75rem',
   },
-  simpleTitle: {
+  headerIcon: {
+    color: '#22C55E',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  headerTitle: {
     margin: 0,
-    fontSize: '1.5rem',
+    fontSize: '1.4rem',
     fontWeight: 800,
     color: '#FFFFFF',
     letterSpacing: '-0.01em',
   },
 
-  // ─── My Farm Details card (spec §2 polish) ───────────────
-  // Plain list-only card: title row with Edit button, then 4
-  // detail rows. No status pill / progress bar — that lives
-  // exclusively inside Today's Action card per "no duplicate
-  // progress" rule.
+  // ── Setup Card (spec §3) ────────────────────────────────────
+  setupCard: {
+    margin: '0.75rem 1rem 0',
+    background: '#102C47',
+    border: '1px solid rgba(34,197,94,0.32)',
+    borderRadius: 14,
+    padding: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    boxShadow: '0 6px 18px rgba(34,197,94,0.06)',
+  },
+  setupBadge: {
+    alignSelf: 'flex-start',
+    fontSize: '0.625rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: '#FB923C',
+    background: 'rgba(251,146,60,0.12)',
+    border: '1px solid rgba(251,146,60,0.30)',
+    padding: '3px 10px',
+    borderRadius: 999,
+  },
+  setupTitle: {
+    margin: 0,
+    fontSize: '1.05rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+    lineHeight: 1.3,
+  },
+  setupBody: {
+    margin: 0,
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.72)',
+    lineHeight: 1.45,
+  },
+  setupCta: {
+    width: '100%',
+    appearance: 'none',
+    border: 'none',
+    background: '#22C55E',
+    color: '#FFFFFF',
+    borderRadius: 12,
+    padding: '0.8rem 1rem',
+    marginTop: 4,
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 48,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 8px 20px rgba(34,197,94,0.22)',
+  },
+
+  // ── Farm Details Card (spec §4) ─────────────────────────────
   detailsCard: {
-    margin: '0.5rem 1rem',
+    margin: '0.75rem 1rem 0',
     background: '#102C47',
     border: '1px solid #1F3B5C',
     borderRadius: 14,
-    padding: '0.95rem 1rem',
+    padding: '1rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
+    gap: 4,
   },
   detailsHead: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    marginBottom: '0.25rem',
+    marginBottom: 6,
   },
   detailsTitle: {
     margin: 0,
-    fontSize: '0.95rem',
+    fontSize: '1rem',
     fontWeight: 700,
     color: '#FFFFFF',
   },
   detailsEditBtn: {
     appearance: 'none',
     background: 'transparent',
-    border: '1px solid rgba(255,255,255,0.18)',
-    color: 'rgba(255,255,255,0.78)',
-    borderRadius: 8,
-    padding: '5px 12px',
+    border: '1px solid rgba(34,197,94,0.45)',
+    color: '#86EFAC',
+    borderRadius: 999,
+    padding: '5px 14px',
     fontSize: '0.8125rem',
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: 'pointer',
     minHeight: 32,
     flex: '0 0 auto',
-  },
-
-  // ─── Farm action row (control-panel spec) ─────────────────
-  // Horizontal Edit / Add / Switch row sitting under the
-  // details card. Bigger 44px tap targets per spec §5.
-  // Switch (when shown) uses a native <select> styled to
-  // match the buttons so the visual rhythm stays consistent.
-  actionRow: {
-    margin: '0.5rem 1rem',
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  actionBtn: {
-    flex: '1 1 auto',
-    appearance: 'none',
-    background: '#1A3B5D',
-    border: '1px solid #1F3B5C',
-    color: '#FFFFFF',
-    borderRadius: 10,
-    padding: '0.6rem 1rem',
-    fontSize: '0.875rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    minHeight: 44,
-  },
-  actionSelect: {
-    flex: '1 1 auto',
-    appearance: 'none',
-    background: '#1A3B5D',
-    border: '1px solid #1F3B5C',
-    color: '#FFFFFF',
-    borderRadius: 10,
-    padding: '0.6rem 1rem',
-    fontSize: '0.875rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    minHeight: 44,
-    // Color-scheme dark hint helps native option panels render
-    // legibly on Windows Chromium / Edge.
-    colorScheme: 'dark',
   },
   detailList: {
     listStyle: 'none',
@@ -476,20 +510,33 @@ const S = {
     padding: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
+    gap: 2,
   },
   detailRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    padding: '4px 0',
+    padding: '8px 0',
     fontSize: '0.875rem',
+    borderBottom: '1px solid rgba(255,255,255,0.04)',
+  },
+  detailLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+    flex: '1 1 auto',
+  },
+  detailIcon: {
+    color: '#86EFAC',
+    display: 'inline-flex',
+    alignItems: 'center',
+    flex: '0 0 auto',
   },
   detailLabel: {
-    color: 'rgba(255,255,255,0.55)',
+    color: 'rgba(255,255,255,0.70)',
     fontWeight: 600,
-    flex: '0 0 auto',
   },
   detailValue: {
     color: '#FFFFFF',
@@ -498,232 +545,119 @@ const S = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    flex: '0 1 auto',
+    maxWidth: '60%',
+  },
+  // Placeholder values ("Add location", "Not selected") render
+  // muted so the eye glides past them — but they're never the
+  // word "No data" (spec §8).
+  detailValuePlaceholder: {
+    color: 'rgba(255,255,255,0.45)',
+    fontWeight: 500,
+    fontStyle: 'italic',
   },
 
-  // ─── Single-row Help (spec §5 polish) ──────────────────
-  // "Need help?  Contact our team →" — entire row is the tap
-  // target. Ghost styling so it doesn't compete with the
-  // Today's Action green primary CTA.
-  helpRow: {
+  // ── Action Buttons (spec §5) ────────────────────────────────
+  actionStack: {
+    margin: '0.75rem 1rem 0',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: 'calc(100% - 2rem)',
-    margin: '0.75rem 1rem 1.5rem',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  actionBtnPrimary: {
+    width: '100%',
     appearance: 'none',
-    background: 'transparent',
-    border: '1px solid rgba(255,255,255,0.12)',
-    borderRadius: 10,
-    padding: '0.75rem 1rem',
-    cursor: 'pointer',
-    color: '#FFFFFF',
-    fontSize: '0.875rem',
-    minHeight: 44,
-    gap: 12,
-  },
-  helpRowLead: {
-    color: 'rgba(255,255,255,0.65)',
-    fontWeight: 500,
-  },
-  helpRowAction: {
-    color: '#86EFAC',
-    fontWeight: 700,
-  },
-
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.625rem',
-    padding: '1.125rem 1.25rem',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-  },
-  pageIcon: {
-    fontSize: '1.25rem',
-  },
-  pageTitle: {
-    fontSize: '1.25rem',
-    fontWeight: 700,
-    color: '#EAF2FF',
-    margin: 0,
-  },
-  tilesWrap: {
-    padding: '1rem 1.25rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-  },
-  intelligenceWrap: {
-    padding: '0.5rem 1.25rem 0',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  cardWrap: {
-    padding: '0 1.25rem 0.75rem',
-  },
-  identityCard: {
-    background: 'rgba(255,255,255,0.04)',
-    borderRadius: '20px',
-    padding: '1.5rem',
-    border: '1px solid rgba(255,255,255,0.06)',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-  },
-  avatarSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.875rem',
-  },
-  avatarActions: {
-    display: 'flex',
-    gap: '0.5rem',
-  },
-  avatarBtn: {
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    color: '#9FB3C8',
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: '10px',
-    padding: '0.375rem 0.75rem',
-    cursor: 'pointer',
-    minHeight: '32px',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  avatarRemoveBtn: {
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    color: '#6F8299',
-    background: 'none',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: '10px',
-    padding: '0.375rem 0.75rem',
-    cursor: 'pointer',
-    minHeight: '32px',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  avatarError: {
-    fontSize: '0.75rem',
-    color: '#FCA5A5',
-    marginTop: '0.25rem',
-  },
-  farmName: {
-    fontSize: '1.25rem',
-    fontWeight: 700,
-    color: '#EAF2FF',
-    margin: 0,
-    lineHeight: 1.3,
-  },
-  farmSubline: {
-    fontSize: '0.75rem',
-    color: '#6F8299',
-    fontWeight: 500,
-    marginTop: '0.125rem',
-    display: 'block',
-  },
-  // ─── Tile grid ──────────
-  tileGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '0.625rem',
-  },
-  tile: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.375rem',
-    padding: '1.125rem 0.75rem',
-    borderRadius: '16px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.22)',
-    textAlign: 'center',
-    animation: 'farroway-fade-in 0.3s ease-out',
-  },
-  tileIcon: {
-    fontSize: '1.5rem',
-    marginBottom: '0.125rem',
-  },
-  tileLabel: {
-    fontSize: '0.625rem',
-    color: '#6F8299',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    fontWeight: 600,
-  },
-  tileValue: {
-    fontSize: '0.9375rem',
-    color: '#EAF2FF',
-    fontWeight: 600,
-  },
-  stageBadge: {
-    display: 'inline-block',
-    fontSize: '0.8125rem',
-    color: '#EAF2FF',
-    fontWeight: 600,
-    padding: '0.125rem 0.625rem',
-    borderRadius: '999px',
-    background: 'rgba(255,255,255,0.06)',
-    textTransform: 'capitalize',
-  },
-  actionsRow: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  cropFitBtn: {
-    width: '100%',
-    padding: '0.875rem',
-    borderRadius: '14px',
-    border: '1px solid rgba(34,197,94,0.2)',
-    background: 'rgba(34,197,94,0.06)',
-    color: '#22C55E',
-    fontSize: '0.9375rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  editBtn: {
-    width: '100%',
-    padding: '0.875rem',
-    borderRadius: '14px',
     border: 'none',
     background: '#22C55E',
-    color: '#fff',
-    fontSize: '0.9375rem',
+    color: '#FFFFFF',
+    borderRadius: 12,
+    padding: '0.8rem 1rem',
+    fontSize: '0.95rem',
     fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
-    WebkitTapHighlightColor: 'transparent',
-    transition: 'transform 0.1s ease, box-shadow 0.15s ease',
-  },
-  switchBtn: {
-    width: '100%',
-    padding: '0.75rem',
-    borderRadius: '14px',
-    border: '1px solid rgba(255,255,255,0.06)',
-    background: 'rgba(255,255,255,0.03)',
-    color: '#9FB3C8',
-    fontSize: '0.875rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-  },
-  emptyWrap: {
-    display: 'flex',
-    flexDirection: 'column',
+    minHeight: 48,
+    display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '4rem 1.5rem',
-    textAlign: 'center',
+    gap: 8,
+    boxShadow: '0 8px 20px rgba(34,197,94,0.20)',
   },
-  emptyText: {
-    fontSize: '0.9375rem',
-    color: '#9FB3C8',
-    margin: '0 0 1.25rem 0',
-    lineHeight: 1.5,
+  actionBtnSecondary: {
+    width: '100%',
+    appearance: 'none',
+    background: '#102C47',
+    border: '1px solid rgba(34,197,94,0.32)',
+    color: '#86EFAC',
+    borderRadius: 12,
+    padding: '0.8rem 1rem',
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 48,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
+  actionBtnIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+
+  // ── Help Card (spec §6) ─────────────────────────────────────
+  helpCard: {
+    width: 'calc(100% - 2rem)',
+    margin: '1rem 1rem 0',
+    appearance: 'none',
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    borderRadius: 12,
+    padding: '0.8rem 1rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    cursor: 'pointer',
+    color: '#FFFFFF',
+    minHeight: 56,
+    textAlign: 'left',
+  },
+  helpCardIcon: {
+    color: '#86EFAC',
+    display: 'inline-flex',
+    alignItems: 'center',
+    flex: '0 0 auto',
+  },
+  helpCardText: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '1 1 auto',
+    minWidth: 0,
+    gap: 2,
+  },
+  helpCardTitle: {
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+  },
+  helpCardSub: {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.55)',
+  },
+  helpCardAction: {
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    color: '#86EFAC',
+    flex: '0 0 auto',
+    display: 'inline-flex',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+  },
+
+  // Bottom spacer — keeps the help card off the bottom nav.
+  bottomSpacer: { height: '4rem' },
+
+  // ── Skeleton ────────────────────────────────────────────────
   skeletonWrap: {
     padding: '1.25rem',
   },

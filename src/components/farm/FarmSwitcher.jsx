@@ -52,6 +52,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
+import { Sprout } from '../icons/lucide.jsx';
 
 const MAX_VISIBLE_BEFORE_SCROLL = 5;
 const ROW_HEIGHT_REM = 2.5;
@@ -122,10 +123,16 @@ export default function FarmSwitcher() {
         disabled={isSingle}
         data-testid="farm-switcher-toggle"
       >
+        {/* Sprout icon — small green accent that identifies this
+            row as the farm-context selector. Hidden from a11y so
+            it doesn't compete with the visible label text. */}
+        <span aria-hidden="true" style={S.btnIcon}>
+          <Sprout size={16} />
+        </span>
         <span style={S.btnLead}>{labelPrefix}:</span>
         <span style={S.btnName}>{activeName}</span>
         {!isSingle && (
-          <span aria-hidden="true" style={S.btnChevron}>{open ? '▴' : '▾'}</span>
+          <span aria-hidden="true" style={S.btnChevron}>{open ? '\u25B4' : '\u25BE'}</span>
         )}
       </button>
 
@@ -197,22 +204,33 @@ const S = {
     width: '100%',
     appearance: 'none',
     background: '#102C47',
-    border: '1px solid #1F3B5C',
+    // Green-accent border (My Farm polish, Apr 2026): subtle
+    // emerald edge that ties the selector to the farm-control
+    // theme without shouting. Same green as the primary CTA.
+    border: '1px solid rgba(34,197,94,0.32)',
     color: '#FFFFFF',
-    borderRadius: 10,
-    padding: '0.6rem 0.9rem',
-    fontSize: '0.875rem',
+    borderRadius: 12,
+    padding: '0.7rem 0.9rem',
+    fontSize: '0.9rem',
     fontWeight: 600,
     cursor: 'pointer',
-    minHeight: 44,
+    minHeight: 48,
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     textAlign: 'left',
+    boxShadow: '0 4px 12px rgba(34,197,94,0.06)',
   },
   btnDisabled: {
     cursor: 'default',
     opacity: 0.92,
+  },
+  // Leading sprout icon — small green accent on the left.
+  btnIcon: {
+    color: '#22C55E',
+    display: 'inline-flex',
+    alignItems: 'center',
+    flex: '0 0 auto',
   },
   btnLead: {
     color: 'rgba(255,255,255,0.55)',
