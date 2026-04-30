@@ -24,8 +24,15 @@ const C = FARROWAY_BRAND.colors;
 
 // Canonical brand asset path. Lives in /public so Vite serves
 // it from the site root in dev AND copies it into the dist/
-// output unchanged at build time.
+// output unchanged at build time. Older deployments only have
+// the .svg variant — see SRC_FALLBACK below.
 const SRC = '/icons/farroway-mark.jpg';
+// Fallback used when the primary asset 404s. The SVG redraw
+// has shipped for many releases, so this gives us a safe
+// landing on any environment that hasn't yet picked up the
+// new JPG. Spec §3 of the safe-session work — the UI must
+// never depend on a specific deploy artefact being present.
+const SRC_FALLBACK = '/icons/farroway-mark.svg';
 
 export function FarrowayMark({
   size = 32,
@@ -37,6 +44,15 @@ export function FarrowayMark({
   const tileFill =
     tileVariant === 'dark'  ? C.navy  :
     tileVariant === 'light' ? C.white : null;
+
+  // Track whether the primary asset 404'd so we can swap to
+  // the SVG fallback. One-shot: if the fallback also fails the
+  // browser shows the standard broken-image placeholder, but
+  // the rest of the UI keeps rendering.
+  const [src, setSrc] = React.useState(SRC);
+  const handleError = React.useCallback(() => {
+    if (src !== SRC_FALLBACK) setSrc(SRC_FALLBACK);
+  }, [src]);
 
   // When a tile is requested we wrap the asset in a rounded
   // square coloured tile (app-icon contexts). Otherwise the
@@ -61,10 +77,11 @@ export function FarrowayMark({
         {...rest}
       >
         <img
-          src={SRC}
+          src={src}
           alt=""
           width={size}
           height={size}
+          onError={handleError}
           style={{
             width: '100%',
             height: '100%',
@@ -78,10 +95,11 @@ export function FarrowayMark({
 
   return (
     <img
-      src={SRC}
+      src={src}
       alt={ariaLabel}
       width={size}
       height={size}
+      onError={handleError}
       style={{
         display: 'block',
         flexShrink: 0,

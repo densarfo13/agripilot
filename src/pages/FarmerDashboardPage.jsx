@@ -182,21 +182,32 @@ export default function FarmerDashboardPage() {
           return;
         }
 
-        // 404 — user is authenticated but has no farmer row.
-        // The previous version only flipped `showOnboarding=true`,
-        // but the in-page OnboardingWizard ALSO requires
-        // `isApproved` (registrationStatus === 'approved'),
-        // which is exactly the state a brand-new account does
-        // NOT have. The result was a permanent "Loading your
-        // account status…" dead-end. Now we actually navigate
-        // the user to the dedicated profile-setup route, which
-        // can run without an approved registration row.
+        // 404 — user is authenticated but the server has no
+        // farmer row OR the endpoint itself is missing on this
+        // deployment. Either way, BEFORE bouncing the user out
+        // to /profile/setup we check the local cache: if we
+        // saw a valid farmer profile on a previous boot, trust
+        // it and render the dashboard. This breaks the
+        // dashboard ↔ /profile/setup redirect loop the recent
+        // safe-session spec calls out — a stale endpoint must
+        // not lock the farmer out of their own data.
         if (status === 404) {
+          const cachedProfile404 = (() => {
+            try { return JSON.parse(localStorage.getItem('farroway:farmerProfile')); }
+            catch { return null; }
+          })();
+          if (cachedProfile404
+              && (cachedProfile404.id || cachedProfile404.userId
+                  || cachedProfile404.farmerId)) {
+            // eslint-disable-next-line no-console
+            console.log('[BOOT] 404 — using cached farmer profile (no redirect)');
+            setProfile(cachedProfile404);
+            setProfileError('');
+            return;
+          }
+          // No cache → genuine first-run state, route to setup.
           // eslint-disable-next-line no-console
           console.log('[BOOT] farmer missing — routing to /profile/setup');
-          // Belt-and-braces: still set the in-page flag in case
-          // the user lands on /profile/setup and bounces back
-          // to /dashboard before the navigate resolves.
           setShowOnboarding(true);
           try {
             navigate('/profile/setup', {
@@ -254,9 +265,24 @@ export default function FarmerDashboardPage() {
         try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(farmer)); }
         catch { /* quota */ }
       } else {
-        // 200 OK but empty payload — same dead-end as the
-        // 404 branch above. Route the user to /profile/setup
-        // so they can create their farmer row.
+        // 200 OK but empty payload — same anti-loop guard as
+        // the 404 branch above. If we have a valid cached
+        // profile, render the dashboard with the cache rather
+        // than bouncing to /profile/setup. Only route to setup
+        // when there's genuinely nothing to render.
+        const cachedProfileEmpty = (() => {
+          try { return JSON.parse(localStorage.getItem('farroway:farmerProfile')); }
+          catch { return null; }
+        })();
+        if (cachedProfileEmpty
+            && (cachedProfileEmpty.id || cachedProfileEmpty.userId
+                || cachedProfileEmpty.farmerId)) {
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] empty payload — using cached farmer profile (no redirect)');
+          setProfile(cachedProfileEmpty);
+          setProfileError('');
+          return;
+        }
         // eslint-disable-next-line no-console
         console.log('[BOOT] farmer missing (empty payload) — routing to /profile/setup');
         setShowOnboarding(true);
