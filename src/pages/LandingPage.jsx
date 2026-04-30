@@ -113,9 +113,11 @@ function HeroSection() {
       <div style={S.sectionInner}>
         <div className="landing-hero-split">
           <div>
-            <div style={S.heroBadge}>
-              <BrandLogo variant="dark" size="sm" iconOnly />
-              <span>Farroway</span>
+            {/* Full brand lockup — leaf mark + Farroway wordmark
+                + two-tone tagline. Renders the v9 mark via the
+                shared FarrowayLogo primitive. */}
+            <div style={S.heroBrand}>
+              <BrandLogo variant="dark" size="lg" showTagline />
             </div>
 
             <h1 style={S.heroTitle}>
@@ -145,8 +147,11 @@ function HeroSection() {
           <div className="landing-hero-mockup" style={S.heroMockup}>
             <div style={S.mockupPhone}>
               <div style={S.mockupScreen}>
+                {/* Larger brand mark splash at the top of the
+                    phone mockup so the landing visitor sees the
+                    v9 leaf-arrow mark at scale. */}
                 <div style={S.mockupHeader}>
-                  <BrandLogo variant="light" size="sm" />
+                  <BrandLogo variant="light" size="md" />
                 </div>
                 <div style={S.mockupTagline}>
                   Today&rsquo;s Task
@@ -758,11 +763,22 @@ const S = {
   sectionInner: { maxWidth: '76rem', margin: '0 auto',
                   padding: '0 1.25rem' },
   heroBadge: {
+    // Retained for any callers still referencing this style
+    // (back-compat); heroBrand below is the new home for the
+    // hero brand lockup.
     display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
     background: WHITE, border: `1px solid ${BORDER}`,
     borderRadius: '999px', padding: '0.4rem 0.85rem',
     fontSize: '0.8125rem', fontWeight: 700, color: NAVY,
     marginBottom: '1.25rem',
+  },
+  heroBrand: {
+    // Hero-section home for the full BrandLogo lockup. Sits
+    // above the H1 so visitors see the v9 leaf mark + Farroway
+    // wordmark + tagline first. No background chip — lets the
+    // mark breathe against the section's pale-green tint.
+    display: 'inline-flex',
+    marginBottom: '1.5rem',
   },
   heroTitle: {
     fontSize: 'clamp(2rem, 5vw, 3.25rem)',
