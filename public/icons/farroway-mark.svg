@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway brand mark — v5 (April 2026 brand sheet, exact match).
+  Farroway brand mark — v6 (April 2026 brand asset, exact match).
 
   Standalone vector copy of the leaf-arrow mark drawn inline by
   src/components/FarrowayLogo.jsx — kept in sync by hand.
 
-  Composition:
-    1. Vertical pointed-oval leaf, dark-green stroke (#15803D)
-       around a brand-green fill (#22C55E).
-    2. Solid white upward arrow painted on top of the leaf body
-       (shaft + triangular head), pointing up-and-to-the-right.
-
-  The mark is self-contained — the dark-green outline keeps it
-  defined on light pages, and the bright fill keeps it defined
-  on dark dashboards, so no recolouring is needed for either
-  surface context.
+  Composition (top → bottom inside the tilted leaf silhouette):
+    1. lighter-green band hugging the upper-right tip (#A3E635)
+    2. medium-green main body (#22C55E)
+    3. white wedge in the lower-left (#FFFFFF)
+    4. solid dark-navy arrow (#0B1220) — single filled polygon
+       combining shaft + chevron head — painted on top, curving
+       up through the wedge into the green body.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 100 100"
@@ -22,29 +19,35 @@
      aria-label="Farroway">
   <title>Farroway</title>
 
-  <!-- Leaf body — bright green fill, dark-green outline. -->
-  <path d="M 50 6
-           Q 18 18, 12 52
-           Q 18 88, 50 96
-           Q 82 88, 88 52
-           Q 82 18, 50 6 Z"
-        fill="#22C55E"
-        stroke="#15803D"
-        stroke-width="5"
-        stroke-linejoin="round" />
+  <defs>
+    <clipPath id="leafClip">
+      <path d="M 88 14
+               Q 70 6, 48 12
+               Q 22 22, 10 50
+               Q 4 80, 28 90
+               Q 50 92, 66 76
+               Q 82 56, 88 14 Z" />
+    </clipPath>
+  </defs>
 
-  <!-- White upward arrow on top of the leaf. -->
-  <path d="M 26 78
-           L 36 64
-           L 60 30
-           L 56 26
-           L 80 16
-           L 70 40
-           L 66 36
-           L 42 70
-           L 32 84 Z"
-        fill="#FFFFFF"
-        stroke="#FFFFFF"
-        stroke-width="1"
-        stroke-linejoin="round" />
+  <g clip-path="url(#leafClip)">
+    <!-- 1. medium green base -->
+    <rect x="0" y="0" width="100" height="100" fill="#22C55E" />
+
+    <!-- 2. lighter green band at the upper-right -->
+    <polygon points="-10,-20 110,-20 110,6 -10,32" fill="#A3E635" />
+
+    <!-- 3. white wedge in the lower-left -->
+    <polygon points="-10,86 110,46 110,120 -10,120" fill="#FFFFFF" />
+  </g>
+
+  <!-- Dark navy arrow — single filled polygon (shaft + chevron
+       head) painted on top of the leaf so it reads cleanly
+       across both the green portion and the white wedge. -->
+  <polygon
+    points="80,14 60,18 70,28 34,70 22,78 28,84 40,72 76,36 66,38"
+    fill="#0B1220"
+    stroke="#0B1220"
+    stroke-width="0.6"
+    stroke-linejoin="round" />
 </svg>
