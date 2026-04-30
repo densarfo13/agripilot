@@ -1,25 +1,20 @@
 /**
- * FarrowayLogo — v9 brand mark.
+ * FarrowayLogo — v10 (final).
  *
- * Composition (matches the supplied April 2026 brand asset):
+ * Renders the canonical brand asset shipped at
+ *   /public/icons/farroway-mark.jpg
+ * via a plain <img>. No more hand-drawn SVG — the file on disk
+ * is the source of truth, so the on-screen mark is exactly
+ * what the brand team supplied.
  *
- *   1. Vertical pointed-oval leaf silhouette.
- *   2. Green gradient fill — lime green at top-right fading to
- *      darker green at the lower-left.
- *   3. Brown "soil" wedge filling the lower-right portion of
- *      the leaf (the earth/field motif).
- *   4. Three flowing white curves running across the leaf —
- *      reading as field furrows / growth bands.
- *   5. The top white curve transforms into an arrow with a
- *      white arrowhead near the upper-right tip of the leaf.
+ * To swap the asset:
+ *   • Drop a new file at public/icons/farroway-mark.jpg (or
+ *     .svg / .png — update SRC below to match the extension).
+ *   • No JSX changes required; every caller picks it up
+ *     automatically.
  *
- * If you want pixel-perfect fidelity to the source asset,
- * drop the canonical SVG / PNG into:
- *   public/icons/farroway-mark.svg
- * and follow the swap path documented in the file header.
- *
- * API (props, lockup, tile variants) unchanged from v8 —
- * existing callers keep working.
+ * API unchanged from v9 — props, the full lockup, and the
+ * tagline composition all keep working.
  */
 
 import React from 'react';
@@ -27,16 +22,10 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 const C = FARROWAY_BRAND.colors;
 
-// Earth / soil tone — not part of the canonical FARROWAY_BRAND
-// palette but referenced by the logo. Kept as a local constant
-// so the brand object stays focused on UI surface tokens.
-const SOIL_BROWN = '#7C3F1D';
-
-let _uid = 0;
-function nextId(prefix) {
-  _uid += 1;
-  return `${prefix}_${_uid}`;
-}
+// Canonical brand asset path. Lives in /public so Vite serves
+// it from the site root in dev AND copies it into the dist/
+// output unchanged at build time.
+const SRC = '/icons/farroway-mark.jpg';
 
 export function FarrowayMark({
   size = 32,
@@ -45,123 +34,67 @@ export function FarrowayMark({
   style,
   ...rest
 }) {
-  // Per-render unique ids so multiple instances on the same
-  // page don't collide on clipPath / gradient refs.
-  const ids = React.useMemo(() => ({
-    leafClip: nextId('farrowayLeafClip'),
-    leafGrad: nextId('farrowayLeafGrad'),
-  }), []);
+  const tileFill =
+    tileVariant === 'dark'  ? C.navy  :
+    tileVariant === 'light' ? C.white : null;
 
-  // Vertical pointed-oval leaf. Sharp top tip at (50, 6),
-  // widest around y ≈ 50, soft point at the base (50, 94).
-  const LEAF_PATH =
-    'M 50 6 '
-    + 'Q 22 14, 14 48 '
-    + 'Q 12 82, 50 94 '
-    + 'Q 88 82, 86 48 '
-    + 'Q 78 14, 50 6 Z';
-
-  // Brown "soil" wedge — fills the lower-right of the leaf.
-  // The polygon extends well past the leaf bounds; the
-  // clipPath trims it to the silhouette.
-  const SOIL_WEDGE = 'M 110 50 L 110 110 L 30 110 Q 64 70, 110 50 Z';
-
-  // Three flowing white curves. Stroke widths step down from
-  // top (thickest, ends at the arrowhead) to bottom (thinnest,
-  // sits at the boundary with the soil).
-  const CURVE_TOP    = 'M 22 56 Q 48 30, 78 24';
-  const CURVE_MID    = 'M 16 66 Q 48 56, 82 52';
-  const CURVE_BOTTOM = 'M 24 80 Q 50 72, 80 64';
+  // When a tile is requested we wrap the asset in a rounded
+  // square coloured tile (app-icon contexts). Otherwise the
+  // bare image renders.
+  if (tileFill) {
+    return (
+      <span
+        role="img"
+        aria-label={ariaLabel}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size,
+          height: size,
+          borderRadius: Math.round(size * 0.22),
+          background: tileFill,
+          flexShrink: 0,
+          overflow: 'hidden',
+          ...(style || {}),
+        }}
+        {...rest}
+      >
+        <img
+          src={SRC}
+          alt=""
+          width={size}
+          height={size}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
+      </span>
+    );
+  }
 
   return (
-    <svg
-      role="img"
-      aria-label={ariaLabel}
+    <img
+      src={SRC}
+      alt={ariaLabel}
       width={size}
       height={size}
-      viewBox="0 0 100 100"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'block', flexShrink: 0, ...(style || {}) }}
+      style={{
+        display: 'block',
+        flexShrink: 0,
+        objectFit: 'contain',
+        ...(style || {}),
+      }}
       {...rest}
-    >
-      <title>{ariaLabel}</title>
-
-      <defs>
-        <clipPath id={ids.leafClip}>
-          <path d={LEAF_PATH} />
-        </clipPath>
-        {/* Leaf gradient: lime at top-right → medium green
-            → darker green at lower-left. */}
-        <linearGradient id={ids.leafGrad} x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor={C.lightGreen} />
-          <stop offset="55%"  stopColor={C.green} />
-          <stop offset="100%" stopColor={C.darkGreen} />
-        </linearGradient>
-      </defs>
-
-      {/* Optional rounded-square tile (app-icon variants). */}
-      {tileFill(tileVariant) && (
-        <rect
-          x="0" y="0" width="100" height="100"
-          rx="22" ry="22"
-          fill={tileFill(tileVariant)}
-        />
-      )}
-
-      {/* Layered fills clipped to the leaf silhouette. */}
-      <g clipPath={`url(#${ids.leafClip})`}>
-        {/* Green gradient fills the whole leaf. */}
-        <rect x="0" y="0" width="100" height="100" fill={`url(#${ids.leafGrad})`} />
-
-        {/* Brown soil wedge in the lower-right. */}
-        <path d={SOIL_WEDGE} fill={SOIL_BROWN} />
-
-        {/* Three white flowing curves — field furrows /
-            growth bands. Drawn inside the clip so they don't
-            extend past the leaf. */}
-        <path
-          d={CURVE_TOP}
-          fill="none"
-          stroke={C.white}
-          strokeWidth="6"
-          strokeLinecap="round"
-        />
-        <path
-          d={CURVE_MID}
-          fill="none"
-          stroke={C.white}
-          strokeWidth="5"
-          strokeLinecap="round"
-        />
-        <path
-          d={CURVE_BOTTOM}
-          fill="none"
-          stroke={C.white}
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-      </g>
-
-      {/* White arrowhead at the upper-right end of the top
-          curve. Drawn OUTSIDE the clip group so it can extend
-          slightly past the leaf edge if needed. */}
-      <polygon
-        points="82,18 64,22 72,32"
-        fill={C.white}
-        stroke={C.white}
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   );
 }
 
-function tileFill(variant) {
-  if (variant === 'dark')  return C.navy;
-  if (variant === 'light') return C.white;
-  return null;
-}
-
+// Legacy export name preserved so any caller still importing
+// `FarrowayIcon` keeps working.
 export const FarrowayIcon = FarrowayMark;
 
 /**
