@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway logo — 512x512 reference asset (v7, April 2026).
-
-  Same composition as public/icons/farroway-mark.svg, scaled
-  for raster generators.
+  Farroway logo — 512x512 reference (v8). Same composition as
+  public/icons/farroway-mark.svg, scaled for raster generators.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 512 512"
@@ -13,37 +11,49 @@
 
   <defs>
     <clipPath id="leafClip">
-      <path d="M 256 31
-               Q 113 72, 72 235
-               Q 61 420, 256 481
-               Q 451 420, 440 235
-               Q 399 72, 256 31 Z" />
+      <path d="M 143 113
+               Q 256 72, 420 92
+               L 430 113
+               Q 461 246, 410 358
+               L 307 471
+               L 215 410
+               Q 113 317, 92 225
+               Q 113 143, 143 113 Z" />
     </clipPath>
   </defs>
 
-  <!-- Dark-green outline. -->
-  <path d="M 256 31
-           Q 113 72, 72 235
-           Q 61 420, 256 481
-           Q 451 420, 440 235
-           Q 399 72, 256 31 Z"
-        fill="none"
-        stroke="#15803D"
-        stroke-width="26"
-        stroke-linejoin="round" />
-
   <g clip-path="url(#leafClip)">
-    <rect x="0" y="0" width="512" height="512" fill="#22C55E" />
-    <polygon points="-51,-51 563,-51 563,41 -51,143"
-             fill="#A3E635" opacity="0.55" />
-    <polygon points="-51,430 563,256 563,614 -51,614" fill="#FFFFFF" />
+    <rect x="0" y="0" width="512" height="512" fill="#FFFFFF" />
+    <path d="M 0 0 L 512 0 L 512 307 Q 276 338, 123 369 L 0 369 Z"
+          fill="#22C55E" />
+    <path d="M 0 0 L 512 0 L 512 174 Q 276 205, 113 266 L 0 266 Z"
+          fill="#A3E635" />
   </g>
 
-  <!-- Solid dark-navy chevron arrow. -->
-  <polygon
-    points="399,82 307,92 358,143 174,338 123,389 154,420 205,368 389,174 338,194"
-    fill="#0B1220"
-    stroke="#0B1220"
-    stroke-width="3"
-    stroke-linejoin="round" />
+  <g clip-path="url(#leafClip)">
+    <path d="M 123 256 Q 276 194, 430 164"
+          fill="none" stroke="#0B1220"
+          stroke-width="15" stroke-linecap="round" />
+    <path d="M 154 358 Q 276 328, 399 297"
+          fill="none" stroke="#0B1220"
+          stroke-width="15" stroke-linecap="round" />
+  </g>
+
+  <path d="M 143 113
+           Q 256 72, 420 92
+           L 430 113
+           Q 461 246, 410 358
+           L 307 471
+           L 215 410
+           Q 113 317, 92 225
+           Q 113 143, 143 113 Z"
+        fill="none" stroke="#15803D"
+        stroke-width="13" stroke-linejoin="round" />
+
+  <path d="M 143 215 Q 287 154, 389 133"
+        fill="none" stroke="#0B1220"
+        stroke-width="17" stroke-linecap="round" />
+  <polygon points="410,113 328,123 358,164"
+           fill="#0B1220" stroke="#0B1220"
+           stroke-width="3" stroke-linejoin="round" />
 </svg>

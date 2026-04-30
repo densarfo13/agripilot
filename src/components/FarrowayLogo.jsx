@@ -1,32 +1,29 @@
 /**
- * FarrowayLogo — v7 brand mark, redrawn April 2026 to better
- * match the supplied brand asset.
+ * FarrowayLogo — v8 brand mark.
  *
- * If you have the brand asset as a finished SVG / PNG and
- * want pixel-perfect fidelity, drop it in at
+ * Composition (matches the supplied April 2026 brand asset):
+ *
+ *   1. Asymmetric tilted leaf silhouette — wide flat-ish top
+ *      edge curving to a sharp pointed bottom on the right.
+ *   2. Three internal colour zones, each separated by a dark
+ *      navy "vein" line:
+ *        • upper / largest    → bright lime green  (#A3E635)
+ *        • middle / band      → medium green       (#22C55E)
+ *        • lower-right wedge  → white              (#FFFFFF)
+ *   3. Dark navy curved arrow painted on top of the upper
+ *      green zone, with a chevron arrowhead near the top-right.
+ *
+ * If you want pixel-perfect fidelity to the source asset, drop
+ * the canonical SVG / PNG into:
  *   public/icons/farroway-mark.svg
- * and either:
- *   1. Replace the contents of `FarrowayMark` below with
- *      <img src="/icons/farroway-mark.svg" ... /> — the
- *      lockup, props, and tile variants will keep working.
- *   2. Or paste the new SVG path data into LEAF_PATH /
+ * and either
+ *   1. Replace the body of FarrowayMark with
+ *      <img src="/icons/farroway-mark.svg" ... />, OR
+ *   2. Paste the new path data into LEAF_PATH / VEIN_PATHS /
  *      ARROW_PATH below.
  *
- * Composition (v7):
- *   * Vertical pointed-oval leaf — sharp tip at top, softer
- *     point at the base, widest near the middle.
- *   * Darker-green outline around the leaf edge so the
- *     silhouette has depth on both light and dark surfaces.
- *   * Bright brand-green fill with a faint lighter-green
- *     highlight along the upper-right edge.
- *   * White triangular wedge cutting into the lower-left of
- *     the leaf body.
- *   * Solid dark-navy chevron arrow painted on top, running
- *     from the lower-left up through the white wedge to a
- *     finned arrowhead near the upper-right of the leaf.
- *
- * API and tile variants are unchanged from v6 — props, the
- * full lockup, and the tagline composition all keep working.
+ * API (props, lockup, tile variants) is unchanged from v7 —
+ * every existing caller keeps working.
  */
 
 import React from 'react';
@@ -49,32 +46,31 @@ export function FarrowayMark({
 }) {
   const clipId = React.useMemo(() => nextId('farrowayLeaf'), []);
 
-  const tileFill =
-    tileVariant === 'dark'  ? C.navy  :
-    tileVariant === 'light' ? C.white : null;
-
-  // Vertical pointed-oval leaf. Sharp tip at top (50, 6);
-  // widest around y ≈ 50; softly pointed base at (50, 94).
+  // Outer leaf silhouette. Top edge runs nearly straight from
+  // upper-left across to upper-right; the right side curves
+  // gently down; the bottom comes to a sharp point near
+  // (60, 92); the left side curves back up.
   const LEAF_PATH =
-    'M 50 6 '
-    + 'Q 22 14, 14 46 '   // upper-left curve down to widest
-    + 'Q 12 82, 50 94 '   // lower-left curve to base
-    + 'Q 88 82, 86 46 '   // lower-right curve up
-    + 'Q 78 14, 50 6 Z';  // upper-right curve back to top
+    'M 28 22 '
+    + 'Q 50 14, 82 18 '   // top edge — wide and slightly slanted
+    + 'L 84 22 '          // small upper-right shoulder
+    + 'Q 90 48, 80 70 '   // right side curving down
+    + 'L 60 92 '          // sharp bottom-right point (white tip)
+    + 'L 42 80 '          // back up to lower-left of body
+    + 'Q 22 62, 18 44 '   // left bulge
+    + 'Q 22 28, 28 22 Z'; // close to upper-left
 
-  // Solid dark arrow as a single filled polygon. Runs from
-  // the lower-left of the leaf to the upper-right tip with a
-  // chevron-style head.
-  const ARROW_POINTS =
-      '78,16 '       // tip (top-right)
-    + '60,18 '       // back-top flange
-    + '70,28 '       // shaft-top meets head
-    + '34,66 '       // shaft top-edge tail
-    + '24,76 '       // tail (bottom-left)
-    + '30,82 '       // tail bottom
-    + '40,72 '       // shaft bottom-edge
-    + '76,34 '       // shaft-bottom meets head
-    + '66,38';       // back-bottom flange
+  // Vein lines. The leaf reads as three zones separated by
+  // these dark navy strokes:
+  //   topVein — separates bright-green top from medium-green band
+  //   bottomVein — separates medium-green band from white wedge
+  const TOP_VEIN  = 'M 24 50 Q 54 38, 84 32';
+  const BOT_VEIN  = 'M 30 70 Q 54 64, 78 58';
+
+  // Arrow — runs across the upper bright-green zone, finished
+  // with a chevron head near the top-right.
+  const ARROW_SHAFT = 'M 28 42 Q 56 30, 76 26';
+  const ARROW_HEAD  = '80,22 64,24 70,32';
 
   return (
     <svg
@@ -96,51 +92,82 @@ export function FarrowayMark({
       </defs>
 
       {/* Optional rounded-square tile (app-icon variants). */}
-      {tileFill && (
+      {tileFill(tileVariant) && (
         <rect
           x="0" y="0" width="100" height="100"
           rx="22" ry="22"
-          fill={tileFill}
+          fill={tileFill(tileVariant)}
         />
       )}
 
-      {/* Dark-green outline behind the fill so the leaf has a
-          visible edge. Drawn first; the clipped fill overlays
-          it, leaving a thin outline visible around the path. */}
+      {/* Layered colour zones — each fills the whole canvas
+          and is trimmed by the leaf clipPath. Rendering order
+          matters: white sits at the bottom, then medium green
+          covers the upper two thirds, then bright green
+          covers the upper third. */}
+      <g clipPath={`url(#${clipId})`}>
+        {/* 3. Bottom layer — WHITE fills everything. */}
+        <rect x="0" y="0" width="100" height="100" fill={C.white} />
+
+        {/* 2. Medium-green band covers the upper two thirds.
+              Cut runs along BOT_VEIN's contour; we approximate
+              it with a polygon that follows the same path. */}
+        <path
+          d="M 0 0 L 100 0 L 100 60 Q 54 66, 24 72 L 0 72 Z"
+          fill={C.green}
+        />
+
+        {/* 1. Bright lime green covers the upper third. Cut
+              runs along TOP_VEIN's contour. */}
+        <path
+          d="M 0 0 L 100 0 L 100 34 Q 54 40, 22 52 L 0 52 Z"
+          fill={C.lightGreen}
+        />
+      </g>
+
+      {/* Dark navy vein strokes that visually separate the
+          zones. Drawn AFTER the clipped fills so they appear
+          on top. Clipped to the leaf so they don't extend
+          past the silhouette. */}
+      <g clipPath={`url(#${clipId})`}>
+        <path
+          d={TOP_VEIN}
+          fill="none"
+          stroke={C.navy}
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d={BOT_VEIN}
+          fill="none"
+          stroke={C.navy}
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+      </g>
+
+      {/* Outer leaf outline — a subtle dark-green stroke that
+          gives the leaf an edge against the navy backdrop. */}
       <path
         d={LEAF_PATH}
         fill="none"
         stroke={C.darkGreen}
-        strokeWidth="5"
+        strokeWidth="2.5"
         strokeLinejoin="round"
       />
 
-      {/* Leaf interior — three zones clipped to the silhouette. */}
-      <g clipPath={`url(#${clipId})`}>
-        {/* 1. Bright green base fills the whole leaf. */}
-        <rect x="0" y="0" width="100" height="100" fill={C.green} />
-
-        {/* 2. Faint lighter-green highlight along the upper
-              edge — gives the leaf a subtle gradient instead
-              of a flat fill. */}
-        <polygon
-          points="-10,-10 110,-10 110,8 -10,28"
-          fill={C.lightGreen}
-          opacity="0.55"
-        />
-
-        {/* 3. White triangular wedge cutting into the lower
-              portion of the leaf. The cut line runs from
-              roughly (-10, 84) up to (110, 50). */}
-        <polygon
-          points="-10,84 110,50 110,120 -10,120"
-          fill={C.white}
-        />
-      </g>
-
-      {/* Solid dark-navy chevron arrow. */}
+      {/* Curved arrow shaft + chevron head, drawn on top of
+          everything else so the navy reads cleanly across both
+          green zones. */}
+      <path
+        d={ARROW_SHAFT}
+        fill="none"
+        stroke={C.navy}
+        strokeWidth="3.4"
+        strokeLinecap="round"
+      />
       <polygon
-        points={ARROW_POINTS}
+        points={ARROW_HEAD}
         fill={C.navy}
         stroke={C.navy}
         strokeWidth="0.6"
@@ -148,6 +175,12 @@ export function FarrowayMark({
       />
     </svg>
   );
+}
+
+function tileFill(variant) {
+  if (variant === 'dark')  return C.navy;
+  if (variant === 'light') return C.white;
+  return null;
 }
 
 export const FarrowayIcon = FarrowayMark;
