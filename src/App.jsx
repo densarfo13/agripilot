@@ -128,6 +128,12 @@ const TodayQuick = lazy(() => import('./pages/Today.jsx'));
 // nothing is replaced; ProfileGuard now points first-time users
 // here instead of the legacy form.
 const QuickStart = lazy(() => import('./pages/onboarding/QuickStart.jsx'));
+// Minimal onboarding (Apr 2026 fast-flow refactor): 2-screen
+// entry → 3-input setup → straight to /dashboard. Reaches the
+// first actionable task in under 60 s. Legacy QuickStart +
+// FastOnboardingRoute remain mounted for any deep links that
+// were previously documented.
+const MinimalOnboarding = lazy(() => import('./pages/onboarding/MinimalOnboarding.jsx'));
 const CameraScanPage = lazy(() => import('./pages/CameraScanPage.jsx'));
 const LandCheckPage = lazy(() => import('./pages/LandCheckPage.jsx'));
 const VerifyOtp = lazy(() => import('./pages/VerifyOtp.jsx'));
@@ -572,6 +578,7 @@ export default function App() {
                 routes remain reachable for users / scripts that
                 deep-link to them. */}
             <Route path="/onboarding/quick" element={<QuickStart />} />
+            <Route path="/onboarding/minimal" element={<MinimalOnboarding />} />
             <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
             <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />
             <Route path="/dashboard" element={<V2Dashboard />} />
