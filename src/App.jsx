@@ -105,6 +105,7 @@ const V2FarmerType = lazy(() => import('./pages/FarmerType.jsx'));
 const V2StarterGuide = lazy(() => import('./pages/StarterGuide.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const HelpPage = lazy(() => import('./pages/HelpPage.jsx'));
+const SimpleOnboarding = lazy(() => import('./onboarding/OnboardingFlow.jsx'));
 const FarmerWelcome = lazy(() => import('./pages/FarmerWelcome.jsx'));
 const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
 const BeginnerReassurance = lazy(() => import('./pages/BeginnerReassurance.jsx'));
@@ -593,6 +594,11 @@ export default function App() {
             <Route path="/tasks" element={<AllTasksPage />} />
             <Route path="/my-farm" element={<MyFarmPage />} />
             <Route path="/help" element={<HelpPage />} />
+            {/* Simple Onboarding (rollout v1) — gated by
+                FEATURE_SIMPLE_ONBOARDING inside the component;
+                when off it forwards to /onboarding so existing
+                pilots are unaffected. */}
+            <Route path="/onboarding/simple" element={<SimpleOnboarding />} />
             <Route path="/progress" element={<FarmerProgressPage />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />

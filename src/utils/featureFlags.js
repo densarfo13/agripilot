@@ -62,6 +62,13 @@ const DEFAULTS = Object.freeze({
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.
   FEATURE_ADVANCED_AI_RECOMMENDATIONS: false,
+
+  // Ghana-ready Simple Onboarding (rollout v1) — under-2-minute
+  // farmer setup that lands on Today's Plan. Lives under
+  // /onboarding/simple route. Existing FastFlow / OnboardingV3
+  // flows stay registered so the rollout can A/B without code
+  // changes, controlled by this flag.
+  FEATURE_SIMPLE_ONBOARDING: true,
 });
 
 function safeWindowFlag(name) {
