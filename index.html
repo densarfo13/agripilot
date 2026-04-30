@@ -11,27 +11,46 @@
     <!-- Theme color (Android status bar + PWA chrome) -->
     <meta name="theme-color" content="#0F172A" />
 
-    <!-- Standard favicon / icons.
-         The SVG is the single source of truth — vector, scales
-         perfectly, served by the unconditional static mount in
-         server/src/app.js so it cannot 404 even on a stale
-         deploy. The previous PNG <link rel="icon"> was removed
-         because some deploys don't have the rasterised file
-         and Chrome was logging a 404 in the network panel
-         even though the SVG worked. -->
+    <!-- Favicons & app icons — multi-asset stack so every
+         platform picks the right format:
+           1. SVG  — modern browsers, vector, perfect scaling
+           2. JPG  — actual brand-asset raster. Loaded after the
+                    SVG so vector-aware browsers prefer the
+                    scalable mark, but raster-only paths
+                    (Android home-screen install, link previews,
+                    older Safari) still get the brand image. -->
     <link rel="icon" type="image/svg+xml" href="/icons/farroway-mark.svg" />
+    <link rel="icon" type="image/jpeg" href="/icons/farroway-mark.jpg" />
     <!-- Pinned-tab / mask icon for Safari macOS (renders as a
          single-colour silhouette using the navy brand colour). -->
     <link rel="mask-icon" href="/icons/farroway-mark.svg" color="#0B1220" />
 
-    <!-- Apple iOS PWA tags -->
+    <!-- Apple iOS PWA tags. The .png is preferred when the
+         deploy ships it; the JPG entry is the fallback so iOS
+         home-screen installs still pick up the brand mark on
+         deploys that haven't generated the rasterised
+         apple-touch-icon yet. -->
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/icons/farroway-mark.jpg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Modern equivalent of the deprecated apple-* meta — silences
          Chrome's deprecation warning while keeping iOS PWA support. -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Farroway" />
+
+    <!-- Open Graph / Twitter share previews. When a Farroway
+         link is pasted into chat or social feeds, the JPG is
+         what partners and farmers see in the link card. -->
+    <meta property="og:title" content="Farroway" />
+    <meta property="og:description" content="Know what to do. Grow better." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/farroway-mark.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Farroway" />
+    <meta name="twitter:description" content="Know what to do. Grow better." />
+    <meta name="twitter:image" content="/icons/farroway-mark.jpg" />
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

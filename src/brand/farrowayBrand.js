@@ -49,6 +49,11 @@ export const FARROWAY_BRAND = Object.freeze({
     wordmarkDark:  '/icons/farroway-mark.svg',     //  is a system font on top)
     fullLight:     '/icons/farroway-mark.svg',
     fullDark:      '/icons/farroway-mark.svg',
+    // Brand-asset raster (the actual JPG the user supplied).
+    // Non-React consumers (PDF generators, email templates,
+    // og:image readers, link-card previews) should use this
+    // path when they need a raster brand mark.
+    markRaster:    '/icons/farroway-mark.jpg',
     raster192:     '/icons/icon-192.png',          // PWA install
     raster512:     '/icons/icon-512.png',
     appleTouch:    '/icons/apple-touch-icon.png',
