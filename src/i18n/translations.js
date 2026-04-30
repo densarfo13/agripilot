@@ -7112,11 +7112,21 @@ const T = {
   //  NAVIGATION — bottom tab labels
   // ═══════════════════════════════════════════════════════════
 
-  'nav.home': { en: 'Home', fr: 'Accueil', sw: 'Nyumbani', ha: 'Gida', tw: 'Fie' },
-  'nav.myFarm': { en: 'My Farm', fr: 'Ma ferme', sw: 'Shamba', ha: 'Gona', tw: 'Afuo' },
-  'nav.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma' },
-  'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo', ha: 'Ci gaba', tw: 'Nkɔso' },
-  'nav.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',       ha: 'Sayar',  tw: 'Tɔn',  hi: 'बेचें' },
+  'nav.home':     { en: 'Home',     fr: 'Accueil', sw: 'Nyumbani',   ha: 'Gida',    tw: 'Fie',   hi: 'होम' },
+  'nav.myFarm':   { en: 'My Farm',  fr: 'Ma ferme', sw: 'Shamba',     ha: 'Gona',    tw: 'Afuo',  hi: 'मेरा खेत' },
+  'nav.tasks':    { en: 'Tasks',    fr: 'Tâches',  sw: 'Kazi',       ha: 'Ayyuka',  tw: 'Adwuma', hi: 'कार्य' },
+  'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo',  ha: 'Ci gaba', tw: 'Nkɔso',  hi: 'प्रगति' },
+  'nav.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',        ha: 'Sayar',   tw: 'Tɔn',    hi: 'बेचें' },
+  // Spec-named aliases (common.*) — same values, kept in sync
+  // so callers using the spec key shape resolve identically.
+  'common.home':     { en: 'Home',     fr: 'Accueil', sw: 'Nyumbani',  ha: 'Gida',    tw: 'Fie',    hi: 'होम' },
+  'common.myFarm':   { en: 'My Farm',  fr: 'Ma ferme', sw: 'Shamba',    ha: 'Gona',    tw: 'Afuo',   hi: 'मेरा खेत' },
+  'common.tasks':    { en: 'Tasks',    fr: 'Tâches',  sw: 'Kazi',      ha: 'Ayyuka',  tw: 'Adwuma', hi: 'कार्य' },
+  'common.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo', ha: 'Ci gaba', tw: 'Nkɔso',  hi: 'प्रगति' },
+  'common.funding':  { en: 'Funding',  fr: 'Aides',   sw: 'Fursa',     ha: 'Dama',    tw: 'Hokwan', hi: 'फंडिंग' },
+  'common.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',       ha: 'Sayar',   tw: 'Tɔn',    hi: 'बेचें' },
+  'common.help':     { en: 'Need help?',     fr: 'Besoin d\u2019aide ?',   sw: 'Unahitaji msaada?',  ha: 'Kana buƙatar taimako?', tw: 'Wopɛ mmoa?',          hi: 'मदद चाहिए?' },
+  'common.contact':  { en: 'Contact our team', fr: 'Contacter notre équipe', sw: 'Wasiliana na timu yetu', ha: 'Tuntuɓi ƙungiyarmu',     tw: 'Ka kyerɛ yɛn dwumadie', hi: 'हमारी टीम से संपर्क करें' },
 
   // ═══════════════════════════════════════════════════════════
   //  DASHBOARD — section labels (Home decision screen)
@@ -10472,6 +10482,18 @@ const T = {
   'locale.banner.accept':      { en: 'Yes, use {language}',                                                 fr: 'Oui, utiliser {language}',                                            sw: 'Ndiyo, tumia {language}',                                              ha: 'Eh, yi amfani da {language}',                                           tw: 'Aane, fa {language} di dwuma',                                            hi: 'हाँ, {language} उपयोग करें' },
   'locale.banner.choose':      { en: 'Choose another language',                                             fr: 'Choisir une autre langue',                                            sw: 'Chagua lugha nyingine',                                                ha: 'Zaɓi wani harshe',                                                      tw: 'Yi kasa foforɔ bi',                                                       hi: 'अन्य भाषा चुनें' },
   'locale.banner.keepEnglish': { en: 'Keep English',                                                        fr: 'Garder l\'anglais',                                                   sw: 'Endelea na Kiingereza',                                                ha: 'Ci gaba da Turanci',                                                    tw: 'Tena Borɔfo so',                                                          hi: 'अंग्रेज़ी रखें' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  LANGUAGE — spec-shaped banner + switcher (rollout §7 / §6)
+  // ═══════════════════════════════════════════════════════════
+  'language.banner.aria':        { en: 'Language suggestion',                                                fr: 'Suggestion de langue',                          sw: 'Pendekezo la lugha',                            ha: 'Shawarar harshe',                          tw: 'Kasa nkyerɛkyerɛmu',                       hi: 'भाषा सुझाव' },
+  'language.banner.title':       { en: 'We detected your farm is in {country}. Choose the best language for this farm.', fr: 'Nous avons détecté que votre ferme est en {country}. Choisissez la meilleure langue.', sw: 'Tumegundua kuwa shamba lako liko {country}. Chagua lugha bora.', ha: 'Mun gano gonar ku tana cikin {country}. Zaɓi mafi kyawun harshe.', tw: 'Yɛahunu sɛ w\'afuo wɔ {country}. Yi kasa pa ma afuo yi.', hi: 'हमने पाया कि आपका खेत {country} में है। इस खेत के लिए सबसे अच्छी भाषा चुनें।' },
+  'language.banner.useEnglish':  { en: 'Use English',                                                         fr: 'Utiliser l\'anglais',                            sw: 'Tumia Kiingereza',                              ha: 'Yi amfani da Turanci',                     tw: 'Fa Borɔfo di dwuma',                       hi: 'अंग्रेज़ी उपयोग करें' },
+  'language.banner.chooseTwi':   { en: 'Choose Twi',                                                          fr: 'Choisir le twi',                                 sw: 'Chagua Twi',                                    ha: 'Zaɓi Twi',                                 tw: 'Yi Twi',                                  hi: 'ट्वी चुनें' },
+  'language.banner.chooseHausa': { en: 'Choose Hausa',                                                        fr: 'Choisir le haoussa',                             sw: 'Chagua Kihausa',                                ha: 'Zaɓi Hausa',                               tw: 'Yi Hausa',                                hi: 'हौसा चुनें' },
+  'language.banner.choose':      { en: 'Choose {language}',                                                   fr: 'Choisir {language}',                             sw: 'Chagua {language}',                             ha: 'Zaɓi {language}',                          tw: 'Yi {language}',                           hi: '{language} चुनें' },
+  'language.banner.keepCurrent': { en: 'Keep current language',                                               fr: 'Garder la langue actuelle',                      sw: 'Endelea na lugha ya sasa',                      ha: 'Ci gaba da harshen yanzu',                 tw: 'Tena kasa a wode di dwuma seesei so',     hi: 'वर्तमान भाषा रखें' },
+  'language.switcher.aria':      { en: 'Change language',                                                     fr: 'Changer de langue',                              sw: 'Badilisha lugha',                               ha: 'Canza harshe',                             tw: 'Sesa kasa',                               hi: 'भाषा बदलें' },
 };
 
 export default T;

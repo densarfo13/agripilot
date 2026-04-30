@@ -53,6 +53,12 @@ import { SIMPLE_MODE_TRANSLATIONS }            from './simpleModeTranslations.js
 import { SIMPLE_UX_TRANSLATIONS }              from './simpleUxTranslations.js';
 import { RETENTION_TRANSLATIONS }              from './retentionTranslations.js';
 import { NGO_MAP_DASHBOARD_TRANSLATIONS }      from './ngoMapDashboardTranslations.js';
+// JSON locale files (en.json / tw.json / ha.json / hi.json /
+// sw.json / fr.json / es.json / pt.json) — flattened to dotted
+// keys and merged below as empty-slot fill. Mandated by §1 +
+// §11 of the localization rollout spec; until now they shipped
+// in the repo but were never wired into the live t() resolver.
+import { JSON_LOCALE_OVERLAY }                 from './jsonLocaleLoader.js';
 import {
   formatNumber,
   formatCount,
@@ -117,6 +123,7 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
     SIMPLE_UX_TRANSLATIONS,
     RETENTION_TRANSLATIONS,
     NGO_MAP_DASHBOARD_TRANSLATIONS,
+    JSON_LOCALE_OVERLAY,
   ]);
 })();
 
