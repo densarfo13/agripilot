@@ -1,21 +1,35 @@
 /**
- * FarrowayLogo — v3 brand mark, redrawn to match the official
- * brand sheet (April 2026):
+ * FarrowayLogo — v4 brand mark, redrawn April 2026 to match the
+ * official brand sheet:
  *
- *   * Leaf-shaped silhouette (pointed top-right tip, rounded base)
- *   * Inside the leaf, three faceted green slabs (lightest top
- *     → medium green → darker green) plus a navy wedge at the
- *     lower-left
- *   * A white upward arrow piercing through the leaf from
- *     lower-left to upper-right
+ *   USAGE ON DARK BACKGROUND   |   USAGE ON LIGHT BACKGROUND
+ *   ─────────────────────────  |   ─────────────────────────
+ *   green leaf + white "F"     |   green leaf + navy "Farroway"
+ *   tagline: white + green     |   tagline: navy + green
+ *
+ * Because the SAME green mark sits on both dark and light tiles,
+ * the mark itself is single-tone (brand green only). The arrow
+ * inside the leaf is cut out as NEGATIVE SPACE, not painted —
+ * the surface behind the leaf shows through, so the mark stays
+ * legible on every backdrop.
+ *
+ * Composition:
+ *   * Leaf silhouette, pointed top-right tip, rounded bottom-left.
+ *     Filled with brand green (#22C55E).
+ *   * Subtle leaf-vein highlight in lighter green (#A3E635) — a
+ *     thin diagonal stroke from the base to the tip, hinting at
+ *     the central rib.
+ *   * Upward-pointing arrow (shaft + head) cut out of the leaf
+ *     via an SVG <mask>. The cutout reveals whatever sits behind
+ *     the SVG (white page, navy dashboard, brand-blue tile).
  *
  * Two-tone tagline support: "Know what to do." (navy on light
  * surfaces, white on dark) + "Grow better." (always green).
  *
- * App-icon contexts wrap the bare mark in a rounded square
- * tile via `tileVariant="light"` or `"dark"`. The PRIMARY
- * logo is the bare leaf — no tile — so it sits naturally on
- * white pages or dark dashboards alike.
+ * App-icon contexts wrap the bare mark in a rounded square tile
+ * via `tileVariant="light"` or `"dark"`. The PRIMARY logo is
+ * the bare leaf — no tile — so it reads naturally on white
+ * pages or dark dashboards alike.
  *
  * Backwards-compatible API:
  *   size       — icon edge in px (default 32)
@@ -25,8 +39,6 @@
  *   iconOnly   — alias for showText={false}
  *   withTile   — legacy alias; if true, behaves like
  *                tileVariant="dark"
- *
- * New props:
  *   tileVariant — "none" (default) | "light" | "dark"
  *   showTagline — render the two-tone tagline beneath the
  *                 wordmark (default false; set on splash /
@@ -34,11 +46,10 @@
  *
  * Strict-rule audit
  *   * Inline SVG — no second network request, ships in the
- *     bundle, works offline. (Rasterised PWA tile lives at
- *     /icons/icon-{192,512}.png — that's a separate asset.)
- *   * Works on light AND dark backgrounds without an external
- *     tile: the leaf's own navy section + lime arrow keep it
- *     readable in both contexts.
+ *     bundle, works offline.
+ *   * Single brand colour — no clash with dark or light surfaces.
+ *   * The arrow cutout uses a <mask>, so clip-path stacking on
+ *     adjacent SVG instances is not affected.
  *   * Accessibility: <svg role="img"> + <title>; tagline keys
  *     read by screen readers in source order.
  */
@@ -49,7 +60,7 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 const C = FARROWAY_BRAND.colors;
 
 // Stable IDs prefixed with the component name so multiple
-// instances on the same page never collide on clip-path refs.
+// instances on the same page never collide on mask refs.
 let _uid = 0;
 function nextId(prefix) {
   _uid += 1;
@@ -69,28 +80,32 @@ export function FarrowayMark({
   style,
   ...rest
 }) {
-  // One unique id per render — required because clipPath refs
-  // are scoped to the document, not the SVG.
-  const clipId = React.useMemo(() => nextId('farrowayLeaf'), []);
-
+  // One unique id per render — required because mask refs are
+  // scoped to the document, not the SVG.
+  const maskId  = React.useMemo(() => nextId('farrowayArrow'), []);
   const tileFill =
     tileVariant === 'dark'  ? C.navy  :
     tileVariant === 'light' ? C.white : null;
 
-  // Leaf silhouette: pointed top-right tip ~(88, 14), bulging
-  // upper-left around (10, 50), rounded bottom curve through
-  // (28, 90), back up the right side.
+  // Leaf silhouette: pointed top-right tip ~(86, 14), bulging
+  // upper-left around (10, 48), rounded bottom curve through
+  // (28, 90), back up the right side. Slightly tightened from
+  // the v3 path so the leaf reads cleanly against the tagline.
   const LEAF_PATH =
-    'M 88 14 '
-    + 'Q 70 6, 48 12 '
-    + 'Q 22 22, 10 50 '
-    + 'Q 4 80, 28 90 '
+    'M 86 14 '
+    + 'Q 66 6, 44 14 '
+    + 'Q 20 24, 10 48 '
+    + 'Q 4 78, 28 90 '
     + 'Q 50 92, 66 76 '
-    + 'Q 82 56, 88 14 Z';
+    + 'Q 82 54, 86 14 Z';
 
-  // Inside the leaf, draw faceted slabs from back (lightest)
-  // to front (navy wedge). Each polygon extends past the
-  // leaf bounds; the clipPath trims them to the silhouette.
+  // Curved arrow geometry — drawn in BLACK on the mask so it
+  // becomes a cutout when the leaf is painted. Shaft runs from
+  // the lower-left of the leaf to the upper-right tip; the
+  // arrowhead is a small filled triangle just inside the tip.
+  const ARROW_SHAFT  = 'M 28 72 Q 46 56, 76 22';
+  const ARROW_HEAD   = '78,18 60,22 68,34';
+
   return (
     <svg
       role="img"
@@ -105,9 +120,27 @@ export function FarrowayMark({
       <title>{ariaLabel}</title>
 
       <defs>
-        <clipPath id={clipId}>
-          <path d={LEAF_PATH} />
-        </clipPath>
+        {/* Mask: white = keep, black = cut out. We cut the arrow
+            shaft + head out of the leaf so whatever surface sits
+            behind the SVG (page, tile, dashboard) shows through. */}
+        <mask id={maskId} maskUnits="userSpaceOnUse"
+              x="0" y="0" width="100" height="100">
+          <rect x="0" y="0" width="100" height="100" fill="white" />
+          <path
+            d={ARROW_SHAFT}
+            stroke="black"
+            strokeWidth="9"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <polygon
+            points={ARROW_HEAD}
+            fill="black"
+            stroke="black"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </mask>
       </defs>
 
       {/* Optional rounded-square tile (app-icon variants). */}
@@ -119,93 +152,31 @@ export function FarrowayMark({
         />
       )}
 
-      {/* Leaf body — simplified two-zone composition (Apr 2026
-          brand-asset refresh, matching the supplied app-icon
-          design):
-            * upper-right band : lighter green (#A3E635)
-            * main body        : medium green  (#22C55E)
-            * lower-left wedge : navy          (#0B1220)
-          The cut between the two greens runs from (-10, 32) to
-          (110, 6) so the lighter band hugs the upper-right
-          tip. The navy wedge cut runs from (-10, 92) up to
-          (110, 50) so the wedge occupies the lower-left third
-          of the leaf — exactly where the supplied design puts
-          it. */}
-      <g clipPath={`url(#${clipId})`}>
-        {/* 1. medium green base — fills the whole leaf */}
-        <rect x="0" y="0" width="100" height="100" fill={C.green} />
-
-        {/* 2. lighter green band at the upper-right */}
-        <polygon
-          points="-10,-20 110,-20 110,6 -10,32"
-          fill={C.lightGreen}
-        />
-
-        {/* 3. navy wedge — slants up to the right so it sits in
-              the lower-LEFT of the leaf, matching the new mark. */}
-        <polygon
-          points="-10,92 110,50 110,120 -10,120"
-          fill={C.navy}
-        />
-      </g>
-
-      {/* Two-tone curved arrow — drawn AFTER the clipped group
-          so the arrowhead can sit at the upper-right tip without
-          getting trimmed. The shaft is a single quadratic curve
-          from (24, 74) to (78, 22); we draw it twice with two
-          different clip regions so the segment over the navy
-          wedge renders white and the segment over the green
-          renders navy. The arrowhead is a small triangle drawn
-          last, in navy. */}
-
-      {/* Per-render clip definitions for the two arrow halves. */}
-      <defs>
-        <clipPath id={`${clipId}_navyZone`}>
-          {/* Same wedge polygon as #3 above — the arrow shaft is
-              white where it overlaps this region. */}
-          <polygon points="-10,92 110,50 110,120 -10,120" />
-        </clipPath>
-        <clipPath id={`${clipId}_greenZone`}>
-          {/* Everything inside the leaf that is NOT the wedge.
-              Drawn as a 5-point polygon roughly tracing the
-              leaf bounds minus the wedge — the leaf clip-path
-              still trims the outer edges. */}
-          <polygon points="-10,-20 110,-20 110,50 -10,92" />
-        </clipPath>
-      </defs>
-
-      {/* Shaft over the navy wedge → render white */}
-      <g clipPath={`url(#${clipId}_navyZone)`}>
-        <path
-          d="M 24 74 Q 44 60, 78 22"
-          stroke={C.white}
-          strokeWidth="3.2"
-          strokeLinecap="round"
-          fill="none"
-        />
-      </g>
-
-      {/* Shaft over the green portion → render navy */}
-      <g clipPath={`url(#${clipId}_greenZone)`}>
-        <path
-          d="M 24 74 Q 44 60, 78 22"
-          stroke={C.navy}
-          strokeWidth="3.2"
-          strokeLinecap="round"
-          fill="none"
-        />
-      </g>
-
-      {/* Arrowhead at the upper-right tip — small filled triangle
-          in navy. Pointing up-and-to-the-right along the curve's
-          tangent at (78, 22). */}
-      <polygon
-        points="80,18 66,22 72,30"
-        fill={C.navy}
-        stroke={C.navy}
-        strokeWidth="0.6"
-        strokeLinejoin="round"
+      {/* Leaf body — single brand-green fill, masked so the
+          arrow cuts through to whatever is behind. */}
+      <path
+        d={LEAF_PATH}
+        fill={C.green}
+        mask={`url(#${maskId})`}
       />
+
+      {/* Leaf-vein accent in the lighter green tone — sits
+          under the cutout, runs along the arrow shaft so the
+          two read as a single integrated mark. The mask trims
+          everything outside the leaf. */}
+      <g
+        clipPath={undefined}
+        style={{ pointerEvents: 'none' }}
+      >
+        <path
+          d="M 30 78 Q 48 60, 80 20"
+          stroke={C.lightGreen}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.55"
+        />
+      </g>
     </svg>
   );
 }

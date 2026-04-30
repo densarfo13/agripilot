@@ -472,6 +472,65 @@ const TASK_DESCRIPTIONS = {
 // backend change — we localise on the client by recognising
 // the strings the engine emits.
 const TASK_TITLE_PHRASE_MAP = {
+  // Generic engine titles that don't carry an explicit titleKey —
+  // matched on exact English text. Added Apr 2026 after a French/
+  // Hausa pilot showed "Clear your field" leaking through.
+  'Clear your field': {
+    fr: 'Défrichez votre champ',
+    sw: 'Safisha shamba lako',
+    ha: 'Share gonarka',
+    tw: 'Twitwa w\u2019afuo',
+    hi: 'अपना खेत साफ़ करें',
+  },
+  'Prepare your field': {
+    fr: 'Préparez votre champ',
+    sw: 'Andaa shamba lako',
+    ha: 'Shirya gonarka',
+    tw: 'Siesie w\u2019afuo',
+    hi: 'अपना खेत तैयार करें',
+  },
+  'Check your soil': {
+    fr: 'Vérifiez votre sol',
+    sw: 'Angalia udongo wako',
+    ha: 'Duba ƙasarka',
+    tw: 'Hwɛ w\u2019asase',
+    hi: 'अपनी मिट्टी जाँचें',
+  },
+  'Plant your seeds': {
+    fr: 'Plantez vos semences',
+    sw: 'Panda mbegu zako',
+    ha: 'Shuka iririnka',
+    tw: 'Dua wo aba',
+    hi: 'अपने बीज बोएँ',
+  },
+  'Water your crop': {
+    fr: 'Arrosez votre culture',
+    sw: 'Mwagilia zao lako',
+    ha: 'Shayar da amfaninka',
+    tw: 'Gugu wo aduane',
+    hi: 'अपनी फसल को पानी दें',
+  },
+  'Start logging farm costs to track profitability': {
+    fr: 'Commencez à enregistrer les coûts pour suivre la rentabilité',
+    sw: 'Anza kuandika gharama za shamba kufuatilia faida',
+    ha: 'Fara rubuta kuɗaɗen gona don bibiyar riba',
+    tw: 'Hyɛ aseɛ kyerɛw afuom ho ka na hwɛ mfaso',
+    hi: 'लाभ ट्रैक करने के लिए खेत की लागत दर्ज करें',
+  },
+  'Keep logging harvest and costs to unlock performance comparison': {
+    fr: 'Continuez à enregistrer la récolte et les coûts pour comparer les performances',
+    sw: 'Endelea kuandika mavuno na gharama kufungua ulinganisho',
+    ha: 'Ci gaba da rubuta girbi da farashi don buɗe kwatance',
+    tw: 'Kɔ so kyerɛw nnɔbae ne ka so na bue toatoa toa hwɛ',
+    hi: 'प्रदर्शन तुलना अनलॉक करने के लिए फसल और लागत दर्ज करते रहें',
+  },
+  'Log farm expenses to track profitability': {
+    fr: 'Enregistrez les dépenses pour suivre la rentabilité',
+    sw: 'Andika gharama za shamba kufuatilia faida',
+    ha: 'Rubuta kashe-kashen gona don bibiyar riba',
+    tw: 'Kyerɛw afuom ho ka na hwɛ mfaso',
+    hi: 'लाभ ट्रैक करने के लिए खेत के खर्चे दर्ज करें',
+  },
   'Prepare rows for maize': {
     fr: 'Préparer les rangs pour le maïs',
     sw: 'Andaa mistari kwa mahindi',

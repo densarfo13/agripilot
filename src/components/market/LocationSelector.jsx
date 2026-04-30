@@ -51,11 +51,48 @@ function regionKey(r) {
   return `${String(r.country || '').toUpperCase()}:${r.stateCode ? String(r.stateCode).toUpperCase() : ''}`;
 }
 
-function regionLabel(r, t) {
+/**
+ * Apr 2026 i18n sweep — lift the displayed country/state through
+ * a small normaliser so we never render lowercase / typo'd
+ * source data verbatim.  Pilot screenshot showed
+ * "—, united state of america" on the Hausa Sell form because
+ * the data source held a lowercased full name; the chip rendered
+ * it as-is.  This helper:
+ *   • drops the empty-state em-dash so we never render a stray
+ *     "—, country" chip
+ *   • prefers `Intl.DisplayNames(lang)` when the country looks
+ *     like a 2-letter code (best path — full localisation)
+ *   • title-cases multi-word country names so we never display
+ *     "united state of america"
+ */
+function _localiseCountry(country, lang) {
+  if (!country) return '';
+  const value = String(country).trim();
+  if (!value) return '';
+  // 2-letter ISO code → use Intl.DisplayNames when available.
+  if (/^[A-Za-z]{2}$/.test(value)) {
+    try {
+      if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+        const dn = new Intl.DisplayNames([lang || 'en'], { type: 'region' });
+        const localised = dn.of(value.toUpperCase());
+        if (localised && localised !== value.toUpperCase()) return localised;
+      }
+    } catch { /* Intl unsupported for this locale */ }
+    return value.toUpperCase();
+  }
+  // Multi-word free-text — title-case each word.
+  return value
+    .split(/\s+/)
+    .map((w) => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '')
+    .join(' ');
+}
+
+function regionLabel(r, t, lang) {
   if (!r) return tSafe('market.location.none', '');
   if (r.label) return r.label;
-  if (r.stateCode) return `${r.stateCode}, ${r.country}`;
-  return String(r.country || '').toUpperCase();
+  const country = _localiseCountry(r.country, lang);
+  if (r.stateCode) return `${r.stateCode}, ${country}`;
+  return country || String(r.country || '').toUpperCase();
 }
 
 export default function LocationSelector({
@@ -66,7 +103,7 @@ export default function LocationSelector({
   onReset,
   onExpand,
 }) {
-  const { t } = useAppSettings();
+  const { t, language } = useAppSettings();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const popoverRef = useRef(null);
@@ -132,7 +169,7 @@ export default function LocationSelector({
       >
         <span style={S.triggerIcon}>{'\uD83D\uDCCD'}</span>
         <span style={S.triggerText}>
-          {value ? regionLabel(value, t) : (tSafe('market.location.any', ''))}
+          {value ? regionLabel(value, t, language) : (tSafe('market.location.any', ''))}
         </span>
         <span style={S.triggerCaret}>▾</span>
       </button>
@@ -196,7 +233,7 @@ export default function LocationSelector({
                     style={{ ...S.row, ...(isSelected ? S.rowSelected : null) }}
                     data-testid={`location-row-${r.country}-${r.stateCode || 'ALL'}`}
                   >
-                    <span>{regionLabel(r, t)}</span>
+                    <span>{regionLabel(r, t, language)}</span>
                     {r._preferred && (
                       <span style={S.pillPreferred}>{tSafe('market.location.preferredPill', '')}</span>
                     )}

@@ -194,8 +194,12 @@ export default function FarmerTodayPage() {
         }
       : null;
     return {
-      primaryTask: today.primaryTask ? localizeServerTask(today.primaryTask, t) : null,
-      secondaryTasks: (today.secondaryTasks || []).map((task) => localizeServerTask(task, t)),
+      // Pass `lang` so localizeServerTask can fall back to the
+      // phrase-map localizer (`getLocalizedTaskTitle`) for server-
+      // emitted titles that lack an explicit titleKey — fixes the
+      // "Clear your field" leak in fr/ha pilots.
+      primaryTask: today.primaryTask ? localizeServerTask(today.primaryTask, t, language) : null,
+      secondaryTasks: (today.secondaryTasks || []).map((task) => localizeServerTask(task, t, language)),
       riskAlerts: today.riskAlerts || [],
       weatherAlerts: today.weatherAlerts || [],
       weatherBadge: badge,
@@ -939,6 +943,10 @@ export default function FarmerTodayPage() {
         }
         onContinue={() => setCompletionBanner(false)}
         onClose={() => setCompletionBanner(false)}
+        /* 7-day loop spec — pass the localised celebratory copy
+           into the existing impact-message slot. Falls back to
+           the rotating micro-reward if the key is missing. */
+        impactMessage={tSafe('retention.completed.goodJob', 'Good job!')}
       />
 
       {/* Reminder banner (spec §4/§5/§6). At most one active card.

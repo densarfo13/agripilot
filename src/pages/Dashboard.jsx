@@ -67,6 +67,8 @@ import MarketSignalCard from '../components/MarketSignalCard.jsx';
 import {
   Camera, Sprout, ShoppingCart, Wallet, ArrowRight, HelpCircle,
 } from '../components/icons/lucide.jsx';
+import WeatherIcon from '../components/farmer/WeatherIcon.jsx';
+import useEngagementDay from '../hooks/useEngagementDay.js';
 import {
   resolveProfileCompletionRoute, routeToUrl,
 } from '../core/multiFarm/index.js';
@@ -88,6 +90,12 @@ export default function Dashboard() {
   // ─── THE LOOP ────────────────────────────────────────────
   const loop = useFarmerLoop();
   const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
+
+  // ─── 7-day engagement loop ──────────────────────────────
+  // Pure derivation from the retention store. Gates the three
+  // progressive-unlock quick-action tiles and supplies the
+  // "Day N of 7" indicator under the progress block.
+  const engagement = useEngagementDay(loop.profile);
 
   // ─── Daily notification engine (pure, gated by prefs + dedupe) ──
   useDailyNotifications({
@@ -600,8 +608,20 @@ export default function Dashboard() {
             data-testid="home-weather-intel"
             data-severity={loop.weatherDecision.severity}
           >
+            {/* Use the dedicated WeatherIcon so the picture
+                matches the actual condition (sunny / cloudy /
+                rain / storm / hot / dry) rather than the
+                decision-engine's flat emoji. Falls back to the
+                existing chipIcon when WeatherIcon resolves to
+                null (very stale / unavailable payloads). */}
             <span style={S.wxIntelIcon} aria-hidden="true">
-              {loop.weatherDecision.chipIcon || '☁'}
+              {loop.weather ? (
+                <WeatherIcon weather={loop.weather} size={22} />
+              ) : (
+                <span style={{ fontSize: 22, lineHeight: 1 }}>
+                  {loop.weatherDecision.chipIcon || '☁'}
+                </span>
+              )}
             </span>
             <div style={S.wxIntelText}>
               {loop.weatherDecision.chipLabel ? (
@@ -857,17 +877,29 @@ export default function Dashboard() {
                   {' '}{tSafe('home.progress.tasks', 'tasks done')}
                 </span>
               </span>
-              <span
-                style={{
-                  ...S.progressStatus,
-                  ...(loop.progress.done === loop.progress.total
-                    ? S.progressStatusDone
-                    : null),
-                }}
-              >
-                {loop.progress.done === loop.progress.total
-                  ? tSafe('home.progress.complete', 'All done')
-                  : tSafe('home.progress.onTrack', 'On track')}
+              <span style={S.progressMetaRow}>
+                {/* 7-day engagement loop indicator. Inline messaging
+                    only — no new section per the spec's "DO NOT
+                    change UI structure" rule. Self-hides during
+                    onboarding (dayNumber === 0). */}
+                {engagement.dayNumber > 0 && (
+                  <span style={S.dayPill} data-testid="home-day-pill">
+                    {tSafe('home.engagement.dayOfSeven',
+                      'Day {n} of 7').replace('{n}', String(engagement.dayNumber))}
+                  </span>
+                )}
+                <span
+                  style={{
+                    ...S.progressStatus,
+                    ...(loop.progress.done === loop.progress.total
+                      ? S.progressStatusDone
+                      : null),
+                  }}
+                >
+                  {loop.progress.done === loop.progress.total
+                    ? tSafe('home.progress.complete', 'All done')
+                    : tSafe('home.progress.onTrack', 'On track')}
+                </span>
               </span>
             </div>
             <div style={S.progressTrack} aria-hidden="true">
@@ -911,31 +943,92 @@ export default function Dashboard() {
           </button>
         )}
 
-        {/* ── Quick actions row (Home redesign §4) ──────────────
-            Exactly three tiles: Scan crop / Check land / View
-            tasks. Funding + Sell removed because the bottom nav
-            already routes there — Home spec rule "no duplicate
-            actions". Three tiles flow side-by-side on phones and
-            wrap on narrow viewports via auto-fit. */}
+        {/* ── Lightweight Funding / Sell trigger row ────────────
+            Spec rule: "Do not overbuild. Add simple trigger-ready
+            placeholders." Two thin chips that surface only when
+            simple, already-loaded farm data signals an
+            opportunity. Keep both off-screen otherwise so Home
+            stays focused on the primary task.
+
+              • Ready-to-sell  ← crop stage ∈ {harvest, post_harvest}
+              • Funding nearby ← existing opportunities-feed signal
+                                  via the loop's profile flag (kept
+                                  read-only — no new fetch added). */}
+        {loop.profile && (
+          (() => {
+            const stage = String(loop.profile.cropStage || '').toLowerCase();
+            const showSell = stage === 'harvest' || stage === 'post_harvest' || loop.profile.readyToSell === true;
+            const showFunding = loop.profile.fundingOpportunitiesAvailable === true
+              || loop.profile.fundingNearby === true;
+            if (!showSell && !showFunding) return null;
+            return (
+              <div style={S.triggerRow} data-testid="home-trigger-row">
+                {showSell && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/sell')}
+                    style={{ ...S.triggerChip, ...S.triggerChipSell }}
+                    data-testid="home-trigger-sell"
+                  >
+                    <span aria-hidden="true">🛒</span>
+                    <span style={S.triggerChipLabel}>
+                      {tSafe('home.trigger.readyToSell', 'Ready to sell?')}
+                    </span>
+                    <span style={S.triggerChipChevron} aria-hidden="true">
+                      <ArrowRight size={14} />
+                    </span>
+                  </button>
+                )}
+                {showFunding && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/opportunities')}
+                    style={{ ...S.triggerChip, ...S.triggerChipFunding }}
+                    data-testid="home-trigger-funding"
+                  >
+                    <span aria-hidden="true">💰</span>
+                    <span style={S.triggerChipLabel}>
+                      {tSafe('home.trigger.fundingNearby', 'Funding nearby')}
+                    </span>
+                    <span style={S.triggerChipChevron} aria-hidden="true">
+                      <ArrowRight size={14} />
+                    </span>
+                  </button>
+                )}
+              </div>
+            );
+          })()
+        )}
+
+        {/* ── Quick actions grid (Home redesign §4 v2) ──────────
+            Four tiles per the action-first spec: Scan crop /
+            Check land / Mark ready to sell / View funding.
+            Sell + Funding here are deep-link shortcuts to the
+            same routes the bottom nav serves; the Home tiles
+            give farmers landing on Home first a one-tap path
+            into those flows without hunting through the nav.
+            Same routes, same labels — no duplicate logic. */}
         {loop.profile && (
           <div style={S.quickGrid} data-testid="home-quick-actions">
-            <button
-              type="button"
-              onClick={() => navigate('/scan-crop')}
-              style={S.quickTile}
-              data-testid="home-scan-crop"
-            >
-              <span style={S.quickTileIcon} aria-hidden="true">
-                <Camera size={20} />
-              </span>
-              <span style={S.quickTileLabel}>
-                {tSafe('home.quick.scanCrop', 'Scan crop')}
-              </span>
-              <span style={S.quickTileHelper}>
-                {tSafe('home.quick.scanCrop.helper',
-                  'Detect issues early.')}
-              </span>
-            </button>
+            {engagement.unlocks.scanCrop && (
+              <button
+                type="button"
+                onClick={() => navigate('/scan-crop')}
+                style={S.quickTile}
+                data-testid="home-scan-crop"
+              >
+                <span style={S.quickTileIcon} aria-hidden="true">
+                  <Camera size={20} />
+                </span>
+                <span style={S.quickTileLabel}>
+                  {tSafe('home.quick.scanCrop', 'Scan crop')}
+                </span>
+                <span style={S.quickTileHelper}>
+                  {tSafe('home.quick.scanCrop.helper',
+                    'Detect issues early.')}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate('/land-check')}
@@ -953,23 +1046,44 @@ export default function Dashboard() {
                   'Quick farm check.')}
               </span>
             </button>
-            <button
-              type="button"
-              onClick={() => navigate('/tasks')}
-              style={S.quickTile}
-              data-testid="home-view-tasks"
-            >
-              <span style={S.quickTileIcon} aria-hidden="true">
-                <ArrowRight size={20} />
-              </span>
-              <span style={S.quickTileLabel}>
-                {tSafe('home.quick.viewTasks', 'View tasks')}
-              </span>
-              <span style={S.quickTileHelper}>
-                {tSafe('home.quick.viewTasks.helper',
-                  'Your task list.')}
-              </span>
-            </button>
+            {engagement.unlocks.markSell && (
+              <button
+                type="button"
+                onClick={() => navigate('/sell')}
+                style={S.quickTile}
+                data-testid="home-mark-sell"
+              >
+                <span style={S.quickTileIcon} aria-hidden="true">
+                  <ShoppingCart size={20} />
+                </span>
+                <span style={S.quickTileLabel}>
+                  {tSafe('home.quick.markSell', 'Mark ready to sell')}
+                </span>
+                <span style={S.quickTileHelper}>
+                  {tSafe('home.quick.markSell.helper',
+                    'Signal harvest is ready.')}
+                </span>
+              </button>
+            )}
+            {engagement.unlocks.viewFunding && (
+              <button
+                type="button"
+                onClick={() => navigate('/opportunities')}
+                style={S.quickTile}
+                data-testid="home-view-funding"
+              >
+                <span style={S.quickTileIcon} aria-hidden="true">
+                  <Wallet size={20} />
+                </span>
+                <span style={S.quickTileLabel}>
+                  {tSafe('home.quick.viewFunding', 'View funding')}
+                </span>
+                <span style={S.quickTileHelper}>
+                  {tSafe('home.quick.viewFunding.helper',
+                    'See available offers.')}
+                </span>
+              </button>
+            )}
           </div>
         )}
 
@@ -1063,6 +1177,28 @@ const S = {
     border: '1px solid rgba(34,197,94,0.32)',
     padding: '3px 10px',
     borderRadius: 999,
+  },
+  // Right-side meta row inside the progress block. Holds the
+  // optional Day N of 7 pill plus the existing on-track / all-
+  // done status pill — both sized identically.
+  progressMetaRow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
+  dayPill: {
+    fontSize: '0.6875rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: '#FCD34D',
+    background: 'rgba(245,158,11,0.10)',
+    border: '1px solid rgba(245,158,11,0.32)',
+    padding: '3px 10px',
+    borderRadius: 999,
+    whiteSpace: 'nowrap',
   },
   progressStatusDone: {
     color: '#FCD34D',
@@ -1372,6 +1508,48 @@ const S = {
     fontWeight: 500,
     color: 'rgba(255,255,255,0.75)',
     lineHeight: 1.4,
+  },
+
+  // ── Funding / Sell trigger chips (Home spec — triggers) ───
+  // Thin always-localised chip pair. Each chip self-hides when
+  // its trigger condition is false; whole row hides when neither
+  // trigger fires. Styling is calmer than the primary CTA so the
+  // chips never compete with Today's Action.
+  triggerRow: {
+    margin: '0.75rem 0 0',
+    display: 'flex',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  triggerChip: {
+    appearance: 'none',
+    border: '1px solid',
+    color: '#FFFFFF',
+    borderRadius: 999,
+    padding: '7px 14px',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 36,
+  },
+  triggerChipSell: {
+    background: 'rgba(34,197,94,0.12)',
+    borderColor: 'rgba(34,197,94,0.45)',
+    color: '#86EFAC',
+  },
+  triggerChipFunding: {
+    background: 'rgba(245,158,11,0.12)',
+    borderColor: 'rgba(245,158,11,0.45)',
+    color: '#FCD34D',
+  },
+  triggerChipLabel: { fontWeight: 700 },
+  triggerChipChevron: {
+    display: 'inline-flex',
+    marginLeft: 2,
+    opacity: 0.85,
   },
 
   // ── Help row (Home redesign §6) ────────────────────────────

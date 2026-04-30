@@ -95,6 +95,11 @@ export const COMMON_CROPS = Object.freeze([
   ['garlic',     'Garlic'],
   ['lettuce',    'Lettuce'],
   ['oil_palm',   'Oil palm'],
+  // Apr 2026 i18n sweep — pilot screenshot showed "Almond" as a
+  // raw English label on a French UI (the canonical id wasn't
+  // registered, so getCropLabel fell through to the humanised
+  // form). Adding canonical entry + per-lang translations below.
+  ['almond',     'Almond'],
   ['other',      'Other'],
 ].map(([code, label]) => Object.freeze({ code, label })));
 
@@ -134,6 +139,7 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sunflower: 'Tournesol', sesame: 'S\u00E9same', tobacco: 'Tabac',
     eggplant: 'Aubergine', ginger: 'Gingembre', garlic: 'Ail',
     lettuce: 'Laitue', oil_palm: 'Palmier \u00E0 huile',
+    almond: 'Amande',
     other: 'Autre',
   }),
 
@@ -154,6 +160,7 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sunflower: 'Alizeti', sesame: 'Ufuta', tobacco: 'Tumbaku',
     eggplant: 'Bilinganya', ginger: 'Tangawizi', garlic: 'Kitunguu saumu',
     lettuce: 'Saladi', oil_palm: 'Mchikichi',
+    almond: 'Lozi',
     other: 'Nyingine',
   }),
 
@@ -174,6 +181,7 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sunflower: 'Furen rana', sesame: 'Ri\u1E0Di', tobacco: 'Taba',
     eggplant: 'Yalo', ginger: 'Citta', garlic: 'Tafarnuwa',
     lettuce: 'Latas', oil_palm: 'Itacen man ja',
+    almond: 'Almond',
     other: 'Sauran',
   }),
 
@@ -195,6 +203,7 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     sunflower: 'Awia nhwiren', sesame: 'Sesimi', tobacco: 'Taa',
     eggplant: 'Nyaadewa', ginger: 'Akakaduro', garlic: 'Gyeene-fitaa',
     lettuce: 'Lɛtas', oil_palm: 'Abɛ',
+    almond: 'Almond',
     other: 'Foforɔ',
   }),
 
@@ -241,6 +250,7 @@ const CROP_LABELS_BY_LANG = Object.freeze({
     garlic: '\u0932\u0939\u0938\u0941\u0928',
     lettuce: '\u0938\u0932\u093E\u0926 \u092A\u0924\u094D\u0924\u093E',
     oil_palm: '\u0924\u093E\u0921 \u0915\u093E \u0924\u0947\u0932',
+    almond: '\u092C\u093E\u0926\u093E\u092E',
     other: '\u0905\u0928\u094D\u092F',
   }),
 });

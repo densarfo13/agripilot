@@ -90,9 +90,15 @@ export default function CreateListingPage() {
 
         <form onSubmit={handleSubmit} style={S.form}>
           <Field label={tSafe('market.field.crop', '')}>
+            {/* Bind the displayed value to the localised cropLabel
+                (computed at line ~77 via getCropDisplayName) when
+                the prefilled cropKey resolves; falls back to the
+                raw form.cropKey for free-text typing. Without this,
+                legacy uppercase canonical codes like "ALMOND"
+                rendered as-is in non-en UIs. */}
             <input
               required
-              value={form.cropKey}
+              value={cropLabel || form.cropKey}
               onChange={set('cropKey')}
               placeholder="tomato"
               style={S.input}

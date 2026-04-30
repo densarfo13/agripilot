@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway brand mark.
+  Farroway brand mark — v4 (April 2026 brand sheet).
 
-  Standalone vector copy of the leaf-shape arrow-path mark
-  drawn inline by src/components/FarrowayLogo.jsx — kept in
-  sync by hand. Used by browsers that prefer an SVG icon
-  (rel="icon" type="image/svg+xml") and as a transparent
-  source asset for any PWA / app-icon raster export.
+  Standalone vector copy of the leaf-arrow mark drawn inline by
+  src/components/FarrowayLogo.jsx — kept in sync by hand. Used
+  by browsers that prefer an SVG icon (rel="icon"
+  type="image/svg+xml") and as the transparent source asset for
+  any PWA / app-icon raster export.
 
-  Composition (top → bottom inside the leaf silhouette):
-    1. lighter green band at the upper-right tip (#A3E635)
-    2. medium green main body (#22C55E)
-    3. navy wedge in the lower-left (#0B1220)
-    4. two-tone curved arrow piercing through the leaf:
-       navy over the green, white over the navy wedge,
-       small triangular arrowhead at the upper-right.
+  Composition:
+    1. Leaf silhouette filled brand green (#22C55E).
+    2. Curved upward arrow (shaft + head) cut out of the leaf as
+       NEGATIVE SPACE via an SVG <mask>. The cutout reveals the
+       surface behind the SVG, so the mark works on dark navy
+       AND white tiles without alteration.
+    3. Subtle leaf-vein highlight in lighter green (#A3E635)
+       running along the arrow shaft.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 100 100"
@@ -23,54 +24,38 @@
   <title>Farroway</title>
 
   <defs>
-    <clipPath id="leafClip">
-      <path d="M 88 14
-               Q 70 6, 48 12
-               Q 22 22, 10 50
-               Q 4 80, 28 90
-               Q 50 92, 66 76
-               Q 82 56, 88 14 Z" />
-    </clipPath>
-    <clipPath id="navyZone">
-      <polygon points="-10,92 110,50 110,120 -10,120" />
-    </clipPath>
-    <clipPath id="greenZone">
-      <polygon points="-10,-20 110,-20 110,50 -10,92" />
-    </clipPath>
+    <mask id="arrowCutout" maskUnits="userSpaceOnUse"
+          x="0" y="0" width="100" height="100">
+      <rect x="0" y="0" width="100" height="100" fill="white" />
+      <path d="M 28 72 Q 46 56, 76 22"
+            stroke="black"
+            stroke-width="9"
+            stroke-linecap="round"
+            fill="none" />
+      <polygon points="78,18 60,22 68,34"
+               fill="black"
+               stroke="black"
+               stroke-width="2"
+               stroke-linejoin="round" />
+    </mask>
   </defs>
 
-  <g clip-path="url(#leafClip)">
-    <!-- 1. medium green base -->
-    <rect x="0" y="0" width="100" height="100" fill="#22C55E" />
+  <!-- Leaf body — single brand-green fill, masked so the arrow
+       cuts through to whatever sits behind the SVG. -->
+  <path d="M 86 14
+           Q 66 6, 44 14
+           Q 20 24, 10 48
+           Q 4 78, 28 90
+           Q 50 92, 66 76
+           Q 82 54, 86 14 Z"
+        fill="#22C55E"
+        mask="url(#arrowCutout)" />
 
-    <!-- 2. lighter green band at the upper-right -->
-    <polygon points="-10,-20 110,-20 110,6 -10,32" fill="#A3E635" />
-
-    <!-- 3. navy wedge in the lower-left -->
-    <polygon points="-10,92 110,50 110,120 -10,120" fill="#0B1220" />
-  </g>
-
-  <!-- Arrow shaft — drawn twice so the segment over the navy
-       wedge is white and the segment over the green is navy. -->
-  <g clip-path="url(#navyZone)">
-    <path d="M 24 74 Q 44 60, 78 22"
-          stroke="#FFFFFF"
-          stroke-width="3.2"
-          stroke-linecap="round"
-          fill="none" />
-  </g>
-  <g clip-path="url(#greenZone)">
-    <path d="M 24 74 Q 44 60, 78 22"
-          stroke="#0B1220"
-          stroke-width="3.2"
-          stroke-linecap="round"
-          fill="none" />
-  </g>
-
-  <!-- Arrowhead at the upper-right tip -->
-  <polygon points="80,18 66,22 72,30"
-           fill="#0B1220"
-           stroke="#0B1220"
-           stroke-width="0.6"
-           stroke-linejoin="round" />
+  <!-- Lighter-green vein accent along the arrow shaft. -->
+  <path d="M 30 78 Q 48 60, 80 20"
+        stroke="#A3E635"
+        stroke-width="1.4"
+        stroke-linecap="round"
+        fill="none"
+        opacity="0.55" />
 </svg>

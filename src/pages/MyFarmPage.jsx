@@ -44,6 +44,9 @@ import {
 } from '../components/icons/lucide.jsx';
 import { compressAvatar } from '../utils/avatarStorage.js';
 import { loadData, saveData } from '../store/localStore.js';
+import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
+import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
+import HomeProgressBar from '../components/farmer/HomeProgressBar.jsx';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -103,6 +106,55 @@ export default function MyFarmPage() {
   const [farmPhoto, setFarmPhoto] = useState(initialPhoto);
   const [photoBusy, setPhotoBusy] = useState(false);
   const fileInputRef = useRef(null);
+
+  // ── Today's farm action + progress derivation ────────────────
+  // Per the action-first spec, My Farm now shows a small
+  // read-only "Today's farm action" link + a compact progress
+  // bar. Both are derived from pure functions; we don't fire any
+  // notification side effects here (the home loop owns that).
+  const todaySnapshot = useMemo(() => {
+    if (!profile) return { primaryTitle: '', done: 0, total: 0 };
+    try {
+      const plan = getTodayTasks({
+        farm: {
+          id: profile.id,
+          crop: profile.crop,
+          farmType: profile.farmType,
+          cropStage: profile.cropStage,
+          countryCode: profile.countryCode || profile.country,
+        },
+        weather: profile.weather || null,
+      });
+      const tasks = Array.isArray(plan?.tasks) ? plan.tasks : [];
+      const primary = tasks[0] || null;
+      const total = tasks.length;
+      const done = tasks.filter((tk) => tk && tk.completed === true).length;
+
+      // Resolution order for the visible task title (matches the
+      // localizeServerTask contract used by FarmerTodayPage):
+      //   1. titleKey  → t(key)                   (preferred)
+      //   2. raw title → getLocalizedTaskTitle    (phrase map)
+      //   3. raw title → as-is                    (last resort)
+      // Without step 2, engine-emitted titles like "Scout the
+      // field for pests and damage" leaked English on FR/HA UIs.
+      let primaryTitle = '';
+      if (primary && primary.titleKey) {
+        primaryTitle = t(primary.titleKey) || '';
+      }
+      if (!primaryTitle && primary && primary.title) {
+        primaryTitle = (lang && lang !== 'en')
+          ? (getLocalizedTaskTitle(primary.id, primary.title, lang) || primary.title)
+          : primary.title;
+      }
+      if (!primaryTitle) {
+        primaryTitle = tSafe('myFarm.todayAction.fallback', 'Check today\u2019s task');
+      }
+      return { primaryTitle, done, total };
+    } catch {
+      return { primaryTitle: '', done: 0, total: 0 };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile && profile.id, profile && profile.cropStage, lang]);
 
   if (profileLoading) {
     return (
@@ -279,6 +331,42 @@ export default function MyFarmPage() {
         aria-hidden="true"
         tabIndex={-1}
       />
+
+      {/* ── Today's farm action (action-first spec) ──────────
+          Compact read-only card linking to /tasks. Stays subtle
+          so it never competes with the Home primary CTA. The
+          farmer's main task surface is still /tasks; this is
+          just a contextual link from the farm-management view. */}
+      {todaySnapshot.primaryTitle ? (
+        <button
+          type="button"
+          onClick={() => navigate('/tasks')}
+          style={S.todayActionCard}
+          data-testid="my-farm-today-action"
+        >
+          <span style={S.todayActionLabel}>
+            {tSafe('myFarm.todayAction.title', "Today's farm action")}
+          </span>
+          <span style={S.todayActionTitle}>
+            {todaySnapshot.primaryTitle}
+          </span>
+          <span style={S.todayActionChevron} aria-hidden="true">
+            <ArrowRight size={14} />
+          </span>
+        </button>
+      ) : null}
+
+      {/* ── My progress (action-first spec) ─────────────────────
+          Reuses the existing HomeProgressBar — same tones, same
+          accessibility, same self-hide-when-empty rule. The bar
+          self-hides when totalToday <= 0 so a clean day stays
+          uncluttered. */}
+      <div style={{ margin: '0 1rem' }}>
+        <HomeProgressBar
+          doneToday={todaySnapshot.done}
+          totalToday={todaySnapshot.total}
+        />
+      </div>
 
       {/* ── 4. Setup Card (spec §4 redesign) ───────────────────
           Single unified card; renders ONLY when the farm is
@@ -567,6 +655,50 @@ const S = {
     fontWeight: 800,
     color: '#FFFFFF',
     letterSpacing: '-0.01em',
+  },
+
+  // ── Today's farm action card (action-first spec) ──────────
+  // Subtle full-width chip linking to /tasks. Calmer than the
+  // Home primary CTA so My Farm stays a management surface.
+  todayActionCard: {
+    width: 'calc(100% - 2rem)',
+    margin: '0.75rem 1rem 0',
+    appearance: 'none',
+    background: '#102C47',
+    border: '1px solid rgba(34,197,94,0.32)',
+    borderRadius: 14,
+    padding: '0.7rem 1rem',
+    color: '#FFFFFF',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 52,
+    textAlign: 'left',
+  },
+  todayActionLabel: {
+    fontSize: '0.6875rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: '#86EFAC',
+    flex: '0 0 auto',
+  },
+  todayActionTitle: {
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+    flex: '1 1 auto',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  todayActionChevron: {
+    color: '#86EFAC',
+    display: 'inline-flex',
+    alignItems: 'center',
+    flex: '0 0 auto',
   },
 
   // ── Farm Identity Card (spec §3 redesign) ──────────────────

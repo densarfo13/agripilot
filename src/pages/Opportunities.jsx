@@ -34,6 +34,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { getActiveFundingOpportunities, FUNDING_EVENTS }
   from '../funding/fundingStore.js';
 import { matchFundingForFarm } from '../funding/fundingMatcher.js';
+import { localizeFundingText } from '../funding/localizeFundingText.js';
+import { useTranslation } from '../i18n/index.js';
 // Spec §3 (now un-deferred): My Applications data source.
 // fundingApplicationStore is the canonical store for buyer-side
 // interest records — read-only here; nothing on this page mutates
@@ -263,6 +265,11 @@ function _statusLabel(status) {
 
 function PriorityOpportunityCard({ match, farmerId, farmId }) {
   const { opportunity: o, reasons } = match;
+  // i18n sweep — sample-data benefit + matcher reason strings
+  // are pushed as English literals; localiseFundingText maps the
+  // known phrases to the active language at render time without
+  // touching the matcher's business logic.
+  const { lang: _lang } = useTranslation();
 
   // F-spec §3 "Save for later": secondary action that records the
   // farmer's interest at INTERESTED status without leaving the
@@ -324,7 +331,7 @@ function PriorityOpportunityCard({ match, farmerId, farmId }) {
       <h2 style={priorityStyles.title}>{o.title}</h2>
 
       {o.benefit && (
-        <p style={priorityStyles.benefit}>{o.benefit}</p>
+        <p style={priorityStyles.benefit}>{localizeFundingText(o.benefit, _lang)}</p>
       )}
 
       <p style={priorityStyles.deadline}>
@@ -335,7 +342,7 @@ function PriorityOpportunityCard({ match, farmerId, farmId }) {
         <ul style={priorityStyles.reasonList}>
           {reasons.slice(0, 3).map((r) => (
             <li key={r} style={priorityStyles.reasonItem}>
-              <span aria-hidden="true">✓</span> {r}
+              <span aria-hidden="true">✓</span> {localizeFundingText(r, _lang)}
             </li>
           ))}
         </ul>
@@ -456,6 +463,8 @@ function OpportunityListRow({ match }) {
 
 function OpportunityCard({ match }) {
   const { opportunity: o, reasons } = match;
+  // Same i18n sweep as PriorityOpportunityCard above.
+  const { lang: _lang } = useTranslation();
 
   const deadlineLabel = o.deadline
     ? new Date(o.deadline).toLocaleDateString(undefined,
@@ -503,7 +512,7 @@ function OpportunityCard({ match }) {
           <span style={cardStyles.benefitLabel}>
             {tSafe('funding.benefit', 'Benefit')}
           </span>
-          <span style={cardStyles.benefitVal}>{o.benefit}</span>
+          <span style={cardStyles.benefitVal}>{localizeFundingText(o.benefit, _lang)}</span>
         </div>
       )}
 
@@ -519,7 +528,7 @@ function OpportunityCard({ match }) {
             {reasons.map((r) => (
               <li key={r} style={cardStyles.reasonItem}>
                 <span style={cardStyles.reasonDot} aria-hidden="true">•</span>
-                {r}
+                {localizeFundingText(r, _lang)}
               </li>
             ))}
             <li style={cardStyles.mayQualify}>

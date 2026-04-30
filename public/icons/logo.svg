@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway logo — 512x512 reference asset.
+  Farroway logo — 512x512 reference asset (v4, April 2026).
 
   Aligned with the canonical leaf-arrow mark (see
   src/components/FarrowayLogo.jsx and
-  public/icons/farroway-mark.svg). The previous shield-and-
-  furrow shape was an unreferenced legacy asset; this file
-  is now the same mark, scaled for the larger viewBox so
-  raster generators (scripts/generate-icons.js) produce a
-  consistent app-icon set.
+  public/icons/farroway-mark.svg). Same composition scaled
+  for the larger viewBox so raster generators
+  (scripts/generate-icons.js) produce a consistent app-icon
+  set at 192/512/1024.
 
-  Composition (top → bottom inside the leaf silhouette):
-    1. lighter green band at the upper-right tip (#A3E635)
-    2. medium green main body (#22C55E)
-    3. navy wedge in the lower-left (#0B1220)
-    4. two-tone curved arrow piercing through the leaf
+  Composition:
+    1. Leaf silhouette filled brand green (#22C55E).
+    2. Curved upward arrow cut out as negative space via mask.
+    3. Lighter-green vein accent along the arrow shaft.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 512 512"
@@ -23,55 +21,37 @@
   <title>Farroway</title>
 
   <defs>
-    <clipPath id="leafClip">
-      <path d="M 451 72
-               Q 358 31, 246 61
-               Q 113 113, 51 256
-               Q 20 410, 143 461
-               Q 256 471, 338 389
-               Q 420 287, 451 72 Z" />
-    </clipPath>
-    <clipPath id="navyZone">
-      <polygon points="-51,471 563,256 563,614 -51,614" />
-    </clipPath>
-    <clipPath id="greenZone">
-      <polygon points="-51,-102 563,-102 563,256 -51,471" />
-    </clipPath>
+    <mask id="arrowCutout" maskUnits="userSpaceOnUse"
+          x="0" y="0" width="512" height="512">
+      <rect x="0" y="0" width="512" height="512" fill="white" />
+      <path d="M 143 369 Q 235 287, 389 113"
+            stroke="black"
+            stroke-width="46"
+            stroke-linecap="round"
+            fill="none" />
+      <polygon points="399,92 307,113 348,174"
+               fill="black"
+               stroke="black"
+               stroke-width="10"
+               stroke-linejoin="round" />
+    </mask>
   </defs>
 
-  <g clip-path="url(#leafClip)">
-    <!-- 1. medium green base -->
-    <rect x="0" y="0" width="512" height="512" fill="#22C55E" />
+  <!-- Leaf body — single brand-green fill, masked. -->
+  <path d="M 440 72
+           Q 338 31, 225 72
+           Q 102 123, 51 246
+           Q 20 399, 143 461
+           Q 256 471, 338 389
+           Q 420 276, 440 72 Z"
+        fill="#22C55E"
+        mask="url(#arrowCutout)" />
 
-    <!-- 2. lighter green band at the upper-right -->
-    <polygon points="-51,-102 563,-102 563,31 -51,164" fill="#A3E635" />
-
-    <!-- 3. navy wedge in the lower-left -->
-    <polygon points="-51,471 563,256 563,614 -51,614" fill="#0B1220" />
-  </g>
-
-  <!-- Arrow shaft drawn twice with two clip regions so the
-       segment over the navy wedge is white and the segment
-       over the green is navy. -->
-  <g clip-path="url(#navyZone)">
-    <path d="M 123 379 Q 225 307, 399 113"
-          stroke="#FFFFFF"
-          stroke-width="16.4"
-          stroke-linecap="round"
-          fill="none" />
-  </g>
-  <g clip-path="url(#greenZone)">
-    <path d="M 123 379 Q 225 307, 399 113"
-          stroke="#0B1220"
-          stroke-width="16.4"
-          stroke-linecap="round"
-          fill="none" />
-  </g>
-
-  <!-- Arrowhead at the upper-right tip -->
-  <polygon points="410,92 338,113 369,154"
-           fill="#0B1220"
-           stroke="#0B1220"
-           stroke-width="3"
-           stroke-linejoin="round" />
+  <!-- Lighter-green vein accent along the arrow shaft. -->
+  <path d="M 154 399 Q 246 307, 410 102"
+        stroke="#A3E635"
+        stroke-width="7.2"
+        stroke-linecap="round"
+        fill="none"
+        opacity="0.55" />
 </svg>

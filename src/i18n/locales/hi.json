@@ -1,0 +1,124 @@
+{
+  "nav": {
+    "home": "होम",
+    "farm": "खेत",
+    "tasks": "कार्य",
+    "reports": "रिपोर्ट"
+  },
+  "dashboard": {
+    "smart_assistant": "क्या करना है, जानें। बेहतर उगाएँ।",
+    "crop_progress": "फसल प्रगति",
+    "just_started": "अभी शुरू हुआ",
+    "message_start": "आपकी फसल अभी शुरू हो रही है। आज के काम पूरे करें।",
+    "overall_progress": "कुल प्रगति",
+    "today_focus": "आज का ध्यान",
+    "good_job": "बढ़िया काम!",
+    "keep_going": "जारी रखें और आपका खेत समृद्ध होगा।"
+  },
+  "tasks": {
+    "total": "कुल कार्य",
+    "pending": "लंबित",
+    "completed": "पूर्ण",
+    "prepare_field": "अपना खेत और पौधे तैयार करें",
+    "scout_pests": "कीटों की जाँच करें"
+  },
+  "farm": {
+    "crop_information": "फसल जानकारी",
+    "primary_crop": "मुख्य फसल",
+    "farm_profile": "खेत प्रोफ़ाइल",
+    "farm_size": "खेत का आकार",
+    "farmer_name": "किसान का नाम",
+    "location": "स्थान",
+    "view_farm": "मेरा खेत देखें",
+    "add_farm": "नया खेत जोड़ें",
+    "switch_farm": "खेत बदलें",
+    "farm_status": "खेत की स्थिति",
+    "start_date": "प्रारंभ तिथि",
+    "active_tasks": "सक्रिय कार्य",
+    "recent_activities": "हाल की गतिविधियाँ"
+  },
+  "settings": {
+    "settings": "सेटिंग्स",
+    "manage_preferences": "अपनी प्राथमिकताएँ और खाता प्रबंधित करें",
+    "notifications": "सूचनाएँ",
+    "daily_reminders": "दैनिक अनुस्मारक",
+    "daily_reminders_helper": "रोज़ कार्य अनुस्मारक पाएँ",
+    "weather_alerts": "मौसम चेतावनी",
+    "weather_alerts_helper": "महत्वपूर्ण मौसम जानकारी पाएँ",
+    "risk_alerts": "जोखिम चेतावनी",
+    "risk_alerts_helper": "कीट और बीमारी की चेतावनी पाएँ",
+    "missed_task_alerts": "छूटे कार्य की चेतावनी",
+    "missed_task_alerts_helper": "छूटे कार्यों की चेतावनी पाएँ",
+    "email_notifications": "ईमेल सूचनाएँ",
+    "email_notifications_helper": "ईमेल सूचनाएँ प्राप्त करें",
+    "sms_notifications": "एसएमएस सूचनाएँ",
+    "sms_notifications_helper": "एसएमएस सूचनाएँ प्राप्त करें",
+    "reminder_time": "अनुस्मारक समय",
+    "reminder_time_helper": "अनुस्मारक भेजने का समय निर्धारित करें",
+    "language": "भाषा",
+    "language_helper": "अपनी पसंदीदा भाषा चुनें",
+    "change_password": "पासवर्ड बदलें",
+    "change_password_helper": "अपना पासवर्ड अपडेट करें",
+    "help_support": "सहायता और समर्थन",
+    "help_support_helper": "सहायता और समर्थन पाएँ",
+    "about_app": "Farroway के बारे में",
+    "about_app_helper": "ऐप के बारे में और जानें",
+    "farmer_id": "किसान आईडी",
+    "copy": "कॉपी"
+  },
+  "tips": {
+    "daily_tip": "दैनिक सुझाव",
+    "tip_consistency": "सर्वोत्तम परिणाम के लिए कार्यों में निरंतरता रखें।"
+  },
+  "reminders": {
+    "title": "अनुस्मारक",
+    "none": "आपके पास कोई नई अनुस्मारक नहीं है।"
+  },
+  "market": {
+    "title": "बाज़ार जानकारी",
+    "check_prices": "बेचने से पहले स्थानीय कीमतें देखें।"
+  },
+  "status": {
+    "fair": "ठीक-ठाक",
+    "good": "अच्छा",
+    "excellent": "उत्कृष्ट",
+    "poor": "कमज़ोर"
+  },
+  "stages": {
+    "planting": "रोपण",
+    "establishment": "स्थापना",
+    "vegetative": "वृद्धि",
+    "bulking": "विकास",
+    "maturation": "परिपक्वता",
+    "harvest": "कटाई"
+  },
+  "crops": {
+    "cassava": "कसावा",
+    "maize": "मक्का",
+    "rice": "चावल",
+    "tomato": "टमाटर",
+    "pepper": "मिर्च",
+    "onion": "प्याज़",
+    "okra": "भिंडी",
+    "yam": "रतालू",
+    "plantain": "केला",
+    "cocoa": "कोको",
+    "groundnut": "मूँगफली",
+    "beans": "सेम"
+  },
+  "common": {
+    "none": "कोई नहीं",
+    "open_count": "{{count}} खुले"
+  },
+  "taskCompletion": {
+    "title": "क्या आपने यह कार्य पूरा किया?",
+    "yes": "हाँ",
+    "partly": "आंशिक रूप से",
+    "no": "नहीं",
+    "next_step": "अगला कदम",
+    "continue": "जारी रखें",
+    "later": "बाद में",
+    "tasks_left": "{{count}} कार्य शेष",
+    "done_today": "{{done}} में से {{total}} आज पूर्ण"
+  }
+}

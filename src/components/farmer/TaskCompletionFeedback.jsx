@@ -51,6 +51,13 @@ export default function TaskCompletionFeedback({
   nextTaskTitle = '',
   onContinue,
   onClose,
+  // 7-day loop spec — optional already-localised "Good job!"
+  // / impact message. Renders in the existing micro-reward
+  // slot when present (no new UI element added). When absent
+  // the panel falls back to the rotating per-day micro-reward
+  // + the static "You're on track." line, preserving the
+  // pre-spec behaviour.
+  impactMessage = '',
 }) {
   const { t } = useTranslation();
 
@@ -113,11 +120,13 @@ export default function TaskCompletionFeedback({
         </div>
       ) : null}
 
-      {microLabel ? (
-        <div style={S.micro}>{microLabel}</div>
-      ) : (
-        <div style={S.micro}>{onTrackLabel}</div>
-      )}
+      {/* Impact-message slot — same DOM node, prioritised content:
+          1. caller-supplied `impactMessage` (e.g. "Good job!")
+          2. rotating per-day micro-reward (legacy default)
+          3. static "You're on track." */}
+      <div style={S.micro}>
+        {impactMessage || microLabel || onTrackLabel}
+      </div>
 
       {nextTaskTitle ? (
         <div style={S.nextRow} data-testid="completion-next">

@@ -6110,10 +6110,10 @@ const T = {
   'stage.maturity': { en: 'Maturity', fr: 'Maturité', sw: 'Kukomaa', ha: 'Balaguro', tw: 'Anyin', hi: 'परिपक्वता', },
 
   // ─── Risk level badges ────────────────────────────────────
-  'risk.low': { en: 'Low Risk', fr: 'Risque Faible', sw: 'Hatari Ndogo', ha: 'Ƙaramin Haɗari', tw: 'Asiane Ketewa' },
-  'risk.moderate': { en: 'Moderate', fr: 'Modéré', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' },
-  'risk.high': { en: 'High Risk', fr: 'Risque Élevé', sw: 'Hatari Kubwa', ha: 'Haɗari Mai Girma', tw: 'Asiane Kɛse' },
-  'risk.urgent': { en: 'Urgent', fr: 'Urgent', sw: 'Dharura', ha: 'Gaggawa', tw: 'Ɛhia Ntɛm' },
+  'risk.low': { en: 'Low Risk', fr: 'Risque Faible', sw: 'Hatari Ndogo', ha: 'Ƙaramin Haɗari', tw: 'Asiane Ketewa' , hi: 'कम जोखिम' },
+  'risk.moderate': { en: 'Moderate', fr: 'Modéré', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam' , hi: 'मध्यम' },
+  'risk.high': { en: 'High Risk', fr: 'Risque Élevé', sw: 'Hatari Kubwa', ha: 'Haɗari Mai Girma', tw: 'Asiane Kɛse' , hi: 'उच्च जोखिम' },
+  'risk.urgent': { en: 'Urgent', fr: 'Urgent', sw: 'Dharura', ha: 'Gaggawa', tw: 'Ɛhia Ntɛm' , hi: 'तत्काल' },
 
   // ═══════════════════════════════════════════════════════════
   //  FARM SWITCHING — multi-farm support
@@ -7176,99 +7176,99 @@ const T = {
   // ═══════════════════════════════════════════════════════════
 
   // ─── WHY lines (one sentence, practical) ──────────────────
-  'why.drying.preventMold': { en: 'Dry grain now to prevent mold.', fr: 'Séchez les grains pour éviter la moisissure.', sw: 'Kausha nafaka sasa kuzuia ukungu.', ha: 'Bushe hatsi yanzu don hana naman gwari.', tw: 'Hwie aburow no awo seesei na ɛbɛbɔ nkasɛe.' },
-  'why.rain.avoidDamage': { en: 'Protect harvest now before rain.', fr: 'Protégez la récolte avant la pluie.', sw: 'Linda mavuno kabla ya mvua.', ha: 'Kare girbi kafin ruwan sama.', tw: 'Bɔ wotwa adeɛ no ho ban ansa na osu atɔ.' },
-  'why.rain.protectBeforeDry': { en: 'Cover harvest — rain is falling.', fr: 'Couvrez la récolte — il pleut.', sw: 'Funika mavuno — mvua inanyesha.', ha: 'Rufe girbi — ana ruwan sama.', tw: 'Kata wotwa adeɛ no so — osu retɔ.' },
-  'why.water.reduceCropStress': { en: 'Water today to reduce crop stress.', fr: 'Arrosez aujourd\'hui pour réduire le stress.', sw: 'Mwagilia leo kupunguza msongo wa mimea.', ha: 'Ka ruwa yau don rage damuwa ga amfani.', tw: 'Gu nsu ɛnnɛ na ɛbɛma nnɔbae no ayɛ yie.' },
-  'why.water.supportGrowth': { en: 'Water crop to support healthy growth.', fr: 'Arrosez pour une bonne croissance.', sw: 'Mwagilia kwa ukuaji bora.', ha: 'Ka ruwa don tallafin girma.', tw: 'Gu nsu ma nnɔbae no nyini yie.' },
-  'why.pest.catchEarly': { en: 'Check pests early to avoid spread.', fr: 'Vérifiez les ravageurs tôt pour éviter la propagation.', sw: 'Angalia wadudu mapema kuzuia kuenea.', ha: 'Bincika kwari da wuri don hana yaduwa.', tw: 'Hwɛ mmoa a wɔsɛe nnɔbae ntɛm na wɔatrɛw.' },
-  'why.spray.protectCrop': { en: 'Spray to protect your crop.', fr: 'Pulvérisez pour protéger votre culture.', sw: 'Nyunyiza kulinda mazao yako.', ha: 'Fesa don kare amfanin gonarka.', tw: 'Pete aduro so bɔ wo nnɔbae ho ban.' },
-  'why.weed.reduceCompetition': { en: 'Remove weeds to reduce competition.', fr: 'Désherbez pour réduire la concurrence.', sw: 'Ondoa magugu kupunguza ushindani.', ha: 'Cire ciyawa don rage gasa.', tw: 'Yi wura no na ɛremfa nnɔbae no aduan.' },
-  'why.fertilize.boostNutrients': { en: 'Fertilize now to boost nutrients.', fr: 'Fertilisez maintenant pour stimuler les nutriments.', sw: 'Weka mbolea sasa kuongeza virutubisho.', ha: 'Sa taki yanzu don ƙara abinci.', tw: 'Fa nkɔsoɔ aduro gu so seesei.' },
-  'why.harvest.beforeRain': { en: 'Harvest now before rain starts.', fr: 'Récoltez avant la pluie.', sw: 'Vuna sasa kabla ya mvua.', ha: 'Girba yanzu kafin ruwan sama.', tw: 'Twa adeɛ seesei ansa na osu atɔ.' },
-  'why.harvest.preserveQuality': { en: 'Harvest now to preserve quality.', fr: 'Récoltez pour préserver la qualité.', sw: 'Vuna sasa kuhifadhi ubora.', ha: 'Girba yanzu don adana inganci.', tw: 'Twa adeɛ seesei na emu papa akɔ.' },
-  'why.plant.rightTiming': { en: 'Plant now for best timing.', fr: 'Plantez maintenant au bon moment.', sw: 'Panda sasa kwa wakati mzuri.', ha: 'Shuka yanzu a lokaci mai kyau.', tw: 'Dua seesei na bere pa mu.' },
-  'why.landPrep.readySoil': { en: 'Prepare soil for planting.', fr: 'Préparez le sol pour la plantation.', sw: 'Andaa udongo kwa kupanda.', ha: 'Shirya ƙasa don shuka.', tw: 'Siesie asase no ma dua.' },
-  'why.sort.betterPrice': { en: 'Sort produce for a better price.', fr: 'Triez pour un meilleur prix.', sw: 'Panga mazao kwa bei bora.', ha: 'Tsara kayan girbi don samun farashi mai kyau.', tw: 'Pae nneɛma no mu na woanya bo pa.' },
-  'why.store.preventLoss': { en: 'Store properly to prevent loss.', fr: 'Stockez correctement pour éviter les pertes.', sw: 'Hifadhi vizuri kuzuia upotevu.', ha: 'Ajiye daidai don hana asara.', tw: 'Kora yie na biribiara anyane.' },
+  'why.drying.preventMold': { en: 'Dry grain now to prevent mold.', fr: 'Séchez les grains pour éviter la moisissure.', sw: 'Kausha nafaka sasa kuzuia ukungu.', ha: 'Bushe hatsi yanzu don hana naman gwari.', tw: 'Hwie aburow no awo seesei na ɛbɛbɔ nkasɛe.' , hi: 'फफूँदी से बचने के लिए अभी अनाज सुखाएँ।' },
+  'why.rain.avoidDamage': { en: 'Protect harvest now before rain.', fr: 'Protégez la récolte avant la pluie.', sw: 'Linda mavuno kabla ya mvua.', ha: 'Kare girbi kafin ruwan sama.', tw: 'Bɔ wotwa adeɛ no ho ban ansa na osu atɔ.' , hi: 'बारिश से पहले फसल की रक्षा करें।' },
+  'why.rain.protectBeforeDry': { en: 'Cover harvest — rain is falling.', fr: 'Couvrez la récolte — il pleut.', sw: 'Funika mavuno — mvua inanyesha.', ha: 'Rufe girbi — ana ruwan sama.', tw: 'Kata wotwa adeɛ no so — osu retɔ.' , hi: 'फसल ढक दें — बारिश हो रही है।' },
+  'why.water.reduceCropStress': { en: 'Water today to reduce crop stress.', fr: 'Arrosez aujourd\'hui pour réduire le stress.', sw: 'Mwagilia leo kupunguza msongo wa mimea.', ha: 'Ka ruwa yau don rage damuwa ga amfani.', tw: 'Gu nsu ɛnnɛ na ɛbɛma nnɔbae no ayɛ yie.' , hi: 'फसल का तनाव कम करने के लिए आज पानी दें।' },
+  'why.water.supportGrowth': { en: 'Water crop to support healthy growth.', fr: 'Arrosez pour une bonne croissance.', sw: 'Mwagilia kwa ukuaji bora.', ha: 'Ka ruwa don tallafin girma.', tw: 'Gu nsu ma nnɔbae no nyini yie.' , hi: 'स्वस्थ विकास के लिए फसल को पानी दें।' },
+  'why.pest.catchEarly': { en: 'Check pests early to avoid spread.', fr: 'Vérifiez les ravageurs tôt pour éviter la propagation.', sw: 'Angalia wadudu mapema kuzuia kuenea.', ha: 'Bincika kwari da wuri don hana yaduwa.', tw: 'Hwɛ mmoa a wɔsɛe nnɔbae ntɛm na wɔatrɛw.' , hi: 'फैलाव रोकने के लिए कीट जल्दी जाँचें।' },
+  'why.spray.protectCrop': { en: 'Spray to protect your crop.', fr: 'Pulvérisez pour protéger votre culture.', sw: 'Nyunyiza kulinda mazao yako.', ha: 'Fesa don kare amfanin gonarka.', tw: 'Pete aduro so bɔ wo nnɔbae ho ban.' , hi: 'अपनी फसल बचाने के लिए छिड़काव करें।' },
+  'why.weed.reduceCompetition': { en: 'Remove weeds to reduce competition.', fr: 'Désherbez pour réduire la concurrence.', sw: 'Ondoa magugu kupunguza ushindani.', ha: 'Cire ciyawa don rage gasa.', tw: 'Yi wura no na ɛremfa nnɔbae no aduan.', hi: 'प्रतिस्पर्धा कम करने के लिए खरपतवार हटाएँ।' },
+  'why.fertilize.boostNutrients': { en: 'Fertilize now to boost nutrients.', fr: 'Fertilisez maintenant pour stimuler les nutriments.', sw: 'Weka mbolea sasa kuongeza virutubisho.', ha: 'Sa taki yanzu don ƙara abinci.', tw: 'Fa nkɔsoɔ aduro gu so seesei.' , hi: 'पोषण बढ़ाने के लिए अभी खाद डालें।' },
+  'why.harvest.beforeRain': { en: 'Harvest now before rain starts.', fr: 'Récoltez avant la pluie.', sw: 'Vuna sasa kabla ya mvua.', ha: 'Girba yanzu kafin ruwan sama.', tw: 'Twa adeɛ seesei ansa na osu atɔ.' , hi: 'बारिश शुरू होने से पहले अभी कटाई करें।' },
+  'why.harvest.preserveQuality': { en: 'Harvest now to preserve quality.', fr: 'Récoltez pour préserver la qualité.', sw: 'Vuna sasa kuhifadhi ubora.', ha: 'Girba yanzu don adana inganci.', tw: 'Twa adeɛ seesei na emu papa akɔ.' , hi: 'गुणवत्ता बनाए रखने के लिए अभी कटाई करें।' },
+  'why.plant.rightTiming': { en: 'Plant now for best timing.', fr: 'Plantez maintenant au bon moment.', sw: 'Panda sasa kwa wakati mzuri.', ha: 'Shuka yanzu a lokaci mai kyau.', tw: 'Dua seesei na bere pa mu.' , hi: 'सही समय पर अभी रोपण करें।' },
+  'why.landPrep.readySoil': { en: 'Prepare soil for planting.', fr: 'Préparez le sol pour la plantation.', sw: 'Andaa udongo kwa kupanda.', ha: 'Shirya ƙasa don shuka.', tw: 'Siesie asase no ma dua.' , hi: 'रोपण के लिए मिट्टी तैयार करें।' },
+  'why.sort.betterPrice': { en: 'Sort produce for a better price.', fr: 'Triez pour un meilleur prix.', sw: 'Panga mazao kwa bei bora.', ha: 'Tsara kayan girbi don samun farashi mai kyau.', tw: 'Pae nneɛma no mu na woanya bo pa.' , hi: 'बेहतर कीमत के लिए उपज छाँटें।' },
+  'why.store.preventLoss': { en: 'Store properly to prevent loss.', fr: 'Stockez correctement pour éviter les pertes.', sw: 'Hifadhi vizuri kuzuia upotevu.', ha: 'Ajiye daidai don hana asara.', tw: 'Kora yie na biribiara anyane.' , hi: 'नुकसान से बचने के लिए सही ढंग से भंडारण करें।' },
 
   // ─── RISK lines (plain language, not scary) ───────────────
-  'risk.drying.spoilageIfDelayed': { en: 'Risk: harvest may spoil if left damp.', fr: 'Risque : la récolte peut pourrir si elle reste humide.', sw: 'Hatari: mavuno yanaweza kuoza yakiachwa unyevu.', ha: 'Haɗari: girbi zai iya lalacewa idan ya kasance a jike.', tw: 'Asiane: wotwa adeɛ no bɛporɔw sɛ ɛtena fũ mu.' },
-  'risk.rain.uncoveredHarvest': { en: 'Risk: rain may damage uncovered grain.', fr: 'Risque : la pluie peut endommager les grains non couverts.', sw: 'Hatari: mvua inaweza kuharibu nafaka zisizofunikwa.', ha: 'Haɗari: ruwan sama zai iya lalata hatsi maras rufi.', tw: 'Asiane: osu bɛsɛe aburow a wɔnkatae so no.' },
-  'risk.rain.dampHarvest': { en: 'Risk: rain will make harvest damp.', fr: 'Risque : la pluie va mouiller la récolte.', sw: 'Hatari: mvua itafanya mavuno kuwa unyevu.', ha: 'Haɗari: ruwan sama zai sa girbi ya yi jike.', tw: 'Asiane: osu bɛma wotwa adeɛ no ayɛ fũ.' },
-  'risk.water.yieldDropIfDry': { en: 'Risk: yield may drop if crop stays dry.', fr: 'Risque : le rendement peut baisser si la culture reste sèche.', sw: 'Hatari: mavuno yanaweza kushuka zao likibaki kavu.', ha: 'Haɗari: amfani zai iya raguwa idan amfanin gona ya bushe.', tw: 'Asiane: nnɔbae no sua bɛte sɛ ɛtena wo mu.' },
-  'risk.water.stuntedGrowth': { en: 'Risk: growth may slow without water.', fr: 'Risque : la croissance peut ralentir sans eau.', sw: 'Hatari: ukuaji unaweza kupungua bila maji.', ha: 'Haɗari: girma zai iya raguwa ba tare da ruwa ba.', tw: 'Asiane: nyini no bɛyɛ brɛoo sɛ wonnya nsu.' },
-  'risk.pest.spreadFast': { en: 'Risk: pests can spread quickly.', fr: 'Risque : les ravageurs peuvent se propager rapidement.', sw: 'Hatari: wadudu wanaweza kuenea haraka.', ha: 'Haɗari: kwari na iya yaɗuwa cikin sauri.', tw: 'Asiane: mmoa a wɔsɛe nnɔbae no bɛtrɛw ntɛm.' },
-  'risk.spray.driftInWind': { en: 'Risk: wind may carry spray off target.', fr: 'Risque : le vent peut emporter le produit.', sw: 'Hatari: upepo unaweza kubeba dawa.', ha: 'Haɗari: iska na iya ɗaukar maganin.', tw: 'Asiane: mframa bɛma aduro no akɔ baabi foforo.' },
-  'risk.spray.damageSpread': { en: 'Risk: damage can spread without treatment.', fr: 'Risque : les dégâts peuvent s\'étendre sans traitement.', sw: 'Hatari: uharibifu unaweza kuenea bila matibabu.', ha: 'Haɗari: lalacewa na iya yaɗuwa ba tare da magani ba.', tw: 'Asiane: sɛe no bɛtrɛw sɛ wɔanhyɛ aduro.' },
-  'risk.weed.yieldReduction': { en: 'Risk: weeds take nutrients from crop.', fr: 'Risque : les mauvaises herbes prennent les nutriments.', sw: 'Hatari: magugu yanachukua virutubisho vya mazao.', ha: 'Haɗari: ciyawa na ɗaukar abincin amfanin gona.', tw: 'Asiane: wura no gye nnɔbae no aduan.' },
-  'risk.fertilize.poorGrowth': { en: 'Risk: poor growth without nutrients.', fr: 'Risque : mauvaise croissance sans nutriments.', sw: 'Hatari: ukuaji duni bila virutubisho.', ha: 'Haɗari: rashin girma ba tare da abinci ba.', tw: 'Asiane: ɛrennyini yie sɛ wonnya nkɔsoɔ aduro.' },
-  'risk.harvest.rainDamage': { en: 'Risk: rain may damage crop in field.', fr: 'Risque : la pluie peut endommager la culture au champ.', sw: 'Hatari: mvua inaweza kuharibu mazao shambani.', ha: 'Haɗari: ruwan sama zai iya lalata amfanin gona a gona.', tw: 'Asiane: osu bɛsɛe nnɔbae a ɛwɔ afuo no so.' },
-  'risk.harvest.overRipening': { en: 'Risk: crop may over-ripen if left.', fr: 'Risque : la culture peut trop mûrir.', sw: 'Hatari: mazao yanaweza kuiva kupita kiasi.', ha: 'Haɗari: amfanin gona zai iya nuna fiye da kima.', tw: 'Asiane: nnɔbae no bɛbere dodo sɛ wɔgyae.' },
-  'risk.plant.missWindow': { en: 'Risk: planting window may close.', fr: 'Risque : la période de plantation peut se terminer.', sw: 'Hatari: wakati wa kupanda unaweza kupita.', ha: 'Haɗari: lokacin shuka na iya wucewa.', tw: 'Asiane: dua bere no bɛtwam.' },
-  'risk.landPrep.delayedPlanting': { en: 'Risk: planting delayed if soil not ready.', fr: 'Risque : plantation retardée si le sol n\'est pas prêt.', sw: 'Hatari: kupanda kuchelewa udongo usipokuwa tayari.', ha: 'Haɗari: shuka zai yi latti idan ƙasa ba ta shirya ba.', tw: 'Asiane: dua no bɛkyɛ sɛ asase no nsiesie.' },
-  'risk.sort.qualityLoss': { en: 'Risk: unsorted produce loses value.', fr: 'Risque : les produits non triés perdent de la valeur.', sw: 'Hatari: mazao yasiyopangwa yanapoteza thamani.', ha: 'Haɗari: kayan da ba a tsara ba na rasa daraja.', tw: 'Asiane: nneɛma a wɔmpae mu no bo bɛte.' },
-  'risk.store.postHarvestLoss': { en: 'Risk: poor storage causes loss.', fr: 'Risque : un mauvais stockage cause des pertes.', sw: 'Hatari: uhifadhi mbaya husababisha upotevu.', ha: 'Haɗari: rashin ajiyar daidai na haifar da asara.', tw: 'Asiane: sɛ wonkora yie a wobɛhwere.' },
+  'risk.drying.spoilageIfDelayed': { en: 'Risk: harvest may spoil if left damp.', fr: 'Risque : la récolte peut pourrir si elle reste humide.', sw: 'Hatari: mavuno yanaweza kuoza yakiachwa unyevu.', ha: 'Haɗari: girbi zai iya lalacewa idan ya kasance a jike.', tw: 'Asiane: wotwa adeɛ no bɛporɔw sɛ ɛtena fũ mu.' , hi: 'जोखिम: नम रहने पर फसल खराब हो सकती है।' },
+  'risk.rain.uncoveredHarvest': { en: 'Risk: rain may damage uncovered grain.', fr: 'Risque : la pluie peut endommager les grains non couverts.', sw: 'Hatari: mvua inaweza kuharibu nafaka zisizofunikwa.', ha: 'Haɗari: ruwan sama zai iya lalata hatsi maras rufi.', tw: 'Asiane: osu bɛsɛe aburow a wɔnkatae so no.' , hi: 'जोखिम: बारिश खुले अनाज को नुकसान पहुँचा सकती है।' },
+  'risk.rain.dampHarvest': { en: 'Risk: rain will make harvest damp.', fr: 'Risque : la pluie va mouiller la récolte.', sw: 'Hatari: mvua itafanya mavuno kuwa unyevu.', ha: 'Haɗari: ruwan sama zai sa girbi ya yi jike.', tw: 'Asiane: osu bɛma wotwa adeɛ no ayɛ fũ.' , hi: 'जोखिम: बारिश से फसल नम हो जाएगी।' },
+  'risk.water.yieldDropIfDry': { en: 'Risk: yield may drop if crop stays dry.', fr: 'Risque : le rendement peut baisser si la culture reste sèche.', sw: 'Hatari: mavuno yanaweza kushuka zao likibaki kavu.', ha: 'Haɗari: amfani zai iya raguwa idan amfanin gona ya bushe.', tw: 'Asiane: nnɔbae no sua bɛte sɛ ɛtena wo mu.' , hi: 'जोखिम: सूखी रहने पर पैदावार घट सकती है।' },
+  'risk.water.stuntedGrowth': { en: 'Risk: growth may slow without water.', fr: 'Risque : la croissance peut ralentir sans eau.', sw: 'Hatari: ukuaji unaweza kupungua bila maji.', ha: 'Haɗari: girma zai iya raguwa ba tare da ruwa ba.', tw: 'Asiane: nyini no bɛyɛ brɛoo sɛ wonnya nsu.' , hi: 'जोखिम: पानी के बिना विकास धीमा हो सकता है।' },
+  'risk.pest.spreadFast': { en: 'Risk: pests can spread quickly.', fr: 'Risque : les ravageurs peuvent se propager rapidement.', sw: 'Hatari: wadudu wanaweza kuenea haraka.', ha: 'Haɗari: kwari na iya yaɗuwa cikin sauri.', tw: 'Asiane: mmoa a wɔsɛe nnɔbae no bɛtrɛw ntɛm.' , hi: 'जोखिम: कीट जल्दी फैल सकते हैं।' },
+  'risk.spray.driftInWind': { en: 'Risk: wind may carry spray off target.', fr: 'Risque : le vent peut emporter le produit.', sw: 'Hatari: upepo unaweza kubeba dawa.', ha: 'Haɗari: iska na iya ɗaukar maganin.', tw: 'Asiane: mframa bɛma aduro no akɔ baabi foforo.' , hi: 'जोखिम: हवा छिड़काव को बहा सकती है।' },
+  'risk.spray.damageSpread': { en: 'Risk: damage can spread without treatment.', fr: 'Risque : les dégâts peuvent s\'étendre sans traitement.', sw: 'Hatari: uharibifu unaweza kuenea bila matibabu.', ha: 'Haɗari: lalacewa na iya yaɗuwa ba tare da magani ba.', tw: 'Asiane: sɛe no bɛtrɛw sɛ wɔanhyɛ aduro.' , hi: 'जोखिम: उपचार के बिना नुकसान फैल सकता है।' },
+  'risk.weed.yieldReduction': { en: 'Risk: weeds take nutrients from crop.', fr: 'Risque : les mauvaises herbes prennent les nutriments.', sw: 'Hatari: magugu yanachukua virutubisho vya mazao.', ha: 'Haɗari: ciyawa na ɗaukar abincin amfanin gona.', tw: 'Asiane: wura no gye nnɔbae no aduan.', hi: 'जोखिम: खरपतवार फसल से पोषक तत्व ले लेते हैं।' },
+  'risk.fertilize.poorGrowth': { en: 'Risk: poor growth without nutrients.', fr: 'Risque : mauvaise croissance sans nutriments.', sw: 'Hatari: ukuaji duni bila virutubisho.', ha: 'Haɗari: rashin girma ba tare da abinci ba.', tw: 'Asiane: ɛrennyini yie sɛ wonnya nkɔsoɔ aduro.' , hi: 'जोखिम: पोषण के बिना विकास खराब होगा।' },
+  'risk.harvest.rainDamage': { en: 'Risk: rain may damage crop in field.', fr: 'Risque : la pluie peut endommager la culture au champ.', sw: 'Hatari: mvua inaweza kuharibu mazao shambani.', ha: 'Haɗari: ruwan sama zai iya lalata amfanin gona a gona.', tw: 'Asiane: osu bɛsɛe nnɔbae a ɛwɔ afuo no so.' , hi: 'जोखिम: बारिश खेत में फसल को नुकसान पहुँचा सकती है।' },
+  'risk.harvest.overRipening': { en: 'Risk: crop may over-ripen if left.', fr: 'Risque : la culture peut trop mûrir.', sw: 'Hatari: mazao yanaweza kuiva kupita kiasi.', ha: 'Haɗari: amfanin gona zai iya nuna fiye da kima.', tw: 'Asiane: nnɔbae no bɛbere dodo sɛ wɔgyae.' , hi: 'जोखिम: छोड़ने पर फसल अधिक पक सकती है।' },
+  'risk.plant.missWindow': { en: 'Risk: planting window may close.', fr: 'Risque : la période de plantation peut se terminer.', sw: 'Hatari: wakati wa kupanda unaweza kupita.', ha: 'Haɗari: lokacin shuka na iya wucewa.', tw: 'Asiane: dua bere no bɛtwam.' , hi: 'जोखिम: रोपण का समय बंद हो सकता है।' },
+  'risk.landPrep.delayedPlanting': { en: 'Risk: planting delayed if soil not ready.', fr: 'Risque : plantation retardée si le sol n\'est pas prêt.', sw: 'Hatari: kupanda kuchelewa udongo usipokuwa tayari.', ha: 'Haɗari: shuka zai yi latti idan ƙasa ba ta shirya ba.', tw: 'Asiane: dua no bɛkyɛ sɛ asase no nsiesie.' , hi: 'जोखिम: मिट्टी तैयार न होने पर रोपण में देरी होगी।' },
+  'risk.sort.qualityLoss': { en: 'Risk: unsorted produce loses value.', fr: 'Risque : les produits non triés perdent de la valeur.', sw: 'Hatari: mazao yasiyopangwa yanapoteza thamani.', ha: 'Haɗari: kayan da ba a tsara ba na rasa daraja.', tw: 'Asiane: nneɛma a wɔmpae mu no bo bɛte.' , hi: 'जोखिम: बिना छाँटी उपज मूल्य खो देती है।' },
+  'risk.store.postHarvestLoss': { en: 'Risk: poor storage causes loss.', fr: 'Risque : un mauvais stockage cause des pertes.', sw: 'Hatari: uhifadhi mbaya husababisha upotevu.', ha: 'Haɗari: rashin ajiyar daidai na haifar da asara.', tw: 'Asiane: sɛ wonkora yie a wobɛhwere.' , hi: 'जोखिम: खराब भंडारण से नुकसान होता है।' },
 
   // ─── Crop-specific risk patterns (Crop Intelligence Layer §5) ──
   // These messageKeys are produced by src/config/crops/cropRiskPatterns.js
   // and rendered on crop-aware risk cards in the farm dashboard.
 
   // Cassava
-  'risk.cassava.whitefly_mosaic': { en: 'Watch for whitefly and cassava mosaic virus.', fr: 'Surveillez la mouche blanche et la mosaïque du manioc.', sw: 'Angalia inzi-weupe na ugonjwa wa mosaic wa muhogo.', ha: 'Kula da ƙudaje-farare da cutar mosaic na rogo.', tw: 'Hwɛ nwansena fitaa ne bankye yadeɛ.' },
-  'risk.cassava.root_rot':        { en: 'Root rot risk — keep fields well drained.', fr: 'Risque de pourriture des racines — drainez bien le champ.', sw: 'Hatari ya kuoza kwa mizizi — hakikisha maji yanaondoka.', ha: 'Haɗarin ruɓewar saiwa — tabbatar ruwa na tafiya daga gona.', tw: 'Nhini porɔwee asiane — ma nsu nkɔ afuo no mu.' },
-  'risk.cassava.leaf_yellowing':  { en: 'Leaf yellowing may signal nutrient stress.', fr: 'Le jaunissement peut signaler un manque de nutriments.', sw: 'Majani ya manjano yanaweza kuonyesha ukosefu wa virutubisho.', ha: 'Yellowar ganye na iya nuna rashin abinci.', tw: 'Ahahan kɔkɔɔ kyerɛ sɛ aduan asa.' },
+  'risk.cassava.whitefly_mosaic': { en: 'Watch for whitefly and cassava mosaic virus.', fr: 'Surveillez la mouche blanche et la mosaïque du manioc.', sw: 'Angalia inzi-weupe na ugonjwa wa mosaic wa muhogo.', ha: 'Kula da ƙudaje-farare da cutar mosaic na rogo.', tw: 'Hwɛ nwansena fitaa ne bankye yadeɛ.' , hi: 'सफ़ेद मक्खी और कसावा मोज़ेक वायरस से सावधान रहें।' },
+  'risk.cassava.root_rot': { en: 'Root rot risk — keep fields well drained.', fr: 'Risque de pourriture des racines — drainez bien le champ.', sw: 'Hatari ya kuoza kwa mizizi — hakikisha maji yanaondoka.', ha: 'Haɗarin ruɓewar saiwa — tabbatar ruwa na tafiya daga gona.', tw: 'Nhini porɔwee asiane — ma nsu nkɔ afuo no mu.' , hi: 'जड़ सड़न जोखिम — खेतों में पानी न रुकने दें।' },
+  'risk.cassava.leaf_yellowing': { en: 'Leaf yellowing may signal nutrient stress.', fr: 'Le jaunissement peut signaler un manque de nutriments.', sw: 'Majani ya manjano yanaweza kuonyesha ukosefu wa virutubisho.', ha: 'Yellowar ganye na iya nuna rashin abinci.', tw: 'Ahahan kɔkɔɔ kyerɛ sɛ aduan asa.' , hi: 'पत्तियों का पीला पड़ना पोषण की कमी दर्शाता है।' },
 
   // Maize
-  'risk.maize.drought_tasseling': { en: 'Drought at tasseling hits yield hardest.', fr: 'La sécheresse à la floraison affecte le plus le rendement.', sw: 'Ukame wakati wa kutoa miche huathiri mavuno zaidi.', ha: 'Fari lokacin fitar fure yana rage amfani sosai.', tw: 'Osukɔm wɔ nhwiren bere mu sɛe aba kɛse.' },
-  'risk.maize.fall_armyworm':     { en: 'Scout for fall armyworm on leaves and whorl.', fr: 'Inspectez la chenille légionnaire sur les feuilles.', sw: 'Angalia funza wa maize kwenye majani.', ha: 'Duba tsutsar soja a kan ganye.', tw: 'Hwehwɛ nwansena a wɔdidi ahahan so.' },
-  'risk.maize.heat_grainfill':    { en: 'Heat stress at grain fill cuts kernel weight.', fr: 'La chaleur au remplissage réduit le poids des grains.', sw: 'Joto wakati wa kujaza nafaka hupunguza uzito.', ha: 'Zafi lokacin cika hatsi na rage nauyi.', tw: 'Ahuhuro wɔ aba nhyɛso mu te aba mu.' },
+  'risk.maize.drought_tasseling': { en: 'Drought at tasseling hits yield hardest.', fr: 'La sécheresse à la floraison affecte le plus le rendement.', sw: 'Ukame wakati wa kutoa miche huathiri mavuno zaidi.', ha: 'Fari lokacin fitar fure yana rage amfani sosai.', tw: 'Osukɔm wɔ nhwiren bere mu sɛe aba kɛse.' , hi: 'फूल आने पर सूखा पैदावार को सबसे ज़्यादा प्रभावित करता है।' },
+  'risk.maize.fall_armyworm': { en: 'Scout for fall armyworm on leaves and whorl.', fr: 'Inspectez la chenille légionnaire sur les feuilles.', sw: 'Angalia funza wa maize kwenye majani.', ha: 'Duba tsutsar soja a kan ganye.', tw: 'Hwehwɛ nwansena a wɔdidi ahahan so.' , hi: 'पत्तियों और अंदर फ़ॉल आर्मीवर्म की जाँच करें।' },
+  'risk.maize.heat_grainfill': { en: 'Heat stress at grain fill cuts kernel weight.', fr: 'La chaleur au remplissage réduit le poids des grains.', sw: 'Joto wakati wa kujaza nafaka hupunguza uzito.', ha: 'Zafi lokacin cika hatsi na rage nauyi.', tw: 'Ahuhuro wɔ aba nhyɛso mu te aba mu.' , hi: 'दाना भरते समय गर्मी से दाने का वज़न घटता है।' },
 
   // Rice
-  'risk.rice.blast':        { en: 'Rice blast risk — monitor for grey-green lesions.', fr: 'Risque de pyriculariose — surveillez les taches grises.', sw: 'Hatari ya blast — angalia madoa ya kijivu.', ha: 'Haɗarin blast — duba alamun ganye.', tw: 'Mpunga blast asiane — hwɛ ahahan ntokwa.' },
-  'risk.rice.stem_borer':   { en: 'Check for stem borer — look for dead hearts.', fr: 'Inspectez le foreur de tige — cherchez les cœurs morts.', sw: 'Angalia funza wa shina — tafuta mioyo iliyokufa.', ha: 'Duba tsutsar tushe — nemo masu mutu.', tw: 'Hwehwɛ dua mu nwansena — hwɛ dua a awu.' },
-  'risk.rice.water_stress': { en: 'Water stress — keep bunds sealed and refilled.', fr: 'Stress hydrique — maintenez les diguettes étanches.', sw: 'Ukosefu wa maji — funga kingo za paddy.', ha: 'Rashin ruwa — rufe dikokin paddy.', tw: 'Nsu sua — to paddy bund mu.' },
+  'risk.rice.blast': { en: 'Rice blast risk — monitor for grey-green lesions.', fr: 'Risque de pyriculariose — surveillez les taches grises.', sw: 'Hatari ya blast — angalia madoa ya kijivu.', ha: 'Haɗarin blast — duba alamun ganye.', tw: 'Mpunga blast asiane — hwɛ ahahan ntokwa.' , hi: 'राइस ब्लास्ट जोखिम — हरे-धूसर धब्बों की निगरानी करें।' },
+  'risk.rice.stem_borer': { en: 'Check for stem borer — look for dead hearts.', fr: 'Inspectez le foreur de tige — cherchez les cœurs morts.', sw: 'Angalia funza wa shina — tafuta mioyo iliyokufa.', ha: 'Duba tsutsar tushe — nemo masu mutu.', tw: 'Hwehwɛ dua mu nwansena — hwɛ dua a awu.' , hi: 'तना छेदक की जाँच — मृत शीर्ष देखें।' },
+  'risk.rice.water_stress': { en: 'Water stress — keep bunds sealed and refilled.', fr: 'Stress hydrique — maintenez les diguettes étanches.', sw: 'Ukosefu wa maji — funga kingo za paddy.', ha: 'Rashin ruwa — rufe dikokin paddy.', tw: 'Nsu sua — to paddy bund mu.' , hi: 'पानी की कमी — मेंड़ बंद और भरी रखें।' },
 
   // Tomato
-  'risk.tomato.late_blight':       { en: 'Late blight risk — avoid overhead watering.', fr: 'Mildiou — évitez d\'arroser par le dessus.', sw: 'Blight ya baadaye — epuka kumwagilia kutoka juu.', ha: 'Blight daga sama — guji shayar da shi daga sama.', tw: 'Late blight asiane — mma ɛnnhyia ahahan no so.' },
-  'risk.tomato.fruitworm':         { en: 'Watch fruits for worm entry holes.', fr: 'Vérifiez les trous d\'entrée sur les fruits.', sw: 'Angalia matunda kwa mashimo ya funza.', ha: 'Duba \u0257an itace don ramukan tsutsotsi.', tw: 'Hwɛ aduaba so hwɛ nwansena tokuro.' },
-  'risk.tomato.blossom_end_rot':   { en: 'Uneven watering can cause blossom-end rot.', fr: 'L\'arrosage irrégulier peut causer la nécrose apicale.', sw: 'Kumwagilia kusiko sawasawa husababisha kuoza.', ha: 'Shayarwa da ba daidai ba na haifar da ruɓewa.', tw: 'Sɛ wogu nsu mpɛ mpɛ a ɛma aduaba porɔwee.' },
+  'risk.tomato.late_blight': { en: 'Late blight risk — avoid overhead watering.', fr: 'Mildiou — évitez d\'arroser par le dessus.', sw: 'Blight ya baadaye — epuka kumwagilia kutoka juu.', ha: 'Blight daga sama — guji shayar da shi daga sama.', tw: 'Late blight asiane — mma ɛnnhyia ahahan no so.' , hi: 'लेट ब्लाइट जोखिम — ऊपर से पानी न दें।' },
+  'risk.tomato.fruitworm': { en: 'Watch fruits for worm entry holes.', fr: 'Vérifiez les trous d\'entrée sur les fruits.', sw: 'Angalia matunda kwa mashimo ya funza.', ha: 'Duba \u0257an itace don ramukan tsutsotsi.', tw: 'Hwɛ aduaba so hwɛ nwansena tokuro.' , hi: 'फलों में कीट छिद्र देखें।' },
+  'risk.tomato.blossom_end_rot': { en: 'Uneven watering can cause blossom-end rot.', fr: 'L\'arrosage irrégulier peut causer la nécrose apicale.', sw: 'Kumwagilia kusiko sawasawa husababisha kuoza.', ha: 'Shayarwa da ba daidai ba na haifar da ruɓewa.', tw: 'Sɛ wogu nsu mpɛ mpɛ a ɛma aduaba porɔwee.' , hi: 'असमान पानी देने से ब्लॉसम-एंड रॉट हो सकता है।' },
 
   // Onion
-  'risk.onion.purple_blotch': { en: 'Purple blotch risk in humid conditions.', fr: 'Taches pourpres en conditions humides.', sw: 'Hatari ya madoa ya zambarau katika unyevu.', ha: 'Haɗarin tabo shunayya cikin damina.', tw: 'Kɔbene ntokwa asiane wɔ fũ bere mu.' },
-  'risk.onion.wet_bulking':   { en: 'Avoid heavy watering as bulbs mature.', fr: 'Évitez l\'arrosage excessif à la bulbaison.', sw: 'Epuka maji mengi wakati wa kukomaa kwa balbu.', ha: 'Kauce yawan ruwa lokacin da bulb ya nuna.', tw: 'Mma ɛnnhyia nsu pii wɔ bulbs anyini bere mu.' },
+  'risk.onion.purple_blotch': { en: 'Purple blotch risk in humid conditions.', fr: 'Taches pourpres en conditions humides.', sw: 'Hatari ya madoa ya zambarau katika unyevu.', ha: 'Haɗarin tabo shunayya cikin damina.', tw: 'Kɔbene ntokwa asiane wɔ fũ bere mu.' , hi: 'नमी में बैंगनी धब्बा जोखिम।' },
+  'risk.onion.wet_bulking': { en: 'Avoid heavy watering as bulbs mature.', fr: 'Évitez l\'arrosage excessif à la bulbaison.', sw: 'Epuka maji mengi wakati wa kukomaa kwa balbu.', ha: 'Kauce yawan ruwa lokacin da bulb ya nuna.', tw: 'Mma ɛnnhyia nsu pii wɔ bulbs anyini bere mu.' , hi: 'कंद पकते समय अधिक पानी न दें।' },
 
   // Okra
-  'risk.okra.shoot_fruit_borer': { en: 'Scout for shoot and fruit borer.', fr: 'Inspectez le foreur des pousses et fruits.', sw: 'Angalia funza wa matawi na matunda.', ha: 'Duba tsutsar reshe da \u0257an itace.', tw: 'Hwɛ mmran ne aduaba mu nwansena.' },
-  'risk.okra.yellow_vein':       { en: 'Yellow vein mosaic — spread by whitefly.', fr: 'Mosaïque des nervures jaunes — propagée par la mouche blanche.', sw: 'Mosaic ya mishipa ya njano — huenezwa na inzi-weupe.', ha: 'Yellow vein mosaic — ta hanyar ƙudaje-farare.', tw: 'Ahahan kɔkɔɔ mmoaba yadeɛ — nwansena na ɛtrɛw.' },
+  'risk.okra.shoot_fruit_borer': { en: 'Scout for shoot and fruit borer.', fr: 'Inspectez le foreur des pousses et fruits.', sw: 'Angalia funza wa matawi na matunda.', ha: 'Duba tsutsar reshe da \u0257an itace.', tw: 'Hwɛ mmran ne aduaba mu nwansena.' , hi: 'टहनी और फल छेदक की जाँच करें।' },
+  'risk.okra.yellow_vein': { en: 'Yellow vein mosaic — spread by whitefly.', fr: 'Mosaïque des nervures jaunes — propagée par la mouche blanche.', sw: 'Mosaic ya mishipa ya njano — huenezwa na inzi-weupe.', ha: 'Yellow vein mosaic — ta hanyar ƙudaje-farare.', tw: 'Ahahan kɔkɔɔ mmoaba yadeɛ — nwansena na ɛtrɛw.' , hi: 'पीली नस मोज़ेक — सफ़ेद मक्खी से फैलती है।' },
 
   // Pepper
-  'risk.pepper.anthracnose': { en: 'Anthracnose — dark sunken spots on fruit.', fr: 'Anthracnose — taches foncées sur les fruits.', sw: 'Anthracnose — madoa meusi kwenye matunda.', ha: 'Anthracnose — baƙar tabo a kan \u0257an itace.', tw: 'Anthracnose — ntokwa tuntum wɔ aduaba so.' },
-  'risk.pepper.thrips':      { en: 'Check leaves for thrips damage.', fr: 'Vérifiez les dégâts de thrips sur les feuilles.', sw: 'Angalia uharibifu wa thrips kwenye majani.', ha: 'Duba lalacewar thrips a ganyayyaki.', tw: 'Hwɛ thrips sɛe wɔ ahahan so.' },
+  'risk.pepper.anthracnose': { en: 'Anthracnose — dark sunken spots on fruit.', fr: 'Anthracnose — taches foncées sur les fruits.', sw: 'Anthracnose — madoa meusi kwenye matunda.', ha: 'Anthracnose — baƙar tabo a kan \u0257an itace.', tw: 'Anthracnose — ntokwa tuntum wɔ aduaba so.' , hi: 'एन्थ्रेक्नोज़ — फलों पर गहरे धँसे धब्बे।' },
+  'risk.pepper.thrips': { en: 'Check leaves for thrips damage.', fr: 'Vérifiez les dégâts de thrips sur les feuilles.', sw: 'Angalia uharibifu wa thrips kwenye majani.', ha: 'Duba lalacewar thrips a ganyayyaki.', tw: 'Hwɛ thrips sɛe wɔ ahahan so.' , hi: 'पत्तियों में थ्रिप्स नुकसान देखें।' },
 
   // Potato
-  'risk.potato.late_blight': { en: 'Late blight watch — inspect leaves weekly.', fr: 'Surveillance du mildiou — inspectez chaque semaine.', sw: 'Angalia blight — kagua majani kila wiki.', ha: 'Duba late blight — bincika ganye sati-sati.', tw: 'Hwehwɛ late blight — hwɛ ahahan kwasida biara.' },
-  'risk.potato.aphids':      { en: 'Monitor aphids on new growth.', fr: 'Surveillez les pucerons sur les jeunes pousses.', sw: 'Fuatilia vidukari kwenye ukuaji mpya.', ha: 'Bibiyar aphid akan sabon girma.', tw: 'Hwɛ aphids wɔ foforo nhyin so.' },
+  'risk.potato.late_blight': { en: 'Late blight watch — inspect leaves weekly.', fr: 'Surveillance du mildiou — inspectez chaque semaine.', sw: 'Angalia blight — kagua majani kila wiki.', ha: 'Duba late blight — bincika ganye sati-sati.', tw: 'Hwehwɛ late blight — hwɛ ahahan kwasida biara.' , hi: 'लेट ब्लाइट निगरानी — पत्तियाँ साप्ताहिक जाँचें।' },
+  'risk.potato.aphids': { en: 'Monitor aphids on new growth.', fr: 'Surveillez les pucerons sur les jeunes pousses.', sw: 'Fuatilia vidukari kwenye ukuaji mpya.', ha: 'Bibiyar aphid akan sabon girma.', tw: 'Hwɛ aphids wɔ foforo nhyin so.' , hi: 'नई बढ़त पर एफिड्स की निगरानी करें।' },
 
   // Banana
-  'risk.banana.black_sigatoka': { en: 'Black Sigatoka — remove dead leaves weekly.', fr: 'Sigatoka noire — retirez les feuilles mortes.', sw: 'Black Sigatoka — ondoa majani yaliyokufa.', ha: 'Black Sigatoka — cire matattun ganye.', tw: 'Black Sigatoka — yi ahahan a awu.' },
-  'risk.banana.weevil':         { en: 'Check pseudostems for banana weevil holes.', fr: 'Vérifiez les trous de charançon sur les pseudo-troncs.', sw: 'Angalia mashimo ya mdudu kwenye shina.', ha: 'Duba ramuka a kan kututture.', tw: 'Hwɛ kwadu dua mu nwansena tokuro.' },
+  'risk.banana.black_sigatoka': { en: 'Black Sigatoka — remove dead leaves weekly.', fr: 'Sigatoka noire — retirez les feuilles mortes.', sw: 'Black Sigatoka — ondoa majani yaliyokufa.', ha: 'Black Sigatoka — cire matattun ganye.', tw: 'Black Sigatoka — yi ahahan a awu.' , hi: 'ब्लैक सिगाटोका — मृत पत्तियाँ साप्ताहिक हटाएँ।' },
+  'risk.banana.weevil': { en: 'Check pseudostems for banana weevil holes.', fr: 'Vérifiez les trous de charançon sur les pseudo-troncs.', sw: 'Angalia mashimo ya mdudu kwenye shina.', ha: 'Duba ramuka a kan kututture.', tw: 'Hwɛ kwadu dua mu nwansena tokuro.' , hi: 'तने में केला घुन के छिद्र देखें।' },
 
   // Plantain
-  'risk.plantain.black_sigatoka': { en: 'Black Sigatoka — sanitise the field weekly.', fr: 'Sigatoka noire — assainissez le champ chaque semaine.', sw: 'Black Sigatoka — safisha shamba kila wiki.', ha: 'Black Sigatoka — tsaftace gona sati-sati.', tw: 'Black Sigatoka — siesie afuo no kwasida.' },
-  'risk.plantain.wind':           { en: 'Fruiting plants tip over in wind — stake them.', fr: 'Les plants fructifiants tombent au vent — tuteurez-les.', sw: 'Mimea inayozaa huanguka upeponi — iunge.', ha: 'Tsire-tsire masu \u0257an itace na fa\u0257uwa cikin iska — ka tallafa.', tw: 'Aba a ɛwɔ dua so twa gu mframa mu — sɔ mu.' },
+  'risk.plantain.black_sigatoka': { en: 'Black Sigatoka — sanitise the field weekly.', fr: 'Sigatoka noire — assainissez le champ chaque semaine.', sw: 'Black Sigatoka — safisha shamba kila wiki.', ha: 'Black Sigatoka — tsaftace gona sati-sati.', tw: 'Black Sigatoka — siesie afuo no kwasida.' , hi: 'ब्लैक सिगाटोका — खेत साप्ताहिक साफ़ करें।' },
+  'risk.plantain.wind': { en: 'Fruiting plants tip over in wind — stake them.', fr: 'Les plants fructifiants tombent au vent — tuteurez-les.', sw: 'Mimea inayozaa huanguka upeponi — iunge.', ha: 'Tsire-tsire masu \u0257an itace na fa\u0257uwa cikin iska — ka tallafa.', tw: 'Aba a ɛwɔ dua so twa gu mframa mu — sɔ mu.' , hi: 'फल लदे पौधे हवा में गिरते हैं — सहारा दें।' },
 
   // Cocoa
-  'risk.cocoa.black_pod': { en: 'Black pod rot — remove diseased pods weekly.', fr: 'Pourriture brune — retirez les cabosses malades.', sw: 'Kuoza kwa maganda — ondoa maganda magonjwa.', ha: 'Baƙar ruɓe — cire kwasfa masu cuta.', tw: 'Kookoo porɔwee — yi abɛ a ayare.' },
-  'risk.cocoa.mirids':    { en: 'Scout for capsid (mirid) damage on pods and shoots.', fr: 'Inspectez les dégâts de mirides sur cabosses et pousses.', sw: 'Angalia uharibifu wa mirids kwenye maganda.', ha: 'Duba lalacewar mirids a kan kwasfa.', tw: 'Hwehwɛ mirids sɛe wɔ abɛ so.' },
+  'risk.cocoa.black_pod': { en: 'Black pod rot — remove diseased pods weekly.', fr: 'Pourriture brune — retirez les cabosses malades.', sw: 'Kuoza kwa maganda — ondoa maganda magonjwa.', ha: 'Baƙar ruɓe — cire kwasfa masu cuta.', tw: 'Kookoo porɔwee — yi abɛ a ayare.' , hi: 'ब्लैक पॉड रॉट — रोगग्रस्त फली साप्ताहिक हटाएँ।' },
+  'risk.cocoa.mirids': { en: 'Scout for capsid (mirid) damage on pods and shoots.', fr: 'Inspectez les dégâts de mirides sur cabosses et pousses.', sw: 'Angalia uharibifu wa mirids kwenye maganda.', ha: 'Duba lalacewar mirids a kan kwasfa.', tw: 'Hwehwɛ mirids sɛe wɔ abɛ so.' , hi: 'फलियों और टहनियों पर मिरिड क्षति की जाँच करें।' },
 
   // Mango
-  'risk.mango.powdery_mildew': { en: 'Powdery mildew on flowers reduces fruit set.', fr: 'L\'oïdium sur les fleurs réduit la nouaison.', sw: 'Powdery mildew kwenye maua hupunguza matunda.', ha: 'Powdery mildew akan furen na rage \u0257an itace.', tw: 'Powdery mildew wɔ nhwiren so te aduaba so.' },
-  'risk.mango.fruit_fly':      { en: 'Fruit fly — bag or trap around ripening fruit.', fr: 'Mouche des fruits — ensachez ou piégez.', sw: 'Inzi wa matunda — funika au weka mtego.', ha: 'Ƙudar \u0257an itace — ka rufe ko sa wata.', tw: 'Aduaba nwansena — katakata anaa yɛ atiridii.' },
+  'risk.mango.powdery_mildew': { en: 'Powdery mildew on flowers reduces fruit set.', fr: 'L\'oïdium sur les fleurs réduit la nouaison.', sw: 'Powdery mildew kwenye maua hupunguza matunda.', ha: 'Powdery mildew akan furen na rage \u0257an itace.', tw: 'Powdery mildew wɔ nhwiren so te aduaba so.' , hi: 'फूलों पर भभूतिया रोग फल लगने को कम करता है।' },
+  'risk.mango.fruit_fly': { en: 'Fruit fly — bag or trap around ripening fruit.', fr: 'Mouche des fruits — ensachez ou piégez.', sw: 'Inzi wa matunda — funika au weka mtego.', ha: 'Ƙudar \u0257an itace — ka rufe ko sa wata.', tw: 'Aduaba nwansena — katakata anaa yɛ atiridii.' , hi: 'फल मक्खी — पकते फल को थैले में रखें या जाल लगाएँ।' },
 
   // Generic fallback (used when a crop has no bespoke patterns)
-  'risk.generic.dry_stress':   { en: 'Dry conditions — plan irrigation windows.', fr: 'Conditions sèches — planifiez l\'arrosage.', sw: 'Hali ya ukavu — panga nyakati za umwagiliaji.', ha: 'Bushewa — tsara lokutan ban ruwa.', tw: 'Nsu sua — hyɛ nsu gu bere.' },
-  'risk.generic.wet_disease':  { en: 'Wet weather raises foliar disease pressure.', fr: 'Le temps humide augmente les maladies foliaires.', sw: 'Hali ya mvua huongeza magonjwa ya majani.', ha: 'Yanayin ruwa na ƙara cututtukan ganye.', tw: 'Fũ bere ma ahahan yadeɛ.' },
+  'risk.generic.dry_stress': { en: 'Dry conditions — plan irrigation windows.', fr: 'Conditions sèches — planifiez l\'arrosage.', sw: 'Hali ya ukavu — panga nyakati za umwagiliaji.', ha: 'Bushewa — tsara lokutan ban ruwa.', tw: 'Nsu sua — hyɛ nsu gu bere.' , hi: 'सूखी स्थिति — सिंचाई की योजना बनाएँ।' },
+  'risk.generic.wet_disease': { en: 'Wet weather raises foliar disease pressure.', fr: 'Le temps humide augmente les maladies foliaires.', sw: 'Hali ya mvua huongeza magonjwa ya majani.', ha: 'Yanayin ruwa na ƙara cututtukan ganye.', tw: 'Fũ bere ma ahahan yadeɛ.' , hi: 'गीला मौसम पत्ती रोग का दबाव बढ़ाता है।' },
 
   // ─── Crop Intelligence v2: photo capture UI (spec C) ───────────
   'cropPhoto.title':          { en: 'Identify your crop', fr: 'Identifier votre culture', sw: 'Tambua mazao yako', ha: 'Gane amfaninka', tw: 'Hunu wo nnɔbae' },
@@ -8997,31 +8997,31 @@ const T = {
   // ═══════════════════════════════════════════════════════════
   //  TIMING — why this task matters NOW (spec §2)
   // ═══════════════════════════════════════════════════════════
-  'timing.whileConditionsDry': { en: 'Good time now — conditions are dry.', fr: 'Bon moment — temps sec.', sw: 'Wakati mzuri — hali ni kavu.', ha: 'Lokaci mai kyau — busasshe ne.', tw: 'Bere pa — ewim yɛ hye.' },
-  'timing.beforeRainArrives': { en: 'Do this before rain arrives.', fr: 'À faire avant la pluie.', sw: 'Fanya kabla mvua ifike.', ha: 'Yi wannan kafin ruwan sama.', tw: 'Yɛ eyi ansa na osu aba.' },
-  'timing.waitForDryWeather': { en: 'Wait for dry weather to dry properly.', fr: 'Attendez un temps sec pour sécher.', sw: 'Subiri hali ya hewa kavu.', ha: 'Jira busasshen yanayi.', tw: 'Twɛn ma ewim yɛ hye.' },
-  'timing.heatIsHighToday': { en: 'Heat is high today — watering matters more.', fr: 'Forte chaleur — arrosage important.', sw: 'Joto ni kali leo — kumwagilia ni muhimu.', ha: 'Zafi mai tsanani — shayarwa na da muhimmanci.', tw: 'Ɛhyew nnɛ — nsu guo ho hia pa ara.' },
-  'timing.earlyThisWeek': { en: 'Do this early this week.', fr: 'À faire tôt cette semaine.', sw: 'Fanya mapema wiki hii.', ha: 'Yi da wuri a wannan mako.', tw: 'Yɛ eyi nnawɔtwe yi mfiase.' },
-  'timing.actNowBeforeSpread': { en: 'Act now before it spreads.', fr: 'Agissez vite avant propagation.', sw: 'Fanya sasa kabla kuenea.', ha: 'Yi yanzu kafin ya yaɗu.', tw: 'Yɛ no ntɛm ansa na atrɛw.' },
-  'timing.regularCheckProtects': { en: 'Regular checks protect your crop.', fr: 'Vérifications régulières protègent la culture.', sw: 'Ukaguzi wa kawaida hulinda mazao.', ha: 'Bincike na yau da kullum na kare amfanin.', tw: 'Nhwehwɛmu daa bɔ wo nnɔbae ho ban.' },
-  'timing.waitForCalmWind': { en: 'Wait for calm wind to spray.', fr: 'Attendez un vent calme pour pulvériser.', sw: 'Subiri upepo utulie kunyunyizia.', ha: 'Jira iskar ta kwanta kafin fesa.', tw: 'Twɛn ma mframa dwodwo ansa na wopete aduro.' },
-  'timing.bestInCalmConditions': { en: 'Best done in calm conditions.', fr: 'Mieux par temps calme.', sw: 'Bora katika hali tulivu.', ha: 'Gara a yi a cikin kwanciyar hankali.', tw: 'Eye sɛ woyɛ no bere a ewim yɛ dinn.' },
-  'timing.beforeWeedsGrow': { en: 'Clear before weeds take over.', fr: 'Désherber avant que les mauvaises herbes ne dominent.', sw: 'Safisha kabla magugu yakue.', ha: 'Share kafin ciyayi su rufe.', tw: 'Popa ansa na wura adu.' },
-  'timing.feedDuringGrowth': { en: 'Best time to feed during active growth.', fr: 'Meilleur moment pour nourrir pendant la croissance.', sw: 'Wakati bora wa kulisha wakati wa ukuaji.', ha: 'Lokaci mafi kyau don ciyar da amfani.', tw: 'Bere pa a wobɛma nkwan wɔ nyin bere mu.' },
-  'timing.beforePlantingWindow': { en: 'Do before planting window closes.', fr: 'À faire avant la fin de la saison de semis.', sw: 'Fanya kabla dirisha la kupanda lifungwe.', ha: 'Yi kafin lokacin shuka ya ƙare.', tw: 'Yɛ ansa na dua bere no akɔ.' },
-  'timing.beforeRainTomorrow': { en: 'Best done today before rain tomorrow.', fr: 'À faire aujourd\'hui avant la pluie demain.', sw: 'Bora kufanya leo kabla ya mvua kesho.', ha: 'Gara a yi yau kafin ruwan gobe.', tw: 'Eye sɛ woyɛ nnɛ ansa osu atɔ ɔkyena.' },
-  'timing.harvestWhenReady': { en: 'Harvest when crop is ready.', fr: 'Récoltez quand la culture est prête.', sw: 'Vuna wakati mazao yako tayari.', ha: 'Girbe lokacin amfanin ya nuna.', tw: 'Twa bere a nnɔbae no abɛre.' },
-  'timing.soonAfterHarvest': { en: 'Best done soon after harvest.', fr: 'À faire rapidement après la récolte.', sw: 'Bora kufanya baada ya kuvuna.', ha: 'Gara a yi ba\'an girbe.', tw: 'Eye sɛ woyɛ no ntɛm wɔ twa ase.' },
-  'timing.beforeQualityDrops': { en: 'Store before quality drops.', fr: 'Stocker avant que la qualité ne baisse.', sw: 'Hifadhi kabla ubora kupungua.', ha: 'Ajiye kafin ingancin ya ragu.', tw: 'Kora ansa na ne su abɛhwe ase.' },
+  'timing.whileConditionsDry': { en: 'Good time now — conditions are dry.', fr: 'Bon moment — temps sec.', sw: 'Wakati mzuri — hali ni kavu.', ha: 'Lokaci mai kyau — busasshe ne.', tw: 'Bere pa — ewim yɛ hye.' , hi: 'अच्छा समय — मौसम सूखा है।' },
+  'timing.beforeRainArrives': { en: 'Do this before rain arrives.', fr: 'À faire avant la pluie.', sw: 'Fanya kabla mvua ifike.', ha: 'Yi wannan kafin ruwan sama.', tw: 'Yɛ eyi ansa na osu aba.' , hi: 'बारिश आने से पहले करें।' },
+  'timing.waitForDryWeather': { en: 'Wait for dry weather to dry properly.', fr: 'Attendez un temps sec pour sécher.', sw: 'Subiri hali ya hewa kavu.', ha: 'Jira busasshen yanayi.', tw: 'Twɛn ma ewim yɛ hye.' , hi: 'सही सुखाने के लिए सूखे मौसम का इंतज़ार करें।' },
+  'timing.heatIsHighToday': { en: 'Heat is high today — watering matters more.', fr: 'Forte chaleur — arrosage important.', sw: 'Joto ni kali leo — kumwagilia ni muhimu.', ha: 'Zafi mai tsanani — shayarwa na da muhimmanci.', tw: 'Ɛhyew nnɛ — nsu guo ho hia pa ara.' , hi: 'आज गर्मी अधिक है — पानी देना ज़रूरी।' },
+  'timing.earlyThisWeek': { en: 'Do this early this week.', fr: 'À faire tôt cette semaine.', sw: 'Fanya mapema wiki hii.', ha: 'Yi da wuri a wannan mako.', tw: 'Yɛ eyi nnawɔtwe yi mfiase.' , hi: 'इस सप्ताह जल्दी करें।' },
+  'timing.actNowBeforeSpread': { en: 'Act now before it spreads.', fr: 'Agissez vite avant propagation.', sw: 'Fanya sasa kabla kuenea.', ha: 'Yi yanzu kafin ya yaɗu.', tw: 'Yɛ no ntɛm ansa na atrɛw.' , hi: 'फैलने से पहले अभी कार्य करें।' },
+  'timing.regularCheckProtects': { en: 'Regular checks protect your crop.', fr: 'Vérifications régulières protègent la culture.', sw: 'Ukaguzi wa kawaida hulinda mazao.', ha: 'Bincike na yau da kullum na kare amfanin.', tw: 'Nhwehwɛmu daa bɔ wo nnɔbae ho ban.' , hi: 'नियमित जाँच फसल की रक्षा करती है।' },
+  'timing.waitForCalmWind': { en: 'Wait for calm wind to spray.', fr: 'Attendez un vent calme pour pulvériser.', sw: 'Subiri upepo utulie kunyunyizia.', ha: 'Jira iskar ta kwanta kafin fesa.', tw: 'Twɛn ma mframa dwodwo ansa na wopete aduro.' , hi: 'छिड़काव के लिए शांत हवा का इंतज़ार करें।' },
+  'timing.bestInCalmConditions': { en: 'Best done in calm conditions.', fr: 'Mieux par temps calme.', sw: 'Bora katika hali tulivu.', ha: 'Gara a yi a cikin kwanciyar hankali.', tw: 'Eye sɛ woyɛ no bere a ewim yɛ dinn.' , hi: 'शांत स्थिति में करना सबसे अच्छा।' },
+  'timing.beforeWeedsGrow': { en: 'Clear before weeds take over.', fr: 'Désherber avant que les mauvaises herbes ne dominent.', sw: 'Safisha kabla magugu yakue.', ha: 'Share kafin ciyayi su rufe.', tw: 'Popa ansa na wura adu.', hi: 'खरपतवार बढ़ने से पहले साफ़ करें।' },
+  'timing.feedDuringGrowth': { en: 'Best time to feed during active growth.', fr: 'Meilleur moment pour nourrir pendant la croissance.', sw: 'Wakati bora wa kulisha wakati wa ukuaji.', ha: 'Lokaci mafi kyau don ciyar da amfani.', tw: 'Bere pa a wobɛma nkwan wɔ nyin bere mu.' , hi: 'सक्रिय विकास के दौरान खाद देने का सबसे अच्छा समय।' },
+  'timing.beforePlantingWindow': { en: 'Do before planting window closes.', fr: 'À faire avant la fin de la saison de semis.', sw: 'Fanya kabla dirisha la kupanda lifungwe.', ha: 'Yi kafin lokacin shuka ya ƙare.', tw: 'Yɛ ansa na dua bere no akɔ.' , hi: 'रोपण समय बंद होने से पहले करें।' },
+  'timing.beforeRainTomorrow': { en: 'Best done today before rain tomorrow.', fr: 'À faire aujourd\'hui avant la pluie demain.', sw: 'Bora kufanya leo kabla ya mvua kesho.', ha: 'Gara a yi yau kafin ruwan gobe.', tw: 'Eye sɛ woyɛ nnɛ ansa osu atɔ ɔkyena.' , hi: 'कल की बारिश से पहले आज करना बेहतर।' },
+  'timing.harvestWhenReady': { en: 'Harvest when crop is ready.', fr: 'Récoltez quand la culture est prête.', sw: 'Vuna wakati mazao yako tayari.', ha: 'Girbe lokacin amfanin ya nuna.', tw: 'Twa bere a nnɔbae no abɛre.' , hi: 'फसल तैयार होने पर कटाई करें।' },
+  'timing.soonAfterHarvest': { en: 'Best done soon after harvest.', fr: 'À faire rapidement après la récolte.', sw: 'Bora kufanya baada ya kuvuna.', ha: 'Gara a yi ba\'an girbe.', tw: 'Eye sɛ woyɛ no ntɛm wɔ twa ase.' , hi: 'कटाई के तुरंत बाद करना सबसे अच्छा।' },
+  'timing.beforeQualityDrops': { en: 'Store before quality drops.', fr: 'Stocker avant que la qualité ne baisse.', sw: 'Hifadhi kabla ubora kupungua.', ha: 'Ajiye kafin ingancin ya ragu.', tw: 'Kora ansa na ne su abɛhwe ase.' , hi: 'गुणवत्ता घटने से पहले भंडारण करें।' },
 
   // ─── Smart timing (weather-aware) — day/date phrases ───
-  'timing.doNow': { en: 'Do now.', fr: 'À faire maintenant.', sw: 'Fanya sasa.', ha: 'Yi yanzu.', tw: 'Yɛ no seesei.' },
-  'timing.doToday': { en: 'Do today.', fr: 'À faire aujourd\'hui.', sw: 'Fanya leo.', ha: 'Yi yau.', tw: 'Yɛ no nnɛ.' },
-  'timing.doThisWeek': { en: 'Do this week.', fr: 'À faire cette semaine.', sw: 'Fanya wiki hii.', ha: 'Yi a wannan mako.', tw: 'Yɛ no nnawɔtwe yi.' },
-  'timing.beforeRainOnDay': { en: 'Before rain on {day}.', fr: 'Avant la pluie de {day}.', sw: 'Kabla mvua ya {day}.', ha: 'Kafin ruwan sama na {day}.', tw: 'Ansa osu atɔ {day}.' },
-  'timing.doBeforeRainOnDay': { en: 'Finish before rain on {day}.', fr: 'Finir avant la pluie de {day}.', sw: 'Maliza kabla mvua ya {day}.', ha: 'Gama kafin ruwan sama na {day}.', tw: 'Wie ansa osu atɔ {day}.' },
-  'timing.dryStartsTomorrow': { en: 'Dry weather starts tomorrow.', fr: 'Temps sec à partir de demain.', sw: 'Hali ya hewa kavu itaanza kesho.', ha: 'Busasshen yanayi zai fara gobe.', tw: 'Ewim bɛyɛ hye ɔkyena.' },
-  'timing.dryStartsOnDay': { en: 'Dry weather returns {day}.', fr: 'Temps sec de retour {day}.', sw: 'Hali ya hewa kavu itarudi {day}.', ha: 'Busasshen yanayi zai dawo {day}.', tw: 'Ewim bɛyɛ hye {day}.' },
+  'timing.doNow': { en: 'Do now.', fr: 'À faire maintenant.', sw: 'Fanya sasa.', ha: 'Yi yanzu.', tw: 'Yɛ no seesei.' , hi: 'अभी करें।' },
+  'timing.doToday': { en: 'Do today.', fr: 'À faire aujourd\'hui.', sw: 'Fanya leo.', ha: 'Yi yau.', tw: 'Yɛ no nnɛ.' , hi: 'आज करें।' },
+  'timing.doThisWeek': { en: 'Do this week.', fr: 'À faire cette semaine.', sw: 'Fanya wiki hii.', ha: 'Yi a wannan mako.', tw: 'Yɛ no nnawɔtwe yi.' , hi: 'इस सप्ताह करें।' },
+  'timing.beforeRainOnDay': { en: 'Before rain on {day}.', fr: 'Avant la pluie de {day}.', sw: 'Kabla mvua ya {day}.', ha: 'Kafin ruwan sama na {day}.', tw: 'Ansa osu atɔ {day}.' , hi: '{day} की बारिश से पहले।' },
+  'timing.doBeforeRainOnDay': { en: 'Finish before rain on {day}.', fr: 'Finir avant la pluie de {day}.', sw: 'Maliza kabla mvua ya {day}.', ha: 'Gama kafin ruwan sama na {day}.', tw: 'Wie ansa osu atɔ {day}.' , hi: '{day} की बारिश से पहले समाप्त करें।' },
+  'timing.dryStartsTomorrow': { en: 'Dry weather starts tomorrow.', fr: 'Temps sec à partir de demain.', sw: 'Hali ya hewa kavu itaanza kesho.', ha: 'Busasshen yanayi zai fara gobe.', tw: 'Ewim bɛyɛ hye ɔkyena.' , hi: 'सूखा मौसम कल शुरू होगा।' },
+  'timing.dryStartsOnDay': { en: 'Dry weather returns {day}.', fr: 'Temps sec de retour {day}.', sw: 'Hali ya hewa kavu itarudi {day}.', ha: 'Busasshen yanayi zai dawo {day}.', tw: 'Ewim bɛyɛ hye {day}.' , hi: '{day} को सूखा मौसम लौटता है।' },
 
   // ─── Date / day names (short) ──────────────────────────
   'date.day.sun': { en: 'Sun', fr: 'Dim', sw: 'Jpi', ha: 'Lah', tw: 'Kwa' },
@@ -9107,14 +9107,14 @@ const T = {
   'economics.market.moderate': { en: 'Moderate market potential', fr: 'Potentiel de marché moyen', sw: 'Fursa ya soko ya wastani', ha: 'Matsakaicin damar kasuwa', tw: 'Gua so kwan a ɛwɔ mfinimfini' },
   'economics.market.good': { en: 'Good market potential', fr: 'Bon potentiel de marché', sw: 'Fursa nzuri ya soko', ha: 'Kyakkyawan damar kasuwa', tw: 'Gua so kwan pa' },
   'economics.tip.planAhead': { en: 'Planning saves cost later.', fr: 'Planifier économise plus tard.', sw: 'Kupanga kunapunguza gharama baadaye.', ha: 'Tsarawa na rage farashi nan gaba.', tw: 'Nhyehyɛe tumi gye sika akyiri.' },
-  'economics.tip.clearingInvestment': { en: 'Good clearing helps reduce loss later.', fr: 'Un bon nettoyage réduit les pertes.', sw: 'Usafishaji mzuri hupunguza hasara baadaye.', ha: 'Share mai kyau na rage asara nan gaba.', tw: 'Popa a woyɛ no yie tumi tɔɔ sɛe nkakra.' },
+  'economics.tip.clearingInvestment': { en: 'Good clearing helps reduce loss later.', fr: 'Un bon nettoyage réduit les pertes.', sw: 'Usafishaji mzuri hupunguza hasara baadaye.', ha: 'Share mai kyau na rage asara nan gaba.', tw: 'Popa a woyɛ no yie tumi tɔɔ sɛe nkakra.', hi: 'अच्छी सफ़ाई बाद में नुकसान कम करती है।' },
   'economics.tip.seedInvestment': { en: 'Good seeds are a worthy investment.', fr: 'Les bonnes semences sont un bon investissement.', sw: 'Mbegu nzuri ni uwekezaji mzuri.', ha: 'Iri mai kyau saka ne mai kyau.', tw: 'Aba pa yɛ sika a wode bɔ mu yie.' },
   'economics.tip.fertilizeForYield': { en: 'Right nutrients boost your harvest.', fr: 'Les bons nutriments augmentent la récolte.', sw: 'Virutubisho sahihi vinaboresha mavuno.', ha: 'Takin da ya dace na ƙara girbi.', tw: 'Nkwan pa ma wo nnɔbae dɔɔso.' },
   'economics.tip.protectForQuality': { en: 'Protection now preserves crop quality.', fr: 'La protection maintenant préserve la qualité.', sw: 'Kulinda sasa kunahifadhi ubora.', ha: 'Kariya yanzu na kiyaye inganci.', tw: 'Bɔ ho ban seesei na ɛhwɛ su yie so.' },
   'economics.tip.nearHarvest': { en: 'Your investment is almost ready to pay off.', fr: 'Votre investissement est presque prêt.', sw: 'Uwekezaji wako unakaribia kutoa matunda.', ha: 'Jarin ku na kusa da bayarwa.', tw: 'Wo sika a wode bɔɔ mu no rebɛba mfaso.' },
   'economics.tip.harvestCarefully': { en: 'Careful harvest protects sale quality.', fr: 'Une récolte soignée protège la qualité.', sw: 'Kuvuna kwa uangalifu hulinda ubora wa kuuza.', ha: 'Girbe da hankali na kare ingancin sayarwa.', tw: 'Twa yie na ɛhwɛ ne su yie ma wuton.' },
   'economics.tip.dryAndStoreWell': { en: 'Drying well protects your profit.', fr: 'Bien sécher protège vos bénéfices.', sw: 'Kukausha vizuri hulinda faida yako.', ha: 'Bushewa da kyau na kare riba.', tw: 'Hwie yie na ɛhwɛ wo mfaso so.' },
-  'economics.task.clearReducesLoss': { en: 'Good clearing helps reduce loss.', fr: 'Un bon désherbage réduit les pertes.', sw: 'Usafishaji hupunguza hasara.', ha: 'Share na rage asara.', tw: 'Popa yie tumi tɔɔ sɛe nkakra.' },
+  'economics.task.clearReducesLoss': { en: 'Good clearing helps reduce loss.', fr: 'Un bon désherbage réduit les pertes.', sw: 'Usafishaji hupunguza hasara.', ha: 'Share na rage asara.', tw: 'Popa yie tumi tɔɔ sɛe nkakra.', hi: 'अच्छी सफ़ाई नुकसान कम करती है।' },
   'economics.task.dryProtectsQuality': { en: 'Drying protects sale quality.', fr: 'Le séchage protège la qualité.', sw: 'Kukausha hulinda ubora.', ha: 'Bushewa na kare inganci.', tw: 'Ahwie yie hwɛ ne su so.' },
   'economics.task.harvestTracksProfit': { en: 'Logging harvest helps track profit.', fr: 'Enregistrer aide à suivre les bénéfices.', sw: 'Kurekodi husaidia kufuatilia faida.', ha: 'Rubuta na taimaka wajen bin diddigin riba.', tw: 'Kyerɛw ma woahu wo mfaso.' },
   'economics.task.storeReducesWaste': { en: 'Good storage reduces waste.', fr: 'Un bon stockage réduit le gaspillage.', sw: 'Hifadhi nzuri hupunguza upotevu.', ha: 'Ajiyewa mai kyau na rage ɓarnatar.', tw: 'Kora yie na ɛtɔɔ sɛe nkakra.' },
@@ -9466,7 +9466,7 @@ const T = {
   // explicit "Approval not guaranteed" so the farmer knows the
   // outcome is not promised before they tap Apply.
   'funding.whatToExpect':                { en: 'What to expect',          fr: 'À quoi s\u2019attendre',                sw: 'Cha kutarajia',                  ha: 'Abin da za a yi tsammani',           tw: 'Deɛ ɛsɛ sɛ wohwɛ',                          hi: 'क्या उम्मीद करें' },
-  'funding.whatToExpect.application':    { en: 'Application required',    fr: 'Candidature requise',                    sw: 'Maombi yanahitajika',            ha: 'Ana buƙatar aikace-aikace',          tw: 'Application yɛ adwuma',                     hi: 'आवेदन आवश्यक' },
+  'funding.whatToExpect.application':    { en: 'Application required',    fr: 'Candidature requise',                    sw: 'Maombi yanahitajika',            ha: 'Ana buƙatar aikace-aikace',          tw: 'Adesrɛdeɛ a ɛhia',                          hi: 'आवेदन आवश्यक' },
   'funding.whatToExpect.review':         { en: 'Review by organization',  fr: 'Examen par l\u2019organisation',         sw: 'Kupitiwa na shirika',            ha: 'Bita ta ƙungiyar',                   tw: 'Asɔreyɛfoɔ no bɛhwɛ',                       hi: 'संगठन द्वारा समीक्षा' },
   'funding.whatToExpect.notGuaranteed':  { en: 'Approval not guaranteed', fr: 'Approbation non garantie',               sw: 'Idhini haijahakikishwa',         ha: 'Ba a tabbatar da yarda ba',          tw: 'Wɔnhyɛ wo bɔ sɛ wɔbɛpene so',               hi: 'अनुमोदन की गारंटी नहीं' },
   'funding.saveForLater':                { en: 'Save for later',          fr: 'Enregistrer pour plus tard',             sw: 'Hifadhi kwa baadaye',            ha: 'Ajiye don baya',                     tw: 'Kora so ma akyi',                           hi: 'बाद के लिए सहेजें' },
@@ -10035,6 +10035,274 @@ const T = {
   'home.quick.viewTasks.helper':  { en: 'Your task list.', fr: 'Votre liste de tâches.', sw: 'Orodha ya kazi zako.', ha: 'Jerin ayyukanku.', tw: 'Wo nnwuma nhyehyɛeɛ.', hi: 'आपकी कार्य सूची।' },
   'home.help.title':              { en: 'Need help?',  fr: 'Besoin d\'aide ?', sw: 'Unahitaji msaada?', ha: 'Kana bukatar taimako?', tw: 'Wohia mmoa?', hi: 'मदद चाहिए?' },
   'home.help.contact':            { en: 'Contact us',  fr: 'Contactez-nous',  sw: 'Wasiliana nasi', ha: 'Tuntuɓe mu',  tw: 'Frɛ yɛn',     hi: 'संपर्क करें' },
+
+  // ─── Home action-first redesign — quick actions v2 ────────────
+  // Two new tiles replace "View tasks": "Mark ready to sell"
+  // (deep-link to /sell) + "View funding" (deep-link to
+  // /opportunities). Same routes the bottom nav serves; tiles
+  // give farmers landing on Home first a one-tap shortcut.
+  'home.quick.markSell':          { en: 'Mark ready to sell',  fr: 'Marquer prêt à vendre',         sw: 'Weka tayari kuuza',            ha: 'Yi alama shirye don sayarwa',  tw: 'Kyerɛ sɛ akrado sɛ wɔbɛtɔn',  hi: 'बेचने को तैयार चिह्नित करें' },
+  'home.quick.markSell.helper':   { en: 'Signal harvest is ready.', fr: 'Indique que la récolte est prête.',  sw: 'Onyesha mavuno yako tayari.', ha: 'Nuna girbi ya shirya.',          tw: 'Kyerɛ sɛ nnɔbae akrado.',     hi: 'फसल तैयार है, संकेत दें।' },
+  'home.quick.viewFunding':       { en: 'View funding',        fr: 'Voir le financement',           sw: 'Tazama ufadhili',              ha: 'Duba tallafi',                  tw: 'Hwɛ sika boa',                hi: 'फंडिंग देखें' },
+  'home.quick.viewFunding.helper':{ en: 'See available offers.',fr: 'Voir les offres disponibles.', sw: 'Ona ofa zilizopo.',            ha: 'Duba tayin da ake da su.',      tw: 'Hwɛ deɛ ɛwɔ hɔ.',             hi: 'उपलब्ध ऑफ़र देखें।' },
+
+  // ─── Home — Funding/Sell trigger chips ────────────────────────
+  // Two thin chips that surface only when simple farm-data
+  // signals an opportunity. Calmer than the primary CTA.
+  'home.trigger.readyToSell':     { en: 'Ready to sell?',      fr: 'Prêt à vendre ?',               sw: 'Tayari kuuza?',                ha: 'Shirye don sayarwa?',           tw: 'Akrado sɛ wɔbɛtɔn?',          hi: 'बेचने के लिए तैयार?' },
+  'home.trigger.fundingNearby':   { en: 'Funding nearby',      fr: 'Financement à proximité',       sw: 'Ufadhili karibu',              ha: 'Tallafi kusa',                  tw: 'Sika boa bɛn',                hi: 'पास में फंडिंग' },
+
+  // ─── My Farm — Today's farm action ────────────────────────────
+  // Compact link surface — one row, links to /tasks. The full
+  // task surface still lives on Home + /tasks; this is a
+  // contextual link from the farm-management view.
+  'myFarm.todayAction.title':     { en: "Today's farm action", fr: 'Action du jour pour la ferme',  sw: 'Hatua ya leo shambani',        ha: 'Aikin gona na yau',             tw: 'Nnɛ afuom adwuma',            hi: 'आज की कृषि क्रिया' },
+  'myFarm.todayAction.fallback':  { en: "Check today's task",  fr: 'Voir la tâche du jour',         sw: 'Angalia kazi ya leo',          ha: 'Duba aikin yau',                tw: 'Hwɛ nnɛ adwuma',              hi: 'आज का कार्य देखें' },
+
+  // ─── Fast onboarding flow (4 screens, < 60 s end-to-end) ─────
+  // Screens: entry → quick setup → recommendation → first task.
+  // Mounted at /onboarding/start. Strings stay short so each
+  // screen fits a single phone viewport without scrolling.
+  'fastFlow.tagline':             { en: 'Know what to do. Grow better.', fr: 'Sachez quoi faire. Cultivez mieux.', sw: 'Jua la kufanya. Lima vizuri.', ha: 'San abin yi. Yi noma sosai.', tw: 'Hu deɛ wobɛyɛ. Yɛ kuayɛ pa.', hi: 'क्या करना है, जानें। बेहतर उगाएँ।' },
+
+  // Screen 1 — entry
+  'fastFlow.entry.question':      { en: 'Are you new to farming?',       fr: 'Êtes-vous nouveau dans l\'agriculture ?',   sw: 'Je, wewe ni mpya kwenye kilimo?', ha: 'Sabuwa ce ka shiga noma?', tw: 'Wofiri ase reyɛ kuayɛ?', hi: 'क्या आप खेती में नए हैं?' },
+  'fastFlow.entry.new':           { en: "Yes, I\u2019m new",             fr: 'Oui, je suis nouveau',                       sw: 'Ndiyo, mimi ni mpya',             ha: 'Eh, sabuwa ce',           tw: 'Aane, meyɛ foforɔ',     hi: 'हाँ, मैं नया हूँ' },
+  'fastFlow.entry.existing':      { en: 'I already farm',                fr: 'Je cultive déjà',                            sw: 'Tayari ninalima',                 ha: 'Ina noma a yanzu',        tw: 'Mereyɛ kuayɛ dada',     hi: 'मैं पहले से खेती करता हूँ' },
+
+  // Screen 2 — quick setup
+  'fastFlow.setup.title':         { en: 'Quick setup',                   fr: 'Configuration rapide',                       sw: 'Mipangilio ya haraka',            ha: 'Saiti mai sauri',         tw: 'Nhyehyɛeɛ a ɛyɛ ntɛm',   hi: 'त्वरित सेटअप' },
+  'fastFlow.setup.location':      { en: 'Location',                      fr: 'Lieu',                                       sw: 'Mahali',                          ha: 'Wuri',                    tw: 'Beaeɛ',                  hi: 'स्थान' },
+  'fastFlow.setup.locationPlaceholder': { en: 'City or region',           fr: 'Ville ou région',                            sw: 'Mji au eneo',                     ha: 'Birni ko yanki',          tw: 'Kuro anaa beaeɛ',        hi: 'शहर या क्षेत्र' },
+  'fastFlow.setup.autoDetect':    { en: 'Auto-detect',                   fr: 'Détecter',                                   sw: 'Tambua',                          ha: 'Gano',                    tw: 'Hwehwɛ',                 hi: 'पता लगाएँ' },
+  'fastFlow.setup.detecting':     { en: 'Detecting…',                    fr: 'Détection…',                                 sw: 'Inatambua…',                      ha: 'Ana ganowa…',             tw: 'Yɛrehwehwɛ…',            hi: 'पता लगा रहे हैं…' },
+  'fastFlow.setup.farmSize':      { en: 'Farm size',                     fr: 'Taille de la ferme',                         sw: 'Ukubwa wa shamba',                ha: 'Girman gona',             tw: 'Afuom kɛseyɛ',           hi: 'खेत का आकार' },
+  'fastFlow.size.small.label':    { en: 'Small',                         fr: 'Petite',                                     sw: 'Ndogo',                           ha: 'Ƙarama',                  tw: 'Ketewa',                 hi: 'छोटा' },
+  'fastFlow.size.small.helper':   { en: 'Under 1 ha',                    fr: 'Moins de 1 ha',                              sw: 'Chini ya hekta 1',                ha: 'Ƙasa da ha 1',            tw: 'Bɛyɛ asaase ketewa',     hi: '1 हेक्टेयर से कम' },
+  'fastFlow.size.medium.label':   { en: 'Medium',                        fr: 'Moyenne',                                    sw: 'Wastani',                         ha: 'Matsakaici',              tw: 'Mfimfini',               hi: 'मध्यम' },
+  'fastFlow.size.medium.helper':  { en: '1–5 ha',                        fr: '1–5 ha',                                     sw: 'Hekta 1–5',                       ha: 'ha 1–5',                  tw: 'ha 1–5',                 hi: '1–5 हेक्टेयर' },
+  'fastFlow.size.large.label':    { en: 'Large',                         fr: 'Grande',                                     sw: 'Kubwa',                           ha: 'Babba',                   tw: 'Kɛseɛ',                  hi: 'बड़ा' },
+  'fastFlow.size.large.helper':   { en: 'Over 5 ha',                     fr: 'Plus de 5 ha',                               sw: 'Zaidi ya hekta 5',                ha: 'Sama da ha 5',            tw: 'Bɛboro ha 5',            hi: '5 से अधिक हेक्टेयर' },
+  'fastFlow.setup.crop':          { en: 'Crop',                          fr: 'Culture',                                    sw: 'Zao',                             ha: 'Shuka',                   tw: 'Aduane',                 hi: 'फसल' },
+  'fastFlow.setup.recommend':     { en: 'Recommend for me',              fr: 'Recommander pour moi',                       sw: 'Pendekeza kwangu',                ha: 'Bayar da shawara',        tw: 'Kyerɛ me deɛ ɛfata',    hi: 'मेरे लिए सुझाएँ' },
+  'fastFlow.setup.cropSelect':    { en: 'Or pick a crop…',               fr: 'Ou choisissez une culture…',                 sw: 'Au chagua zao…',                  ha: 'Ko zaɓi shuka…',          tw: 'Anaa paw aduane…',       hi: 'या फसल चुनें…' },
+
+  // Screen 3 — recommendation
+  'fastFlow.rec.badge':           { en: 'Recommended crop',              fr: 'Culture recommandée',                        sw: 'Zao linalopendekezwa',            ha: 'Shukar da aka shawarta',  tw: 'Aduane a yɛkamfo kyerɛ', hi: 'सुझाई गई फसल' },
+  'fastFlow.rec.body':            { en: 'Based on your location and season.', fr: 'Selon votre lieu et la saison.',    sw: 'Kulingana na mahali na msimu.',   ha: 'Bisa wurinka da kakar shekara.', tw: 'Egyina wo beaeɛ ne mmerɛ so.', hi: 'आपके स्थान और मौसम के आधार पर।' },
+
+  // Screen 4 — first task
+  'fastFlow.firstTask.title':     { en: "Today\u2019s action",           fr: 'Action du jour',                             sw: 'Hatua ya leo',                    ha: 'Aikin yau',               tw: 'Nnɛ adwuma',             hi: 'आज की क्रिया' },
+  'fastFlow.firstTask.body':      { en: 'Walk your land and check soil moisture before planting {crop}.', fr: 'Parcourez votre terrain et vérifiez l\'humidité du sol avant de planter {crop}.', sw: 'Tembea shamba lako na uangalie unyevu wa udongo kabla ya kupanda {crop}.', ha: 'Yi yawo a gonarka kuma duba danshin ƙasa kafin ka shuka {crop}.', tw: 'Nantew w\'asaase no so na hwɛ asaase no fɔforɔ ansa na woadua {crop}.', hi: '{crop} बोने से पहले अपनी जमीन देखें और मिट्टी की नमी जाँचें।' },
+  'fastFlow.firstTask.cta':       { en: 'Act now',                       fr: 'Agir maintenant',                            sw: 'Tenda sasa',                      ha: 'Yi yanzu',                tw: 'Yɛ seesei',              hi: 'अभी करें' },
+  'fastFlow.firstTask.crop.fallback': { en: 'your crop',                 fr: 'votre culture',                              sw: 'zao lako',                        ha: 'shukarka',                tw: 'w\'aduane',              hi: 'आपकी फसल' },
+
+  // ─── 7-day engagement loop ────────────────────────────────────
+  // Inline messaging only — no UI structure changes per the
+  // strict rule. {n} is interpolated by Dashboard.jsx before
+  // the string is rendered.
+  'home.engagement.dayOfSeven':   { en: 'Day {n} of 7',         fr: 'Jour {n} sur 7',           sw: 'Siku {n} kati ya 7',        ha: 'Rana {n} a cikin 7',         tw: 'Da {n} wɔ 7 mu',           hi: '{n} में से 7' },
+  // Impact-message celebratory copy shown after a task complete.
+  // Falls back to the rotating micro-reward when missing.
+  'retention.completed.goodJob':  { en: 'Good job!',            fr: 'Bien joué !',              sw: 'Kazi nzuri!',               ha: 'Yi kyau!',                   tw: 'Adwuma pa!',               hi: 'बढ़िया काम!' },
+
+  // ─── My Farm — gap-fill for missing keys (Apr 2026 pilot) ─────
+  // Pilot screenshots showed these strings leaking English on
+  // French / Hausa UIs because the keys were called via tSafe
+  // but never defined in this file — tSafe always returned the
+  // English fallback regardless of language.  Adding them here
+  // closes the leak without changing any call site.
+  'myFarm.setupBadge':  { en: 'Setup incomplete',                fr: 'Configuration incomplète',                       sw: 'Mipangilio haijakamilika',           ha: 'Saiti bai cika ba',               tw: 'Nhyehyɛeɛ a ɛnwiei',                  hi: 'सेटअप अधूरा' },
+  'myFarm.setupTitle':  { en: 'Complete your farm setup',        fr: 'Terminez la configuration de votre ferme',       sw: 'Kamilisha mipangilio ya shamba',     ha: 'Kammala saitin gonarka',          tw: 'Wie w\u2019afuom nhyehyɛeɛ',          hi: 'अपना खेत सेटअप पूरा करें' },
+  'myFarm.setupBody':   { en: 'Add crop, location, and farm size to get personalized tasks and smart guidance.', fr: 'Ajoutez la culture, le lieu et la taille pour recevoir des tâches personnalisées.', sw: 'Ongeza zao, mahali na ukubwa wa shamba ili kupata kazi maalum.', ha: 'Ƙara shuka, wuri, da girman gona don karɓar ayyuka na musamman.', tw: 'Fa aduane, beaeɛ, ne afuom kɛseyɛ ka ho na nya nnwuma a ɛfata wo.', hi: 'व्यक्तिगत कार्य पाने के लिए फसल, स्थान और खेत का आकार जोड़ें।' },
+  'myFarm.setupCta':    { en: 'Complete setup',                  fr: 'Terminer la configuration',                      sw: 'Kamilisha mipangilio',               ha: 'Kammala saiti',                   tw: 'Wie nhyehyɛeɛ',                       hi: 'सेटअप पूरा करें' },
+  'myFarm.edit.short':  { en: 'Edit',                            fr: 'Modifier',                                       sw: 'Hariri',                             ha: 'Gyara',                           tw: 'Sesa',                                hi: 'संपादित करें' },
+  'myFarm.notSelected': { en: 'Not selected',                    fr: 'Non sélectionné',                                sw: 'Haijachaguliwa',                     ha: 'Ba a zaɓa ba',                    tw: 'Wonpaaeɛ',                            hi: 'चयनित नहीं' },
+  'myFarm.addSize':     { en: 'Add farm size',                   fr: 'Ajouter la taille de la ferme',                  sw: 'Ongeza ukubwa wa shamba',            ha: 'Ƙara girman gona',                tw: 'Fa afuom kɛseyɛ ka ho',               hi: 'खेत का आकार जोड़ें' },
+  'myFarm.addLocation': { en: 'Add location',                    fr: 'Ajouter le lieu',                                sw: 'Ongeza mahali',                      ha: 'Ƙara wuri',                       tw: 'Fa beaeɛ ka ho',                      hi: 'स्थान जोड़ें' },
+  'myFarm.planning':    { en: 'Planning',                        fr: 'Planification',                                  sw: 'Kupanga',                            ha: 'Tsarawa',                         tw: 'Nhyehyɛeɛ',                           hi: 'योजना' },
+  'myFarm.help.sub':    { en: 'We\u2019re here to support you.', fr: 'Nous sommes là pour vous aider.',                sw: 'Tuko hapa kukusaidia.',              ha: 'Muna nan don taimaka muku.',      tw: 'Yɛwɔ ha sɛ yɛbɛboa wo.',              hi: 'हम आपकी सहायता के लिए हैं।' },
+
+  // ─── Farmer-surface gap-fill (Apr 2026 pilot follow-up) ──────
+  // 52 keys referenced via tSafe('key', 'fallback') across the
+  // farmer-facing surfaces (common, home, today, onboarding,
+  // quickStart, simple, tasks, farm) but never defined in this
+  // file — pilot screenshots showed each one leaking English on
+  // FR/HA UIs. Added here in one block so future translators can
+  // edit the launch-language values in a single spot.
+
+  // common.*
+  'common.country':       { en: 'Country',         fr: 'Pays',             sw: 'Nchi',              ha: 'Ƙasa',              tw: 'Ɔman',                  hi: 'देश' },
+  'common.crop':          { en: 'Crop',            fr: 'Culture',          sw: 'Zao',               ha: 'Shuka',             tw: 'Aduane',                hi: 'फसल' },
+  'common.dismiss':       { en: 'Dismiss',         fr: 'Ignorer',          sw: 'Ondoa',             ha: 'Cire',              tw: 'Yi firi hɔ',            hi: 'खारिज करें' },
+  'common.region':        { en: 'Region',          fr: 'Région',           sw: 'Eneo',              ha: 'Yanki',             tw: 'Mantam',                hi: 'क्षेत्र' },
+  'common.setUpFarm':     { en: 'Set up my farm',  fr: 'Configurer ma ferme', sw: 'Sanidi shamba langu', ha: 'Saita gonata',  tw: 'Hyehyɛ m\u2019afuom',   hi: 'मेरा खेत सेटअप करें' },
+  'common.settings':      { en: 'Settings',        fr: 'Paramètres',       sw: 'Mipangilio',        ha: 'Saiti',             tw: 'Nhyehyɛeɛ',             hi: 'सेटिंग्स' },
+  'common.severity':      { en: 'Severity',        fr: 'Gravité',          sw: 'Ukali',             ha: 'Tsananin',          tw: 'Ɔhaw kɛseyɛ',           hi: 'गंभीरता' },
+
+  // farm.next.*
+  'farm.next.weatherIntel': { en: 'Weather intelligence', fr: 'Info météo',  sw: 'Maarifa ya hali ya hewa', ha: 'Bayanin yanayi', tw: 'Ewiem tebea ho nimdeɛ', hi: 'मौसम जानकारी' },
+
+  // home.*
+  'home.greeting':            { en: 'Welcome',     fr: 'Bienvenue',        sw: 'Karibu',            ha: 'Barka da zuwa',     tw: 'Akwaaba',               hi: 'स्वागत है' },
+  'home.progress.complete':   { en: 'All done',    fr: 'Tout est fait',    sw: 'Yote yamekamilika', ha: 'An gama duka',      tw: 'Ne nyinaa awie',        hi: 'सब हो गया' },
+  'home.progress.onTrack':    { en: 'On track',    fr: 'Sur la bonne voie', sw: 'Njia nzuri',       ha: 'Kan hanya',         tw: 'Ɛkwan pa so',           hi: 'सही रास्ते पर' },
+  'home.progress.tasks':      { en: 'tasks done',  fr: 'tâches terminées', sw: 'kazi zilizofanyika', ha: 'ayyukan da aka gama', tw: 'nnwuma a wɔawie',      hi: 'कार्य पूर्ण' },
+  'home.upNext.label':        { en: 'Up next',     fr: 'À suivre',         sw: 'Inayofuata',        ha: 'Na gaba',           tw: 'Nea edi hɔ',            hi: 'अगला' },
+
+  // onboarding.*
+  'onboarding.continue':            { en: 'Continue',          fr: 'Continuer',                 sw: 'Endelea',                  ha: 'Ci gaba',                tw: 'Toa so',                   hi: 'जारी रखें' },
+  'onboarding.country':             { en: 'Country',           fr: 'Pays',                      sw: 'Nchi',                     ha: 'Ƙasa',                   tw: 'Ɔman',                     hi: 'देश' },
+  'onboarding.country.placeholder': { en: 'Select country',    fr: 'Choisir un pays',           sw: 'Chagua nchi',              ha: 'Zaɓi ƙasa',              tw: 'Paw ɔman',                 hi: 'देश चुनें' },
+  'onboarding.crop':                { en: 'Crop',              fr: 'Culture',                   sw: 'Zao',                      ha: 'Shuka',                  tw: 'Aduane',                   hi: 'फसल' },
+  'onboarding.crop.placeholder':    { en: 'Select crop',       fr: 'Choisir une culture',       sw: 'Chagua zao',               ha: 'Zaɓi shuka',             tw: 'Paw aduane',               hi: 'फसल चुनें' },
+  'onboarding.detect':              { en: 'Use my location',   fr: 'Utiliser ma position',      sw: 'Tumia mahali pangu',       ha: 'Yi amfani da wurina',    tw: 'Fa me beaeɛ di dwuma',     hi: 'मेरा स्थान उपयोग करें' },
+  'onboarding.entry.existing':      { en: 'I already farm',    fr: 'Je cultive déjà',           sw: 'Tayari ninalima',          ha: 'Ina noma a yanzu',       tw: 'Mereyɛ kuayɛ dada',        hi: 'मैं पहले से खेती करता हूँ' },
+  'onboarding.entry.new':           { en: 'Yes, I\u2019m new', fr: 'Oui, je suis nouveau',      sw: 'Ndiyo, mimi ni mpya',      ha: 'Eh, sabuwa ce',          tw: 'Aane, meyɛ foforɔ',        hi: 'हाँ, मैं नया हूँ' },
+  'onboarding.entry.title':         { en: 'Are you new to farming?', fr: 'Êtes-vous nouveau dans l\u2019agriculture ?', sw: 'Je, wewe ni mpya kwenye kilimo?', ha: 'Sabuwa ce ka shiga noma?', tw: 'Wofiri ase reyɛ kuayɛ?', hi: 'क्या आप खेती में नए हैं?' },
+  'onboarding.farmSize':            { en: 'Farm size',         fr: 'Taille de la ferme',        sw: 'Ukubwa wa shamba',         ha: 'Girman gona',            tw: 'Afuom kɛseyɛ',             hi: 'खेत का आकार' },
+  'onboarding.location':            { en: 'Location',          fr: 'Lieu',                      sw: 'Mahali',                   ha: 'Wuri',                   tw: 'Beaeɛ',                    hi: 'स्थान' },
+  'onboarding.reco.change':         { en: 'Change',            fr: 'Modifier',                  sw: 'Badilisha',                ha: 'Canza',                  tw: 'Sesa',                     hi: 'बदलें' },
+  'onboarding.reco.title':          { en: 'Recommended crop',  fr: 'Culture recommandée',       sw: 'Zao linalopendekezwa',     ha: 'Shukar da aka shawarta', tw: 'Aduane a yɛkamfo kyerɛ',   hi: 'सुझाई गई फसल' },
+  'onboarding.recommend':           { en: 'Recommend for me',  fr: 'Recommander pour moi',      sw: 'Pendekeza kwangu',         ha: 'Bayar da shawara',       tw: 'Kyerɛ me deɛ ɛfata',       hi: 'मेरे लिए सुझाएँ' },
+  'onboarding.saving':              { en: 'Setting up\u2026',  fr: 'Configuration\u2026',       sw: 'Inasanidiwa\u2026',        ha: 'Ana saitawa\u2026',      tw: 'Yɛresiesie\u2026',         hi: 'सेटअप हो रहा है…' },
+  'onboarding.setup.title':         { en: 'Quick farm setup',  fr: 'Configuration rapide',      sw: 'Mipangilio ya haraka',     ha: 'Saiti mai sauri',        tw: 'Afuom nhyehyɛeɛ ntɛm',     hi: 'त्वरित खेत सेटअप' },
+  'onboarding.useGps':              { en: 'Use my location',   fr: 'Utiliser ma position',      sw: 'Tumia mahali pangu',       ha: 'Yi amfani da wurina',    tw: 'Fa me beaeɛ di dwuma',     hi: 'मेरा स्थान उपयोग करें' },
+
+  // quickStart.*
+  'quickStart.changeLanguage': { en: 'Change language',          fr: 'Changer la langue',          sw: 'Badilisha lugha',         ha: 'Canza harshe',           tw: 'Sesa kasa',                hi: 'भाषा बदलें' },
+  'quickStart.cta':            { en: 'Start farming',            fr: 'Commencer l\u2019agriculture', sw: 'Anza kilimo',           ha: 'Fara noma',              tw: 'Hyɛ kuayɛ ase',            hi: 'खेती शुरू करें' },
+  'quickStart.starting':       { en: 'Starting\u2026',           fr: 'Démarrage\u2026',            sw: 'Inaanza\u2026',           ha: 'Ana farawa\u2026',       tw: 'Yɛrehyɛ ase\u2026',        hi: 'शुरू हो रहा है…' },
+  'quickStart.welcome':        { en: 'Welcome to Farroway',      fr: 'Bienvenue sur Farroway',     sw: 'Karibu Farroway',         ha: 'Barka da zuwa Farroway', tw: 'Akwaaba Farroway',         hi: 'Farroway में स्वागत है' },
+
+  // simple.*
+  'simple.checkFarm':  { en: 'Check farm',  fr: 'Vérifier la ferme', sw: 'Angalia shamba', ha: 'Duba gona', tw: 'Hwɛ afuom', hi: 'खेत जाँचें' },
+  'simple.done':       { en: 'Done',        fr: 'Terminé',           sw: 'Imefanyika',     ha: 'An gama',   tw: 'Wie',       hi: 'पूर्ण' },
+  'simple.listen':     { en: 'Listen',      fr: 'Écouter',           sw: 'Sikiliza',       ha: 'Saurara',   tw: 'Tie',       hi: 'सुनें' },
+  'simple.today':      { en: 'Today',       fr: 'Aujourd\u2019hui',  sw: 'Leo',            ha: 'Yau',       tw: 'Nnɛ',       hi: 'आज' },
+
+  // tasks.checkFarm.title (today fallback)
+  'tasks.checkFarm.title': { en: 'Check your farm today', fr: 'Vérifiez votre ferme aujourd\u2019hui', sw: 'Angalia shamba lako leo', ha: 'Duba gonarka yau', tw: 'Hwɛ w\u2019afuom nnɛ', hi: 'आज अपना खेत जाँचें' },
+
+  // today.*
+  'today.done':                    { en: 'Done',                          fr: 'Terminé',                                 sw: 'Imefanyika',                       ha: 'An gama',                          tw: 'Wie',                              hi: 'पूर्ण' },
+  'today.doneNow':                 { en: 'Done now',                      fr: 'Terminé maintenant',                      sw: 'Imefanyika sasa',                  ha: 'An gama yanzu',                    tw: 'Awie seesei',                      hi: 'अभी पूर्ण' },
+  'today.fallbackTask':            { en: 'Check your farm today',         fr: 'Vérifiez votre ferme aujourd\u2019hui',   sw: 'Angalia shamba lako leo',          ha: 'Duba gonarka yau',                 tw: 'Hwɛ w\u2019afuom nnɛ',             hi: 'आज अपना खेत जाँचें' },
+  'today.feedback.body':           { en: 'Good work. Progress updated.',  fr: 'Bon travail. Progrès mis à jour.',        sw: 'Kazi nzuri. Maendeleo yamesasishwa.', ha: 'Aiki mai kyau. An sabunta ci gaba.', tw: 'Adwuma pa. Yɛasakra nkɔso.',     hi: 'बढ़िया काम। प्रगति अपडेट हुई।' },
+  'today.listen':                  { en: 'Listen',                        fr: 'Écouter',                                 sw: 'Sikiliza',                         ha: 'Saurara',                          tw: 'Tie',                              hi: 'सुनें' },
+  'today.progress.streak':         { en: '{count} day streak',            fr: 'Série de {count} jours',                  sw: 'Mfululizo wa siku {count}',        ha: 'Jerin kwana {count}',              tw: 'Nnafua {count} mfululizo',         hi: '{count} दिन की स्ट्रीक' },
+  'today.risk.droughtHigh':        { en: 'Drought risk: HIGH',            fr: 'Risque de sécheresse : ÉLEVÉ',            sw: 'Hatari ya ukame: KUBWA',           ha: 'Haɗarin fari: BABBA',              tw: 'Asubɔnem asiane: KƐSE',            hi: 'सूखे का जोखिम: उच्च' },
+  'today.risk.pestHigh':           { en: 'Pest risk: HIGH',               fr: 'Risque de ravageurs : ÉLEVÉ',             sw: 'Hatari ya wadudu: KUBWA',          ha: 'Haɗarin kwari: BABBA',             tw: 'Nkekaboa asiane: KƐSE',            hi: 'कीट जोखिम: उच्च' },
+  'today.scan.cta':                { en: 'See something wrong? Scan your crop', fr: 'Vous voyez un problème ? Scannez votre culture', sw: 'Umeona kosa? Skani zao lako', ha: 'Kun ga matsala? Duba shukarka', tw: 'Wuhu biribi a ɛnyɛ? Hwehwɛ w\u2019aduane', hi: 'कुछ गलत दिखा? फसल स्कैन करें' },
+  'today.task.instruction.label':  { en: 'How',                           fr: 'Comment',                                 sw: 'Jinsi',                            ha: 'Yadda',                            tw: 'Sɛdeɛ',                            hi: 'कैसे' },
+  'today.task.risk.label':         { en: 'Why it matters',                fr: 'Pourquoi c\u2019est important',           sw: 'Kwa nini ni muhimu',               ha: 'Me yasa yake da muhimmanci',       tw: 'Adɛn nti na ɛho hia',              hi: 'क्यों ज़रूरी है' },
+  'today.task.timing.label':       { en: 'When',                          fr: 'Quand',                                   sw: 'Lini',                             ha: 'Yaushe',                           tw: 'Bere ɛn',                          hi: 'कब' },
+  'today.todaysTask':              { en: 'Today\u2019s task',             fr: 'Tâche du jour',                           sw: 'Kazi ya leo',                      ha: 'Aikin yau',                        tw: 'Nnɛ adwuma',                       hi: 'आज का कार्य' },
+
+  // ─── Farmer-surface gap-fill, batch 2 (Apr 2026) ─────────────
+  // 73 more keys called via tSafe('key', '') across the New Farm /
+  // Edit Farm forms, the daily-tasks panel, the insight panel,
+  // onboarding sub-copy, the timeline card, and the today done-
+  // state. Empty fallbacks meant non-en UIs rendered blank cells
+  // instead of leaking English — equally bad. Adding translations
+  // here closes both failure modes.
+
+  // farm.create / edit / save dialog states
+  'farm.createTitle':    { en: 'Create farm',                       fr: 'Créer une ferme',                    sw: 'Unda shamba',                     ha: 'Ƙirƙira gona',                  tw: 'Bɔ afuom',                        hi: 'नया खेत बनाएँ' },
+  'farm.createSubtitle': { en: 'Add your farm details',             fr: 'Ajoutez les détails de votre ferme', sw: 'Ongeza maelezo ya shamba',        ha: 'Ƙara bayanan gonarka',          tw: 'Fa w\u2019afuom ho nsɛm ka ho',   hi: 'अपने खेत का विवरण जोड़ें' },
+  'farm.creating':       { en: 'Creating\u2026',                    fr: 'Création\u2026',                     sw: 'Inaundwa\u2026',                  ha: 'Ana ƙirƙirawa\u2026',           tw: 'Yɛrebɔ\u2026',                    hi: 'बना रहे हैं…' },
+  'farm.editTitle':      { en: 'Edit farm',                         fr: 'Modifier la ferme',                  sw: 'Hariri shamba',                   ha: 'Gyara gona',                    tw: 'Sesa afuom',                      hi: 'खेत संपादित करें' },
+  'farm.editSubtitle':   { en: 'Update your farm details',          fr: 'Mettre à jour les détails',          sw: 'Sasisha maelezo ya shamba',       ha: 'Sabunta bayanan gona',          tw: 'Sakra w\u2019afuom ho nsɛm',      hi: 'अपने खेत का विवरण अपडेट करें' },
+  'farm.saveChanges':    { en: 'Save changes',                      fr: 'Enregistrer',                        sw: 'Hifadhi mabadiliko',              ha: 'Ajiye canje-canje',             tw: 'Sie nsesaeɛ',                     hi: 'बदलाव सहेजें' },
+  'farm.saveNew':        { en: 'Create farm',                       fr: 'Créer la ferme',                     sw: 'Unda shamba',                     ha: 'Ƙirƙira gona',                  tw: 'Bɔ afuom',                        hi: 'खेत बनाएँ' },
+  'farm.saving':         { en: 'Saving\u2026',                      fr: 'Enregistrement\u2026',               sw: 'Inahifadhi\u2026',                ha: 'Ana ajiyewa\u2026',             tw: 'Yɛresie\u2026',                   hi: 'सहेज रहे हैं…' },
+
+  // farm.err.* — form-validation messages
+  'farm.err.cropRequired':         { en: 'Please select a crop',                  fr: 'Veuillez choisir une culture',          sw: 'Tafadhali chagua zao',                ha: 'Da fatan zaɓi shuka',                  tw: 'Yɛsrɛ wo paw aduane',                hi: 'कृपया फसल चुनें' },
+  'farm.err.nameRequired':         { en: 'Please enter a farm name',              fr: 'Veuillez saisir un nom de ferme',       sw: 'Tafadhali andika jina la shamba',     ha: 'Da fatan rubuta sunan gona',           tw: 'Yɛsrɛ wo kyerɛw afuom din',          hi: 'कृपया खेत का नाम लिखें' },
+  'farm.err.countryRequired':      { en: 'Please select a country',               fr: 'Veuillez choisir un pays',              sw: 'Tafadhali chagua nchi',               ha: 'Da fatan zaɓi ƙasa',                   tw: 'Yɛsrɛ wo paw ɔman',                  hi: 'कृपया देश चुनें' },
+  'farm.err.stateRequired':        { en: 'Please select a state',                 fr: 'Veuillez choisir une région',           sw: 'Tafadhali chagua eneo',               ha: 'Da fatan zaɓi yanki',                  tw: 'Yɛsrɛ wo paw mantam',                hi: 'कृपया राज्य चुनें' },
+  'farm.err.farmTypeRequired':     { en: 'Please select a farm type',             fr: 'Veuillez choisir un type de ferme',     sw: 'Tafadhali chagua aina ya shamba',     ha: 'Da fatan zaɓi nau\u2019in gona',       tw: 'Yɛsrɛ wo paw afuom suban',           hi: 'कृपया खेत का प्रकार चुनें' },
+  'farm.err.sizeRequired':         { en: 'Please enter farm size',                fr: 'Veuillez saisir la taille',             sw: 'Tafadhali andika ukubwa',             ha: 'Da fatan rubuta girman',               tw: 'Yɛsrɛ wo kyerɛw kɛseyɛ',             hi: 'कृपया खेत का आकार लिखें' },
+  'farm.err.sizePositive':         { en: 'Size must be greater than 0',           fr: 'La taille doit être supérieure à 0',    sw: 'Ukubwa lazima uwe zaidi ya 0',        ha: 'Girman dole ya zama sama da 0',        tw: 'Kɛseyɛ no ɛsɛ sɛ ɛboro 0',           hi: 'आकार 0 से अधिक होना चाहिए' },
+  'farm.err.unitRequired':         { en: 'Please select a unit',                  fr: 'Veuillez choisir une unité',            sw: 'Tafadhali chagua kipimo',             ha: 'Da fatan zaɓi sashin awo',             tw: 'Yɛsrɛ wo paw nsusuwsoɔ',             hi: 'कृपया इकाई चुनें' },
+  'farm.err.stageRequired':        { en: 'Please select a stage',                 fr: 'Veuillez choisir une étape',            sw: 'Tafadhali chagua hatua',              ha: 'Da fatan zaɓi mataki',                 tw: 'Yɛsrɛ wo paw anammɔn',               hi: 'कृपया चरण चुनें' },
+  'farm.err.otherCropRequired':    { en: 'Please enter your crop name',           fr: 'Veuillez saisir le nom de la culture',  sw: 'Tafadhali andika jina la zao',        ha: 'Da fatan rubuta sunan shuka',          tw: 'Yɛsrɛ wo kyerɛw aduane din',         hi: 'कृपया फसल का नाम लिखें' },
+  'farm.err.plantingDateInvalid':  { en: 'Invalid planting date',                 fr: 'Date de plantation invalide',           sw: 'Tarehe ya kupanda si sahihi',         ha: 'Ranar shuka ba daidai ba',             tw: 'Adua da no nyɛ pɛ',                  hi: 'अमान्य रोपण तिथि' },
+  'farm.err.plantingDateFuture':   { en: 'Planting date can\u2019t be in the future', fr: 'La date ne peut pas être dans le futur', sw: 'Tarehe haiwezi kuwa ya baadaye',  ha: 'Ranar ba za ta iya zama gaba ba',      tw: 'Adua da no rentumi ankɔ daakye',     hi: 'रोपण तिथि भविष्य में नहीं हो सकती' },
+  'farm.err.fixHighlighted':       { en: 'Please fix the highlighted fields',     fr: 'Veuillez corriger les champs en évidence', sw: 'Tafadhali rekebisha sehemu zilizoangaziwa', ha: 'Da fatan gyara filayen da aka haska', tw: 'Yɛsrɛ wo siesie nsɛm a yɛakyerɛ', hi: 'कृपया हाइलाइट किए गए फ़ील्ड ठीक करें' },
+  'farm.err.saveFailed':           { en: 'Could not save the farm',               fr: 'Impossible d\u2019enregistrer la ferme', sw: 'Haikuweza kuhifadhi shamba',         ha: 'Ba a iya ajiye gonar ba',              tw: 'Yɛantumi ansie afuom no',            hi: 'खेत सहेजा नहीं जा सका' },
+
+  // farm.fields.* — form labels + placeholders
+  'farm.fields.name':                    { en: 'Farm name',           fr: 'Nom de la ferme',         sw: 'Jina la shamba',        ha: 'Sunan gona',          tw: 'Afuom din',                  hi: 'खेत का नाम' },
+  'farm.fields.namePlaceholder':         { en: 'e.g. Green Acres',    fr: 'ex. Champs Verts',        sw: 'mfano: Mashamba Mazuri', ha: 'misali: Gona Ta Kore', tw: 'sɛ: Afuom Pa',               hi: 'जैसे हरा खेत' },
+  'farm.fields.country':                 { en: 'Country',             fr: 'Pays',                    sw: 'Nchi',                  ha: 'Ƙasa',                tw: 'Ɔman',                       hi: 'देश' },
+  'farm.fields.countryPlaceholder':      { en: 'Select country',      fr: 'Choisir un pays',         sw: 'Chagua nchi',           ha: 'Zaɓi ƙasa',           tw: 'Paw ɔman',                   hi: 'देश चुनें' },
+  'farm.fields.state':                   { en: 'State / Region',      fr: 'Région',                  sw: 'Eneo',                  ha: 'Yanki',               tw: 'Mantam',                     hi: 'राज्य' },
+  'farm.fields.statePlaceholder':        { en: 'Select state',        fr: 'Choisir une région',      sw: 'Chagua eneo',           ha: 'Zaɓi yanki',          tw: 'Paw mantam',                 hi: 'राज्य चुनें' },
+  'farm.fields.crop':                    { en: 'Crop',                fr: 'Culture',                 sw: 'Zao',                   ha: 'Shuka',               tw: 'Aduane',                     hi: 'फसल' },
+  'farm.fields.cropPlaceholder':         { en: 'Select crop',         fr: 'Choisir une culture',     sw: 'Chagua zao',            ha: 'Zaɓi shuka',          tw: 'Paw aduane',                 hi: 'फसल चुनें' },
+  'farm.fields.otherCrop':               { en: 'Other crop',          fr: 'Autre culture',           sw: 'Zao lingine',           ha: 'Wani shuka',          tw: 'Aduane foforɔ',              hi: 'अन्य फसल' },
+  'farm.fields.otherCropPlaceholder':    { en: 'Enter crop name',     fr: 'Saisir le nom',           sw: 'Andika jina la zao',    ha: 'Rubuta sunan shuka',  tw: 'Kyerɛw aduane din',          hi: 'फसल का नाम लिखें' },
+  'farm.fields.cropStage':               { en: 'Crop stage',          fr: 'Étape de la culture',     sw: 'Hatua ya zao',          ha: 'Matakin shuka',       tw: 'Aduane anammɔn',             hi: 'फसल चरण' },
+  'farm.fields.stagePlaceholder':        { en: 'Select stage',        fr: 'Choisir une étape',       sw: 'Chagua hatua',          ha: 'Zaɓi mataki',         tw: 'Paw anammɔn',                hi: 'चरण चुनें' },
+  'farm.fields.farmType':                { en: 'Farm type',           fr: 'Type de ferme',           sw: 'Aina ya shamba',        ha: 'Nau\u2019in gona',    tw: 'Afuom suban',                hi: 'खेत का प्रकार' },
+  'farm.fields.sizePlaceholder':         { en: 'e.g. 2',              fr: 'ex. 2',                   sw: 'mfano: 2',              ha: 'misali: 2',           tw: 'sɛ: 2',                      hi: 'जैसे 2' },
+  'farm.fields.sizeUnit':                { en: 'Size unit',           fr: 'Unité de taille',         sw: 'Kipimo cha ukubwa',     ha: 'Sashin girma',        tw: 'Kɛseyɛ nsusuwsoɔ',           hi: 'आकार इकाई' },
+  'farm.fields.sizeUnitPlaceholder':     { en: 'Select unit',         fr: 'Choisir une unité',       sw: 'Chagua kipimo',         ha: 'Zaɓi sashin awo',     tw: 'Paw nsusuwsoɔ',              hi: 'इकाई चुनें' },
+  'farm.fields.plantingDate':            { en: 'Planting date',       fr: 'Date de plantation',      sw: 'Tarehe ya kupanda',     ha: 'Ranar shuka',         tw: 'Adua da',                    hi: 'रोपण तिथि' },
+  'farm.fields.plantingDateHelp':        { en: 'When did you plant?', fr: 'Quand avez-vous planté ?', sw: 'Ulipanda lini?',       ha: 'Yaushe ka shuka?',    tw: 'Da bɛn na woduaa?',          hi: 'आपने कब रोपा?' },
+  'farm.fields.activeFarm':              { en: 'Active farm',         fr: 'Ferme active',            sw: 'Shamba linaloendelea',  ha: 'Gona mai aiki',       tw: 'Afuom a ɛreyɛ adwuma',       hi: 'सक्रिय खेत' },
+  'farm.fields.manualOverride':          { en: 'Manual stage override', fr: 'Remplacement manuel',   sw: 'Badilisha hatua mwenyewe', ha: 'Canza mataki da hannu', tw: 'Sesa anammɔn no wo nsa', hi: 'मैनुअल चरण ओवरराइड' },
+
+  // farm.size* / farm.next.*
+  'farm.next.weatherIntelLine':  { en: 'Weather guidance for today',  fr: 'Conseil météo du jour',                 sw: 'Mwongozo wa hali ya hewa leo',     ha: 'Jagora ta yanayi yau',                tw: 'Ewiem tebea akwankyerɛ nnɛ',        hi: 'आज का मौसम मार्गदर्शन' },
+  'farm.next.weatherIntelRisk':  { en: 'Weather risk',                fr: 'Risque météo',                          sw: 'Hatari ya hali ya hewa',           ha: 'Haɗarin yanayi',                      tw: 'Ewiem tebea asiane',                hi: 'मौसम जोखिम' },
+  'farm.sizeConverted':          { en: 'Size converted',              fr: 'Taille convertie',                      sw: 'Ukubwa umebadilishwa',             ha: 'An canza girma',                      tw: 'Yɛasakra kɛseyɛ',                   hi: 'आकार परिवर्तित' },
+  'farm.sizeHelpBackyard':       { en: 'Approximate plot size',       fr: 'Taille approximative du lopin',         sw: 'Ukubwa wa kiwanja takribani',      ha: 'Kimanin girman fili',                 tw: 'Asaase ketewa kɛseyɛ',              hi: 'अनुमानित प्लॉट का आकार' },
+  'farm.sizeHelpLand':           { en: 'Total farm area',             fr: 'Superficie totale de la ferme',         sw: 'Eneo lote la shamba',              ha: 'Jimillar yankin gona',                tw: 'Afuom nyinaa kɛseyɛ',               hi: 'कुल खेत क्षेत्र' },
+  'farm.sizeLabelBackyard':      { en: 'Plot size',                   fr: 'Taille du lopin',                       sw: 'Ukubwa wa kiwanja',                ha: 'Girman fili',                         tw: 'Asaase ketewa kɛseyɛ',              hi: 'प्लॉट का आकार' },
+  'farm.sizeLabelLand':          { en: 'Farm size',                   fr: 'Taille de la ferme',                    sw: 'Ukubwa wa shamba',                 ha: 'Girman gona',                         tw: 'Afuom kɛseyɛ',                      hi: 'खेत का आकार' },
+
+  // farmer.dailyTasks.*
+  'farmer.dailyTasks.title':   { en: 'Today\u2019s tasks',         fr: 'Tâches du jour',           sw: 'Kazi za leo',          ha: 'Ayyukan yau',          tw: 'Nnɛ nnwuma',           hi: 'आज के कार्य' },
+  'farmer.dailyTasks.allDone': { en: 'All done for today',         fr: 'Tout est fait pour aujourd\u2019hui', sw: 'Yote yamekamilika leo', ha: 'An gama duka yau',  tw: 'Ne nyinaa awie nnɛ',  hi: 'आज सब हो गया' },
+  'farmer.dailyTasks.done':    { en: 'Done',                       fr: 'Terminé',                  sw: 'Imefanyika',           ha: 'An gama',              tw: 'Wie',                  hi: 'पूर्ण' },
+  'farmer.dailyTasks.open':    { en: 'Open',                       fr: 'À faire',                  sw: 'Wazi',                 ha: 'A buɗe',               tw: 'Bue',                  hi: 'खुला' },
+  'farmer.dailyTasks.skipped': { en: 'Skipped',                    fr: 'Ignoré',                   sw: 'Imerukwa',             ha: 'An tsallake',          tw: 'Wɔatra so',            hi: 'छोड़ा गया' },
+  'farmer.dailyTasks.why':     { en: 'Why this task?',             fr: 'Pourquoi cette tâche ?',   sw: 'Kwa nini kazi hii?',   ha: 'Don me wannan aikin?', tw: 'Adɛn nti saa adwuma yi?', hi: 'यह कार्य क्यों?' },
+
+  // farmer.insight.panel.*
+  'farmer.insight.panel.title':       { en: 'Insights',           fr: 'Insights',              sw: 'Maarifa',              ha: 'Fahimta',                tw: 'Nimdeɛ',                hi: 'अंतर्दृष्टि' },
+  'farmer.insight.panel.confidence':  { en: 'Confidence',         fr: 'Confiance',             sw: 'Uhakika',              ha: 'Tabbas',                 tw: 'Awerɛhyɛeɛ',            hi: 'विश्वास' },
+  'farmer.insight.panel.empty':       { en: 'No insights yet',    fr: 'Aucun insight pour l\u2019instant', sw: 'Hakuna maarifa bado', ha: 'Babu fahimta tukuna', tw: 'Nimdeɛ biara nni hɔ ɛɛ', hi: 'अभी कोई अंतर्दृष्टि नहीं' },
+  'farmer.insight.panel.why':         { en: 'Why this matters',   fr: 'Pourquoi c\u2019est important', sw: 'Kwa nini ni muhimu', ha: 'Me yasa yake da muhimmanci', tw: 'Adɛn nti na ɛho hia', hi: 'क्यों ज़रूरी है' },
+
+  // onboarding.* (extra)
+  'onboarding.cityDetected':       { en: 'City detected',                            fr: 'Ville détectée',                          sw: 'Mji umetambuliwa',                  ha: 'An gane birni',                       tw: 'Yɛahunu kuro',                       hi: 'शहर पता चला' },
+  'onboarding.entry.sub':          { en: 'Tell us about you',                        fr: 'Parlez-nous de vous',                     sw: 'Tuelezee kuhusu wewe',              ha: 'Faɗa mana game da kai',               tw: 'Ka wo ho asɛm kyerɛ yɛn',            hi: 'अपने बारे में बताएँ' },
+  'onboarding.location.fallback':  { en: 'Could not detect location',                fr: 'Position non détectée',                   sw: 'Mahali hapakutambuliwa',            ha: 'Ba a gano wuri ba',                   tw: 'Yɛanhunu beaeɛ',                     hi: 'स्थान का पता नहीं चला' },
+  'onboarding.reco.basedOn':       { en: 'Based on your location and season',        fr: 'Selon votre lieu et la saison',           sw: 'Kulingana na mahali na msimu',      ha: 'Bisa wurinka da kakar shekara',       tw: 'Egyina wo beaeɛ ne mmerɛ so',        hi: 'आपके स्थान और मौसम के आधार पर' },
+  'onboarding.setup.sub':          { en: 'Just three quick details',                 fr: 'Trois informations rapides',              sw: 'Maelezo matatu ya haraka tu',       ha: 'Bayanai uku masu sauri kawai',        tw: 'Nsɛm mmiɛnsa ntɛm pɛ',               hi: 'बस तीन त्वरित विवरण' },
+
+  // quickStart.*
+  'quickStart.error.retry': { en: 'Something didn\u2019t work. Tap again.', fr: 'Quelque chose n\u2019a pas marché. Appuyez à nouveau.', sw: 'Kuna tatizo. Bonyeza tena.', ha: 'Wani abu bai yi aiki ba. Sake danna.', tw: 'Biribi anyɛ adwuma. San mia bio.', hi: 'कुछ काम नहीं किया। दोबारा टैप करें।' },
+  'quickStart.lede':        { en: 'One tap to start. We\u2019ll handle setup.',     fr: 'Un toucher pour commencer. On gère la configuration.', sw: 'Bonyeza mara moja. Tutashughulikia.', ha: 'Danna sau ɗaya. Mu za mu kula da saiti.', tw: 'Mia pɛnkoro na fi ase. Yɛbɛhwɛ nhyehyɛeɛ no.', hi: 'एक टैप से शुरू करें। हम सेटअप करेंगे।' },
+
+  // tasks.checkFarm.why
+  'tasks.checkFarm.why': { en: 'Catch issues early before they spread.', fr: 'Détectez les problèmes avant qu\u2019ils ne se propagent.', sw: 'Gundua matatizo mapema kabla hayaenei.', ha: 'Gano matsala da wuri kafin ta yaɗu.', tw: 'Hwehwɛ ɔhaw bi ntɛm ansa na atrɛ.', hi: 'समस्याएँ फैलने से पहले जल्दी पकड़ें।' },
+
+  // timeline.*
+  'timeline.title':           { en: 'Crop timeline',           fr: 'Chronologie de la culture',     sw: 'Ratiba ya zao',                 ha: 'Jadawalin shuka',                tw: 'Aduane mmerɛ',                  hi: 'फसल समयरेखा' },
+  'timeline.journey':         { en: 'Journey',                 fr: 'Parcours',                      sw: 'Safari',                        ha: 'Tafiya',                         tw: 'Akwantuo',                      hi: 'यात्रा' },
+  'timeline.stageNow':        { en: 'Stage now',               fr: 'Étape actuelle',                sw: 'Hatua sasa',                    ha: 'Mataki yanzu',                   tw: 'Anammɔn seesei',                hi: 'अभी का चरण' },
+  'timeline.next':            { en: 'Next',                    fr: 'Suivant',                       sw: 'Inayofuata',                    ha: 'Na gaba',                        tw: 'Nea ɛdi hɔ',                    hi: 'अगला' },
+  'timeline.daysLeft':        { en: '{count} days left',       fr: '{count} jours restants',        sw: 'Siku {count} zilizobaki',       ha: 'Saura kwana {count}',            tw: 'Nnafua {count} aka',            hi: '{count} दिन शेष' },
+  'timeline.manualOverride':  { en: 'Manual stage override',   fr: 'Remplacement manuel',           sw: 'Badilisha hatua mwenyewe',      ha: 'Canza mataki da hannu',          tw: 'Sesa anammɔn no wo nsa',        hi: 'मैनुअल चरण ओवरराइड' },
+
+  // today.done.*
+  'today.done.nextAction':     { en: 'Next action',         fr: 'Action suivante',     sw: 'Hatua inayofuata',  ha: 'Mataki na gaba',  tw: 'Ade a edi hɔ',     hi: 'अगला कदम' },
+  'today.done.reviewProgress': { en: 'Review progress',     fr: 'Voir les progrès',    sw: 'Kagua maendeleo',   ha: 'Duba ci gaba',    tw: 'Hwɛ nkɔanim',      hi: 'प्रगति देखें' },
 };
 
 export default T;

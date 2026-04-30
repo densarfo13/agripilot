@@ -64,16 +64,50 @@ export function generateLocalizedTask({ type, crop, timing = 'today', extra = {}
 }
 
 /**
- * Localize a task row that came back from the server by looking
- * up an i18n-key override if one is attached, otherwise passing
- * the raw strings through. Callers should prefer task rows with
- * `titleKey` / `detailKey` properties so the Today page can render
- * the same card in any language.
+ * Localize a task row that came back from the server.
+ *
+ * Resolution order (per the no-English-leak rule — Apr 2026):
+ *   1. `task.titleKey` → t(key, vars)                              (preferred)
+ *   2. `getLocalizedTaskTitle(task.id, task.title, lang)`          (phrase map)
+ *   3. raw `task.title` literal                                     (last resort)
+ *
+ * Same chain applies to `detailKey` → `getLocalizedTaskDescription`
+ * → raw detail.  The phrase-map fallback (step 2) is what catches
+ * server-emitted English-only titles like "Clear your field" that
+ * lack a titleKey — without this hop those strings leaked through
+ * the Today/Tasks UI in non-English languages.
+ *
+ * The `lang` parameter is optional; when absent the phrase-map
+ * lookup short-circuits and we fall straight to the raw value
+ * (so callers that don't have an active language still get safe
+ * behaviour).
  */
-export function localizeServerTask(task, t) {
+import {
+  getLocalizedTaskTitle,
+  getLocalizedTaskDescription,
+} from './taskTranslations.js';
+
+export function localizeServerTask(task, t, lang = null) {
   if (!task) return null;
-  const title = task.titleKey ? t(task.titleKey, task.titleVars) : task.title || '';
-  const detail = task.detailKey ? t(task.detailKey, task.detailVars) : task.detail || null;
+
+  let title;
+  if (task.titleKey) {
+    title = t ? t(task.titleKey, task.titleVars) : (task.title || '');
+  } else if (lang && lang !== 'en' && task.title) {
+    title = getLocalizedTaskTitle(task.id, task.title, lang) || task.title;
+  } else {
+    title = task.title || '';
+  }
+
+  let detail;
+  if (task.detailKey) {
+    detail = t ? t(task.detailKey, task.detailVars) : (task.detail || null);
+  } else if (lang && lang !== 'en' && task.detail) {
+    detail = getLocalizedTaskDescription(task.id, task.detail, lang) || task.detail;
+  } else {
+    detail = task.detail || null;
+  }
+
   return { ...task, title, detail };
 }
 

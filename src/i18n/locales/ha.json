@@ -1,0 +1,124 @@
+{
+  "nav": {
+    "home": "Gida",
+    "farm": "Gona",
+    "tasks": "Ayyuka",
+    "reports": "Rahotanni"
+  },
+  "dashboard": {
+    "smart_assistant": "San abin yi. Yi noma sosai.",
+    "crop_progress": "Cigaban shuka",
+    "just_started": "An fara kawai",
+    "message_start": "Shukarka tana farawa kawai. Kammala ayyukan yau.",
+    "overall_progress": "Jimillar cigaba",
+    "today_focus": "Mayar da hankali yau",
+    "good_job": "Yi kyau!",
+    "keep_going": "Ci gaba kuma gonarka za ta yi kyau."
+  },
+  "tasks": {
+    "total": "Jimillar ayyuka",
+    "pending": "A jiran",
+    "completed": "An kammala",
+    "prepare_field": "Shirya gonarka da shukoki",
+    "scout_pests": "Duba kwari"
+  },
+  "farm": {
+    "crop_information": "Bayanin shuka",
+    "primary_crop": "Babban shuka",
+    "farm_profile": "Bayanin gona",
+    "farm_size": "Girman gona",
+    "farmer_name": "Sunan manomi",
+    "location": "Wuri",
+    "view_farm": "Duba gonata",
+    "add_farm": "Ƙara sabuwar gona",
+    "switch_farm": "Canza gona",
+    "farm_status": "Yanayin gona",
+    "start_date": "Ranar farawa",
+    "active_tasks": "Ayyuka masu aiki",
+    "recent_activities": "Ayyukan kwanan nan"
+  },
+  "settings": {
+    "settings": "Saiti",
+    "manage_preferences": "Sarrafa zaɓuɓɓuka da asusunka",
+    "notifications": "Sanarwa",
+    "daily_reminders": "Tunatarwar yau da kullum",
+    "daily_reminders_helper": "Karɓi tunatarwar ayyuka kowace rana",
+    "weather_alerts": "Faɗakarwar yanayi",
+    "weather_alerts_helper": "Karɓi muhimman bayanan yanayi",
+    "risk_alerts": "Faɗakarwar haɗari",
+    "risk_alerts_helper": "Karɓi faɗakarwar kwari da cututtuka",
+    "missed_task_alerts": "Faɗakarwar ayyukan da aka rasa",
+    "missed_task_alerts_helper": "Karɓi faɗakarwa don ayyukan da aka rasa",
+    "email_notifications": "Sanarwar imel",
+    "email_notifications_helper": "Karɓi sanarwa ta imel",
+    "sms_notifications": "Sanarwar SMS",
+    "sms_notifications_helper": "Karɓi sanarwa ta SMS",
+    "reminder_time": "Lokacin tunatarwa",
+    "reminder_time_helper": "Saita lokacin aika tunatarwa",
+    "language": "Harshe",
+    "language_helper": "Zaɓi harshen da kake so",
+    "change_password": "Canza kalmar wucewa",
+    "change_password_helper": "Sabunta kalmar wucewa",
+    "help_support": "Taimako da tallafi",
+    "help_support_helper": "Sami taimako da tallafi",
+    "about_app": "Game da Farroway",
+    "about_app_helper": "Ƙara koyo game da app",
+    "farmer_id": "ID na manomi",
+    "copy": "Kwafa"
+  },
+  "tips": {
+    "daily_tip": "Shawara ta yau",
+    "tip_consistency": "Ka kasance mai dagewa kan ayyukanka don sakamako mafi kyau."
+  },
+  "reminders": {
+    "title": "Tunatarwa",
+    "none": "Ba ka da sabuwar tunatarwa."
+  },
+  "market": {
+    "title": "Bayanin kasuwa",
+    "check_prices": "Duba farashin yanki kafin ka sayar."
+  },
+  "status": {
+    "fair": "Mai kyau",
+    "good": "Kyakkyawa",
+    "excellent": "Mai matuƙar kyau",
+    "poor": "Mara kyau"
+  },
+  "stages": {
+    "planting": "Shuka",
+    "establishment": "Kafawa",
+    "vegetative": "Girma",
+    "bulking": "Faɗaɗa",
+    "maturation": "Nuna",
+    "harvest": "Girbi"
+  },
+  "crops": {
+    "cassava": "Rogo",
+    "maize": "Masara",
+    "rice": "Shinkafa",
+    "tomato": "Tumatir",
+    "pepper": "Tattasai",
+    "onion": "Albasa",
+    "okra": "Kubewa",
+    "yam": "Doya",
+    "plantain": "Ayaba",
+    "cocoa": "Kwakwa",
+    "groundnut": "Gyaɗa",
+    "beans": "Wake"
+  },
+  "common": {
+    "none": "Babu",
+    "open_count": "{{count}} a buɗe"
+  },
+  "taskCompletion": {
+    "title": "Ka kammala wannan aikin?",
+    "yes": "Eh",
+    "partly": "Wani ɓangare",
+    "no": "A'a",
+    "next_step": "Mataki na gaba",
+    "continue": "Ci gaba",
+    "later": "Daga baya",
+    "tasks_left": "Ayyuka {{count}} sun rage",
+    "done_today": "{{done}} cikin {{total}} an gama yau"
+  }
+}

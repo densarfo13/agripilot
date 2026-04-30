@@ -37,6 +37,7 @@ import {
   getActiveFundingOpportunities, FUNDING_EVENTS,
 } from '../funding/fundingStore.js';
 import { matchFundingForFarm } from '../funding/fundingMatcher.js';
+import { localizeFundingText } from '../funding/localizeFundingText.js';
 import {
   saveFundingInterest, recordApplyClick, findInterest,
   INTEREST_STATUS,
@@ -238,7 +239,7 @@ export default function FundingOpportunityDetail() {
         <section style={S.facts}>
           {o.benefit && (
             <Fact label={tSafe('funding.benefit', 'Benefit')}
-                  value={o.benefit} highlight />
+                  value={localizeFundingText(o.benefit, language)} highlight />
           )}
           <Fact label={tSafe('funding.deadline', 'Deadline')}
                 value={deadlineLabel} />
@@ -276,7 +277,7 @@ export default function FundingOpportunityDetail() {
               {reasons.map((r) => (
                 <li key={r} style={S.reasonItem}>
                   <span style={S.reasonDot} aria-hidden="true">•</span>
-                  {r}
+                  {localizeFundingText(r, language)}
                 </li>
               ))}
             </ul>

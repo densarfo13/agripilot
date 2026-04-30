@@ -93,6 +93,13 @@ export function getRetentionState() {
     lastCompletionISO:  cur?.lastCompletionISO  || null,
     streakDays:         Number.isFinite(cur?.streakDays) ? cur.streakDays : 0,
     reminderShownISO:   cur?.reminderShownISO   || null,
+    // 7-day engagement loop additions:
+    //   firstVisitISO    pinned on the very first recordVisit; never
+    //                    advances afterwards. Used to derive
+    //                    `dayNumber` (1 + local-day gap, capped to
+    //                    avoid runaway counts on long-time users).
+    firstVisitISO:      cur?.firstVisitISO      || null,
+    tasksCompleted:     Number.isFinite(cur?.tasksCompleted) ? cur.tasksCompleted : 0,
   };
 }
 
@@ -103,13 +110,21 @@ export function getRetentionState() {
  * since the last completion (NOT since the last visit; opening the
  * app without completing a task should not break a streak).
  *
+ * Side effect (7-day loop): pins `firstVisitISO` the very first
+ * time the helper runs, so `dayNumber()` can derive a stable
+ * 0/1/2/… progression without depending on per-call timing.
+ *
  * Returns the updated state.
  */
 export function recordVisit(now = new Date()) {
   const today = _todayISO(now);
   const cur = getRetentionState();
-  if (cur.lastVisitISO === today) return cur;        // idempotent
-  const next = { ...cur, lastVisitISO: today };
+  if (cur.lastVisitISO === today && cur.firstVisitISO) return cur; // idempotent
+  const next = {
+    ...cur,
+    lastVisitISO:  today,
+    firstVisitISO: cur.firstVisitISO || today,
+  };
   _write(next);
   return next;
 }
@@ -144,6 +159,13 @@ export function recordCompletion(now = new Date()) {
     lastVisitISO:      today,
     lastCompletionISO: today,
     streakDays:        nextStreak,
+    // 7-day loop: monotonic counter incremented on every
+    // accepted completion (i.e. once per local day max). The
+    // app reads this as the running total of "tasks done across
+    // the whole 7-day loop"; for the per-day count, use the
+    // existing taskScheduler's `done` derivation.
+    tasksCompleted:    (cur.tasksCompleted || 0) + 1,
+    firstVisitISO:     cur.firstVisitISO || today,
   };
   _write(next);
   return next;
@@ -190,6 +212,27 @@ export function daysSinceLastVisit(now = new Date()) {
   if (!cur.lastVisitISO) return null;
   const today = _todayISO(now);
   return _daysBetween(cur.lastVisitISO, today);
+}
+
+/**
+ * 7-day engagement-loop day counter.
+ *
+ *   • Day 0   — pre-onboarding (no firstVisitISO yet)
+ *   • Day 1   — first visit (today)
+ *   • Day N   — 1 + local days since firstVisitISO, capped at 7
+ *
+ * Capped at 7 so the unlock gates (Scan ≥ 3, Funding ≥ 5,
+ * Sell ≥ 6) all stay green for long-time users — once a feature
+ * unlocks it never re-locks. Returns 0 for users who have never
+ * recorded a visit (still in onboarding).
+ */
+export function dayNumber(now = new Date()) {
+  const cur = getRetentionState();
+  if (!cur.firstVisitISO) return 0;
+  const today = _todayISO(now);
+  const gap = _daysBetween(cur.firstVisitISO, today);
+  if (!Number.isFinite(gap) || gap < 0) return 1;
+  return Math.min(7, gap + 1);
 }
 
 /**
