@@ -28,6 +28,16 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { getFarmStatus } from '../../lib/farm/farmFallbacks.js';
 import useTodayTask from '../../hooks/useTodayTask.js';
 import { getEffectiveStreak } from '../../lib/loop/dailyLoop.js';
+// Weather intelligence — adapts the base task when conditions
+// warrant (storm/rain/dry/heat) and produces a "Weather impact"
+// line + a smart-button label. Both helpers are pure; null-safe
+// when weather is unavailable so the card falls back to the base
+// task verbatim (spec §7).
+import { useWeather } from '../../context/WeatherContext.jsx';
+import { mapWeatherToSpec } from '../../services/weatherService.js';
+import {
+  adaptTaskForWeather, buildWeatherImpactLine, pickAdaptedCtaLabel,
+} from '../../logic/taskEngine.js';
 import { CheckCircle, AlertTriangle, Sprout, ArrowRight } from '../icons/lucide.jsx';
 
 const TONE_STYLES = Object.freeze({
@@ -41,6 +51,20 @@ export default function NextBestActionCard({ farm }) {
   useTranslation();
   const navigate = useNavigate();
 
+  // Centralized weather state (auto-refreshed every 20 min by the
+  // WeatherContext provider; see /context/WeatherContext.jsx). Read
+  // defensively — the provider exposes `weather` as null until the
+  // first fetch completes, and this card renders before that.
+  let liveWeather = null;
+  try {
+    const ctx = useWeather();
+    liveWeather = (ctx && ctx.weather) || null;
+  } catch { /* outside the provider — no-op fallback */ }
+  // Prefer farm-attached weather when present (older surfaces seed
+  // it that way), otherwise fall back to the live context value.
+  const rawWeather = farm?.weather || liveWeather || null;
+  const weatherSpec = mapWeatherToSpec(rawWeather);
+
   // Production task engine — never returns null, always renderable.
   // Receives the farm + whatever it knows; weather / risks /
   // activity / funding / buyer signals are passed through when the
@@ -49,12 +73,25 @@ export default function NextBestActionCard({ farm }) {
   // default rule based on what's set up.
   const task = useTodayTask({
     farm,
-    weather: farm?.weather || null,
+    weather: rawWeather,
     risks: farm?.risks || null,
     activity: farm?.activity || null,
     fundingMatches: farm?.fundingMatches || null,
     buyerSignals: farm?.buyerSignals || null,
   });
+
+  // Layer the weather adaptation on top of the production engine's
+  // output. When weatherSpec is null this is a no-op (returns base
+  // task), so the card never crashes when the weather service fails
+  // (spec §7).
+  const adapted = adaptTaskForWeather({
+    crop:     farm?.crop || null,
+    stage:    farm?.cropStage || farm?.stage || null,
+    weather:  weatherSpec,
+    baseTask: task,
+  });
+  const weatherImpactLine = buildWeatherImpactLine(weatherSpec);
+  const adaptedCtaLabel   = pickAdaptedCtaLabel(adapted);
 
   // Status pill — derived independently of the engine so the chip
   // tone reflects setup-completeness directly.
@@ -69,11 +106,13 @@ export default function NextBestActionCard({ farm }) {
   let streakDays = 0;
   try { streakDays = getEffectiveStreak() || 0; } catch { /* ignore */ }
 
-  // Body line is the engine's resolved title (always non-empty per
-  // contract). The engine's `instruction` is also available; the
-  // card renders it as a secondary line when present.
-  const bodyText = task.title;
-  const detailText = task.instruction || '';
+  // Body line is the adapted task's title — this is either the
+  // weather override ("Pause planting", "Delay field work", etc.)
+  // OR the base engine title when no rule fires. Detail text uses
+  // the adapted action when present, falling back to the base
+  // engine instruction.
+  const bodyText   = adapted.title || task.title;
+  const detailText = adapted.action || task.instruction || '';
 
   // CTA route comes from the engine's source rule (setup →
   // /edit-farm, harvest → /sell, funding → /opportunities,
@@ -83,8 +122,11 @@ export default function NextBestActionCard({ farm }) {
   // CTA label: usually "Act now" (the unified primary label)
   // EXCEPT for setup-incomplete state — when the farmer hasn't
   // finished onboarding their farm, "Complete setup" reads as
-  // a clearer next step than the generic "Act now". Same green
-  // primary styling either way; only the wording adapts.
+  // a clearer next step than the generic "Act now". When the
+  // adapter flags the task as blocked by weather, the label
+  // swaps to "Wait" (storm) or "Check again later" (rain) so
+  // the farmer never taps a green CTA into wet field work
+  // (spec §5).
   let ctaRoute;
   let ctaKey;
   let ctaFallback;
@@ -102,6 +144,14 @@ export default function NextBestActionCard({ farm }) {
     }
     ctaKey      = 'farm.next.cta.doThisNow';
     ctaFallback = 'Act now';
+  }
+  if (adaptedCtaLabel) {
+    // Weather-blocked override. Keep the route as-is so the farmer
+    // can still navigate through and review; only the wording shifts.
+    ctaKey      = adaptedCtaLabel === 'Wait'
+      ? 'farm.next.cta.wait'
+      : 'farm.next.cta.checkLater';
+    ctaFallback = adaptedCtaLabel;
   }
 
   return (
@@ -135,11 +185,30 @@ export default function NextBestActionCard({ farm }) {
       {detailText && detailText !== bodyText ? (
         <p style={S.detail}>{detailText}</p>
       ) : null}
+      {/* Weather impact (Apr 2026 spec): one short line below the
+          task that explains why the farmer should/shouldn't act
+          today. Hidden when there's nothing weather-driven to say
+          so the card stays calm in good conditions (no clutter). */}
+      {weatherImpactLine ? (
+        <p
+          style={{
+            ...S.weatherImpact,
+            ...(adapted.blocked ? S.weatherImpactBlocked : null),
+          }}
+          data-testid="next-best-action-weather"
+        >
+          {tSafe('farm.next.weatherImpact', weatherImpactLine)}
+        </p>
+      ) : null}
 
       <button
         type="button"
-        style={S.cta}
+        style={{
+          ...S.cta,
+          ...(adapted.blocked ? S.ctaBlocked : null),
+        }}
         data-testid="next-best-action-cta"
+        data-adapted={adapted.source}
         onClick={() => { try { navigate(ctaRoute); } catch { /* ignore */ } }}
       >
         <span>{tStrict(ctaKey, ctaFallback)}</span>
@@ -214,6 +283,26 @@ const S = {
     lineHeight: 1.4,
     color: 'rgba(255,255,255,0.65)',
   },
+  // Weather impact line — small inline note below the detail
+  // text. Subtle by default so good-condition farms don't have a
+  // loud chip; switches to amber when the adapter flagged the
+  // task as blocked.
+  weatherImpact: {
+    margin: '0 0 12px',
+    padding: '6px 10px',
+    borderRadius: 8,
+    background: 'rgba(56,189,248,0.08)',
+    border: '1px solid rgba(56,189,248,0.20)',
+    fontSize: '0.8125rem',
+    lineHeight: 1.35,
+    color: '#7DD3FC',
+    fontWeight: 600,
+  },
+  weatherImpactBlocked: {
+    background: 'rgba(245,158,11,0.10)',
+    border: '1px solid rgba(245,158,11,0.32)',
+    color: '#FDE68A',
+  },
   cta: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -229,5 +318,12 @@ const S = {
     cursor: 'pointer',
     minHeight: 48,
     boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+  },
+  // Blocked-CTA tone — amber, calmer shadow. Reads as "wait, not
+  // proceed" without disabling the button (the farmer can still
+  // tap through to /tasks for context).
+  ctaBlocked: {
+    background: '#F59E0B',
+    boxShadow: '0 6px 16px rgba(245,158,11,0.22)',
   },
 };
