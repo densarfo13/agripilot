@@ -34,11 +34,34 @@ import { getEffectiveStreak } from '../../lib/loop/dailyLoop.js';
 // when weather is unavailable so the card falls back to the base
 // task verbatim (spec §7).
 import { useWeather } from '../../context/WeatherContext.jsx';
-import { mapWeatherToSpec } from '../../services/weatherService.js';
 import {
-  adaptTaskForWeather, buildWeatherImpactLine, pickAdaptedCtaLabel,
+  mapWeatherToSpec, extractForecastDays,
+} from '../../services/weatherService.js';
+import {
+  adaptTaskForWeather,
 } from '../../logic/taskEngine.js';
+// 3-day predictive action window. Reads the forecast and the base
+// task; returns a "what to do, when, and why" summary the Home
+// card renders. Never throws; safely degrades to "Check your farm
+// today" when the forecast is missing (spec §6).
+import {
+  getBestActionWindow, formatActionWindowLine,
+} from '../../intelligence/actionWindow.js';
 import { CheckCircle, AlertTriangle, Sprout, ArrowRight } from '../icons/lucide.jsx';
+
+// Slugify the action-window's CTA wording into a stable i18n key
+// suffix so callers don't have to maintain a rule-→-key map.
+//   "Act now"            → "actNow"
+//   "Plan task"          → "planTask"
+//   "Check again later"  → "checkAgainLater"
+function _slugCta(text) {
+  if (!text) return 'actNow';
+  const parts = String(text).trim().split(/\s+/);
+  return parts.map((p, i) => {
+    const w = p.toLowerCase();
+    return i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1);
+  }).join('');
+}
 
 const TONE_STYLES = Object.freeze({
   ok:   { background: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.45)',  fg: '#86EFAC', icon: CheckCircle },
@@ -90,8 +113,18 @@ export default function NextBestActionCard({ farm }) {
     weather:  weatherSpec,
     baseTask: task,
   });
-  const weatherImpactLine = buildWeatherImpactLine(weatherSpec);
-  const adaptedCtaLabel   = pickAdaptedCtaLabel(adapted);
+
+  // 3-day predictive timing (Apr 2026 spec). Builds a forecast
+  // array from whatever the weather context exposes; the action
+  // window helper handles a missing/empty forecast by returning
+  // a safe "Check your farm today" fallback.
+  const forecastDays = extractForecastDays(rawWeather, 3);
+  const window = getBestActionWindow({
+    farm,
+    forecast: forecastDays,
+    task:     adapted,
+  });
+  const intelligenceLine = formatActionWindowLine(window);
 
   // Status pill — derived independently of the engine so the chip
   // tone reflects setup-completeness directly.
@@ -116,17 +149,10 @@ export default function NextBestActionCard({ farm }) {
 
   // CTA route comes from the engine's source rule (setup →
   // /edit-farm, harvest → /sell, funding → /opportunities,
-  // default → /tasks) so the button leads to the right surface
-  // for what the farmer needs next.
-  //
-  // CTA label: usually "Act now" (the unified primary label)
-  // EXCEPT for setup-incomplete state — when the farmer hasn't
-  // finished onboarding their farm, "Complete setup" reads as
-  // a clearer next step than the generic "Act now". When the
-  // adapter flags the task as blocked by weather, the label
-  // swaps to "Wait" (storm) or "Check again later" (rain) so
-  // the farmer never taps a green CTA into wet field work
-  // (spec §5).
+  // default → /tasks). The CTA wording, however, is owned by
+  // the action-window helper for non-setup tasks: it picks
+  // between Act now / Wait / Check again later / Plan task /
+  // View safe task / Start early based on a 3-day read.
   let ctaRoute;
   let ctaKey;
   let ctaFallback;
@@ -142,16 +168,13 @@ export default function NextBestActionCard({ farm }) {
     } else {
       ctaRoute = '/tasks';
     }
-    ctaKey      = 'farm.next.cta.doThisNow';
-    ctaFallback = 'Act now';
-  }
-  if (adaptedCtaLabel) {
-    // Weather-blocked override. Keep the route as-is so the farmer
-    // can still navigate through and review; only the wording shifts.
-    ctaKey      = adaptedCtaLabel === 'Wait'
-      ? 'farm.next.cta.wait'
-      : 'farm.next.cta.checkLater';
-    ctaFallback = adaptedCtaLabel;
+    // Window button text always wins for action tasks. The
+    // fallback "Act now" matches the prior default when the
+    // window degrades to its safe fallback (spec §6).
+    ctaFallback = window.buttonText || 'Act now';
+    // i18n key derived from the wording so translators don't
+    // have to know about the rule chain.
+    ctaKey = 'farm.next.cta.' + _slugCta(ctaFallback);
   }
 
   return (
@@ -185,30 +208,43 @@ export default function NextBestActionCard({ farm }) {
       {detailText && detailText !== bodyText ? (
         <p style={S.detail}>{detailText}</p>
       ) : null}
-      {/* Weather impact (Apr 2026 spec): one short line below the
-          task that explains why the farmer should/shouldn't act
-          today. Hidden when there's nothing weather-driven to say
-          so the card stays calm in good conditions (no clutter). */}
-      {weatherImpactLine ? (
-        <p
+      {/* Weather intelligence (Apr 2026 spec §4): two short
+          lines — what's happening today + when to act. Pulled
+          from the action-window helper so the card never shows
+          raw forecast tables (spec §5). Hidden when the window
+          has nothing actionable to add (good-conditions farms
+          stay uncluttered). */}
+      {intelligenceLine ? (
+        <div
           style={{
             ...S.weatherImpact,
-            ...(adapted.blocked ? S.weatherImpactBlocked : null),
+            ...(window.blockedToday ? S.weatherImpactBlocked : null),
           }}
           data-testid="next-best-action-weather"
         >
-          {tSafe('farm.next.weatherImpact', weatherImpactLine)}
-        </p>
+          <div style={S.weatherImpactLabel}>
+            {tSafe('farm.next.weatherIntel', 'Weather intelligence')}
+          </div>
+          <div style={S.weatherImpactBody}>
+            {tSafe('farm.next.weatherIntelLine', intelligenceLine)}
+          </div>
+          {window.riskIfDelayed ? (
+            <div style={S.weatherImpactRisk}>
+              {tSafe('farm.next.weatherIntelRisk', window.riskIfDelayed)}
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <button
         type="button"
         style={{
           ...S.cta,
-          ...(adapted.blocked ? S.ctaBlocked : null),
+          ...(window.blockedToday ? S.ctaBlocked : null),
         }}
         data-testid="next-best-action-cta"
         data-adapted={adapted.source}
+        data-window={window.buttonText}
         onClick={() => { try { navigate(ctaRoute); } catch { /* ignore */ } }}
       >
         <span>{tStrict(ctaKey, ctaFallback)}</span>
@@ -283,13 +319,14 @@ const S = {
     lineHeight: 1.4,
     color: 'rgba(255,255,255,0.65)',
   },
-  // Weather impact line — small inline note below the detail
-  // text. Subtle by default so good-condition farms don't have a
-  // loud chip; switches to amber when the adapter flagged the
-  // task as blocked.
+  // Weather intelligence panel — small two-line block below the
+  // detail text. "Weather intelligence" eyebrow + a one-sentence
+  // recommendation. Subtle by default; switches to amber when the
+  // action window flags today as blocked. Spec §5 keeps it lean
+  // — no graphs, no tables, no hourly numbers.
   weatherImpact: {
     margin: '0 0 12px',
-    padding: '6px 10px',
+    padding: '8px 10px',
     borderRadius: 8,
     background: 'rgba(56,189,248,0.08)',
     border: '1px solid rgba(56,189,248,0.20)',
@@ -297,11 +334,32 @@ const S = {
     lineHeight: 1.35,
     color: '#7DD3FC',
     fontWeight: 600,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
   },
   weatherImpactBlocked: {
     background: 'rgba(245,158,11,0.10)',
     border: '1px solid rgba(245,158,11,0.32)',
     color: '#FDE68A',
+  },
+  weatherImpactLabel: {
+    fontSize: '0.625rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    opacity: 0.7,
+  },
+  weatherImpactBody: {
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  weatherImpactRisk: {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    opacity: 0.85,
+    fontStyle: 'italic',
   },
   cta: {
     display: 'inline-flex',

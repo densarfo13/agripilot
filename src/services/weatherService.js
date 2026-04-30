@@ -212,6 +212,79 @@ export async function getForecast(location) {
 }
 
 /**
+ * extractForecastDays(raw, n=3) → Array<DaySpec>
+ *
+ * Pure helper that pulls a per-day forecast out of any raw
+ * weather shape the codebase produces. Returns up to `n` rows of
+ * the shape:
+ *
+ *   { date: Date, condition, precipitation, temperature }
+ *
+ * Used by the 3-day action window (src/intelligence/actionWindow.js)
+ * to pick the best day to act. Returns an empty array when the raw
+ * weather carries no forecast data — the action window then
+ * degrades to "today only" reasoning + safe fallback copy
+ * (spec §6: never crash, never blank).
+ *
+ * Field aliases tolerated:
+ *   - forecast: array of {date|ts, precipitationMm|rainMm|precipitation, temperatureC|tempC|temperature}
+ *   - rainExpectedToday / heatHigh: single-flag fallback for day 0
+ */
+export function extractForecastDays(raw, n = 3) {
+  if (!raw || typeof raw !== 'object') return [];
+  const limit = Math.max(1, Math.min(7, Number(n) || 3));
+  const out = [];
+
+  // Path 1: explicit per-day forecast array.
+  const arr = Array.isArray(raw.forecast) ? raw.forecast : null;
+  if (arr && arr.length > 0) {
+    for (const row of arr) {
+      if (!row) continue;
+      const dateRaw = row.date || row.ts || row.timestamp;
+      const d = dateRaw instanceof Date ? dateRaw : new Date(dateRaw);
+      if (!Number.isFinite(d.getTime())) continue;
+      const precipitation = _num(row.precipitationMm)
+                         ?? _num(row.rainMm)
+                         ?? _num(row.precipitation)
+                         ?? 0;
+      const temperature   = _num(row.temperatureC)
+                         ?? _num(row.tempC)
+                         ?? _num(row.temperature)
+                         ?? null;
+      const isStorm = !!(row.severe || row.storm || row.heavyRain);
+      const condition = _deriveCondition({
+        precipitation24h: precipitation,
+        temperature,
+        isStorm,
+        isCold: !!row.cold,
+      });
+      out.push(Object.freeze({
+        date: d,
+        condition,
+        precipitation,
+        temperature: temperature == null ? 0 : temperature,
+      }));
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
+  // Path 2: collapsed single-flag shape — only today is known.
+  // Build a 1-row forecast from mapWeatherToSpec so the action
+  // window can at least reason about today.
+  const todaySpec = mapWeatherToSpec(raw);
+  if (todaySpec) {
+    out.push(Object.freeze({
+      date:          new Date(),
+      condition:     todaySpec.condition,
+      precipitation: todaySpec.precipitation,
+      temperature:   todaySpec.temperature,
+    }));
+  }
+  return out;
+}
+
+/**
  * _internal — exported for unit tests only. Not part of the
  * public API; treat as implementation detail.
  */
