@@ -19,22 +19,21 @@
 
 import React from 'react';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
-// Import the brand asset directly so Vite bundles it with the
-// app (content-hashed URL like /assets/farroway-mark.{hash}.jpg).
-// This guarantees the file is on every deploy without depending
-// on the /public copy reaching the CDN — the previous
-// /icons/farroway-mark.jpg path 404'd in production for users
-// because the asset hadn't propagated yet.
-import farrowayMarkUrl from '../assets/farroway-mark.jpg';
 
 const C = FARROWAY_BRAND.colors;
 
-// Bundled asset URL — always resolves at build time. Content
-// hash means cache-busting is automatic on every deploy.
-const SRC = farrowayMarkUrl;
-// Last-resort fallback if the bundled asset somehow fails to
-// load (defensive — should never trigger in practice). Points
-// at the v9 SVG redraw which ships in /public on every deploy.
+// Brand asset paths — kept as plain strings so the build never
+// depends on a binary file resolving at compile time. The
+// previous bundled-import approach
+//   `import farrowayMarkUrl from '../assets/farroway-mark.jpg'`
+// hard-failed the deploy whenever the JPG didn't arrive in the
+// build container (binary push hiccup, LFS hiccup, partial
+// clone — any of those tank the build with a Rollup
+// 'Could not resolve' error). The path-string approach below
+// is build-safe: if the asset is missing at runtime the
+// onError handler falls through to the SVG redraw, which
+// ships in /public on every deploy.
+const SRC = '/icons/farroway-mark.jpg';
 const SRC_FALLBACK = '/icons/farroway-mark.svg';
 
 export function FarrowayMark({
