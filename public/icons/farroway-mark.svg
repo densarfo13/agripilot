@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway brand mark, v3.
+  Farroway brand mark.
 
   Standalone vector copy of the leaf-shape arrow-path mark
   drawn inline by src/components/FarrowayLogo.jsx — kept in
   sync by hand. Used by browsers that prefer an SVG icon
   (rel="icon" type="image/svg+xml") and as a transparent
-  source asset for any PWA/app-icon raster export.
+  source asset for any PWA / app-icon raster export.
 
   Composition (top → bottom inside the leaf silhouette):
-    1. light-green slice (#A3E635)
-    2. medium-green body (#22C55E)
-    3. white diagonal stripe (#FFFFFF)
-    4. navy wedge (#0B1220)
-    5. white upward-right arrow with thin navy outline
+    1. lighter green band at the upper-right tip (#A3E635)
+    2. medium green main body (#22C55E)
+    3. navy wedge in the lower-left (#0B1220)
+    4. two-tone curved arrow piercing through the leaf:
+       navy over the green, white over the navy wedge,
+       small triangular arrowhead at the upper-right.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 100 100"
@@ -30,34 +31,46 @@
                Q 50 92, 66 76
                Q 82 56, 88 14 Z" />
     </clipPath>
+    <clipPath id="navyZone">
+      <polygon points="-10,92 110,50 110,120 -10,120" />
+    </clipPath>
+    <clipPath id="greenZone">
+      <polygon points="-10,-20 110,-20 110,50 -10,92" />
+    </clipPath>
   </defs>
 
   <g clip-path="url(#leafClip)">
     <!-- 1. medium green base -->
     <rect x="0" y="0" width="100" height="100" fill="#22C55E" />
 
-    <!-- 2. light green slice at the top -->
-    <polygon points="-10,-20 110,-20 110,4 -10,30" fill="#A3E635" />
+    <!-- 2. lighter green band at the upper-right -->
+    <polygon points="-10,-20 110,-20 110,6 -10,32" fill="#A3E635" />
 
-    <!-- 3. thin white diagonal stripe -->
-    <polygon points="-10,76 110,30 110,40 -10,82" fill="#FFFFFF" />
-
-    <!-- 4. navy wedge filling the lower-right -->
-    <polygon points="-10,82 110,40 110,120 -10,120" fill="#0B1220" />
+    <!-- 3. navy wedge in the lower-left -->
+    <polygon points="-10,92 110,50 110,120 -10,120" fill="#0B1220" />
   </g>
 
-  <!-- 5. white upward arrow, drawn on top of the leaf -->
-  <g transform="rotate(28 52 52)">
-    <path d="M 46 78
-             L 46 48
-             L 38 48
-             L 52 28
-             L 66 48
-             L 56 48
-             L 56 78 Z"
-          fill="#FFFFFF"
+  <!-- Arrow shaft — drawn twice so the segment over the navy
+       wedge is white and the segment over the green is navy. -->
+  <g clip-path="url(#navyZone)">
+    <path d="M 24 74 Q 44 60, 78 22"
+          stroke="#FFFFFF"
+          stroke-width="3.2"
+          stroke-linecap="round"
+          fill="none" />
+  </g>
+  <g clip-path="url(#greenZone)">
+    <path d="M 24 74 Q 44 60, 78 22"
           stroke="#0B1220"
-          stroke-width="1.2"
-          stroke-linejoin="round" />
+          stroke-width="3.2"
+          stroke-linecap="round"
+          fill="none" />
   </g>
+
+  <!-- Arrowhead at the upper-right tip -->
+  <polygon points="80,18 66,22 72,30"
+           fill="#0B1220"
+           stroke="#0B1220"
+           stroke-width="0.6"
+           stroke-linejoin="round" />
 </svg>

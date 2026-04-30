@@ -65,7 +65,7 @@ import MarketSignalCard from '../components/MarketSignalCard.jsx';
 // their bottom-nav tabs, but the Home grid acts as a fast
 // shortcut for farmers who land on Home first.
 import {
-  Camera, Sprout, ShoppingCart, Wallet, ArrowRight,
+  Camera, Sprout, ShoppingCart, Wallet, ArrowRight, HelpCircle,
 } from '../components/icons/lucide.jsx';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -347,6 +347,35 @@ export default function Dashboard() {
     if (loop.primaryTask) setShowTaskAction(true);
   }
 
+  // Home redesign §6 — help row click:
+  //   1. try /support route (lazy-mounted somewhere in the
+  //      router tree)
+  //   2. if the URL didn't actually change within 120 ms, fall
+  //      back to mailto so the click is never dead
+  // Mirrors the same pattern used on /my-farm.
+  function handleHelpClick() {
+    const before = (typeof window !== 'undefined' && window.location)
+      ? String(window.location.pathname || '') : '';
+    try { navigate('/support'); }
+    catch {
+      try {
+        if (typeof window !== 'undefined') {
+          window.location.href = 'mailto:support@farroway.app';
+        }
+      } catch { /* never propagate */ }
+      return;
+    }
+    setTimeout(() => {
+      try {
+        const after = (typeof window !== 'undefined' && window.location)
+          ? String(window.location.pathname || '') : '';
+        if (after === before && typeof window !== 'undefined') {
+          window.location.href = 'mailto:support@farroway.app';
+        }
+      } catch { /* never propagate */ }
+    }, 120);
+  }
+
   function handleSetStage() {
     setShowStageModal(true);
   }
@@ -550,14 +579,44 @@ export default function Dashboard() {
           <NotificationBell userId={_userId} testId="home-bell" />
         </div>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
-        {/* Spec polish (Apr 2026): weatherLine removed here.
-            FarmerHeader's weather chip already shows
-            temp + icon + chipLabel ("Rain later"). The
-            separate weatherLine action banner duplicated
-            this; spec calls for ONE combined weather/action
-            insight surface so the chip carries it alone now.
-            The action-guidance line still appears via
-            FarmerHeader's expanded weather card on tap. */}
+
+        {/* ── Weather Intelligence Card (Home redesign §2) ─────
+            One compact card with the weather condition + a
+            single line of action guidance. Self-hides when the
+            weather decision is 'safe' (no notable signal — the
+            FarmerHeader chip already carries the condition for
+            those days). Reads from the existing
+            loop.weatherDecision; no new fetch.
+
+            Layout intentionally uses ONE icon + one bold line +
+            one body line so we don't accumulate "duplicate
+            weather cards" — the spec's anti-pattern. */}
+        {loop.profile
+          && loop.weatherDecision
+          && loop.weatherDecision.severity !== 'safe'
+          && (loop.weatherDecision.actionLine || loop.weatherDecision.chipLabel) && (
+          <div
+            style={S.wxIntelCard}
+            data-testid="home-weather-intel"
+            data-severity={loop.weatherDecision.severity}
+          >
+            <span style={S.wxIntelIcon} aria-hidden="true">
+              {loop.weatherDecision.chipIcon || '☁'}
+            </span>
+            <div style={S.wxIntelText}>
+              {loop.weatherDecision.chipLabel ? (
+                <div style={S.wxIntelTitle}>
+                  {loop.weatherDecision.chipLabel}
+                </div>
+              ) : null}
+              {loop.weatherDecision.actionLine ? (
+                <div style={S.wxIntelBody}>
+                  {loop.weatherDecision.actionLine}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {/* v3 stability layer: classified load-error banner.
             Renders ABOVE the data sections so a 401 / MFA /
@@ -852,12 +911,12 @@ export default function Dashboard() {
           </button>
         )}
 
-        {/* ── 2x2 Quick actions grid (unified UI spec)
-            Exactly four tiles: Scan crop / Check land / Funding
-            / Sell. Funding + Sell here are deep-link shortcuts
-            to their bottom-nav tabs so farmers landing on Home
-            first don't have to hunt. Same routes, same labels —
-            no duplicate flows. */}
+        {/* ── Quick actions row (Home redesign §4) ──────────────
+            Exactly three tiles: Scan crop / Check land / View
+            tasks. Funding + Sell removed because the bottom nav
+            already routes there — Home spec rule "no duplicate
+            actions". Three tiles flow side-by-side on phones and
+            wrap on narrow viewports via auto-fit. */}
         {loop.profile && (
           <div style={S.quickGrid} data-testid="home-quick-actions">
             <button
@@ -896,39 +955,50 @@ export default function Dashboard() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/opportunities')}
+              onClick={() => navigate('/tasks')}
               style={S.quickTile}
-              data-testid="home-funding"
+              data-testid="home-view-tasks"
             >
               <span style={S.quickTileIcon} aria-hidden="true">
-                <Wallet size={20} />
+                <ArrowRight size={20} />
               </span>
               <span style={S.quickTileLabel}>
-                {tSafe('home.quick.funding', 'Funding')}
+                {tSafe('home.quick.viewTasks', 'View tasks')}
               </span>
               <span style={S.quickTileHelper}>
-                {tSafe('home.quick.funding.helper',
-                  'See available offers.')}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/sell')}
-              style={S.quickTile}
-              data-testid="home-sell"
-            >
-              <span style={S.quickTileIcon} aria-hidden="true">
-                <ShoppingCart size={20} />
-              </span>
-              <span style={S.quickTileLabel}>
-                {tSafe('home.quick.sell', 'Sell')}
-              </span>
-              <span style={S.quickTileHelper}>
-                {tSafe('home.quick.sell.helper',
-                  'List your harvest.')}
+                {tSafe('home.quick.viewTasks.helper',
+                  'Your task list.')}
               </span>
             </button>
           </div>
+        )}
+
+        {/* ── Help row (Home redesign §6) ──────────────────────
+            Compact "Need help? Contact us →" row. Click prefers
+            the in-app /support route, falls back to a mailto if
+            the URL doesn't change. Never a dead click. */}
+        {loop.profile && (
+          <button
+            type="button"
+            onClick={handleHelpClick}
+            style={S.helpRow}
+            data-testid="home-help"
+          >
+            <span style={S.helpRowIcon} aria-hidden="true">
+              <HelpCircle size={18} />
+            </span>
+            <span style={S.helpRowText}>
+              <span style={S.helpRowTitle}>
+                {tSafe('home.help.title', 'Need help?')}
+              </span>
+              <span style={S.helpRowAction}>
+                {tSafe('home.help.contact', 'Contact us')}
+                <span aria-hidden="true" style={{ marginLeft: 6, display: 'inline-flex' }}>
+                  <ArrowRight size={14} />
+                </span>
+              </span>
+            </span>
+          </button>
         )}
 
         {modals}
@@ -1262,6 +1332,94 @@ const S = {
     fontSize: '0.8125rem',
     fontWeight: 600,
     color: '#9FB3C8',
+  },
+
+  // ── Weather Intelligence Card (Home redesign §2) ───────────
+  // One compact card with condition + action guidance. Icon
+  // on the left; bold title; one-line body. Self-hides via
+  // the JSX gate when severity is 'safe'.
+  wxIntelCard: {
+    margin: '0.75rem 0 0',
+    padding: '12px 14px',
+    borderRadius: 16,
+    background: '#102C47',
+    border: '1px solid rgba(14,165,233,0.30)',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  wxIntelIcon: {
+    fontSize: 22,
+    lineHeight: 1,
+    flex: '0 0 auto',
+    marginTop: 1,
+  },
+  wxIntelText: {
+    flex: '1 1 auto',
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  wxIntelTitle: {
+    fontSize: '0.95rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+    lineHeight: 1.25,
+  },
+  wxIntelBody: {
+    fontSize: '0.85rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 1.4,
+  },
+
+  // ── Help row (Home redesign §6) ────────────────────────────
+  // Compact "Need help? Contact us →" row that sits at the
+  // bottom of the Home stack. Quiet styling so it never
+  // competes with the primary CTA.
+  helpRow: {
+    width: '100%',
+    appearance: 'none',
+    margin: '0.75rem 0 0',
+    padding: '12px 14px',
+    borderRadius: 14,
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+    color: '#FFFFFF',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    cursor: 'pointer',
+    textAlign: 'left',
+    minHeight: 52,
+  },
+  helpRowIcon: {
+    color: '#86EFAC',
+    display: 'inline-flex',
+    alignItems: 'center',
+    flex: '0 0 auto',
+  },
+  helpRowText: {
+    flex: '1 1 auto',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    minWidth: 0,
+  },
+  helpRowTitle: {
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+  },
+  helpRowAction: {
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    color: '#86EFAC',
+    display: 'inline-flex',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
   },
   loadingWrap: {
     display: 'flex',

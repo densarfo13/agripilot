@@ -10026,6 +10026,15 @@ const T = {
   // Compact CTA labels under the circular farm photo.
   'myFarm.uploadPhoto':   { en: 'Upload photo', fr: 'Téléverser une photo', sw: 'Pakia picha', ha: 'Loda hoto',  tw: 'Fa mfoni kɔ',  hi: 'फोटो अपलोड करें' },
   'myFarm.uploadingPhoto':{ en: 'Uploading…',   fr: 'Téléversement…',       sw: 'Inapakia…',  ha: 'Ana lodawa…', tw: 'Yɛrekɔfa…',    hi: 'अपलोड हो रहा है…' },
+
+  // ─── Home redesign — quick actions row + help row ─────────────
+  // Three quick-action tiles: Scan crop / Check land / View tasks.
+  // Funding + Sell removed (already in bottom nav). Single help
+  // row at the bottom. All keys carry the en/fr/sw/ha/tw/hi set.
+  'home.quick.viewTasks':         { en: 'View tasks',  fr: 'Voir les tâches', sw: 'Tazama kazi', ha: 'Duba ayyuka',  tw: 'Hwɛ nnwuma',  hi: 'कार्य देखें' },
+  'home.quick.viewTasks.helper':  { en: 'Your task list.', fr: 'Votre liste de tâches.', sw: 'Orodha ya kazi zako.', ha: 'Jerin ayyukanku.', tw: 'Wo nnwuma nhyehyɛeɛ.', hi: 'आपकी कार्य सूची।' },
+  'home.help.title':              { en: 'Need help?',  fr: 'Besoin d\'aide ?', sw: 'Unahitaji msaada?', ha: 'Kana bukatar taimako?', tw: 'Wohia mmoa?', hi: 'मदद चाहिए?' },
+  'home.help.contact':            { en: 'Contact us',  fr: 'Contactez-nous',  sw: 'Wasiliana nasi', ha: 'Tuntuɓe mu',  tw: 'Frɛ yɛn',     hi: 'संपर्क करें' },
 };
 
 export default T;

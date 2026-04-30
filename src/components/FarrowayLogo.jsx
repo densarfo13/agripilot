@@ -119,72 +119,93 @@ export function FarrowayMark({
         />
       )}
 
-      {/* Leaf body — clipped facets.
-          Composition (per the v3 brand sheet, app-icon panel):
-            * top thin slice  : lightest green  (#A3E635)
-            * main body       : medium green    (#22C55E)
-            * thin diagonal   : white stripe    (#FFFFFF)
-            * bottom-right    : navy wedge      (#0B1220)
-          All cut lines slope UP to the right (higher y on the
-          left, lower y on the right) so the navy wedge sits
-          in the lower-right of the leaf, exactly where the
-          brand sheet shows it. */}
+      {/* Leaf body — simplified two-zone composition (Apr 2026
+          brand-asset refresh, matching the supplied app-icon
+          design):
+            * upper-right band : lighter green (#A3E635)
+            * main body        : medium green  (#22C55E)
+            * lower-left wedge : navy          (#0B1220)
+          The cut between the two greens runs from (-10, 32) to
+          (110, 6) so the lighter band hugs the upper-right
+          tip. The navy wedge cut runs from (-10, 92) up to
+          (110, 50) so the wedge occupies the lower-left third
+          of the leaf — exactly where the supplied design puts
+          it. */}
       <g clipPath={`url(#${clipId})`}>
         {/* 1. medium green base — fills the whole leaf */}
         <rect x="0" y="0" width="100" height="100" fill={C.green} />
 
-        {/* 2. light green slice at the top — the cut runs from
-              (-10, 30) on the left up to (110, 4) on the right
-              so the lighter band hugs the upper-right tip. */}
+        {/* 2. lighter green band at the upper-right */}
         <polygon
-          points="-10,-20 110,-20 110,4 -10,30"
+          points="-10,-20 110,-20 110,6 -10,32"
           fill={C.lightGreen}
         />
 
-        {/* 3. white diagonal stripe — thin band from lower-left
-              to upper-right of the leaf, separating the green
-              body from the navy wedge below. */}
+        {/* 3. navy wedge — slants up to the right so it sits in
+              the lower-LEFT of the leaf, matching the new mark. */}
         <polygon
-          points="-10,76 110,30 110,40 -10,82"
-          fill={C.white}
-        />
-
-        {/* 4. navy wedge — everything BELOW the white stripe.
-              Because the cut slopes up to the right, this fills
-              the lower-RIGHT portion of the leaf interior. */}
-        <polygon
-          points="-10,82 110,40 110,120 -10,120"
+          points="-10,92 110,50 110,120 -10,120"
           fill={C.navy}
         />
       </g>
 
-      {/* White upward arrow — drawn AFTER the clipped group so
-          it can extend slightly past the leaf without being
-          trimmed. Rotated only ~28° so it sits roughly along
-          the medium-green band, matching the brand sheet's
-          horizontal-ish arrow orientation rather than a sharp
-          diagonal. */}
-      <g transform="rotate(28 52 52)">
-        {/* single arrow polygon: rectangular stem + triangular
-            arrowhead on top. Thin dark outline gives it the
-            crisp definition seen on the brand sheet. */}
+      {/* Two-tone curved arrow — drawn AFTER the clipped group
+          so the arrowhead can sit at the upper-right tip without
+          getting trimmed. The shaft is a single quadratic curve
+          from (24, 74) to (78, 22); we draw it twice with two
+          different clip regions so the segment over the navy
+          wedge renders white and the segment over the green
+          renders navy. The arrowhead is a small triangle drawn
+          last, in navy. */}
+
+      {/* Per-render clip definitions for the two arrow halves. */}
+      <defs>
+        <clipPath id={`${clipId}_navyZone`}>
+          {/* Same wedge polygon as #3 above — the arrow shaft is
+              white where it overlaps this region. */}
+          <polygon points="-10,92 110,50 110,120 -10,120" />
+        </clipPath>
+        <clipPath id={`${clipId}_greenZone`}>
+          {/* Everything inside the leaf that is NOT the wedge.
+              Drawn as a 5-point polygon roughly tracing the
+              leaf bounds minus the wedge — the leaf clip-path
+              still trims the outer edges. */}
+          <polygon points="-10,-20 110,-20 110,50 -10,92" />
+        </clipPath>
+      </defs>
+
+      {/* Shaft over the navy wedge → render white */}
+      <g clipPath={`url(#${clipId}_navyZone)`}>
         <path
-          d="
-            M 46 78
-            L 46 48
-            L 38 48
-            L 52 28
-            L 66 48
-            L 56 48
-            L 56 78
-            Z
-          "
-          fill={C.white}
-          stroke={C.navy}
-          strokeWidth="1.2"
-          strokeLinejoin="round"
+          d="M 24 74 Q 44 60, 78 22"
+          stroke={C.white}
+          strokeWidth="3.2"
+          strokeLinecap="round"
+          fill="none"
         />
       </g>
+
+      {/* Shaft over the green portion → render navy */}
+      <g clipPath={`url(#${clipId}_greenZone)`}>
+        <path
+          d="M 24 74 Q 44 60, 78 22"
+          stroke={C.navy}
+          strokeWidth="3.2"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </g>
+
+      {/* Arrowhead at the upper-right tip — small filled triangle
+          in navy. Pointing up-and-to-the-right along the curve's
+          tangent at (78, 22). */}
+      <polygon
+        points="80,18 66,22 72,30"
+        fill={C.navy}
+        stroke={C.navy}
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
