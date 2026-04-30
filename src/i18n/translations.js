@@ -10462,6 +10462,16 @@ const T = {
   // today.done.*
   'today.done.nextAction':     { en: 'Next action',         fr: 'Action suivante',     sw: 'Hatua inayofuata',  ha: 'Mataki na gaba',  tw: 'Ade a edi hɔ',     hi: 'अगला कदम' },
   'today.done.reviewProgress': { en: 'Review progress',     fr: 'Voir les progrès',    sw: 'Kagua maendeleo',   ha: 'Duba ci gaba',    tw: 'Hwɛ nkɔanim',      hi: 'प्रगति देखें' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  LOCALE — language suggestion banner (auto-detect feature)
+  // ═══════════════════════════════════════════════════════════
+  'locale.banner.aria':        { en: 'Language suggestion',                                                fr: 'Suggestion de langue',                                                sw: 'Pendekezo la lugha',                                                  ha: 'Shawarar harshe',                                                       tw: 'Kasa nkyerɛkyerɛmu',                                                      hi: 'भाषा सुझाव' },
+  'locale.banner.eyebrow':     { en: 'Language suggestion based on your farm location',                     fr: 'Suggestion de langue selon votre emplacement',                         sw: 'Pendekezo la lugha kulingana na eneo lako',                            ha: 'Shawarar harshe bisa wurin gonar ka',                                   tw: 'Kasa nkyerɛkyerɛmu a egyina w\'afuo beae so',                              hi: 'आपके खेत के स्थान के आधार पर भाषा सुझाव' },
+  'locale.banner.title':       { en: 'We detected your location ({where}). Use {language} for this farm?', fr: 'Nous avons détecté votre emplacement ({where}). Utiliser {language} pour cette ferme ?', sw: 'Tumegundua mahali pako ({where}). Tumia {language} kwa shamba hili?',  ha: 'Mun gano wurin ku ({where}). Yi amfani da {language} don wannan gona?', tw: 'Yɛahunu wo beae ({where}). Fa {language} di dwuma ma afuo yi?',           hi: 'हमने आपका स्थान पहचाना ({where})। इस खेत के लिए {language} उपयोग करें?' },
+  'locale.banner.accept':      { en: 'Yes, use {language}',                                                 fr: 'Oui, utiliser {language}',                                            sw: 'Ndiyo, tumia {language}',                                              ha: 'Eh, yi amfani da {language}',                                           tw: 'Aane, fa {language} di dwuma',                                            hi: 'हाँ, {language} उपयोग करें' },
+  'locale.banner.choose':      { en: 'Choose another language',                                             fr: 'Choisir une autre langue',                                            sw: 'Chagua lugha nyingine',                                                ha: 'Zaɓi wani harshe',                                                      tw: 'Yi kasa foforɔ bi',                                                       hi: 'अन्य भाषा चुनें' },
+  'locale.banner.keepEnglish': { en: 'Keep English',                                                        fr: 'Garder l\'anglais',                                                   sw: 'Endelea na Kiingereza',                                                ha: 'Ci gaba da Turanci',                                                    tw: 'Tena Borɔfo so',                                                          hi: 'अंग्रेज़ी रखें' },
 };
 
 export default T;

@@ -40,6 +40,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import { loadData, saveData, removeData } from '../../store/localStore.js';
 import { recommendTopCrops } from '../../lib/recommendations/topCropEngine.js';
 import { cropLabel } from '../../utils/cropLabel.js';
+import LanguageSuggestionBanner from '../../components/locale/LanguageSuggestionBanner.jsx';
 
 const STORE_KEY = 'onboarding';
 
@@ -101,6 +102,14 @@ export default function FastFlow() {
     <div style={S.page} data-testid="fast-flow" data-step={state.step}>
       <div style={S.container}>
         <Header lang={lang} step={state.step} onBack={state.step > 1 ? goBack : null} />
+        {/* Language suggestion banner (locale-detection feature). Renders
+            only when detection finds a country that maps to a non-active
+            language; the farmer can accept, choose another, or keep
+            English. Hidden after the first decision (per-farm flag). */}
+        <LanguageSuggestionBanner
+          farm={state.location ? { country: state.location } : null}
+          autoDetect
+        />
         {state.step === 1 && (
           <ScreenEntry
             onPick={(isNew) => update({ isNewFarmer: isNew, step: 2 })}
