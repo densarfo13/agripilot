@@ -1,35 +1,25 @@
 /**
- * FarrowayLogo — v4 brand mark, redrawn April 2026 to match the
- * official brand sheet:
+ * FarrowayLogo — v5 brand mark, redrawn April 2026 to match the
+ * supplied brand-asset reference exactly:
  *
- *   USAGE ON DARK BACKGROUND   |   USAGE ON LIGHT BACKGROUND
- *   ─────────────────────────  |   ─────────────────────────
- *   green leaf + white "F"     |   green leaf + navy "Farroway"
- *   tagline: white + green     |   tagline: navy + green
+ *   * Vertical pointed-oval leaf (almond shape) — sharp top tip,
+ *     softly pointed base, symmetric flanks.
+ *   * Dark-green stroke around the outside (#15803D) so the
+ *     leaf stays defined on light AND dark surfaces.
+ *   * Brand-green interior fill (#22C55E).
+ *   * Solid white upward arrow (shaft + triangular head) painted
+ *     on top of the leaf body, pointing up-and-to-the-right.
  *
- * Because the SAME green mark sits on both dark and light tiles,
- * the mark itself is single-tone (brand green only). The arrow
- * inside the leaf is cut out as NEGATIVE SPACE, not painted —
- * the surface behind the leaf shows through, so the mark stays
- * legible on every backdrop.
- *
- * Composition:
- *   * Leaf silhouette, pointed top-right tip, rounded bottom-left.
- *     Filled with brand green (#22C55E).
- *   * Subtle leaf-vein highlight in lighter green (#A3E635) — a
- *     thin diagonal stroke from the base to the tip, hinting at
- *     the central rib.
- *   * Upward-pointing arrow (shaft + head) cut out of the leaf
- *     via an SVG <mask>. The cutout reveals whatever sits behind
- *     the SVG (white page, navy dashboard, brand-blue tile).
+ * The mark is self-contained — its own outline + interior keep
+ * it readable on a navy tile, a white page, or a dashboard panel
+ * without recolouring.
  *
  * Two-tone tagline support: "Know what to do." (navy on light
  * surfaces, white on dark) + "Grow better." (always green).
  *
  * App-icon contexts wrap the bare mark in a rounded square tile
  * via `tileVariant="light"` or `"dark"`. The PRIMARY logo is
- * the bare leaf — no tile — so it reads naturally on white
- * pages or dark dashboards alike.
+ * the bare leaf — no tile.
  *
  * Backwards-compatible API:
  *   size       — icon edge in px (default 32)
@@ -41,17 +31,12 @@
  *                tileVariant="dark"
  *   tileVariant — "none" (default) | "light" | "dark"
  *   showTagline — render the two-tone tagline beneath the
- *                 wordmark (default false; set on splash /
- *                 email-signature presentations)
+ *                 wordmark (default false)
  *
  * Strict-rule audit
- *   * Inline SVG — no second network request, ships in the
- *     bundle, works offline.
- *   * Single brand colour — no clash with dark or light surfaces.
- *   * The arrow cutout uses a <mask>, so clip-path stacking on
- *     adjacent SVG instances is not affected.
- *   * Accessibility: <svg role="img"> + <title>; tagline keys
- *     read by screen readers in source order.
+ *   * Inline SVG — no second network request.
+ *   * Single mark, two surface contexts — no recolouring needed.
+ *   * Accessibility: <svg role="img"> + <title>.
  */
 
 import React from 'react';
@@ -59,19 +44,11 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 
 const C = FARROWAY_BRAND.colors;
 
-// Stable IDs prefixed with the component name so multiple
-// instances on the same page never collide on mask refs.
-let _uid = 0;
-function nextId(prefix) {
-  _uid += 1;
-  return `${prefix}_${_uid}`;
-}
-
 /**
  * The bare leaf mark — no wordmark, no tile.
  *
- * viewBox is 0 0 100 100. All coordinates tuned so the mark
- * stays crisp from ~20 px (sidebar) up to 192 px (PWA tile).
+ * viewBox is 0 0 100 100. Coordinates tuned so the mark stays
+ * crisp from ~20 px (sidebar) up to 192 px (PWA tile).
  */
 export function FarrowayMark({
   size = 32,
@@ -80,31 +57,50 @@ export function FarrowayMark({
   style,
   ...rest
 }) {
-  // One unique id per render — required because mask refs are
-  // scoped to the document, not the SVG.
-  const maskId  = React.useMemo(() => nextId('farrowayArrow'), []);
   const tileFill =
     tileVariant === 'dark'  ? C.navy  :
     tileVariant === 'light' ? C.white : null;
 
-  // Leaf silhouette: pointed top-right tip ~(86, 14), bulging
-  // upper-left around (10, 48), rounded bottom curve through
-  // (28, 90), back up the right side. Slightly tightened from
-  // the v3 path so the leaf reads cleanly against the tagline.
+  // Vertical pointed-oval leaf.
+  //   * Top tip:    (50, 6)   — sharp
+  //   * Widest:     y ≈ 52
+  //   * Base tip:   (50, 96)  — softly pointed
+  // Symmetric quadratic curves so the silhouette reads as a
+  // simple, recognisable leaf at every render size.
   const LEAF_PATH =
-    'M 86 14 '
-    + 'Q 66 6, 44 14 '
-    + 'Q 20 24, 10 48 '
-    + 'Q 4 78, 28 90 '
-    + 'Q 50 92, 66 76 '
-    + 'Q 82 54, 86 14 Z';
+    'M 50 6 '
+    + 'Q 18 18, 12 52 '
+    + 'Q 18 88, 50 96 '
+    + 'Q 82 88, 88 52 '
+    + 'Q 82 18, 50 6 Z';
 
-  // Curved arrow geometry — drawn in BLACK on the mask so it
-  // becomes a cutout when the leaf is painted. Shaft runs from
-  // the lower-left of the leaf to the upper-right tip; the
-  // arrowhead is a small filled triangle just inside the tip.
-  const ARROW_SHAFT  = 'M 28 72 Q 46 56, 76 22';
-  const ARROW_HEAD   = '78,18 60,22 68,34';
+  // White arrow painted on top of the leaf body. Drawn as a
+  // single filled polygon so the head + shaft read as one
+  // confident shape (matches the supplied brand asset).
+  //
+  // Geometry:
+  //                         tip (78, 18)
+  //                        /
+  //              (66, 18)*--*(72, 30)   outer / inner head edges
+  //                       \  \
+  //                        \  \
+  //                shaft thick band
+  //                  \      \
+  //                   *(34, 70)
+  //                   |
+  //                  *(26, 78)  — base
+  //
+  const ARROW_PATH =
+    'M 26 78 '
+    + 'L 36 64 '
+    + 'L 60 30 '   // up the lower flank of the shaft to head base
+    + 'L 56 26 '   // back-bottom flange of arrowhead
+    + 'L 80 16 '   // tip of the arrow
+    + 'L 70 40 '   // back-top flange of arrowhead
+    + 'L 66 36 '
+    + 'L 42 70 '   // down the upper flank of the shaft
+    + 'L 32 84 '
+    + 'Z';
 
   return (
     <svg
@@ -119,30 +115,6 @@ export function FarrowayMark({
     >
       <title>{ariaLabel}</title>
 
-      <defs>
-        {/* Mask: white = keep, black = cut out. We cut the arrow
-            shaft + head out of the leaf so whatever surface sits
-            behind the SVG (page, tile, dashboard) shows through. */}
-        <mask id={maskId} maskUnits="userSpaceOnUse"
-              x="0" y="0" width="100" height="100">
-          <rect x="0" y="0" width="100" height="100" fill="white" />
-          <path
-            d={ARROW_SHAFT}
-            stroke="black"
-            strokeWidth="9"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <polygon
-            points={ARROW_HEAD}
-            fill="black"
-            stroke="black"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-        </mask>
-      </defs>
-
       {/* Optional rounded-square tile (app-icon variants). */}
       {tileFill && (
         <rect
@@ -152,31 +124,24 @@ export function FarrowayMark({
         />
       )}
 
-      {/* Leaf body — single brand-green fill, masked so the
-          arrow cuts through to whatever is behind. */}
+      {/* Leaf body — bright green fill with a dark-green outline
+          so the silhouette holds on every backdrop. */}
       <path
         d={LEAF_PATH}
         fill={C.green}
-        mask={`url(#${maskId})`}
+        stroke={C.darkGreen}
+        strokeWidth="5"
+        strokeLinejoin="round"
       />
 
-      {/* Leaf-vein accent in the lighter green tone — sits
-          under the cutout, runs along the arrow shaft so the
-          two read as a single integrated mark. The mask trims
-          everything outside the leaf. */}
-      <g
-        clipPath={undefined}
-        style={{ pointerEvents: 'none' }}
-      >
-        <path
-          d="M 30 78 Q 48 60, 80 20"
-          stroke={C.lightGreen}
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.55"
-        />
-      </g>
+      {/* White upward arrow — confident, single filled shape. */}
+      <path
+        d={ARROW_PATH}
+        fill={C.white}
+        stroke={C.white}
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -200,8 +165,6 @@ export default function FarrowayLogo({
   showTagline = false,
   ...rest
 }) {
-  // Resolve effective tile mode. Old callers passed
-  // `withTile=true/false`; new callers pass `tileVariant`.
   const effectiveTile =
     tileVariant
       ? tileVariant
@@ -211,9 +174,6 @@ export default function FarrowayLogo({
   const wordmarkColor = textColor
     || (onDark ? C.white : C.navy);
 
-  // Tagline colours: the brand sheet shows
-  //   "Know what to do." in navy (light bg) / white (dark bg)
-  //   "Grow better."     always in brand green
   const taglinePrimary  = onDark ? C.white : C.navy;
   const taglineAccent   = C.green;
 

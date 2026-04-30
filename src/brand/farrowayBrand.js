@@ -31,11 +31,12 @@ export const FARROWAY_BRAND = Object.freeze({
   website: 'https://farroway.app',
   supportEmail: 'support@farroways.com',
   colors: Object.freeze({
-    green:       '#22C55E', // primary brand green
-    lightGreen:  '#A3E635', // accent / arrow-path highlight
+    green:       '#22C55E', // primary brand green (leaf fill)
+    darkGreen:   '#15803D', // leaf outline / depth accent
+    lightGreen:  '#A3E635', // accent highlight
     navy:        '#0B1220', // deep navy — icon background, app bg
     darkPanel:   '#111A2E', // raised surface on dark bg
-    white:       '#FFFFFF',
+    white:       '#FFFFFF', // arrow + onDark wordmark
   }),
   // Static asset paths for surfaces that prefer a file over
   // the inline SVG (PDFs, email templates, og:image, etc.).

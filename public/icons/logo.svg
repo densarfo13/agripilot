@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Farroway logo — 512x512 reference asset (v4, April 2026).
+  Farroway logo — 512x512 reference asset (v5, April 2026).
 
   Aligned with the canonical leaf-arrow mark (see
   src/components/FarrowayLogo.jsx and
@@ -10,9 +10,9 @@
   set at 192/512/1024.
 
   Composition:
-    1. Leaf silhouette filled brand green (#22C55E).
-    2. Curved upward arrow cut out as negative space via mask.
-    3. Lighter-green vein accent along the arrow shaft.
+    1. Vertical pointed-oval leaf, dark-green stroke around a
+       brand-green fill.
+    2. Solid white upward arrow painted on top.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 512 512"
@@ -20,38 +20,29 @@
      aria-label="Farroway">
   <title>Farroway</title>
 
-  <defs>
-    <mask id="arrowCutout" maskUnits="userSpaceOnUse"
-          x="0" y="0" width="512" height="512">
-      <rect x="0" y="0" width="512" height="512" fill="white" />
-      <path d="M 143 369 Q 235 287, 389 113"
-            stroke="black"
-            stroke-width="46"
-            stroke-linecap="round"
-            fill="none" />
-      <polygon points="399,92 307,113 348,174"
-               fill="black"
-               stroke="black"
-               stroke-width="10"
-               stroke-linejoin="round" />
-    </mask>
-  </defs>
-
-  <!-- Leaf body — single brand-green fill, masked. -->
-  <path d="M 440 72
-           Q 338 31, 225 72
-           Q 102 123, 51 246
-           Q 20 399, 143 461
-           Q 256 471, 338 389
-           Q 420 276, 440 72 Z"
+  <!-- Leaf body. -->
+  <path d="M 256 31
+           Q 92 92, 61 266
+           Q 92 451, 256 492
+           Q 420 451, 451 266
+           Q 420 92, 256 31 Z"
         fill="#22C55E"
-        mask="url(#arrowCutout)" />
+        stroke="#15803D"
+        stroke-width="26"
+        stroke-linejoin="round" />
 
-  <!-- Lighter-green vein accent along the arrow shaft. -->
-  <path d="M 154 399 Q 246 307, 410 102"
-        stroke="#A3E635"
-        stroke-width="7.2"
-        stroke-linecap="round"
-        fill="none"
-        opacity="0.55" />
+  <!-- White upward arrow. -->
+  <path d="M 133 399
+           L 184 328
+           L 307 154
+           L 287 133
+           L 410 82
+           L 358 205
+           L 338 184
+           L 215 358
+           L 164 430 Z"
+        fill="#FFFFFF"
+        stroke="#FFFFFF"
+        stroke-width="5"
+        stroke-linejoin="round" />
 </svg>
