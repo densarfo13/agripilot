@@ -349,16 +349,37 @@ export function answerForIntent(intentId, language = 'en', vars = null) {
  * surface. First pattern of each intent doubles as the
  * canonical user-facing question; we render those for the
  * suggested-questions grid.
+ *
+ * Optional `opts.regionConfig` filters out intents that don't
+ * apply in the active region (spec §9: backyard users never
+ * see Sell as a primary action). When omitted, every intent
+ * surfaces — preserves backwards compatibility.
  */
-export function getSuggestedQuestions(language = 'en') {
+export function getSuggestedQuestions(language = 'en', opts = {}) {
   const lang = String(language || 'en').toLowerCase();
-  return INTENTS.map((intent) => {
-    const list = intent.patterns[lang] || intent.patterns.en || [];
-    return {
-      id: intent.id,
-      question: list[0] || intent.id,
-      action: intent.action,
-      navigate: intent.navigate || null,
-    };
-  });
+  const regionConfig = opts && opts.regionConfig;
+  const isBackyard   = !!(opts && opts.isBackyard);
+
+  return INTENTS
+    .filter((intent) => {
+      // Sell intent gating — hide when the region disables
+      // the sell flow OR the farmer is on the backyard
+      // experience. Voice routing still resolves the intent
+      // if the farmer happens to speak the phrase, so this
+      // only trims the visible suggested-question grid.
+      if (intent.id === 'sell') {
+        if (isBackyard) return false;
+        if (regionConfig && regionConfig.enableSellFlow === false) return false;
+      }
+      return true;
+    })
+    .map((intent) => {
+      const list = intent.patterns[lang] || intent.patterns.en || [];
+      return {
+        id: intent.id,
+        question: list[0] || intent.id,
+        action: intent.action,
+        navigate: intent.navigate || null,
+      };
+    });
 }

@@ -36,6 +36,9 @@ import {
   generateDailyPlan, getDailyPlanVoiceSummary,
 } from '../../core/dailyIntelligenceEngine.js';
 import { useProfile } from '../../context/ProfileContext.jsx';
+import {
+  getRegionConfig, shouldUseBackyardExperience,
+} from '../../config/regionConfig.js';
 
 const STATE = {
   IDLE: 'idle',
@@ -227,7 +230,15 @@ export default function VoiceAssistant({ open, onClose }) {
 
   if (!open) return null;
 
-  const suggested = getSuggestedQuestions(lang);
+  // Region-aware suggested-question filtering (spec §9). The
+  // sell intent is hidden for backyard users + regions where
+  // enableSellFlow is false; voice routing still resolves the
+  // intent if a farmer happens to speak the phrase.
+  const country  = profile?.country || profile?.countryCode || null;
+  const farmType = profile?.farmType || null;
+  const regionConfig = getRegionConfig(country);
+  const isBackyard = shouldUseBackyardExperience(country, farmType);
+  const suggested = getSuggestedQuestions(lang, { regionConfig, isBackyard });
 
   return (
     <div
