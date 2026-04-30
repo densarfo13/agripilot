@@ -58,13 +58,14 @@ import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
 import RainfallForecastCard from '../components/RainfallForecastCard.jsx';
 import MarketSignalCard from '../components/MarketSignalCard.jsx';
-// Lucide-style icons for the Home quick-checks grid (Scan
-// crop + Check land). ShoppingCart + Wallet imports dropped
-// alongside the Mark-ready + Funding tiles in the screen-
-// role refactor — Sell + Funding flows now live exclusively
-// in their dedicated bottom-nav tabs.
+// Lucide-style icons for the Home 2x2 quick-actions grid:
+// Scan crop / Check land / Funding / Sell. The unified UI
+// system spec (Apr 2026 polish) restores the four-tile grid
+// — Funding + Sell are still primarily reachable through
+// their bottom-nav tabs, but the Home grid acts as a fast
+// shortcut for farmers who land on Home first.
 import {
-  Camera, Sprout,
+  Camera, Sprout, ShoppingCart, Wallet, ArrowRight,
 } from '../components/icons/lucide.jsx';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -781,14 +782,82 @@ export default function Dashboard() {
             />
           ))}
 
-        {/* Screen-role refactor (Apr 2026): Home owns daily-
-            action overview only. Funding + Mark-ready tiles
-            removed — those flows live exclusively in the
-            Funding and Sell tabs (still in bottom nav). Home
-            keeps two quick farm checks: Scan crop + Check
-            land. Same Lucide icons, same routes, just two
-            tiles in a 2-column grid that now fits naturally
-            without crowding the primary CTA. */}
+        {/* ── Daily progress block (unified UI spec, Apr 2026)
+            Visible "X / Y" daily progress + status pill. The
+            primary task card has its own micro-signal; this
+            block is the calm at-a-glance read for farmers who
+            already know the task. Hidden when total === 0
+            (no tasks yet today) so we never claim "0/0 — On
+            track". */}
+        {loop.profile && loop.progress && loop.progress.total > 0 && (
+          <div style={S.progressBlock} data-testid="home-progress">
+            <div style={S.progressHeadRow}>
+              <span style={S.progressCount}>
+                {loop.progress.done}/{loop.progress.total}
+                <span style={S.progressCountSub}>
+                  {' '}{tSafe('home.progress.tasks', 'tasks done')}
+                </span>
+              </span>
+              <span
+                style={{
+                  ...S.progressStatus,
+                  ...(loop.progress.done === loop.progress.total
+                    ? S.progressStatusDone
+                    : null),
+                }}
+              >
+                {loop.progress.done === loop.progress.total
+                  ? tSafe('home.progress.complete', 'All done')
+                  : tSafe('home.progress.onTrack', 'On track')}
+              </span>
+            </div>
+            <div style={S.progressTrack} aria-hidden="true">
+              <div
+                style={{
+                  ...S.progressFill,
+                  width: `${loop.progress.percent}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Up Next preview card (unified UI spec)
+            Tiny secondary card that surfaces the next task
+            title only, with a "View tasks" tap target. Drawn
+            from the loop's autopilotNextText (already memoised
+            inside useFarmerLoop). Hidden when there's nothing
+            to preview — first-day or all-done farmers don't
+            see a half-empty preview. */}
+        {loop.profile
+          && loop.taskViewModel
+          && loop.taskViewModel.nextText
+          && loop.progress
+          && loop.progress.remaining > 1 && (
+          <button
+            type="button"
+            onClick={() => navigate('/tasks')}
+            style={S.upNextCard}
+            data-testid="home-up-next"
+          >
+            <span style={S.upNextLabel}>
+              {tSafe('home.upNext.label', 'Up next')}
+            </span>
+            <span style={S.upNextTitle}>
+              {loop.taskViewModel.nextText}
+            </span>
+            <span style={S.upNextChevron} aria-hidden="true">
+              <ArrowRight size={14} />
+            </span>
+          </button>
+        )}
+
+        {/* ── 2x2 Quick actions grid (unified UI spec)
+            Exactly four tiles: Scan crop / Check land / Funding
+            / Sell. Funding + Sell here are deep-link shortcuts
+            to their bottom-nav tabs so farmers landing on Home
+            first don't have to hunt. Same routes, same labels —
+            no duplicate flows. */}
         {loop.profile && (
           <div style={S.quickGrid} data-testid="home-quick-actions">
             <button
@@ -825,6 +894,40 @@ export default function Dashboard() {
                   'Quick farm check.')}
               </span>
             </button>
+            <button
+              type="button"
+              onClick={() => navigate('/opportunities')}
+              style={S.quickTile}
+              data-testid="home-funding"
+            >
+              <span style={S.quickTileIcon} aria-hidden="true">
+                <Wallet size={20} />
+              </span>
+              <span style={S.quickTileLabel}>
+                {tSafe('home.quick.funding', 'Funding')}
+              </span>
+              <span style={S.quickTileHelper}>
+                {tSafe('home.quick.funding.helper',
+                  'See available offers.')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/sell')}
+              style={S.quickTile}
+              data-testid="home-sell"
+            >
+              <span style={S.quickTileIcon} aria-hidden="true">
+                <ShoppingCart size={20} />
+              </span>
+              <span style={S.quickTileLabel}>
+                {tSafe('home.quick.sell', 'Sell')}
+              </span>
+              <span style={S.quickTileHelper}>
+                {tSafe('home.quick.sell.helper',
+                  'List your harvest.')}
+              </span>
+            </button>
           </div>
         )}
 
@@ -851,6 +954,108 @@ const S = {
     // plus a small breathing buffer so the last quick-action
     // tile is never visually pinned under the fixed nav.
     padding: '0.75rem 0.75rem 5rem',
+  },
+
+  // ─── Daily progress block (unified UI spec, Apr 2026) ────
+  // Calm "X / Y tasks done • On track" surface that sits
+  // under the primary task card. Track is the same green
+  // fill used elsewhere in the app for consistency.
+  progressBlock: {
+    margin: '0.75rem 0 0',
+    padding: '10px 12px',
+    borderRadius: 12,
+    background: '#102C47',
+    border: '1px solid #1F3B5C',
+  },
+  progressHeadRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  progressCount: {
+    fontSize: '0.875rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+  },
+  progressCountSub: {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.55)',
+  },
+  progressStatus: {
+    fontSize: '0.6875rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: '#86EFAC',
+    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(34,197,94,0.32)',
+    padding: '3px 10px',
+    borderRadius: 999,
+  },
+  progressStatusDone: {
+    color: '#FCD34D',
+    background: 'rgba(245,158,11,0.10)',
+    border: '1px solid rgba(245,158,11,0.32)',
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    background: '#22C55E',
+    borderRadius: 999,
+    transition: 'width 240ms ease',
+  },
+
+  // ─── Up Next preview card (unified UI spec, Apr 2026) ────
+  // One small ghost card under the progress block that gives
+  // the farmer a peek at what's coming after the current
+  // task. Whole row is a tap target → /tasks. Hidden when
+  // there's nothing to preview.
+  upNextCard: {
+    width: '100%',
+    margin: '0.5rem 0 0',
+    appearance: 'none',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 12,
+    padding: '0.65rem 0.85rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    cursor: 'pointer',
+    color: '#FFFFFF',
+    minHeight: 48,
+    textAlign: 'left',
+  },
+  upNextLabel: {
+    fontSize: '0.625rem',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'rgba(255,255,255,0.55)',
+    flex: '0 0 auto',
+  },
+  upNextTitle: {
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    color: '#FFFFFF',
+    flex: '1 1 auto',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  upNextChevron: {
+    color: '#86EFAC',
+    flex: '0 0 auto',
+    display: 'inline-flex',
+    alignItems: 'center',
   },
 
   // ─── Spec polish (Apr 2026): 2x2 quick-actions grid ─────

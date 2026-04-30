@@ -477,17 +477,12 @@ export default function AllTasksPage() {
       {!loading && tasks.length > 0 && !taskCompletionState && (
         <div style={S.sections}>
 
-          {/* Scan-crop entry — "Having a problem? Scan" */}
-          <button
-            type="button"
-            onClick={() => navigate('/scan-crop')}
-            style={S.scanEntry}
-            data-testid="tasks-scan-crop"
-          >
-            <span style={S.scanEntryIcon} aria-hidden="true">{'\uD83D\uDCF7'}</span>
-            <span>{t('camera.entry.tasksCta')}</span>
-            <span style={S.scanEntryChevron}>{'\u203A'}</span>
-          </button>
+          {/* Unified UI spec (Apr 2026): the Scan-crop entry on
+              this page was a duplicate of Home's quick-action
+              tile. Removed per "no duplicate actions across
+              screens" — Tasks now focuses purely on execution
+              (current → next → completed). Scan-crop remains
+              one tap away on Home. */}
 
           {/* ═══ A. CURRENT TASK ═══ */}
           {currentTask && (
