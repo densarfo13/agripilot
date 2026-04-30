@@ -16,6 +16,12 @@ import { estimateCropStage, isHarvestStage } from './cropStageEstimator.js';
 import { applyWeatherRules } from './weatherTaskRules.js';
 import { generateActions } from './taskGenerator.js';
 import { getCompletedActionIdsToday } from './dailyTaskCompletion.js';
+import {
+  getRegionConfig,
+  shouldUseBackyardExperience,
+} from '../config/regionConfig.js';
+import { getBackyardDailyPlan, getBackyardWeatherAlerts } from '../experience/backyardExperience.js';
+import { getFarmDailyPlan, getFarmWeatherFocusAlerts } from '../experience/farmExperience.js';
 
 /**
  * @typedef {{
@@ -182,6 +188,13 @@ export function generateDailyPlan({
   const plantingDate = farm.plantingDate || farm.plantedAt || null;
   const country = farm.country || farm.countryCode || null;
 
+  // Region-aware experience selection (spec §5). Reads
+  // through the config so no country logic is hardcoded
+  // here — Mexico's mixed experience + home_garden farm type
+  // resolves to backyard automatically.
+  const regionConfig = getRegionConfig(country);
+  const isBackyard = shouldUseBackyardExperience(country, farm.farmType);
+
   // Stage: prefer manual override, else estimate from days
   // since planting.
   const stageInfo = estimateCropStage({
@@ -193,7 +206,19 @@ export function generateDailyPlan({
   const harvestReady = isHarvestStage(stage);
 
   // Weather rules — empty arrays when no weather passed in.
-  const weatherRules = weather ? applyWeatherRules(weather) : { actions: [], alerts: [] };
+  const baseWeatherRules = weather ? applyWeatherRules(weather) : { actions: [], alerts: [] };
+
+  // Region-specific weather alerts (typhoon / monsoon /
+  // drought / flood / frost / heat). Merged on top of the
+  // base rules so the Philippine farmer sees the typhoon
+  // banner and the U.S. backyarder sees the frost watch.
+  const focusAlerts = isBackyard
+    ? getBackyardWeatherAlerts(weather)
+    : getFarmWeatherFocusAlerts(weather, regionConfig.weatherFocus || []);
+  const weatherRules = {
+    actions: baseWeatherRules.actions,
+    alerts:  [...focusAlerts, ...baseWeatherRules.alerts],
+  };
 
   // Already-completed-today filter.
   let completedToday = [];
@@ -201,13 +226,31 @@ export function generateDailyPlan({
   catch { completedToday = []; }
 
   // Action list (capped at 3 inside generateActions).
-  const actions = generateActions({
+  let actions = generateActions({
     cropStageInfo: { ...stageInfo, stage },
     weatherRules,
     recentTasks,
     completedToday,
-    harvestReady,
+    // Spec §9: backyard users never see Sell as an action,
+    // so suppress harvestReady → "Prepare to sell" emission
+    // for them. Farm region gating happens via
+    // regionConfig.enableSellFlow below.
+    harvestReady: harvestReady && !isBackyard && regionConfig.enableSellFlow !== false,
   });
+
+  // Experience fallback: when the engine can't fill three
+  // slots, top up from the experience-specific safe set so
+  // the daily card never reads empty for a known region.
+  if (actions.length < 3) {
+    const fallback = isBackyard
+      ? getBackyardDailyPlan().actions
+      : getFarmDailyPlan().actions;
+    const seen = new Set(actions.map((a) => a.id));
+    for (const a of fallback) {
+      if (actions.length >= 3) break;
+      if (!seen.has(a.id)) actions = [...actions, a];
+    }
+  }
 
   // Alerts — combine weather + profile gaps.
   const alerts = buildAlerts({
@@ -237,7 +280,7 @@ export function generateDailyPlan({
     cropId,
     cropStage: stage,
     date: isoDay(now),
-    summary,
+    summary: isBackyard ? getBackyardDailyPlan().summary : summary,
     actions,
     alerts,
     confidence,
@@ -247,6 +290,12 @@ export function generateDailyPlan({
     weatherUsed:       !!weather,
     weatherStale,
     harvestReady,
+    // Region context for downstream consumers (UI labels,
+    // sell-flow gating, measurement system).
+    experience:        isBackyard ? 'backyard' : regionConfig.experience,
+    enableSellFlow:    !isBackyard && regionConfig.enableSellFlow !== false,
+    measurementSystem: regionConfig.measurementSystem,
+    country,
     generatedAt: nowIso(),
   };
 }

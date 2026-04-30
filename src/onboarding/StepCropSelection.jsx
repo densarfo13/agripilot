@@ -14,21 +14,58 @@ import React from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { getLocalizedCropName } from '../i18n/cropNames.js';
+import { getRegionCrops } from '../config/regionConfig.js';
 
-const CROPS = Object.freeze([
-  { id: 'maize',  emoji: '\uD83C\uDF3D' },
-  { id: 'tomato', emoji: '\uD83C\uDF45' },
-  { id: 'pepper', emoji: '\uD83C\uDF36' },
-  { id: 'onion',  emoji: '\uD83E\uDDC5' },
-  { id: 'ginger', emoji: '\uD83E\uDED8' },
-  { id: 'okra',   emoji: '\uD83D\uDFE2' },
-]);
+// Emoji catalogue. Falls back to a generic seedling for any
+// crop the region config surfaces that we don't have an icon
+// for (e.g. avocado, coffee, soybean) — keeps new countries
+// shippable without a code change here.
+const CROP_EMOJI = Object.freeze({
+  maize:    '\uD83C\uDF3D',
+  corn:     '\uD83C\uDF3D',
+  tomato:   '\uD83C\uDF45',
+  pepper:   '\uD83C\uDF36',
+  chili:    '\uD83C\uDF36',
+  onion:    '\uD83E\uDDC5',
+  ginger:   '\uD83E\uDED8',
+  okra:     '\uD83D\uDFE2',
+  cassava:  '\uD83C\uDF31',
+  yam:      '\uD83C\uDF60',
+  rice:     '\uD83C\uDF5A',
+  wheat:    '\uD83C\uDF3E',
+  beans:    '\uD83E\uDED8',
+  potato:   '\uD83E\uDD54',
+  kale:     '\uD83E\uDD6C',
+  lettuce:  '\uD83E\uDD6C',
+  herbs:    '\uD83C\uDF3F',
+  cucumber: '\uD83E\uDD52',
+  coconut:  '\uD83E\uDD65',
+  banana:   '\uD83C\uDF4C',
+  soybean:  '\uD83E\uDED8',
+  coffee:   '\u2615',
+  avocado:  '\uD83E\uDD51',
+});
+
+const FALLBACK_EMOJI = '\uD83C\uDF31';
+
+function emojiFor(cropId) {
+  return CROP_EMOJI[String(cropId || '').toLowerCase()] || FALLBACK_EMOJI;
+}
 
 export default function StepCropSelection({ value, onChange }) {
   const { lang } = useTranslation();
   const isOther = value.cropId === 'other';
   const [otherName, setOtherName] = React.useState(
     isOther ? (value.cropName || '') : '',
+  );
+
+  // Region-aware crop list (spec §6). Falls back to the
+  // DEFAULT_REGION_CONFIG list when the country isn't known.
+  const regionCrops = React.useMemo(
+    () => (getRegionCrops(value.country) || []).map((id) => ({
+      id, emoji: emojiFor(id),
+    })),
+    [value.country],
   );
 
   function pickCrop(cropId) {
@@ -60,7 +97,7 @@ export default function StepCropSelection({ value, onChange }) {
       </p>
 
       <div style={S.grid}>
-        {CROPS.map((c) => {
+        {regionCrops.map((c) => {
           const active = value.cropId === c.id;
           return (
             <button

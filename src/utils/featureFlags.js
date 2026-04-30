@@ -69,6 +69,28 @@ const DEFAULTS = Object.freeze({
   // flows stay registered so the rollout can A/B without code
   // changes, controlled by this flag.
   FEATURE_SIMPLE_ONBOARDING: true,
+
+  // Global Expansion System — region-config-driven adaptation
+  // for crops / language / nav / experience. When off, the
+  // app falls through to its existing Ghana/EN defaults so
+  // pilots running today are unaffected.
+  FEATURE_GLOBAL_REGION_CONFIG: true,
+
+  // U.S. backyard experience (garden language, no sell-flow,
+  // frost/heat-aware watering). Reads through experience helpers
+  // gated by getRegionConfig().enableBackyardMode.
+  FEATURE_US_BACKYARD_EXPERIENCE: true,
+
+  // Ghana farm experience (rainfall/humidity-aware tasks, sell
+  // flow enabled, NGO reporting). On by default — matches the
+  // current pilot behaviour.
+  FEATURE_GHANA_FARM_EXPERIENCE: true,
+
+  // Advanced Wave-3/4 country activation (India / Philippines /
+  // Brazil / Mexico / Indonesia full localisation). MUST stay
+  // off until each market clears the launch checklist; the
+  // region config keeps them in 'planned' status regardless.
+  FEATURE_ADVANCED_GLOBAL_EXPANSION: false,
 });
 
 function safeWindowFlag(name) {

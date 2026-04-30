@@ -16,14 +16,33 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { NAV_ICONS } from '../../lib/farmerIcons.js';
+import { useProfile } from '../../context/ProfileContext.jsx';
+import {
+  getRegionConfig, shouldUseBackyardExperience,
+} from '../../config/regionConfig.js';
+import { getBackyardLabel } from '../../experience/backyardExperience.js';
 
-const TABS = [
+// Farm-experience tabs (Ghana / Nigeria / Kenya / India / etc).
+const FARM_TABS = [
   { key: 'home',          path: '/dashboard',     icon: NAV_ICONS.home,          labelKey: 'nav.home',          fallback: 'Home' },
   { key: 'farm',          path: '/my-farm',       icon: NAV_ICONS.farm,          labelKey: 'nav.myFarm',        fallback: 'Farm' },
   { key: 'tasks',         path: '/tasks',         icon: NAV_ICONS.tasks,         labelKey: 'nav.tasks',         fallback: 'Tasks' },
   { key: 'progress',      path: '/progress',      icon: NAV_ICONS.progress,      labelKey: 'nav.progress',      fallback: 'Progress' },
   { key: 'opportunities', path: '/opportunities', icon: NAV_ICONS.opportunities, labelKey: 'nav.opportunities', fallback: 'Funding' },
   { key: 'sell',          path: '/sell',          icon: NAV_ICONS.sell,          labelKey: 'nav.sell',          fallback: 'Sell' },
+];
+
+// Backyard-experience tabs (U.S. backyard / home garden) —
+// spec §10. "My Garden" replaces "Farm"; Sell is removed
+// because backyard users don't list produce; Ask + Scan
+// surface as nav entries instead.
+const BACKYARD_TABS = [
+  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
+  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGarden', fallback: 'My Garden' },
+  { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
+  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
+  { key: 'ask',      path: '/help',      icon: NAV_ICONS.help || '\u2754', labelKey: 'nav.ask',  fallback: 'Ask' },
+  { key: 'scan',     path: '/dashboard?scan=1', icon: NAV_ICONS.scan || '\uD83D\uDCF7', labelKey: 'nav.scan', fallback: 'Scan' },
 ];
 
 export default function BottomTabNav() {
@@ -34,6 +53,18 @@ export default function BottomTabNav() {
   // tSafe for every nav label so a missing key shows the visible
   // tab key fallback rather than humanised English.
   useTranslation();
+
+  // Region-aware tab list (spec §10). Reads through the
+  // existing ProfileContext so we never need an extra fetch.
+  // Falls back to the farm tab list whenever profile / region
+  // is unknown — pilots running today are unaffected.
+  let profile = null;
+  try { profile = useProfile()?.profile || null; }
+  catch { /* outside ProfileContext (e.g. login page) */ }
+  const country = profile?.country || profile?.countryCode || null;
+  const farmType = profile?.farmType || null;
+  const isBackyard = shouldUseBackyardExperience(country, farmType);
+  const TABS = isBackyard ? BACKYARD_TABS : FARM_TABS;
 
   const currentPath = location.pathname;
 

@@ -11446,6 +11446,42 @@ const T = {
     hi: 'होम पर माइक टैप करें और अपनी भाषा में कोई भी प्रश्न पूछें।',
     es: 'Toque el micrófono en Inicio y haga cualquier pregunta en su idioma.',
   },
+
+  // ═══════════════════════════════════════════════════════════
+  //  GLOBAL EXPANSION — backyard nav + readiness labels
+  // ═══════════════════════════════════════════════════════════
+  'nav.myGarden': {
+    en: 'My Garden', fr: 'Mon jardin', sw: 'Bustani Yangu',
+    ha: 'Lambun a', tw: 'Me Turom', hi: 'मेरा बगीचा',
+    es: 'Mi jardín',
+  },
+  'nav.ask': {
+    en: 'Ask', fr: 'Demander', sw: 'Uliza',
+    ha: 'Tambaya', tw: 'Bisa', hi: 'पूछें', es: 'Preguntar',
+  },
+  'nav.scan': {
+    en: 'Scan', fr: 'Scanner', sw: 'Skani',
+    ha: 'Bincika', tw: 'Hwehwɛ', hi: 'स्कैन', es: 'Escanear',
+  },
+  // Readiness-status labels for the admin "Global Expansion" card
+  'expansion.ready': {
+    en: 'Ready to expand', fr: 'Prêt à s\u2019étendre',
+    sw: 'Tayari kupanua', ha: 'Shirye don faɗaɗawa',
+    tw: 'Asiesie ho sɛ ɛrebɛkɔ akyiri',
+    hi: 'विस्तार के लिए तैयार',
+    es: 'Listo para expandir',
+  },
+  'expansion.needsValidation': {
+    en: 'Needs validation', fr: 'Validation requise',
+    sw: 'Inahitaji uthibitisho', ha: 'Yana buƙatar tabbatarwa',
+    tw: 'Ɛhia nhwehwɛmu', hi: 'मान्यता आवश्यक',
+    es: 'Necesita validación',
+  },
+  'expansion.notReady': {
+    en: 'Not ready', fr: 'Pas prêt',
+    sw: 'Haijatayari', ha: 'Bai shirya ba',
+    tw: 'Ennsiesie ho', hi: 'तैयार नहीं', es: 'No listo',
+  },
 };
 
 export default T;
