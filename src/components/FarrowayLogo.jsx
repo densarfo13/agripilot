@@ -19,21 +19,24 @@
 
 import React from 'react';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+// Brand asset baked into a JS module by
+// scripts/bake-brand-mark.mjs. The JPG bytes live as a base64
+// data URL inside src/brand/farrowayMarkDataUrl.js — no binary
+// file in the build pipeline at all, so the deploy can't drop
+// the asset between local and the build container. The
+// previous approaches (Rollup import of /src/assets, plain
+// path to /icons) both broke when the JPG didn't arrive in the
+// deploy clone; this travels with the JS bundle.
+import { FARROWAY_MARK_DATA_URL } from '../brand/farrowayMarkDataUrl.js';
 
 const C = FARROWAY_BRAND.colors;
 
-// Brand asset paths — kept as plain strings so the build never
-// depends on a binary file resolving at compile time. The
-// previous bundled-import approach
-//   `import farrowayMarkUrl from '../assets/farroway-mark.jpg'`
-// hard-failed the deploy whenever the JPG didn't arrive in the
-// build container (binary push hiccup, LFS hiccup, partial
-// clone — any of those tank the build with a Rollup
-// 'Could not resolve' error). The path-string approach below
-// is build-safe: if the asset is missing at runtime the
-// onError handler falls through to the SVG redraw, which
-// ships in /public on every deploy.
-const SRC = '/icons/farroway-mark.jpg';
+// Primary source — embedded data URL, always available.
+const SRC = FARROWAY_MARK_DATA_URL;
+// Last-resort fallback if some environment refuses to render
+// the data URL (very old browsers, strict CSP without
+// img-src 'data:'). The v9 SVG redraw ships in /public on
+// every deploy.
 const SRC_FALLBACK = '/icons/farroway-mark.svg';
 
 export function FarrowayMark({
