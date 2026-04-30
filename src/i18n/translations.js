@@ -4353,10 +4353,10 @@ const T = {
     en: 'Your Name', fr: 'Votre nom', sw: 'Jina lako', ha: 'Sunan ka', tw: 'Wo din',
   },
   'setup.farmName': {
-    en: 'Farm Name', fr: 'Nom de la ferme', sw: 'Jina la shamba', ha: 'Sunan gona', tw: 'Afuo din',
+    en: 'Farm Name', fr: 'Nom de la ferme', sw: 'Jina la shamba', ha: 'Sunan gona', tw: 'Afuo din', hi: 'खेत का नाम',
   },
   'setup.country': {
-    en: 'Country', fr: 'Pays', sw: 'Nchi', ha: 'Ƙasa', tw: 'Ɔman',
+    en: 'Country', fr: 'Pays', sw: 'Nchi', ha: 'Ƙasa', tw: 'Ɔman', hi: 'देश',
   },
   'setup.village': {
     en: 'Village / Region', fr: 'Village / Région', sw: 'Mahali pa shamba', ha: 'Ƙauye / Yanki', tw: 'Akuraa / Mantam',
@@ -4380,10 +4380,10 @@ const T = {
     en: 'hectares', fr: 'hectares', sw: 'hekta', ha: 'hekta', tw: 'hekta',
   },
   'setup.mainCrop': {
-    en: 'Main Crop', fr: 'Culture principale', sw: 'Zao kuu', ha: 'Babban amfanin gona', tw: 'Nnɔbae titiriw',
+    en: 'Main Crop', fr: 'Culture principale', sw: 'Zao kuu', ha: 'Babban amfanin gona', tw: 'Nnɔbae titiriw', hi: 'मुख्य फसल',
   },
   'setup.selectCrop': {
-    en: 'Select a crop', fr: 'Choisir une culture', sw: 'Chagua zao', ha: 'Zaɓi amfanin gona', tw: 'Yi nnɔbae bi',
+    en: 'Select a crop', fr: 'Choisir une culture', sw: 'Chagua zao', ha: 'Zaɓi amfanin gona', tw: 'Yi nnɔbae bi', hi: 'फसल चुनें',
   },
   'setup.exactLocation': {
     en: 'Exact Location (GPS)', fr: 'Localisation exacte (GPS)', sw: 'Mahali halisi (GPS)', ha: 'Wuri daidai (GPS)', tw: 'Beae pɔtee (GPS)',
@@ -4889,7 +4889,7 @@ const T = {
   'guided.daysAgo': { en: '{days}d ago', fr: 'il y a {days}j', sw: 'siku {days} zilizopita', ha: 'kwanaki {days} da suka wuce', tw: 'nnansa {days} a atwam\'' },
 
   'guided.taskReason': { en: 'Based on your crop stage and today\'s conditions.', fr: 'Basé sur votre étape et les conditions du jour.', sw: 'Kulingana na hatua ya mazao yako na hali ya leo.', ha: 'Bisa ga matakin amfanin ku da halin yau.', tw: 'Egyina wo nnɔbae anammɔn ne ɛnnɛ tebea so.' },
-  'guided.taskCta': { en: 'Start now', fr: 'Commencer', sw: 'Anza sasa', ha: 'Fara yanzu', tw: 'Fi ase seesei' },
+  'guided.taskCta': { en: 'Start now', fr: 'Commencer', sw: 'Anza sasa', ha: 'Fara yanzu', tw: 'Fi ase seesei', hi: 'अभी शुरू करें' },
   'guided.taskNext': { en: 'After this, Farroway will show your next farm task.', fr: 'Ensuite, Farroway montrera votre prochaine tâche.', sw: 'Baada ya hii, Farroway itaonyesha kazi yako inayofuata.', ha: 'Bayan wannan, Farroway zai nuna maka aikin ku na gaba.', tw: 'Eyi akyi, Farroway bɛkyerɛ wo adwuma a edi so.' },
 
   'guided.pestReason': { en: 'Pests or disease may be affecting your crop. Act quickly.', fr: 'Des ravageurs pourraient affecter votre culture. Agissez vite.', sw: 'Wadudu au ugonjwa unaweza kuathiri mazao yako. Chukua hatua haraka.', ha: 'Ƙwari ko cuta na iya shafar amfanin ku. Yi gaggawa.', tw: 'Ebia mmoa bɔne resia wo nnɔbae. Yɛ ntɛm.' },
@@ -6323,6 +6323,17 @@ const T = {
   'cropStage.fruiting': { en: 'Fruiting', fr: 'Fructification', sw: 'Matunda', ha: 'Ɗan itace', tw: 'Aba', hi: 'फल आना' },
   'cropStage.harvest': { en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa', hi: 'कटाई' },
   'cropStage.postHarvest': { en: 'Post-Harvest', fr: 'Post-récolte', sw: 'Baada ya Mavuno', ha: 'Bayan Girbi', tw: 'Otwa Akyi', hi: 'कटाई के बाद' },
+  // NewFarmScreen.jsx STAGE_OPTIONS uses underscore-style codes
+  // ('land_prep', 'early_growth', 'maintain', 'post_harvest')
+  // and looks them up via `cropStage.${code}`. Mirror the
+  // camelCase entries above so the dropdown localises across
+  // every launch language. Pilot screenshots showed "Land prep"
+  // leaking on sw/ha/tw/hi because the underscore variant of
+  // these keys never existed.
+  'cropStage.land_prep':    { en: 'Land prep',    fr: 'Préparation', sw: 'Kuandaa Ardhi', ha: 'Shirya Ƙasa', tw: 'Asase Nhyehyɛe', hi: 'खेत की तैयारी' },
+  'cropStage.early_growth': { en: 'Early growth', fr: 'Début de croissance', sw: 'Ukuaji wa awali', ha: 'Farkon girma', tw: 'Mfitiase nyin', hi: 'प्रारंभिक वृद्धि' },
+  'cropStage.maintain':     { en: 'Maintain',     fr: 'Entretien', sw: 'Tunza', ha: 'Kula', tw: 'Hwɛ so', hi: 'देखभाल' },
+  'cropStage.post_harvest': { en: 'Post-harvest', fr: 'Post-récolte', sw: 'Baada ya Mavuno', ha: 'Bayan Girbi', tw: 'Otwa Akyi', hi: 'कटाई के बाद' },
   // Crop-specific lifecycle stages (Crop Intelligence Layer §3) —
   // these appear in the stage dropdown when a crop like cassava,
   // maize, tomato, rice, or groundnut is selected.
