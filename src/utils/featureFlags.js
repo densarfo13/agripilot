@@ -20,6 +20,17 @@ const DEFAULTS = Object.freeze({
   // crop-name overlay. Default ON in development, OFF until
   // explicitly enabled in production builds.
   FEATURE_LOCALIZATION: true,
+
+  // Voice assistant (§14 of the voice rollout spec). The mic
+  // launcher + suggested-question sheet ride this flag — when
+  // off, the launcher hides quietly and existing UI surfaces
+  // are unaffected.
+  FEATURE_VOICE_ASSISTANT: true,
+
+  // Open-ended LLM-backed voice chat. MUST stay off until the
+  // safety review the spec calls out lands — guided questions
+  // only for now.
+  FEATURE_OPEN_ENDED_VOICE: false,
 });
 
 function safeWindowFlag(name) {
