@@ -281,31 +281,17 @@ export function fallbackToText(reason = 'voice-unavailable') {
 }
 
 // ─── Question normalisation ──────────────────────────────────
-
-/**
- * normalizeFarmerQuestion — lowercase + strip punctuation +
- * collapse whitespace + drop common filler words, so a
- * farmer's "Hello, will it rain today please?" matches the
- * intent pattern "will it rain".
- */
-const FILLER_WORDS = new Set([
-  'please', 'farroway', 'hey', 'hi', 'hello', 'ok', 'um', 'uh',
-  'so', 'just', 'kindly', 'pls', 'plz',
-]);
-
-export function normalizeFarmerQuestion(text) {
-  if (!text) return '';
-  return String(text)
-    .toLowerCase()
-    .replace(/[\u2018\u2019\u201C\u201D]/g, "'")
-    .replace(/[^a-z0-9\u00C0-\u024F\u0900-\u097F\u4e00-\u9fff'\s-]/gi, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .filter((w) => !FILLER_WORDS.has(w))
-    .join(' ')
-    .trim();
-}
-
-// Re-exported here so callers have a single import target —
-// matches the spec's listing for voiceEngine.ts.
-export { routeVoiceIntent } from './voiceIntents.js';
+//
+// The normalizer + filler-words list now live in
+// voiceQuestionNormalizer.js so voiceEngine.js and
+// voiceIntents.js no longer form a circular import. The
+// circular import was tripping a TDZ ('Cannot access X before
+// initialization') in the minified production bundle, which
+// crashed the dashboard whenever the voice launcher mounted.
+//
+// We re-export normalizeFarmerQuestion here so existing
+// callers (and the spec's "voiceEngine.ts" surface) keep
+// working without changes. The routeVoiceIntent re-export
+// from voiceIntents.js is intentionally REMOVED — callers
+// that need it should import from voiceIntents directly.
+export { normalizeFarmerQuestion } from './voiceQuestionNormalizer.js';

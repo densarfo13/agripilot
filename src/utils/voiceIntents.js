@@ -27,7 +27,10 @@
  * `answerForIntent` which substitutes {placeholders}.
  */
 
-import { normalizeFarmerQuestion } from './voiceEngine.js';
+// Direct import from the standalone normalizer to avoid the
+// voiceEngine ↔ voiceIntents circular import that tripped a
+// TDZ in the minified production bundle.
+import { normalizeFarmerQuestion } from './voiceQuestionNormalizer.js';
 
 // Helper for declaring the same patterns across languages
 // without repeating the syntax.

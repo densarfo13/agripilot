@@ -69,7 +69,25 @@ export async function fetchForecast({ lat, lng, countryCode, force = false } = {
   const coords = resolveCoordinates({ lat, lng, countryCode });
   if (!coords) return null;
 
-  const locKey = `${coords.lat.toFixed(2)},${coords.lng.toFixed(2)}`;
+  // Defensive numeric coercion. Profile data round-trips
+  // through JSON / form inputs so lat/lng can arrive as
+  // strings ("5.55"); calling .toFixed() on a string throws
+  // 'TypeError: lat.toFixed is not a function' which crashed
+  // the forecast context on /dashboard. Coerce once here and
+  // bail safely when the value isn't a finite number.
+  const latNum = Number(coords.lat);
+  const lngNum = Number(coords.lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+    console.warn('Forecast skipped — non-numeric coords', { lat: coords.lat, lng: coords.lng });
+    return null;
+  }
+  // Re-stamp the coords object with numbers so downstream
+  // consumers (cache, URL builder, return shape) all see a
+  // consistent shape.
+  coords.lat = latNum;
+  coords.lng = lngNum;
+
+  const locKey = `${latNum.toFixed(2)},${lngNum.toFixed(2)}`;
 
   // Check cache (unless forced)
   if (!force) {
@@ -131,7 +149,12 @@ export async function fetchForecast({ lat, lng, countryCode, force = false } = {
  */
 export function getCachedForecast(lat, lng) {
   if (lat == null || lng == null) return null;
-  const locKey = `${lat.toFixed(2)},${lng.toFixed(2)}`;
+  // Same defensive coercion as fetchForecast — never call
+  // .toFixed() on a value that might be a string from JSON.
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return null;
+  const locKey = `${latNum.toFixed(2)},${lngNum.toFixed(2)}`;
   return cache.get(locKey) || null;
 }
 
