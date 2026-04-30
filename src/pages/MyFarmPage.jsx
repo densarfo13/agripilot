@@ -40,6 +40,7 @@ import { STAGE_KEYS } from '../utils/cropStages.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
+import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 import {
   Sprout, Wheat, MapPin, Ruler, Calendar, HelpCircle, Plus, ArrowRight,
 } from '../components/icons/lucide.jsx';
@@ -526,6 +527,15 @@ export default function MyFarmPage() {
           above the bottom-tab nav, hidden when
           FEATURE_VOICE_ASSISTANT is off. */}
       <VoiceLauncher variant="floating" />
+
+      {/* Photo intelligence launcher — sits LEFT of the voice
+          FAB so the two don't overlap. Hides itself when
+          FEATURE_PHOTO_INTELLIGENCE is off. */}
+      <PhotoLauncher
+        variant="floating"
+        farmId={farmIdForPhoto}
+        cropId={profile?.crop || profile?.cropType || null}
+      />
     </div>
   );
 }

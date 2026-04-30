@@ -49,6 +49,7 @@ import { confirmProgramActed } from '../notifications/smsConfirmations.js';
 import ProgramCard from '../components/farmer/ProgramCard.jsx';
 import NotificationBell from '../components/NotificationBell.jsx';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
+import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 import {
   addNotification, NOTIFICATION_TYPES,
 } from '../notifications/notificationStore.js';
@@ -1123,6 +1124,15 @@ export default function Dashboard() {
             FEATURE_VOICE_ASSISTANT is off so existing UI stays
             unchanged. */}
         <VoiceLauncher variant="floating" />
+
+        {/* Photo intelligence launcher — sits LEFT of the voice
+            FAB so the two don't overlap. Hides itself when
+            FEATURE_PHOTO_INTELLIGENCE is off. */}
+        <PhotoLauncher
+          variant="floating"
+          farmId={loop.profile?.id || null}
+          cropId={loop.profile?.cropType || loop.profile?.crop || null}
+        />
 
         {showCorrectionModal && (
           <TaskCorrectionModal

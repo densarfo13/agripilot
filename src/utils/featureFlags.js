@@ -31,6 +31,22 @@ const DEFAULTS = Object.freeze({
   // safety review the spec calls out lands — guided questions
   // only for now.
   FEATURE_OPEN_ENDED_VOICE: false,
+
+  // Photo Intelligence (rollout v1). Guards the "Scan crop"
+  // entry points + analyze flow + result card. Default on in
+  // dev; production builds gate via VITE_FEATURE_PHOTO_INTELLIGENCE.
+  FEATURE_PHOTO_INTELLIGENCE: true,
+
+  // Voice playback ON the photo intelligence result card.
+  // Independent of FEATURE_VOICE_ASSISTANT so the assistant
+  // sheet can stay off while the photo flow still reads
+  // results aloud.
+  FEATURE_VOICE_RESPONSE: true,
+
+  // OpenAI / vision-LLM diagnosis path. MUST stay off — the
+  // app uses safe rule-based placeholder responses until a
+  // medical-style review of the AI output lands.
+  FEATURE_OPEN_AI_DIAGNOSIS: false,
 });
 
 function safeWindowFlag(name) {

@@ -10828,6 +10828,185 @@ const T = {
     hi: 'मुझे मदद चाहिए',
     es: 'Necesito ayuda',
   },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PHOTO INTELLIGENCE — "Scan crop" guided photo flow
+  //  (rollout v1, spec §1-§14)
+  // ═══════════════════════════════════════════════════════════
+  'photo.scanCrop': {
+    en: 'Scan crop', fr: 'Scanner la culture', sw: 'Skani zao',
+    ha: 'Bincika amfani', tw: 'Hwehwɛ nnɔbae', hi: 'फसल स्कैन करें',
+    es: 'Escanear cultivo',
+  },
+  'photo.takePhoto': {
+    en: 'Take photo', fr: 'Prendre une photo', sw: 'Piga picha',
+    ha: 'Ɗauki hoto', tw: 'Twe foto', hi: 'फ़ोटो लें',
+    es: 'Tomar foto',
+  },
+  'photo.uploadPhoto': {
+    en: 'Upload photo', fr: 'Téléverser une photo', sw: 'Pakia picha',
+    ha: 'Ɗora hoto', tw: 'Loade foto', hi: 'फ़ोटो अपलोड करें',
+    es: 'Subir foto',
+  },
+  'photo.retake': {
+    en: 'Retake', fr: 'Reprendre', sw: 'Piga tena',
+    ha: 'Sake ɗauka', tw: 'San twe', hi: 'फिर से लें',
+    es: 'Volver a tomar',
+  },
+  'photo.continue': {
+    en: 'Continue', fr: 'Continuer', sw: 'Endelea',
+    ha: 'Ci gaba', tw: 'Toa so', hi: 'जारी रखें',
+    es: 'Continuar',
+  },
+  'photo.processing': {
+    en: 'Preparing photo\u2026', fr: 'Préparation de la photo\u2026',
+    sw: 'Inaandaa picha\u2026', ha: 'Ana shirya hoto\u2026',
+    tw: 'Yɛresiesie foto no\u2026', hi: 'फ़ोटो तैयार हो रही है\u2026',
+    es: 'Preparando foto\u2026',
+  },
+  'photo.analyzing': {
+    en: 'Analysing photo\u2026', fr: 'Analyse en cours\u2026',
+    sw: 'Inachambua picha\u2026', ha: 'Ana nazarin hoto\u2026',
+    tw: 'Yɛrehwehwɛ foto no mu\u2026', hi: 'फ़ोटो की जाँच हो रही है\u2026',
+    es: 'Analizando foto\u2026',
+  },
+  'photo.pickQuestion': {
+    en: 'Pick a question', fr: 'Choisissez une question',
+    sw: 'Chagua swali', ha: 'Zaɓi tambaya',
+    tw: 'Yi asɛm bi', hi: 'सवाल चुनें', es: 'Elija una pregunta',
+  },
+  'photo.errNotImage': {
+    en: 'That file does not look like an image. Try again.',
+    fr: 'Ce fichier ne semble pas être une image. Réessayez.',
+    sw: 'Faili hii haionekani kuwa picha. Jaribu tena.',
+    ha: 'Wannan fayil ɗin ba ya zama hoto. Sake gwadawa.',
+    tw: 'Saa fayel yi nyɛ foto. San hwehwɛ.',
+    hi: 'यह फ़ाइल छवि नहीं लगती। पुनः प्रयास करें।',
+    es: 'Este archivo no parece una imagen. Inténtelo de nuevo.',
+  },
+  'photo.errReadFailed': {
+    en: 'Could not read the file. Try a different photo.',
+    fr: 'Impossible de lire le fichier. Essayez une autre photo.',
+    sw: 'Imeshindikana kusoma faili. Jaribu picha nyingine.',
+    ha: 'Ba a iya karanta fayil ɗin ba. Gwada wani hoto.',
+    tw: 'Yɛantumi ankenkan fayel no. Hwehwɛ foto foforɔ.',
+    hi: 'फ़ाइल पढ़ी नहीं जा सकी। अन्य फ़ोटो आज़माएँ।',
+    es: 'No se pudo leer el archivo. Intente con otra foto.',
+  },
+  'photo.errAnalyze': {
+    en: 'We could not analyse the photo right now. Try again or contact our team.',
+    fr: 'Impossible d\u2019analyser la photo. Réessayez ou contactez notre équipe.',
+    sw: 'Hatukuweza kuchambua picha sasa. Jaribu tena au wasiliana na timu yetu.',
+    ha: 'Ba mu iya nazarin hoton ba yanzu. Sake gwadawa ko tuntuɓi ƙungiyarmu.',
+    tw: 'Yɛantumi anhwɛ foto no mu seesei. San hwehwɛ anaa frɛ yɛn dwumadie.',
+    hi: 'अभी फ़ोटो की जाँच नहीं हो सकी। पुनः प्रयास करें या हमारी टीम से संपर्क करें।',
+    es: 'No pudimos analizar la foto ahora. Inténtelo de nuevo o contacte a nuestro equipo.',
+  },
+  'photo.offlineNote': {
+    en: 'Photo saved. We will analyse it again when connection improves.',
+    fr: 'Photo enregistrée. Nous l\u2019analyserons à nouveau dès que la connexion s\u2019améliorera.',
+    sw: 'Picha imehifadhiwa. Tutachambua tena mtandao utakapokuwa bora.',
+    ha: 'An ajiye hoto. Za mu sake nazari idan haɗin yanar gizo ya inganta.',
+    tw: 'Wɔakora foto no so. Yɛbɛsan ahwɛ no mu sɛ ɛnam pa a.',
+    hi: 'फ़ोटो सहेजी गई। कनेक्शन बेहतर होने पर हम इसकी फिर से जाँच करेंगे।',
+    es: 'Foto guardada. La analizaremos cuando mejore la conexión.',
+  },
+  'photo.saveToHistory': {
+    en: 'Save to farm history', fr: 'Enregistrer dans l\u2019historique',
+    sw: 'Hifadhi kwenye historia ya shamba', ha: 'Ajiye a tarihin gona',
+    tw: 'Kora wɔ afuo abakɔsɛm mu', hi: 'खेत इतिहास में सहेजें',
+    es: 'Guardar en historial de finca',
+  },
+  'photo.savedToHistory': {
+    en: 'Saved', fr: 'Enregistré', sw: 'Imehifadhiwa',
+    ha: 'An ajiye', tw: 'Akora so', hi: 'सहेज लिया',
+    es: 'Guardado',
+  },
+
+  // Result-card section labels
+  'photo.result.possibleIssue': {
+    en: 'Possible issue', fr: 'Problème possible',
+    sw: 'Tatizo linalowezekana', ha: 'Yiwuwar matsala',
+    tw: 'Asɛm a ɛbɛtumi aba', hi: 'संभावित समस्या',
+    es: 'Posible problema',
+  },
+  'photo.result.recommendedAction': {
+    en: 'What to do now', fr: 'Quoi faire maintenant',
+    sw: 'Cha kufanya sasa', ha: 'Abin da za a yi yanzu',
+    tw: 'Nea ɛsɛ sɛ woyɛ seesei', hi: 'अभी क्या करें',
+    es: 'Qué hacer ahora',
+  },
+  'photo.result.seekHelp': {
+    en: 'When to get help', fr: 'Quand demander de l\u2019aide',
+    sw: 'Wakati wa kupata msaada', ha: 'Yaushe za a nemi taimako',
+    tw: 'Bere a wopɛ mmoa', hi: 'मदद कब लें', es: 'Cuándo pedir ayuda',
+  },
+  // Confidence pill
+  'photo.confidence.low': {
+    en: 'Low confidence', fr: 'Confiance faible',
+    sw: 'Uhakika mdogo', ha: 'Tabbas kaɗan',
+    tw: 'Gyidie a ɛyɛ kakra', hi: 'कम विश्वास',
+    es: 'Confianza baja',
+  },
+  'photo.confidence.medium': {
+    en: 'Medium confidence', fr: 'Confiance moyenne',
+    sw: 'Uhakika wa kati', ha: 'Tabbas matsakaici',
+    tw: 'Gyidie a ɛyɛ ntam', hi: 'मध्यम विश्वास',
+    es: 'Confianza media',
+  },
+  'photo.confidence.high': {
+    en: 'High confidence', fr: 'Confiance élevée',
+    sw: 'Uhakika mkubwa', ha: 'Babban tabbas',
+    tw: 'Gyidie kɛse', hi: 'उच्च विश्वास',
+    es: 'Confianza alta',
+  },
+
+  // Suggested questions (rollout §3)
+  'photo.q.whatsWrong': {
+    en: 'What is wrong with my crop?',
+    fr: 'Qu\u2019est-ce qui ne va pas avec ma culture ?',
+    sw: 'Tatizo gani lipo na zao langu?',
+    ha: 'Mene ne matsalar amfanin gonata?',
+    tw: 'Dɛn na asi me nnɔbae?',
+    hi: 'मेरी फसल में क्या समस्या है?',
+    es: '¿Qué le pasa a mi cultivo?',
+  },
+  'photo.q.pestDamage': {
+    en: 'Is this pest damage?',
+    fr: 'Est-ce un dégât de ravageur ?',
+    sw: 'Hii ni uharibifu wa wadudu?',
+    ha: 'Wannan lalacewar kwari ce?',
+    tw: 'Yei yɛ mmoa ɔhaw?',
+    hi: 'क्या यह कीट क्षति है?',
+    es: '¿Esto es daño de plaga?',
+  },
+  'photo.q.disease': {
+    en: 'Is this disease?',
+    fr: 'Est-ce une maladie ?',
+    sw: 'Je, hii ni ugonjwa?',
+    ha: 'Wannan cuta ce?',
+    tw: 'Yei yɛ yadeɛ?',
+    hi: 'क्या यह बीमारी है?',
+    es: '¿Es una enfermedad?',
+  },
+  'photo.q.readyHarvest': {
+    en: 'Is my crop ready to harvest?',
+    fr: 'Ma culture est-elle prête à récolter ?',
+    sw: 'Zao langu liko tayari kuvunwa?',
+    ha: 'Amfanin gonata ya nuna don girbi?',
+    tw: 'Me nnɔbae no awie sɛ wɔbɛtwa?',
+    hi: 'क्या मेरी फसल कटाई के लिए तैयार है?',
+    es: '¿Mi cultivo está listo para cosechar?',
+  },
+  'photo.q.whatsNext': {
+    en: 'What should I do next?',
+    fr: 'Que dois-je faire ensuite ?',
+    sw: 'Nifanye nini sasa?',
+    ha: 'Me zan yi na gaba?',
+    tw: 'Dɛn na ɛsɛ sɛ meyɛ a edi hɔ?',
+    hi: 'अब मुझे क्या करना चाहिए?',
+    es: '¿Qué debo hacer a continuación?',
+  },
 };
 
 export default T;
