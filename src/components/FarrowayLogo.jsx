@@ -19,19 +19,22 @@
 
 import React from 'react';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+// Import the brand asset directly so Vite bundles it with the
+// app (content-hashed URL like /assets/farroway-mark.{hash}.jpg).
+// This guarantees the file is on every deploy without depending
+// on the /public copy reaching the CDN — the previous
+// /icons/farroway-mark.jpg path 404'd in production for users
+// because the asset hadn't propagated yet.
+import farrowayMarkUrl from '../assets/farroway-mark.jpg';
 
 const C = FARROWAY_BRAND.colors;
 
-// Canonical brand asset path. Lives in /public so Vite serves
-// it from the site root in dev AND copies it into the dist/
-// output unchanged at build time. Older deployments only have
-// the .svg variant — see SRC_FALLBACK below.
-const SRC = '/icons/farroway-mark.jpg';
-// Fallback used when the primary asset 404s. The SVG redraw
-// has shipped for many releases, so this gives us a safe
-// landing on any environment that hasn't yet picked up the
-// new JPG. Spec §3 of the safe-session work — the UI must
-// never depend on a specific deploy artefact being present.
+// Bundled asset URL — always resolves at build time. Content
+// hash means cache-busting is automatic on every deploy.
+const SRC = farrowayMarkUrl;
+// Last-resort fallback if the bundled asset somehow fails to
+// load (defensive — should never trigger in practice). Points
+// at the v9 SVG redraw which ships in /public on every deploy.
 const SRC_FALLBACK = '/icons/farroway-mark.svg';
 
 export function FarrowayMark({
