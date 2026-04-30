@@ -51,6 +51,7 @@ import NotificationBell from '../components/NotificationBell.jsx';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 import DailyPlanCard from '../components/daily/DailyPlanCard.jsx';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 import {
   addNotification, NOTIFICATION_TYPES,
 } from '../notifications/notificationStore.js';
@@ -773,9 +774,18 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Normal task card — hidden while a camera hero is active so
-            Home never shows two dominant tasks at once. */}
-        {!cameraTask && loop.profile && !loop.farmSwitching && (
+        {/* Normal task card. Hidden while a camera hero is active
+            so Home never shows two dominant tasks at once. ALSO
+            hidden when FEATURE_DAILY_INTELLIGENCE is on — the
+            DailyPlanCard above now owns "what should I do next?"
+            and surfaces the same setup / stage prompts via its
+            alerts, so rendering both creates a duplicate
+            "current task" surface. (Spec §16: remove duplicate
+            sections.) Flag off → existing behaviour unchanged. */}
+        {!cameraTask
+          && loop.profile
+          && !loop.farmSwitching
+          && !isFeatureEnabled('FEATURE_DAILY_INTELLIGENCE') && (
           <NextActionCard
             decision={loop.decision}
             taskViewModel={loop.taskViewModel}

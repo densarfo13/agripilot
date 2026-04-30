@@ -22,8 +22,6 @@ import { isFeatureEnabled } from '../../utils/featureFlags.js';
 import { generateDailyPlan } from '../../core/dailyIntelligenceEngine.js';
 import { markActionDone } from '../../core/dailyTaskCompletion.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
-import VoiceLauncher from '../voice/VoiceLauncher.jsx';
-import PhotoLauncher from '../photo/PhotoLauncher.jsx';
 
 const URGENCY_TONE = {
   high:   { background: 'rgba(239,68,68,0.10)', borderColor: 'rgba(239,68,68,0.32)',  pill: '#FCA5A5' },
@@ -236,15 +234,12 @@ export default function DailyPlanCard({
         </p>
       )}
 
-      {/* ── Footer: Ask Farroway + Scan crop ── */}
-      <div style={S.footerRow}>
-        <VoiceLauncher variant="chip" />
-        <PhotoLauncher
-          variant="chip"
-          farmId={farm.id || null}
-          cropId={plan.cropId || null}
-        />
-      </div>
+      {/* Footer intentionally omitted — the floating Ask Farroway
+          and Scan Crop FABs on Home already cover those entry
+          points, so rendering them again inside this card was
+          duplicate UI (spec §16). When this card mounts on a
+          surface that doesn't carry those FABs (e.g. an embedded
+          variant on My Farm), wire them in there explicitly. */}
     </section>
   );
 }
@@ -354,5 +349,4 @@ const S = {
   btnPrimary: { background: '#22C55E', color: '#062714', borderColor: '#22C55E' },
   btnGhost: { background: 'transparent', color: '#EAF2FF' },
   empty: { margin: 0, color: '#9FB3C8', fontSize: '0.875rem' },
-  footerRow: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' },
 };
