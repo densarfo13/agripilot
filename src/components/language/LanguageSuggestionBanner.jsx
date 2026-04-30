@@ -37,6 +37,10 @@ import {
 } from '../../i18n/languageConfig.js';
 import { isFeatureEnabled } from '../../utils/featureFlags.js';
 
+// Per-language button copy. The spec lists explicit "Use
+// English / Choose Twi / Choose Hausa" labels; for the new
+// fr/es/hi rows we fall back to the generic "Choose {language}"
+// pattern with the language's own native label substituted.
 const BUTTON_BY_CODE = {
   en: { fallback: 'Use English', key: 'language.banner.useEnglish' },
   tw: { fallback: 'Choose Twi',  key: 'language.banner.chooseTwi' },
@@ -86,11 +90,23 @@ export default function LanguageSuggestionBanner({
     if (typeof onDismiss === 'function') onDismiss({ chosenLang: lang, dismissed: true });
   }
 
-  const titleTemplate = tSafe(
-    'language.banner.title',
-    'We detected your farm is in {country}. Choose the best language for this farm.',
+  // Spec §1 keys take priority — language.detectedTitle +
+  // language.detectedMessage with {country} / {language}
+  // placeholders. The legacy language.banner.title is kept as
+  // a graceful fallback for surfaces that haven't migrated yet.
+  const eyebrow = tSafe(
+    'language.detectedTitle',
+    'Language suggestion based on your farm location',
   );
-  const title = String(titleTemplate).replace('{country}', country);
+  const suggestedLang = options[0] || 'en';
+  const suggestedLangLabel = getLanguageNativeLabel(suggestedLang);
+  const titleTemplate = tSafe(
+    'language.detectedMessage',
+    'We detected your farm is in {country}. Use {language} for this farm?',
+  );
+  const title = String(titleTemplate)
+    .replace('{country}', country)
+    .replace('{language}', suggestedLangLabel);
 
   return (
     <section
@@ -99,10 +115,24 @@ export default function LanguageSuggestionBanner({
       style={{ ...S.wrap, ...(style || {}) }}
       data-testid="language-suggestion-banner"
     >
+      <span style={S.eyebrow}>{eyebrow}</span>
       <p style={S.title}>{title}</p>
 
       <div style={S.actions}>
-        {options.map((code) => {
+        {/* Primary action: accept the suggested language. */}
+        <button
+          type="button"
+          onClick={() => applyChoice(suggestedLang)}
+          style={{ ...S.btn, ...S.btnPrimary }}
+          data-testid="language-banner-use-suggested"
+        >
+          {tSafe('language.useSuggested', 'Yes, use this language')}
+        </button>
+
+        {/* Per-language explicit option buttons (Use English /
+            Choose Twi / Choose Hausa / etc). Skip the suggested
+            language since the primary button covers it. */}
+        {options.filter((c) => c !== suggestedLang).map((code) => {
           const meta = BUTTON_BY_CODE[code]
             || { key: 'language.banner.choose', fallback: `Choose ${getLanguageNativeLabel(code)}` };
           const labelTemplate = tSafe(meta.key, meta.fallback);
@@ -114,20 +144,22 @@ export default function LanguageSuggestionBanner({
               key={code}
               type="button"
               onClick={() => applyChoice(code)}
-              style={{ ...S.btn, ...(code === 'en' ? S.btnPrimary : S.btnGhost) }}
+              style={{ ...S.btn, ...S.btnGhost }}
               data-testid={`language-banner-${code}`}
             >
               {label}
             </button>
           );
         })}
+
+        {/* Secondary actions — choose another (any), keep current. */}
         <button
           type="button"
           onClick={keepCurrent}
           style={{ ...S.btn, ...S.btnGhost }}
           data-testid="language-banner-keep"
         >
-          {tSafe('language.banner.keepCurrent', 'Keep current language')}
+          {tSafe('language.keepEnglish', 'Keep English')}
         </button>
       </div>
     </section>
@@ -145,6 +177,13 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.625rem',
+  },
+  eyebrow: {
+    fontSize: '0.6875rem',
+    color: '#86EFAC',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
   },
   title: {
     margin: 0,

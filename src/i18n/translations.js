@@ -10494,6 +10494,181 @@ const T = {
   'language.banner.choose':      { en: 'Choose {language}',                                                   fr: 'Choisir {language}',                             sw: 'Chagua {language}',                             ha: 'Zaɓi {language}',                          tw: 'Yi {language}',                           hi: '{language} चुनें' },
   'language.banner.keepCurrent': { en: 'Keep current language',                                               fr: 'Garder la langue actuelle',                      sw: 'Endelea na lugha ya sasa',                      ha: 'Ci gaba da harshen yanzu',                 tw: 'Tena kasa a wode di dwuma seesei so',     hi: 'वर्तमान भाषा रखें' },
   'language.switcher.aria':      { en: 'Change language',                                                     fr: 'Changer de langue',                              sw: 'Badilisha lugha',                               ha: 'Canza harshe',                             tw: 'Sesa kasa',                               hi: 'भाषा बदलें' },
+
+  // ═══════════════════════════════════════════════════════════
+  //  LANGUAGE — spec §1 explicit keys (rollout v3)
+  // ═══════════════════════════════════════════════════════════
+  'common.language': {
+    en: 'Language',          fr: 'Langue',          sw: 'Lugha',
+    ha: 'Harshe',            tw: 'Kasa',            hi: 'भाषा',
+    es: 'Idioma',
+  },
+  'language.detectedTitle': {
+    en: 'Language suggestion based on your farm location',
+    fr: 'Suggestion de langue selon l\u2019emplacement de votre ferme',
+    sw: 'Pendekezo la lugha kulingana na eneo la shamba lako',
+    ha: 'Shawarar harshe bisa wurin gonar ku',
+    tw: 'Kasa nkyerɛkyerɛmu a egyina w\u2019afuo beae so',
+    hi: 'आपके खेत के स्थान के आधार पर भाषा सुझाव',
+    es: 'Sugerencia de idioma seg\u00FAn la ubicaci\u00F3n de su finca',
+  },
+  'language.detectedMessage': {
+    en: 'We detected your farm is in {country}. Use {language} for this farm?',
+    fr: 'Nous avons d\u00E9tect\u00E9 que votre ferme est en {country}. Utiliser {language} pour cette ferme ?',
+    sw: 'Tumegundua kuwa shamba lako liko {country}. Tumia {language} kwa shamba hili?',
+    ha: 'Mun gano gonar ku tana cikin {country}. Yi amfani da {language} don wannan gona?',
+    tw: 'Yɛahunu sɛ w\u2019afuo wɔ {country}. Fa {language} di dwuma ma afuo yi?',
+    hi: 'हमने पाया कि आपका खेत {country} में है। इस खेत के लिए {language} उपयोग करें?',
+    es: 'Detectamos que su finca est\u00E1 en {country}. \u00BFUsar {language} para esta finca?',
+  },
+  'language.useSuggested': {
+    en: 'Yes, use this language',
+    fr: 'Oui, utiliser cette langue',
+    sw: 'Ndiyo, tumia lugha hii',
+    ha: 'Eh, yi amfani da wannan harshe',
+    tw: 'Aane, fa kasa yi di dwuma',
+    hi: 'हाँ, यह भाषा उपयोग करें',
+    es: 'S\u00ED, usar este idioma',
+  },
+  'language.chooseAnother': {
+    en: 'Choose another language',
+    fr: 'Choisir une autre langue',
+    sw: 'Chagua lugha nyingine',
+    ha: 'Zaɓi wani harshe',
+    tw: 'Yi kasa foforɔ bi',
+    hi: 'अन्य भाषा चुनें',
+    es: 'Elegir otro idioma',
+  },
+  'language.keepEnglish': {
+    en: 'Keep English',
+    fr: 'Garder l\u2019anglais',
+    sw: 'Endelea na Kiingereza',
+    ha: 'Ci gaba da Turanci',
+    tw: 'Tena Borɔfo so',
+    hi: 'अंग्रेज़ी रखें',
+    es: 'Mantener ingl\u00E9s',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  FARM — spec §1 (addFarm / switchFarm / editFarm)
+  //  These complement the existing farm.editFarm parent key by
+  //  adding the action-style entries the spec lists.
+  // ═══════════════════════════════════════════════════════════
+  'farm.addFarm': {
+    en: 'Add another farm',
+    fr: 'Ajouter une autre ferme',
+    sw: 'Ongeza shamba lingine',
+    ha: 'Ƙara wata gona',
+    tw: 'Ka afuo foforɔ ho',
+    hi: 'दूसरा खेत जोड़ें',
+    es: 'Agregar otra finca',
+  },
+  'farm.switchFarm': {
+    en: 'Switch farm',
+    fr: 'Changer de ferme',
+    sw: 'Badilisha shamba',
+    ha: 'Canza gona',
+    tw: 'Sesa afuo',
+    hi: 'खेत बदलें',
+    es: 'Cambiar de finca',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  HELP — spec §1 explicit keys
+  // ═══════════════════════════════════════════════════════════
+  'help.needHelp': {
+    en: 'Need help?',
+    fr: 'Besoin d\u2019aide ?',
+    sw: 'Unahitaji msaada?',
+    ha: 'Kana buƙatar taimako?',
+    tw: 'Wopɛ mmoa?',
+    hi: 'मदद चाहिए?',
+    es: '\u00BFNecesita ayuda?',
+  },
+  'help.contactTeam': {
+    en: 'Contact our team',
+    fr: 'Contacter notre \u00E9quipe',
+    sw: 'Wasiliana na timu yetu',
+    ha: 'Tuntuɓi ƙungiyarmu',
+    tw: 'Ka kyerɛ yɛn dwumadie',
+    hi: 'हमारी टीम से संपर्क करें',
+    es: 'Contactar nuestro equipo',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TASK — spec §1 short labels (water / checkCrop / checkLand)
+  // ═══════════════════════════════════════════════════════════
+  'task.water': {
+    en: 'Water your crops',
+    fr: 'Arrosez vos cultures',
+    sw: 'Mwagilia mazao yako',
+    ha: 'Yi wa amfanin gonar ku ruwa',
+    tw: 'Gugu wo nnɔbae',
+    hi: 'अपनी फसलों को पानी दें',
+    es: 'Riegue sus cultivos',
+  },
+  'task.checkCrop': {
+    en: 'Check your crop',
+    fr: 'V\u00E9rifiez votre culture',
+    sw: 'Angalia zao lako',
+    ha: 'Duba amfanin gonar ku',
+    tw: 'Hwɛ wo nnɔbae',
+    hi: 'अपनी फसल की जाँच करें',
+    es: 'Revise su cultivo',
+  },
+  'task.checkLand': {
+    en: 'Check your land',
+    fr: 'V\u00E9rifiez votre terrain',
+    sw: 'Angalia ardhi yako',
+    ha: 'Duba ƙasarka',
+    tw: 'Hwɛ w\u2019asase',
+    hi: 'अपनी ज़मीन की जाँच करें',
+    es: 'Revise su terreno',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  WEATHER — short banner copy
+  // ═══════════════════════════════════════════════════════════
+  'weather.rainExpected': {
+    en: 'Rain expected today',
+    fr: 'Pluie attendue aujourd\u2019hui',
+    sw: 'Mvua inatarajiwa leo',
+    ha: 'Ana sa ran ruwan sama yau',
+    tw: 'Wɔrehwɛ kwan sɛ nsuo bɛtɔ ɛnnɛ',
+    hi: 'आज बारिश की संभावना',
+    es: 'Se espera lluvia hoy',
+  },
+  'weather.hotToday': {
+    en: 'Hot weather today',
+    fr: 'Temps chaud aujourd\u2019hui',
+    sw: 'Hali ya joto leo',
+    ha: 'Yanayi mai zafi yau',
+    tw: 'Wim ayɛ hyew ɛnnɛ',
+    hi: 'आज गर्म मौसम',
+    es: 'Clima caluroso hoy',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  MARKET / HARVEST — short banner copy
+  // ═══════════════════════════════════════════════════════════
+  'market.readyToSell': {
+    en: 'Ready to sell',
+    fr: 'Pr\u00EAt \u00E0 vendre',
+    sw: 'Tayari kuuza',
+    ha: 'Shirye don sayarwa',
+    tw: 'Asiesie ho sɛ wɔbɛtɔn',
+    hi: 'बेचने के लिए तैयार',
+    es: 'Listo para vender',
+  },
+  'harvest.storageAdvice': {
+    en: 'Storage advice',
+    fr: 'Conseils de stockage',
+    sw: 'Ushauri wa kuhifadhi',
+    ha: 'Shawarar adanawa',
+    tw: 'Akoraeɛ ho afutuɔ',
+    hi: 'भंडारण सलाह',
+    es: 'Consejos de almacenamiento',
+  },
 };
 
 export default T;

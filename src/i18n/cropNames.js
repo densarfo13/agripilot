@@ -28,13 +28,33 @@
 import { getCropLabelSafe } from '../utils/crops.js';
 
 // Spec-supplied table. Crop ids are lowercase canonical.
+// All six launch languages must be present per the rollout
+// spec — partner team verified each row in pilot screenshots.
 export const CROP_NAMES = Object.freeze({
-  maize:  Object.freeze({ en: 'Maize / Corn', tw: 'Aburo',      ha: 'Masara' }),
-  okra:   Object.freeze({ en: 'Okra',          tw: 'Nkruma',     ha: 'Kubewa' }),
-  onion:  Object.freeze({ en: 'Onion',         tw: 'Ay\u025By\u025B', ha: 'Albasa' }),
-  ginger: Object.freeze({ en: 'Ginger',        tw: 'Akakaduro',  ha: 'Citta' }),
-  tomato: Object.freeze({ en: 'Tomato',        tw: 'Tomato',     ha: 'Tumatir' }),
-  pepper: Object.freeze({ en: 'Pepper',        tw: 'Mako',       ha: 'Barkono' }),
+  maize:  Object.freeze({
+    en: 'Maize / Corn', tw: 'Aburo',           ha: 'Masara',
+    fr: 'Ma\u00EFs',    es: 'Ma\u00EDz',       hi: '\u092E\u0915\u094D\u0915\u093E',
+  }),
+  okra:   Object.freeze({
+    en: 'Okra',         tw: 'Nkruma',          ha: 'Kubewa',
+    fr: 'Gombo',        es: 'Okra',            hi: '\u092D\u093F\u0902\u0921\u0940',
+  }),
+  onion:  Object.freeze({
+    en: 'Onion',        tw: 'Ay\u025By\u025B', ha: 'Albasa',
+    fr: 'Oignon',       es: 'Cebolla',         hi: '\u092A\u094D\u092F\u093E\u091C',
+  }),
+  ginger: Object.freeze({
+    en: 'Ginger',       tw: 'Akakaduro',       ha: 'Citta',
+    fr: 'Gingembre',    es: 'Jengibre',        hi: '\u0905\u0926\u0930\u0915',
+  }),
+  tomato: Object.freeze({
+    en: 'Tomato',       tw: 'Tomato',          ha: 'Tumatir',
+    fr: 'Tomate',       es: 'Tomate',          hi: '\u091F\u092E\u093E\u091F\u0930',
+  }),
+  pepper: Object.freeze({
+    en: 'Pepper',       tw: 'Mako',            ha: 'Barkono',
+    fr: 'Piment',       es: 'Pimiento',        hi: '\u092E\u093F\u0930\u094D\u091A',
+  }),
 });
 
 /**
