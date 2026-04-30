@@ -91,6 +91,13 @@ const DEFAULTS = Object.freeze({
   // off until each market clears the launch checklist; the
   // region config keeps them in 'planned' status regardless.
   FEATURE_ADVANCED_GLOBAL_EXPANSION: false,
+
+  // Safe session bootstrap + recovery. When on, callers can
+  // wrap protected routes in <DashboardSafeLoader/> for the
+  // load → recover → render chain. When off, existing
+  // ProfileGuard / route logic runs unchanged so pilot tenants
+  // see no behaviour change.
+  FEATURE_SAFE_SESSION: true,
 });
 
 function safeWindowFlag(name) {

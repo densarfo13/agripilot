@@ -37,6 +37,7 @@ import {
   saveFarmLanguage, saveUserLanguage,
 } from '../utils/localeEngine.js';
 import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
+import { persistFarmAfterSetup } from '../core/sessionBootstrap.js';
 
 import StepFarmerType       from './StepFarmerType.jsx';
 import StepLocation         from './StepLocation.jsx';
@@ -127,6 +128,28 @@ export default function OnboardingFlow() {
       const finalProfile = completeOnboarding({
         // Mirror the spec's data-model field names.
       });
+
+      // Mirror the saved farm onto the standardized session
+      // keys (spec §5 + §6) so DashboardSafeLoader sees a
+      // ready session immediately after navigation.
+      try {
+        persistFarmAfterSetup({
+          farm: {
+            id: finalProfile.activeFarmId,
+            farmName: finalProfile.farmName,
+            crop: finalProfile.cropId,
+            cropName: finalProfile.cropName,
+            country: finalProfile.country,
+            region: finalProfile.region,
+            farmType: finalProfile.farmSize === 'backyard' ? 'backyard' : 'small_farm',
+            plantingDate: finalProfile.plantingDate,
+            farmSize: finalProfile.farmSize,
+          },
+          // Backend not wired yet; mark as pending so a future
+          // sync pass can promote it.
+          pendingSync: true,
+        });
+      } catch { /* never block the redirect */ }
 
       if (finalProfile.language) {
         try {
