@@ -140,7 +140,10 @@ const DEFAULTS = Object.freeze({
   // path: card visuals stay identical to before. Independent of
   // `guidedFundingApplication` so pilots can A/B card-level vs
   // modal-level upgrades separately.
-  fundingScreenV2: false,
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever in case a pilot needs the legacy card layout
+  // back: set VITE_FARROWAY_FEATURE_FUNDINGSCREENV2=0 to disable.
+  fundingScreenV2: true,
 });
 
 function envOverride(name) {
