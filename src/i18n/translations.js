@@ -12543,6 +12543,28 @@ const T = {
   'experience.cta.addFarmShort':               { en: '+ Add Farm', fr: '+ Ajouter une ferme', sw: '+ Ongeza Shamba', ha: '+ Ƙara Gona', tw: '+ Ka Afuo ho', hi: '+ खेत जोड़ें' },
   'experience.cta.addGardenShort':             { en: '+ Add Garden', fr: '+ Ajouter un jardin', sw: '+ Ongeza Bustani', ha: '+ Ƙara Lambu', tw: '+ Ka Turo ho', hi: '+ बगीचा जोड़ें' },
 
+  // ─── ExperienceFallback recovery card (crash prevention §1) ──────
+  // Without these keys, baseT humanizes the dotted-key tail and
+  // returns "Title" / "Body" / "Reload" / "Repair" / "Clear" —
+  // which strictT doesn't detect as a miss, so the recovery
+  // card renders humanized garbage instead of the caller-supplied
+  // inline fallbacks. Adding the keys explicitly so the card
+  // always renders the spec copy.
+  'experience.recovery.title':                 { en: 'We couldn\u2019t load your farm or garden', fr: 'Nous n\u2019avons pas pu charger votre ferme ou jardin', sw: 'Hatukuweza kupakia shamba au bustani yako', ha: 'Ba mu iya loda gonarka ko lambunka ba', tw: 'Yɛantumi annya w\u2019afuo anaa wo turo no', hi: 'हम आपका खेत या बगीचा लोड नहीं कर सके' },
+  'experience.recovery.body':                  { en: 'Your data is safe on this device. Try one of the recovery options below.', fr: 'Vos données sont en sécurité sur cet appareil. Essayez une des options de récupération ci-dessous.', sw: 'Data yako iko salama kwenye kifaa hiki. Jaribu chaguo mojawapo la uokoaji hapa chini.', ha: 'Bayananka suna lafiya akan na\u2019urar. Gwada ɗaya daga zaɓuɓɓukan dawowa a ƙasa.', tw: 'Wo nsɛm no ho asɔm wɔ saa pɔn yi so. Sɔ nneɛma a ɛwɔ ase yi mu biako hwɛ.', hi: 'आपका डेटा इस डिवाइस पर सुरक्षित है। नीचे दिए गए विकल्पों में से कोई आज़माएँ।' },
+  'experience.recovery.reload':                { en: 'Reload', fr: 'Recharger', sw: 'Pakia upya', ha: 'Sake lodawa', tw: 'San pakia', hi: 'पुनः लोड करें' },
+  'experience.recovery.repair':                { en: 'Repair session', fr: 'Réparer la session', sw: 'Tengeneza kipindi', ha: 'Gyara zaman', tw: 'Siesie session no', hi: 'सत्र मरम्मत करें' },
+  'experience.recovery.clear':                 { en: 'Clear local cache', fr: 'Effacer le cache local', sw: 'Futa kashe ya programu', ha: 'Share cache', tw: 'Yi cache no firi mu', hi: 'लोकल कैश साफ़ करें' },
+
+  // Loading + signed-out branches of ExperienceFallback (same
+  // root cause — the humanizer turns the tail into "Title" /
+  // "Body" / "Login" if the keys are missing).
+  'experience.loading.title':                  { en: 'Loading your data\u2026', fr: 'Chargement de vos données\u2026', sw: 'Inapakia data yako\u2026', ha: 'Ana loda bayananka\u2026', tw: 'Wo nsɛm reba\u2026', hi: 'आपका डेटा लोड हो रहा है\u2026' },
+  'experience.loading.body':                   { en: 'One moment while we restore your session.', fr: 'Un moment pendant que nous restaurons votre session.', sw: 'Subiri kidogo tunaporejesha kipindi chako.', ha: 'Jira kaɗan yayin da muke maido da zaman ka.', tw: 'Twɛn kakra na yɛresan de wo session no aba.', hi: 'एक क्षण, हम आपका सत्र पुनर्स्थापित कर रहे हैं।' },
+  'experience.signedOut.title':                { en: 'You\u2019re signed out', fr: 'Vous \u00eates déconnecté', sw: 'Umetoka', ha: 'An sauke ka', tw: 'Wodi out', hi: 'आप साइन आउट हैं' },
+  'experience.signedOut.body':                 { en: 'Sign in to see your home dashboard.', fr: 'Connectez-vous pour voir votre tableau de bord.', sw: 'Ingia ili uone dashibodi yako.', ha: 'Shiga don ganin allon nuni naka.', tw: 'Hyɛn mu na hwɛ wo dashboard.', hi: 'अपना होम डैशबोर्ड देखने के लिए साइन इन करें।' },
+  'experience.signedOut.cta':                  { en: 'Go to login', fr: 'Aller à la connexion', sw: 'Nenda kuingia', ha: 'Je ka shiga', tw: 'Kɔ login', hi: 'लॉगिन पर जाएँ' },
+
   // ─── Architecture audit §7 — buyer + NGO bottom nav ─────────────
   'buyer.nav.buy':                             { en: 'Buy',       fr: 'Acheter',  sw: 'Nunua',  ha: 'Saya',    tw: 'Tɔ',         hi: 'खरीदें' },
   'buyer.nav.saved':                           { en: 'Saved',     fr: 'Enregistré', sw: 'Iliyohifadhiwa', ha: 'An ajiye', tw: 'Akora hɔ', hi: 'सहेजे गए' },
