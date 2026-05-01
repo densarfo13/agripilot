@@ -202,7 +202,12 @@ export default function NgoDashboard() {
     'Farmers needing attention');
   const expLbl  = resolve(t, 'ngo.dashboard.exportReport',  'Export Report');
   const errLbl  = resolve(t, 'ngo.dashboard.error',         'Could not load dashboard');
-  const emptyLbl = resolve(t, 'ngo.dashboard.empty',        'No farmers in this program yet.');
+  // Final go-live spec §13: empty-state copy for the no-farmers
+  // branch. The new key matches the spec sentence verbatim;
+  // ngo.dashboard.empty stays as the legacy fallback.
+  const emptyLbl = resolve(t, 'ngo.empty.farmers.copy',
+    resolve(t, 'ngo.dashboard.empty',
+      'Invite farmers to start tracking program activity.'));
 
   if (loading) {
     return (
@@ -448,7 +453,8 @@ export default function NgoDashboard() {
           <AdminEmptyState
             tone="positive"
             icon={'\u2713'}
-            title={resolve(t, 'ngo.dashboard.empty.title', 'Nothing to review yet')}
+            title={resolve(t, 'ngo.empty.farmers.title',
+              resolve(t, 'ngo.dashboard.empty.title', 'No farmers yet'))}
             body={emptyLbl}
             testId="ngo-farmers-empty"
           />

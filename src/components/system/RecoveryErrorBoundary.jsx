@@ -6,7 +6,11 @@
  *     <App />
  *   </RecoveryErrorBoundary>
  *
- * Buttons:
+ * Buttons (final go-live spec §19):
+ *   • Reload app             → window.location.reload()
+ *                              (fastest path — most exceptions are
+ *                               transient render races; reloading
+ *                               clears them without touching state)
  *   • Repair session         → repairFarrowaySession() + reload
  *   • Restart setup          → navigate to /onboarding/simple
  *   • Clear local app cache  → clearFarrowayCacheKeepingAuth() +
@@ -34,9 +38,14 @@ export default class RecoveryErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
+    this.handleReload  = this.handleReload.bind(this);
     this.handleRepair  = this.handleRepair.bind(this);
     this.handleRestart = this.handleRestart.bind(this);
     this.handleClear   = this.handleClear.bind(this);
+  }
+
+  handleReload() {
+    try { window.location.reload(); } catch { /* ignore */ }
   }
 
   static getDerivedStateFromError(error) {
@@ -97,8 +106,16 @@ export default class RecoveryErrorBoundary extends React.Component {
 
           <button
             type="button"
-            onClick={this.handleRepair}
+            onClick={this.handleReload}
             style={{ ...S.btn, ...S.btnPrimary }}
+            data-testid="recovery-reload"
+          >
+            {tSafe('recovery.reload', 'Reload app')}
+          </button>
+          <button
+            type="button"
+            onClick={this.handleRepair}
+            style={{ ...S.btn, ...S.btnGhost }}
             data-testid="recovery-repair"
           >
             {tSafe('recovery.repair', 'Repair session')}

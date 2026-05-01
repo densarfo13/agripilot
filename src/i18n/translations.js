@@ -11547,9 +11547,9 @@ const T = {
     tw: 'Siesie session', hi: 'सत्र मरम्मत', es: 'Reparar sesión',
   },
   'recovery.reload': {
-    en: 'Reload', fr: 'Recharger',
-    sw: 'Pakia upya', ha: 'Sake lodawa',
-    tw: 'Reload', hi: 'पुनः लोड', es: 'Recargar',
+    en: 'Reload app', fr: 'Recharger l\u2019app',
+    sw: 'Pakia programu upya', ha: 'Sake lodawa',
+    tw: 'Sane pakia app no', hi: 'ऐप पुनः लोड करें', es: 'Recargar la app',
   },
   'recovery.clearCache': {
     en: 'Clear local app cache',
@@ -12468,7 +12468,7 @@ const T = {
   'journey.scan.tips.retake':                  { en: 'Take another photo',                      fr: 'Prendre une autre photo',                     sw: 'Piga picha nyingine',                        ha: 'Ɗauki wani hoto',                          tw: 'Twa mfonini foforɔ',                          hi: 'दूसरी फोटो लें' },
 
   'journey.waitlist.title':                    { en: 'No buyers searching for {crop} yet',      fr: 'Aucun acheteur ne cherche {crop} pour l\u2019instant', sw: 'Hakuna wanunuzi wanaotafuta {crop} bado', ha: 'Babu masu siye da ke neman {crop} tukuna', tw: 'Adetɔni biara nrehwehwɛ {crop} ɛ',           hi: 'अभी कोई खरीदार {crop} नहीं खोज रहा' },
-  'journey.waitlist.copy':                     { en: 'We\u2019ll notify you the moment demand picks up. You can also boost a listing now to get visibility while it\u2019s quiet.', fr: 'Nous vous avertirons dès que la demande reprendra. Vous pouvez aussi booster une annonce maintenant pour gagner en visibilité.', sw: 'Tutakujulisha mara mahitaji yanapoanza. Pia unaweza kukuza orodha sasa ili kupata mwonekano wakati wa utulivu.', ha: 'Za mu sanar da kai a lokacin da buƙata ta fara. Za ka iya kuma ƙara talla yanzu don samun gani yayin shiru.', tw: 'Yɛbɛbɔ wo amane bere a hia bɛhyɛ aseɛ. Wobetumi nso ahyɛ adetɔn den seesei na woanya nhwehwɛmu wɔ dinn mu.', hi: 'मांग बढ़ते ही हम आपको सूचित करेंगे। आप अभी एक सूची को बूस्ट भी कर सकते हैं।' },
+  'journey.waitlist.copy':                     { en: 'We\u2019ll notify you when buyers are available. You can also boost a listing now to get visibility while it\u2019s quiet.', fr: 'Nous vous avertirons quand des acheteurs seront disponibles. Vous pouvez aussi booster une annonce maintenant pour gagner en visibilité.', sw: 'Tutakujulisha wanunuzi watakapopatikana. Pia unaweza kukuza orodha sasa ili kupata mwonekano wakati wa utulivu.', ha: 'Za mu sanar da kai lokacin da masu siye suka samu. Za ka iya kuma ƙara talla yanzu don samun gani yayin shiru.', tw: 'Yɛbɛbɔ wo amane sɛ adetɔni a wɔbɛtɔ wo nneɛma no wɔ hɔ. Wobetumi nso ahyɛ adetɔn den seesei na woanya nhwehwɛmu wɔ dinn mu.', hi: 'जब खरीदार उपलब्ध होंगे तो हम आपको सूचित करेंगे। आप अभी एक सूची को बूस्ट भी कर सकते हैं।' },
   'journey.waitlist.notify':                   { en: 'Notify me',                               fr: 'Me prévenir',                                 sw: 'Nijulishe',                                  ha: 'Sanar da ni',                              tw: 'Bɔ me amane',                                  hi: 'मुझे सूचित करें' },
   'journey.waitlist.boost':                    { en: 'Boost a listing',                         fr: 'Booster une annonce',                         sw: 'Kuza orodha',                                ha: 'Ƙara talla',                               tw: 'Hyɛ adetɔn den',                              hi: 'सूची को बूस्ट करें' },
   'journey.waitlist.stamped':                  { en: 'You\u2019ll be notified',                 fr: 'Vous serez notifié',                          sw: 'Utajulishwa',                                ha: 'Za a sanar da kai',                        tw: 'Wɔbɛbɔ wo amane',                             hi: 'आपको सूचित किया जाएगा' },
@@ -12490,6 +12490,13 @@ const T = {
   'common.later':                              { en: 'Later',                                   fr: 'Plus tard',                                   sw: 'Baadaye',                                    ha: 'Daga baya',                                tw: 'Akyiri yi',                                    hi: 'बाद में' },
 
   'scan.cameraDenied':                         { en: 'Camera access is off. Use Upload from gallery below, or enable camera in your browser settings.', fr: 'L\u2019accès à la caméra est désactivé. Utilisez Télécharger depuis la galerie ci-dessous, ou activez la caméra dans les paramètres du navigateur.', sw: 'Ufikiaji wa kamera umezimwa. Tumia Pakia kutoka kwa nyumba hapa chini, au washa kamera katika mipangilio ya kivinjari.', ha: 'An kashe kamarar. Yi amfani da Loda daga ɗakin hoto a ƙasa, ko kunna kamarar a saitin burauzar.', tw: 'Kamera no nso ankasa. Fa "Fa firi mfonini kuro mu" wɔ aseɛ, anaa kɔ kamera nhyehyɛeɛ mu hyɛ no aso.', hi: 'कैमरा एक्सेस बंद है। नीचे "गैलरी से अपलोड करें" का उपयोग करें, या ब्राउज़र सेटिंग्स में कैमरा सक्षम करें।' },
+
+  // ─── Final go-live spec (§2 + §9 + §13) — empty states + offline banner ─────
+  'home.tasks.allDone.title':                  { en: 'You\u2019re all set for today \uD83C\uDF89', fr: 'Tout est prêt pour aujourd\u2019hui \uD83C\uDF89', sw: 'Umemaliza yote kwa leo \uD83C\uDF89', ha: 'Ka gama duka don yau \uD83C\uDF89', tw: 'Wo nneɛma nyinaa awie ɛnnɛ \uD83C\uDF89', hi: 'आज के लिए आप तैयार हैं \uD83C\uDF89' },
+  'home.tasks.allDone.cta':                    { en: 'Scan a plant', fr: 'Scanner une plante', sw: 'Skani mmea', ha: 'Duba shuka', tw: 'Hwehwɛ afifideɛ', hi: 'पौधे को स्कैन करें' },
+  'ngo.empty.farmers.title':                   { en: 'No farmers yet', fr: 'Aucun agriculteur pour l\u2019instant', sw: 'Hakuna wakulima bado', ha: 'Babu manoma tukuna', tw: 'Akuafoɔ biara nni hɔ ɛnnɛ', hi: 'अभी कोई किसान नहीं' },
+  'ngo.empty.farmers.copy':                    { en: 'Invite farmers to start tracking program activity.', fr: 'Invitez des agriculteurs pour commencer à suivre l\u2019activité du programme.', sw: 'Alika wakulima ili kuanza kufuatilia shughuli za programu.', ha: 'Gayyaci manoma don fara bin diddigin ayyukan shirin.', tw: 'To akuafoɔ nsa ma wɔmfi ase ntu nhyehyɛeɛ no anammɔn akyi.', hi: 'कार्यक्रम गतिविधि ट्रैक करने के लिए किसानों को आमंत्रित करें।' },
+  'sync.savedOnDevice':                        { en: 'Saved on this device. We\u2019ll sync when connection improves.', fr: 'Enregistré sur cet appareil. Synchronisation à la reprise du réseau.', sw: 'Imehifadhiwa kwenye kifaa hiki. Tutasawazisha mtandao utakaporudi.', ha: 'An adana akan na\u2019urar. Za mu daidaita lokacin da haɗin ya inganta.', tw: 'Akora wɔ saa pɔn yi so. Yɛbɛyɛ sync sɛ nkitahodi no ye.', hi: 'इस डिवाइस पर सहेजा गया। कनेक्शन सुधरने पर सिंक करेंगे।' },
 };
 
 export default T;

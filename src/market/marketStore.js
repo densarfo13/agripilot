@@ -109,20 +109,88 @@ export function getListings() {
 }
 
 /**
- * Active = listings whose status is not "SOLD" or "EXPIRED" and
- * whose readyDate (when present) hasn't slipped more than 30
- * days past today. Stale listings stay on the device but the
- * marketplace surface filters them out.
+ * Listing status taxonomy (final go-live spec §10):
+ *   DRAFT      — farmer started a listing but hasn't published it
+ *   ACTIVE     — published; visible on /marketplace
+ *   INTERESTED — at least one buyer interest received (display
+ *                helper; the row is still ACTIVE on disk)
+ *   CONTACTED  — farmer has reached out to a buyer
+ *   SOLD       — terminal — produce is gone
+ *   EXPIRED    — readyDate slipped >30d past, swept on boot
+ *
+ * The on-disk row stores ACTIVE / DRAFT / SOLD / EXPIRED as the
+ * canonical state. INTERESTED + CONTACTED are computed on read
+ * from the buyer-interest store so the listing row never falls
+ * out of sync with interest activity.
+ */
+export const LISTING_STATUS = Object.freeze({
+  DRAFT:      'DRAFT',
+  ACTIVE:     'ACTIVE',
+  INTERESTED: 'INTERESTED',
+  CONTACTED:  'CONTACTED',
+  SOLD:       'SOLD',
+  EXPIRED:    'EXPIRED',
+});
+
+/**
+ * Active = listings whose status is not "DRAFT", "SOLD" or
+ * "EXPIRED" and whose readyDate (when present) hasn't slipped
+ * more than 30 days past today. Stale listings stay on the
+ * device but the marketplace surface filters them out.
  */
 export function getActiveListings() {
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   return getListings().filter((l) => {
     const status = String(l.status || '').toUpperCase();
-    if (status === 'SOLD' || status === 'EXPIRED') return false;
+    if (status === 'DRAFT' || status === 'SOLD' || status === 'EXPIRED') return false;
     if (!l.readyDate) return true;
     const t = Date.parse(l.readyDate);
     if (Number.isNaN(t)) return true;
     return t >= cutoff;
+  });
+}
+
+/**
+ * getListingsForFarmer({ farmerId }) — every row this farmer
+ * has saved (DRAFT + ACTIVE + SOLD + EXPIRED), with each row
+ * decorated with a derived display status:
+ *   * INTERESTED — ACTIVE row + at least one buyer interest
+ *   * CONTACTED  — ACTIVE row + farmer has marked it contacted
+ *
+ * The on-disk status is left unchanged. The decorated `displayStatus`
+ * is what the My Listings screen renders; the original `status`
+ * stays canonical so a contact action never accidentally hides
+ * the listing from /marketplace.
+ */
+export function getListingsForFarmer({ farmerId } = {}) {
+  if (!farmerId) return [];
+  const all = getListings().filter((l) => l && l.farmerId === farmerId);
+  if (all.length === 0) return [];
+
+  let interests = [];
+  try { interests = _read(STORAGE_KEYS.INTERESTS) || []; }
+  catch { interests = []; }
+
+  const interestByListing = new Map();
+  for (const i of interests) {
+    if (!i || !i.listingId) continue;
+    const arr = interestByListing.get(i.listingId) || [];
+    arr.push(i);
+    interestByListing.set(i.listingId, arr);
+  }
+
+  return all.map((row) => {
+    const status = String(row.status || '').toUpperCase();
+    let displayStatus = status || LISTING_STATUS.ACTIVE;
+    if (status === LISTING_STATUS.ACTIVE) {
+      const ints = interestByListing.get(row.id) || [];
+      const anyContacted = ints.some(
+        (i) => String(i?.status || '').toLowerCase() === 'contacted'
+      );
+      if (anyContacted)      displayStatus = LISTING_STATUS.CONTACTED;
+      else if (ints.length)  displayStatus = LISTING_STATUS.INTERESTED;
+    }
+    return { ...row, displayStatus, interestCount: (interestByListing.get(row.id) || []).length };
   });
 }
 

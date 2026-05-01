@@ -13,6 +13,8 @@ import InviteFriendsCard from '../components/growth/InviteFriendsCard.jsx';
 import SellPromptCard from '../components/growth/SellPromptCard.jsx';
 import MarketSwitcherChip from '../components/markets/MarketSwitcherChip.jsx';
 import HomeTaskEnhancer from '../components/home/HomeTaskEnhancer.jsx';
+// Final go-live spec §9: empty-state when no recommendations.
+import AllSetForTodayCard from '../components/home/AllSetForTodayCard.jsx';
 import StreakRewardBanner from '../components/engagement/StreakRewardBanner.jsx';
 import ProfileCompletionPrompt from '../components/home/ProfileCompletionPrompt.jsx';
 import MarketplaceNudgeCard from '../components/home/MarketplaceNudgeCard.jsx';
@@ -228,7 +230,12 @@ export default function FarmerOverviewTab() {
                 </div>
               )}
 
-              {/* Recommendations */}
+              {/* Recommendations — empty branch shows the
+                  "all set for today" empty state with a Scan
+                  shortcut (final go-live spec §9). */}
+              {(!lifecycle.recommendations || lifecycle.recommendations.length === 0) && (
+                <AllSetForTodayCard />
+              )}
               {lifecycle.recommendations && lifecycle.recommendations.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>
                   <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Today’s Priority</div>

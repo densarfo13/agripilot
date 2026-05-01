@@ -47,13 +47,36 @@ export default function FarmerEntry() {
     );
   }
 
-  // ── Authenticated — auto-route
+  // ── Authenticated — auto-route by role
   if (isAuthenticated) {
-    // Staff users go to their admin dashboard instead of farmer home
-    if (user?.role && user.role !== 'farmer') {
-      return <Navigate to="/dashboard" replace />;
+    const role = String(user?.role || '').toLowerCase();
+
+    // Final go-live spec §1: per-role redirect map. Each role
+    // lands on the surface that matches its job, instead of every
+    // non-farmer falling through to /dashboard (the farmer home).
+    if (role === 'super_admin' || role === 'institutional_admin') {
+      // Platform admin — V1 Layout root mounts the admin dashboard.
+      return <Navigate to="/" replace />;
+    }
+    if (role === 'reviewer' || role === 'field_officer') {
+      // NGO / staff — application review queue is their home.
+      return <Navigate to="/applications" replace />;
+    }
+    if (role === 'agent') {
+      return <Navigate to="/agent" replace />;
+    }
+    if (role === 'investor_viewer') {
+      return <Navigate to="/internal/metrics" replace />;
+    }
+    if (role === 'buyer') {
+      // Buyer role isn't in the canonical taxonomy yet, but the
+      // cookie session may set it via a future server change. /buy
+      // self-handles the flag-off case and never crashes.
+      return <Navigate to="/buy" replace />;
     }
 
+    // Default: farmer (and anything unrecognised falls back to the
+    // farmer flow rather than a blank screen).
     const hasFarm = (activeFarms && activeFarms.length > 0) || !!profile?.id;
     if (hasFarm) {
       // Case A/B: session + farm → Home

@@ -215,7 +215,7 @@ export default function WaitlistNudgeCard({ style }) {
         </span>
         <span style={S.copy}>
           {tStrict('journey.waitlist.copy',
-            'We\u2019ll notify you the moment demand picks up. You can also boost a listing now to get visibility while it\u2019s quiet.')}
+            'We\u2019ll notify you when buyers are available. You can also boost a listing now to get visibility while it\u2019s quiet.')}
         </span>
         {stamped ? (
           <span style={S.successPill} data-testid="waitlist-stamped">

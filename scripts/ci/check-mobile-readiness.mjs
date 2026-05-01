@@ -114,6 +114,48 @@ const checks = [
       return idxHelp < idxLayout && idxPrivacy < idxLayout;
     },
   },
+  {
+    name: 'RecoveryErrorBoundary surfaces 4 buttons (Reload, Repair, Restart, Clear)',
+    why:  'Spec §19 requires the full recovery menu, not 3 buttons',
+    pass: () => {
+      const f = read('src/components/system/RecoveryErrorBoundary.jsx');
+      return /data-testid="recovery-reload"/.test(f)
+          && /data-testid="recovery-repair"/.test(f)
+          && /data-testid="recovery-restart"/.test(f)
+          && /data-testid="recovery-clear"/.test(f);
+    },
+  },
+  {
+    name: 'marketStore exports LISTING_STATUS taxonomy with DRAFT',
+    why:  'Spec §10 requires draft / active / interested / contacted / sold / expired',
+    pass: () => {
+      const f = read('src/market/marketStore.js');
+      return /LISTING_STATUS\s*=\s*Object\.freeze/.test(f)
+          && /DRAFT:\s*['"]DRAFT['"]/.test(f)
+          && /INTERESTED:\s*['"]INTERESTED['"]/.test(f)
+          && /CONTACTED:\s*['"]CONTACTED['"]/.test(f);
+    },
+  },
+  {
+    name: 'AllSetForTodayCard ships the empty-state',
+    why:  'Spec §9 — Home must surface a friendly empty state when no priority',
+    pass: () => fs.existsSync(path.join(ROOT, 'src/components/home/AllSetForTodayCard.jsx')),
+  },
+  {
+    name: 'FarmerEntry has per-role redirect map',
+    why:  'Spec §1 — buyer/admin/staff/agent each land on the right surface',
+    pass: () => {
+      const f = read('src/pages/FarmerEntry.jsx');
+      return /role === ['"]super_admin['"]/.test(f)
+          && /role === ['"]reviewer['"]/.test(f)
+          && /role === ['"]agent['"]/.test(f);
+    },
+  },
+  {
+    name: 'LanguageSelector filters to supported languages',
+    why:  'Spec §15 — never show a language without translations',
+    pass: () => /_isLanguageSupported|REQUIRED_KEYS/.test(read('src/components/LanguageSelector.jsx')),
+  },
 ];
 
 const failed = [];

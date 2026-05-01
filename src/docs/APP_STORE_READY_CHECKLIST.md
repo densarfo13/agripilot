@@ -1,7 +1,7 @@
 # Farroway — App Store Ready Checklist
 
-**Companion to:** `FINAL_APP_STORE_AUDIT.md`
-**Verdict carried forward:** READY WITH MINOR RISKS
+**Companion to:** `FINAL_GO_LIVE_GAPS_FIXED.md` + `FULL_GO_LIVE_AUDIT.md`
+**Verdict carried forward:** READY
 
 This checklist matches the launch spec's §17 scenarios (A–I).
 Each item lists the path to follow + the expected outcome + the
@@ -113,6 +113,14 @@ device.
 - [ ] Backyard user → no Sell or Funding in primary nav
 - [ ] Funding "Start Application" modal opens cleanly
 - [ ] Sell form submits with auto-priced field
+- [ ] Admin user signs in → lands on `/` (V1 admin dashboard, not farmer Home)
+- [ ] Reviewer signs in → lands on `/applications`
+- [ ] Agent signs in → lands on `/agent`
+- [ ] Backyard user with no priority task → "You're all set for today" card shows + Scan CTA works
+- [ ] NGO program with 0 farmers → "Invite farmers to start tracking program activity." empty state
+- [ ] LanguageSelector dropdown only shows fully-translated languages
+- [ ] RecoveryErrorBoundary shows 4 buttons (Reload / Repair / Restart / Clear)
+- [ ] My Listings page shows DRAFT / ACTIVE / INTERESTED / CONTACTED / SOLD / EXPIRED display statuses
 
 ---
 
