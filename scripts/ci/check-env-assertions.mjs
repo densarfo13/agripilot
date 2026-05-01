@@ -21,9 +21,17 @@
 const MODE = (process.argv.find((a) => a.startsWith('--mode=')) || '--mode=prod')
   .split('=')[1];
 
+// Required backend vars. Entries can be strings (single var name)
+// or objects { name, aliases } for vars that have a legacy alias.
+//
+// Early-scale infra spec §8 — REDIS_URL is REQUIRED at the
+// 10k–50k scale tier so rate limits + queues + sessions can
+// share state across replicas. AUTH_SECRET is the canonical
+// name; JWT_SECRET is accepted as a back-compat alias.
 const REQUIRED_BACKEND = [
   'DATABASE_URL',
-  'JWT_SECRET',
+  { name: 'AUTH_SECRET', aliases: ['JWT_SECRET'] },
+  'REDIS_URL',
 ];
 
 const REQUIRED_FRONTEND_PROD = [
@@ -41,6 +49,8 @@ const OPTIONAL_PROVIDERS = [
   { name: 'TWILIO_VOICE_FROM',     aliases: ['TWILIO_VOICE_NUMBER'], purpose: 'Voice alerts' },
   { name: 'SENDGRID_API_KEY',      aliases: [],                purpose: 'Email + password resets' },
   { name: 'MFA_SECRET_KEY',        aliases: [],                purpose: 'MFA encryption at rest' },
+  { name: 'SCAN_API_KEY',          aliases: [],                purpose: 'External scan provider; fallback used when missing' },
+  { name: 'ANALYTICS_KEY',         aliases: ['POSTHOG_KEY', 'MIXPANEL_TOKEN'], purpose: 'PostHog/Mixpanel ingest; DB-only when missing' },
 ];
 
 function present(name, aliases = []) {
@@ -54,8 +64,13 @@ function main() {
   const warnings = [];
 
   if (MODE === 'prod') {
-    for (const v of REQUIRED_BACKEND)
-      if (!present(v)) failures.push({ v, why: 'required (backend)' });
+    for (const entry of REQUIRED_BACKEND) {
+      const name    = typeof entry === 'string' ? entry : entry.name;
+      const aliases = typeof entry === 'string' ? []    : (entry.aliases || []);
+      if (!present(name, aliases)) {
+        failures.push({ v: name, why: 'required (backend)' });
+      }
+    }
     for (const v of REQUIRED_FRONTEND_PROD)
       if (!present(v)) failures.push({ v, why: 'required (frontend build)' });
   }

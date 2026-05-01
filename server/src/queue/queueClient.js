@@ -32,6 +32,15 @@ export const QUEUES = Object.freeze({
   RISK_SCORING:       'risk_scoring',
   AUTONOMOUS_ACTIONS: 'autonomous_actions',
   NOTIFICATIONS:      'notifications',
+  // Early-scale infra spec §2 — additional queue names so the
+  // SCAN ingestion pipeline + offline SYNC fanout can move off
+  // the request thread once the corresponding workers ship.
+  // The queueClient's in-memory fallback runs registered
+  // processors inline today, so callers can enqueue jobs now
+  // and the queue switches to BullMQ + Redis as soon as the
+  // infra is provisioned.
+  SCAN_JOBS:          'scan_jobs',
+  SYNC_JOBS:          'sync_jobs',
 });
 
 const VALID_QUEUES = new Set(Object.values(QUEUES));

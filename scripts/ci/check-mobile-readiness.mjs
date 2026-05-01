@@ -572,6 +572,51 @@ const checks = [
       return fs.existsSync(path.join(ROOT, 'scripts/ops/export-data.mjs'));
     },
   },
+  {
+    name: 'Queue ships SCAN_JOBS + SYNC_JOBS names',
+    why:  'Early-scale infra \u00a72 \u2014 background queue covers scan + sync',
+    pass: () => {
+      const f = read('server/src/queue/queueClient.js');
+      return /SCAN_JOBS:\s*['"]scan_jobs['"]/.test(f)
+          && /SYNC_JOBS:\s*['"]sync_jobs['"]/.test(f);
+    },
+  },
+  {
+    name: 'Rate limiters use Redis store when REDIS_URL is set',
+    why:  'Early-scale infra \u00a77 \u2014 caps consistent across replicas',
+    pass: () => {
+      const f = read('server/src/app.js');
+      return /rate-limit-redis/.test(f)
+          && /_rateLimitStoreFactory/.test(f)
+          && /store: _rlStore\(['"]auth['"]\)/.test(f);
+    },
+  },
+  {
+    name: 'Analytics-light service ships the 8 spec events',
+    why:  'Early-scale infra \u00a76 \u2014 launch-critical event taxonomy',
+    pass: () => {
+      const f = read('server/src/services/analytics/earlyScaleAnalytics.js');
+      return /INSTALL/.test(f)
+          && /FIRST_ACTION/.test(f)
+          && /HOME_VIEW/.test(f)
+          && /TASK_COMPLETED/.test(f)
+          && /SCAN_USED/.test(f)
+          && /LISTING_CREATED/.test(f)
+          && /BUYER_INTEREST/.test(f)
+          && /DAY2_RETURN/.test(f);
+    },
+  },
+  {
+    name: 'env validation lists REDIS_URL + AUTH_SECRET as required',
+    why:  'Early-scale infra \u00a78 \u2014 Redis is non-optional at this tier',
+    pass: () => {
+      const f = read('scripts/ci/check-env-assertions.mjs');
+      return /REDIS_URL/.test(f)
+          && /AUTH_SECRET/.test(f)
+          && /SCAN_API_KEY/.test(f)
+          && /ANALYTICS_KEY/.test(f);
+    },
+  },
 ];
 
 const failed = [];

@@ -234,6 +234,38 @@ app.use(requestId);
 app.use(requestLogger);
 
 // ─── Rate Limiters ─────────────────────────────────────
+// Early-scale infra spec §7 — when REDIS_URL is present, use a
+// Redis-backed rate-limit store so caps stay consistent across
+// API replicas. When Redis is unset, fall back to the in-process
+// memory store (per-replica caps) — fine for the 1k–10k tier and
+// for local dev. The store is loaded lazily so the build never
+// requires `rate-limit-redis`/`ioredis` to be installed.
+let _rateLimitStoreFactory = null; // (prefix) => RedisStore | undefined
+(async () => {
+  try {
+    if (!process.env.REDIS_URL) return;
+    const [{ default: RedisStore }, { default: IORedis }] = await Promise.all([
+      import('rate-limit-redis').catch(() => ({ default: null })),
+      import('ioredis').catch(() => ({ default: null })),
+    ]);
+    if (!RedisStore || !IORedis) return;
+    const client = new IORedis(process.env.REDIS_URL, {
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
+    });
+    client.on('error', () => { /* silent — limiter degrades to memory */ });
+    _rateLimitStoreFactory = (prefix) => new RedisStore({
+      sendCommand: (...args) => client.call(...args),
+      prefix: `farroway:rl:${prefix}:`,
+    });
+  } catch { /* never propagate — falls back to memory store */ }
+})();
+
+function _rlStore(prefix) {
+  if (!_rateLimitStoreFactory) return undefined;
+  try { return _rateLimitStoreFactory(prefix); } catch { return undefined; }
+}
+
 const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes (relaxed for pilot)
   max: 30, // 30 auth requests per 5 min per IP (covers login + refresh + me)
@@ -241,6 +273,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // successful requests don't count toward limit
+  store: _rlStore('auth'),
   // Uses default keyGenerator (request IP via express trust proxy)
 });
 
@@ -251,6 +284,7 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.path.startsWith('/api/v2/auth/'), // auth has its own limiter
+  store: _rlStore('api'),
 });
 
 // Production infra spec §2: domain-specific rate limits.
@@ -263,6 +297,7 @@ const scanLimiter = rateLimit({
   message: { error: 'Too many scan requests. Please wait a moment.' },
   standardHeaders: true,
   legacyHeaders: false,
+  store: _rlStore('scan'),
 });
 const fundingLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -270,6 +305,7 @@ const fundingLimiter = rateLimit({
   message: { error: 'Too many funding requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
+  store: _rlStore('funding'),
 });
 const sellLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -277,6 +313,7 @@ const sellLimiter = rateLimit({
   message: { error: 'Too many marketplace requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
+  store: _rlStore('sell'),
 });
 
 // Apply API-wide rate limiter to all /api routes (auth excluded — has authLimiter)
