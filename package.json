@@ -35,7 +35,8 @@
     "check:i18n":         "node scripts/check-i18n.js",
     "check:crop-labels":  "node scripts/check-raw-crop-render.js",
     "launch-gate":      "node scripts/launch-gate.mjs",
-    "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build"
+    "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build",
+    "launch-gate:final": "npm run launch-gate:fast && npm run guard:i18n && npm run guard:crop-render"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

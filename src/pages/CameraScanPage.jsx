@@ -31,6 +31,22 @@ export default function CameraScanPage() {
   const [taskAdded, setTaskAdded] = useState(false);
   const [history, setHistory] = useState(() => getScanHistory());
 
+  // Final-Launch §3 — when the new scan flow is enabled, /scan-crop
+  // becomes a redirect to /scan. Static import is safe; the
+  // features module is small and already in the bundle.
+  useEffect(() => {
+    let cancelled = false;
+    import('../config/features.js')
+      .then((cfg) => {
+        if (cancelled) return;
+        if (cfg?.isFeatureEnabled?.('scanDetection')) {
+          try { navigate('/scan', { replace: true }); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* swallow — flag-off path is the default */ });
+    return () => { cancelled = true; };
+  }, [navigate]);
+
   useEffect(() => {
     safeTrackEvent('camera.scan_shown', {});
     // Behavior tracking spec event — gated. Lazy-imports so the

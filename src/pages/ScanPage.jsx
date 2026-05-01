@@ -76,6 +76,10 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [savedEntryId, setSavedEntryId] = useState(null);
   const [tasksAdded, setTasksAdded] = useState(false);
+  // Thumbnail produced by ScanCapture for the history list.
+  // Persisted via saveScanEntry; expires with the rest of the
+  // history slot.
+  const [pendingThumbnail, setPendingThumbnail] = useState(null);
 
   // Read profile defensively — the page must work in a logged-out
   // / no-active-farm state.
@@ -98,9 +102,10 @@ export default function ScanPage() {
     }
   }, [flagOn, experience, navigate]);
 
-  const onContinue = useCallback(async ({ imageBase64, imageUrl, file }) => {
+  const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file }) => {
     setError('');
     setPhase('analyzing');
+    setPendingThumbnail(thumbnail || null);
     try {
       try { trackEvent('scan_photo_taken', { experience, hasFile: !!file }); }
       catch { /* ignore */ }
@@ -132,6 +137,7 @@ export default function ScanPage() {
     setResult(null);
     setSavedEntryId(null);
     setTasksAdded(false);
+    setPendingThumbnail(null);
     setPhase('capture');
   }, []);
 
@@ -142,6 +148,7 @@ export default function ScanPage() {
         farmId:    profile?.id || null,
         cropId:    profile?.crop || profile?.cropId || null,
         plantName: profile?.plantName || null,
+        thumbnail: pendingThumbnail,
         experience,
         language:  null,
       });

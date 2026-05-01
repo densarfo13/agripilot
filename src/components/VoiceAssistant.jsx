@@ -60,6 +60,7 @@ import {
   isListenSupported,
 } from '../voice/voiceEngine.js';
 import useLowLiteracyMode from '../hooks/useLowLiteracyMode.js';
+import { isFeatureEnabled } from '../config/features.js';
 
 // ─── Command map ─────────────────────────────────────────────
 //
@@ -173,7 +174,17 @@ export default function VoiceAssistant() {
       // navigation is instantaneous so they hear "Tasks" → screen
       // changes.
       speakKey(match.key, lang || 'en', tStrict(match.key, ''));
-      try { navigate?.(match.route); } catch { /* ignore */ }
+      // Spoken "scan" routes to the new /scan flow when the
+      // scanDetection feature flag is on; legacy /scan-crop
+      // otherwise. Static import avoids a Vite/ESM require()
+      // hazard.
+      let route = match.route;
+      try {
+        if (route === '/scan-crop' && isFeatureEnabled('scanDetection')) {
+          route = '/scan';
+        }
+      } catch { /* keep legacy route on any guard error */ }
+      try { navigate?.(route); } catch { /* ignore */ }
       setState(STATE.IDLE);
       return;
     }

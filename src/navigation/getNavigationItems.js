@@ -60,13 +60,16 @@ const FARM_ITEMS = [
   { key: 'nav.sell',     fallback: 'Sell',       path: '/farmer/listings',   icon: '\uD83E\uDDFA', testid: 'tab-sell' },
 ];
 
-const BACKYARD_ITEMS = [
+// Scan path resolution is deferred to call time so the new
+// /scan flow is reachable when the `scanDetection` feature
+// flag is on without changing this static table.
+const _BACKYARD_ITEMS_BASE = [
   { key: 'nav.home',      fallback: 'Home',       path: '/dashboard', icon: '\uD83C\uDFE1', testid: 'tab-home' },
   { key: 'nav.myGarden',  fallback: 'My Garden',  path: '/my-farm',   icon: '\uD83C\uDF31', testid: 'tab-farm' },
   { key: 'nav.tasks',     fallback: 'Tasks',      path: '/tasks',     icon: '\u2705',       testid: 'tab-tasks' },
   { key: 'nav.progress',  fallback: 'Progress',   path: '/progress',  icon: '\uD83D\uDCC8', testid: 'tab-progress' },
   { key: 'nav.ask',       fallback: 'Ask',        path: '/today',     icon: '\uD83C\uDFA4', testid: 'tab-ask' },
-  { key: 'nav.scan',      fallback: 'Scan',       path: '/scan-crop', icon: '\uD83D\uDCF8', testid: 'tab-scan' },
+  { key: 'nav.scan',      fallback: 'Scan',       path: '__scan__',   icon: '\uD83D\uDCF8', testid: 'tab-scan' },
 ];
 
 const GENERIC_ITEMS = [
@@ -79,16 +82,45 @@ const GENERIC_ITEMS = [
   { key: 'nav.progress', fallback: 'Progress', path: '/progress',  icon: '\uD83D\uDCC8', testid: 'tab-progress' },
 ];
 
+// Static import — Vite ESM has no `require`. Defensive
+// destructure with a guard so a malformed features module
+// can never break the nav.
+import * as _features from '../config/features.js';
+
+/**
+ * Resolve the runtime scan path. The `__scan__` sentinel above
+ * is replaced here so the table stays static while the actual
+ * destination flips with the `scanDetection` feature flag.
+ */
+function _resolveScanPath() {
+  try {
+    if (typeof _features?.isFeatureEnabled === 'function'
+        && _features.isFeatureEnabled('scanDetection')) {
+      return '/scan';
+    }
+  } catch { /* ignore */ }
+  return '/scan-crop';
+}
+
+function _materialise(items) {
+  return items.map((it) => (
+    it.path === '__scan__' ? { ...it, path: _resolveScanPath() } : { ...it }
+  ));
+}
+
 /**
  * @param {RegionExperience} experience
  * @returns {NavItem[]}
  */
 export function getNavigationItems(experience) {
-  if (experience === 'backyard') return BACKYARD_ITEMS.slice();
+  if (experience === 'backyard') return _materialise(_BACKYARD_ITEMS_BASE);
   if (experience === 'generic')  return GENERIC_ITEMS.slice();
   return FARM_ITEMS.slice();
 }
 
-export const _internal = Object.freeze({ FARM_ITEMS, BACKYARD_ITEMS, GENERIC_ITEMS });
+// Backwards compat — older imports asked for BACKYARD_ITEMS.
+export const BACKYARD_ITEMS = _BACKYARD_ITEMS_BASE;
+
+export const _internal = Object.freeze({ FARM_ITEMS, BACKYARD_ITEMS: _BACKYARD_ITEMS_BASE, GENERIC_ITEMS });
 
 export default getNavigationItems;

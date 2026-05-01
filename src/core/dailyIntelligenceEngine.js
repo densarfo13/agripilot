@@ -25,6 +25,7 @@ import { getFarmDailyPlan, getFarmWeatherFocusAlerts } from '../experience/farmE
 import { getGenericDailyPlan } from '../experience/genericExperience.js';
 import { resolveRegionUX } from './regionUXEngine.js';
 import { isFeatureEnabled } from '../config/features.js';
+import { getActiveScanTasks } from './scanToTask.js';
 
 /**
  * @typedef {{
@@ -281,6 +282,36 @@ export function generateDailyPlan({
     // regionConfig.enableSellFlow below.
     harvestReady: harvestReady && !isBackyard && regionConfig.enableSellFlow !== false,
   });
+
+  // Scan-derived follow-ups (feature-flag gated). When a recent
+  // /scan flagged "check the affected leaf again tomorrow" we
+  // surface those tasks alongside the engine's regular output.
+  // Capped at 1 per render so the daily card stays scannable;
+  // the rest of the slots come from the existing generator below.
+  if (isFeatureEnabled('scanToTask')) {
+    try {
+      const scanTasks = getActiveScanTasks({ farmId: farm.id });
+      if (Array.isArray(scanTasks) && scanTasks.length > 0) {
+        const seen = new Set(actions.map((a) => a.id));
+        for (const t of scanTasks.slice(0, 1)) {
+          if (actions.length >= 3) break;
+          if (seen.has(t.id)) continue;
+          actions = [
+            ...actions,
+            {
+              id:         t.id,
+              title:      t.title,
+              detail:     t.reason,
+              urgency:    t.urgency || 'medium',
+              actionType: t.actionType || 'inspect',
+              source:     'scan',
+            },
+          ];
+          seen.add(t.id);
+        }
+      }
+    } catch { /* never let scan-task lookup break daily plan */ }
+  }
 
   // Experience fallback: when the engine can't fill three
   // slots, top up from the experience-specific safe set so

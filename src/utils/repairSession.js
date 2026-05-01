@@ -145,6 +145,53 @@ export function repairFarrowaySession() {
     }
   }
 
+  // ── 5. experience ↔ farmType reconciliation (Final-Launch §2). ──
+  // The U.S. experience chooser writes both `experience` and
+  // `farmType` to the user_profile slot. If only one made it
+  // (older clients, partial sync), backfill the other so the
+  // BottomTabNav and regionUXEngine both see consistent state.
+  const profile = readJson(KEY.userProfile);
+  if (profile && !profile.__corrupt && typeof profile === 'object') {
+    let mutated = false;
+    const next = { ...profile };
+    if (next.experience === 'backyard' && !next.farmType) {
+      next.farmType = 'backyard';
+      mutated = true;
+      actions.push('repaired_farmType_for_backyard_experience');
+    } else if (next.experience === 'farm' && !next.farmType) {
+      next.farmType = 'small_farm';
+      mutated = true;
+      actions.push('repaired_farmType_for_farm_experience');
+    } else if (!next.experience && next.farmType) {
+      // The reverse case — farmType set but experience missing.
+      // Mirror via the same simple lookup the chooser uses.
+      if (next.farmType === 'backyard' || next.farmType === 'home_garden') {
+        next.experience = 'backyard';
+        mutated = true;
+        actions.push('repaired_experience_for_backyard_farmType');
+      } else if (next.farmType === 'small_farm' || next.farmType === 'large_farm' || next.farmType === 'farm') {
+        next.experience = 'farm';
+        mutated = true;
+        actions.push('repaired_experience_for_farm_farmType');
+      }
+    }
+    if (mutated) writeJson(KEY.userProfile, next);
+  }
+
+  // Mirror the experience hint into the dedicated localStorage
+  // slot that FarmerTodayPage reads to flip its title — keeps
+  // the today header in sync with whatever the profile says.
+  if (profile && !profile.__corrupt && profile.experience) {
+    try {
+      const existing = safeStorage()?.getItem('farroway_experience');
+      const want = JSON.stringify(profile.experience);
+      if (existing !== want) {
+        safeStorage()?.setItem('farroway_experience', want);
+        actions.push('mirrored_experience_to_top_level_key');
+      }
+    } catch { /* ignore */ }
+  }
+
   return {
     actions,
     snapshot: {
@@ -189,6 +236,25 @@ export function clearFarrowayCacheKeepingAuth() {
     try { ls.removeItem(k); removed.push(k); } catch { /* ignore */ }
   }
   return { removed };
+}
+
+/**
+ * repairSession — caller-friendly alias used by AuthContext +
+ * the App Store launch audit. Returns just the `actions` array
+ * so existing destructures (`actions.length`) work correctly.
+ *
+ * Earlier code imported `{ repairSession }` from this file but
+ * the only exported function was `repairFarrowaySession`, so the
+ * destructure produced undefined and the repair pass silently
+ * never ran. Adding the alias here un-breaks that wiring.
+ */
+export function repairSession() {
+  try {
+    const result = repairFarrowaySession();
+    return Array.isArray(result?.actions) ? result.actions : [];
+  } catch {
+    return [];
+  }
 }
 
 export const _internal = Object.freeze({ KEY, LEGACY_KEY, PREFIXES, AUTH_KEEP });

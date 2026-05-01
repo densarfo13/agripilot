@@ -170,11 +170,16 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       // still hand off the URL so the engine can run the
       // rule-based fallback.
       const b64 = await _readAsBase64(file).catch(() => null);
+      // Downscale to a small dataURL for the history thumbnail.
+      // Best-effort — if canvas isn't available the consumer
+      // simply falls back to the placeholder emoji.
+      const thumbnail = await _makeThumbnail(file).catch(() => null);
       if (typeof onContinue === 'function') {
         try {
           await onContinue({
             imageBase64: b64,
             imageUrl:    preview,
+            thumbnail,
             file,
           });
         } catch { /* never propagate */ }
@@ -268,5 +273,45 @@ function _readAsBase64(file) {
       reader.onerror = () => reject(reader.error || new Error('read_failed'));
       reader.readAsDataURL(file);
     } catch (err) { reject(err); }
+  });
+}
+
+/**
+ * Generate a small JPEG thumbnail (max 96 px on longest side) for
+ * the scan-history list. Returns a dataURL on success or null on
+ * any failure (no canvas, decode error, etc.) — the consumer
+ * falls back to a placeholder.
+ */
+function _makeThumbnail(file, maxDim = 96) {
+  return new Promise((resolve) => {
+    try {
+      if (typeof URL === 'undefined' || typeof document === 'undefined') return resolve(null);
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const ratio = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
+          const w = Math.max(1, Math.round(img.naturalWidth  * ratio));
+          const h = Math.max(1, Math.round(img.naturalHeight * ratio));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(null);
+          ctx.drawImage(img, 0, 0, w, h);
+          let dataUrl = '';
+          try { dataUrl = canvas.toDataURL('image/jpeg', 0.7); }
+          catch { dataUrl = ''; }
+          resolve(dataUrl || null);
+        } catch { resolve(null); }
+        finally {
+          try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+        }
+      };
+      img.onerror = () => {
+        try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+        resolve(null);
+      };
+      img.src = url;
+    } catch { resolve(null); }
   });
 }

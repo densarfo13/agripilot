@@ -181,6 +181,10 @@ const PostHarvestSummaryPage = lazy(() => import('./pages/farmer/PostHarvestSumm
 const FarmerOnboardingPage = lazy(() => import('./pages/onboarding/FarmerOnboardingPage.jsx'));
 const FastOnboardingRoute = lazy(() => import('./pages/onboarding/fast/FastOnboardingRoute.jsx'));
 const OnboardingV3 = lazy(() => import('./pages/onboarding/OnboardingV3.jsx'));
+// OnboardingRouter — thin guard that bounces U.S. users to the
+// experience chooser when they haven't picked one yet. Flag-off
+// behaviour: identical to OnboardingV3.
+const OnboardingRouter = lazy(() => import('./pages/onboarding/OnboardingRouter.jsx'));
 const EditFarmScreen = lazy(() => import('./pages/EditFarmScreen.jsx'));
 const NewFarmScreen  = lazy(() => import('./pages/NewFarmScreen.jsx'));
 // /farms — Manage Farms control panel for multi-farm households
@@ -763,7 +767,12 @@ export default function App() {
                 new signups. Legacy /fast + /smart kept for back-compat
                 with any in-flight sessions but all new entry points
                 (FarmerRegister, ProfileGuard) point here. */}
-            <Route path="/onboarding"    element={<OnboardingV3 />} />
+            {/* /onboarding now routes through OnboardingRouter
+                so U.S. users with no experience selection bounce
+                to /onboarding/us-experience. Flag-off path:
+                identical to V3. /onboarding/v3 stays as a direct
+                deep-link to V3 for QA. */}
+            <Route path="/onboarding"    element={<OnboardingRouter />} />
             <Route path="/onboarding/v3" element={<OnboardingV3 />} />
             <Route path="/edit-farm" element={<EditFarmScreen />} />
             <Route path="/farm/new" element={<NewFarmScreen />} />
