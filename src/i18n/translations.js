@@ -6779,6 +6779,24 @@ const T = {
   'myFarm.addFarm': {
     en: 'Add New Farm', fr: 'Ajouter une ferme', sw: 'Ongeza shamba jipya', ha: '\u0198ara sabuwar gona', tw: 'Fa afuo foforo\u0254 ka ho',
   },
+  // Safe-launch backyard-as-farm-type spec §2 — adaptive labels.
+  // Reused by MyFarmPage.Header + the action-button trio when
+  // the active farm row's farmType is backyard / home_garden.
+  'myGarden.title': {
+    en: 'My Garden', fr: 'Mon jardin', sw: 'Bustani Yangu', ha: 'Lambun a', tw: 'Me Turom', hi: 'मेरा बगीचा',
+  },
+  'myFarm.editGarden': {
+    en: 'Edit Garden', fr: 'Modifier le jardin', sw: 'Hariri bustani', ha: 'Gyara lambu', tw: 'Sesa turo no', hi: 'बगीचा संपादित करें',
+  },
+  'myFarm.addGarden': {
+    en: 'Add Garden', fr: 'Ajouter un jardin', sw: 'Ongeza bustani', ha: '\u0198ara lambu', tw: 'Fa turo ka ho', hi: 'बगीचा जोड़ें',
+  },
+  'myFarm.switchToFarm': {
+    en: 'Switch to Farm', fr: 'Passer \u00e0 la ferme', sw: 'Badilisha kwenda shamba', ha: 'Canja zuwa gona', tw: 'Dane k\u0254 afuo so', hi: 'खेत पर बदलें',
+  },
+  'myFarm.switchToGarden': {
+    en: 'Switch to Garden', fr: 'Passer au jardin', sw: 'Badilisha kwenda bustani', ha: 'Canja zuwa lambu', tw: 'Dane k\u0254 turo so', hi: 'बगीचे पर बदलें',
+  },
 
   // ═══════════════════════════════════════════════════════════
   //  USER MODE — mode switcher labels

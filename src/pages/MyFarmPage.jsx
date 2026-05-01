@@ -188,6 +188,28 @@ export default function MyFarmPage() {
   // data), fall back to the farms array lookup.
   const farm = profile || farms?.find((f) => f.id === currentFarmId) || farms?.[0] || null;
 
+  // Safe-launch backyard-as-farm-type spec §1: derive whether the
+  // active row is a backyard / home-garden record so the header,
+  // buttons, and switch shortcut adapt without rewriting the data
+  // model. Both legacy ('home_garden') and canonical ('backyard')
+  // tags resolve to the garden surface.
+  const _activeFarmType = String(farm?.farmType || '').toLowerCase();
+  const isBackyardActive = _activeFarmType === 'backyard'
+                        || _activeFarmType === 'home_garden'
+                        || _activeFarmType === 'home';
+
+  // Spec §5 — surface a "Switch to Farm" shortcut on the garden
+  // surface when at least one non-backyard record exists, and
+  // "Switch to Garden" on the farm surface when at least one
+  // backyard record exists. The shortcut sits next to "Edit"
+  // and complements the FarmSwitcher dropdown above.
+  const hasOtherFarm = Array.isArray(farms)
+    && farms.some((f) => {
+      const t = String(f?.farmType || '').toLowerCase();
+      const isBackyardRow = t === 'backyard' || t === 'home_garden' || t === 'home';
+      return isBackyardActive ? !isBackyardRow : isBackyardRow;
+    });
+
   // Per-row farm details — values are non-null defaults per spec
   // (no "No data" leaks; missing fields show "Add location" etc.).
   const cropValue = farm.crop
@@ -290,7 +312,7 @@ export default function MyFarmPage() {
   return (
     <div style={S.page} data-testid="my-farm-page">
       {/* ── 1. Header (spec §1) ─────────────────────────────── */}
-      <Header t={t} />
+      <Header t={t} isBackyard={isBackyardActive} />
 
       {/* ── 2. Farm Selector (spec §2) ─────────────────────────
           Reuses the existing FarmSwitcher — single-farm farms
@@ -449,10 +471,24 @@ export default function MyFarmPage() {
       </section>
 
       {/* ── 6. Action Buttons (spec §5 redesign) ───────────────
-          Exactly three same-size action buttons.
-          • Edit Farm     — primary green
-          • Add New Farm  — secondary outline
-          • Switch Farm   — tertiary (scrolls to FarmSwitcher) */}
+          Safe-launch backyard-as-farm-type spec §5: labels +
+          targets adapt to whether the active row is a backyard
+          / home-garden record.
+
+          Backyard:
+            • Edit Garden          — primary green
+            • Add Farm             — secondary (creates a non-
+                                     backyard row, doesn't edit
+                                     this garden)
+            • Switch to Farm       — only when a non-backyard
+                                     row already exists
+
+          Farm:
+            • Edit Farm            — primary green
+            • Add Garden           — secondary (creates a backyard
+                                     row, doesn't edit this farm)
+            • Switch Farm          — scrolls to FarmSwitcher
+      */}
       <div style={S.actionStack} data-testid="my-farm-actions">
         <button
           type="button"
@@ -463,29 +499,57 @@ export default function MyFarmPage() {
           <span style={S.actionBtnIcon} aria-hidden="true">
             <Sprout size={16} />
           </span>
-          <span>{tSafe('myFarm.edit', 'Edit Farm')}</span>
+          <span>
+            {isBackyardActive
+              ? tSafe('myFarm.editGarden', 'Edit Garden')
+              : tSafe('myFarm.edit', 'Edit Farm')}
+          </span>
         </button>
         <button
           type="button"
-          onClick={() => navigate('/farm/new')}
+          onClick={() => {
+            // Backyard active → Add Farm should land on the
+            // farm-setup flow (NewFarmScreen) directly, not the
+            // adaptive setup which would default to backyard
+            // again. Farm active → Add Garden routes to the
+            // backyard onboarding flow.
+            try {
+              if (isBackyardActive) {
+                navigate('/farm/new?intent=farm');
+              } else {
+                navigate('/onboarding/backyard');
+              }
+            } catch { /* swallow */ }
+          }}
           style={S.actionBtnSecondary}
-          data-testid="my-farm-add"
+          data-testid={isBackyardActive ? 'my-farm-add-farm' : 'my-farm-add-garden'}
         >
           <span style={S.actionBtnIcon} aria-hidden="true">
             <Plus size={16} />
           </span>
-          <span>{tSafe('myFarm.addFarm', 'Add New Farm')}</span>
+          <span>
+            {isBackyardActive
+              ? tSafe('myFarm.addFarm', 'Add Farm')
+              : tSafe('myFarm.addGarden', 'Add Garden')}
+          </span>
         </button>
         <button
           type="button"
           onClick={handleSwitchFarm}
           style={S.actionBtnSecondary}
           data-testid="my-farm-switch"
+          disabled={!hasOtherFarm && !(Array.isArray(farms) && farms.length > 1)}
         >
           <span style={S.actionBtnIcon} aria-hidden="true">
             <ArrowRight size={16} />
           </span>
-          <span>{tSafe('myFarm.switchFarm', 'Switch Farm')}</span>
+          <span>
+            {isBackyardActive
+              ? tSafe('myFarm.switchToFarm', 'Switch to Farm')
+              : (hasOtherFarm
+                  ? tSafe('myFarm.switchToGarden', 'Switch to Garden')
+                  : tSafe('myFarm.switchFarm', 'Switch Farm'))}
+          </span>
         </button>
       </div>
 
@@ -542,13 +606,20 @@ export default function MyFarmPage() {
 
 // ─── Local components ──────────────────────────────────────────
 
-function Header({ t }) {
+function Header({ t, isBackyard }) {
+  // Safe-launch spec §2: title swaps "My Farm" → "My Garden" when
+  // the active row is a backyard / home-garden record. Falls back
+  // through tSafe so a missing translation never blanks the title.
+  const title = isBackyard
+    ? (tSafe('myGarden.title', 'My Garden')
+       || t('myGarden.title') || 'My Garden')
+    : (t('myFarm.title') || 'My Farm');
   return (
     <div style={S.header}>
       <span style={S.headerIcon} aria-hidden="true">
         <Sprout size={20} />
       </span>
-      <h1 style={S.headerTitle}>{t('myFarm.title')}</h1>
+      <h1 style={S.headerTitle}>{title}</h1>
     </div>
   );
 }

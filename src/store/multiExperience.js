@@ -143,11 +143,18 @@ export function setActiveGardenId(id) {
 /**
  * getActiveExperience — 'garden' | 'farm' | null.
  *
- * Resolution order:
+ * Resolution order (safe-launch backyard-as-farm-type spec §8):
  *   1. Explicit pin in `farroway_active_experience`.
- *   2. Derived: if only gardens exist, return 'garden'; if only
+ *   2. Derived from the active farm row's `farmType` — if the
+ *      legacy `farroway_active_farm` JSON blob carries
+ *      farmType in {backyard, home_garden, home}, treat as
+ *      garden. This keeps the spec's "active farm's farmType
+ *      drives the experience surface" rule honored even when
+ *      no explicit pin has been written yet.
+ *   3. Derived: if only gardens exist, return 'garden'; if only
  *      farms exist, return 'farm'.
- *   3. null when no rows of either type are stored.
+ *   4. Both exist, no valid pin → 'farm' (historical default).
+ *   5. null when no rows of either type are stored.
  *
  * The "explicit pin must point to a non-empty experience" rule
  * stops a stale pin (e.g. user deleted their last garden, then
@@ -161,6 +168,21 @@ export function getActiveExperience() {
   if (pinned === EXPERIENCE.GARDEN && gardens.length > 0) return EXPERIENCE.GARDEN;
   if (pinned === EXPERIENCE.FARM   && farms.length   > 0) return EXPERIENCE.FARM;
 
+  // Derivation step 2: read the legacy active-farm blob. If
+  // that row's farmType is a backyard variant AND the user
+  // actually has a garden record, surface garden — even
+  // without an explicit pin. This honors the spec's
+  // "activeFarm.farmType drives the experience" rule.
+  try {
+    const legacyActive = _readLegacyActiveFarm();
+    if (legacyActive && (gardens.length > 0 || farms.length > 0)) {
+      const t = String(legacyActive.farmType || '').toLowerCase();
+      const isBackyard = t === 'backyard' || t === 'home_garden' || t === 'home';
+      if (isBackyard && gardens.length > 0) return EXPERIENCE.GARDEN;
+      if (!isBackyard && farms.length > 0)  return EXPERIENCE.FARM;
+    }
+  } catch { /* fall through to count-based derivation */ }
+
   if (gardens.length > 0 && farms.length === 0) return EXPERIENCE.GARDEN;
   if (farms.length   > 0 && gardens.length === 0) return EXPERIENCE.FARM;
   if (gardens.length > 0 && farms.length   > 0) {
@@ -169,6 +191,16 @@ export function getActiveExperience() {
     return EXPERIENCE.FARM;
   }
   return null;
+}
+
+function _readLegacyActiveFarm() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem('farroway_active_farm');
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    return v && typeof v === 'object' ? v : null;
+  } catch { return null; }
 }
 
 /**

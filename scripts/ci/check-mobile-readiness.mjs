@@ -424,6 +424,27 @@ const checks = [
     why:  'Land-size base spec \u00a76 \u2014 historical rows must auto-migrate',
     pass: () => /repairLandSizeBase/.test(read('src/context/AuthContext.jsx')),
   },
+  {
+    name: 'MyFarmPage adapts header + buttons to backyard farmType',
+    why:  'Safe-launch backyard-as-farm-type \u00a72, \u00a75 \u2014 garden vs farm labels',
+    pass: () => {
+      const f = read('src/pages/MyFarmPage.jsx');
+      return /isBackyardActive/.test(f)
+          && /myFarm\.editGarden/.test(f)
+          && /myFarm\.addGarden/.test(f)
+          && /myFarm\.switchToFarm/.test(f);
+    },
+  },
+  {
+    name: 'getActiveExperience derives from active farm farmType',
+    why:  'Safe-launch backyard-as-farm-type \u00a78 \u2014 activeFarm.farmType drives experience surface',
+    pass: () => {
+      const f = read('src/store/multiExperience.js');
+      return /_readLegacyActiveFarm/.test(f)
+          && /farroway_active_farm/.test(f)
+          && /isBackyard \?\s*EXPERIENCE\.GARDEN|isBackyard\s*&&\s*gardens\.length/.test(f);
+    },
+  },
 ];
 
 const failed = [];
