@@ -162,13 +162,26 @@ export default function FarmerDashboardPage() {
           r = await fetchProfile();
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[BOOT] bootstrap failed', err);
         if (!aliveRef.current) return;
 
         const status = err && err.response && err.response.status;
         const aborted = err && (err.name === 'AbortError' || err.name === 'CanceledError'
           || err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED');
+
+        // Demote handled-path failures (auth bounce, no-profile-yet,
+        // request abort) to a calm log line. Genuine unexpected
+        // failures still get a loud console.error so on-call sees
+        // them clearly. This stops the no-session boot path from
+        // painting the console red on every fresh install.
+        const handledStatus = status === 401 || status === 403 || status === 404;
+        if (handledStatus || aborted) {
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] bootstrap recoverable',
+            { status: status || null, aborted: !!aborted });
+        } else {
+          // eslint-disable-next-line no-console
+          console.error('[BOOT] bootstrap failed', err);
+        }
 
         // 401 / 403 — clear the session and bounce to /login.
         if (status === 401 || status === 403) {
