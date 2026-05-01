@@ -44,6 +44,14 @@ import { tSafe } from '../i18n/tSafe.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { ArrowRight } from '../components/icons/lucide.jsx';
+import { isFeatureEnabled } from '../config/features.js';
+import { trackEvent } from '../analytics/analyticsStore.js';
+import useAutoPriceSuggestion from '../hooks/useAutoPriceSuggestion.js';
+import MarketInsightCard from '../components/sell/MarketInsightCard.jsx';
+import BuyerExplanation  from '../components/sell/BuyerExplanation.jsx';
+import PostListingFlow   from '../components/sell/PostListingFlow.jsx';
+import RegionDetectChip  from '../components/sell/RegionDetectChip.jsx';
+import FarmerInterestPanel from '../components/marketplace/FarmerInterestPanel.jsx';
 
 const C = FARROWAY_BRAND.colors;
 const UNITS = ['kg', 'bags', 'crates'];
@@ -110,7 +118,54 @@ export default function Sell() {
   const [photoFile, setPhotoFile]   = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [successId, setSuccessId]   = useState(null);
+  // Sell screen V2 — flag-gated additions (default off).
+  const v2On = isFeatureEnabled('sellScreenV2');
+  // "Not sure yet" toggle for the quantity field. When on the
+  // listing saves with `quantity: null` so buyers can still see
+  // the offer and ask the farmer for a number directly.
+  const [qtyUnknown, setQtyUnknown] = useState(false);
+  // Track whether the user has manually edited the price input.
+  // Auto-suggestion only writes when this stays false — once the
+  // user types anything we never overwrite their value.
+  const [priceTouched, setPriceTouched] = useState(false);
+  // Detected region (filled in by RegionDetectChip on success).
+  const [detectedRegion, setDetectedRegion]   = useState('');
+  const [detectedCountry, setDetectedCountry] = useState('');
   const [errMsg, setErrMsg]         = useState('');
+
+  // Effective region/country for insights + listing payload —
+  // V2 prefers the freshly detected value, with the farm/profile
+  // region as graceful fallback.
+  const effectiveCountry = detectedCountry
+    || activeFarm?.country
+    || profile?.country
+    || '';
+  const effectiveRegion = detectedRegion
+    || activeFarm?.region
+    || profile?.region
+    || '';
+
+  // V2 auto price suggestion. Only prefills when the user has not
+  // typed anything into the price field yet. We never overwrite a
+  // human-typed value.
+  const { formatted: pricePrefill } = useAutoPriceSuggestion({
+    crop,
+    country: effectiveCountry,
+  });
+  React.useEffect(() => {
+    if (!v2On) return;
+    if (priceTouched) return;
+    if (!pricePrefill) return;
+    setPriceRange(pricePrefill);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v2On, pricePrefill, priceTouched]);
+
+  // Track `listing_viewed` once per page mount so analytics can
+  // measure the form-funnel drop-off (view → submit → buyer).
+  React.useEffect(() => {
+    try { trackEvent('listing_viewed', { source: 'sell_page' }); }
+    catch { /* swallow */ }
+  }, []);
 
   // Empty-state: no farm yet → tell farmer where to go.
   if (!activeFarm && !profile?.farmId) {
@@ -166,6 +221,8 @@ export default function Sell() {
                 setSuccessId(null);
                 setQuantity('');
                 setPriceRange('');
+                setQtyUnknown(false);
+                setPriceTouched(false);
               }}
               style={S.btnGhost}
             >
@@ -173,6 +230,13 @@ export default function Sell() {
             </button>
           </div>
         </div>
+        {/* V2: 3-step "what happens next" explainer below the
+            existing success card. Self-suppresses when flag off. */}
+        {v2On ? (
+          <div style={{ marginTop: 12 }}>
+            <PostListingFlow />
+          </div>
+        ) : null}
       </main>
     );
   }
@@ -187,7 +251,10 @@ export default function Sell() {
       setErrMsg(tSafe('market.error.cropRequired', 'Please enter a crop.'));
       return;
     }
-    if (!Number.isFinite(qty) || qty <= 0) {
+    // V2: when "Not sure yet" is selected, skip the qty > 0 check
+    // and persist null. Old flow keeps the strict qty validator.
+    const qtyResolved = (v2On && qtyUnknown) ? null : qty;
+    if (qtyResolved !== null && (!Number.isFinite(qty) || qty <= 0)) {
       setErrMsg(tSafe('market.error.qtyRequired',
         'Please enter a quantity greater than 0.'));
       return;
@@ -199,18 +266,33 @@ export default function Sell() {
         farmerId:   user?.sub || profile?.userId || null,
         farmId:     activeFarm?.id || profile?.farmId || null,
         crop:       crop.trim(),
-        quantity:   qty,
+        quantity:   qtyResolved,
         unit,
         readyDate,
         priceRange: priceRange.trim() || null,
         location: {
           lat:     activeFarm?.lat ?? activeFarm?.location?.lat ?? null,
           lng:     activeFarm?.lng ?? activeFarm?.location?.lng ?? null,
-          region:  activeFarm?.region  || profile?.region  || '',
-          country: activeFarm?.country || profile?.country || '',
+          region:  effectiveRegion,
+          country: effectiveCountry,
         },
         status: 'ACTIVE',
       });
+      // V2 spec §9: emit a canonical `listing_created` event with
+      // the context buyers care about. The marketStore already
+      // emits MARKET_LISTING_CREATED via safeTrackEvent — this is
+      // the spec-name companion so dashboards can switch to either.
+      try {
+        trackEvent('listing_created', {
+          listingId: listing?.id || null,
+          crop:      crop.trim(),
+          unit,
+          quantity:  qtyResolved,
+          region:    effectiveRegion,
+          country:   effectiveCountry,
+          priceSuggested: !priceTouched && !!pricePrefill,
+        });
+      } catch { /* swallow */ }
       // Fire-and-forget backend sync. Resolves true if the
       // v3 endpoint exists; on 404 / network blip the local
       // listing stays the source of truth and the user
@@ -324,6 +406,17 @@ export default function Sell() {
                     <ArrowRight size={14} />
                   </button>
                 </div>
+                {/* Marketplace transaction flow: inline interest
+                    panel with status pills + Contact / Negotiate /
+                    Accept actions + stale-interest nudge. The
+                    legacy "View buyers" chip above stays for deep-
+                    linking. Flag-off path: panel returns null. */}
+                {isFeatureEnabled('marketTransactionFlow') ? (
+                  <FarmerInterestPanel
+                    listing={l}
+                    farmerName={profile?.farmerName || profile?.fullName || ''}
+                  />
+                ) : null}
               </article>
             );
           })}
@@ -351,6 +444,20 @@ export default function Sell() {
             implicit label nesting also still works for screen
             readers — explicit htmlFor is just additionally
             robust. */}
+        {/* V2: market insight (demand + avg price + nearby buyers).
+            Mounts above the form so the farmer sees the signal
+            before committing to a price. Returns null when crop
+            is empty so we never render a half-card. */}
+        {v2On ? (
+          <div style={{ marginBottom: 12 }}>
+            <MarketInsightCard
+              crop={crop}
+              country={effectiveCountry}
+              region={effectiveRegion}
+            />
+          </div>
+        ) : null}
+
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <label style={S.label} htmlFor="sell-crop">
             {tSafe('market.crop', 'Crop')}
@@ -376,12 +483,19 @@ export default function Sell() {
                 name="quantity"
                 min="0"
                 step="0.5"
-                value={quantity}
+                value={qtyUnknown ? '' : quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                placeholder="0"
-                style={S.input}
+                placeholder={qtyUnknown
+                  ? tSafe('sell.qty.notSureYet', 'Not sure yet')
+                  : '0'}
+                style={{
+                  ...S.input,
+                  opacity: qtyUnknown ? 0.6 : 1,
+                  cursor:  qtyUnknown ? 'not-allowed' : 'text',
+                }}
+                disabled={qtyUnknown}
                 data-testid="sell-qty"
-                required
+                required={!qtyUnknown}
               />
             </label>
             <label style={{ ...S.label, flex: 1 }} htmlFor="sell-unit">
@@ -400,6 +514,35 @@ export default function Sell() {
               </select>
             </label>
           </div>
+
+          {/* V2: "Not sure yet" toggle for the quantity field.
+              When on, the listing saves with quantity:null so
+              buyers can still see the offer. Off by default —
+              farmers who know their tonnage continue as before. */}
+          {v2On ? (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.78)',
+                cursor: 'pointer',
+                marginTop: -4,
+              }}
+              data-testid="sell-qty-unknown-toggle"
+            >
+              <input
+                type="checkbox"
+                checked={qtyUnknown}
+                onChange={(e) => setQtyUnknown(e.target.checked)}
+                style={{ accentColor: '#22C55E' }}
+              />
+              <span>
+                {tSafe('sell.qty.notSureYet', 'Not sure yet \u2014 I\u2019ll confirm with the buyer')}
+              </span>
+            </label>
+          ) : null}
 
           <label style={S.label} htmlFor="sell-ready-date">
             {tSafe('market.readyDate', 'Ready date')}
@@ -421,11 +564,29 @@ export default function Sell() {
               id="sell-price"
               name="priceRange"
               value={priceRange}
-              onChange={(e) => setPriceRange(e.target.value)}
+              onChange={(e) => {
+                setPriceRange(e.target.value);
+                // Once the user edits the price field, the
+                // auto-suggestion never overwrites again.
+                setPriceTouched(true);
+              }}
               placeholder="e.g. 250–300 GHS / kg"
               style={S.input}
               data-testid="sell-price"
             />
+            {v2On && !priceTouched && pricePrefill ? (
+              <span
+                style={{
+                  fontSize: 12,
+                  color: '#86EFAC',
+                  fontWeight: 600,
+                  marginTop: 4,
+                }}
+                data-testid="sell-price-suggested"
+              >
+                {tSafe('sell.price.suggested', 'Suggested from market data')}
+              </span>
+            ) : null}
           </label>
 
           {/* Optional photo — boosts verification level
@@ -453,15 +614,35 @@ export default function Sell() {
             )}
           </label>
 
-          <div style={S.regionPill} data-testid="sell-region">
-            <span style={S.regionLabel}>
-              {tSafe('market.region', 'Region')}
-            </span>
-            <span style={S.regionVal}>
-              {(activeFarm?.region || profile?.region || '—')
-                + (activeFarm?.country ? `, ${activeFarm.country}` : '')}
-            </span>
-          </div>
+          {/* V2: smart region chip — shows detected city/state with
+              a "Detected" tag, falls back to a "Set your location"
+              button when detection fails. Flag-off path keeps the
+              static pill rendering whatever the farm/profile has. */}
+          {v2On ? (
+            <RegionDetectChip
+              initialRegion={activeFarm?.region  || profile?.region  || ''}
+              initialCountry={activeFarm?.country || profile?.country || ''}
+              onSetLocation={() => navigate('/profile/setup')}
+              onDetected={(reg, ctry) => {
+                if (reg)  setDetectedRegion(reg);
+                if (ctry) setDetectedCountry(ctry);
+              }}
+            />
+          ) : (
+            <div style={S.regionPill} data-testid="sell-region">
+              <span style={S.regionLabel}>
+                {tSafe('market.region', 'Region')}
+              </span>
+              <span style={S.regionVal}>
+                {(activeFarm?.region || profile?.region || '—')
+                  + (activeFarm?.country ? `, ${activeFarm.country}` : '')}
+              </span>
+            </div>
+          )}
+
+          {/* V2: trust line just above the submit button so the
+              farmer reads it at the moment of commitment. */}
+          {v2On ? <BuyerExplanation /> : null}
 
           <button
             type="submit"

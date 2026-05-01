@@ -70,6 +70,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 //   /admin/funding  — admin manages funding catalog
 //   /ngo/funding    — same management page, NGO entry point
 const Sell           = lazy(() => import('./pages/Sell.jsx'));
+const Buy            = lazy(() => import('./pages/Buy.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
@@ -674,6 +675,12 @@ export default function App() {
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
             <Route path="/sell"               element={<Sell />} />
+            {/* /buy — simple buyer marketplace. The page itself
+                checks the `buyMarketplace` flag and renders a
+                "coming soon" notice when off, so the route is
+                always live + safe (no 404 on stray nav taps).
+                Coexists with /marketplace + /market/browse. */}
+            <Route path="/buy"                element={<Buy />} />
             <Route path="/opportunities"      element={<Opportunities />} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message

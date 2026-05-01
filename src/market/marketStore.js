@@ -183,6 +183,22 @@ export function saveListing(listing) {
     );
   } catch { /* analytics is fire-and-forget */ }
 
+  // Marketplace scale: when a NEW listing is created, fan out
+  // alerts to every buyer who has expressed interest in the same
+  // crop in the past. Lazy-loaded to avoid a circular import at
+  // module init; fire-and-forget so a notification failure never
+  // blocks the listing save.
+  if (idx < 0) {
+    (async () => {
+      try {
+        const mod = await import('./buyerNotifications.js');
+        if (mod && typeof mod.fanoutNewListingAlerts === 'function') {
+          mod.fanoutNewListingAlerts(stored);
+        }
+      } catch { /* swallow */ }
+    })();
+  }
+
   return stored;
 }
 
@@ -225,6 +241,15 @@ export function getBuyerInterests() {
   const rows = _read(STORAGE_KEYS.INTERESTS);
   return rows
     .filter((r) => r && typeof r === 'object' && r.listingId)
+    .map((r) => {
+      // Marketplace transaction flow: normalize legacy records
+      // missing the `status` field. Defaults to 'interested' so
+      // the state machine has a starting point. Never throws.
+      if (!r.status) {
+        return { ...r, status: 'interested' };
+      }
+      return r;
+    })
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 }
 
@@ -242,10 +267,21 @@ export function saveBuyerInterest(interest) {
   const stored = {
     id:        safeInt.id || `int_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     listingId: String(safeInt.listingId),
+    // Marketplace scale: persist buyerId so listingPriority +
+    // buyerNotifications can match a buyer's interest history
+    // back to their device. Optional — legacy callers without
+    // a buyerId stay readable; the matchers degrade gracefully.
+    buyerId:    String(safeInt.buyerId    || '').trim() || null,
     buyerName:  String(safeInt.buyerName  || '').trim(),
     buyerPhone: String(safeInt.buyerPhone || '').trim(),
     buyerEmail: String(safeInt.buyerEmail || '').trim(),
+    crop:       String(safeInt.crop       || '').trim() || null,
     message:    String(safeInt.message    || '').trim(),
+    // Marketplace transaction flow: every new interest starts in
+    // the 'interested' state. Farmer actions (Contact / Mark
+    // negotiating / Accept) flow through `updateInterestStatus`.
+    status:           'interested',
+    statusUpdatedAt:  _now(),
     createdAt:  _now(),
   };
 
@@ -257,6 +293,16 @@ export function saveBuyerInterest(interest) {
     safeTrackEvent(MARKET_EVENTS.BUYER_INTEREST_SUBMITTED, {
       interestId: stored.id,
       listingId:  stored.listingId,
+      hasPhone:   !!stored.buyerPhone,
+      hasEmail:   !!stored.buyerEmail,
+    });
+    // Sell screen V2 spec §9: emit the canonical `buyer_interest`
+    // companion event so dashboards using the spec name pick it
+    // up alongside the existing MARKET_LISTING_* stream.
+    safeTrackEvent('buyer_interest', {
+      interestId: stored.id,
+      listingId:  stored.listingId,
+      crop:       stored.crop || null,
       hasPhone:   !!stored.buyerPhone,
       hasEmail:   !!stored.buyerEmail,
     });
@@ -288,6 +334,62 @@ export function saveBuyerInterest(interest) {
   } catch { /* never block on notifications */ }
 
   return stored;
+}
+
+/**
+ * updateInterestStatus(id, partial) — mutate a buyer-interest
+ * record. Used by the marketplace transaction flow to walk the
+ * state machine: interested → contacted → negotiating → sold.
+ *
+ *   partial = { status?, farmerNote?, statusUpdatedAt? }
+ *
+ * Returns the updated record, or null if the id is unknown.
+ * Never throws. Emits MARKET_INTEREST_UPDATED for downstream
+ * subscribers + dispatches a same-tab `farroway:market_changed`
+ * window event so surfaces refresh without prop drilling.
+ */
+export function updateInterestStatus(id, partial = {}) {
+  const targetId = String(id || '').trim();
+  if (!targetId) return null;
+
+  const rows = _read(STORAGE_KEYS.INTERESTS);
+  const idx  = rows.findIndex((r) => r && r.id === targetId);
+  if (idx < 0) return null;
+
+  const existing = rows[idx] || {};
+  const next = {
+    ...existing,
+    ...partial,
+    id: existing.id,                   // never overwrite id
+    listingId: existing.listingId,     // never re-bind to a different listing
+    statusUpdatedAt: _now(),
+  };
+  rows[idx] = next;
+  _write(STORAGE_KEYS.INTERESTS, rows);
+
+  try {
+    safeTrackEvent(MARKET_EVENTS.LISTING_UPDATED, {
+      listingId: next.listingId,
+      interestId: next.id,
+      status: next.status || null,
+      kind: 'interest_status',
+    });
+    // Spec-name companion event for the marketplace transaction
+    // flow. Dashboards using either name pick the change up.
+    safeTrackEvent('interest_status_changed', {
+      interestId: next.id,
+      listingId: next.listingId,
+      status: next.status || null,
+    });
+  } catch { /* swallow */ }
+
+  try {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new Event('farroway:market_changed'));
+    }
+  } catch { /* swallow */ }
+
+  return next;
 }
 
 // ─── Aggregates (used by NGO MarketActivity) ───────────────

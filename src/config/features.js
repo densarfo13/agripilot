@@ -133,6 +133,92 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // Marketplace revenue scale: stacks on top of marketScale +
+  // marketMonetization to grow revenue per user.
+  //   §1 top-selling crops bumped in the buyer-feed sort (+50 pts)
+  //   §2 weekly recurring-supply toggle in the InterestForm
+  //      success state; persists to `farroway_recurring_orders`
+  //   §3 priority listings — boosted-first sort (already part of
+  //      marketScale, retained here so the spec line is met when
+  //      marketScale is off but revenue scale is on)
+  //   §4 scarcity badges on each ListingCard
+  //      ("Limited quantity" / "High demand")
+  //   §5 buyer preferences + Quick Reorder strip on /buy
+  //   §6 sticky A/B/C pricing variants for boost + assist
+  //
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever: set VITE_FARROWAY_FEATURE_MARKETREVENUESCALE=0
+  // at build time to revert to the prior listing surface.
+  marketRevenueScale: true,
+  // Marketplace monetization: simple, non-blocking paid layers
+  // on top of the free marketplace.
+  //   §1 Boost listing — farmer-side 24h paid placement; the
+  //      listingPriority sort gives boosted listings the top slot.
+  //      A "Boosted" badge renders on the buyer card.
+  //   §2 Assisted deal — "Get help closing deal" CTA next to
+  //      each active listing. Saves to `farroway_assist_requests`
+  //      so pilot operators can pick up the request.
+  //   §3 Buyer priority — opt-in toggle on /buy. Persists to
+  //      `farroway_buyer_priority`; in pilot it is a preference
+  //      surface (boosted listings already lead via the existing
+  //      sort).
+  //   §5 Tracking events emitted: boost_click, assist_request,
+  //      deal_closed (the last via marketTransaction's sold
+  //      transition).
+  // Critical rule: NEVER blocks the free flows — listing creation
+  // and buyer interest stay unconditional regardless of this flag
+  // or any paid status. Flag-off path: every paid surface returns
+  // null. Independent of `marketScale` so pilots can run paid
+  // layers on top of the simple v1 buyer feed.
+  marketMonetization: false,
+  // Marketplace scale: stacks on top of marketTransactionFlow +
+  // buyMarketplace. When on:
+  //   • Buyers see "new listing" alerts on /buy when a freshly
+  //     created listing matches their past interest crop.
+  //   • Listings are sorted by relevance: same-crop matches first,
+  //     then dense-cluster crops, then newest.
+  //   • ListingCard surfaces seller reputation badges
+  //     (active seller / fast response).
+  //   • InterestForm shows a "What else do you need?" repeat
+  //     prompt right after a successful interest submission.
+  //   • FarmerInterestPanel shows a "List another crop?" repeat
+  //     prompt right after a sale closes.
+  // Flag-off path: every surface above renders unchanged.
+  marketScale: false,
+  // Marketplace transaction flow: when on, the /sell page mounts
+  // an inline FarmerInterestPanel under each active-listing card.
+  // The panel surfaces an interest count headline ("1 buyer is
+  // interested"), a per-interest status pill (interested →
+  // contacted → negotiating → sold), action buttons (Contact /
+  // Mark negotiating / Accept), a stale-interest nudge banner,
+  // and the prefilled Contact-buyer modal. The /buy InterestForm
+  // additionally prefills the optional message field with a
+  // buyer-to-farmer template when this flag is on. Flag-off path:
+  // legacy "View buyers" chip + /marketplace deep-link unchanged.
+  marketTransactionFlow: false,
+  // Buy marketplace (simple): mounts the /buy route as a clean
+  // buyer-facing list. Each card shows crop / quantity / location
+  // / ready date and an inline "I'm interested" form (name +
+  // location + optional message). Submits via the existing
+  // `saveBuyerInterest` so the farmer notification +
+  // BUYER_INTEREST_SUBMITTED + spec-name `buyer_interest` events
+  // all fire through the canonical pipeline. Coexists with
+  // /marketplace + /market/browse — those richer routes stay
+  // verbatim. Flag-off path: /buy renders a "coming soon" notice.
+  buyMarketplace: false,
+  // Sell screen V2 (UX + conversion): when on, the /sell form adds
+  // a Market Insight card (demand level / average price / nearby
+  // buyers), an auto price suggestion via the existing priceEngine,
+  // a smart region chip with city/state detection (fallback "Set
+  // your location"), a "Not sure yet" quantity option, a buyer
+  // explanation line, and a 3-step "What happens next" panel on
+  // the success card. Tracking emits the spec-name events
+  // `listing_viewed`, `listing_created`, and `buyer_interest` (the
+  // marketStore continues to emit MARKET_LISTING_* alongside).
+  // Flag-off path: existing form renders verbatim. The CTA copy
+  // refresh ("Create Listing" → "List my produce") happens via the
+  // i18n key, which applies regardless of this flag.
+  sellScreenV2: false,
   // Funding screen V2 (UX + conversion): when on, FundingCard adds
   // an inline "Why this fits you" chip group (crop / region /
   // experience match) and a footer badge row (time / difficulty /
