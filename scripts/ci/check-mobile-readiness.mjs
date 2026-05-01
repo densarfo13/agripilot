@@ -534,6 +534,44 @@ const checks = [
         .test(f);
     },
   },
+  {
+    name: 'Backend /health returns spec shape (status + db + uptime + timestamp)',
+    why:  'Production infra \u00a71 \u2014 load balancer needs uptime + db keys',
+    pass: () => {
+      const f = read('server/src/app.js');
+      return /app\.get\(['"]\/health['"]/.test(f)
+          && /uptime/.test(f)
+          && /db:\s*dbStatus/.test(f);
+    },
+  },
+  {
+    name: 'Backend ships scan + funding + sell rate limiters',
+    why:  'Production infra \u00a72 \u2014 protect cost-sensitive paths',
+    pass: () => {
+      const f = read('server/src/app.js');
+      return /scanLimiter/.test(f)
+          && /fundingLimiter/.test(f)
+          && /sellLimiter/.test(f);
+    },
+  },
+  {
+    name: 'Marketplace tables index region + createdAt',
+    why:  'Production infra \u00a73 \u2014 query times bounded as we scale',
+    pass: () => {
+      const f = read('server/prisma/schema.prisma');
+      return /idx_produce_listings_region/.test(f)
+          && /idx_buyer_requests_region/.test(f)
+          && /idx_buyer_requests_created/.test(f)
+          && /idx_marketplace_payments_created/.test(f);
+    },
+  },
+  {
+    name: 'export-data backup script exists',
+    why:  'Production infra \u00a78 \u2014 daily snapshot of launch-critical tables',
+    pass: () => {
+      return fs.existsSync(path.join(ROOT, 'scripts/ops/export-data.mjs'));
+    },
+  },
 ];
 
 const failed = [];

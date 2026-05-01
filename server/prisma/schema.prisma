@@ -2957,6 +2957,9 @@ model ProduceListing {
   @@index([crop],     map: "idx_produce_listings_crop")
   @@index([farmId],   map: "idx_produce_listings_farm")
   @@index([createdAt], map: "idx_produce_listings_created")
+  // Production infra spec §3 — region + country lookups for the
+  // marketplace browse filters.
+  @@index([region],   map: "idx_produce_listings_region")
   @@map("produce_listings")
 }
 
@@ -2976,6 +2979,9 @@ model BuyerRequest {
   @@index([status],  map: "idx_buyer_requests_status")
   @@index([crop],    map: "idx_buyer_requests_crop")
   @@index([buyerId], map: "idx_buyer_requests_buyer")
+  // Production infra spec §3 — region filters + recency sort.
+  @@index([region],    map: "idx_buyer_requests_region")
+  @@index([createdAt], map: "idx_buyer_requests_created")
   @@map("buyer_requests")
 }
 
@@ -2992,6 +2998,8 @@ model MarketplacePayment {
   @@index([buyerId],   map: "idx_marketplace_payments_buyer")
   @@index([listingId], map: "idx_marketplace_payments_listing")
   @@index([status],    map: "idx_marketplace_payments_status")
+  // Production infra spec §3 — recency sort for ledger reads.
+  @@index([createdAt], map: "idx_marketplace_payments_created")
   @@map("marketplace_payments")
 }
 

@@ -253,22 +253,75 @@ const apiLimiter = rateLimit({
   skip: (req) => req.path.startsWith('/api/v2/auth/'), // auth has its own limiter
 });
 
+// Production infra spec §2: domain-specific rate limits.
+// Scan is moderate (image upload + AI-heavy), funding +
+// sell are generous (forms + reads), all stricter than the
+// per-IP /api default to protect cost-sensitive paths.
+const scanLimiter = rateLimit({
+  windowMs: 60 * 1000,             // 1 minute
+  max: 30,                          // 30 scans/min/IP — moderate
+  message: { error: 'Too many scan requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const fundingLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,                          // 60 funding requests/min/IP
+  message: { error: 'Too many funding requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const sellLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,                          // 60 sell/listing requests/min/IP
+  message: { error: 'Too many marketplace requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Apply API-wide rate limiter to all /api routes (auth excluded — has authLimiter)
 app.use('/api', apiLimiter);
+
+// Domain limiters — applied AFTER the general limiter so a
+// hostile flood is bounded by the strictest applicable rule.
+// Path matchers are deliberately broad (regex) so /api/v1
+// + /api/v2 + /api/scan-* all inherit the cap.
+app.use(/^\/api\/(v\d+\/)?(scan|pest-scan|crop-scan|image-scan)/i,        scanLimiter);
+app.use(/^\/api\/(v\d+\/)?(funding|opportunities|fund-application)/i,     fundingLimiter);
+app.use(/^\/api\/(v\d+\/)?(market|listing|listings|sell|buyer-interest)/i, sellLimiter);
 
 // ─── Uploads: authenticated static serving ─────────────
 // Files require a valid JWT to download (prevents public access to evidence)
 app.use('/uploads', authenticate, express.static(path.join(__dirname, '../uploads')));
 
 // ─── Health Check ───────────────────────────────────────
-app.get('/api/health', async (_req, res) => {
+// Production infra spec §1: response shape is
+//   { status, db, uptime, timestamp }
+// `uptime` is process uptime in seconds (whole-number rounded).
+// `db: 'ok' | 'down'` lets the load balancer distinguish a
+// fully-degraded instance from a transient db blip.
+// `/health` is exposed alongside `/api/health` as a route alias
+// so a load-balancer can probe either path without coupling
+// to the API prefix.
+const _serverStartedAt = Date.now();
+async function _healthHandler(_req, res) {
+  let dbStatus = 'down';
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
-  } catch (err) {
-    res.status(503).json({ status: 'degraded', timestamp: new Date().toISOString(), error: 'Database unreachable' });
-  }
-});
+    dbStatus = 'ok';
+  } catch { dbStatus = 'down'; }
+  const uptime = Math.floor((Date.now() - _serverStartedAt) / 1000);
+  const body = {
+    status:    dbStatus === 'ok' ? 'ok' : 'degraded',
+    db:        dbStatus,
+    uptime,
+    timestamp: new Date().toISOString(),
+    version:   '1.0.0',
+  };
+  res.status(dbStatus === 'ok' ? 200 : 503).json(body);
+}
+app.get('/api/health', _healthHandler);
+app.get('/health',     _healthHandler);
 
 
 // ─── Extended Health Check (admin-only) ────────────────────
