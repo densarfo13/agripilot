@@ -18,6 +18,7 @@ import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
 import SWUpdateBanner from './components/system/SWUpdateBanner.jsx';
+import BackyardGuard from './components/system/BackyardGuard.jsx';
 import VoiceAssistant from './components/VoiceAssistant.jsx';
 import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
 import { syncQueue } from './offline/syncManager.js';
@@ -647,6 +648,17 @@ export default function App() {
               /ngo/value dashboard sits inside the protected layout
               below since it reads the user's farm roster. */}
           <Route path="/pricing" element={<Pricing />} />
+
+          {/* Go-live audit fix: legal + help surfaces MUST be
+              reachable without a session so App Store reviewers
+              and unauthenticated visitors can land on them.
+              Previously these were nested inside V2ProtectedLayout
+              despite the comment claiming "Public" — moving them
+              to the public block here. */}
+          <Route path="/help"    element={<HelpPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms"   element={<Terms />} />
           <Route element={<V2ProtectedLayout />}>
             {/* Frictionless welcome screen - the new first-time
                 destination. Legacy /onboarding + /onboarding/fast
@@ -665,7 +677,7 @@ export default function App() {
             <Route path="/dashboard" element={<V2Dashboard />} />
             <Route path="/tasks" element={<AllTasksPage />} />
             <Route path="/my-farm" element={<MyFarmPage />} />
-            <Route path="/help" element={<HelpPage />} />
+            {/* /help moved to the public block above (go-live audit). */}
             {/* Simple Onboarding (rollout v1) — gated by
                 FEATURE_SIMPLE_ONBOARDING inside the component;
                 when off it forwards to /onboarding so existing
@@ -703,7 +715,7 @@ export default function App() {
                 /ngo/impact is staff-only (NGO operators
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
-            <Route path="/sell"               element={<Sell />} />
+            <Route path="/sell"               element={<BackyardGuard><Sell /></BackyardGuard>} />
             {/* /buy — simple buyer marketplace. The page itself
                 checks the `buyMarketplace` flag and renders a
                 "coming soon" notice when off, so the route is
@@ -734,18 +746,16 @@ export default function App() {
             {/* /start/farm — 2-field minimal setup (crop + location).
                 Defers farm size + crop stage to the home prompt. */}
             <Route path="/start/farm"         element={<MinimalFarmSetup />} />
-            <Route path="/opportunities"      element={<Opportunities />} />
+            <Route path="/opportunities"      element={<BackyardGuard><Opportunities /></BackyardGuard>} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message
                 when off, so the route is always live + safe. */}
-            <Route path="/funding"            element={<FundingHub />} />
-            {/* App Store submission requires reachable in-app
-                Contact + Privacy + Terms routes. Public (no
-                ProtectedRoute wrap) so reviewers can land on
-                them without a session. */}
-            <Route path="/contact"            element={<ContactPage />} />
-            <Route path="/privacy"            element={<PrivacyPolicy />} />
-            <Route path="/terms"              element={<Terms />} />
+            <Route path="/funding"            element={<BackyardGuard><FundingHub /></BackyardGuard>} />
+            {/* /contact, /privacy, /terms moved to the public
+                block above (go-live audit). Previously they
+                lived here despite the comment claiming "public",
+                which the App Store reviewer fix now actually
+                honours. */}
             {/* /onboarding/backyard — feature-flag-gated 6-step
                 garden setup. The page checks the flag itself
                 and redirects to /dashboard when off. */}

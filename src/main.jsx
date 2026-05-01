@@ -2,6 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+// Go-live audit fix: surface the 3-button recovery card
+// (Repair session / Restart setup / Clear local cache) for any
+// runtime exception that escapes a child component. The outer
+// ErrorBoundary stays as the last-resort catch for truly fatal
+// startup errors (e.g. createRoot or AppSettingsProvider blow-up).
+import RecoveryErrorBoundary from './components/system/RecoveryErrorBoundary.jsx';
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx';
 import LanguageRegionGate from './components/LanguageRegionGate.jsx';
 import { initSyncCoordinator } from './services/syncCoordinator.js';
@@ -73,7 +79,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <AppSettingsProvider>
         <LanguageRegionGate>
-          <App />
+          <RecoveryErrorBoundary>
+            <App />
+          </RecoveryErrorBoundary>
         </LanguageRegionGate>
       </AppSettingsProvider>
     </ErrorBoundary>
