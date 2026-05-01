@@ -26,6 +26,7 @@ import { playVoice } from '../../utils/voicePlayer.js';
 import { twiVoice } from '../../i18n/twiVoice.js';
 import VoiceReplayButton from '../voice/VoiceReplayButton.jsx';
 import UpgradePrompt from '../monetization/UpgradePrompt.jsx';
+import ScanShareButton from '../growth/ScanShareButton.jsx';
 
 const STYLES = {
   card: {
@@ -246,6 +247,9 @@ export default function ScanResultCard({
               : tStrict('scan.save', 'Save to history')}
           </button>
         ) : null}
+        {/* User growth §1: share-this-scan CTA. Self-hides when
+            `userGrowth` is off or the device has no share path. */}
+        <ScanShareButton result={result} lang={lang} />
       </div>
 
       <p style={STYLES.disclaimer}>

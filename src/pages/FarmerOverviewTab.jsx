@@ -9,6 +9,8 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import EngagementStrip from '../components/engagement/EngagementStrip.jsx';
 import NgoModeCard from '../components/monetization/NgoModeCard.jsx';
 import InsightsDigest from '../components/insights/InsightsDigest.jsx';
+import InviteFriendsCard from '../components/growth/InviteFriendsCard.jsx';
+import SellPromptCard from '../components/growth/SellPromptCard.jsx';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
@@ -70,6 +72,12 @@ export default function FarmerOverviewTab() {
       {/* Long-term moat: insights digest pulled from accumulated
           data (flag-gated; returns null when no insights yet). */}
       <InsightsDigest farmerId={farmerId} />
+      {/* User growth §3: prompt eligible users to list their
+          produce. Self-suppresses when conditions aren't met. */}
+      <SellPromptCard farmerId={farmerId} />
+      {/* User growth §2 + §5: invite friends (region-focused
+          headline). Captures incoming ?ref=CODE on mount. */}
+      <InviteFriendsCard />
       {/* NGO mode card (flag-gated; returns null when off) */}
       <NgoModeCard />
       {/* Lifecycle Stage Card */}

@@ -26,7 +26,9 @@ import { tStrict } from '../../i18n/strictT.js';
 import StreakChip from './StreakChip.jsx';
 import EngagementPlanCard from './EngagementPlanCard.jsx';
 import EngagementWeeklySummary from './EngagementWeeklySummary.jsx';
+import TodaysPriorityCard from './TodaysPriorityCard.jsx';
 import { setupEngagementReminders } from '../../engine/engagementReminders.js';
+import { setupHabitNotification } from '../../engine/habitNotifications.js';
 
 const S = {
   wrap: {
@@ -49,36 +51,50 @@ export default function EngagementStrip({
   weather     = null,
   style,
 }) {
-  const enabled = isFeatureEnabled('dailyEngagement');
+  const enabled  = isFeatureEnabled('dailyEngagement');
+  const habitOn  = isFeatureEnabled('dailyHabit');
 
   // Register reminders only when the strip is actually mounted with
-  // the flag on. The reminder helper itself is idempotent + cancels
-  // its own previous timers, so even multiple mounts are safe.
+  // the flag on. Habit V2 fires ONE reminder/day; V1 fires morning
+  // + afternoon. The two paths are mutually exclusive — we never
+  // run both schedulers in the same session to avoid duplicate
+  // notifications.
   useEffect(() => {
     if (!enabled) return undefined;
     let teardown = () => { /* noop */ };
     try {
-      teardown = setupEngagementReminders({
-        copy: {
-          morning: {
-            title: tStrict('engagement.reminder.morning.title',
-              'Good morning \u2014 your plan is ready'),
-            body:  tStrict('engagement.reminder.morning.body',
-              'Open Farroway to see today\u2019s 2 simple actions.'),
+      if (habitOn) {
+        teardown = setupHabitNotification({
+          copy: {
+            title: tStrict('habit.reminder.title',
+              'Your priority for today'),
+            body:  tStrict('habit.reminder.body',
+              'Open Farroway and tap today\u2019s priority action.'),
           },
-          afternoon: {
-            title: tStrict('engagement.reminder.afternoon.title',
-              'Still time \u2014 one quick action'),
-            body:  tStrict('engagement.reminder.afternoon.body',
-              'A 2-minute check today keeps your streak going.'),
+        });
+      } else {
+        teardown = setupEngagementReminders({
+          copy: {
+            morning: {
+              title: tStrict('engagement.reminder.morning.title',
+                'Good morning \u2014 your plan is ready'),
+              body:  tStrict('engagement.reminder.morning.body',
+                'Open Farroway to see today\u2019s 2 simple actions.'),
+            },
+            afternoon: {
+              title: tStrict('engagement.reminder.afternoon.title',
+                'Still time \u2014 one quick action'),
+              body:  tStrict('engagement.reminder.afternoon.body',
+                'A 2-minute check today keeps your streak going.'),
+            },
           },
-        },
-      });
+        });
+      }
     } catch { /* swallow — reminders never block render */ }
     return () => {
       try { teardown(); } catch { /* swallow */ }
     };
-  }, [enabled]);
+  }, [enabled, habitOn]);
 
   if (!enabled) return null;
 
@@ -89,7 +105,9 @@ export default function EngagementStrip({
           <StreakChip />
         </div>
       ) : null}
-      <EngagementPlanCard weather={weather} />
+      {habitOn
+        ? <TodaysPriorityCard weather={weather} />
+        : <EngagementPlanCard weather={weather} />}
       {showWeekly ? <EngagementWeeklySummary /> : null}
     </div>
   );

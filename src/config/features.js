@@ -93,6 +93,23 @@ const DEFAULTS = Object.freeze({
   // Requires `adaptiveFarmGardenSetup` to also be on; flag-off
   // path falls back to GardenSetupForm verbatim.
   fastBackyardOnboarding: false,
+  // Daily habit V2: when on AND `dailyEngagement` is also on, the
+  // EngagementStrip swaps in:
+  //   • TodaysPriorityCard — 1 priority + 1-2 optional rows with
+  //     a daily progress bar, value-led why text, and value-aware
+  //     completion toasts. Replaces the V1 EngagementPlanCard.
+  //   • Single 1/day notification (default 7am) via
+  //     habitNotifications, replacing the morning + afternoon
+  //     pair from engagementReminders. Mutually exclusive — no
+  //     duplicate fires.
+  // The streak chip and weekly summary stay across both V1 and V2.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever: set VITE_FARROWAY_FEATURE_DAILYHABIT=0 at
+  // build time to revert to the V1 plan card + dual reminder.
+  // Note: this surface only renders when `dailyEngagement` is also
+  // on (the parent strip gate); pilots not on the engagement track
+  // see no change either way.
+  dailyHabit: true,
   // Daily engagement layer: mounts EngagementStrip on the farmer
   // Home tab. Wraps the existing dailyTaskEngine in a "never empty"
   // 2–3 task generator, surfaces a streak chip + weekly plant-
@@ -133,6 +150,28 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // User growth: self-sustaining acquisition layer.
+  //   §1 ScanShareButton on ScanResultCard — shares result via
+  //      Web Share API or clipboard fallback. Includes the user's
+  //      stable invite URL so a shared scan is also a referral.
+  //   §2 InviteFriendsCard on Home — surfaces this device's stable
+  //      referral code, builds an invite URL, and routes to the
+  //      OS share sheet or clipboard. Records every outbound
+  //      invite to `farroway_referral_invites`.
+  //   §3 SellPromptCard on Home — onboarding-conversion CTA shown
+  //      when the user has a farm + activity but no listings yet.
+  //   §4 Tracking events: share_clicked, share_completed,
+  //      invite_sent, invite_rewarded, signup_via_invite,
+  //      sell_prompt_view / _click / _dismiss.
+  //   §5 Region focus — `growthRegion` resolves the pilot focus
+  //      (default Greater Accra, Ghana; override at build time
+  //      via VITE_FARROWAY_GROWTH_REGION="Country:Region"). The
+  //      InviteFriendsCard headline switches based on whether the
+  //      user's location matches the focus.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever: set VITE_FARROWAY_FEATURE_USERGROWTH=0 at
+  // build time to revert to the prior surfaces.
+  userGrowth: true,
   // Long-term moat: crystallises value from the data Farroway has
   // already captured. Mounts:
   //   • InsightsDigest on the farmer Home tab — 1-5 personalised
