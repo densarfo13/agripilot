@@ -359,6 +359,44 @@ const checks = [
           && /'acres',\s*'hectares',\s*'sqm',\s*'sqft'/.test(f);
     },
   },
+  {
+    name: 'ExperienceFallback ships loading + signedOut + recovery branches',
+    why:  'Crash-prevention §1 \u2014 dashboard never paints against null user/farm',
+    pass: () => {
+      const f = read('src/components/system/ExperienceFallback.jsx');
+      return /experience-fallback-loading/.test(f)
+          && /experience-fallback-loggedout/.test(f)
+          && /experience-fallback-recovery/.test(f);
+    },
+  },
+  {
+    name: 'ExperienceFallback wraps /dashboard + /my-farm routes',
+    why:  'Crash-prevention §1 \u2014 high-traffic surfaces use the safe guard',
+    pass: () => {
+      const f = read('src/App.jsx');
+      return /<ExperienceFallback><V2Dashboard\s*\/><\/ExperienceFallback>/.test(f)
+          && /<ExperienceFallback><MyFarmPage\s*\/><\/ExperienceFallback>/.test(f);
+    },
+  },
+  {
+    name: 'clearFarrowayCache (aggressive) + clearFarrowayCacheKeepingAuth both export',
+    why:  'Crash-prevention §4 \u2014 hard-reset path needed alongside the keep-auth one',
+    pass: () => {
+      const f = read('src/utils/repairSession.js');
+      return /export function clearFarrowayCache\b/.test(f)
+          && /export function clearFarrowayCacheKeepingAuth/.test(f);
+    },
+  },
+  {
+    name: 'safeNavigateHome helper exists',
+    why:  'Crash-prevention §6 \u2014 guarded navigation prevents blank /home',
+    pass: () => {
+      const f = read('src/utils/safeNavigateHome.js');
+      return /export function safeNavigateHome/.test(f)
+          && /isExplicitLogout/.test(f)
+          && /getActiveExperience/.test(f);
+    },
+  },
 ];
 
 const failed = [];

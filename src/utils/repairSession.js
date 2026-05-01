@@ -259,6 +259,46 @@ export function clearFarrowayCacheKeepingAuth() {
 }
 
 /**
+ * clearFarrowayCache — aggressive variant per crash-prevention
+ * spec §4. Removes EVERY `farroway_`-prefixed localStorage key
+ * (including auth tokens), then forwards to /login.
+ *
+ *   • Use this when the user explicitly asked for a hard reset
+ *     (e.g. "Clear cache and sign out").
+ *   • For "clear cache but stay signed in" use the keep-auth
+ *     variant above (the RecoveryErrorBoundary uses that one).
+ *
+ * Strict-rule audit
+ *   * Only touches keys starting with `farroway_` so unrelated
+ *     localStorage entries from other apps on the device are
+ *     untouched. NOT swept: keys starting with `farroway:`
+ *     (colon namespace, used by sync/i18n internals) — those
+ *     are cleared by the keep-auth variant; this stricter
+ *     variant intentionally limits its surface to the
+ *     underscore-namespaced session keys.
+ *   * Replaces — not pushes — the URL so the back button
+ *     doesn't restore a stale page.
+ *   * Never throws.
+ */
+export function clearFarrowayCache() {
+  const ls = safeStorage();
+  if (ls) {
+    try {
+      const keys = Object.keys(ls);
+      for (const k of keys) {
+        if (typeof k === 'string' && k.startsWith('farroway_')) {
+          try { ls.removeItem(k); } catch { /* ignore */ }
+        }
+      }
+    } catch { /* ignore */ }
+  }
+  try {
+    if (typeof window !== 'undefined') window.location.replace('/login');
+  } catch { /* ignore */ }
+  return true;
+}
+
+/**
  * repairSession — caller-friendly alias used by AuthContext +
  * the App Store launch audit. Returns just the `actions` array
  * so existing destructures (`actions.length`) work correctly.

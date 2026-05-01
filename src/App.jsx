@@ -19,6 +19,12 @@ import SyncStatus from './components/SyncStatus.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
 import SWUpdateBanner from './components/system/SWUpdateBanner.jsx';
 import BackyardGuard from './components/system/BackyardGuard.jsx';
+// Final crash-prevention spec §1: drop-in safe guard for any
+// page that reads activeExperience / activeFarmId /
+// activeGardenId. Renders Loading → SignedOut → Recovery
+// before delegating to children, so the dashboard never paints
+// a blank screen against null data.
+import ExperienceFallback from './components/system/ExperienceFallback.jsx';
 import VoiceAssistant from './components/VoiceAssistant.jsx';
 import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
 import { syncQueue } from './offline/syncManager.js';
@@ -698,9 +704,9 @@ export default function App() {
             <Route path="/onboarding/minimal" element={<MinimalOnboarding />} />
             <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
             <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />
-            <Route path="/dashboard" element={<V2Dashboard />} />
+            <Route path="/dashboard" element={<ExperienceFallback><V2Dashboard /></ExperienceFallback>} />
             <Route path="/tasks" element={<AllTasksPage />} />
-            <Route path="/my-farm" element={<MyFarmPage />} />
+            <Route path="/my-farm" element={<ExperienceFallback><MyFarmPage /></ExperienceFallback>} />
             {/* /help moved to the public block above (go-live audit). */}
             {/* Simple Onboarding (rollout v1) — gated by
                 FEATURE_SIMPLE_ONBOARDING inside the component;
