@@ -73,6 +73,18 @@ const DEFAULTS = Object.freeze({
   // scan. Off by default so the new scan surface ships read-only
   // until the task pipeline is verified.
   scanToTask: false,
+  // Twi voice guidance: enables the short-phrase Twi dictionary
+  // + auto-play hooks on Home greeting, Task tap, and Scan
+  // result. Reuses the existing voiceEngine 3-tier fallback so
+  // prerecorded mp3s win when present. Off by default; the
+  // user-facing mute toggle is the day-2 control.
+  twiVoiceGuidance: false,
+  // Adaptive farm/garden setup: when on, /farm/new routes
+  // through AdaptiveFarmSetup, which renders GardenSetupForm
+  // for backyard users and the existing NewFarmScreen for farm
+  // users. Off by default — flag-off path is the existing
+  // NewFarmScreen verbatim.
+  adaptiveFarmGardenSetup: false,
 });
 
 function envOverride(name) {

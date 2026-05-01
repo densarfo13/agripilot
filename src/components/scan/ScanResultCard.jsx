@@ -18,9 +18,13 @@
  * "Plant" / "Crop" wording where it appears.
  */
 
+import { useEffect, useRef } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
+import { playVoice } from '../../utils/voicePlayer.js';
+import { twiVoice } from '../../i18n/twiVoice.js';
+import VoiceReplayButton from '../voice/VoiceReplayButton.jsx';
 
 const STYLES = {
   card: {
@@ -132,18 +136,44 @@ export default function ScanResultCard({
   alreadyAddedTasks = false,
 }) {
   // Subscribe to language change so labels refresh.
-  useTranslation();
-  if (!result) return null;
+  const { lang } = useTranslation();
 
+  // Twi voice guidance — auto-play `twiVoice.scan.issue` once per
+  // mount when:
+  //   • twiVoiceGuidance flag is on
+  //   • active language is Twi (or scan was tagged Twi by the
+  //     engine — both are accepted signals)
+  // The mute hook + VoiceReplayButton handle silencing + repeat.
+  const playedRef = useRef(false);
+  useEffect(() => {
+    if (playedRef.current) return;
+    if (!result) return;
+    if (!isFeatureEnabled('twiVoiceGuidance')) return;
+    const isTwi = lang === 'tw' || result?.language === 'tw';
+    if (!isTwi) return;
+    playedRef.current = true;
+    try { playVoice(twiVoice.scan.issue, 'tw'); }
+    catch { /* never propagate */ }
+  }, [result, lang]);
+
+  if (!result) return null;
   const scanToTaskOn = isFeatureEnabled('scanToTask');
 
   return (
     <article style={STYLES.card} data-testid="scan-result-card" data-confidence={result.confidence}>
       <div style={STYLES.header}>
         <h3 style={STYLES.title}>{result.possibleIssue || tStrict('scan.fallback.headline', 'Needs closer inspection')}</h3>
-        <span style={_confidencePill(result.confidence)}>
-          {_confidenceLabel(result.confidence)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Twi voice replay — self-hides when the feature
+              flag is off, the language isn't Twi, or the user
+              has muted voice guidance. */}
+          {isFeatureEnabled('twiVoiceGuidance') && (lang === 'tw' || result?.language === 'tw') ? (
+            <VoiceReplayButton text={twiVoice.scan.issue} lang="tw" />
+          ) : null}
+          <span style={_confidencePill(result.confidence)}>
+            {_confidenceLabel(result.confidence)}
+          </span>
+        </div>
       </div>
 
       {result.explanation ? (

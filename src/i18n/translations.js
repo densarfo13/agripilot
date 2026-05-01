@@ -11839,6 +11839,60 @@ const T = {
   'scan.error.analyze':           { en: 'We could not analyze that photo. Try again.', fr: 'Nous n\'avons pas pu analyser cette photo. Réessayez.', sw: 'Hatukuweza kuchunguza picha hiyo. Jaribu tena.', ha: 'Ba mu iya bincika wannan hoton ba. Sake gwadawa.', tw: 'Yɛantumi anhwehwɛ saa mfoni no mu. San sɔ.', hi: 'हम उस फोटो का विश्लेषण नहीं कर सके। पुनः प्रयास करें।' },
   'scan.error.generic':           { en: 'Something went wrong. Try again.', fr: 'Une erreur s\'est produite. Réessayez.', sw: 'Hitilafu imetokea. Jaribu tena.', ha: 'Wani abu ya yi kuskure. Sake gwadawa.', tw: 'Biribi anyɛ yiye. San sɔ.', hi: 'कुछ गलत हुआ। पुनः प्रयास करें।' },
   'common.tryAgain':              { en: 'Try again',                  fr: 'Réessayer',                   sw: 'Jaribu tena',            ha: 'Sake gwadawa',            tw: 'San sɔ',                   hi: 'पुनः प्रयास करें' },
+
+  // ─── Twi voice guidance (VoiceMuteToggle + VoiceReplayButton) ─
+  // Aria-only labels — the chips themselves render emoji icons.
+  'voice.mute.muteAria':       { en: 'Mute voice',         fr: 'Désactiver la voix',   sw: 'Zima sauti',          ha: 'Kashe murya',         tw: 'Kata nne',             hi: 'आवाज़ बंद करें' },
+  'voice.mute.unmuteAria':     { en: 'Unmute voice',       fr: 'Activer la voix',      sw: 'Washa sauti',         ha: 'Kunna murya',         tw: 'Sɔ nne',               hi: 'आवाज़ चालू करें' },
+  'voice.replay.aria':         { en: 'Replay',             fr: 'Rejouer',              sw: 'Cheza tena',          ha: 'Sake kunna',          tw: 'San bɔ',               hi: 'फिर चलाएं' },
+  'voice.controls.play':       { en: 'Play',               fr: 'Lire',                 sw: 'Cheza',               ha: 'Kunna',               tw: 'Bɔ',                   hi: 'चलाएँ' },
+  'voice.controls.stop':       { en: 'Stop',               fr: 'Arrêter',              sw: 'Simamisha',           ha: 'Tsaya',               tw: 'Gyae',                 hi: 'रोकें' },
+  'voice.controls.unavailable': { en: 'Audio may not be available in Twi on this device. You can still read the guidance.', fr: 'L\'audio n\'est peut-être pas disponible en twi sur cet appareil. Vous pouvez toujours lire les conseils.', sw: 'Sauti haiwezi kupatikana kwa Kitwi kwenye kifaa hiki. Bado unaweza kusoma mwongozo.', ha: 'Sauti na iya rashin samuwa a Twi a wannan na\'urar. Har yanzu kuna iya karanta jagora.', tw: 'Ebia nne nni hɔ wɔ Twi mu wɔ saa afidie yi so. Wobetumi akenkan akwankyerɛ no.', hi: 'इस डिवाइस पर ट्वी में ऑडियो उपलब्ध नहीं हो सकता। आप मार्गदर्शन पढ़ सकते हैं।' },
+
+  // ─── Spec i18n keys for the Twi-localization audit (§1) ─────
+  // Most spec keys (common.*, daily.*, weather.*, help.*) already
+  // exist elsewhere in this file. The set below fills the gaps
+  // the audit found missing.
+  'daily.gardenTitle':    { en: 'Today\u2019s Garden Plan', fr: 'Plan de jardin du jour', sw: 'Mpango wa Bustani wa Leo', ha: 'Shirin Lambun Yau', tw: 'Nnɛ Turo Nhyehyɛeɛ', hi: 'आज की बगीचा योजना' },
+
+  'tasks.checkPlant':     { en: 'Check your plant today',           fr: 'Vérifiez votre plante aujourd\'hui',   sw: 'Kagua mmea wako leo',           ha: 'Duba shukar ku yau',           tw: 'Hwɛ wo plant no nnɛ',                   hi: 'आज अपने पौधे की जाँच करें' },
+  'tasks.checkCrop':      { en: 'Check your crop today',            fr: 'Vérifiez votre culture aujourd\'hui',  sw: 'Kagua zao lako leo',            ha: 'Duba shukar amfanin gona yau', tw: 'Hwɛ wo crop no nnɛ',                    hi: 'आज अपनी फसल की जाँच करें' },
+  'tasks.waterIfDry':     { en: 'Water only if soil feels dry',      fr: 'Arrosez si le sol est sec',            sw: 'Mwagilia tu kama udongo ni mkavu', ha: 'Shayar idan ƙasa ta bushe',  tw: 'Sɛ asase no ayɛ kusuu a, fa nsuo gu so', hi: 'मिट्टी सूखी हो तो ही पानी दें' },
+  'tasks.inspectLeaves':  { en: 'Inspect leaves for damage',         fr: 'Inspectez les feuilles',                sw: 'Kagua majani',                  ha: 'Bincika ganye',                tw: 'Hwɛ ahaban no',                          hi: 'पत्तियों की जाँच करें' },
+  'tasks.takePhoto':      { en: 'Take a photo if something looks wrong', fr: 'Prenez une photo si quelque chose ne va pas', sw: 'Piga picha kama kuna tatizo', ha: 'Ɗauki hoto idan akwai wani abu', tw: 'Sɛ biribi nnyɛ yie a, fa foto',     hi: 'कुछ गलत लगे तो फोटो लें' },
+
+  'scan.possibleIssue':   { en: 'Possible issue',                    fr: 'Problème possible',                     sw: 'Tatizo linalowezekana',         ha: 'Matsala mai yiwuwa',           tw: 'Ebia ɔhaw bi wɔ hɔ',                    hi: 'संभावित समस्या' },
+  'scan.lowConfidence':   { en: 'Low confidence',                    fr: 'Faible confiance',                      sw: 'Imani ya chini',                ha: 'Ƙarancin tabbas',              tw: 'Yɛnhu no yie',                          hi: 'कम विश्वास' },
+
+  'weather.checkSoil':    { en: 'Check the soil moisture',           fr: 'Vérifiez l\'humidité du sol',          sw: 'Kagua unyevu wa udongo',        ha: 'Duba ɗanyen ƙasa',             tw: 'Hwɛ sɛ asase no ayɛ kusuu anaa',         hi: 'मिट्टी की नमी जाँचें' },
+
+  // ─── Adaptive farm/garden setup (GardenSetupForm) ────────────
+  // Single-page garden form mounted at /farm/new for backyard
+  // users when the adaptiveFarmGardenSetup flag is on. Farm
+  // users keep the existing NewFarmScreen verbatim.
+  'gardenSetup.title':                   { en: 'Set up your garden',                          fr: 'Configurer votre jardin',                       sw: 'Sanidi bustani yako',                       ha: 'Saita lambun ku',                          tw: 'Yɛ wo turo no',                                hi: 'अपना बगीचा सेट करें' },
+  'gardenSetup.subtitle':                { en: 'Create a garden profile and get simple daily guidance.', fr: 'Créez un profil de jardin et recevez des conseils quotidiens simples.', sw: 'Tengeneza wasifu wa bustani na upate mwongozo wa kila siku rahisi.', ha: 'Ƙirƙiri bayanin lambu kuma sami sauƙin jagora ta yau da kullum.', tw: 'Bɔ wo turo ho nsɛm na nya akwankyerɛ a ɛyɛ mmerɛ tiawa.', hi: 'बगीचा प्रोफ़ाइल बनाएं और सरल दैनिक मार्गदर्शन पाएं।' },
+
+  'gardenSetup.gardenName.label':        { en: 'Garden name',                                 fr: 'Nom du jardin',                                 sw: 'Jina la bustani',                            ha: 'Sunan lambu',                              tw: 'Turo no din',                                 hi: 'बगीचे का नाम' },
+  'gardenSetup.gardenName.placeholder':  { en: 'My Home Garden',                              fr: 'Mon jardin maison',                             sw: 'Bustani yangu ya nyumbani',                  ha: 'Lambun gida',                              tw: 'Me fie turo',                                 hi: 'मेरा घर का बगीचा' },
+  'gardenSetup.gardenName.helper':       { en: 'Optional. You can change this later.',         fr: 'Facultatif. Vous pouvez le modifier plus tard.',  sw: 'Si lazima. Unaweza kubadilisha baadaye.',     ha: 'Ba dole ba. Za ka iya canza shi daga baya.',  tw: 'Ɛnyɛ tia. Wobetumi sesa akyiri yi.',           hi: 'वैकल्पिक। आप इसे बाद में बदल सकते हैं।' },
+
+  'gardenSetup.plant.label':             { en: 'What are you growing?',                       fr: 'Que cultivez-vous ?',                           sw: 'Unalima nini?',                              ha: 'Me kake nomawa?',                          tw: 'Dɛn na woreyɛ?',                              hi: 'आप क्या उगा रहे हैं?' },
+  'gardenSetup.location.label':          { en: 'Where is your garden?',                       fr: 'Où se trouve votre jardin ?',                   sw: 'Bustani yako iko wapi?',                     ha: 'Inda lambun ku yake?',                     tw: 'Wo turo wɔ he?',                              hi: 'आपका बगीचा कहाँ है?' },
+  'gardenSetup.location.detect':         { en: 'Use my location',                             fr: 'Utiliser ma position',                          sw: 'Tumia eneo langu',                           ha: 'Yi amfani da wurina',                      tw: 'De me beaeɛ di dwuma',                        hi: 'मेरा स्थान उपयोग करें' },
+  'gardenSetup.location.requesting':     { en: 'Detecting your location\u2026',               fr: 'Détection de votre position\u2026',             sw: 'Inagundua eneo lako\u2026',                 ha: 'Ana gano wurinku\u2026',                    tw: 'Yɛrehu wo beaeɛ\u2026',                       hi: 'आपका स्थान खोजा जा रहा है\u2026' },
+  'gardenSetup.location.failed':         { en: 'We couldn\u2019t detect your location. Please select your country below.', fr: 'Impossible de détecter votre position. Sélectionnez votre pays ci-dessous.', sw: 'Hatukuweza kugundua eneo lako. Tafadhali chagua nchi yako hapa chini.', ha: 'Ba mu iya gano wurin ku ba. Da fatan zaɓi ƙasarku a ƙasa.', tw: 'Yɛannya wo beaeɛ. Yɛsrɛ wo, yi wo man wɔ aseɛ ha.', hi: 'हम आपका स्थान नहीं खोज सके। कृपया नीचे अपना देश चुनें।' },
+  'gardenSetup.location.country':        { en: 'Country',                                      fr: 'Pays',                                          sw: 'Nchi',                                       ha: 'Ƙasa',                                     tw: 'Ɔman',                                        hi: 'देश' },
+  'gardenSetup.location.region':         { en: 'Region or state (optional)',                   fr: 'Région ou état (facultatif)',                   sw: 'Mkoa au jimbo (si lazima)',                  ha: 'Yanki ko jiha (ba dole ba)',               tw: 'Ɔmantam anaa state (ɛnyɛ tia)',                hi: 'क्षेत्र या राज्य (वैकल्पिक)' },
+
+  'gardenSetup.size.label':              { en: 'Garden size',                                  fr: 'Taille du jardin',                              sw: 'Ukubwa wa bustani',                          ha: 'Girman lambu',                             tw: 'Turo kɛseyɛ',                                  hi: 'बगीचे का आकार' },
+  'gardenSetup.size.small':              { en: 'Small \u2014 pots or indoor plants',          fr: 'Petit \u2014 pots ou plantes d\'intérieur',     sw: 'Ndogo \u2014 vyungu au mimea ya ndani',     ha: 'Ƙarami \u2014 tukwane ko shuke-shuken cikin gida', tw: 'Ketewa \u2014 nkukuo anaa fie nnua',  hi: 'छोटा \u2014 गमले या इनडोर पौधे' },
+  'gardenSetup.size.medium':             { en: 'Medium \u2014 backyard or raised bed',         fr: 'Moyen \u2014 jardin ou plate-bande surélevée',   sw: 'Wastani \u2014 nyuma ya nyumba au kitanda', ha: 'Matsakaici \u2014 bayan gida ko gadon da aka tashi', tw: 'Mfimfini \u2014 fie akyiri anaa mpa a ema', hi: 'मध्यम \u2014 पिछवाड़ा या उठा हुआ बेड' },
+  'gardenSetup.size.large':              { en: 'Large \u2014 large home garden',                fr: 'Grand \u2014 grand jardin',                     sw: 'Kubwa \u2014 bustani kubwa',                ha: 'Babba \u2014 babbar lambun gida',          tw: 'Kɛseɛ \u2014 fie turo kɛseɛ',                  hi: 'बड़ा \u2014 बड़ा घरेलू बगीचा' },
+  'gardenSetup.size.unsure':             { en: 'I\u2019m not sure',                            fr: 'Je ne suis pas sûr',                            sw: 'Sina uhakika',                               ha: 'Ban tabbata ba',                           tw: 'Mennim',                                       hi: 'मुझे यकीन नहीं है' },
+
+  'gardenSetup.cta.save':                { en: 'Save garden',                                  fr: 'Enregistrer le jardin',                         sw: 'Hifadhi bustani',                            ha: 'Adana lambu',                              tw: 'Kora turo no',                                hi: 'बगीचा सहेजें' },
+  'gardenSetup.error.required':          { en: 'Please pick a plant, confirm your country, and where you\u2019re growing.', fr: 'Veuillez choisir une plante, confirmer votre pays et l\'endroit où vous cultivez.', sw: 'Tafadhali chagua mmea, thibitisha nchi yako, na unalima wapi.', ha: 'Da fatan zaɓi shuka, tabbatar da ƙasarku, da inda kake nomawa.', tw: 'Yɛsrɛ wo, yi aduane bi, ka wo ɔman ho asɛm, na ka beaeɛ a wodua.', hi: 'कृपया एक पौधा चुनें, अपना देश पुष्टि करें, और कहाँ उगा रहे हैं।' },
 };
 
 export default T;

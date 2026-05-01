@@ -51,6 +51,26 @@ const BACKYARD_TABS = [
   { key: 'scan',     path: '/dashboard?scan=1', icon: NAV_ICONS.scan || '\uD83D\uDCF7', labelKey: 'nav.scan', fallback: 'Scan' },
 ];
 
+// Setup / onboarding paths where the bottom nav must self-hide
+// (Adaptive setup spec §5 — users should not leave setup midway
+// and create broken state). Match prefix so child routes inherit.
+const HIDE_NAV_PATHS = [
+  '/onboarding',           // covers /onboarding, /onboarding/v3, /backyard, /us-experience, etc.
+  '/farm/new',
+  '/edit-farm',
+  '/setup-farm',
+  '/profile/setup',
+  '/welcome-farmer',
+];
+
+function _isSetupPath(pathname) {
+  if (!pathname) return false;
+  for (const prefix of HIDE_NAV_PATHS) {
+    if (pathname === prefix || pathname.startsWith(prefix + '/')) return true;
+  }
+  return false;
+}
+
 export default function BottomTabNav() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -59,6 +79,11 @@ export default function BottomTabNav() {
   // tSafe for every nav label so a missing key shows the visible
   // tab key fallback rather than humanised English.
   useTranslation();
+
+  // Self-hide during setup / onboarding flows so users don't
+  // accidentally navigate away mid-setup and leave a partial
+  // farm/garden record behind.
+  if (_isSetupPath(location?.pathname || '')) return null;
 
   // Region-aware tab list (spec §10). Reads through the
   // existing ProfileContext so we never need an extra fetch.
