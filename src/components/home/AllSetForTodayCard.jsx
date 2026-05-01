@@ -22,6 +22,7 @@
 import { useNavigate } from 'react-router-dom';
 import { tStrict } from '../../i18n/strictT.js';
 import { useTranslation } from '../../i18n/index.js';
+import { useScreenTranslator } from '../../i18n/strictTranslator.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const S = {
@@ -53,9 +54,25 @@ const S = {
   },
 };
 
+// Final architecture audit §17: every key this surface renders
+// must be present in the active language, or the entire card
+// falls back to English. Wires useScreenTranslator at one
+// canonical home surface so the per-screen language gate has at
+// least one in-tree consumer locking its behaviour.
+const SCREEN_KEYS = Object.freeze([
+  'home.tasks.allDone.title',
+  'home.tasks.allDone.cta',
+]);
+
 export default function AllSetForTodayCard({ style }) {
   // Subscribe so the card re-renders on language switch.
   useTranslation();
+  // Per-screen completeness gate. If either of the two keys this
+  // card renders is missing in the active language, the hook
+  // pins the renders to English so the user never sees a
+  // half-translated card. Falls through to per-key tStrict
+  // for legacy parity with the rest of the codebase.
+  useScreenTranslator('home_allset', SCREEN_KEYS);
   const navigate = useNavigate();
 
   function handleScan() {

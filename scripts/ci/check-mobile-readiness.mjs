@@ -493,6 +493,47 @@ const checks = [
           && /farroway_full_architecture_migrated/.test(f);
     },
   },
+  {
+    name: 'BuyerBottomNav + NgoBottomNav exist + mounted',
+    why:  'Architecture audit \u00a77 \u2014 buyer + NGO get a mobile bottom nav by role',
+    pass: () => {
+      const layout = read('src/layouts/ProtectedLayout.jsx');
+      return fs.existsSync(path.join(ROOT, 'src/components/buyer/BuyerBottomNav.jsx'))
+          && fs.existsSync(path.join(ROOT, 'src/components/admin/NgoBottomNav.jsx'))
+          && /<BuyerBottomNav\s*\/>/.test(layout)
+          && /<NgoBottomNav\s*\/>/.test(layout);
+    },
+  },
+  {
+    name: 'PrivacyPolicy mentions marketplace + localStorage + data rights',
+    why:  'Architecture audit \u00a719 \u2014 App Store reviewer checklist',
+    pass: () => {
+      const f = read('src/pages/PrivacyPolicy.jsx');
+      return /marketplace contact handling/i.test(f)
+          && /localStorage/.test(f)
+          && /support@farroway\.app/.test(f);
+    },
+  },
+  {
+    name: 'useScreenTranslator wired into at least one canonical home surface',
+    why:  'Architecture audit \u00a717 \u2014 per-screen language gate has a real consumer',
+    pass: () => {
+      const f = read('src/components/home/AllSetForTodayCard.jsx');
+      return /useScreenTranslator/.test(f);
+    },
+  },
+  {
+    name: 'Buyer empty-state uses spec sentence',
+    why:  'Architecture audit \u00a715 \u2014 "No produce nearby yet. We\u2019ll notify you when listings are available."',
+    pass: () => {
+      // The translation source file stores curly-apostrophe as
+      // the literal `\u2019` escape sequence, so we match that
+      // form here rather than the decoded unicode glyph.
+      const f = read('src/i18n/translations.js');
+      return /No produce nearby yet\. We\\u2019ll notify you when listings are available\./
+        .test(f);
+    },
+  },
 ];
 
 const failed = [];

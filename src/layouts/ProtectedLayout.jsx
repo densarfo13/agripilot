@@ -5,6 +5,10 @@ import ProfileGuard from '../components/ProfileGuard.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
 import BottomTabNav from '../components/farmer/BottomTabNav.jsx';
+// Architecture audit §7 — buyer + NGO mobile bottom navs.
+// Self-suppress during setup paths just like BottomTabNav.
+import BuyerBottomNav from '../components/buyer/BuyerBottomNav.jsx';
+import NgoBottomNav   from '../components/admin/NgoBottomNav.jsx';
 // Region UX System (feature-flag gated). The host self-hides
 // when `regionUxSystem` is off OR there's nothing to surface
 // for the active country.
@@ -75,7 +79,28 @@ export default function ProtectedLayout() {
           <Suspense fallback={<InnerPageLoader />}>
             <Outlet />
           </Suspense>
-          {isFarmer && <BottomTabNav />}
+          {/* Architecture audit §7: bottom nav per role.
+              Farmer roles render the existing FARM/BACKYARD
+              tabs (BottomTabNav handles experience switching
+              internally). Buyer renders BuyerBottomNav.
+              NGO/staff roles render NgoBottomNav. Platform
+              admins use the V1 desktop sidebar (Layout.jsx)
+              and don't show a bottom nav on their V2 surfaces.
+              Each component self-suppresses on setup paths. */}
+          {(() => {
+            const role = String(user?.role || '').toLowerCase();
+            if (isFarmer || role === 'farmer') return <BottomTabNav />;
+            if (role === 'buyer') return <BuyerBottomNav />;
+            if (
+              role === 'reviewer'           ||
+              role === 'field_officer'      ||
+              role === 'institutional_admin'||
+              role === 'agent'              ||
+              role === 'ngo_admin'          ||
+              role === 'program_admin'
+            ) return <NgoBottomNav />;
+            return null;
+          })()}
           {/* Feedback prompt host — listens globally; never
               renders unless a meaningful action emits the
               farroway:request_feedback event AND the session

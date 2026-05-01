@@ -88,6 +88,30 @@ export default function PrivacyPolicy() {
         )}
       </p>
 
+      {/* Final architecture audit §19: explicit sections covering
+          marketplace contact handling + on-device storage +
+          user-data rights so the privacy page satisfies the
+          App-Store reviewer checklist verbatim. */}
+      <h2 style={STYLES.h2}>
+        {tStrict('privacy.h.marketplace', 'Marketplace contact handling')}
+      </h2>
+      <p style={STYLES.p}>
+        {tStrict(
+          'privacy.body.marketplace',
+          'When you list produce on Farroway, your farm name and approximate location are visible to potential buyers. Your phone number, email and full address are NEVER exposed publicly. Buyers express interest through an in-app form and Farroway relays the message to you — direct contact details only ever flow through the app.'
+        )}
+      </p>
+
+      <h2 style={STYLES.h2}>
+        {tStrict('privacy.h.storage', 'On-device storage and your data rights')}
+      </h2>
+      <p style={STYLES.p}>
+        {tStrict(
+          'privacy.body.storage',
+          'Farroway works offline by storing your farm, garden, task, scan and feedback data in your browser\u2019s localStorage. That data lives on your device and syncs to our servers when you reconnect. You can clear all on-device Farroway data at any time from the recovery screen (Reload \u00b7 Repair \u00b7 Restart setup \u00b7 Clear Farroway cache). Server-side, you can request a copy or deletion of your account data by emailing support@farroway.app.'
+        )}
+      </p>
+
       <h2 style={STYLES.h2}>{tStrict('privacy.h.contact', 'Contact')}</h2>
       <p style={STYLES.p}>
         {tStrict(

@@ -643,7 +643,7 @@ const T = {
   'market.detail.unavailableTitle':  { en: 'No longer available', hi: 'अब उपलब्ध नहीं',        tw: 'Ennyɛ hɔ bio',          es: 'Ya no disponible',        pt: 'Já não disponível',       fr: 'Plus disponible',            ar: 'لم تعد متوفرة',        sw: 'Haipatikani tena',           id: 'Tidak lagi tersedia' },
   'market.detail.unavailableBody':   { en: 'This listing is no longer accepting new interest.', hi: 'यह लिस्टिंग अब नई रुचि स्वीकार नहीं कर रही।', tw: 'Adetɔn yi nnye akokwaa foforɔ bio.', es: 'Esta publicación ya no acepta nuevos intereses.', pt: 'Esta publicação já não aceita novos interesses.', fr: 'Cette annonce n\'accepte plus de nouvelles marques d\'intérêt.', ar: 'لم يعد هذا الإعلان يقبل اهتمامًا جديدًا.', sw: 'Tangazo hili halikubali nia mpya.', id: 'Daftar ini tidak menerima minat baru lagi.' },
 
-  'market.browse.noResults':         { en: 'No matching listings yet', hi: 'अभी कोई मिलान नहीं', tw: 'Deɛ ɛka ho nni hɔ', es: 'Aún no hay coincidencias', pt: 'Ainda sem correspondências', fr: 'Pas encore d\'annonces', ar: 'لا توجد نتائج بعد', sw: 'Bado hakuna matangazo yanayolingana', id: 'Belum ada yang cocok' },
+  'market.browse.noResults':         { en: 'No produce nearby yet. We\u2019ll notify you when listings are available.', hi: 'अभी आस-पास कोई उपज नहीं है। उपलब्ध होने पर हम आपको सूचित करेंगे।', tw: 'Aduane biara nni hɔ ɛnnɛ. Yɛbɛbɔ wo amane sɛ adetɔn no wɔ hɔ.', es: 'No hay productos cerca aún. Le avisaremos cuando haya listados.', pt: 'Ainda não há produtos próximos. Avisaremos quando houver anúncios.', fr: 'Pas encore de produits près de chez vous. Nous vous préviendrons.', ar: 'لا توجد منتجات قريبة بعد. سنخبرك عند توفرها.', sw: 'Bado hakuna mazao karibu. Tutakujulisha pindi yatakapopatikana.', id: 'Belum ada hasil di sekitar. Kami akan memberi tahu Anda saat tersedia.' },
 
   // ─── Buyer location preference UI ──────────────────────
   'market.field.location':           { en: 'Location',              hi: 'स्थान',                 tw: 'Baabi',              es: 'Ubicación',               pt: 'Localização',                fr: 'Emplacement',          ar: 'الموقع',           sw: 'Eneo',             id: 'Lokasi' },
@@ -7516,7 +7516,7 @@ const T = {
   'marketplace.request':         { en: 'Request', fr: 'Demander', sw: 'Omba', ha: 'Nema', tw: 'Bisa' },
   'marketplace.requesting':      { en: 'Requesting…', fr: 'Envoi…', sw: 'Inaomba…', ha: 'Ana nema…', tw: 'Rebisa…' },
   'marketplace.loading':         { en: 'Loading listings…', fr: 'Chargement…', sw: 'Inapakia…', ha: 'Ana lodawa…', tw: 'Reload…' },
-  'marketplace.empty':           { en: 'No active listings matching your filters yet.', fr: 'Aucune annonce active ne correspond aux filtres.', sw: 'Hakuna orodha hai inayolingana.', ha: 'Babu bayanan da suka dace.', tw: 'Nnɔbae biara nni hɔ a ɛne wo nhwehwɛmu yi hyia.' },
+  'marketplace.empty':           { en: 'No produce nearby yet. We\u2019ll notify you when listings are available.', fr: 'Pas encore de produits près de chez vous. Nous vous préviendrons.', sw: 'Bado hakuna mazao karibu. Tutakujulisha pindi yatakapopatikana.', ha: 'Babu kayan amfanin gona kusa tukuna. Za mu sanar da kai lokacin da suka samu.', tw: 'Aduane biara nni hɔ ɛnnɛ. Yɛbɛbɔ wo amane sɛ adetɔn no wɔ hɔ.', hi: 'अभी आस-पास कोई उपज नहीं है। उपलब्ध होने पर हम आपको सूचित करेंगे।' },
   'marketplace.filter.cropPlaceholder':   { en: 'Filter by crop', fr: 'Filtrer par culture', sw: 'Chuja kwa mazao', ha: 'Tace ta amfani', tw: 'Yiyi nnɔbae' },
   'marketplace.filter.regionPlaceholder': { en: 'Filter by region', fr: 'Filtrer par région', sw: 'Chuja kwa eneo', ha: 'Tace ta yanki', tw: 'Yiyi man' },
   'marketplace.field.crop':     { en: 'Crop', fr: 'Culture', sw: 'Mazao', ha: 'Amfani', tw: 'Nnɔbae' },
@@ -12542,6 +12542,20 @@ const T = {
   'experience.cta.addFarm':                    { en: 'Add farm', fr: 'Ajouter une ferme', sw: 'Ongeza shamba', ha: 'Ƙara gona', tw: 'Ka afuo ho', hi: 'खेत जोड़ें' },
   'experience.cta.addFarmShort':               { en: '+ Add Farm', fr: '+ Ajouter une ferme', sw: '+ Ongeza Shamba', ha: '+ Ƙara Gona', tw: '+ Ka Afuo ho', hi: '+ खेत जोड़ें' },
   'experience.cta.addGardenShort':             { en: '+ Add Garden', fr: '+ Ajouter un jardin', sw: '+ Ongeza Bustani', ha: '+ Ƙara Lambu', tw: '+ Ka Turo ho', hi: '+ बगीचा जोड़ें' },
+
+  // ─── Architecture audit §7 — buyer + NGO bottom nav ─────────────
+  'buyer.nav.buy':                             { en: 'Buy',       fr: 'Acheter',  sw: 'Nunua',  ha: 'Saya',    tw: 'Tɔ',         hi: 'खरीदें' },
+  'buyer.nav.saved':                           { en: 'Saved',     fr: 'Enregistré', sw: 'Iliyohifadhiwa', ha: 'An ajiye', tw: 'Akora hɔ', hi: 'सहेजे गए' },
+  'buyer.nav.interests':                       { en: 'Interests', fr: 'Intérêts', sw: 'Maslahi', ha: 'Sha\u2019awa', tw: 'Anigye',  hi: 'रुचियाँ' },
+  'buyer.nav.contact':                         { en: 'Contact',   fr: 'Contact',  sw: 'Mawasiliano', ha: 'Tuntuɓi', tw: 'Frɛ',     hi: 'संपर्क' },
+  'buyer.nav.profile':                         { en: 'Profile',   fr: 'Profil',   sw: 'Wasifu', ha: 'Bayanin sirri', tw: 'Profile', hi: 'प्रोफ़ाइल' },
+
+  'ngo.nav.dashboard':                         { en: 'Dashboard',     fr: 'Tableau de bord', sw: 'Dashibodi',     ha: 'Allon nuni',       tw: 'Dashboard',      hi: 'डैशबोर्ड' },
+  'ngo.nav.farmers':                           { en: 'Farmers',       fr: 'Agriculteurs',     sw: 'Wakulima',       ha: 'Manoma',           tw: 'Akuafo\u0254',  hi: 'किसान' },
+  'ngo.nav.programs':                          { en: 'Programs',      fr: 'Programmes',       sw: 'Programu',       ha: 'Shirye-shirye',    tw: 'Nhyehyɛeɛ',       hi: 'कार्यक्रम' },
+  'ngo.nav.reports':                           { en: 'Reports',       fr: 'Rapports',         sw: 'Ripoti',         ha: 'Rahotanni',        tw: 'Amane\u025B',    hi: 'रिपोर्ट' },
+  'ngo.nav.fundingLeads':                      { en: 'Funding Leads', fr: 'Pistes de financement', sw: 'Viongozi vya ufadhili', ha: 'Jagororin tallafi', tw: 'Sika afotuo',     hi: 'फंडिंग लीड्स' },
+  'ngo.nav.settings':                          { en: 'Settings',      fr: 'Paramètres',       sw: 'Mipangilio',     ha: 'Saituna',          tw: 'Nhyehy\u025B\u025B',  hi: 'सेटिंग्स' },
 
   // ─── Final feedback-loop spec §1 — quick feedback prompt ────────
   'feedback.prompt.title':                     { en: 'What was confusing?', fr: 'Qu\u2019est-ce qui était confus ?', sw: 'Nini kilichokuchanganya?', ha: 'Me ya rikitar da kai?', tw: 'Adɛn na ɛyɛɛ basabasa?', hi: 'क्या भ्रमित कर रहा था?' },
