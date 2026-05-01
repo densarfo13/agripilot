@@ -29,6 +29,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
+import { isFeatureEnabled } from '../../config/features.js';
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB
 
@@ -107,6 +108,12 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   useTranslation();
 
   const inputRef = useRef(null);
+  // Robust journey §1: a second input WITHOUT the `capture`
+  // attribute so the OS shows the gallery picker directly when
+  // the user prefers an upload (or when camera permission is
+  // denied). Visually exposed as a small "Upload from gallery"
+  // button beside the camera trigger.
+  const galleryInputRef = useRef(null);
   const [preview, setPreview] = useState(null);   // ObjectURL
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
@@ -124,6 +131,11 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   const triggerPicker = useCallback(() => {
     setError('');
     try { inputRef.current?.click(); } catch { /* ignore */ }
+  }, []);
+
+  const triggerGallery = useCallback(() => {
+    setError('');
+    try { galleryInputRef.current?.click(); } catch { /* ignore */ }
   }, []);
 
   const onFileChange = useCallback((e) => {
@@ -217,10 +229,33 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         style={{ display: 'none' }}
         data-testid="scan-capture-input"
       />
+      {/* Robust journey §1: explicit gallery upload fallback.
+          Same handler as the camera input but no `capture` hint
+          so the OS shows the file picker directly. Self-hides
+          when `journeyResilience` is off so existing surfaces
+          stay identical. */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        onChange={onFileChange}
+        style={{ display: 'none' }}
+        data-testid="scan-capture-gallery-input"
+      />
       <div style={STYLES.buttonsRow}>
         <button type="button" onClick={triggerPicker} style={STYLES.btn} data-testid="scan-capture-pick">
           {preview ? tStrict('scan.retake', 'Retake') : captureLabel}
         </button>
+        {!preview && isFeatureEnabled('journeyResilience') ? (
+          <button
+            type="button"
+            onClick={triggerGallery}
+            style={STYLES.btn}
+            data-testid="scan-capture-gallery"
+          >
+            {tStrict('journey.scan.upload', 'Upload from gallery')}
+          </button>
+        ) : null}
         {preview ? (
           <button
             type="button"

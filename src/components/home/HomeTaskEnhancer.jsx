@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+import { trackFirstAction } from '../../analytics/funnelEvents.js';
 import { playVoice, stopVoice } from '../../utils/voicePlayer.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { getStreak } from '../../utils/streak.js';
@@ -327,6 +328,14 @@ export default function HomeTaskEnhancer({
     try {
       trackEvent('home_task_completed', {
         title: String(d.rec?.title || '').slice(0, 80),
+        urgency: d.urgency || null,
+      });
+    } catch { /* swallow */ }
+    // Funnel optimisation §10: stamp first-action when the user
+    // completes their first task. Idempotent across calls — only
+    // the first ever fires `first_action_completed`.
+    try {
+      trackFirstAction('task_completed', {
         urgency: d.urgency || null,
       });
     } catch { /* swallow */ }

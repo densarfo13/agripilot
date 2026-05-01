@@ -14,6 +14,10 @@ import SellPromptCard from '../components/growth/SellPromptCard.jsx';
 import MarketSwitcherChip from '../components/markets/MarketSwitcherChip.jsx';
 import HomeTaskEnhancer from '../components/home/HomeTaskEnhancer.jsx';
 import StreakRewardBanner from '../components/engagement/StreakRewardBanner.jsx';
+import ProfileCompletionPrompt from '../components/home/ProfileCompletionPrompt.jsx';
+import MarketplaceNudgeCard from '../components/home/MarketplaceNudgeCard.jsx';
+import SignInPromptCard from '../components/home/SignInPromptCard.jsx';
+import WaitlistNudgeCard from '../components/home/WaitlistNudgeCard.jsx';
 import { isFeatureEnabled } from '../config/features.js';
 
 const STAGE_META = {
@@ -86,6 +90,23 @@ export default function FarmerOverviewTab() {
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
+      {/* Funnel optimisation §5: optional sign-in nudge. Only
+          renders AFTER first action — never before value. */}
+      <SignInPromptCard />
+      {/* Funnel optimisation §8: marketplace nudge with demand +
+          suggested price + List now. Self-hides when no demand
+          signal or the user already has a listing. */}
+      <MarketplaceNudgeCard />
+      {/* Robust journey §5 + §7: complement to the marketplace
+          nudge — when there is NO demand for the user's crop,
+          surface a calm "notify me / boost listing" alternative
+          instead of leaving the slot empty. */}
+      <WaitlistNudgeCard />
+      {/* Onboarding optimisation §6: prompt to fill in the deferred
+          farm size + crop stage fields. Self-hides when the user
+          completed the full form, when neither field is missing,
+          or when `onboardingV2` is off. */}
+      <ProfileCompletionPrompt />
       {/* Multi-market expansion §5: market switcher chip. Auto-
           detects from country, allows manual override. Self-hides
           when `multiMarket` flag is off. */}

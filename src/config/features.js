@@ -150,6 +150,86 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // Robust journey: real-world resilience layer.
+  //   §1 ScanCapture exposes an explicit "Upload from gallery"
+  //      button as a secondary path beside the camera trigger.
+  //   §2 MinimalFarmSetup auto-saves drafts to
+  //      `farroway_onb_minimal_draft` on every change and
+  //      restores on next mount with a "Picked up where you
+  //      left off" feedback chip.
+  //   §3 partial-input handling already shipped (Sell V2
+  //      "Not sure yet" qty toggle).
+  //   §4 ScanRetryTips surfaces when the result is unclear
+  //      (low confidence / fallback / no diagnosis), giving
+  //      photo tips + a Retake button.
+  //   §5 + §7 WaitlistNudgeCard replaces the empty slot when
+  //      there is NO demand for the user's crop — calm
+  //      "Notify me / Boost listing" alternative.
+  //   §6 offline support is already shipped via the existing
+  //      OfflineBanner + sync engine; no duplicate added.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as opt-out: set
+  // VITE_FARROWAY_FEATURE_JOURNEYRESILIENCE=0 at build time to
+  // hide the gallery button + draft auto-save + retry tips +
+  // waitlist card. Existing flows stay identical when off.
+  journeyResilience: true,
+  // Attribution + funnel tracking: captures the user's
+  // acquisition source on first visit (UTM params → ?ref → host
+  // referrer → 'direct') and auto-attaches it (plus country +
+  // experience) to every funnel event. The MetricsDashboard
+  // gains a "By acquisition source" table showing installs /
+  // first-action % / D2 return % / avg time-to-value per
+  // source. Reads only from the existing analytics log; no new
+  // events introduced — all telemetry goes through the
+  // canonical `funnelEvents` helpers which now wrap payloads
+  // via `_withContext`. Capture + auto-attach are universal —
+  // they apply whether or not this flag is on. The flag is
+  // strictly a kill-switch for the dashboard table.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as opt-out: set
+  // VITE_FARROWAY_FEATURE_ATTRIBUTIONTRACKING=0 at build time
+  // to hide the attribution table on /internal/metrics. Capture
+  // + event auto-attach continue regardless.
+  attributionTracking: true,
+  // Funnel optimisation: end-to-end activation + retention +
+  // early-revenue stack on top of the existing flags.
+  //   §1 OnboardingEntry now treats Scan as primary (large
+  //      green hero) and Start farm as secondary (compact pill).
+  //   §5 SignInPromptCard on Home — optional sign-in nudge that
+  //      only renders AFTER first action; never before value.
+  //   §8 MarketplaceNudgeCard on Home — surfaces demand +
+  //      suggested price for the user's primary crop with a
+  //      one-tap "List now" CTA when buyers are searching for
+  //      that crop AND no active listing exists yet.
+  //   §10 funnelEvents emits first_visit, first_action_completed
+  //       (with time_to_value_ms), session_started, day2_return.
+  //       Stamped from OnboardingEntry mount, MinimalFarmSetup
+  //       submit, ScanResultCard mount, HomeTaskEnhancer
+  //       mark-as-done. Idempotent across calls and applies
+  //       regardless of this flag (universal telemetry).
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as an opt-out lever: set
+  // VITE_FARROWAY_FEATURE_FUNNELOPTIMIZATION=0 at build time to
+  // hide the marketplace + sign-in nudges. The hero / secondary
+  // visual hierarchy on /start lives inside OnboardingEntry and
+  // is part of the onboardingV2 surface, unaffected by this
+  // flag.
+  funnelOptimization: true,
+  // Onboarding optimisation V2: when on, mounts a 2-button entry
+  // screen at /start (Scan plant / Start farm) and a 2-field
+  // minimal setup at /start/farm (crop + location only). Defers
+  // farm size + crop stage to a Home-tab ProfileCompletionPrompt
+  // shown after the user has had a moment of value. Returning
+  // users (active farm OR onboarding stamp) auto-redirect from
+  // /start → /home so the entry never re-prompts. Coexists with
+  // the existing AdaptiveFarmSetup at /farm/new — that flow
+  // remains the full-form path used by the completion prompt.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as an opt-out lever: set
+  // VITE_FARROWAY_FEATURE_ONBOARDINGV2=0 at build time to revert
+  // (/start → "coming soon" notice; /start/farm → redirect to
+  // /farm/new; ProfileCompletionPrompt returns null).
+  onboardingV2: true,
   // Daily streak rewards: surfaces milestone celebrations
   // (3/7/14/30) and a "don't break your streak" risk warning
   // when the streak is alive but no completion has been logged

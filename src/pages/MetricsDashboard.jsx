@@ -33,6 +33,7 @@ import {
   getHeadlineKPIs,
   getPerMarketBreakdown,
 } from '../admin/growthMetrics.js';
+import { getAttributionBySource } from '../admin/attributionMetrics.js';
 
 const S = {
   page: {
@@ -229,6 +230,14 @@ export default function MetricsDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagOn, tick]);
 
+  // Attribution + funnel §4: by-source rows (installs / first-
+  // action rate / day2 return rate / avg time-to-value).
+  const attribution = useMemo(() => {
+    if (!flagOn) return [];
+    try { return getAttributionBySource(); } catch { return []; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flagOn, tick]);
+
   if (!flagOn) {
     return (
       <main style={S.page} data-screen="metrics-coming-soon">
@@ -357,6 +366,54 @@ export default function MetricsDashboard() {
           ))}
         </div>
       </section>
+
+      {/* Attribution + funnel §4: per-source breakdown table.
+          Gated by the `attributionTracking` flag (in addition to
+          `investorMetrics` which gates the whole dashboard). */}
+      {isFeatureEnabled('attributionTracking') && attribution.length > 0 ? (
+        <section style={S.block} data-testid="metrics-attribution">
+          <h3 style={S.blockEyebrow}>
+            {tStrict('metrics.attributionTitle', 'By acquisition source')}
+          </h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: 13,
+              color: '#EAF2FF',
+            }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'rgba(255,255,255,0.6)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '6px 8px' }}>{tStrict('metrics.attr.source', 'Source')}</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>{tStrict('metrics.attr.installs', 'Installs')}</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>{tStrict('metrics.attr.firstActionRate', 'First-action %')}</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>{tStrict('metrics.attr.day2', 'D2 return %')}</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>{tStrict('metrics.attr.ttv', 'Avg TTV')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attribution.map((row) => (
+                  <tr
+                    key={row.source}
+                    style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                    data-testid={`metrics-attr-row-${row.source}`}
+                  >
+                    <td style={{ padding: '8px', fontWeight: 700 }}>{row.source}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>{row.installs}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>{_pct(row.firstActionRate)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>{_pct(row.day2ReturnRate)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: 'rgba(255,255,255,0.78)' }}>
+                      {row.avgTimeToValueMs != null
+                        ? `${Math.round(row.avgTimeToValueMs / 1000)}s`
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

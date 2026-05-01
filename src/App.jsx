@@ -73,6 +73,8 @@ const Sell           = lazy(() => import('./pages/Sell.jsx'));
 const Buy                = lazy(() => import('./pages/Buy.jsx'));
 const OperatorDashboard  = lazy(() => import('./pages/OperatorDashboard.jsx'));
 const MetricsDashboard   = lazy(() => import('./pages/MetricsDashboard.jsx'));
+const OnboardingEntry    = lazy(() => import('./pages/OnboardingEntry.jsx'));
+const MinimalFarmSetup   = lazy(() => import('./pages/MinimalFarmSetup.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
@@ -428,6 +430,24 @@ export default function App() {
       .catch(() => setI18nReady(true)); // proceed even if translations fail — fallbacks work
     // Initialize offline sync — replays queued mutations when back online
     initAutoSync(api);
+    // Funnel + attribution: capture acquisition source FIRST so
+    // it's attached to every event the rest of the boot fires.
+    // Both modules lazy-load so they stay out of the critical
+    // path bundle.
+    (async () => {
+      try {
+        const a = await import('./analytics/attribution.js');
+        if (a && typeof a.captureFromUrl === 'function') {
+          a.captureFromUrl();
+        }
+      } catch { /* swallow */ }
+      try {
+        const mod = await import('./analytics/funnelEvents.js');
+        if (mod && typeof mod.markSessionStart === 'function') {
+          mod.markSessionStart();
+        }
+      } catch { /* swallow */ }
+    })();
     // Demo mode: populate the local store so every admin/NGO page
     // renders real data on first load. No-ops outside demo mode and
     // when the store already has real data (see demoSeed.isStoreEmpty).
@@ -693,6 +713,14 @@ export default function App() {
                 and renders an "internal only" notice when off, so
                 the route is always live + safe. */}
             <Route path="/internal/metrics"   element={<MetricsDashboard />} />
+            {/* /start — minimal onboarding entry. The page checks
+                the `onboardingV2` flag and renders a "coming soon"
+                notice when off. Returning users (with farm or
+                onboarding stamp) auto-redirect to /home. */}
+            <Route path="/start"              element={<OnboardingEntry />} />
+            {/* /start/farm — 2-field minimal setup (crop + location).
+                Defers farm size + crop stage to the home prompt. */}
+            <Route path="/start/farm"         element={<MinimalFarmSetup />} />
             <Route path="/opportunities"      element={<Opportunities />} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message

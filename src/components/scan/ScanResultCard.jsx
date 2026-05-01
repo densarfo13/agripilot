@@ -29,6 +29,8 @@ import UpgradePrompt from '../monetization/UpgradePrompt.jsx';
 import ScanShareButton from '../growth/ScanShareButton.jsx';
 import ChannelShareButtons from '../growth/ChannelShareButtons.jsx';
 import ScanContinueCard from '../growth/ScanContinueCard.jsx';
+import ScanRetryTips from './ScanRetryTips.jsx';
+import { trackFirstAction } from '../../analytics/funnelEvents.js';
 
 const STYLES = {
   card: {
@@ -160,6 +162,23 @@ export default function ScanResultCard({
     catch { /* never propagate */ }
   }, [result, lang]);
 
+  // Funnel optimisation §10: stamp first-action on first scan
+  // result render. trackFirstAction is idempotent across mounts
+  // so a re-render or a returning user with prior actions is a
+  // no-op.
+  const firstActionRef = useRef(false);
+  useEffect(() => {
+    if (firstActionRef.current) return;
+    if (!result) return;
+    firstActionRef.current = true;
+    try {
+      trackFirstAction('scan_completed', {
+        crop: result?.crop || result?.plantId || null,
+        hasIssue: !!(result?.possibleIssue || result?.issue),
+      });
+    } catch { /* swallow */ }
+  }, [result]);
+
   if (!result) return null;
   const scanToTaskOn = isFeatureEnabled('scanToTask');
 
@@ -274,6 +293,12 @@ export default function ScanResultCard({
           'Farroway provides guidance based on the photo and available information. Results are not guaranteed. Contact a local expert for severe or spreading issues.'
         )}
       </p>
+
+      {/* Robust journey §4: retry tips when the result is unclear
+          (low confidence / fallback / no diagnosis). Mounts above
+          the continue + upgrade prompts so the user sees the path
+          to a better photo first. */}
+      <ScanRetryTips result={result} onRetake={onRetake} />
 
       {/* User acquisition §4: habit-conversion CTA pointing the
           user from one scan to a daily plan. Self-hides when
