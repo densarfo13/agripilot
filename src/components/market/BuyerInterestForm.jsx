@@ -50,14 +50,14 @@ export default function BuyerInterestForm({
 
       <div style={S.row}>
         <Field label={tSafe('market.interest.quantity', '')} flex={1}>
-          <input type="number" min="0" step="0.1"
+          <input type="number" inputMode="decimal" min="0" step="0.1"
             value={form.quantityRequested} onChange={set('quantityRequested')}
             style={S.input}
             data-testid="interest-quantity"
           />
         </Field>
         <Field label={tSafe('market.interest.offered', '')} flex={1}>
-          <input type="number" min="0" step="0.01"
+          <input type="number" inputMode="decimal" min="0" step="0.01"
             value={form.offeredPrice} onChange={set('offeredPrice')}
             style={S.input}
             data-testid="interest-price"

@@ -62,7 +62,7 @@ export default function BuyerFiltersBar({
       <label style={S.field}>
         <span style={S.label}>{t('market.field.quantity')}</span>
         <input
-          type="number" min="0" step="0.1"
+          type="number" inputMode="decimal" min="0" step="0.1"
           value={filters.quantity || ''}
           onChange={set('quantity')}
           style={S.input}

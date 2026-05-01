@@ -78,14 +78,28 @@ scripts/ci/check-launch-telemetry.mjs                  (2 new events → 12 tota
 
 ## 6. Remaining risks
 
-**None coded. Only operational.**
+**None coded. Manual physical-device pass remains.**
 
 - **Live iOS device sign-off** — manual checklist
   (`GO_LIVE_TEST_CHECKLIST.md`) walks every scenario A–N on a
-  physical iPhone. CI cannot replace it.
+  physical iPhone. CI cannot fully replace it, but a new
+  static-analysis guard (`guard:ios-quirks`) shrinks what the
+  device test has to catch by flagging known iOS Safari
+  pitfalls in code:
+  - `<input type="number">` without `inputMode` (wrong keyboard
+    on iOS) — current baseline 39
+  - `position: fixed` + `bottom: 0` without
+    `safe-area-inset-bottom` — current baseline 6 (all are
+    full-viewport modal backdrops, not bottom-pinned UI)
+  - Mouse-only `onMouseEnter` / `onMouseLeave` handlers without
+    matching `onFocus` / `onBlur` (broken on touch + keyboard) —
+    current baseline 5
 
-That's it. Every regression-testable launch property is now
-locked in CI:
+  Each baseline is locked at the current count. Any new debt
+  fails CI; lowering a baseline is a deliberate code-quality
+  step. We dropped `numberInputWithoutInputMode` from 44 → 39
+  in this commit by fixing the marketplace quantity / price
+  inputs (BuyerInterestForm, BuyerFiltersBar, MarketplaceCard).
 
 ```
 guard:i18n            ✓  100% across 6 languages
@@ -93,11 +107,13 @@ guard:crops           ✓  272 (baseline)
 guard:crop-render     ✓  522 JSX files
 guard:mobile          ✓  25/25 mobile-affordance + experience assertions
 guard:telemetry       ✓  12/12 launch-day events wired
+guard:ios-quirks      ✓  3/3 categories within baseline
 launch-gate:final     ✓  all of the above
 ```
 
-A regression that drops any wired property fails CI before the
-launch dashboard would notice.
+A regression that drops any wired property OR introduces new
+iOS-quirk debt fails CI before the launch dashboard would
+notice.
 
 ---
 

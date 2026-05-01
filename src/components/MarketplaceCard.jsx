@@ -255,13 +255,13 @@ function FarmerListingMode({ farm, onCreated, t, tr, styles }) {
         </label>
         <label style={styles.label}>
           {tr('marketplace.field.quantity', 'Quantity (kg)')}
-          <input style={styles.input} value={quantity} type="number" min="1"
+          <input style={styles.input} value={quantity} type="number" inputMode="numeric" min="1"
                  onChange={(e) => setQuantity(e.target.value)}
                  required data-testid="list-quantity" />
         </label>
         <label style={styles.label}>
           {tr('marketplace.field.price', 'Price per kg (optional)')}
-          <input style={styles.input} value={price} type="number" min="0" step="0.01"
+          <input style={styles.input} value={price} type="number" inputMode="decimal" min="0" step="0.01"
                  onChange={(e) => setPrice(e.target.value)}
                  data-testid="list-price" />
           {priceInsight && priceInsight.suggested && (
