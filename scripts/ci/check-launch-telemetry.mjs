@@ -70,6 +70,8 @@ const REQUIRED_EVENTS = [
     why: 'User picked an option (or sent free-form text) — counts canonical confusion buckets.' },
   { name: 'feedback_top_issue_viewed', surface: 'FeedbackDashboard.jsx',
     why: 'Admin opened the dashboard and saw the recommended next fix.' },
+  { name: 'experience_fallback_auto_repair', surface: 'ExperienceFallback.jsx',
+    why: 'Auto-repair fired when the recovery branch would have shown — measures self-heal hit rate.' },
 ];
 
 function listFiles(dir, acc) {

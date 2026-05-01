@@ -37,6 +37,8 @@
  *     truthy check on `experience` + `activeEntity`).
  */
 
+import { useEffect, useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { tStrict } from '../../i18n/strictT.js';
 import { useTranslation } from '../../i18n/index.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -45,6 +47,8 @@ import {
   repairFarrowaySession,
   clearFarrowayCacheKeepingAuth,
 } from '../../utils/repairSession.js';
+import { narrowRepairActivePointers } from '../../store/multiExperience.js';
+import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const C = {
   bg:    '#0B1D34',
@@ -128,6 +132,19 @@ export default function ExperienceFallback({ children }) {
   const { user, authLoading } = _safeUseAuth();
   const xp = _safeUseExperience();
 
+  // Final fix spec §1–§5: auto-repair + auto-redirect instead of
+  // rendering the recovery card on first detection of missing
+  // active context. The card stays as a last-resort surface ONLY
+  // when the auto-repair has run AND still can't resolve.
+  const repairAttemptedRef = useRef(false);
+  const [repairResolution, setRepairResolution] = useState(null);
+  // null   — not attempted yet
+  // 'fixed'    — repair found a valid entity; re-render through
+  //               useExperience subscription
+  // 'no_data'  — no garden + no farm; redirect to onboarding
+  // 'unfixed'  — repair ran and entities exist but still no
+  //               valid pointer (genuine corruption — show card)
+
   // 1. Auth + experience still loading — render the loader.
   if (authLoading) {
     return (
@@ -173,14 +190,67 @@ export default function ExperienceFallback({ children }) {
   }
 
   // 3. Active experience missing OR the active entity didn't
-  //    resolve — show the 3-button recovery card.
+  //    resolve. Auto-repair before showing the recovery card.
   const exp     = xp.experience;
   const entity  = xp.activeEntity;
   const farmMissing    = exp === xp.EXPERIENCE.FARM   && !entity;
   const gardenMissing  = exp === xp.EXPERIENCE.GARDEN && !entity;
   const expMissing     = !exp;
+  const needsRepair    = expMissing || farmMissing || gardenMissing;
 
-  if (expMissing || farmMissing || gardenMissing) {
+  // Final fix spec §5: instead of immediately throwing the
+  // recovery card, run the narrow repair pass once and let
+  // useExperience re-resolve. If the repair finds entities,
+  // the parent re-renders and the children path runs cleanly.
+  // If no entities exist at all, we redirect to setup.
+  // The recovery card only shows for the genuinely-corrupted
+  // case where entities exist but the pointer can't resolve.
+  useEffect(() => {
+    if (!needsRepair) return;
+    if (repairAttemptedRef.current) return;
+    repairAttemptedRef.current = true;
+    let resolution = 'unfixed';
+    try {
+      const actions = narrowRepairActivePointers();
+      // Re-read snapshot via useExperience subscription —
+      // the repair fired the SWITCH_EVENT so the hook will
+      // refresh on the next tick.
+      const noData = Array.isArray(actions)
+        && actions.includes('no_data_for_repair');
+      if (noData) resolution = 'no_data';
+      else        resolution = 'fixed';
+      try {
+        trackEvent('experience_fallback_auto_repair', {
+          actions, resolution,
+        });
+      } catch { /* swallow */ }
+    } catch { resolution = 'unfixed'; }
+    setRepairResolution(resolution);
+  }, [needsRepair]);
+
+  // Auto-redirect to setup when no data exists. We use
+  // <Navigate> so React Router handles the transition cleanly
+  // (no full reload, no history-stack pollution).
+  if (needsRepair && repairResolution === 'no_data') {
+    return <Navigate to="/onboarding/simple" replace />;
+  }
+  // Repair fixed it — render the loading branch for one frame
+  // while useExperience re-subscribes; the next render lands
+  // in the happy path because activeEntity now resolves.
+  if (needsRepair && repairResolution === 'fixed') {
+    return (
+      <main style={S.page} data-testid="experience-fallback-recovering">
+        <section style={S.card}>
+          <div style={S.spinner} aria-hidden="true" />
+          <h2 style={S.title}>
+            {tStrict('experience.loading.title', 'Loading your data\u2026')}
+          </h2>
+        </section>
+      </main>
+    );
+  }
+
+  if (needsRepair && repairResolution === 'unfixed') {
     return (
       <main style={S.page} data-testid="experience-fallback-recovery">
         <section style={S.card}>
@@ -203,7 +273,15 @@ export default function ExperienceFallback({ children }) {
           <button
             type="button"
             onClick={() => {
-              try { repairFarrowaySession(); } catch { /* swallow */ }
+              // Final fix spec §6: Repair Session clears ONLY the
+              // three active-pointer keys (active_experience +
+              // active_garden_id + active_farm_id) and re-derives
+              // them from the healthy gardens/farms data. It does
+              // NOT call repairFarrowaySession (which is broader
+              // and clears more state — preserved in case a
+              // future "deep repair" surface needs it).
+              try { narrowRepairActivePointers(); }
+              catch { /* swallow */ }
               try { window.location.reload(); } catch { /* swallow */ }
             }}
             style={{ ...S.btn, ...S.btnGhost }}

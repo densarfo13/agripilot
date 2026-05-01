@@ -632,6 +632,26 @@ const checks = [
     why:  'Onboarding-loop fix v2 \u2014 flag-true-but-no-entity routes back to setup',
     pass: () => /shouldShowSetup\(\)/.test(read('src/components/ProfileGuard.jsx')),
   },
+  {
+    name: 'narrowRepairActivePointers exported from multiExperience',
+    why:  'No-crash fix \u00a76 \u2014 Repair Session button clears only 3 pointer keys',
+    pass: () => {
+      const f = read('src/store/multiExperience.js');
+      return /export function narrowRepairActivePointers/.test(f)
+          && /experience_derived_garden/.test(f)
+          && /experience_derived_farm/.test(f);
+    },
+  },
+  {
+    name: 'ExperienceFallback auto-repairs + redirects to setup',
+    why:  'No-crash fix \u00a73, \u00a75 \u2014 never paint the recovery card on first miss',
+    pass: () => {
+      const f = read('src/components/system/ExperienceFallback.jsx');
+      return /narrowRepairActivePointers/.test(f)
+          && /<Navigate to="\/onboarding\/simple"/.test(f)
+          && /experience_fallback_auto_repair/.test(f);
+    },
+  },
 ];
 
 const failed = [];

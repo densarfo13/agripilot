@@ -358,6 +358,65 @@ export function removeExperience(id) {
   return true;
 }
 
+/**
+ * narrowRepairActivePointers() — minimal repair used by the
+ * "Repair session" button on the ExperienceFallback recovery
+ * card (final fix spec §6).
+ *
+ *   Clears ONLY the three active-pointer keys:
+ *     farroway_active_experience
+ *     farroway_active_garden_id
+ *     farroway.activeFarmId    (legacy underscore-dot key)
+ *
+ *   Keeps:
+ *     farroway_gardens / farroway_farms / farroway.farms
+ *     scan history / feedback / language / auth
+ *
+ *   Then re-runs the standard repairExperience() so the cleared
+ *   pointers get re-derived from the healthy gardens/farms data.
+ *
+ * Returns the actions emitted by repairExperience so callers can
+ * log them at dev verbosity.
+ */
+export function narrowRepairActivePointers() {
+  if (typeof localStorage === 'undefined') return [];
+  // Clear ONLY the active pointers — not the data.
+  try { localStorage.removeItem(STORAGE_KEYS.ACTIVE_EXPERIENCE); }
+  catch { /* swallow */ }
+  try { localStorage.removeItem(STORAGE_KEYS.ACTIVE_GARDEN_ID); }
+  catch { /* swallow */ }
+  try { localStorage.removeItem('farroway.activeFarmId'); }
+  catch { /* swallow */ }
+
+  // Re-derive inline to avoid a circular import. Mirrors
+  // repairExperience()'s rule 3 ("missing experience → derive
+  // from data"). Returns the action tags taken.
+  const actions = [];
+  const gardens = getGardens();
+  const farms   = getFarmsOnly();
+  if (gardens.length > 0) {
+    _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.GARDEN);
+    setActiveGardenId(gardens[0].id);
+    actions.push('experience_derived_garden');
+  } else if (farms.length > 0) {
+    _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.FARM);
+    try { setActiveFarmId(farms[0].id); } catch { /* swallow */ }
+    actions.push('experience_derived_farm');
+  } else {
+    actions.push('no_data_for_repair');
+  }
+
+  // Emit a switched event so any subscriber re-renders against
+  // the post-repair state.
+  try {
+    const exp = getActiveExperience();
+    const ent = getActiveEntity();
+    _emitSwitch(exp, ent ? ent.id : null, { narrowRepair: true });
+  } catch { /* swallow */ }
+
+  return actions;
+}
+
 // ── Snapshot ──────────────────────────────────────────────────
 
 /**
