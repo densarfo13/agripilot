@@ -64,6 +64,12 @@ const REQUIRED_EVENTS = [
     why: 'Single-experience farm user adds a garden — measures cross-context adoption.' },
   { name: 'experience_add_farm_tap',   surface: 'ExperienceManageCard.jsx',
     why: 'Single-experience garden user adds a farm — measures cross-context adoption.' },
+  { name: 'feedback_prompt_shown',     surface: 'UserFeedbackPromptHost.jsx',
+    why: 'Quick-feedback prompt rendered after a meaningful action.' },
+  { name: 'feedback_submitted',        surface: 'userFeedbackStore.js',
+    why: 'User picked an option (or sent free-form text) — counts canonical confusion buckets.' },
+  { name: 'feedback_top_issue_viewed', surface: 'FeedbackDashboard.jsx',
+    why: 'Admin opened the dashboard and saw the recommended next fix.' },
 ];
 
 function listFiles(dir, acc) {

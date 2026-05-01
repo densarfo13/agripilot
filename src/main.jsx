@@ -22,6 +22,17 @@ import './i18n/i18next.js';
 // Initialize offline sync coordinator (auto-flushes on reconnect + visibility)
 initSyncCoordinator();
 
+// Final feedback-loop spec §7: auto-attach __farrowayPrintFeedback
+// in dev so engineers can summarise local feedback from the
+// browser console without an import. The helper auto-attaches
+// from inside the module on dev import; production tree-shakes
+// the side-effect via import.meta.env.DEV.
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    import('./utils/printFeedbackSummary.js').catch(() => { /* never block boot */ });
+  }
+} catch { /* ignore */ }
+
 // Dev-only DOM text audit — runs ONCE on first idle, scans for
 // likely hardcoded English literals, reports a single grouped block
 // to the console. Vite tree-shakes the dynamic import out of the

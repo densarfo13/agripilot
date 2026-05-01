@@ -339,6 +339,14 @@ export default function HomeTaskEnhancer({
         urgency: d.urgency || null,
       });
     } catch { /* swallow */ }
+    // Final feedback-loop spec §1: task completion is a
+    // meaningful action. Fire-and-forget request to the global
+    // host (self-rate-limits to once per session).
+    try {
+      import('../../analytics/userFeedbackStore.js')
+        .then((m) => m.requestUserFeedback && m.requestUserFeedback('home_task'))
+        .catch(() => { /* swallow */ });
+    } catch { /* never propagate */ }
     // Daily streak system §4: append "+1 day streak" reward when
     // the streak rewards flag is on. Streak is bumped inside
     // markHomeTask above; we read the post-bump value to render.

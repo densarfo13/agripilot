@@ -114,6 +114,14 @@ export default function AdaptiveFarmSetup() {
       try { navigate('/dashboard', { replace: true }); }
       catch { /* ignore */ }
     }
+    // Final feedback-loop spec §1: onboarding-complete is a
+    // meaningful action. Fire-and-forget; host self-rate-limits
+    // and skips the prompt while the user is still on a setup
+    // path so the timing aligns with the navigate above.
+    try {
+      const m = await import('../analytics/userFeedbackStore.js');
+      if (m.requestUserFeedback) m.requestUserFeedback('onboarding');
+    } catch { /* never propagate */ }
   }, [navigate]);
 
   const onCancel = useCallback(() => {

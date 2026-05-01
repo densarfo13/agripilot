@@ -177,6 +177,15 @@ export default function ScanResultCard({
         hasIssue: !!(result?.possibleIssue || result?.issue),
       });
     } catch { /* swallow */ }
+    // Final feedback-loop spec §1: a scan result is a meaningful
+    // action — fire-and-forget request to the global host. Host
+    // self-rate-limits (max 1 per session) and self-suppresses on
+    // setup paths so this never spams the user.
+    try {
+      import('../../analytics/userFeedbackStore.js')
+        .then((m) => m.requestUserFeedback && m.requestUserFeedback('scan'))
+        .catch(() => { /* swallow */ });
+    } catch { /* never propagate */ }
   }, [result]);
 
   if (!result) return null;

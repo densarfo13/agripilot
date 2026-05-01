@@ -13,6 +13,11 @@ import RegionBannerHost from '../components/system/RegionBannerHost.jsx';
 // only one experience). Lets a single user flip between their
 // garden and their farm without re-onboarding.
 import ExperienceSwitcher from '../components/system/ExperienceSwitcher.jsx';
+// Final feedback-loop spec §1, §8 — global host that listens
+// for `farroway:request_feedback` events emitted from
+// meaningful action paths and renders the lightweight prompt.
+// Self-suppresses on first app open + during setup/onboarding.
+import UserFeedbackPromptHost from '../components/feedback/UserFeedbackPromptHost.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
@@ -71,6 +76,12 @@ export default function ProtectedLayout() {
             <Outlet />
           </Suspense>
           {isFarmer && <BottomTabNav />}
+          {/* Feedback prompt host — listens globally; never
+              renders unless a meaningful action emits the
+              farroway:request_feedback event AND the session
+              flag isn't already set AND we're not on a setup
+              path. */}
+          <UserFeedbackPromptHost />
         </div>
       </ProfileGuard>
     </AuthGuard>

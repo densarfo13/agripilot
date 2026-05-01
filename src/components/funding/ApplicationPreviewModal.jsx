@@ -375,6 +375,14 @@ export default function ApplicationPreviewModal({
         userRole: context.userRole || null,
       });
     } catch { /* swallow */ }
+    // Final feedback-loop spec §1: starting a funding application
+    // is a meaningful action — request the prompt asynchronously
+    // so the modal close + navigation aren't blocked.
+    try {
+      import('../../analytics/userFeedbackStore.js')
+        .then((m) => m.requestUserFeedback && m.requestUserFeedback('funding'))
+        .catch(() => { /* swallow */ });
+    } catch { /* never propagate */ }
 
     if (typeof onContinue === 'function') {
       try { onContinue(card); } catch { /* swallow */ }

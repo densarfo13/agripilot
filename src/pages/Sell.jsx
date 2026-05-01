@@ -338,6 +338,13 @@ export default function Sell() {
       } catch { /* never block on verification */ }
 
       setSuccessId(listing.id);
+      // Final feedback-loop spec §1: a saved listing is a
+      // meaningful action — request the prompt (host self-rate-
+      // limits to once per session).
+      try {
+        const { requestUserFeedback } = await import('../analytics/userFeedbackStore.js');
+        if (requestUserFeedback) requestUserFeedback('sell');
+      } catch { /* never propagate */ }
     } catch (err) {
       setErrMsg(tSafe('market.error.saveFailed',
         'We could not save your listing. Try again in a moment.'));

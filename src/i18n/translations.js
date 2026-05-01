@@ -12524,6 +12524,18 @@ const T = {
   'experience.cta.addFarm':                    { en: 'Add farm', fr: 'Ajouter une ferme', sw: 'Ongeza shamba', ha: 'Ƙara gona', tw: 'Ka afuo ho', hi: 'खेत जोड़ें' },
   'experience.cta.addFarmShort':               { en: '+ Add Farm', fr: '+ Ajouter une ferme', sw: '+ Ongeza Shamba', ha: '+ Ƙara Gona', tw: '+ Ka Afuo ho', hi: '+ खेत जोड़ें' },
   'experience.cta.addGardenShort':             { en: '+ Add Garden', fr: '+ Ajouter un jardin', sw: '+ Ongeza Bustani', ha: '+ Ƙara Lambu', tw: '+ Ka Turo ho', hi: '+ बगीचा जोड़ें' },
+
+  // ─── Final feedback-loop spec §1 — quick feedback prompt ────────
+  'feedback.prompt.title':                     { en: 'What was confusing?', fr: 'Qu\u2019est-ce qui était confus ?', sw: 'Nini kilichokuchanganya?', ha: 'Me ya rikitar da kai?', tw: 'Adɛn na ɛyɛɛ basabasa?', hi: 'क्या भ्रमित कर रहा था?' },
+  'feedback.opt.unclearClick':                 { en: 'I didn\u2019t know what to click', fr: 'Je ne savais pas où cliquer', sw: 'Sikujua niibofye nini', ha: 'Ban san abin da zan danna ba', tw: 'Mannim deɛ menye click', hi: 'मुझे पता नहीं था क्या क्लिक करूँ' },
+  'feedback.opt.scanNotObvious':               { en: 'Scan wasn\u2019t obvious', fr: 'Le scan n\u2019était pas évident', sw: 'Skani haikuwa wazi', ha: 'Duba bai bayyana ba', tw: 'Hwehwɛmu no ankyerɛ', hi: 'स्कैन स्पष्ट नहीं था' },
+  'feedback.opt.tooManyTasks':                 { en: 'Too many tasks', fr: 'Trop de tâches', sw: 'Kazi nyingi mno', ha: 'Ayyuka da yawa', tw: 'Adwuma dodow dodo', hi: 'बहुत सारे कार्य' },
+  'feedback.opt.unclearResult':                { en: 'Result wasn\u2019t clear', fr: 'Le résultat n\u2019était pas clair', sw: 'Matokeo hayakuwa wazi', ha: 'Sakamako bai bayyana ba', tw: 'Nea efirii mu no anna adi', hi: 'परिणाम स्पष्ट नहीं था' },
+  'feedback.opt.lowValue':                     { en: 'I wouldn\u2019t use this again', fr: 'Je ne l\u2019utiliserais plus', sw: 'Singetumia tena', ha: 'Ba zan sake amfani da shi ba', tw: 'Memmfa nyɛ adwuma bio', hi: 'मैं इसका दोबारा उपयोग नहीं करूँगा' },
+  'feedback.opt.other':                        { en: 'Other',                                   fr: 'Autre',                                       sw: 'Nyingine',                                   ha: 'Sauran',                                   tw: 'Foforɔ',                                       hi: 'अन्य' },
+  'feedback.other.placeholder':                { en: 'Tell us in one line what didn\u2019t work.', fr: 'Dites-nous en une ligne ce qui n\u2019a pas marché.', sw: 'Tuambie kwa mstari mmoja kilichoshindikana.', ha: 'Faɗa mana a layi ɗaya abin da bai yi aiki ba.', tw: 'Ka kyerɛ yɛn wɔ nkyerɛwde baako mu deɛ ɛyɛɛ basabasa.', hi: 'एक पंक्ति में बताएँ क्या काम नहीं किया।' },
+  'feedback.other.send':                       { en: 'Send', fr: 'Envoyer', sw: 'Tuma', ha: 'Aika', tw: 'Soma', hi: 'भेजें' },
+  'feedback.thanks':                           { en: 'Thanks \u2014 we use this to fix the next thing.', fr: 'Merci \u2014 nous l\u2019utilisons pour corriger la prochaine chose.', sw: 'Asante \u2014 tutatumia hii kurekebisha jambo linalofuata.', ha: 'Na gode \u2014 za mu yi amfani da wannan don gyara abin da ke gaba.', tw: 'Meda wo ase \u2014 yɛde yɛi besiesie deɛ edi hɔ.', hi: 'धन्यवाद \u2014 हम इसका उपयोग अगली चीज़ ठीक करने के लिए करेंगे।' },
 };
 
 export default T;

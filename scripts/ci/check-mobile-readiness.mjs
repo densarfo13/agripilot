@@ -250,6 +250,65 @@ const checks = [
       return /Finish setup/.test(f) && /profile-completion-progress/.test(f);
     },
   },
+  {
+    name: 'userFeedbackStore exports requestUserFeedback + saveFeedback',
+    why:  'Feedback-loop §1, §2 \u2014 quick capture API surface',
+    pass: () => {
+      const f = read('src/analytics/userFeedbackStore.js');
+      return /export function requestUserFeedback/.test(f)
+          && /export function saveFeedback/.test(f)
+          && /FEEDBACK_OPTIONS/.test(f);
+    },
+  },
+  {
+    name: 'feedbackClassifier maps the 6 spec buckets',
+    why:  'Feedback-loop §3 \u2014 each option must resolve to a bucket + suggested fix',
+    pass: () => {
+      const f = read('src/analytics/feedbackClassifier.js');
+      return /unclear_priority/.test(f)
+          && /scan_visibility/.test(f)
+          && /task_overload/.test(f)
+          && /unclear_result/.test(f)
+          && /low_value/.test(f)
+          && /manual_review/.test(f);
+    },
+  },
+  {
+    name: 'feedbackPriority computes topIssue + recommendedNextFix',
+    why:  'Feedback-loop §6 \u2014 admin sees one fix to do next',
+    pass: () => {
+      const f = read('src/analytics/feedbackPriority.js');
+      return /computeFeedbackPriority/.test(f)
+          && /recommendedNextFix/.test(f);
+    },
+  },
+  {
+    name: 'UserFeedbackPromptHost mounted in ProtectedLayout',
+    why:  'Feedback-loop §1, §8 \u2014 global host enforces session rate-limit + setup-path skip',
+    pass: () => {
+      const layout = read('src/layouts/ProtectedLayout.jsx');
+      return /<UserFeedbackPromptHost\s*\/>/.test(layout);
+    },
+  },
+  {
+    name: 'FeedbackDashboard route registered (admin/feedback)',
+    why:  'Feedback-loop §4 \u2014 admin must be able to see top issue',
+    pass: () => /admin\/feedback/.test(read('src/App.jsx')),
+  },
+  {
+    name: 'requestUserFeedback wired into 5 meaningful actions',
+    why:  'Feedback-loop §1 \u2014 onboarding, scan, task, sell, funding',
+    pass: () => {
+      const files = [
+        'src/pages/AdaptiveFarmSetup.jsx',
+        'src/components/scan/ScanResultCard.jsx',
+        'src/components/home/HomeTaskEnhancer.jsx',
+        'src/pages/Sell.jsx',
+        'src/components/funding/ApplicationPreviewModal.jsx',
+      ];
+      return files.every((p) => /requestUserFeedback/.test(read(p)));
+    },
+  },
 ];
 
 const failed = [];

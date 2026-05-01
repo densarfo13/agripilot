@@ -262,6 +262,8 @@ const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx')
 const BuyerTrustPage = lazy(() => import('./pages/BuyerTrustPage.jsx'));
 const BuyerView = lazy(() => import('./pages/BuyerView.jsx'));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage.jsx'));
+// Final feedback-loop spec §4 — admin-only feedback rollup.
+const FeedbackDashboard = lazy(() => import('./components/admin/FeedbackDashboard.jsx'));
 const AdminImportFarmersPage = lazy(() => import('./pages/AdminImportFarmersPage.jsx'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage.jsx'));
 
@@ -968,6 +970,7 @@ export default function App() {
                 for this UI-only sprint. */}
             <Route path="buyers" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><BuyerView /></RoleRoute>} />
             <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
+            <Route path="admin/feedback"  element={<RoleRoute roles={ADMIN_ROLES}><FeedbackDashboard /></RoleRoute>} />
             <Route path="admin/ngo-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><AdminDashboard /></RoleRoute>} />
             <Route path="admin/ngo-program" element={<RoleRoute roles={ADMIN_ROLES}><NgoDashboardPage /></RoleRoute>} />
             <Route path="admin/import-farmers" element={<RoleRoute roles={ADMIN_ROLES}><AdminImportFarmersPage /></RoleRoute>} />
