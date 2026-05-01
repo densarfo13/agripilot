@@ -175,7 +175,18 @@ const BULLETS = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function OrganizationPilotCTA({ context = {} }) {
+/**
+ * @param {object}  props
+ * @param {object}  [props.context]   country / userRole bag
+ * @param {boolean} [props.silent]    when true, suppresses the prominent
+ *                                    trigger card AND ignores the
+ *                                    `ngoPartnershipLeads` gate so the
+ *                                    pilot-help modal listener stays
+ *                                    available wherever the wrapper is
+ *                                    mounted (e.g. inside the new
+ *                                    ApplicationPreviewModal).
+ */
+export default function OrganizationPilotCTA({ context = {}, silent = false }) {
   // Subscribe to language change.
   useTranslation();
 
@@ -194,6 +205,40 @@ export default function OrganizationPilotCTA({ context = {} }) {
     email:            '',
     message:          '',
   });
+
+  // Prefill-open hand-off — ApplicationPreviewModal dispatches a
+  // `farroway:open_pilot_help` window event with a `detail` bag of
+  // prefill fields. Listening here keeps the surfaces loosely
+  // coupled: the modal does not need a prop reference to this CTA.
+  // Existing usages (the regular "Become a partner" entry point)
+  // are unaffected because the listener only opens the modal +
+  // merges fields; manual button clicks still work the same way.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onOpen = (e) => {
+      try {
+        const detail = (e && e.detail) || {};
+        setForm((cur) => ({
+          ...cur,
+          organizationName: detail.organizationName || cur.organizationName,
+          country:          detail.country          || cur.country,
+          numberOfFarmers:  detail.numberOfFarmers  || cur.numberOfFarmers,
+          goal:             detail.goal             || cur.goal,
+          email:            detail.email            || cur.email,
+          message:          detail.message          || cur.message,
+        }));
+        setError('');
+        setSuccess(false);
+        setOpen(true);
+      } catch { /* swallow */ }
+    };
+    try { window.addEventListener('farroway:open_pilot_help', onOpen); }
+    catch { /* swallow */ }
+    return () => {
+      try { window.removeEventListener('farroway:open_pilot_help', onOpen); }
+      catch { /* swallow */ }
+    };
+  }, []);
 
   // ESC closes the modal.
   useEffect(() => {
@@ -281,32 +326,37 @@ export default function OrganizationPilotCTA({ context = {} }) {
     }
   }, [form, context.country, context.userRole]);
 
-  if (!flagOn) return null;
-
+  // We keep the listener + modal mounted regardless of the
+  // `ngoPartnershipLeads` flag so the new ApplicationPreviewModal's
+  // "Get help applying" button can still summon this form when the
+  // partner-CTA card itself is hidden. Only the prominent trigger
+  // section is flag-gated to preserve the original surface logic.
   return (
     <>
-      <section style={STYLES.card} data-testid="organization-pilot-cta">
-        <div style={STYLES.cardHeader}>
-          <span aria-hidden="true" style={{ fontSize: 22 }}>{'\uD83E\uDD1D'}</span>
-          <h3 style={STYLES.cardTitle}>
-            {tStrict('funding.org.title', 'For Organizations')}
-          </h3>
-        </div>
-        <p style={STYLES.cardCopy}>
-          {tStrict(
-            'funding.org.copy',
-            'Work with Farroway to reach active farmers, track engagement, and measure outcomes.'
-          )}
-        </p>
-        <ul style={STYLES.bullets}>
-          {BULLETS.map((b) => (
-            <li key={b.key}>{tStrict(b.key, b.fallback)}</li>
-          ))}
-        </ul>
-        <button type="button" style={STYLES.cta} onClick={openModal} data-testid="org-pilot-open">
-          {tStrict('funding.org.startPilot', 'Start a pilot program')}
-        </button>
-      </section>
+      {flagOn && !silent ? (
+        <section style={STYLES.card} data-testid="organization-pilot-cta">
+          <div style={STYLES.cardHeader}>
+            <span aria-hidden="true" style={{ fontSize: 22 }}>{'\uD83E\uDD1D'}</span>
+            <h3 style={STYLES.cardTitle}>
+              {tStrict('funding.org.title', 'For Organizations')}
+            </h3>
+          </div>
+          <p style={STYLES.cardCopy}>
+            {tStrict(
+              'funding.org.copy',
+              'Work with Farroway to reach active farmers, track engagement, and measure outcomes.'
+            )}
+          </p>
+          <ul style={STYLES.bullets}>
+            {BULLETS.map((b) => (
+              <li key={b.key}>{tStrict(b.key, b.fallback)}</li>
+            ))}
+          </ul>
+          <button type="button" style={STYLES.cta} onClick={openModal} data-testid="org-pilot-open">
+            {tStrict('funding.org.startPilot', 'Start a pilot program')}
+          </button>
+        </section>
+      ) : null}
 
       {open ? (
         <div

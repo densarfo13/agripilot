@@ -25,6 +25,7 @@ import { isFeatureEnabled } from '../../config/features.js';
 import { playVoice } from '../../utils/voicePlayer.js';
 import { twiVoice } from '../../i18n/twiVoice.js';
 import VoiceReplayButton from '../voice/VoiceReplayButton.jsx';
+import UpgradePrompt from '../monetization/UpgradePrompt.jsx';
 
 const STYLES = {
   card: {
@@ -253,6 +254,11 @@ export default function ScanResultCard({
           'Farroway provides guidance based on the photo and available information. Results are not guaranteed. Contact a local expert for severe or spreading issues.'
         )}
       </p>
+
+      {/* Monetization upgrade prompt — flag-gated; self-hides for
+          pro users and when `monetization` is off. Never blocks the
+          scan result; sits below the card content as a follow-on. */}
+      <UpgradePrompt context="scan_result" style={{ marginTop: 12 }} />
     </article>
   );
 }

@@ -85,6 +85,62 @@ const DEFAULTS = Object.freeze({
   // users. Off by default — flag-off path is the existing
   // NewFarmScreen verbatim.
   adaptiveFarmGardenSetup: false,
+  // Fast backyard onboarding (3 steps): when on, the adaptive
+  // /farm/new wrapper picks FastBackyardOnboarding for backyard
+  // users — value intro → plant card quick-pick → Plan Ready.
+  // Auto-fills cropStage/unit/farmType so the user only ever
+  // makes one decision (plant). Target completion time < 10s.
+  // Requires `adaptiveFarmGardenSetup` to also be on; flag-off
+  // path falls back to GardenSetupForm verbatim.
+  fastBackyardOnboarding: false,
+  // Daily engagement layer: mounts EngagementStrip on the farmer
+  // Home tab. Wraps the existing dailyTaskEngine in a "never empty"
+  // 2–3 task generator, surfaces a streak chip + weekly plant-
+  // health summary, and registers morning + afternoon reminders
+  // (afternoon only fires when no completion logged today). The
+  // existing /utils/streak streak counter is the single source of
+  // truth — this layer reads + bumps it; it never forks the data.
+  // Off by default — flag-off path is a no-op (strip returns null).
+  dailyEngagement: false,
+  // Guided Funding Application: when on, FundingCard's primary CTA
+  // changes from "Explore this option" to "Start Application" and
+  // opens an ApplicationPreviewModal (readiness score, quick apply
+  // kit, trust badges, urgency, 3 steps, 3 buttons:
+  //   • Continue Application — opens externalUrl + tracks
+  //     `funding_apply_click`
+  //   • Get help applying    — fires `farroway:open_pilot_help`
+  //     window event consumed by OrganizationPilotCTA's listener
+  //   • Remind me later      — bookmarks via fundingBookmarks
+  // Flag-off path: existing anchor + `Explore this option` copy
+  // unchanged. Existing navigation routes (/funding,
+  // /opportunities, /opportunities/:id, /admin/funding,
+  // /ngo/funding-readiness) stay verbatim.
+  guidedFundingApplication: false,
+  // Monetization (free | pro): when on, surfaces the UpgradePrompt
+  // below scan results, applies tier-aware scan-history caps via
+  // `monetization/scanLimits`, and lets pro-only sections wrap in
+  // `<ProGate>` to render the upgrade card for free users. Pure
+  // additive — never gates onboarding or the daily plan, even when
+  // the user is on the free tier. Flag-off path: every helper
+  // returns the unbounded values regardless of stored tier.
+  monetization: false,
+  // NGO mode: surfaces the NgoModeCard on the farmer Home tab. The
+  // card is a *user preference* that decides whether to show
+  // shortcut buttons to the existing organisation-facing surfaces
+  // (`/admin/funding`, `/ngo/impact`, `/ngo/programs`). It does not
+  // grant access — the existing route guards still apply. Flag-off
+  // path: card returns null; nothing changes on Home.
+  ngoMode: false,
+  // Funding screen V2 (UX + conversion): when on, FundingCard adds
+  // an inline "Why this fits you" chip group (crop / region /
+  // experience match) and a footer badge row (time / difficulty /
+  // used-by count). Title rendering also strips a trailing
+  // "(SAMPLE)" suffix at render time as a defence-in-depth measure
+  // — the static catalog already had the suffix removed. Flag-off
+  // path: card visuals stay identical to before. Independent of
+  // `guidedFundingApplication` so pilots can A/B card-level vs
+  // modal-level upgrades separately.
+  fundingScreenV2: false,
 });
 
 function envOverride(name) {

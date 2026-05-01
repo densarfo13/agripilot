@@ -27,7 +27,10 @@
 export const SAMPLE_FUNDING_OPPORTUNITIES = Object.freeze([
   Object.freeze({
     id:               'sample-input-support',
-    title:            'Smallholder Seed & Input Support (SAMPLE)',
+    // The redundant "(SAMPLE)" suffix is dropped from the title —
+    // the `sample: true` flag below is what surfaces the SAMPLE
+    // badge in the UI, so the title can stay clean.
+    title:            'Smallholder Seed & Input Support',
     description:
       'A seed and fertiliser support program for smallholder farmers '
       + 'cultivating staple crops. May cover a portion of input costs '
@@ -55,7 +58,7 @@ export const SAMPLE_FUNDING_OPPORTUNITIES = Object.freeze([
 
   Object.freeze({
     id:               'sample-training',
-    title:            'Climate-Smart Farming Training (SAMPLE)',
+    title:            'Climate-Smart Farming Training',
     description:
       'A free training program covering climate-resilient practices, '
       + 'soil health, and post-harvest handling. Open to all crops '
@@ -83,7 +86,7 @@ export const SAMPLE_FUNDING_OPPORTUNITIES = Object.freeze([
 
   Object.freeze({
     id:               'sample-grant',
-    title:            'Smallholder Productivity Grant (SAMPLE)',
+    title:            'Smallholder Productivity Grant',
     description:
       'A productivity-focused grant for smallholder farms. Covers up '
       + 'to a fixed amount toward equipment or improved inputs. '

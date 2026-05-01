@@ -17,10 +17,26 @@
  * still feel native.
  */
 
+import { useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { trackFundingEvent } from '../../analytics/fundingAnalytics.js';
 import { FARM_TYPE_LABELS } from '../../config/fundingConfig.js';
+import { isFeatureEnabled } from '../../config/features.js';
+import ApplicationPreviewModal from './ApplicationPreviewModal.jsx';
+import MatchChips from './MatchChips.jsx';
+import CardFooterBadges from './CardFooterBadges.jsx';
+
+// Belt-and-braces: strip a trailing "(SAMPLE)" / "(sample)" suffix
+// from any catalog title at render. The static catalog already had
+// the suffix removed (sampleOpportunities.js), but this guard keeps
+// any future catalog drift invisible to the user — the SAMPLE badge
+// is rendered separately by surfaces that read `card.sample`.
+const _SAMPLE_SUFFIX_RE = /\s*\(sample\)\s*$/i;
+function _cleanTitle(t) {
+  if (!t || typeof t !== 'string') return t || '';
+  return t.replace(_SAMPLE_SUFFIX_RE, '').trim();
+}
 
 const STYLES = {
   card: {
@@ -103,7 +119,24 @@ const PILL_TONE = {
 export default function FundingCard({ card, context = {} }) {
   // Subscribe to language change so localized labels refresh.
   useTranslation();
+  const guidedOn = isFeatureEnabled('guidedFundingApplication');
+  const screenV2On = isFeatureEnabled('fundingScreenV2');
+  const [previewOpen, setPreviewOpen] = useState(false);
   if (!card || !card.id) return null;
+  const cleanTitle = _cleanTitle(card.title);
+  // Match-chip / footer surfaces need a profile snapshot. The
+  // existing context API already carries country/userRole; we
+  // accept a `profile` field for richer data and fall back to
+  // synthesising a minimal profile from the context bag so the
+  // chips still resolve gracefully on legacy callers.
+  const profileSnapshot = (context && (context.profile || context.farm)) || {
+    country:    context && context.country    ? context.country    : '',
+    region:     context && context.region     ? context.region     : '',
+    crop:       context && context.crop       ? context.crop       : '',
+    plantId:    context && context.plantId    ? context.plantId    : '',
+    farmType:   context && context.farmType   ? context.farmType   : '',
+    experience: context && context.experience ? context.experience : '',
+  };
 
   const tone = PILL_TONE[card.category] || PILL_TONE.partnership;
   const pillStyle = {
@@ -144,13 +177,19 @@ export default function FundingCard({ card, context = {} }) {
   return (
     <article style={STYLES.card} data-funding-id={card.id} data-category={card.category}>
       <div style={STYLES.header}>
-        <h4 style={STYLES.title}>{card.title}</h4>
+        <h4 style={STYLES.title}>{cleanTitle}</h4>
         <span style={pillStyle} aria-hidden="true">
           {tStrict(`funding.category.${card.category}`, card.category)}
         </span>
       </div>
 
       <p style={STYLES.description}>{card.description}</p>
+
+      {/* Inline "Why this fits you" chip group — flag-gated so
+          existing surfaces stay visually identical when off. */}
+      {screenV2On ? (
+        <MatchChips card={card} profile={profileSnapshot} />
+      ) : null}
 
       {/* Match reason — surfaced by the smart engine when present.
           Conservative copy ("may be useful", never "you qualify"). */}
@@ -185,16 +224,49 @@ export default function FundingCard({ card, context = {} }) {
         <span style={STYLES.metaValue}>{card.nextStep}</span>
       </div>
 
-      <a
-        href={card.externalUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={handleClick}
-        style={STYLES.cta}
-        data-testid={`funding-cta-${card.id}`}
-      >
-        {tStrict('funding.card.exploreOption', 'Explore this option')}
-      </a>
+      {/* Footer badges — flag-gated. Self-suppress per-badge when
+          the corresponding card field is missing, and the row
+          itself returns null when all three are absent. */}
+      {screenV2On ? (
+        <CardFooterBadges
+          timeToComplete={card.timeToComplete}
+          difficulty={card.difficulty}
+          successCount={card.successCount}
+        />
+      ) : null}
+
+      {guidedOn ? (
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              trackFundingEvent('funding_view', {
+                cardId:   card.id,
+                category: card.category,
+                country:  context.country  || null,
+                userRole: context.userRole || null,
+                source:   'card_cta',
+              });
+            } catch { /* swallow */ }
+            setPreviewOpen(true);
+          }}
+          style={{ ...STYLES.cta, border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center' }}
+          data-testid={`funding-cta-${card.id}`}
+        >
+          {tStrict('funding.card.startApplication', 'Start Application')}
+        </button>
+      ) : (
+        <a
+          href={card.externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleClick}
+          style={STYLES.cta}
+          data-testid={`funding-cta-${card.id}`}
+        >
+          {tStrict('funding.card.exploreOption', 'Explore this option')}
+        </a>
+      )}
 
       <p style={STYLES.disclaimer}>
         {tStrict(
@@ -202,6 +274,16 @@ export default function FundingCard({ card, context = {} }) {
           'Farroway does not guarantee funding. Always verify requirements with the official program.'
         )}
       </p>
+
+      {guidedOn ? (
+        <ApplicationPreviewModal
+          open={previewOpen}
+          card={card}
+          profile={context.profile || context}
+          context={context}
+          onClose={() => setPreviewOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }

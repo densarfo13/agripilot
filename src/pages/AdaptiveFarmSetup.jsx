@@ -44,8 +44,9 @@ import {
   setActiveFarmId as farrowaySetActiveFarmId,
 } from '../store/farrowayLocal.js';
 
-const NewFarmScreen     = lazy(() => import('./NewFarmScreen.jsx'));
-const GardenSetupForm   = lazy(() => import('../components/farm/GardenSetupForm.jsx'));
+const NewFarmScreen           = lazy(() => import('./NewFarmScreen.jsx'));
+const GardenSetupForm         = lazy(() => import('../components/farm/GardenSetupForm.jsx'));
+const FastBackyardOnboarding  = lazy(() => import('../components/farm/FastBackyardOnboarding.jsx'));
 
 const PROFILE_KEY     = 'farroway_user_profile';
 const ACTIVE_FARM_KEY = 'farroway_active_farm';
@@ -82,7 +83,8 @@ function _readExperienceHint() {
 
 export default function AdaptiveFarmSetup() {
   const navigate = useNavigate();
-  const flagOn = isFeatureEnabled('adaptiveFarmGardenSetup');
+  const flagOn   = isFeatureEnabled('adaptiveFarmGardenSetup');
+  const fastOn   = isFeatureEnabled('fastBackyardOnboarding');
   const experience = useMemo(() => _readExperienceHint(), []);
 
   const initialProfile = useMemo(() => _readJson(PROFILE_KEY) || {}, []);
@@ -129,6 +131,19 @@ export default function AdaptiveFarmSetup() {
   }
 
   if (experience === 'backyard') {
+    // Fast 3-step path (target < 10s) when feature flag is on.
+    if (fastOn) {
+      return (
+        <Suspense fallback={null}>
+          <FastBackyardOnboarding
+            initialProfile={initialProfile}
+            onSaved={onGardenSaved}
+            onCancel={onCancel}
+          />
+        </Suspense>
+      );
+    }
+    // Default backyard path — the single-page GardenSetupForm.
     return (
       <Suspense fallback={null}>
         <GardenSetupForm
