@@ -133,6 +133,22 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // Long-term moat: crystallises value from the data Farroway has
+  // already captured. Mounts:
+  //   • InsightsDigest on the farmer Home tab — 1-5 personalised
+  //     rows pulled from listings + interests + price catalog +
+  //     reputation + recurring orders. Self-suppresses when the
+  //     engine produces no insights, so a brand-new install stays
+  //     calm.
+  //   • VerifiedBadge on every ListingCard — surfaces the existing
+  //     verificationStore's GPS + photo + timestamp level so a
+  //     verified seller earns a "Verified" chip on each card.
+  //
+  // No new persistence — every signal is read from existing stores.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever: set VITE_FARROWAY_FEATURE_FARROWAYMOAT=0 at
+  // build time to revert to the prior surface.
+  farrowayMoat: true,
   // Marketplace revenue scale: stacks on top of marketScale +
   // marketMonetization to grow revenue per user.
   //   §1 top-selling crops bumped in the buyer-feed sort (+50 pts)

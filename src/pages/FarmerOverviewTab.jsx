@@ -8,6 +8,7 @@ import api from '../api/client.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import EngagementStrip from '../components/engagement/EngagementStrip.jsx';
 import NgoModeCard from '../components/monetization/NgoModeCard.jsx';
+import InsightsDigest from '../components/insights/InsightsDigest.jsx';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
@@ -66,6 +67,9 @@ export default function FarmerOverviewTab() {
     <div className="page-body" style={{ paddingTop: 0 }}>
       {/* Daily engagement layer (flag-gated; returns null when off) */}
       <EngagementStrip />
+      {/* Long-term moat: insights digest pulled from accumulated
+          data (flag-gated; returns null when no insights yet). */}
+      <InsightsDigest farmerId={farmerId} />
       {/* NGO mode card (flag-gated; returns null when off) */}
       <NgoModeCard />
       {/* Lifecycle Stage Card */}

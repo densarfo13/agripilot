@@ -23,6 +23,7 @@ import InterestForm from './InterestForm.jsx';
 import SellerBadges from '../marketplace/SellerBadges.jsx';
 import BoostedBadge from '../marketplace/BoostedBadge.jsx';
 import ScarcityBadges from '../marketplace/ScarcityBadges.jsx';
+import VerifiedBadge  from '../insights/VerifiedBadge.jsx';
 
 const S = {
   card: {
@@ -159,6 +160,14 @@ export default function ListingCard({
           row stays calm for new sellers. */}
       {isFeatureEnabled('marketScale') && listing.farmerId ? (
         <SellerBadges farmerId={listing.farmerId} />
+      ) : null}
+
+      {/* Long-term moat §5: verified-listing chip. Reads the
+          existing verificationStore so a listing carrying a
+          GPS + photo verification (level ≥ 2) earns a badge.
+          Self-hides when the listing has no verification yet. */}
+      {isFeatureEnabled('farrowayMoat') ? (
+        <VerifiedBadge listingId={listing.id} />
       ) : null}
 
       <div style={S.metaGrid}>

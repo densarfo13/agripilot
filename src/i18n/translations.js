@@ -12232,6 +12232,35 @@ const T = {
 
   'market.boost.price':                        { en: '{price} {currency} for 24 hours',         fr: '{price} {currency} pour 24 heures',           sw: '{price} {currency} kwa saa 24',              ha: '{price} {currency} na awa 24',             tw: '{price} {currency} ma nnɔnhwere 24',          hi: '24 घंटे के लिए {price} {currency}' },
   'market.assist.price':                       { en: 'Service fee: {price} {currency}',         fr: 'Frais de service : {price} {currency}',       sw: 'Ada ya huduma: {price} {currency}',          ha: 'Kuɗin sabis: {price} {currency}',          tw: 'Adwumayɛ ka: {price} {currency}',             hi: 'सेवा शुल्क: {price} {currency}' },
+
+  // Long-term moat — insights digest + verified-listing chip.
+  // Gated by `farrowayMoat`. Pure read aggregator over existing
+  // stores; no new persistence.
+  'insights.title':                            { en: 'Insights for you',                        fr: 'Aperçus pour vous',                           sw: 'Maarifa kwa ajili yako',                     ha: 'Hasashe a gare ka',                        tw: 'Nyansahuo ma wo',                              hi: 'आपके लिए अंतर्दृष्टि' },
+
+  'insights.demand.title':                     { en: 'Demand for {crop}',                       fr: 'Demande pour {crop}',                         sw: 'Mahitaji ya {crop}',                         ha: 'Buƙatar {crop}',                           tw: 'Hia ma {crop}',                               hi: '{crop} की मांग' },
+  'insights.demand.value.high':                { en: '{count} buyers actively looking',         fr: '{count} acheteurs cherchent activement',      sw: 'Wanunuzi {count} wanatafuta kwa bidii',     ha: 'Masu siye {count} suna nema sosai',        tw: 'Adetɔfoɔ {count} rehwehwɛ kɛse',              hi: '{count} खरीदार सक्रिय रूप से खोज रहे हैं' },
+  'insights.demand.value.medium':              { en: '{count} buyers interested',               fr: '{count} acheteurs intéressés',                sw: 'Wanunuzi {count} wana shauku',               ha: 'Masu siye {count} suna sha\u2019awa',      tw: 'Adetɔfoɔ {count} pɛ',                         hi: '{count} खरीदार रुचि रखते हैं' },
+  'insights.demand.value.low':                 { en: 'Quiet for now',                           fr: 'Calme pour le moment',                        sw: 'Kimya kwa sasa',                             ha: 'Shiru a yanzu',                            tw: 'Dinn seesei',                                 hi: 'अभी शांत' },
+
+  'insights.price.title':                      { en: 'Suggested price',                         fr: 'Prix suggéré',                                sw: 'Bei iliyopendekezwa',                        ha: 'Farashin da aka ba da shawara',            tw: 'Boɔ a wɔakyerɛ',                              hi: 'सुझाया गया मूल्य' },
+  'insights.price.source':                     { en: 'Source: {source}',                        fr: 'Source : {source}',                           sw: 'Chanzo: {source}',                           ha: 'Tushe: {source}',                          tw: 'Firi: {source}',                              hi: 'स्रोत: {source}' },
+
+  'insights.activity.title':                   { en: 'This week',                               fr: 'Cette semaine',                               sw: 'Wiki hii',                                   ha: 'Wannan mako',                              tw: 'Saa nnawɔtwe yi',                             hi: 'इस सप्ताह' },
+  'insights.activity.value':                   { en: '{count} buyers reached out',              fr: '{count} acheteurs vous ont contacté',         sw: 'Wanunuzi {count} wamewasiliana',             ha: 'Masu siye {count} sun tuntuɓa',            tw: 'Adetɔfoɔ {count} afrɛ',                       hi: '{count} खरीदारों ने संपर्क किया' },
+
+  'insights.topCrop.title':                    { en: 'Top-selling crop',                        fr: 'Culture la plus vendue',                      sw: 'Zao linaliuza zaidi',                        ha: 'Amfanin gona da yake sayar da yawa',       tw: 'Aduane a wɔtɔn pii',                          hi: 'सबसे अधिक बिकने वाली फसल' },
+  'insights.topCrop.meta':                     { en: '{count} recent transactions',             fr: '{count} transactions récentes',               sw: 'Miamala {count} ya hivi karibuni',           ha: 'Ma\u2019amaloli {count} na baya-bayan nan', tw: 'Nsɛm {count} a aba nnansa yi',               hi: '{count} हाल के लेन-देन' },
+
+  'insights.recurring.title':                  { en: 'Your weekly supply',                      fr: 'Votre approvisionnement hebdomadaire',        sw: 'Usambazaji wako wa kila wiki',               ha: 'Samar maka na mako-mako',                  tw: 'Wo dapɛn nsuoyiɛ',                            hi: 'आपकी साप्ताहिक आपूर्ति' },
+  'insights.recurring.multi':                  { en: '{count} crops on weekly auto-match',      fr: '{count} cultures en correspondance hebdomadaire', sw: 'Mazao {count} kwenye mechi ya kila wiki',  ha: 'Amfanin gona {count} a daidaita mako-mako', tw: 'Aduane {count} wɔ dapɛn nhwehwɛmu mu',     hi: '{count} फसलें साप्ताहिक ऑटो-मैच पर' },
+
+  'insights.trust.title':                      { en: 'Your trust signals',                      fr: 'Vos signaux de confiance',                    sw: 'Ishara zako za uaminifu',                    ha: 'Sigogin amincin ka',                       tw: 'Wo nokwasɛm nsɛnkyerɛnneɛ',                   hi: 'आपके विश्वास संकेत' },
+  'insights.trust.level.high':                 { en: 'Verified seller \u00B7 level {level}',    fr: 'Vendeur vérifié \u00B7 niveau {level}',       sw: 'Muuzaji aliyethibitishwa \u00B7 kiwango {level}', ha: 'Mai sayar da aka tabbatar \u00B7 mataki {level}', tw: 'Adetɔnfoɔ a yɛahwɛ mu \u00B7 ɔkwan {level}', hi: 'सत्यापित विक्रेता \u00B7 स्तर {level}' },
+  'insights.trust.value.multi':                { en: '{count} earned badges',                   fr: '{count} badges gagnés',                       sw: 'Ishara {count} zilizopatikana',              ha: 'Alamomi {count} da aka samu',              tw: 'Mfonini {count} a woanya',                    hi: '{count} अर्जित बैज' },
+
+  'market.verified.badge':                     { en: 'Verified',                                fr: 'Vérifié',                                     sw: 'Imethibitishwa',                             ha: 'An tabbatar',                              tw: 'Yɛahwɛ mu',                                    hi: 'सत्यापित' },
+  'market.verified.logged':                    { en: 'Logged',                                  fr: 'Enregistré',                                  sw: 'Imerekodiwa',                                ha: 'An yi rajista',                            tw: 'Wɔakyerɛ',                                     hi: 'दर्ज' },
 };
 
 export default T;
