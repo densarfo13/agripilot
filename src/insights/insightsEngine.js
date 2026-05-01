@@ -68,6 +68,66 @@ function _safeReadJsonArray(key) {
   } catch { return []; }
 }
 
+/**
+ * hasMeaningfulData — controlled-rollout gate. Returns `true` when
+ * the user has produced enough activity for insights to be honest.
+ *
+ *   • Has any farm (profile / active farm / owned listing)
+ *   • OR has any recent engagement completion
+ *   • OR has any owned listing
+ *   • OR has any submitted buyer interest
+ *
+ * Returns `false` for a brand-new install. Callers use this to
+ * show a calm "Start using Farroway to get insights" empty state
+ * instead of fabricating signals from no data.
+ */
+export function hasMeaningfulData({
+  profile = {},
+  activeFarm = null,
+  farmerId = '',
+  buyerId = '',
+} = {}) {
+  // Farm check (cheap; no localStorage read).
+  const hasFarm = Boolean(
+    profile?.farmId
+    || activeFarm?.id
+    || profile?.farmerId,
+  );
+  if (hasFarm) return true;
+
+  // Activity check — engagement completion in the last 60 days.
+  try {
+    const completions = _safeReadJsonArray('farroway_engagement_history');
+    if (completions.some((c) => {
+      const t = Date.parse(c?.completedAt || '');
+      return Number.isFinite(t)
+        && t >= Date.now() - 60 * 86_400_000;
+    })) return true;
+  } catch { /* swallow */ }
+
+  // Listings owned by this farmer.
+  if (farmerId) {
+    try {
+      const listings = _safeReadJsonArray('farroway_market_listings');
+      if (listings.some((l) => l && String(l.farmerId || '') === String(farmerId))) {
+        return true;
+      }
+    } catch { /* swallow */ }
+  }
+
+  // Interests submitted by this buyer.
+  if (buyerId) {
+    try {
+      const interests = _safeReadJsonArray('farroway_buyer_interests');
+      if (interests.some((i) => i && String(i.buyerId || '') === String(buyerId))) {
+        return true;
+      }
+    } catch { /* swallow */ }
+  }
+
+  return false;
+}
+
 function _resolvePrimaryCrop(profile, activeFarm, listings) {
   // Order: profile preference → active farm crop → newest listing
   // crop. We read the canonical `crop` field only — legacy
@@ -194,6 +254,7 @@ export function buildInsights({
               : 'Quiet for now',
         ).replace('{count}', String(demand.count)),
         tone:  tonalKey,
+        action: { route: '/sell', kind: 'list_crop' },
       });
     }
   }
@@ -215,6 +276,7 @@ export function buildInsights({
             ? tStrict('insights.price.source', 'Source: {source}').replace('{source}', ref.source)
             : '',
           tone:  'neutral',
+          action: { route: '/sell', kind: 'apply_price' },
         });
       }
     } catch { /* swallow */ }
@@ -240,6 +302,7 @@ export function buildInsights({
           '{count} buyers reached out',
         ).replace('{count}', String(recentInterestsForMe)),
         tone:  'positive',
+        action: { route: '/sell', kind: 'review_interests' },
       });
     }
   }
@@ -262,6 +325,7 @@ export function buildInsights({
             '{count} recent transactions',
           ).replace('{count}', String(top[0].score)),
           tone:  'positive',
+          action: { route: '/buy', kind: 'browse_top' },
         });
       }
     }
@@ -284,6 +348,7 @@ export function buildInsights({
                 '{count} crops on weekly auto-match',
               ).replace('{count}', String(recurring.length)),
           tone:  'neutral',
+          action: { route: '/buy', kind: 'view_recurring' },
         });
       }
     } catch { /* swallow */ }

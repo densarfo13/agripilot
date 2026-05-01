@@ -52,6 +52,7 @@ import BuyerExplanation  from '../components/sell/BuyerExplanation.jsx';
 import PostListingFlow   from '../components/sell/PostListingFlow.jsx';
 import RegionDetectChip  from '../components/sell/RegionDetectChip.jsx';
 import FarmerInterestPanel from '../components/marketplace/FarmerInterestPanel.jsx';
+import { consumeInsightActionStamp } from '../insights/insightActionStamp.js';
 
 const C = FARROWAY_BRAND.colors;
 const UNITS = ['kg', 'bags', 'crates'];
@@ -164,6 +165,11 @@ export default function Sell() {
   // measure the form-funnel drop-off (view → submit → buyer).
   React.useEffect(() => {
     try { trackEvent('listing_viewed', { source: 'sell_page' }); }
+    catch { /* swallow */ }
+    // Fire `action_after_insight` when the user landed here from
+    // an insight tap on the Home digest. Stamp is cleared after
+    // read so a later unrelated visit can't double-fire.
+    try { consumeInsightActionStamp({ route: '/sell' }); }
     catch { /* swallow */ }
   }, []);
 

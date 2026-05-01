@@ -12261,6 +12261,10 @@ const T = {
 
   'market.verified.badge':                     { en: 'Verified',                                fr: 'Vérifié',                                     sw: 'Imethibitishwa',                             ha: 'An tabbatar',                              tw: 'Yɛahwɛ mu',                                    hi: 'सत्यापित' },
   'market.verified.logged':                    { en: 'Logged',                                  fr: 'Enregistré',                                  sw: 'Imerekodiwa',                                ha: 'An yi rajista',                            tw: 'Wɔakyerɛ',                                     hi: 'दर्ज' },
+
+  // Insights digest empty-state — controlled rollout §3.
+  'insights.empty.title':                      { en: 'Insights coming soon',                    fr: 'Aperçus à venir',                             sw: 'Maarifa yanakuja hivi karibuni',             ha: 'Hasashe na zuwa nan ba da daɗewa ba',      tw: 'Nyansahuo reba',                              hi: 'अंतर्दृष्टि जल्द आ रही है' },
+  'insights.empty.body':                       { en: 'Start using Farroway to get insights \u2014 list a crop, browse the marketplace, or complete a daily task.', fr: 'Commencez à utiliser Farroway pour obtenir des aperçus \u2014 listez une culture, parcourez le marché ou complétez une tâche quotidienne.', sw: 'Anza kutumia Farroway kupata maarifa \u2014 orodhesha zao, vinjari soko, au kamilisha kazi ya kila siku.', ha: 'Fara amfani da Farroway don samun hasashe \u2014 tallata amfanin gona, leƙa kasuwa, ko kammala aikin yau.', tw: 'Hyɛ Farroway ase nya nyansahuo \u2014 to aduane, hwehwɛ gua so, anaa wie da no adwuma.', hi: 'अंतर्दृष्टि पाने के लिए Farroway का उपयोग शुरू करें \u2014 फसल सूचीबद्ध करें, मार्केटप्लेस ब्राउज़ करें, या दैनिक कार्य पूरा करें।' },
 };
 
 export default T;

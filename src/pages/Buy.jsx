@@ -46,6 +46,7 @@ import { getBuyerAlerts, markAllAlertsRead } from '../market/buyerNotifications.
 import ListingCard from '../components/buy/ListingCard.jsx';
 import BuyerPriorityCard from '../components/marketplace/BuyerPriorityCard.jsx';
 import QuickReorderStrip from '../components/marketplace/QuickReorderStrip.jsx';
+import { consumeInsightActionStamp } from '../insights/insightActionStamp.js';
 
 const S = {
   page: {
@@ -196,6 +197,11 @@ export default function Buy() {
         count:  listings.length,
       });
     } catch { /* swallow */ }
+    // Fire `action_after_insight` if the user landed here from
+    // tapping an insight on the Home digest. Stamp is cleared
+    // after read so a later unrelated visit can't double-fire.
+    try { consumeInsightActionStamp({ route: '/buy' }); }
+    catch { /* swallow */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
