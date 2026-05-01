@@ -109,20 +109,66 @@ export function getListings() {
 }
 
 /**
- * Active = listings whose status is not "SOLD" and whose
- * readyDate (when present) hasn't slipped more than 30 days
- * past today. Stale listings stay on the device but the
+ * Active = listings whose status is not "SOLD" or "EXPIRED" and
+ * whose readyDate (when present) hasn't slipped more than 30
+ * days past today. Stale listings stay on the device but the
  * marketplace surface filters them out.
  */
 export function getActiveListings() {
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   return getListings().filter((l) => {
-    if (String(l.status || '').toUpperCase() === 'SOLD') return false;
+    const status = String(l.status || '').toUpperCase();
+    if (status === 'SOLD' || status === 'EXPIRED') return false;
     if (!l.readyDate) return true;
     const t = Date.parse(l.readyDate);
     if (Number.isNaN(t)) return true;
     return t >= cutoff;
   });
+}
+
+/**
+ * sweepExpiredListings — mark every ACTIVE listing whose
+ * readyDate has slipped more than 30 days past today as
+ * `EXPIRED` so the farmer's "My Listings" surface can show
+ * why a listing is no longer visible to buyers (instead of
+ * silently disappearing).
+ *
+ * Idempotent — re-running is a no-op once everything stale
+ * is already flagged. Returns the number of rows updated so
+ * callers (e.g. the boot-time hook) can log telemetry.
+ *
+ * Strict-rule audit
+ *   * never throws — read/write are try/catch wrapped
+ *   * never wipes data — only flips status ACTIVE → EXPIRED
+ *   * SOLD listings are left alone (they're terminal)
+ *   * no readyDate ⇒ no expiry — those listings stay ACTIVE
+ *     until the farmer marks them sold
+ */
+export function sweepExpiredListings({ now = Date.now() } = {}) {
+  const cutoff = now - 30 * 24 * 60 * 60 * 1000;
+  let rows;
+  try { rows = _read(STORAGE_KEYS.LISTINGS); }
+  catch { rows = []; }
+  if (!Array.isArray(rows) || rows.length === 0) return 0;
+
+  let changed = 0;
+  const next = rows.map((row) => {
+    if (!row || typeof row !== 'object') return row;
+    const status = String(row.status || '').toUpperCase();
+    if (status !== 'ACTIVE' && status !== '') return row;
+    if (!row.readyDate) return row;
+    const t = Date.parse(row.readyDate);
+    if (Number.isNaN(t)) return row;
+    if (t >= cutoff) return row;
+    changed += 1;
+    return { ...row, status: 'EXPIRED', updatedAt: _now() };
+  });
+
+  if (changed > 0) {
+    try { _write(STORAGE_KEYS.LISTINGS, next); }
+    catch { /* swallow — best-effort */ }
+  }
+  return changed;
 }
 
 /**

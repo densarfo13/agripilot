@@ -158,6 +158,43 @@ export function AuthProvider({ children }) {
     bootstrap();
   }, []);
 
+  // ─── Cross-tab session sync (go-live audit fix) ────────────
+  // localStorage `storage` events fire in OTHER tabs when a key
+  // is mutated, so listening for changes to the session-cache
+  // key + the legacy V1 token gives us a clean signal that
+  // "the user logged in/out somewhere else." We keep the logic
+  // narrow:
+  //   • Cache CLEARED (newValue null) AND we currently have a
+  //     user → drop local state immediately so the UI flips to
+  //     logged-out. We do NOT call logoutUser() — the other tab
+  //     already hit the server.
+  //   • Cache POPULATED (newValue present) AND we have no user →
+  //     re-bootstrap so the new session is picked up without a
+  //     reload.
+  // Anything else (same-value writes, unrelated keys) is ignored.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onStorage = (ev) => {
+      try {
+        if (!ev || ev.storageArea !== window.localStorage) return;
+        const key = ev.key;
+        if (key !== SESSION_CACHE_KEY && key !== 'farroway_token') return;
+
+        const cleared = ev.newValue == null;
+        if (cleared && user) {
+          // Another tab logged out — mirror it here.
+          try { setUser(null); setIsOfflineSession(false); }
+          catch { /* swallow */ }
+        } else if (!cleared && !user) {
+          // Another tab logged in — pick up the session.
+          try { bootstrap(); } catch { /* swallow */ }
+        }
+      } catch { /* never propagate */ }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [user]);
+
   async function login(email, password) {
     const data = await loginUser({ email, password });
 

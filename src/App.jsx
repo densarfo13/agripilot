@@ -576,6 +576,28 @@ export default function App() {
     };
   }, []);
 
+  // Go-live audit — listing expiry sweep. Runs once on boot via
+  // a microtask so it never blocks render. Idempotent: rerunning
+  // is a no-op once everything stale is already flagged. Lazy-
+  // imported so a problem inside marketStore can never break boot.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(async () => {
+      if (cancelled) return;
+      try {
+        const m = await import('./market/marketStore.js');
+        const changed = (m.sweepExpiredListings || (() => 0))();
+        if (changed > 0) {
+          try {
+            const a = await import('./analytics/analyticsStore.js');
+            a.trackEvent?.('listing_expiry_sweep', { changed });
+          } catch { /* swallow */ }
+        }
+      } catch { /* never propagate */ }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <BrowserRouter>
       <NetworkProvider>

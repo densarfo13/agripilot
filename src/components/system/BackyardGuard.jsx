@@ -33,24 +33,50 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 export default function BackyardGuard({ children }) {
   const navigate = useNavigate();
   let profile = null;
-  try { profile = useProfile()?.profile || null; } catch { profile = null; }
+  let profileLoading = false;
+  let profileInitialized = true;
+  try {
+    const ctx = useProfile() || {};
+    profile = ctx.profile || null;
+    profileLoading = !!ctx.loading;
+    profileInitialized = ctx.initialized !== false;
+  } catch {
+    profile = null;
+    profileLoading = false;
+    profileInitialized = true;
+  }
 
   const country  = profile?.country || profile?.countryCode || null;
   const farmType = profile?.farmType || profile?.type || null;
 
+  // Defer the experience check until ProfileContext has a real
+  // answer. Without this, a backyard user who deep-links into
+  // /sell can see one frame of the farmer surface before the
+  // redirect fires (the profile load races the route mount).
+  const profileReady = profileInitialized && !profileLoading
+    && (profile !== null || profileInitialized);
+
   let isBackyard = false;
-  try { isBackyard = shouldUseBackyardExperience(country, farmType); }
-  catch { isBackyard = false; }
+  try {
+    if (profileReady) {
+      isBackyard = shouldUseBackyardExperience(country, farmType);
+    }
+  } catch { isBackyard = false; }
 
   useEffect(() => {
+    if (!profileReady) return;
     if (!isBackyard) return;
     try { trackEvent('backyard_guard_redirect', { country, farmType }); }
     catch { /* swallow */ }
     try { navigate('/home', { replace: true }); }
     catch { /* swallow */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBackyard]);
+  }, [profileReady, isBackyard]);
 
+  // While profile is still loading, render nothing rather than
+  // flash the underlying farmer page. ProtectedLayout already
+  // shows a spinner above us, so a blank child here is invisible.
+  if (!profileReady) return null;
   if (isBackyard) return null;
   return children || null;
 }

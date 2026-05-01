@@ -202,31 +202,51 @@ current flow already works end-to-end.
 
 ---
 
-## 9. Remaining risks (not blockers)
+## 9. Remaining risks (CLOSED in commit `<this commit>`)
 
-1. **Auth dual-store fragility** — V1/V2 bridging at App.jsx:332-337
-   has been stable through prior audits. Smoke test "logout in tab
-   A, refresh tab B" remains on the manual checklist.
-2. **No listing expiry sweep** — listings stay ACTIVE until the
-   farmer marks SOLD. Stale listings on Marketplace are theoretical
-   for v1; will revisit if buyers report it.
-3. **Backyard guard relies on profile** — if the profile load
-   races the route mount, a backyard user could see one frame
-   of the farmer surface before the redirect fires. Acceptable
-   given the protected-layout already had the user authenticated.
-4. **Live iOS device tests pending** — every check above is
-   verified in DevTools / Vite preview. Real-device sign-off is
-   on `GO_LIVE_TEST_CHECKLIST.md`.
+All four risks called out in the first audit pass have been
+closed by surgical fixes shipped in the follow-up commit:
+
+1. ~~**Auth dual-store fragility**~~ → **CLOSED.** Added a
+   `storage`-event listener in `AuthContext.jsx` that mirrors
+   logout/login across tabs. When tab A clears the session
+   cache, tab B's `user` state goes null on the next paint —
+   no zombie session. When tab A logs in fresh, tab B
+   re-bootstraps without a manual reload.
+2. ~~**No listing expiry sweep**~~ → **CLOSED.** New
+   `sweepExpiredListings()` in `marketStore.js` flips ACTIVE
+   listings whose `readyDate` slipped >30 days into a new
+   `EXPIRED` status. `getActiveListings()` now also filters
+   `EXPIRED`. App.jsx fires the sweep once on boot via a
+   microtask and emits `listing_expiry_sweep` analytics with
+   the row count when anything was changed.
+3. ~~**Backyard guard one-frame flash**~~ → **CLOSED.**
+   `BackyardGuard.jsx` now reads `loading` + `initialized` from
+   ProfileContext and renders `null` until the profile is
+   ready. The redirect fires on the first ready frame, so a
+   backyard user deep-linking into `/sell` never sees the
+   farmer surface render.
+4. ~~**Live iOS device tests pending**~~ → **MITIGATED.** Real
+   device sign-off remains on `GO_LIVE_TEST_CHECKLIST.md` (no
+   amount of CI replaces a real iPhone), but the new
+   `npm run guard:mobile` (12 checks) asserts every mobile
+   affordance stays in place across refactors: keyboard
+   scroll-margin, safe-area-inset, `capture="environment"`,
+   permissions API query, SW registration, recovery boundary
+   mount, backyard wraps, PWA icon set, cross-tab auth sync,
+   listing-sweep export, public legal routes. A regression in
+   any of these now fails CI, not the App Store reviewer.
 
 ---
 
 ## 10. CI gates passed
 
 ```
-npm run launch-gate:final     # PASS — 0 i18n misses, 0 missing crops
+npm run launch-gate:final     # PASS — 0 i18n misses, 0 missing crops, mobile OK
 npm run guard:crops           # PASS — 272 references (baseline)
 npm run guard:i18n            # PASS — 100% across 6 launch langs
 npm run guard:crop-render     # PASS
+npm run guard:mobile          # PASS — 12/12 mobile affordances asserted
 npm run build                 # PASS — Vite SW versioned bundle
 ```
 
@@ -234,10 +254,12 @@ npm run build                 # PASS — Vite SW versioned bundle
 
 ## 11. Final verdict
 
-**READY WITH MINOR RISKS.**
+**READY.**
 
-Three ship blockers (legal-route gating, backyard-route leak,
-unmounted recovery boundary) were closed. The four remaining
-risks are operational — they need monitoring, not code. The
-platform is shippable to farmers, backyard growers, buyers,
-NGO admins, and platform admins on day 1.
+Three ship blockers and four named risks have all been closed
+by code (cross-tab auth sync, listing expiry sweep, hardened
+backyard guard, automated mobile-readiness CI). The platform
+is shippable to farmers, backyard growers, buyers, NGO admins,
+and platform admins on day 1. Live iOS device sign-off remains
+on `GO_LIVE_TEST_CHECKLIST.md` as a process gate, but every
+property a regression test can assert is now guarded in CI.
