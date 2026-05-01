@@ -111,11 +111,13 @@ const DEFAULTS = Object.freeze({
   //   • Get help applying    — fires `farroway:open_pilot_help`
   //     window event consumed by OrganizationPilotCTA's listener
   //   • Remind me later      — bookmarks via fundingBookmarks
-  // Flag-off path: existing anchor + `Explore this option` copy
-  // unchanged. Existing navigation routes (/funding,
-  // /opportunities, /opportunities/:id, /admin/funding,
-  // /ngo/funding-readiness) stay verbatim.
-  guidedFundingApplication: false,
+  // Flag-off path: existing anchor + the legacy CTA copy. Existing
+  // navigation routes (/funding, /opportunities, /opportunities/:id,
+  // /admin/funding, /ngo/funding-readiness) stay verbatim.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever: set VITE_FARROWAY_FEATURE_GUIDEDFUNDINGAPPLICATION=0
+  // at build time to revert to the direct external-link CTA.
+  guidedFundingApplication: true,
   // Monetization (free | pro): when on, surfaces the UpgradePrompt
   // below scan results, applies tier-aware scan-history caps via
   // `monetization/scanLimits`, and lets pro-only sections wrap in
