@@ -156,6 +156,41 @@ const checks = [
     why:  'Spec §15 — never show a language without translations',
     pass: () => /_isLanguageSupported|REQUIRED_KEYS/.test(read('src/components/LanguageSelector.jsx')),
   },
+  {
+    name: 'multiExperience store exports core actions',
+    why:  'Multi-experience: garden + farm coexist; switch never overwrites',
+    pass: () => {
+      const f = read('src/store/multiExperience.js');
+      return /export function getActiveExperience/.test(f)
+          && /export function setActiveExperience/.test(f)
+          && /export function switchExperience/.test(f)
+          && /export function addGarden/.test(f)
+          && /export function addFarm/.test(f)
+          && /export function removeExperience/.test(f)
+          && /SWITCH_EVENT/.test(f);
+    },
+  },
+  {
+    name: 'useExperience hook subscribes to switch event',
+    why:  'Components must re-render when the user switches between garden + farm',
+    pass: () => {
+      const f = read('src/hooks/useExperience.js');
+      return /SWITCH_EVENT/.test(f) && /addEventListener/.test(f);
+    },
+  },
+  {
+    name: 'ExperienceSwitcher mounted in ProtectedLayout',
+    why:  'Users with both a garden and a farm need a visible switch control',
+    pass: () => {
+      const layout = read('src/layouts/ProtectedLayout.jsx');
+      return /<ExperienceSwitcher\s*\/>/.test(layout);
+    },
+  },
+  {
+    name: 'BottomTabNav reacts to active experience',
+    why:  'Switching experience must instantly flip nav between FARM_TABS / BACKYARD_TABS',
+    pass: () => /useExperience/.test(read('src/components/farmer/BottomTabNav.jsx')),
+  },
 ];
 
 const failed = [];

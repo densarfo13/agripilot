@@ -27,6 +27,11 @@ import { getBackyardLabel } from '../../experience/backyardExperience.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { resolveRegionUX } from '../../core/regionUXEngine.js';
 import { getNavigationItems } from '../../navigation/getNavigationItems.js';
+// Multi-experience selector — when the active experience is
+// 'garden', the nav switches to BACKYARD_TABS regardless of the
+// profile's farmType, so a user with both a garden and a farm
+// flips nav surfaces instantly on switch.
+import useExperience from '../../hooks/useExperience.js';
 
 // Farm-experience tabs (Ghana / Nigeria / Kenya / India / etc).
 const FARM_TABS = [
@@ -93,7 +98,27 @@ export default function BottomTabNav() {
   try { profile = useProfile()?.profile || null; }
   catch { /* outside ProfileContext (e.g. login page) */ }
   const country = profile?.country || profile?.countryCode || null;
-  const farmType = profile?.farmType || null;
+  // Multi-experience: when the user has both a garden and a farm
+  // and has explicitly switched, the active entity's farmType
+  // wins over the profile's farmType so the nav reflects the
+  // current context. Falls through to the profile when no active
+  // entity is set (single-experience users are unaffected).
+  let farmType = profile?.farmType || null;
+  try {
+    const exp = useExperience();
+    if (exp && exp.activeEntity && exp.activeEntity.farmType) {
+      farmType = exp.activeEntity.farmType;
+    } else if (exp && exp.experience === exp.EXPERIENCE.GARDEN) {
+      farmType = 'backyard';
+    } else if (exp && exp.experience === exp.EXPERIENCE.FARM) {
+      // Only override if the profile farmType IS a backyard one;
+      // otherwise leave the existing value (some farms ship as
+      // 'commercial', not 'small_farm').
+      if (!farmType || farmType === 'backyard' || farmType === 'home_garden') {
+        farmType = 'small_farm';
+      }
+    }
+  } catch { /* outside hook scope — fall back to profile */ }
   const isBackyard = shouldUseBackyardExperience(country, farmType);
 
   // Region UX System path (feature-flag gated). When on, derive

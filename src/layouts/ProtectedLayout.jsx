@@ -9,6 +9,10 @@ import BottomTabNav from '../components/farmer/BottomTabNav.jsx';
 // when `regionUxSystem` is off OR there's nothing to surface
 // for the active country.
 import RegionBannerHost from '../components/system/RegionBannerHost.jsx';
+// Multi-experience selector (self-suppresses when the user has
+// only one experience). Lets a single user flip between their
+// garden and their farm without re-onboarding.
+import ExperienceSwitcher from '../components/system/ExperienceSwitcher.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
@@ -44,8 +48,9 @@ export default function ProtectedLayout() {
                 <LanguageSelector />
               </div>
 
-              {/* Right: mode + voice + logout */}
+              {/* Right: experience switcher + mode + voice + logout */}
               <div style={S.headerRight}>
+                {isFarmer && <ExperienceSwitcher />}
                 {isFarmer && allowedModes.length > 1 && (
                   <button
                     onClick={() => setMode(mode === 'basic' ? 'standard' : 'basic')}

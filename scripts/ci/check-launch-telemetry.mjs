@@ -58,6 +58,8 @@ const REQUIRED_EVENTS = [
     why: 'Scan vs Farm split — primary funnel signal.' },
   { name: 'onboarding_entry_skipped', surface: 'OnboardingEntry.jsx',
     why: 'Returning-user shortcut — confirms repair / cached-session paths fire.' },
+  { name: 'experience_switch_tap',    surface: 'ExperienceSwitcher.jsx',
+    why: 'Multi-experience users tap the chip to switch between garden + farm.' },
 ];
 
 function listFiles(dir, acc) {

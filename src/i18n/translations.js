@@ -12497,6 +12497,10 @@ const T = {
   'ngo.empty.farmers.title':                   { en: 'No farmers yet', fr: 'Aucun agriculteur pour l\u2019instant', sw: 'Hakuna wakulima bado', ha: 'Babu manoma tukuna', tw: 'Akuafoɔ biara nni hɔ ɛnnɛ', hi: 'अभी कोई किसान नहीं' },
   'ngo.empty.farmers.copy':                    { en: 'Invite farmers to start tracking program activity.', fr: 'Invitez des agriculteurs pour commencer à suivre l\u2019activité du programme.', sw: 'Alika wakulima ili kuanza kufuatilia shughuli za programu.', ha: 'Gayyaci manoma don fara bin diddigin ayyukan shirin.', tw: 'To akuafoɔ nsa ma wɔmfi ase ntu nhyehyɛeɛ no anammɔn akyi.', hi: 'कार्यक्रम गतिविधि ट्रैक करने के लिए किसानों को आमंत्रित करें।' },
   'sync.savedOnDevice':                        { en: 'Saved on this device. We\u2019ll sync when connection improves.', fr: 'Enregistré sur cet appareil. Synchronisation à la reprise du réseau.', sw: 'Imehifadhiwa kwenye kifaa hiki. Tutasawazisha mtandao utakaporudi.', ha: 'An adana akan na\u2019urar. Za mu daidaita lokacin da haɗin ya inganta.', tw: 'Akora wɔ saa pɔn yi so. Yɛbɛyɛ sync sɛ nkitahodi no ye.', hi: 'इस डिवाइस पर सहेजा गया। कनेक्शन सुधरने पर सिंक करेंगे।' },
+
+  // ─── Multi-experience switcher (header chip) ────────────────────
+  'experience.garden':                         { en: 'Garden', fr: 'Jardin', sw: 'Bustani', ha: 'Lambu', tw: 'Turo', hi: 'बगीचा' },
+  'experience.farm':                           { en: 'Farm',   fr: 'Ferme',  sw: 'Shamba',  ha: 'Gona',  tw: 'Afuo',  hi: 'खेत' },
 };
 
 export default T;
