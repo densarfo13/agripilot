@@ -88,6 +88,11 @@ const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboard
 // U.S. experience selector — sits in front of both backyard
 // and farm onboarding routes for U.S. users.
 const USExperienceSelection = lazy(() => import('./pages/onboarding/USExperienceSelection.jsx'));
+// Scan detection (FEATURE_SCAN_DETECTION). Coexists with the
+// existing /scan-crop surface; the new pages bounce there when
+// the flag is off so deep links never strand the user.
+const ScanPage       = lazy(() => import('./pages/ScanPage.jsx'));
+const ScanResultPage = lazy(() => import('./pages/ScanResultPage.jsx'));
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -681,6 +686,11 @@ export default function App() {
                 onward to /onboarding/backyard or /onboarding (V3)
                 based on choice. */}
             <Route path="/onboarding/us-experience" element={<USExperienceSelection />} />
+            {/* Scan detection — feature-flag gated. Pages
+                self-bounce to /scan-crop when off so deep links
+                stay reachable. */}
+            <Route path="/scan"                     element={<ScanPage />} />
+            <Route path="/scan/result/:scanId"       element={<ScanResultPage />} />
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
                    element={

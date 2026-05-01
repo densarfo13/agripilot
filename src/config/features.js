@@ -58,6 +58,21 @@ const DEFAULTS = Object.freeze({
   // flow runs. Choice persists so returning users are not asked
   // again. Off by default; non-U.S. flows are unaffected either way.
   usExperienceSelection: false,
+  // Scan detection (spec): enables the new /scan route +
+  // ScanCapture/Result/History components + scanDetectionEngine
+  // fallback. Coexists with the existing /scan-crop surface;
+  // VoiceAssistant's "scan" command still routes to /scan-crop.
+  scanDetection: false,
+  // Scan API enabled: when off, `scanDetectionEngine` returns the
+  // rule-based safe fallback without hitting any backend. Flip to
+  // true once `/api/scan/analyze` lands on the server. Independent
+  // of `scanDetection` so the UI can ship before the API.
+  scanApiEnabled: false,
+  // Scan-to-task: enables the "Add to Today's Plan" button on
+  // the result card and creates up to 2 follow-up tasks from a
+  // scan. Off by default so the new scan surface ships read-only
+  // until the task pipeline is verified.
+  scanToTask: false,
 });
 
 function envOverride(name) {
