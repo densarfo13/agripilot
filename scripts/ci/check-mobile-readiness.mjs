@@ -222,6 +222,34 @@ const checks = [
           && /BACKYARD_LABELS/.test(f);
     },
   },
+  {
+    name: 'strictTranslator ships screen-level fallback',
+    why:  'Final UI launch §1 \u2014 if any key on a screen is missing, render the whole screen in English',
+    pass: () => {
+      const f = read('src/i18n/strictTranslator.js');
+      return /export function validateScreen/.test(f)
+          && /export function useScreenTranslator/.test(f);
+    },
+  },
+  {
+    name: 'home.task.remindLater i18n key wired in HomeTaskEnhancer',
+    why:  'Final UI launch §3 \u2014 secondary CTA standardised to "Remind me later"',
+    pass: () => /home\.task\.remindLater/.test(read('src/components/home/HomeTaskEnhancer.jsx'))
+              && /home\.task\.remindLater/.test(read('src/i18n/translations.js')),
+  },
+  {
+    name: 'BottomTabNav uses nav.funding (not nav.opportunities) for the Funding tab',
+    why:  'Final UI launch §6 \u2014 nav label keys aligned to spec',
+    pass: () => /labelKey:\s*['"]nav\.funding['"]/.test(read('src/components/farmer/BottomTabNav.jsx')),
+  },
+  {
+    name: 'ProfileCompletionPrompt ships the spec copy + progress indicator',
+    why:  'Final UI launch §5 \u2014 "Finish setup to get better recommendations" + progress bar',
+    pass: () => {
+      const f = read('src/components/home/ProfileCompletionPrompt.jsx');
+      return /Finish setup/.test(f) && /profile-completion-progress/.test(f);
+    },
+  },
 ];
 
 const failed = [];

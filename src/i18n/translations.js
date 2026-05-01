@@ -11612,9 +11612,11 @@ const T = {
   // Nav-item labels for the backyard / generic / farm variants.
   // The existing nav.home / nav.myFarm / nav.tasks / nav.progress
   // are already defined elsewhere in this file.
-  'nav.myGarden': { en: 'My Garden', fr: 'Mon jardin', sw: 'Bustani yangu', ha: 'Lambuna', tw: 'Me turo', hi: 'मेरा बगीचा' },
-  'nav.ask':      { en: 'Ask',       fr: 'Demander',   sw: 'Uliza',          ha: 'Tambaya', tw: 'Bisa',    hi: 'पूछें' },
-  'nav.scan':     { en: 'Scan',      fr: 'Scanner',    sw: 'Skani',          ha: 'Duba',    tw: 'Hwehwɛ',  hi: 'स्कैन' },
+  // (nav.myGarden / nav.ask / nav.scan canonical entries live
+  // in the "GLOBAL EXPANSION" block above at lines ~11460-11472
+  // with full 7-language coverage including Spanish. The
+  // duplicates that previously sat here have been removed —
+  // last-write-wins was clobbering the more complete entries.)
   'nav.funding':  { en: 'Funding',   fr: 'Financement', sw: 'Ufadhili',      ha: 'Tallafi', tw: 'Sika',    hi: 'वित्त' },
   'nav.sell':     { en: 'Sell',      fr: 'Vendre',     sw: 'Uza',            ha: 'Sayar',   tw: 'Tɔn',     hi: 'बेचें' },
 
@@ -12370,6 +12372,11 @@ const T = {
   'home.task.urgency.thisWeek':                { en: 'This week',                               fr: 'Cette semaine',                               sw: 'Wiki hii',                                   ha: 'Wannan mako',                              tw: 'Saa nnawɔtwe yi',                             hi: 'इस सप्ताह' },
 
   'home.task.markDone':                        { en: 'Mark as done',                            fr: 'Marquer comme fait',                          sw: 'Weka kama imefanyika',                       ha: 'Yi alama: an yi',                          tw: 'Hyɛ: wɔayɛ',                                   hi: 'पूर्ण के रूप में चिह्नित करें' },
+  // Final UI launch spec §3: secondary CTA standardised to
+  // "Remind me later". The legacy `home.task.skip` key stays
+  // for back-compat with any deep-linked surface that still
+  // references it; new call sites should use `home.task.remindLater`.
+  'home.task.remindLater':                     { en: 'Remind me later',                         fr: 'Me rappeler plus tard',                       sw: 'Nikumbushe baadaye',                         ha: 'Tunatar da ni daga baya',                  tw: 'Bɔ me amane akyiri yi',                       hi: 'मुझे बाद में याद दिलाएँ' },
   'home.task.skip':                            { en: 'Skip for now',                            fr: 'Passer pour l\u2019instant',                  sw: 'Ruka kwa sasa',                              ha: 'Tsallake yanzu',                           tw: 'Buw seesei',                                   hi: 'अभी छोड़ें' },
 
   'home.task.feedback.done':                   { en: 'Done \u2014 nice work. Your progress just moved.', fr: 'Fait \u2014 bien joué. Vos progrès viennent d\u2019avancer.', sw: 'Imefanyika \u2014 vizuri. Maendeleo yako yamesonga.', ha: 'An yi \u2014 aiki mai kyau. Cigaba ya ci gaba.', tw: 'Wɔayɛ \u2014 adwuma pa. Wo nkɔsoɔ akɔ animu.', hi: 'पूर्ण \u2014 बढ़िया। आपकी प्रगति आगे बढ़ी।' },
@@ -12430,9 +12437,12 @@ const T = {
   'onb.plant.rice':                            { en: 'Rice',                                    fr: 'Riz',                                         sw: 'Mchele',                                     ha: 'Shinkafa',                                 tw: 'Ɛmo',                                          hi: 'चावल' },
   'onb.plant.beans':                           { en: 'Beans',                                   fr: 'Haricots',                                    sw: 'Maharagwe',                                  ha: 'Wake',                                     tw: 'Adua',                                         hi: 'बीन्स' },
 
-  'onb.complete.title':                        { en: 'Add a few more details',                  fr: 'Ajoutez quelques détails',                    sw: 'Ongeza maelezo machache zaidi',              ha: 'Ƙara wasu cikakkun bayanai',               tw: 'Fa nsɛm kakra ka ho',                         hi: 'कुछ और विवरण जोड़ें' },
-  'onb.complete.copy':                         { en: 'Sharing your farm size and crop stage gives us sharper daily tips. Takes a minute.', fr: 'Partager la taille de votre ferme et l\u2019étape de la culture affine nos conseils quotidiens. Cela prend une minute.', sw: 'Kushiriki ukubwa wa shamba na hatua ya zao kunatupa ushauri wa kila siku ulio sahihi zaidi. Inachukua dakika.', ha: 'Raba girman gonarka da matakin amfanin gona yana ba mu shawarwarin yau da kullum mafi inganci. Yana ɗaukar minti ɗaya.', tw: 'Sɛ woka w\u2019afuo kɛseyɛ ne aduane no nhyehyɛeɛ ho asɛm a, yɛnya afotuɔ a emu yɛ den. Ɛfa simma 1.', hi: 'अपने खेत का आकार और फसल अवस्था साझा करने से दैनिक सुझाव और सटीक होते हैं। एक मिनट लगता है।' },
-  'onb.complete.cta':                          { en: 'Add details',                             fr: 'Ajouter des détails',                         sw: 'Ongeza maelezo',                             ha: 'Ƙara cikakkun bayanai',                    tw: 'Fa nsɛm ka ho',                               hi: 'विवरण जोड़ें' },
+  // Final UI launch spec §5: copy aligned to "Complete your
+  // configuration" / "Finish setup to get better recommendations"
+  // / "Finish setup".
+  'onb.complete.title':                        { en: 'Complete your configuration',             fr: 'Terminez votre configuration',                sw: 'Kamilisha usanidi wako',                     ha: 'Kammala saiti naka',                       tw: 'Wie wo nhyehyɛeɛ no',                          hi: 'अपना कॉन्फ़िगरेशन पूरा करें' },
+  'onb.complete.copy':                         { en: 'Finish setup to get better recommendations.', fr: 'Terminez la configuration pour de meilleures recommandations.', sw: 'Maliza usanidi ili upate mapendekezo bora.', ha: 'Kammala saitin don samun shawarwari mafi kyau.', tw: 'Wie nhyehyɛeɛ no na woanya afotuɔ a ɛyɛ den.', hi: 'बेहतर सुझाव पाने के लिए सेटअप पूरा करें।' },
+  'onb.complete.cta':                          { en: 'Finish setup',                            fr: 'Terminer la configuration',                   sw: 'Maliza usanidi',                             ha: 'Kammala saiti',                            tw: 'Wie nhyehyɛeɛ',                               hi: 'सेटअप पूरा करें' },
 
   'onb.entry.recommended':                     { en: 'Recommended',                             fr: 'Recommandé',                                  sw: 'Inapendekezwa',                              ha: 'An ba da shawara',                         tw: 'Yɛrekamfo',                                    hi: 'अनुशंसित' },
   'onb.tile.farm.compactCopy':                 { en: 'Just crop + location \u2014 30 seconds.', fr: 'Juste culture + lieu \u2014 30 secondes.',    sw: 'Zao + eneo tu \u2014 sekunde 30.',           ha: 'Amfanin gona + wuri kawai \u2014 daƙiƙa 30.', tw: 'Aduane + beaeɛ \u2014 simma 30.',          hi: 'बस फसल + स्थान \u2014 30 सेकंड।' },

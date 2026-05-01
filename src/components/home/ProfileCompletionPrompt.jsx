@@ -110,6 +110,23 @@ export default function ProfileCompletionPrompt({ style }) {
     return out;
   }, [farm]);
 
+  // Final UI launch spec §5: progress indicator. We score the
+  // user's profile completeness against five canonical fields a
+  // good farm/garden record carries: crop, country/region,
+  // farmSize, cropStage, name. Each filled field = 20 %.
+  const progressPct = useMemo(() => {
+    if (!farm) return 0;
+    // Canonical field is `crop` (per cropAliases.js + canonicalizeFarmPayload).
+    const filled = [
+      Boolean(farm.crop),
+      Boolean(farm.country || farm.countryCode),
+      Boolean(farm.farmSize) || Boolean(farm.gardenSizeCategory),
+      Boolean(farm.cropStage) || Boolean(farm.plantingStatus),
+      Boolean(farm.name),
+    ].filter(Boolean).length;
+    return Math.round((filled / 5) * 100);
+  }, [farm]);
+
   const eligible = flagOn
     && !dismissed
     && farm
@@ -153,12 +170,48 @@ export default function ProfileCompletionPrompt({ style }) {
       <span style={S.icon} aria-hidden="true">{'\u270F\uFE0F'}</span>
       <div style={S.body}>
         <span style={S.title}>
-          {tStrict('onb.complete.title', 'Add a few more details')}
+          {tStrict('onb.complete.title', 'Complete your configuration')}
         </span>
         <span style={S.copy}>
           {tStrict('onb.complete.copy',
-            'Sharing your farm size and crop stage gives us sharper daily tips. Takes a minute.')}
+            'Finish setup to get better recommendations.')}
         </span>
+        {/* Final UI launch spec §5: visible progress indicator
+            so the user knows how close they are. Five canonical
+            fields × 20 %. */}
+        <div
+          style={{
+            marginTop: 4,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+          data-testid="profile-completion-progress"
+          data-progress={progressPct}
+        >
+          <div
+            style={{
+              flex: 1,
+              height: 6,
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.10)',
+              overflow: 'hidden',
+            }}
+            aria-hidden="true"
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.max(0, Math.min(100, progressPct))}%`,
+                background: '#22C55E',
+                transition: 'width 200ms ease-out',
+              }}
+            />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>
+            {progressPct}%
+          </span>
+        </div>
         <div style={S.rowBtns}>
           <button
             type="button"
@@ -166,7 +219,7 @@ export default function ProfileCompletionPrompt({ style }) {
             style={S.primary}
             data-testid="profile-completion-start"
           >
-            {tStrict('onb.complete.cta', 'Add details')}
+            {tStrict('onb.complete.cta', 'Finish setup')}
           </button>
           <button
             type="button"

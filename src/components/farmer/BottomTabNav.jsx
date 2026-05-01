@@ -39,7 +39,11 @@ const FARM_TABS = [
   { key: 'farm',          path: '/my-farm',       icon: NAV_ICONS.farm,          labelKey: 'nav.myFarm',        fallback: 'Farm' },
   { key: 'tasks',         path: '/tasks',         icon: NAV_ICONS.tasks,         labelKey: 'nav.tasks',         fallback: 'Tasks' },
   { key: 'progress',      path: '/progress',      icon: NAV_ICONS.progress,      labelKey: 'nav.progress',      fallback: 'Progress' },
-  { key: 'opportunities', path: '/opportunities', icon: NAV_ICONS.opportunities, labelKey: 'nav.opportunities', fallback: 'Funding' },
+  // Final UI launch spec §6: standardise the funding tab to use
+  // `nav.funding` (the canonical spec key). The legacy
+  // `nav.opportunities` key stays in translations.js for any
+  // external link or analytics tag that references it.
+  { key: 'opportunities', path: '/opportunities', icon: NAV_ICONS.opportunities, labelKey: 'nav.funding', fallback: 'Funding' },
   { key: 'sell',          path: '/sell',          icon: NAV_ICONS.sell,          labelKey: 'nav.sell',          fallback: 'Sell' },
 ];
 

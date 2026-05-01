@@ -503,7 +503,7 @@ export default function HomeTaskEnhancer({
             style={S.ghost}
             data-testid="home-task-skip"
           >
-            {tStrict('home.task.skip', 'Skip for now')}
+            {tStrict('home.task.remindLater', 'Remind me later')}
           </button>
         </div>
       </section>
@@ -542,7 +542,7 @@ export default function HomeTaskEnhancer({
                     style={S.optActionBtn}
                     data-testid={`home-task-opt-skip-${d.idx}`}
                   >
-                    {tStrict('home.task.skip', 'Skip for now')}
+                    {tStrict('home.task.remindLater', 'Remind me later')}
                   </button>
                 </div>
               </div>

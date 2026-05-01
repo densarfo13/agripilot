@@ -264,8 +264,12 @@ export default function FarmerOverviewTab() {
                       lang={lang}
                     />
                   ) : (
+                    // Final UI launch spec §2: cap legacy V1 task list
+                    // at 1 primary + 2 collapsed (3 total). Removes
+                    // task-overload that the V2 path already fixes
+                    // via HomeTaskEnhancer. Flag-on path is unaffected.
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      {lifecycle.recommendations.slice(0, 4).map((rec, i) => (
+                      {lifecycle.recommendations.slice(0, 3).map((rec, i) => (
                         <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
                           <span style={{ color: '#16a34a', fontWeight: 600, flexShrink: 0 }}>-</span>
                           <div>
