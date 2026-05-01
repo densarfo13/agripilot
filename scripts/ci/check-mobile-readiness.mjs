@@ -445,6 +445,54 @@ const checks = [
           && /isBackyard \?\s*EXPERIENCE\.GARDEN|isBackyard\s*&&\s*gardens\.length/.test(f);
     },
   },
+  {
+    name: 'migrateLegacyFarms ships dual-store split + backup + sentinel',
+    why:  'Multi-role architecture \u00a72 \u2014 first-class gardens + farms arrays',
+    pass: () => {
+      const f = read('src/utils/migrateLegacyFarms.js');
+      return /export function migrateLegacyFarms/.test(f)
+          && /farroway_legacy_farms_backup/.test(f)
+          && /farroway_full_architecture_migrated/.test(f)
+          && /farroway_gardens/.test(f)
+          && /farroway_farms/.test(f);
+    },
+  },
+  {
+    name: 'activeContext resolver covers grower + non-grower roles',
+    why:  'Multi-role architecture \u00a73 \u2014 single resolver across every role',
+    pass: () => {
+      const f = read('src/core/activeContext.js');
+      return /export function getActiveContext/.test(f)
+          && /NON_GROWER_ROLE_TO_EXPERIENCE/.test(f)
+          && /buyer/.test(f)
+          && /ngo_admin/.test(f)
+          && /platform_admin/.test(f);
+    },
+  },
+  {
+    name: 'repairActiveContext orchestrates migrate + repair + landsize',
+    why:  'Multi-role architecture \u00a714 \u2014 single boot-time entry',
+    pass: () => {
+      const f = read('src/utils/repairActiveContext.js');
+      return /migrateLegacyFarms/.test(f)
+          && /repairExperience/.test(f)
+          && /repairLandSizeBase/.test(f);
+    },
+  },
+  {
+    name: 'AuthContext bootstrap calls repairActiveContext',
+    why:  'Multi-role architecture \u00a74 \u2014 single boot-time chain replaces ad-hoc calls',
+    pass: () => /repairActiveContext/.test(read('src/context/AuthContext.jsx')),
+  },
+  {
+    name: 'farrowayLocal dual-writes new gardens/farms arrays after migration',
+    why:  'Multi-role architecture \u2014 new writes mirror to first-class arrays',
+    pass: () => {
+      const f = read('src/store/farrowayLocal.js');
+      return /_dualWriteToNewArrays/.test(f)
+          && /farroway_full_architecture_migrated/.test(f);
+    },
+  },
 ];
 
 const failed = [];

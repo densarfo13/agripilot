@@ -105,33 +105,20 @@ export function AuthProvider({ children }) {
       if (isDev) console.warn('[AUTH] repairSession unavailable:', err && err.message);
     }
 
-    // Final spec §4: repair the multi-experience state pointers
-    // so a stale pin / deleted active row / corrupted blob can
-    // never leave the app pointed at nothing renderable. Lazy-
-    // imported so a problem here can never break boot.
+    // Multi-role architecture migration: single boot-time
+    // entry that runs the legacy-farms migration (idempotent,
+    // sentinel-guarded) → repairExperience → repairLandSizeBase
+    // in order. Each step bails on the explicit-logout flag so
+    // the chain is a no-op after Logout. Lazy-imported so a
+    // problem in any step can never break boot.
     try {
-      const { repairExperience } = await import('../utils/repairExperience.js');
-      const xpActions = repairExperience();
-      if (isDev && xpActions && xpActions.length) {
-        console.log('[AUTH] repairExperience applied:', xpActions);
+      const { repairActiveContext } = await import('../utils/repairActiveContext.js');
+      const ctxActions = await repairActiveContext();
+      if (isDev && ctxActions && ctxActions.length) {
+        console.log('[AUTH] repairActiveContext applied:', ctxActions);
       }
     } catch (err) {
-      if (isDev) console.warn('[AUTH] repairExperience unavailable:', err && err.message);
-    }
-
-    // Land-size base-unit spec: idempotent migration for any
-    // historical farm rows that pre-date the landSizeSqFt +
-    // displayUnit fields, plus the >10k-acres heuristic that
-    // flips mislabeled rows back to sqft. Lazy-imported so a
-    // problem here can never break boot.
-    try {
-      const { repairLandSizeBase } = await import('../lib/units/landSizeBase.js');
-      const lsActions = repairLandSizeBase();
-      if (isDev && lsActions && lsActions.length) {
-        console.log('[AUTH] repairLandSizeBase applied:', lsActions);
-      }
-    } catch (err) {
-      if (isDev) console.warn('[AUTH] repairLandSizeBase unavailable:', err && err.message);
+      if (isDev) console.warn('[AUTH] repairActiveContext unavailable:', err && err.message);
     }
 
     // ─── Step 0: Instant restore from cache ──────────────────

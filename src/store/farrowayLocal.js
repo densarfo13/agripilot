@@ -131,6 +131,45 @@ export function getFeedback() {
   return readJson(K.FEEDBACK, []);
 }
 
+// ─── Multi-role dual-write ─────────────────────────────────────────
+// After the migration sentinel is set, every saveFarm / updateFarm
+// also writes the row to farroway_gardens (backyard rows) or
+// farroway_farms (every other type). Pre-migration writes are
+// picked up by migrateLegacyFarms on the next boot.
+function _isMigrated() {
+  if (!hasStorage()) return false;
+  try { return window.localStorage.getItem('farroway_full_architecture_migrated') === 'true'; }
+  catch { return false; }
+}
+
+function _isGardenFarmType(t) {
+  const s = String(t || '').toLowerCase();
+  return s === 'backyard' || s === 'home_garden' || s === 'home';
+}
+
+function _dualWriteToNewArrays(farm) {
+  if (!_isMigrated()) return;
+  if (!hasStorage()) return;
+  const targetKey = _isGardenFarmType(farm?.farmType)
+    ? 'farroway_gardens'
+    : 'farroway_farms';
+  try {
+    const raw = window.localStorage.getItem(targetKey);
+    let arr;
+    try { arr = raw ? JSON.parse(raw) : []; } catch { arr = []; }
+    if (!Array.isArray(arr)) arr = [];
+    const idx = arr.findIndex((r) => r && String(r.id) === String(farm.id));
+    const decorated = {
+      ...farm,
+      experience: _isGardenFarmType(farm?.farmType) ? 'garden' : 'farm',
+      userId: farm?.userId || null,
+    };
+    if (idx >= 0) arr[idx] = decorated;
+    else          arr.push(decorated);
+    window.localStorage.setItem(targetKey, JSON.stringify(arr));
+  } catch { /* swallow — legacy array is still authoritative */ }
+}
+
 // ─── Farms ─────────────────────────────────────────────────────────
 function genId() {
   try {
@@ -242,6 +281,13 @@ export function saveFarm({
   const farms = getFarms();
   farms.push(farm);
   writeJson(K.FARMS, farms);
+  // Multi-role architecture spec: dual-write to the first-class
+  // arrays AFTER the legacy write succeeds. Backyard rows land
+  // in farroway_gardens, every other type in farroway_farms.
+  // Self-suppresses when the migration sentinel hasn't been set
+  // yet — bootstrap's migrateLegacyFarms will pick the row up
+  // on next boot.
+  _dualWriteToNewArrays(farm);
   // First farm becomes active automatically; caller can also opt in
   // explicitly via setActive so "Add Farm" can toggle it.
   if (setActive || !getActiveFarmId()) setActiveFarmId(farm.id);
@@ -296,6 +342,9 @@ export function updateFarm(farmId, patch = {}) {
   }
   farms[idx] = after;
   writeJson(K.FARMS, farms);
+  // Multi-role dual-write — keep the new first-class arrays in
+  // sync with the legacy partition.
+  _dualWriteToNewArrays(after);
   logEvent({
     farmId:    after.id,
     type:     'farm_updated',
