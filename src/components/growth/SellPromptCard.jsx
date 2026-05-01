@@ -24,7 +24,7 @@
  *   • Pure read-aggregator on storage; never throws.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
@@ -163,11 +163,21 @@ export default function SellPromptCard({
     setDismissed(true);
   }, []);
 
-  if (!flagOn || dismissed || !eligible) return null;
+  // Once-per-mount view event for funnel measurement. Lives in
+  // a useEffect — firing analytics during render is a React rules
+  // violation that triggers minified error #300 if the analytics
+  // pipeline ever causes a setState in another component.
+  const viewedRef = useRef(false);
+  const visible = flagOn && !dismissed && eligible;
+  useEffect(() => {
+    if (!visible) return;
+    if (viewedRef.current) return;
+    viewedRef.current = true;
+    try { trackEvent('sell_prompt_view', { source: 'home_growth' }); }
+    catch { /* swallow */ }
+  }, [visible]);
 
-  // Once-per-mount view event for funnel measurement.
-  try { trackEvent('sell_prompt_view', { source: 'home_growth' }); }
-  catch { /* swallow */ }
+  if (!visible) return null;
 
   return (
     <section
