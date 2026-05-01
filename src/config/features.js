@@ -150,6 +150,55 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // Investor metrics: surfaces `/internal/metrics` with headline
+  // KPIs, growth + retention block, and per-market breakdown.
+  // Pure read aggregator over existing stores — no new
+  // persistence keys. Revenue figures are pilot ladder prices ×
+  // event counts (the codebase has no billing integration yet,
+  // by design); production drop-in is one swap in growthMetrics.
+  // DEFAULT ON — the spec ships unconditionally so the live
+  // metrics surface is reachable for any investor demo. Flag
+  // retained as opt-out: set
+  // VITE_FARROWAY_FEATURE_INVESTORMETRICS=0 at build time to
+  // revert to the "internal only" notice.
+  investorMetrics: true,
+  // Operator tools: per-market dashboard at /operator with a
+  // pending-interests queue and quick actions to mark contacted /
+  // close the deal / copy buyer info. Reads the same partition
+  // boundary as the buyer feed (marketFilter), so an operator
+  // sees exactly what a buyer in the same market sees, plus the
+  // pending interests not yet acted on by the farmer. Every
+  // action emits a `marketId`-tagged analytics event via
+  // trackMarketEvent for per-region funnel reporting.
+  // Stacks on top of `multiMarket` (which provides the partition
+  // boundary). DEFAULT ON — the spec ships unconditionally.
+  // Flag retained as an opt-out lever: set
+  // VITE_FARROWAY_FEATURE_OPERATORTOOLS=0 at build time to revert
+  // to the "coming soon" notice on /operator.
+  operatorTools: true,
+  // Multi-market expansion: replicates Farroway across pilot
+  // markets without breaking the existing surface.
+  //   §1 marketCatalog — frozen per-country config (GH/KE/NG/TZ/
+  //      IN/US) with currency, primary unit, suggested crops,
+  //      and seed listings + buyers.
+  //   §2 marketCatalog also carries default + fallback languages
+  //      so localization can swap copy by market.
+  //   §3 marketSeeder lazy-seeds sample listings + buyer
+  //      interests on first market entry; idempotent stamp
+  //      prevents reseeding.
+  //   §4 marketFilter enforces "no cross-region mixing": Buy.jsx
+  //      drops listings that don't belong to the user's active
+  //      market BEFORE the priority sort runs.
+  //   §5 marketResolver auto-resolves the market from
+  //      country/profile + manual override
+  //      (`farroway_active_market`); MarketSwitcherChip on Home
+  //      surfaces the override + auto-detect picker.
+  //   §6 marketAnalytics.trackMarketEvent auto-attaches marketId
+  //      to events so dashboards partition cleanly.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as an opt-out lever: set VITE_FARROWAY_FEATURE_MULTIMARKET=0
+  // at build time to revert to the single-market surface.
+  multiMarket: true,
   // User growth: self-sustaining acquisition layer.
   //   §1 ScanShareButton on ScanResultCard — shares result via
   //      Web Share API or clipboard fallback. Includes the user's

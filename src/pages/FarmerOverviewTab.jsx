@@ -11,6 +11,7 @@ import NgoModeCard from '../components/monetization/NgoModeCard.jsx';
 import InsightsDigest from '../components/insights/InsightsDigest.jsx';
 import InviteFriendsCard from '../components/growth/InviteFriendsCard.jsx';
 import SellPromptCard from '../components/growth/SellPromptCard.jsx';
+import MarketSwitcherChip from '../components/markets/MarketSwitcherChip.jsx';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
@@ -67,6 +68,10 @@ export default function FarmerOverviewTab() {
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
+      {/* Multi-market expansion §5: market switcher chip. Auto-
+          detects from country, allows manual override. Self-hides
+          when `multiMarket` flag is off. */}
+      <MarketSwitcherChip />
       {/* Daily engagement layer (flag-gated; returns null when off) */}
       <EngagementStrip />
       {/* Long-term moat: insights digest pulled from accumulated

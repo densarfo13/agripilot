@@ -47,6 +47,9 @@ import ListingCard from '../components/buy/ListingCard.jsx';
 import BuyerPriorityCard from '../components/marketplace/BuyerPriorityCard.jsx';
 import QuickReorderStrip from '../components/marketplace/QuickReorderStrip.jsx';
 import { consumeInsightActionStamp } from '../insights/insightActionStamp.js';
+import { resolveActiveMarketId, ACTIVE_MARKET_CHANGED_EVENT } from '../markets/marketResolver.js';
+import { filterListingsByMarket } from '../markets/marketFilter.js';
+import { seedMarketIfNeeded } from '../markets/marketSeeder.js';
 
 const S = {
   page: {
@@ -150,20 +153,68 @@ export default function Buy() {
   const [tick, setTick] = useState(0);
   const scaleOn   = isFeatureEnabled('marketScale');
   const revenueOn = isFeatureEnabled('marketRevenueScale');
+  const multiMarketOn = isFeatureEnabled('multiMarket');
 
   // Quick-reorder filter — sticky to the strip's chip selection.
   const [activeCrop, setActiveCrop] = useState('');
 
+  // Multi-market expansion §3 + §4: resolve the user's active
+  // market once per render, seed sample listings on first entry,
+  // and keep the value live by listening for the change event.
+  const [activeMarketId, setActiveMarketId] = useState(() => {
+    if (!multiMarketOn) return null;
+    try {
+      return resolveActiveMarketId({
+        profile,
+        activeFarm: { id: profile?.farmId, country: profile?.country, region: profile?.region },
+      });
+    } catch { return null; }
+  });
+  useEffect(() => {
+    if (!multiMarketOn) return undefined;
+    const refresh = () => {
+      try {
+        setActiveMarketId(resolveActiveMarketId({
+          profile,
+          activeFarm: { id: profile?.farmId, country: profile?.country, region: profile?.region },
+        }));
+      } catch { /* swallow */ }
+    };
+    if (typeof window !== 'undefined') {
+      try {
+        window.addEventListener(ACTIVE_MARKET_CHANGED_EVENT, refresh);
+        window.addEventListener('storage', refresh);
+      } catch { /* swallow */ }
+      return () => {
+        try {
+          window.removeEventListener(ACTIVE_MARKET_CHANGED_EVENT, refresh);
+          window.removeEventListener('storage', refresh);
+        } catch { /* swallow */ }
+      };
+    }
+    return undefined;
+  }, [multiMarketOn, profile]);
+  useEffect(() => {
+    if (!multiMarketOn || !activeMarketId) return;
+    try { seedMarketIfNeeded(activeMarketId); }
+    catch { /* swallow */ }
+  }, [multiMarketOn, activeMarketId]);
+
   const listings = useMemo(() => {
     try {
       const all = getActiveListings() || [];
+      // Multi-market §4: drop listings that don't belong to the
+      // user's active market BEFORE any subsequent sort/filter.
+      const marketScoped = multiMarketOn && activeMarketId
+        ? filterListingsByMarket(all, activeMarketId)
+        : all;
       // Apply the Quick Reorder filter first so the priority sort
       // operates on the focused subset.
       const filtered = (revenueOn && activeCrop)
-        ? all.filter((l) =>
+        ? marketScoped.filter((l) =>
             String(l?.crop || '').trim().toLowerCase()
               === String(activeCrop).trim().toLowerCase())
-        : all;
+        : marketScoped;
       if (scaleOn || revenueOn) {
         // Marketplace scale §6 / revenue scale §1: priority sort
         // bumps boosted → past-interest → top-selling → cluster →
@@ -174,7 +225,7 @@ export default function Buy() {
         Date.parse(b?.createdAt || 0) - Date.parse(a?.createdAt || 0));
     } catch { return []; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick, scaleOn, revenueOn, buyerId, activeCrop]);
+  }, [tick, scaleOn, revenueOn, multiMarketOn, activeMarketId, buyerId, activeCrop]);
 
   // Marketplace scale §1: surface unread "new listing" alerts.
   // The component itself is small + inline so we don't need a
