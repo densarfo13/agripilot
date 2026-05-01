@@ -47,8 +47,21 @@ import { getReferencePrice } from '../lib/pricing/priceEngine.js';
 import { getTopCrops } from '../market/topCropStats.js';
 import { computeSellerReputation } from '../market/sellerReputation.js';
 import { getRecurringOrdersForBuyer } from '../market/recurringOrders.js';
+import { getCompletedInsightIds } from './insightCompletions.js';
 
-const MAX_INSIGHTS = 5;
+// Spec §2: max 3 visible at a time. The engine produces every
+// candidate then sorts by priority and slices.
+const MAX_INSIGHTS = 3;
+
+// Spec §3 priority weights (descending). Money first, then
+// urgency, then activity, then informational.
+const PRIORITY = Object.freeze({
+  money:      100,
+  urgency:     80,
+  activity:    60,
+  info:        40,
+  trust:       20,
+});
 
 function _norm(s) { return String(s || '').trim().toLowerCase(); }
 
@@ -253,8 +266,19 @@ export function buildInsights({
               ? '{count} buyers interested'
               : 'Quiet for now',
         ).replace('{count}', String(demand.count)),
-        tone:  tonalKey,
-        action: { route: '/sell', kind: 'list_crop' },
+        tone:     tonalKey,
+        // Spec §3: high demand for the user's crop is money-class
+        // urgency — list now to capture the buyers actively
+        // searching. Medium drops a tier.
+        priority: demand.level === 'high' ? PRIORITY.money + PRIORITY.urgency
+                : demand.level === 'medium' ? PRIORITY.money
+                : PRIORITY.activity,
+        urgency:  demand.level === 'high' ? 'today' : 'this_week',
+        cta: {
+          label: tStrict('insights.cta.listNow', 'List now'),
+          route: '/sell',
+          kind:  'list_crop',
+        },
       });
     }
   }
@@ -275,8 +299,15 @@ export function buildInsights({
           meta:  ref.source
             ? tStrict('insights.price.source', 'Source: {source}').replace('{source}', ref.source)
             : '',
-          tone:  'neutral',
-          action: { route: '/sell', kind: 'apply_price' },
+          tone:     'neutral',
+          // Direct money signal → top priority class.
+          priority: PRIORITY.money,
+          urgency:  'this_week',
+          cta: {
+            label: tStrict('insights.cta.applyPrice', 'Use this price'),
+            route: '/sell',
+            kind:  'apply_price',
+          },
         });
       }
     } catch { /* swallow */ }
@@ -301,35 +332,52 @@ export function buildInsights({
           'insights.activity.value',
           '{count} buyers reached out',
         ).replace('{count}', String(recentInterestsForMe)),
-        tone:  'positive',
-        action: { route: '/sell', kind: 'review_interests' },
+        tone:     'positive',
+        // Buyer interest pending response = urgency, not just activity.
+        priority: PRIORITY.urgency,
+        urgency:  'this_week',
+        cta: {
+          label: tStrict('insights.cta.reviewBuyers', 'Review buyers'),
+          route: '/sell',
+          kind:  'review_interests',
+        },
       });
     }
   }
 
   // ── Top crop in pilot (cohort signal) ───────────────────────
-  try {
-    const top = getTopCrops({ windowDays: 90, limit: 1 });
-    if (Array.isArray(top) && top[0]?.crop && top[0]?.score > 0) {
-      const topCrop = _capitalize(top[0].crop);
-      // Skip if it's the same as the user's primary — no new info.
-      if (_norm(top[0].crop) !== primaryCrop) {
-        insights.push({
-          id:    'top_crop',
-          kind:  'top_crop',
-          icon:  '\u2728',
-          title: tStrict('insights.topCrop.title', 'Top-selling crop'),
-          value: topCrop,
-          meta:  tStrict(
-            'insights.topCrop.meta',
-            '{count} recent transactions',
-          ).replace('{count}', String(top[0].score)),
-          tone:  'positive',
-          action: { route: '/buy', kind: 'browse_top' },
-        });
+  // Spec §6 relevance: only fire when the user has a location
+  // anchor (we treat that as a regional-cohort proxy in pilot)
+  // and the cohort top crop is different from their primary.
+  if (primaryCountry) {
+    try {
+      const top = getTopCrops({ windowDays: 90, limit: 1 });
+      if (Array.isArray(top) && top[0]?.crop && top[0]?.score > 0) {
+        const topCrop = _capitalize(top[0].crop);
+        if (_norm(top[0].crop) !== primaryCrop) {
+          insights.push({
+            id:    'top_crop',
+            kind:  'top_crop',
+            icon:  '\u2728',
+            title: tStrict('insights.topCrop.title', 'Top-selling crop'),
+            value: topCrop,
+            meta:  tStrict(
+              'insights.topCrop.meta',
+              '{count} recent transactions',
+            ).replace('{count}', String(top[0].score)),
+            tone:     'positive',
+            priority: PRIORITY.info,
+            urgency:  null,
+            cta: {
+              label: tStrict('insights.cta.browse', 'Browse listings'),
+              route: '/buy',
+              kind:  'browse_top',
+            },
+          });
+        }
       }
-    }
-  } catch { /* swallow */ }
+    } catch { /* swallow */ }
+  }
 
   // ── Recurring orders (buyer side) ───────────────────────────
   if (buyerId) {
@@ -347,8 +395,14 @@ export function buildInsights({
                 'insights.recurring.multi',
                 '{count} crops on weekly auto-match',
               ).replace('{count}', String(recurring.length)),
-          tone:  'neutral',
-          action: { route: '/buy', kind: 'view_recurring' },
+          tone:     'neutral',
+          priority: PRIORITY.activity,
+          urgency:  'this_week',
+          cta: {
+            label: tStrict('insights.cta.viewRecurring', 'Open weekly feed'),
+            route: '/buy',
+            kind:  'view_recurring',
+          },
         });
       }
     } catch { /* swallow */ }
@@ -377,16 +431,48 @@ export function buildInsights({
       icon:  '\uD83D\uDEE1\uFE0F',
       title: tStrict('insights.trust.title', 'Your trust signals'),
       value: trustValue,
-      tone:  'positive',
+      tone:     'positive',
+      priority: PRIORITY.trust,
+      urgency:  null,
+      // Spec §1: every insight needs an action button. The
+      // trust signal routes to /sell where the next listing can
+      // earn a fresh GPS + photo verification.
+      cta: {
+        label: tStrict('insights.cta.boostTrust', 'Verify another listing'),
+        route: '/sell',
+        kind:  'boost_trust',
+      },
     });
   }
+
+  // Spec §5: filter out anything completed in the last 24h so a
+  // tapped insight doesn't hang around.
+  let filtered = insights;
+  try {
+    const completed = getCompletedInsightIds();
+    if (completed.size > 0) {
+      filtered = insights.filter((it) => !completed.has(it.id));
+    }
+  } catch { /* swallow */ }
+
+  // Spec §3: priority sort. Tie-breaker is the original order
+  // (engine-discovery order) so the result stays stable.
+  filtered = filtered
+    .map((it, idx) => ({ it, idx }))
+    .sort((a, b) => {
+      const pa = Number(a.it.priority) || 0;
+      const pb = Number(b.it.priority) || 0;
+      if (pb !== pa) return pb - pa;
+      return a.idx - b.idx;
+    })
+    .map((d) => d.it);
 
   return {
     primaryCrop,
     primaryRegion,
     primaryCountry,
     trust,
-    insights: insights.slice(0, MAX_INSIGHTS),
+    insights: filtered.slice(0, MAX_INSIGHTS),
   };
 }
 
