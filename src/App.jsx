@@ -17,6 +17,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import StepUpModal from './components/StepUpModal.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
+import SWUpdateBanner from './components/system/SWUpdateBanner.jsx';
 import VoiceAssistant from './components/VoiceAssistant.jsx';
 import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
 import { syncQueue } from './offline/syncManager.js';
@@ -596,6 +597,12 @@ export default function App() {
             refreshSession returns boolean — exactly the contract
             transport.send expects. */}
       <OfflineBanner transport={makeOfflineTransport({ refreshAuth: refreshSession })} />
+      {/* App Store launch audit §4.1.4: surfaces the
+          `farroway:sw_new_version` event dispatched by
+          registerServiceWorker so users on long-running tabs
+          actually pick up production deploys instead of being
+          stuck on stale builds. */}
+      <SWUpdateBanner />
       <AuthLoadingGate>
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -717,7 +724,13 @@ export default function App() {
                 the `onboardingV2` flag and renders a "coming soon"
                 notice when off. Returning users (with farm or
                 onboarding stamp) auto-redirect to /home. */}
-            <Route path="/start"              element={<OnboardingEntry />} />
+            {/* App Store launch audit: removed duplicate /start
+                route mount. The public-zone /start above (line
+                ~615) → FarmerEntry is the canonical entry; this
+                second mount of OnboardingEntry was unreachable
+                first-match dead code. The OnboardingEntry
+                component stays in the codebase for the V2 entry
+                experiment but is not currently routed. */}
             {/* /start/farm — 2-field minimal setup (crop + location).
                 Defers farm size + crop stage to the home prompt. */}
             <Route path="/start/farm"         element={<MinimalFarmSetup />} />
@@ -847,7 +860,14 @@ export default function App() {
             */}
             <Route path="/settings" element={<Settings />} />
             <Route path="/farmer-settings" element={<FarmerSettingsPage />} />
-            <Route path="/scan-crop" element={<CameraScanPage />} />
+            {/* App Store launch audit: /scan-crop → /scan canonical
+                redirect per spec §8. The legacy CameraScanPage
+                stays in the bundle for direct callers but the
+                primary route forwards to the v2 ScanPage so all
+                deep links + the existing voice-assistant nav
+                ("scan crop" command) land on the canonical
+                surface. */}
+            <Route path="/scan-crop" element={<Navigate to="/scan" replace />} />
             <Route path="/land-check" element={<LandCheckPage />} />
             <Route path="/crop-recommendations" element={<CropRecommendations />} />
             <Route path="/crop-summary" element={<CropSummary />} />

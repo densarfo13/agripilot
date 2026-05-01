@@ -118,6 +118,31 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // App Store launch audit §4.1: detect camera permission state
+  // proactively so we can promote the gallery button and show a
+  // calm hint when the user denied camera access. The Permissions
+  // API isn't on every browser — we degrade silently when missing.
+  const [cameraDenied, setCameraDenied] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (typeof navigator === 'undefined') return;
+        if (!navigator.permissions || typeof navigator.permissions.query !== 'function') return;
+        const status = await navigator.permissions.query({ name: 'camera' });
+        if (cancelled) return;
+        if (status && status.state === 'denied') setCameraDenied(true);
+        if (status && typeof status.addEventListener === 'function') {
+          status.addEventListener('change', () => {
+            if (cancelled) return;
+            setCameraDenied(status.state === 'denied');
+          });
+        }
+      } catch { /* permission query unsupported; silent degrade */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Revoke ObjectURL on unmount + when preview changes.
   useEffect(() => () => {
@@ -242,15 +267,49 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         style={{ display: 'none' }}
         data-testid="scan-capture-gallery-input"
       />
+      {/* App Store launch audit §4.1: when the camera permission
+          is explicitly denied, show a calm hint so the user
+          knows the gallery button below is the path forward.
+          Self-suppresses when permission isn't denied OR the
+          Permissions API is unavailable (we never assume denied). */}
+      {cameraDenied && !preview ? (
+        <div
+          style={{
+            background: 'rgba(245,158,11,0.10)',
+            border: '1px solid rgba(245,158,11,0.40)',
+            borderRadius: 10,
+            padding: '8px 12px',
+            color: '#FDE68A',
+            fontSize: 13,
+            lineHeight: 1.45,
+            marginBottom: 8,
+          }}
+          data-testid="scan-capture-camera-denied"
+        >
+          {tStrict('scan.cameraDenied',
+            'Camera access is off. Use Upload from gallery below, or enable camera in your browser settings.')}
+        </div>
+      ) : null}
       <div style={STYLES.buttonsRow}>
-        <button type="button" onClick={triggerPicker} style={STYLES.btn} data-testid="scan-capture-pick">
+        {/* When camera is denied, demote the camera button to
+            secondary and promote the gallery button to primary. */}
+        <button
+          type="button"
+          onClick={triggerPicker}
+          style={cameraDenied && !preview
+            ? { ...STYLES.btn, opacity: 0.7 }
+            : STYLES.btn}
+          data-testid="scan-capture-pick"
+        >
           {preview ? tStrict('scan.retake', 'Retake') : captureLabel}
         </button>
-        {!preview && isFeatureEnabled('journeyResilience') ? (
+        {!preview && (isFeatureEnabled('journeyResilience') || cameraDenied) ? (
           <button
             type="button"
             onClick={triggerGallery}
-            style={STYLES.btn}
+            style={cameraDenied
+              ? { ...STYLES.btn, ...(STYLES.btnPrimary || {}) }
+              : STYLES.btn}
             data-testid="scan-capture-gallery"
           >
             {tStrict('journey.scan.upload', 'Upload from gallery')}

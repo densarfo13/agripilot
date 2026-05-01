@@ -18,6 +18,7 @@ import ProfileCompletionPrompt from '../components/home/ProfileCompletionPrompt.
 import MarketplaceNudgeCard from '../components/home/MarketplaceNudgeCard.jsx';
 import SignInPromptCard from '../components/home/SignInPromptCard.jsx';
 import WaitlistNudgeCard from '../components/home/WaitlistNudgeCard.jsx';
+import HomeHeader from '../components/home/HomeHeader.jsx';
 import { isFeatureEnabled } from '../config/features.js';
 
 const STAGE_META = {
@@ -90,6 +91,9 @@ export default function FarmerOverviewTab() {
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
+      {/* UI polish §3: unified greeting + streak header at the
+          very top. Self-hides when `uiPolish` flag is off. */}
+      <HomeHeader name={farmer?.fullName || farmer?.firstName || ''} />
       {/* Funnel optimisation §5: optional sign-in nudge. Only
           renders AFTER first action — never before value. */}
       <SignInPromptCard />

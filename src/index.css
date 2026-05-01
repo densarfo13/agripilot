@@ -568,3 +568,14 @@ body.low-literacy-mode .voice-btn--md             { width: 44px; height: 44px; f
 }
 .low-literacy-toggle--on { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.45); }
 .low-literacy-toggle__label { font-weight: 600; }
+
+/* App Store launch audit §4.1: keyboard-overlap mitigation.
+   Browsers scroll the focused input into view automatically, but
+   without `scroll-margin-bottom` the field can land flush against
+   the on-screen keyboard. A 96px margin keeps the active field
+   visible above the typical mobile keyboard + bottom nav. */
+input:focus,
+textarea:focus,
+select:focus {
+  scroll-margin-bottom: 96px;
+}

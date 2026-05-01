@@ -150,6 +150,17 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // UI polish: cosmetic + structural pass on the farmer Home
+  // tab. When on, mounts HomeHeader at the very top — a single
+  // gradient card with a time-of-day greeting (Good morning /
+  // afternoon / evening), the farmer's first name when known,
+  // and the StreakChip in the right slot. Spec §1, §2, §4, §5,
+  // §6, §8 are already shipped under prior flags (homeTaskV2,
+  // onboardingV2).
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as opt-out: set VITE_FARROWAY_FEATURE_UIPOLISH=0 at build
+  // time to hide the header.
+  uiPolish: true,
   // Robust journey: real-world resilience layer.
   //   §1 ScanCapture exposes an explicit "Upload from gallery"
   //      button as a secondary path beside the camera trigger.
