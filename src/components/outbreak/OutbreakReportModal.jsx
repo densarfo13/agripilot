@@ -65,7 +65,8 @@ export default function OutbreakReportModal({
 
   const cropLabel = useMemo(() => {
     if (!farm) return '';
-    const code = farm.crop || farm.cropType || '';
+    // `crop` is canonical (canonicalizeFarmPayload in lib/api.js).
+    const code = farm.crop || '';
     return getCropLabelSafe(code, lang) || code || '';
   }, [farm, lang]);
 

@@ -13,6 +13,19 @@
 
 const DEFAULTS = Object.freeze({
   marketplace: false,
+  // Region UX System (spec build): resolves region → experience
+  // (farm/backyard/generic), surfaces the RegionBanner, swaps
+  // BottomTabNav items, and routes dailyIntelligenceEngine through
+  // the genericExperience fallback for unsupported countries.
+  // Off by default so existing flows ship unchanged; flip via
+  // VITE_FARROWAY_FEATURE_REGIONUXSYSTEM=1 once vetted in pilot.
+  regionUxSystem: false,
+  // Funding Hub (spec build): region- and role-aware static
+  // catalog at /funding. Coexists with the existing per-farm
+  // matcher at /opportunities — different surfaces, different
+  // intents. Off by default; flip via
+  // VITE_FARROWAY_FEATURE_FUNDINGHUB=1.
+  fundingHub: false,
 });
 
 function envOverride(name) {

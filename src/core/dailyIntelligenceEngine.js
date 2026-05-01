@@ -22,6 +22,9 @@ import {
 } from '../config/regionConfig.js';
 import { getBackyardDailyPlan, getBackyardWeatherAlerts } from '../experience/backyardExperience.js';
 import { getFarmDailyPlan, getFarmWeatherFocusAlerts } from '../experience/farmExperience.js';
+import { getGenericDailyPlan } from '../experience/genericExperience.js';
+import { resolveRegionUX } from './regionUXEngine.js';
+import { isFeatureEnabled } from '../config/features.js';
 
 /**
  * @typedef {{
@@ -187,6 +190,47 @@ export function generateDailyPlan({
   const cropId = farm.crop || farm.cropType || null;
   const plantingDate = farm.plantingDate || farm.plantedAt || null;
   const country = farm.country || farm.countryCode || null;
+
+  // Region UX resolution (Region UX System spec §1, §4).
+  // Behind a feature flag — when off, behaviour is identical
+  // to before. When on, an `experience: 'generic'` resolution
+  // (unknown / planned country, or no farmType pivot) returns
+  // the genericExperience plan, sidestepping the farm/backyard
+  // routing below.
+  const regionUxOn = isFeatureEnabled('regionUxSystem');
+  if (regionUxOn) {
+    const ux = resolveRegionUX({
+      detectedCountry: country || farm.detectedCountry,
+      detectedRegion:  farm.region || farm.detectedRegion,
+      farmType:        farm.farmType || farm.type,
+    });
+    if (ux.experience === 'generic') {
+      const generic = getGenericDailyPlan({ farm, weather, recentTasks });
+      return {
+        farmId:            farm.id,
+        cropId,
+        cropStage:         farm.manualStage || farm.cropStage || null,
+        date:              isoDay(now),
+        summary:           generic.summary,
+        actions:           generic.actions,
+        alerts:            generic.alerts,
+        confidence:        generic.confidence,
+        // Generic plan doesn't depend on per-farm signals; flag
+        // them as unknown rather than missing so the card doesn't
+        // emit "needs planting date" prompts that don't apply.
+        needsPlantingDate: false,
+        needsCrop:         false,
+        needsLocation:     false,
+        weatherUsed:       false,
+        harvestReady:      false,
+        generatedAt:       nowIso(),
+        // Surfaced for telemetry / banner rendering. Existing
+        // consumers that ignore unknown fields stay safe.
+        regionUx:          ux,
+      };
+    }
+    // Farm / backyard branches below already handle the rest.
+  }
 
   // Region-aware experience selection (spec §5). Reads
   // through the config so no country logic is hardcoded

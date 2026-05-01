@@ -72,6 +72,10 @@ const Sell           = lazy(() => import('./pages/Sell.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
+// Funding Hub (spec build) — region- and role-aware static
+// catalog. Coexists with /opportunities (per-farm matcher).
+// Off by default; gated by feature flag inside the page.
+const FundingHub     = lazy(() => import('./pages/FundingHub.jsx'));
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -633,6 +637,10 @@ export default function App() {
                 stumbles onto the URL is redirected. */}
             <Route path="/sell"               element={<Sell />} />
             <Route path="/opportunities"      element={<Opportunities />} />
+            {/* /funding — Funding Hub. The page itself checks the
+                feature flag and renders a "rolling out" message
+                when off, so the route is always live + safe. */}
+            <Route path="/funding"            element={<FundingHub />} />
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
                    element={

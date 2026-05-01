@@ -78,7 +78,10 @@ export function _farmCandidate(farm) {
   // A farm may carry a single `crop` / `cropType` or an
   // array of crops (multi-cycle farms). Accept either.
   const cropList = [];
-  const single = farm.crop || farm.cropType || farm.primaryCrop;
+  // `crop` is canonical (canonicalizeFarmPayload in lib/api.js);
+  // primaryCrop is the legacy aggregate field still used by some
+  // older farm rows.
+  const single = farm.crop || farm.primaryCrop;
   if (single) cropList.push(single);
   if (Array.isArray(farm.crops)) cropList.push(...farm.crops);
   if (Array.isArray(farm.cropTypes)) cropList.push(...farm.cropTypes);

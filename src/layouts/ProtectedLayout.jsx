@@ -5,6 +5,10 @@ import ProfileGuard from '../components/ProfileGuard.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import AutoVoiceToggle from '../components/AutoVoiceToggle.jsx';
 import BottomTabNav from '../components/farmer/BottomTabNav.jsx';
+// Region UX System (feature-flag gated). The host self-hides
+// when `regionUxSystem` is off OR there's nothing to surface
+// for the active country.
+import RegionBannerHost from '../components/system/RegionBannerHost.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
@@ -24,6 +28,11 @@ export default function ProtectedLayout() {
     <AuthGuard>
       <ProfileGuard>
         <div style={S.page}>
+          {/* Region UX banner — top of every protected page when
+              the feature flag is on AND the active country is
+              outside the actively-supported set. Self-hides
+              otherwise; one-line removal reverses the wiring. */}
+          <RegionBannerHost />
           <div style={S.container}>
             <div style={S.header}>
               {/* Left: connectivity + language */}

@@ -21,6 +21,12 @@ import {
   getRegionConfig, shouldUseBackyardExperience,
 } from '../../config/regionConfig.js';
 import { getBackyardLabel } from '../../experience/backyardExperience.js';
+// Region UX System (feature-flag gated). When on, the helper
+// becomes the single source of truth for tab items so future
+// region changes only need to touch `getNavigationItems`.
+import { isFeatureEnabled } from '../../config/features.js';
+import { resolveRegionUX } from '../../core/regionUXEngine.js';
+import { getNavigationItems } from '../../navigation/getNavigationItems.js';
 
 // Farm-experience tabs (Ghana / Nigeria / Kenya / India / etc).
 const FARM_TABS = [
@@ -64,7 +70,33 @@ export default function BottomTabNav() {
   const country = profile?.country || profile?.countryCode || null;
   const farmType = profile?.farmType || null;
   const isBackyard = shouldUseBackyardExperience(country, farmType);
-  const TABS = isBackyard ? BACKYARD_TABS : FARM_TABS;
+
+  // Region UX System path (feature-flag gated). When on, derive
+  // tabs through `getNavigationItems(experience)` — this routes
+  // generic-experience users through a 4-tab subset (Sell hidden
+  // until we know the region opens a marketplace flow). Existing
+  // pilots with the flag OFF keep the inline FARM_TABS /
+  // BACKYARD_TABS path verbatim.
+  let TABS;
+  if (isFeatureEnabled('regionUxSystem')) {
+    const ux = resolveRegionUX({
+      detectedCountry: country,
+      detectedRegion:  profile?.region || null,
+      farmType,
+    });
+    const items = getNavigationItems(ux.experience);
+    // Adapt nav-item shape to the BottomTabNav row shape so the
+    // existing render loop is unchanged.
+    TABS = items.map((it) => ({
+      key:      it.testid?.replace(/^tab-/, '') || it.path,
+      path:     it.path,
+      icon:     it.icon,
+      labelKey: it.key,
+      fallback: it.fallback,
+    }));
+  } else {
+    TABS = isBackyard ? BACKYARD_TABS : FARM_TABS;
+  }
 
   const currentPath = location.pathname;
 

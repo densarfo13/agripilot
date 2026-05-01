@@ -17,6 +17,9 @@ import FarmerIntelligenceSummary from '../components/admin/FarmerIntelligenceSum
 import InterventionList from '../components/admin/InterventionList.jsx';
 import PrioritySupplyList from '../components/admin/PrioritySupplyList.jsx';
 import RiskBadge from '../components/admin/RiskBadge.jsx';
+// Funding & Partnerships tile (spec build) — local-only metrics
+// from the new Funding Hub. Self-hides when fundingHub flag off.
+import FundingPartnershipsCard from '../components/admin/FundingPartnershipsCard.jsx';
 import useSafeData, { API_ERROR_TYPES } from '../hooks/useSafeData.js';
 import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
@@ -168,6 +171,11 @@ export default function AdminDashboard() {
         farmers={farmers}
         performance={performance}
       />
+
+      {/* ─── Funding & Partnerships — local-only metrics from
+              the new Funding Hub. Self-hides when feature flag
+              off so existing dashboards ship unchanged. ────── */}
+      <FundingPartnershipsCard />
 
       {/* ─── Risk by region ─────────────────────────────── */}
       <section style={S.section}>

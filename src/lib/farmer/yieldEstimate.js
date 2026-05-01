@@ -176,7 +176,8 @@ export function sumYield(farms) {
   for (const f of farms) {
     if (!f) continue;
     const r = estimateYield({
-      crop: f.crop || f.cropType,
+      // `crop` is canonical (canonicalizeFarmPayload in lib/api.js).
+      crop: f.crop,
       areaHectares: f.landSizeHectares
         ?? (f.normalizedAreaSqm != null ? f.normalizedAreaSqm / 10000 : null)
         ?? f.areaHectares
