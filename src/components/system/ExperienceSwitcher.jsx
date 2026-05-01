@@ -30,6 +30,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import useExperience from '../../hooks/useExperience.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+import { showToast } from '../../core/farm/unified.js';
 
 const S = {
   wrap: {
@@ -78,8 +79,21 @@ export default function ExperienceSwitcher() {
     if (experience === target) return;
     try { trackEvent('experience_switch_tap', { from: experience, to: target }); }
     catch { /* swallow */ }
-    try { switchTo(target); }
-    catch { /* swallow */ }
+    const ok = (() => {
+      try { return switchTo(target); }
+      catch { return false; }
+    })();
+    if (!ok) return;
+    // Spec §2: surface a friendly toast so the user knows the
+    // context flipped — nav + home re-render via the
+    // `farroway:experience_switched` event but the toast makes
+    // the change unmistakable.
+    try {
+      const msg = target === EXPERIENCE.GARDEN
+        ? tStrict('experience.switched.garden', 'Switched to Garden \uD83C\uDF31')
+        : tStrict('experience.switched.farm',   'Switched to Farm \uD83D\uDE9C');
+      showToast(msg);
+    } catch { /* swallow */ }
   }
 
   return (

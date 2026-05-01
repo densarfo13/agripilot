@@ -81,6 +81,20 @@ export function AuthProvider({ children }) {
       if (isDev) console.warn('[AUTH] repairSession unavailable:', err && err.message);
     }
 
+    // Final spec §4: repair the multi-experience state pointers
+    // so a stale pin / deleted active row / corrupted blob can
+    // never leave the app pointed at nothing renderable. Lazy-
+    // imported so a problem here can never break boot.
+    try {
+      const { repairExperience } = await import('../utils/repairExperience.js');
+      const xpActions = repairExperience();
+      if (isDev && xpActions && xpActions.length) {
+        console.log('[AUTH] repairExperience applied:', xpActions);
+      }
+    } catch (err) {
+      if (isDev) console.warn('[AUTH] repairExperience unavailable:', err && err.message);
+    }
+
     // ─── Step 0: Instant restore from cache ──────────────────
     // Show cached user immediately so the UI doesn't flash login.
     // The actual server validation happens below and corrects if stale.

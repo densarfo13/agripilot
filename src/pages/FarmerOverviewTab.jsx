@@ -15,6 +15,10 @@ import MarketSwitcherChip from '../components/markets/MarketSwitcherChip.jsx';
 import HomeTaskEnhancer from '../components/home/HomeTaskEnhancer.jsx';
 // Final go-live spec §9: empty-state when no recommendations.
 import AllSetForTodayCard from '../components/home/AllSetForTodayCard.jsx';
+// Multi-experience: surfaces "Add Garden" / "Add Farm" / "Start
+// your first" affordances on Home. Self-suppresses when the user
+// has both experiences (the header switcher chip is canonical).
+import ExperienceManageCard from '../components/system/ExperienceManageCard.jsx';
 import StreakRewardBanner from '../components/engagement/StreakRewardBanner.jsx';
 import ProfileCompletionPrompt from '../components/home/ProfileCompletionPrompt.jsx';
 import MarketplaceNudgeCard from '../components/home/MarketplaceNudgeCard.jsx';
@@ -96,6 +100,11 @@ export default function FarmerOverviewTab() {
       {/* UI polish §3: unified greeting + streak header at the
           very top. Self-hides when `uiPolish` flag is off. */}
       <HomeHeader name={farmer?.fullName || farmer?.firstName || ''} />
+      {/* Multi-experience: surfaces "Add Garden" / "Add Farm" /
+          "Start your first" affordances when the user has 0 or 1
+          experiences. Renders null when the user has both (the
+          header chip becomes the canonical switch surface). */}
+      <ExperienceManageCard />
       {/* Funnel optimisation §5: optional sign-in nudge. Only
           renders AFTER first action — never before value. */}
       <SignInPromptCard />

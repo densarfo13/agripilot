@@ -60,6 +60,10 @@ const REQUIRED_EVENTS = [
     why: 'Returning-user shortcut — confirms repair / cached-session paths fire.' },
   { name: 'experience_switch_tap',    surface: 'ExperienceSwitcher.jsx',
     why: 'Multi-experience users tap the chip to switch between garden + farm.' },
+  { name: 'experience_add_garden_tap', surface: 'ExperienceManageCard.jsx',
+    why: 'Single-experience farm user adds a garden — measures cross-context adoption.' },
+  { name: 'experience_add_farm_tap',   surface: 'ExperienceManageCard.jsx',
+    why: 'Single-experience garden user adds a farm — measures cross-context adoption.' },
 ];
 
 function listFiles(dir, acc) {

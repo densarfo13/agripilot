@@ -12501,6 +12501,19 @@ const T = {
   // ─── Multi-experience switcher (header chip) ────────────────────
   'experience.garden':                         { en: 'Garden', fr: 'Jardin', sw: 'Bustani', ha: 'Lambu', tw: 'Turo', hi: 'बगीचा' },
   'experience.farm':                           { en: 'Farm',   fr: 'Ferme',  sw: 'Shamba',  ha: 'Gona',  tw: 'Afuo',  hi: 'खेत' },
+  'experience.plant':                          { en: 'Plant',  fr: 'Plante', sw: 'Mmea',    ha: 'Shuka', tw: 'Afifideɛ', hi: 'पौधा' },
+  'experience.myGarden':                       { en: 'My Garden', fr: 'Mon jardin', sw: 'Bustani yangu', ha: 'Lambuna', tw: 'Me turo', hi: 'मेरा बगीचा' },
+  'experience.myFarm':                         { en: 'My Farm', fr: 'Ma ferme', sw: 'Shamba langu', ha: 'Gonata', tw: 'M\'afuo', hi: 'मेरा खेत' },
+  'experience.scanPlant':                      { en: 'Take Plant Photo', fr: 'Photographier la plante', sw: 'Piga picha ya mmea', ha: 'Ɗauki hoton shuka', tw: 'Twa afifideɛ no mfonini', hi: 'पौधे की फोटो लें' },
+  'experience.readyToPick':                    { en: 'Ready to pick', fr: 'Prêt à cueillir', sw: 'Tayari kuvuna', ha: 'A shirye don ɗiba', tw: 'Asi sɛ wobetete', hi: 'तोड़ने के लिए तैयार' },
+  'experience.switched.garden':                { en: 'Switched to Garden \uD83C\uDF31', fr: 'Basculé vers le jardin \uD83C\uDF31', sw: 'Imebadilishwa kwenda Bustani \uD83C\uDF31', ha: 'An sauya zuwa Lambu \uD83C\uDF31', tw: 'Wɔdane kɔ Turo so \uD83C\uDF31', hi: 'बगीचे पर बदला \uD83C\uDF31' },
+  'experience.switched.farm':                  { en: 'Switched to Farm \uD83D\uDE9C', fr: 'Basculé vers la ferme \uD83D\uDE9C', sw: 'Imebadilishwa kwenda Shamba \uD83D\uDE9C', ha: 'An sauya zuwa Gona \uD83D\uDE9C', tw: 'Wɔdane kɔ Afuo so \uD83D\uDE9C', hi: 'खेत पर बदला \uD83D\uDE9C' },
+  'experience.empty.title':                    { en: 'Start your first garden or farm', fr: 'Commencez votre premier jardin ou ferme', sw: 'Anza bustani au shamba lako la kwanza', ha: 'Fara lambu ko gonarka ta farko', tw: 'Hyɛ wo turo anaa afuo a edi kan ase', hi: 'अपना पहला बगीचा या खेत शुरू करें' },
+  'experience.empty.copy':                     { en: 'Pick the path that fits today. You can always add the other later.', fr: 'Choisissez le chemin qui vous convient aujourd\u2019hui. Vous pouvez toujours ajouter l\u2019autre plus tard.', sw: 'Chagua njia inayofaa leo. Unaweza kuongeza nyingine baadaye.', ha: 'Zaɓi hanyar da ta dace yau. Za ka iya ƙara ɗayan daga baya.', tw: 'Yi kwan a ɛfata ɛnnɛ. Wobetumi ɛyɛ ɛkro no akyiri yi.', hi: 'आज के लिए सही रास्ता चुनें। दूसरा बाद में जोड़ सकते हैं।' },
+  'experience.cta.setupGarden':                { en: 'Set up garden', fr: 'Configurer le jardin', sw: 'Sanidi bustani', ha: 'Saita lambu', tw: 'Hyehyɛ turo no', hi: 'बगीचा सेट करें' },
+  'experience.cta.addFarm':                    { en: 'Add farm', fr: 'Ajouter une ferme', sw: 'Ongeza shamba', ha: 'Ƙara gona', tw: 'Ka afuo ho', hi: 'खेत जोड़ें' },
+  'experience.cta.addFarmShort':               { en: '+ Add Farm', fr: '+ Ajouter une ferme', sw: '+ Ongeza Shamba', ha: '+ Ƙara Gona', tw: '+ Ka Afuo ho', hi: '+ खेत जोड़ें' },
+  'experience.cta.addGardenShort':             { en: '+ Add Garden', fr: '+ Ajouter un jardin', sw: '+ Ongeza Bustani', ha: '+ Ƙara Lambu', tw: '+ Ka Turo ho', hi: '+ बगीचा जोड़ें' },
 };
 
 export default T;

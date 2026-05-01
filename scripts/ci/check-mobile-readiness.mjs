@@ -191,6 +191,37 @@ const checks = [
     why:  'Switching experience must instantly flip nav between FARM_TABS / BACKYARD_TABS',
     pass: () => /useExperience/.test(read('src/components/farmer/BottomTabNav.jsx')),
   },
+  {
+    name: 'repairExperience runs at boot',
+    why:  'Spec §4 — stale pin / deleted active row must auto-heal',
+    pass: () => {
+      const ctx = read('src/context/AuthContext.jsx');
+      return /repairExperience/.test(ctx)
+          && fs.existsSync(path.join(ROOT, 'src/utils/repairExperience.js'));
+    },
+  },
+  {
+    name: 'ExperienceSwitcher fires switch toast',
+    why:  'Spec §2 — user sees "Switched to Garden/Farm" feedback on switch',
+    pass: () => {
+      const f = read('src/components/system/ExperienceSwitcher.jsx');
+      return /showToast/.test(f) && /experience\.switched/.test(f);
+    },
+  },
+  {
+    name: 'ExperienceManageCard surfaces Add Garden / Add Farm CTAs',
+    why:  'Spec §2 — single-experience users see the +Add CTA on Home',
+    pass: () => fs.existsSync(path.join(ROOT, 'src/components/system/ExperienceManageCard.jsx')),
+  },
+  {
+    name: 'getExperienceLabels helper exists',
+    why:  'Spec §9 — single source of truth for backyard \u2194 farm copy split',
+    pass: () => {
+      const f = read('src/experience/labels.js');
+      return /export function getExperienceLabels/.test(f)
+          && /BACKYARD_LABELS/.test(f);
+    },
+  },
 ];
 
 const failed = [];
