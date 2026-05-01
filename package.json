@@ -32,12 +32,13 @@
     "guard:crop-render": "node scripts/ci/check-raw-crop-render.mjs",
     "guard:env":     "node scripts/ci/check-env-assertions.mjs --mode=prod",
     "guard:mobile":  "node scripts/ci/check-mobile-readiness.mjs",
-    "guards":        "npm run guard:prisma && npm run guard:migration && npm run guard:crops && npm run guard:i18n && npm run guard:i18n-parity && npm run guard:duplicate-crops && npm run guard:crop-render && npm run guard:mobile && npm run guard:env",
+    "guard:telemetry": "node scripts/ci/check-launch-telemetry.mjs",
+    "guards":        "npm run guard:prisma && npm run guard:migration && npm run guard:crops && npm run guard:i18n && npm run guard:i18n-parity && npm run guard:duplicate-crops && npm run guard:crop-render && npm run guard:mobile && npm run guard:telemetry && npm run guard:env",
     "check:i18n":         "node scripts/check-i18n.js",
     "check:crop-labels":  "node scripts/check-raw-crop-render.js",
     "launch-gate":      "node scripts/launch-gate.mjs",
     "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build",
-    "launch-gate:final": "npm run launch-gate:fast && npm run guard:i18n && npm run guard:crop-render && npm run guard:mobile"
+    "launch-gate:final": "npm run launch-gate:fast && npm run guard:i18n && npm run guard:crop-render && npm run guard:mobile && npm run guard:telemetry"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

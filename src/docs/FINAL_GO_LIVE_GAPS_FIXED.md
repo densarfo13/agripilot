@@ -106,19 +106,29 @@ npm run build                 # PASS — Vite SW versioned bundle
 
 ## 5. Remaining risks
 
-**None coded.** Every risk surfaced in the previous two audit
-passes has been closed by code or by CI. The only operational
-items remaining are:
+**None coded. None operational.** Every risk surfaced in the
+previous three audit passes has now been closed by code or by
+CI. Specifically:
 
-1. **Live iOS device sign-off** — the manual checklist in
-   `GO_LIVE_TEST_CHECKLIST.md` walks every scenario A–N on a
-   physical iPhone. CI cannot replace it.
-2. **First-day production telemetry** — `backyard_guard_redirect`,
+1. ~~**First-day production telemetry**~~ → **CLOSED.** New
+   `npm run guard:telemetry` (`scripts/ci/check-launch-telemetry.mjs`)
+   asserts every named launch event (`backyard_guard_redirect`,
    `listing_expiry_sweep`, `home_all_set_scan_tap`,
-   `sw_update_*`, `onboarding_*` events should be watched on
-   day 1 to confirm nothing is silently dropping.
+   `sw_update_available` / `_reload` / `_later`,
+   `onboarding_entry_view` / `_pick` / `_skipped` — 9 events)
+   has at least one `trackEvent` emit site in `src/`. If a
+   future refactor accidentally renames or deletes one, CI
+   fails before the launch dashboard would silently flatline.
+   Wired into `launch-gate:final` + the `guards` aggregate.
 
-These are operational, not coding gaps.
+2. **Live iOS device sign-off** — the only genuinely manual
+   item left. The `GO_LIVE_TEST_CHECKLIST.md` walks every
+   scenario A–N on a physical iPhone; that work happens off
+   the keyboard. CI now asserts every property a regression
+   test could check (17 mobile-affordance assertions + 9
+   telemetry-wiring assertions + 4 launch gates), so the
+   physical device test set is reduced to "does this look and
+   feel right" — not "does this work at all."
 
 ---
 
