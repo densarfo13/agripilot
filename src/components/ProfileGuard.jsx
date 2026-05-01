@@ -2,20 +2,27 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { isProfileComplete } from '../lib/farmScore.js';
 import { isFirstTimeFarmer } from '../utils/fastOnboarding/index.js';
-import { isOnboardingComplete } from '../utils/onboarding.js';
+import { shouldShowSetup } from '../utils/onboarding.js';
 
 export default function ProfileGuard({ children }) {
   const location = useLocation();
   const { profile, farms, loading, initialized } = useProfile();
 
-  // ─── Onboarding-loop fix (Apr 2026 hotfix) ──────────────────────
-  // Once a farmer has been through setup ONCE on this device, never
-  // automatically route them back. The server profile remains the
-  // source of truth for incomplete-data prompts inside the app, but
-  // the top-of-router redirect is gated on this client flag so a
-  // partial / slow / cold-cache server response can't bounce the
-  // user into a redirect loop.
-  if (isOnboardingComplete()) return children;
+  // ─── Onboarding-loop fix v2 (May 2026) ───────────────────────────
+  // shouldShowSetup() unifies two rules per the final fix spec:
+  //   1. Either `farroway_onboarding_done` OR
+  //      `farroway_onboarding_completed` truthy → flag is set.
+  //      The original `isOnboardingComplete()`-only check missed
+  //      users who completed setup via a save handler that
+  //      stamped only the _completed key.
+  //   2. Spec §6 fallback — even when the flag is true, if no
+  //      garden/farm record exists on the device (wipe /
+  //      migration / new device), still send the user to setup
+  //      so we never paint a blank Home dashboard.
+  // The server profile remains the source of truth for
+  // incomplete-data prompts inside the app; the automatic
+  // top-of-router redirect is gated by this combined check.
+  if (!shouldShowSetup()) return children;
 
   // Show loading while profile hasn't been initialized for current auth session.
   // This prevents flashing /profile/setup when profile fetch is still in-flight.

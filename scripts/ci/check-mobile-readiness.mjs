@@ -617,6 +617,21 @@ const checks = [
           && /ANALYTICS_KEY/.test(f);
     },
   },
+  {
+    name: 'isOnboardingComplete reads BOTH _done and _completed keys',
+    why:  'Onboarding-loop fix v2 \u2014 save handlers + repairSession stamp _completed; legacy helper read _done',
+    pass: () => {
+      const f = read('src/utils/onboarding.js');
+      return /ONBOARDING_DONE_KEY/.test(f)
+          && /ONBOARDING_COMPLETED_KEY/.test(f)
+          && /export function shouldShowSetup/.test(f);
+    },
+  },
+  {
+    name: 'ProfileGuard uses shouldShowSetup (covers \u00a76 fallback)',
+    why:  'Onboarding-loop fix v2 \u2014 flag-true-but-no-entity routes back to setup',
+    pass: () => /shouldShowSetup\(\)/.test(read('src/components/ProfileGuard.jsx')),
+  },
 ];
 
 const failed = [];
