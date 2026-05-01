@@ -46,6 +46,18 @@ const DEFAULTS = Object.freeze({
   // `safeTrackEvent` pipeline — this one is local-first so
   // pilot operators can inspect raw event streams on-device.
   behaviorTracking: false,
+  // U.S. Backyard onboarding flow: enables the dedicated 6-step
+  // /onboarding/backyard route for U.S. users selecting Backyard
+  // Farming or Home Garden. The destination + persistence are
+  // gated by this flag; existing onboarding flows for commercial
+  // farms stay unchanged when off.
+  usBackyardFlow: false,
+  // U.S. Experience selection: when on, U.S. users hit a chooser
+  // step at /onboarding/us-experience that asks "Backyard / Home
+  // Garden" vs "Farm / Agriculture" before either onboarding
+  // flow runs. Choice persists so returning users are not asked
+  // again. Off by default; non-U.S. flows are unaffected either way.
+  usExperienceSelection: false,
 });
 
 function envOverride(name) {

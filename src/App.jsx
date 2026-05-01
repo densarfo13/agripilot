@@ -77,6 +77,17 @@ const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
 // catalog. Coexists with /opportunities (per-farm matcher).
 // Off by default; gated by feature flag inside the page.
 const FundingHub     = lazy(() => import('./pages/FundingHub.jsx'));
+// App Store launch surfaces — required by the submission process
+// AND by the Voice Assistant / ErrorBoundary recovery paths.
+const ContactPage    = lazy(() => import('./pages/ContactPage.jsx'));
+const PrivacyPolicy  = lazy(() => import('./pages/PrivacyPolicy.jsx'));
+const Terms          = lazy(() => import('./pages/Terms.jsx'));
+// U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
+// redirects to /dashboard when the flag is off.
+const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
+// U.S. experience selector — sits in front of both backyard
+// and farm onboarding routes for U.S. users.
+const USExperienceSelection = lazy(() => import('./pages/onboarding/USExperienceSelection.jsx'));
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -653,6 +664,23 @@ export default function App() {
                 feature flag and renders a "rolling out" message
                 when off, so the route is always live + safe. */}
             <Route path="/funding"            element={<FundingHub />} />
+            {/* App Store submission requires reachable in-app
+                Contact + Privacy + Terms routes. Public (no
+                ProtectedRoute wrap) so reviewers can land on
+                them without a session. */}
+            <Route path="/contact"            element={<ContactPage />} />
+            <Route path="/privacy"            element={<PrivacyPolicy />} />
+            <Route path="/terms"              element={<Terms />} />
+            {/* /onboarding/backyard — feature-flag-gated 6-step
+                garden setup. The page checks the flag itself
+                and redirects to /dashboard when off. */}
+            <Route path="/onboarding/backyard" element={<BackyardOnboarding />} />
+            {/* /onboarding/us-experience — chooser between Backyard
+                and Farm for U.S. users. The page checks the flag
+                itself and bounces to /dashboard when off. Routes
+                onward to /onboarding/backyard or /onboarding (V3)
+                based on choice. */}
+            <Route path="/onboarding/us-experience" element={<USExperienceSelection />} />
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
                    element={

@@ -66,6 +66,21 @@ export function AuthProvider({ children }) {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
     if (isDev) console.log('[AUTH] Bootstrap start');
 
+    // ─── Step 0a: Self-heal stale localStorage state ─────────
+    // Non-destructive repair pass for the spec-canonical session
+    // keys (farroway_user, _user_profile, _farms, _active_farm,
+    // _onboarding_completed). Lazy-imported so a corrupted
+    // repair module can never break boot.
+    try {
+      const { repairSession } = await import('../utils/repairSession.js');
+      const actions = repairSession();
+      if (isDev && actions && actions.length) {
+        console.log('[AUTH] repairSession applied:', actions);
+      }
+    } catch (err) {
+      if (isDev) console.warn('[AUTH] repairSession unavailable:', err && err.message);
+    }
+
     // ─── Step 0: Instant restore from cache ──────────────────
     // Show cached user immediately so the UI doesn't flash login.
     // The actual server validation happens below and corrects if stale.

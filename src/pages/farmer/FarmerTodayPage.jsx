@@ -897,7 +897,20 @@ export default function FarmerTodayPage() {
         </div>
       )}
 
-      <h1 style={S.pageTitle}>{t('actionHome.todayHeader')}</h1>
+      {/* Title flips to the garden header for backyard experience.
+          The signal is the `farroway_experience` localStorage key
+          written by the BackyardOnboarding page; reading directly
+          avoids a new context dependency. Defensive — falls back
+          to the existing farm header on any error. */}
+      <h1 style={S.pageTitle}>{(() => {
+        try {
+          const raw = typeof localStorage !== 'undefined'
+            ? localStorage.getItem('farroway_experience') : null;
+          const exp = raw ? JSON.parse(raw) : null;
+          if (exp === 'backyard') return t('backyard.todayHeader');
+        } catch { /* fall through */ }
+        return t('actionHome.todayHeader');
+      })()}</h1>
 
       {/* Top notification — rendered above everything else so high-
           priority alerts are seen first. Hidden when nothing unread. */}
