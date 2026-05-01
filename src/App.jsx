@@ -9,6 +9,7 @@ import api from './api/client.js';
 // time the app boots in demo mode. Production boots are unaffected
 // because `isDemoMode()` is false and the helper no-ops.
 import { ensureDemoSeed } from './lib/demo/demoSeed.js';
+import { isFeatureEnabled } from './config/features.js';
 
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -402,6 +403,17 @@ export default function App() {
     // renders real data on first load. No-ops outside demo mode and
     // when the store already has real data (see demoSeed.isStoreEmpty).
     try { ensureDemoSeed(); } catch { /* never blocks app boot */ }
+    // Behavior tracking (gated). One `app_open` event per cold
+    // mount feeds the local analytics log + the canonical pipeline.
+    try {
+      if (isFeatureEnabled('behaviorTracking')) {
+        // Lazy-import so the analyticsStore is only pulled into
+        // the bundle when the flag is on at build time.
+        import('./analytics/analyticsStore.js')
+          .then((m) => { try { m.trackEvent?.('app_open'); } catch { /* ignore */ } })
+          .catch(() => { /* swallow */ });
+      }
+    } catch { /* never blocks app boot */ }
     // Refresh the synchronous mirrors of the IDB-backed farm +
     // progress stores. Both helpers swallow their own errors so
     // boot is never blocked by a missing IndexedDB.

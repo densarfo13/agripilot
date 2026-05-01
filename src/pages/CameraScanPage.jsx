@@ -33,6 +33,18 @@ export default function CameraScanPage() {
 
   useEffect(() => {
     safeTrackEvent('camera.scan_shown', {});
+    // Behavior tracking spec event — gated. Lazy-imports so the
+    // analytics store stays out of the scan bundle when the flag
+    // is off at build time.
+    try {
+      import('../config/features.js').then((cfg) => {
+        if (cfg.isFeatureEnabled?.('behaviorTracking')) {
+          import('../analytics/analyticsStore.js')
+            .then((m) => { try { m.trackEvent?.('scan_used'); } catch { /* ignore */ } })
+            .catch(() => { /* swallow */ });
+        }
+      }).catch(() => { /* swallow */ });
+    } catch { /* never propagate */ }
     // Spec §7: opportunistically drop a recheck task when a scan from
     // yesterday is still open. Pure no-op if nothing qualifies.
     try {

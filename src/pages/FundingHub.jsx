@@ -37,12 +37,13 @@ import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { resolveRegionUX } from '../core/regionUXEngine.js';
 import {
-  recommendFundingPrograms,
+  getFundingRecommendations,
   groupByCategory,
 } from '../core/fundingRecommendationEngine.js';
 import { trackFundingEvent } from '../analytics/fundingAnalytics.js';
 import FundingCard from '../components/funding/FundingCard.jsx';
-import ApplyReadinessChecklist from '../components/funding/ApplyReadinessChecklist.jsx';
+import FundingReadinessCard from '../components/funding/FundingReadinessCard.jsx';
+import OrganizationPilotCTA from '../components/funding/OrganizationPilotCTA.jsx';
 import NgoProgramTools from '../components/funding/NgoProgramTools.jsx';
 
 const NGO_ROLES = new Set(['ngo_admin', 'government_program']);
@@ -201,9 +202,12 @@ export default function FundingHub() {
     farmType,
   }), [country, region, farmType]);
 
-  // Recommendation list. Memoised on the inputs so a parent
-  // re-render doesn't re-score the catalog.
-  const recommendations = useMemo(() => recommendFundingPrograms({
+  // Smart recommendations + readiness score + tips, in one call.
+  // The engine respects the smartFundingRecommendations feature
+  // flag implicitly by always returning a useful shape; the
+  // readiness card itself is the gated surface (consumer-side).
+  const smartOn = isFeatureEnabled('smartFundingRecommendations');
+  const smartCtx = useMemo(() => ({
     country,
     region,
     farmType,
@@ -211,24 +215,61 @@ export default function FundingHub() {
     userRole,
     farmSize,
     experienceType: ux.experience,
-    limit: 12,
-  }), [country, region, farmType, cropId, userRole, farmSize, ux.experience]);
+    // Readiness signals — pulled from the profile defensively. If
+    // any field is missing, the engine treats it as "not done"
+    // and surfaces a tip.
+    profileCompleted:        !!(profile?.farmName || profile?.name),
+    locationConfirmed:       !!(country || region),
+    cropAdded:               !!cropId,
+    farmSizeAdded:           !!farmSize,
+    hasPhotosOrScanHistory:  !!(profile?.photoUrl || profile?.profileImageUrl
+                                || profile?.photos || profile?.scanHistory),
+    completedTasksLast7Days: Number(profile?.completedTasksLast7Days
+                                || profile?.recentCompletedTasks
+                                || 0),
+    activeDaysLast7Days:     Number(profile?.activeDaysLast7Days || 0),
+  }), [
+    country, region, farmType, cropId, userRole, farmSize, ux.experience,
+    profile?.farmName, profile?.name, profile?.photoUrl, profile?.profileImageUrl,
+    profile?.photos, profile?.scanHistory,
+    profile?.completedTasksLast7Days, profile?.recentCompletedTasks,
+    profile?.activeDaysLast7Days,
+  ]);
 
+  const smart = useMemo(() => getFundingRecommendations(smartCtx), [smartCtx]);
+  const recommendations = smart.recommendations;
+  const readinessScore = smart.readinessScore;
+  const readinessTips = smart.readinessTips;
   const grouped = useMemo(() => groupByCategory(recommendations), [recommendations]);
 
-  // Page-view event — once on mount per visit.
+  // Page-view event — once on mount per visit. Spec uses
+  // `funding_hub_viewed`; the older `funding_page_view` is also
+  // emitted as an alias so the prior admin tile keeps working.
   useEffect(() => {
     if (!flagOn) return;
     try {
+      trackFundingEvent('funding_hub_viewed', {
+        country,
+        userRole,
+        experience: ux.experience,
+        recommendedCount: recommendations.length,
+        readinessScore,
+      });
       trackFundingEvent('funding_page_view', {
         country,
         userRole,
         experience: ux.experience,
         recommendedCount: recommendations.length,
       });
+      // Behavior tracking spec event name + lazy import to avoid
+      // pulling the analytics store into bundles when the flag's off.
+      if (isFeatureEnabled('behaviorTracking')) {
+        import('../analytics/analyticsStore.js')
+          .then((m) => { try { m.trackEvent?.('funding_viewed', { country, userRole }); }
+            catch { /* ignore */ } })
+          .catch(() => { /* swallow */ });
+      }
     } catch { /* never propagate */ }
-    // We intentionally fire only once on mount — re-firing on
-    // every state change inflates the analytics signal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagOn]);
 
@@ -258,7 +299,8 @@ export default function FundingHub() {
   }
 
   const isNgo = NGO_ROLES.has(userRole);
-  const recommendedCards = recommendations.slice(0, 6);
+  // Spec §1: show 3-5 best options max in the Recommended row.
+  const recommendedCards = recommendations.slice(0, 5);
   const ctx = { country, userRole, experience: ux.experience };
 
   return (
@@ -266,25 +308,29 @@ export default function FundingHub() {
       <div style={STYLES.header}>
         <div>
           <h1 style={STYLES.title}>
-            {tStrict('funding.hub.title', 'Funding & Support')}
+            {tStrict('funding.hub.title', 'Opportunities for you')}
           </h1>
           <p style={STYLES.subtitle}>
             {tStrict(
               'funding.hub.subtitle',
-              'Programs and partners that may fit your farm and country. Verify each option with the official program before applying.'
+              'Find relevant funding, support programs, training, and partnerships based on your location and activity.'
             )}
           </p>
         </div>
       </div>
 
-      {/* Top row: Recommended (left) + Readiness (right on wide,
-          stacked on narrow). NGO tools mount above when applicable. */}
+      {/* NGO program quick-links above the recommendations — only
+          for ngo_admin / government_program roles. */}
       {isNgo ? (
         <div style={{ marginBottom: 16 }}>
           <NgoProgramTools context={ctx} />
         </div>
       ) : null}
 
+      {/* Top row: Recommended (left) + Readiness (right on wide,
+          stacked on narrow). The readiness card is gated on the
+          smartFundingRecommendations flag — flag-off Hubs show
+          recommendations only, no readiness widget. */}
       <div style={wide ? STYLES.topRow : STYLES.topRowNarrow}>
         <section data-section="recommended">
           <h2 style={STYLES.sectionTitle}>
@@ -305,12 +351,13 @@ export default function FundingHub() {
             </div>
           )}
         </section>
-        <ApplyReadinessChecklist
-          farm={profile}
-          tasks={null}
-          impactData={profile?.impactData || null}
-          context={ctx}
-        />
+        {smartOn ? (
+          <FundingReadinessCard
+            score={readinessScore}
+            tips={readinessTips}
+            context={ctx}
+          />
+        ) : null}
       </div>
 
       {/* Categorised sections — show only buckets that have cards. */}
@@ -331,10 +378,16 @@ export default function FundingHub() {
         );
       })}
 
+      {/* For Organizations — partnership lead funnel. The CTA
+          self-hides when the ngoPartnershipLeads flag is off. */}
+      <div style={{ marginTop: 24 }}>
+        <OrganizationPilotCTA context={ctx} />
+      </div>
+
       <div style={STYLES.globalDisclaimer}>
         {tStrict(
           'funding.hub.globalDisclaimer',
-          'Farroway shows publicly-available program information. We do not guarantee funding. Always verify requirements with the official program before applying.'
+          'Farroway helps you discover possible funding, support, training, and partnership opportunities. Farroway does not guarantee eligibility, approval, funding, or program availability. Always verify requirements with the official program or organization.'
         )}
       </div>
     </main>

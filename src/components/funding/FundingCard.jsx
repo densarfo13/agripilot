@@ -20,6 +20,7 @@
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { trackFundingEvent } from '../../analytics/fundingAnalytics.js';
+import { FARM_TYPE_LABELS } from '../../config/fundingConfig.js';
 
 const STYLES = {
   card: {
@@ -120,6 +121,12 @@ export default function FundingCard({ card, context = {} }) {
         country:  context.country || null,
         userRole: context.userRole || null,
       });
+      // Spec event name + the older alias so existing analytics
+      // consumers keep working through the migration.
+      trackFundingEvent('external_funding_link_clicked', {
+        cardId:   card.id,
+        url:      card.externalUrl,
+      });
       trackFundingEvent('funding_external_link', {
         cardId:   card.id,
         url:      card.externalUrl,
@@ -145,12 +152,26 @@ export default function FundingCard({ card, context = {} }) {
 
       <p style={STYLES.description}>{card.description}</p>
 
+      {/* Match reason — surfaced by the smart engine when present.
+          Conservative copy ("may be useful", never "you qualify"). */}
+      {card.matchReason ? (
+        <div style={STYLES.metaRow}>
+          <span style={STYLES.metaLabel}>{tStrict('funding.card.matchReason', 'Why we suggested this')}</span>
+          <span style={STYLES.metaValue}>{card.matchReason}</span>
+        </div>
+      ) : null}
+
       <div style={STYLES.metaRow}>
         <span style={STYLES.metaLabel}>{tStrict('funding.card.bestFor', 'Best for')}</span>
         <div style={STYLES.bestFor}>
-          {(card.bestFor || []).map((b) => (
-            <span key={b} style={STYLES.bestForChip}>{b}</span>
-          ))}
+          {(card.bestFor || []).map((b) => {
+            // bestFor carries farm-type slugs (small_farm, backyard…).
+            // Render via the label map + a strict-translator key so
+            // non-English UIs get localized chips.
+            const fallback = FARM_TYPE_LABELS[b] || b;
+            const label = tStrict(`funding.bestFor.${b}`, fallback);
+            return <span key={b} style={STYLES.bestForChip}>{label}</span>;
+          })}
         </div>
       </div>
 

@@ -22,6 +22,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { summariseFundingEvents } from '../../analytics/fundingAnalytics.js';
+import { getNgoPilotLeadCount } from '../../data/ngoPilotLeads.js';
 
 const STYLES = {
   section: { marginTop: '1.25rem' },
@@ -71,6 +72,9 @@ export default function FundingPartnershipsCard() {
   const flagOn = isFeatureEnabled('fundingHub');
 
   const [summary, setSummary] = useState(() => summariseFundingEvents());
+  const [leadCount, setLeadCount] = useState(() => {
+    try { return getNgoPilotLeadCount(); } catch { return 0; }
+  });
 
   // Refresh on a slow tick — the local log is bounded so this is
   // cheap. The admin may also have other tabs open writing to it,
@@ -81,10 +85,13 @@ export default function FundingPartnershipsCard() {
     const refresh = () => {
       if (cancelled) return;
       try { setSummary(summariseFundingEvents()); } catch { /* ignore */ }
+      try { setLeadCount(getNgoPilotLeadCount()); } catch { /* ignore */ }
     };
     const id = setInterval(refresh, 8000);
     const onStorage = (e) => {
-      if (e?.key === 'farroway_funding_events') refresh();
+      // Refresh whenever either of the two relevant slots changes
+      // (analytics rolling log OR the pilot-lead store).
+      if (e?.key === 'farroway_funding_events' || e?.key === 'farroway_ngo_pilot_leads') refresh();
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', onStorage);
@@ -100,10 +107,19 @@ export default function FundingPartnershipsCard() {
 
   if (!flagOn) return null;
 
-  const pageViews     = summary?.byEvent?.funding_page_view     || 0;
+  // Spec event names + older aliases — coalesce so the tile keeps
+  // showing real numbers across the migration window.
+  const pageViews =
+    (summary?.byEvent?.funding_hub_viewed || 0)
+    + (summary?.byEvent?.funding_page_view || 0);
   const cardClicks    = summary?.byEvent?.funding_card_clicked  || 0;
   const pilotInquiries = summary?.pilotInquiries || 0;
+  const pilotCtaClicks = summary?.byEvent?.ngo_pilot_cta_clicked || 0;
+  const pilotFormSubmissions = summary?.byEvent?.ngo_pilot_form_submitted || 0;
   const ngoToolClicks = summary?.byEvent?.funding_ngo_tool_clicked || 0;
+  // Pilot leads stored locally — distinct from form-submission
+  // events because a single submit creates exactly one lead.
+  const storedLeadCount = leadCount;
 
   // Average readiness — derive a simple mean of the recorded
   // funding_readiness_change events. This is a local approximation,
@@ -146,8 +162,16 @@ export default function FundingPartnershipsCard() {
                 <div style={STYLES.tileValue}>{cardClicks.toLocaleString()}</div>
               </div>
               <div style={STYLES.tile}>
-                <div style={STYLES.tileLabel}>{tStrict('admin.funding.pilotInquiries', 'Pilot inquiries')}</div>
-                <div style={STYLES.tileValue}>{pilotInquiries.toLocaleString()}</div>
+                <div style={STYLES.tileLabel}>{tStrict('admin.funding.pilotCtaClicks', 'Pilot CTA clicks')}</div>
+                <div style={STYLES.tileValue}>{(pilotCtaClicks || pilotInquiries).toLocaleString()}</div>
+              </div>
+              <div style={STYLES.tile}>
+                <div style={STYLES.tileLabel}>{tStrict('admin.funding.pilotLeads', 'Pilot leads')}</div>
+                <div style={STYLES.tileValue}>{storedLeadCount.toLocaleString()}</div>
+              </div>
+              <div style={STYLES.tile}>
+                <div style={STYLES.tileLabel}>{tStrict('admin.funding.pilotForms', 'Forms submitted')}</div>
+                <div style={STYLES.tileValue}>{pilotFormSubmissions.toLocaleString()}</div>
               </div>
               <div style={STYLES.tile}>
                 <div style={STYLES.tileLabel}>{tStrict('admin.funding.ngoToolClicks', 'NGO tool clicks')}</div>

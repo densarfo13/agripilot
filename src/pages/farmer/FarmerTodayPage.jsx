@@ -36,6 +36,17 @@ import ProgressSummaryCard from '../../components/farmer/ProgressSummaryCard.jsx
 import CropStageCard from '../../components/farmer/CropStageCard.jsx';
 import SupportSection from '../../components/farmer/SupportSection.jsx';
 import FarmerActionGrid from '../../components/farmer/FarmerActionGrid.jsx';
+// Lightweight feedback (gated on `feedbackSystem` flag). The
+// gate decides when to show it; the QuickFeedback component
+// self-hides if the flag is off.
+import QuickFeedback from '../../components/feedback/QuickFeedback.jsx';
+import {
+  incrementUsageCounter,
+  shouldShowFeedback,
+  markFeedbackShown,
+} from '../../utils/feedbackGate.js';
+import { trackEvent as trackBehaviorEvent } from '../../analytics/analyticsStore.js';
+import { isFeatureEnabled as isFeatureEnabledForFeedback } from '../../config/features.js';
 import DailyReminderBanner from '../../components/farmer/DailyReminderBanner.jsx';
 import TaskCompletionFeedback from '../../components/farmer/TaskCompletionFeedback.jsx';
 import HomeProgressBar from '../../components/farmer/HomeProgressBar.jsx';
@@ -125,6 +136,29 @@ export default function FarmerTodayPage() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // Lightweight feedback gate. Increment a "meaningful uses"
+  // counter on first mount, decide whether to surface the
+  // QuickFeedback widget, and stamp the 24h cooldown if shown.
+  // No-ops when feedbackSystem flag is off.
+  // Behavior tracking emits a `view_daily_plan` event when on.
+  const [showFeedback, setShowFeedback] = useState(false);
+  useEffect(() => {
+    try {
+      if (isFeatureEnabledForFeedback('behaviorTracking')) {
+        trackBehaviorEvent('view_daily_plan');
+      }
+      if (isFeatureEnabledForFeedback('feedbackSystem')) {
+        incrementUsageCounter();
+        if (shouldShowFeedback()) {
+          setShowFeedback(true);
+          markFeedbackShown();
+        }
+      }
+    } catch { /* never block the page */ }
+    // Once-per-mount; we don't want this to re-run on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Bump the lifetime "Today visits" counter once per browser
   // session. The helper is sessionStorage-debounced, so calling
@@ -1183,6 +1217,12 @@ export default function FarmerTodayPage() {
           10 primary actions as voice-enabled tiles. The toggle in its
           header switches the whole UI to simple/icon mode. */}
       <FarmerActionGrid />
+
+      {/* Lightweight feedback — only renders when the gate
+          (≥2 meaningful uses + 24h cooldown) AND the
+          feedbackSystem feature flag both allow it. Self-hides
+          after submission. Never blocks the user flow. */}
+      {showFeedback ? <QuickFeedback context="daily_plan" /> : null}
 
       <SupportSection />
     </Shell>

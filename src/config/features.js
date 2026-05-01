@@ -26,6 +26,26 @@ const DEFAULTS = Object.freeze({
   // intents. Off by default; flip via
   // VITE_FARROWAY_FEATURE_FUNDINGHUB=1.
   fundingHub: false,
+  // Smart Funding Recommendations: turns the static catalog into
+  // a personalised readiness-aware engine (computes a 0-100 score
+  // + emits readiness tips). Sits on top of the Funding Hub —
+  // requires `fundingHub` to also be on for the surface to render.
+  smartFundingRecommendations: false,
+  // NGO Partnership Leads: enables the OrganizationPilotCTA form
+  // on the Funding Hub + the pilot-leads count in the admin
+  // dashboard tile. Storage is local-first (localStorage) and
+  // ready to swap for a backend POST when one exists.
+  ngoPartnershipLeads: false,
+  // Lightweight Feedback System: gates the QuickFeedback +
+  // PulseQuestion widgets on farmer-facing pages. The store is
+  // local-first (`farroway_feedback`); when off, the widgets
+  // never render even if the gate criteria are met.
+  feedbackSystem: false,
+  // Behavior Tracking: enables the new generic analyticsStore
+  // event log (`farroway_events`). Coexists with the canonical
+  // `safeTrackEvent` pipeline — this one is local-first so
+  // pilot operators can inspect raw event streams on-device.
+  behaviorTracking: false,
 });
 
 function envOverride(name) {

@@ -66,6 +66,19 @@ export default function VoiceButton({
     } else {
       speak(spoken, lang || 'en');
     }
+    // Behavior tracking — gated. Lazy import keeps the analytics
+    // store out of the bundle when the flag is off at build time.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      import('../config/features.js').then((cfg) => {
+        if (cfg.isFeatureEnabled?.('behaviorTracking')) {
+          import('../analytics/analyticsStore.js')
+            .then((m) => { try { m.trackEvent?.('voice_used', { lang, hasKey: !!labelKey }); }
+              catch { /* ignore */ } })
+            .catch(() => { /* swallow */ });
+        }
+      }).catch(() => { /* swallow */ });
+    } catch { /* never propagate from a click handler */ }
   }, [spoken, lang, labelKey]);
 
   // Hide entirely when unsupported — a dead button is worse than
