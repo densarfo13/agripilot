@@ -34,7 +34,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import getLocation from '../location/getLocation.js';
-import reverseGeocode from '../lib/location/reverseGeocode.js';
+// reverseGeocode is a NAMED export (not default) and takes
+// positional `(lat, lng, opts)` args. The returned shape uses
+// `principalSubdivision` for the state/region label and
+// `countryLabel` for the human-readable country name.
+import { reverseGeocode } from '../lib/location/reverseGeocode.js';
 
 function _formatRegion({ city, state, country }) {
   const parts = [];
@@ -68,12 +72,17 @@ export default function useDetectedRegion({
         if (myEpoch === epochRef.current) setStatus('failed');
         return;
       }
-      const geo = await reverseGeocode({ lat: loc.lat, lng: loc.lng });
+      const geo = await reverseGeocode(loc.lat, loc.lng);
       if (myEpoch !== epochRef.current) return;     // raced
       if (!geo) { setStatus('failed'); return; }
       setCity(geo.city || '');
-      setState(geo.state || geo.region || '');
-      setCountry(geo.country || '');
+      // The reverseGeocode contract returns principalSubdivision
+      // (e.g. "Greater Accra") rather than `state` / `region` —
+      // map it onto our internal `state` slot.
+      setState(geo.principalSubdivision || '');
+      // Prefer the human-readable label; fall back to the raw
+      // ISO country code when the catalog lookup misses.
+      setCountry(geo.countryLabel || geo.country || '');
       setStatus('detected');
     } catch {
       if (myEpoch === epochRef.current) setStatus('failed');
