@@ -144,12 +144,31 @@ export function getDefaultUnit({ farmType, countryCode } = {}) {
  * should offer for this farmType + country combo. Order matters:
  * the first entry is the preferred default. Same rules as
  * getDefaultUnit, expanded to both units per tier.
+ *
+ * Spec §4 (square foot land size option):
+ *   * US backyard:  sqft, sqm                  (existing)
+ *   * US farm:      acres, sqft, hectares      (NEW: sqft added)
+ *   * Ghana farm:   hectares, acres, sqm, sqft (NEW: sqft optional)
+ *   * Other farm:   hectares, acres            (existing)
  */
 export function getAllowedUnits({ farmType, countryCode } = {}) {
   const def = getDefaultUnit({ farmType, countryCode });
-  const ft = normalizeFarmType(farmType);
+  const ft  = normalizeFarmType(farmType);
+  const iso = String(countryCode || '').trim().toUpperCase();
+
   if (ft === 'backyard') {
     return def === 'sqft' ? ['sqft', 'sqm'] : ['sqm', 'sqft'];
+  }
+  // Farm / commercial tier
+  if (iso === 'US') {
+    // Default acres but farmers occasionally enter raised-bed
+    // plots in sq ft — offer sqft as the second option.
+    return ['acres', 'sqft', 'hectares'];
+  }
+  if (iso === 'GH') {
+    // Ghana farms work in acres + hectares historically. Keep
+    // both as primaries; expose sqm + sqft as opt-in tail.
+    return ['acres', 'hectares', 'sqm', 'sqft'];
   }
   return def === 'acres' ? ['acres', 'hectares'] : ['hectares', 'acres'];
 }

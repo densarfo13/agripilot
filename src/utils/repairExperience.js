@@ -81,6 +81,15 @@ function _writeString(key, value) {
   } catch { return false; }
 }
 
+// Inline read of the explicit-logout flag. Kept dependency-free
+// so the boot path stays small.
+function _isExplicitLogout() {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('farroway_explicit_logout') === 'true';
+  } catch { return false; }
+}
+
 /**
  * repairExperience(): string[]
  *
@@ -89,6 +98,16 @@ function _writeString(key, value) {
  */
 export function repairExperience() {
   const actions = [];
+
+  // Final logout-loop fix §2: explicit-logout beats repair.
+  // Without this, the repair pass runs on every boot — even
+  // immediately after Logout — and re-derives the active
+  // experience from the cached gardens/farms, sending the
+  // farmer right back into the dashboard.
+  if (_isExplicitLogout()) {
+    actions.push('skipped_explicit_logout');
+    return actions;
+  }
 
   // ── Rule 6: drop corrupted blobs for our keys (only) ─────
   const farmsBlob = _safeParseList(FARROWAY_FARMS_KEY);

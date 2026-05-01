@@ -309,6 +309,56 @@ const checks = [
       return files.every((p) => /requestUserFeedback/.test(read(p)));
     },
   },
+  {
+    name: 'explicitLogout helper exists',
+    why:  'Logout-loop fix \u2014 dedicated marker that beats repair logic',
+    pass: () => {
+      const f = read('src/utils/explicitLogout.js');
+      return /export function markExplicitLogout/.test(f)
+          && /export function clearExplicitLogout/.test(f)
+          && /export function isExplicitLogout/.test(f);
+    },
+  },
+  {
+    name: 'AuthContext bootstrap honors explicit-logout flag',
+    why:  'Logout-loop fix \u2014 bootstrap must short-circuit when flag set',
+    pass: () => {
+      const f = read('src/context/AuthContext.jsx');
+      return /isExplicitLogout/.test(f)
+          && /markExplicitLogout/.test(f)
+          && /clearExplicitLogout/.test(f);
+    },
+  },
+  {
+    name: 'repairSession + repairExperience bail on explicit-logout',
+    why:  'Logout-loop fix \u2014 repair logic must NOT undo a logout',
+    pass: () => {
+      const a = read('src/utils/repairSession.js');
+      const b = read('src/utils/repairExperience.js');
+      return /skipped_explicit_logout/.test(a)
+          && /skipped_explicit_logout/.test(b);
+    },
+  },
+  {
+    name: 'landUnits ships LAND_SIZE_UNITS + formatLandSize + convertToSquareFeet',
+    why:  'Land-size spec \u2014 sq ft option + spec-shape unit list',
+    pass: () => {
+      const f = read('src/utils/landUnits.js');
+      return /LAND_SIZE_UNITS/.test(f)
+          && /export function formatLandSize/.test(f)
+          && /export function convertToSquareFeet/.test(f)
+          && /sq_ft/.test(f);
+    },
+  },
+  {
+    name: 'getAllowedUnits offers sqft for US farm + Ghana farm',
+    why:  'Land-size spec \u2014 sqft must surface in the unit dropdown',
+    pass: () => {
+      const f = read('src/lib/units/areaConversion.js');
+      return /\['acres',\s*'sqft',\s*'hectares'\]/.test(f)
+          && /'acres',\s*'hectares',\s*'sqm',\s*'sqft'/.test(f);
+    },
+  },
 ];
 
 const failed = [];

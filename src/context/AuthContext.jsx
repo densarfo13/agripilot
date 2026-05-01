@@ -13,6 +13,9 @@ import {
 import { logActivity } from '../services/activityLogger.js';
 import { clearSessionState } from '../lib/auth/clearSessionState.js';
 import { startInactivityWatcher } from '../lib/auth/inactivityWatcher.js';
+import {
+  isExplicitLogout, markExplicitLogout, clearExplicitLogout,
+} from '../utils/explicitLogout.js';
 
 const AuthContext = createContext(null);
 
@@ -65,6 +68,27 @@ export function AuthProvider({ children }) {
   async function bootstrap() {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
     if (isDev) console.log('[AUTH] Bootstrap start');
+
+    // ─── Step -1: Explicit-logout short-circuit ─────────────
+    // If the farmer just hit Logout, every downstream repair
+    // path (repairSession, repairExperience, cached-profile
+    // restore, /me validation) must be skipped — otherwise the
+    // app reads the still-cached farm + onboarding flag and
+    // sends the farmer right back into the dashboard.
+    //
+    // The flag is cleared on successful login (see `login`,
+    // `completeMfaChallenge`, `verifyPhoneOtp`, `register`).
+    // Bootstrap finishes here with no user, no offline session,
+    // authLoading=false so the route guard renders /login.
+    try {
+      if (isExplicitLogout()) {
+        if (isDev) console.log('[AUTH] Explicit-logout flag set — skipping repair / restore');
+        setUser(null);
+        setIsOfflineSession(false);
+        setAuthLoading(false);
+        return;
+      }
+    } catch { /* never propagate */ }
 
     // ─── Step 0a: Self-heal stale localStorage state ─────────
     // Non-destructive repair pass for the spec-canonical session
@@ -221,6 +245,9 @@ export function AuthProvider({ children }) {
     const loggedInUser = data.user || null;
     setUser(loggedInUser);
     setIsOfflineSession(false);
+    // Successful login — clear the explicit-logout flag so future
+    // bootstraps run repair / restore normally.
+    try { clearExplicitLogout(); } catch { /* swallow */ }
     // Login already verified the session — clear authLoading so
     // AuthLoadingGate opens immediately without waiting for bootstrap's /me call.
     setAuthLoading(false);
@@ -236,6 +263,7 @@ export function AuthProvider({ children }) {
     const loggedInUser = data.user || null;
     setUser(loggedInUser);
     setIsOfflineSession(false);
+    try { clearExplicitLogout(); } catch { /* swallow */ }
     setAuthLoading(false);
     cacheSession(loggedInUser);
     return data;
@@ -246,6 +274,7 @@ export function AuthProvider({ children }) {
     const registeredUser = data.user || null;
     setUser(registeredUser);
     setIsOfflineSession(false);
+    try { clearExplicitLogout(); } catch { /* swallow */ }
     cacheSession(registeredUser);
     // Track registration for admin analytics
     logActivity('user_registered', { method: 'email' }, { userId: registeredUser?.id });
@@ -255,6 +284,41 @@ export function AuthProvider({ children }) {
   async function logout(reason) {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
     if (isDev) console.log('[AUTH] Logout, reason:', reason || 'explicit');
+
+    // Final logout-loop fix §1: flip the explicit-logout flag
+    // BEFORE any async work so a race (e.g. a tab refresh hitting
+    // bootstrap before the cleanup completes) still short-circuits
+    // through the new bootstrap guard.
+    try { markExplicitLogout(); } catch { /* swallow */ }
+
+    // Final logout-loop fix §1: clear the session pointers the
+    // spec calls out so repair logic on next bootstrap (after the
+    // farmer signs back in and the explicit-logout flag is
+    // cleared) starts from a clean slate. We DELIBERATELY leave
+    // the data stores alone (farroway.farms / farroway_gardens /
+    // scan history / feedback / language) — logout removes the
+    // session, not the user's data.
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const SESSION_POINTERS = [
+          'farroway_user',
+          'farroway_current_user',
+          'farroway_session',
+          'farroway_active_role',
+          'farroway_active_experience',
+          'farroway_active_farm_id',
+          'farroway_active_garden_id',
+          'farroway_active_farm',
+          'farroway_active_garden',
+          'farroway_onboarding_completed',
+          'farroway_user_profile',
+        ];
+        for (const k of SESSION_POINTERS) {
+          try { localStorage.removeItem(k); } catch { /* swallow */ }
+        }
+      }
+    } catch { /* never propagate */ }
+
     // Fire-and-forget the server-side session drop so a slow / dead
     // network never makes the logout button feel broken. Any failure
     // here doesn't matter: local state has already been wiped below
@@ -293,10 +357,17 @@ export function AuthProvider({ children }) {
     // future surface is added there but not here. Non-fatal.
     try { await clearSessionState(); } catch { /* already hard-cleared above */ }
 
-    // Force a reload so any in-memory state outside React (e.g. a
-    // module-level cache, an open WebSocket) starts from zero.
-    try { if (typeof location !== 'undefined') location.reload(); }
-    catch { /* ignore — best-effort */ }
+    // Force a hard navigation to /login (replace, not push) so any
+    // in-memory state outside React (module-level caches, open
+    // WebSockets) starts from zero AND the URL bar shows the
+    // post-logout target. The explicit-logout flag set above keeps
+    // the boot pass on /login even if a stray navigation tried to
+    // forward to /home.
+    try {
+      if (typeof window !== 'undefined') {
+        window.location.replace('/login');
+      }
+    } catch { /* ignore — best-effort */ }
   }
 
   async function resendEmailVerification() {
@@ -313,6 +384,7 @@ export function AuthProvider({ children }) {
     const loggedInUser = data.user || null;
     setUser(loggedInUser);
     setIsOfflineSession(false);
+    try { clearExplicitLogout(); } catch { /* swallow */ }
     setAuthLoading(false);
     cacheSession(loggedInUser);
     logActivity('login', { method: 'phone_otp' }, { userId: loggedInUser?.id });

@@ -50,6 +50,17 @@ function safeStorage() {
   } catch { return null; }
 }
 
+// Inline read of the explicit-logout flag. We avoid importing
+// `src/utils/explicitLogout.js` here to keep this module
+// dependency-free (it ships in the recovery / boot path).
+function _isExplicitLogout() {
+  try {
+    const ls = safeStorage();
+    if (!ls) return false;
+    return ls.getItem('farroway_explicit_logout') === 'true';
+  } catch { return false; }
+}
+
 function readJson(key) {
   const ls = safeStorage();
   if (!ls) return null;
@@ -89,6 +100,15 @@ function removeKey(key) {
  */
 export function repairFarrowaySession() {
   const actions = [];
+
+  // Final logout-loop fix §2: if the farmer just hit Logout,
+  // every repair below would re-stamp the onboarding flag and
+  // re-select the cached farm — which is exactly the bug we're
+  // closing. Bail before any write.
+  if (_isExplicitLogout()) {
+    actions.push('skipped_explicit_logout');
+    return { actions, snapshot: null };
+  }
 
   // ── 1. Drop only corrupted JSON rows (never wipe user data). ──
   for (const key of Object.values(KEY)) {
