@@ -12,6 +12,9 @@ import InsightsDigest from '../components/insights/InsightsDigest.jsx';
 import InviteFriendsCard from '../components/growth/InviteFriendsCard.jsx';
 import SellPromptCard from '../components/growth/SellPromptCard.jsx';
 import MarketSwitcherChip from '../components/markets/MarketSwitcherChip.jsx';
+import HomeTaskEnhancer from '../components/home/HomeTaskEnhancer.jsx';
+import StreakRewardBanner from '../components/engagement/StreakRewardBanner.jsx';
+import { isFeatureEnabled } from '../config/features.js';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
@@ -43,13 +46,28 @@ export default function FarmerOverviewTab() {
   const handleRecompute = async () => {
     setRecomputing(true);
     setLcError('');
+    setLcSuccess('');
+    const previousStage = lifecycle?.currentStage || null;
     try {
       await api.post(`/lifecycle/farmers/${farmerId}/recompute`);
       const r = await api.get(`/lifecycle/farmers/${farmerId}`);
       setLifecycle(r.data);
       refresh();
+      // Spec §5: motivating completion feedback. Show whether the
+      // stage advanced and acknowledge the user's effort either way.
+      const nextStageMeta = STAGE_META[r.data?.currentStage];
+      const nextLabel = nextStageMeta?.label || r.data?.currentStage?.replace(/_/g, ' ') || '';
+      const advanced = previousStage && r.data?.currentStage && previousStage !== r.data.currentStage;
+      setLcSuccess(
+        advanced
+          ? `Great work — you're now in ${nextLabel}.`
+          : nextLabel
+            ? `Progress updated. Keep going in ${nextLabel}.`
+            : 'Progress updated. Great work.',
+      );
+      setTimeout(() => setLcSuccess(''), 5000);
     } catch {
-      setLcError('Failed to refresh lifecycle stage. Please try again.');
+      setLcError('Failed to update progress. Please try again.');
     }
     setRecomputing(false);
   };
@@ -72,6 +90,11 @@ export default function FarmerOverviewTab() {
           detects from country, allows manual override. Self-hides
           when `multiMarket` flag is off. */}
       <MarketSwitcherChip />
+      {/* Daily streak system §4 + §6: milestone celebration on
+          3/7/14/30 OR streak-at-risk warning when no completion
+          yet today (after 4pm local). Self-suppresses when
+          `streakRewards` is off and when neither condition fires. */}
+      <StreakRewardBanner />
       {/* Daily engagement layer (flag-gated; returns null when off) */}
       <EngagementStrip />
       {/* Long-term moat: insights digest pulled from accumulated
@@ -95,12 +118,12 @@ export default function FarmerOverviewTab() {
             </button>
             <button
               className="btn btn-sm"
-              style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '0.78rem', cursor: 'pointer', padding: '0.25rem 0.5rem' }}
+              style={{ background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.45)', color: '#86EFAC', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', padding: '0.35rem 0.75rem', borderRadius: '8px' }}
               onClick={handleRecompute}
               disabled={recomputing || lcLoading}
-              title="Recalculate lifecycle stage from latest activity data"
+              title="Confirm you've completed your current stage activities so we update your progress"
             >
-              {recomputing ? '↻ Recalculating...' : '↻ Refresh stage'}
+              {recomputing ? 'Updating…' : '✓ Mark as done'}
             </button>
           </div>
         </div>
@@ -183,18 +206,35 @@ export default function FarmerOverviewTab() {
               {/* Recommendations */}
               {lifecycle.recommendations && lifecycle.recommendations.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Next Actions</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    {lifecycle.recommendations.slice(0, 4).map((rec, i) => (
-                      <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
-                        <span style={{ color: '#16a34a', fontWeight: 600, flexShrink: 0 }}>-</span>
-                        <div>
-                          <span style={{ fontWeight: 500 }}>{rec.title}</span>
-                          <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>{rec.message}</span>
+                  <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Today’s Priority</div>
+                  {isFeatureEnabled('homeTaskV2') ? (
+                    /* V2 surface: motivating progress line, urgency
+                       chips, benefit text, and prominent Listen
+                       button. Replaces the bare bulleted list. */
+                    <HomeTaskEnhancer
+                      recommendations={lifecycle.recommendations}
+                      currentStageLabel={STAGE_META[lifecycle.currentStage]?.label || lifecycle.currentStage}
+                      progressPct={(() => {
+                        const list = lifecycle.stages || Object.keys(STAGE_META);
+                        const idx = Number(lifecycle.stageIndex);
+                        if (!Number.isFinite(idx) || !list.length) return 0;
+                        return Math.round((idx / Math.max(1, list.length - 1)) * 100);
+                      })()}
+                      lang={lang}
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {lifecycle.recommendations.slice(0, 4).map((rec, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
+                          <span style={{ color: '#16a34a', fontWeight: 600, flexShrink: 0 }}>-</span>
+                          <div>
+                            <span style={{ fontWeight: 500 }}>{rec.title}</span>
+                            <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>{rec.message}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>

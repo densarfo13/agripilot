@@ -27,6 +27,8 @@ import { twiVoice } from '../../i18n/twiVoice.js';
 import VoiceReplayButton from '../voice/VoiceReplayButton.jsx';
 import UpgradePrompt from '../monetization/UpgradePrompt.jsx';
 import ScanShareButton from '../growth/ScanShareButton.jsx';
+import ChannelShareButtons from '../growth/ChannelShareButtons.jsx';
+import ScanContinueCard from '../growth/ScanContinueCard.jsx';
 
 const STYLES = {
   card: {
@@ -252,12 +254,31 @@ export default function ScanResultCard({
         <ScanShareButton result={result} lang={lang} />
       </div>
 
+      {/* User acquisition §2: explicit per-channel share buttons
+          (WhatsApp / Facebook / SMS / Copy). Self-hides when
+          `userAcquisition` is off. Sits below the canonical
+          action row so it never displaces the spec buttons. */}
+      <ChannelShareButtons
+        text={(() => {
+          const issue = String(result?.issue || result?.diagnosis || '').trim();
+          return issue
+            ? `Possible issue: ${issue}. Scanned with Farroway.`
+            : 'Plant scan from Farroway.';
+        })()}
+        context="scan_result"
+      />
+
       <p style={STYLES.disclaimer}>
         {tStrict(
           'scan.disclaimer',
           'Farroway provides guidance based on the photo and available information. Results are not guaranteed. Contact a local expert for severe or spreading issues.'
         )}
       </p>
+
+      {/* User acquisition §4: habit-conversion CTA pointing the
+          user from one scan to a daily plan. Self-hides when
+          `userAcquisition` is off. */}
+      <ScanContinueCard result={result} />
 
       {/* Monetization upgrade prompt — flag-gated; self-hides for
           pro users and when `monetization` is off. Never blocks the

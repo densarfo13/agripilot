@@ -150,6 +150,38 @@ const DEFAULTS = Object.freeze({
   // grant access — the existing route guards still apply. Flag-off
   // path: card returns null; nothing changes on Home.
   ngoMode: false,
+  // Daily streak rewards: surfaces milestone celebrations
+  // (3/7/14/30) and a "don't break your streak" risk warning
+  // when the streak is alive but no completion has been logged
+  // today (after 4pm local). Reads via getStreakSnapshot — pure
+  // read on top of the canonical utils/streak counter. Once-per-
+  // milestone + once-per-day stamp prevents duplicates. Also
+  // injects the "+1 day streak — you're at N!" line into the
+  // Home Tab completion toast.
+  // Wires Home Tab "Mark as done" through updateStreak so home
+  // recommendations count toward the daily streak (was
+  // previously decoupled from the streak counter — bug fix that
+  // applies regardless of this flag).
+  // DEFAULT ON — the spec ships unconditionally. Flag retained
+  // as an opt-out lever: set
+  // VITE_FARROWAY_FEATURE_STREAKREWARDS=0 at build time to hide
+  // the banner + suppress the +1 line (the underlying bug-fix
+  // bump still applies).
+  streakRewards: true,
+  // Home task UX V2: when on, the lifecycle "Today's Priority"
+  // recommendations on the farmer Home tab render through
+  // HomeTaskEnhancer — a hero priority card with title +
+  // benefit + urgency + Mark as done / Skip for now actions, a
+  // prominent "Listen in your language" pill, and a motivating
+  // progress line driven by the stage progress %. Per-day stamps
+  // at `farroway_home_task_state` collapse done/skipped tasks
+  // for 24h. Universal copy fixes (button rename to "Mark as
+  // done", section header rename to "Today's Priority", and
+  // motivating success message) apply regardless of this flag.
+  // DEFAULT ON — the spec ships unconditionally. Flag retained as
+  // an opt-out lever: set VITE_FARROWAY_FEATURE_HOMETASKV2=0 at
+  // build time to revert to the legacy bulleted Next Actions list.
+  homeTaskV2: true,
   // Investor metrics: surfaces `/internal/metrics` with headline
   // KPIs, growth + retention block, and per-market breakdown.
   // Pure read aggregator over existing stores — no new
@@ -199,6 +231,26 @@ const DEFAULTS = Object.freeze({
   // as an opt-out lever: set VITE_FARROWAY_FEATURE_MULTIMARKET=0
   // at build time to revert to the single-market surface.
   multiMarket: true,
+  // User acquisition: stacks on top of `userGrowth` with two
+  // explicit additions:
+  //   §2 ChannelShareButtons on ScanResultCard — direct
+  //      WhatsApp / Facebook / SMS / Copy buttons (instead of
+  //      just the OS share sheet). Each click fires
+  //      `share_clicked` + `share_completed` with channel
+  //      attribution, plus records an outbound invite via
+  //      referralStore so the new-user attribution chain stays
+  //      intact.
+  //   §4 ScanContinueCard on ScanResultCard — habit-conversion
+  //      CTA pointing the user from one scan to a daily plan.
+  //      Routes to /home with crop-aware copy when available.
+  // The other spec items (§1 scan entry, §3 onboarding, §5
+  // referral, §6 tracking) are already shipped via existing
+  // surfaces. DEFAULT ON — the spec ships unconditionally.
+  // Flag retained as opt-out: set
+  // VITE_FARROWAY_FEATURE_USERACQUISITION=0 at build time to
+  // hide the channel buttons + post-scan CTA (the canonical
+  // OS share sheet button remains).
+  userAcquisition: true,
   // User growth: self-sustaining acquisition layer.
   //   §1 ScanShareButton on ScanResultCard — shares result via
   //      Web Share API or clipboard fallback. Includes the user's
