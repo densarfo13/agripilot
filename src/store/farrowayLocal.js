@@ -17,6 +17,11 @@
  */
 
 import { toSquareMeters } from '../lib/units/areaConversion.js';
+// Single-base land-size model. landSizeSqFt is the canonical
+// stored number; displayUnit captures the user's chosen unit
+// so the UI converts ONCE on render. normalizedAreaSqm stays
+// alongside for back-compat with existing per-area math.
+import { toLandSizeSqFt } from '../lib/units/landSizeBase.js';
 
 import { logEvent } from '../lib/events/eventLogger.js';
 
@@ -205,6 +210,15 @@ export function saveFarm({
     // returns null when either piece is missing / invalid so
     // downstream code can handle "unknown area" explicitly.
     normalizedAreaSqm: toSquareMeters(sizeNum, sizeUnit),
+    // Land-size base-unit spec: ONE canonical sqft value + the
+    // user's chosen displayUnit so the UI converts ONCE on
+    // render and never double-converts. Stays consistent with
+    // normalizedAreaSqm via the same input pair.
+    landSizeSqFt: (function () {
+      const v = toLandSizeSqFt(sizeNum, sizeUnit);
+      return Number.isFinite(v) ? Math.round(v * 10000) / 10000 : null;
+    })(),
+    displayUnit: sizeUnit ? String(sizeUnit).trim() : null,
     stage:    stage    ? String(stage).trim()    : null,
     // Farm type tiers the downstream experience (task engine,
     // alerts, recommendations). Canonicalised to one of three
@@ -270,6 +284,15 @@ export function updateFarm(farmId, patch = {}) {
       || changed.size != null) {
     const size = after.farmSize != null ? after.farmSize : after.size;
     after.normalizedAreaSqm = toSquareMeters(size, after.sizeUnit);
+    // Land-size base-unit spec: keep landSizeSqFt + displayUnit
+    // in lockstep with farmSize × sizeUnit. Single conversion on
+    // save; the display layer converts ONCE on render and never
+    // round-trips back to storage.
+    const baseFt = toLandSizeSqFt(size, after.sizeUnit);
+    after.landSizeSqFt = Number.isFinite(baseFt)
+      ? Math.round(baseFt * 10000) / 10000
+      : null;
+    after.displayUnit  = after.sizeUnit ? String(after.sizeUnit).trim() : null;
   }
   farms[idx] = after;
   writeJson(K.FARMS, farms);

@@ -119,6 +119,21 @@ export function AuthProvider({ children }) {
       if (isDev) console.warn('[AUTH] repairExperience unavailable:', err && err.message);
     }
 
+    // Land-size base-unit spec: idempotent migration for any
+    // historical farm rows that pre-date the landSizeSqFt +
+    // displayUnit fields, plus the >10k-acres heuristic that
+    // flips mislabeled rows back to sqft. Lazy-imported so a
+    // problem here can never break boot.
+    try {
+      const { repairLandSizeBase } = await import('../lib/units/landSizeBase.js');
+      const lsActions = repairLandSizeBase();
+      if (isDev && lsActions && lsActions.length) {
+        console.log('[AUTH] repairLandSizeBase applied:', lsActions);
+      }
+    } catch (err) {
+      if (isDev) console.warn('[AUTH] repairLandSizeBase unavailable:', err && err.message);
+    }
+
     // ─── Step 0: Instant restore from cache ──────────────────
     // Show cached user immediately so the UI doesn't flash login.
     // The actual server validation happens below and corrects if stale.

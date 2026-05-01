@@ -397,6 +397,33 @@ const checks = [
           && /getActiveExperience/.test(f);
     },
   },
+  {
+    name: 'landSizeBase ships toLandSizeSqFt + displayLandSize + repair',
+    why:  'Land-size base spec \u2014 single canonical sqft, no double conversion',
+    pass: () => {
+      const f = read('src/lib/units/landSizeBase.js');
+      return /export function toLandSizeSqFt/.test(f)
+          && /export function fromLandSizeSqFt/.test(f)
+          && /export function displayLandSize/.test(f)
+          && /export function repairLandSize\b/.test(f)
+          && /export function repairLandSizeBase/.test(f);
+    },
+  },
+  {
+    name: 'farrowayLocal.saveFarm writes landSizeSqFt + displayUnit',
+    why:  'Land-size base spec \u2014 every saved row carries the canonical base',
+    pass: () => {
+      const f = read('src/store/farrowayLocal.js');
+      return /landSizeSqFt:/.test(f)
+          && /displayUnit:/.test(f)
+          && /toLandSizeSqFt/.test(f);
+    },
+  },
+  {
+    name: 'AuthContext bootstrap runs repairLandSizeBase',
+    why:  'Land-size base spec \u00a76 \u2014 historical rows must auto-migrate',
+    pass: () => /repairLandSizeBase/.test(read('src/context/AuthContext.jsx')),
+  },
 ];
 
 const failed = [];
