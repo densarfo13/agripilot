@@ -149,13 +149,17 @@ export function resolveUserContext(user = null) {
   //    that garden experience always has a usable value here so
   //    downstream code doesn't have to handle null. We coerce
   //    missing values to 'unknown' (the safest fallback).
-  const rawSetupBefore = String(row?.growingSetup || '').toLowerCase();
-  const rawSetup = SETUP_ALIAS[rawSetupBefore] || rawSetupBefore;
   // Merge-spec canonical taxonomy. The legacy 'bed' / 'indoor'
   // values are normalised to the new keys so any garden saved
-  // before the rename still resolves to a usable bucket.
+  // before the rename still resolves to a usable bucket. Declared
+  // BEFORE first read so the `const` TDZ never triggers on the
+  // hot path (a use-before-declaration here would throw on the
+  // very first resolveUserContext() call with a row that has a
+  // growingSetup value).
   const SETUP_ALIAS = { bed: 'raised_bed', indoor: 'indoor_balcony' };
   const ALLOWED_SETUPS = new Set(['container', 'raised_bed', 'ground', 'indoor_balcony', 'unknown']);
+  const rawSetupBefore = String(row?.growingSetup || '').toLowerCase();
+  const rawSetup = SETUP_ALIAS[rawSetupBefore] || rawSetupBefore;
   let growingSetup = ALLOWED_SETUPS.has(rawSetup) ? rawSetup : 'unknown';
   if (experience !== 'garden') {
     // Farms don't have a growingSetup concept; report 'unknown'
