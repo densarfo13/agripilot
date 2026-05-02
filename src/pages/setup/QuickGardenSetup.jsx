@@ -34,7 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { addGarden } from '../../store/multiExperience.js';
-import { setOnboardingComplete } from '../../utils/onboarding.js';
+import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 // Shared progress bar from FastFlow so the garden setup screen
 // shows the same visual indicator as the experience picker.
@@ -172,6 +172,19 @@ export default function QuickGardenSetup() {
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle'); // 'idle'|'requesting'|'denied'|'ok'
 
+  // Final-gap stability \u00a78 \u2014 returning users land on /home,
+  // not in setup. A completed flag means the user already
+  // owns at least one garden/farm; re-entry to /setup/garden
+  // would otherwise let them create a duplicate row.
+  useEffect(() => {
+    try {
+      if (isOnboardingComplete()) {
+        navigate('/home', { replace: true });
+      }
+    } catch { /* swallow */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Spec \u00a78 \u2014 "Use my location" is now an explicit user action,
   // not a silent on-mount probe (which made some browsers prompt
   // for permission before the user knew why). The manual fields
@@ -235,11 +248,15 @@ export default function QuickGardenSetup() {
         stateLabel:     region.trim() || null,
         city:           city.trim() || null,
         gardenSizeCategory: size,
-        // Backyard growing-setup spec \u00a72\u2013\u00a73 \u2014 persisted
-        // verbatim so dailyIntelligenceEngine + hybridScanEngine
-        // can personalise tasks + scan results without an extra
-        // lookup. null when the user skipped the step.
-        growingSetup,
+        // Backyard growing-setup spec \u00a72\u2013\u00a73 + final-gap
+        // stability \u00a76 \u2014 persisted verbatim so
+        // dailyIntelligenceEngine + hybridScanEngine can
+        // personalise tasks + scan results without an extra
+        // lookup. Garden experience MUST always have a value,
+        // so a skipped pick is coerced to 'unknown' (the safest
+        // fallback) instead of null \u2014 downstream consumers can
+        // then branch on the value without a null-check.
+        growingSetup: growingSetup || 'unknown',
         // Non-blocking guidance hint per onboarding spec \u00a72 \u2014
         // stored on the garden record so future surfaces can
         // soften copy for first-time growers without changing

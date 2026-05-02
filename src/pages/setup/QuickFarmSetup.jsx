@@ -38,7 +38,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { addFarm } from '../../store/multiExperience.js';
-import { setOnboardingComplete } from '../../utils/onboarding.js';
+import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { getDefaultUnit, getAllowedUnits } from '../../lib/units/areaConversion.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
@@ -147,6 +147,18 @@ export default function QuickFarmSetup() {
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle');
+
+  // Final-gap stability \u00a78 \u2014 returning users land on /home,
+  // not in setup. A completed flag means the user already
+  // owns at least one garden/farm.
+  useEffect(() => {
+    try {
+      if (isOnboardingComplete()) {
+        navigate('/home', { replace: true });
+      }
+    } catch { /* swallow */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Spec \u00a78 \u2014 "Use my location" is now an explicit user
   // action, not a silent on-mount probe. Failure NEVER blocks

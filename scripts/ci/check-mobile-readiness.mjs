@@ -1361,13 +1361,18 @@ const checks = [
     why:  'Backyard growing-setup spec \u00a71 \u2014 capture pot/bed/ground/unknown',
     pass: () => {
       const f = read('src/pages/setup/QuickGardenSetup.jsx');
+      // Accept either the bare-shorthand `growingSetup,` write
+      // OR the explicit `growingSetup: <expr>,` write so the
+      // 'unknown' coercion (final-gap stability \u00a76) doesn't
+      // trip this guard.
+      const PERSISTED = /growingSetup\s*:\s*growingSetup\b|^\s*growingSetup,?\s*$/m;
       return /garden\.growingSetup\.title/.test(f)
           && /GROWING_SETUP_OPTIONS/.test(f)
           && /garden\.growingSetup\.container/.test(f)
           && /garden\.growingSetup\.bed/.test(f)
           && /garden\.growingSetup\.ground/.test(f)
           && /garden\.growingSetup\.unknown/.test(f)
-          && /growingSetup,?\s*$/m.test(f)                   // persisted on the garden record
+          && PERSISTED.test(f)
           && /quick-garden-growing-/.test(f);                // testid prefix exists
     },
   },
@@ -1456,6 +1461,101 @@ const checks = [
           && /raised_bed:\s*['"]bed['"]/.test(f)
           && /pots:\s*['"]container['"]/.test(f)
           && /growingSetup,/.test(f);                  // included in the saved object
+    },
+  },
+  {
+    // Final-gap stability \u00a71 \u2014 single source of truth for
+    // "who is this user, what are they working on right now,
+    // and where". Returns a stable shape with no undefined keys.
+    name: 'contextResolver ships resolveUserContext with stable shape',
+    why:  'Final-gap stability \u00a71 \u2014 every consumer reads the same context shape',
+    pass: () => {
+      const f = read('src/core/contextResolver.js');
+      return /export function resolveUserContext/.test(f)
+          && /experience,/.test(f)
+          && /gardenId,/.test(f)
+          && /farmId,/.test(f)
+          && /growingSetup,/.test(f)
+          && /location,/.test(f)
+          && /cropOrPlant,/.test(f)
+          // Garden experience always coerces missing growingSetup
+          // to 'unknown' (spec \u00a76).
+          && /growingSetup\s*=\s*['"]unknown['"]/.test(f);
+    },
+  },
+  {
+    // Final-gap stability \u00a77 \u2014 universal "system has nothing
+    // to say" fallback. Scan / API / empty kinds each return a
+    // stable shape with 2\u20133 actions.
+    name: 'getSafeFallback ships scan / api / empty fallbacks with 2\u20133 actions',
+    why:  'Final-gap stability \u00a77 \u2014 user is never stuck on a blank screen',
+    pass: () => {
+      const f = read('src/core/getSafeFallback.js');
+      return /export function getSafeFallback/.test(f)
+          && /SCAN_FALLBACK/.test(f)
+          && /API_FALLBACK/.test(f)
+          && /EMPTY_FALLBACK_GARDEN/.test(f)
+          && /EMPTY_FALLBACK_FARM/.test(f)
+          && /Retake the photo in better light/.test(f)
+          && /Check leaves and soil manually/.test(f)
+          && /Monitor the plant tomorrow/.test(f);
+    },
+  },
+  {
+    // Final-gap stability \u00a72 \u2014 enforceHighTrustScanResult
+    // GUARANTEES at least one action in the rendered result.
+    // Empty engine output falls through to the canonical scan
+    // fallback action set (matches getSafeFallback).
+    name: 'enforceHighTrustScanResult guarantees \u22651 action',
+    why:  'Final-gap stability \u00a72 \u2014 scan result NEVER renders an empty action list',
+    pass: () => {
+      const f = read('src/core/scanResultPolicy.js');
+      return /_SCAN_FALLBACK_ACTIONS/.test(f)
+          && /recommendedActions\.length\s*===\s*0/.test(f)
+          && /Retake the photo in better light/.test(f)
+          && /Check leaves and soil manually/.test(f)
+          && /Monitor the plant tomorrow/.test(f);
+    },
+  },
+  {
+    // Final-gap stability \u00a73 \u2014 sanitizeScanOutput alias points
+    // to the canonical orchestrator so callers can speak in
+    // spec terms ("hard-block forbidden wording") without
+    // learning the longer name.
+    name: 'sanitizeScanOutput alias is exported from scanResultPolicy',
+    why:  'Final-gap stability \u00a73 \u2014 spec-named hard-block entry point',
+    pass: () => {
+      const f = read('src/core/scanResultPolicy.js');
+      return /export const sanitizeScanOutput\s*=\s*enforceHighTrustScanResult/.test(f);
+    },
+  },
+  {
+    // Final-gap stability \u00a76 \u2014 garden experience always has a
+    // usable growingSetup ('unknown' when skipped). Coercion
+    // happens at the canonical write-site (QuickGardenSetup).
+    name: 'QuickGardenSetup coerces missing growingSetup to "unknown"',
+    why:  'Final-gap stability \u00a76 \u2014 garden experience always has a setup value',
+    pass: () => {
+      const f = read('src/pages/setup/QuickGardenSetup.jsx');
+      return /growingSetup:\s*growingSetup\s*\|\|\s*['"]unknown['"]/.test(f);
+    },
+  },
+  {
+    // Final-gap stability \u00a78 \u2014 onboarding routes redirect to
+    // /home when isOnboardingComplete() is true so a returning
+    // user can never land mid-flow + create duplicate gardens
+    // / farms. All three onboarding entry surfaces enforce this.
+    name: 'Onboarding routes redirect to /home when already completed',
+    why:  'Final-gap stability \u00a78 \u2014 onboarding never loops',
+    pass: () => {
+      const flow   = read('src/pages/onboarding/FastFlow.jsx');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const guard  = /isOnboardingComplete\(\)/;
+      const redir  = /navigate\(\s*['"]\/home['"]\s*,\s*\{\s*replace:\s*true\s*\}\s*\)/;
+      return guard.test(flow)   && redir.test(flow)
+          && guard.test(garden) && redir.test(garden)
+          && guard.test(farm)   && redir.test(farm);
     },
   },
 ];

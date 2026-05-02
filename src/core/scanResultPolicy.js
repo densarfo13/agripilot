@@ -43,7 +43,18 @@
  *     engine emits text that mismatches the active context.
  */
 
-// ── Forbidden phrase \u2192 safe replacement ─────────────────────
+// Final-gap stability \u00a72 / \u00a77 \u2014 the canonical scan-failure
+// action set. Kept as a frozen array so the actions-guarantee
+// path below shares the same wording as the standalone
+// getSafeFallback('scan') caller. Mirrors getSafeFallback's
+// SCAN_FALLBACK actions exactly so the two paths cannot drift.
+const _SCAN_FALLBACK_ACTIONS = Object.freeze([
+  'Retake the photo in better light',
+  'Check leaves and soil manually',
+  'Monitor the plant tomorrow',
+]);
+
+// \u2500\u2500 Forbidden phrase \u2192 safe replacement \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 //
 // Order matters: longer phrases first so "confirmed disease" beats
 // "disease". Replacements keep the sentence grammatical and never
@@ -324,7 +335,21 @@ export function enforceHighTrustScanResult(raw, ctx = {}) {
   const actionsSource = Array.isArray(safe.recommendedActions) && safe.recommendedActions.length > 0
     ? safe.recommendedActions
     : (Array.isArray(safe.actions) ? safe.actions : []);
-  const recommendedActions = sanitizeActions(actionsSource);
+  let recommendedActions = sanitizeActions(actionsSource);
+
+  // Final-gap stability \u00a72 \u2014 scan output GUARANTEE: actions
+  // length must be >= 1 before render. If sanitisation stripped
+  // every action OR the engine emitted none, fall through to the
+  // canonical scan-fallback list so the user never sees a blank
+  // "what to do" section. Imported lazily to avoid circular deps
+  // (getSafeFallback is a leaf module).
+  if (recommendedActions.length === 0) {
+    try {
+      // eslint-disable-next-line global-require, import/no-dynamic-require
+      const fb = _SCAN_FALLBACK_ACTIONS;
+      recommendedActions = fb.slice();
+    } catch { /* swallow \u2014 leaf-module import shouldn't fail */ }
+  }
 
   const plantOrCrop = ctx.plantOrCropName
     || safe.plantName
@@ -358,6 +383,25 @@ export function enforceHighTrustScanResult(raw, ctx = {}) {
     disclaimer,
   };
 }
+
+/**
+ * sanitizeScanOutput \u2014 spec-named alias for the orchestrator.
+ *
+ * Final-gap stability \u00a73 calls for a `sanitizeScanOutput()`
+ * function as the hard-block entry point for forbidden wording.
+ * The canonical implementation already lives in
+ * `enforceHighTrustScanResult`, which:
+ *   \u2022 strips banned phrases ("disease detected", "guaranteed",
+ *     "apply N ml", specific product names) via
+ *     `sanitizeScanText` + `sanitizeActions`,
+ *   \u2022 enforces the actions-length \u2265 1 guarantee, and
+ *   \u2022 returns the structured high-trust shape ready for render.
+ *
+ * Exposing this alias means callers can speak in terms of the
+ * spec without learning the longer name. Both names point to
+ * the same function so behaviour stays identical.
+ */
+export const sanitizeScanOutput = enforceHighTrustScanResult;
 
 export const POLICY = Object.freeze({ CATEGORY });
 export default enforceHighTrustScanResult;

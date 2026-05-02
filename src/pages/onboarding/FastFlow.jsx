@@ -35,7 +35,7 @@
  *     and by FastFlow not mounting any of those surfaces itself.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tStrict } from '../../i18n/strictT.js';
@@ -43,6 +43,10 @@ import { loadData, saveData, removeData } from '../../store/localStore.js';
 import { recommendTopCrops } from '../../lib/recommendations/topCropEngine.js';
 import { cropLabel } from '../../utils/cropLabel.js';
 import LanguageSuggestionBanner from '../../components/locale/LanguageSuggestionBanner.jsx';
+// Final-gap stability \u00a78 \u2014 onboarding-completed flag must
+// block re-entry into onboarding routes so a returning user
+// can never accidentally land in setup mid-flow.
+import { isOnboardingComplete } from '../../utils/onboarding.js';
 // Spec \u00a72 \u2014 Step 0 language picker. We reuse the canonical
 // setLanguage() from i18n/index.js so the choice flows into every
 // other surface (the existing LanguageSelector dropdown stays in
@@ -73,6 +77,22 @@ function _initialState() {
 export default function FastFlow() {
   const navigate = useNavigate();
   const { lang } = useTranslation();
+
+  // Final-gap stability \u00a78 \u2014 returning users with the
+  // onboarding-completed flag set MUST land on /home, not in
+  // FastFlow. This prevents the onboarding loop where a
+  // re-entry (deep link, refresh of /onboarding/start) walks
+  // the user through the picker again. The check runs once on
+  // mount; a future user reset clears the flag and re-enables
+  // this route.
+  useEffect(() => {
+    try {
+      if (isOnboardingComplete()) {
+        navigate('/home', { replace: true });
+      }
+    } catch { /* swallow \u2014 router failure shouldn't block render */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [state, setState] = useState(_initialState);
 
