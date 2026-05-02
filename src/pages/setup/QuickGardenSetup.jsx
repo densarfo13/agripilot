@@ -215,6 +215,49 @@ export default function QuickGardenSetup() {
   // the resolved tile label OR the canonical id; an empty query
   // shows every tile (the default).
   const [plantQuery, setPlantQuery] = useState('');
+
+  // Stability-patch \u00a74 \u2014 multi-step state machine. The form
+  // used to render every section stacked on a single scrollable
+  // page; the spec mandates one decision per screen. Sub-steps:
+  //   0  Location               (spec item 3)
+  //   1  Plant                  (spec item 4)
+  //   2  Growing setup + size   (spec item 5, garden-only;
+  //                              size pills stay on the same
+  //                              screen \u2014 both are "about your
+  //                              garden", both optional)
+  //   3  Review + Save          (spec item 7)
+  // Each sub-step renders its own card; Continue at the bottom
+  // advances; Back at the top decrements (sub-step 0 \u2192 routes
+  // back out to FastFlow's experience picker).
+  const [subStep, setSubStep] = useState(0);
+  const TOTAL_SUB_STEPS = 4;
+
+  // Per-sub-step required-field gate. Continue stays disabled
+  // until the gate passes. Sub-steps 2\u20133 (growing setup, size)
+  // are optional and Continue is always enabled.
+  function canAdvance(s) {
+    if (s === 0) return !!country.trim();
+    if (s === 1) {
+      // 'other' tile requires the free-text input to be filled.
+      if (plantPick === 'other' && !plant.trim()) return false;
+      return !!plant.trim();
+    }
+    return true;
+  }
+
+  function handleBack() {
+    if (subStep > 0) {
+      setSubStep(subStep - 1);
+    } else {
+      // Sub-step 0 back \u2192 out to the experience picker so the
+      // user can switch from garden to farm without restarting.
+      try { navigate('/onboarding/start'); } catch { /* swallow */ }
+    }
+  }
+  function handleContinue() {
+    if (!canAdvance(subStep)) return;
+    if (subStep < TOTAL_SUB_STEPS - 1) setSubStep(subStep + 1);
+  }
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle'); // 'idle'|'requesting'|'denied'|'ok'
@@ -364,10 +407,14 @@ export default function QuickGardenSetup() {
   return (
     <main style={S.page} data-testid="quick-garden-setup" data-screen="setup-garden">
       <div>
-        {/* Spec \u00a75 \u2014 progress bar instead of a long step-count pill. The
-            garden flow is 4 steps total (Step 0 lang \u2192 Step 1
-            pick \u2192 Step 2\u20133 setup); we sit at \u224875% on this screen. */}
-        <OnboardingProgressBar value={3} total={4} />
+        {/* Stability-patch \u00a73 \u2014 progress bar only. The
+            canonical onboarding flow is 6 visible decisions
+            total (FastFlow takes 2: language + experience; the
+            setup form takes 4: location, plant, growing setup,
+            review). The bar position reflects the user's
+            absolute position so progress reads continuous from
+            FastFlow into here. */}
+        <OnboardingProgressBar value={3 + subStep} total={6} />
         <h1 style={S.title}>
           {tStrict('setup.garden.title', 'Set up your garden')}
         </h1>
@@ -377,14 +424,10 @@ export default function QuickGardenSetup() {
         </p>
       </div>
 
-      {/* Plant tiles (spec \u00a77 + farm/garden separation \u00a74).
-          Tomato/Pepper/Herbs/Lettuce/Cucumber + Other (free
-          input fallback). A search input above the grid filters
-          visible tiles for users with longer real-world plant
-          lists; "Other" is always shown so the user can fall
-          through to a free-text entry even when nothing matches.
-          The id="review-plant" anchor lets the review panel's
-          "Change plant" button scroll back here. */}
+      {/* SubStep 1 \u2014 Plant tiles. Pick the plant the user is
+          growing. "Other" reveals a free-text fallback so any
+          plant outside the launch list still works. */}
+      {subStep === 1 && (
       <section style={S.card} data-testid="setup-garden-plant-tiles" id="review-plant">
         <span style={S.label}>
           {tStrict('onboarding.pickPlant.title', 'Pick your plant')}
@@ -451,11 +494,12 @@ export default function QuickGardenSetup() {
           <div style={S.errorRow}>{errors.plant}</div>
         ) : null}
       </section>
+      )}
 
-      {/* Location (spec \u00a78). "Use my location" is the primary
-          CTA; manual country + region inputs always available.
-          id="review-location" \u2014 review panel's Change-location
-          button scrolls here. */}
+      {/* SubStep 0 \u2014 Location. "Use my location" + manual
+          country / region inputs. Location failure does NOT
+          block setup. */}
+      {subStep === 0 && (
       <section style={S.card} id="review-location">
         <span style={S.label}>
           {tStrict('onboarding.gardenLocation', 'Where is your garden?')}
@@ -521,41 +565,19 @@ export default function QuickGardenSetup() {
           <div style={S.errorRow}>{errors.country}</div>
         ) : null}
       </section>
+      )}
 
-      {/* Optional skill level (spec \u00a72) \u2014 garden wording. The
-          choice is non-blocking guidance only \u2014 we never gate
-          the Save button on it. */}
-      <section style={S.card} data-testid="setup-garden-skill">
-        <span style={S.label}>
-          {tStrict('onboarding.newToGrowing', 'Are you new to growing?')}
-        </span>
-        <div style={S.pillRow}>
-          {[
-            { value: 'new',      labelKey: 'onboarding.yesNew',           fallback: 'Yes, I\u2019m new' },
-            { value: 'existing', labelKey: 'onboarding.alreadyGrowPlants', fallback: 'I already grow plants' },
-          ].map((opt) => {
-            const active = skillLevel === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSkillLevel(active ? null : opt.value)}
-                style={active ? { ...S.pill, ...S.pillActive } : S.pill}
-                data-testid={`setup-garden-skill-${opt.value}`}
-                aria-pressed={active}
-              >
-                {tStrict(opt.labelKey, opt.fallback)}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Stability-patch \u00a74 \u2014 the optional skill-level pill
+          ("Are you new to growing?") is no longer rendered.
+          Spec \u00a74 explicitly forbids "experience level" in the
+          stacked form; the field stays in state for any
+          downstream surface that wants to read it but is not
+          collected during onboarding. */}
 
-      {/* Growing setup (Backyard growing-setup spec \u00a71). Garden-
-          only step \u2014 captures whether the user grows in a pot,
-          a garden bed, the backyard soil, or doesn't know. Drives
+      {/* SubStep 2 \u2014 Growing setup (garden-only). Drives
           task personalisation downstream (dailyIntelligenceEngine
-          \u00a75) + scan action enrichment (hybridScanEngine \u00a76). */}
+          + hybridScanEngine). */}
+      {subStep === 2 && (
       <section style={S.card} data-testid="setup-garden-growing-setup" id="review-growing-setup">
         <span style={S.label}>
           {tStrict('garden.growingSetup.title', 'How are you growing your plant?')}
@@ -579,10 +601,13 @@ export default function QuickGardenSetup() {
           })}
         </div>
       </section>
+      )}
 
-      {/* Garden size (onboarding spec \u00a76) \u2014 4 fixed buckets,
-          NEVER acres. "I don't know" is selectable so the user
-          can proceed without making up an answer. */}
+      {/* Garden size pills sit on the SAME sub-step as growing
+          setup so the user makes both "about your garden"
+          decisions on one screen. Spec \u00a75 size options;
+          NEVER acres. */}
+      {subStep === 2 && (
       <section style={S.card}>
         <span style={S.label}>
           {tStrict('onboarding.gardenSize.title', 'Garden size')}
@@ -605,45 +630,89 @@ export default function QuickGardenSetup() {
           })}
         </div>
       </section>
+      )}
 
-      {/* Review panel sits between the form fields and the
-          Save button so the user sees "Review your first plan"
-          + the user's actual picks (Plant / Location / Growing
-          setup) BEFORE committing. Each row has a "Change X"
-          button that scrolls back to the relevant form section.
-          Merge-spec \u00a73. */}
-      <OnboardingReviewPanel
-        experience="garden"
-        summary={{
-          plant:                plant.trim() || null,
-          plantAnchor:          'review-plant',
-          location:             [city, region, country].filter((s) => s && s.trim()).join(', ') || null,
-          locationAnchor:       'review-location',
-          growingSetup:         growingSetup
-            ? tStrict(`garden.growingSetup.${growingSetup === 'raised_bed' ? 'raisedBed'
-                                            : growingSetup === 'indoor_balcony' ? 'indoorBalcony'
-                                            : growingSetup}`,
-                growingSetup)
-            : null,
-          growingSetupAnchor:   'review-growing-setup',
-        }}
-      />
+      {/* SubStep 3 \u2014 Review + Save. The user sees their picks
+          (Plant / Location / Growing setup) with Change buttons
+          that jump back to the relevant sub-step (state-based,
+          NOT scroll). Below the panel sits the Save Garden CTA
+          which persists the record + routes to /home. */}
+      {subStep === 3 && (
+        <>
+          <OnboardingReviewPanel
+            experience="garden"
+            summary={{
+              plant:        plant.trim() || null,
+              location:     [city, region, country].filter((s) => s && s.trim()).join(', ') || null,
+              growingSetup: growingSetup
+                ? tStrict(`garden.growingSetup.${growingSetup === 'raised_bed' ? 'raisedBed'
+                                                : growingSetup === 'indoor_balcony' ? 'indoorBalcony'
+                                                : growingSetup}`,
+                    growingSetup)
+                : null,
+            }}
+            onChangeStep={(key) => {
+              // Stability-patch \u00a74 \u2014 state-based jump-back.
+              // Each Change button maps to the sub-step that
+              // owns that field; profile state is preserved
+              // because we only flip the subStep pointer.
+              if (key === 'location')     setSubStep(0);
+              else if (key === 'plant')   setSubStep(1);
+              else if (key === 'growingSetup') setSubStep(2);
+            }}
+          />
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={!canSubmit}
-        style={canSubmit ? S.saveBtn : { ...S.saveBtn, ...S.saveBtnDisabled }}
-        data-testid="quick-garden-save"
-      >
-        {submitting
-          ? tStrict('setup.garden.saving', 'Saving\u2026')
-          : tStrict('onboarding.saveGarden', 'Save Garden')}
-      </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSubmit}
+            style={canSubmit ? S.saveBtn : { ...S.saveBtn, ...S.saveBtnDisabled }}
+            data-testid="quick-garden-save"
+          >
+            {submitting
+              ? tStrict('setup.garden.saving', 'Saving\u2026')
+              : tStrict('onboarding.saveGarden', 'Save Garden')}
+          </button>
 
-      {errors.form ? (
-        <div style={{ ...S.errorRow, fontSize: 13 }}>{errors.form}</div>
-      ) : null}
+          {errors.form ? (
+            <div style={{ ...S.errorRow, fontSize: 13 }}>{errors.form}</div>
+          ) : null}
+        </>
+      )}
+
+      {/* Continue / Back navigation. Save sub-step (4) has its
+          own primary CTA (Save Garden) so we hide Continue
+          there. Back is always shown so the user can step back
+          through the flow without losing data. */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button
+          type="button"
+          onClick={handleBack}
+          style={{
+            appearance: 'none', fontFamily: 'inherit', cursor: 'pointer',
+            background: 'transparent', border: `1px solid ${C.border}`,
+            color: C.ink, padding: '12px 16px', borderRadius: 12,
+            fontSize: 14, fontWeight: 700, minHeight: 44,
+            flex: '0 0 auto',
+          }}
+          data-testid="quick-garden-back"
+        >
+          {tStrict('onboarding.back', 'Back')}
+        </button>
+        {subStep < TOTAL_SUB_STEPS - 1 ? (
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={!canAdvance(subStep)}
+            style={canAdvance(subStep)
+              ? { ...S.saveBtn, marginTop: 0, flex: 1 }
+              : { ...S.saveBtn, ...S.saveBtnDisabled, marginTop: 0, flex: 1 }}
+            data-testid="quick-garden-continue"
+          >
+            {tStrict('onboarding.continue', 'Continue')}
+          </button>
+        ) : null}
+      </div>
     </main>
   );
 }

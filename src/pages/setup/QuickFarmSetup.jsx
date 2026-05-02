@@ -168,6 +168,31 @@ export default function QuickFarmSetup() {
   // Farm/garden separation spec \u00a74 \u2014 search input above the
   // crop tiles so users with longer lists can filter.
   const [cropQuery, setCropQuery] = useState('');
+
+  // Stability-patch \u00a74 \u2014 multi-step state machine. Sub-steps:
+  //   0  Location          (spec item 3)
+  //   1  Crop              (spec item 4)
+  //   2  Farm size         (spec item 6, farm-only)
+  //   3  Review + Save     (spec item 7)
+  const [subStep, setSubStep] = useState(0);
+  const TOTAL_SUB_STEPS = 4;
+  function canAdvance(s) {
+    if (s === 0) return !!country.trim();
+    if (s === 1) {
+      if (cropPick === 'other' && !crop.trim()) return false;
+      return !!crop.trim();
+    }
+    if (s === 2) return !!sizeBucket || !!size.trim();
+    return true;
+  }
+  function handleBack() {
+    if (subStep > 0) setSubStep(subStep - 1);
+    else { try { navigate('/onboarding/start'); } catch { /* swallow */ } }
+  }
+  function handleContinue() {
+    if (!canAdvance(subStep)) return;
+    if (subStep < TOTAL_SUB_STEPS - 1) setSubStep(subStep + 1);
+  }
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle');
@@ -356,7 +381,10 @@ export default function QuickFarmSetup() {
         {/* Spec \u00a75 \u2014 progress bar. Farm flow: 4 steps total
             (Step 0 lang \u2192 Step 1 pick \u2192 Step 2\u20133 setup); we sit
             at \u224875% on this screen. */}
-        <OnboardingProgressBar value={3} total={4} />
+        {/* Stability-patch \u00a73 \u2014 progress bar reads continuous
+            from FastFlow into here. Six visible decisions
+            total; this surface owns positions 3 through 6. */}
+        <OnboardingProgressBar value={3 + subStep} total={6} />
         <h1 style={S.title}>
           {tStrict('setup.farm.title', 'Set up your farm')}
         </h1>
@@ -371,6 +399,8 @@ export default function QuickFarmSetup() {
           fallback). A search input above the grid filters
           visible tiles; "Other" stays visible so users with a
           crop not on the launch list can still type it in. */}
+      {/* SubStep 1 \u2014 Crop pick. */}
+      {subStep === 1 && (
       <section style={S.card} data-testid="setup-farm-crop-tiles" id="review-crop">
         <span style={S.label}>
           {tStrict('onboarding.pickCrop.title', 'Pick your crop')}
@@ -439,9 +469,10 @@ export default function QuickFarmSetup() {
         ) : null}
         {errors.crop ? <div style={S.errorRow}>{errors.crop}</div> : null}
       </section>
+      )}
 
-      {/* Location (spec \u00a78). id="review-location" \u2014 review
-          panel's Change-location button scrolls here. */}
+      {/* SubStep 0 \u2014 Location (spec item 3). */}
+      {subStep === 0 && (
       <section style={S.card} id="review-location">
         <span style={S.label}>
           {tStrict('onboarding.farmLocation', 'Where is your farm?')}
@@ -505,51 +536,19 @@ export default function QuickFarmSetup() {
         ) : null}
         {errors.country ? <div style={S.errorRow}>{errors.country}</div> : null}
       </section>
+      )}
 
-      {/* Optional skill level (spec \u00a72) \u2014 farm wording. The
-          choice is non-blocking guidance only. */}
-      <section style={S.card} data-testid="setup-farm-skill">
-        <span style={S.label}>
-          {tStrict('onboarding.newToFarming', 'Are you new to farming?')}
-        </span>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-          {[
-            { value: 'new',      labelKey: 'onboarding.yesNew',      fallback: 'Yes, I\u2019m new' },
-            { value: 'existing', labelKey: 'onboarding.alreadyFarm', fallback: 'I already farm' },
-          ].map((opt) => {
-            const active = skillLevel === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSkillLevel(active ? null : opt.value)}
-                style={{
-                  appearance: 'none',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                  background: active ? 'rgba(34,197,94,0.18)' : 'transparent',
-                  border: `1px solid ${active ? 'rgba(34,197,94,0.32)' : C.border}`,
-                  color: active ? '#86EFAC' : C.ink,
-                  padding: '8px 14px',
-                  borderRadius: 999,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  minHeight: 40,
-                }}
-                data-testid={`setup-farm-skill-${opt.value}`}
-                aria-pressed={active}
-              >
-                {tStrict(opt.labelKey, opt.fallback)}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Stability-patch \u00a74 \u2014 the optional skill-level pill
+          ("Are you new to farming?") is no longer rendered.
+          Spec \u00a74 forbids "experience level" in the stacked
+          form; the field stays in state for any downstream
+          surface that wants to read it but is not collected
+          during onboarding. */}
 
-      {/* Farm size buckets (spec \u00a76). Less than 1 acre / 1\u20135 /
-          5+ / I don't know. NEVER show "Small backyard". An
-          optional custom row underneath lets the user enter
-          exact acres / hectares / sq ft if they want precision. */}
+      {/* SubStep 2 \u2014 Farm size (spec item 6, farm-only).
+          4 acre buckets + optional custom row. NEVER shows
+          "Small backyard". */}
+      {subStep === 2 && (
       <section style={S.card} data-testid="setup-farm-size-buckets" id="review-farm-size">
         <span style={S.label}>
           {tStrict('onboarding.farmSize.title', 'Farm size')}
@@ -626,40 +625,79 @@ export default function QuickFarmSetup() {
         {errors.size ? <div style={S.errorRow}>{errors.size}</div> : null}
         {errors.unit ? <div style={S.errorRow}>{errors.unit}</div> : null}
       </section>
+      )}
 
-      {/* Review panel \u2014 final-merged onboarding spec \u00a75 +
-          merge-spec \u00a73 "Your picks" summary. Farm renders Crop +
-          Location + Farm size. The Change buttons scroll back
-          to the form sections via the anchors above. */}
-      <OnboardingReviewPanel
-        experience="farm"
-        summary={{
-          crop:           crop.trim() || null,
-          cropAnchor:     'review-crop',
-          location:       [region, country].filter((s) => s && s.trim()).join(', ') || null,
-          locationAnchor: 'review-location',
-          farmSize:       sizeBucket
-            ? tStrict(`onboarding.farmSize.${sizeBucket}`, sizeBucket)
-            : (size ? `${size} ${unit || ''}`.trim() : null),
-          farmSizeAnchor: 'review-farm-size',
-        }}
-      />
+      {/* SubStep 3 \u2014 Review + Save. Farm renders Crop +
+          Location + Farm size with Change buttons that jump
+          back via setSubStep (state-based, not scroll). */}
+      {subStep === 3 && (
+        <>
+          <OnboardingReviewPanel
+            experience="farm"
+            summary={{
+              crop:     crop.trim() || null,
+              location: [region, country].filter((s) => s && s.trim()).join(', ') || null,
+              farmSize: sizeBucket
+                ? tStrict(`onboarding.farmSize.${sizeBucket}`, sizeBucket)
+                : (size ? `${size} ${unit || ''}`.trim() : null),
+            }}
+            onChangeStep={(key) => {
+              if (key === 'location')      setSubStep(0);
+              else if (key === 'crop')     setSubStep(1);
+              else if (key === 'farmSize') setSubStep(2);
+            }}
+          />
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={!canSubmit}
-        style={canSubmit ? S.saveBtn : { ...S.saveBtn, ...S.saveBtnDisabled }}
-        data-testid="quick-farm-save"
-      >
-        {submitting
-          ? tStrict('setup.farm.saving', 'Saving\u2026')
-          : tStrict('onboarding.saveFarm', 'Save Farm')}
-      </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSubmit}
+            style={canSubmit ? S.saveBtn : { ...S.saveBtn, ...S.saveBtnDisabled }}
+            data-testid="quick-farm-save"
+          >
+            {submitting
+              ? tStrict('setup.farm.saving', 'Saving\u2026')
+              : tStrict('onboarding.saveFarm', 'Save Farm')}
+          </button>
 
-      {errors.form ? (
-        <div style={{ ...S.errorRow, fontSize: 13 }}>{errors.form}</div>
-      ) : null}
+          {errors.form ? (
+            <div style={{ ...S.errorRow, fontSize: 13 }}>{errors.form}</div>
+          ) : null}
+        </>
+      )}
+
+      {/* Continue / Back navigation. Save sub-step (3) has its
+          own primary CTA (Save Farm) so we hide Continue
+          there. Back is always shown. */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button
+          type="button"
+          onClick={handleBack}
+          style={{
+            appearance: 'none', fontFamily: 'inherit', cursor: 'pointer',
+            background: 'transparent', border: `1px solid ${C.border}`,
+            color: C.ink, padding: '12px 16px', borderRadius: 12,
+            fontSize: 14, fontWeight: 700, minHeight: 44,
+            flex: '0 0 auto',
+          }}
+          data-testid="quick-farm-back"
+        >
+          {tStrict('onboarding.back', 'Back')}
+        </button>
+        {subStep < TOTAL_SUB_STEPS - 1 ? (
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={!canAdvance(subStep)}
+            style={canAdvance(subStep)
+              ? { ...S.saveBtn, marginTop: 0, flex: 1 }
+              : { ...S.saveBtn, ...S.saveBtnDisabled, marginTop: 0, flex: 1 }}
+            data-testid="quick-farm-continue"
+          >
+            {tStrict('onboarding.continue', 'Continue')}
+          </button>
+        ) : null}
+      </div>
     </main>
   );
 }

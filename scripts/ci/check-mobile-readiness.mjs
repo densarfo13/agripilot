@@ -1120,42 +1120,49 @@ const checks = [
   {
     // High-trust onboarding spec \u00a78 \u2014 step indicator MUST
     // show "Step X of 3" so users see a 3-step (not 6) flow.
-    name: 'FastFlow step indicator caps at 3-4 steps',
-    why:  'High-trust onboarding spec \u00a78 \u2014 3-4 steps max, no scary 1/6 number',
+    // Stability-patch \u00a73 \u2014 step pill REMOVED entirely from
+    // the FastFlow header; only the progress bar communicates
+    // position. The bar represents the canonical 6-decision
+    // flow (FastFlow takes 2: language + experience; setup
+    // form takes 4: location, plant/crop, setup, review).
+    name: 'FastFlow header has no step-count pill (progress bar only)',
+    why:  'Stability-patch \u00a73 \u2014 numeric step counts removed',
     pass: () => {
       const f = read('src/pages/onboarding/FastFlow.jsx');
-      // Either a literal "/ 3" or "/ 4" total OR the totalSteps
-      // prop pattern that powers the new picker (Step 0 language
-      // + Step 1 experience + 2 setup steps = 4).
-      return /onboarding\.step/.test(f)
-          && (/totalSteps\s*=\s*4/.test(f) || /\.replace\(['"]\{total\}['"],\s*['"][34]['"]\)/.test(f))
-          && !/\{step\}\s*\/\s*[56]/.test(f);   // no legacy "X / 5" or "/ 6"
+      // Forbidden: any rendered tStrict('onboarding.step', \u2026)
+      // call inside the Header. The legacy `<span style={S.stepPill}>`
+      // is gone; the Header now only renders the back button or
+      // a hidden spacer.
+      return !/data-testid=["']fast-flow-step["']/.test(f)
+          && !/tStrict\(\s*['"]onboarding\.step['"]/.test(f)
+          // Progress bar still mounted with totalSteps = 6
+          // (matches the canonical flow length).
+          && /totalSteps\s*=\s*6/.test(f)
+          && /<OnboardingProgressBar/.test(f);
     },
   },
   {
     // High-trust onboarding spec \u00a72 \u2014 "Are you new to growing?"
     // moves to the setup forms as a non-blocking guidance pill.
     // Garden uses growing-wording, Farm uses farming-wording.
-    name: 'Quick setup forms ship optional skill-level pill (non-blocking)',
-    why:  'High-trust onboarding spec \u00a72 \u2014 experience level moves AFTER experience pick',
+    // Stability-patch \u00a74 \u2014 the skill-level pill is no longer
+    // rendered (spec \u00a74 forbids "experience level" in the
+    // stacked form). The skillLevel state stays in both Quick
+    // setups for any downstream surface that wants to read it,
+    // but it is NOT collected during onboarding.
+    name: 'Quick setup forms do NOT render the skill-level pill',
+    why:  'Stability-patch \u00a74 \u2014 one decision per screen, no experience-level pill',
     pass: () => {
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      // Both files build the testid via a template literal:
-      //   `setup-garden-skill-${opt.value}` / `setup-farm-skill-${opt.value}`
-      // Match either the literal resolved form OR the template
-      // form so the guard isn't sensitive to the rendering style.
-      const SKILL_TESTID = /setup-(?:garden|farm)-skill-(?:new|existing|\$\{opt\.value\})/;
-      return /onboarding\.newToGrowing/.test(garden)
-          && /onboarding\.alreadyGrowPlants/.test(garden)
-          && SKILL_TESTID.test(garden)
-          && /onboarding\.newToFarming/.test(farm)
-          && /onboarding\.alreadyFarm/.test(farm)
-          && SKILL_TESTID.test(farm)
-          // Ensure skillLevel is captured into the persisted record
-          // (so downstream surfaces can soften copy without refetching).
-          && /skillLevel/.test(garden)
-          && /skillLevel/.test(farm);
+      // Forbidden: testids on the dropped pill row.
+      const SKILL_TESTID = /data-testid=\{`setup-(?:garden|farm)-skill-/;
+      return !SKILL_TESTID.test(garden)
+          && !SKILL_TESTID.test(farm)
+          // The legacy "Are you new to..." copy is no longer
+          // referenced in the rendered output.
+          && !/tStrict\('onboarding\.newToGrowing'/.test(garden)
+          && !/tStrict\('onboarding\.newToFarming'/.test(farm);
     },
   },
   {
@@ -2211,6 +2218,47 @@ const checks = [
           && PHRASE.test(trans)
           && PHRASE.test(manifest)
           && PHRASE.test(html);
+    },
+  },
+  {
+    // Stability-patch \u00a74 \u2014 Quick setup forms are now
+    // multi-step state machines (one decision per screen),
+    // not single scrollable stacked forms. Each setup ships
+    // a subStep state, canAdvance gate, handleBack +
+    // handleContinue, and the review-screen Change buttons
+    // jump back via setSubStep (state-based, NOT scrollIntoView).
+    name: 'Quick setup forms are multi-step (one decision per screen)',
+    why:  'Stability-patch \u00a74 \u2014 stacked form removed; back preserves data',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const REQ = (f) =>
+            /\[\s*subStep,\s*setSubStep\s*\]\s*=\s*useState\(0\)/.test(f)
+         && /TOTAL_SUB_STEPS\s*=\s*4/.test(f)
+         && /function canAdvance/.test(f)
+         && /function handleBack/.test(f)
+         && /function handleContinue/.test(f)
+         && /\{\s*subStep === 0\s*&&/.test(f)
+         && /\{\s*subStep === 1\s*&&/.test(f)
+         && /\{\s*subStep === 2\s*&&/.test(f)
+         && /\{\s*subStep === 3\s*&&/.test(f)
+         // Review panel jumps back via state, not scroll.
+         && /onChangeStep=\{/.test(f)
+         && /setSubStep\(\d\)/.test(f);
+      return REQ(garden) && REQ(farm);
+    },
+  },
+  {
+    // Stability-patch \u00a71 \u2014 the FastFlow header logo image
+    // ships an onError fallback that hides the <img> if it
+    // fails to load. No "?" placeholder, no broken-image icon.
+    name: 'FastFlow header logo has onError fallback (no broken icon)',
+    why:  'Stability-patch \u00a71 \u2014 broken logo never shows a placeholder',
+    pass: () => {
+      const f = read('src/pages/onboarding/FastFlow.jsx');
+      return /logoFailed/.test(f)
+          && /onError=\{\(\)\s*=>\s*setLogoFailed\(true\)\}/.test(f)
+          && /logoFailed \?\s*null/.test(f);
     },
   },
 ];

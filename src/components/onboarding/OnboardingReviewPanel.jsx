@@ -113,7 +113,7 @@ function scrollToAnchor(id) {
   } catch { /* swallow */ }
 }
 
-export default function OnboardingReviewPanel({ experience, summary }) {
+export default function OnboardingReviewPanel({ experience, summary, onChangeStep }) {
   const isGarden = String(experience || '').toLowerCase() === 'garden'
                 || String(experience || '').toLowerCase() === 'backyard';
   const tasks = _tasksFor(experience);
@@ -154,11 +154,21 @@ export default function OnboardingReviewPanel({ experience, summary }) {
           <span style={S.summaryTitle}>
             {tSafe('onboarding.review.editTitle', 'Edit your setup')}
           </span>
+          {/* Each Change button jumps the user back to the
+              corresponding step. The parent passes onChangeStep
+              when the form is multi-step (state-based jump);
+              otherwise we fall back to the same-page scroll
+              anchor. Stability-patch \u00a74 \u2014 the multi-step
+              setup forms now drive jumps via setSubStep so
+              the user lands on a real Pick-X / Location screen
+              instead of scrolling within a stacked form. */}
           {safeSummary.plant != null ? (
             <SummaryRow
               label={tSafe('onboarding.review.changePlant', 'Plant')}
               value={safeSummary.plant}
-              onChange={() => scrollToAnchor(safeSummary.plantAnchor || 'review-plant')}
+              onChange={() => (typeof onChangeStep === 'function'
+                ? onChangeStep('plant')
+                : scrollToAnchor(safeSummary.plantAnchor || 'review-plant'))}
               changeLabel={tSafe('onboarding.review.changePlantBtn', 'Change plant')}
               testid="onboarding-review-change-plant"
             />
@@ -167,7 +177,9 @@ export default function OnboardingReviewPanel({ experience, summary }) {
             <SummaryRow
               label={tSafe('onboarding.review.changeCropLabel', 'Crop')}
               value={safeSummary.crop}
-              onChange={() => scrollToAnchor(safeSummary.cropAnchor || 'review-crop')}
+              onChange={() => (typeof onChangeStep === 'function'
+                ? onChangeStep('crop')
+                : scrollToAnchor(safeSummary.cropAnchor || 'review-crop'))}
               changeLabel={tSafe('onboarding.review.changeCrop', 'Change crop')}
               testid="onboarding-review-change-crop"
             />
@@ -176,7 +188,9 @@ export default function OnboardingReviewPanel({ experience, summary }) {
             <SummaryRow
               label={tSafe('onboarding.review.locationLabel', 'Location')}
               value={safeSummary.location}
-              onChange={() => scrollToAnchor(safeSummary.locationAnchor || 'review-location')}
+              onChange={() => (typeof onChangeStep === 'function'
+                ? onChangeStep('location')
+                : scrollToAnchor(safeSummary.locationAnchor || 'review-location'))}
               changeLabel={tSafe('onboarding.review.changeLocation', 'Change location')}
               testid="onboarding-review-change-location"
             />
@@ -185,7 +199,9 @@ export default function OnboardingReviewPanel({ experience, summary }) {
             <SummaryRow
               label={tSafe('garden.growingSetup.label', 'Growing setup')}
               value={safeSummary.growingSetup}
-              onChange={() => scrollToAnchor(safeSummary.growingSetupAnchor || 'review-growing-setup')}
+              onChange={() => (typeof onChangeStep === 'function'
+                ? onChangeStep('growingSetup')
+                : scrollToAnchor(safeSummary.growingSetupAnchor || 'review-growing-setup'))}
               changeLabel={tSafe('onboarding.review.changeGrowingSetup', 'Change growing setup')}
               testid="onboarding-review-change-growing-setup"
             />
@@ -194,7 +210,9 @@ export default function OnboardingReviewPanel({ experience, summary }) {
             <SummaryRow
               label={tSafe('onboarding.farmSize.title', 'Farm size')}
               value={safeSummary.farmSize}
-              onChange={() => scrollToAnchor(safeSummary.farmSizeAnchor || 'review-farm-size')}
+              onChange={() => (typeof onChangeStep === 'function'
+                ? onChangeStep('farmSize')
+                : scrollToAnchor(safeSummary.farmSizeAnchor || 'review-farm-size'))}
               changeLabel={tSafe('onboarding.review.changeFarmSize', 'Change farm size')}
               testid="onboarding-review-change-farm-size"
             />

@@ -197,22 +197,18 @@ export default function FastFlow() {
     try { navigate(target); } catch { /* swallow */ }
   }
 
-  // Spec \u00a75 \u2014 progress bar instead of a long step-count pill. Total
-  // assumed 4 steps (FastFlow Step 0 + Step 1, then 2 setup
-  // steps); progress reflects the visible position in the flow.
-  // The setup forms own their own slice of the bar.
-  const totalSteps = 4;
+  // Stability-patch \u00a73 \u2014 progress bar only, no numeric
+  // pill. The canonical onboarding flow is 6 visible
+  // decisions total: FastFlow takes 2 (language + experience),
+  // the setup form takes 4 (location, plant/crop, setup,
+  // review). The bar reads continuous across both surfaces.
+  const totalSteps = 6;
   const visibleStep = step + 1; // 1-indexed display
 
   return (
     <div style={S.page} data-testid="fast-flow" data-step={String(step)}>
       <div style={S.container}>
-        <Header
-          lang={lang}
-          step={visibleStep}
-          totalSteps={totalSteps}
-          onBack={step > 0 ? () => setStep(step - 1) : null}
-        />
+        <Header onBack={step > 0 ? () => setStep(step - 1) : null} />
         <OnboardingProgressBar value={visibleStep} total={totalSteps} />
         {step === 0 && (
           <ScreenLanguage onPick={pickLanguage} />
@@ -282,24 +278,28 @@ function ScreenLanguage({ onPick }) {
   );
 }
 
-function Header({ step, totalSteps, onBack }) {
+function Header({ onBack }) {
+  // Stability-patch \u00a71 \u2014 logo with an onError fallback. If
+  // the image fails to load (broken deploy, cached 404, CSP),
+  // the <img> hides itself and we render NOTHING in its place.
+  // No "?" placeholder, no broken-image icon, no fallback to
+  // the legacy emoji. The wordmark "Farroway" beside it
+  // continues to carry the brand identity.
+  const [logoFailed, setLogoFailed] = useState(false);
   return (
     <header style={S.header}>
       <div style={S.brandRow}>
-        {/* Premium logo (final-onboarding-polish spec \u00a71). The
-            emoji that used to sit here was replaced with the
-            canonical raster mark from /icons/logo-premium.jpg.
-            Height capped at 32px; aspect ratio preserved via
-            object-fit; alt is empty because the wordmark
-            "Farroway" beside it carries the brand name. */}
-        <img
-          src="/icons/logo-premium.jpg"
-          alt=""
-          width="32"
-          height="32"
-          style={S.brandLogoImg}
-          aria-hidden="true"
-        />
+        {logoFailed ? null : (
+          <img
+            src="/icons/logo-premium.jpg"
+            alt=""
+            width="32"
+            height="32"
+            style={S.brandLogoImg}
+            aria-hidden="true"
+            onError={() => setLogoFailed(true)}
+          />
+        )}
         <div style={S.brandTextCol}>
           <span style={S.brandName}>Farroway</span>
           <span style={S.brandTagline}>
@@ -307,6 +307,12 @@ function Header({ step, totalSteps, onBack }) {
           </span>
         </div>
       </div>
+      {/* Stability-patch \u00a73 \u2014 the step-count pill is gone.
+          Progress is communicated by the bar below the header.
+          On the final step, callers can render a small
+          "Almost done" string in their own surface; the header
+          stays minimal. The back button still appears on every
+          step >= 1. */}
       {onBack ? (
         <button
           type="button"
@@ -315,14 +321,12 @@ function Header({ step, totalSteps, onBack }) {
           aria-label={tStrict('onboarding.back', 'Back')}
           data-testid="fast-flow-back"
         >
-          \u2190
+          {'\u2190'}
         </button>
       ) : (
-        <span style={S.stepPill} data-testid="fast-flow-step">
-          {tStrict('onboarding.step', 'Step {done} of {total}')
-            .replace('{done}', String(step))
-            .replace('{total}', String(totalSteps || 4))}
-        </span>
+        // Empty spacer so the header keeps its
+        // space-between layout even with no step pill.
+        <span style={{ ...S.backBtn, visibility: 'hidden' }} aria-hidden="true" />
       )}
     </header>
   );
