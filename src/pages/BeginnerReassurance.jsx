@@ -34,9 +34,13 @@ export default function BeginnerReassurance() {
   function handleContinue() {
     markSeen();
     safeTrackEvent('onboarding.reassurance_continue', {});
-    // Route into the fast onboarding flow (first-time farmer path)
-    // rather than the legacy crop-fit intake form.
-    navigate('/onboarding/fast', { replace: true });
+    // Risk-fix follow-up to 9874630: route into the canonical
+    // post-rewrite FastFlow at /onboarding/start (Step 0 language
+    // picker \u2192 Step 1 "What are you growing?" \u2192 quick setup),
+    // not the older /onboarding/fast V2 route. Both routes still
+    // exist; pointing here ensures new users land on the polished
+    // canonical path.
+    navigate('/onboarding/start', { replace: true });
   }
 
   return (

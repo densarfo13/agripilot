@@ -73,7 +73,12 @@ export default function OnboardingFlow() {
   // Forward to the legacy onboarding when the flag is off so
   // anyone who lands here doesn't see a blank screen.
   if (!isFeatureEnabled('FEATURE_SIMPLE_ONBOARDING')) {
-    navigate('/onboarding', { replace: true });
+    // Risk-fix follow-up to 9874630: when the simple-onboarding
+    // flag is off, route to the CANONICAL post-rewrite entry
+    // (/onboarding/start \u2192 FastFlow) instead of the legacy
+    // /onboarding root. This collapses two parallel onboarding
+    // paths into one user-facing flow.
+    navigate('/onboarding/start', { replace: true });
     return null;
   }
 

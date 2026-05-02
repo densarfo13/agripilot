@@ -1719,6 +1719,30 @@ const checks = [
       return /step\s*===\s*TOTAL_STEPS\s*\?\s*tSafe\(\s*['"]onboarding\.almostDone['"]/.test(f);
     },
   },
+  {
+    // Risk-fix follow-up to 9874630 \u2014 the user-facing onboarding
+    // entry surfaces (FarmerEntry post-auth, BeginnerReassurance
+    // continue, OnboardingFlow flag-off) ALL route to the
+    // canonical post-rewrite FastFlow at /onboarding/start.
+    // Collapses parallel onboarding paths into a single
+    // user-facing flow that gets every polish fix shipped so far.
+    name: 'Canonical onboarding entry points all route to /onboarding/start',
+    why:  'Risk-fix \u2014 single user-facing onboarding flow',
+    pass: () => {
+      const farmerEntry  = read('src/pages/FarmerEntry.jsx');
+      const reassurance  = read('src/pages/BeginnerReassurance.jsx');
+      const simpleFlow   = read('src/onboarding/OnboardingFlow.jsx');
+      // FarmerEntry: post-auth no-farm path navigates to /onboarding/start.
+      const farmerOk = /['"]\/onboarding\/start['"]\s*:\s*['"]\/beginner-reassurance['"]/.test(farmerEntry);
+      // BeginnerReassurance: Continue button navigates to /onboarding/start.
+      const reassureOk = /navigate\(\s*['"]\/onboarding\/start['"],\s*\{\s*replace:\s*true\s*\}\s*\)/.test(reassurance);
+      // Simple Onboarding flag-off redirect target is /onboarding/start.
+      // Buffer is generous because the redirect comment block sits
+      // between the flag check and the navigate call.
+      const simpleOk = /isFeatureEnabled\(['"]FEATURE_SIMPLE_ONBOARDING['"]\)[\s\S]{0,800}navigate\(\s*['"]\/onboarding\/start['"]/.test(simpleFlow);
+      return farmerOk && reassureOk && simpleOk;
+    },
+  },
 ];
 
 const failed = [];
