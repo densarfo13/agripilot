@@ -565,6 +565,25 @@ export default function App() {
           if (!cycleId || !payload) return;
           return api.post(`/crop-cycles/${cycleId}/harvest`, payload, cfg);
         }
+        // Retention Loop \u00a76 follow-up \u2014 micro health-feedback
+        // mirror. Local persistence at `farroway_health_feedback`
+        // is the source of truth; this case forwards the same
+        // payload to the server endpoint so admin dashboards can
+        // aggregate cross-device. Gated by
+        // FEATURE_HEALTH_FEEDBACK_SYNC at the enqueue site
+        // (src/core/healthFeedbackStore.js); when the flag is
+        // off no entries land here, so the dispatcher is a
+        // no-op until the server route ships.
+        case 'health_feedback': {
+          const { contextId, contextType, date, healthFeedback } = action.payload || {};
+          if (!contextId || !healthFeedback) return;
+          return api.post('/health-feedback', {
+            contextId,
+            contextType,
+            date,
+            healthFeedback,
+          }, cfg);
+        }
         default:
           return undefined;
       }

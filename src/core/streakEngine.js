@@ -71,10 +71,29 @@ function _safeSet(key, value) {
 }
 
 /**
- * Format a Date as 'YYYY-MM-DD' in local time. Matches the
+ * Format a Date as 'YYYY-MM-DD' in LOCAL time. Matches the
  * dayKey() helper used elsewhere (dailyTaskCompletion +
  * lib/loop) so the streak day boundary lines up with the
  * task-completion day boundary.
+ *
+ * Why local time (not UTC)
+ * ────────────────────────
+ * Pilot users are smallholder farmers who live and work in
+ * one time zone — their "today" is defined by their device
+ * clock, not Greenwich. A UTC-based boundary would split a
+ * West African farmer's evening across two streak days, and
+ * a Hindi farmer's morning task could count under yesterday.
+ * Local time keeps the streak intuitive: "I worked today,
+ * so my streak grew today."
+ *
+ * Edge case: a user crossing time zones (rare for our pilots
+ * but possible for diaspora demos) might see one extra day
+ * gain or one missed day loss when the device clock jumps.
+ * That's a deliberate trade-off — the alternative (UTC) would
+ * misread "today" for every regular user. If pilot data shows
+ * the trade-off biting, the fix is to read the active farm's
+ * `country` from contextResolver and look up its IANA zone,
+ * not to flip the boundary global-by-default.
  */
 function _localDayKey(date) {
   const d = (date instanceof Date) ? date : new Date(date || Date.now());

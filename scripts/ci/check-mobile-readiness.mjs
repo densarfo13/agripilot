@@ -2848,6 +2848,30 @@ const checks = [
     // every retention-loop module: completed state per task,
     // streak pill, progress bar, adaptive banner, completion
     // toast, health prompt, and all-done tomorrow preview.
+    // Retention Loop \u00a76 follow-up \u2014 health-feedback writes
+    // mirror to the offline queue (gated by feature flag)
+    // and the App.jsx dispatcher knows how to send them.
+    // The flag stays OFF until the server endpoint at
+    // /health-feedback exists; wiring is in place so flipping
+    // the flag is the only step needed.
+    name: 'healthFeedbackStore mirrors writes to offline queue (gated)',
+    why:  'Retention Loop \u00a76 follow-up \u2014 server-sync wiring ready',
+    pass: () => {
+      const f = read('src/core/healthFeedbackStore.js');
+      const flags = read('src/utils/featureFlags.js');
+      const app = read('src/App.jsx');
+      return /from\s+['"]\.\.\/offline\/offlineQueue\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/utils\/featureFlags\.js['"]/.test(f)
+          && /isFeatureEnabled\(['"]FEATURE_HEALTH_FEEDBACK_SYNC['"]\)/.test(f)
+          && /addToQueue\(\s*\{[\s\S]*?type:\s*['"]health_feedback['"]/.test(f)
+          // Default OFF.
+          && /FEATURE_HEALTH_FEEDBACK_SYNC:\s*false/.test(flags)
+          // App dispatcher knows the type.
+          && /case\s+['"]health_feedback['"]/.test(app)
+          && /\/health-feedback/.test(app);
+    },
+  },
+  {
     name: 'DailyPlanCard wires retention loop (streak + progress + adaptive + health)',
     why:  'Retention Loop \u00a71\u2013\u00a77 \u2014 Home card surfaces engagement',
     pass: () => {

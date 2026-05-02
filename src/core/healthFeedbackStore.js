@@ -45,6 +45,17 @@
  */
 
 import { trackEvent } from '../analytics/analyticsStore.js';
+// Server-sync mirror (Retention Loop §6 follow-up). Health-
+// feedback writes ALSO land on the lightweight offline queue
+// when FEATURE_HEALTH_FEEDBACK_SYNC is on; the App.jsx 5s
+// tick then drains the queue against the server endpoint
+// (api.post('/health-feedback', payload)). The flag stays OFF
+// at default so we don't enqueue doomed POSTs against a
+// route that doesn't exist yet \u2014 when the server endpoint
+// ships, flip the flag and existing local entries stay
+// readable on-device while NEW writes mirror to the queue.
+import { addToQueue } from '../offline/offlineQueue.js';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 
 export const HEALTH_FEEDBACK_KEY = 'farroway_health_feedback';
 const MAX_ENTRIES = 200;
@@ -135,6 +146,27 @@ export function recordHealthFeedback(input) {
       date,
     });
   } catch { /* swallow */ }
+  // Server-sync mirror. Gated by FEATURE_HEALTH_FEEDBACK_SYNC
+  // so we don't enqueue doomed POSTs against a server route
+  // that doesn't exist yet. Wrapped in try/catch so a queue-
+  // write failure never blocks the local persistence above.
+  // The dispatcher in App.jsx maps `health_feedback` actions
+  // onto `api.post('/health-feedback', payload)` so flipping
+  // the flag is the only step needed when the server route
+  // ships.
+  try {
+    if (isFeatureEnabled('FEATURE_HEALTH_FEEDBACK_SYNC')) {
+      addToQueue({
+        type: 'health_feedback',
+        payload: {
+          contextId,
+          contextType,
+          date,
+          healthFeedback: value,
+        },
+      });
+    }
+  } catch { /* swallow — local persistence already landed */ }
   return entry;
 }
 

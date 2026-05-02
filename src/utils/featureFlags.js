@@ -59,6 +59,18 @@ const DEFAULTS = Object.freeze({
   // path no-ops (useful during pilot).
   FEATURE_AUTO_TASK_GENERATION: true,
 
+  // Retention Loop spec §6 follow-up — server sync for the
+  // micro health-feedback prompt (Yes / Not sure / No).
+  // Default OFF: the local store at `farroway_health_feedback`
+  // is the source of truth, and we don't want to enqueue
+  // doomed POSTs against a server route that doesn't exist
+  // yet. When the server endpoint at /api/health-feedback
+  // ships, flip this flag to start mirroring writes into the
+  // offline queue (which then drains on the App.jsx 5s tick).
+  // Existing local entries are unaffected by the flip — they
+  // stay readable on-device for the admin aggregator.
+  FEATURE_HEALTH_FEEDBACK_SYNC: false,
+
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.
   FEATURE_ADVANCED_AI_RECOMMENDATIONS: false,
