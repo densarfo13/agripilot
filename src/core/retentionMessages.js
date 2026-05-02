@@ -40,11 +40,31 @@
  * so it gets its own module. The Home card composes both.
  */
 
+// Each entry pairs a stable translation key with the English
+// fallback. The fallback is what `tStrict` returns when the
+// active locale is missing the key (or when the strict
+// translator is bypassed in node-mode tests). Returning the
+// pair instead of a raw string lets the engine stay pure (no
+// React / i18n import) while the card render path resolves
+// the user-visible copy via tStrict so non-EN locales see
+// translated wording.
 const MESSAGE = Object.freeze({
-  consistency:   'Great consistency. Keep going today.',
-  comeback:      'Let\u2019s get back on track. Start with one quick check.',
-  highHumidity:  'Humidity is high today \u2014 watch for leaf spots.',
-  rainExpected:  'Rain is expected \u2014 avoid overwatering.',
+  consistency: {
+    key:      'daily.adaptive.consistency',
+    fallback: 'Great consistency. Keep going today.',
+  },
+  comeback: {
+    key:      'daily.adaptive.comeback',
+    fallback: 'Let\u2019s get back on track. Start with one quick check.',
+  },
+  highHumidity: {
+    key:      'daily.adaptive.highHumidity',
+    fallback: 'Humidity is high today \u2014 watch for leaf spots.',
+  },
+  rainExpected: {
+    key:      'daily.adaptive.rainExpected',
+    fallback: 'Rain is expected \u2014 avoid overwatering.',
+  },
 });
 
 // Same thresholds the dailyPlanEngine uses so Home doesn't
@@ -73,7 +93,10 @@ function _wNum(weather, ...keys) {
  *          ≥ 2  = missed 2+ days (comeback branch)
  *          null = never completed (skip behaviour branch)
  * @param {object} [input.weather] — optional weather snapshot.
- * @returns {string|null}
+ * @returns {{ key:string, fallback:string }|null}
+ *          A translation key + English fallback. The card
+ *          resolves the user-visible copy via tStrict; when
+ *          there's no banner today, returns null.
  */
 export function pickAdaptiveMessage(input) {
   const i = (input && typeof input === 'object') ? input : {};
@@ -110,35 +133,53 @@ export function pickAdaptiveMessage(input) {
 }
 
 /**
- * pickCompletionFeedback(type) → string
+ * pickCompletionFeedback(type) → { key, fallback }
  *
  * Spec §4 — the toast that fires after a task is marked done.
  * Garden vs farm wording so the user feels the message was
- * written for what THEY are growing. Always returns a string;
- * never null.
+ * written for what THEY are growing. Returns a translation
+ * key + English fallback; the card resolves via tStrict.
  */
 export function pickCompletionFeedback(type) {
   if (type === 'farm') {
-    return 'Nice work \uD83D\uDE9C You\u2019re staying ahead of crop problems.';
+    return {
+      key:      'daily.completionFeedback.farm',
+      fallback: 'Nice work \uD83D\uDE9C You\u2019re staying ahead of crop problems.',
+    };
   }
   // Default to garden wording for any other / unknown type so
   // a missing type never produces an awkward farm-only line on
   // a backyard surface.
-  return 'Nice work \uD83C\uDF31 You\u2019re keeping your plant healthy.';
+  return {
+    key:      'daily.completionFeedback.garden',
+    fallback: 'Nice work \uD83C\uDF31 You\u2019re keeping your plant healthy.',
+  };
 }
 
 /**
- * pickAllDoneTomorrowPreview(planTomorrow) → string
+ * pickAllDoneTomorrowPreview(planTomorrow) → { text, key, fallback }
  *
  * Spec §7 — when every task is complete today, the Home card
- * surfaces a calm "see you tomorrow" preview. We prefer the
- * engine's own tomorrowPreview when present (it's already
- * weather-aware) and fall through to the spec's default copy
- * when it isn't.
+ * surfaces a calm "see you tomorrow" preview.
+ *
+ *   • When the dailyPlanEngine produced a tomorrowPreview, we
+ *     surface it verbatim through `text` (it's already weather-
+ *     aware AND already routed through tStrict at the engine
+ *     boundary, so re-keying it would lose the personalised
+ *     wording like "Watering may not be needed tomorrow.")
+ *   • When the engine emitted nothing, we hand back the spec's
+ *     default copy as a `key` + `fallback` pair so the card
+ *     can resolve it via tStrict and non-EN locales translate.
  */
 export function pickAllDoneTomorrowPreview(planTomorrow) {
-  if (typeof planTomorrow === 'string' && planTomorrow.trim()) return planTomorrow.trim();
-  return 'Tomorrow: check again for early signs of stress.';
+  if (typeof planTomorrow === 'string' && planTomorrow.trim()) {
+    return { text: planTomorrow.trim(), key: null, fallback: planTomorrow.trim() };
+  }
+  return {
+    text:     null,
+    key:      'daily.allDone.defaultPreview',
+    fallback: 'Tomorrow: check again for early signs of stress.',
+  };
 }
 
 export default {

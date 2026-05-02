@@ -280,6 +280,8 @@ export default function DailyPlanCard({
   // Retention Loop spec \u00a74 \u2014 completion-feedback toast. Shown
   // for ~3 s after each Mark-done tap. Garden vs farm wording
   // is picked from the experience the v2 engine inferred.
+  // Stored as a tSafe-resolved string so a re-render in a
+  // different locale doesn't show a stale English toast.
   const [toast, setToast] = React.useState(null);
   const toastTimerRef = React.useRef(null);
   const experienceType = farm.farmType === 'backyard' ? 'garden' : 'farm';
@@ -313,9 +315,13 @@ export default function DailyPlanCard({
     // day is a no-op) so even with multiple tasks marked done
     // back-to-back the count only advances once per day.
     try { recordTaskCompleted(); } catch { /* swallow */ }
-    // Retention Loop spec \u00a74 \u2014 surface the toast.
+    // Retention Loop spec \u00a74 \u2014 surface the toast. Engine
+    // returns { key, fallback }; we resolve through tSafe so
+    // non-EN locales see the translated wording instead of
+    // the English fallback.
     try {
-      setToast(pickCompletionFeedback(experienceType));
+      const fb = pickCompletionFeedback(experienceType);
+      setToast(tSafe(fb.key, fb.fallback));
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setToast(null), 3200);
     } catch { /* swallow */ }
@@ -429,10 +435,12 @@ export default function DailyPlanCard({
 
       {/* Retention Loop spec \u00a75 \u2014 adaptive message. Single
           banner; null collapses to nothing. Behavioural signal
-          (consistency / comeback) takes priority over weather. */}
+          (consistency / comeback) takes priority over weather.
+          Engine returns { key, fallback }; the card resolves
+          through tSafe so non-EN locales see translated copy. */}
       {adaptiveMessage ? (
         <p style={S.adaptiveMessage} data-testid="daily-adaptive-message">
-          {adaptiveMessage}
+          {tSafe(adaptiveMessage.key, adaptiveMessage.fallback)}
         </p>
       ) : null}
 
@@ -591,15 +599,24 @@ export default function DailyPlanCard({
       {/* Retention Loop spec \u00a77 \u2014 next-day preview that fires
           ONLY when every task today is complete. Calmer than
           the always-visible follow-up row above (which shows
-          tomorrow guidance regardless of progress). Falls
-          through to the engine's tomorrowPreview when present
-          so the wording stays weather-aware ("Watering may not
-          be needed tomorrow."). */}
-      {progress.allDone ? (
-        <div style={S.allDonePreview} data-testid="daily-all-done-preview">
-          {pickAllDoneTomorrowPreview(plan.followUpTask && plan.followUpTask.text)}
-        </div>
-      ) : null}
+          tomorrow guidance regardless of progress). Engine
+          returns either a verbatim text (when the v2 plan
+          produced a weather-aware tomorrow preview \u2014 we don't
+          re-key it because the engine already personalised it)
+          OR a { key, fallback } pair for the default copy
+          which tSafe resolves to the active locale. */}
+      {progress.allDone ? (() => {
+        const tp = pickAllDoneTomorrowPreview(plan.followUpTask && plan.followUpTask.text);
+        const text = tp && tp.text
+          ? tp.text
+          : (tp && tp.key ? tSafe(tp.key, tp.fallback) : '');
+        if (!text) return null;
+        return (
+          <div style={S.allDonePreview} data-testid="daily-all-done-preview">
+            {text}
+          </div>
+        );
+      })() : null}
 
       {/* Retention Loop spec \u00a76 \u2014 micro health-feedback prompt.
           Visible after the user has marked at least one task

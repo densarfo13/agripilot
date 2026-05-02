@@ -2798,23 +2798,49 @@ const checks = [
     // comeback > rain > humidity > null) plus garden vs farm
     // completion-feedback wording.
     name: 'retentionMessages ships adaptive + completion + all-done copy',
-    why:  'Retention Loop \u00a74\u2013\u00a75 \u2014 calm-by-default banner copy',
+    why:  'Retention Loop \u00a74\u2013\u00a75 \u2014 calm-by-default banner copy + i18n keys',
     pass: () => {
       const f = read('src/core/retentionMessages.js');
+      const t = read('src/i18n/translations.js');
       // The source persists the curly apostrophe as the literal
       // escape sequence `\u2019` (six ASCII chars), so we anchor
       // on substrings that don't span the apostrophe.
-      return /export\s+function\s+pickAdaptiveMessage/.test(f)
-          && /export\s+function\s+pickCompletionFeedback/.test(f)
-          && /export\s+function\s+pickAllDoneTomorrowPreview/.test(f)
-          && /Great consistency\. Keep going today\./.test(f)
-          && /get back on track\. Start with one quick check/.test(f)
-          && /Humidity is high today/.test(f)
-          && /Rain is expected/.test(f)
-          // Garden vs farm completion-feedback wording \u2014 anchor
-          // on the unique substrings AFTER the apostrophe.
-          && /keeping your plant healthy/.test(f)
-          && /staying ahead of crop problems/.test(f);
+      const fileOk =
+            /export\s+function\s+pickAdaptiveMessage/.test(f)
+         && /export\s+function\s+pickCompletionFeedback/.test(f)
+         && /export\s+function\s+pickAllDoneTomorrowPreview/.test(f)
+         // English fallbacks still present in the engine source
+         // so a translation-load failure can't silence the
+         // banner.
+         && /Great consistency\. Keep going today\./.test(f)
+         && /get back on track\. Start with one quick check/.test(f)
+         && /Humidity is high today/.test(f)
+         && /Rain is expected/.test(f)
+         && /keeping your plant healthy/.test(f)
+         && /staying ahead of crop problems/.test(f)
+         // Engine returns { key, fallback } pairs, NOT raw
+         // strings, so the card render path can route through
+         // tSafe / tStrict and non-EN locales translate.
+         && /'daily\.adaptive\.consistency'/.test(f)
+         && /'daily\.adaptive\.comeback'/.test(f)
+         && /'daily\.adaptive\.highHumidity'/.test(f)
+         && /'daily\.adaptive\.rainExpected'/.test(f)
+         && /'daily\.completionFeedback\.garden'/.test(f)
+         && /'daily\.completionFeedback\.farm'/.test(f)
+         && /'daily\.allDone\.defaultPreview'/.test(f);
+      // And the matching translation keys exist in
+      // translations.js (across the 6 launch locales). We just
+      // assert presence here \u2014 guard:i18n-parity covers JSON
+      // locale parity separately.
+      const trOk =
+            /'daily\.adaptive\.consistency':/.test(t)
+         && /'daily\.adaptive\.comeback':/.test(t)
+         && /'daily\.adaptive\.highHumidity':/.test(t)
+         && /'daily\.adaptive\.rainExpected':/.test(t)
+         && /'daily\.completionFeedback\.garden':/.test(t)
+         && /'daily\.completionFeedback\.farm':/.test(t)
+         && /'daily\.allDone\.defaultPreview':/.test(t);
+      return fileOk && trOk;
     },
   },
   {
