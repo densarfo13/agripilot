@@ -90,6 +90,26 @@ const REQUIRED_EVENTS = [
     why: 'User completed the optimized farm onboarding — funnel hit + unit pick by region.' },
   { name: 'treatment_add_to_plan', surface: 'TreatmentGuidanceCard.jsx',
     why: 'User accepted the engine-recommended non-chemical actions into Today\u2019s Plan.' },
+  // Production-hardening spec \u00a71 \u2014 onboarding funnel telemetry.
+  // The 8 events below let the launch dashboard build a complete
+  // funnel without joining the experience-specific
+  // setup_*_completed events.
+  { name: 'onboarding_started',          surface: 'FastFlow.jsx',
+    why: 'New user reaches the canonical onboarding entry (Step 0 language picker).' },
+  { name: 'onboarding_step_viewed',      surface: 'FastFlow.jsx',
+    why: 'Each step transition fires; lets us see drop-off per step.' },
+  { name: 'onboarding_step_completed',   surface: 'FastFlow.jsx',
+    why: 'User completed a step (language picked / experience picked) \u2014 forward funnel.' },
+  { name: 'onboarding_draft_saved',      surface: 'onboardingDraft.js',
+    why: 'Draft snapshot persisted \u2014 confirms the form-state-preservation path is live.' },
+  { name: 'onboarding_draft_malformed',  surface: 'onboardingDraft.js',
+    why: 'Stored draft failed version / sanitiser checks; signal a data-shape regression.' },
+  { name: 'onboarding_recovery_shown',   surface: 'RecoveryErrorBoundary.jsx',
+    why: 'Recovery card surfaced after an unhandled render error \u2014 spike means a regression.' },
+  { name: 'onboarding_recovery_used',    surface: 'RecoveryErrorBoundary.jsx',
+    why: 'Recovery action tapped (try_again / fix_setup / restart_setup) \u2014 measures self-heal.' },
+  { name: 'onboarding_completed',        surface: 'QuickGardenSetup.jsx / QuickFarmSetup.jsx',
+    why: 'Onboarding finished \u2014 canonical funnel-completion event for day-1 attribution.' },
 ];
 
 function listFiles(dir, acc) {

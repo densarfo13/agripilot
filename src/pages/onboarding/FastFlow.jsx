@@ -58,6 +58,11 @@ import { setLanguage as i18nSetLanguage } from '../../i18n/index.js';
 // LanguageSuggestionBanner + topCropEngine + the i18n strict
 // translator into every setup screen render).
 import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
+// Production-hardening spec \u00a71 \u2014 canonical onboarding
+// telemetry. Fired at every meaningful step transition so the
+// launch dashboard can build a complete funnel without joining
+// experience-specific events.
+import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const STORE_KEY = 'onboarding';
 
@@ -140,10 +145,36 @@ export default function FastFlow() {
   // setup forms own steps 2\u20134 (or 2\u20135 for farm).
   const [step, setStep] = useState(state.step === 1 ? 1 : 0);
 
+  // Production-hardening spec \u00a71 \u2014 fire onboarding_started on
+  // first mount + onboarding_step_viewed every time the visible
+  // step changes. Both events are best-effort; a tracking
+  // failure must NEVER cascade into the render path.
+  useEffect(() => {
+    try { trackEvent('onboarding_started', { draftVersion: 2 }); }
+    catch { /* swallow */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      trackEvent('onboarding_step_viewed', {
+        currentStep: step,
+        // step 0 is the language picker; step 1 is the
+        // experience picker. activeExperience is unknown until
+        // step 1 \u2192 setup, so the hint stays null here.
+        activeExperience: null,
+      });
+    } catch { /* swallow */ }
+  }, [step]);
+
   function pickLanguage(code) {
     try { i18nSetLanguage(code); } catch { /* swallow */ }
     try { saveData(STORE_KEY, { ...state, step: 1, language: code }); }
     catch { /* swallow */ }
+    try {
+      trackEvent('onboarding_step_completed', {
+        currentStep: 0, language: code,
+      });
+    } catch { /* swallow */ }
     setStep(1);
   }
 
@@ -157,6 +188,11 @@ export default function FastFlow() {
     } catch { /* swallow \u2014 setup form has its own safety net */ }
     try { saveData(STORE_KEY, { ...state, step: 2, experience: expSafe }); }
     catch { /* swallow */ }
+    try {
+      trackEvent('onboarding_step_completed', {
+        currentStep: 1, activeExperience: expSafe,
+      });
+    } catch { /* swallow */ }
     const target = expSafe === 'garden' ? '/setup/garden' : '/setup/farm';
     try { navigate(target); } catch { /* swallow */ }
   }

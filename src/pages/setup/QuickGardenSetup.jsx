@@ -36,18 +36,20 @@ import { tStrict } from '../../i18n/strictT.js';
 import { addGarden } from '../../store/multiExperience.js';
 import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
-// Farm/garden separation spec \u00a76 \u2014 persist Quick setup
-// snapshots so a back/forward navigation doesn't lose
-// in-flight form data.
-import { loadData, saveData, removeData } from '../../store/localStore.js';
+// Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
+// draft I/O. Replaces direct loadData/saveData calls so a
+// malformed draft (manual DevTools tweak, schema swap, partial
+// write) auto-clears instead of crashing useState during
+// hydration.
+import {
+  loadGardenDraft,
+  saveGardenDraft,
+  clearGardenDraft,
+} from '../../core/onboardingDraft.js';
 // Shared progress bar \u2014 leaf module so importing it doesn't
 // pull the whole FastFlow tree (locale banner, recommendation
 // engine, etc.) along with it. Render-crash hardening.
 import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
-
-// localStore key for the garden-setup draft. Cleared after a
-// successful save so a future visit starts blank.
-const GARDEN_DRAFT_KEY = 'setup_garden_draft';
 
 // Spec \u00a76 \u2014 garden size buckets. Garden flow MUST NOT show
 // acres; this is a kitchen-plot screen. "I don't know" lets the
@@ -157,21 +159,17 @@ export default function QuickGardenSetup() {
   useTranslation();
   const navigate = useNavigate();
 
-  // Farm/garden separation spec \u00a76 \u2014 hydrate local form state
-  // from the persisted draft so a back-navigation back into this
-  // form preserves what the user had typed. Lazy useState
-  // initialiser so the draft is read ONCE on mount (an IIFE in
-  // the function body would re-read localStorage on every
-  // render). Defensive try/catch \u2014 a malformed draft from a
-  // prior deploy must NOT crash the form. We also defend each
-  // field against unexpected types so a string \u2192 object swap
-  // upstream can never poison a useState init.
-  const [_draft] = useState(() => {
-    try {
-      const raw = loadData(GARDEN_DRAFT_KEY, null);
-      return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
-    } catch { return {}; }
-  });
+  // Hydrate from the versioned + sanitised draft. The helper
+  // returns null when:
+  //   \u2022 no draft is stored,
+  //   \u2022 the stored version doesn't match
+  //     CURRENT_ONBOARDING_DRAFT_VERSION (legacy / future drafts
+  //     auto-clear), or
+  //   \u2022 the payload fails sanitisation.
+  // In every "no draft" case we just start the form blank \u2014
+  // never crash. Lazy useState init so the read runs ONCE on
+  // mount.
+  const [_draft] = useState(() => loadGardenDraft() || {});
   const _str = (v) => (typeof v === 'string' ? v : '');
   const _strOrNull = (v) => (typeof v === 'string' && v ? v : null);
 
@@ -218,18 +216,17 @@ export default function QuickGardenSetup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Farm/garden separation spec \u00a76 \u2014 snapshot the form state
-  // on every change so a back-navigation back into this form
-  // restores what the user had typed. The save handler clears
-  // the draft (saveData on success path \u2192 removeData) so the
-  // next setup attempt starts blank.
+  // Snapshot the form state on every change so a back-navigation
+  // restores what the user had typed. The sanitised save helper
+  // narrows every field + stamps the canonical version, so
+  // anything malformed gets caught here BEFORE landing in
+  // localStorage. The save handler clears the draft after a
+  // successful persist so the next setup attempt starts blank.
   useEffect(() => {
-    try {
-      saveData(GARDEN_DRAFT_KEY, {
-        plant, plantPick, country, region, city,
-        size, growingSetup, skillLevel,
-      });
-    } catch { /* swallow */ }
+    saveGardenDraft({
+      plant, plantPick, country, region, city,
+      size, growingSetup, skillLevel,
+    });
   }, [plant, plantPick, country, region, city, size, growingSetup, skillLevel]);
 
   // Spec \u00a78 \u2014 "Use my location" is now an explicit user action,
@@ -319,12 +316,22 @@ export default function QuickGardenSetup() {
         }
       } catch { /* swallow */ }
       try { setOnboardingComplete(); } catch { /* swallow */ }
-      // Farm/garden separation \u00a76 \u2014 wipe the draft so the
-      // next setup attempt (e.g. user resets onboarding later)
-      // starts blank instead of restoring stale fields.
-      try { removeData(GARDEN_DRAFT_KEY); } catch { /* swallow */ }
+      // Wipe the versioned draft after a successful save so the
+      // next setup attempt starts blank instead of restoring
+      // stale fields.
+      try { clearGardenDraft(); } catch { /* swallow */ }
       try { trackEvent('setup_garden_completed', { hasSize: !!size, hasRegion: !!region.trim() }); }
       catch { /* swallow */ }
+      // Production-hardening spec \u00a71 \u2014 canonical onboarding
+      // completion event so day-1 telemetry can attribute the
+      // funnel finish without joining the experience-specific
+      // setup_*_completed events.
+      try {
+        trackEvent('onboarding_completed', {
+          activeExperience: 'garden',
+          draftVersion:     2,
+        });
+      } catch { /* swallow */ }
       try { navigate('/home', { replace: true }); }
       catch {
         try { navigate('/dashboard', { replace: true }); }

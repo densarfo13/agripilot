@@ -41,14 +41,16 @@ import { addFarm } from '../../store/multiExperience.js';
 import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { getDefaultUnit, getAllowedUnits } from '../../lib/units/areaConversion.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
-import { loadData, saveData, removeData } from '../../store/localStore.js';
+// Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
+// draft I/O.
+import {
+  loadFarmDraft,
+  saveFarmDraft,
+  clearFarmDraft,
+} from '../../core/onboardingDraft.js';
 // Shared progress bar \u2014 leaf module so importing it doesn't
 // pull the whole FastFlow tree along with it.
 import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
-
-// Farm/garden separation spec \u00a76 \u2014 draft snapshot key. Cleared
-// after a successful save so a future visit starts blank.
-const FARM_DRAFT_KEY = 'setup_farm_draft';
 
 // Spec \u00a76 \u2014 farm size buckets. Farm flow MUST NOT show
 // "Small backyard"; this is a working-acre screen. The bucket
@@ -135,17 +137,11 @@ export default function QuickFarmSetup() {
   useTranslation();
   const navigate = useNavigate();
 
-  // Farm/garden separation spec \u00a76 \u2014 hydrate from the draft
-  // snapshot so a back-navigation preserves form data. Lazy
-  // useState init so the read runs once on mount; defensive
-  // type-narrowing on every field so a malformed draft from a
-  // prior deploy can never crash the form.
-  const [_draft] = useState(() => {
-    try {
-      const raw = loadData(FARM_DRAFT_KEY, null);
-      return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
-    } catch { return {}; }
-  });
+  // Hydrate from the versioned + sanitised draft. Lazy useState
+  // init so the read runs once on mount. Returns null on
+  // version mismatch / malformed payload \u2014 the form starts
+  // blank instead of crashing.
+  const [_draft] = useState(() => loadFarmDraft() || {});
   const _str = (v) => (typeof v === 'string' ? v : '');
   const _strOrNull = (v) => (typeof v === 'string' && v ? v : null);
 
@@ -184,15 +180,13 @@ export default function QuickFarmSetup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Farm/garden separation spec \u00a76 \u2014 snapshot the form state
-  // on every change so a back-navigation preserves it.
+  // Snapshot via the sanitiser so anything malformed gets
+  // caught BEFORE landing in localStorage.
   useEffect(() => {
-    try {
-      saveData(FARM_DRAFT_KEY, {
-        crop, cropPick, country, region,
-        sizeBucket, size, unit, skillLevel,
-      });
-    } catch { /* swallow */ }
+    saveFarmDraft({
+      crop, cropPick, country, region,
+      sizeBucket, size, unit, skillLevel,
+    });
   }, [crop, cropPick, country, region, sizeBucket, size, unit, skillLevel]);
 
   // Spec \u00a78 \u2014 "Use my location" is now an explicit user
@@ -320,13 +314,21 @@ export default function QuickFarmSetup() {
         }
       } catch { /* swallow */ }
       try { setOnboardingComplete(); } catch { /* swallow */ }
-      // Farm/garden separation \u00a76 \u2014 wipe the draft after save.
-      try { removeData(FARM_DRAFT_KEY); } catch { /* swallow */ }
+      // Wipe the versioned draft after a successful save.
+      try { clearFarmDraft(); } catch { /* swallow */ }
       try {
         trackEvent('setup_farm_completed', {
           country: country.trim().toUpperCase(),
           unit,
           sizeSqFt: stored?.landSizeSqFt || null,
+        });
+      } catch { /* swallow */ }
+      // Production-hardening spec \u00a71 \u2014 canonical onboarding
+      // completion event for day-1 funnel attribution.
+      try {
+        trackEvent('onboarding_completed', {
+          activeExperience: 'farm',
+          draftVersion:     2,
         });
       } catch { /* swallow */ }
       try { navigate('/home', { replace: true }); }

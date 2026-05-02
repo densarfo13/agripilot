@@ -115,14 +115,17 @@ const checks = [
     },
   },
   {
-    name: 'RecoveryErrorBoundary surfaces 4 buttons (Reload, Repair, Restart, Clear)',
-    why:  'Spec §19 requires the full recovery menu, not 3 buttons',
+    // Production-hardening spec \u00a75 superseded the legacy
+    // 4-button menu. The new layout collapses Reload / Repair /
+    // Restart / Clear cache down to 3 user-friendly actions:
+    // Try again / Fix setup issue / Restart setup.
+    name: 'RecoveryErrorBoundary surfaces 3 buttons (Try again, Fix setup, Restart)',
+    why:  'Production-hardening spec \u00a75 \u2014 collapsed recovery menu',
     pass: () => {
       const f = read('src/components/system/RecoveryErrorBoundary.jsx');
-      return /data-testid="recovery-reload"/.test(f)
-          && /data-testid="recovery-repair"/.test(f)
-          && /data-testid="recovery-restart"/.test(f)
-          && /data-testid="recovery-clear"/.test(f);
+      return /data-testid="recovery-try-again"/.test(f)
+          && /data-testid="recovery-fix-setup"/.test(f)
+          && /data-testid="recovery-restart"/.test(f);
     },
   },
   {
@@ -1801,14 +1804,104 @@ const checks = [
     pass: () => {
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      return /GARDEN_DRAFT_KEY/.test(garden)
-          && /loadData\(GARDEN_DRAFT_KEY/.test(garden)
-          && /saveData\(GARDEN_DRAFT_KEY/.test(garden)
-          && /removeData\(GARDEN_DRAFT_KEY\)/.test(garden)
-          && /FARM_DRAFT_KEY/.test(farm)
-          && /loadData\(FARM_DRAFT_KEY/.test(farm)
-          && /saveData\(FARM_DRAFT_KEY/.test(farm)
-          && /removeData\(FARM_DRAFT_KEY\)/.test(farm);
+      // Production-hardening: setup forms now route through the
+      // versioned + sanitised draft helpers in onboardingDraft.js
+      // instead of calling localStore directly. The helpers
+      // include malformed-draft auto-clear + telemetry.
+      return /loadGardenDraft\(\)/.test(garden)
+          && /saveGardenDraft\(/.test(garden)
+          && /clearGardenDraft\(\)/.test(garden)
+          && /loadFarmDraft\(\)/.test(farm)
+          && /saveFarmDraft\(/.test(farm)
+          && /clearFarmDraft\(\)/.test(farm);
+    },
+  },
+  {
+    // Production-hardening spec \u00a72\u2013\u00a73 \u2014 the onboarding-draft
+    // module ships a versioned + sanitised load/save path so a
+    // malformed draft can never crash the form.
+    name: 'onboardingDraft module ships versioned sanitised I/O',
+    why:  'Production-hardening spec \u00a72\u2013\u00a73 \u2014 malformed draft never crashes',
+    pass: () => {
+      const f = read('src/core/onboardingDraft.js');
+      return /CURRENT_ONBOARDING_DRAFT_VERSION\s*=\s*2/.test(f)
+          && /export function sanitizeGardenDraft/.test(f)
+          && /export function sanitizeFarmDraft/.test(f)
+          && /export function loadGardenDraft/.test(f)
+          && /export function saveGardenDraft/.test(f)
+          && /export function clearGardenDraft/.test(f)
+          && /export function loadFarmDraft/.test(f)
+          && /export function saveFarmDraft/.test(f)
+          && /export function clearFarmDraft/.test(f)
+          && /export function clearAllOnboardingDrafts/.test(f)
+          && /version\s*!==\s*CURRENT_ONBOARDING_DRAFT_VERSION/.test(f)
+          && /onboarding_draft_malformed/.test(f);
+    },
+  },
+  {
+    // Production-hardening spec \u00a76 \u2014 OnboardingProgressBar
+    // MUST live in its own leaf module + setup forms MUST NOT
+    // import it from FastFlow.jsx. Belt-and-braces against the
+    // cross-coupling that caused the recovery-card crash.
+    name: 'OnboardingProgressBar never imported from FastFlow.jsx',
+    why:  'Production-hardening spec \u00a76 \u2014 leaf-module rule cannot be reintroduced',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Forbidden import shape: importing from /onboarding/FastFlow.jsx.
+      const FORBIDDEN = /from\s+['"]\.\.\/onboarding\/FastFlow\.jsx['"]/;
+      // Required import shape: importing from the leaf module.
+      const REQUIRED  = /from\s+['"]\.\.\/\.\.\/components\/onboarding\/OnboardingProgressBar\.jsx['"]/;
+      return !FORBIDDEN.test(garden)
+          && !FORBIDDEN.test(farm)
+          && REQUIRED.test(garden)
+          && REQUIRED.test(farm);
+    },
+  },
+  {
+    // Production-hardening spec \u00a74 \u2014 RecoveryErrorBoundary uses
+    // user-friendly copy ("Fix setup issue") and the new
+    // "Try again" / "Fix setup issue" / "Restart setup" buttons.
+    // The legacy "Clear local app cache" wording is gone.
+    name: 'RecoveryErrorBoundary ships user-friendly copy + 3-button layout',
+    why:  'Production-hardening spec \u00a74\u2013\u00a75 \u2014 non-technical recovery UX',
+    pass: () => {
+      const f = read('src/components/system/RecoveryErrorBoundary.jsx');
+      return /recovery\.tryAgain/.test(f)
+          && /recovery\.fixSetup/.test(f)
+          && /recovery\.restart/.test(f)
+          && /Fix setup issue/.test(f)
+          && /Try again/.test(f)
+          && /Your saved farm or garden is safe/.test(f)
+          && /clearAllOnboardingDrafts/.test(f)
+          // Legacy "Clear local app cache" button is removed.
+          // We check for the testid (not the visible text) so a
+          // comment that documents the change doesn't trip the
+          // guard. recovery-clear was the testid of the dropped
+          // 4th button.
+          && !/data-testid="recovery-clear"/.test(f)
+          // Legacy "Repair session" button is removed (the 3-button
+          // layout collapses onto Try again / Fix / Restart).
+          && !/data-testid="recovery-repair"/.test(f)
+          // Legacy testid for the old reload button is removed
+          // \u2014 the new "Try again" action uses recovery-try-again.
+          && !/data-testid="recovery-reload"/.test(f)
+          // Telemetry on shown + used.
+          && /onboarding_recovery_shown/.test(f)
+          && /onboarding_recovery_used/.test(f);
+    },
+  },
+  {
+    // Production-hardening spec \u00a71 \u2014 FastFlow fires the
+    // canonical onboarding telemetry events at every meaningful
+    // step transition.
+    name: 'FastFlow fires onboarding_started + step_viewed + step_completed',
+    why:  'Production-hardening spec \u00a71 \u2014 canonical funnel events',
+    pass: () => {
+      const f = read('src/pages/onboarding/FastFlow.jsx');
+      return /trackEvent\(\s*['"]onboarding_started['"]/.test(f)
+          && /trackEvent\(\s*['"]onboarding_step_viewed['"]/.test(f)
+          && /trackEvent\(\s*['"]onboarding_step_completed['"]/.test(f);
     },
   },
 ];
