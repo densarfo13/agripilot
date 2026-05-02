@@ -88,6 +88,8 @@ const REQUIRED_EVENTS = [
     why: 'User completed the optimized garden onboarding — funnel hit per region.' },
   { name: 'setup_farm_completed', surface: 'QuickFarmSetup.jsx',
     why: 'User completed the optimized farm onboarding — funnel hit + unit pick by region.' },
+  { name: 'treatment_add_to_plan', surface: 'TreatmentGuidanceCard.jsx',
+    why: 'User accepted the engine-recommended non-chemical actions into Today\u2019s Plan.' },
 ];
 
 function listFiles(dir, acc) {

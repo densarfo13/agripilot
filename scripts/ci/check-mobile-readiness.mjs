@@ -937,6 +937,29 @@ const checks = [
           && /scaleType:\s*land\.scaleType/.test(f);
     },
   },
+  {
+    name: 'treatmentEngine maps issue \u2192 category + safe chemical guidance',
+    why:  'Treatment engine spec \u00a72\u2013\u00a74 \u2014 class-only guidance, no exact dosage',
+    pass: () => {
+      const f = read('src/core/treatmentEngine.js');
+      return /export function recommendTreatment/.test(f)
+          && /ISSUE_TO_CATEGORY/.test(f)
+          && /locally approved fungicide/.test(f)
+          && /locally approved pest-control/.test(f)
+          && /Farroway provides guidance/.test(f);
+    },
+  },
+  {
+    name: 'TreatmentGuidanceCard mounted under scan result',
+    why:  'Treatment engine spec \u00a78 \u2014 result surfaces structured guidance',
+    pass: () => {
+      const page = read('src/pages/ScanPage.jsx');
+      const card = read('src/components/scan/TreatmentGuidanceCard.jsx');
+      return fs.existsSync(path.join(ROOT, 'src/components/scan/TreatmentGuidanceCard.jsx'))
+          && /<TreatmentGuidanceCard/.test(page)
+          && /treatment_add_to_plan/.test(card);
+    },
+  },
 ];
 
 const failed = [];

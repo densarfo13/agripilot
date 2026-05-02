@@ -45,6 +45,10 @@ import ScanFeedbackPrompt from '../components/scan/ScanFeedbackPrompt.jsx';
 // expert" CTA when the verdict warrants a human second opinion.
 import ScanVerificationChecklist from '../components/scan/ScanVerificationChecklist.jsx';
 import ScanLocalExpertCTA from '../components/scan/ScanLocalExpertCTA.jsx';
+// Treatment recommendation spec: structured non-chemical-first
+// guidance + class-only chemical hints + prevention tips +
+// warning + disclaimer. Renders below the result card.
+import TreatmentGuidanceCard from '../components/scan/TreatmentGuidanceCard.jsx';
 import ScanHistory from '../components/scan/ScanHistory.jsx';
 
 const STYLES = {
@@ -410,6 +414,54 @@ export default function ScanPage() {
             issue={result.possibleIssue}
             spreadFast={result.spreadFast || false}
             cropName={result.cropName || profile?.crop || profile?.cropId || null}
+          />
+          {/* Treatment guidance — non-chemical actions first,
+              class-only chemical guidance, prevention tips,
+              warning when triggered, disclaimer always. The
+              "Add to Today's Plan" CTA inside this card forwards
+              to the existing onAddTasks handler so chemical
+              guidance is never persisted as a task. */}
+          <TreatmentGuidanceCard
+            issue={result.possibleIssue}
+            confidence={result.confidence}
+            activeExperience={activeExperience}
+            country={profile?.country || null}
+            region={profile?.region  || null}
+            cropName={result.cropName || profile?.crop || profile?.cropId || null}
+            plantName={profile?.plantName || null}
+            scaleType={result.scaleType  || null}
+            repeatedIssue={false}
+            weather={null}
+            onAddToPlan={(actions) => {
+              // Reuse the existing scan→task path. The actions
+              // here are the non-chemical immediateActions only
+              // (the card slices the array before calling us);
+              // they shape themselves into suggestedTasks for
+              // addScanTasks via a tiny adapter so the cap-2 +
+              // dedupe rules still apply.
+              if (!Array.isArray(actions) || actions.length === 0) return;
+              try {
+                const adapted = actions.slice(0, 2).map((title, i) => ({
+                  id:         `treatment_${i}_${Date.now().toString(36)}`,
+                  title,
+                  reason:     '',
+                  urgency:    'medium',
+                  actionType: 'treatment',
+                }));
+                // Pretend the engine emitted these as suggestedTasks;
+                // onAddTasks reads result.suggestedTasks. We mutate
+                // the in-memory result + delegate.
+                if (result && Array.isArray(result.suggestedTasks)) {
+                  // Prepend so the treatment actions sit ahead of any
+                  // existing follow-up.
+                  const merged = [...adapted, ...result.suggestedTasks].slice(0, 2);
+                  // eslint-disable-next-line no-param-reassign
+                  result.suggestedTasks = merged;
+                }
+                onAddTasks();
+              } catch { /* swallow */ }
+            }}
+            alreadyAddedTasks={tasksAdded}
           />
           <ScanFeedbackPrompt scanId={result.scanId || null} />
         </>
