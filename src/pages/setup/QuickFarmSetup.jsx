@@ -58,6 +58,11 @@ import {
 // so the user sees a precise error + actionable next step instead
 // of the generic "We couldn't detect your location" line.
 import { requestUserLocation } from '../../utils/locationHandler.js';
+// Location-persistence fix \u2014 single-key snapshot at
+// `farroway_location` so any downstream surface (review,
+// recovery, future preview-before-save) can read the user's
+// pick without walking the active farm/garden record.
+import { saveLocation } from '../../utils/locationStore.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 // Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
 // draft I/O.
@@ -238,6 +243,16 @@ export default function QuickFarmSetup() {
     } catch { /* swallow */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Location-persistence fix \u2014 mirror the country + region into
+  // the flat `farroway_location` key on every change. Distinct
+  // from the versioned + sanitised farm-draft store; this is
+  // the public single-key surface any reader can rely on
+  // without knowing the draft schema. Empty input wipes the
+  // entry (see saveLocation source).
+  useEffect(() => {
+    saveLocation({ country, region });
+  }, [country, region]);
 
   // Snapshot via the sanitiser so anything malformed gets
   // caught BEFORE landing in localStorage.

@@ -45,6 +45,11 @@ import { formatLocation } from '../../utils/formatDisplay.js';
 // unsupported) so the garden form shows a precise error +
 // actionable next step instead of the legacy generic line.
 import { requestUserLocation } from '../../utils/locationHandler.js';
+// Location-persistence fix \u2014 mirror country + region into the
+// flat `farroway_location` key on every change so any reader
+// downstream can pick up the user's location without walking
+// the full garden record.
+import { saveLocation } from '../../utils/locationStore.js';
 // Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
 // draft I/O. Replaces direct loadData/saveData calls so a
 // malformed draft (manual DevTools tweak, schema swap, partial
@@ -311,6 +316,15 @@ export default function QuickGardenSetup() {
       size, growingSetup, skillLevel,
     });
   }, [plant, plantPick, country, region, city, size, growingSetup, skillLevel]);
+
+  // Location-persistence fix \u2014 mirror the country + region into
+  // the flat `farroway_location` key on every change. Distinct
+  // from the versioned + sanitised garden-draft store; this is
+  // the public single-key surface any reader can rely on
+  // without knowing the draft schema.
+  useEffect(() => {
+    saveLocation({ country, region });
+  }, [country, region]);
 
   // Spec \u00a78 + Location-handler fix \u2014 explicit user action with
   // precise error-code distinction (PositionError codes 1/2/3

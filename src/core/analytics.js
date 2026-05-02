@@ -313,6 +313,11 @@ export function clearFarrowayActivityData() {
       'farroway_last_home_open_date',
       'farroway_user_memory',
       'farroway_last_scan_issue',
+      // Location-persistence fix \u2014 the public single-key
+      // location snapshot. Tracks what the user told us;
+      // wipe it on privacy clear so the user genuinely
+      // starts fresh.
+      'farroway_location',
     ];
     for (const k of keys) {
       try {

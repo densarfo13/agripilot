@@ -2605,6 +2605,30 @@ const checks = [
     // request. Both setup forms route through requestUserLocation
     // and surface error-code-specific copy + a success
     // affirmation.
+    // Location-persistence fix \u2014 single-key snapshot at
+    // farroway_location so any downstream surface can read
+    // the user's pick without walking the active record.
+    name: 'locationStore ships save/load/clear + setup forms wire it',
+    why:  'Location-persistence fix \u2014 public single-key location surface',
+    pass: () => {
+      const store    = read('src/utils/locationStore.js');
+      const garden   = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm     = read('src/pages/setup/QuickFarmSetup.jsx');
+      const analytics = read('src/core/analytics.js');
+      return /export\s+function\s+saveLocation/.test(store)
+          && /export\s+function\s+loadLocation/.test(store)
+          && /export\s+function\s+clearLocation/.test(store)
+          && /'farroway_location'/.test(store)
+          // Both setup forms import + call saveLocation.
+          && /from\s+['"]\.\.\/\.\.\/utils\/locationStore\.js['"]/.test(garden)
+          && /from\s+['"]\.\.\/\.\.\/utils\/locationStore\.js['"]/.test(farm)
+          && /saveLocation\(\s*\{\s*country,\s*region\s*\}\s*\)/.test(garden)
+          && /saveLocation\(\s*\{\s*country,\s*region\s*\}\s*\)/.test(farm)
+          // Privacy clear wipes the new key.
+          && /'farroway_location'/.test(analytics);
+    },
+  },
+  {
     name: 'Location handler distinguishes PositionError codes',
     why:  'Location-handler fix \u2014 precise error per code (denied / unavailable / timeout / unsupported)',
     pass: () => {
