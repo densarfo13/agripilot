@@ -221,6 +221,21 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
               testid="onboarding-review-change-growing-setup"
             />
           ) : null}
+          {/* Onboarding-polish patch \u00a72 \u2014 garden size now lives
+              on its own sub-step. The review row points at it so
+              the user can edit garden size without scrolling
+              past growing-setup first. */}
+          {safeSummary.gardenSize != null ? (
+            <SummaryRow
+              label={tSafe('onboarding.gardenSize.label', 'Garden size')}
+              value={safeSummary.gardenSize}
+              onChange={() => (typeof onChangeStep === 'function'
+                ? onChangeStep('gardenSize')
+                : scrollToAnchor(safeSummary.gardenSizeAnchor || 'review-garden-size'))}
+              changeLabel={tSafe('onboarding.review.changeGardenSize', 'Change garden size')}
+              testid="onboarding-review-change-garden-size"
+            />
+          ) : null}
           {safeSummary.farmSize != null ? (
             <SummaryRow
               label={tSafe('onboarding.farmSize.title', 'Farm size')}

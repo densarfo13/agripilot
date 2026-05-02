@@ -72,7 +72,7 @@ const GROWING_SETUP_OPTIONS = [
   { id: 'raised_bed',     icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.raisedBed',     fallback: 'Raised bed'        },
   { id: 'ground',         icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',        fallback: 'Backyard soil'     },
   { id: 'indoor_balcony', icon: '\uD83E\uDE9F', labelKey: 'garden.growingSetup.indoorBalcony', fallback: 'Indoor / balcony'  },
-  { id: 'unknown',        icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',       fallback: 'I don\u2019t know' },
+  { id: 'unknown',        icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',       fallback: 'Not sure' },
 ];
 
 const STYLES = {

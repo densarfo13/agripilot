@@ -61,6 +61,17 @@ import {
 } from '../voice/voiceEngine.js';
 import useLowLiteracyMode from '../hooks/useLowLiteracyMode.js';
 import { isFeatureEnabled } from '../config/features.js';
+// Onboarding-polish patch \u00a71 \u2014 hide the floating mic until
+// onboarding has completed. The voice navigator targets
+// authenticated farmer surfaces (/my-farm, /tasks, etc.); a
+// user partway through setup who taps it would just be bounced
+// off their own setup screen. The gate ALSO covers the explicit
+// onboarding/setup paths via the path list below so the mic
+// never appears on the language picker, where-growing screen,
+// location step, plant/crop tiles, garden setup, garden size,
+// farm size, or review screen \u2014 even on cold paint while the
+// flag write hasn't yet propagated to localStorage.
+import { isOnboardingComplete } from '../utils/onboarding.js';
 
 // ─── Command map ─────────────────────────────────────────────
 //
@@ -129,6 +140,11 @@ const VOICE_FAB_HIDDEN_PATHS = [
   '/reset-password', '/verify-otp',
   '/landing', '/welcome', '/start', '/farmer-welcome',
   '/accept-invite', '/farmer-register',
+  // Onboarding-polish patch \u00a71 \u2014 every onboarding + setup
+  // surface. Belt-and-braces alongside the isOnboardingComplete()
+  // flag check below; on these paths the mic is hidden EVEN if
+  // a half-set flag survived from a prior session.
+  '/onboarding', '/setup',
 ];
 
 function _isPublicAuthSurface(pathname) {
@@ -265,6 +281,16 @@ export default function VoiceAssistant() {
   // and the FAB visually overlapped the Sign In button on
   // /login per the smoke-test screenshots.
   if (_isPublicAuthSurface(location.pathname)) return null;
+
+  // Onboarding-polish patch §1 — hide the mic until the user
+  // has completed onboarding. Spec rule:
+  //   if (onboardingCompleted !== true) return null;
+  // The flag is OR-semantic across both legacy keys (see
+  // utils/onboarding.js). Returns false in SSR / private mode,
+  // matching the path-based gate above which also defaults to
+  // hiding on uncertainty.
+  try { if (!isOnboardingComplete()) return null; }
+  catch { return null; }
 
   const ariaLabel = tStrict('voiceNav.tap', 'Voice assistant');
   const status =

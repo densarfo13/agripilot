@@ -2241,13 +2241,12 @@ const checks = [
     // handleContinue, and the review-screen Change buttons
     // jump back via setSubStep (state-based, NOT scrollIntoView).
     name: 'Quick setup forms are multi-step (one decision per screen)',
-    why:  'Stability-patch \u00a74 \u2014 stacked form removed; back preserves data',
+    why:  'Stability-patch \u00a74 + onboarding-polish \u00a72 \u2014 stacked form removed; back preserves data; garden splits growing-setup + size onto separate sub-steps',
     pass: () => {
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      const REQ = (f) =>
+      const COMMON = (f) =>
             /\[\s*subStep,\s*setSubStep\s*\]\s*=\s*useState\(0\)/.test(f)
-         && /TOTAL_SUB_STEPS\s*=\s*4/.test(f)
          && /function canAdvance/.test(f)
          && /function handleBack/.test(f)
          && /function handleContinue/.test(f)
@@ -2258,7 +2257,18 @@ const checks = [
          // Review panel jumps back via state, not scroll.
          && /onChangeStep=\{/.test(f)
          && /setSubStep\(\d\)/.test(f);
-      return REQ(garden) && REQ(farm);
+      // Garden form: 5 sub-steps (location \u2192 plant \u2192 growing
+      // setup \u2192 garden size \u2192 review). Onboarding-polish patch
+      // \u00a72 split garden size out of the growing-setup screen.
+      const GARDEN_OK = COMMON(garden)
+         && /TOTAL_SUB_STEPS\s*=\s*5/.test(garden)
+         && /\{\s*subStep === 4\s*&&/.test(garden);
+      // Farm form: still 4 sub-steps (location \u2192 crop \u2192
+      // farm size \u2192 review). Farm size has its own screen
+      // already; no split needed.
+      const FARM_OK = COMMON(farm)
+         && /TOTAL_SUB_STEPS\s*=\s*4/.test(farm);
+      return GARDEN_OK && FARM_OK;
     },
   },
   {
@@ -2530,6 +2540,105 @@ const checks = [
     pass: () => {
       const f = read('src/core/analytics.js');
       return /export\s*\{\s*trackEvent\s*\}\s*from\s*['"]\.\.\/analytics\/analyticsStore\.js['"]/.test(f);
+    },
+  },
+  {
+    // Onboarding-polish patch \u00a71. The floating voice-nav button
+    // is hidden on every onboarding + setup screen so the user
+    // is never offered "scan crop" / "my farm" voice navigation
+    // before they actually own a farm/garden. Two layered gates:
+    // (a) the isOnboardingComplete() flag returns false until
+    // setOnboardingComplete() fires inside the save handler;
+    // (b) the path-based hidden list catches /onboarding and
+    // /setup so the mic stays hidden even on cold paint while
+    // the flag write hasn't yet propagated to localStorage.
+    name: 'VoiceAssistant hides until onboarding completes',
+    why:  'Onboarding-polish patch \u00a71 \u2014 mic appears only after Home loads',
+    pass: () => {
+      const f = read('src/components/VoiceAssistant.jsx');
+      return /from\s*['"]\.\.\/utils\/onboarding\.js['"]/.test(f)
+          && /isOnboardingComplete/.test(f)
+          && /if\s*\(\s*!\s*isOnboardingComplete\(\)\s*\)\s*return\s*null/.test(f)
+          && /'\/onboarding'/.test(f)
+          && /'\/setup'/.test(f);
+    },
+  },
+  {
+    // Onboarding-polish patch \u00a72. Garden growing-setup and
+    // garden size now live on SEPARATE sub-steps (2 + 3) so the
+    // user makes one decision per screen. Farm size already had
+    // its own screen and is unaffected.
+    name: 'Garden growing-setup and size are on separate sub-steps',
+    why:  'Onboarding-polish patch \u00a72 \u2014 one decision per screen',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      // Sub-step 2 = growing setup, sub-step 3 = garden size.
+      // The growing-setup card is gated on === 2, the size card
+      // on === 3. The review jump-back maps gardenSize \u2192 3.
+      return /TOTAL_SUB_STEPS\s*=\s*5/.test(garden)
+          && /subStep === 2 &&[\s\S]*?setup-garden-growing-setup/.test(garden)
+          && /subStep === 3 &&[\s\S]*?setup-garden-size/.test(garden)
+          && /subStep === 4 &&/.test(garden)
+          && /onChangeStep=\{[\s\S]*?key === 'gardenSize'[\s\S]*?setSubStep\(3\)/.test(garden);
+    },
+  },
+  {
+    // Onboarding-polish patch \u00a73. Location step copy:
+    //   subtitle \u2014 "This helps us give you the right advice for your weather."
+    //   manual fallback \u2014 "Or enter it manually"
+    //   error \u2014 "We couldn't detect your location. Please enter it manually."
+    name: 'Location step copy: weather-advice subtitle + detect-error wording',
+    why:  'Onboarding-polish patch \u00a73 \u2014 calmer, action-first location wording',
+    pass: () => {
+      const t = read('src/i18n/translations.js');
+      // The translations file persists the curly apostrophe as the
+      // literal escape sequence `\u2019`, so the regex must match
+      // those six characters verbatim (one backslash, one `u`,
+      // four hex digits) \u2014 hence the `couldn\\\\u2019t` source.
+      // Note we also accept the modern multi-line definition (line
+      // ~12551 in this build) by anchoring on the canonical
+      // English wording rather than whichever duplicate definition
+      // the regex engine sees first.
+      return /'onboarding\.locationSubtitle':[\s\S]*?This helps us give you the right advice for your weather/.test(t)
+          && /'onboarding\.locationManual':[\s\S]*?Or enter it manually/.test(t)
+          && /We couldn\\u2019t detect your location\. Please enter it manually/.test(t);
+    },
+  },
+  {
+    // Onboarding-polish patch \u00a74. Onboarding primary CTA reads
+    // "Next" everywhere except the final review screen (which
+    // reads "Start using Farroway"). FastFlow + QuickGardenSetup
+    // + QuickFarmSetup each use the new onboarding.next key.
+    name: 'Onboarding CTAs read "Next" (onboarding.next key)',
+    why:  'Onboarding-polish patch \u00a74 \u2014 unified Next CTA across onboarding',
+    pass: () => {
+      const t      = read('src/i18n/translations.js');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const fast   = read('src/pages/onboarding/FastFlow.jsx');
+      return /'onboarding\.next':[\s\S]*?en:\s*'Next'/.test(t)
+          && /tStrict\(\s*'onboarding\.next'\s*,\s*'Next'\s*\)/.test(garden)
+          && /tStrict\(\s*'onboarding\.next'\s*,\s*'Next'\s*\)/.test(farm)
+          && /tStrict\(\s*'onboarding\.next'\s*,\s*'Next'\s*\)/.test(fast);
+    },
+  },
+  {
+    // Onboarding-polish patch \u00a75. Every onboarding option that
+    // used "I don't know" now reads "Not sure". Both the
+    // translation values AND the source-code fallbacks (used
+    // when translations.js fails to load entirely).
+    name: 'Onboarding "I don\u2019t know" replaced with "Not sure"',
+    why:  'Onboarding-polish patch \u00a75 \u2014 calmer, less self-blame copy',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const stepFarm = read('src/onboarding/StepFarmSetup.jsx');
+      const gardenForm = read('src/components/farm/GardenSetupForm.jsx');
+      // No source fallback in any onboarding file should still
+      // read "I don't know"; every unknown affirmation is now
+      // "Not sure" in the source AND in translations.js.
+      const noLeak = (f) => !/I don\\u2019t know/.test(f) && !/I don\u2019t know/.test(f);
+      return noLeak(garden) && noLeak(farm) && noLeak(stepFarm) && noLeak(gardenForm);
     },
   },
 ];

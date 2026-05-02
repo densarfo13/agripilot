@@ -66,7 +66,7 @@ const FARM_SIZE_BUCKETS = [
   { value: 'lt1',     acres: 0.5, labelKey: 'onboarding.farmSize.lt1',     fallback: 'Less than 1 acre' },
   { value: '1to5',    acres: 3,   labelKey: 'onboarding.farmSize.1to5',    fallback: '1 to 5 acres' },
   { value: 'gt5',     acres: 10,  labelKey: 'onboarding.farmSize.gt5',     fallback: '5+ acres' },
-  { value: 'unknown', acres: null,labelKey: 'onboarding.farmSize.unknown', fallback: 'I don\u2019t know' },
+  { value: 'unknown', acres: null,labelKey: 'onboarding.farmSize.unknown', fallback: 'Not sure' },
 ];
 
 // Spec \u00a77 \u2014 farm crop tiles. 5 launch crops + Other (free
@@ -700,7 +700,7 @@ export default function QuickFarmSetup() {
               : { ...S.saveBtn, ...S.saveBtnDisabled, marginTop: 0, flex: 1 }}
             data-testid="quick-farm-continue"
           >
-            {tStrict('onboarding.continue', 'Continue')}
+            {tStrict('onboarding.next', 'Next')}
           </button>
         ) : null}
       </div>

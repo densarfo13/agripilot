@@ -68,7 +68,7 @@ const SIZE_OPTIONS = [
   { value: 'small',   labelKey: 'onboarding.gardenSize.small',   fallback: 'Small' },
   { value: 'medium',  labelKey: 'onboarding.gardenSize.medium',  fallback: 'Medium' },
   { value: 'large',   labelKey: 'onboarding.gardenSize.large',   fallback: 'Large' },
-  { value: 'unknown', labelKey: 'onboarding.gardenSize.unknown', fallback: 'I don\u2019t know' },
+  { value: 'unknown', labelKey: 'onboarding.gardenSize.unknown', fallback: 'Not sure' },
 ];
 
 // Backyard growing-setup spec \u00a71\u2013\u00a72 \u2014 garden-only step
@@ -91,7 +91,7 @@ const GROWING_SETUP_OPTIONS = [
   { value: 'raised_bed',     icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.raisedBed',     fallback: 'Raised bed'        },
   { value: 'ground',         icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',        fallback: 'Backyard soil'     },
   { value: 'indoor_balcony', icon: '\uD83E\uDE9F', labelKey: 'garden.growingSetup.indoorBalcony', fallback: 'Indoor / balcony'  },
-  { value: 'unknown',        icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',       fallback: 'I don\u2019t know' },
+  { value: 'unknown',        icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',       fallback: 'Not sure' },
 ];
 
 // Spec \u00a77 \u2014 garden plant tiles. 5 common picks + Other (free
@@ -220,25 +220,27 @@ export default function QuickGardenSetup() {
   // shows every tile (the default).
   const [plantQuery, setPlantQuery] = useState('');
 
-  // Stability-patch \u00a74 \u2014 multi-step state machine. The form
-  // used to render every section stacked on a single scrollable
-  // page; the spec mandates one decision per screen. Sub-steps:
-  //   0  Location               (spec item 3)
-  //   1  Plant                  (spec item 4)
-  //   2  Growing setup + size   (spec item 5, garden-only;
-  //                              size pills stay on the same
-  //                              screen \u2014 both are "about your
-  //                              garden", both optional)
-  //   3  Review + Save          (spec item 7)
-  // Each sub-step renders its own card; Continue at the bottom
+  // Stability-patch \u00a74 + onboarding-polish patch \u00a72 \u2014
+  // multi-step state machine. One decision per screen. Sub-steps:
+  //   0  Location          (spec item 3)
+  //   1  Plant             (spec item 4)
+  //   2  Growing setup     (spec item 5, garden-only)
+  //   3  Garden size       (spec item 5, garden-only \u2014 split
+  //                         OUT of the growing-setup screen so
+  //                         the user makes one decision per
+  //                         screen, per onboarding-polish \u00a72)
+  //   4  Review + Save     (spec item 7)
+  // Each sub-step renders its own card; Next at the bottom
   // advances; Back at the top decrements (sub-step 0 \u2192 routes
   // back out to FastFlow's experience picker).
   const [subStep, setSubStep] = useState(0);
-  const TOTAL_SUB_STEPS = 4;
+  const TOTAL_SUB_STEPS = 5;
 
   // Per-sub-step required-field gate. Continue stays disabled
-  // until the gate passes. Sub-steps 2\u20133 (growing setup, size)
-  // are optional and Continue is always enabled.
+  // until the gate passes. Sub-steps 2 (growing setup) and 3
+  // (garden size) are optional and Next is always enabled \u2014
+  // the user can skip both screens by tapping Next without
+  // selecting a tile.
   function canAdvance(s) {
     // Location step: country typed manually OR geolocation
     // succeeded \u2014 either path is enough to advance per spec
@@ -418,7 +420,11 @@ export default function QuickGardenSetup() {
           title + subtitle that focuses the user on the current
           decision; the global header was redundant noise above
           a step-specific question. */}
-      <OnboardingProgressBar value={3 + subStep} total={6} />
+      {/* Progress bar total bumps from 6 to 7 because
+          onboarding-polish patch \u00a72 split garden growing-setup
+          and garden-size onto separate sub-steps (each "about
+          your garden" decision now gets its own screen). */}
+      <OnboardingProgressBar value={3 + subStep} total={7} />
 
       {/* SubStep 1 \u2014 Plant tiles. Pick the plant the user is
           growing. "Other" reveals a free-text fallback so any
@@ -574,11 +580,16 @@ export default function QuickGardenSetup() {
 
       {/* SubStep 2 \u2014 Growing setup (garden-only). Drives
           task personalisation downstream (dailyIntelligenceEngine
-          + hybridScanEngine). */}
+          + hybridScanEngine). Per onboarding-polish patch \u00a72,
+          this is now a single-decision screen \u2014 garden size
+          moved to sub-step 3. */}
       {subStep === 2 && (
       <section style={S.card} data-testid="setup-garden-growing-setup" id="review-growing-setup">
+        <h1 style={{ ...S.title, fontSize: 22, marginBottom: 4 }}>
+          {tStrict('garden.growingSetup.title', 'How are you growing your plants?')}
+        </h1>
         <span style={S.label}>
-          {tStrict('garden.growingSetup.title', 'How are you growing your plant?')}
+          {tStrict('garden.growingSetup.label', 'Growing setup')}
         </span>
         <div style={S.pillRow}>
           {GROWING_SETUP_OPTIONS.map((opt) => {
@@ -601,14 +612,17 @@ export default function QuickGardenSetup() {
       </section>
       )}
 
-      {/* Garden size pills sit on the SAME sub-step as growing
-          setup so the user makes both "about your garden"
-          decisions on one screen. Spec \u00a75 size options;
+      {/* SubStep 3 \u2014 Garden size. Onboarding-polish patch \u00a72
+          splits this OUT of the growing-setup screen so each
+          screen has a single decision. Spec \u00a75 size options;
           NEVER acres. */}
-      {subStep === 2 && (
-      <section style={S.card}>
+      {subStep === 3 && (
+      <section style={S.card} data-testid="setup-garden-size" id="review-garden-size">
+        <h1 style={{ ...S.title, fontSize: 22, marginBottom: 4 }}>
+          {tStrict('onboarding.gardenSize.title', 'How big is your garden?')}
+        </h1>
         <span style={S.label}>
-          {tStrict('onboarding.gardenSize.title', 'Garden size')}
+          {tStrict('onboarding.gardenSize.label', 'Garden size')}
         </span>
         <div style={S.pillRow}>
           {SIZE_OPTIONS.map((opt) => {
@@ -630,15 +644,15 @@ export default function QuickGardenSetup() {
       </section>
       )}
 
-      {/* SubStep 3 \u2014 Review + Save. The user sees their picks
-          (Plant / Location / Growing setup) with Change buttons
-          that jump back to the relevant sub-step (state-based,
-          NOT scroll). Below the panel sits the Save Garden CTA
-          which persists the record + routes to /home. The
-          firstPlanEngine generates the action list from the
-          user's actual entries (plant, location, isGarden)
-          and the cached weather snapshot if available. */}
-      {subStep === 3 && (
+      {/* SubStep 4 \u2014 Review + Save. The user sees their picks
+          (Plant / Location / Growing setup / Garden size) with
+          Change buttons that jump back to the relevant sub-step
+          (state-based, NOT scroll). Below the panel sits the
+          Save Garden CTA which persists the record + routes to
+          /home. The firstPlanEngine generates the action list
+          from the user's actual entries (plant, location,
+          isGarden) and the cached weather snapshot if available. */}
+      {subStep === 4 && (
         <>
           <OnboardingReviewPanel
             experience="garden"
@@ -650,6 +664,14 @@ export default function QuickGardenSetup() {
                                                 : growingSetup === 'indoor_balcony' ? 'indoorBalcony'
                                                 : growingSetup}`,
                     growingSetup)
+                : null,
+              // Onboarding-polish patch \u00a72 \u2014 garden size is now
+              // a standalone sub-step; surface it on the review
+              // panel so the user can confirm OR edit it before
+              // saving. Falls through to the localized bucket
+              // label (Small / Medium / Large / Not sure).
+              gardenSize:   size
+                ? tStrict(`onboarding.gardenSize.${size}`, size)
                 : null,
             }}
             actions={generateFirstPlan({
@@ -673,13 +695,17 @@ export default function QuickGardenSetup() {
               })(),
             })}
             onChangeStep={(key) => {
-              // Stability-patch \u00a74 \u2014 state-based jump-back.
-              // Each Change button maps to the sub-step that
-              // owns that field; profile state is preserved
-              // because we only flip the subStep pointer.
-              if (key === 'location')     setSubStep(0);
-              else if (key === 'plant')   setSubStep(1);
+              // Stability-patch \u00a74 + onboarding-polish \u00a72 \u2014
+              // state-based jump-back. Each Change button maps
+              // to the sub-step that owns that field; profile
+              // state is preserved because we only flip the
+              // subStep pointer (no remount, no draft reload).
+              // Garden size now lives on its own sub-step (3)
+              // separate from growing setup (2).
+              if (key === 'location')          setSubStep(0);
+              else if (key === 'plant')        setSubStep(1);
               else if (key === 'growingSetup') setSubStep(2);
+              else if (key === 'gardenSize')   setSubStep(3);
             }}
           />
 
@@ -730,7 +756,7 @@ export default function QuickGardenSetup() {
               : { ...S.saveBtn, ...S.saveBtnDisabled, marginTop: 0, flex: 1 }}
             data-testid="quick-garden-continue"
           >
-            {tStrict('onboarding.continue', 'Continue')}
+            {tStrict('onboarding.next', 'Next')}
           </button>
         ) : null}
       </div>

@@ -11350,9 +11350,9 @@ const T = {
     tw: 'Eka 5+', hi: '5+ एकड़', es: 'Más de 2 ha',
   },
   'onboarding.size.unknown': {
-    en: 'I don\u2019t know', fr: 'Je ne sais pas',
-    sw: 'Sijui', ha: 'Ban sani ba',
-    tw: 'Mennim', hi: 'मुझे नहीं पता', es: 'No sé',
+    en: 'Not sure', fr: 'Pas s\u00FBr',
+    sw: 'Sina uhakika', ha: 'Ban tabbata ba',
+    tw: 'Mennim', hi: 'निश्चित नहीं', es: 'No estoy seguro',
   },
   'onboarding.plantingDate': {
     en: 'When did you plant?', fr: 'Quand avez-vous planté ?',
@@ -11375,9 +11375,9 @@ const T = {
     es: 'Este mes',
   },
   'onboarding.planted.unknown': {
-    en: 'I don\u2019t know', fr: 'Je ne sais pas',
-    sw: 'Sijui', ha: 'Ban sani ba',
-    tw: 'Mennim', hi: 'मुझे नहीं पता', es: 'No sé',
+    en: 'Not sure', fr: 'Pas s\u00FBr',
+    sw: 'Sina uhakika', ha: 'Ban tabbata ba',
+    tw: 'Mennim', hi: 'निश्चित नहीं', es: 'No estoy seguro',
   },
 
   // Daily-plan preview step
@@ -12475,6 +12475,13 @@ const T = {
   'onboarding.contactTeam':       { en: 'Contact team',              fr: 'Contacter l\u2019\u00E9quipe',              sw: 'Wasiliana na timu',                      ha: 'Tuntu\u0253i \u0199ungiya',             tw: 'Frɛ adwumakuw no',                           hi: '\u091F\u0940\u092E \u0938\u0947 \u0938\u0902\u092A\u0930\u094D\u0915 \u0915\u0930\u0947\u0902' },
   'onboarding.step':              { en: 'Step {done} of {total}',    fr: '\u00C9tape {done} sur {total}',             sw: 'Hatua {done} kati ya {total}',           ha: 'Mataki {done} cikin {total}',           tw: 'Anammɔn {done} wɔ {total} mu',               hi: '\u091A\u0930\u0923 {done} / {total}' },
   'onboarding.continue':          { en: 'Continue',                  fr: 'Continuer',                                 sw: 'Endelea',                                ha: 'Ci gaba',                               tw: 'Toa so',                                     hi: '\u091C\u093E\u0930\u0940 \u0930\u0916\u0947\u0902' },
+  // Onboarding-polish patch \u00a74 \u2014 every onboarding primary CTA
+  // (except the final review screen, which says "Start using
+  // Farroway") now reads "Next" instead of "Continue". Distinct
+  // key from .continue so non-onboarding callers of the latter
+  // (PhotoIntelligence, AccountLoadFallback, BeginnerReassurance,
+  // LandCheckPage, etc.) keep their existing copy.
+  'onboarding.next':              { en: 'Next',                      fr: 'Suivant',                                   sw: 'Endelea',                                ha: 'Na gaba',                               tw: 'Kɔ so',                                      hi: '\u0905\u0917\u0932\u093E' },
   'onboarding.back':              { en: 'Back',                      fr: 'Retour',                                    sw: 'Rudi',                                   ha: 'Komawa',                                tw: 'San',                                        hi: '\u0935\u093E\u092A\u0938' },
 
   // Step 0 \u2014 language picker.
@@ -12533,20 +12540,25 @@ const T = {
   'onboarding.gardenLocation':    { en: 'Where is your garden?', fr: 'Où se trouve votre jardin ?',  sw: 'Bustani yako iko wapi?',  ha: 'Ina lambun ka yake?',    tw: 'Wo turom no wɔ he?',           hi: '\u0906\u092A\u0915\u093E \u092C\u0917\u0940\u091A\u093E \u0915\u0939\u093E\u0902 \u0939\u0948?' },
   'onboarding.farmLocation':      { en: 'Where is your farm?',   fr: 'Où se trouve votre ferme ?',   sw: 'Shamba lako liko wapi?',  ha: 'Ina gonarka take?',      tw: 'Wo afuo no wɔ he?',            hi: '\u0906\u092A\u0915\u093E \u0916\u0947\u0924 \u0915\u0939\u093E\u0902 \u0939\u0948?' },
   'onboarding.useMyLocation':     { en: 'Use my location',       fr: 'Utiliser ma position',         sw: 'Tumia eneo langu',        ha: 'Yi amfani da wurina',    tw: 'Fa me beaeɛ no',               hi: '\u092E\u0947\u0930\u093E \u0938\u094D\u0925\u093E\u0928 \u0909\u092A\u092F\u094B\u0917 \u0915\u0930\u0947\u0902' },
-  'onboarding.locationManual':    { en: 'Or enter manually',     fr: 'Ou saisir manuellement',       sw: 'Au ingiza mwenyewe',      ha: 'Ko shigar da kanka',     tw: 'Anaa kyerɛ wo ho',             hi: '\u092F\u093E \u0939\u093E\u0925 \u0938\u0947 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902' },
+  'onboarding.locationManual':    { en: 'Or enter it manually',  fr: 'Ou saisissez-le manuellement', sw: 'Au liingize kwa mkono',   ha: 'Ko shigar da shi da hannu', tw: 'Anaa kyerɛ no wo nsa',         hi: '\u092F\u093E \u0907\u0938\u0947 \u0939\u093E\u0925 \u0938\u0947 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902' },
   // Location-screen UX cleanup (no humanizer leaks). Each
   // key tail is intentionally LONG enough that a missing
   // resolution surfaces a sensible humanised fallback (e.g.
   // "Detecting Location"), not a cryptic "Geo Denied" tail.
-  'onboarding.locationSubtitle':  { en: 'We use this to give weather-based advice.', fr: 'Nous l\u2019utilisons pour des conseils m\u00E9t\u00E9o.', sw: 'Tunalitumia kutoa ushauri wa hali ya hewa.', ha: 'Muna amfani da wannan don ba ka shawarar yanayi.', tw: 'Yɛde yei ma akwankyerɛ a egyina ahyɛyɛeɛ so.', hi: '\u0939\u092E \u0907\u0938\u0915\u093E \u0909\u092A\u092F\u094B\u0917 \u092E\u094C\u0938\u092E-\u0906\u0927\u093E\u0930\u093F\u0924 \u0938\u0932\u093E\u0939 \u0926\u0947\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u0915\u0930\u0924\u0947 \u0939\u0948\u0902\u0964' },
+  'onboarding.locationSubtitle':  { en: 'This helps us give you the right advice for your weather.', fr: 'Cela nous aide \u00E0 vous donner les bons conseils pour votre m\u00E9t\u00E9o.', sw: 'Hii hutusaidia kukupa ushauri sahihi kwa hali yako ya hewa.', ha: 'Wannan yana taimaka mana mu ba ka shawarar daidai don yanayinka.', tw: 'Yei boa yɛn sɛ yɛma wo afotusɛm pa a ɛfa wo wim tebea ho.', hi: '\u092F\u0939 \u0939\u092E\u0947\u0902 \u0906\u092A\u0915\u0947 \u092E\u094C\u0938\u092E \u0915\u0947 \u0932\u093F\u090F \u0938\u0939\u0940 \u0938\u0932\u093E\u0939 \u0926\u0947\u0928\u0947 \u092E\u0947\u0902 \u092E\u0926\u0926 \u0915\u0930\u0924\u093E \u0939\u0948\u0964' },
   'onboarding.useMyCurrentLocation': { en: '\uD83D\uDCCD Use my current location', fr: '\uD83D\uDCCD Utiliser ma position actuelle', sw: '\uD83D\uDCCD Tumia eneo langu la sasa', ha: '\uD83D\uDCCD Yi amfani da wurina na yanzu', tw: '\uD83D\uDCCD Fa me beaeɛ a mewɔ seesei no', hi: '\uD83D\uDCCD \u092E\u0947\u0930\u0947 \u092E\u094C\u091C\u0942\u0926\u093E \u0938\u094D\u0925\u093E\u0928 \u0915\u093E \u0909\u092A\u092F\u094B\u0917 \u0915\u0930\u0947\u0902' },
   'onboarding.detectingLocation': { en: 'Detecting location\u2026', fr: 'D\u00E9tection de la position\u2026', sw: 'Inatambua eneo\u2026', ha: 'Ana gano wuri\u2026', tw: 'Yɛrehwehwɛ beaeɛ\u2026', hi: '\u0938\u094D\u0925\u093E\u0928 \u0915\u093E \u092A\u0924\u093E \u0932\u0917\u093E \u0930\u0939\u0947 \u0939\u0948\u0902\u2026' },
-  'onboarding.locationFailed':    { en: 'We couldn\u2019t access your location. Please enter it manually.', fr: 'Nous n\u2019avons pas pu acc\u00E9der \u00E0 votre position. Veuillez la saisir manuellement.', sw: 'Hatukuweza kufikia eneo lako. Tafadhali liingize kwa mkono.', ha: 'Ba mu iya samun damar wurinka ba. Da fatan shigar da shi da hannu.', tw: 'Yɛantumi annya wo beaeɛ. Yɛsrɛ wo, kyerɛ wo ho.', hi: '\u0939\u092E \u0906\u092A\u0915\u0947 \u0938\u094D\u0925\u093E\u0928 \u0924\u0915 \u092A\u0939\u0941\u0902\u091A \u0928\u0939\u0940\u0902 \u0938\u0915\u0947\u0964 \u0915\u0943\u092A\u092F\u093E \u0907\u0938\u0947 \u0939\u093E\u0925 \u0938\u0947 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902\u0964' },
+  'onboarding.locationFailed':    { en: 'We couldn\u2019t detect your location. Please enter it manually.', fr: 'Nous n\u2019avons pas pu d\u00E9tecter votre position. Veuillez la saisir manuellement.', sw: 'Hatukuweza kugundua eneo lako. Tafadhali liingize kwa mkono.', ha: 'Ba mu iya gano wurinka ba. Da fatan shigar da shi da hannu.', tw: 'Yɛantumi anhu wo beaeɛ. Yɛsrɛ wo, kyerɛ no wo nsa.', hi: '\u0939\u092E \u0906\u092A\u0915\u0947 \u0938\u094D\u0925\u093E\u0928 \u0915\u093E \u092A\u0924\u093E \u0928\u0939\u0940\u0902 \u0932\u0917\u093E \u092A\u093E\u090F\u0964 \u0915\u0943\u092A\u092F\u093E \u0907\u0938\u0947 \u0939\u093E\u0925 \u0938\u0947 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902\u0964' },
   'onboarding.selectCountry':     { en: 'Select country',         fr: 'S\u00E9lectionner un pays',                 sw: 'Chagua nchi',                 ha: 'Zaɓi ƙasa',                tw: 'Yi ɔman',                          hi: '\u0926\u0947\u0936 \u091A\u0941\u0928\u0947\u0902' },
   'onboarding.enterRegion':       { en: 'Enter region or state',  fr: 'Entrer la r\u00E9gion ou l\u2019\u00E9tat',  sw: 'Ingiza eneo au jimbo',        ha: 'Shigar da yanki ko jiha',  tw: 'Kyerɛ ɔmantam anaa state',         hi: '\u0915\u094D\u0937\u0947\u0924\u094D\u0930 \u092F\u093E \u0930\u093E\u091C\u094D\u092F \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902' },
 
   // Garden size buckets (spec \u00a76).
-  'onboarding.gardenSize.title':  { en: 'Garden size',           fr: 'Taille du jardin',             sw: 'Ukubwa wa bustani',       ha: 'Girman lambu',           tw: 'Turom no kɛseɛ',               hi: '\u092C\u0917\u0940\u091A\u0947 \u0915\u093E \u0906\u0915\u093E\u0930' },
+  // Onboarding-polish patch \u00a72 \u2014 garden size now lives on its
+  // own sub-step, so the title becomes a full-question header.
+  // The label key is the short noun phrase used by the review
+  // panel + the smaller field-label inside the form.
+  'onboarding.gardenSize.title':  { en: 'How big is your garden?', fr: 'Quelle est la taille de votre jardin\u00A0?', sw: 'Bustani yako ina ukubwa gani?', ha: 'Mene ne girman lambun ka?', tw: 'Wo turom no kɛseɛ ne sɛn?',     hi: '\u0906\u092A\u0915\u093E \u092C\u0917\u0940\u091A\u093E \u0915\u093F\u0924\u0928\u093E \u092C\u0921\u093C\u093E \u0939\u0948?' },
+  'onboarding.gardenSize.label':  { en: 'Garden size',           fr: 'Taille du jardin',             sw: 'Ukubwa wa bustani',       ha: 'Girman lambu',           tw: 'Turom no kɛseɛ',               hi: '\u092C\u0917\u0940\u091A\u0947 \u0915\u093E \u0906\u0915\u093E\u0930' },
   'onboarding.gardenSize.small':  { en: 'Small',                 fr: 'Petit',                        sw: 'Ndogo',                   ha: 'Ƙarami',                 tw: 'Ketewa',                       hi: '\u091B\u094B\u091F\u093E' },
   'onboarding.gardenSize.medium': { en: 'Medium',                fr: 'Moyen',                        sw: 'Wastani',                 ha: 'Matsakaici',             tw: 'Mfimfini',                     hi: '\u092E\u0927\u094D\u092F\u092E' },
   'onboarding.gardenSize.large':  { en: 'Large',                 fr: 'Grand',                        sw: 'Kubwa',                   ha: 'Babban',                 tw: 'Kɛseɛ',                        hi: '\u092C\u0921\u093C\u093E' },

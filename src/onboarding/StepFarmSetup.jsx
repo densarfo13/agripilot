@@ -20,14 +20,14 @@ const FARM_SIZE_CHOICES = Object.freeze([
   { id: 'lt1acre',   labelKey: 'onboarding.size.lt1Acre',   fallback: 'Less than 1 acre' },
   { id: '1to5acres', labelKey: 'onboarding.size.1to5Acres', fallback: '1\u20135 acres' },
   { id: 'gt5acres',  labelKey: 'onboarding.size.gt5Acres',  fallback: '5+ acres' },
-  { id: 'unknown',   labelKey: 'onboarding.size.unknown',   fallback: 'I don\u2019t know' },
+  { id: 'unknown',   labelKey: 'onboarding.size.unknown',   fallback: 'Not sure' },
 ]);
 
 const PLANTING_CHOICES = Object.freeze([
   { id: 'today',     labelKey: 'onboarding.planted.today',     fallback: 'Today' },
   { id: 'thisweek',  labelKey: 'onboarding.planted.thisWeek',  fallback: 'This week' },
   { id: 'thismonth', labelKey: 'onboarding.planted.thisMonth', fallback: 'This month' },
-  { id: 'unknown',   labelKey: 'onboarding.planted.unknown',   fallback: 'I don\u2019t know' },
+  { id: 'unknown',   labelKey: 'onboarding.planted.unknown',   fallback: 'Not sure' },
 ]);
 
 function defaultFarmName(cropId, lang) {

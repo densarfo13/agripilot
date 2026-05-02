@@ -541,7 +541,7 @@ function ScreenSetup({ state, onChange, onContinue }) {
         style={{ ...S.cta, ...(canContinue ? null : S.ctaDisabled) }}
         data-testid="fast-flow-setup-continue"
       >
-        {tStrict('common.continue', 'Continue')} →
+        {tStrict('onboarding.next', 'Next')} →
       </button>
     </section>
   );
@@ -594,7 +594,7 @@ function ScreenRecommendation({ state, lang, onChange, onContinue }) {
         style={S.cta}
         data-testid="fast-flow-rec-continue"
       >
-        {tStrict('common.continue', 'Continue')} →
+        {tStrict('onboarding.next', 'Next')} →
       </button>
     </section>
   );
