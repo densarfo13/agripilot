@@ -33,6 +33,12 @@
  * image-only verdict, hybridAnalyze layers context on top.
  */
 
+// Land Intelligence engine — provides the scale + risk + extra
+// actions layer per the land-intelligence spec. Imported eagerly
+// because both modules are pure helpers with no cross-imports;
+// no circular-import risk.
+import { landIntelligenceEngine } from './landIntelligenceEngine.js';
+
 // ── Safe issue taxonomy (spec §2) ─────────────────────────────
 export const ISSUES = Object.freeze({
   LOOKS_HEALTHY:                'Looks healthy',
@@ -382,7 +388,35 @@ export function hybridAnalyze(input = {}) {
   const isGarden = exp === 'garden' || exp === 'backyard';
   const contextType = isGarden ? 'garden' : (exp === 'farm' ? 'farm' : 'generic');
   const actionsTable = isGarden ? GARDEN_BY_ISSUE : FARM_BY_ISSUE;
-  const recommendedActions = (actionsTable[issue] || actionsTable[ISSUES.NEEDS_CLOSER_INSPECTION]).slice();
+  let recommendedActions = (actionsTable[issue] || actionsTable[ISSUES.NEEDS_CLOSER_INSPECTION]).slice();
+
+  // Land Intelligence — append scale-aware actions per spec §5
+  // and risk-driven enrichment per spec §6. Pure function; never
+  // throws. We dedupe case-insensitively so the scale extras
+  // don't double up on existing garden/farm advice.
+  let scaleType = isGarden ? 'small' : null;
+  let riskProfile = [];
+  try {
+    const land = landIntelligenceEngine({
+      sizeSqFt:         safe.sizeSqFt || (safe.imageResult?.sizeSqFt) || null,
+      country:          safe.country  || null,
+      region:           safe.region   || null,
+      cropName:         safe.cropName || safe.plantName || null,
+      plantName:        safe.plantName || null,
+      activeExperience: isGarden ? 'garden' : (exp === 'farm' ? 'farm' : null),
+      weather:          safe.weather  || null,
+    });
+    scaleType = land.scaleType;
+    riskProfile = land.riskProfile;
+    const seen = new Set(recommendedActions.map((s) => String(s || '').trim().toLowerCase()));
+    for (const a of [...land.scanContextAdjustment, ...land.suggestedActions]) {
+      const k = String(a || '').trim().toLowerCase();
+      if (k && !seen.has(k)) {
+        recommendedActions.push(a);
+        seen.add(k);
+      }
+    }
+  } catch { /* land enrichment is best-effort — ignore */ }
 
   const plantOrCrop = isGarden
     ? (safe.plantName || safe.cropName || null)
@@ -397,6 +431,13 @@ export function hybridAnalyze(input = {}) {
     followUpTask:  _followUpTask(isGarden ? 'garden' : 'farm', plantOrCrop),
     disclaimer:    DISCLAIMER,
     contextType,
+    // Land context surfaced for callers that want to render
+    // additional UI (e.g. "Scout nearby rows" badge for large
+    // farms). Both fields are present even when land data is
+    // missing — scaleType defaults to 'small'/null per the
+    // engine's internal fallback.
+    scaleType,
+    riskProfile,
   };
 }
 

@@ -168,6 +168,7 @@ export default function ScanPage() {
               activeExperience,
               country:          profile?.country || null,
               region:           profile?.region  || null,
+              sizeSqFt:         profile?.landSizeSqFt || profile?.farmSize || null,
             });
             setResult({
               scanId:             'scan_fb_' + Date.now().toString(36),
@@ -234,6 +235,9 @@ export default function ScanPage() {
           country:          profile?.country || null,
           region:           profile?.region  || null,
           weather:          weatherSnapshot,
+          // Land Intelligence input — drives the scale-aware
+          // action enrichment inside hybridAnalyze.
+          sizeSqFt:         profile?.landSizeSqFt || profile?.farmSize || null,
         });
 
         // Merge: hybrid wins on the user-visible fields, engine

@@ -904,6 +904,29 @@ const checks = [
           && /\/setup\/farm/.test(app);
     },
   },
+  {
+    name: 'landIntelligenceEngine ships scale + risk + scan-adjustment',
+    why:  'Land intelligence spec \u00a72-\u00a76 \u2014 scale + risk + action enrichment',
+    pass: () => {
+      const f = read('src/core/landIntelligenceEngine.js');
+      return /export function getScaleType/.test(f)
+          && /export function getRiskProfile/.test(f)
+          && /export function getScanContextAdjustment/.test(f)
+          && /export function enrichActions/.test(f)
+          && /export function landIntelligenceEngine/.test(f);
+    },
+  },
+  {
+    name: 'hybridScanEngine + ScanPage thread sizeSqFt into Land Intelligence',
+    why:  'Land intelligence spec \u00a77 \u2014 scan results adapt to scale',
+    pass: () => {
+      const hybrid = read('src/core/hybridScanEngine.js');
+      const scan   = read('src/pages/ScanPage.jsx');
+      return /landIntelligenceEngine/.test(hybrid)
+          && /scanContextAdjustment/.test(hybrid)
+          && /sizeSqFt:\s*profile\?\.landSizeSqFt/.test(scan);
+    },
+  },
 ];
 
 const failed = [];
