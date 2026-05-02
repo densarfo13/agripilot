@@ -12463,6 +12463,54 @@ const T = {
   'onboarding.continue':          { en: 'Continue',                  fr: 'Continuer',                                 sw: 'Endelea',                                ha: 'Ci gaba',                               tw: 'Toa so',                                     hi: '\u091C\u093E\u0930\u0940 \u0930\u0916\u0947\u0902' },
   'onboarding.back':              { en: 'Back',                      fr: 'Retour',                                    sw: 'Rudi',                                   ha: 'Komawa',                                tw: 'San',                                        hi: '\u0935\u093E\u092A\u0938' },
 
+  // Step 0 \u2014 language picker.
+  'onboarding.chooseLanguage':    { en: 'Choose your language',      fr: 'Choisissez votre langue',                   sw: 'Chagua lugha yako',                      ha: 'Zaɓi yarenka',                          tw: 'Yi w\u2019ɔkasa',                            hi: '\u0905\u092A\u0928\u0940 \u092D\u093E\u0937\u093E \u091A\u0941\u0928\u0947\u0902' },
+  // Subtitle shown under "What are you growing?" tile picker.
+  'onboarding.experienceSubtitle':{ en: 'Get simple daily guidance for your plants or farm.', fr: 'Recevez des conseils quotidiens simples pour vos plantes ou votre ferme.', sw: 'Pata mwongozo rahisi wa kila siku kwa mimea au shamba lako.', ha: 'Sami sauƙin shawarwarin yau da kullum ga shuke-shuke ko gonarka.', tw: 'Nya akwankyerɛ a ɛyɛ mmerɛ ma w\u2019aduane anaa w\u2019afuo daa.', hi: '\u0905\u092A\u0928\u0947 \u092A\u094C\u0927\u094B\u0902 \u092F\u093E \u0916\u0947\u0924 \u0915\u0947 \u0932\u093F\u090F \u0938\u0930\u0932 \u0926\u0948\u0928\u093F\u0915 \u092E\u093E\u0930\u094D\u0917\u0926\u0930\u094D\u0936\u0928 \u092A\u093E\u090F\u0902\u0964' },
+
+  // Plant tiles (garden flow). "Other" lets the user fall through to free input.
+  'onboarding.plant.tomato':      { en: 'Tomato',     fr: 'Tomate',     sw: 'Nyanya',     ha: 'Tumatir',  tw: 'Tomato',     hi: '\u091F\u092E\u093E\u091F\u0930' },
+  'onboarding.plant.pepper':      { en: 'Pepper',     fr: 'Poivron',    sw: 'Pilipili',   ha: 'Tattasai', tw: 'Mako',       hi: '\u092E\u093F\u0930\u094D\u091A' },
+  'onboarding.plant.herbs':       { en: 'Herbs',      fr: 'Herbes',     sw: 'Mboga za majani', ha: 'Ganye', tw: 'Nhabannan',  hi: '\u091C\u0921\u093C\u0940-\u092C\u0942\u091F\u0940' },
+  'onboarding.plant.lettuce':     { en: 'Lettuce',    fr: 'Laitue',     sw: 'Saladi',     ha: 'Latas',    tw: 'Letas',      hi: '\u0938\u0932\u093E\u0926 \u092A\u0924\u094D\u0924\u093E' },
+  'onboarding.plant.cucumber':    { en: 'Cucumber',   fr: 'Concombre',  sw: 'Tango',      ha: 'Kokonbur', tw: 'Kokumba',    hi: '\u0916\u0940\u0930\u093E' },
+  'onboarding.plant.other':       { en: 'Other',      fr: 'Autre',      sw: 'Nyingine',   ha: 'Wani',     tw: 'Foforɔ',     hi: '\u0905\u0928\u094D\u092F' },
+
+  // Crop tiles (farm flow).
+  'onboarding.crop.maize':        { en: 'Maize',      fr: 'Maïs',       sw: 'Mahindi',    ha: 'Masara',   tw: 'Aburoo',     hi: '\u092E\u0915\u094D\u0915\u093E' },
+  'onboarding.crop.rice':         { en: 'Rice',       fr: 'Riz',        sw: 'Mchele',     ha: 'Shinkafa', tw: 'Ɛmo',        hi: '\u091A\u093E\u0935\u0932' },
+  'onboarding.crop.pepper':       { en: 'Pepper',     fr: 'Poivron',    sw: 'Pilipili',   ha: 'Tattasai', tw: 'Mako',       hi: '\u092E\u093F\u0930\u094D\u091A' },
+  'onboarding.crop.tomato':       { en: 'Tomato',     fr: 'Tomate',     sw: 'Nyanya',     ha: 'Tumatir',  tw: 'Tomato',     hi: '\u091F\u092E\u093E\u091F\u0930' },
+  'onboarding.crop.cassava':      { en: 'Cassava',    fr: 'Manioc',     sw: 'Mihogo',     ha: 'Rogo',     tw: 'Bankye',     hi: '\u0915\u0938\u093E\u0935\u093E' },
+  'onboarding.crop.other':        { en: 'Other',      fr: 'Autre',      sw: 'Nyingine',   ha: 'Wani',     tw: 'Foforɔ',     hi: '\u0905\u0928\u094D\u092F' },
+
+  // Pick-plant / pick-crop screen titles + subtitles.
+  'onboarding.pickPlant.title':   { en: 'Pick your plant',      fr: 'Choisissez votre plante',     sw: 'Chagua mmea wako',     ha: 'Zaɓi shukar ka',          tw: 'Yi w\u2019aduane',            hi: '\u0905\u092A\u0928\u093E \u092A\u094C\u0927\u093E \u091A\u0941\u0928\u0947\u0902' },
+  'onboarding.pickPlant.sub':     { en: 'You can add more plants later.', fr: 'Vous pouvez ajouter d\u2019autres plantes plus tard.', sw: 'Unaweza kuongeza mimea zaidi baadaye.', ha: 'Za ka iya ƙara ƙarin shuke-shuke daga baya.', tw: 'Wobetumi de aduane bi aka ho akyiri yi.', hi: '\u0906\u092A \u092C\u093E\u0926 \u092E\u0947\u0902 \u0914\u0930 \u092A\u094C\u0927\u0947 \u091C\u094B\u0921\u093C \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964' },
+  'onboarding.pickCrop.title':    { en: 'Pick your crop',       fr: 'Choisissez votre culture',    sw: 'Chagua zao lako',      ha: 'Zaɓi amfanin gonarka',    tw: 'Yi w\u2019aduane',            hi: '\u0905\u092A\u0928\u0940 \u092B\u093C\u0938\u0932 \u091A\u0941\u0928\u0947\u0902' },
+  'onboarding.pickCrop.sub':      { en: 'You can add more crops later.',  fr: 'Vous pouvez ajouter d\u2019autres cultures plus tard.', sw: 'Unaweza kuongeza mazao zaidi baadaye.', ha: 'Za ka iya ƙara ƙarin amfanin gona daga baya.', tw: 'Wobetumi de aduane bi aka ho akyiri yi.', hi: '\u0906\u092A \u092C\u093E\u0926 \u092E\u0947\u0902 \u0914\u0930 \u092B\u093C\u0938\u0932\u0947\u0902 \u091C\u094B\u0921\u093C \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964' },
+
+  // Location screen.
+  'onboarding.gardenLocation':    { en: 'Where is your garden?', fr: 'Où se trouve votre jardin ?',  sw: 'Bustani yako iko wapi?',  ha: 'Ina lambun ka yake?',    tw: 'Wo turom no wɔ he?',           hi: '\u0906\u092A\u0915\u093E \u092C\u0917\u0940\u091A\u093E \u0915\u0939\u093E\u0902 \u0939\u0948?' },
+  'onboarding.farmLocation':      { en: 'Where is your farm?',   fr: 'Où se trouve votre ferme ?',   sw: 'Shamba lako liko wapi?',  ha: 'Ina gonarka take?',      tw: 'Wo afuo no wɔ he?',            hi: '\u0906\u092A\u0915\u093E \u0916\u0947\u0924 \u0915\u0939\u093E\u0902 \u0939\u0948?' },
+  'onboarding.useMyLocation':     { en: 'Use my location',       fr: 'Utiliser ma position',         sw: 'Tumia eneo langu',        ha: 'Yi amfani da wurina',    tw: 'Fa me beaeɛ no',               hi: '\u092E\u0947\u0930\u093E \u0938\u094D\u0925\u093E\u0928 \u0909\u092A\u092F\u094B\u0917 \u0915\u0930\u0947\u0902' },
+  'onboarding.locationManual':    { en: 'Or enter manually',     fr: 'Ou saisir manuellement',       sw: 'Au ingiza mwenyewe',      ha: 'Ko shigar da kanka',     tw: 'Anaa kyerɛ wo ho',             hi: '\u092F\u093E \u0939\u093E\u0925 \u0938\u0947 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902' },
+
+  // Garden size buckets (spec \u00a76).
+  'onboarding.gardenSize.title':  { en: 'Garden size',           fr: 'Taille du jardin',             sw: 'Ukubwa wa bustani',       ha: 'Girman lambu',           tw: 'Turom no kɛseɛ',               hi: '\u092C\u0917\u0940\u091A\u0947 \u0915\u093E \u0906\u0915\u093E\u0930' },
+  'onboarding.gardenSize.small':  { en: 'Small',                 fr: 'Petit',                        sw: 'Ndogo',                   ha: 'Ƙarami',                 tw: 'Ketewa',                       hi: '\u091B\u094B\u091F\u093E' },
+  'onboarding.gardenSize.medium': { en: 'Medium',                fr: 'Moyen',                        sw: 'Wastani',                 ha: 'Matsakaici',             tw: 'Mfimfini',                     hi: '\u092E\u0927\u094D\u092F\u092E' },
+  'onboarding.gardenSize.large':  { en: 'Large',                 fr: 'Grand',                        sw: 'Kubwa',                   ha: 'Babban',                 tw: 'Kɛseɛ',                        hi: '\u092C\u0921\u093C\u093E' },
+  'onboarding.gardenSize.unknown':{ en: 'I don\u2019t know',     fr: 'Je ne sais pas',               sw: 'Sijui',                   ha: 'Ban sani ba',            tw: 'Mennim',                       hi: '\u092E\u0941\u091D\u0947 \u0928\u0939\u0940\u0902 \u092A\u0924\u093E' },
+
+  // Farm size buckets (spec \u00a76 \u2014 different from garden, NEVER show "small backyard").
+  'onboarding.farmSize.title':    { en: 'Farm size',             fr: 'Taille de la ferme',           sw: 'Ukubwa wa shamba',        ha: 'Girman gona',            tw: 'Afuo no kɛseɛ',                hi: '\u0916\u0947\u0924 \u0915\u093E \u0906\u0915\u093E\u0930' },
+  'onboarding.farmSize.lt1':      { en: 'Less than 1 acre',      fr: 'Moins de 1 acre',              sw: 'Chini ya ekari 1',        ha: 'Kasa da kadada 1',       tw: 'Ɛyɛ kakra wɔ acre 1 ase',      hi: '1 \u090F\u0915\u0921\u093C \u0938\u0947 \u0915\u092E' },
+  'onboarding.farmSize.1to5':     { en: '1 to 5 acres',          fr: '1 à 5 acres',                  sw: 'Ekari 1 hadi 5',          ha: 'Kadada 1 zuwa 5',        tw: 'Acre 1 kɔsi 5',                hi: '1 \u0938\u0947 5 \u090F\u0915\u0921\u093C' },
+  'onboarding.farmSize.gt5':      { en: '5+ acres',              fr: '5 acres ou plus',              sw: 'Ekari 5 au zaidi',        ha: 'Kadada 5 ko fiye',       tw: 'Acre 5 anaa bebree',           hi: '5+ \u090F\u0915\u0921\u093C' },
+  'onboarding.farmSize.unknown':  { en: 'I don\u2019t know',     fr: 'Je ne sais pas',               sw: 'Sijui',                   ha: 'Ban sani ba',            tw: 'Mennim',                       hi: '\u092E\u0941\u091D\u0947 \u0928\u0939\u0940\u0902 \u092A\u0924\u093E' },
+  'onboarding.farmSize.customLabel':{ en: 'Or enter exact size (optional)', fr: 'Ou saisir la taille exacte (optionnel)', sw: 'Au ingiza ukubwa kamili (si lazima)', ha: 'Ko shigar da ainihin girma (na zaɓi)', tw: 'Anaa kyerɛ kɛseɛ pɔtɛɛ (sɛ wopɛ)', hi: '\u092F\u093E \u0938\u0939\u0940 \u0906\u0915\u093E\u0930 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902 (\u0935\u0948\u0915\u0932\u094D\u092A\u093F\u0915)' },
+
   'onb.tile.scan.title':                       { en: 'Scan a plant',                            fr: 'Scanner une plante',                          sw: 'Skani mmea',                                 ha: 'Sikan shuka',                              tw: 'Skan aduane',                                  hi: 'पौधा स्कैन करें' },
   'onb.tile.scan.copy':                        { en: 'Take a photo \u2014 we\u2019ll spot issues and give you a tip in seconds.', fr: 'Prenez une photo \u2014 nous repérons les problèmes et donnons un conseil en quelques secondes.', sw: 'Piga picha \u2014 tutagundua matatizo na kukupa ushauri kwa sekunde.', ha: 'Ɗauki hoto \u2014 za mu gano matsaloli mu ba ka shawara cikin daƙiƙai.', tw: 'Twa mfonini \u2014 yɛbɛhu nsɛm na ama wo afotuo prɛko.', hi: 'फोटो लें \u2014 हम समस्याएं पहचानेंगे और कुछ सेकंड में सुझाव देंगे।' },
   'onb.tile.farm.title':                       { en: 'Start your farm',                         fr: 'Démarrer votre ferme',                        sw: 'Anza shamba lako',                           ha: 'Fara gonarka',                             tw: 'Hyɛ wo afuo ase',                             hi: 'अपना खेत शुरू करें' },

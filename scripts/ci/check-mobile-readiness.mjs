@@ -1109,13 +1109,16 @@ const checks = [
   {
     // High-trust onboarding spec \u00a78 \u2014 step indicator MUST
     // show "Step X of 3" so users see a 3-step (not 6) flow.
-    name: 'FastFlow step indicator caps at 3 steps',
+    name: 'FastFlow step indicator caps at 3-4 steps',
     why:  'High-trust onboarding spec \u00a78 \u2014 3-4 steps max, no scary 1/6 number',
     pass: () => {
       const f = read('src/pages/onboarding/FastFlow.jsx');
+      // Either a literal "/ 3" or "/ 4" total OR the totalSteps
+      // prop pattern that powers the new picker (Step 0 language
+      // + Step 1 experience + 2 setup steps = 4).
       return /onboarding\.step/.test(f)
-          && /\.replace\(['"]\{total\}['"],\s*['"]3['"]\)/.test(f)
-          && !/\{step\}\s*\/\s*4/.test(f);   // legacy "X / 4" removed
+          && (/totalSteps\s*=\s*4/.test(f) || /\.replace\(['"]\{total\}['"],\s*['"][34]['"]\)/.test(f))
+          && !/\{step\}\s*\/\s*[56]/.test(f);   // no legacy "X / 5" or "/ 6"
     },
   },
   {
@@ -1225,6 +1228,126 @@ const checks = [
         if (!re.test(f)) return false;
       }
       return true;
+    },
+  },
+  {
+    // Clean-onboarding spec \u00a72 \u2014 Step 0 language picker exists
+    // BEFORE any translated content so the rest of the flow is
+    // read in the user's preferred language.
+    name: 'FastFlow ships Step 0 language picker',
+    why:  'Clean-onboarding spec \u00a72 \u2014 language chosen before translated content',
+    pass: () => {
+      const f = read('src/pages/onboarding/FastFlow.jsx');
+      return /onboarding\.chooseLanguage/.test(f)
+          && /data-testid=["']fast-flow-language["']/.test(f)
+          && /LANGUAGE_OPTIONS/.test(f)
+          && /OnboardingProgressBar/.test(f)
+          // 6 launch picker languages: en/es/fr/sw/ha/hi (Twi
+          // intentionally not in first-paint picker).
+          && /['"]en['"][\s\S]*?['"]es['"][\s\S]*?['"]fr['"][\s\S]*?['"]sw['"][\s\S]*?['"]ha['"][\s\S]*?['"]hi['"]/.test(f);
+    },
+  },
+  {
+    // Spec \u00a75 \u2014 progress bar replaces "Step 1 of 6". Both
+    // FastFlow + the Quick setup forms mount the same component.
+    name: 'Onboarding renders progress bar instead of scary step number',
+    why:  'Clean-onboarding spec \u00a75 \u2014 progress bar only',
+    pass: () => {
+      const flow   = read('src/pages/onboarding/FastFlow.jsx');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /export function OnboardingProgressBar/.test(flow)
+          && /role=["']progressbar["']/.test(flow)
+          && /OnboardingProgressBar/.test(garden)
+          && /OnboardingProgressBar/.test(farm);
+    },
+  },
+  {
+    // Spec \u00a77 \u2014 garden ships predefined plant tiles + Other
+    // free-input fallback; farm ships predefined crop tiles +
+    // Other.
+    name: 'Setup forms ship predefined plant/crop tiles + Other',
+    why:  'Clean-onboarding spec \u00a77 \u2014 quick taps, no typing required',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const GARDEN_TILES = ['tomato', 'pepper', 'herbs', 'lettuce', 'cucumber', 'other'];
+      const FARM_TILES   = ['maize', 'rice', 'pepper', 'tomato', 'cassava', 'other'];
+      for (const t of GARDEN_TILES) {
+        if (!new RegExp(`onboarding\\.plant\\.${t}`).test(garden)) return false;
+      }
+      for (const t of FARM_TILES) {
+        if (!new RegExp(`onboarding\\.crop\\.${t}`).test(farm)) return false;
+      }
+      return /PLANT_OPTIONS/.test(garden)
+          && /CROP_OPTIONS/.test(farm);
+    },
+  },
+  {
+    // Spec \u00a76 \u2014 size buckets are experience-specific.
+    // Garden: Small/Medium/Large/I don't know. Acres NEVER shown.
+    // Farm: <1 acre / 1-5 / 5+ / I don't know. NEVER "Small backyard".
+    name: 'Size buckets are experience-specific (garden uses size words, farm uses acres)',
+    why:  'Clean-onboarding spec \u00a76 \u2014 size scale matches the experience',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Garden uses Small/Medium/Large/Don't-know words. Acres
+      // bucket key must NOT exist in the garden source (the
+      // farmType: 'backyard' string is the backend type, not a
+      // user-visible label, so it's allowed).
+      return /onboarding\.gardenSize\.small/.test(garden)
+          && /onboarding\.gardenSize\.medium/.test(garden)
+          && /onboarding\.gardenSize\.large/.test(garden)
+          && /onboarding\.gardenSize\.unknown/.test(garden)
+          // No acres-keyed bucket label sneaks into the garden
+          // size options (would break the spec "do not show acres").
+          && !/onboarding\.gardenSize\.[a-z0-9_]*acre/i.test(garden)
+          // Farm ships the 4 acre buckets + the FARM_SIZE_BUCKETS
+          // module table.
+          && /onboarding\.farmSize\.lt1/.test(farm)
+          && /onboarding\.farmSize\.1to5/.test(farm)
+          && /onboarding\.farmSize\.gt5/.test(farm)
+          && /onboarding\.farmSize\.unknown/.test(farm)
+          && /FARM_SIZE_BUCKETS/.test(farm)
+          // Farm size labels must not include a "small backyard"
+          // bucket (spec: "do not show 'Small backyard' in farm flow").
+          && !/onboarding\.farmSize\.[a-z0-9_]*backyard/i.test(farm);
+    },
+  },
+  {
+    // Spec \u00a78 \u2014 "Use my location" is the primary CTA on the
+    // location section; manual entry is the fallback, not the
+    // first thing the user sees. Geolocation failure must not
+    // block setup (the manual fields are always visible).
+    name: 'Setup forms expose explicit "Use my location" CTA',
+    why:  'Clean-onboarding spec \u00a78 \u2014 explicit location action, manual always available',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /onboarding\.useMyLocation/.test(garden)
+          && /data-testid=["']quick-garden-use-location["']/.test(garden)
+          && /requestLocation/.test(garden)
+          && /onboarding\.useMyLocation/.test(farm)
+          && /data-testid=["']quick-farm-use-location["']/.test(farm)
+          && /requestLocation/.test(farm);
+    },
+  },
+  {
+    // Spec \u00a74 \u2014 ProtectedLayout suppresses logout, mode
+    // toggle, AutoVoice on every onboarding path so the user has
+    // zero distractions during setup. The language selector
+    // (left side) stays visible per spec.
+    name: 'ProtectedLayout suppresses logout / mode / AutoVoice on onboarding paths',
+    why:  'Clean-onboarding spec \u00a74 \u2014 zero distractions during setup',
+    pass: () => {
+      const f = read('src/layouts/ProtectedLayout.jsx');
+      return /_isOnboardingPath/.test(f)
+          && /ONBOARDING_PREFIXES/.test(f)
+          && /!onboarding\s*&&\s*<AutoVoiceToggle/.test(f)
+          && /!onboarding\s*&&\s*\(/.test(f)               // logout button
+          && /['"]\/setup\/garden['"]/.test(f)
+          && /['"]\/setup\/farm['"]/.test(f);
     },
   },
 ];

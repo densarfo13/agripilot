@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
@@ -32,10 +32,37 @@ const InnerPageLoader = () => (
   </div>
 );
 
+// Spec \u00a74 \u2014 onboarding paths where the chrome must hide
+// distractions (logout, mode toggle, AutoVoice). Mirrors
+// BottomTabNav.HIDE_NAV_PATHS so the same set of routes hides
+// every chrome affordance. The language selector stays visible
+// per spec ("Show only: language selector if needed").
+const ONBOARDING_PREFIXES = [
+  '/onboarding',
+  '/setup/garden',
+  '/setup/farm',
+  '/start',          // covers /start, /start/farm, /start/garden
+  '/farm/new',
+  '/edit-farm',
+  '/setup-farm',
+  '/profile/setup',
+  '/welcome-farmer',
+];
+
+function _isOnboardingPath(pathname) {
+  if (!pathname) return false;
+  for (const p of ONBOARDING_PREFIXES) {
+    if (pathname === p || pathname.startsWith(p + '/')) return true;
+  }
+  return false;
+}
+
 export default function ProtectedLayout() {
   const { logout, user, resendEmailVerification, isOfflineSession } = useAuth();
   const { t } = useTranslation();
   const { mode, setMode, allowedModes, isFarmer } = useUserMode();
+  const location = useLocation();
+  const onboarding = _isOnboardingPath(location?.pathname || '');
 
   return (
     <AuthGuard>
@@ -57,22 +84,34 @@ export default function ProtectedLayout() {
                 <LanguageSelector />
               </div>
 
-              {/* Right: experience switcher + mode + voice + logout */}
-              <div style={S.headerRight}>
-                {isFarmer && <ExperienceSwitcher />}
-                {isFarmer && allowedModes.length > 1 && (
+              {/* Right: experience switcher + mode + voice + logout.
+                  Spec \u00a74: suppress mode toggle / AutoVoice / logout
+                  during onboarding so the user has zero distractions
+                  while completing setup. The language selector
+                  (left side) stays visible per spec. */}
+              <div style={S.headerRight} data-testid="layout-chrome-right">
+                {isFarmer && !onboarding && <ExperienceSwitcher />}
+                {isFarmer && !onboarding && allowedModes.length > 1 && (
                   <button
                     onClick={() => setMode(mode === 'basic' ? 'standard' : 'basic')}
                     style={S.modeToggle}
                     type="button"
+                    data-testid="layout-mode-toggle"
                   >
                     {mode === 'basic' ? t('mode.simple') : t('mode.standard')}
                   </button>
                 )}
-                <AutoVoiceToggle />
-                <button onClick={logout} style={S.logoutBtn} type="button">
-                  {t('common.logout')}
-                </button>
+                {!onboarding && <AutoVoiceToggle />}
+                {!onboarding && (
+                  <button
+                    onClick={logout}
+                    style={S.logoutBtn}
+                    type="button"
+                    data-testid="layout-logout"
+                  >
+                    {t('common.logout')}
+                  </button>
+                )}
               </div>
             </div>
           </div>

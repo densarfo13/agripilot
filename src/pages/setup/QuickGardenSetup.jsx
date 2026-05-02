@@ -36,11 +36,33 @@ import { tStrict } from '../../i18n/strictT.js';
 import { addGarden } from '../../store/multiExperience.js';
 import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+// Shared progress bar from FastFlow so the garden setup screen
+// shows the same visual indicator as the experience picker.
+import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
 
+// Spec \u00a76 \u2014 garden size buckets. Garden flow MUST NOT show
+// acres; this is a kitchen-plot screen. "I don't know" lets the
+// user proceed without making up an answer.
 const SIZE_OPTIONS = [
-  { value: 'small',  labelKey: 'setup.garden.size.small',  fallback: 'Small'  },
-  { value: 'medium', labelKey: 'setup.garden.size.medium', fallback: 'Medium' },
-  { value: 'large',  labelKey: 'setup.garden.size.large',  fallback: 'Large'  },
+  { value: 'small',   labelKey: 'onboarding.gardenSize.small',   fallback: 'Small' },
+  { value: 'medium',  labelKey: 'onboarding.gardenSize.medium',  fallback: 'Medium' },
+  { value: 'large',   labelKey: 'onboarding.gardenSize.large',   fallback: 'Large' },
+  { value: 'unknown', labelKey: 'onboarding.gardenSize.unknown', fallback: 'I don\u2019t know' },
+];
+
+// Spec \u00a77 \u2014 garden plant tiles. 5 common picks + Other (free
+// input fallback). The first 5 cover the launch crop set; the
+// caller normalises the selected label into the existing
+// addGarden({ crop }) shape so downstream surfaces (scan,
+// treatment, daily plan) get the same crop key as a manually
+// typed plant.
+const PLANT_OPTIONS = [
+  { value: 'tomato',   labelKey: 'onboarding.plant.tomato',   fallback: 'Tomato'   },
+  { value: 'pepper',   labelKey: 'onboarding.plant.pepper',   fallback: 'Pepper'   },
+  { value: 'herbs',    labelKey: 'onboarding.plant.herbs',    fallback: 'Herbs'    },
+  { value: 'lettuce',  labelKey: 'onboarding.plant.lettuce',  fallback: 'Lettuce'  },
+  { value: 'cucumber', labelKey: 'onboarding.plant.cucumber', fallback: 'Cucumber' },
+  { value: 'other',    labelKey: 'onboarding.plant.other',    fallback: 'Other'    },
 ];
 
 const C = {
@@ -114,6 +136,10 @@ export default function QuickGardenSetup() {
   const navigate = useNavigate();
 
   const [plant, setPlant]       = useState('');
+  // Spec \u00a77 \u2014 selected plant tile ('tomato'\u2026'other'). When
+  // set to 'other' we expand a free-text input below; otherwise
+  // the tile label is the plant.
+  const [plantPick, setPlantPick] = useState(null);
   const [country, setCountry]   = useState('');
   const [region, setRegion]     = useState('');
   const [city, setCity]         = useState('');
@@ -128,23 +154,48 @@ export default function QuickGardenSetup() {
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle'); // 'idle'|'requesting'|'denied'|'ok'
 
-  // Auto-detect location once on mount; geolocation denial is
-  // silent — the manual inputs stay available either way.
-  useEffect(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+  // Spec \u00a78 \u2014 "Use my location" is now an explicit user action,
+  // not a silent on-mount probe (which made some browsers prompt
+  // for permission before the user knew why). The manual fields
+  // are always usable; geolocation failure NEVER blocks setup.
+  function requestLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGeoStatus('denied');
+      return;
+    }
     setGeoStatus('requesting');
     try {
       navigator.geolocation.getCurrentPosition(
         () => {
-          // We don't reverse-geocode here — manual fields stay
-          // available. We just record the success.
+          // We don't reverse-geocode here \u2014 manual fields stay
+          // available. We just record the success so the helper
+          // copy can encourage the user that detection worked.
           setGeoStatus('ok');
         },
         () => { setGeoStatus('denied'); },
         { timeout: 4000, maximumAge: 60_000 },
       );
     } catch { setGeoStatus('denied'); }
-  }, []);
+  }
+  // Initialise to 'idle' \u2014 we no longer auto-probe on mount.
+  useEffect(() => { /* no-op, kept for future */ }, []);
+
+  // Plant tile selection \u2014 either set the canonical label from
+  // the tile (sync to `plant` text state) or open the "Other"
+  // free-text input (clears `plant` so the user types their own).
+  function handlePickPlant(value) {
+    setPlantPick(value);
+    if (value !== 'other') {
+      const tile = PLANT_OPTIONS.find((p) => p.value === value);
+      const label = tile ? tStrict(tile.labelKey, tile.fallback) : '';
+      setPlant(label);
+      setErrors((cur) => ({ ...cur, plant: undefined }));
+    } else {
+      // Wipe the plant string so the user types their own; keeps
+      // the validator honest if they pick Other but never type.
+      setPlant('');
+    }
+  }
 
   function handleSave() {
     const next = {};
@@ -198,15 +249,10 @@ export default function QuickGardenSetup() {
   return (
     <main style={S.page} data-testid="quick-garden-setup" data-screen="setup-garden">
       <div>
-        {/* Step indicator (spec \u00a78) \u2014 "Step 2 of 3" so the user
-            sees the same 3-step progression FastFlow advertises.
-            Garden flow: 1 pick experience \u2192 2 set up \u2192 3 save. */}
-        <div style={{ ...S.subtitle, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.65 }}
-             data-testid="setup-garden-step">
-          {tStrict('onboarding.step', 'Step {done} of {total}')
-            .replace('{done}', '2')
-            .replace('{total}', '3')}
-        </div>
+        {/* Spec \u00a75 \u2014 progress bar instead of "Step 1 of 6". The
+            garden flow is 4 steps total (Step 0 lang \u2192 Step 1
+            pick \u2192 Step 2\u20133 setup); we sit at \u224875% on this screen. */}
+        <OnboardingProgressBar value={3} total={4} />
         <h1 style={S.title}>
           {tStrict('setup.garden.title', 'Set up your garden')}
         </h1>
@@ -216,33 +262,83 @@ export default function QuickGardenSetup() {
         </p>
       </div>
 
-      {/* Plant */}
-      <section style={S.card}>
+      {/* Plant tiles (spec \u00a77). Tomato/Pepper/Herbs/Lettuce/Cucumber
+          + Other (free input fallback). The selected tile flows
+          into the existing addGarden({ crop }) shape so downstream
+          surfaces (scan, treatment, daily plan) get the same crop
+          key as a manually typed plant. */}
+      <section style={S.card} data-testid="setup-garden-plant-tiles">
         <span style={S.label}>
-          {tStrict('setup.garden.plantLabel', 'What are you growing?')}
+          {tStrict('onboarding.pickPlant.title', 'Pick your plant')}
         </span>
-        <input
-          type="text"
-          autoFocus
-          inputMode="text"
-          autoCapitalize="words"
-          autoComplete="off"
-          placeholder={tStrict('setup.garden.plantPh', 'e.g. tomato, basil, pepper')}
-          value={plant}
-          onChange={(e) => setPlant(e.target.value)}
-          style={errors.plant ? { ...S.input, ...S.inputError } : S.input}
-          data-testid="quick-garden-plant"
-          maxLength={60}
-        />
+        <div style={S.pillRow}>
+          {PLANT_OPTIONS.map((opt) => {
+            const active = plantPick === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handlePickPlant(opt.value)}
+                style={active ? { ...S.pill, ...S.pillActive } : S.pill}
+                data-testid={`quick-garden-plant-${opt.value}`}
+                aria-pressed={active}
+              >
+                {tStrict(opt.labelKey, opt.fallback)}
+              </button>
+            );
+          })}
+        </div>
+        {/* Other \u2192 reveal the free-text fallback so the user can
+            type any plant. Also shown when the user wants to
+            override the tile label. */}
+        {plantPick === 'other' ? (
+          <input
+            type="text"
+            autoFocus
+            inputMode="text"
+            autoCapitalize="words"
+            autoComplete="off"
+            placeholder={tStrict('setup.garden.plantPh', 'e.g. tomato, basil, pepper')}
+            value={plant}
+            onChange={(e) => setPlant(e.target.value)}
+            style={errors.plant ? { ...S.input, ...S.inputError } : S.input}
+            data-testid="quick-garden-plant"
+            maxLength={60}
+          />
+        ) : null}
         {errors.plant ? (
           <div style={S.errorRow}>{errors.plant}</div>
         ) : null}
       </section>
 
-      {/* Location */}
+      {/* Location (spec \u00a78). "Use my location" is the primary
+          CTA; manual country + region inputs always available. */}
       <section style={S.card}>
         <span style={S.label}>
-          {tStrict('setup.garden.locationLabel', 'Where is your garden?')}
+          {tStrict('onboarding.gardenLocation', 'Where is your garden?')}
+        </span>
+        <button
+          type="button"
+          onClick={requestLocation}
+          disabled={geoStatus === 'requesting'}
+          style={{
+            appearance: 'none', fontFamily: 'inherit', cursor: 'pointer',
+            background: 'rgba(34,197,94,0.18)',
+            border: `1px solid rgba(34,197,94,0.32)`,
+            color: '#86EFAC',
+            padding: '10px 14px', borderRadius: 10,
+            fontSize: 14, fontWeight: 700, minHeight: 40,
+            opacity: geoStatus === 'requesting' ? 0.7 : 1,
+            alignSelf: 'flex-start',
+          }}
+          data-testid="quick-garden-use-location"
+        >
+          {geoStatus === 'requesting'
+            ? tStrict('setup.garden.geoRequesting', 'Detecting your location\u2026')
+            : tStrict('onboarding.useMyLocation', 'Use my location')}
+        </button>
+        <span style={{ ...S.helpRow, marginTop: 4 }}>
+          {tStrict('onboarding.locationManual', 'Or enter manually')}
         </span>
         <input
           type="text"
@@ -312,10 +408,12 @@ export default function QuickGardenSetup() {
         </div>
       </section>
 
-      {/* Optional size */}
+      {/* Garden size (spec \u00a76) \u2014 4 fixed buckets, NEVER acres.
+          "I don't know" is selectable so the user can proceed
+          without making up an answer. */}
       <section style={S.card}>
         <span style={S.label}>
-          {tStrict('setup.garden.sizeLabel', 'Garden size (optional)')}
+          {tStrict('onboarding.gardenSize.title', 'Garden size')}
         </span>
         <div style={S.pillRow}>
           {SIZE_OPTIONS.map((opt) => {

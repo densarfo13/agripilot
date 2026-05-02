@@ -41,6 +41,30 @@ import { addFarm } from '../../store/multiExperience.js';
 import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { getDefaultUnit, getAllowedUnits } from '../../lib/units/areaConversion.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
+
+// Spec \u00a76 \u2014 farm size buckets. Farm flow MUST NOT show
+// "Small backyard"; this is a working-acre screen. The bucket
+// values map to a canonical acre figure for downstream
+// land-intelligence calculations; "I don't know" stores null.
+const FARM_SIZE_BUCKETS = [
+  { value: 'lt1',     acres: 0.5, labelKey: 'onboarding.farmSize.lt1',     fallback: 'Less than 1 acre' },
+  { value: '1to5',    acres: 3,   labelKey: 'onboarding.farmSize.1to5',    fallback: '1 to 5 acres' },
+  { value: 'gt5',     acres: 10,  labelKey: 'onboarding.farmSize.gt5',     fallback: '5+ acres' },
+  { value: 'unknown', acres: null,labelKey: 'onboarding.farmSize.unknown', fallback: 'I don\u2019t know' },
+];
+
+// Spec \u00a77 \u2014 farm crop tiles. 5 launch crops + Other (free
+// input). Coexists with the existing free input for users who
+// type something not in the list.
+const CROP_OPTIONS = [
+  { value: 'maize',   labelKey: 'onboarding.crop.maize',   fallback: 'Maize'   },
+  { value: 'rice',    labelKey: 'onboarding.crop.rice',    fallback: 'Rice'    },
+  { value: 'pepper',  labelKey: 'onboarding.crop.pepper',  fallback: 'Pepper'  },
+  { value: 'tomato',  labelKey: 'onboarding.crop.tomato',  fallback: 'Tomato'  },
+  { value: 'cassava', labelKey: 'onboarding.crop.cassava', fallback: 'Cassava' },
+  { value: 'other',   labelKey: 'onboarding.crop.other',   fallback: 'Other'   },
+];
 
 const C = {
   card:     'rgba(255,255,255,0.04)',
@@ -105,8 +129,15 @@ export default function QuickFarmSetup() {
   const navigate = useNavigate();
 
   const [crop, setCrop]         = useState('');
+  const [cropPick, setCropPick] = useState(null); // 'maize'\u2026'other'
   const [country, setCountry]   = useState('');
   const [region, setRegion]     = useState('');
+  // Spec \u00a76 \u2014 farm size has TWO inputs: a 4-pill bucket and an
+  // optional custom row. We track the bucket separately so the
+  // canonical farmSize/sizeUnit fall through cleanly: bucket
+  // selected \u2192 bucket acres + 'acres'; custom typed \u2192 numeric
+  // size + chosen unit.
+  const [sizeBucket, setSizeBucket] = useState(null);
   const [size, setSize]         = useState('');
   const [unit, setUnit]         = useState(null);
   // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
@@ -117,12 +148,14 @@ export default function QuickFarmSetup() {
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle');
 
-  // Detect country once on mount (silent on denial). The
-  // unit dropdown defaults via getDefaultUnit per region:
-  //   US → acres
-  //   anywhere else → hectares
-  useEffect(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+  // Spec \u00a78 \u2014 "Use my location" is now an explicit user
+  // action, not a silent on-mount probe. Failure NEVER blocks
+  // setup; the manual fields stay usable.
+  function requestLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGeoStatus('denied');
+      return;
+    }
     setGeoStatus('requesting');
     try {
       navigator.geolocation.getCurrentPosition(
@@ -131,7 +164,36 @@ export default function QuickFarmSetup() {
         { timeout: 4000, maximumAge: 60_000 },
       );
     } catch { setGeoStatus('denied'); }
-  }, []);
+  }
+  useEffect(() => { /* no-op, kept for future */ }, []);
+
+  function handlePickCrop(value) {
+    setCropPick(value);
+    if (value !== 'other') {
+      const tile = CROP_OPTIONS.find((c) => c.value === value);
+      const label = tile ? tStrict(tile.labelKey, tile.fallback) : '';
+      setCrop(label);
+      setErrors((cur) => ({ ...cur, crop: undefined }));
+    } else {
+      setCrop('');
+    }
+  }
+
+  // Bucket pick. When the user picks a bucket the canonical
+  // size/unit get set so a Save without ever opening the custom
+  // row still produces a usable land-size record.
+  function handlePickBucket(bucket) {
+    setSizeBucket(bucket.value);
+    if (bucket.acres == null) {
+      setSize('');
+      // Keep unit at its current value so the custom row still
+      // works if the user opens it.
+    } else {
+      setSize(String(bucket.acres));
+      setUnit('acres');
+    }
+    setErrors((cur) => ({ ...cur, size: undefined, unit: undefined }));
+  }
 
   // Default unit reactively when the country is typed.
   const defaultUnit = useMemo(() => {
@@ -160,16 +222,33 @@ export default function QuickFarmSetup() {
     const next = {};
     if (!crop.trim())    next.crop    = tStrict('setup.farm.err.crop',    'Tell us what crop you grow.');
     if (!country.trim()) next.country = tStrict('setup.farm.err.country', 'Pick the country where the farm is.');
-    if (!size.trim() || Number(size) <= 0) {
+    // Spec \u00a76 \u2014 size is OPTIONAL when the user picks the
+    // "I don't know" bucket OR any non-unknown bucket (which
+    // already populates a canonical acres value). The strict
+    // numeric+unit check only fires when the user opened the
+    // custom row and typed garbage.
+    const hasBucket = !!sizeBucket;
+    const hasCustom = !!size.trim();
+    if (hasCustom && (!Number.isFinite(Number(size)) || Number(size) <= 0)) {
       next.size = tStrict('setup.farm.err.size', 'Enter a land size larger than 0.');
     }
-    if (!unit) next.unit = tStrict('setup.farm.err.unit', 'Pick a unit.');
+    if (hasCustom && !unit) {
+      next.unit = tStrict('setup.farm.err.unit', 'Pick a unit.');
+    }
+    if (!hasBucket && !hasCustom) {
+      next.size = tStrict('setup.farm.err.size', 'Enter a land size larger than 0.');
+    }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
     setSubmitting(true);
     try {
-      const numericSize = Number(size);
+      // For "I don't know" bucket, persist null so the
+      // land-intelligence engine can fall through to its small/
+      // medium/large heuristics on country only.
+      const numericSize = (sizeBucket === 'unknown' && !size.trim())
+        ? null
+        : Number(size);
       const stored = addFarm({
         crop:         crop.trim().toLowerCase().replace(/\s+/g, '_'),
         cropLabel:    crop.trim(),
@@ -219,14 +298,10 @@ export default function QuickFarmSetup() {
   return (
     <main style={S.page} data-testid="quick-farm-setup" data-screen="setup-farm">
       <div>
-        {/* Step indicator (spec \u00a78) \u2014 "Step 2 of 3" so the user
-            sees the same 3-step progression FastFlow advertises. */}
-        <div style={{ ...S.subtitle, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.65 }}
-             data-testid="setup-farm-step">
-          {tStrict('onboarding.step', 'Step {done} of {total}')
-            .replace('{done}', '2')
-            .replace('{total}', '3')}
-        </div>
+        {/* Spec \u00a75 \u2014 progress bar. Farm flow: 4 steps total
+            (Step 0 lang \u2192 Step 1 pick \u2192 Step 2\u20133 setup); we sit
+            at \u224875% on this screen. */}
+        <OnboardingProgressBar value={3} total={4} />
         <h1 style={S.title}>
           {tStrict('setup.farm.title', 'Set up your farm')}
         </h1>
@@ -236,31 +311,86 @@ export default function QuickFarmSetup() {
         </p>
       </div>
 
-      {/* Crop */}
-      <section style={S.card}>
+      {/* Crop tiles (spec \u00a77). Maize/Rice/Pepper/Tomato/Cassava
+          + Other (free input fallback). */}
+      <section style={S.card} data-testid="setup-farm-crop-tiles">
         <span style={S.label}>
-          {tStrict('setup.farm.cropLabel', 'What crop are you growing?')}
+          {tStrict('onboarding.pickCrop.title', 'Pick your crop')}
         </span>
-        <input
-          type="text"
-          autoFocus
-          inputMode="text"
-          autoCapitalize="words"
-          autoComplete="off"
-          placeholder={tStrict('setup.farm.cropPh', 'e.g. maize, cassava, tomato')}
-          value={crop}
-          onChange={(e) => setCrop(e.target.value)}
-          style={errors.crop ? { ...S.input, ...S.inputError } : S.input}
-          data-testid="quick-farm-crop"
-          maxLength={60}
-        />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+          {CROP_OPTIONS.map((opt) => {
+            const active = cropPick === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handlePickCrop(opt.value)}
+                style={{
+                  appearance: 'none',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  background: active ? 'rgba(34,197,94,0.18)' : 'transparent',
+                  border: `1px solid ${active ? 'rgba(34,197,94,0.32)' : C.border}`,
+                  color: active ? '#86EFAC' : C.ink,
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  minHeight: 40,
+                }}
+                data-testid={`quick-farm-crop-${opt.value}`}
+                aria-pressed={active}
+              >
+                {tStrict(opt.labelKey, opt.fallback)}
+              </button>
+            );
+          })}
+        </div>
+        {cropPick === 'other' ? (
+          <input
+            type="text"
+            autoFocus
+            inputMode="text"
+            autoCapitalize="words"
+            autoComplete="off"
+            placeholder={tStrict('setup.farm.cropPh', 'e.g. maize, cassava, tomato')}
+            value={crop}
+            onChange={(e) => setCrop(e.target.value)}
+            style={errors.crop ? { ...S.input, ...S.inputError } : S.input}
+            data-testid="quick-farm-crop"
+            maxLength={60}
+          />
+        ) : null}
         {errors.crop ? <div style={S.errorRow}>{errors.crop}</div> : null}
       </section>
 
-      {/* Location */}
+      {/* Location (spec \u00a78) */}
       <section style={S.card}>
         <span style={S.label}>
-          {tStrict('setup.farm.locationLabel', 'Where is your farm?')}
+          {tStrict('onboarding.farmLocation', 'Where is your farm?')}
+        </span>
+        <button
+          type="button"
+          onClick={requestLocation}
+          disabled={geoStatus === 'requesting'}
+          style={{
+            appearance: 'none', fontFamily: 'inherit', cursor: 'pointer',
+            background: 'rgba(34,197,94,0.18)',
+            border: `1px solid rgba(34,197,94,0.32)`,
+            color: '#86EFAC',
+            padding: '10px 14px', borderRadius: 10,
+            fontSize: 14, fontWeight: 700, minHeight: 40,
+            opacity: geoStatus === 'requesting' ? 0.7 : 1,
+            alignSelf: 'flex-start',
+          }}
+          data-testid="quick-farm-use-location"
+        >
+          {geoStatus === 'requesting'
+            ? tStrict('setup.farm.geoRequesting', 'Detecting your location\u2026')
+            : tStrict('onboarding.useMyLocation', 'Use my location')}
+        </button>
+        <span style={{ ...S.helpRow, marginTop: 4 }}>
+          {tStrict('onboarding.locationManual', 'Or enter manually')}
         </span>
         <input
           type="text"
@@ -339,11 +469,49 @@ export default function QuickFarmSetup() {
         </div>
       </section>
 
-      {/* Land size + unit */}
-      <section style={S.card}>
+      {/* Farm size buckets (spec \u00a76). Less than 1 acre / 1\u20135 /
+          5+ / I don't know. NEVER show "Small backyard". An
+          optional custom row underneath lets the user enter
+          exact acres / hectares / sq ft if they want precision. */}
+      <section style={S.card} data-testid="setup-farm-size-buckets">
         <span style={S.label}>
-          {tStrict('setup.farm.sizeLabel', 'Land size')}
+          {tStrict('onboarding.farmSize.title', 'Farm size')}
         </span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+          {FARM_SIZE_BUCKETS.map((bucket) => {
+            const active = sizeBucket === bucket.value;
+            return (
+              <button
+                key={bucket.value}
+                type="button"
+                onClick={() => handlePickBucket(bucket)}
+                style={{
+                  appearance: 'none',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  background: active ? 'rgba(34,197,94,0.18)' : 'transparent',
+                  border: `1px solid ${active ? 'rgba(34,197,94,0.32)' : C.border}`,
+                  color: active ? '#86EFAC' : C.ink,
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  minHeight: 40,
+                }}
+                data-testid={`quick-farm-size-${bucket.value}`}
+                aria-pressed={active}
+              >
+                {tStrict(bucket.labelKey, bucket.fallback)}
+              </button>
+            );
+          })}
+        </div>
+        {/* Custom row \u2014 exact size + unit. Optional; when the
+            user picks a bucket the canonical size+unit are
+            already populated, so this row is for refinement. */}
+        <div style={{ ...S.helpRow, marginTop: 8 }}>
+          {tStrict('onboarding.farmSize.customLabel', 'Or enter exact size (optional)')}
+        </div>
         <div style={S.twoCol}>
           <input
             type="number"
@@ -377,10 +545,6 @@ export default function QuickFarmSetup() {
               ))}
             </select>
           </div>
-        </div>
-        <div style={S.helpRow}>
-          {tStrict('setup.farm.unitHint',
-            'Default unit picked from your country. You can change it.')}
         </div>
         {errors.size ? <div style={S.errorRow}>{errors.size}</div> : null}
         {errors.unit ? <div style={S.errorRow}>{errors.unit}</div> : null}

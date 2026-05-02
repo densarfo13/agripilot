@@ -43,6 +43,11 @@ import { loadData, saveData, removeData } from '../../store/localStore.js';
 import { recommendTopCrops } from '../../lib/recommendations/topCropEngine.js';
 import { cropLabel } from '../../utils/cropLabel.js';
 import LanguageSuggestionBanner from '../../components/locale/LanguageSuggestionBanner.jsx';
+// Spec \u00a72 \u2014 Step 0 language picker. We reuse the canonical
+// setLanguage() from i18n/index.js so the choice flows into every
+// other surface (the existing LanguageSelector dropdown stays in
+// sync, and `farroway:langchange` fires for live re-render).
+import { setLanguage as i18nSetLanguage } from '../../i18n/index.js';
 
 const STORE_KEY = 'onboarding';
 
@@ -100,11 +105,22 @@ export default function FastFlow() {
     navigate('/dashboard', { replace: true });
   }
 
-  // High-trust onboarding (spec \u00a71) \u2014 entry asks "What are you
-  // growing?" and routes out to the existing single-screen Quick
-  // setup form. activeExperience is stamped immediately so every
-  // downstream surface (tasks, scan, treatment) has the right
-  // context from minute one.
+  // High-trust onboarding (spec \u00a71\u2013\u00a72) \u2014 two in-component
+  // steps before we hand off to the multi-step Quick setup form:
+  //   Step 0: Choose language (so every translated screen below
+  //           is read in the user's preferred language)
+  //   Step 1: What are you growing? (Garden / Farm)
+  // After Step 1 we navigate to /setup/garden or /setup/farm; the
+  // setup forms own steps 2\u20134 (or 2\u20135 for farm).
+  const [step, setStep] = useState(state.step === 1 ? 1 : 0);
+
+  function pickLanguage(code) {
+    try { i18nSetLanguage(code); } catch { /* swallow */ }
+    try { saveData(STORE_KEY, { ...state, step: 1, language: code }); }
+    catch { /* swallow */ }
+    setStep(1);
+  }
+
   function pickExperience(experience) {
     const expSafe = experience === 'farm' ? 'farm' : 'garden';
     try {
@@ -119,27 +135,123 @@ export default function FastFlow() {
     try { navigate(target); } catch { /* swallow */ }
   }
 
+  // Spec \u00a75 \u2014 progress bar instead of "Step X of 6". Total
+  // assumed 4 steps (FastFlow Step 0 + Step 1, then 2 setup
+  // steps); progress reflects the visible position in the flow.
+  // The setup forms own their own slice of the bar.
+  const totalSteps = 4;
+  const visibleStep = step + 1; // 1-indexed display
+
   return (
-    <div style={S.page} data-testid="fast-flow" data-step="1">
+    <div style={S.page} data-testid="fast-flow" data-step={String(step)}>
       <div style={S.container}>
-        <Header lang={lang} step={1} onBack={null} />
-        {/* Language suggestion banner (locale-detection feature). Renders
-            only when detection finds a country that maps to a non-active
-            language; the farmer can accept, choose another, or keep
-            English. Hidden after the first decision (per-farm flag). */}
-        <LanguageSuggestionBanner
-          farm={state.location ? { country: state.location } : null}
-          autoDetect
+        <Header
+          lang={lang}
+          step={visibleStep}
+          totalSteps={totalSteps}
+          onBack={step > 0 ? () => setStep(step - 1) : null}
         />
-        <ScreenEntry onPick={pickExperience} />
+        <OnboardingProgressBar value={visibleStep} total={totalSteps} />
+        {step === 0 && (
+          <ScreenLanguage onPick={pickLanguage} />
+        )}
+        {step === 1 && (
+          <>
+            {/* Language suggestion banner runs only AFTER Step 0
+                so the user has already made an explicit choice
+                (or seen the picker). Self-hides on subsequent
+                visits per the existing per-farm flag. */}
+            <LanguageSuggestionBanner
+              farm={state.location ? { country: state.location } : null}
+              autoDetect
+            />
+            <ScreenEntry onPick={pickExperience} />
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * OnboardingProgressBar \u2014 spec \u00a75. A single horizontal bar
+ * that fills as the user moves through the flow. No "Step X of Y"
+ * scary number. Exported so QuickGardenSetup / QuickFarmSetup can
+ * mount the same visual on their own internal steps.
+ */
+export function OnboardingProgressBar({ value, total }) {
+  const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, total)) * 100)));
+  return (
+    <div
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={value}
+      data-testid="onboarding-progress"
+      style={{
+        width: '100%',
+        height: 4,
+        borderRadius: 999,
+        background: 'rgba(255,255,255,0.10)',
+        overflow: 'hidden',
+        margin: '4px 0 8px',
+      }}
+    >
+      <div
+        style={{
+          width: `${pct}%`,
+          height: '100%',
+          background: '#22C55E',
+          transition: 'width 240ms ease',
+        }}
+      />
     </div>
   );
 }
 
 // ─── Screens ──────────────────────────────────────────────
 
-function Header({ step, onBack }) {
+// Spec \u00a72 \u2014 the 6 launch languages we offer at Step 0. Twi
+// is intentionally omitted from the FIRST-PAINT picker (it's
+// still reachable via the header dropdown) because the
+// onboarding spec mandates a complete-language guarantee per
+// screen. Spanish IS included \u2014 guard:i18n-parity confirms
+// 96/96 keys translated.
+const LANGUAGE_OPTIONS = [
+  { code: 'en', label: 'English'   },
+  { code: 'es', label: 'Espa\u00F1ol'  },
+  { code: 'fr', label: 'Fran\u00E7ais' },
+  { code: 'sw', label: 'Kiswahili' },
+  { code: 'ha', label: 'Hausa'     },
+  { code: 'hi', label: '\u0939\u093F\u0928\u094D\u0926\u0940'    },
+];
+
+function ScreenLanguage({ onPick }) {
+  return (
+    <section style={S.screen} data-testid="fast-flow-language" data-screen="onb-language">
+      <h1 style={S.h1}>
+        {tStrict('onboarding.chooseLanguage', 'Choose your language')}
+      </h1>
+      <div style={{ ...S.optionStack, gap: 8 }}>
+        {LANGUAGE_OPTIONS.map((opt) => (
+          <button
+            key={opt.code}
+            type="button"
+            style={{ ...S.choice, ...S.choiceSecondary, justifyContent: 'flex-start' }}
+            onClick={() => onPick(opt.code)}
+            data-testid={`onb-language-${opt.code}`}
+            aria-label={opt.label}
+          >
+            <span style={S.choiceIcon} aria-hidden="true">{'\uD83D\uDCAC'}</span>
+            <span style={S.choiceText}>{opt.label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Header({ step, totalSteps, onBack }) {
   return (
     <header style={S.header}>
       <div style={S.brandRow}>
@@ -165,7 +277,7 @@ function Header({ step, onBack }) {
         <span style={S.stepPill} data-testid="fast-flow-step">
           {tStrict('onboarding.step', 'Step {done} of {total}')
             .replace('{done}', String(step))
-            .replace('{total}', '3')}
+            .replace('{total}', String(totalSteps || 4))}
         </span>
       )}
     </header>
