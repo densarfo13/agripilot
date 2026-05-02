@@ -42,7 +42,9 @@ import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboard
 import { getDefaultUnit, getAllowedUnits } from '../../lib/units/areaConversion.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 import { loadData, saveData, removeData } from '../../store/localStore.js';
-import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
+// Shared progress bar \u2014 leaf module so importing it doesn't
+// pull the whole FastFlow tree along with it.
+import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
 
 // Farm/garden separation spec \u00a76 \u2014 draft snapshot key. Cleared
 // after a successful save so a future visit starts blank.
@@ -134,28 +136,35 @@ export default function QuickFarmSetup() {
   const navigate = useNavigate();
 
   // Farm/garden separation spec \u00a76 \u2014 hydrate from the draft
-  // snapshot so a back-navigation preserves form data.
-  const _draft = (() => {
-    try { return loadData(FARM_DRAFT_KEY, null) || {}; }
-    catch { return {}; }
-  })();
+  // snapshot so a back-navigation preserves form data. Lazy
+  // useState init so the read runs once on mount; defensive
+  // type-narrowing on every field so a malformed draft from a
+  // prior deploy can never crash the form.
+  const [_draft] = useState(() => {
+    try {
+      const raw = loadData(FARM_DRAFT_KEY, null);
+      return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    } catch { return {}; }
+  });
+  const _str = (v) => (typeof v === 'string' ? v : '');
+  const _strOrNull = (v) => (typeof v === 'string' && v ? v : null);
 
-  const [crop, setCrop]         = useState(_draft.crop || '');
-  const [cropPick, setCropPick] = useState(_draft.cropPick || null);
-  const [country, setCountry]   = useState(_draft.country || '');
-  const [region, setRegion]     = useState(_draft.region || '');
+  const [crop, setCrop]         = useState(_str(_draft.crop));
+  const [cropPick, setCropPick] = useState(_strOrNull(_draft.cropPick));
+  const [country, setCountry]   = useState(_str(_draft.country));
+  const [region, setRegion]     = useState(_str(_draft.region));
   // Spec \u00a76 \u2014 farm size has TWO inputs: a 4-pill bucket and an
   // optional custom row. We track the bucket separately so the
   // canonical farmSize/sizeUnit fall through cleanly: bucket
   // selected \u2192 bucket acres + 'acres'; custom typed \u2192 numeric
   // size + chosen unit.
-  const [sizeBucket, setSizeBucket] = useState(_draft.sizeBucket || null);
-  const [size, setSize]         = useState(_draft.size || '');
-  const [unit, setUnit]         = useState(_draft.unit || null);
+  const [sizeBucket, setSizeBucket] = useState(_strOrNull(_draft.sizeBucket));
+  const [size, setSize]         = useState(_str(_draft.size));
+  const [unit, setUnit]         = useState(_strOrNull(_draft.unit));
   // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
   // the user has chosen the farm experience. Non-blocking
   // guidance only.
-  const [skillLevel, setSkillLevel] = useState(_draft.skillLevel || null);
+  const [skillLevel, setSkillLevel] = useState(_strOrNull(_draft.skillLevel));
   // Farm/garden separation spec \u00a74 \u2014 search input above the
   // crop tiles so users with longer lists can filter.
   const [cropQuery, setCropQuery] = useState('');

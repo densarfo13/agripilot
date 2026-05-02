@@ -1253,13 +1253,24 @@ const checks = [
     name: 'Onboarding renders progress bar instead of scary step number',
     why:  'Clean-onboarding spec \u00a75 \u2014 progress bar only',
     pass: () => {
+      const bar    = read('src/components/onboarding/OnboardingProgressBar.jsx');
       const flow   = read('src/pages/onboarding/FastFlow.jsx');
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      return /export function OnboardingProgressBar/.test(flow)
-          && /role=["']progressbar["']/.test(flow)
+      // Render-crash hardening (this commit): the progress bar
+      // moved into its own leaf module so importing it from
+      // setup forms no longer drags the whole FastFlow tree
+      // along. The bar itself defines role="progressbar"; flow
+      // + setup forms only need to import + render it.
+      return /export default function OnboardingProgressBar/.test(bar)
+          && /role=["']progressbar["']/.test(bar)
+          && /OnboardingProgressBar/.test(flow)
           && /OnboardingProgressBar/.test(garden)
-          && /OnboardingProgressBar/.test(farm);
+          && /OnboardingProgressBar/.test(farm)
+          // Setup forms import from the leaf module (NOT from
+          // FastFlow.jsx \u2014 that's the cross-coupling we removed).
+          && /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingProgressBar\.jsx['"]/.test(garden)
+          && /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingProgressBar\.jsx['"]/.test(farm);
     },
   },
   {

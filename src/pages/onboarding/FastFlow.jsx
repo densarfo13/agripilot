@@ -52,6 +52,12 @@ import { isOnboardingComplete } from '../../utils/onboarding.js';
 // other surface (the existing LanguageSelector dropdown stays in
 // sync, and `farroway:langchange` fires for live re-render).
 import { setLanguage as i18nSetLanguage } from '../../i18n/index.js';
+// Progress bar lives in its own leaf module so the QuickGarden /
+// QuickFarm setup forms can import it without dragging the
+// FastFlow import tree along with them (which previously pulled
+// LanguageSuggestionBanner + topCropEngine + the i18n strict
+// translator into every setup screen render).
+import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
 
 const STORE_KEY = 'onboarding';
 
@@ -193,41 +199,10 @@ export default function FastFlow() {
   );
 }
 
-/**
- * OnboardingProgressBar \u2014 spec \u00a75. A single horizontal bar
- * that fills as the user moves through the flow. No "Step X of Y"
- * scary number. Exported so QuickGardenSetup / QuickFarmSetup can
- * mount the same visual on their own internal steps.
- */
-export function OnboardingProgressBar({ value, total }) {
-  const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, total)) * 100)));
-  return (
-    <div
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={total}
-      aria-valuenow={value}
-      data-testid="onboarding-progress"
-      style={{
-        width: '100%',
-        height: 4,
-        borderRadius: 999,
-        background: 'rgba(255,255,255,0.10)',
-        overflow: 'hidden',
-        margin: '4px 0 8px',
-      }}
-    >
-      <div
-        style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: '#22C55E',
-          transition: 'width 240ms ease',
-        }}
-      />
-    </div>
-  );
-}
+// OnboardingProgressBar lives in
+// src/components/onboarding/OnboardingProgressBar.jsx so the
+// QuickGarden / QuickFarm setup forms can import it without
+// pulling the whole FastFlow tree.
 
 // ─── Screens ──────────────────────────────────────────────
 

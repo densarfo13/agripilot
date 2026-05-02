@@ -40,9 +40,10 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 // snapshots so a back/forward navigation doesn't lose
 // in-flight form data.
 import { loadData, saveData, removeData } from '../../store/localStore.js';
-// Shared progress bar from FastFlow so the garden setup screen
-// shows the same visual indicator as the experience picker.
-import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
+// Shared progress bar \u2014 leaf module so importing it doesn't
+// pull the whole FastFlow tree (locale banner, recommendation
+// engine, etc.) along with it. Render-crash hardening.
+import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
 
 // localStore key for the garden-setup draft. Cleared after a
 // successful save so a future visit starts blank.
@@ -158,34 +159,42 @@ export default function QuickGardenSetup() {
 
   // Farm/garden separation spec \u00a76 \u2014 hydrate local form state
   // from the persisted draft so a back-navigation back into this
-  // form preserves what the user had typed. The hydration runs
-  // once via useState lazy initialiser; subsequent changes are
-  // snapshotted via the useEffect below.
-  const _draft = (() => {
-    try { return loadData(GARDEN_DRAFT_KEY, null) || {}; }
-    catch { return {}; }
-  })();
+  // form preserves what the user had typed. Lazy useState
+  // initialiser so the draft is read ONCE on mount (an IIFE in
+  // the function body would re-read localStorage on every
+  // render). Defensive try/catch \u2014 a malformed draft from a
+  // prior deploy must NOT crash the form. We also defend each
+  // field against unexpected types so a string \u2192 object swap
+  // upstream can never poison a useState init.
+  const [_draft] = useState(() => {
+    try {
+      const raw = loadData(GARDEN_DRAFT_KEY, null);
+      return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    } catch { return {}; }
+  });
+  const _str = (v) => (typeof v === 'string' ? v : '');
+  const _strOrNull = (v) => (typeof v === 'string' && v ? v : null);
 
-  const [plant, setPlant]       = useState(_draft.plant || '');
+  const [plant, setPlant]       = useState(_str(_draft.plant));
   // Spec \u00a77 \u2014 selected plant tile ('tomato'\u2026'other'). When
   // set to 'other' we expand a free-text input below; otherwise
   // the tile label is the plant.
-  const [plantPick, setPlantPick] = useState(_draft.plantPick || null);
-  const [country, setCountry]   = useState(_draft.country || '');
-  const [region, setRegion]     = useState(_draft.region || '');
-  const [city, setCity]         = useState(_draft.city || '');
-  const [size, setSize]         = useState(_draft.size || null); // optional
+  const [plantPick, setPlantPick] = useState(_strOrNull(_draft.plantPick));
+  const [country, setCountry]   = useState(_str(_draft.country));
+  const [region, setRegion]     = useState(_str(_draft.region));
+  const [city, setCity]         = useState(_str(_draft.city));
+  const [size, setSize]         = useState(_strOrNull(_draft.size)); // optional
   // Backyard growing-setup spec \u00a71 \u2014 'container' | 'bed' |
   // 'ground' | 'unknown'. Always nullable (the user can save
   // without picking) so onboarding stays fast; downstream
   // surfaces fall through to generic garden guidance when null.
-  const [growingSetup, setGrowingSetup] = useState(_draft.growingSetup || null);
+  const [growingSetup, setGrowingSetup] = useState(_strOrNull(_draft.growingSetup));
   // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
   // the user has chosen the garden experience. Non-blocking
   // guidance only; saved to the garden record so downstream
   // surfaces can soften copy ("first time?" hints) but never
   // gate the flow.
-  const [skillLevel, setSkillLevel] = useState(_draft.skillLevel || null);
+  const [skillLevel, setSkillLevel] = useState(_strOrNull(_draft.skillLevel));
   // Farm/garden separation spec \u00a74 \u2014 free-text search above
   // the plant tiles so users with longer lists can filter
   // instead of scrolling. Filtering is case-insensitive against
