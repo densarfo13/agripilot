@@ -442,12 +442,29 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       recommendedActions: [],
     });
 
+    // High-confidence scan spec §1: tier policy from confidence.
+    // §2: verification questions tailored to the predicted issue.
+    let policy = { tier: safe.confidence, allowSpecificName: false, allowTop3: false, categoryOnly: true };
+    let questions = [];
+    try {
+      const { tierPolicy } = await import('./ml/confidenceTiers.js');
+      const { verificationQuestions } = await import('./ml/verificationQuestions.js');
+      policy = tierPolicy(safe.confidence);
+      questions = verificationQuestions({
+        issue:  safe.possibleIssue,
+        crop:   cropName,
+        region,
+        weather,
+      });
+    } catch { /* swallow — both modules are pure helpers */ }
+
     // Persist the training event (fire-and-forget — don't block
     // the response on the DB write).
+    const scanId = req.body?.scanId || ('scan_' + Date.now().toString(36));
     try {
       await prisma.scanTrainingEvent.create({
         data: {
-          scanId:         req.body?.scanId || ('scan_' + Date.now().toString(36)),
+          scanId,
           userId:         req.user?.id || null,
           imageUrl:       imageUrl || null,
           cropName:       cropName  || null,
@@ -462,8 +479,11 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
     } catch { /* swallow — analytics row is best-effort */ }
 
     return res.json({
-      ok:           true,
-      verdict:      safe,
+      ok:                    true,
+      verdict:               safe,
+      tierPolicy:            policy,
+      verificationQuestions: questions,
+      scanId,
       inferenceMeta: {
         provider:     inference.meta?.provider || null,
         latencyMs:    inference.meta?.latencyMs || 0,
@@ -477,32 +497,66 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
 
 app.post('/api/scan/feedback', authenticate, async (req, res) => {
   try {
-    const { scanId, userFeedback, correctedIssue } = req.body || {};
-    if (!scanId || !userFeedback) {
+    const {
+      scanId, userFeedback, correctedIssue,
+      verificationAnswer,        // { questionId, answer } — checklist tap
+      verificationSummary,       // { matched, mismatched, confirmed, downgrade } — after checklist completes
+      outcome,                   // 'recovered' | 'spread' | 'lost' | 'unknown'
+      outcomeNote,
+    } = req.body || {};
+
+    if (!scanId) {
       return res.status(400).json({ error: 'missing_required_fields' });
     }
-    const allowed = new Set(['helpful', 'not_helpful', 'not_sure']);
-    if (!allowed.has(String(userFeedback))) {
+    // Allowed feedback values (§9 + §6 verification + outcome).
+    const allowedFb       = new Set(['helpful', 'not_helpful', 'not_sure', 'verification']);
+    const allowedOutcome  = new Set(['recovered', 'spread', 'lost', 'unknown']);
+    if (userFeedback && !allowedFb.has(String(userFeedback))) {
       return res.status(400).json({ error: 'invalid_feedback' });
     }
-    // Find the most recent training row for this scan + user
-    // and update it with the feedback. Don't error if missing —
-    // some scans run before the migration is applied.
+    if (outcome && !allowedOutcome.has(String(outcome))) {
+      return res.status(400).json({ error: 'invalid_outcome' });
+    }
+
     try {
       const row = await prisma.scanTrainingEvent.findFirst({
         where:   { scanId, userId: req.user?.id || null },
         orderBy: { createdAt: 'desc' },
       });
       if (row) {
-        await prisma.scanTrainingEvent.update({
-          where: { id: row.id },
-          data:  {
-            userFeedback:   String(userFeedback),
-            correctedIssue: correctedIssue ? String(correctedIssue).slice(0, 200) : null,
-          },
-        });
+        // Build a partial update — only fields the caller sent.
+        const data = {};
+        if (userFeedback && userFeedback !== 'verification') {
+          data.userFeedback = String(userFeedback);
+        }
+        if (correctedIssue) {
+          data.correctedIssue = String(correctedIssue).slice(0, 200);
+        }
+        if (verificationAnswer && verificationAnswer.questionId) {
+          // Merge answer into existing JSON map.
+          const prev = row.verificationAnswers && typeof row.verificationAnswers === 'object'
+            ? row.verificationAnswers : {};
+          data.verificationAnswers = {
+            ...prev,
+            [String(verificationAnswer.questionId)]: String(verificationAnswer.answer || '')
+              .toLowerCase() === 'yes' ? 'yes' : 'no',
+          };
+        }
+        if (verificationSummary && typeof verificationSummary === 'object') {
+          data.verificationDowngrade = !!verificationSummary.downgrade;
+        }
+        if (outcome) {
+          data.outcome = String(outcome);
+          if (outcomeNote) data.outcomeNote = String(outcomeNote).slice(0, 400);
+        }
+        if (Object.keys(data).length > 0) {
+          await prisma.scanTrainingEvent.update({
+            where: { id: row.id },
+            data,
+          });
+        }
       }
-    } catch { /* swallow */ }
+    } catch { /* swallow — best-effort */ }
     return res.json({ ok: true });
   } catch (err) {
     return res.status(500).json({ error: 'scan_feedback_failed', message: err && err.message });

@@ -3083,6 +3083,16 @@ model ScanTrainingEvent {
   weatherSummary  Json?                               @map("weather_summary")
   predictedIssue  String?                             @map("predicted_issue")
   confidence      String?                             // low | medium | high
+  // High-confidence ML scan layer (spec §6) — verification
+  // checklist answers + eventual outcome.
+  // verificationAnswers: { [questionId]: 'yes' | 'no' }
+  verificationAnswers Json?                           @map("verification_answers")
+  verificationDowngrade Boolean? @default(false)      @map("verification_downgrade")
+  // Eventual outcome — set later when the user reports back
+  // (e.g. 'recovered' | 'spread' | 'lost' | 'unknown'). Used
+  // to evaluate model performance over time.
+  outcome         String?                             @map("outcome")
+  outcomeNote     String?                             @map("outcome_note")
   userFeedback    String?                             @map("user_feedback")    // helpful | not_helpful | not_sure
   correctedIssue  String?                             @map("corrected_issue")
   expertLabel     String?                             @map("expert_label")

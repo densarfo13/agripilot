@@ -76,6 +76,10 @@ const REQUIRED_EVENTS = [
     why: 'Hybrid engine refined the image-only verdict — measures rule-pipeline hit rate per issue.' },
   { name: 'scan_feedback', surface: 'ScanFeedbackPrompt.jsx',
     why: 'User answered "Was this helpful?" — feeds the training-data foundation (ML §9).' },
+  { name: 'scan_verification_answer', surface: 'ScanVerificationChecklist.jsx',
+    why: 'User answered a verification yes/no check — feeds high-confidence tier downgrade rules.' },
+  { name: 'scan_expert_cta_tap', surface: 'ScanLocalExpertCTA.jsx',
+    why: 'User tapped "Find local help" on the scan recovery card — measures expert-second-opinion demand.' },
 ];
 
 function listFiles(dir, acc) {

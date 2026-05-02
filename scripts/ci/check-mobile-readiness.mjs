@@ -784,6 +784,69 @@ const checks = [
           && /scanTrainingEvents/.test(f);
     },
   },
+  {
+    name: 'confidenceTiers ships numeric thresholds + tierPolicy',
+    why:  'High-confidence ML \u00a71 \u2014 0.85/0.60 thresholds drive output rules',
+    pass: () => {
+      const f = read('server/src/ml/confidenceTiers.js');
+      return /HIGH:\s*0\.85/.test(f)
+          && /MEDIUM:\s*0\.60/.test(f)
+          && /export function tierPolicy/.test(f)
+          && /export function downgrade/.test(f);
+    },
+  },
+  {
+    name: 'verificationQuestions returns 2\u20133 yes/no checks per issue',
+    why:  'High-confidence ML \u00a72 \u2014 verify before naming a specific condition',
+    pass: () => {
+      const f = read('server/src/ml/verificationQuestions.js');
+      return /export function verificationQuestions/.test(f)
+          && /export function scoreVerification/.test(f)
+          && /Possible fungal stress/.test(f)
+          && /Possible water stress/.test(f);
+    },
+  },
+  {
+    name: 'scanSafetyFilter rewrites to treatment-class language',
+    why:  'High-confidence ML \u00a74 \u2014 no exact products / dosages',
+    pass: () => {
+      const f = read('server/src/ml/scanSafetyFilter.js');
+      return /TREATMENT_CLASS_REWRITES/.test(f)
+          && /locally approved fungicide/i.test(f)
+          && /locally approved insecticide/i.test(f);
+    },
+  },
+  {
+    name: 'ScanVerificationChecklist + ScanLocalExpertCTA mounted',
+    why:  'High-confidence ML \u00a72 + \u00a75 \u2014 user-facing UX',
+    pass: () => {
+      const page = read('src/pages/ScanPage.jsx');
+      return fs.existsSync(path.join(ROOT, 'src/components/scan/ScanVerificationChecklist.jsx'))
+          && fs.existsSync(path.join(ROOT, 'src/components/scan/ScanLocalExpertCTA.jsx'))
+          && /<ScanVerificationChecklist/.test(page)
+          && /<ScanLocalExpertCTA/.test(page);
+    },
+  },
+  {
+    name: 'ScanTrainingEvent extended with verification + outcome',
+    why:  'High-confidence ML \u00a76 \u2014 data foundation for future training',
+    pass: () => {
+      const schema = read('server/prisma/schema.prisma');
+      return /verificationAnswers/.test(schema)
+          && /verificationDowngrade/.test(schema)
+          && /outcome\s+String/.test(schema)
+          && fs.existsSync(path.join(ROOT, 'server/prisma/migrations/20260501_scan_verification_outcome/migration.sql'));
+    },
+  },
+  {
+    name: '/api/scan/analyze returns tierPolicy + verificationQuestions',
+    why:  'High-confidence ML \u00a71 + \u00a72 \u2014 frontend has what it needs to gate naming',
+    pass: () => {
+      const f = read('server/src/app.js');
+      return /tierPolicy/.test(f)
+          && /verificationQuestions/.test(f);
+    },
+  },
 ];
 
 const failed = [];

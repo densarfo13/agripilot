@@ -50,11 +50,43 @@ const UNSAFE_PHRASES = Object.freeze([
 const DOSAGE_PATTERN =
   /\b\d+(?:\.\d+)?\s?(ml|millilit(?:re|er)s?|l\b|litres?|liters?|g\b|grams?|kg\b|kilograms?|mg|oz\b|teaspoons?|tablespoons?|tsp|tbsp|cup(?:s)?)\b/gi;
 
+// Treatment-class spec §4: when an action mentions a SPECIFIC
+// product (brand or active ingredient), rewrite to the safe
+// class-only form. The first pattern that matches wins; the
+// replacement is a complete sentence so even mid-paragraph
+// mentions get cleanly rewritten.
+const TREATMENT_CLASS_REWRITES = Object.freeze([
+  [/\b(spray|apply|use)\s+([a-z\-]+\s+)?fungicides?\b[^.]*\.?/gi,
+    'Use a locally approved fungicide for this crop and disease, and follow label instructions.'],
+  [/\b(spray|apply|use)\s+([a-z\-]+\s+)?insecticides?\b[^.]*\.?/gi,
+    'Use a locally approved insecticide for this crop and pest, and follow label instructions.'],
+  [/\b(spray|apply|use)\s+([a-z\-]+\s+)?pesticides?\b[^.]*\.?/gi,
+    'Use a locally approved pesticide for this crop, and follow label instructions.'],
+  [/\b(spray|apply|use)\s+([a-z\-]+\s+)?herbicides?\b[^.]*\.?/gi,
+    'Use a locally approved herbicide for this crop, and follow label instructions.'],
+  // Active-ingredient names that occasionally leak out — every
+  // mention rewrites to the same neutral instruction.
+  [/\b(mancozeb|chlorothalonil|copper\s*(sulphate|hydroxide)|propiconazole|tebuconazole|azoxystrobin)\b[^.]*\.?/gi,
+    'Use a locally approved fungicide for this crop and disease, and follow label instructions.'],
+  [/\b(carbaryl|imidacloprid|cypermethrin|deltamethrin|malathion|chlorpyrifos|permethrin)\b[^.]*\.?/gi,
+    'Use a locally approved insecticide for this crop and pest, and follow label instructions.'],
+]);
+
 function _scrub(text) {
   if (typeof text !== 'string' || !text) return text;
   let out = text;
   for (const [pattern, replacement] of UNSAFE_PHRASES) {
     out = out.replace(pattern, replacement);
+  }
+  // Treatment-class first-match: rewrite the whole sentence so
+  // the action stays parsable to the UI.
+  for (const [pattern, replacement] of TREATMENT_CLASS_REWRITES) {
+    if (pattern.test(out)) {
+      out = out.replace(pattern, replacement);
+    }
+    // Reset lastIndex so the next iteration scans the rewritten
+    // text from the start (each pattern is global).
+    pattern.lastIndex = 0;
   }
   out = out.replace(DOSAGE_PATTERN, 'appropriate amount');
   return out;
@@ -125,7 +157,9 @@ export function applySafetyFilter(verdict = {}) {
 }
 
 export const _internal = Object.freeze({
-  DISCLAIMER, UNSAFE_PHRASES, DOSAGE_PATTERN, _scrub, _isUnclearVerdict,
+  DISCLAIMER, UNSAFE_PHRASES, DOSAGE_PATTERN,
+  TREATMENT_CLASS_REWRITES,
+  _scrub, _isUnclearVerdict,
 });
 
 export default applySafetyFilter;

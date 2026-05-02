@@ -40,6 +40,11 @@ import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 // after the result renders so we can build a training-data
 // foundation. Self-suppresses after one tap per scanId.
 import ScanFeedbackPrompt from '../components/scan/ScanFeedbackPrompt.jsx';
+// High-confidence ML spec §2 + §5: 2-3 yes/no checks before we
+// commit to a specific named condition; "Confirm with local
+// expert" CTA when the verdict warrants a human second opinion.
+import ScanVerificationChecklist from '../components/scan/ScanVerificationChecklist.jsx';
+import ScanLocalExpertCTA from '../components/scan/ScanLocalExpertCTA.jsx';
 import ScanHistory from '../components/scan/ScanHistory.jsx';
 
 const STYLES = {
@@ -332,6 +337,27 @@ export default function ScanPage() {
             onSave={onSave}
             alreadySaved={!!savedEntryId}
             alreadyAddedTasks={tasksAdded}
+          />
+          {/* High-confidence ML spec §2: 2-3 yes/no checks
+              before committing to a specific named condition.
+              The questions come from the server when available
+              (analyze response includes `verificationQuestions`)
+              or fall through to the on-device hybrid engine. */}
+          {Array.isArray(result.verificationQuestions) && result.verificationQuestions.length > 0 ? (
+            <ScanVerificationChecklist
+              scanId={result.scanId || null}
+              questions={result.verificationQuestions}
+            />
+          ) : null}
+          {/* High-confidence ML spec §5: surface a "confirm with
+              local expert" CTA when the verdict is risky enough
+              (fast spread, sub-high confidence, or high-value
+              crop). The component self-suppresses otherwise. */}
+          <ScanLocalExpertCTA
+            confidence={result.confidence}
+            issue={result.possibleIssue}
+            spreadFast={result.spreadFast || false}
+            cropName={result.cropName || profile?.crop || profile?.cropId || null}
           />
           <ScanFeedbackPrompt scanId={result.scanId || null} />
         </>
