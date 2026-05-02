@@ -874,6 +874,36 @@ const checks = [
           && /scan_fallback_used/.test(f);
     },
   },
+  {
+    name: 'QuickGardenSetup ships 2 required fields + optional size',
+    why:  'Optimized setup spec \u00a73 \u2014 garden onboarding under 30s',
+    pass: () => {
+      const f = read('src/pages/setup/QuickGardenSetup.jsx');
+      const app = read('src/App.jsx');
+      return /quick-garden-plant/.test(f)
+          && /quick-garden-country/.test(f)
+          && /SIZE_OPTIONS/.test(f)
+          && /addGarden/.test(f)
+          && /setOnboardingComplete/.test(f)
+          && /\/setup\/garden/.test(app);
+    },
+  },
+  {
+    name: 'QuickFarmSetup ships 4 fields with regional unit default',
+    why:  'Optimized setup spec \u00a74 \u2014 farm onboarding under 45s',
+    pass: () => {
+      const f = read('src/pages/setup/QuickFarmSetup.jsx');
+      const app = read('src/App.jsx');
+      return /quick-farm-crop/.test(f)
+          && /quick-farm-country/.test(f)
+          && /quick-farm-size/.test(f)
+          && /quick-farm-unit/.test(f)
+          && /getDefaultUnit/.test(f)
+          && /addFarm/.test(f)
+          && /setOnboardingComplete/.test(f)
+          && /\/setup\/farm/.test(app);
+    },
+  },
 ];
 
 const failed = [];

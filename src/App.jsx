@@ -83,6 +83,14 @@ const OperatorDashboard  = lazy(() => import('./pages/OperatorDashboard.jsx'));
 const MetricsDashboard   = lazy(() => import('./pages/MetricsDashboard.jsx'));
 const OnboardingEntry    = lazy(() => import('./pages/OnboardingEntry.jsx'));
 const MinimalFarmSetup   = lazy(() => import('./pages/MinimalFarmSetup.jsx'));
+// Optimized fast setup flow per the
+// "fast, simple, accurate" spec: 2 fields for garden,
+// 4 for farm. Both end with onboardingCompleted=true +
+// navigate('/home', { replace: true }). Mounted alongside
+// (not replacing) the existing setup paths so deep links keep
+// working.
+const QuickGardenSetup   = lazy(() => import('./pages/setup/QuickGardenSetup.jsx'));
+const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
@@ -776,6 +784,12 @@ export default function App() {
             {/* /start/farm — 2-field minimal setup (crop + location).
                 Defers farm size + crop stage to the home prompt. */}
             <Route path="/start/farm"         element={<MinimalFarmSetup />} />
+            {/* Optimized setup flow — single-screen forms per
+                the "fast, simple, accurate" spec. Garden = 2
+                required fields + 1 optional pill. Farm = 4
+                required fields with regional unit default. */}
+            <Route path="/setup/garden"       element={<QuickGardenSetup />} />
+            <Route path="/setup/farm"         element={<QuickFarmSetup />} />
             <Route path="/opportunities"      element={<BackyardGuard><Opportunities /></BackyardGuard>} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message

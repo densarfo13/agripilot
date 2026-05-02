@@ -84,6 +84,10 @@ const REQUIRED_EVENTS = [
     why: 'User tapped the Home above-the-fold scan CTA — measures the retention loop entry point.' },
   { name: 'scan_fallback_used', surface: 'ScanPage.jsx',
     why: 'Scan returned the rule-based fallback (slow API or offline) — measures perf budget violations.' },
+  { name: 'setup_garden_completed', surface: 'QuickGardenSetup.jsx',
+    why: 'User completed the optimized garden onboarding — funnel hit per region.' },
+  { name: 'setup_farm_completed', surface: 'QuickFarmSetup.jsx',
+    why: 'User completed the optimized farm onboarding — funnel hit + unit pick by region.' },
 ];
 
 function listFiles(dir, acc) {
