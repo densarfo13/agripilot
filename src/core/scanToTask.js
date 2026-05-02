@@ -46,36 +46,63 @@ function _writeList(list) {
 }
 
 /**
- * Persist scan-derived tasks. Returns the actually-stored entries
- * (capped at 2). When the flag is off, returns an empty array
- * without writing anything.
+ * Persist scan-derived tasks. Returns the actually-stored entries.
+ * When the flag is off, returns an empty array without writing.
  *
- * @param {Array<object>} suggestedTasks  from `analyzeScan`
- * @param {object} [context]   { scanId, farmId, gardenId, experience }
+ * @param {Array<object>} suggestedTasks  from `analyzeScan` \u2014 capped at 2
+ * @param {object} [context]
+ * @param {string} [context.scanId]
+ * @param {string} [context.farmId]
+ * @param {string} [context.gardenId]
+ * @param {string} [context.experience]
+ * @param {object} [context.followUpTask]  optional canonical follow-up
+ *                                         task from scanResultPolicy.
+ *                                         Persisted IN ADDITION to the
+ *                                         capped immediate tasks
+ *                                         (spec \u00a77 \u2014 max 2 + 1
+ *                                         follow-up = 3 total).
  * @returns {Array<object>}
  *
- * Final scan engine spec §9: tasks attach to gardenId OR farmId
- * based on activeExperience so garden + farm Today's Plans stay
- * isolated. Same-day duplicates are rejected per the spec
- * "do not duplicate same scan task on same day" rule.
+ * Final scan engine spec \u00a79 + high-trust scan output spec \u00a77:
+ *   \u2022 Up to 2 immediate action tasks (cap enforced here so callers
+ *     can pass the engine's full suggestedTasks list without trimming
+ *     it themselves).
+ *   \u2022 Plus an optional follow-up task ("Check this again
+ *     tomorrow") so the user always has a built-in "come back and
+ *     verify" step in Today's Plan.
+ *   \u2022 Tasks attach to gardenId OR farmId based on activeExperience
+ *     so garden + farm Today's Plans stay isolated.
+ *   \u2022 Same-day same-scan same-title entries are rejected so
+ *     rescanning the same plant doesn't pile up duplicates.
  */
 export function addScanTasks(suggestedTasks, context = {}) {
   if (!isFeatureEnabled('scanToTask')) return [];
-  if (!Array.isArray(suggestedTasks) || suggestedTasks.length === 0) return [];
-  const cappedSource = suggestedTasks.slice(0, 2);
+
+  const immediateSource = Array.isArray(suggestedTasks)
+    ? suggestedTasks.slice(0, 2)
+    : [];
+  const followUpSource = (context && typeof context.followUpTask === 'object' && context.followUpTask)
+    ? [context.followUpTask]
+    : [];
+
+  if (immediateSource.length === 0 && followUpSource.length === 0) return [];
   const now = Date.now();
 
-  // Spec §9: dedupe same-day same-scan tasks so the user
-  // doesn't accumulate duplicate entries from rescanning.
+  // Spec \u00a79: dedupe same-day same-scan tasks so rescanning
+  // doesn't accumulate duplicates. We compute the dedupe key
+  // including a marker for the follow-up so a follow-up + an
+  // immediate task that share a title (e.g. "Check this plant
+  // again tomorrow" appearing in both lists by accident) don't
+  // collide and silently drop the follow-up.
   const todayKey = new Date(now).toISOString().slice(0, 10);
   const list = _readList();
   const existing = new Set(
     list
       .filter((t) => t && t.scanId && String(t.createdAt || '').slice(0, 10) === todayKey)
-      .map((t) => `${t.scanId}|${t.title}`)
+      .map((t) => `${t.scanId}|${t.isFollowUp ? 'fu' : 'im'}|${String(t.title || '').toLowerCase()}`)
   );
 
-  const newEntries = cappedSource.map((t) => ({
+  const buildEntry = (t, isFollowUp) => ({
     id:         t?.id || ('scantask_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 8)),
     title:      String(t?.title || ''),
     reason:     t?.reason ? String(t.reason) : '',
@@ -86,15 +113,22 @@ export function addScanTasks(suggestedTasks, context = {}) {
     gardenId:   context.gardenId || null,
     farmId:     context.farmId   || null,
     experience: context.experience || 'generic',
+    isFollowUp: !!isFollowUp,
     createdAt:  new Date(now).toISOString(),
     expiresAt:  new Date(now + EXPIRY_MS).toISOString(),
     completed:  false,
-  })).filter((t) => !existing.has(`${t.scanId}|${t.title}`));
+  });
 
-  if (newEntries.length === 0) return [];
-  list.push(...newEntries);
+  const candidates = [
+    ...immediateSource.map((t) => buildEntry(t, false)),
+    ...followUpSource.map((t) => buildEntry(t, true)),
+  ].filter((t) => t.title)
+   .filter((t) => !existing.has(`${t.scanId}|${t.isFollowUp ? 'fu' : 'im'}|${t.title.toLowerCase()}`));
+
+  if (candidates.length === 0) return [];
+  list.push(...candidates);
   _writeList(list);
-  return newEntries;
+  return candidates;
 }
 
 /**

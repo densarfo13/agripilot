@@ -18,7 +18,7 @@
  * "Plant" / "Crop" wording where it appears.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
@@ -31,6 +31,7 @@ import ChannelShareButtons from '../growth/ChannelShareButtons.jsx';
 import ScanContinueCard from '../growth/ScanContinueCard.jsx';
 import ScanRetryTips from './ScanRetryTips.jsx';
 import { trackFirstAction } from '../../analytics/funnelEvents.js';
+import { enforceHighTrustScanResult } from '../../core/scanResultPolicy.js';
 
 const STYLES = {
   card: {
@@ -85,6 +86,58 @@ const STYLES = {
     background: 'rgba(239,68,68,0.10)',
     border: '1px solid rgba(239,68,68,0.35)',
     color: '#FCA5A5',
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+  // High-trust scan output (spec \u00a71): "Possible issue" eyebrow
+  // sits ABOVE the issue title so the user reads the framing
+  // before the diagnosis-shaped string.
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
+    marginBottom: 2,
+  },
+  // Escalation block (spec \u00a75) \u2014 amber, conditional, distinct
+  // from the red shouldSeekHelp "danger" block.
+  escalateBlock: {
+    padding: '10px 12px',
+    borderRadius: 10,
+    background: 'rgba(245,158,11,0.10)',
+    border: '1px solid rgba(245,158,11,0.32)',
+    color: '#FCD34D',
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+  // Follow-up pill (spec \u00a71) \u2014 a single concise reassurance
+  // line. Visually quieter than the action list.
+  followUpBlock: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '8px 12px',
+    borderRadius: 10,
+    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.28)',
+    color: '#86EFAC',
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+  followUpDot: {
+    width: 6, height: 6, borderRadius: 999, background: '#22C55E',
+    flex: '0 0 6px',
+  },
+  // "Check to confirm:" verification block (spec \u00a76) \u2014 only
+  // shown when the policy module has yes/no items for the
+  // category (suppressed for healthy / unknown).
+  verifyBlock: {
+    padding: '10px 12px',
+    borderRadius: 10,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px dashed rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 13,
     lineHeight: 1.5,
   },
@@ -191,10 +244,66 @@ export default function ScanResultCard({
   if (!result) return null;
   const scanToTaskOn = isFeatureEnabled('scanToTask');
 
+  // High-trust scan output (spec \u00a71\u2013\u00a76): run the raw result
+  // through the policy module so we ALWAYS render the same
+  // structured shape regardless of which path produced the
+  // verdict (real ML, hybrid fallback, 2-second timer fallback).
+  // The policy:
+  //   \u2022 sanitises forbidden wording ("confirmed disease" \u2192
+  //     "possible issue", exact dosage \u2192 "Follow label
+  //     instructions.")
+  //   \u2022 caps action bullets at 3
+  //   \u2022 provides escalation copy keyed off issue category +
+  //     garden/farm context
+  //   \u2022 builds the "Check this again tomorrow" follow-up line
+  //   \u2022 returns optional "Check to confirm:" yes/no items
+  // The original `result` is preserved for callers that read
+  // engine-only fields (scanId, suggestedTasks, meta).
+  const policy = useMemo(() => {
+    try {
+      return enforceHighTrustScanResult(result, {
+        contextType:     experience === 'farm' || experience === 'farmer' ? 'farm'
+                       : (experience === 'backyard' || experience === 'garden' ? 'garden' : 'generic'),
+        plantOrCropName: result?.plantName || result?.cropName || result?.crop || null,
+      });
+    } catch {
+      // Never throw \u2014 fall back to the raw issue + an empty plan
+      // so the card still renders something safe.
+      return {
+        possibleIssue:       result?.possibleIssue || 'Needs closer inspection',
+        confidence:          result?.confidence || 'low',
+        whyExplanation:      '',
+        recommendedActions:  [],
+        escalationCopy:      '',
+        followUpCopy:        '',
+        followUpTask:        null,
+        verificationChecks:  [],
+        contextType:         'generic',
+        category:            'unknown',
+        disclaimer:          '',
+      };
+    }
+  }, [result, experience]);
+
   return (
-    <article style={STYLES.card} data-testid="scan-result-card" data-confidence={result.confidence}>
+    <article
+      style={STYLES.card}
+      data-testid="scan-result-card"
+      data-confidence={policy.confidence}
+      data-context={policy.contextType}
+      data-category={policy.category}
+    >
       <div style={STYLES.header}>
-        <h3 style={STYLES.title}>{result.possibleIssue || tStrict('scan.fallback.headline', 'Needs closer inspection')}</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Spec \u00a71 \u2014 "Possible issue" eyebrow ALWAYS renders so
+              the user reads the framing before the issue name. */}
+          <span style={STYLES.eyebrow} data-testid="scan-eyebrow">
+            {tStrict('scan.eyebrow.possibleIssue', 'Possible issue')}
+          </span>
+          <h3 style={STYLES.title}>
+            {policy.possibleIssue || tStrict('scan.fallback.headline', 'Needs closer inspection')}
+          </h3>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* Twi voice replay — self-hides when the feature
               flag is off, the language isn't Twi, or the user
@@ -202,28 +311,76 @@ export default function ScanResultCard({
           {isFeatureEnabled('twiVoiceGuidance') && (lang === 'tw' || result?.language === 'tw') ? (
             <VoiceReplayButton text={twiVoice.scan.issue} lang="tw" />
           ) : null}
-          <span style={_confidencePill(result.confidence)}>
-            {_confidenceLabel(result.confidence)}
+          <span style={_confidencePill(policy.confidence)}>
+            {_confidenceLabel(policy.confidence)}
           </span>
         </div>
       </div>
 
-      {result.explanation ? (
+      {/* Spec \u00a71 "Why" \u2014 one-paragraph plain-language reason.
+          Skips the section entirely when the engine has nothing
+          to say so the layout doesn't render an empty label. */}
+      {policy.whyExplanation ? (
         <div>
-          <span style={STYLES.metaLabel}>{tStrict('scan.whatItMeans', 'What it means')}</span>
-          <p style={{ ...STYLES.explain, marginTop: 4 }}>{result.explanation}</p>
+          <span style={STYLES.metaLabel}>{tStrict('scan.why', 'Why')}</span>
+          <p style={{ ...STYLES.explain, marginTop: 4 }} data-testid="scan-why">
+            {policy.whyExplanation}
+          </p>
         </div>
       ) : null}
 
-      {Array.isArray(result.recommendedActions) && result.recommendedActions.length > 0 ? (
+      {/* Spec \u00a71 "What to do now" \u2014 2\u20133 action bullets, sanitised
+          and capped by the policy module. */}
+      {policy.recommendedActions.length > 0 ? (
         <div>
           <span style={STYLES.metaLabel}>{tStrict('scan.whatToDo', 'What to do now')}</span>
-          <ul style={{ ...STYLES.list, marginTop: 4 }}>
-            {result.recommendedActions.map((a, i) => <li key={i}>{a}</li>)}
+          <ul style={{ ...STYLES.list, marginTop: 4 }} data-testid="scan-actions">
+            {policy.recommendedActions.map((a, i) => <li key={i}>{a}</li>)}
           </ul>
         </div>
       ) : null}
 
+      {/* Spec \u00a75 "When to escalate" \u2014 conditional copy keyed off
+          category + garden/farm context. Suppressed for the
+          healthy branch where there's nothing to escalate. */}
+      {policy.escalationCopy ? (
+        <div style={STYLES.escalateBlock} data-testid="scan-escalate">
+          <strong style={{ display: 'block', marginBottom: 4 }}>
+            {tStrict('scan.whenToEscalate', 'When to escalate')}
+          </strong>
+          {policy.escalationCopy}
+        </div>
+      ) : null}
+
+      {/* Spec \u00a76 (optional) "Check to confirm:" \u2014 2\u20133 yes/no
+          items the user can mentally tick before acting. Hidden
+          when the category has no checks (healthy / unknown). */}
+      {policy.verificationChecks.length > 0 ? (
+        <div style={STYLES.verifyBlock} data-testid="scan-verify-checks">
+          <strong style={{ display: 'block', marginBottom: 4 }}>
+            {tStrict('scan.checkToConfirm', 'Check to confirm:')}
+          </strong>
+          <ul style={{ ...STYLES.list, marginTop: 4, color: 'rgba(255,255,255,0.85)' }}>
+            {policy.verificationChecks.map((q, i) => <li key={i}>{q}</li>)}
+          </ul>
+        </div>
+      ) : null}
+
+      {/* Spec \u00a71 "Follow-up" \u2014 single reassurance line. The
+          actual follow-up TASK is added when the user taps Add to
+          Today's Plan; this block is the human-readable promise. */}
+      {policy.followUpCopy ? (
+        <div style={STYLES.followUpBlock} data-testid="scan-followup">
+          <span style={STYLES.followUpDot} aria-hidden="true" />
+          <span><strong>{tStrict('scan.followUp', 'Follow-up')}:</strong> {policy.followUpCopy}</span>
+        </div>
+      ) : null}
+
+      {/* Legacy "When to get help" red block kept as a SEPARATE
+          danger signal \u2014 fires only when the engine flips
+          shouldSeekHelp (e.g. damage severe + spreading). The
+          escalation block above is the conditional 2\u20133-day path;
+          this block is the immediate "see a human" path. */}
       {result.shouldSeekHelp ? (
         <div style={STYLES.helpBlock} data-testid="scan-seek-help">
           <strong style={{ display: 'block', marginBottom: 4 }}>

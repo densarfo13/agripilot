@@ -995,6 +995,97 @@ const checks = [
       return true;
     },
   },
+  {
+    // High-trust scan output spec \u00a72: certain phrases imply
+    // overconfidence we don't have. The scan engine sources
+    // (and the policy module that sanitises them) must never
+    // contain these as OUTPUT strings. We allow them in the
+    // policy module's REGEX list (left-hand side of the
+    // FORBIDDEN_REPLACEMENTS table) by checking only the engine
+    // sources, not the policy itself.
+    name: 'scan engines never use overconfident verdict wording',
+    why:  'High-trust scan output spec \u00a72 \u2014 no "confirmed disease" / "guaranteed cure"',
+    pass: () => {
+      const BANNED = [
+        'confirmed disease',
+        'disease detected',
+        'disease confirmed',
+        'guaranteed cure',
+        'guaranteed treatment',
+        'proven cure',
+      ];
+      const FILES = [
+        'src/core/treatmentEngine.js',
+        'src/core/hybridScanEngine.js',
+        'src/core/scanDetectionEngine.js',
+      ];
+      // Strip // line comments + /* block comments */ before
+      // scanning so the engine sources can DOCUMENT what they're
+      // forbidden from emitting (e.g. "* NEVER emits 'confirmed
+      // disease'") without tripping this guard. The substring
+      // checks then only see source code + string literals.
+      const stripComments = (src) => src
+        .replace(/\/\*[\s\S]*?\*\//g, ' ')
+        .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+      for (const rel of FILES) {
+        const body = stripComments(read(rel)).toLowerCase();
+        for (const token of BANNED) {
+          if (body.includes(token)) return false;
+        }
+      }
+      return true;
+    },
+  },
+  {
+    name: 'scanResultPolicy module ships sanitiser + escalation + follow-up',
+    why:  'High-trust scan output spec \u00a71\u2013\u00a76 \u2014 single source of structured safe output',
+    pass: () => {
+      const f = read('src/core/scanResultPolicy.js');
+      return /export function sanitizeScanText/.test(f)
+          && /export function escalationCopyFor/.test(f)
+          && /export function followUpTaskFor/.test(f)
+          && /export function verificationChecksFor/.test(f)
+          && /export function enforceHighTrustScanResult/.test(f)
+          && /confirmed disease/.test(f)             // forbidden-token table
+          && /guaranteed cure/.test(f)               // forbidden-token table
+          && /Follow label instructions/.test(f);    // safe replacement
+    },
+  },
+  {
+    name: 'ScanResultCard renders Possible issue / Why / Escalate / Follow-up',
+    why:  'High-trust scan output spec \u00a71 \u2014 every result follows the same structure',
+    pass: () => {
+      const f = read('src/components/scan/ScanResultCard.jsx');
+      return /enforceHighTrustScanResult/.test(f)
+          && /scan\.eyebrow\.possibleIssue/.test(f)
+          && /data-testid=["']scan-eyebrow["']/.test(f)
+          && /data-testid=["']scan-actions["']/.test(f)
+          && /data-testid=["']scan-escalate["']/.test(f)
+          && /data-testid=["']scan-followup["']/.test(f)
+          && /scan\.whenToEscalate/.test(f)
+          && /scan\.followUp/.test(f);
+    },
+  },
+  {
+    name: 'scanToTask persists max 2 immediate + 1 follow-up task',
+    why:  'High-trust scan output spec \u00a77 \u2014 follow-up task always appears',
+    pass: () => {
+      const f = read('src/core/scanToTask.js');
+      return /context\.followUpTask/.test(f)
+          && /isFollowUp:\s*!!isFollowUp/.test(f)
+          && /immediateSource\s*=\s*Array\.isArray\(suggestedTasks\)/.test(f)
+          && /\.slice\(0,\s*2\)/.test(f);
+    },
+  },
+  {
+    name: 'ScanPage threads policy follow-up task into addScanTasks',
+    why:  'High-trust scan output spec \u00a77 \u2014 \u201cCheck this again tomorrow\u201d added to plan',
+    pass: () => {
+      const f = read('src/pages/ScanPage.jsx');
+      return /followUpTaskFor/.test(f)
+          && /followUpTask,/.test(f);   // passed into addScanTasks context
+    },
+  },
 ];
 
 const failed = [];

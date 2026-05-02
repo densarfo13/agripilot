@@ -25,6 +25,10 @@ import { analyzeScan } from '../core/scanDetectionEngine.js';
 // region) on top of the image-only verdict so the result is
 // safer + more actionable. See src/core/hybridScanEngine.js.
 import { hybridAnalyze } from '../core/hybridScanEngine.js';
+// High-trust scan output policy \u2014 sanitises forbidden wording
+// and gives us the canonical "Check this again tomorrow" follow-up
+// task we attach to Add to Today's Plan (spec \u00a77).
+import { followUpTaskFor, sanitizeScanText } from '../core/scanResultPolicy.js';
 import { saveScanEntry } from '../data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
@@ -334,21 +338,40 @@ export default function ScanPage() {
   const onAddTasks = useCallback(() => {
     if (!result) return;
     try {
-      // Spec §9: tasks attach to gardenId OR farmId based on
-      // activeExperience so garden + farm Today's Plans stay
-      // isolated. Same-day duplicates are rejected inside
-      // addScanTasks.
+      // Spec \u00a79 + high-trust scan output \u00a77: tasks attach to
+      // gardenId OR farmId based on activeExperience so garden +
+      // farm Today's Plans stay isolated. Same-day duplicates
+      // are rejected inside addScanTasks.
+      //
+      // The canonical "Check this again tomorrow" follow-up
+      // task comes from scanResultPolicy.followUpTaskFor so the
+      // wording is identical to what the result card showed
+      // under the Follow-up block. addScanTasks persists up to
+      // 2 immediate action tasks PLUS the follow-up (3 total).
       const isGarden = activeExperience === 'garden';
-      const stored = addScanTasks(result.suggestedTasks, {
+      const followUpTask = followUpTaskFor(
+        isGarden ? 'garden' : 'farm',
+        profile?.plantName || profile?.crop || profile?.cropId || null,
+      );
+      const sanitisedSuggested = Array.isArray(result.suggestedTasks)
+        ? result.suggestedTasks.map((t) => ({
+            ...t,
+            title:  sanitizeScanText(String(t?.title || '')),
+            reason: sanitizeScanText(String(t?.reason || '')),
+          })).filter((t) => t.title)
+        : [];
+      const stored = addScanTasks(sanitisedSuggested, {
         scanId:    result.scanId,
         gardenId:  isGarden ? (activeGardenId || profile?.id || null) : null,
         farmId:    !isGarden ? (activeFarmId   || profile?.id || null) : null,
         experience: activeExperience,
+        followUpTask,
       });
       if (stored.length > 0) setTasksAdded(true);
       try { trackEvent('scan_task_created', {
         scanId: result.scanId,
         count: stored.length,
+        followUpAdded: stored.some((t) => t.isFollowUp),
         contextType: isGarden ? 'garden' : 'farm',
       }); }
       catch { /* ignore */ }
@@ -433,30 +456,35 @@ export default function ScanPage() {
             repeatedIssue={false}
             weather={null}
             onAddToPlan={(actions) => {
-              // Reuse the existing scan→task path. The actions
+              // Reuse the existing scan\u2192task path. The actions
               // here are the non-chemical immediateActions only
-              // (the card slices the array before calling us);
-              // they shape themselves into suggestedTasks for
-              // addScanTasks via a tiny adapter so the cap-2 +
-              // dedupe rules still apply.
+              // (the card slices the array before calling us).
+              // Wording is sanitised through scanResultPolicy so
+              // any forbidden tokens are rewritten before persistence.
+              // addScanTasks now caps immediate at 2 internally
+              // and ALSO appends the policy follow-up task
+              // ("Check this again tomorrow"), so we just shape
+              // the actions into suggestedTasks and delegate.
               if (!Array.isArray(actions) || actions.length === 0) return;
               try {
-                const adapted = actions.slice(0, 2).map((title, i) => ({
+                const adapted = actions.map((title, i) => ({
                   id:         `treatment_${i}_${Date.now().toString(36)}`,
-                  title,
+                  title:      sanitizeScanText(String(title || '')),
                   reason:     '',
                   urgency:    'medium',
                   actionType: 'treatment',
-                }));
-                // Pretend the engine emitted these as suggestedTasks;
-                // onAddTasks reads result.suggestedTasks. We mutate
-                // the in-memory result + delegate.
+                })).filter((t) => t.title);
                 if (result && Array.isArray(result.suggestedTasks)) {
-                  // Prepend so the treatment actions sit ahead of any
-                  // existing follow-up.
-                  const merged = [...adapted, ...result.suggestedTasks].slice(0, 2);
+                  // Prepend so the treatment actions sit ahead of
+                  // any engine-emitted follow-up; the policy
+                  // follow-up task is appended separately by
+                  // addScanTasks via context.followUpTask in
+                  // onAddTasks below.
                   // eslint-disable-next-line no-param-reassign
-                  result.suggestedTasks = merged;
+                  result.suggestedTasks = [...adapted, ...result.suggestedTasks];
+                } else if (result) {
+                  // eslint-disable-next-line no-param-reassign
+                  result.suggestedTasks = adapted;
                 }
                 onAddTasks();
               } catch { /* swallow */ }
