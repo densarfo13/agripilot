@@ -32,6 +32,14 @@ import { followUpTaskFor, sanitizeScanText } from '../core/scanResultPolicy.js';
 import { saveScanEntry } from '../data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
+// Data Moat Layer follow-up \u2014 spec-shaped scan events fire
+// through the canonical analytics service so eventStore +
+// userMemory + insightAggregator pick them up. Legacy domain
+// events (scan_opened / scan_photo_taken / scan_analyzed /
+// scan_saved / etc.) keep their existing route via the
+// analyticsStore import above so the older dashboard surfaces
+// stay in sync.
+import { trackEvent as moatTrack } from '../core/analytics.js';
 // Final scan engine spec §2: scans must attach to the active
 // context — gardenId when activeExperience='garden', farmId
 // when 'farm'. useExperience reads the canonical multi-
@@ -154,6 +162,14 @@ export default function ScanPage() {
     setPendingThumbnail(thumbnail || null);
     try {
       try { trackEvent('scan_photo_taken', { experience, hasFile: !!file }); }
+      catch { /* ignore */ }
+      // Data Moat Layer \u00a78 \u2014 spec-shaped scan_started event.
+      // Fires alongside the legacy scan_photo_taken so existing
+      // dashboards keep working AND eventStore picks the
+      // canonical event up. The moat service enriches the
+      // payload with active context + weather summary; we add
+      // the event-specific bits (hasFile flag).
+      try { moatTrack('scan_started', { hasFile: !!file }); }
       catch { /* ignore */ }
 
       // Retention spec §2 + §12: surface a fallback verdict
@@ -293,13 +309,42 @@ export default function ScanPage() {
       setPhase('result');
       try { trackEvent('scan_analyzed', { experience, source: out?.meta?.source, confidence: out?.confidence }); }
       catch { /* ignore */ }
+      // Data Moat Layer \u00a78 \u2014 spec-shaped scan_completed event.
+      // Carries the issue type / confidence so the
+      // insightAggregator can surface "common issues by region".
+      // We also write a `farroway_last_scan_issue` ISO timestamp
+      // when the scan flagged something so the dailyPlanEngine's
+      // "recent scan issue" risk path picks it up.
+      try {
+        const issueType = refinedOut?.label
+                       || refinedOut?.disease
+                       || refinedOut?.diagnosis
+                       || null;
+        moatTrack('scan_completed', {
+          issueType,
+          confidence: refinedOut?.confidence || null,
+          source:     refinedOut?.meta?.source || null,
+        });
+        if (issueType
+            && typeof localStorage !== 'undefined'
+            && refinedOut?.urgency
+            && refinedOut.urgency !== 'low') {
+          try { localStorage.setItem('farroway_last_scan_issue', new Date().toISOString()); }
+          catch { /* swallow */ }
+        }
+      } catch { /* ignore */ }
     } catch (err) {
       setError(tStrict(
         'scan.error.analyze',
         'We could not analyze that photo. Try again.'
       ));
       setPhase('error');
-      try { trackEvent('scan_failed', { reason: err && err.message }); }
+      // Data Moat Layer \u00a78 \u2014 scan_failed routes through the
+      // moat service (which mirrors to analyticsStore so the
+      // legacy admin "scan failures" dashboard stays in sync).
+      // Direct analyticsStore.trackEvent removed to avoid a
+      // double-fire.
+      try { moatTrack('scan_failed', { reason: err && err.message }); }
       catch { /* ignore */ }
     }
   }, [experience, activeExperience, profile]);

@@ -3112,9 +3112,11 @@ const checks = [
     // with payload enrichment + crash safety + dual-store
     // mirror (eventStore + legacy analyticsStore).
     name: 'analytics service ships enriched trackEvent + clearActivityData',
-    why:  'Data Moat Layer \u00a71 + \u00a77 \u2014 crash-safe + privacy clear',
+    why:  'Data Moat Layer \u00a71 + \u00a77 \u2014 crash-safe + privacy clear + gated server sync',
     pass: () => {
       const f = read('src/core/analytics.js');
+      const flags = read('src/utils/featureFlags.js');
+      const app = read('src/App.jsx');
       return /export\s+function\s+trackEvent/.test(f)
           && /export\s+function\s+clearFarrowayActivityData/.test(f)
           && /from\s+['"]\.\/eventStore\.js['"]/.test(f)
@@ -3127,7 +3129,40 @@ const checks = [
           && /'onboarding_completed'/.test(f)
           // Privacy clear wipes the activity-log keys.
           && /'farroway_events'/.test(f)
-          && /'farroway_health_feedback'/.test(f);
+          && /'farroway_health_feedback'/.test(f)
+          // Server-sync wiring: gated mirror to offline queue.
+          && /isFeatureEnabled\(['"]FEATURE_EVENT_SYNC['"]\)/.test(f)
+          && /addToQueue\(\s*\{[\s\S]*?type:\s*['"]event['"]/.test(f)
+          // Flag default OFF.
+          && /FEATURE_EVENT_SYNC:\s*false/.test(flags)
+          // App.jsx dispatcher knows the type.
+          && /case\s+['"]event['"]/.test(app)
+          && /\/events/.test(app);
+    },
+  },
+  {
+    // Data Moat Layer follow-up \u2014 ScanPage fires the
+    // spec-shaped scan_started / scan_completed / scan_failed
+    // events through the moat service so eventStore +
+    // userMemory + insightAggregator pick them up. Legacy
+    // domain events (scan_opened / scan_photo_taken /
+    // scan_analyzed / etc.) keep their original analyticsStore
+    // route so the older dashboards stay in sync.
+    name: 'ScanPage fires scan_started / scan_completed / scan_failed',
+    why:  'Data Moat Layer \u00a78 follow-up \u2014 scan tracking hooks wired',
+    pass: () => {
+      const f = read('src/pages/ScanPage.jsx');
+      return /import\s+\{\s*trackEvent\s+as\s+moatTrack\s*\}\s+from\s+['"]\.\.\/core\/analytics\.js['"]/.test(f)
+          && /moatTrack\(['"]scan_started['"]/.test(f)
+          && /moatTrack\(['"]scan_completed['"]/.test(f)
+          && /moatTrack\(['"]scan_failed['"]/.test(f)
+          // Direct legacy `trackEvent('scan_failed'` removed
+          // to avoid double-fire (the moat service mirrors
+          // back to analyticsStore for back-compat).
+          && !/\btrackEvent\(['"]scan_failed['"]/.test(f)
+          // Recent-scan-issue ISO timestamp written for the
+          // dailyPlanEngine retention path.
+          && /'farroway_last_scan_issue'/.test(f);
     },
   },
   {

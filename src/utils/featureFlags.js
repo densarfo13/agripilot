@@ -71,6 +71,19 @@ const DEFAULTS = Object.freeze({
   // stay readable on-device for the admin aggregator.
   FEATURE_HEALTH_FEEDBACK_SYNC: false,
 
+  // Data Moat Layer follow-up — server sync for the canonical
+  // event log at `farroway_events`. Default OFF; same pattern
+  // as FEATURE_HEALTH_FEEDBACK_SYNC. When the server endpoint
+  // at /api/events lands, flip this flag and saveEvent
+  // additionally enqueues `event_batch` actions onto the
+  // offline queue (App.jsx dispatcher handles them). Existing
+  // local entries are unaffected by the flip — they stay
+  // readable on-device for the insightAggregator + the admin
+  // surfaces. The eventStore.markEventSynced + clearSyncedEvents
+  // helpers were built for this drain path; flipping the
+  // flag activates it.
+  FEATURE_EVENT_SYNC: false,
+
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.
   FEATURE_ADVANCED_AI_RECOMMENDATIONS: false,

@@ -584,6 +584,21 @@ export default function App() {
             healthFeedback,
           }, cfg);
         }
+        // Data Moat Layer follow-up \u2014 canonical event-log
+        // mirror. Each tracked event becomes one queue entry
+        // of type 'event'; the local eventStore at
+        // farroway_events stays the source of truth, this
+        // forwards the same record to the server route so
+        // admin surfaces can aggregate cross-device. Gated by
+        // FEATURE_EVENT_SYNC at the enqueue site
+        // (src/core/analytics.js); when the flag is off no
+        // entries land here, so the dispatcher is a no-op
+        // until the server route ships.
+        case 'event': {
+          const { name, payload } = action.payload || {};
+          if (!name) return;
+          return api.post('/events', { name, payload }, cfg);
+        }
         default:
           return undefined;
       }

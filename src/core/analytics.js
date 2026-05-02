@@ -49,6 +49,17 @@
 
 import { saveEvent } from './eventStore.js';
 import { trackEvent as legacyTrackEvent } from '../analytics/analyticsStore.js';
+// Server-sync mirror (Data Moat Layer follow-up). Event writes
+// ALSO land on the lightweight offline queue when
+// FEATURE_EVENT_SYNC is on; the App.jsx 5s tick drains the
+// queue against the server endpoint (api.post('/events',
+// payload)). The flag stays OFF at default so we don't
+// enqueue doomed POSTs against a route that doesn't exist
+// yet. When the server endpoint ships, flipping the flag is
+// the only step needed; existing local events stay readable
+// on-device for the insightAggregator + admin surfaces.
+import { addToQueue } from '../offline/offlineQueue.js';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 
 // Spec §1 event allow-list. Keys are the canonical event
 // names; trackEvent silently warns (in dev) when called with
@@ -246,6 +257,22 @@ export function trackEvent(eventName, payload = {}) {
     // working without a code change.
     try { legacyTrackEvent(name, enrichedPayload); }
     catch { /* swallow — primary write already landed */ }
+
+    // Server-sync mirror. Gated by FEATURE_EVENT_SYNC so we
+    // don't enqueue doomed POSTs against a server route that
+    // doesn't exist yet. Each event becomes one queue entry
+    // of type 'event'; the App.jsx dispatcher maps it onto
+    // api.post('/events', { name, payload }). Wrapped in
+    // try/catch so a queue failure never blocks the local
+    // write that already landed.
+    try {
+      if (isFeatureEnabled('FEATURE_EVENT_SYNC')) {
+        addToQueue({
+          type: 'event',
+          payload: { name, payload: enrichedPayload },
+        });
+      }
+    } catch { /* swallow — local write already landed */ }
 
     return record;
   } catch {
