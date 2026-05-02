@@ -1651,12 +1651,72 @@ const checks = [
         'onboarding.review.changeCrop',
         'onboarding.review.changeLocation',
         'onboarding.review.changeGrowingSetup',
+        // Polish-audit \u00a71 \u2014 farm-only edit option.
+        'onboarding.review.changeFarmSize',
+        // Polish-audit \u00a74 \u2014 final-step pill copy.
+        'onboarding.almostDone',
       ];
       for (const k of KEYS) {
         const re = new RegExp(`['"]${k.replace(/\./g, '\\.')}['"]\\s*:`);
         if (!re.test(f)) return false;
       }
       return true;
+    },
+  },
+  {
+    // Polish-audit \u00a72 \u2014 final-step title swaps from
+    // "Review your plan" to "Review your first plan" so the
+    // user reads it as a starting position, not the final one.
+    name: 'Review-step title is "Review your first plan"',
+    why:  'Polish-audit \u00a72 \u2014 final framing reads as a first plan',
+    pass: () => {
+      const f = read('src/i18n/translations.js');
+      // Match the canonical row \u2014 must contain "first" so a
+      // future regression that strips the word fails this.
+      return /'onboarding\.review\.title':[\s\S]*?en:\s*'Review your first plan'/.test(f);
+    },
+  },
+  {
+    // Polish-audit \u00a71 \u2014 farm experience swaps the
+    // "Change growing setup" button for "Change farm size".
+    // Both keys + testids must be present in the source.
+    name: 'Review step ships farm-only "Change farm size" edit option',
+    why:  'Polish-audit \u00a71 \u2014 farm size editable from review screen',
+    pass: () => {
+      const f = read('src/onboarding/StepDailyPlanPreview.jsx');
+      return /onboarding\.review\.changeFarmSize/.test(f)
+          && /data-testid=["']onboarding-edit-farm-size["']/.test(f)
+          && /handleEdit\(\s*['"]farmSize['"]\s*\)/.test(f);
+    },
+  },
+  {
+    // Polish-audit \u00a73 + \u00a75 \u2014 the bottom CTA is just "Go to
+    // Home"; the legacy VoiceLauncher + PhotoLauncher chip
+    // shortcuts were dropped so the final step has one
+    // primary action. Each launcher import is commented out
+    // (kept as history reference) so a grep for the value
+    // doesn't accidentally match.
+    name: 'Review-step bottom CTA drops voice + photo chip shortcuts',
+    why:  'Polish-audit \u00a73/\u00a75 \u2014 single primary CTA, no distractions',
+    pass: () => {
+      const f = read('src/onboarding/StepDailyPlanPreview.jsx');
+      // No active <VoiceLauncher /> or <PhotoLauncher /> JSX;
+      // commented-out imports allowed (line starts with //).
+      const hasActiveVoice = /^[^/]*<VoiceLauncher\b/m.test(f);
+      const hasActivePhoto = /^[^/]*<PhotoLauncher\b/m.test(f);
+      return !hasActiveVoice && !hasActivePhoto
+          // Primary CTA testid still present.
+          && /data-testid=["']onboarding-go-home["']/.test(f);
+    },
+  },
+  {
+    // Polish-audit \u00a74 \u2014 the step pill swaps to "Almost done"
+    // on the final step instead of "Step 6 of 6".
+    name: 'OnboardingFlow shows "Almost done" pill on final step',
+    why:  'Polish-audit \u00a74 \u2014 reduce step anxiety on commitment screen',
+    pass: () => {
+      const f = read('src/onboarding/OnboardingFlow.jsx');
+      return /step\s*===\s*TOTAL_STEPS\s*\?\s*tSafe\(\s*['"]onboarding\.almostDone['"]/.test(f);
     },
   },
 ];

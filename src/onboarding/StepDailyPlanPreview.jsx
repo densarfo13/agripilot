@@ -25,8 +25,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { generateDailyPlan } from '../core/dailyIntelligenceEngine.js';
-import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
-import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
+// VoiceLauncher / PhotoLauncher were rendered as chip shortcuts
+// at the bottom of this card; the polish-audit spec \u00a73 + \u00a75
+// require us to drop them so the final step shows just the
+// primary "Go to Home" CTA. Imports kept as commented-out
+// reference for callers grepping the file history.
+// import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
+// import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 
 const URGENCY_TONE = {
   high:   { background: 'rgba(239,68,68,0.10)', borderColor: 'rgba(239,68,68,0.32)' },
@@ -111,7 +116,7 @@ export default function StepDailyPlanPreview({ value, onComplete, busy, onEditSt
           immediately under so the user knows nothing is locked
           in yet. */}
       <h1 style={S.title}>
-        {tSafe('onboarding.review.title', 'Review your plan')}
+        {tSafe('onboarding.review.title', 'Review your first plan')}
       </h1>
       <p style={S.helperText}>
         {tSafe('onboarding.review.helper',
@@ -149,9 +154,13 @@ export default function StepDailyPlanPreview({ value, onComplete, busy, onEditSt
 
       {/* Review-step spec \u2014 "Edit your setup" panel. Each button
           jumps the parent flow back to the relevant step,
-          preserving the in-flight profile state. The parent
-          maps the string keys to step numbers so this component
-          stays decoupled from the step taxonomy. */}
+          preserving the in-flight profile state. Garden vs farm
+          show experience-specific options (polish-audit \u00a71):
+            \u2022 Garden: crop + location + growing setup
+            \u2022 Farm:   crop + location + farm size
+          (growing setup is a garden-only concept; farm size is
+          a farm-only concept). Both flows show 3 options so the
+          screen never accumulates "too many buttons" \u00a75. */}
       {typeof onEditStep === 'function' ? (
         <div style={S.editPanel} data-testid="onboarding-edit-setup">
           <span style={S.editPanelTitle}>
@@ -173,17 +182,53 @@ export default function StepDailyPlanPreview({ value, onComplete, busy, onEditSt
           >
             {tSafe('onboarding.review.changeLocation', 'Change location')}
           </button>
-          <button
-            type="button"
-            onClick={() => handleEdit('growingSetup')}
-            style={S.editBtn}
-            data-testid="onboarding-edit-growing-setup"
-          >
-            {tSafe('onboarding.review.changeGrowingSetup', 'Change growing setup')}
-          </button>
+          {(() => {
+            // Polish-audit \u00a71 \u2014 farm experience swaps the
+            // "Change growing setup" button for "Change farm
+            // size" since growing-setup is garden-only and
+            // farm-size is farm-only. Detect from any of the
+            // farm-shaped fields the profile may carry; default
+            // to garden when ambiguous (the safer default since
+            // the growing-setup button always does something
+            // sensible whereas farm-size on a garden record is
+            // meaningless).
+            const isFarm = (
+              value.farmType === 'small_farm' ||
+              value.farmType === 'farm' ||
+              value.experience === 'farm' ||
+              (value.farmSize && value.farmSize !== 'backyard')
+            );
+            if (isFarm) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => handleEdit('farmSize')}
+                  style={S.editBtn}
+                  data-testid="onboarding-edit-farm-size"
+                >
+                  {tSafe('onboarding.review.changeFarmSize', 'Change farm size')}
+                </button>
+              );
+            }
+            return (
+              <button
+                type="button"
+                onClick={() => handleEdit('growingSetup')}
+                style={S.editBtn}
+                data-testid="onboarding-edit-growing-setup"
+              >
+                {tSafe('onboarding.review.changeGrowingSetup', 'Change growing setup')}
+              </button>
+            );
+          })()}
         </div>
       ) : null}
 
+      {/* Polish-audit \u00a75 \u2014 single primary CTA at the bottom.
+          The voice + photo chip shortcuts were dropped; the
+          user gets to those affordances on /home immediately
+          after this screen. Keeps the final step focused on
+          one decision: Go to Home (or scroll up to edit). */}
       <div style={S.cta}>
         <button
           type="button"
@@ -196,14 +241,6 @@ export default function StepDailyPlanPreview({ value, onComplete, busy, onEditSt
             ? tSafe('common.saving', 'Saving\u2026')
             : tSafe('onboarding.goHome', 'Go to Home')}
         </button>
-        <div style={S.shortcuts}>
-          <VoiceLauncher variant="chip" />
-          <PhotoLauncher
-            variant="chip"
-            farmId={value.activeFarmId || null}
-            cropId={value.cropId || null}
-          />
-        </div>
       </div>
     </section>
   );

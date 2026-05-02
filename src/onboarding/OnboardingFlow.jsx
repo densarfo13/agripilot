@@ -223,6 +223,9 @@ export default function OnboardingFlow() {
                               // growing-setup picker lives in
                               // QuickGardenSetup, which this
                               // flow doesn't traverse).
+            farmSize:     5, // StepFarmSetup also owns the
+                              // farm-size field (farm-only edit
+                              // option per polish-audit \u00a71).
           };
           const target = map[key];
           if (Number.isFinite(target)) setStep(target);
@@ -254,10 +257,18 @@ export default function OnboardingFlow() {
               {'\u2190'}
             </button>
           ) : <span style={S.backBtn} aria-hidden="true" />}
-          <span style={S.progress}>
-            {tSafe('onboarding.stepOf', 'Step {step} of {total}')
-              .replace('{step}', String(step))
-              .replace('{total}', String(TOTAL_STEPS))}
+          <span style={S.progress} data-testid="onboarding-progress-pill">
+            {/* Polish-audit \u00a74 \u2014 reduce step anxiety on the
+                final step. "Step 6 of 6" reads heavy at the
+                point the user is about to commit; "Almost done"
+                signals the same position without the count.
+                Earlier steps still show "Step X of N" so the
+                user has a sense of progress. */}
+            {step === TOTAL_STEPS
+              ? tSafe('onboarding.almostDone', 'Almost done')
+              : tSafe('onboarding.stepOf', 'Step {step} of {total}')
+                  .replace('{step}', String(step))
+                  .replace('{total}', String(TOTAL_STEPS))}
           </span>
           <span style={S.backBtn} aria-hidden="true" />
         </header>
