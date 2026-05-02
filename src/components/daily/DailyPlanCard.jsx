@@ -20,6 +20,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { isFeatureEnabled } from '../../utils/featureFlags.js';
 import { generateDailyPlan } from '../../core/dailyIntelligenceEngine.js';
+import { generateIntelligentPlan } from '../../core/farrowayIntelligenceEngine.js';
 import { markActionDone } from '../../core/dailyTaskCompletion.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
@@ -52,8 +53,73 @@ export default function DailyPlanCard({
   if (!farm) return null;
 
   // Re-run the engine when version bumps (after a Mark-done).
-  const plan = React.useMemo(
-    () => generateDailyPlan({ farm, weather, weatherStale, recentTasks }),
+  const plan = React.useMemo(() => {
+    const base = generateDailyPlan({ farm, weather, weatherStale, recentTasks });
+    // Invisible-intelligence layer: compose the new engine on
+    // top of the existing daily plan so the user sees a
+    // priority + secondary + risks + explanation + follow-up
+    // structure instead of the legacy generic 3-task list.
+    // The new engine returns the spec shape; we adapt it to
+    // the existing `actions[]` + `alerts[]` shape DailyPlanCard
+    // already renders, plus add explanation + followUpTask
+    // slots below.
+    let intel = null;
+    try {
+      intel = generateIntelligentPlan({
+        activeExperience: farm.farmType === 'backyard' ? 'garden' : 'farm',
+        cropName:         farm.crop || farm.cropId || null,
+        plantName:        farm.plantName || null,
+        country:          farm.country || farm.countryCode || null,
+        region:           farm.region || farm.state || null,
+        plantedAt:        farm.plantingDate || farm.plantedAt || null,
+        growingSetup:     farm.growingSetup || null,
+        sizeSqFt:         farm.landSizeSqFt || farm.farmSize || null,
+        displayUnit:      farm.displayUnit || farm.sizeUnit || null,
+        weather,
+      });
+    } catch { /* never let the engine break the page */ }
+
+    if (!intel) return base;
+
+    // Adapt todaysPriority + secondaryTasks into the legacy
+    // actions[] shape. Each gets a stable id derived from the
+    // text so Mark-done dedupe still works.
+    const slug = (s) => String(s || '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 32);
+    const intelTasks = [intel.todaysPriority, ...intel.secondaryTasks].filter(Boolean);
+    const adaptedActions = intelTasks.map((t, i) => ({
+      id:         `intel_${i}_${slug(t.text)}`,
+      title:      t.text,
+      reason:     t.detail,
+      urgency:    t.type === 'risk' ? 'high'
+                : t.type === 'scan' ? 'low'
+                : 'medium',
+      actionType: t.type || 'inspect',
+      source:     'intelligence',
+    }));
+
+    // Risk signals fold into the alerts[] array so existing
+    // alert render paths surface them.
+    const adaptedAlerts = [
+      ...(Array.isArray(base.alerts) ? base.alerts : []),
+      ...intel.riskSignals.map((r, i) => ({
+        id:       `intel_risk_${i}`,
+        severity: r.severity || 'warning',
+        title:    r.text,
+        message:  r.detail,
+      })),
+    ];
+
+    return {
+      ...base,
+      actions:        adaptedActions.slice(0, 3),
+      alerts:         adaptedAlerts,
+      // New slots the render below picks up.
+      explanation:    intel.explanation,
+      followUpTask:   intel.followUpTask,
+      confidence:     intel.confidence || base.confidence,
+    };
+  },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [farm, weather, weatherStale, recentTasks, version],
   );
@@ -153,6 +219,18 @@ export default function DailyPlanCard({
         </p>
       )}
 
+      {/* Invisible-intelligence \u00a78 \u2014 "Why this matters" line.
+          One sentence the engine emits to explain the day's
+          plan in context (rain, humidity, stage, setup). The
+          existing summary still renders above for the legacy
+          per-stage opener; this adds the contextual explanation
+          underneath. */}
+      {plan.explanation ? (
+        <p style={S.explanation} data-testid="daily-plan-explanation">
+          {plan.explanation}
+        </p>
+      ) : null}
+
       {plan.weatherStale && (
         <p style={S.staleNote}>
           {tSafe('daily.weatherStale',
@@ -234,10 +312,35 @@ export default function DailyPlanCard({
         </p>
       )}
 
-      {/* Footer intentionally omitted — the floating Ask Farroway
+      {/* Invisible-intelligence \u00a78 \u2014 follow-up task row. A
+          single line of "tomorrow" guidance the engine emits
+          alongside today's actions. Sits below the action
+          stack so the user reads tomorrow's hint last. */}
+      {plan.followUpTask && plan.followUpTask.text ? (
+        <div
+          style={{
+            marginTop: 12,
+            padding: '8px 12px',
+            borderRadius: 10,
+            background: 'rgba(34,197,94,0.08)',
+            border: '1px solid rgba(34,197,94,0.28)',
+            color: '#86EFAC',
+            fontSize: 13,
+            lineHeight: 1.45,
+          }}
+          data-testid="daily-followup"
+        >
+          <strong>
+            {tSafe('daily.followUp', 'Tomorrow')}:
+          </strong>{' '}
+          {plan.followUpTask.text}
+        </div>
+      ) : null}
+
+      {/* Footer intentionally omitted \u2014 the floating Ask Farroway
           and Scan Crop FABs on Home already cover those entry
           points, so rendering them again inside this card was
-          duplicate UI (spec §16). When this card mounts on a
+          duplicate UI (spec \u00a716). When this card mounts on a
           surface that doesn't carry those FABs (e.g. an embedded
           variant on My Farm), wire them in there explicitly. */}
     </section>
@@ -295,6 +398,16 @@ const S = {
     fontSize: '0.9375rem',
     lineHeight: 1.45,
     color: '#F1F5F9',
+  },
+  // Invisible-intelligence \u00a78 \u2014 "Why this matters" line under
+  // the summary. Smaller, medium-opacity grey so the eye reads
+  // it as supporting context, not a competing headline.
+  explanation: {
+    margin: '-2px 0 0',
+    fontSize: '0.8125rem',
+    lineHeight: 1.5,
+    color: '#9FB3C8',
+    fontStyle: 'italic',
   },
   staleNote: {
     margin: 0,

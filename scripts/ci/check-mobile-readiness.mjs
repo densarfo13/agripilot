@@ -2319,6 +2319,78 @@ const checks = [
           && /dynamicActions\.slice\(0,\s*3\)/.test(panel);
     },
   },
+  {
+    // Invisible-intelligence engine \u2014 the orchestrator behind
+    // Today's Plan. Composes weather + stage + scale + setup +
+    // crop-pack signals into the spec output shape (priority +
+    // secondary + risks + explanation + confidence + follow-up).
+    // Coexists with dailyIntelligenceEngine.generateDailyPlan
+    // (legacy) and firstPlanEngine.generateFirstPlan (onboarding
+    // review).
+    name: 'farrowayIntelligenceEngine ships full spec contract',
+    why:  'Invisible-intelligence spec \u00a71\u2013\u00a77 \u2014 priority/secondary/risk/explanation/follow-up',
+    pass: () => {
+      const f = read('src/core/farrowayIntelligenceEngine.js');
+      return /export function generateIntelligentPlan/.test(f)
+          // 6 named stages including the new flowering stage.
+          && /germination/.test(f)
+          && /early_growth/.test(f)
+          && /vegetative/.test(f)
+          && /flowering/.test(f)
+          && /mature/.test(f)
+          // Weather thresholds.
+          && /rainChance[\s\S]{0,40}>\s*60/.test(f)
+          && /humidity[\s\S]{0,80}>\s*70/.test(f)
+          && /temp[\s\S]{0,80}>\s*30/.test(f)
+          // Wind threshold for spray-warning rule.
+          && /WIND_KMH_THRESHOLD\s*=\s*25/.test(f)
+          // Crop rule packs (spec \u00a76).
+          && /CROP_PACKS/.test(f)
+          && /pepper:/.test(f)
+          && /tomato:/.test(f)
+          && /maize:/.test(f)
+          && /herbs:/.test(f)
+          // Growing-setup packs (spec \u00a74).
+          && /SETUP_PACKS/.test(f)
+          && /container:/.test(f)
+          && /raised_bed:/.test(f)
+          && /ground:/.test(f)
+          && /indoor_balcony:/.test(f)
+          // Farm-scale tiers (spec \u00a75).
+          && /small_farm/.test(f)
+          && /medium_farm/.test(f)
+          && /large_farm/.test(f)
+          // Output shape \u2014 spec mandates these 6 keys.
+          && /todaysPriority/.test(f)
+          && /secondaryTasks/.test(f)
+          && /riskSignals/.test(f)
+          && /explanation/.test(f)
+          && /confidence/.test(f)
+          && /followUpTask/.test(f);
+    },
+  },
+  {
+    // Invisible-intelligence \u00a78 \u2014 Home integration. DailyPlanCard
+    // composes the new engine output on top of the existing
+    // generateDailyPlan: priority + secondary become actions[],
+    // risk signals fold into alerts[], explanation + followUp
+    // render as new slots.
+    name: 'DailyPlanCard composes farrowayIntelligenceEngine output',
+    why:  'Invisible-intelligence spec \u00a78 \u2014 Home shows priority + risks + follow-up',
+    pass: () => {
+      const f = read('src/components/daily/DailyPlanCard.jsx');
+      return /from ['"]\.\.\/\.\.\/core\/farrowayIntelligenceEngine\.js['"]/.test(f)
+          && /generateIntelligentPlan\(/.test(f)
+          && /todaysPriority/.test(f)
+          && /secondaryTasks/.test(f)
+          && /riskSignals/.test(f)
+          && /explanation:\s*intel\.explanation/.test(f)
+          && /followUpTask:\s*intel\.followUpTask/.test(f)
+          // New render slots wired up.
+          && /data-testid=["']daily-plan-explanation["']/.test(f)
+          && /data-testid=["']daily-followup["']/.test(f);
+    },
+  },
 ];
 
 const failed = [];
