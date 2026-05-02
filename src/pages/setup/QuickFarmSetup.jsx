@@ -109,6 +109,10 @@ export default function QuickFarmSetup() {
   const [region, setRegion]     = useState('');
   const [size, setSize]         = useState('');
   const [unit, setUnit]         = useState(null);
+  // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
+  // the user has chosen the farm experience. Non-blocking
+  // guidance only.
+  const [skillLevel, setSkillLevel] = useState(null); // null | 'new' | 'existing'
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle');
@@ -178,6 +182,8 @@ export default function QuickFarmSetup() {
         stateLabel:   region.trim() || null,
         farmSize:     numericSize,
         sizeUnit:     unit,
+        // Non-blocking guidance hint per spec \u00a72.
+        skillLevel,
         farmType:     'small_farm',
       });
       try {
@@ -211,8 +217,16 @@ export default function QuickFarmSetup() {
                  && unit && !submitting;
 
   return (
-    <main style={S.page} data-testid="quick-farm-setup">
+    <main style={S.page} data-testid="quick-farm-setup" data-screen="setup-farm">
       <div>
+        {/* Step indicator (spec \u00a78) \u2014 "Step 2 of 3" so the user
+            sees the same 3-step progression FastFlow advertises. */}
+        <div style={{ ...S.subtitle, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.65 }}
+             data-testid="setup-farm-step">
+          {tStrict('onboarding.step', 'Step {done} of {total}')
+            .replace('{done}', '2')
+            .replace('{total}', '3')}
+        </div>
         <h1 style={S.title}>
           {tStrict('setup.farm.title', 'Set up your farm')}
         </h1>
@@ -285,6 +299,46 @@ export default function QuickFarmSetup() {
         {errors.country ? <div style={S.errorRow}>{errors.country}</div> : null}
       </section>
 
+      {/* Optional skill level (spec \u00a72) \u2014 farm wording. The
+          choice is non-blocking guidance only. */}
+      <section style={S.card} data-testid="setup-farm-skill">
+        <span style={S.label}>
+          {tStrict('onboarding.newToFarming', 'Are you new to farming?')}
+        </span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+          {[
+            { value: 'new',      labelKey: 'onboarding.yesNew',      fallback: 'Yes, I\u2019m new' },
+            { value: 'existing', labelKey: 'onboarding.alreadyFarm', fallback: 'I already farm' },
+          ].map((opt) => {
+            const active = skillLevel === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSkillLevel(active ? null : opt.value)}
+                style={{
+                  appearance: 'none',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  background: active ? 'rgba(34,197,94,0.18)' : 'transparent',
+                  border: `1px solid ${active ? 'rgba(34,197,94,0.32)' : C.border}`,
+                  color: active ? '#86EFAC' : C.ink,
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  minHeight: 40,
+                }}
+                data-testid={`setup-farm-skill-${opt.value}`}
+                aria-pressed={active}
+              >
+                {tStrict(opt.labelKey, opt.fallback)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Land size + unit */}
       <section style={S.card}>
         <span style={S.label}>
@@ -341,7 +395,7 @@ export default function QuickFarmSetup() {
       >
         {submitting
           ? tStrict('setup.farm.saving', 'Saving\u2026')
-          : tStrict('setup.farm.save',   'Save my farm')}
+          : tStrict('onboarding.saveFarm', 'Save Farm')}
       </button>
 
       {errors.form ? (

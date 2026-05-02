@@ -1086,6 +1086,147 @@ const checks = [
           && /followUpTask,/.test(f);   // passed into addScanTasks context
     },
   },
+  {
+    // High-trust onboarding spec \u00a71 \u2014 the FIRST onboarding
+    // screen asks "What are you growing?" with two tiles
+    // (Backyard/Garden + Farm), NOT the legacy "Are you new
+    // to farming?" skill-level question. Pick experience first
+    // so downstream surfaces have the right context.
+    name: 'FastFlow first screen asks "What are you growing?" with Garden/Farm tiles',
+    why:  'High-trust onboarding spec \u00a71 \u2014 experience picked before skill level',
+    pass: () => {
+      const f = read('src/pages/onboarding/FastFlow.jsx');
+      return /onboarding\.whatAreYouGrowing/.test(f)
+          && /data-testid=["']onb-entry-garden["']/.test(f)
+          && /data-testid=["']onb-entry-farm["']/.test(f)
+          && /onboarding\.backyardGarden/.test(f)
+          && /onboarding\.farm/.test(f)
+          && !/fastFlow\.entry\.question/.test(f)        // legacy key removed
+          && /\/setup\/garden/.test(f)                   // garden hand-off
+          && /\/setup\/farm/.test(f);                    // farm hand-off
+    },
+  },
+  {
+    // High-trust onboarding spec \u00a78 \u2014 step indicator MUST
+    // show "Step X of 3" so users see a 3-step (not 6) flow.
+    name: 'FastFlow step indicator caps at 3 steps',
+    why:  'High-trust onboarding spec \u00a78 \u2014 3-4 steps max, no scary 1/6 number',
+    pass: () => {
+      const f = read('src/pages/onboarding/FastFlow.jsx');
+      return /onboarding\.step/.test(f)
+          && /\.replace\(['"]\{total\}['"],\s*['"]3['"]\)/.test(f)
+          && !/\{step\}\s*\/\s*4/.test(f);   // legacy "X / 4" removed
+    },
+  },
+  {
+    // High-trust onboarding spec \u00a72 \u2014 "Are you new to growing?"
+    // moves to the setup forms as a non-blocking guidance pill.
+    // Garden uses growing-wording, Farm uses farming-wording.
+    name: 'Quick setup forms ship optional skill-level pill (non-blocking)',
+    why:  'High-trust onboarding spec \u00a72 \u2014 experience level moves AFTER experience pick',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Both files build the testid via a template literal:
+      //   `setup-garden-skill-${opt.value}` / `setup-farm-skill-${opt.value}`
+      // Match either the literal resolved form OR the template
+      // form so the guard isn't sensitive to the rendering style.
+      const SKILL_TESTID = /setup-(?:garden|farm)-skill-(?:new|existing|\$\{opt\.value\})/;
+      return /onboarding\.newToGrowing/.test(garden)
+          && /onboarding\.alreadyGrowPlants/.test(garden)
+          && SKILL_TESTID.test(garden)
+          && /onboarding\.newToFarming/.test(farm)
+          && /onboarding\.alreadyFarm/.test(farm)
+          && SKILL_TESTID.test(farm)
+          // Ensure skillLevel is captured into the persisted record
+          // (so downstream surfaces can soften copy without refetching).
+          && /skillLevel/.test(garden)
+          && /skillLevel/.test(farm);
+    },
+  },
+  {
+    // Spec \u00a79 \u2014 button copy is action-shaped: "Save Garden" /
+    // "Save Farm". The legacy "Save my garden" / "Save my farm"
+    // is no longer the rendered label.
+    name: 'Quick setup forms render Save Garden / Save Farm copy',
+    why:  'High-trust onboarding spec \u00a79 \u2014 clear action-shaped Save button copy',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /onboarding\.saveGarden/.test(garden)
+          && /onboarding\.saveFarm/.test(farm);
+    },
+  },
+  {
+    // Spec \u00a77 \u2014 onboarding screens MUST hide bottom nav
+    // (which carries scan + funding/sell tabs) so the user
+    // can't be distracted away from setup. The nav already
+    // self-hides on /onboarding; this guard ensures the new
+    // /setup/garden + /setup/farm + /start/farm paths are
+    // also covered.
+    name: 'BottomTabNav suppresses onboarding paths (setup + start)',
+    why:  'High-trust onboarding spec \u00a77 \u2014 no nav distractions during setup',
+    pass: () => {
+      const f = read('src/components/farmer/BottomTabNav.jsx');
+      return /HIDE_NAV_PATHS/.test(f)
+          && /['"]\/setup\/garden['"]/.test(f)
+          && /['"]\/setup\/farm['"]/.test(f)
+          && /['"]\/start\/farm['"]/.test(f)
+          && /['"]\/onboarding['"]/.test(f);
+    },
+  },
+  {
+    // Spec \u00a75 \u2014 strict screen-level translator with the
+    // exact getScreenText(screenName, language) shape the
+    // onboarding spec calls out. The hook variant
+    // (useScreenTranslator) is re-exported so existing callers
+    // keep working unchanged.
+    name: 'strictScreenTranslator ships getScreenText + screen-fallback policy',
+    why:  'High-trust onboarding spec \u00a74\u2013\u00a75 \u2014 one screen = one language',
+    pass: () => {
+      const f = read('src/i18n/strictScreenTranslator.js');
+      return /export function getScreenText/.test(f)
+          && /export\s*\{\s*useScreenTranslator\s*\}/.test(f)
+          && /validation\.ok\s*\?\s*safeLang\s*:\s*['"]en['"]/.test(f);
+    },
+  },
+  {
+    // Spec \u00a76 \u2014 every required onboarding key must be
+    // present in the canonical translations store. We sample
+    // the keys here; guard:i18n-parity covers per-language
+    // completeness across the whole file.
+    name: 'translations.js ships every required onboarding key',
+    why:  'High-trust onboarding spec \u00a76 \u2014 complete keys for the new flow',
+    pass: () => {
+      const f = read('src/i18n/translations.js');
+      const KEYS = [
+        'onboarding.whatAreYouGrowing',
+        'onboarding.backyardGarden',
+        'onboarding.farm',
+        'onboarding.newToGrowing',
+        'onboarding.newToFarming',
+        'onboarding.yesNew',
+        'onboarding.alreadyGrowPlants',
+        'onboarding.alreadyFarm',
+        'onboarding.selectPlant',
+        'onboarding.selectCrop',
+        'onboarding.location',
+        'onboarding.landSize',
+        'onboarding.saveGarden',
+        'onboarding.saveFarm',
+        'onboarding.needHelp',
+        'onboarding.contactTeam',
+        'onboarding.step',
+        'onboarding.continue',
+        'onboarding.back',
+      ];
+      for (const k of KEYS) {
+        const re = new RegExp(`['"]${k.replace(/\./g, '\\.')}['"]\\s*:`);
+        if (!re.test(f)) return false;
+      }
+      return true;
+    },
+  },
 ];
 
 const failed = [];

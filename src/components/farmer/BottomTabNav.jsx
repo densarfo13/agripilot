@@ -61,13 +61,24 @@ const BACKYARD_TABS = [
 ];
 
 // Setup / onboarding paths where the bottom nav must self-hide
-// (Adaptive setup spec §5 — users should not leave setup midway
-// and create broken state). Match prefix so child routes inherit.
+// (Adaptive setup spec \u00a75 + high-trust onboarding spec \u00a77 \u2014
+// users should not leave setup midway and create broken state,
+// AND must not see funding/sell/scan affordances before setup
+// is complete). Match prefix so child routes inherit.
 const HIDE_NAV_PATHS = [
-  '/onboarding',           // covers /onboarding, /onboarding/v3, /backyard, /us-experience, etc.
+  '/onboarding',           // covers /onboarding, /onboarding/v3, /backyard, /us-experience, /onboarding/start (FastFlow), etc.
   '/farm/new',
   '/edit-farm',
   '/setup-farm',
+  // High-trust onboarding spec \u00a77 \u2014 Quick setup forms hand
+  // off to /home themselves; bottom nav must self-hide here so
+  // a half-filled setup form can't be abandoned via a tab tap
+  // and the funding/sell/scan tabs aren't visible distractions
+  // during onboarding.
+  '/setup/garden',
+  '/setup/farm',
+  // Legacy minimal-farm setup entry kept for deep links.
+  '/start/farm',
   '/profile/setup',
   '/welcome-farmer',
 ];

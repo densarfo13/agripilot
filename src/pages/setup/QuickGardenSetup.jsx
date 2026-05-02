@@ -118,6 +118,12 @@ export default function QuickGardenSetup() {
   const [region, setRegion]     = useState('');
   const [city, setCity]         = useState('');
   const [size, setSize]         = useState(null); // optional
+  // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
+  // the user has chosen the garden experience. Non-blocking
+  // guidance only; saved to the garden record so downstream
+  // surfaces can soften copy ("first time?" hints) but never
+  // gate the flow.
+  const [skillLevel, setSkillLevel] = useState(null); // null | 'new' | 'existing'
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle'); // 'idle'|'requesting'|'denied'|'ok'
@@ -160,6 +166,10 @@ export default function QuickGardenSetup() {
         stateLabel:     region.trim() || null,
         city:           city.trim() || null,
         gardenSizeCategory: size,
+        // Non-blocking guidance hint per spec \u00a72 \u2014 stored on
+        // the garden record so future surfaces can soften copy
+        // for first-time growers without changing the flow.
+        skillLevel,
         farmType:       'backyard',
       });
       try {
@@ -186,8 +196,17 @@ export default function QuickGardenSetup() {
   const canSubmit = plant.trim() && country.trim() && !submitting;
 
   return (
-    <main style={S.page} data-testid="quick-garden-setup">
+    <main style={S.page} data-testid="quick-garden-setup" data-screen="setup-garden">
       <div>
+        {/* Step indicator (spec \u00a78) \u2014 "Step 2 of 3" so the user
+            sees the same 3-step progression FastFlow advertises.
+            Garden flow: 1 pick experience \u2192 2 set up \u2192 3 save. */}
+        <div style={{ ...S.subtitle, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.65 }}
+             data-testid="setup-garden-step">
+          {tStrict('onboarding.step', 'Step {done} of {total}')
+            .replace('{done}', '2')
+            .replace('{total}', '3')}
+        </div>
         <h1 style={S.title}>
           {tStrict('setup.garden.title', 'Set up your garden')}
         </h1>
@@ -264,6 +283,35 @@ export default function QuickGardenSetup() {
         ) : null}
       </section>
 
+      {/* Optional skill level (spec \u00a72) \u2014 garden wording. The
+          choice is non-blocking guidance only \u2014 we never gate
+          the Save button on it. */}
+      <section style={S.card} data-testid="setup-garden-skill">
+        <span style={S.label}>
+          {tStrict('onboarding.newToGrowing', 'Are you new to growing?')}
+        </span>
+        <div style={S.pillRow}>
+          {[
+            { value: 'new',      labelKey: 'onboarding.yesNew',           fallback: 'Yes, I\u2019m new' },
+            { value: 'existing', labelKey: 'onboarding.alreadyGrowPlants', fallback: 'I already grow plants' },
+          ].map((opt) => {
+            const active = skillLevel === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSkillLevel(active ? null : opt.value)}
+                style={active ? { ...S.pill, ...S.pillActive } : S.pill}
+                data-testid={`setup-garden-skill-${opt.value}`}
+                aria-pressed={active}
+              >
+                {tStrict(opt.labelKey, opt.fallback)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Optional size */}
       <section style={S.card}>
         <span style={S.label}>
@@ -297,7 +345,7 @@ export default function QuickGardenSetup() {
       >
         {submitting
           ? tStrict('setup.garden.saving', 'Saving\u2026')
-          : tStrict('setup.garden.save',   'Save my garden')}
+          : tStrict('onboarding.saveGarden', 'Save Garden')}
       </button>
 
       {errors.form ? (

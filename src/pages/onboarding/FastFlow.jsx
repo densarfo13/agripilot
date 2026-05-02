@@ -1,36 +1,38 @@
 /**
- * FastFlow — 4-screen onboarding sequence per the action-first spec.
+ * FastFlow — 3-step onboarding per the high-trust onboarding
+ * spec (post-fix).
  *
- *   1. ENTRY            "Are you new to farming?"  (Yes / Existing)
- *   2. QUICK SETUP      Location + Farm size + Crop  (single page)
- *   3. RECOMMENDATION   "Recommended crop: {crop}"
- *   4. FIRST TASK       Navigate to /dashboard
+ *   1. CHOOSE         "What are you growing?"  (Garden / Farm)
+ *   2. QUICK SETUP    Hand off to /setup/garden OR /setup/farm
+ *                     (single-screen forms that already exist)
+ *   3. SAVE \u2192 Home   QuickGardenSetup / QuickFarmSetup persist
+ *                     and route to /home themselves.
+ *
+ * Why the rewrite
+ * ───────────────
+ * The legacy 4-screen FastFlow asked "Are you new to farming?"
+ * FIRST \u2014 a skill-level question before the user had even told
+ * us whether they grow at home or on a farm. Two consequences:
+ *   \u2022 Backyard users got farm-shaped guidance they couldn't act on.
+ *   \u2022 The 6-question count drove drop-off.
+ *
+ * This rewrite:
+ *   \u2022 Picks experience FIRST so every downstream surface (tasks,
+ *     scan, treatment) has the right context from minute one.
+ *   \u2022 Routes out to the existing single-screen QuickGardenSetup /
+ *     QuickFarmSetup so the flow is 3 steps, not 4. The "Are you
+ *     new to growing?" question moves to the setup screens as a
+ *     non-blocking guidance toggle.
  *
  * Strict rules
- * ────────────
- *   • No backend / auth / API changes — the flow writes to
- *     localStorage only (`farroway:store:onboarding`). Existing
- *     onboarding routes (/onboarding, /onboarding/quick, etc.)
- *     stay intact; this is an additive route the team can wire
- *     into ProfileGuard / Login when they want the new flow live.
- *   • No multi-route navigation between steps — internal state
- *     drives the screen. One mount, one component, no router
- *     ping-pong, < 60 s end-to-end.
- *   • No scrolling required on any single screen at typical phone
- *     viewports (380×640 minimum). Every step's content fits a
- *     single viewport with the CTA above the fold.
- *   • No empty states; no dead ends. Each step has one obvious
- *     next button; back-arrow returns to the previous step.
- *
- * State stored
- * ────────────
- *   isNewFarmer : boolean   — entry choice
- *   location    : string    — auto-detected or selected
- *   farmSize    : 'small' | 'medium' | 'large'
- *   crop        : string    — selected or recommended
- *
- * Persisted under `farroway:store:onboarding` so a refresh mid-
- * flow restores the same step. Cleared on completion.
+ * \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+ *   \u2022 Every visible string via tStrict (no English bleed when
+ *     active language is fr/sw/ha/hi/tw).
+ *   \u2022 Inline styles only.
+ *   \u2022 Never throws \u2014 navigate failures are swallowed.
+ *   \u2022 Bottom nav, mic, scan, funding/sell are all suppressed
+ *     during onboarding by extending BottomTabNav.HIDE_NAV_PATHS
+ *     and by FastFlow not mounting any of those surfaces itself.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -98,10 +100,29 @@ export default function FastFlow() {
     navigate('/dashboard', { replace: true });
   }
 
+  // High-trust onboarding (spec \u00a71) \u2014 entry asks "What are you
+  // growing?" and routes out to the existing single-screen Quick
+  // setup form. activeExperience is stamped immediately so every
+  // downstream surface (tasks, scan, treatment) has the right
+  // context from minute one.
+  function pickExperience(experience) {
+    const expSafe = experience === 'farm' ? 'farm' : 'garden';
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const stored = expSafe === 'garden' ? 'backyard' : 'farm';
+        localStorage.setItem('farroway_experience', JSON.stringify(stored));
+      }
+    } catch { /* swallow \u2014 setup form has its own safety net */ }
+    try { saveData(STORE_KEY, { ...state, step: 2, experience: expSafe }); }
+    catch { /* swallow */ }
+    const target = expSafe === 'garden' ? '/setup/garden' : '/setup/farm';
+    try { navigate(target); } catch { /* swallow */ }
+  }
+
   return (
-    <div style={S.page} data-testid="fast-flow" data-step={state.step}>
+    <div style={S.page} data-testid="fast-flow" data-step="1">
       <div style={S.container}>
-        <Header lang={lang} step={state.step} onBack={state.step > 1 ? goBack : null} />
+        <Header lang={lang} step={1} onBack={null} />
         {/* Language suggestion banner (locale-detection feature). Renders
             only when detection finds a country that maps to a non-active
             language; the farmer can accept, choose another, or keep
@@ -110,33 +131,7 @@ export default function FastFlow() {
           farm={state.location ? { country: state.location } : null}
           autoDetect
         />
-        {state.step === 1 && (
-          <ScreenEntry
-            onPick={(isNew) => update({ isNewFarmer: isNew, step: 2 })}
-          />
-        )}
-        {state.step === 2 && (
-          <ScreenSetup
-            state={state}
-            onChange={update}
-            onContinue={() => update({ step: state.crop ? 3 : 3 })}
-          />
-        )}
-        {state.step === 3 && (
-          <ScreenRecommendation
-            state={state}
-            lang={lang}
-            onChange={update}
-            onContinue={() => update({ step: 4 })}
-          />
-        )}
-        {state.step === 4 && (
-          <ScreenFirstTask
-            state={state}
-            lang={lang}
-            onAct={complete}
-          />
-        )}
+        <ScreenEntry onPick={pickExperience} />
       </div>
     </div>
   );
@@ -161,14 +156,16 @@ function Header({ step, onBack }) {
           type="button"
           onClick={onBack}
           style={S.backBtn}
-          aria-label={tStrict('common.back', 'Back')}
+          aria-label={tStrict('onboarding.back', 'Back')}
           data-testid="fast-flow-back"
         >
-          ←
+          \u2190
         </button>
       ) : (
         <span style={S.stepPill} data-testid="fast-flow-step">
-          {step} / 4
+          {tStrict('onboarding.step', 'Step {done} of {total}')
+            .replace('{done}', String(step))
+            .replace('{total}', '3')}
         </span>
       )}
     </header>
@@ -176,32 +173,40 @@ function Header({ step, onBack }) {
 }
 
 function ScreenEntry({ onPick }) {
+  // High-trust onboarding spec \u00a71 \u2014 the FIRST question is now
+  // "What are you growing?", not skill level. Pick experience
+  // before anything else so downstream surfaces have the right
+  // context from minute one. The two tiles are equal weight
+  // visually \u2014 garden and farm are both first-class paths, no
+  // "primary" CTA like the legacy Scan-vs-Farm screen had.
   return (
-    <section style={S.screen} data-testid="fast-flow-entry">
+    <section style={S.screen} data-testid="fast-flow-entry" data-screen="onb-entry">
       <h1 style={S.h1}>
-        {tStrict('fastFlow.entry.question', 'Are you new to farming?')}
+        {tStrict('onboarding.whatAreYouGrowing', 'What are you growing?')}
       </h1>
       <div style={S.optionStack}>
         <button
           type="button"
           style={{ ...S.choice, ...S.choicePrimary }}
-          onClick={() => onPick(true)}
-          data-testid="fast-flow-new"
+          onClick={() => onPick('garden')}
+          data-testid="onb-entry-garden"
+          aria-label={tStrict('onboarding.backyardGarden', 'Backyard / Garden')}
         >
-          <span style={S.choiceIcon} aria-hidden="true">🌱</span>
+          <span style={S.choiceIcon} aria-hidden="true">{'\uD83C\uDF31'}</span>
           <span style={S.choiceText}>
-            {tStrict('fastFlow.entry.new', "Yes, I\u2019m new")}
+            {tStrict('onboarding.backyardGarden', 'Backyard / Garden')}
           </span>
         </button>
         <button
           type="button"
           style={{ ...S.choice, ...S.choiceSecondary }}
-          onClick={() => onPick(false)}
-          data-testid="fast-flow-existing"
+          onClick={() => onPick('farm')}
+          data-testid="onb-entry-farm"
+          aria-label={tStrict('onboarding.farm', 'Farm')}
         >
-          <span style={S.choiceIcon} aria-hidden="true">🌾</span>
+          <span style={S.choiceIcon} aria-hidden="true">{'\uD83D\uDE9C'}</span>
           <span style={S.choiceText}>
-            {tStrict('fastFlow.entry.existing', 'I already farm')}
+            {tStrict('onboarding.farm', 'Farm')}
           </span>
         </button>
       </div>
