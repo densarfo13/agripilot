@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Farroway brand mark — v9 (April 2026 brand asset).
+
+  Vertical pointed-oval leaf with green gradient (lime →
+  medium → dark), brown soil wedge in the lower-right, three
+  flowing white curves across the leaf (field furrows / growth
+  bands), and a white arrowhead at the upper-right tip of the
+  top curve.
+
+  If you have the canonical brand-asset file, drop it in at
+  this path to override this redraw.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 100 100"
+     role="img"
+     aria-label="Farroway">
+  <title>Farroway</title>
+
+  <defs>
+    <clipPath id="leafClip">
+      <path d="M 50 6
+               Q 22 14, 14 48
+               Q 12 82, 50 94
+               Q 88 82, 86 48
+               Q 78 14, 50 6 Z" />
+    </clipPath>
+    <linearGradient id="leafGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#A3E635" />
+      <stop offset="55%"  stop-color="#22C55E" />
+      <stop offset="100%" stop-color="#15803D" />
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#leafClip)">
+    <!-- Green gradient base -->
+    <rect x="0" y="0" width="100" height="100" fill="url(#leafGrad)" />
+
+    <!-- Brown soil wedge in the lower-right -->
+    <path d="M 110 50 L 110 110 L 30 110 Q 64 70, 110 50 Z"
+          fill="#7C3F1D" />
+
+    <!-- Three white flowing curves -->
+    <path d="M 22 56 Q 48 30, 78 24"
+          fill="none" stroke="#FFFFFF"
+          stroke-width="6" stroke-linecap="round" />
+    <path d="M 16 66 Q 48 56, 82 52"
+          fill="none" stroke="#FFFFFF"
+          stroke-width="5" stroke-linecap="round" />
+    <path d="M 24 80 Q 50 72, 80 64"
+          fill="none" stroke="#FFFFFF"
+          stroke-width="4" stroke-linecap="round" />
+  </g>
+
+  <!-- White arrowhead at the upper-right -->
+  <polygon points="82,18 64,22 72,32"
+           fill="#FFFFFF" stroke="#FFFFFF"
+           stroke-width="0.6" stroke-linejoin="round" />
+</svg>
