@@ -370,6 +370,13 @@ export function clearFarrowayActivityData() {
       // (catalog data) live in farroway_programs and are NOT
       // wiped \u2014 they're org metadata, not user activity.
       'farroway_farmer_source',
+      // NGO Onboarding spec \u00a78 follow-up \u2014 the day2/day7
+      // return-fired stamps. Wiping these on privacy clear
+      // means a returning user's events count fresh from the
+      // next firstVisit. Same activity-log treatment as the
+      // streak / completion / scan stamps.
+      'farroway_day2_return_fired',
+      'farroway_day7_return_fired',
     ];
     for (const k of keys) {
       try {

@@ -120,12 +120,33 @@ export default function PlanReadyScreen() {
     } catch { /* swallow */ }
   }, []);
 
-  // Build the farm-shape input DailyPlanCard expects from the
-  // program defaults so the engine produces a real plan even
-  // BEFORE a full farm record exists. The card itself
-  // tolerates missing fields and falls through to the spec's
-  // §8 fallback path when a field is null.
+  // Build the farm-shape input DailyPlanCard expects.
+  // NGO Onboarding spec follow-up (risk #3): prefer the
+  // persisted active-farm record when one exists \u2014 that's
+  // the row Confirm wrote (or that an admin import will
+  // eventually write). Only fall through to the synthetic
+  // shape when no active row is present (the bridge case
+  // before the user has confirmed anything). Both paths are
+  // null-tolerant so DailyPlanCard always gets a usable
+  // farm prop.
   const farm = React.useMemo(() => {
+    // Try the canonical active-farm row first.
+    let stored = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('farroway_active_farm');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object' && parsed.farmType) {
+            stored = parsed;
+          }
+        }
+      }
+    } catch { /* ignore corrupt entry */ }
+    if (stored) return stored;
+
+    // No active row \u2014 synthesise from program defaults so the
+    // engine still produces a real plan.
     const p = program || {};
     return {
       id:              source && source.farmerId ? `program_${source.farmerId}` : 'program_farmer',

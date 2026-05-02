@@ -2616,6 +2616,48 @@ const checks = [
     // context generator, source-aware onboarding gate,
     // analytics enrichment, program roles, three pages, and
     // routes.
+    // NGO Onboarding follow-up — closes the 3 remaining
+    // risks: bulk-import admin UI, day2/day7 return-day
+    // scheduler, PlanReadyScreen reads real active farm
+    // when present.
+    name: 'NGO program follow-up: import UI + return-day events + PlanReady real-farm',
+    why:  'NGO Onboarding follow-up — risks closed for pilot launch',
+    pass: () => {
+      const importPage  = read('src/pages/admin/AdminProgramsImport.jsx');
+      const dailyLoop   = read('src/utils/dailyLoop.js');
+      const planReady   = read('src/pages/programs/PlanReadyScreen.jsx');
+      const app         = read('src/App.jsx');
+      const analytics   = read('src/core/analytics.js');
+      // Risk 1: admin import UI present + key wiring.
+      const IMPORT_OK =
+            /export default function AdminProgramsImport/.test(importPage)
+         && /from\s+['"]\.\.\/\.\.\/core\/programs\/programStore\.js['"]/.test(importPage)
+         && /from\s+['"]\.\.\/\.\.\/core\/programs\/farmerImport\.js['"]/.test(importPage)
+         && /trackEvent\(\s*['"]farmer_invited['"]/.test(importPage)
+         && /data-testid="admin-programs-import"/.test(importPage)
+         && /path="\/admin\/programs\/import"/.test(app);
+      // Risk 2: return-day scheduler in initDailyLoop +
+      // once-fired stamps + analytics integration.
+      const RETURN_OK =
+            /from\s+['"]\.\.\/lib\/retention\/streakStore\.js['"]/.test(dailyLoop)
+         && /from\s+['"]\.\.\/core\/analytics\.js['"]/.test(dailyLoop)
+         && /DAY2_RETURN_STAMP_KEY/.test(dailyLoop)
+         && /DAY7_RETURN_STAMP_KEY/.test(dailyLoop)
+         && /trackEvent\(\s*['"]day2_return['"]/.test(dailyLoop)
+         && /trackEvent\(\s*['"]day7_return['"]/.test(dailyLoop)
+         && /_fireReturnDayEvents\(\)/.test(dailyLoop)
+         // Privacy clear wipes the return-fired stamps too.
+         && /'farroway_day2_return_fired'/.test(analytics)
+         && /'farroway_day7_return_fired'/.test(analytics);
+      // Risk 3: PlanReadyScreen prefers a stored active farm
+      // before falling through to the synthetic shape.
+      const PLAN_OK =
+            /'farroway_active_farm'/.test(planReady)
+         && /if\s+\(stored\)\s+return\s+stored/.test(planReady);
+      return IMPORT_OK && RETURN_OK && PLAN_OK;
+    },
+  },
+  {
     name: 'NGO program onboarding ships full foundation',
     why:  'NGO Onboarding \u2014 imported farmers skip individual onboarding',
     pass: () => {

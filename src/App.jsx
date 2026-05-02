@@ -101,6 +101,12 @@ const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx')
 const PlanReadyScreen      = lazy(() => import('./pages/programs/PlanReadyScreen.jsx'));
 const ConfirmFarmDetails   = lazy(() => import('./pages/programs/ConfirmFarmDetails.jsx'));
 const NgoProgramDashboard  = lazy(() => import('./pages/programs/NgoProgramDashboard.jsx'));
+// NGO Onboarding spec \u00a73 follow-up \u2014 admin bulk-import surface.
+// Mounted under /admin/programs/import; routes through the
+// V2 protected layout because it's an authenticated admin
+// view. PROGRAM_DASHBOARD_ROLES on the role guard inside the
+// protected block.
+const AdminProgramsImport  = lazy(() => import('./pages/admin/AdminProgramsImport.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
@@ -847,6 +853,11 @@ export default function App() {
             <Route path="/program/welcome"    element={<PlanReadyScreen />} />
             <Route path="/program/confirm"    element={<ConfirmFarmDetails />} />
             <Route path="/program/dashboard"  element={<NgoProgramDashboard />} />
+            {/* NGO Onboarding spec \u00a73 follow-up \u2014 admin bulk-import.
+                Page-level role check happens inside the page; here we
+                just register the route so authenticated admins
+                can reach it. */}
+            <Route path="/admin/programs/import" element={<AdminProgramsImport />} />
             <Route path="/opportunities"      element={<BackyardGuard><Opportunities /></BackyardGuard>} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message
