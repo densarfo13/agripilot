@@ -149,7 +149,7 @@ const GARDEN_BY_ISSUE = Object.freeze({
   [ISSUES.POSSIBLE_PEST_DAMAGE]: [
     'Check under leaves and along stems for insects.',
     'Remove any obviously damaged leaves.',
-    'Use a mild soap spray or neem oil only if you\u2019ve confirmed pests.',
+    'If pests are confirmed, only use a locally approved home-garden pest-control option labelled for plants of this type, and follow the label.',
     'Avoid commercial-strength sprays on home plants.',
   ],
   [ISSUES.POSSIBLE_NUTRIENT_DEFICIENCY]: [

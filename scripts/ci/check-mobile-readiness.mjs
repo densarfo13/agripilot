@@ -960,6 +960,41 @@ const checks = [
           && /treatment_add_to_plan/.test(card);
     },
   },
+  {
+    // Treatment engine spec \u00a74 + safe-launch policy: chemical guidance must
+    // be CLASS-ONLY ("a locally approved fungicide", "a pest-control option
+    // labelled for this crop"). Naming a specific product or active ingredient
+    // ("neem oil", "soap spray", "mancozeb", etc.) creates legal + safety
+    // exposure (we'd be implicitly recommending it) and bypasses the user's
+    // local extension service. This guard scans the scan + treatment engine
+    // source files for banned product / active-ingredient tokens and fails
+    // CI if any reach the engine output strings. Add new tokens here as the
+    // safety review surfaces them.
+    name: 'scan + treatment engines never name specific products / actives',
+    why:  'Treatment engine spec \u00a74 \u2014 chemical guidance must be class-only',
+    pass: () => {
+      const BANNED = [
+        'neem oil', 'soap spray', 'copper sulphate', 'copper sulfate',
+        'mancozeb', 'imidacloprid', 'cypermethrin', 'carbaryl',
+        'chlorothalonil', 'tebuconazole', 'propiconazole', 'chlorpyrifos',
+        'deltamethrin', 'permethrin', 'malathion', 'glyphosate',
+        'roundup', 'sevin',
+      ];
+      const FILES = [
+        'src/core/treatmentEngine.js',
+        'src/core/hybridScanEngine.js',
+        'src/core/dailyIntelligenceEngine.js',
+        'src/core/landIntelligenceEngine.js',
+      ];
+      for (const rel of FILES) {
+        const body = read(rel).toLowerCase();
+        for (const token of BANNED) {
+          if (body.includes(token)) return false;
+        }
+      }
+      return true;
+    },
+  },
 ];
 
 const failed = [];

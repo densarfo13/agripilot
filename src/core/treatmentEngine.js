@@ -182,7 +182,7 @@ function _safeChemicalGuidance(category, isFarm) {
   if (category === CATEGORY.PEST) {
     return isFarm
       ? 'If pests are visible or damage spreads, consider locally approved pest-control options labelled for this crop. Follow label directions and local guidance.'
-      : 'If pests are visible, consider home-safe options first (mild soap spray, neem oil) and only use products labelled for plants of this type. Follow the label.';
+      : 'If pests are visible, consider a locally approved home-garden pest-control option labelled for plants of this type. Follow the label and check with your local nursery if unsure.';
   }
   if (category === CATEGORY.NUTRIENT) {
     return isFarm
