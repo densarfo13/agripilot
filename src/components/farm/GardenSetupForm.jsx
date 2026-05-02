@@ -62,6 +62,18 @@ const WHERE_OPTIONS = [
   { id: 'greenhouse', labelKey: 'backyard.where.greenhouse', fallback: 'Greenhouse' },
 ];
 
+// Canonical growing-setup buckets (final-gap stability \u00a76).
+// First-class field shown alongside the legacy growingLocation
+// row so this surface can serve as the edit-garden form too.
+// Pre-populated from `initialProfile.growingSetup` when the
+// caller passes an existing garden's record in.
+const GROWING_SETUP_OPTIONS = [
+  { id: 'container', icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container', fallback: 'Pot / Container'  },
+  { id: 'bed',       icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.bed',       fallback: 'Garden bed'       },
+  { id: 'ground',    icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',    fallback: 'Backyard soil'    },
+  { id: 'unknown',   icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',   fallback: 'I\u2019m not sure' },
+];
+
 const STYLES = {
   page: {
     minHeight: '100vh',
@@ -214,6 +226,14 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
   const [region, setRegion] = useState(initialProfile?.region || '');
   const [gardenSizeCategory, setGardenSizeCategory] = useState('');
   const [growingLocation, setGrowingLocation] = useState('');
+  // Canonical 4-bucket growing-setup. Pre-populated from the
+  // record when this form is reused as the edit-garden surface.
+  // When the user explicitly picks here, it WINS over the
+  // growingLocation \u2192 bucket mapping at save time, so editing
+  // the field actually flows through.
+  const [growingSetup, setGrowingSetup] = useState(
+    String(initialProfile?.growingSetup || '').toLowerCase() || ''
+  );
 
   // ── Geolocation state ───────────────────────────────────
   const [locationStatus, setLocationStatus] = useState('idle'); // idle | requesting | denied | granted
@@ -267,14 +287,15 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
     }
     setSubmitting(true);
     try {
-      // Backyard growing-setup spec \u00a72 \u2014 normalise the
-      // existing growingLocation pick (soil/raised_bed/pots/
-      // indoor/greenhouse) to the canonical 4-bucket value
-      // (container/bed/ground/unknown) so downstream surfaces
-      // (dailyIntelligenceEngine, hybridScanEngine) read the
-      // same field whether the garden was created via this
-      // form or via QuickGardenSetup. The two fields coexist
-      // for backwards compatibility.
+      // Backyard growing-setup spec \u00a72 + final-gap stability
+      // \u00a76 \u2014 the canonical growingSetup field is the source of
+      // truth. When the user explicitly picked it via the new
+      // bucket row, that wins. Otherwise we fall back to the
+      // historical growingLocation \u2192 bucket mapping so legacy
+      // calls (and users who only filled the richer
+      // soil/pots/indoor/greenhouse list) still produce a
+      // usable canonical value. Final fallback: 'unknown' so
+      // garden experience always has a non-null setup.
       const GROWING_LOCATION_TO_SETUP = {
         soil:       'ground',
         raised_bed: 'bed',
@@ -282,7 +303,11 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
         indoor:     'container',
         greenhouse: 'bed',
       };
-      const growingSetup = GROWING_LOCATION_TO_SETUP[growingLocation] || 'unknown';
+      const ALLOWED_SETUPS = new Set(['container', 'bed', 'ground', 'unknown']);
+      const explicitSetup = ALLOWED_SETUPS.has(growingSetup) ? growingSetup : '';
+      const finalGrowingSetup = explicitSetup
+        || GROWING_LOCATION_TO_SETUP[growingLocation]
+        || 'unknown';
 
       const garden = {
         id:                   'garden_' + Date.now().toString(36),
@@ -300,7 +325,7 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
         growingLocation,
         // Canonical bucket (container/bed/ground/unknown) used
         // by tasks + scan engines.
-        growingSetup,
+        growingSetup: finalGrowingSetup,
         cropStage:            'land_prep',
         unit,
         onboardingCompleted:  true,
@@ -469,7 +494,41 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
         </div>
       </div>
 
-      {/* Growing location */}
+      {/* Growing setup (final-gap stability \u00a76) \u2014 canonical
+          4-bucket field. First-class so this surface can serve
+          as the edit-garden form: pre-populated from
+          initialProfile.growingSetup, an explicit pick wins
+          over the legacy growingLocation \u2192 bucket mapping at
+          save time. */}
+      <div style={STYLES.section} data-testid="garden-setup-growing-setup">
+        <span style={STYLES.sectionLabel}>
+          {tStrict('garden.growingSetup.title', 'How are you growing this?')}
+        </span>
+        <div style={STYLES.optionRow}>
+          {GROWING_SETUP_OPTIONS.map((opt) => {
+            const active = growingSetup === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setGrowingSetup(active ? '' : opt.id)}
+                style={{ ...STYLES.optionBtn, ...(active ? STYLES.optionBtnActive : null) }}
+                data-testid={`garden-setup-growing-${opt.id}`}
+                aria-pressed={active}
+              >
+                <span aria-hidden="true" style={{ marginRight: 6 }}>{opt.icon}</span>
+                {tStrict(opt.labelKey, opt.fallback)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Growing location \u2014 richer detail (soil / raised bed /
+          pots / indoor / greenhouse). Optional now: when the
+          canonical bucket above is picked, the save uses that
+          explicit value; this row stays as a finer-grained
+          informational field. */}
       <div style={STYLES.section}>
         <span style={STYLES.sectionLabel}>
           {tStrict('backyard.step.where.title', 'Where are you growing?')}

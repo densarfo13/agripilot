@@ -1558,6 +1558,41 @@ const checks = [
           && guard.test(farm)   && redir.test(farm);
     },
   },
+  {
+    // Risk-fix follow-up to the final-gap commit: GardenSetupForm
+    // now ships a FIRST-CLASS canonical 4-bucket growing-setup
+    // picker so this surface can serve as the edit-garden form
+    // (pre-populated from initialProfile.growingSetup; explicit
+    // pick wins over the legacy growingLocation \u2192 bucket mapping
+    // at save time).
+    name: 'GardenSetupForm ships first-class growingSetup picker (edit-garden)',
+    why:  'Risk-fix \u2014 canonical growing-setup field is editable, not just derived',
+    pass: () => {
+      const f = read('src/components/farm/GardenSetupForm.jsx');
+      return /GROWING_SETUP_OPTIONS/.test(f)
+          && /useState\(\s*String\(initialProfile\?\.growingSetup/.test(f)
+          && /garden-setup-growing-/.test(f)
+          && /finalGrowingSetup/.test(f)                     // explicit-wins logic
+          && /growingSetup:\s*finalGrowingSetup/.test(f);
+    },
+  },
+  {
+    // Risk-fix follow-up: LanguageSelector dropdown auto-hides
+    // any language missing the new canonical onboarding keys.
+    // Belt-and-braces alongside the strict screen translator's
+    // per-screen English fallback.
+    name: 'LanguageSelector REQUIRED_KEYS covers onboarding + growingSetup keys',
+    why:  'Risk-fix \u2014 partial-translation languages auto-hide from picker',
+    pass: () => {
+      const f = read('src/components/LanguageSelector.jsx');
+      return /onboarding\.chooseLanguage/.test(f)
+          && /onboarding\.whatAreYouGrowing/.test(f)
+          && /onboarding\.saveGarden/.test(f)
+          && /onboarding\.saveFarm/.test(f)
+          && /garden\.growingSetup\.title/.test(f)
+          && /garden\.growingSetup\.container/.test(f);
+    },
+  },
 ];
 
 const failed = [];

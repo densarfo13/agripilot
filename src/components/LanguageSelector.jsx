@@ -22,10 +22,34 @@ import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 // Canonical keys every supported language must translate. If a
 // language is missing any of them, treat it as unsupported and
 // drop it from the dropdown.
+//
+// Final-gap stability follow-up: the original 3-key sample was
+// stable but didn't catch onboarding gaps \u2014 a language could
+// pass parity here while still leaking English on the Step-0
+// language picker / Pick-plant / Pick-crop / growing-setup
+// screens. Expanding the sample to include one canonical key
+// from each post-onboarding-rewrite screen keeps the picker
+// honest: a partially-translated language is now hidden from
+// the dropdown until every canonical screen is covered. The
+// strict screen translator continues to enforce per-screen
+// fallback as a second line of defence.
 const REQUIRED_KEYS = Object.freeze([
   'recovery.repair',
   'nav.scan',
   'common.back',
+  // Onboarding flow rewrite (clean-onboarding spec).
+  'onboarding.chooseLanguage',
+  'onboarding.whatAreYouGrowing',
+  'onboarding.backyardGarden',
+  'onboarding.farm',
+  'onboarding.saveGarden',
+  'onboarding.saveFarm',
+  // Backyard growing-setup (garden-only step).
+  'garden.growingSetup.title',
+  'garden.growingSetup.container',
+  'garden.growingSetup.bed',
+  'garden.growingSetup.ground',
+  'garden.growingSetup.unknown',
 ]);
 
 function _isLanguageSupported(code) {
