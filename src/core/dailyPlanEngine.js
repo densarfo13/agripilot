@@ -62,13 +62,19 @@ const MAX_TASKS = 3;
  * picks one based on context.setup and trims tasks to MAX_TASKS.
  */
 const GARDEN_SETUP_RULES = Object.freeze({
+  // Final Home + Review Copy Polish \u00a71 \u2014 "Scan if you see..."
+  // task lines are re-shaped to the action-first question form
+  // ("See spots or damage? Scan your plant"). The wording works
+  // for any garden setup so a single line can replace each
+  // legacy variant; the scan crop-engine doesn't read these
+  // strings, only the user does.
   container: {
     priority: 'Check container soil moisture',
     reason:   'Pots dry faster than garden soil.',
     tasks: [
       'Make sure the pot drains well',
       'Water only if top soil feels dry',
-      'Scan if you see spots or holes',
+      'See spots or damage? Scan your plant',
     ],
   },
   raised_bed: {
@@ -77,7 +83,7 @@ const GARDEN_SETUP_RULES = Object.freeze({
     tasks: [
       'Check spacing between plants',
       'Water only if soil feels dry below the surface',
-      'Scan if you see spots, holes, or wilting',
+      'See spots or damage? Scan your plant',
     ],
   },
   ground: {
@@ -86,7 +92,7 @@ const GARDEN_SETUP_RULES = Object.freeze({
     tasks: [
       'Pull any weeds growing near your plants',
       'Press the soil — water only if it feels dry',
-      'Scan if you see spots, holes, or insects',
+      'See spots or damage? Scan your plant',
     ],
   },
   indoor_balcony: {
@@ -95,7 +101,7 @@ const GARDEN_SETUP_RULES = Object.freeze({
     tasks: [
       'Move pots toward the brightest spot today',
       'Water only if top soil feels dry',
-      'Scan if you see yellowing or stretched stems',
+      'See spots or damage? Scan your plant',
     ],
   },
 });
@@ -106,13 +112,16 @@ const GARDEN_SETUP_RULES = Object.freeze({
  * large farms get the multi-area scout prompt.
  */
 const FARM_SIZE_RULES = Object.freeze({
+  // Final Home + Review Copy Polish \u00a71 \u2014 "Scan if you see..."
+  // task lines on farm rules use the crop-aware question form
+  // ("See spots or damage? Scan your crop").
   small: {
     priority: 'Check crop leaves today',
     reason:   'A short walk through your plot catches issues early.',
     tasks: [
       'Walk the field once and look at the crop leaves',
       'Note anything that looks different from yesterday',
-      'Scan if you see spots, holes, or insects',
+      'See spots or damage? Scan your crop',
     ],
   },
   medium: {
@@ -121,7 +130,7 @@ const FARM_SIZE_RULES = Object.freeze({
     tasks: [
       'Pick three areas — corner, middle, and edge',
       'Compare the leaves at each point',
-      'Scan if you see spots, holes, or insects',
+      'See spots or damage? Scan your crop',
     ],
   },
   large: {
@@ -130,7 +139,7 @@ const FARM_SIZE_RULES = Object.freeze({
     tasks: [
       'Walk five areas across the field',
       'Compare the leaves at each point',
-      'Scan if you see spots, holes, or insects',
+      'See spots or damage? Scan your crop',
     ],
   },
 });
@@ -212,6 +221,81 @@ function _readWeatherFacets(weather) {
 }
 
 /**
+ * Final Home + Review Copy Polish \u00a76 \u2014 risk level + reason.
+ *
+ * The Home card surfaces a small "Risk: Medium" tag below the
+ * priority. The level is derived from THREE signals:
+ *   • weather facets (already computed by _readWeatherFacets)
+ *   • behavioural signals (passed in via context, optional):
+ *       missedYesterday    — user didn't complete a task yesterday
+ *       repeatedMissedDays — user missed 2+ consecutive days
+ *   • prior scan signal (optional):
+ *       hasRecentScanIssue — last scan flagged something
+ *
+ * Order of precedence (worst wins):
+ *
+ *   HIGH:
+ *     • repeatedMissedDays                     (behavioural)
+ *     • highHumidity AND hasRecentScanIssue    (compound)
+ *
+ *   MEDIUM:
+ *     • highHumidity                           (weather)
+ *     • rainExpected                           (weather)
+ *     • missedYesterday                        (behavioural)
+ *
+ *   LOW:
+ *     • everything else
+ *
+ * Returned object pairs the level with a short reason string
+ * the card displays under the Risk label. Strings stay calm
+ * per spec \u00a77 ("Keep it small, not scary.")
+ */
+function _computeRisk(facets, behaviour) {
+  const f = facets || {};
+  const b = (behaviour && typeof behaviour === 'object') ? behaviour : {};
+
+  // HIGH first \u2014 worst-wins order matches the spec \u00a76 list.
+  if (b.repeatedMissedDays) {
+    return {
+      riskLevel:  'high',
+      riskReason: 'Recent issues need follow-up today.',
+    };
+  }
+  if (f.highHumidity && b.hasRecentScanIssue) {
+    return {
+      riskLevel:  'high',
+      riskReason: 'Recent issues need follow-up today.',
+    };
+  }
+
+  // MEDIUM \u2014 humidity / rain / yesterday-miss.
+  if (f.highHumidity) {
+    return {
+      riskLevel:  'medium',
+      riskReason: 'Humidity is high \u2014 watch for leaf spots.',
+    };
+  }
+  if (f.rainExpected) {
+    return {
+      riskLevel:  'medium',
+      riskReason: 'Rain is expected \u2014 plan around watering.',
+    };
+  }
+  if (b.missedYesterday) {
+    return {
+      riskLevel:  'medium',
+      riskReason: 'You missed yesterday \u2014 a quick check today helps.',
+    };
+  }
+
+  // LOW \u2014 default calm state.
+  return {
+    riskLevel:  'low',
+    riskReason: 'Conditions look normal today.',
+  };
+}
+
+/**
  * Build the tomorrow-preview line. Spec §6 — always present, one
  * short sentence the farmer can read at a glance. Driven by:
  *   • rain expected today → "Watering may not be needed tomorrow."
@@ -249,7 +333,12 @@ function _fallbackPlan(type) {
     tasks: [
       'Water only if soil is dry',
       'Look for spots, holes, or insects',
-      'Scan if you see damage',
+      // Final Home + Review Copy Polish \u00a71 \u2014 garden vs farm
+      // wording so the scan prompt always reflects what the
+      // user is growing.
+      isGarden
+        ? 'See spots or damage? Scan your plant'
+        : 'See spots or damage? Scan your crop',
     ],
     riskAlerts:      [],
     tomorrowPreview: isGarden
@@ -291,10 +380,20 @@ function _capTasks(list) {
  *   tasks:           string[],   // 1..3 items, never empty
  *   riskAlerts:      string[],   // 0..3 items
  *   tomorrowPreview: string,
+ *   riskLevel:       'low'|'medium'|'high',  // spec §6
+ *   riskReason:      string,                  // spec §6 — calm one-liner
  * }}
  *
  * Pure function. Never throws. Output is shape-stable across
  * all branches — the card UI never has to null-check a field.
+ *
+ * Risk is computed from weather facets + optional behavioural
+ * signals carried on `context.retention`:
+ *   {
+ *     missedYesterday:     boolean,
+ *     repeatedMissedDays:  boolean,   // 2+ consecutive misses
+ *     hasRecentScanIssue:  boolean,   // last scan flagged something
+ *   }
  */
 export function generateDailyPlan(context) {
   // Defensive cast — the spec says `context` is required, but
@@ -315,11 +414,11 @@ export function generateDailyPlan(context) {
   // Spec §8 fallback — when the context didn't carry a usable
   // setup / size, return the generic check-in. The garden vs
   // farm split still happens so the priority text matches what
-  // the user is actually growing.
+  // the user is actually growing. Risk is still computed on the
+  // fallback path so a missing setup/size never hides a "high
+  // humidity + recent scan" alert.
   if (!base) {
     const fallback = _fallbackPlan(type);
-    // Even on the fallback path, weather facets still apply —
-    // a missing setup/size doesn't mean we should ignore rain.
     const wf = _readWeatherFacets(ctx.weather);
     return _applyWeather(fallback, wf, ctx);
   }
@@ -379,6 +478,13 @@ function _applyWeather(plan, w, ctx) {
   let reason   = plan.reason;
   let tasks    = plan.tasks.slice();
   const risks  = plan.riskAlerts.slice();
+  // Final Home + Review Copy Polish \u00a76 \u2014 risk computed once
+  // from the same weather facets the rest of the engine uses
+  // PLUS any behavioural signals the caller threaded through
+  // context.retention. Computed early so it's available to
+  // the return below; not re-computed elsewhere.
+  const retention = (ctx && typeof ctx.retention === 'object') ? ctx.retention : {};
+  const risk = _computeRisk(w, retention);
 
   // Rain expected: hard-override the priority. Spec §5.
   // The original priority's tasks stay (the farmer still
@@ -422,6 +528,11 @@ function _applyWeather(plan, w, ctx) {
     tasks:           _capTasks(tasks),
     riskAlerts:      risks.slice(0, 3),
     tomorrowPreview: _tomorrowPreview(ctx || {}, w),
+    // Final Home + Review Copy Polish \u00a76 \u2014 surfaced for the
+    // Home risk tag. Always present (low when nothing else
+    // applies) so the card never has to null-check.
+    riskLevel:       risk.riskLevel,
+    riskReason:      risk.riskReason,
   };
 }
 

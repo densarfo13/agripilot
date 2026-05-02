@@ -737,11 +737,16 @@ export default function QuickGardenSetup() {
         </>
       )}
 
-      {/* Continue / Back navigation. Save sub-step (4) has its
-          own primary CTA (Save Garden) so we hide Continue
-          there. Back is always shown so the user can step back
-          through the flow without losing data. */}
+      {/* Next / Back navigation. Final Home + Review Copy Polish
+          \u00a74 \u2014 Back is hidden on the FINAL review sub-step
+          (TOTAL_SUB_STEPS - 1) so the user moves forward, not
+          backward, on the last screen. Earlier sub-steps still
+          show Back so the user can step through the flow without
+          losing data. The review screen exposes its own state-
+          based jump-back via the Edit-setup toggle, which routes
+          to the right sub-step directly without a Back chain. */}
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        {subStep < TOTAL_SUB_STEPS - 1 ? (
         <button
           type="button"
           onClick={handleBack}
@@ -756,6 +761,7 @@ export default function QuickGardenSetup() {
         >
           {tStrict('onboarding.back', 'Back')}
         </button>
+        ) : null}
         {subStep < TOTAL_SUB_STEPS - 1 ? (
           <button
             type="button"

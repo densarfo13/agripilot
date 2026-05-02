@@ -1745,14 +1745,16 @@ const checks = [
     // "Review your plan" to "Review your first plan" so the
     // user reads it as a starting position, not the final one.
     // Go-live merged spec \u00a76 superseded the polish-audit title.
-    // Review screen now reads "Your plan is ready" so the
-    // user's mental model is "the plan is done; here's what
-    // to do" rather than "review what you entered".
-    name: 'Review-step title is "Your plan is ready"',
-    why:  'Go-live merged spec \u00a76 \u2014 outcome-shaped review framing',
+    // Review screen now reads "Here's what to do today" so
+    // the user's mental model is action-first ("here are the
+    // steps for today") rather than the legacy "your plan is
+    // ready" framing. Final Home + Review Copy Polish \u00a71
+    // tightened the copy.
+    name: 'Review-step title is "Here\u2019s what to do today"',
+    why:  'Final Home + Review Copy Polish \u00a71 \u2014 action-first review framing',
     pass: () => {
       const f = read('src/i18n/translations.js');
-      return /'onboarding\.review\.title':[\s\S]{0,160}en:\s*'Your plan is ready'/.test(f);
+      return /'onboarding\.review\.title':[\s\S]{0,160}en:\s*'Here\\u2019s what to do today'/.test(f);
     },
   },
   {
@@ -2093,26 +2095,27 @@ const checks = [
     // the redirect-only OnboardingFlow never mounts. The new
     // OnboardingReviewPanel leaf component brings the review
     // framing into the canonical /setup/{garden,farm} Quick
-    // setup flow, so every user sees "Review your first plan"
-    // + the 3 tightened action tiles + the experience-aware
-    // hint BEFORE tapping Save.
+    // setup flow, so every user sees the action-first
+    // "Here's what to do today" headline + the 3 tightened
+    // action tiles BEFORE tapping Save. Final Home + Review
+    // Copy Polish \u00a71 dropped the redundant subtitle + hint
+    // paragraph and reshaped the scan task into the
+    // garden/farm-aware question form.
     name: 'OnboardingReviewPanel mounted in canonical Quick setup forms',
-    why:  'Risk-fix \u2014 review screen polish reaches the canonical user-facing flow',
+    why:  'Risk-fix + Final Home + Review Copy Polish \u2014 review screen polish reaches the canonical flow',
     pass: () => {
       const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
       const panelOk = /export default function OnboardingReviewPanel/.test(panel)
                    && /onboarding\.review\.title/.test(panel)
-                   // The panel migrated from review.helper to
-                   // review.subtitle as the under-title copy
-                   // (go-live merged spec \u00a76).
-                   && /onboarding\.review\.subtitle/.test(panel)
-                   && /onboarding\.newFarmerHint\.garden/.test(panel)
-                   && /onboarding\.newFarmerHint\.farm/.test(panel)
                    && /preview\.title\.checkPlant/.test(panel)
                    && /preview\.title\.checkCrop/.test(panel)
-                   && /preview\.title\.scan/.test(panel)
+                   // Scan task wording is now garden/farm-aware
+                   // (action-first question form per Final Home
+                   // + Review Copy Polish \u00a71).
+                   && /preview\.title\.scanPlant/.test(panel)
+                   && /preview\.title\.scanCrop/.test(panel)
                    && /data-testid=["']onboarding-review-panel["']/.test(panel);
       const gardenOk = /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingReviewPanel\.jsx['"]/.test(garden)
                     && /<OnboardingReviewPanel/.test(garden)
@@ -2464,34 +2467,26 @@ const checks = [
     },
   },
   {
-    // Go-live merged spec \u2014 review screen + onboarding copy
-    // overhaul. Title swaps from "Review your first plan" to
-    // "Your plan is ready"; subtitle to "Here's what to do
-    // today."; Save CTAs unify on "Start using Farroway"; the
-    // "I don't know" affirmations become "Not sure"; the
-    // pickPlant/pickCrop titles become "What are you growing?"
+    // Go-live merged spec + Final Home + Review Copy Polish \u2014
+    // review screen + onboarding copy overhaul. Final Home +
+    // Review Copy Polish \u00a71 retitled the review screen to
+    // "Here's what to do today" (action-first) and dropped the
+    // redundant subtitle. Save CTAs unify on "Start using
+    // Farroway"; "I don't know" became "Not sure"; the
+    // pickPlant/pickCrop titles became "What are you growing?"
     // / "Which crop are you growing?".
-    name: 'Go-live copy: Your plan is ready / Start using Farroway / Not sure',
-    why:  'Go-live merged spec \u00a76 + \u00a74 + \u00a75 \u2014 final review + size copy',
+    name: 'Go-live copy: Here\u2019s what to do today / Start using Farroway / Not sure',
+    why:  'Go-live merged spec + Final Home + Review Copy Polish \u2014 review + size copy',
     pass: () => {
       const trans  = read('src/i18n/translations.js');
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      // Translations carry the new English values.
-      const Q = (key, value) => {
-        const re = new RegExp(
-          `'${key.replace(/\./g, '\\\\.')}':\\s*\\{[^}]*?en:\\s*'${
-            value.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')
-          }`);
-        return re.test(trans);
-      };
       // The translations file stores curly apostrophes as the
       // literal `\u2019` escape sequence (7 ASCII chars), not
       // the single Unicode character. Match the literal escape
       // form so a JS regex compile doesn't resolve the escape
       // at compile time.
-      const reviewTitle = /'onboarding\.review\.title':[\s\S]{0,160}en:\s*'Your plan is ready'/.test(trans);
-      const reviewSub   = /'onboarding\.review\.subtitle':[\s\S]{0,200}en:\s*'Here\\u2019s what to do today\.'/.test(trans);
+      const reviewTitle = /'onboarding\.review\.title':[\s\S]{0,160}en:\s*'Here\\u2019s what to do today'/.test(trans);
       const editPrompt  = /'onboarding\.review\.editPrompt':[\s\S]{0,200}en:\s*'Want to change anything\?'/.test(trans);
       const startUsing  = /'onboarding\.review\.startUsing':[\s\S]{0,200}en:\s*'Start using Farroway'/.test(trans);
       const startSimple = /'onboarding\.review\.startSimple':[\s\S]{0,200}en:\s*'Start simple\. Do these first:'/.test(trans);
@@ -2505,7 +2500,7 @@ const checks = [
       const notSure = /'garden\.growingSetup\.unknown':[\s\S]{0,80}en:\s*'Not sure'/.test(trans)
                    && /'onboarding\.gardenSize\.unknown':[\s\S]{0,80}en:\s*'Not sure'/.test(trans)
                    && /'onboarding\.farmSize\.unknown':[\s\S]{0,80}en:\s*'Not sure'/.test(trans);
-      return reviewTitle && reviewSub && editPrompt && startUsing && startSimple
+      return reviewTitle && editPrompt && startUsing && startSimple
           && pickPlant && pickCrop && setupTitle
           && gardenCTA && farmCTA && notSure;
     },
@@ -2941,6 +2936,117 @@ const checks = [
     // "(optional)" qualifier is gone from the custom-size
     // label. Translation keys updated across the launch
     // locales (i18n parity guard covers JSON locale parity).
+    // Final Home + Review Copy Polish \u00a71 \u2014 weak copy removed.
+    // Title -> "Here's what to do today"; "Follow these steps
+    // today..." hint paragraph dropped; scan tasks shaped to
+    // the action-first question form ("See spots or damage?
+    // Scan your plant/crop").
+    name: 'Home + review copy: action-first phrasing',
+    why:  'Final Home + Review Copy Polish \u00a71 \u2014 direct, alive, action-first',
+    pass: () => {
+      const t      = read('src/i18n/translations.js');
+      const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
+      const engine = read('src/core/dailyPlanEngine.js');
+      // Title carries the new direct headline.
+      return /'onboarding\.review\.title':[\s\S]*?en:\s*'Here\\u2019s what to do today'/.test(t)
+          // Scan tasks reshaped to the action-first form.
+          && /'See spots or damage\? Scan your plant'/.test(engine)
+          && /'See spots or damage\? Scan your crop'/.test(engine)
+          // Legacy "Scan if you see..." lines no longer in
+          // the engine's GARDEN_SETUP_RULES / FARM_SIZE_RULES
+          // headers (the §8 fallback also uses the new form).
+          && !/'Scan if you see spots or holes'/.test(engine)
+          && !/'Scan if you see spots, holes, or insects'/.test(engine)
+          && !/'Scan if you see damage'/.test(engine)
+          // Hint paragraph render dropped from the panel.
+          && !/<p style=\{S\.hint\}>\{hint\}<\/p>/.test(panel)
+          // Garden / farm scan wording on the review panel.
+          && /'See spots or damage\? Scan your plant'/.test(panel)
+          && /'See spots or damage\? Scan your crop'/.test(panel);
+    },
+  },
+  {
+    // Final Home + Review Copy Polish \u00a73\u2013\u00a74 \u2014 review screen
+    // collapses the Edit-setup affordance + drops the Back
+    // button on the final sub-step.
+    name: 'Review screen collapses Edit setup + drops final Back',
+    why:  'Final Home + Review Copy Polish \u00a73\u2013\u00a74 \u2014 forward-only on review',
+    pass: () => {
+      const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /useState\(false\)/.test(panel)
+          && /editOpen/.test(panel)
+          && /onboarding-review-edit-toggle/.test(panel)
+          // Both setup forms gate Back on \u2018not the last step\u2019.
+          && /\{subStep\s*<\s*TOTAL_SUB_STEPS\s*-\s*1\s*\?[\s\S]*?quick-garden-back/.test(garden)
+          && /\{subStep\s*<\s*TOTAL_SUB_STEPS\s*-\s*1\s*\?[\s\S]*?quick-farm-back/.test(farm);
+    },
+  },
+  {
+    // Final Home + Review Copy Polish \u00a75 \u2014 daily-freshness
+    // tracker writes the spec key on first Home open per day.
+    name: 'dailyFreshness ships once-per-day toast tracker',
+    why:  'Final Home + Review Copy Polish \u00a75 \u2014 fresh-plan signal',
+    pass: () => {
+      const f    = read('src/core/dailyFreshness.js');
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      const t    = read('src/i18n/translations.js');
+      return /export\s+function\s+isFirstHomeOpenToday/.test(f)
+          && /export\s+function\s+markHomeOpenedToday/.test(f)
+          && /'farroway_last_home_open_date'/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/core\/dailyFreshness\.js['"]/.test(card)
+          && /isFirstHomeOpenToday\(\)/.test(card)
+          && /markHomeOpenedToday\(\)/.test(card)
+          && /data-testid="daily-freshness-toast"/.test(card)
+          && /'daily\.freshness\.toast':/.test(t);
+    },
+  },
+  {
+    // Final Home + Review Copy Polish \u00a76\u2013\u00a77 \u2014 risk tag.
+    // Engine emits riskLevel + riskReason; card renders a
+    // small "Risk: Medium" tag with reason underneath.
+    name: 'Risk tag: engine output + Home tag',
+    why:  'Final Home + Review Copy Polish \u00a76\u2013\u00a77 \u2014 risk signal small, not scary',
+    pass: () => {
+      const eng  = read('src/core/dailyPlanEngine.js');
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      const t    = read('src/i18n/translations.js');
+      return /riskLevel:[\s\S]*?'low'\|'medium'\|'high'/.test(eng)
+          && /function\s+_computeRisk/.test(eng)
+          && /'Conditions look normal today\.'/.test(eng)
+          && /'Humidity is high \\u2014 watch for leaf spots\.'/.test(eng)
+          && /'Recent issues need follow-up today\.'/.test(eng)
+          && /riskLevel:\s*v2\.riskLevel/.test(card)
+          && /data-testid="daily-risk-tag"/.test(card)
+          && /RISK_TONE/.test(card)
+          && /'daily\.risk\.label':/.test(t)
+          && /'daily\.risk\.low':/.test(t)
+          && /'daily\.risk\.medium':/.test(t)
+          && /'daily\.risk\.high':/.test(t);
+    },
+  },
+  {
+    // Final Home + Review Copy Polish \u00a72 \u2014 visual hierarchy.
+    // Today's Priority headline reads BIG (summaryBig style),
+    // explanation reads MEDIUM (explanationMedium), other
+    // tasks render with the small-tile treatment.
+    name: 'Home hierarchy: BIG priority -> MEDIUM why -> SMALL tasks',
+    why:  'Final Home + Review Copy Polish \u00a72 \u2014 visual hierarchy',
+    pass: () => {
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      return /style=\{S\.summaryBig\}/.test(card)
+          && /style=\{S\.explanationMedium\}/.test(card)
+          && /summaryBig:\s*\{/.test(card)
+          && /explanationMedium:\s*\{/.test(card)
+          && /actionRowSmall:\s*\{/.test(card)
+          && /actionTitleSmall:\s*\{/.test(card)
+          // Action #0 (priority) keeps its title; #1, #2 use
+          // the smaller treatment.
+          && /isPrimary\s*=\s*idx === 0/.test(card);
+    },
+  },
+  {
     name: 'Custom-size label drops "(optional)" qualifier',
     why:  'Farm-size normalization \u00a77 \u2014 calmer, layout-implied optionality',
     pass: () => {

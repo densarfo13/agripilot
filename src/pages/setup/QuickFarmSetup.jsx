@@ -739,10 +739,14 @@ export default function QuickFarmSetup() {
         </>
       )}
 
-      {/* Continue / Back navigation. Save sub-step (3) has its
-          own primary CTA (Save Farm) so we hide Continue
-          there. Back is always shown. */}
+      {/* Next / Back navigation. Final Home + Review Copy Polish
+          \u00a74 \u2014 Back is hidden on the FINAL review sub-step so
+          the user moves forward on the last screen. Earlier
+          sub-steps still show Back. The review screen exposes
+          its own state-based jump-back via the Edit-setup
+          toggle. */}
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        {subStep < TOTAL_SUB_STEPS - 1 ? (
         <button
           type="button"
           onClick={handleBack}
@@ -757,6 +761,7 @@ export default function QuickFarmSetup() {
         >
           {tStrict('onboarding.back', 'Back')}
         </button>
+        ) : null}
         {subStep < TOTAL_SUB_STEPS - 1 ? (
           <button
             type="button"

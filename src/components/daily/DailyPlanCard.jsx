@@ -53,6 +53,12 @@ import {
 import {
   recordHealthFeedback, getHealthFeedbackForToday,
 } from '../../core/healthFeedbackStore.js';
+// Final Home + Review Copy Polish \u00a75 \u2014 daily-freshness toast
+// tracker. Reads/writes farroway_last_home_open_date so the
+// "Your plan is updated for today" toast fires once per day.
+import {
+  isFirstHomeOpenToday, markHomeOpenedToday,
+} from '../../core/dailyFreshness.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
 const URGENCY_TONE = {
@@ -65,6 +71,15 @@ const SEVERITY_TONE = {
   critical: { background: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.32)', color: '#FCA5A5' },
   warning:  { background: 'rgba(245,158,11,0.10)', borderColor: 'rgba(245,158,11,0.32)', color: '#FDE68A' },
   info:     { background: 'rgba(59,130,246,0.10)', borderColor: 'rgba(59,130,246,0.32)', color: '#93C5FD' },
+};
+
+// Final Home + Review Copy Polish \u00a76\u2013\u00a77 \u2014 risk-tag tone.
+// Calm by default (low). Medium reads amber; high reads red.
+// Kept small per spec ("not scary").
+const RISK_TONE = {
+  low:    { background: 'rgba(34,197,94,0.10)',  borderColor: 'rgba(34,197,94,0.30)' },
+  medium: { background: 'rgba(245,158,11,0.10)', borderColor: 'rgba(245,158,11,0.32)' },
+  high:   { background: 'rgba(239,68,68,0.10)',  borderColor: 'rgba(239,68,68,0.32)' },
 };
 
 export default function DailyPlanCard({
@@ -152,6 +167,38 @@ export default function DailyPlanCard({
     let v2 = null;
     try {
       const ctx = buildGrowingContext({ farm, weather });
+      // Final Home + Review Copy Polish \u00a76 \u2014 thread the
+      // retention behavioural signals into the engine so the
+      // risk computation can promote MEDIUM (missed yesterday)
+      // / HIGH (repeated misses, or humidity + recent scan
+      // issue). Read straight off the persisted streak +
+      // (best-effort) recent-scan flag so the engine stays
+      // pure (no React hooks inside it). Wrapped in try/catch
+      // so a missing module never silences the v2 engine.
+      try {
+        const days = (typeof daysSinceLastCompletion === 'function')
+          ? daysSinceLastCompletion()
+          : null;
+        const recentScan = (() => {
+          try {
+            if (typeof localStorage === 'undefined') return false;
+            const raw = localStorage.getItem('farroway_last_scan_issue');
+            if (!raw) return false;
+            // Recent = within 3 days. Either an ISO timestamp
+            // OR a truthy flag is accepted.
+            const t = Date.parse(raw);
+            if (Number.isFinite(t)) {
+              return (Date.now() - t) < (3 * 24 * 60 * 60 * 1000);
+            }
+            return raw === 'true';
+          } catch { return false; }
+        })();
+        ctx.retention = {
+          missedYesterday:    days != null && days >= 1,
+          repeatedMissedDays: days != null && days >= 2,
+          hasRecentScanIssue: !!recentScan,
+        };
+      } catch { /* keep engine input unchanged */ }
       v2 = generatePlanV2(ctx);
     } catch { /* never let the engine break the page */ }
 
@@ -211,6 +258,11 @@ export default function DailyPlanCard({
         ? { type: 'inspect', text: v2.tomorrowPreview, detail: '' }
         : (intel ? intel.followUpTask : null),
       confidence:     (intel && intel.confidence) || base.confidence,
+      // Final Home + Review Copy Polish \u00a76 \u2014 surface the
+      // engine's risk decision so the card render path can
+      // show the small "Risk: Medium" tag below the priority.
+      riskLevel:      v2.riskLevel  || 'low',
+      riskReason:     v2.riskReason || '',
     };
   },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -263,6 +315,35 @@ export default function DailyPlanCard({
   // immediately surfaces the new "X-day streak" pill.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const streak = React.useMemo(() => getStreak(), [version]);
+
+  // Final Home + Review Copy Polish \u00a75 \u2014 daily-freshness
+  // toast. Reads `farroway_last_home_open_date`; if today
+  // hasn't been recorded yet, fire the "Your plan is updated
+  // for today" toast once. The flag is written AFTER the
+  // toast renders so a transient mount that never paints
+  // doesn't burn the user's once-per-day window.
+  const [freshToast, setFreshToast] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    try {
+      if (isFirstHomeOpenToday()) {
+        setFreshToast(tSafe(
+          'daily.freshness.toast',
+          'Your plan is updated for today \uD83C\uDF31',
+        ));
+        markHomeOpenedToday();
+        // Auto-dismiss after ~3.6s so it lingers a touch
+        // longer than the per-task completion toast (the
+        // freshness message is set-and-forget; the user
+        // doesn't need to react to it).
+        const id = setTimeout(() => { if (!cancelled) setFreshToast(null); }, 3600);
+        return () => { cancelled = true; clearTimeout(id); };
+      }
+    } catch { /* swallow */ }
+    return () => { cancelled = true; };
+    // Only run on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Retention Loop spec \u00a75 \u2014 adaptive home banner. Behaviour
   // signal first (consistency / comeback), weather signal as
@@ -444,20 +525,50 @@ export default function DailyPlanCard({
         </p>
       ) : null}
 
+      {/* Final Home + Review Copy Polish \u00a72 \u2014 visual hierarchy.
+          Today's Priority is the LARGEST element on the card.
+          The headline reads BIG (~1.25rem, bold), then the
+          "Why this matters" explanation reads MEDIUM
+          underneath, then "Other tasks" render as SMALL tiles
+          below the alerts. The risk tag sits between priority
+          and explanation so the user reads
+          "what to do" -> "how serious it is" -> "why" at a glance. */}
       {plan.summary && (
-        <p style={S.summary} data-testid="daily-plan-summary">
+        <p style={S.summaryBig} data-testid="daily-plan-summary">
           {plan.summary}
         </p>
       )}
 
-      {/* Invisible-intelligence \u00a78 \u2014 "Why this matters" line.
-          One sentence the engine emits to explain the day's
-          plan in context (rain, humidity, stage, setup). The
-          existing summary still renders above for the legacy
-          per-stage opener; this adds the contextual explanation
-          underneath. */}
+      {/* Final Home + Review Copy Polish \u00a76\u2013\u00a77 \u2014 risk tag.
+          Calm, small ("Risk: Medium" + one-line reason). Always
+          renders so a Low-risk day still shows the green dot
+          (the user knows the engine ran). */}
+      {plan.riskLevel ? (
+        <div
+          style={{ ...S.riskRow, ...RISK_TONE[plan.riskLevel] }}
+          data-testid="daily-risk-tag"
+          data-risk={plan.riskLevel}
+        >
+          <span style={S.riskDot} aria-hidden="true">
+            {plan.riskLevel === 'high'   ? '\uD83D\uDD34'
+             : plan.riskLevel === 'medium' ? '\uD83D\uDFE1'
+             : '\uD83D\uDFE2'}
+          </span>
+          <span style={S.riskLabel}>
+            {tSafe('daily.risk.label', 'Risk')}
+            {': '}
+            {tSafe(`daily.risk.${plan.riskLevel}`,
+              plan.riskLevel.charAt(0).toUpperCase() + plan.riskLevel.slice(1))}
+          </span>
+          {plan.riskReason ? (
+            <span style={S.riskReason}>{plan.riskReason}</span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* "Why this matters" \u2014 MEDIUM under the BIG priority. */}
       {plan.explanation ? (
-        <p style={S.explanation} data-testid="daily-plan-explanation">
+        <p style={S.explanationMedium} data-testid="daily-plan-explanation">
           {plan.explanation}
         </p>
       ) : null}
@@ -492,30 +603,41 @@ export default function DailyPlanCard({
             {tSafe('daily.topActions', 'Today\u2019s top actions')}
           </p>
           <ul style={S.actionList}>
-            {plan.actions.map((a) => {
+            {plan.actions.map((a, idx) => {
               // Retention Loop spec \u00a71 \u2014 each completed task
-              // shows its completed state. We dim the row,
-              // strike-through the title, and replace the Mark
-              // done / Remind buttons with a calm "Done"
-              // indicator so the user knows their tap landed
-              // and they can't double-record the completion.
+              // shows its completed state.
               const isDone = completedIds.includes(a.id);
+              // Final Home + Review Copy Polish \u00a72 \u2014 visual
+              // hierarchy. Action #0 is the priority echo (it
+              // carries the same headline as plan.summary above);
+              // we keep it visually MEDIUM so it sits between
+              // the BIG summary and the SMALL tail. Actions #1
+              // and #2 are the SECONDARY tasks \u2014 they render
+              // smaller so the eye lands on the priority first.
+              const isPrimary = idx === 0;
               return (
               <li
                 key={a.id}
                 style={{
                   ...S.actionRow,
+                  ...(isPrimary ? null : S.actionRowSmall),
                   ...(URGENCY_TONE[a.urgency] || URGENCY_TONE.low),
                   ...(isDone ? S.actionRowDone : null),
                 }}
                 data-testid={`daily-action-${a.id}`}
                 data-done={isDone ? 'true' : 'false'}
+                data-primary={isPrimary ? 'true' : 'false'}
               >
                 <div style={S.actionBody}>
-                  <p style={isDone ? { ...S.actionTitle, ...S.actionTitleDone } : S.actionTitle}>
+                  <p style={{
+                    ...(isPrimary ? S.actionTitle : S.actionTitleSmall),
+                    ...(isDone ? S.actionTitleDone : null),
+                  }}>
                     {a.title}
                   </p>
-                  <p style={S.actionReason}>{a.reason}</p>
+                  {isPrimary && a.reason ? (
+                    <p style={S.actionReason}>{a.reason}</p>
+                  ) : null}
                 </div>
                 <div style={S.actionButtons}>
                   {isDone ? (
@@ -675,6 +797,20 @@ export default function DailyPlanCard({
         </div>
       ) : null}
 
+      {/* Final Home + Review Copy Polish \u00a75 \u2014 daily-freshness
+          toast. Fires once per day on first Home open. Reuses
+          the same calm green tone as the completion toast so
+          the visual language stays consistent. */}
+      {freshToast ? (
+        <div
+          role="status"
+          style={S.toast}
+          data-testid="daily-freshness-toast"
+        >
+          {freshToast}
+        </div>
+      ) : null}
+
       {/* Footer intentionally omitted \u2014 the floating Ask Farroway
           and Scan Crop FABs on Home already cover those entry
           points, so rendering them again inside this card was
@@ -737,6 +873,19 @@ const S = {
     lineHeight: 1.45,
     color: '#F1F5F9',
   },
+  // Final Home + Review Copy Polish \u00a72 \u2014 BIG priority headline.
+  // Visually dominates the card so the user reads "what to do
+  // today" before anything else. Bumped to 1.25rem + heavier
+  // weight; tighter line-height so a 2-line headline doesn't
+  // double the card height.
+  summaryBig: {
+    margin: 0,
+    fontSize: '1.25rem',
+    lineHeight: 1.3,
+    fontWeight: 800,
+    color: '#F1F5F9',
+    letterSpacing: '-0.01em',
+  },
   // Invisible-intelligence \u00a78 \u2014 "Why this matters" line under
   // the summary. Smaller, medium-opacity grey so the eye reads
   // it as supporting context, not a competing headline.
@@ -746,6 +895,44 @@ const S = {
     lineHeight: 1.5,
     color: '#9FB3C8',
     fontStyle: 'italic',
+  },
+  // Final Home + Review Copy Polish \u00a72 \u2014 MEDIUM "Why this
+  // matters" treatment. Slightly larger than the legacy italic
+  // explanation so the hierarchy reads BIG -> MEDIUM -> SMALL.
+  // Drop the italic so the line reads as a plain explanation,
+  // not a styled aside.
+  explanationMedium: {
+    margin: 0,
+    fontSize: '0.875rem',
+    lineHeight: 1.5,
+    color: '#CBD5E1',
+  },
+  // Final Home + Review Copy Polish \u00a76\u2013\u00a77 \u2014 risk tag row.
+  // Pill-shaped with the level dot, label and reason on a
+  // single line. Wraps gracefully on small screens; reason
+  // drops to a second line if needed without breaking layout.
+  riskRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 6,
+    padding: '6px 10px',
+    borderRadius: 999,
+    border: '1px solid',
+    fontSize: '0.75rem',
+    lineHeight: 1.4,
+    color: '#EAF2FF',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  riskDot: { fontSize: '0.75rem' },
+  riskLabel: {
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+  },
+  riskReason: {
+    color: '#CBD5E1',
+    fontWeight: 500,
   },
   staleNote: {
     margin: 0,
@@ -786,7 +973,24 @@ const S = {
   },
   actionBody: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
   actionTitle: { margin: 0, fontSize: '0.9375rem', fontWeight: 700 },
+  // Final Home + Review Copy Polish \u00a72 \u2014 SMALL secondary
+  // task title. Used on actions #1 and #2 so the eye stays on
+  // the priority above. Same weight, smaller font + slightly
+  // muted colour.
+  actionTitleSmall: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    color: '#CBD5E1',
+  },
   actionReason: { margin: 0, fontSize: '0.8125rem', color: '#9FB3C8', lineHeight: 1.4 },
+  // Final Home + Review Copy Polish \u00a72 \u2014 SMALL secondary
+  // task row. Tighter padding so two stacked tiles fit in the
+  // space the legacy three full-size tiles used to occupy.
+  actionRowSmall: {
+    padding: '0.4rem 0.625rem',
+    borderRadius: 10,
+  },
   actionButtons: { display: 'flex', gap: '0.375rem', flexWrap: 'wrap' },
   btn: {
     padding: '0.4rem 0.75rem',

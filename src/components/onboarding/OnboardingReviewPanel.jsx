@@ -40,6 +40,7 @@
  *     translations.js entries continue to power both surfaces.
  */
 
+import { useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 
 const URGENCY_TONE = {
@@ -65,8 +66,16 @@ function _tasksFor(experience) {
       title:  tSafe('preview.title.water', 'Water only if soil is dry'),
       reason: tSafe('preview.reason.water',
         'Touch the soil 5 cm down \u2014 water only if it feels dry.') },
+    // Final Home + Review Copy Polish \u00a71 \u2014 scan prompt
+    // re-shaped to the action-first question form. Garden
+    // version says "Scan your plant", farm version "Scan your
+    // crop" so the wording reflects what the user is growing.
     { id: 'review.scan',  urgency: 'low',
-      title:  tSafe('preview.title.scan', 'Scan if you see damage'),
+      title:  isGarden
+        ? tSafe('preview.title.scanPlant',
+            'See spots or damage? Scan your plant')
+        : tSafe('preview.title.scanCrop',
+            'See spots or damage? Scan your crop'),
       reason: tSafe('preview.reason.scan',
         'Take a photo of any spot or wilt and we\u2019ll suggest the next step.') },
   ];
@@ -132,11 +141,11 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
         reason: String((a && a.detail) || ''),
       }))
     : _tasksFor(experience);
-  const hint = isGarden
-    ? tSafe('onboarding.newFarmerHint.garden',
-        'Follow these steps today to keep your plant healthy.')
-    : tSafe('onboarding.newFarmerHint.farm',
-        'Follow these steps today to keep your crop healthy.');
+  // Final Home + Review Copy Polish \u00a71 \u2014 the
+  // "Follow these steps today to keep your plant/crop healthy."
+  // hint paragraph was removed. Spec \u00a72 forbids long paragraphs;
+  // the title already carries the action-first framing, so the
+  // hint was redundant noise above the task tiles.
 
   // Merge-spec \u00a73 \u2014 "Your picks" summary block. When the
   // caller passes a `summary` object we render a compact list
@@ -146,29 +155,54 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
   // scroll is enough.
   const safeSummary = summary && typeof summary === 'object' ? summary : null;
   const showSummary = !!safeSummary;
+  // Final Home + Review Copy Polish \u00a73 \u2014 the "Want to change
+  // anything?" affordance is now COLLAPSED by default. The
+  // user sees a small "Edit setup" button; tapping it expands
+  // the per-field Change buttons. Collapsing the section lets
+  // the daily plan tiles dominate the surface, matching the
+  // "move user forward, not backward" intent of spec \u00a74.
+  const [editOpen, setEditOpen] = useState(false);
 
   return (
     <section style={S.wrap} data-testid="onboarding-review-panel" data-experience={isGarden ? 'garden' : 'farm'}>
       <span style={S.eyebrow}>
         {tSafe('onboarding.planReadyEyebrow', 'Your first plan is ready')}
       </span>
+      {/* Final Home + Review Copy Polish \u00a71 \u2014 the title now
+          reads "Here's what to do today", which is the same
+          message the legacy subtitle was carrying. The
+          subtitle is dropped to remove the redundancy and
+          tighten the visual hierarchy (spec \u00a72). */}
       <h3 style={S.title}>
-        {tSafe('onboarding.review.title', 'Your plan is ready')}
+        {tSafe('onboarding.review.title', 'Here\u2019s what to do today')}
       </h3>
-      <p style={S.subtitle}>
-        {tSafe('onboarding.review.subtitle',
-          'Here\u2019s what to do today.')}
-      </p>
 
-      {/* Merge-spec \u00a73 \u2014 Your picks. Garden experience always
-          renders Plant + Location + Growing setup; farm renders
-          Crop + Location + Farm size. The Change buttons scroll
-          to the relevant form section. */}
+      {/* Merge-spec \u00a73 + Final Home + Review Copy Polish \u00a73 \u2014
+          Your picks block. Collapsed by default behind a small
+          "Edit setup" toggle so the daily plan tiles dominate
+          the surface. When the user wants to change something
+          they tap the toggle and the per-field Change buttons
+          expand inline. */}
       {showSummary ? (
         <div style={S.summary} data-testid="onboarding-review-summary">
-          <span style={S.summaryTitle}>
-            {tSafe('onboarding.review.editPrompt', 'Want to change anything?')}
-          </span>
+          <div style={S.summaryHeaderRow}>
+            <span style={S.summaryTitle}>
+              {tSafe('onboarding.review.editPrompt', 'Want to change anything?')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setEditOpen((v) => !v)}
+              style={S.editToggle}
+              aria-expanded={editOpen}
+              data-testid="onboarding-review-edit-toggle"
+            >
+              {editOpen
+                ? tSafe('onboarding.review.hideEditSetup', 'Hide edit')
+                : tSafe('onboarding.review.editSetup',     'Edit setup')}
+            </button>
+          </div>
+          {editOpen ? (
+          <div data-testid="onboarding-review-edit-panel">
           {/* Each Change button jumps the user back to the
               corresponding step. The parent passes onChangeStep
               when the form is multi-step (state-based jump);
@@ -247,10 +281,11 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
               testid="onboarding-review-change-farm-size"
             />
           ) : null}
+          </div>
+          ) : null}
         </div>
       ) : null}
 
-      <p style={S.hint}>{hint}</p>
       <ul style={S.list}>
         {tasks.map((t, i) => (
           <li
@@ -333,6 +368,31 @@ const S = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     marginBottom: 2,
+  },
+  // Final Home + Review Copy Polish \u00a73 \u2014 the row holding the
+  // collapsed prompt + the Edit setup toggle. Flex space-between
+  // so the prompt sits on the left and the toggle on the right
+  // without each line wrapping.
+  summaryHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  // Same calm-pill style the Change buttons use so the toggle
+  // visually belongs to the same family.
+  editToggle: {
+    appearance: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(34,197,94,0.08)',
+    color: '#86EFAC',
+    padding: '6px 12px',
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 700,
+    minHeight: 32,
   },
   summaryRow: {
     display: 'flex',
