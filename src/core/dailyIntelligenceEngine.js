@@ -288,6 +288,63 @@ export function generateDailyPlan({
     harvestReady: harvestReady && !isBackyard && regionConfig.enableSellFlow !== false,
   });
 
+  // Backyard growing-setup spec \u00a75 \u2014 personalise the daily
+  // plan to the user's pot/bed/ground choice. Garden experience
+  // only; farm flow is unaffected. Tasks are PREPENDED so they
+  // sit at the top of the daily card (the user picked these
+  // settings to get this guidance), then the existing 3-slot
+  // cap + dedupe rules apply downstream.
+  if (isBackyard && farm && typeof farm.growingSetup === 'string') {
+    const SETUP_TASKS = {
+      container: [
+        'Check container soil moisture',
+        'Make sure the pot drains well',
+        'Water only if the top soil feels dry',
+      ],
+      bed: [
+        'Check spacing between plants',
+        'Remove weeds around the plant',
+        'Water near the roots',
+      ],
+      ground: [
+        'Check soil moisture near the plant',
+        'Look for weeds or pests nearby',
+        'Water only if soil is dry',
+      ],
+      unknown: [
+        // Generic garden fallback so the user still gets two
+        // actionable items when they skipped the setup pick.
+        'Check your plant leaves',
+        'Water only if soil is dry',
+      ],
+    };
+    const setup  = String(farm.growingSetup).toLowerCase();
+    const titles = SETUP_TASKS[setup] || [];
+    if (titles.length > 0) {
+      const seen = new Set(actions.map((a) => String(a.title || '').trim().toLowerCase()));
+      const enriched = [];
+      for (const title of titles) {
+        if (enriched.length >= 3) break;
+        const k = title.trim().toLowerCase();
+        if (!k || seen.has(k)) continue;
+        enriched.push({
+          id:         `growing_${setup}_${k.replace(/[^a-z0-9]+/g, '_').slice(0, 32)}`,
+          title,
+          detail:     '',
+          urgency:    'medium',
+          actionType: 'inspect',
+          source:     'growing_setup',
+          growingSetup: setup,
+        });
+        seen.add(k);
+      }
+      // Prepend so the personalised tasks lead the card, then
+      // re-cap to 3 so existing tasks below are bumped out
+      // gracefully.
+      actions = [...enriched, ...actions].slice(0, 3);
+    }
+  }
+
   // Scan-derived follow-ups (feature-flag gated). When a recent
   // /scan flagged "check the affected leaf again tomorrow" we
   // surface those tasks alongside the engine's regular output.

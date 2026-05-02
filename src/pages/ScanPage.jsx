@@ -177,6 +177,7 @@ export default function ScanPage() {
               country:          profile?.country || null,
               region:           profile?.region  || null,
               sizeSqFt:         profile?.landSizeSqFt || profile?.farmSize || null,
+              growingSetup:     profile?.growingSetup || null,
             });
             setResult({
               scanId:             'scan_fb_' + Date.now().toString(36),
@@ -243,9 +244,13 @@ export default function ScanPage() {
           country:          profile?.country || null,
           region:           profile?.region  || null,
           weather:          weatherSnapshot,
-          // Land Intelligence input — drives the scale-aware
+          // Land Intelligence input \u2014 drives the scale-aware
           // action enrichment inside hybridAnalyze.
           sizeSqFt:         profile?.landSizeSqFt || profile?.farmSize || null,
+          // Backyard growing-setup spec \u00a76 \u2014 garden users get
+          // setup-specific scan actions (pot drainage, bed
+          // airflow, ground weeds). Ignored for farm experience.
+          growingSetup:     profile?.growingSetup || null,
         });
 
         // Merge: hybrid wins on the user-visible fields, engine

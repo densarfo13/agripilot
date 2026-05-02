@@ -364,8 +364,12 @@ function _followUpTask(activeExperience, plantOrCropName) {
  * @param {string} [input.country]
  * @param {string} [input.region]
  * @param {object} [input.weather]         { temperatureC, humidity, rainMm, soil, recentRain }
- * @param {Array}  [input.recentTasks]     reserved — future signal
- * @param {Array}  [input.scanHistory]     reserved — future signal
+ * @param {'container'|'bed'|'ground'|'unknown'} [input.growingSetup]
+ *   Backyard growing-setup spec \u00a76 \u2014 personalises the scan
+ *   action list for garden users (pot vs bed vs ground). Ignored
+ *   when activeExperience is 'farm'.
+ * @param {Array}  [input.recentTasks]     reserved \u2014 future signal
+ * @param {Array}  [input.scanHistory]     reserved \u2014 future signal
  * @returns {{
  *   possibleIssue: string,
  *   confidence:    'low'|'medium'|'high',
@@ -416,7 +420,46 @@ export function hybridAnalyze(input = {}) {
         seen.add(k);
       }
     }
-  } catch { /* land enrichment is best-effort — ignore */ }
+  } catch { /* land enrichment is best-effort \u2014 ignore */ }
+
+  // Backyard growing-setup spec \u00a76 \u2014 garden-only scan action
+  // enrichment. When the user told us they grow in a pot / bed /
+  // ground, append the matching action so the scan output reads
+  // like the app understands their setup. Hard-capped at 3
+  // total recommendedActions per spec ("Keep actions max 3").
+  if (isGarden && typeof safe.growingSetup === 'string') {
+    const SETUP_ACTIONS = {
+      container: [
+        'Check pot drainage',
+        'Avoid letting water sit in the container',
+      ],
+      bed: [
+        'Check nearby plants for similar signs',
+        'Improve airflow between plants',
+      ],
+      ground: [
+        'Check soil around the plant',
+        'Remove nearby weeds if present',
+      ],
+    };
+    const setup = String(safe.growingSetup).toLowerCase();
+    const extras = SETUP_ACTIONS[setup] || [];
+    if (extras.length > 0) {
+      const seen = new Set(recommendedActions.map((s) => String(s || '').trim().toLowerCase()));
+      for (const a of extras) {
+        if (recommendedActions.length >= 3) break;
+        const k = String(a || '').trim().toLowerCase();
+        if (k && !seen.has(k)) {
+          recommendedActions.push(a);
+          seen.add(k);
+        }
+      }
+      // Trim to 3 in case prior land-enrichment pushed past the
+      // cap; keep the head of the list (issue-specific +
+      // setup-specific actions sit at the front).
+      recommendedActions = recommendedActions.slice(0, 3);
+    }
+  }
 
   const plantOrCrop = isGarden
     ? (safe.plantName || safe.cropName || null)

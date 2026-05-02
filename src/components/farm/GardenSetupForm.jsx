@@ -267,6 +267,23 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
     }
     setSubmitting(true);
     try {
+      // Backyard growing-setup spec \u00a72 \u2014 normalise the
+      // existing growingLocation pick (soil/raised_bed/pots/
+      // indoor/greenhouse) to the canonical 4-bucket value
+      // (container/bed/ground/unknown) so downstream surfaces
+      // (dailyIntelligenceEngine, hybridScanEngine) read the
+      // same field whether the garden was created via this
+      // form or via QuickGardenSetup. The two fields coexist
+      // for backwards compatibility.
+      const GROWING_LOCATION_TO_SETUP = {
+        soil:       'ground',
+        raised_bed: 'bed',
+        pots:       'container',
+        indoor:     'container',
+        greenhouse: 'bed',
+      };
+      const growingSetup = GROWING_LOCATION_TO_SETUP[growingLocation] || 'unknown';
+
       const garden = {
         id:                   'garden_' + Date.now().toString(36),
         experience:           'backyard',
@@ -281,6 +298,9 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
         region:               (region || '').trim(),
         gardenSizeCategory:   gardenSizeCategory || 'unsure',
         growingLocation,
+        // Canonical bucket (container/bed/ground/unknown) used
+        // by tasks + scan engines.
+        growingSetup,
         cropStage:            'land_prep',
         unit,
         onboardingCompleted:  true,

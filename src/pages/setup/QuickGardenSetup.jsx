@@ -50,6 +50,19 @@ const SIZE_OPTIONS = [
   { value: 'unknown', labelKey: 'onboarding.gardenSize.unknown', fallback: 'I don\u2019t know' },
 ];
 
+// Backyard growing-setup spec \u00a71\u2013\u00a72 \u2014 garden-only step
+// captured AFTER the plant pick. The 4 buckets compress the
+// many real-world possibilities into something every grower
+// recognises; the caller persists the value verbatim onto the
+// garden record where downstream surfaces (dailyIntelligence
+// engine, hybrid scan engine) read it to personalise guidance.
+const GROWING_SETUP_OPTIONS = [
+  { value: 'container', icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container', fallback: 'Pot / Container'  },
+  { value: 'bed',       icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.bed',       fallback: 'Garden bed'       },
+  { value: 'ground',    icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',    fallback: 'Backyard soil'    },
+  { value: 'unknown',   icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',   fallback: 'I\u2019m not sure' },
+];
+
 // Spec \u00a77 \u2014 garden plant tiles. 5 common picks + Other (free
 // input fallback). The first 5 cover the launch crop set; the
 // caller normalises the selected label into the existing
@@ -144,6 +157,11 @@ export default function QuickGardenSetup() {
   const [region, setRegion]     = useState('');
   const [city, setCity]         = useState('');
   const [size, setSize]         = useState(null); // optional
+  // Backyard growing-setup spec \u00a71 \u2014 'container' | 'bed' |
+  // 'ground' | 'unknown'. Always nullable (the user can save
+  // without picking) so onboarding stays fast; downstream
+  // surfaces fall through to generic garden guidance when null.
+  const [growingSetup, setGrowingSetup] = useState(null);
   // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
   // the user has chosen the garden experience. Non-blocking
   // guidance only; saved to the garden record so downstream
@@ -217,9 +235,15 @@ export default function QuickGardenSetup() {
         stateLabel:     region.trim() || null,
         city:           city.trim() || null,
         gardenSizeCategory: size,
-        // Non-blocking guidance hint per spec \u00a72 \u2014 stored on
-        // the garden record so future surfaces can soften copy
-        // for first-time growers without changing the flow.
+        // Backyard growing-setup spec \u00a72\u2013\u00a73 \u2014 persisted
+        // verbatim so dailyIntelligenceEngine + hybridScanEngine
+        // can personalise tasks + scan results without an extra
+        // lookup. null when the user skipped the step.
+        growingSetup,
+        // Non-blocking guidance hint per onboarding spec \u00a72 \u2014
+        // stored on the garden record so future surfaces can
+        // soften copy for first-time growers without changing
+        // the flow.
         skillLevel,
         farmType:       'backyard',
       });
@@ -408,9 +432,38 @@ export default function QuickGardenSetup() {
         </div>
       </section>
 
-      {/* Garden size (spec \u00a76) \u2014 4 fixed buckets, NEVER acres.
-          "I don't know" is selectable so the user can proceed
-          without making up an answer. */}
+      {/* Growing setup (Backyard growing-setup spec \u00a71). Garden-
+          only step \u2014 captures whether the user grows in a pot,
+          a garden bed, the backyard soil, or doesn't know. Drives
+          task personalisation downstream (dailyIntelligenceEngine
+          \u00a75) + scan action enrichment (hybridScanEngine \u00a76). */}
+      <section style={S.card} data-testid="setup-garden-growing-setup">
+        <span style={S.label}>
+          {tStrict('garden.growingSetup.title', 'How are you growing this?')}
+        </span>
+        <div style={S.pillRow}>
+          {GROWING_SETUP_OPTIONS.map((opt) => {
+            const active = growingSetup === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setGrowingSetup(active ? null : opt.value)}
+                style={active ? { ...S.pill, ...S.pillActive } : S.pill}
+                data-testid={`quick-garden-growing-${opt.value}`}
+                aria-pressed={active}
+              >
+                <span aria-hidden="true" style={{ marginRight: 6 }}>{opt.icon}</span>
+                {tStrict(opt.labelKey, opt.fallback)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Garden size (onboarding spec \u00a76) \u2014 4 fixed buckets,
+          NEVER acres. "I don't know" is selectable so the user
+          can proceed without making up an answer. */}
       <section style={S.card}>
         <span style={S.label}>
           {tStrict('onboarding.gardenSize.title', 'Garden size')}

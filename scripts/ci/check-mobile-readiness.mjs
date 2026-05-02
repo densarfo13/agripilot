@@ -1350,6 +1350,114 @@ const checks = [
           && /['"]\/setup\/farm['"]/.test(f);
     },
   },
+  {
+    // Backyard growing-setup spec \u00a71\u2013\u00a72 \u2014 QuickGardenSetup
+    // adds the "How are you growing this?" tile group AFTER the
+    // plant pick. Garden-only step; farm flow never sees it.
+    // The picked value is persisted onto the garden record as
+    // growingSetup so dailyIntelligenceEngine + hybridScanEngine
+    // can read it without an extra lookup.
+    name: 'QuickGardenSetup ships "How are you growing this?" picker',
+    why:  'Backyard growing-setup spec \u00a71 \u2014 capture pot/bed/ground/unknown',
+    pass: () => {
+      const f = read('src/pages/setup/QuickGardenSetup.jsx');
+      return /garden\.growingSetup\.title/.test(f)
+          && /GROWING_SETUP_OPTIONS/.test(f)
+          && /garden\.growingSetup\.container/.test(f)
+          && /garden\.growingSetup\.bed/.test(f)
+          && /garden\.growingSetup\.ground/.test(f)
+          && /garden\.growingSetup\.unknown/.test(f)
+          && /growingSetup,?\s*$/m.test(f)                   // persisted on the garden record
+          && /quick-garden-growing-/.test(f);                // testid prefix exists
+    },
+  },
+  {
+    // Spec \u00a72 \u2014 farm flow MUST NOT show the growing-setup
+    // picker. Belt-and-braces check: scan QuickFarmSetup for
+    // any reference to the garden-only translation key.
+    name: 'QuickFarmSetup never shows the growing-setup picker',
+    why:  'Backyard growing-setup spec \u00a71 \u2014 garden-only step',
+    pass: () => {
+      const f = read('src/pages/setup/QuickFarmSetup.jsx');
+      return !/garden\.growingSetup\./.test(f)
+          && !/GROWING_SETUP_OPTIONS/.test(f);
+    },
+  },
+  {
+    // Spec \u00a75 \u2014 dailyIntelligenceEngine personalises the
+    // daily plan based on growingSetup. Container plants get
+    // drainage/moisture tasks; beds get spacing/weed tasks;
+    // ground gets soil/weed tasks; unknown falls through to
+    // generic garden tasks.
+    name: 'dailyIntelligenceEngine personalises tasks by growingSetup',
+    why:  'Backyard growing-setup spec \u00a75 \u2014 task personalisation per setup',
+    pass: () => {
+      const f = read('src/core/dailyIntelligenceEngine.js');
+      return /SETUP_TASKS/.test(f)
+          && /Check container soil moisture/.test(f)
+          && /Make sure the pot drains well/.test(f)
+          && /Check spacing between plants/.test(f)
+          && /Remove weeds around the plant/.test(f)
+          && /Check soil moisture near the plant/.test(f)
+          && /source:\s*['"]growing_setup['"]/.test(f);
+    },
+  },
+  {
+    // Spec \u00a76 \u2014 hybridScanEngine adds setup-specific actions
+    // for garden + container/bed/ground; final list capped at 3.
+    name: 'hybridScanEngine personalises scan actions by growingSetup',
+    why:  'Backyard growing-setup spec \u00a76 \u2014 scan output reads setup-aware',
+    pass: () => {
+      const f = read('src/core/hybridScanEngine.js');
+      return /SETUP_ACTIONS/.test(f)
+          && /Check pot drainage/.test(f)
+          && /Avoid letting water sit in the container/.test(f)
+          && /Check nearby plants for similar signs/.test(f)
+          && /Improve airflow between plants/.test(f)
+          && /Check soil around the plant/.test(f)
+          && /Remove nearby weeds if present/.test(f)
+          && /recommendedActions\s*=\s*recommendedActions\.slice\(0,\s*3\)/.test(f);
+    },
+  },
+  {
+    // Spec \u00a77 \u2014 every required garden.growingSetup.* key is
+    // present in the canonical translations store.
+    name: 'translations.js ships every garden.growingSetup.* key',
+    why:  'Backyard growing-setup spec \u00a77 \u2014 complete keys for the new step',
+    pass: () => {
+      const f = read('src/i18n/translations.js');
+      const KEYS = [
+        'garden.growingSetup.title',
+        'garden.growingSetup.label',
+        'garden.growingSetup.container',
+        'garden.growingSetup.bed',
+        'garden.growingSetup.ground',
+        'garden.growingSetup.unknown',
+      ];
+      for (const k of KEYS) {
+        const re = new RegExp(`['"]${k.replace(/\./g, '\\.')}['"]\\s*:`);
+        if (!re.test(f)) return false;
+      }
+      return true;
+    },
+  },
+  {
+    // Spec \u00a74 \u2014 GardenSetupForm (the add-another / edit-garden
+    // surface) maps its existing growingLocation pick to the
+    // canonical growingSetup bucket so downstream engines read
+    // the same field whether the garden was created via this
+    // form or via QuickGardenSetup.
+    name: 'GardenSetupForm normalises growingLocation \u2192 growingSetup',
+    why:  'Backyard growing-setup spec \u00a74 \u2014 edit-garden updates the canonical field',
+    pass: () => {
+      const f = read('src/components/farm/GardenSetupForm.jsx');
+      return /GROWING_LOCATION_TO_SETUP/.test(f)
+          && /soil:\s*['"]ground['"]/.test(f)
+          && /raised_bed:\s*['"]bed['"]/.test(f)
+          && /pots:\s*['"]container['"]/.test(f)
+          && /growingSetup,/.test(f);                  // included in the saved object
+    },
+  },
 ];
 
 const failed = [];
