@@ -348,7 +348,7 @@ export default function QuickGardenSetup() {
   return (
     <main style={S.page} data-testid="quick-garden-setup" data-screen="setup-garden">
       <div>
-        {/* Spec \u00a75 \u2014 progress bar instead of "Step 1 of 6". The
+        {/* Spec \u00a75 \u2014 progress bar instead of a long step-count pill. The
             garden flow is 4 steps total (Step 0 lang \u2192 Step 1
             pick \u2192 Step 2\u20133 setup); we sit at \u224875% on this screen. */}
         <OnboardingProgressBar value={3} total={4} />

@@ -197,7 +197,7 @@ export default function FastFlow() {
     try { navigate(target); } catch { /* swallow */ }
   }
 
-  // Spec \u00a75 \u2014 progress bar instead of "Step X of 6". Total
+  // Spec \u00a75 \u2014 progress bar instead of a long step-count pill. Total
   // assumed 4 steps (FastFlow Step 0 + Step 1, then 2 setup
   // steps); progress reflects the visible position in the flow.
   // The setup forms own their own slice of the bar.

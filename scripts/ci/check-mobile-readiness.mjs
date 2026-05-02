@@ -1639,15 +1639,25 @@ const checks = [
     // on step 6 and threads `onEditStep` to StepDailyPlanPreview
     // so each "Edit" button jumps the user back to the right
     // step (preserving profile state).
-    name: 'OnboardingFlow shows back on step 6 + wires onEditStep mapping',
-    why:  'Review-step spec \u2014 back works on final step + Edit options route correctly',
+    // OBSOLETE \u2014 OnboardingFlow.jsx is now a redirect-only shim
+    // pointing /onboarding/simple at /onboarding/start. The
+    // 6-step body (back-button + onEditStep wiring) is gone.
+    // Replaced by the "redirect-only shim" guard below.
+    name: 'OnboardingFlow.jsx is a redirect-only shim to /onboarding/start',
+    why:  'Risk-fix \u2014 legacy 6-step flow superseded by canonical FastFlow',
     pass: () => {
       const f = read('src/onboarding/OnboardingFlow.jsx');
-      return /onEditStep=/.test(f)
-          && /crop:\s*4/.test(f)
-          && /location:\s*2/.test(f)
-          && /growingSetup:\s*5/.test(f)
-          && /showBack\s*=\s*step\s*>\s*1\s*;/.test(f);   // no `&& step !== 6`
+      return /CANONICAL_ENTRY\s*=\s*['"]\/onboarding\/start['"]/.test(f)
+          && /navigate\(CANONICAL_ENTRY,\s*\{\s*replace:\s*true\s*\}\)/.test(f)
+          // Redirect-only \u2014 the legacy step state must NOT be
+          // declared in the new shim; presence of `useState`
+          // indicates the dead code crept back.
+          && !/React\.useState\(\(\) => loadOnboardingProfile/.test(f)
+          // No more 6-step pill / back button / onEditStep
+          // wiring \u2014 those concerns moved to FastFlow + Quick
+          // setups + StepDailyPlanPreview (now unreferenced).
+          && !/showBack/.test(f)
+          && !/onEditStep/.test(f);
     },
   },
   {
@@ -1724,36 +1734,45 @@ const checks = [
     },
   },
   {
-    // Polish-audit \u00a74 \u2014 the step pill swaps to "Almost done"
-    // on the final step instead of "Step 6 of 6".
-    name: 'OnboardingFlow shows "Almost done" pill on final step',
-    why:  'Polish-audit \u00a74 \u2014 reduce step anxiety on commitment screen',
+    // OBSOLETE \u2014 the "Almost done" pill belonged to the legacy
+    // 6-step flow body that no longer exists. The canonical
+    // 4-step FastFlow uses the progress bar only (no step pill
+    // text after step 3 \u2014 see clean-onboarding spec). Kept as
+    // a no-op pass so removing the assertion doesn't change
+    // the check count.
+    name: 'OnboardingFlow.jsx is no longer a 6-step orchestrator',
+    why:  'Risk-fix \u2014 legacy 6-step flow consolidated into FastFlow',
     pass: () => {
       const f = read('src/onboarding/OnboardingFlow.jsx');
-      return /step\s*===\s*TOTAL_STEPS\s*\?\s*tSafe\(\s*['"]onboarding\.almostDone['"]/.test(f);
+      // The legacy TOTAL_STEPS constant must be gone.
+      return !/const\s+TOTAL_STEPS\s*=\s*6/.test(f)
+          && !/onboarding\.almostDone/.test(f)
+          // Step components are no longer imported (the
+          // redirect shim has zero feature imports).
+          && !/from\s+['"]\.\/StepFarmerType\.jsx['"]/.test(f)
+          && !/from\s+['"]\.\/StepCropSelection\.jsx['"]/.test(f);
     },
   },
   {
-    // Risk-fix follow-up to 9874630 \u2014 the user-facing onboarding
-    // entry surfaces (FarmerEntry post-auth, BeginnerReassurance
-    // continue, OnboardingFlow flag-off) ALL route to the
-    // canonical post-rewrite FastFlow at /onboarding/start.
-    // Collapses parallel onboarding paths into a single
-    // user-facing flow that gets every polish fix shipped so far.
+    // Risk-fix follow-up to 9874630 \u2014 every user-facing
+    // onboarding entry surface routes to the canonical
+    // /onboarding/start (FastFlow):
+    //   \u2022 FarmerEntry post-auth no-farm path
+    //   \u2022 BeginnerReassurance Continue button
+    //   \u2022 OnboardingFlow legacy /onboarding/simple route
+    //     (now an unconditional redirect-only shim)
     name: 'Canonical onboarding entry points all route to /onboarding/start',
     why:  'Risk-fix \u2014 single user-facing onboarding flow',
     pass: () => {
       const farmerEntry  = read('src/pages/FarmerEntry.jsx');
       const reassurance  = read('src/pages/BeginnerReassurance.jsx');
       const simpleFlow   = read('src/onboarding/OnboardingFlow.jsx');
-      // FarmerEntry: post-auth no-farm path navigates to /onboarding/start.
       const farmerOk = /['"]\/onboarding\/start['"]\s*:\s*['"]\/beginner-reassurance['"]/.test(farmerEntry);
-      // BeginnerReassurance: Continue button navigates to /onboarding/start.
       const reassureOk = /navigate\(\s*['"]\/onboarding\/start['"],\s*\{\s*replace:\s*true\s*\}\s*\)/.test(reassurance);
-      // Simple Onboarding flag-off redirect target is /onboarding/start.
-      // Buffer is generous because the redirect comment block sits
-      // between the flag check and the navigate call.
-      const simpleOk = /isFeatureEnabled\(['"]FEATURE_SIMPLE_ONBOARDING['"]\)[\s\S]{0,800}navigate\(\s*['"]\/onboarding\/start['"]/.test(simpleFlow);
+      // OnboardingFlow shim: unconditional navigate to
+      // /onboarding/start via the CANONICAL_ENTRY constant.
+      const simpleOk = /CANONICAL_ENTRY\s*=\s*['"]\/onboarding\/start['"]/.test(simpleFlow)
+                    && /navigate\(CANONICAL_ENTRY,\s*\{\s*replace:\s*true\s*\}\)/.test(simpleFlow);
       return farmerOk && reassureOk && simpleOk;
     },
   },
@@ -1779,19 +1798,27 @@ const checks = [
     },
   },
   {
-    // Farm/garden separation spec \u00a73 \u2014 the Simple Onboarding
-    // step pill MUST NOT show "Step 4/5/6 of 6" anymore. Steps
-    // 1\u20133 still show "Step X of N" so progress is visible;
-    // steps 4\u20135 hide the count entirely; step 6 says
-    // "Almost done".
-    name: 'OnboardingFlow hides step count on steps 4\u20135 (no scary 6 of 6)',
-    why:  'Farm/garden separation spec \u00a73 \u2014 onboarding does not feel long',
+    // OBSOLETE \u2014 the legacy 6-step pill no longer exists. The
+    // canonical FastFlow uses a continuous progress bar instead
+    // of any step pill at all (clean-onboarding spec \u00a75).
+    // Replaced with a "no scary step count anywhere" assertion
+    // that scans the entire flow surface for the legacy
+    // "Step X of 6" pattern.
+    name: 'No "Step X of 6" pattern anywhere in onboarding flow',
+    why:  'Risk-fix \u2014 legacy 6-step pill is fully retired',
     pass: () => {
-      const f = read('src/onboarding/OnboardingFlow.jsx');
-      // The pill expression must include a step <= 3 guard so
-      // steps 4 and 5 fall through to the empty string.
-      return /step\s*<=\s*3/.test(f)
-          && /step\s*===\s*TOTAL_STEPS\s*\?\s*tSafe\(\s*['"]onboarding\.almostDone['"]/.test(f);
+      const flow   = read('src/pages/onboarding/FastFlow.jsx');
+      const shim   = read('src/onboarding/OnboardingFlow.jsx');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Reject any literal "of 6" string written into source
+      // (translations.js carries the {step}/{total} template
+      // and isn't part of the rendered surface check).
+      const NO_HARDCODED_OF_SIX = (s) => !/of\s*['"]?6/.test(s);
+      return NO_HARDCODED_OF_SIX(flow)
+          && NO_HARDCODED_OF_SIX(shim)
+          && NO_HARDCODED_OF_SIX(garden)
+          && NO_HARDCODED_OF_SIX(farm);
     },
   },
   {
@@ -1902,6 +1929,36 @@ const checks = [
       return /trackEvent\(\s*['"]onboarding_started['"]/.test(f)
           && /trackEvent\(\s*['"]onboarding_step_viewed['"]/.test(f)
           && /trackEvent\(\s*['"]onboarding_step_completed['"]/.test(f);
+    },
+  },
+  {
+    // Risk-fix \u2014 the legacy /onboarding/simple route is now an
+    // unconditional redirect-only shim. The 6-step body is gone.
+    // No flag, no feature toggle, no draft handling \u2014 just a
+    // useEffect that calls navigate(CANONICAL_ENTRY) on mount.
+    // This collapses the parallel onboarding paths so every
+    // future polish + hardening fix lands in one place.
+    name: '/onboarding/simple is a redirect-only shim (no rendered body)',
+    why:  'Risk-fix \u2014 legacy flow consolidated into canonical /onboarding/start',
+    pass: () => {
+      const f = read('src/onboarding/OnboardingFlow.jsx');
+      return /CANONICAL_ENTRY\s*=\s*['"]\/onboarding\/start['"]/.test(f)
+          && /useEffect\(\s*\(\)\s*=>/.test(f)
+          && /navigate\(CANONICAL_ENTRY,\s*\{\s*replace:\s*true\s*\}\)/.test(f)
+          // Shim returns null, no rendered output.
+          && /return null;/.test(f)
+          // Forbidden: any of the legacy step-flow imports.
+          && !/StepFarmerType/.test(f)
+          && !/StepLocation/.test(f)
+          && !/StepCropSelection/.test(f)
+          && !/StepFarmSetup/.test(f)
+          && !/StepDailyPlanPreview/.test(f)
+          // Forbidden: the legacy feature flag check.
+          && !/FEATURE_SIMPLE_ONBOARDING/.test(f)
+          // Forbidden: any draft / store I/O that belonged to
+          // the old body.
+          && !/loadOnboardingProfile/.test(f)
+          && !/completeOnboarding/.test(f);
     },
   },
 ];
