@@ -113,10 +113,25 @@ function scrollToAnchor(id) {
   } catch { /* swallow */ }
 }
 
-export default function OnboardingReviewPanel({ experience, summary, onChangeStep }) {
+export default function OnboardingReviewPanel({ experience, summary, onChangeStep, actions: dynamicActions }) {
   const isGarden = String(experience || '').toLowerCase() === 'garden'
                 || String(experience || '').toLowerCase() === 'backyard';
-  const tasks = _tasksFor(experience);
+  // Dynamic engine-generated actions take precedence when the
+  // caller supplies them (firstPlanEngine output). Falls back
+  // to the static garden/farm fallback list for legacy
+  // callers. Cap at 3 entries so the review surface stays
+  // scannable; the engine returns up to 5 in priority order
+  // (inspection \u2192 watering \u2192 risk \u2192 growth \u2192 scan).
+  const tasks = (Array.isArray(dynamicActions) && dynamicActions.length > 0)
+    ? dynamicActions.slice(0, 3).map((a, i) => ({
+        id:     `engine.${a && a.type ? a.type : 'task'}.${i}`,
+        urgency: a && a.type === 'risk' ? 'high'
+               : a && a.type === 'scan' ? 'low'
+               : 'medium',
+        title:  String((a && a.text) || ''),
+        reason: String((a && a.detail) || ''),
+      }))
+    : _tasksFor(experience);
   const hint = isGarden
     ? tSafe('onboarding.newFarmerHint.garden',
         'Follow these steps today to keep your plant healthy.')

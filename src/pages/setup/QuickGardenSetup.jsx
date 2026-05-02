@@ -29,7 +29,7 @@
  *   * Geolocation failure is silent — manual inputs always shown.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
@@ -56,6 +56,10 @@ import OnboardingProgressBar from '../../components/onboarding/OnboardingProgres
 // form. Brings the legacy StepDailyPlanPreview wording into
 // the user-facing path without requiring a separate route.
 import OnboardingReviewPanel from '../../components/onboarding/OnboardingReviewPanel.jsx';
+// First-plan engine \u2014 generates a stage + weather-aware action
+// list inline on the review screen so the user's first plan
+// is personalised to what they just told us.
+import { generateFirstPlan } from '../../core/firstPlanEngine.js';
 
 // Spec \u00a76 \u2014 garden size buckets. Garden flow MUST NOT show
 // acres; this is a kitchen-plot screen. "I don't know" lets the
@@ -636,7 +640,10 @@ export default function QuickGardenSetup() {
           (Plant / Location / Growing setup) with Change buttons
           that jump back to the relevant sub-step (state-based,
           NOT scroll). Below the panel sits the Save Garden CTA
-          which persists the record + routes to /home. */}
+          which persists the record + routes to /home. The
+          firstPlanEngine generates the action list from the
+          user's actual entries (plant, location, isGarden)
+          and the cached weather snapshot if available. */}
       {subStep === 3 && (
         <>
           <OnboardingReviewPanel
@@ -651,6 +658,26 @@ export default function QuickGardenSetup() {
                     growingSetup)
                 : null,
             }}
+            actions={generateFirstPlan({
+              crop:     plant.trim() || null,
+              isGarden: true,
+              location: { country: country.trim(), region: region.trim(), city: city.trim() },
+              // No plantedAt yet \u2014 the user just set up; the
+              // engine returns the unknown-stage path which
+              // skips the growth action.
+              plantedAt: null,
+              // Best-effort cached weather. ScanPage already
+              // populates this slot when /scan runs; on first
+              // boot the slot is empty and the engine falls
+              // through to the no-weather branch.
+              weather: (() => {
+                try {
+                  if (typeof window === 'undefined') return null;
+                  const raw = window.localStorage?.getItem('farroway_weather_cache');
+                  return raw ? JSON.parse(raw) : null;
+                } catch { return null; }
+              })(),
+            })}
             onChangeStep={(key) => {
               // Stability-patch \u00a74 \u2014 state-based jump-back.
               // Each Change button maps to the sub-step that

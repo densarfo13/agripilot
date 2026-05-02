@@ -2261,6 +2261,64 @@ const checks = [
           && /logoFailed \?\s*null/.test(f);
     },
   },
+  {
+    // First-plan engine \u2014 generates a stage + weather-aware
+    // action list inline on the review screen so the user's
+    // first plan is personalised to what they just told us.
+    // Coexists with dailyIntelligenceEngine.generateDailyPlan
+    // (which drives /home daily card from the full farm
+    // record); this engine is a slimmer pure function for
+    // the END of onboarding.
+    name: 'firstPlanEngine ships generateFirstPlan with stage + weather logic',
+    why:  'First-plan engine spec \u2014 personalised first daily plan on review',
+    pass: () => {
+      const f = read('src/core/firstPlanEngine.js');
+      return /export function generateFirstPlan/.test(f)
+          // Stage detector covers the 4 named stages.
+          && /germination/.test(f)
+          && /['"]early growth['"]/.test(f)
+          && /vegetative/.test(f)
+          && /mature/.test(f)
+          // Weather thresholds match the spec: rainChance > 60,
+          // humidity > 70, temp > 30.
+          && /rainChance\)\s*>\s*60/.test(f)
+          && /humidity\)\s*>\s*70/.test(f)
+          && /temp\)\s*>\s*30/.test(f)
+          // Action types: inspection / watering / risk /
+          // growth / scan all referenced.
+          && /type:\s*['"]inspection['"]/.test(f)
+          && /type:\s*['"]watering['"]/.test(f)
+          && /type:\s*['"]risk['"]/.test(f)
+          && /type:\s*['"]growth['"]/.test(f)
+          && /type:\s*['"]scan['"]/.test(f)
+          // isGarden flips plant\u2194crop wording.
+          && /isGarden/.test(f);
+    },
+  },
+  {
+    // Quick setup forms compute the first plan from current
+    // state + cached weather and pass the action list to
+    // the review panel. The panel renders dynamic actions
+    // when provided, otherwise falls back to the static
+    // 3-task list.
+    name: 'Quick setup forms feed firstPlan into the review panel',
+    why:  'First-plan engine spec \u2014 review screen reflects user\u2019s entries',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
+      return /from ['"]\.\.\/\.\.\/core\/firstPlanEngine\.js['"]/.test(garden)
+          && /actions=\{generateFirstPlan\(/.test(garden)
+          && /isGarden:\s*true/.test(garden)
+          && /from ['"]\.\.\/\.\.\/core\/firstPlanEngine\.js['"]/.test(farm)
+          && /actions=\{generateFirstPlan\(/.test(farm)
+          && /isGarden:\s*false/.test(farm)
+          // Panel accepts the actions prop and renders dynamic
+          // tasks ahead of the static fallback.
+          && /actions:\s*dynamicActions/.test(panel)
+          && /dynamicActions\.slice\(0,\s*3\)/.test(panel);
+    },
+  },
 ];
 
 const failed = [];

@@ -55,6 +55,8 @@ import OnboardingProgressBar from '../../components/onboarding/OnboardingProgres
 // above the Save button so the user sees the polished
 // "Review your first plan" framing before committing.
 import OnboardingReviewPanel from '../../components/onboarding/OnboardingReviewPanel.jsx';
+// First-plan engine \u2014 stage + weather-aware action list.
+import { generateFirstPlan } from '../../core/firstPlanEngine.js';
 
 // Spec \u00a76 \u2014 farm size buckets. Farm flow MUST NOT show
 // "Small backyard"; this is a working-acre screen. The bucket
@@ -641,6 +643,19 @@ export default function QuickFarmSetup() {
                 ? tStrict(`onboarding.farmSize.${sizeBucket}`, sizeBucket)
                 : (size ? `${size} ${unit || ''}`.trim() : null),
             }}
+            actions={generateFirstPlan({
+              crop:      crop.trim() || null,
+              isGarden:  false,
+              location:  { country: country.trim(), region: region.trim() },
+              plantedAt: null,
+              weather: (() => {
+                try {
+                  if (typeof window === 'undefined') return null;
+                  const raw = window.localStorage?.getItem('farroway_weather_cache');
+                  return raw ? JSON.parse(raw) : null;
+                } catch { return null; }
+              })(),
+            })}
             onChangeStep={(key) => {
               if (key === 'location')      setSubStep(0);
               else if (key === 'crop')     setSubStep(1);
