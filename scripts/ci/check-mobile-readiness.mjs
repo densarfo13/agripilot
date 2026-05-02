@@ -652,6 +652,36 @@ const checks = [
           && /experience_fallback_auto_repair/.test(f);
     },
   },
+  {
+    name: 'scanHistory carries gardenId + farmId + isolation helper',
+    why:  'Scan engine \u00a710 \u2014 garden + farm scan histories must never cross-contaminate',
+    pass: () => {
+      const f = read('src/data/scanHistory.js');
+      return /gardenId:\s*context\.gardenId/.test(f)
+          && /export function getScansForActiveContext/.test(f);
+    },
+  },
+  {
+    name: 'scanToTask attaches gardenId/farmId + dedupes same-day duplicates',
+    why:  'Scan engine \u00a79 \u2014 tasks isolated per active context; no daily duplicates',
+    pass: () => {
+      const f = read('src/core/scanToTask.js');
+      return /gardenId:\s*context\.gardenId/.test(f)
+          && /existing\.has/.test(f)
+          && /todayKey/.test(f);
+    },
+  },
+  {
+    name: 'ScanPage attaches scans to active experience id',
+    why:  'Scan engine \u00a72 \u2014 gardenId when garden active, farmId when farm active',
+    pass: () => {
+      const f = read('src/pages/ScanPage.jsx');
+      return /useExperience/.test(f)
+          && /activeGardenId/.test(f)
+          && /activeFarmId/.test(f)
+          && /isGarden\s*\?/.test(f);
+    },
+  },
 ];
 
 const failed = [];

@@ -66,13 +66,19 @@ function _isoNow() {
  * can navigate to a detail page using its id.
  *
  * @param {object} result      ScanResult from the engine
- * @param {object} [context]   { farmId, cropId, plantName, experience, language, thumbnail }
+ * @param {object} [context]   { farmId, gardenId, userId, cropId, plantName, experience, language, thumbnail }
  * @returns {ScanHistoryEntry}
  */
 export function saveScanEntry(result, context = {}) {
   const safeResult = result && typeof result === 'object' ? result : {};
+  // Final scan engine spec §10: every entry carries BOTH gardenId
+  // and farmId slots so the garden + farm history surfaces stay
+  // isolated. Exactly one is populated per scan, based on the
+  // active experience the caller passes in.
   const entry = {
     id:                  safeResult.scanId || ('scan_' + Date.now().toString(36)),
+    userId:              context.userId    || null,
+    gardenId:            context.gardenId  || null,
     farmId:              context.farmId    || null,
     cropId:              context.cropId    || safeResult.meta?.cropId || null,
     plantName:           context.plantName || safeResult.meta?.plant  || null,
@@ -98,6 +104,44 @@ export function saveScanEntry(result, context = {}) {
   list.push(entry);
   _writeList(list);
   return entry;
+}
+
+/**
+ * getScansForActiveContext({ experience, gardenId, farmId })
+ *   → rows newest-first, isolated to the active context.
+ *
+ * Spec §10 isolation rules:
+ *   • experience='garden' → only rows whose gardenId matches the
+ *     active garden (back-compat: rows saved before gardenId
+ *     existed match if their `experience` was 'garden'/'backyard'
+ *     and no gardenId filter is supplied)
+ *   • experience='farm'   → only rows whose farmId matches the
+ *     active farm (same back-compat rule for legacy 'farm' rows)
+ *   • neither             → return all rows (admin / debug case)
+ */
+export function getScansForActiveContext({ experience, gardenId, farmId } = {}) {
+  const sorted = _readList().slice().sort((a, b) =>
+    String(b?.createdAt || '').localeCompare(String(a?.createdAt || '')));
+
+  if (experience === 'garden') {
+    return sorted.filter((row) => {
+      if (!row) return false;
+      if (gardenId && row.gardenId === gardenId) return true;
+      const xp = String(row.experience || '').toLowerCase();
+      if (!gardenId && (xp === 'garden' || xp === 'backyard')) return true;
+      return false;
+    });
+  }
+  if (experience === 'farm') {
+    return sorted.filter((row) => {
+      if (!row) return false;
+      if (farmId && row.farmId === farmId) return true;
+      const xp = String(row.experience || '').toLowerCase();
+      if (!farmId && xp === 'farm') return true;
+      return false;
+    });
+  }
+  return sorted;
 }
 
 /** Read-only snapshot of all stored entries. */

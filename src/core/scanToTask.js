@@ -51,14 +51,30 @@ function _writeList(list) {
  * without writing anything.
  *
  * @param {Array<object>} suggestedTasks  from `analyzeScan`
- * @param {object} [context]   { scanId, farmId, experience }
+ * @param {object} [context]   { scanId, farmId, gardenId, experience }
  * @returns {Array<object>}
+ *
+ * Final scan engine spec §9: tasks attach to gardenId OR farmId
+ * based on activeExperience so garden + farm Today's Plans stay
+ * isolated. Same-day duplicates are rejected per the spec
+ * "do not duplicate same scan task on same day" rule.
  */
 export function addScanTasks(suggestedTasks, context = {}) {
   if (!isFeatureEnabled('scanToTask')) return [];
   if (!Array.isArray(suggestedTasks) || suggestedTasks.length === 0) return [];
   const cappedSource = suggestedTasks.slice(0, 2);
   const now = Date.now();
+
+  // Spec §9: dedupe same-day same-scan tasks so the user
+  // doesn't accumulate duplicate entries from rescanning.
+  const todayKey = new Date(now).toISOString().slice(0, 10);
+  const list = _readList();
+  const existing = new Set(
+    list
+      .filter((t) => t && t.scanId && String(t.createdAt || '').slice(0, 10) === todayKey)
+      .map((t) => `${t.scanId}|${t.title}`)
+  );
+
   const newEntries = cappedSource.map((t) => ({
     id:         t?.id || ('scantask_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 8)),
     title:      String(t?.title || ''),
@@ -66,14 +82,16 @@ export function addScanTasks(suggestedTasks, context = {}) {
     urgency:    t?.urgency || 'medium',
     actionType: t?.actionType || 'inspect',
     source:     'scan',
-    scanId:     context.scanId || null,
-    farmId:     context.farmId || null,
+    scanId:     context.scanId   || null,
+    gardenId:   context.gardenId || null,
+    farmId:     context.farmId   || null,
     experience: context.experience || 'generic',
     createdAt:  new Date(now).toISOString(),
     expiresAt:  new Date(now + EXPIRY_MS).toISOString(),
     completed:  false,
-  }));
-  const list = _readList();
+  })).filter((t) => !existing.has(`${t.scanId}|${t.title}`));
+
+  if (newEntries.length === 0) return [];
   list.push(...newEntries);
   _writeList(list);
   return newEntries;
@@ -83,14 +101,22 @@ export function addScanTasks(suggestedTasks, context = {}) {
  * Read active (non-expired, non-completed) scan-derived tasks.
  * Used by any Today's Plan surface that wants to surface
  * scan follow-ups without rebuilding its own engine.
+ *
+ * Spec §9 + §10: callers can pass `gardenId` AND/OR `farmId` to
+ * isolate by active context. Passing neither returns every
+ * non-expired non-completed task (legacy behaviour).
  */
-export function getActiveScanTasks({ farmId } = {}) {
+export function getActiveScanTasks({ farmId, gardenId } = {}) {
   const now = Date.now();
   return _readList().filter((t) => {
     if (!t) return false;
     if (t.completed) return false;
     if (t.expiresAt && Date.parse(t.expiresAt) < now) return false;
-    if (farmId && t.farmId && t.farmId !== farmId) return false;
+    // If both filters supplied, an OR-match passes (caller is
+    // looking for "tasks for the active context" — exactly one
+    // of gardenId/farmId is the active id at any moment).
+    if (gardenId && t.gardenId && t.gardenId !== gardenId) return false;
+    if (farmId   && t.farmId   && t.farmId   !== farmId)   return false;
     return true;
   });
 }

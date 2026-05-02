@@ -24,6 +24,12 @@ import { analyzeScan } from '../core/scanDetectionEngine.js';
 import { saveScanEntry } from '../data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
+// Final scan engine spec §2: scans must attach to the active
+// context — gardenId when activeExperience='garden', farmId
+// when 'farm'. useExperience reads the canonical multi-
+// experience selector so the routing matches what BottomTabNav
+// + ExperienceSwitcher are showing on screen.
+import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 import ScanHistory from '../components/scan/ScanHistory.jsx';
@@ -92,6 +98,25 @@ export default function ScanPage() {
   }, []);
   const experience = useMemo(() => _readExperience(profile), [profile]);
 
+  // Final scan engine spec §2: prefer the canonical
+  // multi-experience selector for the active id pair so the
+  // scan attaches to whichever experience the BottomTabNav +
+  // ExperienceSwitcher are currently showing. Falls back to
+  // the legacy single-id model when the hook scope is missing.
+  let activeExperience = experience;
+  let activeGardenId = null;
+  let activeFarmId   = null;
+  try {
+    const xp = useExperience();
+    if (xp && xp.experience) {
+      activeExperience = xp.experience === xp.EXPERIENCE.GARDEN ? 'garden'
+                       : xp.experience === xp.EXPERIENCE.FARM   ? 'farm'
+                       : experience;
+      activeGardenId = xp.activeGardenId || null;
+      activeFarmId   = xp.activeFarmId   || null;
+    }
+  } catch { /* falls back to legacy single-id below */ }
+
   // Off-flag: bounce to the existing scan flow so deep links don't
   // strand the user.
   useEffect(() => {
@@ -144,33 +169,53 @@ export default function ScanPage() {
   const onSave = useCallback(() => {
     if (!result) return;
     try {
+      // Final scan engine spec §10: gardenId is populated when
+      // activeExperience='garden', farmId when 'farm'. Exactly
+      // one of the two slots is non-null per scan so garden +
+      // farm history surfaces stay isolated.
+      const isGarden = activeExperience === 'garden';
       const entry = saveScanEntry(result, {
-        farmId:    profile?.id || null,
+        gardenId:  isGarden ? (activeGardenId || profile?.id || null) : null,
+        farmId:    !isGarden ? (activeFarmId   || profile?.id || null) : null,
         cropId:    profile?.crop || profile?.cropId || null,
         plantName: profile?.plantName || null,
         thumbnail: pendingThumbnail,
-        experience,
+        experience: activeExperience,
         language:  null,
       });
       setSavedEntryId(entry?.id || null);
-      try { trackEvent('scan_saved', { id: entry?.id, experience }); }
+      try { trackEvent('scan_saved', {
+        id: entry?.id,
+        experience: activeExperience,
+        contextType: isGarden ? 'garden' : 'farm',
+      }); }
       catch { /* ignore */ }
     } catch { /* ignore */ }
-  }, [result, profile, experience]);
+  }, [result, profile, activeExperience, activeGardenId, activeFarmId, pendingThumbnail]);
 
   const onAddTasks = useCallback(() => {
     if (!result) return;
     try {
+      // Spec §9: tasks attach to gardenId OR farmId based on
+      // activeExperience so garden + farm Today's Plans stay
+      // isolated. Same-day duplicates are rejected inside
+      // addScanTasks.
+      const isGarden = activeExperience === 'garden';
       const stored = addScanTasks(result.suggestedTasks, {
         scanId:    result.scanId,
-        farmId:    profile?.id || null,
-        experience,
+        gardenId:  isGarden ? (activeGardenId || profile?.id || null) : null,
+        farmId:    !isGarden ? (activeFarmId   || profile?.id || null) : null,
+        experience: activeExperience,
       });
       if (stored.length > 0) setTasksAdded(true);
-      try { trackEvent('scan_task_created', { scanId: result.scanId, count: stored.length }); }
+      try { trackEvent('scan_task_created', {
+        scanId: result.scanId,
+        count: stored.length,
+        contextType: isGarden ? 'garden' : 'farm',
+      }); }
       catch { /* ignore */ }
     } catch { /* ignore */ }
-  }, [result, profile, experience]);
+  }, [result, profile, activeExperience, activeGardenId, activeFarmId]);
 
   const onAsk = useCallback(() => {
     try { trackEvent('scan_help_clicked', { scanId: result?.scanId }); }
