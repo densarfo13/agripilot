@@ -40,6 +40,11 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 // formatter the farm form uses so a garden review reads the
 // location with the same "Maryland, USA" cleanup applied.
 import { formatLocation } from '../../utils/formatDisplay.js';
+// Location-handler fix \u2014 shared helper that distinguishes the
+// PositionError codes (denied / unavailable / timeout /
+// unsupported) so the garden form shows a precise error +
+// actionable next step instead of the legacy generic line.
+import { requestUserLocation } from '../../utils/locationHandler.js';
 // Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
 // draft I/O. Replaces direct loadData/saveData calls so a
 // malformed draft (manual DevTools tweak, schema swap, partial
@@ -273,7 +278,13 @@ export default function QuickGardenSetup() {
   }
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [geoStatus, setGeoStatus]   = useState('idle'); // 'idle'|'requesting'|'denied'|'ok'
+  // Location-handler fix \u2014 status drives button label;
+  // geoErrorKey is the precise per-code translation key on
+  // failure; geoCoords stores lat/lng on success for any
+  // future reverse-geocode wiring.
+  const [geoStatus, setGeoStatus]     = useState('idle'); // 'idle'|'requesting'|'ok'|'denied'|'unavailable'|'timeout'|'unsupported'
+  const [geoErrorKey, setGeoErrorKey] = useState(null);
+  const [geoCoords, setGeoCoords]     = useState(null);
 
   // Final-gap stability \u00a78 \u2014 returning users land on /home,
   // not in setup. A completed flag means the user already
@@ -301,28 +312,25 @@ export default function QuickGardenSetup() {
     });
   }, [plant, plantPick, country, region, city, size, growingSetup, skillLevel]);
 
-  // Spec \u00a78 \u2014 "Use my location" is now an explicit user action,
-  // not a silent on-mount probe (which made some browsers prompt
-  // for permission before the user knew why). The manual fields
-  // are always usable; geolocation failure NEVER blocks setup.
-  function requestLocation() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGeoStatus('denied');
-      return;
-    }
+  // Spec \u00a78 + Location-handler fix \u2014 explicit user action with
+  // precise error-code distinction (PositionError codes 1/2/3
+  // and unsupported). The shared helper resolves a {status,
+  // position, errorKey} shape so this form just routes the
+  // strings through tSafe. Failure NEVER blocks setup; the
+  // manual fields stay usable. Success stamps lat/lng for
+  // future reverse-geocode wiring; today the user still
+  // confirms / edits country + region manually.
+  async function requestLocation() {
     setGeoStatus('requesting');
-    try {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          // We don't reverse-geocode here \u2014 manual fields stay
-          // available. We just record the success so the helper
-          // copy can encourage the user that detection worked.
-          setGeoStatus('ok');
-        },
-        () => { setGeoStatus('denied'); },
-        { timeout: 4000, maximumAge: 60_000 },
-      );
-    } catch { setGeoStatus('denied'); }
+    setGeoErrorKey(null);
+    const result = await requestUserLocation({
+      enableHighAccuracy: true,
+      timeout:            10_000,
+      maximumAge:         0,
+    });
+    setGeoStatus(result.status);
+    setGeoErrorKey(result.errorKey);
+    setGeoCoords(result.position);
   }
   // Initialise to 'idle' \u2014 we no longer auto-probe on mount.
   useEffect(() => { /* no-op, kept for future */ }, []);
@@ -563,10 +571,24 @@ export default function QuickGardenSetup() {
           data-testid="quick-garden-region"
           maxLength={60}
         />
-        {geoStatus === 'denied' ? (
-          <div style={S.helpRow} data-testid="quick-garden-geo-failed">
-            {tStrict('onboarding.locationFailed',
-              'We couldn\u2019t access your location. Please enter it manually.')}
+        {/* Location-handler fix \u2014 error-code-aware feedback +
+            success affirmation. The shared helper sets
+            geoErrorKey to the precise translation key per
+            PositionError code; null on success / idle. */}
+        {geoErrorKey ? (
+          <div style={S.helpRow} data-testid={`quick-garden-geo-${geoStatus}`}>
+            {tStrict(geoErrorKey,
+              'We couldn\u2019t detect your location. Please enter it manually.')}
+          </div>
+        ) : null}
+        {geoStatus === 'ok' ? (
+          <div
+            style={{ ...S.helpRow, color: '#86EFAC' }}
+            data-testid="quick-garden-geo-ok"
+          >
+            {'\u2713 '}
+            {tStrict('onboarding.locationDetected',
+              'Location detected. Confirm or edit the fields below.')}
           </div>
         ) : null}
         {errors.country ? (

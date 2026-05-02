@@ -2436,14 +2436,27 @@ const checks = [
     pass: () => {
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      // Required: new copy keys present on both forms.
+      const helper = read('src/utils/locationHandler.js');
+      // Required: new copy keys present on both forms. The
+      // `onboarding.locationFailed` family migrated to the
+      // shared locationHandler.js (the form references it
+      // indirectly via geoErrorKey returned from the helper),
+      // so we check the helper for the canonical key + the
+      // form for the wiring.
       const REQ = (f) =>
             /onboarding\.locationSubtitle/.test(f)
          && /onboarding\.useMyCurrentLocation/.test(f)
          && /onboarding\.detectingLocation/.test(f)
-         && /onboarding\.locationFailed/.test(f)
          && /onboarding\.selectCountry/.test(f)
-         && /onboarding\.enterRegion/.test(f);
+         && /onboarding\.enterRegion/.test(f)
+         // Form wires the helper-returned key into tStrict.
+         && /geoErrorKey/.test(f);
+      // Helper holds the canonical locationFailed key family.
+      const HELPER_OK =
+            /onboarding\.locationFailed\.denied/.test(helper)
+         && /onboarding\.locationFailed\.unavailable/.test(helper)
+         && /onboarding\.locationFailed\.timeout/.test(helper)
+         && /onboarding\.locationFailed\.unsupported/.test(helper);
       // Forbidden: legacy keys whose tails humanise into
       // user-visible junk.
       const NO_LEAKS = (f) =>
@@ -2462,7 +2475,8 @@ const checks = [
       const GATE = (f) =>
             /geoStatus === ['"]ok['"]/.test(f)
          && /country\.trim\(\)\s*\|\|\s*geoStatus === ['"]ok['"]/.test(f);
-      return REQ(garden) && NO_LEAKS(garden) && GATE(garden)
+      return HELPER_OK
+          && REQ(garden) && NO_LEAKS(garden) && GATE(garden)
           && REQ(farm)   && NO_LEAKS(farm)   && GATE(farm);
     },
   },
@@ -2584,6 +2598,47 @@ const checks = [
           && /subStep === 3 &&[\s\S]*?setup-garden-size/.test(garden)
           && /subStep === 4 &&/.test(garden)
           && /onChangeStep=\{[\s\S]*?key === 'gardenSize'[\s\S]*?setSubStep\(3\)/.test(garden);
+    },
+  },
+  {
+    // Location-handler fix \u2014 PositionError-code-aware location
+    // request. Both setup forms route through requestUserLocation
+    // and surface error-code-specific copy + a success
+    // affirmation.
+    name: 'Location handler distinguishes PositionError codes',
+    why:  'Location-handler fix \u2014 precise error per code (denied / unavailable / timeout / unsupported)',
+    pass: () => {
+      const helper = read('src/utils/locationHandler.js');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const t      = read('src/i18n/translations.js');
+      // Helper distinguishes all four error categories.
+      const helperOk =
+            /export\s+function\s+requestUserLocation/.test(helper)
+         && /'denied'/.test(helper)
+         && /'unavailable'/.test(helper)
+         && /'timeout'/.test(helper)
+         && /'unsupported'/.test(helper)
+         && /code === 1/.test(helper)
+         && /code === 2/.test(helper)
+         && /code === 3/.test(helper);
+      // Both setup forms import + use the helper, hold a
+      // geoErrorKey state, and render the per-code message.
+      const setupOk =
+            /from ['"]\.\.\/\.\.\/utils\/locationHandler\.js['"]/.test(garden)
+         && /from ['"]\.\.\/\.\.\/utils\/locationHandler\.js['"]/.test(farm)
+         && /requestUserLocation\(/.test(garden)
+         && /requestUserLocation\(/.test(farm)
+         && /geoErrorKey/.test(garden)
+         && /geoErrorKey/.test(farm);
+      // All four error keys + success affirmation exist.
+      const trOk =
+            /'onboarding\.locationFailed\.denied':/.test(t)
+         && /'onboarding\.locationFailed\.unavailable':/.test(t)
+         && /'onboarding\.locationFailed\.timeout':/.test(t)
+         && /'onboarding\.locationFailed\.unsupported':/.test(t)
+         && /'onboarding\.locationDetected':/.test(t);
+      return helperOk && setupOk && trOk;
     },
   },
   {

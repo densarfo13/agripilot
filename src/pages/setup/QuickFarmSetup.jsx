@@ -53,6 +53,11 @@ import {
   formatFarmSize,
   normalizeFarmSizeBucket,
 } from '../../utils/formatDisplay.js';
+// Location-handler fix \u2014 shared helper that distinguishes the
+// PositionError codes (denied / unavailable / timeout / unsupported)
+// so the user sees a precise error + actionable next step instead
+// of the generic "We couldn't detect your location" line.
+import { requestUserLocation } from '../../utils/locationHandler.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 // Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
 // draft I/O.
@@ -211,7 +216,16 @@ export default function QuickFarmSetup() {
   }
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [geoStatus, setGeoStatus]   = useState('idle');
+  // Location-handler fix \u2014 status drives the button label
+  // ('idle' | 'requesting' | 'ok' | 'denied' | 'unavailable'
+  //  | 'timeout' | 'unsupported'). geoErrorKey is the
+  // translation key the failure message resolves through tSafe;
+  // null on success / idle. geoCoords stores the lat/lng the
+  // success path returns so future surfaces (reverse-geocode)
+  // can pick them up without re-requesting.
+  const [geoStatus, setGeoStatus]     = useState('idle');
+  const [geoErrorKey, setGeoErrorKey] = useState(null);
+  const [geoCoords, setGeoCoords]     = useState(null);
 
   // Final-gap stability \u00a78 \u2014 returning users land on /home,
   // not in setup. A completed flag means the user already
@@ -234,22 +248,30 @@ export default function QuickFarmSetup() {
     });
   }, [crop, cropPick, country, region, sizeBucket, size, unit, skillLevel]);
 
-  // Spec \u00a78 \u2014 "Use my location" is now an explicit user
-  // action, not a silent on-mount probe. Failure NEVER blocks
-  // setup; the manual fields stay usable.
-  function requestLocation() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGeoStatus('denied');
-      return;
-    }
+  // Spec \u00a78 + Location-handler fix \u2014 "Use my location" is an
+  // explicit user action, not a silent on-mount probe. Errors
+  // are mapped from PositionError codes to specific messages
+  // (permission denied vs unavailable vs timeout vs unsupported)
+  // so the user sees a precise reason + an actionable next
+  // step. Failure NEVER blocks setup; the manual fields stay
+  // usable. Success stamps the lat/lng for any future
+  // reverse-geocode wiring; today the user still confirms /
+  // edits country + region manually.
+  async function requestLocation() {
     setGeoStatus('requesting');
-    try {
-      navigator.geolocation.getCurrentPosition(
-        () => { setGeoStatus('ok'); },
-        () => { setGeoStatus('denied'); },
-        { timeout: 4000, maximumAge: 60_000 },
-      );
-    } catch { setGeoStatus('denied'); }
+    setGeoErrorKey(null);
+    const result = await requestUserLocation({
+      // Same defaults as the location-handler spec snippet:
+      // 10s timeout, fresh fix only, high-accuracy on. The
+      // older 4s timeout was too short for cold GPS warm-ups
+      // on rural devices.
+      enableHighAccuracy: true,
+      timeout:            10_000,
+      maximumAge:         0,
+    });
+    setGeoStatus(result.status);
+    setGeoErrorKey(result.errorKey);
+    setGeoCoords(result.position);
   }
   useEffect(() => { /* no-op, kept for future */ }, []);
 
@@ -567,10 +589,26 @@ export default function QuickFarmSetup() {
           data-testid="quick-farm-region"
           maxLength={60}
         />
-        {geoStatus === 'denied' ? (
-          <div style={S.helpRow} data-testid="quick-farm-geo-failed">
-            {tStrict('onboarding.locationFailed',
-              'We couldn\u2019t access your location. Please enter it manually.')}
+        {/* Location-handler fix \u2014 error-code-aware feedback. The
+            shared helper sets geoErrorKey to the precise
+            translation key per PositionError code; if the
+            request succeeded, geoErrorKey is null and we instead
+            render a calm "Location detected" affirmation so the
+            user knows the tap worked. */}
+        {geoErrorKey ? (
+          <div style={S.helpRow} data-testid={`quick-farm-geo-${geoStatus}`}>
+            {tStrict(geoErrorKey,
+              'We couldn\u2019t detect your location. Please enter it manually.')}
+          </div>
+        ) : null}
+        {geoStatus === 'ok' ? (
+          <div
+            style={{ ...S.helpRow, color: '#86EFAC' }}
+            data-testid="quick-farm-geo-ok"
+          >
+            {'\u2713 '}
+            {tStrict('onboarding.locationDetected',
+              'Location detected. Confirm or edit the fields below.')}
           </div>
         ) : null}
         {errors.country ? <div style={S.errorRow}>{errors.country}</div> : null}
