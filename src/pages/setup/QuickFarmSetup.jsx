@@ -179,7 +179,8 @@ export default function QuickFarmSetup() {
   const [subStep, setSubStep] = useState(0);
   const TOTAL_SUB_STEPS = 4;
   function canAdvance(s) {
-    if (s === 0) return !!country.trim();
+    // Location step: country OR geolocation succeeded.
+    if (s === 0) return !!country.trim() || geoStatus === 'ok';
     if (s === 1) {
       if (cropPick === 'other' && !crop.trim()) return false;
       return !!crop.trim();
@@ -379,22 +380,11 @@ export default function QuickFarmSetup() {
 
   return (
     <main style={S.page} data-testid="quick-farm-setup" data-screen="setup-farm">
-      <div>
-        {/* Spec \u00a75 \u2014 progress bar. Farm flow: 4 steps total
-            (Step 0 lang \u2192 Step 1 pick \u2192 Step 2\u20133 setup); we sit
-            at \u224875% on this screen. */}
-        {/* Stability-patch \u00a73 \u2014 progress bar reads continuous
-            from FastFlow into here. Six visible decisions
-            total; this surface owns positions 3 through 6. */}
-        <OnboardingProgressBar value={3 + subStep} total={6} />
-        <h1 style={S.title}>
-          {tStrict('setup.farm.title', 'Set up your farm')}
-        </h1>
-        <p style={S.subtitle}>
-          {tStrict('setup.farm.subtitle',
-            'Four quick details \u2014 you can refine later.')}
-        </p>
-      </div>
+      {/* Progress bar only \u2014 the form-level "Set up your farm"
+          title was removed (each sub-step ships its own title;
+          a global header was redundant noise above the
+          step-specific question). */}
+      <OnboardingProgressBar value={3 + subStep} total={6} />
 
       {/* Crop tiles (spec \u00a77 + farm/garden separation \u00a74).
           Maize/Rice/Pepper/Tomato/Cassava + Other (free input
@@ -476,9 +466,13 @@ export default function QuickFarmSetup() {
       {/* SubStep 0 \u2014 Location (spec item 3). */}
       {subStep === 0 && (
       <section style={S.card} id="review-location">
-        <span style={S.label}>
+        <h1 style={{ ...S.title, fontSize: 22, marginBottom: 4 }}>
           {tStrict('onboarding.farmLocation', 'Where is your farm?')}
-        </span>
+        </h1>
+        <p style={S.subtitle}>
+          {tStrict('onboarding.locationSubtitle',
+            'We use this to give weather-aware guidance for your area.')}
+        </p>
         <button
           type="button"
           onClick={requestLocation}
@@ -488,16 +482,17 @@ export default function QuickFarmSetup() {
             background: 'rgba(34,197,94,0.18)',
             border: `1px solid rgba(34,197,94,0.32)`,
             color: '#86EFAC',
-            padding: '10px 14px', borderRadius: 10,
-            fontSize: 14, fontWeight: 700, minHeight: 40,
+            padding: '12px 16px', borderRadius: 10,
+            fontSize: 14, fontWeight: 700, minHeight: 44,
             opacity: geoStatus === 'requesting' ? 0.7 : 1,
-            alignSelf: 'flex-start',
+            alignSelf: 'stretch',
+            textAlign: 'center',
           }}
           data-testid="quick-farm-use-location"
         >
           {geoStatus === 'requesting'
-            ? tStrict('setup.farm.geoRequesting', 'Detecting your location\u2026')
-            : tStrict('onboarding.useMyLocation', 'Use my location')}
+            ? tStrict('onboarding.detectingLocation', 'Detecting location\u2026')
+            : tStrict('onboarding.useMyCurrentLocation', '\uD83D\uDCCD Use my current location')}
         </button>
         <span style={{ ...S.helpRow, marginTop: 4 }}>
           {tStrict('onboarding.locationManual', 'Or enter manually')}
@@ -507,7 +502,7 @@ export default function QuickFarmSetup() {
           inputMode="text"
           autoCapitalize="words"
           autoComplete="country-name"
-          placeholder={tStrict('setup.farm.countryPh', 'Country')}
+          placeholder={tStrict('onboarding.selectCountry', 'Select country')}
           value={country}
           onChange={(e) => setCountry(e.target.value)}
           style={errors.country ? { ...S.input, ...S.inputError } : S.input}
@@ -519,7 +514,7 @@ export default function QuickFarmSetup() {
           inputMode="text"
           autoCapitalize="words"
           autoComplete="address-level1"
-          placeholder={tStrict('setup.farm.regionPh', 'Region / state (optional)')}
+          placeholder={tStrict('onboarding.enterRegion', 'Enter region or state')}
           value={region}
           onChange={(e) => setRegion(e.target.value)}
           style={S.input}
@@ -527,13 +522,9 @@ export default function QuickFarmSetup() {
           maxLength={60}
         />
         {geoStatus === 'denied' ? (
-          <div style={S.helpRow}>
-            {tStrict('setup.farm.geoDenied',
-              'Tip: enable location in your browser to auto-detect, or just type it in.')}
-          </div>
-        ) : geoStatus === 'requesting' ? (
-          <div style={S.helpRow}>
-            {tStrict('setup.farm.geoRequesting', 'Detecting your location\u2026')}
+          <div style={S.helpRow} data-testid="quick-farm-geo-failed">
+            {tStrict('onboarding.locationFailed',
+              'We couldn\u2019t access your location. Please enter it manually.')}
           </div>
         ) : null}
         {errors.country ? <div style={S.errorRow}>{errors.country}</div> : null}

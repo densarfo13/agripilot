@@ -240,7 +240,10 @@ export default function QuickGardenSetup() {
   // until the gate passes. Sub-steps 2\u20133 (growing setup, size)
   // are optional and Continue is always enabled.
   function canAdvance(s) {
-    if (s === 0) return !!country.trim();
+    // Location step: country typed manually OR geolocation
+    // succeeded \u2014 either path is enough to advance per spec
+    // (location screen UX cleanup \u00a75).
+    if (s === 0) return !!country.trim() || geoStatus === 'ok';
     if (s === 1) {
       // 'other' tile requires the free-text input to be filled.
       if (plantPick === 'other' && !plant.trim()) return false;
@@ -410,23 +413,12 @@ export default function QuickGardenSetup() {
 
   return (
     <main style={S.page} data-testid="quick-garden-setup" data-screen="setup-garden">
-      <div>
-        {/* Stability-patch \u00a73 \u2014 progress bar only. The
-            canonical onboarding flow is 6 visible decisions
-            total (FastFlow takes 2: language + experience; the
-            setup form takes 4: location, plant, growing setup,
-            review). The bar position reflects the user's
-            absolute position so progress reads continuous from
-            FastFlow into here. */}
-        <OnboardingProgressBar value={3 + subStep} total={6} />
-        <h1 style={S.title}>
-          {tStrict('setup.garden.title', 'Set up your garden')}
-        </h1>
-        <p style={S.subtitle}>
-          {tStrict('setup.garden.subtitle',
-            'Just two quick details \u2014 you can refine later.')}
-        </p>
-      </div>
+      {/* Progress bar only \u2014 the form-level "Set up your garden"
+          title was removed. Each sub-step now ships its own
+          title + subtitle that focuses the user on the current
+          decision; the global header was redundant noise above
+          a step-specific question. */}
+      <OnboardingProgressBar value={3 + subStep} total={6} />
 
       {/* SubStep 1 \u2014 Plant tiles. Pick the plant the user is
           growing. "Other" reveals a free-text fallback so any
@@ -500,14 +492,19 @@ export default function QuickGardenSetup() {
       </section>
       )}
 
-      {/* SubStep 0 \u2014 Location. "Use my location" + manual
-          country / region inputs. Location failure does NOT
-          block setup. */}
+      {/* SubStep 0 \u2014 Location. Title + subtitle focus the user
+          on this single decision. "Use my current location"
+          is the primary CTA; the manual inputs are always
+          available. Location failure NEVER blocks setup. */}
       {subStep === 0 && (
       <section style={S.card} id="review-location">
-        <span style={S.label}>
+        <h1 style={{ ...S.title, fontSize: 22, marginBottom: 4 }}>
           {tStrict('onboarding.gardenLocation', 'Where is your garden?')}
-        </span>
+        </h1>
+        <p style={S.subtitle}>
+          {tStrict('onboarding.locationSubtitle',
+            'We use this to give weather-aware guidance for your area.')}
+        </p>
         <button
           type="button"
           onClick={requestLocation}
@@ -517,16 +514,17 @@ export default function QuickGardenSetup() {
             background: 'rgba(34,197,94,0.18)',
             border: `1px solid rgba(34,197,94,0.32)`,
             color: '#86EFAC',
-            padding: '10px 14px', borderRadius: 10,
-            fontSize: 14, fontWeight: 700, minHeight: 40,
+            padding: '12px 16px', borderRadius: 10,
+            fontSize: 14, fontWeight: 700, minHeight: 44,
             opacity: geoStatus === 'requesting' ? 0.7 : 1,
-            alignSelf: 'flex-start',
+            alignSelf: 'stretch',
+            textAlign: 'center',
           }}
           data-testid="quick-garden-use-location"
         >
           {geoStatus === 'requesting'
-            ? tStrict('setup.garden.geoRequesting', 'Detecting your location\u2026')
-            : tStrict('onboarding.useMyLocation', 'Use my location')}
+            ? tStrict('onboarding.detectingLocation', 'Detecting location\u2026')
+            : tStrict('onboarding.useMyCurrentLocation', '\uD83D\uDCCD Use my current location')}
         </button>
         <span style={{ ...S.helpRow, marginTop: 4 }}>
           {tStrict('onboarding.locationManual', 'Or enter manually')}
@@ -536,7 +534,7 @@ export default function QuickGardenSetup() {
           inputMode="text"
           autoCapitalize="words"
           autoComplete="country-name"
-          placeholder={tStrict('setup.garden.countryPh', 'Country')}
+          placeholder={tStrict('onboarding.selectCountry', 'Select country')}
           value={country}
           onChange={(e) => setCountry(e.target.value)}
           style={errors.country ? { ...S.input, ...S.inputError } : S.input}
@@ -548,7 +546,7 @@ export default function QuickGardenSetup() {
           inputMode="text"
           autoCapitalize="words"
           autoComplete="address-level1"
-          placeholder={tStrict('setup.garden.regionPh', 'State / region (optional)')}
+          placeholder={tStrict('onboarding.enterRegion', 'Enter region or state')}
           value={region}
           onChange={(e) => setRegion(e.target.value)}
           style={S.input}
@@ -556,13 +554,9 @@ export default function QuickGardenSetup() {
           maxLength={60}
         />
         {geoStatus === 'denied' ? (
-          <div style={S.helpRow}>
-            {tStrict('setup.garden.geoDenied',
-              'Tip: enable location in your browser to auto-detect, or just type it in.')}
-          </div>
-        ) : geoStatus === 'requesting' ? (
-          <div style={S.helpRow}>
-            {tStrict('setup.garden.geoRequesting', 'Detecting your location\u2026')}
+          <div style={S.helpRow} data-testid="quick-garden-geo-failed">
+            {tStrict('onboarding.locationFailed',
+              'We couldn\u2019t access your location. Please enter it manually.')}
           </div>
         ) : null}
         {errors.country ? (

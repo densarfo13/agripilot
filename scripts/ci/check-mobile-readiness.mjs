@@ -1349,15 +1349,18 @@ const checks = [
     // location section; manual entry is the fallback, not the
     // first thing the user sees. Geolocation failure must not
     // block setup (the manual fields are always visible).
-    name: 'Setup forms expose explicit "Use my location" CTA',
-    why:  'Clean-onboarding spec \u00a78 \u2014 explicit location action, manual always available',
+    name: 'Setup forms expose explicit "Use my current location" CTA',
+    why:  'Clean-onboarding spec \u00a78 + location-cleanup \u00a74 \u2014 explicit location action',
     pass: () => {
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      return /onboarding\.useMyLocation/.test(garden)
+      // Either the legacy or the new key is acceptable for the
+      // CTA copy; both forms must wire the requestLocation
+      // handler + carry the testid.
+      return (/onboarding\.useMyCurrentLocation/.test(garden) || /onboarding\.useMyLocation/.test(garden))
           && /data-testid=["']quick-garden-use-location["']/.test(garden)
           && /requestLocation/.test(garden)
-          && /onboarding\.useMyLocation/.test(farm)
+          && (/onboarding\.useMyCurrentLocation/.test(farm) || /onboarding\.useMyLocation/.test(farm))
           && /data-testid=["']quick-farm-use-location["']/.test(farm)
           && /requestLocation/.test(farm);
     },
@@ -2389,6 +2392,55 @@ const checks = [
           // New render slots wired up.
           && /data-testid=["']daily-plan-explanation["']/.test(f)
           && /data-testid=["']daily-followup["']/.test(f);
+    },
+  },
+  {
+    // Location-screen UX cleanup \u2014 humanizer-leaking keys
+    // (setup.garden.title / .subtitle / .countryPh / .regionPh
+    // / .geoDenied) used to surface as literal "Title",
+    // "Subtitle", "Country Ph", "Geo Denied" because their
+    // tails humanise into those strings and tStrict doesn't
+    // detect humanised values as missing.
+    //
+    // The Location step now uses long-tail keys that humanise
+    // gracefully even when missing:
+    //   onboarding.locationSubtitle / .useMyCurrentLocation /
+    //   .detectingLocation / .locationFailed / .selectCountry /
+    //   .enterRegion. The legacy keys are no longer rendered
+    //   in the Quick setup forms.
+    name: 'Location step uses clean copy keys (no humanizer leaks)',
+    why:  'Location-screen UX cleanup \u2014 no "Title" / "Country Ph" / "Geo Denied"',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Required: new copy keys present on both forms.
+      const REQ = (f) =>
+            /onboarding\.locationSubtitle/.test(f)
+         && /onboarding\.useMyCurrentLocation/.test(f)
+         && /onboarding\.detectingLocation/.test(f)
+         && /onboarding\.locationFailed/.test(f)
+         && /onboarding\.selectCountry/.test(f)
+         && /onboarding\.enterRegion/.test(f);
+      // Forbidden: legacy keys whose tails humanise into
+      // user-visible junk.
+      const NO_LEAKS = (f) =>
+            !/setup\.garden\.title['"]/.test(f)
+         && !/setup\.garden\.subtitle/.test(f)
+         && !/setup\.garden\.countryPh/.test(f)
+         && !/setup\.garden\.regionPh/.test(f)
+         && !/setup\.garden\.geoDenied/.test(f)
+         && !/setup\.farm\.title['"]/.test(f)
+         && !/setup\.farm\.subtitle/.test(f)
+         && !/setup\.farm\.countryPh/.test(f)
+         && !/setup\.farm\.regionPh/.test(f)
+         && !/setup\.farm\.geoDenied/.test(f);
+      // Continue gate must accept geolocation-succeeded as
+      // a valid entry path (not just country.trim()).
+      const GATE = (f) =>
+            /geoStatus === ['"]ok['"]/.test(f)
+         && /country\.trim\(\)\s*\|\|\s*geoStatus === ['"]ok['"]/.test(f);
+      return REQ(garden) && NO_LEAKS(garden) && GATE(garden)
+          && REQ(farm)   && NO_LEAKS(farm)   && GATE(farm);
     },
   },
 ];
