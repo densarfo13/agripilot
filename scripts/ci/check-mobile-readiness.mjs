@@ -2530,11 +2530,20 @@ const checks = [
     // src/core/analytics.js (spec asked for .ts; codebase rule
     // is JS-only). Re-exports trackEvent from the canonical
     // analyticsStore so a single emit pipeline stays in place.
-    name: 'src/core/analytics ships trackEvent shim re-export',
-    why:  'Go-live spec \u00a714 \u2014 spec-pathed analytics import resolves',
+    name: 'src/core/analytics exports trackEvent (data-moat service)',
+    why:  'Go-live spec \u00a714 + Data Moat Layer \u00a71 \u2014 trackEvent stays callable from /core path',
     pass: () => {
       const f = read('src/core/analytics.js');
-      return /export\s*\{\s*trackEvent\s*\}\s*from\s*['"]\.\.\/analytics\/analyticsStore\.js['"]/.test(f);
+      // The legacy thin re-export was upgraded to a full
+      // service in Data Moat Layer \u00a71 (payload enrichment +
+      // crash safety + dual-store mirror). The contract for
+      // callers is unchanged: `import { trackEvent } from
+      // '../core/analytics.js'` still resolves to a callable
+      // trackEvent function.
+      return /export\s+function\s+trackEvent\(/.test(f)
+          // Legacy mirror still imported so existing
+          // analyticsStore consumers stay in sync.
+          && /from\s+['"]\.\.\/analytics\/analyticsStore\.js['"]/.test(f);
     },
   },
   {
@@ -3080,6 +3089,117 @@ const checks = [
           && /daily\.scanCta\.headline\.farm/.test(card)
           && /daily\.scanCta\.subtext/.test(card)
           && /daily\.scanCta\.button/.test(card);
+    },
+  },
+  {
+    // Data Moat Layer \u00a72 \u2014 canonical event store at
+    // farroway_events. saveEvent / getEvents / summarizeEvents
+    // / clearSyncedEvents all exported.
+    name: 'eventStore ships saveEvent + getEvents + summarize',
+    why:  'Data Moat Layer \u00a72 \u2014 local-first event log',
+    pass: () => {
+      const f = read('src/core/eventStore.js');
+      return /'farroway_events'/.test(f)
+          && /export\s+function\s+saveEvent/.test(f)
+          && /export\s+function\s+getEvents/.test(f)
+          && /export\s+function\s+clearSyncedEvents/.test(f)
+          && /export\s+function\s+summarizeEvents/.test(f)
+          && /export\s+function\s+resetEventStore/.test(f);
+    },
+  },
+  {
+    // Data Moat Layer \u00a71 \u2014 analytics service wraps trackEvent
+    // with payload enrichment + crash safety + dual-store
+    // mirror (eventStore + legacy analyticsStore).
+    name: 'analytics service ships enriched trackEvent + clearActivityData',
+    why:  'Data Moat Layer \u00a71 + \u00a77 \u2014 crash-safe + privacy clear',
+    pass: () => {
+      const f = read('src/core/analytics.js');
+      return /export\s+function\s+trackEvent/.test(f)
+          && /export\s+function\s+clearFarrowayActivityData/.test(f)
+          && /from\s+['"]\.\/eventStore\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/analytics\/analyticsStore\.js['"]/.test(f)
+          // KNOWN_EVENTS list covers the spec event names.
+          && /'daily_open'/.test(f) && /'task_completed'/.test(f)
+          && /'task_skipped'/.test(f) && /'scan_started'/.test(f)
+          && /'scan_completed'/.test(f) && /'scan_failed'/.test(f)
+          && /'health_feedback_submitted'/.test(f)
+          && /'onboarding_completed'/.test(f)
+          // Privacy clear wipes the activity-log keys.
+          && /'farroway_events'/.test(f)
+          && /'farroway_health_feedback'/.test(f);
+    },
+  },
+  {
+    // Data Moat Layer \u00a74 \u2014 derived personal memory.
+    name: 'userMemory ships getUserMemory + encouragementMessage',
+    why:  'Data Moat Layer \u00a74 \u2014 personal memory rollup',
+    pass: () => {
+      const f = read('src/core/userMemory.js');
+      return /export\s+function\s+getUserMemory/.test(f)
+          && /export\s+function\s+encouragementMessage/.test(f)
+          && /completedTasksCount/.test(f)
+          && /skippedTasksCount/.test(f)
+          && /scanCount/.test(f)
+          && /lastHealthyFeedback/.test(f)
+          && /from\s+['"]\.\/eventStore\.js['"]/.test(f);
+    },
+  },
+  {
+    // Data Moat Layer \u00a76 \u2014 region/crop aggregator.
+    name: 'insightAggregator ships aggregateLocalInsights',
+    why:  'Data Moat Layer \u00a76 \u2014 region/crop aggregation foundation',
+    pass: () => {
+      const f = read('src/core/insightAggregator.js');
+      return /export\s+function\s+aggregateLocalInsights/.test(f)
+          && /topCompletedTasks/.test(f)
+          && /commonIssues/.test(f)
+          && /healthTrend/.test(f)
+          && /scanUsageRate/.test(f)
+          && /byRegion/.test(f)
+          && /byCropOrPlant/.test(f);
+    },
+  },
+  {
+    // Data Moat Layer \u00a75 \u2014 dailyPlanEngine accepts userMemory
+    // + adapts the plan based on skip / scan / feedback signals.
+    name: 'dailyPlanEngine adapts to userMemory signals',
+    why:  'Data Moat Layer \u00a75 \u2014 memory-aware adaptation',
+    pass: () => {
+      const f = read('src/core/dailyPlanEngine.js');
+      // Engine reads ctx.userMemory.
+      return /ctx\.userMemory/.test(f)
+          // Skip-many simplification swaps the watering line.
+          && /Press the soil\. If dry, water it\./.test(f)
+          // High-scan path tweaks the reason.
+          && /Follow up on what you scanned recently\./.test(f)
+          // Getting-worse standalone HIGH branch.
+          && /recentlyReportedWorse/.test(f)
+          && /You said it\\u2019s getting worse \\u2014 try a scan today\./.test(f);
+    },
+  },
+  {
+    // Data Moat Layer \u00a73 + \u00a78 \u2014 outcome-feedback prompt
+    // wording reshaped to "Looks healthy / Not sure / Getting
+    // worse"; DailyPlanCard fires daily_open / task_completed
+    // / task_skipped / health_feedback_submitted via the
+    // spec-shaped analytics service.
+    name: 'DailyPlanCard wires data-moat tracking + memory',
+    why:  'Data Moat Layer \u00a73 + \u00a78 \u2014 events + memory + outcome copy',
+    pass: () => {
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      const t    = read('src/i18n/translations.js');
+      return /from\s+['"]\.\.\/\.\.\/core\/analytics\.js['"]/.test(card)
+          && /from\s+['"]\.\.\/\.\.\/core\/userMemory\.js['"]/.test(card)
+          && /moatTrack\(['"]daily_open['"]/.test(card)
+          && /moatTrack\(['"]task_completed['"]/.test(card)
+          && /moatTrack\(['"]task_skipped['"]/.test(card)
+          && /moatTrack\(['"]health_feedback_submitted['"]/.test(card)
+          && /encouragementMessage\(\)/.test(card)
+          && /data-testid="daily-memory-note"/.test(card)
+          // Trend-aware feedback button labels.
+          && /'daily\.healthFeedback\.yes':[\s\S]{0,160}en:\s*'Looks healthy'/.test(t)
+          && /'daily\.healthFeedback\.no':[\s\S]{0,160}en:\s*'Getting worse'/.test(t);
     },
   },
   {

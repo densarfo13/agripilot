@@ -255,6 +255,16 @@ function _computeRisk(facets, behaviour) {
   const b = (behaviour && typeof behaviour === 'object') ? behaviour : {};
 
   // HIGH first \u2014 worst-wins order matches the spec \u00a76 list.
+  // Data Moat Layer \u00a75 \u2014 a "getting worse" feedback in the
+  // user's memory promotes risk on its own (no weather
+  // conjunction required). Spec rule: "If user reports getting
+  // worse: raise risk level + suggest scan or expert help."
+  if (b.recentlyReportedWorse) {
+    return {
+      riskLevel:  'high',
+      riskReason: 'You said it\u2019s getting worse \u2014 try a scan today.',
+    };
+  }
   if (b.repeatedMissedDays) {
     return {
       riskLevel:  'high',
@@ -478,13 +488,66 @@ function _applyWeather(plan, w, ctx) {
   let reason   = plan.reason;
   let tasks    = plan.tasks.slice();
   const risks  = plan.riskAlerts.slice();
-  // Final Home + Review Copy Polish \u00a76 \u2014 risk computed once
-  // from the same weather facets the rest of the engine uses
-  // PLUS any behavioural signals the caller threaded through
-  // context.retention. Computed early so it's available to
-  // the return below; not re-computed elsewhere.
+  // Final Home + Review Copy Polish \u00a76 + Data Moat Layer \u00a75 \u2014
+  // risk computed from weather facets + retention behavioural
+  // signals + (optional) userMemory derived from the event
+  // log. The engine treats userMemory as a wider source of
+  // behavioural signal: a "getting_worse" feedback in memory
+  // promotes risk; a high skip count simplifies the
+  // watering task; a high scan count prioritises follow-up.
   const retention = (ctx && typeof ctx.retention === 'object') ? ctx.retention : {};
-  const risk = _computeRisk(w, retention);
+  const memory    = (ctx && typeof ctx.userMemory === 'object') ? ctx.userMemory : {};
+  // Memory-derived behavioural signals fold into the
+  // retention shape _computeRisk already understands. The
+  // explicit retention fields still take precedence (the
+  // caller may override).
+  const mergedRetention = {
+    ...retention,
+    hasRecentScanIssue:
+      retention.hasRecentScanIssue
+      || memory.lastHealthyFeedback === 'getting_worse',
+    repeatedMissedDays:
+      retention.repeatedMissedDays
+      || (typeof memory.skippedTasksCount === 'number'
+          && typeof memory.completedTasksCount === 'number'
+          && memory.skippedTasksCount > memory.completedTasksCount * 2
+          && memory.skippedTasksCount >= 3),
+    // Standalone "getting worse" signal \u2014 promotes risk to
+    // HIGH regardless of weather. Caller can override via
+    // an explicit retention.recentlyReportedWorse value.
+    recentlyReportedWorse:
+      retention.recentlyReportedWorse
+      || memory.lastHealthyFeedback === 'getting_worse',
+  };
+  const risk = _computeRisk(w, mergedRetention);
+
+  // Data Moat Layer \u00a75 \u2014 watering-task simplification.
+  // When the user often skips watering tasks (skippedCount >
+  // completedCount AND >= 3 skips), the watering line is
+  // re-shaped to a more direct prompt that the user can act
+  // on without thinking. The original detail still renders
+  // as the action's reason on the priority tile.
+  const skipMany = typeof memory.skippedTasksCount === 'number'
+                && memory.skippedTasksCount >= 3
+                && memory.skippedTasksCount > (memory.completedTasksCount || 0);
+  if (skipMany) {
+    tasks = tasks.map((t) => (
+      /^water only if/i.test(t)
+        ? 'Press the soil. If dry, water it.'
+        : t
+    ));
+  }
+
+  // Data Moat Layer \u00a75 \u2014 high-scan users get follow-up
+  // prioritised. We DON'T add extra tasks (cap stays at 3);
+  // we tweak the priority's reason to nudge the follow-up
+  // check explicitly. Threshold: 3+ scans in the user's
+  // history.
+  if ((memory.scanCount || 0) >= 3) {
+    if (!/follow.?up/i.test(reason)) {
+      reason = 'Follow up on what you scanned recently.';
+    }
+  }
 
   // Rain expected: hard-override the priority. Spec §5.
   // The original priority's tasks stay (the farmer still

@@ -59,6 +59,16 @@ import {
 import {
   isFirstHomeOpenToday, markHomeOpenedToday,
 } from '../../core/dailyFreshness.js';
+// Data Moat Layer \u00a78 \u2014 spec-shaped trackEvent + the userMemory
+// derivation. The card fires daily_open / task_completed /
+// task_skipped / task_shown via this service so eventStore +
+// the legacy analytics surface stay in sync. encouragementMessage
+// drives the "Last time..." nudge above the priority when the
+// user has prior history.
+import { trackEvent as moatTrack } from '../../core/analytics.js';
+import {
+  getUserMemory, encouragementMessage,
+} from '../../core/userMemory.js';
 // Final Home Dashboard Polish \u00a72 \u2014 reuse the spec-shaped
 // formatters so the active-context strip displays a clean
 // "Maryland, USA" + "2 acres" / "Small farm" readout instead
@@ -225,14 +235,10 @@ export default function DailyPlanCard({
     let v2 = null;
     try {
       const ctx = buildGrowingContext({ farm, weather });
-      // Final Home + Review Copy Polish \u00a76 \u2014 thread the
-      // retention behavioural signals into the engine so the
-      // risk computation can promote MEDIUM (missed yesterday)
-      // / HIGH (repeated misses, or humidity + recent scan
-      // issue). Read straight off the persisted streak +
-      // (best-effort) recent-scan flag so the engine stays
-      // pure (no React hooks inside it). Wrapped in try/catch
-      // so a missing module never silences the v2 engine.
+      // Final Home + Review Copy Polish \u00a76 + Data Moat Layer
+      // \u00a75 \u2014 thread retention behavioural signals + the
+      // derived userMemory into the engine. Memory drives the
+      // watering-task simplification + scan-follow-up nudge.
       try {
         const days = (typeof daysSinceLastCompletion === 'function')
           ? daysSinceLastCompletion()
@@ -256,6 +262,8 @@ export default function DailyPlanCard({
           repeatedMissedDays: days != null && days >= 2,
           hasRecentScanIssue: !!recentScan,
         };
+        try { ctx.userMemory = getUserMemory(); }
+        catch { /* leave undefined; engine handles missing */ }
       } catch { /* keep engine input unchanged */ }
       v2 = generatePlanV2(ctx);
     } catch { /* never let the engine break the page */ }
@@ -383,6 +391,15 @@ export default function DailyPlanCard({
   const [freshToast, setFreshToast] = React.useState(null);
   React.useEffect(() => {
     let cancelled = false;
+    // Data Moat Layer \u00a78 \u2014 daily_open fires on every Home
+    // mount, regardless of whether the freshness toast shows.
+    // The toast is once-per-day; the event is once-per-mount
+    // so a user who opens Home several times in a session
+    // generates several daily_open events (which the
+    // insightAggregator de-dupes by date for "active days"
+    // metrics).
+    try { moatTrack('daily_open'); }
+    catch { /* swallow */ }
     try {
       if (isFirstHomeOpenToday()) {
         setFreshToast(tSafe(
@@ -415,6 +432,17 @@ export default function DailyPlanCard({
     } catch { return null; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weather, version]);
+
+  // Data Moat Layer \u00a74 \u2014 personal-memory encouragement.
+  // Returns { key, fallback } | null. Renders as a calm
+  // helper line below the priority + risk tag. Never displaces
+  // the priority itself; collapses to nothing when no memory
+  // signal applies (first-time user / fresh device).
+  const memoryNote = React.useMemo(() => {
+    try { return encouragementMessage(); }
+    catch { return null; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
 
   // Retention Loop spec \u00a74 \u2014 completion-feedback toast. Shown
   // for ~3 s after each Mark-done tap. Garden vs farm wording
@@ -449,6 +477,18 @@ export default function DailyPlanCard({
       logEvent(EVENT_TYPES.DAILY_PLAN_ACTION_DONE || 'daily_plan_action_done',
         { farmId: farm.id, actionId: action.id, actionType: action.actionType });
     } catch { /* swallow */ }
+    // Data Moat Layer \u00a78 \u2014 spec-shaped task_completed
+    // event. The analytics service enriches the payload with
+    // active context + weather summary; we add the
+    // event-specific bits (taskId / type / title) so the
+    // userMemory + insightAggregator can group by them.
+    try {
+      moatTrack('task_completed', {
+        taskId:    action.id,
+        taskType:  action.actionType || 'inspect',
+        taskTitle: action.title || '',
+      });
+    } catch { /* swallow */ }
     // Retention Loop spec \u00a73 \u2014 record streak. Idempotent on
     // the day boundary (calling it a second time on the same
     // day is a no-op) so even with multiple tasks marked done
@@ -477,6 +517,27 @@ export default function DailyPlanCard({
         healthFeedback: value,
       });
     } catch { /* swallow */ }
+    // Data Moat Layer \u00a78 \u2014 fire the canonical spec event
+    // (the existing healthFeedbackStore already calls
+    // legacyTrackEvent under the hood, but that uses the
+    // legacy mirror; this call routes through the spec
+    // analytics service so the event lands in eventStore +
+    // gets payload enrichment + privacy-safe weather
+    // summary).
+    try {
+      // Map the legacy 'yes' / 'no' onto the spec's trend
+      // vocabulary so the eventStore record carries both:
+      // userMemory reads either shape.
+      const trendValue = value === 'yes' ? 'looks_healthy'
+                       : value === 'no' ? 'getting_worse'
+                       : 'not_sure';
+      moatTrack('health_feedback_submitted', {
+        contextId,
+        contextType:    experienceType,
+        healthFeedback: value,        // legacy shape (yes/no/not_sure)
+        feedback:       trendValue,    // trend shape
+      });
+    } catch { /* swallow */ }
     setHealthSent(true);
   }
 
@@ -487,6 +548,18 @@ export default function DailyPlanCard({
     try {
       logEvent(EVENT_TYPES.DAILY_PLAN_ACTION_SNOOZED || 'daily_plan_action_snoozed',
         { farmId: farm.id, actionId: action.id });
+    } catch { /* swallow */ }
+    // Data Moat Layer \u00a78 \u2014 spec-shaped task_skipped event
+    // (Remind-later is the user's signal that they don't
+    // want to act on this task right now). userMemory uses
+    // the count to decide whether to simplify watering tasks
+    // for users who skip them often.
+    try {
+      moatTrack('task_skipped', {
+        taskId:    action.id,
+        taskType:  action.actionType || 'inspect',
+        taskTitle: action.title || '',
+      });
     } catch { /* swallow */ }
   }
 
@@ -704,6 +777,21 @@ export default function DailyPlanCard({
       {plan.explanation ? (
         <p style={S.explanationMedium} data-testid="daily-plan-explanation">
           {plan.explanation}
+        </p>
+      ) : null}
+
+      {/* Data Moat Layer \u00a74 \u2014 personal-memory note. Calm,
+          one-line nudge based on the user's prior activity
+          (last health-feedback answer or completion streak).
+          Falls through to nothing when there's no memory
+          signal, so a first-time user doesn't see an empty
+          row. */}
+      {memoryNote ? (
+        <p
+          style={S.memoryNote}
+          data-testid="daily-memory-note"
+        >
+          {tSafe(memoryNote.key, memoryNote.fallback)}
         </p>
       ) : null}
 
@@ -1315,6 +1403,18 @@ const S = {
     color: '#BBF7D0',
     fontSize: '0.875rem',
     fontWeight: 600,
+    lineHeight: 1.45,
+  },
+
+  // Data Moat Layer \u00a74 \u2014 calm one-line memory nudge.
+  // Sits between the explanation and the alerts row. Italic
+  // + subdued color so it reads as supporting context, not
+  // a competing headline.
+  memoryNote: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    color: '#9FB3C8',
+    fontStyle: 'italic',
     lineHeight: 1.45,
   },
 
