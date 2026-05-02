@@ -530,6 +530,27 @@ app.get('/api/ops/health', authenticate, async (req, res) => {
     // Active season count
     const activeSeasons = await prisma.farmSeason.count({ where: { status: 'active' } });
 
+    // Advanced ML scan layer — preprocessing + provider status.
+    // Detects whether `sharp` is installed (full image preprocess
+    // available) and which provider profile is currently
+    // selected. Reports them in the admin health response so a
+    // dashboard can flag misconfiguration.
+    let imagePreprocessing = 'minimal';
+    try {
+      const sharpMod = await import('sharp').catch(() => null);
+      if (sharpMod && sharpMod.default) imagePreprocessing = 'full';
+    } catch { /* swallow */ }
+
+    let scanProviderStatus = { available: [], selected: null, apiKeySet: false };
+    try {
+      const m = await import('./ml/scanProviders.js');
+      if (m.describeProviders) scanProviderStatus = m.describeProviders();
+    } catch { /* swallow */ }
+
+    let scanTrainingCount = null;
+    try { scanTrainingCount = await prisma.scanTrainingEvent.count(); }
+    catch { /* table may not exist on a non-migrated dev db */ }
+
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -541,10 +562,34 @@ app.get('/api/ops/health', authenticate, async (req, res) => {
         diskFiles: uploadHealth.fileCount,
         orphanRisk: uploadHealth.fileCount - evidenceCount, // positive = potential orphans
         activeSeasons,
+        scanTrainingEvents: scanTrainingCount,
+      },
+      ml: {
+        imagePreprocessing,                   // 'full' | 'minimal'
+        provider:  scanProviderStatus,
       },
     });
   } catch (err) {
     res.status(503).json({ status: 'degraded', error: err.message });
+  }
+});
+
+// ─── Ops: prune scan_training_events (admin-only) ───────────
+// Manual trigger for the retention sweep. Use ?dryRun=1 to
+// preview without deleting. The sweep also runs on the existing
+// daily cron.
+app.post('/api/ops/scan-training/prune', authenticate, async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  try {
+    const { pruneScanTrainingEvents } = await import('./ml/pruneScanTrainingEvents.js');
+    const dryRun = String(req.query?.dryRun || '').trim() === '1';
+    const maxKeep = Number(req.query?.maxKeep) || undefined;
+    const summary = await pruneScanTrainingEvents({ dryRun, maxKeep });
+    res.json({ ok: true, summary });
+  } catch (err) {
+    res.status(500).json({ error: 'prune_failed', message: err && err.message });
   }
 });
 

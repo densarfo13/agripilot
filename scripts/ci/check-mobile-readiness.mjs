@@ -750,6 +750,40 @@ const checks = [
           && /Farroway provides guidance/.test(f);
     },
   },
+  {
+    name: 'scanProviders registry ships plantnet + plantix + cropsense + generic',
+    why:  'ML risk fix \u2014 swap providers via SCAN_PROVIDER_PROFILE without code changes',
+    pass: () => {
+      const f = read('server/src/ml/scanProviders.js');
+      return /name:\s*['"]plantnet['"]/.test(f)
+          && /name:\s*['"]plantix['"]/.test(f)
+          && /name:\s*['"]cropsense['"]/.test(f)
+          && /name:\s*['"]generic['"]/.test(f)
+          && /export function pickProvider/.test(f);
+    },
+  },
+  {
+    name: 'pruneScanTrainingEvents retention sweep + admin trigger + cron hook',
+    why:  'ML risk fix \u2014 ScanTrainingEvent ledger bounded at 100k; high-value rows preserved',
+    pass: () => {
+      const sweep = read('server/src/ml/pruneScanTrainingEvents.js');
+      const app   = read('server/src/app.js');
+      const cron  = read('server/src/queue/farmProcessingCron.js');
+      return /export async function pruneScanTrainingEvents/.test(sweep)
+          && /\/api\/ops\/scan-training\/prune/.test(app)
+          && /pruneScanTrainingEvents/.test(cron);
+    },
+  },
+  {
+    name: 'ops/health reports ML preprocess + provider status',
+    why:  'ML risk fix \u2014 admin can see at a glance whether sharp + provider are wired',
+    pass: () => {
+      const f = read('server/src/app.js');
+      return /imagePreprocessing/.test(f)
+          && /scanProviderStatus/.test(f)
+          && /scanTrainingEvents/.test(f);
+    },
+  },
 ];
 
 const failed = [];

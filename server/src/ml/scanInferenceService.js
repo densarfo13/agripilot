@@ -90,36 +90,35 @@ function _ruleClassify({ cropName, plantName, weather }) {
 
 // ── External provider (HTTPS POST) ─────────────────────────────
 //
-// Generic shape — POSTs the image bytes + minimal context to
-// `process.env.SCAN_PROVIDER_URL` with bearer auth. The expected
-// response shape is `{ symptom, confidence, raw? }`. Adapt the
-// transformer when wiring a specific provider (Plantix, PlantNet,
-// Cropsense, etc.).
-async function _externalClassify({ image, mime, cropName, country, region }) {
-  const url = process.env.SCAN_PROVIDER_URL;
-  const key = process.env.SCAN_API_KEY;
-  if (!url || !key) {
-    return { ok: false, error: 'provider_unconfigured' };
+// Delegates to the provider registry (scanProviders.js) so the
+// concrete request/response shape lives next to its adapter.
+// Adding a new vendor (PlantNet, Plantix, Cropsense, generic, …)
+// is a pure data change in scanProviders.js — no edits here.
+//
+// Selected via SCAN_PROVIDER_PROFILE env. SCAN_API_KEY required
+// for any external profile; per-provider URLs documented in
+// scanProviders.js.
+async function _externalClassify(input) {
+  const { pickProvider } = await import('./scanProviders.js');
+  const adapter = pickProvider();
+  if (!adapter) return { ok: false, error: 'provider_unconfigured' };
+
+  let req;
+  try { req = adapter.buildRequest(input); }
+  catch (err) {
+    return { ok: false, error: 'adapter_request_build_failed', message: err && err.message };
+  }
+  if (!req || !req.url) {
+    return { ok: false, error: 'adapter_url_missing' };
   }
 
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), INFERENCE_TIMEOUT_MS);
   try {
-    const body = {
-      // image bytes as base64 — most cloud vision APIs accept this.
-      imageBase64: Buffer.isBuffer(image) ? image.toString('base64') : null,
-      mime,
-      crop:    cropName || null,
-      country: country  || null,
-      region:  region   || null,
-    };
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body:    JSON.stringify(body),
+    const res = await fetch(req.url, {
+      method:  'POST',
+      headers: req.headers || {},
+      body:    req.body,
       signal:  ctrl.signal,
     });
     clearTimeout(t);
@@ -127,18 +126,18 @@ async function _externalClassify({ image, mime, cropName, country, region }) {
       return { ok: false, error: `provider_http_${res ? res.status : 'no_response'}` };
     }
     const data = await res.json();
-    // Shape adaptation: map provider response → our symptom set.
-    const symptom = _normalizeSymptom(data?.symptom || data?.label || data?.diagnosis);
-    const conf    = _normalizeConfidence(data?.confidence);
+    const parsed = adapter.parseResponse(data) || {};
+    const symptom = _normalizeSymptom(parsed.symptom);
+    const conf    = _normalizeConfidence(parsed.confidence);
     return {
       ok: true,
       result: {
         symptom,
         confidence: conf,
         meta: {
-          provider:   'external',
+          provider:   `external:${adapter.name}`,
           providerId: data?.id || null,
-          raw:        data,
+          raw:        parsed.raw || data,
         },
       },
     };

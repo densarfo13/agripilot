@@ -119,6 +119,20 @@ export function startFarmProcessingCron() {
       console.error('[farmProcessingCron] Sweep threw:', err && err.message);
       opsEvent('farmProcessingCron', 'sweep_threw', 'error', { error: err && err.message });
     }
+    // ML scan training-data retention sweep — bounded ledger
+    // size at 100k rows. Runs alongside the farm sweep so we
+    // get one daily housekeeping pass instead of two cron
+    // schedules. Self-contained — failure here doesn't impact
+    // the farm sweep.
+    try {
+      const { pruneScanTrainingEvents } = await import('../ml/pruneScanTrainingEvents.js');
+      const summary = await pruneScanTrainingEvents();
+      if (summary.deleted > 0 || summary.error) {
+        opsEvent('mlRetentionSweep', 'prune_complete', summary.error ? 'warn' : 'info', summary);
+      }
+    } catch (err) {
+      opsEvent('mlRetentionSweep', 'prune_threw', 'error', { error: err && err.message });
+    }
   }, { scheduled: false, timezone: 'UTC' });
   task.start();
   console.log(`[farmProcessingCron] Scheduled — "${schedule}" UTC (batch=${batchSize}, maxBatches=${maxBatches})`);
