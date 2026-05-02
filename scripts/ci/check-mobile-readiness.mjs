@@ -2641,6 +2641,86 @@ const checks = [
       return noLeak(garden) && noLeak(farm) && noLeak(stepFarm) && noLeak(gardenForm);
     },
   },
+  {
+    // Final Daily Plan Engine Upgrade \u00a71. growingContext is the
+    // normaliser that the new daily-plan engine consumes \u2014 it
+    // collapses garden vs farm vocabulary into one shape and
+    // never returns undefined. Garden uses `setup`; farm uses
+    // `size`. Both default to 'unknown' on missing data.
+    name: 'growingContext ships buildGrowingContext with stable shape',
+    why:  'Daily-plan engine \u00a71 \u2014 normalised context contract',
+    pass: () => {
+      const f = read('src/core/growingContext.js');
+      return /export\s+function\s+buildGrowingContext/.test(f)
+          && /'container'\s*,\s*'raised_bed'\s*,\s*'ground'\s*,\s*'indoor_balcony'\s*,\s*'unknown'/.test(f)
+          && /\btype\b/.test(f)
+          && /\bsetup\b/.test(f)
+          && /\bsize\b/.test(f)
+          && /\blocation\b/.test(f)
+          && /\bplantedAt\b/.test(f)
+          && /\bweather\b/.test(f)
+          && /\bcropOrPlant\b/.test(f);
+    },
+  },
+  {
+    // Final Daily Plan Engine Upgrade \u00a72\u2013\u00a76. The new engine
+    // returns the spec shape (priority, reason, tasks, riskAlerts,
+    // tomorrowPreview) and implements every garden / farm /
+    // crop / weather rule + the missing-data fallback.
+    name: 'dailyPlanEngine implements priority/reason/tasks/risks/tomorrow',
+    why:  'Daily-plan engine \u00a72\u2013\u00a76 \u2014 spec-shaped engine',
+    pass: () => {
+      const f = read('src/core/dailyPlanEngine.js');
+      return /export\s+function\s+generateDailyPlan/.test(f)
+          // Garden setup priorities (spec \u00a73).
+          && /'Check container soil moisture'/.test(f)
+          && /'Check spacing and soil moisture'/.test(f)
+          && /'Check soil and nearby weeds'/.test(f)
+          && /'Check light exposure'/.test(f)
+          // Farm size priorities (spec \u00a74).
+          && /'Check crop leaves today'/.test(f)
+          && /'Scout multiple crop areas'/.test(f)
+          // Crop add-ons (spec \u00a74 list).
+          && /'Inspect under leaves for pests'/.test(f)
+          && /'Look for streaks, holes, or dry leaf edges'/.test(f)
+          && /'Check lower leaves for spots'/.test(f)
+          // Weather rules (spec \u00a75).
+          && /'Skip watering today'/.test(f)
+          && /'Rain is expected, so avoid overwatering\.'/.test(f)
+          && /'Watch for leaf spots or mold'/.test(f)
+          && /'Check soil moisture early or late in the day'/.test(f)
+          && /'Avoid spraying during strong wind'/.test(f)
+          // Fallback (spec \u00a78).
+          && /'Check your plant today'/.test(f)
+          && /'Check your crop today'/.test(f)
+          // Output rules (spec \u00a76) \u2014 max-3 cap.
+          && /MAX_TASKS\s*=\s*3/.test(f);
+    },
+  },
+  {
+    // Final Daily Plan Engine Upgrade \u00a77. DailyPlanCard composes
+    // the new spec-shaped engine on top of its existing legacy
+    // engine + invisible-intelligence layer. The v2 engine drives
+    // the visible plan (priority, reason, tasks, alerts, follow-up);
+    // the legacy engines stay for confidence + cropStage slots.
+    name: 'DailyPlanCard composes new dailyPlanEngine output',
+    why:  'Daily-plan engine \u00a77 \u2014 Home plan now spec-shaped',
+    pass: () => {
+      const f = read('src/components/daily/DailyPlanCard.jsx');
+      return /from\s+['"]\.\.\/\.\.\/core\/dailyPlanEngine\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/core\/growingContext\.js['"]/.test(f)
+          && /buildGrowingContext\(/.test(f)
+          && /generatePlanV2\(/.test(f)
+          // V2 priority drives the visible summary headline.
+          && /summary:\s*v2\.priority/.test(f)
+          // V2 tasks become the actions[] tile list.
+          && /v2\.tasks/.test(f)
+          // V2 risk alerts fold into the alerts[] surface.
+          && /v2\.riskAlerts/.test(f)
+          // Tomorrow preview becomes the followUpTask body.
+          && /v2\.tomorrowPreview/.test(f);
+    },
+  },
 ];
 
 const failed = [];

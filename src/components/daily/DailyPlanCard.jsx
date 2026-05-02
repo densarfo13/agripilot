@@ -21,6 +21,16 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { isFeatureEnabled } from '../../utils/featureFlags.js';
 import { generateDailyPlan } from '../../core/dailyIntelligenceEngine.js';
 import { generateIntelligentPlan } from '../../core/farrowayIntelligenceEngine.js';
+// Final Daily Plan Engine Upgrade \u00a72 \u2014 the new spec-shaped
+// engine + its growing-context builder. Imported under aliases
+// so they don't collide with the legacy `generateDailyPlan`
+// from dailyIntelligenceEngine. The new engine is the primary
+// driver of the visible card: priority, reason, tasks, risk
+// alerts, and tomorrow preview all flow from it. The legacy
+// engines stay mounted for back-compat slots (cropStage,
+// confidence, harvestReady) the card still renders below.
+import { generateDailyPlan as generatePlanV2 } from '../../core/dailyPlanEngine.js';
+import { buildGrowingContext } from '../../core/growingContext.js';
 import { markActionDone } from '../../core/dailyTaskCompletion.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
@@ -110,14 +120,76 @@ export default function DailyPlanCard({
       })),
     ];
 
+    // Final Daily Plan Engine Upgrade \u2014 the spec-shaped v2
+    // engine drives the visible plan. We build the normalised
+    // growing context from the same farm + weather inputs, run
+    // the engine, and let its output overlay the legacy fields
+    // the card already renders (summary, explanation, actions,
+    // alerts, followUpTask). Wrapped in try/catch so an engine
+    // bug can never blank the card \u2014 we fall back to the
+    // legacy `intel`-adapted shape above on any failure.
+    let v2 = null;
+    try {
+      const ctx = buildGrowingContext({ farm, weather });
+      v2 = generatePlanV2(ctx);
+    } catch { /* never let the engine break the page */ }
+
+    if (!v2 || !v2.priority) {
+      // Engine output unusable \u2014 keep the legacy adapter shape.
+      return {
+        ...base,
+        actions:        adaptedActions.slice(0, 3),
+        alerts:         adaptedAlerts,
+        explanation:    intel.explanation,
+        followUpTask:   intel.followUpTask,
+        confidence:     intel.confidence || base.confidence,
+      };
+    }
+
+    // V2 engine produced a plan \u2014 adapt its spec shape into
+    // the legacy fields the card render path already knows
+    // about. Tasks become action tiles; risk alerts get their
+    // own pseudo-alert entries (severity 'warning' so they
+    // render in amber, matching the existing tone palette);
+    // tomorrowPreview becomes the followUpTask body.
+    const slugV2 = (s) => String(s || '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 32);
+    const v2Actions = (Array.isArray(v2.tasks) ? v2.tasks : []).map((task, i) => ({
+      id:         `v2_${i}_${slugV2(task)}`,
+      title:      task,
+      // Reason hangs the priority's "why" off the FIRST task so
+      // the action tile stays informative without crowding the
+      // headline. Subsequent tasks render with no detail \u2014 they
+      // are short enough to read at a glance.
+      reason:     i === 0 ? v2.reason : '',
+      urgency:    i === 0 ? 'medium' : 'low',
+      actionType: 'inspect',
+      source:     'dailyPlanEngine',
+    }));
+    const v2Alerts = (Array.isArray(v2.riskAlerts) ? v2.riskAlerts : []).map((text, i) => ({
+      id:       `v2_risk_${i}`,
+      severity: 'warning',
+      title:    text,
+      message:  '',
+    }));
+
     return {
       ...base,
-      actions:        adaptedActions.slice(0, 3),
-      alerts:         adaptedAlerts,
-      // New slots the render below picks up.
-      explanation:    intel.explanation,
-      followUpTask:   intel.followUpTask,
-      confidence:     intel.confidence || base.confidence,
+      // Spec \u00a77 \u2014 priority becomes the visible headline.
+      summary:        v2.priority,
+      explanation:    v2.reason,
+      actions:        v2Actions.slice(0, 3),
+      alerts:         [
+        ...(Array.isArray(base.alerts) ? base.alerts : []),
+        ...v2Alerts,
+      ],
+      // Tomorrow preview folds into the existing follow-up
+      // task slot the render below already shows. Type
+      // 'inspect' so the existing icon mapping works.
+      followUpTask:   v2.tomorrowPreview
+        ? { type: 'inspect', text: v2.tomorrowPreview, detail: '' }
+        : (intel ? intel.followUpTask : null),
+      confidence:     (intel && intel.confidence) || base.confidence,
     };
   },
     // eslint-disable-next-line react-hooks/exhaustive-deps
