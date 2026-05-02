@@ -147,6 +147,49 @@ export default function ScanPage() {
     try {
       try { trackEvent('scan_photo_taken', { experience, hasFile: !!file }); }
       catch { /* ignore */ }
+
+      // Retention spec §2 + §12: surface a fallback verdict
+      // after 2s so the user never stares at a spinner. The
+      // fallback is the rule-based hybrid result (no API call —
+      // hybridAnalyze is pure). When the real `analyzeScan`
+      // resolves later, refinedOut overwrites the fallback in
+      // a single setResult call below.
+      let fallbackTimer = null;
+      let fallbackShown = false;
+      try {
+        fallbackTimer = setTimeout(() => {
+          if (fallbackShown) return;
+          fallbackShown = true;
+          try {
+            const fallbackHybrid = hybridAnalyze({
+              imageResult:      { possibleIssue: '', confidence: 'low' },
+              plantName:        profile?.plantName || null,
+              cropName:         profile?.crop || profile?.cropId || null,
+              activeExperience,
+              country:          profile?.country || null,
+              region:           profile?.region  || null,
+            });
+            setResult({
+              scanId:             'scan_fb_' + Date.now().toString(36),
+              possibleIssue:      fallbackHybrid.possibleIssue,
+              confidence:         fallbackHybrid.confidence,
+              recommendedActions: fallbackHybrid.recommendedActions,
+              suggestedTasks:     fallbackHybrid.followUpTask
+                                    ? [fallbackHybrid.followUpTask]
+                                    : [],
+              hybridReason:       fallbackHybrid.reason,
+              hybridUrgency:      fallbackHybrid.urgency,
+              hybridContext:      fallbackHybrid.contextType,
+              disclaimer:         fallbackHybrid.disclaimer,
+              meta:               { source: 'fallback_2s_timer' },
+            });
+            setPhase('result');
+            try { trackEvent('scan_fallback_used', { reason: '2s_timeout' }); }
+            catch { /* swallow */ }
+          } catch { /* swallow — wait for the real result */ }
+        }, 2000);
+      } catch { /* swallow */ }
+
       const out = await analyzeScan({
         imageBase64,
         imageUrl,
@@ -155,6 +198,11 @@ export default function ScanPage() {
         country:    profile?.country || null,
         experience,
       });
+      // Real result back — cancel the fallback timer if it
+      // hasn't fired yet. If it HAS, the refinedOut below
+      // overwrites the fallback in one render so the user sees
+      // the better result without a flicker.
+      if (fallbackTimer) clearTimeout(fallbackTimer);
 
       // Hybrid refinement: layer active experience + weather +
       // region on top of the image-only verdict. The hybrid

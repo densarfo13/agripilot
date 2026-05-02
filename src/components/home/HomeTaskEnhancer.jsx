@@ -32,6 +32,9 @@ import { trackFirstAction } from '../../analytics/funnelEvents.js';
 import { playVoice, stopVoice } from '../../utils/voicePlayer.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { getStreak } from '../../utils/streak.js';
+// Retention spec §7: celebratory toast on task completion.
+// Shows for ~1.8s with the current streak count + auto-dismisses.
+import TaskCompletionToast from '../tasks/TaskCompletionToast.jsx';
 import {
   taskKeyFor,
   markHomeTask,
@@ -269,6 +272,10 @@ export default function HomeTaskEnhancer({
   const [tick, setTick] = useState(0);
   const [speaking, setSpeaking] = useState(false);
   const [feedback, setFeedback] = useState(null);    // { kind, message } | null
+  // Retention spec §7: celebratory toast on task completion.
+  // { visible, streakCount } | null. Independent of `feedback`
+  // so the inline confirmation row + the toast can coexist.
+  const [completionToast, setCompletionToast] = useState(null);
 
   // Re-render when state map changes in another tab or after a
   // local mark/skip action (the helper emits the change event).
@@ -367,6 +374,15 @@ export default function HomeTaskEnhancer({
         'Done \u2014 nice work. Your progress just moved.') + streakLine,
     });
     setTimeout(() => setFeedback(null), 4000);
+
+    // Retention spec §7: bottom-anchored celebratory toast with
+    // streak count + lightweight slide-up animation. Independent
+    // of the inline `feedback` row so both surfaces can coexist
+    // — feedback is a row directly under the task; the toast is
+    // bottom-anchored above the bottom nav for visual punch.
+    let toastStreak = 0;
+    try { toastStreak = getStreak(); } catch { toastStreak = 0; }
+    setCompletionToast({ visible: true, streakCount: toastStreak });
   }, []);
 
   const handleSkip = useCallback((d) => {
@@ -558,6 +574,13 @@ export default function HomeTaskEnhancer({
           </div>
         </>
       ) : null}
+      {/* Retention spec §7: celebratory toast with streak.
+          Auto-dismisses at 1800ms. Tap to dismiss early. */}
+      <TaskCompletionToast
+        visible={!!(completionToast && completionToast.visible)}
+        streakCount={completionToast ? completionToast.streakCount : 0}
+        onDismiss={() => setCompletionToast(null)}
+      />
     </div>
   );
 }

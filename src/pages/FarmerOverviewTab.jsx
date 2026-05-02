@@ -19,6 +19,10 @@ import AllSetForTodayCard from '../components/home/AllSetForTodayCard.jsx';
 // your first" affordances on Home. Self-suppresses when the user
 // has both experiences (the header switcher chip is canonical).
 import ExperienceManageCard from '../components/system/ExperienceManageCard.jsx';
+// Retention spec §1: above-the-fold scan CTA hero. Self-
+// suppresses when there's no active experience so the
+// ExperienceManageCard owns the empty state.
+import ScanHero from '../components/home/ScanHero.jsx';
 import StreakRewardBanner from '../components/engagement/StreakRewardBanner.jsx';
 import ProfileCompletionPrompt from '../components/home/ProfileCompletionPrompt.jsx';
 import MarketplaceNudgeCard from '../components/home/MarketplaceNudgeCard.jsx';
@@ -105,6 +109,10 @@ export default function FarmerOverviewTab() {
           experiences. Renders null when the user has both (the
           header chip becomes the canonical switch surface). */}
       <ExperienceManageCard />
+      {/* Retention spec §1: above-the-fold scan CTA. Anchors
+          the daily-habit loop right under the greeting +
+          experience header, before any nudge cards. */}
+      <ScanHero />
       {/* Funnel optimisation §5: optional sign-in nudge. Only
           renders AFTER first action — never before value. */}
       <SignInPromptCard />

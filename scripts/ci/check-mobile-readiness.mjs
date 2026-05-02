@@ -847,6 +847,33 @@ const checks = [
           && /verificationQuestions/.test(f);
     },
   },
+  {
+    name: 'ScanHero mounted on Home above the fold',
+    why:  'Retention spec \u00a71 \u2014 scan CTA anchors the daily-habit loop',
+    pass: () => {
+      return fs.existsSync(path.join(ROOT, 'src/components/home/ScanHero.jsx'))
+          && /<ScanHero\s*\/>/.test(read('src/pages/FarmerOverviewTab.jsx'));
+    },
+  },
+  {
+    name: 'TaskCompletionToast mounted in HomeTaskEnhancer',
+    why:  'Retention spec \u00a77 \u2014 celebratory feedback after Mark as done',
+    pass: () => {
+      const enh = read('src/components/home/HomeTaskEnhancer.jsx');
+      return fs.existsSync(path.join(ROOT, 'src/components/tasks/TaskCompletionToast.jsx'))
+          && /<TaskCompletionToast/.test(enh)
+          && /completionToast/.test(enh);
+    },
+  },
+  {
+    name: 'ScanPage 2s fallback timer surfaces rule-based result',
+    why:  'Retention spec \u00a72 + \u00a712 \u2014 result must appear under 2s',
+    pass: () => {
+      const f = read('src/pages/ScanPage.jsx');
+      return /fallback_2s_timer/.test(f)
+          && /scan_fallback_used/.test(f);
+    },
+  },
 ];
 
 const failed = [];

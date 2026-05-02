@@ -80,6 +80,10 @@ const REQUIRED_EVENTS = [
     why: 'User answered a verification yes/no check — feeds high-confidence tier downgrade rules.' },
   { name: 'scan_expert_cta_tap', surface: 'ScanLocalExpertCTA.jsx',
     why: 'User tapped "Find local help" on the scan recovery card — measures expert-second-opinion demand.' },
+  { name: 'scan_hero_tap', surface: 'ScanHero.jsx',
+    why: 'User tapped the Home above-the-fold scan CTA — measures the retention loop entry point.' },
+  { name: 'scan_fallback_used', surface: 'ScanPage.jsx',
+    why: 'Scan returned the rule-based fallback (slow API or offline) — measures perf budget violations.' },
 ];
 
 function listFiles(dir, acc) {
