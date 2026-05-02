@@ -2748,6 +2748,51 @@ const checks = [
     // both setup forms hit a free public reverse-geocoder
     // (BigDataCloud) to auto-fill country + region. Helper
     // is pure async + never-throws + 6s timeout.
+    // Final Location Autofill + Weather Integration \u00a75 +
+    // \u00a77. Self-contained client-side weather service hits
+    // Open-Meteo, returns the spec shape, falls back to a
+    // safe default. Home weather card mounts on Dashboard
+    // with the unavailable fallback line.
+    name: 'Weather service + Home weather card ship spec contract',
+    why:  'Final Weather Integration \u00a75 + \u00a77 \u2014 location feeds weather feeds plan',
+    pass: () => {
+      const svc      = read('src/core/weatherService.js');
+      const card     = read('src/components/daily/HomeWeatherCard.jsx');
+      const dash     = read('src/pages/Dashboard.jsx');
+      const t        = read('src/i18n/translations.js');
+      // Service exports + spec shape + Open-Meteo endpoint.
+      const SVC_OK =
+            /export\s+(?:async\s+)?function\s+getWeatherForLocation/.test(svc)
+         && /export\s+function\s+getDefaultWeather/.test(svc)
+         && /open-meteo\.com/.test(svc)
+         && /AbortController/.test(svc)
+         && /rainExpected:\s*false/.test(svc)
+         && /'Weather unavailable'/.test(svc);
+      // Card exports + reads location + writes back to
+      // farroway_weather_cache so the engine reader picks
+      // up the same numbers.
+      const CARD_OK =
+            /export default function HomeWeatherCard/.test(card)
+         && /from\s+['"]\.\.\/\.\.\/utils\/locationStore\.js['"]/.test(card)
+         && /from\s+['"]\.\.\/\.\.\/core\/weatherService\.js['"]/.test(card)
+         && /'farroway_weather_cache'/.test(card)
+         && /home-weather-card/.test(card);
+      // Mounted on Dashboard above DailyPlanCard.
+      const DASH_OK =
+            /from\s+['"]\.\.\/components\/daily\/HomeWeatherCard\.jsx['"]/.test(dash)
+         && /<HomeWeatherCard\s*\/>/.test(dash);
+      // Translations carry the new keys.
+      const TR_OK =
+            /'home\.weather\.unavailable':/.test(t)
+         && /'home\.weather\.summary\.rainy':/.test(t)
+         && /'home\.weather\.summary\.humid':/.test(t)
+         && /'home\.weather\.summary\.hot':/.test(t)
+         // Affirmation copy tightened.
+         && /'onboarding\.locationDetected':[\s\S]{0,200}'We found your location/.test(t);
+      return SVC_OK && CARD_OK && DASH_OK && TR_OK;
+    },
+  },
+  {
     name: 'Reverse-geocode auto-fills country/region on geolocation',
     why:  'Reverse-geocode follow-up \u2014 close the geolocation -> form-fill loop',
     pass: () => {

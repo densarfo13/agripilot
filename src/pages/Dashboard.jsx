@@ -51,6 +51,13 @@ import NotificationBell from '../components/NotificationBell.jsx';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 import DailyPlanCard from '../components/daily/DailyPlanCard.jsx';
+// Final Location Autofill + Weather Integration \u00a77 \u2014 small
+// Home weather card. Reads the persisted location from
+// `farroway_location`, fetches Open-Meteo weather via
+// core/weatherService, and writes back into
+// `farroway_weather_cache` so DailyPlanCard's existing reader
+// picks up the same numbers. Self-hides when no location.
+import HomeWeatherCard from '../components/daily/HomeWeatherCard.jsx';
 import { isFeatureEnabled } from '../utils/featureFlags.js';
 import {
   addNotification, NOTIFICATION_TYPES,
@@ -597,6 +604,16 @@ export default function Dashboard() {
             / Scan crop footer. Hides quietly when
             FEATURE_DAILY_INTELLIGENCE is off so the existing
             Home composition is unchanged. */}
+        {/* Final Location Autofill + Weather Integration \u00a77 \u2014
+            small Home weather card sits ABOVE the daily plan
+            so the user reads the day's conditions before the
+            tasks. Self-hides when there's no persisted
+            location; renders an "unavailable" fallback when
+            the service returns the safe-default shape. The
+            card writes into farroway_weather_cache so the
+            DailyPlanCard below picks up the same weather. */}
+        {loop.profile ? <HomeWeatherCard /> : null}
+
         {loop.profile && (
           <DailyPlanCard
             farm={loop.profile}
