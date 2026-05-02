@@ -31,7 +31,28 @@ import { generateIntelligentPlan } from '../../core/farrowayIntelligenceEngine.j
 // confidence, harvestReady) the card still renders below.
 import { generateDailyPlan as generatePlanV2 } from '../../core/dailyPlanEngine.js';
 import { buildGrowingContext } from '../../core/growingContext.js';
-import { markActionDone } from '../../core/dailyTaskCompletion.js';
+import {
+  markActionDone,
+  getCompletedActionIdsToday,
+} from '../../core/dailyTaskCompletion.js';
+// Retention Loop spec \u00a72\u2013\u00a77 \u2014 streak counter, daily progress
+// math, adaptive home banner copy, and the micro health-feedback
+// store. Each module is pure-by-default + SSR-safe; the card
+// composes them on top of the v2 daily plan to produce the
+// retention surface (streak pill, progress bar, adaptive
+// message, completed-state styling, completion toast, health
+// prompt, all-done tomorrow preview).
+import {
+  getStreak, recordTaskCompleted, daysSinceLastCompletion,
+} from '../../core/streakEngine.js';
+import { computeDailyProgress } from '../../core/dailyProgress.js';
+import {
+  pickAdaptiveMessage, pickCompletionFeedback,
+  pickAllDoneTomorrowPreview,
+} from '../../core/retentionMessages.js';
+import {
+  recordHealthFeedback, getHealthFeedbackForToday,
+} from '../../core/healthFeedbackStore.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
 const URGENCY_TONE = {
@@ -216,6 +237,70 @@ export default function DailyPlanCard({
     } catch { /* swallow */ }
   }, [plan]);
 
+  // Retention Loop spec \u00a71 \u2014 the completed-action ids for today
+  // drive the progress bar + the per-tile completed state. We
+  // recompute them on every version bump so a Mark-done tap
+  // immediately reflects in the UI without a full reload.
+  const completedIds = React.useMemo(() => {
+    if (!farm || !farm.id) return [];
+    try {
+      const ids = getCompletedActionIdsToday(farm.id);
+      return Array.isArray(ids) ? ids : [];
+    } catch { return []; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [farm, version]);
+
+  // Retention Loop spec \u00a72 \u2014 daily progress math (done / total
+  // / percent / allDone / pending). Pure compute on the v2
+  // plan's actions array.
+  const progress = React.useMemo(() => computeDailyProgress({
+    actions:      plan.actions,
+    completedIds,
+  }), [plan, completedIds]);
+
+  // Retention Loop spec \u00a73 \u2014 streak read. Recompute on every
+  // version bump so a Mark-done tap that records a completion
+  // immediately surfaces the new "X-day streak" pill.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const streak = React.useMemo(() => getStreak(), [version]);
+
+  // Retention Loop spec \u00a75 \u2014 adaptive home banner. Behaviour
+  // signal first (consistency / comeback), weather signal as
+  // fallback. Returns null when the card should stay calm.
+  const adaptiveMessage = React.useMemo(() => {
+    try {
+      return pickAdaptiveMessage({
+        daysSinceLastCompletion: daysSinceLastCompletion(),
+        weather,
+      });
+    } catch { return null; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weather, version]);
+
+  // Retention Loop spec \u00a74 \u2014 completion-feedback toast. Shown
+  // for ~3 s after each Mark-done tap. Garden vs farm wording
+  // is picked from the experience the v2 engine inferred.
+  const [toast, setToast] = React.useState(null);
+  const toastTimerRef = React.useRef(null);
+  const experienceType = farm.farmType === 'backyard' ? 'garden' : 'farm';
+
+  // Retention Loop spec \u00a76 \u2014 health-feedback prompt. Visible
+  // only AFTER the user has marked at least one task done
+  // today AND hasn't already answered for this (gardenId/farmId,
+  // date) pair.
+  const contextId = farm.id || null;
+  const [healthSent, setHealthSent] = React.useState(() => {
+    try {
+      return !!getHealthFeedbackForToday({ contextId });
+    } catch { return false; }
+  });
+
+  // Cleanup the toast timer on unmount so a fast nav-away
+  // doesn't run setState after the component is gone.
+  React.useEffect(() => () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
+
   function handleMarkDone(action) {
     if (!isFeatureEnabled('FEATURE_AUTO_TASK_GENERATION')) return;
     markActionDone(farm.id, action);
@@ -223,8 +308,31 @@ export default function DailyPlanCard({
       logEvent(EVENT_TYPES.DAILY_PLAN_ACTION_DONE || 'daily_plan_action_done',
         { farmId: farm.id, actionId: action.id, actionType: action.actionType });
     } catch { /* swallow */ }
+    // Retention Loop spec \u00a73 \u2014 record streak. Idempotent on
+    // the day boundary (calling it a second time on the same
+    // day is a no-op) so even with multiple tasks marked done
+    // back-to-back the count only advances once per day.
+    try { recordTaskCompleted(); } catch { /* swallow */ }
+    // Retention Loop spec \u00a74 \u2014 surface the toast.
+    try {
+      setToast(pickCompletionFeedback(experienceType));
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToast(null), 3200);
+    } catch { /* swallow */ }
     if (typeof onMarkDone === 'function') onMarkDone(action);
     setVersion((v) => v + 1);
+  }
+
+  function handleHealthFeedback(value) {
+    if (!contextId) return;
+    try {
+      recordHealthFeedback({
+        contextId,
+        contextType: experienceType,
+        healthFeedback: value,
+      });
+    } catch { /* swallow */ }
+    setHealthSent(true);
   }
 
   function handleRemindLater(action) {
@@ -285,6 +393,49 @@ export default function DailyPlanCard({
         </span>
       </div>
 
+      {/* Retention Loop spec \u00a73 \u2014 streak pill. Hidden when the
+          user has no completion history yet (count === 0) so a
+          first-time user doesn't see "0-day streak" as their
+          first impression of the surface. */}
+      {streak.count > 0 ? (
+        <div style={S.streakRow} data-testid="daily-streak-pill">
+          <span style={S.streakPill}>
+            {'\uD83D\uDD25 '}
+            {tSafe('daily.streak', '{count}-day streak', { count: streak.count })
+              .replace('{count}', String(streak.count))}
+          </span>
+        </div>
+      ) : null}
+
+      {/* Retention Loop spec \u00a72 \u2014 daily progress bar. Hidden
+          when there are no actions on the plan (no point
+          showing 0/0). The "X of Y complete" line sits above
+          the bar so the user reads the count first. */}
+      {progress.total > 0 ? (
+        <div style={S.progressWrap} data-testid="daily-progress">
+          <p style={S.progressLine} data-testid="daily-progress-text">
+            {tSafe('daily.progress', 'Today\u2019s progress: {done} of {total} complete')
+              .replace('{done}',  String(progress.done))
+              .replace('{total}', String(progress.total))}
+          </p>
+          <div style={S.progressTrack} aria-hidden="true">
+            <div
+              style={{ ...S.progressFill, width: `${progress.percent}%` }}
+              data-testid="daily-progress-fill"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Retention Loop spec \u00a75 \u2014 adaptive message. Single
+          banner; null collapses to nothing. Behavioural signal
+          (consistency / comeback) takes priority over weather. */}
+      {adaptiveMessage ? (
+        <p style={S.adaptiveMessage} data-testid="daily-adaptive-message">
+          {adaptiveMessage}
+        </p>
+      ) : null}
+
       {plan.summary && (
         <p style={S.summary} data-testid="daily-plan-summary">
           {plan.summary}
@@ -333,17 +484,42 @@ export default function DailyPlanCard({
             {tSafe('daily.topActions', 'Today\u2019s top actions')}
           </p>
           <ul style={S.actionList}>
-            {plan.actions.map((a) => (
+            {plan.actions.map((a) => {
+              // Retention Loop spec \u00a71 \u2014 each completed task
+              // shows its completed state. We dim the row,
+              // strike-through the title, and replace the Mark
+              // done / Remind buttons with a calm "Done"
+              // indicator so the user knows their tap landed
+              // and they can't double-record the completion.
+              const isDone = completedIds.includes(a.id);
+              return (
               <li
                 key={a.id}
-                style={{ ...S.actionRow, ...(URGENCY_TONE[a.urgency] || URGENCY_TONE.low) }}
+                style={{
+                  ...S.actionRow,
+                  ...(URGENCY_TONE[a.urgency] || URGENCY_TONE.low),
+                  ...(isDone ? S.actionRowDone : null),
+                }}
                 data-testid={`daily-action-${a.id}`}
+                data-done={isDone ? 'true' : 'false'}
               >
                 <div style={S.actionBody}>
-                  <p style={S.actionTitle}>{a.title}</p>
+                  <p style={isDone ? { ...S.actionTitle, ...S.actionTitleDone } : S.actionTitle}>
+                    {a.title}
+                  </p>
                   <p style={S.actionReason}>{a.reason}</p>
                 </div>
                 <div style={S.actionButtons}>
+                  {isDone ? (
+                    <span
+                      style={S.donePill}
+                      data-testid={`daily-action-done-${a.id}`}
+                    >
+                      {'\u2713 '}
+                      {tSafe('daily.actionDone', 'Done')}
+                    </span>
+                  ) : (
+                  <>
                   <button
                     type="button"
                     onClick={() => handleMarkDone(a)}
@@ -370,9 +546,12 @@ export default function DailyPlanCard({
                       {tSafe('daily.prepareToSell', 'Prepare to sell')}
                     </button>
                   )}
+                  </>
+                  )}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </>
       )}
@@ -406,6 +585,76 @@ export default function DailyPlanCard({
             {tSafe('daily.followUp', 'Tomorrow')}:
           </strong>{' '}
           {plan.followUpTask.text}
+        </div>
+      ) : null}
+
+      {/* Retention Loop spec \u00a77 \u2014 next-day preview that fires
+          ONLY when every task today is complete. Calmer than
+          the always-visible follow-up row above (which shows
+          tomorrow guidance regardless of progress). Falls
+          through to the engine's tomorrowPreview when present
+          so the wording stays weather-aware ("Watering may not
+          be needed tomorrow."). */}
+      {progress.allDone ? (
+        <div style={S.allDonePreview} data-testid="daily-all-done-preview">
+          {pickAllDoneTomorrowPreview(plan.followUpTask && plan.followUpTask.text)}
+        </div>
+      ) : null}
+
+      {/* Retention Loop spec \u00a76 \u2014 micro health-feedback prompt.
+          Visible after the user has marked at least one task
+          done today AND hasn't yet answered for this context.
+          Three-button row: Yes / Not sure / No. Non-blocking;
+          the rest of the card stays interactive. Tapping any
+          option saves to localStorage + flips healthSent. */}
+      {(!healthSent && progress.done > 0) ? (
+        <div style={S.healthPrompt} data-testid="daily-health-prompt">
+          <p style={S.healthQuestion}>
+            {experienceType === 'farm'
+              ? tSafe('daily.healthFeedback.farm', 'Did your crop look healthy?')
+              : tSafe('daily.healthFeedback.garden', 'Did your plant look healthy?')}
+          </p>
+          <div style={S.healthButtons}>
+            <button
+              type="button"
+              onClick={() => handleHealthFeedback('yes')}
+              style={{ ...S.healthBtn, ...S.btnPrimary }}
+              data-testid="daily-health-yes"
+            >
+              {tSafe('daily.healthFeedback.yes', 'Yes')}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleHealthFeedback('not_sure')}
+              style={{ ...S.healthBtn, ...S.btnGhost }}
+              data-testid="daily-health-notsure"
+            >
+              {tSafe('daily.healthFeedback.notSure', 'Not sure')}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleHealthFeedback('no')}
+              style={{ ...S.healthBtn, ...S.btnGhost }}
+              data-testid="daily-health-no"
+            >
+              {tSafe('daily.healthFeedback.no', 'No')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Retention Loop spec \u00a74 \u2014 completion toast. Appears for
+          ~3 s after each Mark-done tap. Garden vs farm wording
+          chosen by the v2 engine's experience inference. Sits
+          at the bottom of the card so it never displaces the
+          existing layout when it fires. */}
+      {toast ? (
+        <div
+          role="status"
+          style={S.toast}
+          data-testid="daily-completion-toast"
+        >
+          {toast}
         </div>
       ) : null}
 
@@ -534,4 +783,152 @@ const S = {
   btnPrimary: { background: '#22C55E', color: '#062714', borderColor: '#22C55E' },
   btnGhost: { background: 'transparent', color: '#EAF2FF' },
   empty: { margin: 0, color: '#9FB3C8', fontSize: '0.875rem' },
+
+  // Retention Loop spec \u00a73 \u2014 streak pill. Sits in its own row
+  // above the progress bar so the count reads first. Calm
+  // amber tone keeps the fire emoji from feeling alarmist.
+  streakRow: { display: 'flex', justifyContent: 'flex-start' },
+  streakPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.25rem 0.625rem',
+    borderRadius: 999,
+    background: 'rgba(245,158,11,0.12)',
+    border: '1px solid rgba(245,158,11,0.32)',
+    color: '#FCD34D',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+  },
+
+  // Retention Loop spec \u00a72 \u2014 progress text + bar. Track is
+  // a faint white pill; the green fill animates via inline
+  // width so a Mark-done tap visibly advances it.
+  progressWrap: { display: 'flex', flexDirection: 'column', gap: 6 },
+  progressLine: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    color: '#9FB3C8',
+    fontWeight: 600,
+  },
+  progressTrack: {
+    height: 6,
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    background: 'linear-gradient(90deg, #22C55E 0%, #4ADE80 100%)',
+    borderRadius: 999,
+    transition: 'width 0.4s ease-out',
+  },
+
+  // Retention Loop spec \u00a75 \u2014 adaptive message. Single calm
+  // line; tone matches the existing weather-stale row but
+  // colour stays neutral so it never reads as an alert.
+  adaptiveMessage: {
+    margin: 0,
+    padding: '0.5rem 0.75rem',
+    borderRadius: 10,
+    background: 'rgba(59,130,246,0.10)',
+    border: '1px solid rgba(59,130,246,0.28)',
+    color: '#BFDBFE',
+    fontSize: '0.8125rem',
+    lineHeight: 1.45,
+  },
+
+  // Retention Loop spec \u00a71 \u2014 completed-state row + title.
+  // Dimmed background + struck-through title signal "done"
+  // without removing the line entirely (the user can still
+  // see what they did today).
+  actionRowDone: {
+    opacity: 0.55,
+    background: 'rgba(34,197,94,0.06)',
+    borderColor: 'rgba(34,197,94,0.20)',
+  },
+  actionTitleDone: {
+    textDecoration: 'line-through',
+    color: '#9FB3C8',
+  },
+  donePill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.25rem 0.625rem',
+    borderRadius: 999,
+    background: 'rgba(34,197,94,0.18)',
+    border: '1px solid rgba(34,197,94,0.32)',
+    color: '#86EFAC',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+  },
+
+  // Retention Loop spec \u00a74 \u2014 completion toast. Anchored at
+  // the bottom of the card; auto-dismisses via the timer in
+  // handleMarkDone.
+  toast: {
+    margin: '0.5rem 0 0',
+    padding: '0.625rem 0.875rem',
+    borderRadius: 12,
+    background: 'rgba(34,197,94,0.18)',
+    border: '1px solid rgba(34,197,94,0.32)',
+    color: '#86EFAC',
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    textAlign: 'center',
+  },
+
+  // Retention Loop spec \u00a76 \u2014 health-feedback prompt + 3
+  // buttons. Calmer background so the prompt never visually
+  // shouts at the user; the three buttons sit on one row.
+  healthPrompt: {
+    marginTop: 8,
+    padding: '0.625rem 0.75rem',
+    borderRadius: 12,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  healthQuestion: {
+    margin: 0,
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    color: '#EAF2FF',
+  },
+  healthButtons: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  healthBtn: {
+    appearance: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    padding: '0.4rem 0.75rem',
+    borderRadius: 999,
+    border: '1px solid rgba(255,255,255,0.16)',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    minHeight: 32,
+    flex: '0 0 auto',
+  },
+
+  // Retention Loop spec \u00a77 \u2014 all-done tomorrow preview. Only
+  // shown when every task is complete. Slightly warmer green
+  // tone than the always-visible follow-up so the user reads
+  // "you're done; here's tomorrow" as a reward, not a chore.
+  allDonePreview: {
+    marginTop: 8,
+    padding: '0.625rem 0.875rem',
+    borderRadius: 12,
+    background: 'rgba(34,197,94,0.16)',
+    border: '1px solid rgba(34,197,94,0.36)',
+    color: '#BBF7D0',
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    lineHeight: 1.45,
+  },
 };

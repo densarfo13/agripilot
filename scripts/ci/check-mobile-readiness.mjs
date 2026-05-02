@@ -2741,6 +2741,118 @@ const checks = [
           && /from\s+['"]\.\.\/\.\.\/core\/dailyIntelligenceEngine\.js['"]/.test(f);
     },
   },
+  {
+    // Retention Loop spec \u00a73 \u2014 streakEngine writes the spec
+    // keys (farroway_streak_count + farroway_last_completed_date),
+    // exposes the canonical { count, lastCompletedDate } shape,
+    // and mirrors writes to the legacy retention store so
+    // existing surfaces don't drift.
+    name: 'streakEngine ships spec keys + idempotent recordTaskCompleted',
+    why:  'Retention Loop \u00a73 \u2014 streak math is canonical here',
+    pass: () => {
+      const f = read('src/core/streakEngine.js');
+      return /export\s+function\s+getStreak/.test(f)
+          && /export\s+function\s+recordTaskCompleted/.test(f)
+          && /export\s+function\s+daysSinceLastCompletion/.test(f)
+          && /'farroway_streak_count'/.test(f)
+          && /'farroway_last_completed_date'/.test(f)
+          // Mirror to the legacy retention store on writes.
+          && /from\s+['"]\.\.\/lib\/retention\/streakStore\.js['"]/.test(f);
+    },
+  },
+  {
+    // Retention Loop spec \u00a72 \u2014 dailyProgress is the pure
+    // helper Home + future "today" surfaces share. Caps the
+    // count at the plan's actual action.id list so yesterday's
+    // completions don't inflate today's percent.
+    name: 'dailyProgress ships computeDailyProgress with safe shape',
+    why:  'Retention Loop \u00a72 \u2014 progress math is canonical here',
+    pass: () => {
+      const f = read('src/core/dailyProgress.js');
+      return /export\s+function\s+computeDailyProgress/.test(f)
+          && /\bdone\b/.test(f) && /\btotal\b/.test(f)
+          && /\bpercent\b/.test(f) && /\ballDone\b/.test(f)
+          && /pendingIds/.test(f);
+    },
+  },
+  {
+    // Retention Loop spec \u00a76 \u2014 healthFeedbackStore persists
+    // 3-option answers under the spec-named key + supports
+    // dedupe + aggregation.
+    name: 'healthFeedbackStore ships record + read + aggregate',
+    why:  'Retention Loop \u00a76 \u2014 health feedback persistence',
+    pass: () => {
+      const f = read('src/core/healthFeedbackStore.js');
+      return /export\s+function\s+recordHealthFeedback/.test(f)
+          && /export\s+function\s+getHealthFeedbackForToday/.test(f)
+          && /'farroway_health_feedback'/.test(f)
+          // Allowed values match spec text.
+          && /'yes'/.test(f) && /'not_sure'/.test(f) && /'no'/.test(f)
+          // Allowed contexts.
+          && /'garden'/.test(f) && /'farm'/.test(f);
+    },
+  },
+  {
+    // Retention Loop spec \u00a75 \u2014 retentionMessages picks ONE
+    // adaptive message per the priority order (consistency >
+    // comeback > rain > humidity > null) plus garden vs farm
+    // completion-feedback wording.
+    name: 'retentionMessages ships adaptive + completion + all-done copy',
+    why:  'Retention Loop \u00a74\u2013\u00a75 \u2014 calm-by-default banner copy',
+    pass: () => {
+      const f = read('src/core/retentionMessages.js');
+      // The source persists the curly apostrophe as the literal
+      // escape sequence `\u2019` (six ASCII chars), so we anchor
+      // on substrings that don't span the apostrophe.
+      return /export\s+function\s+pickAdaptiveMessage/.test(f)
+          && /export\s+function\s+pickCompletionFeedback/.test(f)
+          && /export\s+function\s+pickAllDoneTomorrowPreview/.test(f)
+          && /Great consistency\. Keep going today\./.test(f)
+          && /get back on track\. Start with one quick check/.test(f)
+          && /Humidity is high today/.test(f)
+          && /Rain is expected/.test(f)
+          // Garden vs farm completion-feedback wording \u2014 anchor
+          // on the unique substrings AFTER the apostrophe.
+          && /keeping your plant healthy/.test(f)
+          && /staying ahead of crop problems/.test(f);
+    },
+  },
+  {
+    // Retention Loop spec \u00a71\u2013\u00a77 \u2014 DailyPlanCard composes
+    // every retention-loop module: completed state per task,
+    // streak pill, progress bar, adaptive banner, completion
+    // toast, health prompt, and all-done tomorrow preview.
+    name: 'DailyPlanCard wires retention loop (streak + progress + adaptive + health)',
+    why:  'Retention Loop \u00a71\u2013\u00a77 \u2014 Home card surfaces engagement',
+    pass: () => {
+      const f = read('src/components/daily/DailyPlanCard.jsx');
+      return /from\s+['"]\.\.\/\.\.\/core\/streakEngine\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/core\/dailyProgress\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/core\/retentionMessages\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/core\/healthFeedbackStore\.js['"]/.test(f)
+          // Streak pill
+          && /data-testid="daily-streak-pill"/.test(f)
+          // Progress bar
+          && /data-testid="daily-progress"/.test(f)
+          && /data-testid="daily-progress-fill"/.test(f)
+          // Adaptive message
+          && /data-testid="daily-adaptive-message"/.test(f)
+          // Completed state per task
+          && /data-testid={`daily-action-done-\$\{a\.id\}`}/.test(f)
+          // Completion toast
+          && /data-testid="daily-completion-toast"/.test(f)
+          // Health prompt
+          && /data-testid="daily-health-prompt"/.test(f)
+          && /data-testid="daily-health-yes"/.test(f)
+          && /data-testid="daily-health-notsure"/.test(f)
+          && /data-testid="daily-health-no"/.test(f)
+          // All-done preview
+          && /data-testid="daily-all-done-preview"/.test(f)
+          // Engine wiring on Mark-done
+          && /recordTaskCompleted\(/.test(f)
+          && /pickCompletionFeedback\(/.test(f);
+    },
+  },
 ];
 
 const failed = [];
