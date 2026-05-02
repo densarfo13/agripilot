@@ -263,17 +263,21 @@ export default function OnboardingFlow() {
             </button>
           ) : <span style={S.backBtn} aria-hidden="true" />}
           <span style={S.progress} data-testid="onboarding-progress-pill">
-            {/* Polish-audit \u00a74 \u2014 reduce step anxiety on the
-                final step. "Step 6 of 6" reads heavy at the
-                point the user is about to commit; "Almost done"
-                signals the same position without the count.
-                Earlier steps still show "Step X of N" so the
-                user has a sense of progress. */}
+            {/* Farm/garden separation spec \u00a73 \u2014 do NOT show
+                "Step 4 of 6" / "5 of 6" / "6 of 6"; those read
+                long and intimidating just before the commit.
+                Steps 1\u20133 still show "Step X of {TOTAL_STEPS}" so
+                the user has a sense of position; steps 4\u20135 hide
+                the count entirely (progress bar speaks); step 6
+                shows "Almost done" so the final commit reads
+                positive instead of heavy. */}
             {step === TOTAL_STEPS
               ? tSafe('onboarding.almostDone', 'Almost done')
-              : tSafe('onboarding.stepOf', 'Step {step} of {total}')
-                  .replace('{step}', String(step))
-                  .replace('{total}', String(TOTAL_STEPS))}
+              : (step <= 3
+                  ? tSafe('onboarding.stepOf', 'Step {step} of {total}')
+                      .replace('{step}', String(step))
+                      .replace('{total}', String(TOTAL_STEPS))
+                  : '')}
           </span>
           <span style={S.backBtn} aria-hidden="true" />
         </header>

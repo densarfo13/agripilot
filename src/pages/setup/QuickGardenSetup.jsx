@@ -36,9 +36,17 @@ import { tStrict } from '../../i18n/strictT.js';
 import { addGarden } from '../../store/multiExperience.js';
 import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+// Farm/garden separation spec \u00a76 \u2014 persist Quick setup
+// snapshots so a back/forward navigation doesn't lose
+// in-flight form data.
+import { loadData, saveData, removeData } from '../../store/localStore.js';
 // Shared progress bar from FastFlow so the garden setup screen
 // shows the same visual indicator as the experience picker.
 import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
+
+// localStore key for the garden-setup draft. Cleared after a
+// successful save so a future visit starts blank.
+const GARDEN_DRAFT_KEY = 'setup_garden_draft';
 
 // Spec \u00a76 \u2014 garden size buckets. Garden flow MUST NOT show
 // acres; this is a kitchen-plot screen. "I don't know" lets the
@@ -148,26 +156,42 @@ export default function QuickGardenSetup() {
   useTranslation();
   const navigate = useNavigate();
 
-  const [plant, setPlant]       = useState('');
+  // Farm/garden separation spec \u00a76 \u2014 hydrate local form state
+  // from the persisted draft so a back-navigation back into this
+  // form preserves what the user had typed. The hydration runs
+  // once via useState lazy initialiser; subsequent changes are
+  // snapshotted via the useEffect below.
+  const _draft = (() => {
+    try { return loadData(GARDEN_DRAFT_KEY, null) || {}; }
+    catch { return {}; }
+  })();
+
+  const [plant, setPlant]       = useState(_draft.plant || '');
   // Spec \u00a77 \u2014 selected plant tile ('tomato'\u2026'other'). When
   // set to 'other' we expand a free-text input below; otherwise
   // the tile label is the plant.
-  const [plantPick, setPlantPick] = useState(null);
-  const [country, setCountry]   = useState('');
-  const [region, setRegion]     = useState('');
-  const [city, setCity]         = useState('');
-  const [size, setSize]         = useState(null); // optional
+  const [plantPick, setPlantPick] = useState(_draft.plantPick || null);
+  const [country, setCountry]   = useState(_draft.country || '');
+  const [region, setRegion]     = useState(_draft.region || '');
+  const [city, setCity]         = useState(_draft.city || '');
+  const [size, setSize]         = useState(_draft.size || null); // optional
   // Backyard growing-setup spec \u00a71 \u2014 'container' | 'bed' |
   // 'ground' | 'unknown'. Always nullable (the user can save
   // without picking) so onboarding stays fast; downstream
   // surfaces fall through to generic garden guidance when null.
-  const [growingSetup, setGrowingSetup] = useState(null);
+  const [growingSetup, setGrowingSetup] = useState(_draft.growingSetup || null);
   // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
   // the user has chosen the garden experience. Non-blocking
   // guidance only; saved to the garden record so downstream
   // surfaces can soften copy ("first time?" hints) but never
   // gate the flow.
-  const [skillLevel, setSkillLevel] = useState(null); // null | 'new' | 'existing'
+  const [skillLevel, setSkillLevel] = useState(_draft.skillLevel || null);
+  // Farm/garden separation spec \u00a74 \u2014 free-text search above
+  // the plant tiles so users with longer lists can filter
+  // instead of scrolling. Filtering is case-insensitive against
+  // the resolved tile label OR the canonical id; an empty query
+  // shows every tile (the default).
+  const [plantQuery, setPlantQuery] = useState('');
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle'); // 'idle'|'requesting'|'denied'|'ok'
@@ -184,6 +208,20 @@ export default function QuickGardenSetup() {
     } catch { /* swallow */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Farm/garden separation spec \u00a76 \u2014 snapshot the form state
+  // on every change so a back-navigation back into this form
+  // restores what the user had typed. The save handler clears
+  // the draft (saveData on success path \u2192 removeData) so the
+  // next setup attempt starts blank.
+  useEffect(() => {
+    try {
+      saveData(GARDEN_DRAFT_KEY, {
+        plant, plantPick, country, region, city,
+        size, growingSetup, skillLevel,
+      });
+    } catch { /* swallow */ }
+  }, [plant, plantPick, country, region, city, size, growingSetup, skillLevel]);
 
   // Spec \u00a78 \u2014 "Use my location" is now an explicit user action,
   // not a silent on-mount probe (which made some browsers prompt
@@ -272,6 +310,10 @@ export default function QuickGardenSetup() {
         }
       } catch { /* swallow */ }
       try { setOnboardingComplete(); } catch { /* swallow */ }
+      // Farm/garden separation \u00a76 \u2014 wipe the draft so the
+      // next setup attempt (e.g. user resets onboarding later)
+      // starts blank instead of restoring stale fields.
+      try { removeData(GARDEN_DRAFT_KEY); } catch { /* swallow */ }
       try { trackEvent('setup_garden_completed', { hasSize: !!size, hasRegion: !!region.trim() }); }
       catch { /* swallow */ }
       try { navigate('/home', { replace: true }); }
@@ -303,17 +345,41 @@ export default function QuickGardenSetup() {
         </p>
       </div>
 
-      {/* Plant tiles (spec \u00a77). Tomato/Pepper/Herbs/Lettuce/Cucumber
-          + Other (free input fallback). The selected tile flows
-          into the existing addGarden({ crop }) shape so downstream
-          surfaces (scan, treatment, daily plan) get the same crop
-          key as a manually typed plant. */}
+      {/* Plant tiles (spec \u00a77 + farm/garden separation \u00a74).
+          Tomato/Pepper/Herbs/Lettuce/Cucumber + Other (free
+          input fallback). A search input above the grid filters
+          visible tiles for users with longer real-world plant
+          lists; "Other" is always shown so the user can fall
+          through to a free-text entry even when nothing matches. */}
       <section style={S.card} data-testid="setup-garden-plant-tiles">
         <span style={S.label}>
           {tStrict('onboarding.pickPlant.title', 'Pick your plant')}
         </span>
+        <input
+          type="search"
+          inputMode="search"
+          autoCapitalize="none"
+          autoComplete="off"
+          placeholder={tStrict('onboarding.searchPlant', 'Search plant\u2026')}
+          value={plantQuery}
+          onChange={(e) => setPlantQuery(e.target.value)}
+          style={S.input}
+          data-testid="quick-garden-plant-search"
+          maxLength={40}
+        />
         <div style={S.pillRow}>
-          {PLANT_OPTIONS.map((opt) => {
+          {PLANT_OPTIONS.filter((opt) => {
+            // Empty query \u2192 show every tile. Otherwise match
+            // case-insensitively against either the canonical
+            // id or the resolved label. "Other" is always
+            // visible so the user can still type a custom plant
+            // when nothing matches the query.
+            if (opt.value === 'other') return true;
+            const q = plantQuery.trim().toLowerCase();
+            if (!q) return true;
+            const label = String(tStrict(opt.labelKey, opt.fallback) || '').toLowerCase();
+            return opt.value.toLowerCase().includes(q) || label.includes(q);
+          }).map((opt) => {
             const active = plantPick === opt.value;
             return (
               <button

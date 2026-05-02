@@ -41,7 +41,12 @@ import { addFarm } from '../../store/multiExperience.js';
 import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { getDefaultUnit, getAllowedUnits } from '../../lib/units/areaConversion.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+import { loadData, saveData, removeData } from '../../store/localStore.js';
 import { OnboardingProgressBar } from '../onboarding/FastFlow.jsx';
+
+// Farm/garden separation spec \u00a76 \u2014 draft snapshot key. Cleared
+// after a successful save so a future visit starts blank.
+const FARM_DRAFT_KEY = 'setup_farm_draft';
 
 // Spec \u00a76 \u2014 farm size buckets. Farm flow MUST NOT show
 // "Small backyard"; this is a working-acre screen. The bucket
@@ -128,22 +133,32 @@ export default function QuickFarmSetup() {
   useTranslation();
   const navigate = useNavigate();
 
-  const [crop, setCrop]         = useState('');
-  const [cropPick, setCropPick] = useState(null); // 'maize'\u2026'other'
-  const [country, setCountry]   = useState('');
-  const [region, setRegion]     = useState('');
+  // Farm/garden separation spec \u00a76 \u2014 hydrate from the draft
+  // snapshot so a back-navigation preserves form data.
+  const _draft = (() => {
+    try { return loadData(FARM_DRAFT_KEY, null) || {}; }
+    catch { return {}; }
+  })();
+
+  const [crop, setCrop]         = useState(_draft.crop || '');
+  const [cropPick, setCropPick] = useState(_draft.cropPick || null);
+  const [country, setCountry]   = useState(_draft.country || '');
+  const [region, setRegion]     = useState(_draft.region || '');
   // Spec \u00a76 \u2014 farm size has TWO inputs: a 4-pill bucket and an
   // optional custom row. We track the bucket separately so the
   // canonical farmSize/sizeUnit fall through cleanly: bucket
   // selected \u2192 bucket acres + 'acres'; custom typed \u2192 numeric
   // size + chosen unit.
-  const [sizeBucket, setSizeBucket] = useState(null);
-  const [size, setSize]         = useState('');
-  const [unit, setUnit]         = useState(null);
+  const [sizeBucket, setSizeBucket] = useState(_draft.sizeBucket || null);
+  const [size, setSize]         = useState(_draft.size || '');
+  const [unit, setUnit]         = useState(_draft.unit || null);
   // High-trust onboarding spec \u00a72 \u2014 ask experience level AFTER
   // the user has chosen the farm experience. Non-blocking
   // guidance only.
-  const [skillLevel, setSkillLevel] = useState(null); // null | 'new' | 'existing'
+  const [skillLevel, setSkillLevel] = useState(_draft.skillLevel || null);
+  // Farm/garden separation spec \u00a74 \u2014 search input above the
+  // crop tiles so users with longer lists can filter.
+  const [cropQuery, setCropQuery] = useState('');
   const [errors, setErrors]     = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [geoStatus, setGeoStatus]   = useState('idle');
@@ -159,6 +174,17 @@ export default function QuickFarmSetup() {
     } catch { /* swallow */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Farm/garden separation spec \u00a76 \u2014 snapshot the form state
+  // on every change so a back-navigation preserves it.
+  useEffect(() => {
+    try {
+      saveData(FARM_DRAFT_KEY, {
+        crop, cropPick, country, region,
+        sizeBucket, size, unit, skillLevel,
+      });
+    } catch { /* swallow */ }
+  }, [crop, cropPick, country, region, sizeBucket, size, unit, skillLevel]);
 
   // Spec \u00a78 \u2014 "Use my location" is now an explicit user
   // action, not a silent on-mount probe. Failure NEVER blocks
@@ -285,6 +311,8 @@ export default function QuickFarmSetup() {
         }
       } catch { /* swallow */ }
       try { setOnboardingComplete(); } catch { /* swallow */ }
+      // Farm/garden separation \u00a76 \u2014 wipe the draft after save.
+      try { removeData(FARM_DRAFT_KEY); } catch { /* swallow */ }
       try {
         trackEvent('setup_farm_completed', {
           country: country.trim().toUpperCase(),
@@ -323,14 +351,35 @@ export default function QuickFarmSetup() {
         </p>
       </div>
 
-      {/* Crop tiles (spec \u00a77). Maize/Rice/Pepper/Tomato/Cassava
-          + Other (free input fallback). */}
+      {/* Crop tiles (spec \u00a77 + farm/garden separation \u00a74).
+          Maize/Rice/Pepper/Tomato/Cassava + Other (free input
+          fallback). A search input above the grid filters
+          visible tiles; "Other" stays visible so users with a
+          crop not on the launch list can still type it in. */}
       <section style={S.card} data-testid="setup-farm-crop-tiles">
         <span style={S.label}>
           {tStrict('onboarding.pickCrop.title', 'Pick your crop')}
         </span>
+        <input
+          type="search"
+          inputMode="search"
+          autoCapitalize="none"
+          autoComplete="off"
+          placeholder={tStrict('onboarding.searchCrop', 'Search crop\u2026')}
+          value={cropQuery}
+          onChange={(e) => setCropQuery(e.target.value)}
+          style={S.input}
+          data-testid="quick-farm-crop-search"
+          maxLength={40}
+        />
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-          {CROP_OPTIONS.map((opt) => {
+          {CROP_OPTIONS.filter((opt) => {
+            if (opt.value === 'other') return true;
+            const q = cropQuery.trim().toLowerCase();
+            if (!q) return true;
+            const label = String(tStrict(opt.labelKey, opt.fallback) || '').toLowerCase();
+            return opt.value.toLowerCase().includes(q) || label.includes(q);
+          }).map((opt) => {
             const active = cropPick === opt.value;
             return (
               <button

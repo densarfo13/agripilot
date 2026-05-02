@@ -1743,6 +1743,63 @@ const checks = [
       return farmerOk && reassureOk && simpleOk;
     },
   },
+  {
+    // Farm/garden separation spec \u00a74 \u2014 search input above the
+    // tile grid so users can filter to their plant/crop quickly.
+    // "Other" stays visible regardless of the query so the
+    // free-text fallback is always reachable.
+    name: 'Setup forms ship plant / crop search input above tile grid',
+    why:  'Farm/garden separation spec \u00a74 \u2014 user can search the tile list',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /onboarding\.searchPlant/.test(garden)
+          && /data-testid=["']quick-garden-plant-search["']/.test(garden)
+          && /plantQuery/.test(garden)
+          // "Other" tile bypasses the filter so free-text path
+          // is always reachable from the picker.
+          && /opt\.value\s*===\s*['"]other['"]\)\s*return true/.test(garden)
+          && /onboarding\.searchCrop/.test(farm)
+          && /data-testid=["']quick-farm-crop-search["']/.test(farm)
+          && /cropQuery/.test(farm);
+    },
+  },
+  {
+    // Farm/garden separation spec \u00a73 \u2014 the Simple Onboarding
+    // step pill MUST NOT show "Step 4/5/6 of 6" anymore. Steps
+    // 1\u20133 still show "Step X of N" so progress is visible;
+    // steps 4\u20135 hide the count entirely; step 6 says
+    // "Almost done".
+    name: 'OnboardingFlow hides step count on steps 4\u20135 (no scary 6 of 6)',
+    why:  'Farm/garden separation spec \u00a73 \u2014 onboarding does not feel long',
+    pass: () => {
+      const f = read('src/onboarding/OnboardingFlow.jsx');
+      // The pill expression must include a step <= 3 guard so
+      // steps 4 and 5 fall through to the empty string.
+      return /step\s*<=\s*3/.test(f)
+          && /step\s*===\s*TOTAL_STEPS\s*\?\s*tSafe\(\s*['"]onboarding\.almostDone['"]/.test(f);
+    },
+  },
+  {
+    // Farm/garden separation spec \u00a76 \u2014 Quick setup forms
+    // persist a draft snapshot via localStore so back-navigation
+    // doesn't lose data. Drafts are wiped on a successful save
+    // so the next setup attempt starts blank.
+    name: 'Quick setup forms persist draft state for back-preservation',
+    why:  'Farm/garden separation spec \u00a76 \u2014 back preserves data',
+    pass: () => {
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /GARDEN_DRAFT_KEY/.test(garden)
+          && /loadData\(GARDEN_DRAFT_KEY/.test(garden)
+          && /saveData\(GARDEN_DRAFT_KEY/.test(garden)
+          && /removeData\(GARDEN_DRAFT_KEY\)/.test(garden)
+          && /FARM_DRAFT_KEY/.test(farm)
+          && /loadData\(FARM_DRAFT_KEY/.test(farm)
+          && /saveData\(FARM_DRAFT_KEY/.test(farm)
+          && /removeData\(FARM_DRAFT_KEY\)/.test(farm);
+    },
+  },
 ];
 
 const failed = [];
