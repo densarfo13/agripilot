@@ -703,6 +703,53 @@ const checks = [
           && /scan_hybrid_applied/.test(f);
     },
   },
+  {
+    name: 'Backend ML pipeline ships preprocess + inference + fusion + safety',
+    why:  'Advanced ML scan layer \u2014 4-stage server pipeline before user sees a verdict',
+    pass: () => {
+      return fs.existsSync(path.join(ROOT, 'server/src/ml/preprocessImage.js'))
+          && fs.existsSync(path.join(ROOT, 'server/src/ml/scanInferenceService.js'))
+          && fs.existsSync(path.join(ROOT, 'server/src/ml/contextFusionEngine.js'))
+          && fs.existsSync(path.join(ROOT, 'server/src/ml/scanSafetyFilter.js'));
+    },
+  },
+  {
+    name: '/api/scan/analyze + /api/scan/feedback endpoints registered',
+    why:  'Advanced ML scan layer \u00a712 + \u00a79 \u2014 frontend integration points',
+    pass: () => {
+      const f = read('server/src/app.js');
+      return /\/api\/scan\/analyze/.test(f)
+          && /\/api\/scan\/feedback/.test(f);
+    },
+  },
+  {
+    name: 'ScanTrainingEvent Prisma model + migration shipped',
+    why:  'Advanced ML scan layer \u00a710 \u2014 training-data foundation',
+    pass: () => {
+      const schema = read('server/prisma/schema.prisma');
+      return /model ScanTrainingEvent/.test(schema)
+          && fs.existsSync(path.join(ROOT, 'server/prisma/migrations/20260501_scan_training_events/migration.sql'));
+    },
+  },
+  {
+    name: 'ScanFeedbackPrompt mounted under scan result',
+    why:  'Advanced ML scan layer \u00a79 \u2014 "Was this helpful?" UX',
+    pass: () => {
+      const page = read('src/pages/ScanPage.jsx');
+      return fs.existsSync(path.join(ROOT, 'src/components/scan/ScanFeedbackPrompt.jsx'))
+          && /<ScanFeedbackPrompt\s+scanId=/.test(page);
+    },
+  },
+  {
+    name: 'scanSafetyFilter strips unsafe language + appends disclaimer',
+    why:  'Advanced ML scan layer \u00a78 \u2014 no "confirmed disease" / dosage leaks',
+    pass: () => {
+      const f = read('server/src/ml/scanSafetyFilter.js');
+      return /UNSAFE_PHRASES/.test(f)
+          && /DOSAGE_PATTERN/.test(f)
+          && /Farroway provides guidance/.test(f);
+    },
+  },
 ];
 
 const failed = [];

@@ -36,6 +36,10 @@ import { trackEvent } from '../analytics/analyticsStore.js';
 import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
+// Advanced ML scan layer §9: ask the user "Was this helpful?"
+// after the result renders so we can build a training-data
+// foundation. Self-suppresses after one tap per scanId.
+import ScanFeedbackPrompt from '../components/scan/ScanFeedbackPrompt.jsx';
 import ScanHistory from '../components/scan/ScanHistory.jsx';
 
 const STYLES = {
@@ -318,16 +322,19 @@ export default function ScanPage() {
       ) : null}
 
       {phase === 'result' && result ? (
-        <ScanResultCard
-          result={result}
-          experience={experience}
-          onRetake={onRetake}
-          onAsk={onAsk}
-          onAddTasks={onAddTasks}
-          onSave={onSave}
-          alreadySaved={!!savedEntryId}
-          alreadyAddedTasks={tasksAdded}
-        />
+        <>
+          <ScanResultCard
+            result={result}
+            experience={experience}
+            onRetake={onRetake}
+            onAsk={onAsk}
+            onAddTasks={onAddTasks}
+            onSave={onSave}
+            alreadySaved={!!savedEntryId}
+            alreadyAddedTasks={tasksAdded}
+          />
+          <ScanFeedbackPrompt scanId={result.scanId || null} />
+        </>
       ) : null}
 
       {phase === 'error' ? (

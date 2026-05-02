@@ -3064,3 +3064,36 @@ model RiskSnapshot {
   @@index([orgId],               map: "idx_risk_org")
   @@map("risk_snapshots")
 }
+
+// ─── ML scan training data (advanced ML layer spec §10) ─────
+//
+// Append-only ledger of every scan + the user/expert label
+// applied to it. Drives V2 custom model training when enough
+// data accumulates. Indexed for cohort sampling (by crop +
+// country + region) and recency cuts.
+model ScanTrainingEvent {
+  id              String   @id @default(uuid())
+  scanId          String                              @map("scan_id")
+  userId          String?                             @map("user_id")
+  imageUrl        String?                             @map("image_url")
+  cropName        String?                             @map("crop_name")
+  plantName       String?                             @map("plant_name")
+  country         String?
+  region          String?
+  weatherSummary  Json?                               @map("weather_summary")
+  predictedIssue  String?                             @map("predicted_issue")
+  confidence      String?                             // low | medium | high
+  userFeedback    String?                             @map("user_feedback")    // helpful | not_helpful | not_sure
+  correctedIssue  String?                             @map("corrected_issue")
+  expertLabel     String?                             @map("expert_label")
+  createdAt       DateTime @default(now())            @map("created_at")
+
+  @@index([scanId],                    map: "idx_scan_train_scan")
+  @@index([cropName],                  map: "idx_scan_train_crop")
+  @@index([country, region],           map: "idx_scan_train_country_region")
+  @@index([predictedIssue, createdAt], map: "idx_scan_train_issue_time")
+  @@index([userFeedback],              map: "idx_scan_train_feedback")
+  @@index([createdAt],                 map: "idx_scan_train_created")
+  @@map("scan_training_events")
+}
+

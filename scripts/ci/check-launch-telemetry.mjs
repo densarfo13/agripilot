@@ -74,6 +74,8 @@ const REQUIRED_EVENTS = [
     why: 'Auto-repair fired when the recovery branch would have shown — measures self-heal hit rate.' },
   { name: 'scan_hybrid_applied', surface: 'ScanPage.jsx',
     why: 'Hybrid engine refined the image-only verdict — measures rule-pipeline hit rate per issue.' },
+  { name: 'scan_feedback', surface: 'ScanFeedbackPrompt.jsx',
+    why: 'User answered "Was this helpful?" — feeds the training-data foundation (ML §9).' },
 ];
 
 function listFiles(dir, acc) {

@@ -360,6 +360,155 @@ async function _healthHandler(_req, res) {
 app.get('/api/health', _healthHandler);
 app.get('/health',     _healthHandler);
 
+// ─── ML scan endpoints (advanced ML layer spec) ───────────────
+// Pipeline:
+//   POST /api/scan/analyze
+//     → preprocessImage (validate, size cap, optional EXIF strip)
+//     → analyzePlantImage (external provider OR rule fallback)
+//     → fuseContext (weather + experience + region rules)
+//     → applySafetyFilter (strip unsafe language, append disclaimer)
+//     → persist scan_training_events row
+//     → return safe verdict
+//   POST /api/scan/feedback
+//     → save user feedback for future ML training
+// Both endpoints are auth-only — the global /api limiter +
+// scanLimiter (regex-matched) cap volume.
+app.post('/api/scan/analyze', authenticate, async (req, res) => {
+  try {
+    const {
+      imageBase64, imageUrl,
+      cropName, plantName,
+      country, region,
+      activeExperience,
+      weather,
+    } = req.body || {};
+
+    const { preprocessImage } = await import('./ml/preprocessImage.js');
+    const { analyzePlantImage } = await import('./ml/scanInferenceService.js');
+    const { fuseContext } = await import('./ml/contextFusionEngine.js');
+    const { applySafetyFilter } = await import('./ml/scanSafetyFilter.js');
+
+    const pre = await preprocessImage({ base64: imageBase64, url: imageUrl });
+    if (!pre.ok) {
+      return res.status(400).json({ error: 'image_rejected', reason: pre.reason });
+    }
+
+    // Pull recent scan history for the same user to feed the
+    // "repeated issue → escalate urgency" rule.
+    let scanHistory = [];
+    try {
+      scanHistory = await prisma.scanTrainingEvent.findMany({
+        where:    { userId: req.user?.id || null },
+        orderBy:  { createdAt: 'desc' },
+        take:     20,
+        select:   { predictedIssue: true, createdAt: true },
+      });
+      scanHistory = scanHistory.map((r) => ({
+        possibleIssue: r.predictedIssue, createdAt: r.createdAt.toISOString(),
+      }));
+    } catch { scanHistory = []; }
+
+    const inference = await analyzePlantImage({
+      image:    pre.image,
+      mime:     pre.mime,
+      cropName, plantName,
+      country,  region,
+      weather,
+    });
+
+    const fused = fuseContext({
+      symptom:    inference.symptom,
+      confidence: inference.confidence,
+      activeExperience,
+      country, region, weather,
+      scanHistory,
+    });
+
+    // Engine output is a "raw" verdict — pass it through the
+    // safety filter before sending to the client.
+    const followUpTask = (fused.contextType === 'garden')
+      ? { id: 'ml_followup_garden', title: 'Check this plant again tomorrow',
+          reason: 'Confirm whether the issue has changed.', urgency: 'medium' }
+      : { id: 'ml_followup_farm',   title: 'Scout nearby crop area tomorrow',
+          reason: 'Check whether the issue is contained.', urgency: 'medium' };
+
+    const safe = applySafetyFilter({
+      ...fused,
+      followUpTask,
+      // Recommended actions are filled in by the frontend hybrid
+      // engine using its garden/farm action tables. The server
+      // returns the issue + confidence + context the frontend
+      // needs to pick the right action set.
+      recommendedActions: [],
+    });
+
+    // Persist the training event (fire-and-forget — don't block
+    // the response on the DB write).
+    try {
+      await prisma.scanTrainingEvent.create({
+        data: {
+          scanId:         req.body?.scanId || ('scan_' + Date.now().toString(36)),
+          userId:         req.user?.id || null,
+          imageUrl:       imageUrl || null,
+          cropName:       cropName  || null,
+          plantName:      plantName || null,
+          country:        country   || null,
+          region:         region    || null,
+          weatherSummary: weather   || null,
+          predictedIssue: safe.possibleIssue,
+          confidence:     safe.confidence,
+        },
+      });
+    } catch { /* swallow — analytics row is best-effort */ }
+
+    return res.json({
+      ok:           true,
+      verdict:      safe,
+      inferenceMeta: {
+        provider:     inference.meta?.provider || null,
+        latencyMs:    inference.meta?.latencyMs || 0,
+        fallbackUsed: !!inference.fallbackUsed,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'scan_analyze_failed', message: err && err.message });
+  }
+});
+
+app.post('/api/scan/feedback', authenticate, async (req, res) => {
+  try {
+    const { scanId, userFeedback, correctedIssue } = req.body || {};
+    if (!scanId || !userFeedback) {
+      return res.status(400).json({ error: 'missing_required_fields' });
+    }
+    const allowed = new Set(['helpful', 'not_helpful', 'not_sure']);
+    if (!allowed.has(String(userFeedback))) {
+      return res.status(400).json({ error: 'invalid_feedback' });
+    }
+    // Find the most recent training row for this scan + user
+    // and update it with the feedback. Don't error if missing —
+    // some scans run before the migration is applied.
+    try {
+      const row = await prisma.scanTrainingEvent.findFirst({
+        where:   { scanId, userId: req.user?.id || null },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (row) {
+        await prisma.scanTrainingEvent.update({
+          where: { id: row.id },
+          data:  {
+            userFeedback:   String(userFeedback),
+            correctedIssue: correctedIssue ? String(correctedIssue).slice(0, 200) : null,
+          },
+        });
+      }
+    } catch { /* swallow */ }
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'scan_feedback_failed', message: err && err.message });
+  }
+});
+
 
 // ─── Extended Health Check (admin-only) ────────────────────
 app.get('/api/ops/health', authenticate, async (req, res) => {
