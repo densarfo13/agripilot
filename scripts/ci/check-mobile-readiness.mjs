@@ -1169,13 +1169,18 @@ const checks = [
     // Spec \u00a79 \u2014 button copy is action-shaped: "Save Garden" /
     // "Save Farm". The legacy "Save my garden" / "Save my farm"
     // is no longer the rendered label.
-    name: 'Quick setup forms render Save Garden / Save Farm copy',
-    why:  'High-trust onboarding spec \u00a79 \u2014 clear action-shaped Save button copy',
+    // Go-live merged spec \u00a76 \u2014 the Save CTAs unified on a
+    // single "Start using Farroway" button across both flows.
+    // The legacy onboarding.saveGarden / saveFarm keys stay
+    // registered in translations.js for any external consumer
+    // but are no longer rendered by the Quick setups.
+    name: 'Quick setup forms render unified "Start using Farroway" CTA',
+    why:  'Go-live merged spec \u00a76 \u2014 single Save CTA across garden + farm',
     pass: () => {
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      return /onboarding\.saveGarden/.test(garden)
-          && /onboarding\.saveFarm/.test(farm);
+      return /onboarding\.review\.startUsing/.test(garden)
+          && /onboarding\.review\.startUsing/.test(farm);
     },
   },
   {
@@ -1739,13 +1744,15 @@ const checks = [
     // Polish-audit \u00a72 \u2014 final-step title swaps from
     // "Review your plan" to "Review your first plan" so the
     // user reads it as a starting position, not the final one.
-    name: 'Review-step title is "Review your first plan"',
-    why:  'Polish-audit \u00a72 \u2014 final framing reads as a first plan',
+    // Go-live merged spec \u00a76 superseded the polish-audit title.
+    // Review screen now reads "Your plan is ready" so the
+    // user's mental model is "the plan is done; here's what
+    // to do" rather than "review what you entered".
+    name: 'Review-step title is "Your plan is ready"',
+    why:  'Go-live merged spec \u00a76 \u2014 outcome-shaped review framing',
     pass: () => {
       const f = read('src/i18n/translations.js');
-      // Match the canonical row \u2014 must contain "first" so a
-      // future regression that strips the word fails this.
-      return /'onboarding\.review\.title':[\s\S]*?en:\s*'Review your first plan'/.test(f);
+      return /'onboarding\.review\.title':[\s\S]{0,160}en:\s*'Your plan is ready'/.test(f);
     },
   },
   {
@@ -2097,7 +2104,10 @@ const checks = [
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
       const panelOk = /export default function OnboardingReviewPanel/.test(panel)
                    && /onboarding\.review\.title/.test(panel)
-                   && /onboarding\.review\.helper/.test(panel)
+                   // The panel migrated from review.helper to
+                   // review.subtitle as the under-title copy
+                   // (go-live merged spec \u00a76).
+                   && /onboarding\.review\.subtitle/.test(panel)
                    && /onboarding\.newFarmerHint\.garden/.test(panel)
                    && /onboarding\.newFarmerHint\.farm/.test(panel)
                    && /preview\.title\.checkPlant/.test(panel)
@@ -2441,6 +2451,85 @@ const checks = [
          && /country\.trim\(\)\s*\|\|\s*geoStatus === ['"]ok['"]/.test(f);
       return REQ(garden) && NO_LEAKS(garden) && GATE(garden)
           && REQ(farm)   && NO_LEAKS(farm)   && GATE(farm);
+    },
+  },
+  {
+    // Go-live merged spec \u2014 review screen + onboarding copy
+    // overhaul. Title swaps from "Review your first plan" to
+    // "Your plan is ready"; subtitle to "Here's what to do
+    // today."; Save CTAs unify on "Start using Farroway"; the
+    // "I don't know" affirmations become "Not sure"; the
+    // pickPlant/pickCrop titles become "What are you growing?"
+    // / "Which crop are you growing?".
+    name: 'Go-live copy: Your plan is ready / Start using Farroway / Not sure',
+    why:  'Go-live merged spec \u00a76 + \u00a74 + \u00a75 \u2014 final review + size copy',
+    pass: () => {
+      const trans  = read('src/i18n/translations.js');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Translations carry the new English values.
+      const Q = (key, value) => {
+        const re = new RegExp(
+          `'${key.replace(/\./g, '\\\\.')}':\\s*\\{[^}]*?en:\\s*'${
+            value.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')
+          }`);
+        return re.test(trans);
+      };
+      // The translations file stores curly apostrophes as the
+      // literal `\u2019` escape sequence (7 ASCII chars), not
+      // the single Unicode character. Match the literal escape
+      // form so a JS regex compile doesn't resolve the escape
+      // at compile time.
+      const reviewTitle = /'onboarding\.review\.title':[\s\S]{0,160}en:\s*'Your plan is ready'/.test(trans);
+      const reviewSub   = /'onboarding\.review\.subtitle':[\s\S]{0,200}en:\s*'Here\\u2019s what to do today\.'/.test(trans);
+      const editPrompt  = /'onboarding\.review\.editPrompt':[\s\S]{0,200}en:\s*'Want to change anything\?'/.test(trans);
+      const startUsing  = /'onboarding\.review\.startUsing':[\s\S]{0,200}en:\s*'Start using Farroway'/.test(trans);
+      const startSimple = /'onboarding\.review\.startSimple':[\s\S]{0,200}en:\s*'Start simple\. Do these first:'/.test(trans);
+      const pickPlant   = /'onboarding\.pickPlant\.title':[\s\S]{0,200}en:\s*'What are you growing\?'/.test(trans);
+      const pickCrop    = /'onboarding\.pickCrop\.title':[\s\S]{0,200}en:\s*'Which crop are you growing\?'/.test(trans);
+      const setupTitle  = /'garden\.growingSetup\.title':[\s\S]{0,200}en:\s*'How are you growing your plants\?'/.test(trans);
+      // Save CTAs unify on the new key.
+      const gardenCTA = /tStrict\(\s*'onboarding\.review\.startUsing'/.test(garden);
+      const farmCTA   = /tStrict\(\s*'onboarding\.review\.startUsing'/.test(farm);
+      // "Not sure" replaces "I don't know" on size + setup unknown.
+      const notSure = /'garden\.growingSetup\.unknown':[\s\S]{0,80}en:\s*'Not sure'/.test(trans)
+                   && /'onboarding\.gardenSize\.unknown':[\s\S]{0,80}en:\s*'Not sure'/.test(trans)
+                   && /'onboarding\.farmSize\.unknown':[\s\S]{0,80}en:\s*'Not sure'/.test(trans);
+      return reviewTitle && reviewSub && editPrompt && startUsing && startSimple
+          && pickPlant && pickCrop && setupTitle
+          && gardenCTA && farmCTA && notSure;
+    },
+  },
+  {
+    // Go-live spec \u00a78 \u2014 contextResolver returns flat
+    // country/region/sizeSqFt/displayUnit fields plus the
+    // existing nested `location` so every consumer sees the
+    // same shape.
+    name: 'contextResolver returns flat country / region / sizeSqFt / displayUnit',
+    why:  'Go-live spec \u00a78 \u2014 stable context shape, no undefined keys',
+    pass: () => {
+      const f = read('src/core/contextResolver.js');
+      // Fields are bare-shorthand in the return object
+       // (`country,` not `country: country,`), so match either
+       // shape.
+      const HAS = (name) => new RegExp(`\\b${name}\\s*[,:]`).test(f);
+      return HAS('activeExperience')
+          && HAS('country')
+          && HAS('region')
+          && HAS('sizeSqFt')
+          && HAS('displayUnit');
+    },
+  },
+  {
+    // Go-live spec \u00a714 \u2014 lightweight analytics shim at
+    // src/core/analytics.js (spec asked for .ts; codebase rule
+    // is JS-only). Re-exports trackEvent from the canonical
+    // analyticsStore so a single emit pipeline stays in place.
+    name: 'src/core/analytics ships trackEvent shim re-export',
+    why:  'Go-live spec \u00a714 \u2014 spec-pathed analytics import resolves',
+    pass: () => {
+      const f = read('src/core/analytics.js');
+      return /export\s*\{\s*trackEvent\s*\}\s*from\s*['"]\.\.\/analytics\/analyticsStore\.js['"]/.test(f);
     },
   },
 ];

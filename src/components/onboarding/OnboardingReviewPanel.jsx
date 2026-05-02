@@ -153,11 +153,11 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
         {tSafe('onboarding.planReadyEyebrow', 'Your first plan is ready')}
       </span>
       <h3 style={S.title}>
-        {tSafe('onboarding.review.title', 'Review your first plan')}
+        {tSafe('onboarding.review.title', 'Your plan is ready')}
       </h3>
       <p style={S.subtitle}>
-        {tSafe('onboarding.review.helper',
-          'You can change anything before continuing.')}
+        {tSafe('onboarding.review.subtitle',
+          'Here\u2019s what to do today.')}
       </p>
 
       {/* Merge-spec \u00a73 \u2014 Your picks. Garden experience always
@@ -167,7 +167,7 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
       {showSummary ? (
         <div style={S.summary} data-testid="onboarding-review-summary">
           <span style={S.summaryTitle}>
-            {tSafe('onboarding.review.editTitle', 'Edit your setup')}
+            {tSafe('onboarding.review.editPrompt', 'Want to change anything?')}
           </span>
           {/* Each Change button jumps the user back to the
               corresponding step. The parent passes onChangeStep

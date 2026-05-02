@@ -692,7 +692,7 @@ export default function QuickGardenSetup() {
           >
             {submitting
               ? tStrict('setup.garden.saving', 'Saving\u2026')
-              : tStrict('onboarding.saveGarden', 'Save Garden')}
+              : tStrict('onboarding.review.startUsing', 'Start using Farroway')}
           </button>
 
           {errors.form ? (

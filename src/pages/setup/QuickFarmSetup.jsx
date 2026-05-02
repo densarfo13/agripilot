@@ -663,7 +663,7 @@ export default function QuickFarmSetup() {
           >
             {submitting
               ? tStrict('setup.farm.saving', 'Saving\u2026')
-              : tStrict('onboarding.saveFarm', 'Save Farm')}
+              : tStrict('onboarding.review.startUsing', 'Start using Farroway')}
           </button>
 
           {errors.form ? (

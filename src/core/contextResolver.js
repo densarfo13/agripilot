@@ -167,13 +167,33 @@ export function resolveUserContext(user = null) {
   const location    = _readLocation(row);
   const cropOrPlant = _readCropOrPlant(row);
 
+  // Go-live spec \u00a78 \u2014 flat country / region / sizeSqFt /
+  // displayUnit so callers don't have to dig into the nested
+  // location object. The flat fields mirror what the
+  // intelligence engine + scan engine already read off the
+  // farm record.
+  const safeRow = (row && typeof row === 'object') ? row : {};
+  const country = (location && location.country) || null;
+  const region  = (location && location.region)  || null;
+  const sizeSqFtRaw = Number(safeRow.landSizeSqFt ?? safeRow.farmSize);
+  const sizeSqFt = Number.isFinite(sizeSqFtRaw) && sizeSqFtRaw > 0 ? sizeSqFtRaw : null;
+  const displayUnit = (typeof safeRow.displayUnit === 'string' && safeRow.displayUnit)
+                   || (typeof safeRow.sizeUnit    === 'string' && safeRow.sizeUnit)
+                   || null;
+
   return {
     experience,
+    activeExperience: experience,    // alias matching go-live spec
     gardenId,
     farmId,
     growingSetup,
     location,
     cropOrPlant,
+    // Flat-field aliases (go-live spec \u00a78).
+    country,
+    region,
+    sizeSqFt,
+    displayUnit,
   };
 }
 
