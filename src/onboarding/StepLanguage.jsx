@@ -43,9 +43,15 @@ export default function StepLanguage({ value, onChange }) {
         {tSafe('onboarding.languageTitle', 'Choose your preferred language')}
       </h1>
       <p style={S.helper}>
+        {/* Final-merged spec \u00a74 \u2014 location-aware helper without
+            the country interpolation. "Best matches for United
+            States" read clinical and country-specific; the new
+            wording feels conversational + works for any country
+            without translation drift. Falls through to the
+            generic helper when no country is detected. */}
         {country
-          ? `${tSafe('onboarding.languageHelperWithCountry',
-              'Best matches for')} ${country}`
+          ? tSafe('onboarding.languageHelperLocation',
+              'Suggested for your location')
           : tSafe('onboarding.languageHelper',
               'You can change this anytime from settings.')}
       </p>

@@ -58,31 +58,43 @@ export default function StepDailyPlanPreview({ value, onComplete, busy, onEditSt
     [previewFarm],
   );
 
-  // Spec §7 fallback action set when the engine can't fill 3
-  // slots (e.g. crop unknown / unfamiliar).
-  const fallbackActions = [
-    {
-      id: 'preview.checkCrop',
-      title: tSafe('voice.todayTasks', 'Check your crop today'),
-      reason: tSafe('preview.reason.checkCrop',
-        'Walk the field and look for new growth or stress signs.'),
-      urgency: 'medium',
-    },
-    {
-      id: 'preview.water',
-      title: tSafe('preview.title.water', 'Water only if soil is dry'),
-      reason: tSafe('preview.reason.water',
-        'Touch the soil 5 cm down — water only if it feels dry.'),
-      urgency: 'medium',
-    },
-    {
-      id: 'preview.ask',
-      title: tSafe('preview.title.ask', 'Ask Farroway if you are unsure'),
-      reason: tSafe('preview.reason.ask',
-        'Tap the mic on Home and ask any question in your language.'),
-      urgency: 'low',
-    },
-  ];
+  // Final-merged spec \u00a75 \u2014 fallback action set with garden/
+  // farm-aware wording. The fallback fires when the engine
+  // can't fill 3 slots (e.g. crop unknown / unfamiliar). Tasks
+  // read action-first, no chatty hedging, with garden-side
+  // copy saying "plant" and farm-side copy saying "crop".
+  const isGardenPreview = (value.farmType === 'backyard'
+    || value.experience === 'backyard'
+    || value.experience === 'garden');
+  const fallbackActions = isGardenPreview
+    ? [
+        { id: 'preview.checkPlant', urgency: 'medium',
+          title: tSafe('preview.title.checkPlant', 'Check your plant'),
+          reason: tSafe('preview.reason.checkPlant',
+            'Look for new growth or stress signs on the leaves.') },
+        { id: 'preview.water',      urgency: 'medium',
+          title: tSafe('preview.title.water', 'Water only if soil is dry'),
+          reason: tSafe('preview.reason.water',
+            'Touch the soil 5 cm down \u2014 water only if it feels dry.') },
+        { id: 'preview.scan',       urgency: 'low',
+          title: tSafe('preview.title.scan', 'Scan if you see damage'),
+          reason: tSafe('preview.reason.scan',
+            'Take a photo of any spot or wilt and we\u2019ll suggest the next step.') },
+      ]
+    : [
+        { id: 'preview.checkCrop',  urgency: 'medium',
+          title: tSafe('preview.title.checkCrop', 'Check your crop'),
+          reason: tSafe('preview.reason.checkCrop',
+            'Walk the field and look for new growth or stress signs.') },
+        { id: 'preview.water',      urgency: 'medium',
+          title: tSafe('preview.title.water', 'Water only if soil is dry'),
+          reason: tSafe('preview.reason.water',
+            'Touch the soil 5 cm down \u2014 water only if it feels dry.') },
+        { id: 'preview.scan',       urgency: 'low',
+          title: tSafe('preview.title.scan', 'Scan if you see damage'),
+          reason: tSafe('preview.reason.scan',
+            'Take a photo of any spot or wilt and we\u2019ll suggest the next step.') },
+      ];
 
   const actions = (plan.actions && plan.actions.length >= 3)
     ? plan.actions.slice(0, 3)
@@ -123,10 +135,17 @@ export default function StepDailyPlanPreview({ value, onComplete, busy, onEditSt
           'You can change anything before continuing.')}
       </p>
 
+      {/* Final-merged spec \u00a75 \u2014 the "do these first" hint now
+          reads action-first instead of "start simple". Garden
+          and farm wording diverge so a backyard user is never
+          told to "keep your crop healthy" and vice versa. */}
       {value.farmerType === 'new' && (
         <p style={S.newFarmerNote}>
-          {tSafe('onboarding.newFarmerHint',
-            'Start simple. Do these actions first.')}
+          {isGardenPreview
+            ? tSafe('onboarding.newFarmerHint.garden',
+                'Follow these steps today to keep your plant healthy.')
+            : tSafe('onboarding.newFarmerHint.farm',
+                'Follow these steps today to keep your crop healthy.')}
         </p>
       )}
 

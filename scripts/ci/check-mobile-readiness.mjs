@@ -1961,6 +1961,74 @@ const checks = [
           && !/completeOnboarding/.test(f);
     },
   },
+  {
+    // Final-merged onboarding spec \u00a74 \u2014 language screen helper
+    // copy reads "Suggested for your location" instead of the
+    // legacy country-interpolated "Best matches for {country}".
+    name: 'StepLanguage helper reads "Suggested for your location"',
+    why:  'Final-merged onboarding spec \u00a74 \u2014 conversational location-aware copy',
+    pass: () => {
+      const f = read('src/onboarding/StepLanguage.jsx');
+      return /onboarding\.languageHelperLocation/.test(f)
+          && /Suggested for your location/.test(f)
+          // Legacy "Best matches for" + country interpolation
+          // is gone (the key may stay in translations.js for
+          // any external callers but is no longer consumed
+          // here).
+          && !/onboarding\.languageHelperWithCountry/.test(f);
+    },
+  },
+  {
+    // Final-merged onboarding spec \u00a75 \u2014 review-screen task
+    // titles tighten + diverge garden vs farm. Garden uses
+    // "Check your plant"; farm uses "Check your crop"; both
+    // include "Scan if you see damage" instead of the legacy
+    // "Ask Farroway if you are unsure" CTA. The "do these
+    // first" hint reads "Follow these steps today to keep your
+    // plant/crop healthy" depending on experience.
+    name: 'StepDailyPlanPreview ships tightened garden/farm-aware copy',
+    why:  'Final-merged onboarding spec \u00a75 \u2014 action-first review copy',
+    pass: () => {
+      const f = read('src/onboarding/StepDailyPlanPreview.jsx');
+      return /preview\.title\.checkPlant/.test(f)
+          && /preview\.title\.checkCrop/.test(f)
+          && /preview\.title\.scan/.test(f)
+          && /onboarding\.newFarmerHint\.garden/.test(f)
+          && /onboarding\.newFarmerHint\.farm/.test(f)
+          && /isGardenPreview/.test(f)
+          // Legacy "Start simple" hint is gone.
+          && !/Start simple\. Do these actions first/.test(f)
+          // Legacy "Ask Farroway if you are unsure" fallback
+          // task is gone \u2014 replaced by "Scan if you see damage".
+          && !/Ask Farroway if you are unsure/.test(f);
+    },
+  },
+  {
+    // Final-merged onboarding spec \u2014 every new copy key is
+    // present in the canonical translations store across all
+    // launch languages (per-language parity is enforced
+    // separately by guard:i18n-parity).
+    name: 'translations.js ships new final-merged onboarding keys',
+    why:  'Final-merged onboarding spec \u2014 every copy key present',
+    pass: () => {
+      const f = read('src/i18n/translations.js');
+      const KEYS = [
+        'onboarding.languageHelperLocation',
+        'onboarding.newFarmerHint.garden',
+        'onboarding.newFarmerHint.farm',
+        'preview.title.checkPlant',
+        'preview.title.checkCrop',
+        'preview.title.scan',
+        'preview.reason.checkPlant',
+        'preview.reason.scan',
+      ];
+      for (const k of KEYS) {
+        const re = new RegExp(`['"]${k.replace(/\./g, '\\.')}['"]\\s*:`);
+        if (!re.test(f)) return false;
+      }
+      return true;
+    },
+  },
 ];
 
 const failed = [];
