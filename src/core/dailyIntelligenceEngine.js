@@ -26,6 +26,11 @@ import { getGenericDailyPlan } from '../experience/genericExperience.js';
 import { resolveRegionUX } from './regionUXEngine.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { getActiveScanTasks } from './scanToTask.js';
+// Land Intelligence — derives scaleType + riskProfile from
+// (sizeSqFt, country, weather, experience) and surfaces extra
+// actions the daily plan can append to the existing rule output.
+// Pure helper; never throws; offline-safe.
+import { landIntelligenceEngine } from './landIntelligenceEngine.js';
 
 /**
  * @typedef {{
@@ -326,6 +331,46 @@ export function generateDailyPlan({
       if (!seen.has(a.id)) actions = [...actions, a];
     }
   }
+
+  // Land Intelligence enrichment — when humidity / heat / rain
+  // signals are present, append the matching risk action so the
+  // daily plan reflects today's conditions even when the rule
+  // engine didn't pick up the same signal. Bounded by the
+  // 3-slot cap and deduped against existing entries (case-
+  // insensitive title match).
+  try {
+    const land = landIntelligenceEngine({
+      sizeSqFt:         Number(farm.landSizeSqFt) || Number(farm.farmSize) || null,
+      country,
+      region:           farm.region || farm.state || null,
+      cropName:         cropId || null,
+      activeExperience: isBackyard ? 'garden' : 'farm',
+      weather,
+    });
+    if (land && Array.isArray(land.suggestedActions) && land.suggestedActions.length > 0) {
+      const existingTitles = new Set(
+        actions.map((a) => String(a.title || '').trim().toLowerCase()),
+      );
+      for (const text of land.suggestedActions) {
+        if (actions.length >= 3) break;
+        const k = String(text || '').trim().toLowerCase();
+        if (!k || existingTitles.has(k)) continue;
+        actions = [
+          ...actions,
+          {
+            id:         `land_${k.replace(/[^a-z0-9]+/g, '_').slice(0, 32)}`,
+            title:      text,
+            detail:     '',
+            urgency:    'medium',
+            actionType: 'inspect',
+            source:     'land_intel',
+            scaleType:  land.scaleType,
+          },
+        ];
+        existingTitles.add(k);
+      }
+    }
+  } catch { /* never let land enrichment break the daily plan */ }
 
   // Alerts — combine weather + profile gaps.
   const alerts = buildAlerts({

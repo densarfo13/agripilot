@@ -927,6 +927,16 @@ const checks = [
           && /sizeSqFt:\s*profile\?\.landSizeSqFt/.test(scan);
     },
   },
+  {
+    name: 'dailyIntelligenceEngine consumes Land Intelligence for daily plan',
+    why:  'Land intelligence spec \u00a77 \u2014 task generator adapts to scale + risk profile',
+    pass: () => {
+      const f = read('src/core/dailyIntelligenceEngine.js');
+      return /landIntelligenceEngine/.test(f)
+          && /source:\s*['"]land_intel['"]/.test(f)
+          && /scaleType:\s*land\.scaleType/.test(f);
+    },
+  },
 ];
 
 const failed = [];
