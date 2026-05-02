@@ -15,7 +15,7 @@
  *     → 'Small farm'
  *
  *   formatFarmSize({})            → 'Not specified'
- *   formatLocation(null)          → 'Not set'
+ *   formatLocation(null)          → 'Location not selected'
  *
  * Why these live in src/utils
  * ───────────────────────────
@@ -59,14 +59,18 @@ const USA_ALIASES = new Set([
 ]);
 
 /**
- * formatLocation(location) → 'Region, Country' | 'Country' | 'Not set'
+ * formatLocation(location) → 'Region, Country' | 'Country' | 'Location not selected'
  *
  * Accepts EITHER:
  *   • an object  { region?, country?, city?, state? } — the canonical
  *     shape persisted on garden / farm rows; OR
- *   • a falsy value (null / undefined / empty string) → 'Not set'.
+ *   • a falsy value (null / undefined / empty string) →
+ *     'Location not selected'.
  *
- * Output rules:
+ * Output rules (Final Review Validation §3):
+ *   • country + region → "Region, Country"   ("Maryland, USA")
+ *   • country only     → "Country"           ("USA")
+ *   • neither          → "Location not selected"
  *   • USA-shaped country values are normalised to uppercase 'USA'.
  *   • Non-USA countries are trimmed and rendered verbatim.
  *   • Empty region drops out so a country-only row reads as just
@@ -74,9 +78,14 @@ const USA_ALIASES = new Set([
  *   • Trailing / leading whitespace inside the values is stripped
  *     before the join, so "Maryland " + "USA" → "Maryland, USA"
  *     (no stray space before the comma).
+ *
+ * Spec change (Final Review Validation §3): "Not set" was the
+ * legacy default; the spec replaces it with the explicit
+ * "Location not selected" so the user sees an actionable
+ * statement of state, not a curt label.
  */
 export function formatLocation(location) {
-  if (!location) return 'Not set';
+  if (!location) return 'Location not selected';
 
   // Object input (canonical path). String inputs fall through
   // to the verbatim trim path below — kept so older callers
@@ -98,7 +107,7 @@ export function formatLocation(location) {
     const parts = [];
     if (region) parts.push(region);
     if (countryDisplay) parts.push(countryDisplay);
-    if (parts.length === 0) return 'Not set';
+    if (parts.length === 0) return 'Location not selected';
     return parts.join(', ');
   }
 
@@ -107,7 +116,7 @@ export function formatLocation(location) {
   // differ across callers; the display is at the mercy of
   // whoever built the string.
   const s = String(location || '').trim();
-  return s || 'Not set';
+  return s || 'Location not selected';
 }
 
 /**

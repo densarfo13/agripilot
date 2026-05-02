@@ -201,6 +201,10 @@ export default function QuickFarmSetup() {
   //   3  Review + Save     (spec item 7)
   const [subStep, setSubStep] = useState(0);
   const TOTAL_SUB_STEPS = 4;
+  // Final Review Validation \u00a76 \u2014 review-side jump-back marker.
+  // Set by the Change buttons; read by handleContinue to skip
+  // intermediate steps and go straight back to review.
+  const [returnToSubStep, setReturnToSubStep] = useState(null);
   function canAdvance(s) {
     // Location step: country OR geolocation succeeded.
     if (s === 0) return !!country.trim() || geoStatus === 'ok';
@@ -217,6 +221,14 @@ export default function QuickFarmSetup() {
   }
   function handleContinue() {
     if (!canAdvance(subStep)) return;
+    // Final Review Validation \u00a76 \u2014 jump straight to review
+    // when the user came from there via a Change button.
+    if (returnToSubStep != null) {
+      const target = returnToSubStep;
+      setReturnToSubStep(null);
+      setSubStep(target);
+      return;
+    }
     if (subStep < TOTAL_SUB_STEPS - 1) setSubStep(subStep + 1);
   }
   const [errors, setErrors]     = useState({});
@@ -244,15 +256,19 @@ export default function QuickFarmSetup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Location-persistence fix \u2014 mirror the country + region into
-  // the flat `farroway_location` key on every change. Distinct
-  // from the versioned + sanitised farm-draft store; this is
-  // the public single-key surface any reader can rely on
-  // without knowing the draft schema. Empty input wipes the
-  // entry (see saveLocation source).
+  // Location-persistence fix + Final Review Validation \u00a71\u2013\u00a72 \u2014
+  // mirror the canonical { country, region, lat?, lng? } shape
+  // into the flat `farroway_location` key on every change.
+  // lat / lng come from the geolocation handler's success
+  // callback (geoCoords); optional, only persist when present.
   useEffect(() => {
-    saveLocation({ country, region });
-  }, [country, region]);
+    saveLocation({
+      country,
+      region,
+      lat: geoCoords && typeof geoCoords.latitude === 'number' ? geoCoords.latitude : undefined,
+      lng: geoCoords && typeof geoCoords.longitude === 'number' ? geoCoords.longitude : undefined,
+    });
+  }, [country, region, geoCoords]);
 
   // Snapshot via the sanitiser so anything malformed gets
   // caught BEFORE landing in localStorage.
@@ -457,9 +473,21 @@ export default function QuickFarmSetup() {
     }
   }
 
-  const canSubmit = crop.trim() && country.trim()
-                 && size.trim() && Number(size) > 0
-                 && unit && !submitting;
+  // Final Review Validation \u00a75 \u2014 farm CTA enables when
+  // crop + country + (sizeBucket OR exactSize) are all set.
+  // sizeBucket = picked a preset; exactSize = typed a number.
+  // The two are mutually exclusive (per Final Farm Size +
+  // Review Normalization patch) so checking either side
+  // covers both paths. Unit is required only when the user
+  // typed a manual size.
+  const hasSizeBucket = !!sizeBucket;
+  const hasExactSize  = !!size.trim() && Number.isFinite(Number(size)) && Number(size) > 0;
+  const canSubmit = !!(
+       crop.trim()
+    && country.trim()
+    && (hasSizeBucket || (hasExactSize && unit))
+    && !submitting
+  );
 
   return (
     <main style={S.page} data-testid="quick-farm-setup" data-screen="setup-farm">
@@ -768,6 +796,10 @@ export default function QuickFarmSetup() {
               })(),
             })}
             onChangeStep={(key) => {
+              // Final Review Validation \u00a76 \u2014 mark the review
+              // sub-step as the return target so the next
+              // Next tap returns the user straight to review.
+              setReturnToSubStep(TOTAL_SUB_STEPS - 1);
               if (key === 'location')      setSubStep(0);
               else if (key === 'crop')     setSubStep(1);
               else if (key === 'farmSize') setSubStep(2);
@@ -785,6 +817,18 @@ export default function QuickFarmSetup() {
               ? tStrict('setup.farm.saving', 'Saving\u2026')
               : tStrict('onboarding.review.startUsing', 'Start using Farroway')}
           </button>
+
+          {/* Final Review Validation \u00a75 \u2014 helper line under
+              the disabled CTA. */}
+          {!canSubmit && !submitting ? (
+            <p
+              style={{ ...S.helpRow, marginTop: 8, textAlign: 'center' }}
+              data-testid="quick-farm-cta-helper"
+            >
+              {tStrict('onboarding.review.completeHelper',
+                'Complete your setup to continue.')}
+            </p>
+          ) : null}
 
           {errors.form ? (
             <div style={{ ...S.errorRow, fontSize: 13 }}>{errors.form}</div>

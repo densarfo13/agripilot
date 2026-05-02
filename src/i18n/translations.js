@@ -12611,6 +12611,13 @@ const T = {
   'onboarding.review.subtitle':         { en: 'Here\u2019s what to do today.', fr: 'Voici ce qu\u2019il faut faire aujourd\u2019hui.', sw: 'Hivi ndivyo vya kufanya leo.', ha: 'Ga abin da za a yi yau.',      tw: 'Yei ne deɛ wobɛyɛ nnɛ.',         hi: '\u0906\u091C \u0915\u094D\u092F\u093E \u0915\u0930\u0928\u093E \u0939\u0948 \u0935\u0939 \u092F\u0939\u093E\u0902 \u0939\u0948\u0964' },
   'onboarding.review.editPrompt':       { en: 'Want to change anything?',   fr: 'Souhaitez-vous changer quelque chose ?',  sw: 'Unataka kubadilisha chochote?', ha: 'Kana son canza wani abu?',    tw: 'Wopɛ sɛ wosesa biribi?',         hi: '\u0915\u094D\u092F\u093E \u0906\u092A \u0915\u0941\u091B \u092C\u0926\u0932\u0928\u093E \u091A\u093E\u0939\u0924\u0947 \u0939\u0948\u0902?' },
   'onboarding.review.startUsing':       { en: 'Start using Farroway',       fr: 'Commencer \u00E0 utiliser Farroway',     sw: 'Anza kutumia Farroway',        ha: 'Fara amfani da Farroway',     tw: 'Hyɛ ase di Farroway dwuma',      hi: 'Farroway \u0915\u093E \u0909\u092A\u092F\u094B\u0917 \u0936\u0941\u0930\u0942 \u0915\u0930\u0947\u0902' },
+  // Final Review Validation \u00a75 \u2014 helper line under the
+  // disabled Save / "Start using Farroway" CTA on the
+  // review screen. Tells the user WHY they can't proceed
+  // (a required field is missing) without naming the
+  // specific field \u2014 the review summary above already
+  // shows what's missing.
+  'onboarding.review.completeHelper':   { en: 'Complete your setup to continue.', fr: 'Terminez votre configuration pour continuer.', sw: 'Kamilisha mpangilio wako ili kuendelea.', ha: 'Kammala saitin ku don ci gaba.', tw: 'Wie wo nhyehyɛeɛ no na fa toa so.', hi: '\u0906\u0917\u0947 \u092C\u0922\u093C\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u0905\u092A\u0928\u0947 \u0938\u0947\u091F\u0905\u092A \u0915\u094B \u092A\u0942\u0930\u093E \u0915\u0930\u0947\u0902\u0964' },
 
   // Retention Loop spec \u00a74\u2013\u00a77 \u2014 daily-card adaptive copy.
   // The card composes pickAdaptiveMessage / pickCompletionFeedback /

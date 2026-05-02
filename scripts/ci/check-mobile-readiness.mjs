@@ -2608,6 +2608,55 @@ const checks = [
     // Location-persistence fix \u2014 single-key snapshot at
     // farroway_location so any downstream surface can read
     // the user's pick without walking the active record.
+    // Final Review Validation \u00a71\u2013\u00a75 \u2014 location keys
+    // standardised, review display rules updated, CTA
+    // validation tightened, helper text under disabled CTA.
+    name: 'Location final-validation: shape + display + CTA + helper',
+    why:  'Final Review Validation \u2014 location persists, review reads it, CTA gates correctly',
+    pass: () => {
+      const store    = read('src/utils/locationStore.js');
+      const display  = read('src/utils/formatDisplay.js');
+      const garden   = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm     = read('src/pages/setup/QuickFarmSetup.jsx');
+      const t        = read('src/i18n/translations.js');
+      // \u00a71 \u2014 locationStore documents + handles lat/lng.
+      const STORE_OK =
+            /typeof i\.lat === 'number'/.test(store)
+         && /typeof i\.lng === 'number'/.test(store)
+         && /Number\.isFinite\(i\.lat\)/.test(store)
+         && /Number\.isFinite\(i\.lng\)/.test(store);
+      // \u00a73 \u2014 formatLocation NEVER returns "Not set".
+      const DISPLAY_OK =
+            /'Location not selected'/.test(display)
+         && !/'Not set'/.test(display);
+      // \u00a72 \u2014 setup forms pass lat/lng to saveLocation.
+      const WIRED = (f) =>
+            /saveLocation\(\s*\{[\s\S]{0,200}lat:/.test(f)
+         && /saveLocation\(\s*\{[\s\S]{0,200}lng:/.test(f)
+         && /geoCoords/.test(f);
+      // \u00a75 \u2014 CTA validation tightened.
+      const GARDEN_CTA =
+            /plant\.trim\(\)[\s\S]{0,160}country\.trim\(\)[\s\S]{0,160}growingSetup/.test(garden);
+      const FARM_CTA =
+            /crop\.trim\(\)[\s\S]{0,200}country\.trim\(\)[\s\S]{0,200}(hasSizeBucket|hasExactSize|sizeBucket)/.test(farm);
+      // \u00a75 \u2014 helper text under disabled CTA.
+      const HELPER_OK =
+            /onboarding\.review\.completeHelper/.test(garden)
+         && /onboarding\.review\.completeHelper/.test(farm)
+         && /'onboarding\.review\.completeHelper':/.test(t)
+         && /Complete your setup to continue\./.test(t);
+      // \u00a76 \u2014 Change buttons set returnToSubStep so Next
+      // jumps straight back to review.
+      const RETURN_OK =
+            /returnToSubStep/.test(garden)
+         && /returnToSubStep/.test(farm)
+         && /setReturnToSubStep\(TOTAL_SUB_STEPS - 1\)/.test(garden)
+         && /setReturnToSubStep\(TOTAL_SUB_STEPS - 1\)/.test(farm);
+      return STORE_OK && DISPLAY_OK && WIRED(garden) && WIRED(farm)
+          && GARDEN_CTA && FARM_CTA && HELPER_OK && RETURN_OK;
+    },
+  },
+  {
     name: 'locationStore ships save/load/clear + setup forms wire it',
     why:  'Location-persistence fix \u2014 public single-key location surface',
     pass: () => {
@@ -2620,10 +2669,14 @@ const checks = [
           && /export\s+function\s+clearLocation/.test(store)
           && /'farroway_location'/.test(store)
           // Both setup forms import + call saveLocation.
+          // Final Review Validation \u00a71 \u2014 the call now passes
+          // `{ country, region, lat?, lng? }` so the regex
+          // anchors on the call site + the country / region
+          // keys, not a strict 2-arg shape.
           && /from\s+['"]\.\.\/\.\.\/utils\/locationStore\.js['"]/.test(garden)
           && /from\s+['"]\.\.\/\.\.\/utils\/locationStore\.js['"]/.test(farm)
-          && /saveLocation\(\s*\{\s*country,\s*region\s*\}\s*\)/.test(garden)
-          && /saveLocation\(\s*\{\s*country,\s*region\s*\}\s*\)/.test(farm)
+          && /saveLocation\(\s*\{[\s\S]{0,400}country[\s\S]{0,200}region/.test(garden)
+          && /saveLocation\(\s*\{[\s\S]{0,400}country[\s\S]{0,200}region/.test(farm)
           // Privacy clear wipes the new key.
           && /'farroway_location'/.test(analytics);
     },
@@ -2976,14 +3029,17 @@ const checks = [
     // formatters that fix the "Maryland , Usa" + "Not sure"
     // bugs and follow the spec's farm-size resolution order.
     name: 'utils/formatDisplay ships formatLocation + formatFarmSize',
-    why:  'Farm-size normalization \u00a75\u2013\u00a76 \u2014 review screen formatters',
+    why:  'Farm-size normalization \u00a75\u2013\u00a76 + Final Review Validation \u00a73 \u2014 review screen formatters',
     pass: () => {
       const f = read('src/utils/formatDisplay.js');
       return /export\s+function\s+formatLocation/.test(f)
           && /export\s+function\s+formatFarmSize/.test(f)
           && /export\s+function\s+normalizeFarmSizeBucket/.test(f)
-          // Spec strings present.
-          && /'Not set'/.test(f)
+          // Spec strings present. Final Review Validation \u00a73
+          // replaced the legacy "Not set" with "Location not
+          // selected"; the formatFarmSize "Not specified"
+          // default is unchanged.
+          && /'Location not selected'/.test(f)
           && /'Not specified'/.test(f)
           && /'Small farm'/.test(f)
           && /'Medium farm'/.test(f)

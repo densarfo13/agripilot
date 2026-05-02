@@ -64,30 +64,50 @@ function _safeRemove(key) {
 }
 
 /**
- * saveLocation({ country, region }) \u2192 stored shape.
+ * saveLocation({ country, region, lat?, lng? }) \u2192 stored shape.
  *
- * Always persists a `{ country, region }` object with both
- * fields coerced to strings (empty string when missing). When
- * BOTH fields are empty, the entry is wiped instead of
- * persisted \u2014 callers don't end up with a stale partial entry
- * after the user clears both inputs.
+ * Always persists a `{ country, region, lat?, lng? }` object.
+ * Country + region are coerced to strings (empty when missing);
+ * lat / lng are kept ONLY when they're finite numbers so a
+ * stale `null` / `undefined` / `NaN` never lands in storage.
+ *
+ * Final Review Validation \u00a71 \u2014 single canonical shape:
+ *   { country, region, lat?, lng? }
+ * No mixed keys ('state', 'countryName', 'locationText').
+ *
+ * Spec rule (\u00a72): when BOTH country and region are empty,
+ * the entry is wiped instead of persisted \u2014 callers don't
+ * end up with a stale partial entry after the user clears
+ * both inputs. lat/lng alone do NOT keep the entry alive
+ * because the user-visible part is the country + region.
  *
  * @param {object} input
  * @param {string} [input.country]
  * @param {string} [input.region]
- * @returns {{country:string, region:string}|null}
+ * @param {number} [input.lat]
+ * @param {number} [input.lng]
+ * @returns {{country:string, region:string, lat?:number, lng?:number}|null}
  */
 export function saveLocation(input) {
   const i = (input && typeof input === 'object') ? input : {};
   const country = (typeof i.country === 'string' ? i.country : '').trim();
   const region  = (typeof i.region  === 'string' ? i.region  : '').trim();
-  // Both empty \u2192 clear so a previously-saved value doesn't
-  // linger after the user wipes the form.
+  // Both visible fields empty \u2192 clear so a previously-saved
+  // value doesn't linger after the user wipes the form.
   if (!country && !region) {
     _safeRemove(LOCATION_STORE_KEY);
     return null;
   }
   const record = { country, region };
+  // Only include lat / lng when they're finite numbers. A null
+  // / undefined / NaN value is dropped so the stored shape
+  // never has stale geo data attached.
+  if (typeof i.lat === 'number' && Number.isFinite(i.lat)) {
+    record.lat = i.lat;
+  }
+  if (typeof i.lng === 'number' && Number.isFinite(i.lng)) {
+    record.lng = i.lng;
+  }
   try {
     _safeSet(LOCATION_STORE_KEY, JSON.stringify(record));
   } catch { /* swallow */ }
@@ -112,10 +132,21 @@ export function loadLocation() {
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
-    return {
+    const out = {
       country: typeof parsed.country === 'string' ? parsed.country : '',
       region:  typeof parsed.region  === 'string' ? parsed.region  : '',
     };
+    // Final Review Validation \u00a71 \u2014 surface lat/lng when the
+    // stored entry has them, dropped otherwise. Callers that
+    // don't care about geo (e.g. the review display) just
+    // ignore the extra fields.
+    if (typeof parsed.lat === 'number' && Number.isFinite(parsed.lat)) {
+      out.lat = parsed.lat;
+    }
+    if (typeof parsed.lng === 'number' && Number.isFinite(parsed.lng)) {
+      out.lng = parsed.lng;
+    }
+    return out;
   } catch {
     // Unparseable entry \u2014 wipe so a future read doesn't keep
     // hitting the same bad payload. Best-effort; never throws.

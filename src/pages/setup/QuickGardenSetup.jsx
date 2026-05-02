@@ -249,6 +249,14 @@ export default function QuickGardenSetup() {
   // back out to FastFlow's experience picker).
   const [subStep, setSubStep] = useState(0);
   const TOTAL_SUB_STEPS = 5;
+  // Final Review Validation \u00a76 \u2014 when the user taps "Change
+  // location" (or any other Change button) on the review
+  // screen, we record the review sub-step here so the very
+  // next tap on Next jumps the user STRAIGHT BACK to review,
+  // skipping the intermediate steps. Cleared after the
+  // jump-back fires. null when the user is going through the
+  // flow forwards for the first time.
+  const [returnToSubStep, setReturnToSubStep] = useState(null);
 
   // Per-sub-step required-field gate. Continue stays disabled
   // until the gate passes. Sub-steps 2 (growing setup) and 3
@@ -279,6 +287,16 @@ export default function QuickGardenSetup() {
   }
   function handleContinue() {
     if (!canAdvance(subStep)) return;
+    // Final Review Validation \u00a76 \u2014 if the user came from the
+    // review screen via a "Change X" button, jump straight
+    // back to review on Next instead of stepping through the
+    // intermediate sub-steps. Cleared after the jump.
+    if (returnToSubStep != null) {
+      const target = returnToSubStep;
+      setReturnToSubStep(null);
+      setSubStep(target);
+      return;
+    }
     if (subStep < TOTAL_SUB_STEPS - 1) setSubStep(subStep + 1);
   }
   const [errors, setErrors]     = useState({});
@@ -317,14 +335,20 @@ export default function QuickGardenSetup() {
     });
   }, [plant, plantPick, country, region, city, size, growingSetup, skillLevel]);
 
-  // Location-persistence fix \u2014 mirror the country + region into
-  // the flat `farroway_location` key on every change. Distinct
-  // from the versioned + sanitised garden-draft store; this is
-  // the public single-key surface any reader can rely on
-  // without knowing the draft schema.
+  // Location-persistence fix + Final Review Validation \u00a71\u2013\u00a72 \u2014
+  // mirror the canonical { country, region, lat?, lng? } shape
+  // into the flat `farroway_location` key on every change.
+  // lat / lng come from the geolocation handler's success
+  // callback (geoCoords); they're optional and only persist
+  // when present.
   useEffect(() => {
-    saveLocation({ country, region });
-  }, [country, region]);
+    saveLocation({
+      country,
+      region,
+      lat: geoCoords && typeof geoCoords.latitude === 'number' ? geoCoords.latitude : undefined,
+      lng: geoCoords && typeof geoCoords.longitude === 'number' ? geoCoords.longitude : undefined,
+    });
+  }, [country, region, geoCoords]);
 
   // Spec \u00a78 + Location-handler fix \u2014 explicit user action with
   // precise error-code distinction (PositionError codes 1/2/3
@@ -437,7 +461,18 @@ export default function QuickGardenSetup() {
     }
   }
 
-  const canSubmit = plant.trim() && country.trim() && !submitting;
+  // Final Review Validation \u00a75 \u2014 garden CTA enables when
+  // plant + country + growingSetup are all set. growingSetup
+  // accepts any of the 5 canonical values including 'unknown'
+  // (the explicit "Not sure" pick); a user who hasn't tapped
+  // any setup tile yet has growingSetup === null and the CTA
+  // stays disabled.
+  const canSubmit = !!(
+       plant.trim()
+    && country.trim()
+    && (typeof growingSetup === 'string' && growingSetup.length > 0)
+    && !submitting
+  );
 
   return (
     <main style={S.page} data-testid="quick-garden-setup" data-screen="setup-garden">
@@ -741,13 +776,16 @@ export default function QuickGardenSetup() {
               })(),
             })}
             onChangeStep={(key) => {
-              // Stability-patch \u00a74 + onboarding-polish \u00a72 \u2014
-              // state-based jump-back. Each Change button maps
-              // to the sub-step that owns that field; profile
-              // state is preserved because we only flip the
-              // subStep pointer (no remount, no draft reload).
-              // Garden size now lives on its own sub-step (3)
-              // separate from growing setup (2).
+              // Stability-patch \u00a74 + onboarding-polish \u00a72 +
+              // Final Review Validation \u00a76 \u2014 state-based
+              // jump-back. Each Change button maps to the
+              // sub-step that owns that field; profile state
+              // is preserved (we only flip the subStep
+              // pointer). We also remember TOTAL_SUB_STEPS - 1
+              // so the next Next tap returns the user
+              // straight to review without re-stepping
+              // through the intermediate screens.
+              setReturnToSubStep(TOTAL_SUB_STEPS - 1);
               if (key === 'location')          setSubStep(0);
               else if (key === 'plant')        setSubStep(1);
               else if (key === 'growingSetup') setSubStep(2);
@@ -766,6 +804,21 @@ export default function QuickGardenSetup() {
               ? tStrict('setup.garden.saving', 'Saving\u2026')
               : tStrict('onboarding.review.startUsing', 'Start using Farroway')}
           </button>
+
+          {/* Final Review Validation \u00a75 \u2014 helper line under
+              the disabled CTA so the user knows WHY they
+              can't proceed. Only renders when the CTA is
+              disabled AND we're not in the middle of a save
+              (the spinner already explains submitting state). */}
+          {!canSubmit && !submitting ? (
+            <p
+              style={{ ...S.helpRow, marginTop: 8, textAlign: 'center' }}
+              data-testid="quick-garden-cta-helper"
+            >
+              {tStrict('onboarding.review.completeHelper',
+                'Complete your setup to continue.')}
+            </p>
+          ) : null}
 
           {errors.form ? (
             <div style={{ ...S.errorRow, fontSize: 13 }}>{errors.form}</div>
