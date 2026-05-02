@@ -286,11 +286,24 @@ function Header({ step, totalSteps, onBack }) {
   return (
     <header style={S.header}>
       <div style={S.brandRow}>
-        <span style={S.brandLogo} aria-hidden="true">🌱</span>
+        {/* Premium logo (final-onboarding-polish spec \u00a71). The
+            emoji that used to sit here was replaced with the
+            canonical raster mark from /icons/logo-premium.jpg.
+            Height capped at 32px; aspect ratio preserved via
+            object-fit; alt is empty because the wordmark
+            "Farroway" beside it carries the brand name. */}
+        <img
+          src="/icons/logo-premium.jpg"
+          alt=""
+          width="32"
+          height="32"
+          style={S.brandLogoImg}
+          aria-hidden="true"
+        />
         <div style={S.brandTextCol}>
           <span style={S.brandName}>Farroway</span>
           <span style={S.brandTagline}>
-            {tStrict('fastFlow.tagline', 'Know what to do. Grow better.')}
+            {tStrict('fastFlow.tagline', 'Know what to do today. Grow better.')}
           </span>
         </div>
       </div>
@@ -316,40 +329,55 @@ function Header({ step, totalSteps, onBack }) {
 }
 
 function ScreenEntry({ onPick }) {
-  // High-trust onboarding spec \u00a71 \u2014 the FIRST question is now
-  // "What are you growing?", not skill level. Pick experience
-  // before anything else so downstream surfaces have the right
-  // context from minute one. The two tiles are equal weight
-  // visually \u2014 garden and farm are both first-class paths, no
-  // "primary" CTA like the legacy Scan-vs-Farm screen had.
+  // High-trust onboarding spec \u00a71 + final-onboarding-polish
+  // \u00a73\u2013\u00a75 \u2014 the first question reframes from
+  // "What are you growing?" to "Where are you growing?" so the
+  // tiles answer the right question. Each tile carries a
+  // subtitle so the user understands the bucket without
+  // tapping. The "At home" tile is rendered with the primary
+  // green so the conversion-default reads first; the "On a
+  // farm" tile is a strong-bordered neutral card so it never
+  // looks disabled \u2014 just secondary in the visual hierarchy.
   return (
     <section style={S.screen} data-testid="fast-flow-entry" data-screen="onb-entry">
       <h1 style={S.h1}>
-        {tStrict('onboarding.whatAreYouGrowing', 'What are you growing?')}
+        {tStrict('onboarding.whereAreYouGrowing', 'Where are you growing?')}
       </h1>
       <div style={S.optionStack}>
         <button
           type="button"
-          style={{ ...S.choice, ...S.choicePrimary }}
+          style={{ ...S.choice, ...S.choicePrimary, alignItems: 'flex-start' }}
           onClick={() => onPick('garden')}
           data-testid="onb-entry-garden"
-          aria-label={tStrict('onboarding.backyardGarden', 'Backyard / Garden')}
+          aria-label={tStrict('onboarding.atHome', 'At home')}
         >
           <span style={S.choiceIcon} aria-hidden="true">{'\uD83C\uDF31'}</span>
-          <span style={S.choiceText}>
-            {tStrict('onboarding.backyardGarden', 'Backyard / Garden')}
+          <span style={S.choiceTextCol}>
+            <span style={S.choiceText}>
+              {tStrict('onboarding.atHome', 'At home')}
+            </span>
+            <span style={S.choiceSub}>
+              {tStrict('onboarding.atHomeSub',
+                'Garden, pots, containers, backyard')}
+            </span>
           </span>
         </button>
         <button
           type="button"
-          style={{ ...S.choice, ...S.choiceSecondary }}
+          style={{ ...S.choice, ...S.choiceFarmCard, alignItems: 'flex-start' }}
           onClick={() => onPick('farm')}
           data-testid="onb-entry-farm"
-          aria-label={tStrict('onboarding.farm', 'Farm')}
+          aria-label={tStrict('onboarding.onAFarm', 'On a farm')}
         >
           <span style={S.choiceIcon} aria-hidden="true">{'\uD83D\uDE9C'}</span>
-          <span style={S.choiceText}>
-            {tStrict('onboarding.farm', 'Farm')}
+          <span style={S.choiceTextCol}>
+            <span style={S.choiceText}>
+              {tStrict('onboarding.onAFarm', 'On a farm')}
+            </span>
+            <span style={S.choiceSub}>
+              {tStrict('onboarding.onAFarmSub',
+                'Fields, crops, or larger growing areas')}
+            </span>
           </span>
         </button>
       </div>
@@ -618,8 +646,23 @@ const S = {
   brandRow: {
     display: 'flex',
     alignItems: 'center',
+    // Final-onboarding-polish spec \u00a71 \u2014 8\u201312px between logo
+    // and "Farroway" wordmark; 10px sits in the middle.
     gap: 10,
   },
+  // Premium logo image (final-onboarding-polish spec \u00a71).
+  // Fixed 32x32 square mirrors the largest spec-allowed
+  // height (28\u201332px). objectFit:contain preserves the
+  // aspect ratio of the source JPG and never stretches.
+  brandLogoImg: {
+    width: 32,
+    height: 32,
+    objectFit: 'contain',
+    borderRadius: 6,
+    flex: '0 0 auto',
+  },
+  // Legacy emoji style kept for any caller still rendering
+  // the text logo. Not referenced by Header any more.
   brandLogo: { fontSize: 30, lineHeight: 1 },
   brandTextCol: {
     display: 'flex',
@@ -709,8 +752,41 @@ const S = {
     color: '#FFFFFF',
     border: '1px solid rgba(255,255,255,0.18)',
   },
+  // Final-onboarding-polish spec \u00a75 \u2014 the "On a farm" tile.
+  // Stronger 1.5px border + slightly higher background opacity
+  // than the default secondary card so it reads as
+  // "secondary, but not disabled". The text stays full-white
+  // so contrast against the dark backdrop is strong.
+  choiceFarmCard: {
+    background: 'rgba(255,255,255,0.07)',
+    color: '#FFFFFF',
+    border: '1.5px solid rgba(255,255,255,0.32)',
+  },
   choiceIcon: { fontSize: 26 },
-  choiceText: { flex: 1, textAlign: 'left' },
+  // Single-line title. The subtext sits below in choiceTextCol
+  // so the title stays large + scannable.
+  choiceText: { fontSize: 16, fontWeight: 700, lineHeight: 1.2, textAlign: 'left' },
+  // Sub-line (final-onboarding-polish spec \u00a74) \u2014 the bucket
+  // explanation under each tile title. Uses currentColor with
+  // explicit opacity so contrast holds on BOTH the dark-text
+  // primary tile AND the light-text secondary tile.
+  choiceSub: {
+    fontSize: 13,
+    fontWeight: 500,
+    color: 'currentColor',
+    opacity: 0.78,
+    textAlign: 'left',
+    lineHeight: 1.35,
+    marginTop: 2,
+  },
+  // Vertical column wrapping the title + subtitle so they sit
+  // stacked instead of inline.
+  choiceTextCol: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+  },
 
   field: { display: 'flex', flexDirection: 'column', gap: 8 },
   fieldLabel: {

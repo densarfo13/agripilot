@@ -1092,18 +1092,21 @@ const checks = [
   {
     // High-trust onboarding spec \u00a71 \u2014 the FIRST onboarding
     // screen asks "What are you growing?" with two tiles
-    // (Backyard/Garden + Farm), NOT the legacy "Are you new
-    // to farming?" skill-level question. Pick experience first
-    // so downstream surfaces have the right context.
-    name: 'FastFlow first screen asks "What are you growing?" with Garden/Farm tiles',
-    why:  'High-trust onboarding spec \u00a71 \u2014 experience picked before skill level',
+    // Final-onboarding-polish spec \u00a73\u2013\u00a74 \u2014 first-screen
+    // question rewrites to "Where are you growing?" and the
+    // tile labels are "At home" / "On a farm" with subtext,
+    // not the legacy "Backyard / Garden" / "Farm".
+    name: 'FastFlow first screen asks "Where are you growing?" with At-home / On-a-farm tiles',
+    why:  'Final-onboarding-polish spec \u00a73\u2013\u00a74 \u2014 reframed question + premium tile labels',
     pass: () => {
       const f = read('src/pages/onboarding/FastFlow.jsx');
-      return /onboarding\.whatAreYouGrowing/.test(f)
+      return /onboarding\.whereAreYouGrowing/.test(f)
           && /data-testid=["']onb-entry-garden["']/.test(f)
           && /data-testid=["']onb-entry-farm["']/.test(f)
-          && /onboarding\.backyardGarden/.test(f)
-          && /onboarding\.farm/.test(f)
+          && /onboarding\.atHome/.test(f)
+          && /onboarding\.atHomeSub/.test(f)
+          && /onboarding\.onAFarm/.test(f)
+          && /onboarding\.onAFarmSub/.test(f)
           && !/fastFlow\.entry\.question/.test(f)        // legacy key removed
           && /\/setup\/garden/.test(f)                   // garden hand-off
           && /\/setup\/farm/.test(f);                    // farm hand-off
@@ -2169,6 +2172,40 @@ const checks = [
       return /logo-premium/.test(brand)
           && /logo-premium/.test(html)
           && /logo-premium/.test(manifest);
+    },
+  },
+  {
+    // Final-onboarding-polish spec \u00a71 \u2014 the FastFlow header
+    // mounts the premium logo as an <img> instead of the
+    // legacy emoji. Sets a fixed 32px height + objectFit so
+    // the image never stretches or crops.
+    name: 'FastFlow header mounts premium logo image (no emoji)',
+    why:  'Final-onboarding-polish spec \u00a71 \u2014 premium logo on onboarding header',
+    pass: () => {
+      const f = read('src/pages/onboarding/FastFlow.jsx');
+      return /<img[\s\S]{0,160}src="\/icons\/logo-premium\.jpg"/.test(f)
+          && /brandLogoImg/.test(f)
+          // Legacy emoji removed from the Header's brand row.
+          && !/<span style=\{S\.brandLogo\} aria-hidden="true">\uD83C\uDF31<\/span>/.test(f);
+    },
+  },
+  {
+    // Final-onboarding-polish spec \u00a76 \u2014 tagline reads
+    // "Know what to do today. Grow better." with the new
+    // "today" qualifier. Brand registry is the single source
+    // of truth; translations.js + manifest.json mirror.
+    name: 'Brand tagline reads "Know what to do today. Grow better."',
+    why:  'Final-onboarding-polish spec \u00a76 \u2014 tagline conversion polish',
+    pass: () => {
+      const brand    = read('src/brand/farrowayBrand.js');
+      const trans    = read('src/i18n/translations.js');
+      const manifest = read('public/manifest.json');
+      const html     = read('index.html');
+      const PHRASE = /Know what to do today\. Grow better\./;
+      return PHRASE.test(brand)
+          && PHRASE.test(trans)
+          && PHRASE.test(manifest)
+          && PHRASE.test(html);
     },
   },
 ];

@@ -10257,7 +10257,7 @@ const T = {
   // Screens: entry → quick setup → recommendation → first task.
   // Mounted at /onboarding/start. Strings stay short so each
   // screen fits a single phone viewport without scrolling.
-  'fastFlow.tagline':             { en: 'Know what to do. Grow better.', fr: 'Sachez quoi faire. Cultivez mieux.', sw: 'Jua la kufanya. Lima vizuri.', ha: 'San abin yi. Yi noma sosai.', tw: 'Hu deɛ wobɛyɛ. Yɛ kuayɛ pa.', hi: 'क्या करना है, जानें। बेहतर उगाएँ।' },
+  'fastFlow.tagline':             { en: 'Know what to do today. Grow better.', fr: 'Sachez quoi faire aujourd\u2019hui. Cultivez mieux.', sw: 'Jua la kufanya leo. Lima vizuri.', ha: 'San abin yi yau. Yi noma sosai.', tw: 'Hu deɛ wobɛyɛ nnɛ. Yɛ kuayɛ pa.', hi: '\u0906\u091C \u0915\u094D\u092F\u093E \u0915\u0930\u0928\u093E \u0939\u0948, \u091C\u093E\u0928\u0947\u0902\u0964 \u092C\u0947\u0939\u0924\u0930 \u0909\u0917\u093E\u090F\u0901\u0964' },
 
   // Screen 1 — entry
   'fastFlow.entry.question':      { en: 'Are you new to farming?',       fr: 'Êtes-vous nouveau dans l\'agriculture ?',   sw: 'Je, wewe ni mpya kwenye kilimo?', ha: 'Sabuwa ce ka shiga noma?', tw: 'Wofiri ase reyɛ kuayɛ?', hi: 'क्या आप खेती में नए हैं?' },
@@ -12444,8 +12444,19 @@ const T = {
   // asks "What are you growing?" instead of "Are you new to
   // farming?" so the user picks experience BEFORE skill level).
   'onboarding.whatAreYouGrowing': { en: 'What are you growing?',     fr: 'Que cultivez-vous ?',                       sw: 'Unalima nini?',                          ha: 'Me kake nomawa?',                       tw: 'D\u025Bn na woreyɛ?',                        hi: '\u0906\u092A \u0915\u094D\u092F\u093E \u0909\u0917\u093E \u0930\u0939\u0947 \u0939\u0948\u0902?' },
+  // Final-onboarding-polish spec \u00a73 \u2014 first-screen question
+  // reframes from "what" (which the tiles can't answer) to
+  // "where" (which the tiles directly answer).
+  'onboarding.whereAreYouGrowing':{ en: 'Where are you growing?',    fr: 'O\u00F9 cultivez-vous ?',                    sw: 'Unalima wapi?',                          ha: 'Ina kake nomawa?',                      tw: 'Wodua w\u0254 he?',                          hi: '\u0906\u092A \u0915\u0939\u093E\u0902 \u0909\u0917\u093E \u0930\u0939\u0947 \u0939\u0948\u0902?' },
   'onboarding.backyardGarden':    { en: 'Backyard / Garden',         fr: 'Jardin / Potager',                          sw: 'Bustani ya nyumbani',                    ha: 'Lambun gida',                           tw: 'Fie turom',                                  hi: '\u092A\u093F\u091B\u0935\u093E\u0921\u093C\u093E / \u092C\u0917\u0940\u091A\u093E' },
   'onboarding.farm':              { en: 'Farm',                      fr: 'Ferme',                                     sw: 'Shamba',                                 ha: 'Gona',                                  tw: 'Afuo',                                       hi: '\u0916\u0947\u0924' },
+  // Final-onboarding-polish spec \u00a74 \u2014 friendlier tile labels.
+  // "At home" / "On a farm" sit next to a one-line subtext
+  // that explains the bucket without making the user tap.
+  'onboarding.atHome':            { en: 'At home',                   fr: '\u00C0 la maison',                          sw: 'Nyumbani',                               ha: 'A gida',                                tw: 'Fie',                                        hi: '\u0918\u0930 \u092A\u0930' },
+  'onboarding.atHomeSub':         { en: 'Garden, pots, containers, backyard', fr: 'Jardin, pots, conteneurs, arri\u00E8re-cour', sw: 'Bustani, sufuria, vyombo, ua', ha: 'Lambu, tukwane, akwatuna, bayan gida', tw: 'Turom, nkuruwa, fie akyi',          hi: '\u092C\u0917\u0940\u091A\u093E, \u0917\u092E\u0932\u0947, \u0915\u0902\u091F\u0947\u0928\u0930, \u092A\u093F\u091B\u0935\u093E\u0921\u093C\u093E' },
+  'onboarding.onAFarm':           { en: 'On a farm',                 fr: 'Sur une ferme',                             sw: 'Shambani',                               ha: 'A gona',                                tw: 'Afuo so',                                    hi: '\u0916\u0947\u0924 \u092A\u0930' },
+  'onboarding.onAFarmSub':        { en: 'Fields, crops, or larger growing areas', fr: 'Champs, cultures ou plus grandes zones', sw: 'Mashamba, mazao, au maeneo makubwa', ha: 'Filaye, amfanin gona, ko manyan wuraren noma', tw: 'Mfuw, aduane, anaa beaeɛ a ɛsoɔ',     hi: '\u0916\u0947\u0924, \u092B\u093C\u0938\u0932\u0947\u0902 \u092F\u093E \u092C\u0921\u093C\u0947 \u0909\u0917\u093E\u0928\u0947 \u0915\u0947 \u0915\u094D\u0937\u0947\u0924\u094D\u0930' },
   'onboarding.newToGrowing':      { en: 'Are you new to growing?',   fr: '\u00CAtes-vous nouveau au jardinage ?',     sw: 'Je, wewe ni mpya kwa kupanda?',          ha: 'Sabuwa ce ka shiga noma a gida?',       tw: 'Wofiri ase reyɛ aduane?',                    hi: '\u0915\u094D\u092F\u093E \u0906\u092A \u0909\u0917\u093E\u0928\u0947 \u092E\u0947\u0902 \u0928\u090F \u0939\u0948\u0902?' },
   'onboarding.newToFarming':      { en: 'Are you new to farming?',   fr: '\u00CAtes-vous nouveau dans l\u2019agriculture ?', sw: 'Je, wewe ni mpya kwenye kilimo?',     ha: 'Sabuwa ce ka shiga noma?',              tw: 'Wofiri ase reyɛ kuayɛ?',                     hi: '\u0915\u094D\u092F\u093E \u0906\u092A \u0916\u0947\u0924\u0940 \u092E\u0947\u0902 \u0928\u090F \u0939\u0948\u0902?' },
   'onboarding.yesNew':            { en: 'Yes, I\u2019m new',         fr: 'Oui, je suis nouveau',                      sw: 'Ndiyo, mimi ni mpya',                    ha: 'Eh, sabuwa ce',                         tw: 'Aane, meyɛ foforɔ',                          hi: '\u0939\u093E\u0901, \u092E\u0948\u0902 \u0928\u092F\u093E \u0939\u0942\u0901' },

@@ -1,7 +1,7 @@
 {
   "name": "Farroway",
   "short_name": "Farroway",
-  "description": "Farroway — Know what to do. Grow better.",
+  "description": "Farroway — Know what to do today. Grow better.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

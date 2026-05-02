@@ -21,7 +21,7 @@
 export const FARROWAY_BRAND = Object.freeze({
   name: 'Farroway',
   shortName: 'Farroway',
-  tagline: 'Know what to do. Grow better.',
+  tagline: 'Know what to do today. Grow better.',
   // Sub-tagline shown on the public landing hero. Kept short
   // so it works in mobile single-column layout without
   // wrapping more than twice.
