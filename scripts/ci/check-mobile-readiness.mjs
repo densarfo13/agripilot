@@ -3031,6 +3031,85 @@ const checks = [
     // Today's Priority headline reads BIG (summaryBig style),
     // explanation reads MEDIUM (explanationMedium), other
     // tasks render with the small-tile treatment.
+    // Final Home Dashboard Polish \u00a71\u2013\u00a72 \u2014 garden vs farm
+    // aware greeting + active-context strip on Home.
+    name: 'Home greeting + active-context strip ship spec copy',
+    why:  'Final Home Dashboard Polish \u00a71\u2013\u00a72 \u2014 daily-assistant feel',
+    pass: () => {
+      const t    = read('src/i18n/translations.js');
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      // Translation keys exist for both experiences + name
+      // variants. Each carries the spec opener "Good morning".
+      const hasGreeting =
+            /'daily\.greeting\.garden':[\s\S]{0,200}en:\s*'Good morning \\u2014 here\\u2019s your plant plan/.test(t)
+         && /'daily\.greeting\.farm':[\s\S]{0,200}en:\s*'Good morning \\u2014 here\\u2019s your crop plan/.test(t)
+         && /'daily\.greeting\.gardenWithName':/.test(t)
+         && /'daily\.greeting\.farmWithName':/.test(t);
+      // Card resolves the right key per experienceType.
+      const usesKeys =
+            /daily\.greeting\.garden(WithName)?/.test(card)
+         && /daily\.greeting\.farm(WithName)?/.test(card)
+         // Active context strip rendered with experience attr.
+         && /data-testid="home-context-strip"/.test(card)
+         && /data-experience=\{isGardenCard \? 'garden' : 'farm'\}/.test(card)
+         // Helpers that enforce isolation by reading only the
+         // right field set per experience.
+         && /_gardenSetupLabel/.test(card)
+         && /_farmSizeLabel/.test(card);
+      return hasGreeting && usesKeys;
+    },
+  },
+  {
+    // Final Home Dashboard Polish \u00a76 \u2014 dedicated Scan CTA
+    // card on Home. Headline reads as a question
+    // ("See damage or spots?"); button navigates to /scan.
+    name: 'Home Scan CTA card with headline + Scan now button',
+    why:  'Final Home Dashboard Polish \u00a76 \u2014 prominent scan affordance',
+    pass: () => {
+      const t    = read('src/i18n/translations.js');
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      return /'daily\.scanCta\.headline\.garden':/.test(t)
+          && /'daily\.scanCta\.headline\.farm':/.test(t)
+          && /'daily\.scanCta\.subtext':[\s\S]{0,200}en:\s*'Take a photo and get clear next steps\.'/.test(t)
+          && /'daily\.scanCta\.button':[\s\S]{0,200}en:\s*'Scan now'/.test(t)
+          && /data-testid="home-scan-cta"/.test(card)
+          // Tap navigates to /scan.
+          && /navigate\(['"]\/scan['"]\)/.test(card)
+          // Headline + subtext + button text all rendered.
+          && /daily\.scanCta\.headline\.garden/.test(card)
+          && /daily\.scanCta\.headline\.farm/.test(card)
+          && /daily\.scanCta\.subtext/.test(card)
+          && /daily\.scanCta\.button/.test(card);
+    },
+  },
+  {
+    // Final Home Dashboard Polish \u00a79 \u2014 context isolation.
+    // Garden Home never reads farm-only fields; farm Home
+    // never reads garden-only fields. We assert this at the
+    // helper-function level: _gardenSetupLabel reads only
+    // growingSetup; _farmSizeLabel reads only the farm-size
+    // taxonomy.
+    name: 'Home context isolation: garden vs farm field readers separated',
+    why:  'Final Home Dashboard Polish \u00a79 \u2014 no mixed wording',
+    pass: () => {
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      // Helpers exist as separate functions (one per experience).
+      const helpersIsolated =
+            /function _gardenSetupLabel\(setup\)/.test(card)
+         && /function _farmSizeLabel\(farm\)/.test(card);
+      // Render path picks ONE based on isGardenCard so the
+      // two never co-render.
+      const branchedRender =
+            /contextSetup\s*=\s*isGardenCard[\s\S]*?_gardenSetupLabel/.test(card)
+         && /contextSize\s*=\s*!isGardenCard[\s\S]*?_farmSizeLabel/.test(card);
+      // The garden helper's allow-list contains only garden
+      // setups (container/raised_bed/etc) -- no farm-size keys.
+      const gardenAllowList =
+            /GARDEN_SETUP_LABEL[\s\S]{0,400}container[\s\S]{0,400}raised_bed[\s\S]{0,400}ground[\s\S]{0,400}indoor_balcony/.test(card);
+      return helpersIsolated && branchedRender && gardenAllowList;
+    },
+  },
+  {
     name: 'Home hierarchy: BIG priority -> MEDIUM why -> SMALL tasks',
     why:  'Final Home + Review Copy Polish \u00a72 \u2014 visual hierarchy',
     pass: () => {

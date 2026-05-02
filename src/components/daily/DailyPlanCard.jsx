@@ -59,6 +59,15 @@ import {
 import {
   isFirstHomeOpenToday, markHomeOpenedToday,
 } from '../../core/dailyFreshness.js';
+// Final Home Dashboard Polish \u00a72 \u2014 reuse the spec-shaped
+// formatters so the active-context strip displays a clean
+// "Maryland, USA" + "2 acres" / "Small farm" readout instead
+// of the raw values stored on the farm row.
+import {
+  formatLocation,
+  formatFarmSize,
+  normalizeFarmSizeBucket,
+} from '../../utils/formatDisplay.js';
 import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
 const URGENCY_TONE = {
@@ -81,6 +90,55 @@ const RISK_TONE = {
   medium: { background: 'rgba(245,158,11,0.10)', borderColor: 'rgba(245,158,11,0.32)' },
   high:   { background: 'rgba(239,68,68,0.10)',  borderColor: 'rgba(239,68,68,0.32)' },
 };
+
+// Final Home Dashboard Polish \u00a72 + \u00a79 \u2014 helpers for the
+// active-context strip. Each takes the farm row and returns a
+// short display string OR null. Garden helpers never touch
+// farm-only fields and vice versa, so the spec's context-
+// isolation rule is enforced by construction (the readers
+// pull from the right key set; the wrong key set returns
+// null and that branch is skipped at render time).
+
+function formatLocationCompact(farm) {
+  if (!farm) return null;
+  const loc = formatLocation({
+    region:  farm.region || farm.state || '',
+    country: farm.country || farm.countryCode || '',
+  });
+  // formatLocation returns 'Not set' for missing data; in the
+  // context strip we'd rather hide the label entirely than
+  // show "Not set" next to the plant name.
+  return (loc && loc !== 'Not set') ? loc : null;
+}
+
+const GARDEN_SETUP_LABEL = Object.freeze({
+  container:      'Pots / containers',
+  raised_bed:     'Raised bed',
+  ground:         'Backyard soil',
+  indoor_balcony: 'Indoor / balcony',
+});
+
+function _gardenSetupLabel(setup) {
+  if (!setup || setup === 'unknown') return null;
+  // Legacy aliases the engine already migrates.
+  const aliased = setup === 'bed' ? 'raised_bed'
+                : setup === 'indoor' ? 'indoor_balcony'
+                : setup;
+  return GARDEN_SETUP_LABEL[aliased] || null;
+}
+
+function _farmSizeLabel(farm) {
+  if (!farm) return null;
+  // Read the spec triple from the persisted row first; legacy
+  // farms (pre Final Farm Size + Review Normalization) store
+  // farmSize/sizeUnit, so we fall through.
+  const exact = (farm.exactSize != null) ? farm.exactSize : farm.farmSize;
+  const unit  = farm.unit || farm.sizeUnit || null;
+  const cat   = farm.sizeCategory
+             || normalizeFarmSizeBucket(farm.sizeBucket || farm.farmSizeBucket || null);
+  const out = formatFarmSize({ exactSize: exact, unit, sizeCategory: cat });
+  return (out && out !== 'Not specified') ? out : null;
+}
 
 export default function DailyPlanCard({
   farm,
@@ -436,21 +494,67 @@ export default function DailyPlanCard({
     try { navigate('/sell'); } catch { /* ignore */ }
   }
 
+  // Final Home Dashboard Polish \u00a72 \u2014 garden vs farm aware
+  // greeting copy. Key picked by experienceType (computed
+  // earlier from farm.farmType). Falls back to the no-name
+  // variant when greetingName is empty so a logged-in farmer
+  // who hasn't set their display name still sees a proper
+  // line, just without the personalisation.
+  const greetingKey = greetingName
+    ? (experienceType === 'farm'
+      ? 'daily.greeting.farmWithName'
+      : 'daily.greeting.gardenWithName')
+    : (experienceType === 'farm'
+      ? 'daily.greeting.farm'
+      : 'daily.greeting.garden');
+  const greetingFallback = greetingName
+    ? (experienceType === 'farm'
+      ? `Good morning, ${greetingName} \u2014 here\u2019s your crop plan.`
+      : `Good morning, ${greetingName} \u2014 here\u2019s your plant plan.`)
+    : (experienceType === 'farm'
+      ? 'Good morning \u2014 here\u2019s your crop plan.'
+      : 'Good morning \u2014 here\u2019s your plant plan.');
+  // tSafe with a placeholder substitution: legacy tSafe calls
+  // {name} interpolation when the third argument is an object.
   const greeting = greetingName
-    ? `${tSafe('daily.greeting', 'Good day,')} ${greetingName}`
-    : tSafe('daily.greetingNoName', 'Good day');
+    ? tSafe(greetingKey, greetingFallback, { name: greetingName }).replace('{name}', greetingName)
+    : tSafe(greetingKey, greetingFallback);
 
   const farmName = farm.farmName || farm.name || tSafe('daily.farmFallback', 'Your farm');
+
+  // Final Home Dashboard Polish \u00a72 \u2014 active context strip.
+  // Compact line under the greeting showing what the user is
+  // growing + where + (garden) growing setup or (farm) size.
+  // Spec \u00a79 (context isolation) \u2014 garden never reads
+  // farm-only fields; farm never reads garden-only fields.
+  const isGardenCard = experienceType === 'garden';
+  const contextCropLabel = farm.cropLabel || farm.plantName || farm.crop
+                        || farm.cropId || null;
+  const contextLocation = formatLocationCompact(farm);
+  // Garden surfaces growingSetup (container/raised_bed/etc).
+  // Farm surfaces sizeCategory + exactSize via formatFarmSize.
+  const contextSetup = isGardenCard
+    ? _gardenSetupLabel(farm.growingSetup)
+    : null;
+  const contextSize  = !isGardenCard
+    ? _farmSizeLabel(farm)
+    : null;
 
   return (
     <section
       style={{ ...S.card, ...(style || {}) }}
       data-testid="daily-plan-card"
     >
-      {/* ── Header: greeting + farm + stage + weather ── */}
+      {/* ── Header: greeting + active context + stage + weather ──
+          Final Home Dashboard Polish \u00a71\u2013\u00a72 \u2014 the greeting
+          opens with the experience-aware line ("here's your
+          plant plan." / "...crop plan.") and the farm-name
+          row carries an active-context strip (plant/crop +
+          location + setup or size). Spec \u00a79 isolation: garden
+          surfaces growingSetup, farm surfaces sizeCategory. */}
       <div style={S.headerRow}>
         <div>
-          <p style={S.greeting}>{greeting}</p>
+          <p style={S.greeting} data-testid="home-greeting">{greeting}</p>
           <p style={S.farmLine}>
             {farmName}
             {plan.cropStage && (
@@ -463,6 +567,36 @@ export default function DailyPlanCard({
               </>
             )}
           </p>
+          {/* Active context strip \u2014 only renders when at least
+              one field has a value (so a brand-new farm with
+              just a name doesn't surface a row of em-dashes). */}
+          {(contextCropLabel || contextLocation || contextSetup || contextSize) ? (
+            <p
+              style={S.contextLine}
+              data-testid="home-context-strip"
+              data-experience={isGardenCard ? 'garden' : 'farm'}
+            >
+              {contextCropLabel ? (
+                <span style={S.contextChip}>{contextCropLabel}</span>
+              ) : null}
+              {contextLocation ? (
+                <span style={S.contextChip}>
+                  {'\uD83D\uDCCD '}
+                  {contextLocation}
+                </span>
+              ) : null}
+              {contextSetup ? (
+                <span style={S.contextChip} data-testid="home-context-setup">
+                  {contextSetup}
+                </span>
+              ) : null}
+              {contextSize ? (
+                <span style={S.contextChip} data-testid="home-context-size">
+                  {contextSize}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
         </div>
         <span
           style={{
@@ -692,6 +826,37 @@ export default function DailyPlanCard({
             'No actions for today — keep watching the field and check back tomorrow.')}
         </p>
       )}
+
+      {/* Final Home Dashboard Polish \u00a76 \u2014 dedicated Scan CTA
+          card. Sits BELOW the action tiles + ABOVE the
+          progress / streak block so the user reads
+          "today's tasks" \u2192 "scan if you see damage" \u2192
+          "your progress". Tapping anywhere on the card or the
+          button navigates to /scan. The headline reads as a
+          direct question; the subtext explains the value. */}
+      <button
+        type="button"
+        onClick={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
+        style={S.scanCtaCard}
+        data-testid="home-scan-cta"
+      >
+        <div style={S.scanCtaText}>
+          <p style={S.scanCtaHeadline}>
+            {tSafe(
+              isGardenCard ? 'daily.scanCta.headline.garden' : 'daily.scanCta.headline.farm',
+              'See damage or spots?',
+            )}
+          </p>
+          <p style={S.scanCtaSubtext}>
+            {tSafe('daily.scanCta.subtext',
+              'Take a photo and get clear next steps.')}
+          </p>
+        </div>
+        <span style={S.scanCtaButton} aria-hidden="true">
+          {tSafe('daily.scanCta.button', 'Scan now')}
+          {' \u2192'}
+        </span>
+      </button>
 
       {/* Invisible-intelligence \u00a78 \u2014 follow-up task row. A
           single line of "tomorrow" guidance the engine emits
@@ -1151,5 +1316,73 @@ const S = {
     fontSize: '0.875rem',
     fontWeight: 600,
     lineHeight: 1.45,
+  },
+
+  // Final Home Dashboard Polish \u00a72 \u2014 active-context strip.
+  contextLine: {
+    margin: '0.25rem 0 0',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.375rem',
+    fontSize: '0.75rem',
+    color: '#9FB3C8',
+  },
+  contextChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '2px 8px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#CBD5E1',
+    fontWeight: 600,
+    letterSpacing: '0.01em',
+  },
+
+  // Final Home Dashboard Polish \u00a76 \u2014 dedicated Scan CTA card.
+  // Reset native button styles so the whole card reads as a
+  // tappable surface, not a button-in-a-row.
+  scanCtaCard: {
+    appearance: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '0.75rem 0.875rem',
+    borderRadius: 12,
+    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(34,197,94,0.32)',
+    color: '#EAF2FF',
+    textAlign: 'left',
+    width: '100%',
+  },
+  scanCtaText: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    minWidth: 0,
+    flex: 1,
+  },
+  scanCtaHeadline: {
+    margin: 0,
+    fontSize: '0.9375rem',
+    fontWeight: 700,
+    color: '#F1F5F9',
+  },
+  scanCtaSubtext: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    color: '#9FB3C8',
+    lineHeight: 1.4,
+  },
+  scanCtaButton: {
+    flex: '0 0 auto',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    color: '#86EFAC',
+    letterSpacing: '0.01em',
   },
 };
