@@ -10,13 +10,19 @@
   "background_color": "#0F172A",
   "icons": [
     {
-      "src": "/icons/farroway-mark.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icons/logo-premium-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo-premium-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/farroway-mark.jpg",
+      "src": "/icons/logo-premium-1024.jpg",
       "sizes": "1024x1024",
       "type": "image/jpeg",
       "purpose": "any"

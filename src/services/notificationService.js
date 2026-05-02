@@ -85,8 +85,8 @@ export function deliverNotification(decision, t) {
     const n = new Notification(title, {
       body,
       tag: decision.dedupeKey, // replaces earlier with same tag — natural dedupe
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/icons/logo-premium-192.jpg',
+      badge: '/icons/logo-premium-192.jpg',
       data: { deeplink: decision.deeplinkTarget || '/dashboard', id, type: decision.type },
       requireInteraction: decision.type === 'critical',
     });

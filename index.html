@@ -11,27 +11,27 @@
     <!-- Theme color (Android status bar + PWA chrome) -->
     <meta name="theme-color" content="#0F172A" />
 
-    <!-- Favicons & app icons — multi-asset stack so every
-         platform picks the right format:
-           1. SVG  — modern browsers, vector, perfect scaling
-           2. JPG  — actual brand-asset raster. Loaded after the
-                    SVG so vector-aware browsers prefer the
-                    scalable mark, but raster-only paths
-                    (Android home-screen install, link previews,
-                    older Safari) still get the brand image. -->
-    <link rel="icon" type="image/svg+xml" href="/icons/farroway-mark.svg" />
-    <link rel="icon" type="image/jpeg" href="/icons/farroway-mark.jpg" />
-    <!-- Pinned-tab / mask icon for Safari macOS (renders as a
-         single-colour silhouette using the navy brand colour). -->
-    <link rel="mask-icon" href="/icons/farroway-mark.svg" color="#0B1220" />
+    <!-- Favicons & app icons \u2014 every brand asset resolves to
+         the logo-premium.* family. The brand team supplied the
+         premium logo as a 1080\u00D71080 JPG; the size variants
+         below all share the same JPG (browsers downscale on
+         render). When a vector SVG arrives, swap these to .svg
+         and redeploy.
+           logo-premium.jpg       \u2014 raster master + og:image
+           logo-premium-1024.jpg  \u2014 PWA + Windows tile
+           logo-premium-512.jpg   \u2014 PWA install + maskable
+           logo-premium-192.jpg   \u2014 Android home-screen
+           logo-premium-180.jpg   \u2014 iOS apple-touch-icon
+           logo-premium.svg       \u2014 (future) vector master -->
+    <link rel="icon" type="image/jpeg" href="/icons/logo-premium.jpg" />
+    <link rel="icon" type="image/jpeg" sizes="192x192" href="/icons/logo-premium-192.jpg" />
+    <link rel="mask-icon" href="/icons/logo-premium.jpg" color="#0B1220" />
 
-    <!-- Apple iOS PWA tags. The .png is preferred when the
-         deploy ships it; the JPG entry is the fallback so iOS
-         home-screen installs still pick up the brand mark on
-         deploys that haven't generated the rasterised
-         apple-touch-icon yet. -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" href="/icons/farroway-mark.jpg" />
+    <!-- Apple iOS PWA tags. The 180x180 .jpg is the canonical
+         apple-touch-icon; the unsized fallback below picks the
+         same file so older Safari versions get the same mark. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/logo-premium-180.jpg" />
+    <link rel="apple-touch-icon" href="/icons/logo-premium-180.jpg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Modern equivalent of the deprecated apple-* meta — silences
          Chrome's deprecation warning while keeping iOS PWA support. -->
@@ -45,12 +45,12 @@
     <meta property="og:title" content="Farroway" />
     <meta property="og:description" content="Know what to do. Grow better." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/icons/farroway-mark.jpg" />
+    <meta property="og:image" content="/icons/logo-premium-1024.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Farroway" />
     <meta name="twitter:description" content="Know what to do. Grow better." />
-    <meta name="twitter:image" content="/icons/farroway-mark.jpg" />
+    <meta name="twitter:image" content="/icons/logo-premium-1024.jpg" />
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

@@ -1,19 +1,18 @@
 /**
- * FarrowayLogo — v10 (final).
+ * FarrowayLogo \u2014 v11 (premium-logo migration).
  *
- * Renders the canonical brand asset shipped at
- *   /public/icons/farroway-mark.jpg
- * via a plain <img>. No more hand-drawn SVG — the file on disk
- * is the source of truth, so the on-screen mark is exactly
- * what the brand team supplied.
+ * Renders the canonical brand asset. The bytes live as a base64
+ * data URL in src/brand/farrowayMarkDataUrl.js so the deploy
+ * pipeline cannot drop the file between local and the build
+ * container. Last-resort fallback resolves to the new
+ * /public/icons/logo-premium.svg path.
  *
  * To swap the asset:
- *   • Drop a new file at public/icons/farroway-mark.jpg (or
- *     .svg / .png — update SRC below to match the extension).
- *   • No JSX changes required; every caller picks it up
- *     automatically.
+ *   \u2022 Drop a new file at public/icons/logo-premium.{svg,png}
+ *     and re-run scripts/bake-brand-mark.mjs to refresh the
+ *     embedded data URL. No JSX changes required.
  *
- * API unchanged from v9 — props, the full lockup, and the
+ * API unchanged from v10 \u2014 props, the full lockup, and the
  * tagline composition all keep working.
  */
 
@@ -37,7 +36,7 @@ const SRC = FARROWAY_MARK_DATA_URL;
 // the data URL (very old browsers, strict CSP without
 // img-src 'data:'). The v9 SVG redraw ships in /public on
 // every deploy.
-const SRC_FALLBACK = '/icons/farroway-mark.svg';
+const SRC_FALLBACK = '/icons/logo-premium.jpg';
 
 export function FarrowayMark({
   size = 32,

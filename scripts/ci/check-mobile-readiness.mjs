@@ -2131,6 +2131,46 @@ const checks = [
       return panelOk && gardenOk && farmOk;
     },
   },
+  {
+    // Premium-logo migration \u2014 every brand surface points at
+    // the canonical logo-premium.* family. The legacy
+    // farroway-mark.{svg,jpg} + raw /icon-192.png + logo-shield
+    // paths must NOT appear in any of the well-known reference
+    // sites (brand registry, index.html, manifest.json,
+    // notification service, FarrowayLogo fallback).
+    name: 'Brand surfaces point at logo-premium.* (no legacy paths)',
+    why:  'Premium-logo migration \u2014 single source of truth for the brand mark',
+    pass: () => {
+      const FILES = [
+        'src/brand/farrowayBrand.js',
+        'index.html',
+        'public/manifest.json',
+        'src/services/notificationService.js',
+        'src/components/FarrowayLogo.jsx',
+      ];
+      for (const rel of FILES) {
+        const body = read(rel);
+        // Forbidden legacy paths (filename-only check so a
+        // build-output hash can't accidentally match).
+        if (/farroway-mark\.(svg|jpg)/.test(body))            return false;
+        if (/logo-shield\.png/.test(body))                    return false;
+        // The raw /icon-192.png + /icon-512.png + apple-touch-
+        // icon.png paths from the old PWA manifest are also
+        // gone. Allowed in the SW (which legitimately caches
+        // both names for back-compat) so we skip src/sw.js /
+        // public/sw.js.
+        if (/['"]\/icon-(?:192|512)\.png['"]/.test(body))     return false;
+        if (/['"]\/apple-touch-icon\.png['"]/.test(body))     return false;
+      }
+      // The new family must show up at canonical sites.
+      const brand    = read('src/brand/farrowayBrand.js');
+      const html     = read('index.html');
+      const manifest = read('public/manifest.json');
+      return /logo-premium/.test(brand)
+          && /logo-premium/.test(html)
+          && /logo-premium/.test(manifest);
+    },
+  },
 ];
 
 const failed = [];
