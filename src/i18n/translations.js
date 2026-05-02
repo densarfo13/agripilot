@@ -12448,6 +12448,9 @@ const T = {
   // reframes from "what" (which the tiles can't answer) to
   // "where" (which the tiles directly answer).
   'onboarding.whereAreYouGrowing':{ en: 'Where are you growing?',    fr: 'O\u00F9 cultivez-vous ?',                    sw: 'Unalima wapi?',                          ha: 'Ina kake nomawa?',                      tw: 'Wodua w\u0254 he?',                          hi: '\u0906\u092A \u0915\u0939\u093E\u0902 \u0909\u0917\u093E \u0930\u0939\u0947 \u0939\u0948\u0902?' },
+  // Helper line under the entry-screen title \u2014 explains WHY
+  // we're asking so the question doesn't feel arbitrary.
+  'onboarding.whereAreYouGrowingHelper': { en: 'We\u2019ll tailor your daily plan based on this.', fr: 'Nous adapterons votre plan quotidien en cons\u00E9quence.', sw: 'Tutarekebisha mpango wako wa kila siku kulingana na hili.', ha: 'Za mu daidaita shirinka na yau da kullum bisa wannan.', tw: 'Yɛbɛsesa wo da biara nhyehyɛeɛ no de agyina yei so.', hi: '\u0939\u092E \u0907\u0938\u0915\u0947 \u0906\u0927\u093E\u0930 \u092A\u0930 \u0906\u092A\u0915\u0940 \u0926\u0948\u0928\u093F\u0915 \u092F\u094B\u091C\u0928\u093E \u0924\u0948\u092F\u093E\u0930 \u0915\u0930\u0947\u0902\u0917\u0947\u0964' },
   'onboarding.backyardGarden':    { en: 'Backyard / Garden',         fr: 'Jardin / Potager',                          sw: 'Bustani ya nyumbani',                    ha: 'Lambun gida',                           tw: 'Fie turom',                                  hi: '\u092A\u093F\u091B\u0935\u093E\u0921\u093C\u093E / \u092C\u0917\u0940\u091A\u093E' },
   'onboarding.farm':              { en: 'Farm',                      fr: 'Ferme',                                     sw: 'Shamba',                                 ha: 'Gona',                                  tw: 'Afuo',                                       hi: '\u0916\u0947\u0924' },
   // Final-onboarding-polish spec \u00a74 \u2014 friendlier tile labels.

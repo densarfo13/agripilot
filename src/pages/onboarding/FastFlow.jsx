@@ -343,6 +343,15 @@ function ScreenEntry({ onPick }) {
       <h1 style={S.h1}>
         {tStrict('onboarding.whereAreYouGrowing', 'Where are you growing?')}
       </h1>
+      {/* Helper line under the title (final-onboarding-polish
+          spec follow-up). Tells the user WHY we're asking, so
+          the question doesn't feel arbitrary. Smaller font +
+          medium opacity than the title; centered to match the
+          h1 text-align so the visual hierarchy reads cleanly. */}
+      <p style={S.entryHelper} data-testid="onb-entry-helper">
+        {tStrict('onboarding.whereAreYouGrowingHelper',
+          'We\u2019ll tailor your daily plan based on this.')}
+      </p>
       <div style={S.optionStack}>
         <button
           type="button"
@@ -721,6 +730,16 @@ const S = {
     fontWeight: 800,
     color: '#FFFFFF',
     lineHeight: 1.2,
+  },
+  // Helper line beneath the entry-screen title. Smaller font,
+  // medium-opacity white, centered to match the title.
+  entryHelper: {
+    margin: '-4px 0 4px',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.65)',
+    lineHeight: 1.4,
+    textAlign: 'center',
   },
 
   optionStack: {

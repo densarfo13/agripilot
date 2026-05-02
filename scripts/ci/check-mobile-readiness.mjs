@@ -1100,7 +1100,12 @@ const checks = [
     why:  'Final-onboarding-polish spec \u00a73\u2013\u00a74 \u2014 reframed question + premium tile labels',
     pass: () => {
       const f = read('src/pages/onboarding/FastFlow.jsx');
-      return /onboarding\.whereAreYouGrowing/.test(f)
+      return /onboarding\.whereAreYouGrowing\b/.test(f)
+          // Helper line under the title (final-onboarding-polish
+          // follow-up). Explains why we're asking; smaller font
+          // + medium-opacity white than the title.
+          && /onboarding\.whereAreYouGrowingHelper/.test(f)
+          && /data-testid=["']onb-entry-helper["']/.test(f)
           && /data-testid=["']onb-entry-garden["']/.test(f)
           && /data-testid=["']onb-entry-farm["']/.test(f)
           && /onboarding\.atHome/.test(f)
