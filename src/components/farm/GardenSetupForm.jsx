@@ -288,22 +288,22 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
     setSubmitting(true);
     try {
       // Backyard growing-setup spec \u00a72 + final-gap stability
-      // \u00a76 \u2014 the canonical growingSetup field is the source of
-      // truth. When the user explicitly picked it via the new
-      // bucket row, that wins. Otherwise we fall back to the
-      // historical growingLocation \u2192 bucket mapping so legacy
-      // calls (and users who only filled the richer
-      // soil/pots/indoor/greenhouse list) still produce a
-      // usable canonical value. Final fallback: 'unknown' so
-      // garden experience always has a non-null setup.
+      // \u00a76 + final-merged follow-up \u2014 the canonical growingSetup
+      // field is the source of truth. When the user explicitly
+      // picked it via the new bucket row, that wins. Otherwise
+      // we fall back to the historical growingLocation \u2192 bucket
+      // mapping. The 5-bucket canonical set (container / bed /
+      // ground / indoor / unknown) means 'indoor' is now its
+      // own first-class value rather than collapsing onto
+      // 'container'.
       const GROWING_LOCATION_TO_SETUP = {
         soil:       'ground',
         raised_bed: 'bed',
         pots:       'container',
-        indoor:     'container',
+        indoor:     'indoor',
         greenhouse: 'bed',
       };
-      const ALLOWED_SETUPS = new Set(['container', 'bed', 'ground', 'unknown']);
+      const ALLOWED_SETUPS = new Set(['container', 'bed', 'ground', 'indoor', 'unknown']);
       const explicitSetup = ALLOWED_SETUPS.has(growingSetup) ? growingSetup : '';
       const finalGrowingSetup = explicitSetup
         || GROWING_LOCATION_TO_SETUP[growingLocation]

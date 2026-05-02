@@ -441,6 +441,13 @@ export function hybridAnalyze(input = {}) {
         'Check soil around the plant',
         'Remove nearby weeds if present',
       ],
+      // Indoor / balcony scan-action enrichment. Light + airflow
+      // are the failure modes that bite indoor growers; soil
+      // / weed / weather advice doesn't apply.
+      indoor: [
+        'Check the plant gets enough light',
+        'Improve airflow around the plant',
+      ],
     };
     const setup = String(safe.growingSetup).toLowerCase();
     const extras = SETUP_ACTIONS[setup] || [];

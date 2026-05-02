@@ -1371,20 +1371,18 @@ const checks = [
     // The picked value is persisted onto the garden record as
     // growingSetup so dailyIntelligenceEngine + hybridScanEngine
     // can read it without an extra lookup.
-    name: 'QuickGardenSetup ships "How are you growing this?" picker',
-    why:  'Backyard growing-setup spec \u00a71 \u2014 capture pot/bed/ground/unknown',
+    name: 'QuickGardenSetup ships "How are you growing your plant?" picker',
+    why:  'Backyard growing-setup spec \u00a71 \u2014 capture container/bed/ground/indoor/unknown',
     pass: () => {
       const f = read('src/pages/setup/QuickGardenSetup.jsx');
-      // Accept either the bare-shorthand `growingSetup,` write
-      // OR the explicit `growingSetup: <expr>,` write so the
-      // 'unknown' coercion (final-gap stability \u00a76) doesn't
-      // trip this guard.
       const PERSISTED = /growingSetup\s*:\s*growingSetup\b|^\s*growingSetup,?\s*$/m;
       return /garden\.growingSetup\.title/.test(f)
           && /GROWING_SETUP_OPTIONS/.test(f)
+          // The 5 spec options including the new indoor pick.
           && /garden\.growingSetup\.container/.test(f)
           && /garden\.growingSetup\.bed/.test(f)
           && /garden\.growingSetup\.ground/.test(f)
+          && /garden\.growingSetup\.indoor/.test(f)
           && /garden\.growingSetup\.unknown/.test(f)
           && PERSISTED.test(f)
           && /quick-garden-growing-/.test(f);                // testid prefix exists
@@ -1409,15 +1407,22 @@ const checks = [
     // ground gets soil/weed tasks; unknown falls through to
     // generic garden tasks.
     name: 'dailyIntelligenceEngine personalises tasks by growingSetup',
-    why:  'Backyard growing-setup spec \u00a75 \u2014 task personalisation per setup',
+    why:  'Backyard growing-setup spec \u00a75 \u2014 task personalisation per setup (incl. indoor)',
     pass: () => {
       const f = read('src/core/dailyIntelligenceEngine.js');
       return /SETUP_TASKS/.test(f)
-          && /Check container soil moisture/.test(f)
+          // Container \u2014 watering frequency + drainage emphasis.
+          && /Check container soil moisture today/.test(f)
           && /Make sure the pot drains well/.test(f)
+          // Bed \u2014 spacing + soil tips.
           && /Check spacing between plants/.test(f)
-          && /Remove weeds around the plant/.test(f)
-          && /Check soil moisture near the plant/.test(f)
+          // Ground \u2014 pest + weather awareness.
+          && /Look for weeds or pests around the plant/.test(f)
+          && /Adjust watering for today/.test(f)
+          // Indoor \u2014 light + airflow emphasis (final-merged
+          // spec follow-up).
+          && /Check the plant gets enough light today/.test(f)
+          && /Rotate the pot so the plant grows evenly/.test(f)
           && /source:\s*['"]growing_setup['"]/.test(f);
     },
   },
@@ -1425,7 +1430,7 @@ const checks = [
     // Spec \u00a76 \u2014 hybridScanEngine adds setup-specific actions
     // for garden + container/bed/ground; final list capped at 3.
     name: 'hybridScanEngine personalises scan actions by growingSetup',
-    why:  'Backyard growing-setup spec \u00a76 \u2014 scan output reads setup-aware',
+    why:  'Backyard growing-setup spec \u00a76 \u2014 scan output reads setup-aware (incl. indoor)',
     pass: () => {
       const f = read('src/core/hybridScanEngine.js');
       return /SETUP_ACTIONS/.test(f)
@@ -1435,6 +1440,9 @@ const checks = [
           && /Improve airflow between plants/.test(f)
           && /Check soil around the plant/.test(f)
           && /Remove nearby weeds if present/.test(f)
+          // Indoor branch (final-merged spec follow-up).
+          && /Check the plant gets enough light/.test(f)
+          && /Improve airflow around the plant/.test(f)
           && /recommendedActions\s*=\s*recommendedActions\.slice\(0,\s*3\)/.test(f);
     },
   },
@@ -1442,7 +1450,7 @@ const checks = [
     // Spec \u00a77 \u2014 every required garden.growingSetup.* key is
     // present in the canonical translations store.
     name: 'translations.js ships every garden.growingSetup.* key',
-    why:  'Backyard growing-setup spec \u00a77 \u2014 complete keys for the new step',
+    why:  'Backyard growing-setup spec \u00a77 \u2014 complete keys (incl. indoor)',
     pass: () => {
       const f = read('src/i18n/translations.js');
       const KEYS = [
@@ -1451,6 +1459,7 @@ const checks = [
         'garden.growingSetup.container',
         'garden.growingSetup.bed',
         'garden.growingSetup.ground',
+        'garden.growingSetup.indoor',
         'garden.growingSetup.unknown',
       ];
       for (const k of KEYS) {

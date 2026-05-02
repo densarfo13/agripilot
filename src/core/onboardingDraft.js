@@ -72,7 +72,7 @@ function _num(v) {
 // nothing else is present). If `raw` doesn't look like a usable
 // draft at all, return null \u2014 the caller treats null as "no
 // draft" and starts the form blank.
-const ALLOWED_GROWING_SETUP = ['container', 'bed', 'ground', 'unknown'];
+const ALLOWED_GROWING_SETUP = ['container', 'bed', 'ground', 'indoor', 'unknown'];
 const ALLOWED_GARDEN_SIZE   = ['small', 'medium', 'large', 'unknown'];
 const ALLOWED_FARM_BUCKET   = ['lt1', '1to5', 'gt5', 'unknown'];
 const ALLOWED_FARM_UNIT     = ['acres', 'hectares', 'sqft', 'sqm'];

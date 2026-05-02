@@ -150,7 +150,7 @@ export function resolveUserContext(user = null) {
   //    downstream code doesn't have to handle null. We coerce
   //    missing values to 'unknown' (the safest fallback).
   const rawSetup = String(row?.growingSetup || '').toLowerCase();
-  const ALLOWED_SETUPS = new Set(['container', 'bed', 'ground', 'unknown']);
+  const ALLOWED_SETUPS = new Set(['container', 'bed', 'ground', 'indoor', 'unknown']);
   let growingSetup = ALLOWED_SETUPS.has(rawSetup) ? rawSetup : 'unknown';
   if (experience !== 'garden') {
     // Farms don't have a growingSetup concept; report 'unknown'

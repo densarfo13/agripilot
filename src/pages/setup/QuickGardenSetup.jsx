@@ -68,16 +68,21 @@ const SIZE_OPTIONS = [
 ];
 
 // Backyard growing-setup spec \u00a71\u2013\u00a72 \u2014 garden-only step
-// captured AFTER the plant pick. The 4 buckets compress the
-// many real-world possibilities into something every grower
-// recognises; the caller persists the value verbatim onto the
-// garden record where downstream surfaces (dailyIntelligence
-// engine, hybrid scan engine) read it to personalise guidance.
+// captured AFTER the plant pick. 5 buckets cover the realistic
+// home-growing surfaces: pots, raised bed, backyard soil,
+// indoor / balcony, or "I don't know" for users who don't want
+// to commit. The value is persisted verbatim onto the garden
+// record where downstream surfaces (dailyIntelligenceEngine,
+// hybridScanEngine) read it to personalise guidance.
 const GROWING_SETUP_OPTIONS = [
-  { value: 'container', icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container', fallback: 'Pot / Container'  },
-  { value: 'bed',       icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.bed',       fallback: 'Garden bed'       },
-  { value: 'ground',    icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',    fallback: 'Backyard soil'    },
-  { value: 'unknown',   icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',   fallback: 'I\u2019m not sure' },
+  { value: 'container', icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container', fallback: 'Pots / containers' },
+  { value: 'bed',       icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.bed',       fallback: 'Raised bed'        },
+  { value: 'ground',    icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',    fallback: 'Backyard soil'     },
+  // Indoor / balcony (final-merged spec follow-up): plants on a
+  // windowsill, balcony, or under a grow light. Drives a
+  // light-check-aware task list downstream.
+  { value: 'indoor',    icon: '\uD83C\uDF3D', labelKey: 'garden.growingSetup.indoor',    fallback: 'Indoor / balcony'  },
+  { value: 'unknown',   icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',   fallback: 'I don\u2019t know' },
 ];
 
 // Spec \u00a77 \u2014 garden plant tiles. 5 common picks + Other (free
@@ -544,7 +549,7 @@ export default function QuickGardenSetup() {
           \u00a75) + scan action enrichment (hybridScanEngine \u00a76). */}
       <section style={S.card} data-testid="setup-garden-growing-setup">
         <span style={S.label}>
-          {tStrict('garden.growingSetup.title', 'How are you growing this?')}
+          {tStrict('garden.growingSetup.title', 'How are you growing your plant?')}
         </span>
         <div style={S.pillRow}>
           {GROWING_SETUP_OPTIONS.map((opt) => {

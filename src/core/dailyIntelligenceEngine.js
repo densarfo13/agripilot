@@ -296,20 +296,32 @@ export function generateDailyPlan({
   // cap + dedupe rules apply downstream.
   if (isBackyard && farm && typeof farm.growingSetup === 'string') {
     const SETUP_TASKS = {
+      // Pots / containers \u2014 spec emphasises watering frequency
+      // (small soil volumes dry out fast) + drainage.
       container: [
-        'Check container soil moisture',
+        'Check container soil moisture today',
         'Make sure the pot drains well',
-        'Water only if the top soil feels dry',
+        'Water more often \u2014 small pots dry out fast',
       ],
+      // Raised bed \u2014 spec emphasises spacing + soil tips.
       bed: [
         'Check spacing between plants',
-        'Remove weeds around the plant',
-        'Water near the roots',
+        'Top up mulch or compost if soil looks bare',
+        'Water near the roots, not the leaves',
       ],
+      // Backyard soil \u2014 spec emphasises pest + weather awareness.
       ground: [
-        'Check soil moisture near the plant',
-        'Look for weeds or pests nearby',
-        'Water only if soil is dry',
+        'Look for weeds or pests around the plant',
+        'Check soil moisture near the roots',
+        'Adjust watering for today\u2019s weather',
+      ],
+      // Indoor / balcony \u2014 spec emphasises light + airflow.
+      // Light is the limiting factor indoors; outdoor advice
+      // about weather doesn't apply.
+      indoor: [
+        'Check the plant gets enough light today',
+        'Rotate the pot so the plant grows evenly',
+        'Avoid letting water sit in the saucer',
       ],
       unknown: [
         // Generic garden fallback so the user still gets two
