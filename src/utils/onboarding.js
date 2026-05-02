@@ -77,11 +77,31 @@ export function setOnboardingComplete() {
 }
 
 export function isOnboardingComplete() {
-  // OR semantics — either key truthy means "done." This stops the
-  // farroway_onboarding_done vs farroway_onboarding_completed
-  // mismatch from re-routing finished users back to setup.
-  return _safeGet(ONBOARDING_DONE_KEY)      === 'true'
-      || _safeGet(ONBOARDING_COMPLETED_KEY) === 'true';
+  // OR semantics — either flag truthy OR a program-source farmer
+  // means "done." NGO Onboarding spec §1: source 'ngo' or
+  // 'program' explicitly skips the individual onboarding flow,
+  // so the gate has to treat them as completion signals too.
+  // Otherwise an imported farmer would loop back to setup on
+  // every Home open. The legacy two-key mismatch (farroway_
+  // onboarding_done vs farroway_onboarding_completed) stays
+  // OR-resolved for back-compat with users who completed setup
+  // on older builds.
+  if (_safeGet(ONBOARDING_DONE_KEY)      === 'true') return true;
+  if (_safeGet(ONBOARDING_COMPLETED_KEY) === 'true') return true;
+  // Program-source short-circuit. Read-only check; we don't
+  // import farmerSource directly to avoid a circular dep
+  // (farmerSource itself doesn't read this module, but other
+  // utils chain through here). Inline parse keeps the path
+  // ~lock-free.
+  try {
+    const raw = _safeGet('farroway_farmer_source');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const source = parsed && typeof parsed === 'object' ? parsed.source : null;
+      if (source === 'ngo' || source === 'program') return true;
+    }
+  } catch { /* swallow — corrupt entry, treat as not complete */ }
+  return false;
 }
 
 /**

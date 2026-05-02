@@ -2611,6 +2611,97 @@ const checks = [
     // Final Review Validation \u00a71\u2013\u00a75 \u2014 location keys
     // standardised, review display rules updated, CTA
     // validation tightened, helper text under disabled CTA.
+    // NGO Onboarding spec \u00a71\u2013\u00a710 \u2014 program/NGO foundation.
+    // Source field, program model, farmer import schema,
+    // context generator, source-aware onboarding gate,
+    // analytics enrichment, program roles, three pages, and
+    // routes.
+    name: 'NGO program onboarding ships full foundation',
+    why:  'NGO Onboarding \u2014 imported farmers skip individual onboarding',
+    pass: () => {
+      const source        = read('src/core/farmerSource.js');
+      const programStore  = read('src/core/programs/programStore.js');
+      const farmerImport  = read('src/core/programs/farmerImport.js');
+      const farmerContext = read('src/core/programs/farmerContext.js');
+      const onboarding    = read('src/utils/onboarding.js');
+      const analytics     = read('src/core/analytics.js');
+      const roles         = read('src/utils/roles.js');
+      const planReady     = read('src/pages/programs/PlanReadyScreen.jsx');
+      const confirm       = read('src/pages/programs/ConfirmFarmDetails.jsx');
+      const dashboard     = read('src/pages/programs/NgoProgramDashboard.jsx');
+      const app           = read('src/App.jsx');
+      const t             = read('src/i18n/translations.js');
+      // \u00a71 \u2014 farmerSource exports + key.
+      const SRC_OK =
+            /export\s+function\s+getFarmerSource/.test(source)
+         && /export\s+function\s+setFarmerSource/.test(source)
+         && /export\s+function\s+isProgramFarmer/.test(source)
+         && /'farroway_farmer_source'/.test(source);
+      // \u00a72 \u2014 program store with the spec field set.
+      const PROG_OK =
+            /export\s+function\s+saveProgram/.test(programStore)
+         && /export\s+function\s+getProgram/.test(programStore)
+         && /export\s+function\s+listPrograms/.test(programStore)
+         && /'farroway_programs'/.test(programStore)
+         && /cropFocus/.test(programStore)
+         && /defaultFarmSize/.test(programStore)
+         && /offlineModeEnabled/.test(programStore);
+      // \u00a73 \u2014 import validator + sensitive-field rejection.
+      const IMPORT_OK =
+            /export\s+function\s+validateFarmerRow/.test(farmerImport)
+         && /export\s+function\s+importFarmers/.test(farmerImport)
+         && /SENSITIVE_KEYS/.test(farmerImport)
+         && /nationalId/.test(farmerImport);
+      // \u00a74 \u2014 context generator with fallthrough.
+      const CTX_OK =
+            /export\s+function\s+buildFarmerContext/.test(farmerContext)
+         && /onboardingCompleted:\s*true/.test(farmerContext)
+         && /activeExperience:\s*'farm'/.test(farmerContext);
+      // \u00a71 \u2014 onboarding gate respects source.
+      const GATE_OK =
+            /'farroway_farmer_source'/.test(onboarding)
+         && /source === 'ngo' \|\| source === 'program'/.test(onboarding);
+      // \u00a78 \u2014 analytics knows the new event names + auto-
+      // attaches programId / organizationId.
+      const ANALYTICS_OK =
+            /'farmer_invited'/.test(analytics)
+         && /'farmer_activated'/.test(analytics)
+         && /'daily_plan_viewed'/.test(analytics)
+         && /'day2_return'/.test(analytics)
+         && /'day7_return'/.test(analytics)
+         && /programId,/.test(analytics)
+         && /organizationId,/.test(analytics);
+      // \u00a710 \u2014 program roles exported.
+      const ROLES_OK =
+            /PROGRAM_AGENT_ROLES/.test(roles)
+         && /PROGRAM_MANAGER_ROLES/.test(roles)
+         && /PROGRAM_ORG_ROLES/.test(roles)
+         && /PROGRAM_DASHBOARD_ROLES/.test(roles);
+      // \u00a75\u2013\u00a76 + \u00a79 \u2014 three program pages exist + carry
+      // the spec-shaped headlines.
+      const PAGES_OK =
+            /program-plan-ready/.test(planReady)
+         && /program\.planReady\.title/.test(planReady)
+         && /program-confirm/.test(confirm)
+         && /program\.confirm\.title/.test(confirm)
+         && /program-dashboard/.test(dashboard)
+         && /program-card-total-farmers/.test(dashboard)
+         && /program-card-active-farmers/.test(dashboard);
+      // App.jsx mounts the three routes.
+      const ROUTES_OK =
+            /path="\/program\/welcome"/.test(app)
+         && /path="\/program\/confirm"/.test(app)
+         && /path="\/program\/dashboard"/.test(app);
+      // Translations carry the new keys.
+      const TR_OK =
+            /'program\.planReady\.title':/.test(t)
+         && /'program\.confirm\.title':/.test(t)
+         && /'program\.dashboard\.totalFarmers':/.test(t);
+      return SRC_OK && PROG_OK && IMPORT_OK && CTX_OK && GATE_OK
+          && ANALYTICS_OK && ROLES_OK && PAGES_OK && ROUTES_OK && TR_OK;
+    },
+  },
+  {
     name: 'Location final-validation: shape + display + CTA + helper',
     why:  'Final Review Validation \u2014 location persists, review reads it, CTA gates correctly',
     pass: () => {

@@ -91,6 +91,16 @@ const MinimalFarmSetup   = lazy(() => import('./pages/MinimalFarmSetup.jsx'));
 // working.
 const QuickGardenSetup   = lazy(() => import('./pages/setup/QuickGardenSetup.jsx'));
 const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx'));
+// NGO Onboarding spec \u00a75\u2013\u00a76 + \u00a79 \u2014 program / NGO surfaces.
+//   /program/welcome    Plan Ready screen for imported farmers
+//   /program/confirm    Lightweight 1\u20132 question fallback when
+//                        the import row is missing required
+//                        context (crop or country).
+//   /program/dashboard  NGO operator dashboard (placeholder
+//                        cards backed by local event log).
+const PlanReadyScreen      = lazy(() => import('./pages/programs/PlanReadyScreen.jsx'));
+const ConfirmFarmDetails   = lazy(() => import('./pages/programs/ConfirmFarmDetails.jsx'));
+const NgoProgramDashboard  = lazy(() => import('./pages/programs/NgoProgramDashboard.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
 const Opportunities  = lazy(() => import('./pages/Opportunities.jsx'));
@@ -824,6 +834,19 @@ export default function App() {
                 required fields with regional unit default. */}
             <Route path="/setup/garden"       element={<QuickGardenSetup />} />
             <Route path="/setup/farm"         element={<QuickFarmSetup />} />
+            {/* NGO Onboarding spec \u00a75\u2013\u00a76 + \u00a79 \u2014 program /
+                NGO surfaces. /program/welcome is the Plan
+                Ready screen imported farmers land on;
+                /program/confirm is the lightweight 1\u20132
+                question fallback when import context is
+                incomplete; /program/dashboard is the
+                operator metrics surface. All three sit
+                inside the protected layout because they're
+                authenticated views; route guards inside
+                each page can further narrow access. */}
+            <Route path="/program/welcome"    element={<PlanReadyScreen />} />
+            <Route path="/program/confirm"    element={<ConfirmFarmDetails />} />
+            <Route path="/program/dashboard"  element={<NgoProgramDashboard />} />
             <Route path="/opportunities"      element={<BackyardGuard><Opportunities /></BackyardGuard>} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message

@@ -84,6 +84,16 @@ const KNOWN_EVENTS = new Set([
   'setup_farm_completed',
   'app_open',
   'listing_expiry_sweep',
+  // NGO Onboarding spec \u00a78 \u2014 program-aware analytics.
+  // Each event fires from an admin or farmer surface;
+  // enrichment auto-attaches programId / organizationId
+  // when the active session has a program source.
+  'farmer_invited',
+  'farmer_activated',
+  'daily_plan_viewed',
+  'scan_used',
+  'day2_return',
+  'day7_return',
 ]);
 
 // Reasonable cap on the weather-summary string the enriched
@@ -222,11 +232,37 @@ export function trackEvent(eventName, payload = {}) {
     // lands.
     const ctx = _readActiveContext();
     const safeCtx = (ctx && typeof ctx === 'object') ? ctx : {};
-    const enrichedPayload = {
-      // Caller-supplied first (spec-shape extras live here).
-      ...(payload && typeof payload === 'object' ? payload : {}),
-      // Spec §1 enrichment fields. Caller can override any of
-      // these by passing the same key in `payload`.
+    // NGO Onboarding spec \u00a78 \u2014 program-source enrichment.
+    // When the active session has source 'ngo' or 'program',
+    // auto-attach programId + organizationId + farmerId to
+    // every event so the NGO dashboard can group by them
+    // without each call site plumbing the IDs through.
+    let programId = null;
+    let organizationId = null;
+    let farmerId = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('farroway_farmer_source');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object'
+              && (parsed.source === 'ngo' || parsed.source === 'program')) {
+            programId      = typeof parsed.programId      === 'string' ? parsed.programId      : null;
+            organizationId = typeof parsed.organizationId === 'string' ? parsed.organizationId : null;
+            farmerId       = typeof parsed.farmerId       === 'string' ? parsed.farmerId       : null;
+          }
+        }
+      }
+    } catch { /* swallow \u2014 enrichment failure must never silence the event */ }
+
+    // Build the enriched payload in two layers: auto fields
+    // FIRST (defaults), caller payload SECOND (overrides),
+    // timestamp LAST (must always be auto so events have a
+    // monotonic clock). This matches the long-standing
+    // contract that callers can override any auto-enriched
+    // field by passing the same key in their payload.
+    const autoPayload = {
+      // Spec §1 enrichment fields.
       userId:           safeCtx.userId           || _readUserId(),
       activeExperience: safeCtx.activeExperience || safeCtx.experience || null,
       gardenId:         safeCtx.gardenId         || null,
@@ -237,7 +273,18 @@ export function trackEvent(eventName, payload = {}) {
       growingSetup:     safeCtx.growingSetup     || null,
       farmSizeCategory: safeCtx.farmSizeCategory || safeCtx.sizeCategory || null,
       weatherSummary:   String(_summariseWeather() || '').slice(0, WEATHER_SUMMARY_MAX) || null,
-      timestamp:        Date.now(),
+      // NGO Onboarding spec §8 — program/org IDs auto-attached
+      // when the active source is program-driven. Caller-
+      // supplied values still win (caller's payload spreads
+      // AFTER this auto layer below).
+      programId,
+      organizationId,
+      farmerId,
+    };
+    const enrichedPayload = {
+      ...autoPayload,
+      ...(payload && typeof payload === 'object' ? payload : {}),
+      timestamp: Date.now(),
     };
 
     // Canonical write — eventStore is what userMemory +
@@ -318,6 +365,11 @@ export function clearFarrowayActivityData() {
       // wipe it on privacy clear so the user genuinely
       // starts fresh.
       'farroway_location',
+      // NGO Onboarding spec \u00a710 \u2014 program / source identity
+      // also wipes on privacy clear. Programs themselves
+      // (catalog data) live in farroway_programs and are NOT
+      // wiped \u2014 they're org metadata, not user activity.
+      'farroway_farmer_source',
     ];
     for (const k of keys) {
       try {
