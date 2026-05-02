@@ -12570,7 +12570,7 @@ const T = {
   'onboarding.farmSize.1to5':     { en: '1 to 5 acres',          fr: '1 à 5 acres',                  sw: 'Ekari 1 hadi 5',          ha: 'Kadada 1 zuwa 5',        tw: 'Acre 1 kɔsi 5',                hi: '1 \u0938\u0947 5 \u090F\u0915\u0921\u093C' },
   'onboarding.farmSize.gt5':      { en: '5+ acres',              fr: '5 acres ou plus',              sw: 'Ekari 5 au zaidi',        ha: 'Kadada 5 ko fiye',       tw: 'Acre 5 anaa bebree',           hi: '5+ \u090F\u0915\u0921\u093C' },
   'onboarding.farmSize.unknown':  { en: 'Not sure',             fr: 'Pas s\u00FBr',                  sw: 'Sina uhakika',            ha: 'Ban tabbata ba',         tw: 'Mennim',                       hi: '\u0928\u093F\u0936\u094D\u091A\u093F\u0924 \u0928\u0939\u0940\u0902' },
-  'onboarding.farmSize.customLabel':{ en: 'Or enter exact size (optional)', fr: 'Ou saisir la taille exacte (optionnel)', sw: 'Au ingiza ukubwa kamili (si lazima)', ha: 'Ko shigar da ainihin girma (na zaɓi)', tw: 'Anaa kyerɛ kɛseɛ pɔtɛɛ (sɛ wopɛ)', hi: '\u092F\u093E \u0938\u0939\u0940 \u0906\u0915\u093E\u0930 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902 (\u0935\u0948\u0915\u0932\u094D\u092A\u093F\u0915)' },
+  'onboarding.farmSize.customLabel':{ en: 'Or enter exact size',             fr: 'Ou saisir la taille exacte',            sw: 'Au ingiza ukubwa kamili',         ha: 'Ko shigar da ainihin girma',     tw: 'Anaa kyerɛ kɛseɛ pɔtɛɛ',                hi: '\u092F\u093E \u0938\u0939\u0940 \u0906\u0915\u093E\u0930 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902' },
 
   // Backyard growing-setup spec \u00a77 \u2014 captures whether the
   // garden user grows in a pot, garden bed, backyard soil, or

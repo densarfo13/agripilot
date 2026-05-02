@@ -40,6 +40,19 @@ import { tStrict } from '../../i18n/strictT.js';
 import { addFarm } from '../../store/multiExperience.js';
 import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { getDefaultUnit, getAllowedUnits } from '../../lib/units/areaConversion.js';
+// Final Farm Size + Review Normalization \u00a71 \u2014 the spec-shaped
+// per-country default unit. Wraps areaConversion.getDefaultUnit
+// so a future country addition only has to land in one file.
+import { getUnit } from '../../config/units.js';
+// Final Farm Size + Review Normalization \u00a75 \u2014 display-side
+// formatters used by the review summary so "Maryland , Usa"
+// renders as "Maryland, USA" and the size readout follows the
+// canonical { sizeCategory, exactSize, unit } shape.
+import {
+  formatLocation,
+  formatFarmSize,
+  normalizeFarmSizeBucket,
+} from '../../utils/formatDisplay.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 // Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
 // draft I/O.
@@ -252,28 +265,39 @@ export default function QuickFarmSetup() {
     }
   }
 
-  // Bucket pick. When the user picks a bucket the canonical
-  // size/unit get set so a Save without ever opening the custom
-  // row still produces a usable land-size record.
+  // Bucket pick. Final Farm Size + Review Normalization \u00a72\u2013\u00a73 \u2014
+  // mutually exclusive with the manual size input. Tapping a
+  // preset CLEARS the manual size so the persisted record only
+  // ever carries one canonical value (sizeCategory OR
+  // exactSize, never both). The unit is left at its current
+  // value (auto-defaulted by country) so a later switch into
+  // the manual row still works without re-picking the unit.
   function handlePickBucket(bucket) {
     setSizeBucket(bucket.value);
-    if (bucket.acres == null) {
-      setSize('');
-      // Keep unit at its current value so the custom row still
-      // works if the user opens it.
-    } else {
-      setSize(String(bucket.acres));
-      setUnit('acres');
-    }
+    setSize('');                       // \u2190 clear manual input
     setErrors((cur) => ({ ...cur, size: undefined, unit: undefined }));
   }
 
-  // Default unit reactively when the country is typed.
+  // Manual-size onChange. Final Farm Size + Review Normalization
+  // \u00a73 \u2014 typing into the manual row CLEARS the active preset
+  // so the two states stay mutually exclusive. Empty input
+  // does NOT clear the preset (the user might be deleting a
+  // typo before re-typing); only a non-empty trim clears.
+  function handleSizeChange(value) {
+    setSize(value);
+    if (value && value.trim() && sizeBucket) {
+      setSizeBucket(null);
+    }
+    setErrors((cur) => ({ ...cur, size: undefined }));
+  }
+
+  // Default unit reactively when the country is typed. Spec
+  // \u00a71 + \u00a74 \u2014 the spec-pathed `getUnit(countryCode)` resolves
+  // to acres for US and hectares for everywhere else. The
+  // user can still override via the dropdown below; this only
+  // populates the FIRST default.
   const defaultUnit = useMemo(() => {
-    return getDefaultUnit({
-      farmType:    'small_farm',
-      countryCode: country.trim().toUpperCase(),
-    });
+    return getUnit(country);
   }, [country]);
 
   // Sync the unit state with the regional default — only when
@@ -316,12 +340,23 @@ export default function QuickFarmSetup() {
 
     setSubmitting(true);
     try {
-      // For "I don't know" bucket, persist null so the
-      // land-intelligence engine can fall through to its small/
-      // medium/large heuristics on country only.
-      const numericSize = (sizeBucket === 'unknown' && !size.trim())
-        ? null
-        : Number(size);
+      // Final Farm Size + Review Normalization \u00a72 \u2014 single
+      // source of truth. The persisted row carries the spec
+      // shape: sizeCategory + exactSize + unit, mutually
+      // exclusive. Legacy keys (farmSize, sizeUnit) are still
+      // written for back-compat with surfaces that read them
+      // (HomeProgressBar, NgoControlPanel, etc.) but the
+      // canonical shape is the new triple.
+      const trimmedSize = size && size.trim() ? Number(size) : null;
+      const exactSize   = (Number.isFinite(trimmedSize) && trimmedSize > 0) ? trimmedSize : null;
+      // sizeCategory is the spec vocabulary (small/medium/large/
+      // custom/unknown). 'custom' fires when the user typed a
+      // manual exact size; 'unknown' fires when nothing was
+      // picked AND nothing was typed (still allowed by the
+      // gate above when geolocation succeeded).
+      const sizeCategory = exactSize != null
+        ? 'custom'
+        : normalizeFarmSizeBucket(sizeBucket);
       const stored = addFarm({
         crop:         crop.trim().toLowerCase().replace(/\s+/g, '_'),
         cropLabel:    crop.trim(),
@@ -332,7 +367,18 @@ export default function QuickFarmSetup() {
         region:       region.trim() || null,
         state:        region.trim() || null,
         stateLabel:   region.trim() || null,
-        farmSize:     numericSize,
+        // Spec \u00a72 canonical shape \u2014 the display formatter
+        // (formatFarmSize) reads these three fields, in this
+        // exact precedence order.
+        sizeCategory,
+        exactSize,
+        unit,
+        // Legacy keys for back-compat. farmSize mirrors
+        // exactSize so the land-intelligence engine + admin
+        // dashboards keep working without touching them. When
+        // sizeCategory is unknown we persist null so the
+        // engine falls through to its country-only heuristic.
+        farmSize:     exactSize,
         sizeUnit:     unit,
         // Non-blocking guidance hint per spec \u00a72.
         skillLevel,
@@ -575,11 +621,16 @@ export default function QuickFarmSetup() {
             );
           })}
         </div>
-        {/* Custom row \u2014 exact size + unit. Optional; when the
-            user picks a bucket the canonical size+unit are
-            already populated, so this row is for refinement. */}
+        {/* Custom row \u2014 exact size + unit. Final Farm Size +
+            Review Normalization \u00a72\u2013\u00a73 \u2014 mutually exclusive
+            with the preset buckets above. Typing into the
+            number field clears whichever preset was active so
+            the persisted record only ever carries ONE canonical
+            value (sizeCategory OR exactSize, never both).
+            The "(optional)" qualifier was dropped per spec \u00a77 \u2014
+            the layout already implies optionality. */}
         <div style={{ ...S.helpRow, marginTop: 8 }}>
-          {tStrict('onboarding.farmSize.customLabel', 'Or enter exact size (optional)')}
+          {tStrict('onboarding.farmSize.customLabel', 'Or enter exact size')}
         </div>
         <div style={S.twoCol}>
           <input
@@ -589,7 +640,7 @@ export default function QuickFarmSetup() {
             step="0.01"
             placeholder={tStrict('setup.farm.sizePh', 'e.g. 2')}
             value={size}
-            onChange={(e) => setSize(e.target.value)}
+            onChange={(e) => handleSizeChange(e.target.value)}
             style={{
               ...(errors.size ? { ...S.input, ...S.inputError } : S.input),
               flex: 1,
@@ -629,10 +680,26 @@ export default function QuickFarmSetup() {
             experience="farm"
             summary={{
               crop:     crop.trim() || null,
-              location: [region, country].filter((s) => s && s.trim()).join(', ') || null,
-              farmSize: sizeBucket
-                ? tStrict(`onboarding.farmSize.${sizeBucket}`, sizeBucket)
-                : (size ? `${size} ${unit || ''}`.trim() : null),
+              // Final Farm Size + Review Normalization \u00a75\u2013\u00a76 \u2014
+              // formatLocation handles the trailing-whitespace
+              // bug ("Maryland , Usa") + USA case-fold
+              // ("usa" -> "USA"). Empty location resolves to
+              // "Not set", not the legacy ", " string.
+              location: formatLocation({
+                region:  region.trim(),
+                country: country.trim(),
+              }),
+              // Final Farm Size + Review Normalization \u00a72 + \u00a75 \u2014
+              // single source of truth: pass the canonical
+              // shape into formatFarmSize so the displayed
+              // string follows the spec's resolution order
+              // (exactSize wins over sizeCategory) and never
+              // shows the conflicting double-state.
+              farmSize: formatFarmSize({
+                sizeCategory: normalizeFarmSizeBucket(sizeBucket),
+                exactSize:    size && size.trim() ? Number(size) : null,
+                unit,
+              }),
             }}
             actions={generateFirstPlan({
               crop:      crop.trim() || null,

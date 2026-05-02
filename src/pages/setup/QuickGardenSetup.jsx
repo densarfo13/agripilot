@@ -36,6 +36,10 @@ import { tStrict } from '../../i18n/strictT.js';
 import { addGarden } from '../../store/multiExperience.js';
 import { setOnboardingComplete, isOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+// Final Farm Size + Review Normalization \u00a75 \u2014 same display
+// formatter the farm form uses so a garden review reads the
+// location with the same "Maryland, USA" cleanup applied.
+import { formatLocation } from '../../utils/formatDisplay.js';
 // Production-hardening spec \u00a72\u2013\u00a73 \u2014 versioned + sanitised
 // draft I/O. Replaces direct loadData/saveData calls so a
 // malformed draft (manual DevTools tweak, schema swap, partial
@@ -658,7 +662,13 @@ export default function QuickGardenSetup() {
             experience="garden"
             summary={{
               plant:        plant.trim() || null,
-              location:     [city, region, country].filter((s) => s && s.trim()).join(', ') || null,
+              // Final Farm Size + Review Normalization \u00a75\u2013\u00a76 \u2014
+              // formatLocation handles whitespace + USA case-fold.
+              location:     formatLocation({
+                region:  region.trim(),
+                country: country.trim(),
+                city:    city.trim(),
+              }),
               growingSetup: growingSetup
                 ? tStrict(`garden.growingSetup.${growingSetup === 'raised_bed' ? 'raisedBed'
                                                 : growingSetup === 'indoor_balcony' ? 'indoorBalcony'

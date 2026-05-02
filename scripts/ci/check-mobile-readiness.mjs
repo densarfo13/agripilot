@@ -2872,6 +2872,89 @@ const checks = [
     },
   },
   {
+    // Final Farm Size + Review Normalization \u00a71 \u2014 spec-shaped
+    // unit config. Flat country -> unit map + getUnit reader.
+    name: 'config/units ships DEFAULT_UNIT_BY_COUNTRY + getUnit',
+    why:  'Farm-size normalization \u00a71 \u2014 unit auto-detect by country',
+    pass: () => {
+      const f = read('src/config/units.js');
+      return /export\s+const\s+DEFAULT_UNIT_BY_COUNTRY/.test(f)
+          && /export\s+function\s+getUnit/.test(f)
+          // Spec map covers the launch-set countries.
+          && /US:\s*'acres'/.test(f)
+          && /GH:\s*'hectares'/.test(f)
+          && /NG:\s*'hectares'/.test(f)
+          && /IN:\s*'hectares'/.test(f)
+          && /DEFAULT:\s*'hectares'/.test(f);
+    },
+  },
+  {
+    // Final Farm Size + Review Normalization \u00a75 \u2014 display
+    // formatters that fix the "Maryland , Usa" + "Not sure"
+    // bugs and follow the spec's farm-size resolution order.
+    name: 'utils/formatDisplay ships formatLocation + formatFarmSize',
+    why:  'Farm-size normalization \u00a75\u2013\u00a76 \u2014 review screen formatters',
+    pass: () => {
+      const f = read('src/utils/formatDisplay.js');
+      return /export\s+function\s+formatLocation/.test(f)
+          && /export\s+function\s+formatFarmSize/.test(f)
+          && /export\s+function\s+normalizeFarmSizeBucket/.test(f)
+          // Spec strings present.
+          && /'Not set'/.test(f)
+          && /'Not specified'/.test(f)
+          && /'Small farm'/.test(f)
+          && /'Medium farm'/.test(f)
+          && /'Large farm'/.test(f)
+          // USA case-fold.
+          && /USA_ALIASES/.test(f);
+    },
+  },
+  {
+    // Final Farm Size + Review Normalization \u00a72\u2013\u00a76 \u2014 the
+    // farm form persists the spec triple (sizeCategory +
+    // exactSize + unit) and surfaces formatLocation /
+    // formatFarmSize on the review summary so the bugs
+    // ("Maryland , Usa", "Not sure" on review) cannot
+    // resurface.
+    name: 'QuickFarmSetup uses spec triple + display formatters',
+    why:  'Farm-size normalization \u00a72\u2013\u00a76 \u2014 single source of truth',
+    pass: () => {
+      const f = read('src/pages/setup/QuickFarmSetup.jsx');
+      return /from\s+['"]\.\.\/\.\.\/config\/units\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/utils\/formatDisplay\.js['"]/.test(f)
+          // Mutually-exclusive handlers in place.
+          && /handleSizeChange/.test(f)
+          && /setSize\(''\)/.test(f)
+          && /setSizeBucket\(null\)/.test(f)
+          // Review uses formatLocation + formatFarmSize.
+          && /formatLocation\(/.test(f)
+          && /formatFarmSize\(/.test(f)
+          // Save handler persists the spec triple.
+          && /sizeCategory[,:]/.test(f)
+          && /exactSize[,:]/.test(f)
+          // Unit auto-default uses spec-pathed getUnit.
+          && /getUnit\(country\)/.test(f);
+    },
+  },
+  {
+    // Final Farm Size + Review Normalization \u00a77 \u2014 the
+    // "(optional)" qualifier is gone from the custom-size
+    // label. Translation keys updated across the launch
+    // locales (i18n parity guard covers JSON locale parity).
+    name: 'Custom-size label drops "(optional)" qualifier',
+    why:  'Farm-size normalization \u00a77 \u2014 calmer, layout-implied optionality',
+    pass: () => {
+      const t = read('src/i18n/translations.js');
+      const f = read('src/pages/setup/QuickFarmSetup.jsx');
+      // The active key value is "Or enter exact size", not the
+      // legacy "(optional)" suffix.
+      return /'onboarding\.farmSize\.customLabel':\s*\{\s*en:\s*'Or enter exact size'/.test(t)
+          && /tStrict\('onboarding\.farmSize\.customLabel',\s*'Or enter exact size'\)/.test(f)
+          // Legacy suffix is gone from the EN value.
+          && !/'Or enter exact size \(optional\)'/.test(t);
+    },
+  },
+  {
     name: 'DailyPlanCard wires retention loop (streak + progress + adaptive + health)',
     why:  'Retention Loop \u00a71\u2013\u00a77 \u2014 Home card surfaces engagement',
     pass: () => {

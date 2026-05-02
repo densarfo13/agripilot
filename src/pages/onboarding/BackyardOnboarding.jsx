@@ -534,7 +534,7 @@ export default function BackyardOnboarding() {
           </button>
         ) : (
           <button type="button" onClick={goNext} style={STYLES.primary} data-testid="backyard-next">
-            {tStrict('common.continue', 'Continue')}
+            {tStrict('onboarding.next', 'Next')}
           </button>
         )}
       </div>
