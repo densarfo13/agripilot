@@ -45,6 +45,9 @@ import { formatLocation } from '../../utils/formatDisplay.js';
 // unsupported) so the garden form shows a precise error +
 // actionable next step instead of the legacy generic line.
 import { requestUserLocation } from '../../utils/locationHandler.js';
+// Reverse-geocode follow-up \u2014 turn the lat/lng we just got
+// into country + region so the inputs auto-populate.
+import { reverseGeocode } from '../../utils/reverseGeocode.js';
 // Location-persistence fix \u2014 mirror country + region into the
 // flat `farroway_location` key on every change so any reader
 // downstream can pick up the user's location without walking
@@ -369,6 +372,26 @@ export default function QuickGardenSetup() {
     setGeoStatus(result.status);
     setGeoErrorKey(result.errorKey);
     setGeoCoords(result.position);
+
+    // Reverse-geocode follow-up \u2014 when geolocation succeeded,
+    // hit the public reverse-geocoder so the country / region
+    // inputs auto-populate. We ONLY overwrite empty inputs:
+    // anything the user has already typed wins, so a manual
+    // edit isn't clobbered if the geo result lands later.
+    // The helper never throws \u2014 a network failure leaves the
+    // inputs untouched and the manual path stays open.
+    if (result.status === 'ok' && result.position) {
+      try {
+        const geo = await reverseGeocode(
+          result.position.latitude,
+          result.position.longitude,
+        );
+        if (geo) {
+          if (geo.country && !country.trim()) setCountry(geo.country);
+          if (geo.region  && !region.trim())  setRegion(geo.region);
+        }
+      } catch { /* swallow \u2014 reverse-geocode is best-effort */ }
+    }
   }
   // Initialise to 'idle' \u2014 we no longer auto-probe on mount.
   useEffect(() => { /* no-op, kept for future */ }, []);

@@ -2744,6 +2744,38 @@ const checks = [
     },
   },
   {
+    // Reverse-geocode follow-up. After geolocation success
+    // both setup forms hit a free public reverse-geocoder
+    // (BigDataCloud) to auto-fill country + region. Helper
+    // is pure async + never-throws + 6s timeout.
+    name: 'Reverse-geocode auto-fills country/region on geolocation',
+    why:  'Reverse-geocode follow-up \u2014 close the geolocation -> form-fill loop',
+    pass: () => {
+      const helper = read('src/utils/reverseGeocode.js');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Helper exists + uses the BigDataCloud endpoint +
+      // validates input range + has the timeout guard.
+      const HELPER_OK =
+            /export\s+(?:async\s+)?function\s+reverseGeocode/.test(helper)
+         && /bigdatacloud\.net/.test(helper)
+         && /AbortController/.test(helper)
+         && /TIMEOUT_MS/.test(helper)
+         && /_validCoord/.test(helper);
+      // Both setup forms import + call the helper inside the
+      // success branch, and ONLY overwrite empty inputs.
+      // The reverseGeocode call may carry an optional trailing
+      // comma after the second arg (multi-line formatting), so
+      // the regex tolerates either.
+      const FORM_OK = (f) =>
+            /from\s+['"]\.\.\/\.\.\/utils\/reverseGeocode\.js['"]/.test(f)
+         && /reverseGeocode\(\s*result\.position\.latitude,\s*result\.position\.longitude,?\s*\)/.test(f)
+         && /geo\.country && !country\.trim\(\)/.test(f)
+         && /geo\.region\s*&&\s*!region\.trim\(\)/.test(f);
+      return HELPER_OK && FORM_OK(garden) && FORM_OK(farm);
+    },
+  },
+  {
     name: 'Location final-validation: shape + display + CTA + helper',
     why:  'Final Review Validation \u2014 location persists, review reads it, CTA gates correctly',
     pass: () => {

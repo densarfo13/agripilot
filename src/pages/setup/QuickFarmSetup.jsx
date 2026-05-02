@@ -58,6 +58,9 @@ import {
 // so the user sees a precise error + actionable next step instead
 // of the generic "We couldn't detect your location" line.
 import { requestUserLocation } from '../../utils/locationHandler.js';
+// Reverse-geocode follow-up \u2014 turn lat/lng into country +
+// region so the inputs auto-populate after geolocation success.
+import { reverseGeocode } from '../../utils/reverseGeocode.js';
 // Location-persistence fix \u2014 single-key snapshot at
 // `farroway_location` so any downstream surface (review,
 // recovery, future preview-before-save) can read the user's
@@ -303,6 +306,23 @@ export default function QuickFarmSetup() {
     setGeoStatus(result.status);
     setGeoErrorKey(result.errorKey);
     setGeoCoords(result.position);
+
+    // Reverse-geocode follow-up \u2014 auto-fill country / region
+    // from the freshly-granted coords. Same rules as the
+    // garden form: only overwrite empty inputs; a manual
+    // entry already typed by the user wins.
+    if (result.status === 'ok' && result.position) {
+      try {
+        const geo = await reverseGeocode(
+          result.position.latitude,
+          result.position.longitude,
+        );
+        if (geo) {
+          if (geo.country && !country.trim()) setCountry(geo.country);
+          if (geo.region  && !region.trim())  setRegion(geo.region);
+        }
+      } catch { /* swallow \u2014 reverse-geocode is best-effort */ }
+    }
   }
   useEffect(() => { /* no-op, kept for future */ }, []);
 
