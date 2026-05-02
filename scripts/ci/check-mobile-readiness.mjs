@@ -682,6 +682,27 @@ const checks = [
           && /isGarden\s*\?/.test(f);
     },
   },
+  {
+    name: 'hybridScanEngine ships safe taxonomy + context rules + disclaimer',
+    why:  'Hybrid scan spec \u2014 image + weather + experience refinement',
+    pass: () => {
+      const f = read('src/core/hybridScanEngine.js');
+      return /export function hybridAnalyze/.test(f)
+          && /POSSIBLE_FUNGAL_STRESS/.test(f)
+          && /POSSIBLE_WATER_STRESS/.test(f)
+          && /POSSIBLE_PEST_DAMAGE/.test(f)
+          && /Farroway provides guidance/.test(f);
+    },
+  },
+  {
+    name: 'ScanPage applies hybrid refinement after analyzeScan',
+    why:  'Hybrid scan spec \u2014 image-only verdict gets context layered on it',
+    pass: () => {
+      const f = read('src/pages/ScanPage.jsx');
+      return /hybridAnalyze/.test(f)
+          && /scan_hybrid_applied/.test(f);
+    },
+  },
 ];
 
 const failed = [];

@@ -21,6 +21,10 @@ import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { resolveRegionUX } from '../core/regionUXEngine.js';
 import { analyzeScan } from '../core/scanDetectionEngine.js';
+// Hybrid engine layers context (active experience + weather +
+// region) on top of the image-only verdict so the result is
+// safer + more actionable. See src/core/hybridScanEngine.js.
+import { hybridAnalyze } from '../core/hybridScanEngine.js';
 import { saveScanEntry } from '../data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
@@ -142,7 +146,76 @@ export default function ScanPage() {
         country:    profile?.country || null,
         experience,
       });
-      setResult(out);
+
+      // Hybrid refinement: layer active experience + weather +
+      // region on top of the image-only verdict. The hybrid
+      // result keeps the same shape callers already render
+      // (possibleIssue / confidence / recommendedActions) so
+      // ScanResultCard doesn't change. We merge the hybrid
+      // fields onto the engine output and keep the original
+      // engine fields (suggestedTasks, meta) intact. The
+      // hybrid engine never throws — failure falls through to
+      // the unrefined image-only result.
+      let refinedOut = out;
+      try {
+        let weatherSnapshot = null;
+        try {
+          // Lazy import to avoid coupling ScanPage to the
+          // weather context's lifecycle. Read the cached
+          // value if WeatherContext has populated it.
+          if (typeof window !== 'undefined') {
+            const raw = window.localStorage?.getItem('farroway_weather_cache');
+            if (raw) weatherSnapshot = JSON.parse(raw);
+          }
+        } catch { /* swallow */ }
+
+        const hybrid = hybridAnalyze({
+          imageResult:      out,
+          plantName:        profile?.plantName || null,
+          cropName:         profile?.crop || profile?.cropId || null,
+          activeExperience: activeExperience,
+          country:          profile?.country || null,
+          region:           profile?.region  || null,
+          weather:          weatherSnapshot,
+        });
+
+        // Merge: hybrid wins on the user-visible fields, engine
+        // fields like meta + scanId + suggestedTasks survive.
+        refinedOut = {
+          ...out,
+          possibleIssue:      hybrid.possibleIssue,
+          confidence:         hybrid.confidence,
+          recommendedActions: hybrid.recommendedActions,
+          // Preserve engine suggestedTasks (used by Add to
+          // Today's Plan) and prepend the hybrid follow-up so
+          // there's always at least one action even on the
+          // unclear-image branch.
+          suggestedTasks: (() => {
+            const existing = Array.isArray(out?.suggestedTasks) ? out.suggestedTasks : [];
+            const seen = new Set(existing.map((t) => String(t?.title || '').toLowerCase()));
+            const followUp = hybrid.followUpTask;
+            if (followUp && !seen.has(String(followUp.title || '').toLowerCase())) {
+              return [followUp, ...existing].slice(0, 2);
+            }
+            return existing.slice(0, 2);
+          })(),
+          // New hybrid-only fields the result card can render.
+          hybridReason:    hybrid.reason,
+          hybridUrgency:   hybrid.urgency,
+          hybridContext:   hybrid.contextType,
+          disclaimer:      hybrid.disclaimer,
+        };
+        try {
+          trackEvent('scan_hybrid_applied', {
+            issue:      hybrid.possibleIssue,
+            confidence: hybrid.confidence,
+            context:    hybrid.contextType,
+            urgency:    hybrid.urgency,
+          });
+        } catch { /* ignore */ }
+      } catch { /* hybrid disabled — fall through to engine output */ }
+
+      setResult(refinedOut);
       setPhase('result');
       try { trackEvent('scan_analyzed', { experience, source: out?.meta?.source, confidence: out?.confidence }); }
       catch { /* ignore */ }
@@ -155,7 +228,7 @@ export default function ScanPage() {
       try { trackEvent('scan_failed', { reason: err && err.message }); }
       catch { /* ignore */ }
     }
-  }, [experience, profile]);
+  }, [experience, activeExperience, profile]);
 
   const onRetake = useCallback(() => {
     setError('');

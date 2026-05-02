@@ -72,6 +72,8 @@ const REQUIRED_EVENTS = [
     why: 'Admin opened the dashboard and saw the recommended next fix.' },
   { name: 'experience_fallback_auto_repair', surface: 'ExperienceFallback.jsx',
     why: 'Auto-repair fired when the recovery branch would have shown — measures self-heal hit rate.' },
+  { name: 'scan_hybrid_applied', surface: 'ScanPage.jsx',
+    why: 'Hybrid engine refined the image-only verdict — measures rule-pipeline hit rate per issue.' },
 ];
 
 function listFiles(dir, acc) {
