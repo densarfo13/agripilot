@@ -68,10 +68,11 @@ const WHERE_OPTIONS = [
 // Pre-populated from `initialProfile.growingSetup` when the
 // caller passes an existing garden's record in.
 const GROWING_SETUP_OPTIONS = [
-  { id: 'container', icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container', fallback: 'Pot / Container'  },
-  { id: 'bed',       icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.bed',       fallback: 'Garden bed'       },
-  { id: 'ground',    icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',    fallback: 'Backyard soil'    },
-  { id: 'unknown',   icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',   fallback: 'I\u2019m not sure' },
+  { id: 'container',      icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container',     fallback: 'Pots / containers' },
+  { id: 'raised_bed',     icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.raisedBed',     fallback: 'Raised bed'        },
+  { id: 'ground',         icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',        fallback: 'Backyard soil'     },
+  { id: 'indoor_balcony', icon: '\uD83E\uDE9F', labelKey: 'garden.growingSetup.indoorBalcony', fallback: 'Indoor / balcony'  },
+  { id: 'unknown',        icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',       fallback: 'I don\u2019t know' },
 ];
 
 const STYLES = {
@@ -296,14 +297,15 @@ export default function GardenSetupForm({ initialProfile = {}, onSaved, onCancel
       // ground / indoor / unknown) means 'indoor' is now its
       // own first-class value rather than collapsing onto
       // 'container'.
+      // Merge-spec canonical 5-bucket taxonomy.
       const GROWING_LOCATION_TO_SETUP = {
         soil:       'ground',
-        raised_bed: 'bed',
+        raised_bed: 'raised_bed',
         pots:       'container',
-        indoor:     'indoor',
-        greenhouse: 'bed',
+        indoor:     'indoor_balcony',
+        greenhouse: 'raised_bed',
       };
-      const ALLOWED_SETUPS = new Set(['container', 'bed', 'ground', 'indoor', 'unknown']);
+      const ALLOWED_SETUPS = new Set(['container', 'raised_bed', 'ground', 'indoor_balcony', 'unknown']);
       const explicitSetup = ALLOWED_SETUPS.has(growingSetup) ? growingSetup : '';
       const finalGrowingSetup = explicitSetup
         || GROWING_LOCATION_TO_SETUP[growingLocation]

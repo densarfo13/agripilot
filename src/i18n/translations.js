@@ -12544,8 +12544,15 @@ const T = {
   'garden.growingSetup.container':{ en: 'Pots / containers',             fr: 'Pots / conteneurs',                     sw: 'Sufuria / vyombo',           ha: 'Tukwane / akwatuna',           tw: 'Nkuruwa',                       hi: '\u0917\u092E\u0932\u0947 / \u0915\u0902\u091F\u0947\u0928\u0930' },
   'garden.growingSetup.bed':      { en: 'Raised bed',                    fr: 'Carr\u00E9 sur\u00E9lev\u00E9',          sw: 'Kitalu kilichoinuliwa',      ha: 'Kwarin da aka ɗaga',           tw: 'Mpa a wɔama so',                hi: '\u090A\u0901\u091A\u0940 \u0915\u094D\u092F\u093E\u0930\u0940' },
   'garden.growingSetup.ground':   { en: 'Backyard soil',                 fr: 'Terre du jardin',                       sw: 'Udongo wa nyuma ya nyumba',  ha: '\u018Aaki na bayan gida',      tw: 'Fie akyi asase',                hi: '\u092A\u093F\u091B\u0935\u093E\u0921\u093C\u0947 \u0915\u0940 \u092E\u093F\u091F\u094D\u091F\u0940' },
-  // Final-merged spec follow-up: indoor / balcony plants need
-  // light-aware tasks rather than soil-aware ones.
+  // Merge-spec value taxonomy: keys mirror the new canonical
+  // value names (raisedBed / indoorBalcony). The legacy .bed
+  // and .indoor keys above stay registered for any external
+  // consumer that read them; the picker now points at the new
+  // keys.
+  'garden.growingSetup.raisedBed':     { en: 'Raised bed',          fr: 'Carr\u00E9 sur\u00E9lev\u00E9',     sw: 'Kitalu kilichoinuliwa',  ha: 'Kwarin da aka ɗaga',  tw: 'Mpa a wɔama so',                hi: '\u090A\u0901\u091A\u0940 \u0915\u094D\u092F\u093E\u0930\u0940' },
+  'garden.growingSetup.indoorBalcony': { en: 'Indoor / balcony',    fr: 'Int\u00E9rieur / balcon',           sw: 'Ndani / balcony',         ha: 'Cikin gida / baranda', tw: 'Fie mu / abrannaa',             hi: '\u0905\u0902\u0926\u0930 / \u092C\u093E\u0932\u094D\u0915\u0928\u0940' },
+  // Final-merged spec follow-up: legacy keys retained for any
+  // external consumers; picker no longer references them.
   'garden.growingSetup.indoor':   { en: 'Indoor / balcony',              fr: 'Int\u00E9rieur / balcon',               sw: 'Ndani / balcony',            ha: 'Cikin gida / baranda',         tw: 'Fie mu / abrannaa',             hi: '\u0905\u0902\u0926\u0930 / \u092C\u093E\u0932\u094D\u0915\u0928\u0940' },
   'garden.growingSetup.unknown':  { en: 'I don\u2019t know',             fr: 'Je ne sais pas',                        sw: 'Sijui',                      ha: 'Ban sani ba',                  tw: 'Mennim',                        hi: '\u092E\u0941\u091D\u0947 \u0928\u0939\u0940\u0902 \u092A\u0924\u093E' },
 

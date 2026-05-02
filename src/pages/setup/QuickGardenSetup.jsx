@@ -74,15 +74,20 @@ const SIZE_OPTIONS = [
 // to commit. The value is persisted verbatim onto the garden
 // record where downstream surfaces (dailyIntelligenceEngine,
 // hybridScanEngine) read it to personalise guidance.
+// Canonical 5-bucket value taxonomy (merge-spec values):
+//   container | raised_bed | ground | indoor_balcony | unknown
+// The values are persisted onto the garden record as
+// `growingSetup` and read by the dailyIntelligenceEngine +
+// hybridScanEngine to personalise tasks + scan actions. Legacy
+// shorter values ('bed', 'indoor') from previous deploys are
+// migrated by the engines via a one-line alias map so old
+// saved gardens don't lose their personalisation.
 const GROWING_SETUP_OPTIONS = [
-  { value: 'container', icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container', fallback: 'Pots / containers' },
-  { value: 'bed',       icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.bed',       fallback: 'Raised bed'        },
-  { value: 'ground',    icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',    fallback: 'Backyard soil'     },
-  // Indoor / balcony (final-merged spec follow-up): plants on a
-  // windowsill, balcony, or under a grow light. Drives a
-  // light-check-aware task list downstream.
-  { value: 'indoor',    icon: '\uD83C\uDF3D', labelKey: 'garden.growingSetup.indoor',    fallback: 'Indoor / balcony'  },
-  { value: 'unknown',   icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',   fallback: 'I don\u2019t know' },
+  { value: 'container',      icon: '\uD83E\uDEB4', labelKey: 'garden.growingSetup.container',     fallback: 'Pots / containers' },
+  { value: 'raised_bed',     icon: '\uD83C\uDF3F', labelKey: 'garden.growingSetup.raisedBed',     fallback: 'Raised bed'        },
+  { value: 'ground',         icon: '\uD83C\uDFE1', labelKey: 'garden.growingSetup.ground',        fallback: 'Backyard soil'     },
+  { value: 'indoor_balcony', icon: '\uD83E\uDE9F', labelKey: 'garden.growingSetup.indoorBalcony', fallback: 'Indoor / balcony'  },
+  { value: 'unknown',        icon: '\u2754',       labelKey: 'garden.growingSetup.unknown',       fallback: 'I don\u2019t know' },
 ];
 
 // Spec \u00a77 \u2014 garden plant tiles. 5 common picks + Other (free
@@ -377,8 +382,10 @@ export default function QuickGardenSetup() {
           input fallback). A search input above the grid filters
           visible tiles for users with longer real-world plant
           lists; "Other" is always shown so the user can fall
-          through to a free-text entry even when nothing matches. */}
-      <section style={S.card} data-testid="setup-garden-plant-tiles">
+          through to a free-text entry even when nothing matches.
+          The id="review-plant" anchor lets the review panel's
+          "Change plant" button scroll back here. */}
+      <section style={S.card} data-testid="setup-garden-plant-tiles" id="review-plant">
         <span style={S.label}>
           {tStrict('onboarding.pickPlant.title', 'Pick your plant')}
         </span>
@@ -446,8 +453,10 @@ export default function QuickGardenSetup() {
       </section>
 
       {/* Location (spec \u00a78). "Use my location" is the primary
-          CTA; manual country + region inputs always available. */}
-      <section style={S.card}>
+          CTA; manual country + region inputs always available.
+          id="review-location" \u2014 review panel's Change-location
+          button scrolls here. */}
+      <section style={S.card} id="review-location">
         <span style={S.label}>
           {tStrict('onboarding.gardenLocation', 'Where is your garden?')}
         </span>
@@ -547,7 +556,7 @@ export default function QuickGardenSetup() {
           a garden bed, the backyard soil, or doesn't know. Drives
           task personalisation downstream (dailyIntelligenceEngine
           \u00a75) + scan action enrichment (hybridScanEngine \u00a76). */}
-      <section style={S.card} data-testid="setup-garden-growing-setup">
+      <section style={S.card} data-testid="setup-garden-growing-setup" id="review-growing-setup">
         <span style={S.label}>
           {tStrict('garden.growingSetup.title', 'How are you growing your plant?')}
         </span>
@@ -599,9 +608,26 @@ export default function QuickGardenSetup() {
 
       {/* Review panel sits between the form fields and the
           Save button so the user sees "Review your first plan"
-          + the 3 tightened daily-task tiles BEFORE committing.
-          Garden experience renders the plant-shaped copy. */}
-      <OnboardingReviewPanel experience="garden" />
+          + the user's actual picks (Plant / Location / Growing
+          setup) BEFORE committing. Each row has a "Change X"
+          button that scrolls back to the relevant form section.
+          Merge-spec \u00a73. */}
+      <OnboardingReviewPanel
+        experience="garden"
+        summary={{
+          plant:                plant.trim() || null,
+          plantAnchor:          'review-plant',
+          location:             [city, region, country].filter((s) => s && s.trim()).join(', ') || null,
+          locationAnchor:       'review-location',
+          growingSetup:         growingSetup
+            ? tStrict(`garden.growingSetup.${growingSetup === 'raised_bed' ? 'raisedBed'
+                                            : growingSetup === 'indoor_balcony' ? 'indoorBalcony'
+                                            : growingSetup}`,
+                growingSetup)
+            : null,
+          growingSetupAnchor:   'review-growing-setup',
+        }}
+      />
 
       <button
         type="button"

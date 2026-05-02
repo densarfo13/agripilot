@@ -295,42 +295,45 @@ export function generateDailyPlan({
   // settings to get this guidance), then the existing 3-slot
   // cap + dedupe rules apply downstream.
   if (isBackyard && farm && typeof farm.growingSetup === 'string') {
+    // Merge-spec \u00a74 task list per canonical bucket.
     const SETUP_TASKS = {
-      // Pots / containers \u2014 spec emphasises watering frequency
-      // (small soil volumes dry out fast) + drainage.
+      // Pots / containers
       container: [
-        'Check container soil moisture today',
+        'Check container soil moisture',
         'Make sure the pot drains well',
-        'Water more often \u2014 small pots dry out fast',
+        'Water only if top soil feels dry',
       ],
-      // Raised bed \u2014 spec emphasises spacing + soil tips.
-      bed: [
+      // Raised bed
+      raised_bed: [
         'Check spacing between plants',
-        'Top up mulch or compost if soil looks bare',
-        'Water near the roots, not the leaves',
+        'Remove weeds around the bed',
+        'Water near the roots',
       ],
-      // Backyard soil \u2014 spec emphasises pest + weather awareness.
+      // Backyard soil
       ground: [
-        'Look for weeds or pests around the plant',
-        'Check soil moisture near the roots',
-        'Adjust watering for today\u2019s weather',
+        'Check soil around the plant',
+        'Look for weeds or pests nearby',
+        'Water only if soil is dry',
       ],
-      // Indoor / balcony \u2014 spec emphasises light + airflow.
-      // Light is the limiting factor indoors; outdoor advice
-      // about weather doesn't apply.
-      indoor: [
-        'Check the plant gets enough light today',
-        'Rotate the pot so the plant grows evenly',
-        'Avoid letting water sit in the saucer',
+      // Indoor / balcony
+      indoor_balcony: [
+        'Check light exposure',
+        'Rotate plant toward light',
+        'Avoid overwatering',
       ],
+      // I don't know \u2014 generic garden fallback.
       unknown: [
-        // Generic garden fallback so the user still gets two
-        // actionable items when they skipped the setup pick.
         'Check your plant leaves',
         'Water only if soil is dry',
       ],
     };
-    const setup  = String(farm.growingSetup).toLowerCase();
+    // Backwards-compat alias: gardens saved before the merge-
+    // spec rename carry 'bed' / 'indoor' values. Map them onto
+    // the new canonical keys so old users don't lose their
+    // personalised tasks after the deploy.
+    const SETUP_ALIAS = { bed: 'raised_bed', indoor: 'indoor_balcony' };
+    const setupRaw = String(farm.growingSetup).toLowerCase();
+    const setup    = SETUP_ALIAS[setupRaw] || setupRaw;
     const titles = SETUP_TASKS[setup] || [];
     if (titles.length > 0) {
       const seen = new Set(actions.map((a) => String(a.title || '').trim().toLowerCase()));

@@ -428,28 +428,30 @@ export function hybridAnalyze(input = {}) {
   // like the app understands their setup. Hard-capped at 3
   // total recommendedActions per spec ("Keep actions max 3").
   if (isGarden && typeof safe.growingSetup === 'string') {
+    // Merge-spec \u00a75 scan-action enrichment per canonical bucket.
     const SETUP_ACTIONS = {
       container: [
         'Check pot drainage',
-        'Avoid letting water sit in the container',
+        'Avoid water sitting in the container',
       ],
-      bed: [
+      raised_bed: [
         'Check nearby plants for similar signs',
         'Improve airflow between plants',
       ],
       ground: [
         'Check soil around the plant',
-        'Remove nearby weeds if present',
+        'Remove nearby weeds',
       ],
-      // Indoor / balcony scan-action enrichment. Light + airflow
-      // are the failure modes that bite indoor growers; soil
-      // / weed / weather advice doesn't apply.
-      indoor: [
-        'Check the plant gets enough light',
-        'Improve airflow around the plant',
+      indoor_balcony: [
+        'Check light exposure',
+        'Move plant closer to light if needed',
       ],
     };
-    const setup = String(safe.growingSetup).toLowerCase();
+    // Backwards-compat alias for gardens saved before the
+    // merge-spec rename (bed / indoor).
+    const SETUP_ALIAS = { bed: 'raised_bed', indoor: 'indoor_balcony' };
+    const setupRaw = String(safe.growingSetup).toLowerCase();
+    const setup    = SETUP_ALIAS[setupRaw] || setupRaw;
     const extras = SETUP_ACTIONS[setup] || [];
     if (extras.length > 0) {
       const seen = new Set(recommendedActions.map((s) => String(s || '').trim().toLowerCase()));

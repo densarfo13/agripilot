@@ -1372,20 +1372,23 @@ const checks = [
     // growingSetup so dailyIntelligenceEngine + hybridScanEngine
     // can read it without an extra lookup.
     name: 'QuickGardenSetup ships "How are you growing your plant?" picker',
-    why:  'Backyard growing-setup spec \u00a71 \u2014 capture container/bed/ground/indoor/unknown',
+    why:  'Merge-spec \u00a71 \u2014 capture container/raised_bed/ground/indoor_balcony/unknown',
     pass: () => {
       const f = read('src/pages/setup/QuickGardenSetup.jsx');
       const PERSISTED = /growingSetup\s*:\s*growingSetup\b|^\s*growingSetup,?\s*$/m;
       return /garden\.growingSetup\.title/.test(f)
           && /GROWING_SETUP_OPTIONS/.test(f)
-          // The 5 spec options including the new indoor pick.
+          // The 5 canonical merge-spec keys.
           && /garden\.growingSetup\.container/.test(f)
-          && /garden\.growingSetup\.bed/.test(f)
+          && /garden\.growingSetup\.raisedBed/.test(f)
           && /garden\.growingSetup\.ground/.test(f)
-          && /garden\.growingSetup\.indoor/.test(f)
+          && /garden\.growingSetup\.indoorBalcony/.test(f)
           && /garden\.growingSetup\.unknown/.test(f)
+          // The 5 canonical value strings used by engines.
+          && /['"]raised_bed['"]/.test(f)
+          && /['"]indoor_balcony['"]/.test(f)
           && PERSISTED.test(f)
-          && /quick-garden-growing-/.test(f);                // testid prefix exists
+          && /quick-garden-growing-/.test(f);
     },
   },
   {
@@ -1407,22 +1410,28 @@ const checks = [
     // ground gets soil/weed tasks; unknown falls through to
     // generic garden tasks.
     name: 'dailyIntelligenceEngine personalises tasks by growingSetup',
-    why:  'Backyard growing-setup spec \u00a75 \u2014 task personalisation per setup (incl. indoor)',
+    why:  'Merge-spec \u00a74 \u2014 5-bucket task personalisation with canonical value taxonomy',
     pass: () => {
       const f = read('src/core/dailyIntelligenceEngine.js');
       return /SETUP_TASKS/.test(f)
-          // Container \u2014 watering frequency + drainage emphasis.
-          && /Check container soil moisture today/.test(f)
+          // Canonical merge-spec keys.
+          && /\braised_bed\b/.test(f)
+          && /\bindoor_balcony\b/.test(f)
+          // Container.
+          && /Check container soil moisture/.test(f)
           && /Make sure the pot drains well/.test(f)
-          // Bed \u2014 spacing + soil tips.
+          // Raised bed.
           && /Check spacing between plants/.test(f)
-          // Ground \u2014 pest + weather awareness.
-          && /Look for weeds or pests around the plant/.test(f)
-          && /Adjust watering for today/.test(f)
-          // Indoor \u2014 light + airflow emphasis (final-merged
-          // spec follow-up).
-          && /Check the plant gets enough light today/.test(f)
-          && /Rotate the pot so the plant grows evenly/.test(f)
+          && /Remove weeds around the bed/.test(f)
+          // Ground.
+          && /Check soil around the plant/.test(f)
+          && /Look for weeds or pests nearby/.test(f)
+          // Indoor / balcony.
+          && /Check light exposure/.test(f)
+          && /Rotate plant toward light/.test(f)
+          && /Avoid overwatering/.test(f)
+          // Backwards-compat alias for legacy saved gardens.
+          && /SETUP_ALIAS/.test(f)
           && /source:\s*['"]growing_setup['"]/.test(f);
     },
   },
@@ -1430,19 +1439,27 @@ const checks = [
     // Spec \u00a76 \u2014 hybridScanEngine adds setup-specific actions
     // for garden + container/bed/ground; final list capped at 3.
     name: 'hybridScanEngine personalises scan actions by growingSetup',
-    why:  'Backyard growing-setup spec \u00a76 \u2014 scan output reads setup-aware (incl. indoor)',
+    why:  'Merge-spec \u00a75 \u2014 scan-action enrichment per canonical bucket (incl. indoor_balcony)',
     pass: () => {
       const f = read('src/core/hybridScanEngine.js');
       return /SETUP_ACTIONS/.test(f)
+          // Canonical merge-spec keys.
+          && /\braised_bed\b/.test(f)
+          && /\bindoor_balcony\b/.test(f)
+          // Container.
           && /Check pot drainage/.test(f)
-          && /Avoid letting water sit in the container/.test(f)
+          && /Avoid water sitting in the container/.test(f)
+          // Raised bed.
           && /Check nearby plants for similar signs/.test(f)
           && /Improve airflow between plants/.test(f)
+          // Ground.
           && /Check soil around the plant/.test(f)
-          && /Remove nearby weeds if present/.test(f)
-          // Indoor branch (final-merged spec follow-up).
-          && /Check the plant gets enough light/.test(f)
-          && /Improve airflow around the plant/.test(f)
+          && /Remove nearby weeds/.test(f)
+          // Indoor / balcony.
+          && /Check light exposure/.test(f)
+          && /Move plant closer to light if needed/.test(f)
+          // Legacy alias for backwards compat.
+          && /SETUP_ALIAS/.test(f)
           && /recommendedActions\s*=\s*recommendedActions\.slice\(0,\s*3\)/.test(f);
     },
   },
@@ -1457,9 +1474,10 @@ const checks = [
         'garden.growingSetup.title',
         'garden.growingSetup.label',
         'garden.growingSetup.container',
-        'garden.growingSetup.bed',
+        // Merge-spec canonical keys.
+        'garden.growingSetup.raisedBed',
         'garden.growingSetup.ground',
-        'garden.growingSetup.indoor',
+        'garden.growingSetup.indoorBalcony',
         'garden.growingSetup.unknown',
       ];
       for (const k of KEYS) {
@@ -1481,8 +1499,11 @@ const checks = [
       const f = read('src/components/farm/GardenSetupForm.jsx');
       return /GROWING_LOCATION_TO_SETUP/.test(f)
           && /soil:\s*['"]ground['"]/.test(f)
-          && /raised_bed:\s*['"]bed['"]/.test(f)
+          // Merge-spec canonical taxonomy: raised_bed maps to
+          // itself; legacy 'bed' value retired.
+          && /raised_bed:\s*['"]raised_bed['"]/.test(f)
           && /pots:\s*['"]container['"]/.test(f)
+          && /indoor:\s*['"]indoor_balcony['"]/.test(f)
           && /growingSetup,/.test(f);                  // included in the saved object
     },
   },
@@ -1860,7 +1881,10 @@ const checks = [
     why:  'Production-hardening spec \u00a72\u2013\u00a73 \u2014 malformed draft never crashes',
     pass: () => {
       const f = read('src/core/onboardingDraft.js');
-      return /CURRENT_ONBOARDING_DRAFT_VERSION\s*=\s*2/.test(f)
+      // Merge-spec bumped CURRENT_ONBOARDING_DRAFT_VERSION
+      // from 2 to 3 (growingSetup taxonomy renamed). Accept
+      // any version >= 2 so a future bump doesn't trip this.
+      return /CURRENT_ONBOARDING_DRAFT_VERSION\s*=\s*[2-9]/.test(f)
           && /export function sanitizeGardenDraft/.test(f)
           && /export function sanitizeFarmDraft/.test(f)
           && /export function loadGardenDraft/.test(f)
@@ -2053,8 +2077,6 @@ const checks = [
       const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
       const garden = read('src/pages/setup/QuickGardenSetup.jsx');
       const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
-      // Panel itself ships the canonical copy keys + an
-      // experience prop that switches plant\u2194crop wording.
       const panelOk = /export default function OnboardingReviewPanel/.test(panel)
                    && /onboarding\.review\.title/.test(panel)
                    && /onboarding\.review\.helper/.test(panel)
@@ -2064,12 +2086,48 @@ const checks = [
                    && /preview\.title\.checkCrop/.test(panel)
                    && /preview\.title\.scan/.test(panel)
                    && /data-testid=["']onboarding-review-panel["']/.test(panel);
-      // Both Quick setup forms import + render the panel with
-      // the right experience prop.
       const gardenOk = /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingReviewPanel\.jsx['"]/.test(garden)
-                    && /<OnboardingReviewPanel\s+experience="garden"/.test(garden);
+                    && /<OnboardingReviewPanel/.test(garden)
+                    && /experience="garden"/.test(garden);
       const farmOk   = /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingReviewPanel\.jsx['"]/.test(farm)
-                    && /<OnboardingReviewPanel\s+experience="farm"/.test(farm);
+                    && /<OnboardingReviewPanel/.test(farm)
+                    && /experience="farm"/.test(farm);
+      return panelOk && gardenOk && farmOk;
+    },
+  },
+  {
+    // Merge-spec \u00a73 \u2014 the review panel renders the user's
+    // actual picks (Plant + Location + Growing setup for
+    // garden, Crop + Location + Farm size for farm) with a
+    // "Change X" button per row that scrolls to the relevant
+    // form section. Anchors live on the form sections so a
+    // smooth scroll keeps the user in-page.
+    name: 'Review panel renders Your-picks summary + Change buttons',
+    why:  'Merge-spec \u00a73 \u2014 user sees their picks + can jump back to edit any',
+    pass: () => {
+      const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      const panelOk = /scrollToAnchor/.test(panel)
+                   && /onboarding-review-summary/.test(panel)
+                   && /onboarding-review-change-plant/.test(panel)
+                   && /onboarding-review-change-crop/.test(panel)
+                   && /onboarding-review-change-location/.test(panel)
+                   && /onboarding-review-change-growing-setup/.test(panel)
+                   && /onboarding-review-change-farm-size/.test(panel)
+                   // SummaryRow component wired with label + value.
+                   && /function SummaryRow/.test(panel);
+      // Garden form passes plant + location + growingSetup.
+      const gardenOk = /summary=\{\{[\s\S]*?plant:[\s\S]*?location:[\s\S]*?growingSetup:/.test(garden)
+                    // Anchor IDs present on the form sections.
+                    && /id="review-plant"/.test(garden)
+                    && /id="review-location"/.test(garden)
+                    && /id="review-growing-setup"/.test(garden);
+      // Farm form passes crop + location + farmSize.
+      const farmOk   = /summary=\{\{[\s\S]*?crop:[\s\S]*?location:[\s\S]*?farmSize:/.test(farm)
+                    && /id="review-crop"/.test(farm)
+                    && /id="review-location"/.test(farm)
+                    && /id="review-farm-size"/.test(farm);
       return panelOk && gardenOk && farmOk;
     },
   },

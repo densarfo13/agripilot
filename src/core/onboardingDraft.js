@@ -36,7 +36,13 @@ import { trackEvent } from '../analytics/analyticsStore.js';
 // Spec \u00a73 \u2014 schema version. Bump this whenever the draft
 // shape changes in a way that older saves can't be rehydrated
 // safely. The load path treats any mismatch as "no draft".
-export const CURRENT_ONBOARDING_DRAFT_VERSION = 2;
+//
+// v3 (merge-spec): growingSetup value taxonomy renamed
+//   bed    \u2192 raised_bed
+//   indoor \u2192 indoor_balcony
+// Old v2 drafts auto-clear with telemetry; saved gardens with
+// the legacy values keep working via an alias in the engines.
+export const CURRENT_ONBOARDING_DRAFT_VERSION = 3;
 
 // localStore-style keys. We bypass `loadData/saveData` from
 // store/localStore.js so the schema check + versioning is
@@ -72,7 +78,8 @@ function _num(v) {
 // nothing else is present). If `raw` doesn't look like a usable
 // draft at all, return null \u2014 the caller treats null as "no
 // draft" and starts the form blank.
-const ALLOWED_GROWING_SETUP = ['container', 'bed', 'ground', 'indoor', 'unknown'];
+// Canonical 5-bucket taxonomy (merge-spec).
+const ALLOWED_GROWING_SETUP = ['container', 'raised_bed', 'ground', 'indoor_balcony', 'unknown'];
 const ALLOWED_GARDEN_SIZE   = ['small', 'medium', 'large', 'unknown'];
 const ALLOWED_FARM_BUCKET   = ['lt1', '1to5', 'gt5', 'unknown'];
 const ALLOWED_FARM_UNIT     = ['acres', 'hectares', 'sqft', 'sqm'];

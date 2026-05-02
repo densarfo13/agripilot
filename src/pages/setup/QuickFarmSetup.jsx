@@ -371,7 +371,7 @@ export default function QuickFarmSetup() {
           fallback). A search input above the grid filters
           visible tiles; "Other" stays visible so users with a
           crop not on the launch list can still type it in. */}
-      <section style={S.card} data-testid="setup-farm-crop-tiles">
+      <section style={S.card} data-testid="setup-farm-crop-tiles" id="review-crop">
         <span style={S.label}>
           {tStrict('onboarding.pickCrop.title', 'Pick your crop')}
         </span>
@@ -440,8 +440,9 @@ export default function QuickFarmSetup() {
         {errors.crop ? <div style={S.errorRow}>{errors.crop}</div> : null}
       </section>
 
-      {/* Location (spec \u00a78) */}
-      <section style={S.card}>
+      {/* Location (spec \u00a78). id="review-location" \u2014 review
+          panel's Change-location button scrolls here. */}
+      <section style={S.card} id="review-location">
         <span style={S.label}>
           {tStrict('onboarding.farmLocation', 'Where is your farm?')}
         </span>
@@ -549,7 +550,7 @@ export default function QuickFarmSetup() {
           5+ / I don't know. NEVER show "Small backyard". An
           optional custom row underneath lets the user enter
           exact acres / hectares / sq ft if they want precision. */}
-      <section style={S.card} data-testid="setup-farm-size-buckets">
+      <section style={S.card} data-testid="setup-farm-size-buckets" id="review-farm-size">
         <span style={S.label}>
           {tStrict('onboarding.farmSize.title', 'Farm size')}
         </span>
@@ -626,9 +627,23 @@ export default function QuickFarmSetup() {
         {errors.unit ? <div style={S.errorRow}>{errors.unit}</div> : null}
       </section>
 
-      {/* Review panel \u2014 final-merged onboarding spec \u00a75. The
-          farm experience renders the crop-shaped copy. */}
-      <OnboardingReviewPanel experience="farm" />
+      {/* Review panel \u2014 final-merged onboarding spec \u00a75 +
+          merge-spec \u00a73 "Your picks" summary. Farm renders Crop +
+          Location + Farm size. The Change buttons scroll back
+          to the form sections via the anchors above. */}
+      <OnboardingReviewPanel
+        experience="farm"
+        summary={{
+          crop:           crop.trim() || null,
+          cropAnchor:     'review-crop',
+          location:       [region, country].filter((s) => s && s.trim()).join(', ') || null,
+          locationAnchor: 'review-location',
+          farmSize:       sizeBucket
+            ? tStrict(`onboarding.farmSize.${sizeBucket}`, sizeBucket)
+            : (size ? `${size} ${unit || ''}`.trim() : null),
+          farmSizeAnchor: 'review-farm-size',
+        }}
+      />
 
       <button
         type="button"

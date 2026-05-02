@@ -72,7 +72,48 @@ function _tasksFor(experience) {
   ];
 }
 
-export default function OnboardingReviewPanel({ experience }) {
+/**
+ * SummaryRow \u2014 one line in the "Your picks" summary block.
+ *   Label (small)
+ *   Value (bold)               [Change X]
+ * The value is rendered as-is so the caller controls
+ * formatting (capitalisation, translation, etc.).
+ */
+function SummaryRow({ label, value, onChange, changeLabel, testid }) {
+  return (
+    <div style={S.summaryRow}>
+      <div style={S.summaryRowText}>
+        <span style={S.summaryRowLabel}>{label}</span>
+        <span style={S.summaryRowValue}>{value || '\u2014'}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onChange}
+        style={S.summaryRowBtn}
+        data-testid={testid}
+      >
+        {changeLabel}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * scrollToAnchor(id) \u2014 scroll the matching DOM node into view.
+ * Used by the "Change X" buttons to bring the user back to the
+ * relevant form section without leaving the page.
+ */
+function scrollToAnchor(id) {
+  if (!id || typeof document === 'undefined') return;
+  try {
+    const el = document.getElementById(id);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } catch { /* swallow */ }
+}
+
+export default function OnboardingReviewPanel({ experience, summary }) {
   const isGarden = String(experience || '').toLowerCase() === 'garden'
                 || String(experience || '').toLowerCase() === 'backyard';
   const tasks = _tasksFor(experience);
@@ -81,6 +122,15 @@ export default function OnboardingReviewPanel({ experience }) {
         'Follow these steps today to keep your plant healthy.')
     : tSafe('onboarding.newFarmerHint.farm',
         'Follow these steps today to keep your crop healthy.');
+
+  // Merge-spec \u00a73 \u2014 "Your picks" summary block. When the
+  // caller passes a `summary` object we render a compact list
+  // of the user's selections + a Change button per row that
+  // scrolls back to the corresponding form section. The buttons
+  // never leave the page; the form is single-screen so a smooth
+  // scroll is enough.
+  const safeSummary = summary && typeof summary === 'object' ? summary : null;
+  const showSummary = !!safeSummary;
 
   return (
     <section style={S.wrap} data-testid="onboarding-review-panel" data-experience={isGarden ? 'garden' : 'farm'}>
@@ -94,6 +144,64 @@ export default function OnboardingReviewPanel({ experience }) {
         {tSafe('onboarding.review.helper',
           'You can change anything before continuing.')}
       </p>
+
+      {/* Merge-spec \u00a73 \u2014 Your picks. Garden experience always
+          renders Plant + Location + Growing setup; farm renders
+          Crop + Location + Farm size. The Change buttons scroll
+          to the relevant form section. */}
+      {showSummary ? (
+        <div style={S.summary} data-testid="onboarding-review-summary">
+          <span style={S.summaryTitle}>
+            {tSafe('onboarding.review.editTitle', 'Edit your setup')}
+          </span>
+          {safeSummary.plant != null ? (
+            <SummaryRow
+              label={tSafe('onboarding.review.changePlant', 'Plant')}
+              value={safeSummary.plant}
+              onChange={() => scrollToAnchor(safeSummary.plantAnchor || 'review-plant')}
+              changeLabel={tSafe('onboarding.review.changePlantBtn', 'Change plant')}
+              testid="onboarding-review-change-plant"
+            />
+          ) : null}
+          {safeSummary.crop != null ? (
+            <SummaryRow
+              label={tSafe('onboarding.review.changeCropLabel', 'Crop')}
+              value={safeSummary.crop}
+              onChange={() => scrollToAnchor(safeSummary.cropAnchor || 'review-crop')}
+              changeLabel={tSafe('onboarding.review.changeCrop', 'Change crop')}
+              testid="onboarding-review-change-crop"
+            />
+          ) : null}
+          {safeSummary.location != null ? (
+            <SummaryRow
+              label={tSafe('onboarding.review.locationLabel', 'Location')}
+              value={safeSummary.location}
+              onChange={() => scrollToAnchor(safeSummary.locationAnchor || 'review-location')}
+              changeLabel={tSafe('onboarding.review.changeLocation', 'Change location')}
+              testid="onboarding-review-change-location"
+            />
+          ) : null}
+          {safeSummary.growingSetup != null ? (
+            <SummaryRow
+              label={tSafe('garden.growingSetup.label', 'Growing setup')}
+              value={safeSummary.growingSetup}
+              onChange={() => scrollToAnchor(safeSummary.growingSetupAnchor || 'review-growing-setup')}
+              changeLabel={tSafe('onboarding.review.changeGrowingSetup', 'Change growing setup')}
+              testid="onboarding-review-change-growing-setup"
+            />
+          ) : null}
+          {safeSummary.farmSize != null ? (
+            <SummaryRow
+              label={tSafe('onboarding.farmSize.title', 'Farm size')}
+              value={safeSummary.farmSize}
+              onChange={() => scrollToAnchor(safeSummary.farmSizeAnchor || 'review-farm-size')}
+              changeLabel={tSafe('onboarding.review.changeFarmSize', 'Change farm size')}
+              testid="onboarding-review-change-farm-size"
+            />
+          ) : null}
+        </div>
+      ) : null}
+
       <p style={S.hint}>{hint}</p>
       <ul style={S.list}>
         {tasks.map((t, i) => (
@@ -159,4 +267,60 @@ const S = {
   },
   rowTitle:  { margin: 0, fontSize: 14, fontWeight: 700, color: '#EAF2FF' },
   rowReason: { margin: 0, fontSize: 12, color: '#9FB3C8', lineHeight: 1.4 },
+
+  // "Your picks" summary block (merge-spec \u00a73).
+  summary: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    padding: '10px 12px',
+    borderRadius: 12,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px dashed rgba(255,255,255,0.18)',
+  },
+  summaryTitle: {
+    fontSize: 11,
+    fontWeight: 800,
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    marginBottom: 2,
+  },
+  summaryRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 36,
+  },
+  summaryRowText: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
+  summaryRowLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.55)',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+  },
+  summaryRowValue: {
+    fontSize: 13,
+    color: '#EAF2FF',
+    fontWeight: 700,
+    lineHeight: 1.3,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  summaryRowBtn: {
+    appearance: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(34,197,94,0.08)',
+    color: '#86EFAC',
+    padding: '6px 10px',
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 700,
+    minHeight: 32,
+    flex: '0 0 auto',
+  },
 };
