@@ -50,6 +50,12 @@ import {
 // pull the whole FastFlow tree (locale banner, recommendation
 // engine, etc.) along with it. Render-crash hardening.
 import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
+// Final-merged onboarding fix \u00a75 follow-up: the review-screen
+// polish ("Review your first plan" + tightened action tiles)
+// now mounts above the Save button on this canonical setup
+// form. Brings the legacy StepDailyPlanPreview wording into
+// the user-facing path without requiring a separate route.
+import OnboardingReviewPanel from '../../components/onboarding/OnboardingReviewPanel.jsx';
 
 // Spec \u00a76 \u2014 garden size buckets. Garden flow MUST NOT show
 // acres; this is a kitchen-plot screen. "I don't know" lets the
@@ -585,6 +591,12 @@ export default function QuickGardenSetup() {
           })}
         </div>
       </section>
+
+      {/* Review panel sits between the form fields and the
+          Save button so the user sees "Review your first plan"
+          + the 3 tightened daily-task tiles BEFORE committing.
+          Garden experience renders the plant-shaped copy. */}
+      <OnboardingReviewPanel experience="garden" />
 
       <button
         type="button"

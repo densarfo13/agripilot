@@ -51,6 +51,10 @@ import {
 // Shared progress bar \u2014 leaf module so importing it doesn't
 // pull the whole FastFlow tree along with it.
 import OnboardingProgressBar from '../../components/onboarding/OnboardingProgressBar.jsx';
+// Review panel \u2014 final-merged onboarding spec \u00a75. Mounts
+// above the Save button so the user sees the polished
+// "Review your first plan" framing before committing.
+import OnboardingReviewPanel from '../../components/onboarding/OnboardingReviewPanel.jsx';
 
 // Spec \u00a76 \u2014 farm size buckets. Farm flow MUST NOT show
 // "Small backyard"; this is a working-acre screen. The bucket
@@ -621,6 +625,10 @@ export default function QuickFarmSetup() {
         {errors.size ? <div style={S.errorRow}>{errors.size}</div> : null}
         {errors.unit ? <div style={S.errorRow}>{errors.unit}</div> : null}
       </section>
+
+      {/* Review panel \u2014 final-merged onboarding spec \u00a75. The
+          farm experience renders the crop-shaped copy. */}
+      <OnboardingReviewPanel experience="farm" />
 
       <button
         type="button"

@@ -2029,6 +2029,41 @@ const checks = [
       return true;
     },
   },
+  {
+    // Risk-fix follow-up to 6fad99c \u2014 the polished review-screen
+    // copy was staged in legacy code (StepDailyPlanPreview) that
+    // the redirect-only OnboardingFlow never mounts. The new
+    // OnboardingReviewPanel leaf component brings the review
+    // framing into the canonical /setup/{garden,farm} Quick
+    // setup flow, so every user sees "Review your first plan"
+    // + the 3 tightened action tiles + the experience-aware
+    // hint BEFORE tapping Save.
+    name: 'OnboardingReviewPanel mounted in canonical Quick setup forms',
+    why:  'Risk-fix \u2014 review screen polish reaches the canonical user-facing flow',
+    pass: () => {
+      const panel  = read('src/components/onboarding/OnboardingReviewPanel.jsx');
+      const garden = read('src/pages/setup/QuickGardenSetup.jsx');
+      const farm   = read('src/pages/setup/QuickFarmSetup.jsx');
+      // Panel itself ships the canonical copy keys + an
+      // experience prop that switches plant\u2194crop wording.
+      const panelOk = /export default function OnboardingReviewPanel/.test(panel)
+                   && /onboarding\.review\.title/.test(panel)
+                   && /onboarding\.review\.helper/.test(panel)
+                   && /onboarding\.newFarmerHint\.garden/.test(panel)
+                   && /onboarding\.newFarmerHint\.farm/.test(panel)
+                   && /preview\.title\.checkPlant/.test(panel)
+                   && /preview\.title\.checkCrop/.test(panel)
+                   && /preview\.title\.scan/.test(panel)
+                   && /data-testid=["']onboarding-review-panel["']/.test(panel);
+      // Both Quick setup forms import + render the panel with
+      // the right experience prop.
+      const gardenOk = /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingReviewPanel\.jsx['"]/.test(garden)
+                    && /<OnboardingReviewPanel\s+experience="garden"/.test(garden);
+      const farmOk   = /from ['"]\.\.\/\.\.\/components\/onboarding\/OnboardingReviewPanel\.jsx['"]/.test(farm)
+                    && /<OnboardingReviewPanel\s+experience="farm"/.test(farm);
+      return panelOk && gardenOk && farmOk;
+    },
+  },
 ];
 
 const failed = [];
