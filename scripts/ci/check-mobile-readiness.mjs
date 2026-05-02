@@ -1593,6 +1593,72 @@ const checks = [
           && /garden\.growingSetup\.container/.test(f);
     },
   },
+  {
+    // Review-step spec \u2014 Step 6 of Simple Onboarding gains
+    // back + edit controls. Title swaps from "Here is what to
+    // do today" to "Review your plan", a helper line tells the
+    // user nothing is committed yet, and an "Edit your setup"
+    // panel below the actions exposes 3 jump-back buttons:
+    // Change crop / Change location / Change growing setup.
+    name: 'StepDailyPlanPreview ships Review title + Edit your setup panel',
+    why:  'Review-step spec \u2014 user can change anything before continuing',
+    pass: () => {
+      const f = read('src/onboarding/StepDailyPlanPreview.jsx');
+      return /onboarding\.review\.title/.test(f)
+          && /onboarding\.review\.helper/.test(f)
+          && /onboarding\.review\.editTitle/.test(f)
+          && /onboarding\.review\.changeCrop/.test(f)
+          && /onboarding\.review\.changeLocation/.test(f)
+          && /onboarding\.review\.changeGrowingSetup/.test(f)
+          && /data-testid=["']onboarding-edit-setup["']/.test(f)
+          && /data-testid=["']onboarding-edit-crop["']/.test(f)
+          && /data-testid=["']onboarding-edit-location["']/.test(f)
+          && /data-testid=["']onboarding-edit-growing-setup["']/.test(f)
+          // Legacy "Here is what to do today" title is no longer
+          // rendered by tSafe (the review.title key is now the
+          // primary heading).
+          && !/tSafe\(['"]onboarding\.planReady['"]/.test(f);
+    },
+  },
+  {
+    // Review-step spec \u2014 OnboardingFlow shows the back button
+    // on step 6 and threads `onEditStep` to StepDailyPlanPreview
+    // so each "Edit" button jumps the user back to the right
+    // step (preserving profile state).
+    name: 'OnboardingFlow shows back on step 6 + wires onEditStep mapping',
+    why:  'Review-step spec \u2014 back works on final step + Edit options route correctly',
+    pass: () => {
+      const f = read('src/onboarding/OnboardingFlow.jsx');
+      return /onEditStep=/.test(f)
+          && /crop:\s*4/.test(f)
+          && /location:\s*2/.test(f)
+          && /growingSetup:\s*5/.test(f)
+          && /showBack\s*=\s*step\s*>\s*1\s*;/.test(f);   // no `&& step !== 6`
+    },
+  },
+  {
+    // Review-step spec \u2014 6 new translation keys present in
+    // every launch language (per-language parity is enforced
+    // separately by guard:i18n-parity).
+    name: 'translations.js ships every onboarding.review.* key',
+    why:  'Review-step spec \u2014 review/edit copy translated for all launch langs',
+    pass: () => {
+      const f = read('src/i18n/translations.js');
+      const KEYS = [
+        'onboarding.review.title',
+        'onboarding.review.helper',
+        'onboarding.review.editTitle',
+        'onboarding.review.changeCrop',
+        'onboarding.review.changeLocation',
+        'onboarding.review.changeGrowingSetup',
+      ];
+      for (const k of KEYS) {
+        const re = new RegExp(`['"]${k.replace(/\./g, '\\.')}['"]\\s*:`);
+        if (!re.test(f)) return false;
+      }
+      return true;
+    },
+  },
 ];
 
 const failed = [];

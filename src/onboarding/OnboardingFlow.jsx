@@ -209,13 +209,35 @@ export default function OnboardingFlow() {
         value={profile}
         onComplete={complete}
         busy={busy}
+        // Review-step spec \u2014 each "Edit your setup" key maps to
+        // the step that owns that field. The profile state is
+        // preserved across the jump (setStep flips the pointer
+        // only); when the user re-reaches step 6, their edits
+        // are reflected in the daily-plan preview.
+        onEditStep={(key) => {
+          const map = {
+            crop:         4, // StepCropSelection
+            location:     2, // StepLocation
+            growingSetup: 5, // StepFarmSetup (closest analogue
+                              // in this flow; the canonical
+                              // growing-setup picker lives in
+                              // QuickGardenSetup, which this
+                              // flow doesn't traverse).
+          };
+          const target = map[key];
+          if (Number.isFinite(target)) setStep(target);
+        }}
       />
     ); break;
     default: body = null;
   }
 
+  // Review-step spec \u2014 the back button MUST be available on
+  // step 6 too so the user can step back through the flow
+  // without committing. The parent's goBack() preserves all
+  // entered data because it only changes the step pointer.
   const showCta = step !== 1 && step !== 6;
-  const showBack = step > 1 && step !== 6;
+  const showBack = step > 1;
 
   return (
     <main style={S.page} data-testid="onboarding-flow" data-step={step}>
