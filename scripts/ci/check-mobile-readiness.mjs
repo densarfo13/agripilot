@@ -2721,6 +2721,26 @@ const checks = [
           && /v2\.tomorrowPreview/.test(f);
     },
   },
+  {
+    // Daily-plan engine follow-up. The "Ask Farroway" voice
+    // intent for "What should I do today?" now reads the SAME
+    // v2 plan the Home card shows so the spoken priority +
+    // reason + tomorrow line match what the user sees on
+    // screen. Legacy engine stays as a fallback safety net so
+    // a future engine bug can't silence the voice path.
+    name: 'VoiceAssistant today_tasks intent reads v2 daily-plan engine',
+    why:  'Daily-plan engine follow-up \u2014 voice in sync with Home card',
+    pass: () => {
+      const f = read('src/components/voice/VoiceAssistant.jsx');
+      return /from\s+['"]\.\.\/\.\.\/core\/dailyPlanEngine\.js['"]/.test(f)
+          && /from\s+['"]\.\.\/\.\.\/core\/growingContext\.js['"]/.test(f)
+          && /generatePlanV2\(/.test(f)
+          && /getPlanV2VoiceSummary\(/.test(f)
+          && /buildGrowingContext\(/.test(f)
+          // Legacy engine still imported as the fallback.
+          && /from\s+['"]\.\.\/\.\.\/core\/dailyIntelligenceEngine\.js['"]/.test(f);
+    },
+  },
 ];
 
 const failed = [];

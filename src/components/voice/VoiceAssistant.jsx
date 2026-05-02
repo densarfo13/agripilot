@@ -35,6 +35,18 @@ import { isFeatureEnabled } from '../../utils/featureFlags.js';
 import {
   generateDailyPlan, getDailyPlanVoiceSummary,
 } from '../../core/dailyIntelligenceEngine.js';
+// Final Daily Plan Engine Upgrade follow-up \u2014 the spec-shaped
+// engine + its growing-context builder. Imported under aliases
+// so they don't collide with the legacy generateDailyPlan +
+// getDailyPlanVoiceSummary above. The voice intent for
+// "What should I do today?" now reads the SAME plan the Home
+// card renders, so the spoken priority / reason / tomorrow
+// preview match what the user sees on screen.
+import {
+  generateDailyPlan as generatePlanV2,
+  getDailyPlanVoiceSummary as getPlanV2VoiceSummary,
+} from '../../core/dailyPlanEngine.js';
+import { buildGrowingContext } from '../../core/growingContext.js';
 import { useProfile } from '../../context/ProfileContext.jsx';
 import {
   getRegionConfig, shouldUseBackyardExperience,
@@ -150,17 +162,37 @@ export default function VoiceAssistant({ open, onClose }) {
     // "today_tasks" intent reads the actual daily plan summary
     // instead of the static template — keeps voice in sync
     // with what the Home card shows.
+    //
+    // Final Daily Plan Engine Upgrade follow-up — the v2
+    // spec-shaped engine is the SOURCE OF TRUTH for the visible
+    // card, so the voice path runs it FIRST. We fall back to
+    // the legacy engine only if v2 produced nothing useful (a
+    // safety net so a future engine bug can't silence voice).
+    // Both branches are wrapped in try/catch so an engine
+    // failure never breaks the voice flow — the user still
+    // gets the static intent template as a final fallback.
     if (question.id === 'today_tasks'
         && profile
         && isFeatureEnabled('FEATURE_DAILY_INTELLIGENCE')) {
+      let voice = '';
       try {
-        const plan = generateDailyPlan({
-          farm: profile,
+        const ctx  = buildGrowingContext({
+          farm:    profile,
           weather: profile.weather || null,
         });
-        const voice = getDailyPlanVoiceSummary(plan);
-        if (voice) result = voice;
-      } catch { /* fall back to the static template */ }
+        const planV2 = generatePlanV2(ctx);
+        voice = getPlanV2VoiceSummary(planV2);
+      } catch { /* fall through to the legacy engine below */ }
+      if (!voice) {
+        try {
+          const plan = generateDailyPlan({
+            farm: profile,
+            weather: profile.weather || null,
+          });
+          voice = getDailyPlanVoiceSummary(plan) || '';
+        } catch { /* fall back to the static template */ }
+      }
+      if (voice) result = voice;
     }
     applyIntentResult({
       id: question.id,

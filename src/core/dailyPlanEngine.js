@@ -425,4 +425,48 @@ function _applyWeather(plan, w, ctx) {
   };
 }
 
+/**
+ * getDailyPlanVoiceSummary(plan) → speakable string.
+ *
+ * Used by the "Ask Farroway" / today_tasks voice intent. Mirrors
+ * the legacy `dailyIntelligenceEngine.getDailyPlanVoiceSummary`
+ * contract (same return type — plain string) but reads the v2
+ * spec shape so the spoken answer matches what the Home card
+ * is rendering.
+ *
+ * Ordered for natural delivery — priority first (the headline
+ * the farmer actually came to hear), then the short "why",
+ * then up to two tasks (any more would overflow a TTS clip on
+ * low-end devices), then tomorrow.
+ *
+ * Returns '' for null / malformed input so the caller can
+ * fall through to the static intent template without a special
+ * null-check path.
+ */
+export function getDailyPlanVoiceSummary(plan) {
+  if (!plan || typeof plan !== 'object') return '';
+  const parts = [];
+  if (typeof plan.priority === 'string' && plan.priority) {
+    parts.push(`Today\u2019s priority: ${plan.priority}.`);
+  }
+  if (typeof plan.reason === 'string' && plan.reason) {
+    parts.push(plan.reason);
+  }
+  if (Array.isArray(plan.tasks) && plan.tasks.length > 0) {
+    // Cap at 2 tasks for the spoken version. A 3-task readout
+    // tips the TTS clip past the comfortable mobile-listen
+    // window and the third task is almost always the scan
+    // prompt (which the user would tap anyway, not act on
+    // through audio). The on-screen card still shows all three.
+    const speak = plan.tasks.slice(0, 2).filter(Boolean);
+    if (speak.length) {
+      parts.push(`Do now: ${speak.join('. ')}.`);
+    }
+  }
+  if (typeof plan.tomorrowPreview === 'string' && plan.tomorrowPreview) {
+    parts.push(`Tomorrow: ${plan.tomorrowPreview}`);
+  }
+  return parts.join(' ').trim();
+}
+
 export default generateDailyPlan;
