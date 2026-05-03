@@ -56,6 +56,26 @@ export async function repairActiveContext() {
     actions.push(`landsize:error:${err && err.message}`);
   }
 
+  // 4. Farm vs Garden UX spec §8 — split misclassified rows.
+  // Idempotent (sentinel-gated). Reclassifies legacy farm rows
+  // that should have been gardens (backyard wording / <1 acre /
+  // explicit growingSetup) and stamps the new `type` field on
+  // every row so downstream readers stop relying on farmType
+  // string-shape decoding.
+  try {
+    const m = await import('../store/migrateFarmGardenSplit.js');
+    const r = (m.migrateFarmGardenSplit || (() => ({})))();
+    if (r && typeof r === 'object') {
+      if (r.migrated) {
+        actions.push(`farmGardenSplit:reclassified:${r.reclassified || 0}`);
+      } else {
+        actions.push(`farmGardenSplit:noop`);
+      }
+    }
+  } catch (err) {
+    actions.push(`farmGardenSplit:error:${err && err.message}`);
+  }
+
   return actions;
 }
 

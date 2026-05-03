@@ -1,29 +1,40 @@
 /**
  * ExperienceTabs — Farms / Gardens switcher tab strip.
  *
- *   <ExperienceTabs current="farm" />
- *   <ExperienceTabs current="garden" />
+ *   <ExperienceTabs current="farm" />                   // navigate mode
+ *   <ExperienceTabs current="garden" />                 // navigate mode
+ *   <ExperienceTabs current="farm" mode="switch" />     // in-place switch
+ *   <ExperienceTabs current="farm" forceShow />         // single-exp shows
  *
  * Renders a two-tab pill strip at the top of the Manage Farms
  * and Manage Gardens pages so a user with BOTH a backyard garden
- * AND a farm can hop between the two surfaces in one tap. Self-
- * hides when the user has at most one experience type — single-
- * experience users don't need a switcher.
+ * AND a farm can hop between the two surfaces in one tap.
  *
- * Garden-visibility spec §5 — Manage screens must show the
- * switcher whenever both experience types exist. The tab strip
- * also flips `activeExperience` via switchTo() so the rest of
- * the app (Home plan, daily-plan engine, scan flow) re-derives
- * its context off the chosen surface.
+ * By default the component self-hides when the user has at most
+ * one experience type. The Farm vs Garden UX spec §2 (My Grow
+ * screen) wants the toggle ALWAYS visible at the top of the
+ * /my-farm page so a single-experience user still sees the empty
+ * counterpart slot — pass `forceShow` for that surface.
+ *
+ * Modes
+ *   "navigate" (default) — flip activeExperience AND navigate to
+ *     the matching manage surface (/farms or /manage-gardens).
+ *     Used by the manage pages.
+ *   "switch"             — flip activeExperience only; the parent
+ *     page re-renders with the newly-active entity. Used by the
+ *     My Grow detail page where we want to swap the visible
+ *     active card without leaving the route.
  *
  * Props
- *   current: 'farm' | 'garden'  — which surface is being viewed
+ *   current:    'farm' | 'garden'  — which surface is being viewed
+ *   mode:       'navigate' | 'switch'  (default 'navigate')
+ *   forceShow:  boolean — when true, render even for single-experience
+ *                         users. Default false.
  *
  * Strict-rule audit
  *   • Inline styles only.
  *   • Pure consumer of useExperience — no new state.
  *   • Never throws — all clicks try/catch wrapped.
- *   • Self-hides when only one experience type exists.
  *   • All visible text via tSafe with English fallbacks.
  */
 
@@ -73,21 +84,34 @@ const S = {
   },
 };
 
-export default function ExperienceTabs({ current = 'farm' }) {
+export default function ExperienceTabs({
+  current   = 'farm',
+  mode      = 'navigate',
+  forceShow = false,
+}) {
   const navigate = useNavigate();
   const { hasGarden, hasFarm, switchTo } = useExperience();
 
-  // Spec rule — single-experience users don't see the tabs at
-  // all. The tabs only earn their slot when both kinds exist.
-  if (!hasGarden || !hasFarm) return null;
+  // Default: single-experience users don't see the tabs at all.
+  // The My Grow page passes `forceShow` so the toggle stays
+  // visible even before a user has both experience types.
+  if (!forceShow && (!hasGarden || !hasFarm)) return null;
 
   function go(target) {
+    // No-op when tapping the already-active tab.
+    if (target === current) return;
     try {
       // Flip the active experience BEFORE navigating so the
       // destination page reads the new context on first paint.
       // switchTo() is a no-op when target === current.
       switchTo(target);
     } catch { /* swallow — visual switch still works */ }
+    if (mode === 'switch') {
+      // In-place mode: the parent page subscribes to the
+      // experience-switched event and re-renders. No navigation
+      // — the user stays on the same route (e.g. /my-farm).
+      return;
+    }
     try {
       navigate(target === 'garden' ? '/manage-gardens' : '/farms');
     } catch { /* swallow */ }

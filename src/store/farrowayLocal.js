@@ -300,6 +300,15 @@ export function saveFarm({
         sizeInAcres:      acres,
       });
     })(),
+    // Farm vs Garden UX spec §7 — every saved row carries an
+    // explicit `type: "farm" | "garden"` field. Mirrors farmType
+    // (backyard → garden, everything else → farm) so downstream
+    // surfaces can branch on `row.type` without re-decoding the
+    // farmType taxonomy.
+    type: (String(farmType || '').toLowerCase() === 'backyard'
+        || String(farmType || '').toLowerCase() === 'home_garden'
+        || String(farmType || '').toLowerCase() === 'home')
+      ? 'garden' : 'farm',
     // Legacy mirrors — kept so existing readers continue to work.
     location: locationStr,
     size:     Number.isFinite(sizeNum) ? String(sizeNum) : '',
@@ -386,6 +395,12 @@ export function updateFarm(farmId, patch = {}) {
       activeExperience: exp,
       sizeInAcres:      after.sizeInAcres,
     });
+    // Farm vs Garden UX spec §7 — keep `type` in lockstep with
+    // farmType so an edit that flipped the tier (e.g. backyard
+    // → small_farm) also re-classifies the row's `type`.
+    const ftLc = String(after.farmType || '').toLowerCase();
+    after.type = (ftLc === 'backyard' || ftLc === 'home_garden' || ftLc === 'home')
+      ? 'garden' : 'farm';
   }
   farms[idx] = after;
   writeJson(K.FARMS, farms);

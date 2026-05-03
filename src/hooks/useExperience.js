@@ -42,6 +42,11 @@ function _readSnapshot() {
     return {
       gardens: [], farms: [],
       activeExperience: null,
+      // Farm vs Garden UX spec §7 — default to 'farm' on failure
+      // so consumers downstream get a usable string. 'farm' is
+      // the legacy default; switching to garden requires positive
+      // signal anyway.
+      activeContextType: 'farm',
       activeGardenId: null, activeFarmId: null,
       activeEntity: null,
       hasGarden: false, hasFarm: false, hasBoth: false,
@@ -101,15 +106,18 @@ export default function useExperience() {
   }, []);
 
   return {
-    experience:      snap.activeExperience,
-    activeEntity:    snap.activeEntity,
-    gardens:         snap.gardens,
-    farms:           snap.farms,
-    activeGardenId:  snap.activeGardenId,
-    activeFarmId:    snap.activeFarmId,
-    hasGarden:       snap.hasGarden,
-    hasFarm:         snap.hasFarm,
-    hasBoth:         snap.hasBoth,
+    experience:        snap.activeExperience,
+    // Farm vs Garden UX spec §7 — explicit context-type string
+    // ('farm' | 'garden') the decision engine reads in one place.
+    activeContextType: snap.activeContextType || 'farm',
+    activeEntity:      snap.activeEntity,
+    gardens:           snap.gardens,
+    farms:             snap.farms,
+    activeGardenId:    snap.activeGardenId,
+    activeFarmId:      snap.activeFarmId,
+    hasGarden:         snap.hasGarden,
+    hasFarm:           snap.hasFarm,
+    hasBoth:           snap.hasBoth,
     EXPERIENCE,
     switchTo,
     addGarden,

@@ -106,6 +106,10 @@ function _pickLocation(row) {
 function _pickType(row, explicitType) {
   if (explicitType === 'garden' || explicitType === 'farm') return explicitType;
   const r = (row && typeof row === 'object') ? row : {};
+  // Farm vs Garden UX spec §7 — `row.type` is the new explicit
+  // partition string. Read first; fall back to the legacy
+  // farmType decoder so pre-spec rows continue to work.
+  if (r.type === 'garden' || r.type === 'farm') return r.type;
   // farmType is the canonical partition key. 'backyard' is the
   // legacy garden value; the post-migration store mints the same
   // row with farmType: 'small_farm' for farms.

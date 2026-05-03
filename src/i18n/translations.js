@@ -7132,6 +7132,12 @@ const T = {
 
   'nav.home':     { en: 'Home',     fr: 'Accueil', sw: 'Nyumbani',   ha: 'Gida',    tw: 'Fie',   hi: 'होम' },
   'nav.myFarm':   { en: 'My Farm',  fr: 'Ma ferme', sw: 'Shamba',     ha: 'Gona',    tw: 'Afuo',  hi: 'मेरा खेत' },
+  // Farm vs Garden UX spec §1 — single canonical label that
+  // covers both farm and garden owners. The tab points at the
+  // same /my-farm route; the destination page renders Farms /
+  // Gardens tabs internally so users see the right cards no
+  // matter which experience they own.
+  'nav.myGrow':   { en: 'My Grow',  fr: 'Mon espace', sw: 'Kilimo Changu', ha: 'Gonata', tw: 'Me Mfuo', hi: 'मेरी फ़सल' },
   'nav.tasks':    { en: 'Tasks',    fr: 'Tâches',  sw: 'Kazi',       ha: 'Ayyuka',  tw: 'Adwuma', hi: 'कार्य' },
   'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo',  ha: 'Ci gaba', tw: 'Nkɔso',  hi: 'प्रगति' },
   'nav.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',        ha: 'Sayar',   tw: 'Tɔn',    hi: 'बेचें' },

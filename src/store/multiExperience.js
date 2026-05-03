@@ -513,10 +513,19 @@ export function getExperienceSnapshot() {
   const activeGardenId   = getActiveGardenId();
   const activeFarmId     = getActiveFarmId();
   const activeEntity     = getActiveEntity();
+  // Farm vs Garden UX spec §7 — `activeContextType` is the
+  // canonical "what is the user looking at right now" string.
+  // Decision engine + scan flow read this directly so they don't
+  // have to combine activeExperience + farmType + the row's own
+  // `type` field on every call.
+  const activeContextType = (activeExperience === EXPERIENCE.GARDEN
+                          || (activeEntity && activeEntity.type === 'garden'))
+    ? 'garden' : 'farm';
   return {
     gardens,
     farms,
     activeExperience,
+    activeContextType,
     activeGardenId,
     activeFarmId,
     activeEntity,

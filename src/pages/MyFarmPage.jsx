@@ -39,6 +39,12 @@ import { getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_KEYS } from '../utils/cropStages.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
+// Farm vs Garden UX spec §2 — Farms / Gardens toggle pinned at
+// the top of My Grow so the user can swap which experience the
+// detail card describes without leaving the route. forceShow=true
+// keeps the toggle visible even before both experiences exist.
+import ExperienceTabs from '../components/farm/ExperienceTabs.jsx';
+import useExperience from '../hooks/useExperience.js';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 import {
@@ -54,6 +60,30 @@ function formatSize(size, unit) {
   if (!size && size !== 0) return null;
   const u = unit || 'acres';
   return `${size} ${u}`;
+}
+
+/**
+ * useExperienceSafe — wrap useExperience with a try/catch so
+ * a render outside the hook scope (or before window is ready)
+ * never crashes the page. Used by MyFarmPage to read activeEntity
+ * for the Farms/Gardens toggle. Returns a stable empty snapshot
+ * on failure so callers can chain `.activeEntity` without a
+ * null-check.
+ */
+function useExperienceSafe() {
+  try {
+    return useExperience();
+  } catch {
+    return {
+      experience:    null,
+      activeEntity:  null,
+      gardens:       [],
+      farms:         [],
+      hasGarden:     false,
+      hasFarm:       false,
+      hasBoth:       false,
+    };
+  }
 }
 
 /**
@@ -86,6 +116,13 @@ export default function MyFarmPage() {
     profile, farms, currentFarmId, loading: profileLoading,
   } = useProfile();
   const { t, lang } = useTranslation();
+  // Farm vs Garden UX spec §2 — when the user taps the Gardens
+  // tab on the My Grow toggle, switchTo() flips activeExperience
+  // and useExperience() re-emits with the active garden as
+  // `activeEntity`. We prefer that row over the profile when
+  // present so the detail card immediately swaps to the picked
+  // experience without a route change.
+  const _exp = useExperienceSafe();
 
   // Spec §1 redesign: removed the previous useEffect that ran
   // `getTodayTasks` + `processNotifications`. Those side effects
@@ -184,9 +221,16 @@ export default function MyFarmPage() {
     );
   }
 
-  // Active farm — prefer profile (always carries the current farm
-  // data), fall back to the farms array lookup.
-  const farm = profile || farms?.find((f) => f.id === currentFarmId) || farms?.[0] || null;
+  // Active farm — Farm vs Garden UX spec §2: prefer the row the
+  // experience switcher exposes via useExperience (it flips on
+  // tab tap). Falls through to the legacy profile / farms list
+  // when no active entity is set so single-experience users
+  // are unaffected.
+  const farm = (_exp && _exp.activeEntity)
+    || profile
+    || farms?.find((f) => f.id === currentFarmId)
+    || farms?.[0]
+    || null;
 
   // Safe-launch backyard-as-farm-type spec §1: derive whether the
   // active row is a backyard / home-garden record so the header,
@@ -313,6 +357,17 @@ export default function MyFarmPage() {
     <div style={S.page} data-testid="my-farm-page">
       {/* ── 1. Header (spec §1) ─────────────────────────────── */}
       <Header t={t} isBackyard={isBackyardActive} />
+
+      {/* Farm vs Garden UX spec §2 — Farms / Gardens toggle.
+          Always visible on My Grow (forceShow). mode="switch"
+          flips activeExperience without navigating; the page
+          re-reads its active entity from useExperience() and
+          re-renders the detail card for the picked experience. */}
+      <ExperienceTabs
+        current={isBackyardActive ? 'garden' : 'farm'}
+        mode="switch"
+        forceShow
+      />
 
       {/* ── 2. Farm Selector (spec §2) ─────────────────────────
           Reuses the existing FarmSwitcher — single-farm farms

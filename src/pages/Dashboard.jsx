@@ -51,6 +51,12 @@ import NotificationBell from '../components/NotificationBell.jsx';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
 import DailyPlanCard from '../components/daily/DailyPlanCard.jsx';
+// Farm vs Garden UX spec §3 — "Working on: [ My Pepper Garden \u25BE ]"
+// dropdown above the daily plan. Lets a multi-entity user flip
+// active context without leaving Home; the rest of the page
+// (DailyPlanCard, weather card, scan affordances) re-derives off
+// the new active row via the experience-switched event.
+import HomeContextSwitcher from '../components/home/HomeContextSwitcher.jsx';
 import { isFeatureEnabled } from '../utils/featureFlags.js';
 import {
   addNotification, NOTIFICATION_TYPES,
@@ -591,6 +597,14 @@ export default function Dashboard() {
           <NotificationBell userId={_userId} testId="home-bell" />
         </div>
         <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
+
+        {/* Farm vs Garden UX spec §3 — Home context switcher.
+            Self-hides for single-entity users; renders for
+            multi-entity (multi-farm OR farm-plus-garden) users.
+            Tapping a row flips activeExperience + active{Farm,
+            Garden}Id and broadcasts the switched event so the
+            DailyPlanCard below re-renders off the new context. */}
+        <HomeContextSwitcher />
 
         {/* Daily Intelligence card (rollout v1) — surfaces the
             top 3 actions for today plus a rolled-up Ask Farroway

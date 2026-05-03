@@ -33,10 +33,16 @@ import { getNavigationItems } from '../../navigation/getNavigationItems.js';
 // flips nav surfaces instantly on switch.
 import useExperience from '../../hooks/useExperience.js';
 
-// Farm-experience tabs (Ghana / Nigeria / Kenya / India / etc).
+// Farm vs Garden UX spec §1 — the second tab is renamed
+// "My Grow" across BOTH experience variants. A single label
+// covers users who own farms, gardens, or both, and the
+// destination page (/my-farm) renders Farms / Gardens tabs
+// internally so the per-experience filtering is explicit.
+// Route stays at /my-farm so existing deep links and the
+// router config keep working unchanged.
 const FARM_TABS = [
   { key: 'home',          path: '/dashboard',     icon: NAV_ICONS.home,          labelKey: 'nav.home',          fallback: 'Home' },
-  { key: 'farm',          path: '/my-farm',       icon: NAV_ICONS.farm,          labelKey: 'nav.myFarm',        fallback: 'Farm' },
+  { key: 'farm',          path: '/my-farm',       icon: NAV_ICONS.farm,          labelKey: 'nav.myGrow',        fallback: 'My Grow' },
   { key: 'tasks',         path: '/tasks',         icon: NAV_ICONS.tasks,         labelKey: 'nav.tasks',         fallback: 'Tasks' },
   { key: 'progress',      path: '/progress',      icon: NAV_ICONS.progress,      labelKey: 'nav.progress',      fallback: 'Progress' },
   // Final UI launch spec §6: standardise the funding tab to use
@@ -48,12 +54,14 @@ const FARM_TABS = [
 ];
 
 // Backyard-experience tabs (U.S. backyard / home garden) —
-// spec §10. "My Garden" replaces "Farm"; Sell is removed
-// because backyard users don't list produce; Ask + Scan
-// surface as nav entries instead.
+// spec §10. Same "My Grow" label as farm tabs (Farm vs Garden
+// UX spec §1) so the nav stays consistent regardless of which
+// experience the user is on. Sell stays removed for backyard
+// — that surface is reserved for users with marketplace-eligible
+// farms; Ask + Scan keep their nav slots.
 const BACKYARD_TABS = [
   { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
-  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGarden', fallback: 'My Garden' },
+  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
   { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
   { key: 'ask',      path: '/help',      icon: NAV_ICONS.help || '\u2754', labelKey: 'nav.ask',  fallback: 'Ask' },
