@@ -119,6 +119,17 @@ export default function ScanHero() {
         source:     'home-hero',
       });
     } catch { /* swallow \u2014 analytics must not crash */ }
+    // Freemium spec §3 + §6 — record "scan-tap intent" so the
+    // SCAN_TAP paywall can fire on the user's NEXT Home open
+    // rather than blocking this navigation. Spec §6 explicitly
+    // forbids aggressive blocking; this turns the trigger into
+    // a gentle "the next time you come back, here's Pro"
+    // prompt. Fire-and-forget; never throws.
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('farroway:paywall:intent', 'scan_tap');
+      }
+    } catch { /* ignore */ }
     try { navigate('/scan'); }
     catch { /* swallow */ }
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
@@ -7,12 +7,49 @@ import { getCropLabel } from '../config/crops/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { resolveProfileCompletionRoute, routeToUrl } from '../core/multiFarm/index.js';
 import { getCropLabelSafe } from '../utils/crops.js';
+// Farm + Garden context switching (per spec).
+//   • getMigratedGardens — first-class garden rows produced by
+//     migrateLegacyFarms (gardens partitioned out of legacy
+//     farms based on growing setup + size heuristics).
+//   • setActiveGardenId / setActiveExperience — multiExperience
+//     writers that flip the active context AND fire the
+//     existing `farroway:experience_switched` event so
+//     downstream surfaces (Home, Tasks, Progress, scan engines)
+//     re-resolve their context without a page reload.
+import { getMigratedGardens } from '../utils/migrateLegacyFarms.js';
+import {
+  setActiveGardenId,
+  setActiveExperience,
+  getActiveExperience,
+  EXPERIENCE,
+  SWITCH_EVENT,
+} from '../store/multiExperience.js';
+import { tStrict } from '../i18n/strictT.js';
 
 /**
- * FarmSwitcher — always visible. Shows active farm, allows switching.
- * Single farm: shows farm label + "Add New Farm".
- * Multiple farms: dropdown with sorted list + switch actions.
- * Handles missing/archived default gracefully.
+ * FarmSwitcher — single context switcher for **farms AND gardens**.
+ *
+ * Spec behaviour
+ * ──────────────
+ *   • Dropdown groups items under FARMS and GARDENS section
+ *     headers. Either group hides cleanly when empty.
+ *   • Selecting a farm flips activeExperience='farm' +
+ *     setActiveFarmId via the existing switchFarm() flow.
+ *   • Selecting a garden flips activeExperience='garden' +
+ *     setActiveGardenId. Both writes broadcast
+ *     `farroway:experience_switched`; consumers listening (Home,
+ *     Tasks, Progress, scan engines) re-resolve their context.
+ *   • Active label adapts to garden wording when activeExperience
+ *     is 'garden' (no "crop" / "farms" leak inside a garden mode).
+ *   • Subscribes to SWITCH_EVENT so a switch fired by another
+ *     surface re-renders this control without a remount.
+ *
+ * Strict guarantees
+ * ─────────────────
+ *   • Never throws. Missing gardens / failed writes degrade to
+ *     a no-op + surface error message in the dropdown.
+ *   • No new store / no new context — uses the existing
+ *     multiExperience writers + getMigratedGardens reader.
  */
 export default function FarmSwitcher() {
   const { profile, activeFarms, switchFarm, refreshProfile, farmSwitching } = useProfile();
@@ -23,13 +60,53 @@ export default function FarmSwitcher() {
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState(null);
 
-  const hasFarms = activeFarms && activeFarms.length > 0;
-  const hasMultiple = activeFarms && activeFarms.length > 1;
-  const defaultFarm = hasFarms
+  // Re-render on every successful experience switch so the
+  // active label flips without a parent remount. The event is
+  // fired by setActiveExperience / setActiveGardenId.
+  const [, _setSwitchTick] = useState(0);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handler = () => _setSwitchTick((n) => n + 1);
+    window.addEventListener(SWITCH_EVENT, handler);
+    return () => window.removeEventListener(SWITCH_EVENT, handler);
+  }, []);
+
+  // Read gardens from the migration partition. The function
+  // already returns [] on missing storage / migration not run,
+  // so callers don't need a try/catch.
+  const gardens = useMemo(() => {
+    try { return getMigratedGardens() || []; }
+    catch { return []; }
+  }, []);
+
+  const activeExperience = (() => {
+    try { return getActiveExperience(); }
+    catch { return null; }
+  })();
+  const isGardenActive = activeExperience === EXPERIENCE.GARDEN;
+
+  const hasFarms      = Array.isArray(activeFarms) && activeFarms.length > 0;
+  const hasGardens    = gardens.length > 0;
+  const hasMultiple   = (activeFarms?.length || 0) + gardens.length > 1;
+
+  // Active item — when activeExperience is garden, prefer the
+  // garden whose id matches; when farm, prefer the farm. Falls
+  // back to the first available record so the trigger is never
+  // empty when at least one entity exists.
+  const activeFarmRow = hasFarms
     ? (activeFarms.find((f) => f.isDefault) || activeFarms[0])
-    : profile;
-  const otherFarms = hasMultiple
-    ? activeFarms.filter((f) => f.id !== defaultFarm?.id)
+    : null;
+  const activeGardenRow = hasGardens ? gardens[0] : null;
+  const defaultFarm = isGardenActive && activeGardenRow
+    ? activeGardenRow
+    : (activeFarmRow || activeGardenRow || profile);
+
+  const otherFarms = hasFarms
+    ? activeFarms.filter((f) => f.id !== (activeFarmRow && activeFarmRow.id))
+    : [];
+  const otherGardens = hasGardens
+    ? gardens.filter((g) => !isGardenActive
+        || (activeGardenRow && g.id !== activeGardenRow.id))
     : [];
 
   async function handleSetDefault(farmId) {
@@ -38,11 +115,47 @@ export default function FarmSwitcher() {
     setError(null);
     try {
       await switchFarm(farmId);
+      // Lock the active experience to 'farm' so a previous
+      // garden pin doesn't re-route the Home plan back to the
+      // garden surface after the next mount. setActiveExperience
+      // fires SWITCH_EVENT; consumers re-resolve their context.
+      try { setActiveExperience(EXPERIENCE.FARM); } catch { /* ignore */ }
       await refreshProfile();
       safeTrackEvent('farm.switched', { farmId });
       setOpen(false);
     } catch (err) {
       setError(err.message || t('farm.switchFailed'));
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  /**
+   * handleSwitchToGarden(gardenId) — local-only switch (no
+   * server round-trip). multiExperience.setActiveGardenId stamps
+   * the active id and setActiveExperience flips the experience
+   * pin. Both fire SWITCH_EVENT; subscribed surfaces re-render.
+   *
+   * No-op when offline isn't a concern here — gardens are a
+   * client-side partition today and writes are localStorage-only.
+   */
+  async function handleSwitchToGarden(gardenId) {
+    if (switching) return;
+    setSwitching(true);
+    setError(null);
+    try {
+      const idOk  = setActiveGardenId(gardenId);
+      const expOk = setActiveExperience(EXPERIENCE.GARDEN);
+      if (!idOk || !expOk) throw new Error('switch_failed');
+      // Best-effort profile refresh so caller surfaces that
+      // depend on profile-derived state (active task list,
+      // streaks) rebuild promptly.
+      try { if (typeof refreshProfile === 'function') await refreshProfile(); }
+      catch { /* refresh failure must not block the switch */ }
+      safeTrackEvent('garden.switched', { gardenId });
+      setOpen(false);
+    } catch (err) {
+      setError((err && err.message) || tStrict('farm.switchFailed', 'Switch failed'));
     } finally {
       setSwitching(false);
     }
@@ -88,25 +201,69 @@ export default function FarmSwitcher() {
 
       {open && (
         <div style={S.dropdown} data-testid="farm-switcher-dropdown">
-          {otherFarms.map((farm) => (
-            <button
-              key={farm.id}
-              onClick={() => handleSetDefault(farm.id)}
-              disabled={switching || farmSwitching || !isOnline}
-              style={{
-                ...S.farmItem,
-                ...((switching || farmSwitching) ? S.farmItemDisabled : {}),
-              }}
-              data-testid={`farm-item-${farm.id}`}
-            >
-              <span style={S.itemName}>{farm.farmName || farm.location || t('farm.unnamed')}</span>
-              {/* `crop` is canonical (canonicalizeFarmPayload). */}
-              {farm.crop && (
-                <span style={S.itemCrop}>{getCropLabelSafe(farm.crop, lang)}</span>
-              )}
-              <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
-            </button>
-          ))}
+          {/* ─── FARMS section ─────────────────────────────── */}
+          {otherFarms.length > 0 ? (
+            <div data-testid="farm-switcher-farms-section">
+              <div style={S.sectionHeader}>
+                {tStrict('farm.section.farms', 'FARMS')}
+              </div>
+              {otherFarms.map((farm) => (
+                <button
+                  key={farm.id}
+                  onClick={() => handleSetDefault(farm.id)}
+                  disabled={switching || farmSwitching || !isOnline}
+                  style={{
+                    ...S.farmItem,
+                    ...((switching || farmSwitching) ? S.farmItemDisabled : {}),
+                  }}
+                  data-testid={`farm-item-${farm.id}`}
+                  data-context-type="farm"
+                >
+                  <span style={S.itemName}>{farm.farmName || farm.location || t('farm.unnamed')}</span>
+                  {/* `crop` is canonical (canonicalizeFarmPayload). */}
+                  {farm.crop && (
+                    <span style={S.itemCrop}>{getCropLabelSafe(farm.crop, lang)}</span>
+                  )}
+                  <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {/* ─── GARDENS section ───────────────────────────── */}
+          {otherGardens.length > 0 ? (
+            <div data-testid="farm-switcher-gardens-section">
+              <div style={S.sectionHeader}>
+                {tStrict('farm.section.gardens', 'GARDENS')}
+              </div>
+              {otherGardens.map((garden) => (
+                <button
+                  key={garden.id}
+                  onClick={() => handleSwitchToGarden(garden.id)}
+                  disabled={switching}
+                  style={{
+                    ...S.farmItem,
+                    ...(switching ? S.farmItemDisabled : {}),
+                  }}
+                  data-testid={`garden-item-${garden.id}`}
+                  data-context-type="garden"
+                >
+                  <span style={S.itemName}>
+                    {garden.gardenName || garden.farmName || garden.location
+                      || tStrict('farm.unnamed', 'Untitled')}
+                  </span>
+                  {/* Garden plant label — falls through getCropLabelSafe
+                      for shared crop ids; keeps localised wording. */}
+                  {(garden.plant || garden.crop) && (
+                    <span style={S.itemCrop}>
+                      {getCropLabelSafe(garden.plant || garden.crop, lang)}
+                    </span>
+                  )}
+                  <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <button onClick={handleAddFarm} style={S.addFarmBtn} data-testid="add-farm-btn">
             + {t('farm.addNew')}
@@ -211,6 +368,14 @@ const S = {
     color: '#fff',
     minHeight: '48px',
     WebkitTapHighlightColor: 'transparent',
+  },
+  sectionHeader: {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.42)',
+    padding: '0.5rem 0.5rem 0.25rem',
   },
   farmItemDisabled: {
     opacity: 0.5,

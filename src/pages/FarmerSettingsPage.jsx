@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import FarmerSettingsPanel from '../components/FarmerSettingsPanel.jsx';
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel.jsx';
+import HelpImproveToggle from '../components/HelpImproveToggle.jsx';
 
 export default function FarmerSettingsPage() {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ export default function FarmerSettingsPage() {
         <h1 style={S.title}>{t('settings.title')}</h1>
         <FarmerSettingsPanel />
         <NotificationSettingsPanel />
+        {/* Global Insights Layer privacy switch (data moat §8). */}
+        <HelpImproveToggle />
       </div>
     </div>
   );

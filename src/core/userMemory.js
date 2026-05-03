@@ -49,6 +49,17 @@
 
 import { getEvents, summarizeEvents } from './eventStore.js';
 import { aggregateRecentFeedback } from './healthFeedbackStore.js';
+// Daily Habit Loop §5/§6/§7 — the primary-action engine reads
+// `currentStreakDays` and `missedDays` off the memory object to
+// pick the streak / welcomeBack / backOnTrack lines. Both facts
+// live in the retention store, so we splice them onto the memory
+// rollup here. Import is best-effort and try/catch-wrapped at
+// every call site so SSR / private-mode never crashes.
+import {
+  getRetentionState,
+  daysSinceLastVisit,
+  missedYesterday,
+} from '../lib/retention/streakStore.js';
 
 const USER_MEMORY_CACHE_KEY = 'farroway_user_memory';
 
@@ -61,6 +72,10 @@ const EMPTY_MEMORY = Object.freeze({
   lastIssueType:       null,
   lastWateringAdvice:  null,
   lastActiveDate:      null,
+  // Daily Habit Loop additions. Both default to 0 so the engine's
+  // numeric guards (>= 2 / === 1) never see NaN.
+  currentStreakDays:   0,
+  missedDays:          0,
 });
 
 function _safeWriteCache(memory) {
@@ -134,6 +149,28 @@ export function getUserMemory() {
       }
     }
 
+    // Daily Habit Loop §5 + §6 + §7 — splice retention facts onto
+    // the memory rollup so the primary-action engine can pick the
+    // streak / welcomeBack / backOnTrack memory lines without
+    // having to import streakStore itself. Each lookup is
+    // independently try/catch'd so a corrupt value on one slot
+    // doesn't blank the others.
+    let currentStreakDays = 0;
+    let missedDays        = 0;
+    try {
+      const r = getRetentionState();
+      if (r && Number.isFinite(r.streakDays)) currentStreakDays = r.streakDays;
+    } catch { /* ignore */ }
+    try {
+      // Use daysSinceLastVisit when no completion has registered
+      // since yesterday. The engine treats missedDays === 1 as the
+      // welcomeBack signal and ≥ 2 as the backOnTrack signal.
+      if (missedYesterday()) {
+        const since = daysSinceLastVisit();
+        missedDays = Number.isFinite(since) ? Math.max(1, since) : 1;
+      }
+    } catch { /* ignore */ }
+
     const memory = {
       completedTasksCount,
       skippedTasksCount,
@@ -142,6 +179,8 @@ export function getUserMemory() {
       lastIssueType,
       lastWateringAdvice,
       lastActiveDate,
+      currentStreakDays,
+      missedDays,
     };
     // Best-effort cache write so background readers can pick
     // up the derived view without re-scanning.

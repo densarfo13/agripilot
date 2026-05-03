@@ -43,6 +43,7 @@ import regionConfigRoutes from './modules/regionConfig/routes.js';
 import postHarvestRoutes from './modules/postHarvest/routes.js';
 import marketGuidanceRoutes from './modules/marketGuidance/routes.js';
 import buyerInterestRoutes from './modules/buyerInterest/routes.js';
+import insightsRoutes from './modules/insights/routes.js';
 import { createMarketplaceRouter } from './modules/marketplace/routes.js';
 import lifecycleRoutes from './modules/lifecycle/routes.js';
 import seasonRoutes from './modules/seasons/routes.js';
@@ -790,6 +791,11 @@ app.use('/api/region-config', regionConfigRoutes);
 app.use('/api/post-harvest', postHarvestRoutes);
 app.use('/api/market-guidance', marketGuidanceRoutes);
 app.use('/api/buyer-interest', buyerInterestRoutes);
+// ─── Global Insights Layer (Data Moat §1) ────────────────────
+// Privacy-safe aggregated counts. POST /batch upserts client
+// deltas; GET / returns scored insights for the dailyPlanEngine
+// reorder hook. NO per-user data flows through this module.
+app.use('/api/insights', insightsRoutes);
 
 // ─── Marketplace (farmer listings + buyer requests) ──────────
 // Feature-flagged behind FEATURES.marketplace so it can be rolled

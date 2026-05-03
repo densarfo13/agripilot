@@ -1,4 +1,8 @@
 /**
+ * @deprecated Onboarding cleanup — superseded by `FastOnboarding`
+ *   at `/onboarding/fast`. This component's route now redirects
+ *   to the canonical entry. Slated for deletion.
+ *
  * MinimalOnboarding — fast, action-first onboarding entry point.
  *
  * Goal: a brand-new farmer reaches their first actionable task in

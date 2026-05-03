@@ -122,7 +122,8 @@ function _safeFallback(reason = 'Forecast unavailable') {
     riskIfDelayed:  '',
     confidence:     'low',
     blockedToday:   false,
-    buttonText:     'Act now',
+    // Core Product Signal §2 — single "Done" verb everywhere.
+    buttonText:     'Done',
   });
 }
 
@@ -284,7 +285,8 @@ export function getBestActionWindow({ farm, forecast, task } = {}) {
       riskIfDelayed:  '',
       confidence,
       blockedToday:   false,
-      buttonText:     'Act now',
+      // Core Product Signal §2 — single "Done" verb everywhere.
+      buttonText:     'Done',
     });
   }
 

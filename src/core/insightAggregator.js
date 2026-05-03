@@ -140,4 +140,102 @@ export function aggregateLocalInsights(events) {
   };
 }
 
+/**
+ * aggregateActionSuccessRates(events) — per-action success-rate
+ * roll-up for the Learning + Scoring spec.
+ *
+ *   import { aggregateActionSuccessRates } from '../core/insightAggregator.js';
+ *
+ *   const rows = aggregateActionSuccessRates(getEvents());
+ *   //  → [
+ *   //      { action: 'no_water_moist',
+ *   //        total: 4, completed: 6, healthy: 3, worse: 1,
+ *   //        success_rate: 0.75, confidence: 4 },
+ *   //      ...
+ *   //    ]
+ *
+ * Spec mapping
+ * ────────────
+ *   total          — # of (action attempt → outcome reported) pairs
+ *                    where outcome is 'healthy' OR 'getting_worse'
+ *   healthy        — pairs where outcome was 'healthy'
+ *   worse          — pairs where outcome was 'getting_worse'
+ *   success_rate   — healthy / total (per spec §3)
+ *   confidence     — total samples, raw count (per spec §3)
+ *   completed      — companion field — # of `primary_action_completed`
+ *                    events seen for this action; useful for
+ *                    "completion rate" follow-ups
+ *
+ * Correlation rule
+ * ────────────────
+ * Both `primary_action_completed` and `health_feedback_submitted`
+ * events carry `payload.primaryActionType` (set by the gate's
+ * safeTrack helper). We correlate by that field — no time-window
+ * heuristic needed because the gate's prompt fires immediately
+ * after the action, so the payload is the canonical link.
+ *
+ * 'not_sure' feedback is intentionally excluded from total — the
+ * spec asks for healthy / total; a "not_sure" reply is neither.
+ *
+ * Returns an array sorted by confidence DESC, then success_rate
+ * DESC. Empty array on missing / malformed input.
+ */
+export function aggregateActionSuccessRates(events) {
+  if (!Array.isArray(events) || events.length === 0) return [];
+  const stats = new Map();
+  for (const e of events) {
+    if (!e || !e.name) continue;
+    const p = e.payload || {};
+    const type = p.primaryActionType;
+    if (!type) continue;
+    let row = stats.get(type);
+    if (!row) {
+      row = { action: type, completed: 0, healthy: 0, worse: 0 };
+      stats.set(type, row);
+    }
+    if (e.name === 'primary_action_completed') {
+      row.completed += 1;
+    } else if (e.name === 'health_feedback_submitted') {
+      const v = String(p.feedback || p.healthFeedback || '').toLowerCase();
+      if (v === 'yes' || v === 'looks_healthy' || v === 'healthy') {
+        row.healthy += 1;
+      } else if (v === 'no' || v === 'getting_worse' || v === 'worse') {
+        row.worse += 1;
+      }
+      // 'not_sure' / 'unsure' deliberately excluded from total.
+    }
+  }
+  const out = [];
+  for (const r of stats.values()) {
+    const samples = r.healthy + r.worse;
+    out.push({
+      action:       r.action,
+      completed:    r.completed,
+      healthy:      r.healthy,
+      worse:        r.worse,
+      total:        samples,
+      success_rate: samples > 0 ? r.healthy / samples : 0,
+      confidence:   samples,
+    });
+  }
+  out.sort((a, b) =>
+    (b.confidence - a.confidence) || (b.success_rate - a.success_rate),
+  );
+  return out;
+}
+
+/**
+ * Convenience: pick the row matching `actionType`. Returns null
+ * when the action has no recorded outcomes yet (spec §5: low
+ * confidence → no boost).
+ */
+export function getActionScore(actionType, events) {
+  if (!actionType) return null;
+  const rows = aggregateActionSuccessRates(events);
+  for (const r of rows) {
+    if (r.action === actionType) return r;
+  }
+  return null;
+}
+
 export default aggregateLocalInsights;

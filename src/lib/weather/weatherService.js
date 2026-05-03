@@ -66,10 +66,15 @@ const STATUS = Object.freeze({
  * supply any numeric signal.
  */
 export function summarizeWeather(raw = {}) {
-  const tempC         = numOr(raw.tempC,         null);
-  const precip7dMm    = numOr(raw.precip7dMm,    null);
-  const forecast7dMm  = numOr(raw.forecast7dMm,  null);
-  const humidity      = numOr(raw.humidity,      null);
+  const tempC             = numOr(raw.tempC,             null);
+  const precip7dMm        = numOr(raw.precip7dMm,        null);
+  const forecast7dMm      = numOr(raw.forecast7dMm,      null);
+  const humidity          = numOr(raw.humidity,          null);
+  // Risk fix #3 — per-day precipitation breakouts. Pass-through
+  // when present; otherwise null. Consumers (moisture estimator,
+  // FirstActionGate weather plumbing) treat null as "no signal".
+  const precipTodayMm     = numOr(raw.precipTodayMm,     null);
+  const precipYesterdayMm = numOr(raw.precipYesterdayMm, null);
 
   if (tempC == null && precip7dMm == null && forecast7dMm == null) {
     return Object.freeze({
@@ -77,6 +82,7 @@ export function summarizeWeather(raw = {}) {
       cautions: Object.freeze([]),
       headlineKey: 'weather.summary.unavailable',
       tempC, precip7dMm, forecast7dMm, humidity,
+      precipTodayMm, precipYesterdayMm,
     });
   }
 
@@ -113,6 +119,7 @@ export function summarizeWeather(raw = {}) {
     cautions:   Object.freeze(cautions),
     headlineKey,
     tempC, precip7dMm, forecast7dMm, humidity,
+    precipTodayMm, precipYesterdayMm,
   });
 }
 
@@ -164,9 +171,15 @@ export async function openMeteoFetcher({ lat, lng, fetchJson } = {}) {
   // with coords (0, 0) in the Atlantic.
   if (lat == null || lng == null) return null;
   if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  // Indispensable Home Loop §4 follow-up — request relative
+  // humidity alongside temperature so the FirstActionGate can
+  // trigger its `check_leaves_humid` branch from real data
+  // instead of inferring from the rain flags. Open-Meteo bills
+  // a single `current=` request for both fields together, so
+  // there's no extra network cost.
   const url =
     `${OPEN_METEO_ENDPOINT}?latitude=${Number(lat)}&longitude=${Number(lng)}`
-    + '&current=temperature_2m'
+    + '&current=temperature_2m,relative_humidity_2m'
     + '&daily=precipitation_sum'
     + '&past_days=7&forecast_days=7&timezone=auto';
   const fj = typeof fetchJson === 'function' ? fetchJson : defaultFetchJson;
@@ -174,6 +187,10 @@ export async function openMeteoFetcher({ lat, lng, fetchJson } = {}) {
   if (!data || typeof data !== 'object') return null;
 
   const tempC = Number(data.current && data.current.temperature_2m);
+  // Open-Meteo returns relative_humidity_2m as a percentage
+  // 0..100. NaN-tolerant — `summarizeWeather` already handles
+  // null cleanly.
+  const humidity = Number(data.current && data.current.relative_humidity_2m);
   const daily = data.daily && Array.isArray(data.daily.precipitation_sum)
     ? data.daily.precipitation_sum.map((n) => Number(n) || 0)
     : null;
@@ -181,16 +198,35 @@ export async function openMeteoFetcher({ lat, lng, fetchJson } = {}) {
 
   // past_days=7 then forecast_days=7 → 14 entries, indexed oldest → newest.
   // Past 7 are indices 0..6, forecast 7..13.
+  //
+  // Per-day breakouts (Ultimate Decision risk fix #3): the
+  // moisture estimator wants explicit "rained today" / "rained
+  // yesterday" signals rather than the rolling 7-day sum, so the
+  // moisture branch can fire correctly the day AFTER a storm.
+  // Open-Meteo's past_days=7 series ends at index 6 = today (in
+  // the requested timezone), so:
+  //   past[6] → today
+  //   past[5] → yesterday
+  // Both are exposed alongside the rolling sum for back-compat.
   const past    = daily.slice(0, 7);
   const future  = daily.slice(7, 14);
   const sum = (arr) => arr.reduce((acc, n) => acc + (Number.isFinite(n) ? n : 0), 0);
+  const dayOr = (idx) => {
+    const v = past[idx];
+    return Number.isFinite(v) ? v : null;
+  };
+  const precipTodayMm     = past.length ? dayOr(past.length - 1)       : null;
+  const precipYesterdayMm = past.length >= 2 ? dayOr(past.length - 2) : null;
 
   return {
-    tempC:        Number.isFinite(tempC) ? tempC : null,
-    precip7dMm:   past.length ? sum(past)   : null,
-    forecast7dMm: future.length ? sum(future) : null,
-    source:       'open-meteo',
-    raw:          data,
+    tempC:               Number.isFinite(tempC) ? tempC : null,
+    humidity:            Number.isFinite(humidity) ? humidity : null,
+    precip7dMm:          past.length ? sum(past)   : null,
+    forecast7dMm:        future.length ? sum(future) : null,
+    precipTodayMm,
+    precipYesterdayMm,
+    source:              'open-meteo',
+    raw:                 data,
   };
 }
 

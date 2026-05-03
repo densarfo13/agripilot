@@ -57,6 +57,15 @@ import TaskFeedbackModal from '../../components/farmer/TaskFeedbackModal.jsx';
 import { recordOutcome } from '../../lib/outcomes/outcomeStore.js';
 import CompletionBanner from '../../components/farmer/CompletionBanner.jsx';
 import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
+import FirstActionGate from '../../components/farmer/FirstActionGate.jsx';
+import { getUserMemory } from '../../core/userMemory.js';
+import { decideToday } from '../../core/ultimateDecisionEngine.js';
+import Paywall from '../../components/farmer/Paywall.jsx';
+import { recordDayActive, getEngagement } from '../../core/userEngagement.js';
+import {
+  shouldShowPaywall, markPaywallShown, markUpgraded,
+  PAYWALL_TRIGGERS,
+} from '../../core/paywall.js';
 import {
   saveTaskCompletion,
   saveFeedback,
@@ -187,9 +196,60 @@ export default function FarmerTodayPage() {
   const [completionBanner, setCompletionBanner] = useState(false);
   const [reinforcementKey, setReinforcementKey] = useState(null);
 
+  // Monetisation §2 — paywall trigger state. The paywall is
+  // controlled here because Home is the canonical "value moment"
+  // surface. Other call sites (Why-tap, Scan-tap) wire their own
+  // shouldShowPaywall(...) calls when those features land.
+  const [paywallOpen, setPaywallOpen]       = useState(false);
+  const [paywallTrigger, setPaywallTrigger] = useState(null);
+
   // Mark today as "visited" so the daily-entry helper can tell
   // first-open from continuing session on the next render cycle.
   useEffect(() => { touchLastVisit(); }, []);
+
+  // Monetisation §1 — bump the days-active counter once per
+  // calendar day, then check whether the user has crossed the
+  // engagement threshold for a one-time paywall fire. The
+  // helper itself is idempotent (only bumps once per day) and
+  // shouldShowPaywall short-circuits on Pro / recent-dismiss /
+  // already-shown paths, so this can run on every Home mount.
+  useEffect(() => {
+    try { recordDayActive(); } catch { /* never block boot */ }
+    try {
+      const e = getEngagement();
+      // Freemium spec §3 — read scan-tap intent. ScanHero stamps
+      // sessionStorage when the user taps Scan; we honour the
+      // intent on the NEXT Home open so the prompt shows after
+      // value, not as a blocking pre-navigation modal. Cleared
+      // here regardless of whether the gate fired (single shot
+      // per intent stamp).
+      let scanIntent = null;
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          scanIntent = sessionStorage.getItem('farroway:paywall:intent');
+          if (scanIntent) sessionStorage.removeItem('farroway:paywall:intent');
+        }
+      } catch { /* ignore */ }
+      // Trigger precedence: scan-tap intent → 3-day streak →
+      // days-active milestone. Each helper short-circuits on
+      // Pro / recent-dismiss / already-shown so falling through
+      // never double-fires.
+      if (scanIntent === 'scan_tap'
+          && shouldShowPaywall(PAYWALL_TRIGGERS.SCAN_TAP, e)) {
+        markPaywallShown(PAYWALL_TRIGGERS.SCAN_TAP);
+        setPaywallTrigger(PAYWALL_TRIGGERS.SCAN_TAP);
+        setPaywallOpen(true);
+      } else if (shouldShowPaywall(PAYWALL_TRIGGERS.STREAK_3_DAY, e)) {
+        markPaywallShown(PAYWALL_TRIGGERS.STREAK_3_DAY);
+        setPaywallTrigger(PAYWALL_TRIGGERS.STREAK_3_DAY);
+        setPaywallOpen(true);
+      } else if (shouldShowPaywall(PAYWALL_TRIGGERS.DAYS_MILESTONE, e)) {
+        markPaywallShown(PAYWALL_TRIGGERS.DAYS_MILESTONE);
+        setPaywallTrigger(PAYWALL_TRIGGERS.DAYS_MILESTONE);
+        setPaywallOpen(true);
+      }
+    } catch { /* never block render */ }
+  }, []);
 
   // Tick counter — bumped after each action so useMemo re-reads the
   // localStorage-backed completions and refreshes the progress snapshot
@@ -780,6 +840,44 @@ export default function FarmerTodayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryTask, secondaryTasks, activeCycle, engineSnapshot, dailySnapshot, loopFacts, progressTick]);
 
+  // Indispensable Home Loop §11 — fire today's notification decision
+  // once per Home open. Router self-dedups via the engine's
+  // date-stamped key (e.g. `morning:2026-05-02`), so this can run
+  // on every mount without spamming. Dispatcher adapters default
+  // to in-app no-op until a real provider registers; safe to leave
+  // on before launch wires real channels.
+  //
+  // Placed AFTER weatherSummary + progressSnapshot are declared
+  // (TDZ-safe). Re-runs when those inputs meaningfully change.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [{ routeFirstActionNotification }, { getUserMemory: _getMem }] = await Promise.all([
+          import('../../core/firstActionNotifications.js'),
+          import('../../core/userMemory.js'),
+        ]);
+        if (cancelled) return;
+        const memory = (() => { try { return _getMem(); } catch { return null; } })();
+        const hour = new Date().getHours();
+        const timeOfDay = hour < 11 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+        routeFirstActionNotification({
+          weather: {
+            humidity:     liveWeather && Number.isFinite(liveWeather.humidity) ? liveWeather.humidity : undefined,
+            rainExpected: !!(weatherSummary && (weatherSummary.rainSoon || weatherSummary.heavyRain)),
+          },
+          memory,
+          riskLevel:        progressSnapshot && progressSnapshot.riskLevel,
+          hasPrimaryAction: true,
+          timeOfDay,
+        });
+      } catch {
+        // never block render — best-effort.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [liveWeather, weatherSummary, progressSnapshot]);
+
   // Next-day hint — shown in the DONE state so completion is never a
   // dead end. Pulled from the task engine's remaining queue.
   const nextDayHint = useMemo(
@@ -912,21 +1010,94 @@ export default function FarmerTodayPage() {
         return t('actionHome.todayHeader');
       })()}</h1>
 
-      {/* Top notification — rendered above everything else so high-
-          priority alerts are seen first. Hidden when nothing unread. */}
+      {/* ═══ Above-the-fold — primary action ONLY (Conversion §1) ══
+          ──────────────────────────────────────────────────────────
+          Per the conversion spec, only the FirstActionGate renders
+          above the fold — its own header line ("Before you do
+          anything, do this first") IS the context label. Every
+          other surface (TodayContextHeader, NotificationBadge,
+          DailyReminderBanner, HomeProgressBar, JourneySummaryCard)
+          is moved below to remove visual competition.
+
+          The h1 page title above is shrunk to a tiny eyebrow
+          (see S.pageTitle) so it remains a screen-reader landmark
+          without competing for visual weight. */}
+      {journeySnapshot.state !== 'onboarding'
+        && journeySnapshot.state !== 'crop_selected' && (
+        (() => {
+          // Composer call — produces primaryAction +
+          // supportingTasks + riskLevel + tomorrowPreview from
+          // the live weather + per-day precipitation
+          // (weatherService risk fix #3). The gate consumes
+          // decision.primaryAction directly and skips its own
+          // engine call.
+          let decision = null;
+          try {
+            decision = decideToday({
+              activeExperience: 'farm',
+              cropOrPlant:      activeCycle?.cropType || null,
+              growingSetup:     'farm',
+              location:         { region: region || null },
+              weatherToday: {
+                humidity:        liveWeather && Number.isFinite(liveWeather.humidity) ? liveWeather.humidity : undefined,
+                rainExpected:    !!(weatherSummary && (weatherSummary.rainSoon || weatherSummary.heavyRain)),
+                temperatureC:    liveWeather && Number.isFinite(liveWeather.tempC) ? liveWeather.tempC : undefined,
+                precipitationMm: liveWeather && Number.isFinite(liveWeather.precipTodayMm) ? Math.max(0, liveWeather.precipTodayMm) : undefined,
+              },
+              weatherYesterday: liveWeather && Number.isFinite(liveWeather.precipYesterdayMm)
+                ? {
+                    rainedYesterday:           liveWeather.precipYesterdayMm > 0,
+                    precipitationMmYesterday:  Math.max(0, liveWeather.precipYesterdayMm),
+                  }
+                : null,
+              userMemory: (() => {
+                try { return getUserMemory(); } catch { return null; }
+              })(),
+              // recentScans intentionally omitted — engine falls
+              // back to userMemory.lastIssueType.
+            });
+          } catch {
+            decision = null;
+          }
+          return (
+            <FirstActionGate
+              decision={decision && decision.primaryAction}
+              context={{
+                activeExperience: 'farm',
+                cropOrPlant:      activeCycle?.cropType || null,
+                region:           region || null,
+                growingSetup:     'farm',
+              }}
+            />
+          );
+        })()
+      )}
+
+      {/* ═══ Below the fold — retention + status surfaces ═══════
+          These render AFTER the primary action per Conversion §2.
+          TodayContextHeader (location · crop · stage) sits FIRST
+          here as the more detailed context line — the gate's own
+          header serves the above-the-fold "context label" role,
+          and this chip row provides the deeper situation report
+          (📍 location · 🌱 crop · stage) for users who want it.
+          Self-hides on a context with no fields set. */}
+      <TodayContextHeader
+        locationLabel={locationLabel}
+        cropLabel={cropLabel}
+        stageLabel={stageLabel}
+      />
+
       <NotificationBadge key={`notif-${notifTick}`} />
 
-      {/* Daily retention banner (spec §1 / §2 / §4 / §7) — single
-          contextual line driven by streakStore + the page's existing
-          weather summary. Self-hides when not eligible. Read-only;
-          never mutates the heavy loop state. */}
+      {/* Daily retention banner — single contextual line driven
+          by streakStore + the page's weather summary. Self-hides
+          when not eligible. */}
       <DailyReminderBanner
         weather={liveWeather}
         todayCompleted={todayPrimaryDone}
       />
 
-      {/* Spec §5 — small daily-completion progress bar with
-          "On track / Needs attention" pill. Self-hides when
+      {/* Daily-completion progress bar. Self-hides when
           totalTasks <= 0 to avoid clutter on a clean day. */}
       <HomeProgressBar
         doneToday={tasksDone}
@@ -949,12 +1120,11 @@ export default function FarmerTodayPage() {
         />
       )}
 
-      {/* 1. Small context header (both states) */}
-      <TodayContextHeader
-        locationLabel={locationLabel}
-        cropLabel={cropLabel}
-        stageLabel={stageLabel}
-      />
+      {/* TodayContextHeader was relocated to immediately above the
+          FirstActionGate per Conversion §5 ("Above the fold:
+          context label + primary action + CTA, nothing else").
+          Render block here intentionally removed — see line ~977
+          for the new position. */}
 
       <FeedbackModal
         open={modal.open}
@@ -1238,6 +1408,25 @@ export default function FarmerTodayPage() {
       {showFeedback ? <QuickFeedback context="daily_plan" /> : null}
 
       <SupportSection />
+
+      {/* Monetisation §3 — paywall modal. Mounted at the end of
+          the page so it overlays everything else when open.
+          Self-hides when paywallOpen is false; the Paywall
+          component itself short-circuits on a closed state. */}
+      <Paywall
+        open={paywallOpen}
+        trigger={paywallTrigger}
+        onUpgrade={() => {
+          // Real billing wiring lands here. For now we flip the
+          // local Pro flag optimistically so subsequent
+          // shouldShowPaywall(...) calls return false. The team
+          // swaps this for a server-confirmed upgrade callback
+          // once Stripe / Play / etc are wired.
+          try { markUpgraded(); } catch { /* ignore */ }
+          setPaywallOpen(false);
+        }}
+        onDismiss={() => setPaywallOpen(false)}
+      />
     </Shell>
   );
 }
@@ -1308,7 +1497,18 @@ function microStatusStyleFor(code) {
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
-  pageTitle: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
+  // Conversion §3 — page title shrunk to a small eyebrow so it
+  // no longer competes with the FirstActionGate above the fold.
+  // Kept as <h1> for screen-reader landmark; the visual weight
+  // sits with the gate's own headline.
+  pageTitle: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.42)',
+    margin: '0 0 8px',
+  },
   // Snippet ref §1: greeting block above the page title.
   greetingWrap: { margin: '0 0 12px' },
   greetingTitle: {

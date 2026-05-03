@@ -19,22 +19,22 @@ enum OrganizationType {
 }
 
 model Organization {
-  id          String            @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
-  type        OrganizationType  @default(INTERNAL)
-  countryCode String?           @map("country_code")
-  regionCode  String?           @map("region_code")
-  isActive    Boolean           @default(true) @map("is_active")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  type        OrganizationType @default(INTERNAL)
+  countryCode String?          @map("country_code")
+  regionCode  String?          @map("region_code")
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
-  users                User[]
-  farmers              Farmer[]
-  programs             Program[]
-  approvalRequests     ApprovalRequest[]
-  pilotChecklistItems  PilotChecklistItem[]
-  issues               Issue[]
-  slaConfig            Json?            @map("sla_config")
+  users               User[]
+  farmers             Farmer[]
+  programs            Program[]
+  approvalRequests    ApprovalRequest[]
+  pilotChecklistItems PilotChecklistItem[]
+  issues              Issue[]
+  slaConfig           Json?                @map("sla_config")
 
   @@map("organizations")
 }
@@ -42,19 +42,19 @@ model Organization {
 // ─── Program (org-level grouping) ───────────────────────
 
 model Program {
-  id              String       @id @default(uuid())
-  organizationId  String       @map("organization_id")
-  name            String
-  description     String?
-  status          String       @default("active")  // active | completed | archived
-  startDate       DateTime?    @map("start_date")
-  endDate         DateTime?    @map("end_date")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  name           String
+  description    String?
+  status         String    @default("active") // active | completed | archived
+  startDate      DateTime? @map("start_date")
+  endDate        DateTime? @map("end_date")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  cohorts         Cohort[]
-  farmers         Farmer[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  cohorts      Cohort[]
+  farmers      Farmer[]
 
   @@index([organizationId], map: "idx_programs_org")
   @@index([status], map: "idx_programs_status")
@@ -64,18 +64,18 @@ model Program {
 // ─── Cohort (program sub-group) ─────────────────────────
 
 model Cohort {
-  id          String   @id @default(uuid())
-  programId   String   @map("program_id")
+  id          String    @id @default(uuid())
+  programId   String    @map("program_id")
   name        String
   description String?
-  status      String   @default("active")  // active | completed | archived
+  status      String    @default("active") // active | completed | archived
   startDate   DateTime? @map("start_date")
   endDate     DateTime? @map("end_date")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  program     Program  @relation(fields: [programId], references: [id])
-  farmers     Farmer[]
+  program Program  @relation(fields: [programId], references: [id])
+  farmers Farmer[]
 
   @@index([programId], map: "idx_cohorts_program")
   @@index([status], map: "idx_cohorts_status")
@@ -219,11 +219,11 @@ enum StorageCondition {
 // ─── SoD / JIT Approval Enums ───────────────────────────
 
 enum ApprovalRequestType {
-  season_reopen       // SoD + JIT: reopen a closed/harvested/failed season
-  farmer_disable      // SoD: disable a farmer account
-  role_escalation     // SoD: assign super_admin or institutional_admin role
-  user_org_transfer   // SoD: move a user across organizations
-  privileged_reset    // SoD + JIT: force-reset an institutional_admin/super_admin password
+  season_reopen // SoD + JIT: reopen a closed/harvested/failed season
+  farmer_disable // SoD: disable a farmer account
+  role_escalation // SoD: assign super_admin or institutional_admin role
+  user_org_transfer // SoD: move a user across organizations
+  privileged_reset // SoD + JIT: force-reset an institutional_admin/super_admin password
 }
 
 enum ApprovalStatus {
@@ -255,89 +255,89 @@ enum OnboardingStatus {
 // ─── User ───────────────────────────────────────────────
 
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  passwordHash      String?   @map("password_hash")
-  fullName          String    @map("full_name")
-  role              UserRole  @default(field_officer)
-  active            Boolean   @default(true)
-  archivedAt        DateTime? @map("archived_at")
-  organizationId    String?   @map("organization_id")
-  preferredLanguage String    @default("en") @map("preferred_language")
-  lastLoginMethod   String?   @map("last_login_method")
-  lastLoginAt       DateTime? @map("last_login_at")
+  id                  String           @id @default(uuid())
+  email               String           @unique
+  passwordHash        String?          @map("password_hash")
+  fullName            String           @map("full_name")
+  role                UserRole         @default(field_officer)
+  active              Boolean          @default(true)
+  archivedAt          DateTime?        @map("archived_at")
+  organizationId      String?          @map("organization_id")
+  preferredLanguage   String           @default("en") @map("preferred_language")
+  lastLoginMethod     String?          @map("last_login_method")
+  lastLoginAt         DateTime?        @map("last_login_at")
   // ─── MFA ───────────────────────────────────────────────
-  mfaEnabled        Boolean   @default(false) @map("mfa_enabled")
-  mfaSecret         String?   @map("mfa_secret")         // AES-encrypted TOTP secret
-  mfaEnrolledAt     DateTime? @map("mfa_enrolled_at")
-  mfaBackupCodes    String[]  @default([]) @map("mfa_backup_codes")  // bcrypt-hashed backup codes
+  mfaEnabled          Boolean          @default(false) @map("mfa_enabled")
+  mfaSecret           String?          @map("mfa_secret") // AES-encrypted TOTP secret
+  mfaEnrolledAt       DateTime?        @map("mfa_enrolled_at")
+  mfaBackupCodes      String[]         @default([]) @map("mfa_backup_codes") // bcrypt-hashed backup codes
   // ─── Email verification ─────────────────────────────────
-  emailVerifiedAt   DateTime? @map("email_verified_at")
+  emailVerifiedAt     DateTime?        @map("email_verified_at")
   // ─── Token revocation ──────────────────────────────────
-  tokenVersion      Int       @default(0) @map("token_version")      // bump on logout/disable
+  tokenVersion        Int              @default(0) @map("token_version") // bump on logout/disable
   // ─── Onboarding tracking ──────────────────────────────
-  onboardingStatus     OnboardingStatus @default(not_started) @map("onboarding_status")
-  onboardingStartedAt  DateTime?        @map("onboarding_started_at")
-  onboardedAt          DateTime?        @map("onboarded_at")
-  onboardingLastStep   String?          @map("onboarding_last_step")
-  onboardingSource     String?          @map("onboarding_source")   // 'self_register', 'admin_invite', 'field_officer', 'ngo'
+  onboardingStatus    OnboardingStatus @default(not_started) @map("onboarding_status")
+  onboardingStartedAt DateTime?        @map("onboarding_started_at")
+  onboardedAt         DateTime?        @map("onboarded_at")
+  onboardingLastStep  String?          @map("onboarding_last_step")
+  onboardingSource    String?          @map("onboarding_source") // 'self_register', 'admin_invite', 'field_officer', 'ngo'
   // ─── NGO program tracking ─────────────────────────────
-  program              String?          // e.g. "Cassava Program"; set when source='ngo'
-  timezone             String?                                       // e.g. 'Africa/Nairobi'
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  program             String? // e.g. "Cassava Program"; set when source='ngo'
+  timezone            String? // e.g. 'Africa/Nairobi'
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  organization          Organization?       @relation(fields: [organizationId], references: [id])
-  onboardingEvents      OnboardingEvent[]
-  farmerProfile         Farmer?             @relation("FarmerUserAccount")
-  farmersCreated        Farmer[]            @relation("FarmerCreatedBy")
-  applicationsCreated   Application[]       @relation("ApplicationCreatedBy")
-  reviewAssignments     ReviewAssignment[]  @relation("ReviewAssignedTo")
-  fieldAssignments      Application[]       @relation("FieldOfficerAssigned")
-  reviewNotes           ReviewNote[]
-  auditLogs             AuditLog[]
-  fieldVisits           FieldVisit[]
-  federatedIdentities   FederatedIdentity[]
+  organization             Organization?            @relation(fields: [organizationId], references: [id])
+  onboardingEvents         OnboardingEvent[]
+  farmerProfile            Farmer?                  @relation("FarmerUserAccount")
+  farmersCreated           Farmer[]                 @relation("FarmerCreatedBy")
+  applicationsCreated      Application[]            @relation("ApplicationCreatedBy")
+  reviewAssignments        ReviewAssignment[]       @relation("ReviewAssignedTo")
+  fieldAssignments         Application[]            @relation("FieldOfficerAssigned")
+  reviewNotes              ReviewNote[]
+  auditLogs                AuditLog[]
+  fieldVisits              FieldVisit[]
+  federatedIdentities      FederatedIdentity[]
   // SoD / JIT approval relations
-  approvalRequestsMade     ApprovalRequest[] @relation("ApprovalRequestedBy")
-  approvalRequestsApproved ApprovalRequest[] @relation("ApprovalApprovedBy")
-  approvalRequestsRevoked  ApprovalRequest[] @relation("ApprovalRevokedBy")
+  approvalRequestsMade     ApprovalRequest[]        @relation("ApprovalRequestedBy")
+  approvalRequestsApproved ApprovalRequest[]        @relation("ApprovalApprovedBy")
+  approvalRequestsRevoked  ApprovalRequest[]        @relation("ApprovalRevokedBy")
   // Pilot QA
-  pilotChecklistItems      PilotChecklistItem[] @relation("PilotChecklistUpdatedBy")
+  pilotChecklistItems      PilotChecklistItem[]     @relation("PilotChecklistUpdatedBy")
   // Feedback
   feedback                 UserFeedback[]
   // Auth
   passwordResetTokens      PasswordResetToken[]
   sessions                 UserSession[]
   emailVerificationTokens  EmailVerificationToken[]
-  farmProfiles             FarmProfile[]           @relation("DirectFarmProfile")
+  farmProfiles             FarmProfile[]            @relation("DirectFarmProfile")
   // Referral
-  referralCode             String?   @unique @map("referral_code")
-  referredById             String?   @map("referred_by_id")
-  referralsGiven           Referral[] @relation("ReferralGiver")
-  referralsReceived        Referral[] @relation("ReferralReceiver")
+  referralCode             String?                  @unique @map("referral_code")
+  referredById             String?                  @map("referred_by_id")
+  referralsGiven           Referral[]               @relation("ReferralGiver")
+  referralsReceived        Referral[]               @relation("ReferralReceiver")
   // Analytics
   analyticsEvents          AnalyticsEvent[]
   // Issues
-  issuesReported           Issue[] @relation("IssueReporter")
-  issuesAssigned           Issue[] @relation("IssueAssignee")
-  issueComments            IssueComment[] @relation("IssueCommenter")
-  issueAttachments         IssueAttachment[] @relation("IssueUploader")
-  staffNotifications       StaffNotification[] @relation("StaffNotifications")
-  notifPreferences         Json?               @map("notif_preferences")
+  issuesReported           Issue[]                  @relation("IssueReporter")
+  issuesAssigned           Issue[]                  @relation("IssueAssignee")
+  issueComments            IssueComment[]           @relation("IssueCommenter")
+  issueAttachments         IssueAttachment[]        @relation("IssueUploader")
+  staffNotifications       StaffNotification[]      @relation("StaffNotifications")
+  notifPreferences         Json?                    @map("notif_preferences")
   // ─── Reverse relations for FK fields that reference User by ID ───
-  farmersAssigned          Farmer[]            @relation("FarmerAssignedOfficer")
-  farmersApproved          Farmer[]            @relation("FarmerApprovedBy")
-  officerValidations       OfficerValidation[] @relation("ValidationOfficer")
-  autoNotifications        AutoNotification[]  @relation("AutoNotifTargetUser")
+  farmersAssigned          Farmer[]                 @relation("FarmerAssignedOfficer")
+  farmersApproved          Farmer[]                 @relation("FarmerApprovedBy")
+  officerValidations       OfficerValidation[]      @relation("ValidationOfficer")
+  autoNotifications        AutoNotification[]       @relation("AutoNotifTargetUser")
   // V2 season engine
   v2Seasons                V2Season[]
   // V2 analytics + support
   v2AnalyticsEvents        V2AnalyticsEvent[]
   v2SupportRequests        V2SupportRequest[]
   // Email logs
-  emailLogs                EmailLog[]          @relation("EmailLogUser")
+  emailLogs                EmailLog[]               @relation("EmailLogUser")
   // Farm task completions
   farmTaskCompletions      V2FarmTaskCompletion[]
 
@@ -353,12 +353,12 @@ model User {
 model PasswordResetToken {
   id        String    @id @default(uuid())
   userId    String    @map("user_id")
-  tokenHash String    @unique @map("token_hash")   // SHA-256 of the raw token
+  tokenHash String    @unique @map("token_hash") // SHA-256 of the raw token
   expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
   createdAt DateTime  @default(now()) @map("created_at")
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "idx_pwd_reset_user")
   @@map("password_reset_tokens")
@@ -411,7 +411,7 @@ model FederatedIdentity {
   linkedAt          DateTime     @default(now()) @map("linked_at")
   metadata          Json?
 
-  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId], map: "uq_fed_provider_account")
   @@index([userId], map: "idx_fed_user")
@@ -421,93 +421,95 @@ model FederatedIdentity {
 // ─── Farmer ─────────────────────────────────────────────
 
 model Farmer {
-  id                   String              @id @default(uuid())
-  fullName             String              @map("full_name")
-  phone                String
-  phoneVerifiedAt      DateTime?           @map("phone_verified_at")   // set by SMS OTP success; null = unverified (backward-compatible)
-  nationalId           String?             @map("national_id")   // unique per org — see @@unique below
-  gender               String?             // male, female, other, prefer_not_to_say
-  dateOfBirth          DateTime?           @map("date_of_birth")
-  region               String
-  district             String?
-  village              String?
-  countryCode          String              @default("KE") @map("country_code")
-  regionCode           String?             @map("region_code")
-  latitude             Float?
-  longitude            Float?
-  locationSource       String?             @map("location_source")     // 'gps', 'manual', 'reverse_geocoded'
-  geolocationAccuracy  Float?              @map("geolocation_accuracy") // meters
-  geolocationCapturedAt DateTime?          @map("geolocation_captured_at")
-  preferredLanguage    String              @default("en") @map("preferred_language")
+  id                     String             @id @default(uuid())
+  fullName               String             @map("full_name")
+  phone                  String
+  phoneVerifiedAt        DateTime?          @map("phone_verified_at") // set by SMS OTP success; null = unverified (backward-compatible)
+  nationalId             String?            @map("national_id") // unique per org — see @@unique below
+  gender                 String? // male, female, other, prefer_not_to_say
+  dateOfBirth            DateTime?          @map("date_of_birth")
+  region                 String
+  district               String?
+  village                String?
+  countryCode            String             @default("KE") @map("country_code")
+  regionCode             String?            @map("region_code")
+  latitude               Float?
+  longitude              Float?
+  locationSource         String?            @map("location_source") // 'gps', 'manual', 'reverse_geocoded'
+  geolocationAccuracy    Float?             @map("geolocation_accuracy") // meters
+  geolocationCapturedAt  DateTime?          @map("geolocation_captured_at")
+  preferredLanguage      String             @default("en") @map("preferred_language")
   // Notification preferences (P2.7) — persisted so the dispatcher can
   // honour literacy mode + per-channel toggles across server restarts.
-  receiveSMS              Boolean   @default(true)  @map("receive_sms")
-  receiveWhatsApp         Boolean   @default(false) @map("receive_whatsapp")
-  receiveVoiceAlerts      Boolean   @default(false) @map("receive_voice_alerts")
-  literacyMode            String    @default("text") @map("literacy_mode")        // 'text' | 'voice' | 'mixed'
-  preferredReminderTime   String    @default("morning") @map("preferred_reminder_time")
-  primaryCrop          String?             @map("primary_crop")
-  farmSizeAcres        Float?              @map("farm_size_acres")      // LEGACY: auto-computed from landSizeHectares via fromHectares(); prefer landSizeValue+landSizeUnit
-  landSizeValue        Float?              @map("land_size_value")
-  landSizeUnit         String?             @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
-  landSizeHectares     Float?              @map("land_size_hectares")   // normalized value
-  normalizedAreaSqm    Float?              @map("normalized_area_sqm")  // m²: derived from landSizeValue+landSizeUnit at write
-  yearsExperience      Int?                @map("years_experience")
-  deviceId             String?             @map("device_id")
-  organizationId       String?             @map("organization_id")
-  createdById          String              @map("created_by_id")
-  selfRegistered       Boolean             @default(false) @map("self_registered")
-  registrationStatus   RegistrationStatus  @default(pending_approval) @map("registration_status")
-  userId               String?             @unique @map("user_id")
-  approvedAt           DateTime?           @map("approved_at")
-  approvedById         String?             @map("approved_by_id")
-  rejectedAt           DateTime?           @map("rejected_at")
-  rejectionReason      String?             @map("rejection_reason")
-  invitedAt            DateTime?           @map("invited_at")
-  inviteToken          String?             @unique @map("invite_token")
-  inviteExpiresAt      DateTime?           @map("invite_expires_at")
-  inviteChannel        String?             @map("invite_channel")        // 'link', 'email', 'phone'
-  inviteDeliveryStatus String?             @map("invite_delivery_status") // 'manual_share_ready','email_sent','phone_sent','accepted','expired'
-  inviteAcceptedAt     DateTime?           @map("invite_accepted_at")
-  inviteResendMeta     Json?               @map("invite_resend_meta")    // { timestamps: number[], totalCount: number, lastResentBy: string }
-  assignedOfficerId    String?             @map("assigned_officer_id")
-  programId            String?             @map("program_id")
-  cohortId             String?             @map("cohort_id")
-  duplicateFlag        String?             @map("duplicate_flag")           // 'possible_duplicate' | 'review_needed' | 'cleared' | null
-  duplicateOfId        String?             @map("duplicate_of_id")          // farmerId of the suspected original
-  duplicateScore       Int?                @map("duplicate_score")          // 0-100 duplicate confidence score
-  duplicateSignals     Json?               @map("duplicate_signals")        // ['phone_exact', 'name_fuzzy_region_match', ...]
-  duplicateReviewedAt  DateTime?           @map("duplicate_reviewed_at")
-  duplicateReviewedBy  String?             @map("duplicate_reviewed_by")    // userId
-  currentStage         LifecycleStage      @default(pre_planting) @map("current_stage")
-  stageUpdatedAt       DateTime?           @map("stage_updated_at")
-  stageSource          String?             @map("stage_source")   // 'activity', 'manual', 'seeded'
-  stageConfidence      String?             @map("stage_confidence") // 'high', 'medium', 'low'
-  stageCropType        String?             @map("stage_crop_type")
-  ageGroup              String?             @map("age_group")              // under_25, 25_35, 36_50, over_50
-  onboardingCompletedAt DateTime?          @map("onboarding_completed_at")
-  profileImageUrl      String?             @map("profile_image_url")
-  profileImageUploadedAt DateTime?         @map("profile_image_uploaded_at")
-  profileImageUpdatedBy String?            @map("profile_image_updated_by") // userId — audit trail, no @relation
-  createdAt            DateTime            @default(now()) @map("created_at")
-  updatedAt            DateTime            @updatedAt @map("updated_at")
+  receiveSMS             Boolean            @default(true) @map("receive_sms")
+  receiveWhatsApp        Boolean            @default(false) @map("receive_whatsapp")
+  receiveVoiceAlerts     Boolean            @default(false) @map("receive_voice_alerts")
+  literacyMode           String             @default("text") @map("literacy_mode") // 'text' | 'voice' | 'mixed'
+  preferredReminderTime  String             @default("morning") @map("preferred_reminder_time")
+  primaryCrop            String?            @map("primary_crop")
+  farmSizeAcres          Float?             @map("farm_size_acres") // LEGACY: auto-computed from landSizeHectares via fromHectares(); prefer landSizeValue+landSizeUnit
+  landSizeValue          Float?             @map("land_size_value")
+  landSizeUnit           String?            @map("land_size_unit") // ACRE | HECTARE | SQUARE_METER
+  landSizeHectares       Float?             @map("land_size_hectares") // normalized value
+  normalizedAreaSqm      Float?             @map("normalized_area_sqm") // m²: derived from landSizeValue+landSizeUnit at write
+  yearsExperience        Int?               @map("years_experience")
+  deviceId               String?            @map("device_id")
+  organizationId         String?            @map("organization_id")
+  createdById            String             @map("created_by_id")
+  selfRegistered         Boolean            @default(false) @map("self_registered")
+  registrationStatus     RegistrationStatus @default(pending_approval) @map("registration_status")
+  userId                 String?            @unique @map("user_id")
+  approvedAt             DateTime?          @map("approved_at")
+  approvedById           String?            @map("approved_by_id")
+  rejectedAt             DateTime?          @map("rejected_at")
+  rejectionReason        String?            @map("rejection_reason")
+  invitedAt              DateTime?          @map("invited_at")
+  inviteToken            String?            @unique @map("invite_token")
+  inviteExpiresAt        DateTime?          @map("invite_expires_at")
+  inviteChannel          String?            @map("invite_channel") // 'link', 'email', 'phone'
+  inviteDeliveryStatus   String?            @map("invite_delivery_status") // 'manual_share_ready','email_sent','phone_sent','accepted','expired'
+  inviteAcceptedAt       DateTime?          @map("invite_accepted_at")
+  inviteResendMeta       Json?              @map("invite_resend_meta") // { timestamps: number[], totalCount: number, lastResentBy: string }
+  assignedOfficerId      String?            @map("assigned_officer_id")
+  programId              String?            @map("program_id")
+  cohortId               String?            @map("cohort_id")
+  duplicateFlag          String?            @map("duplicate_flag") // 'possible_duplicate' | 'review_needed' | 'cleared' | null
+  duplicateOfId          String?            @map("duplicate_of_id") // farmerId of the suspected original
+  duplicateScore         Int?               @map("duplicate_score") // 0-100 duplicate confidence score
+  duplicateSignals       Json?              @map("duplicate_signals") // ['phone_exact', 'name_fuzzy_region_match', ...]
+  duplicateReviewedAt    DateTime?          @map("duplicate_reviewed_at")
+  duplicateReviewedBy    String?            @map("duplicate_reviewed_by") // userId
+  currentStage           LifecycleStage     @default(pre_planting) @map("current_stage")
+  stageUpdatedAt         DateTime?          @map("stage_updated_at")
+  stageSource            String?            @map("stage_source") // 'activity', 'manual', 'seeded'
+  stageConfidence        String?            @map("stage_confidence") // 'high', 'medium', 'low'
+  stageCropType          String?            @map("stage_crop_type")
+  ageGroup               String?            @map("age_group") // under_25, 25_35, 36_50, over_50
+  onboardingCompletedAt  DateTime?          @map("onboarding_completed_at")
+  profileImageUrl        String?            @map("profile_image_url")
+  profileImageUploadedAt DateTime?          @map("profile_image_uploaded_at")
+  profileImageUpdatedBy  String?            @map("profile_image_updated_by") // userId — audit trail, no @relation
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
 
-  organization        Organization?       @relation(fields: [organizationId], references: [id])
-  createdBy           User                @relation("FarmerCreatedBy", fields: [createdById], references: [id])
-  userAccount         User?               @relation("FarmerUserAccount", fields: [userId], references: [id])
-  assignedOfficer     User?               @relation("FarmerAssignedOfficer", fields: [assignedOfficerId], references: [id])
-  approvedBy          User?               @relation("FarmerApprovedBy", fields: [approvedById], references: [id])
-  program             Program?            @relation(fields: [programId], references: [id])
-  cohort              Cohort?             @relation(fields: [cohortId], references: [id])
-  applications        Application[]
-  farmActivities      FarmActivity[]
-  farmSeasons         FarmSeason[]
-  reminders           Reminder[]
-  notifications       FarmerNotification[]
+  organization         Organization?          @relation(fields: [organizationId], references: [id])
+  createdBy            User                   @relation("FarmerCreatedBy", fields: [createdById], references: [id])
+  userAccount          User?                  @relation("FarmerUserAccount", fields: [userId], references: [id])
+  assignedOfficer      User?                  @relation("FarmerAssignedOfficer", fields: [assignedOfficerId], references: [id])
+  approvedBy           User?                  @relation("FarmerApprovedBy", fields: [approvedById], references: [id])
+  program              Program?               @relation(fields: [programId], references: [id])
+  cohort               Cohort?                @relation(fields: [cohortId], references: [id])
+  applications         Application[]
+  farmActivities       FarmActivity[]
+  farmSeasons          FarmSeason[]
+  reminders            Reminder[]
+  notifications        FarmerNotification[]
   produceStorageStatus ProduceStorageStatus[]
-  buyerInterests      BuyerInterest[]
-  farmProfiles        FarmProfile[]
+  buyerInterests       BuyerInterest[]
+  farmProfiles         FarmProfile[]
 
+  @@unique([phone, organizationId], map: "uq_farmers_phone_org")
+  @@unique([nationalId, organizationId], map: "uq_farmers_nationalid_org")
   @@index([organizationId], map: "idx_farmers_org")
   @@index([createdById], map: "idx_farmers_created_by")
   @@index([registrationStatus], map: "idx_farmers_reg_status")
@@ -523,8 +525,6 @@ model Farmer {
   @@index([programId], map: "idx_farmers_program")
   @@index([cohortId], map: "idx_farmers_cohort")
   @@index([duplicateFlag], map: "idx_farmers_duplicate_flag")
-  @@unique([phone, organizationId], map: "uq_farmers_phone_org")
-  @@unique([nationalId, organizationId], map: "uq_farmers_nationalid_org")
   @@map("farmers")
 }
 
@@ -547,21 +547,21 @@ model Application {
   createdAt              DateTime          @default(now()) @map("created_at")
   updatedAt              DateTime          @updatedAt @map("updated_at")
 
-  farmer              Farmer              @relation(fields: [farmerId], references: [id])
-  createdBy           User                @relation("ApplicationCreatedBy", fields: [createdById], references: [id])
-  assignedFieldOfficer User?              @relation("FieldOfficerAssigned", fields: [assignedFieldOfficerId], references: [id])
-  farmLocation        FarmLocation?
-  farmBoundary        FarmBoundary?
-  evidenceFiles       EvidenceFile[]
-  verificationResult  VerificationResult?
-  fraudResult         FraudResult?
-  decisionResult      DecisionResult?
-  benchmarkResult     BenchmarkResult?
-  intelligenceResult  IntelligenceResult?
-  reviewAssignments   ReviewAssignment[]
-  reviewNotes         ReviewNote[]
-  auditLogs           AuditLog[]
-  fieldVisits         FieldVisit[]
+  farmer               Farmer              @relation(fields: [farmerId], references: [id])
+  createdBy            User                @relation("ApplicationCreatedBy", fields: [createdById], references: [id])
+  assignedFieldOfficer User?               @relation("FieldOfficerAssigned", fields: [assignedFieldOfficerId], references: [id])
+  farmLocation         FarmLocation?
+  farmBoundary         FarmBoundary?
+  evidenceFiles        EvidenceFile[]
+  verificationResult   VerificationResult?
+  fraudResult          FraudResult?
+  decisionResult       DecisionResult?
+  benchmarkResult      BenchmarkResult?
+  intelligenceResult   IntelligenceResult?
+  reviewAssignments    ReviewAssignment[]
+  reviewNotes          ReviewNote[]
+  auditLogs            AuditLog[]
+  fieldVisits          FieldVisit[]
 
   @@index([farmerId], map: "idx_applications_farmer")
   @@index([createdById], map: "idx_applications_created_by")
@@ -577,17 +577,17 @@ model Application {
 // ─── Farm Location ──────────────────────────────────────
 
 model FarmLocation {
-  id              String   @id @default(uuid())
-  applicationId   String   @unique @map("application_id")
-  latitude        Float
-  longitude       Float
-  accuracy        Float?
-  altitude        Float?
-  capturedAt      DateTime @default(now()) @map("captured_at")
-  deviceId        String?  @map("device_id")
-  gpsMethod       String?  @map("gps_method")
+  id            String   @id @default(uuid())
+  applicationId String   @unique @map("application_id")
+  latitude      Float
+  longitude     Float
+  accuracy      Float?
+  altitude      Float?
+  capturedAt    DateTime @default(now()) @map("captured_at")
+  deviceId      String?  @map("device_id")
+  gpsMethod     String?  @map("gps_method")
 
-  application     Application @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@map("farm_locations")
 }
@@ -595,26 +595,26 @@ model FarmLocation {
 // ─── Farm Boundary ──────────────────────────────────────
 
 model FarmBoundary {
-  id              String          @id @default(uuid())
-  applicationId   String          @unique @map("application_id")
-  measuredArea    Float?          @map("measured_area_acres")
-  perimeterMeters Float?          @map("perimeter_meters")
-  capturedAt      DateTime        @default(now()) @map("captured_at")
+  id              String   @id @default(uuid())
+  applicationId   String   @unique @map("application_id")
+  measuredArea    Float?   @map("measured_area_acres")
+  perimeterMeters Float?   @map("perimeter_meters")
+  capturedAt      DateTime @default(now()) @map("captured_at")
 
-  application     Application     @relation(fields: [applicationId], references: [id])
-  points          BoundaryPoint[]
+  application Application     @relation(fields: [applicationId], references: [id])
+  points      BoundaryPoint[]
 
   @@map("farm_boundaries")
 }
 
 model BoundaryPoint {
-  id          String       @id @default(uuid())
-  boundaryId  String       @map("boundary_id")
-  pointOrder  Int          @map("point_order")
-  latitude    Float
-  longitude   Float
+  id         String @id @default(uuid())
+  boundaryId String @map("boundary_id")
+  pointOrder Int    @map("point_order")
+  latitude   Float
+  longitude  Float
 
-  boundary    FarmBoundary @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
+  boundary FarmBoundary @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
 
   @@index([boundaryId], map: "idx_boundary_points_boundary")
   @@map("boundary_points")
@@ -623,19 +623,19 @@ model BoundaryPoint {
 // ─── Evidence ───────────────────────────────────────────
 
 model EvidenceFile {
-  id              String       @id @default(uuid())
-  applicationId   String       @map("application_id")
-  type            EvidenceType
-  filename        String
-  originalName    String       @map("original_name")
-  mimeType        String       @map("mime_type")
-  sizeBytes       Int          @map("size_bytes")
-  url             String
-  photoHash       String?      @map("photo_hash")
-  metadata        Json?
-  uploadedAt      DateTime     @default(now()) @map("uploaded_at")
+  id            String       @id @default(uuid())
+  applicationId String       @map("application_id")
+  type          EvidenceType
+  filename      String
+  originalName  String       @map("original_name")
+  mimeType      String       @map("mime_type")
+  sizeBytes     Int          @map("size_bytes")
+  url           String
+  photoHash     String?      @map("photo_hash")
+  metadata      Json?
+  uploadedAt    DateTime     @default(now()) @map("uploaded_at")
 
-  application     Application  @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@index([applicationId], map: "idx_evidence_application")
   @@index([photoHash], map: "idx_evidence_hash")
@@ -656,7 +656,7 @@ model VerificationResult {
   intelligenceSummary Json?    @map("intelligence_summary")
   createdAt           DateTime @default(now()) @map("created_at")
 
-  application         Application @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@map("verification_results")
 }
@@ -675,7 +675,7 @@ model FraudResult {
   intelligenceSummary Json?          @map("intelligence_summary")
   createdAt           DateTime       @default(now()) @map("created_at")
 
-  application         Application    @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@map("fraud_results")
 }
@@ -683,18 +683,18 @@ model FraudResult {
 // ─── Decision Result ────────────────────────────────────
 
 model DecisionResult {
-  id                      String       @id @default(uuid())
-  applicationId           String       @unique @map("application_id")
-  decision                DecisionType
-  decisionLabel           String       @map("decision_label")
-  riskLevel               String       @map("risk_level")
-  recommendedAmount       Float?       @map("recommended_amount")
-  blockers                Json         @default("[]")
-  reasons                 Json         @default("[]")
-  nextActions             Json         @default("[]") @map("next_actions")
-  createdAt               DateTime     @default(now()) @map("created_at")
+  id                String       @id @default(uuid())
+  applicationId     String       @unique @map("application_id")
+  decision          DecisionType
+  decisionLabel     String       @map("decision_label")
+  riskLevel         String       @map("risk_level")
+  recommendedAmount Float?       @map("recommended_amount")
+  blockers          Json         @default("[]")
+  reasons           Json         @default("[]")
+  nextActions       Json         @default("[]") @map("next_actions")
+  createdAt         DateTime     @default(now()) @map("created_at")
 
-  application             Application  @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@map("decision_results")
 }
@@ -702,17 +702,17 @@ model DecisionResult {
 // ─── Benchmark Result ───────────────────────────────────
 
 model BenchmarkResult {
-  id                      String   @id @default(uuid())
-  applicationId           String   @unique @map("application_id")
-  peerGroupSize           Int      @map("peer_group_size")
-  verificationPercentile  Float?   @map("verification_percentile")
-  yieldPercentile         Float?   @map("yield_percentile")
-  repaymentPercentile     Float?   @map("repayment_percentile")
-  strengths               Json     @default("[]")
-  concerns                Json     @default("[]")
-  createdAt               DateTime @default(now()) @map("created_at")
+  id                     String   @id @default(uuid())
+  applicationId          String   @unique @map("application_id")
+  peerGroupSize          Int      @map("peer_group_size")
+  verificationPercentile Float?   @map("verification_percentile")
+  yieldPercentile        Float?   @map("yield_percentile")
+  repaymentPercentile    Float?   @map("repayment_percentile")
+  strengths              Json     @default("[]")
+  concerns               Json     @default("[]")
+  createdAt              DateTime @default(now()) @map("created_at")
 
-  application             Application @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@map("benchmark_results")
 }
@@ -720,24 +720,24 @@ model BenchmarkResult {
 // ─── Intelligence Result ────────────────────────────────
 
 model IntelligenceResult {
-  id                    String   @id @default(uuid())
-  applicationId         String   @unique @map("application_id")
-  mlShadowScore         Float?   @map("ml_shadow_score")
-  mlShadowConfidence    Float?   @map("ml_shadow_confidence")
-  satelliteSignal       Json?    @map("satellite_signal")
-  yieldSignal           Json?    @map("yield_signal")
-  relationshipSignal    Json?    @map("relationship_signal")
-  anomalySignal         Json?    @map("anomaly_signal")
-  cropPredictionSignal  Json?    @map("crop_prediction_signal")
-  weatherSignal         Json?    @map("weather_signal")
-  marketSignal          Json?    @map("market_signal")
-  chatbotSignal         Json?    @map("chatbot_signal")
-  analyticsSignal       Json?    @map("analytics_signal")
-  storageSignal         Json?    @map("storage_signal")
-  buyerSignal           Json?    @map("buyer_signal")
-  createdAt             DateTime @default(now()) @map("created_at")
+  id                   String   @id @default(uuid())
+  applicationId        String   @unique @map("application_id")
+  mlShadowScore        Float?   @map("ml_shadow_score")
+  mlShadowConfidence   Float?   @map("ml_shadow_confidence")
+  satelliteSignal      Json?    @map("satellite_signal")
+  yieldSignal          Json?    @map("yield_signal")
+  relationshipSignal   Json?    @map("relationship_signal")
+  anomalySignal        Json?    @map("anomaly_signal")
+  cropPredictionSignal Json?    @map("crop_prediction_signal")
+  weatherSignal        Json?    @map("weather_signal")
+  marketSignal         Json?    @map("market_signal")
+  chatbotSignal        Json?    @map("chatbot_signal")
+  analyticsSignal      Json?    @map("analytics_signal")
+  storageSignal        Json?    @map("storage_signal")
+  buyerSignal          Json?    @map("buyer_signal")
+  createdAt            DateTime @default(now()) @map("created_at")
 
-  application           Application @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 
   @@map("intelligence_results")
 }
@@ -745,34 +745,34 @@ model IntelligenceResult {
 // ─── Review Assignment ──────────────────────────────────
 
 model ReviewAssignment {
-  id              String    @id @default(uuid())
-  applicationId   String    @map("application_id")
-  reviewerId      String    @map("reviewer_id")
-  assignedAt      DateTime  @default(now()) @map("assigned_at")
-  completedAt     DateTime? @map("completed_at")
-  status          String    @default("assigned")
+  id            String    @id @default(uuid())
+  applicationId String    @map("application_id")
+  reviewerId    String    @map("reviewer_id")
+  assignedAt    DateTime  @default(now()) @map("assigned_at")
+  completedAt   DateTime? @map("completed_at")
+  status        String    @default("assigned")
 
-  application     Application @relation(fields: [applicationId], references: [id])
-  reviewer        User        @relation("ReviewAssignedTo", fields: [reviewerId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+  reviewer    User        @relation("ReviewAssignedTo", fields: [reviewerId], references: [id])
 
+  @@unique([applicationId, reviewerId], map: "uq_review_assign_app_reviewer")
   @@index([applicationId], map: "idx_review_assign_app")
   @@index([reviewerId], map: "idx_review_assign_reviewer")
-  @@unique([applicationId, reviewerId], map: "uq_review_assign_app_reviewer")
   @@map("review_assignments")
 }
 
 // ─── Review Note ────────────────────────────────────────
 
 model ReviewNote {
-  id              String   @id @default(uuid())
-  applicationId   String   @map("application_id")
-  authorId        String   @map("author_id")
-  content         String
-  internal        Boolean  @default(true)
-  createdAt       DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  authorId      String   @map("author_id")
+  content       String
+  internal      Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  application     Application @relation(fields: [applicationId], references: [id])
-  author          User        @relation(fields: [authorId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+  author      User        @relation(fields: [authorId], references: [id])
 
   @@index([applicationId], map: "idx_review_notes_app")
   @@index([authorId], map: "idx_review_notes_author")
@@ -782,19 +782,19 @@ model ReviewNote {
 // ─── Audit Log ──────────────────────────────────────────
 
 model AuditLog {
-  id              String   @id @default(uuid())
-  applicationId   String?  @map("application_id")
-  userId          String?  @map("user_id")
-  organizationId  String?  @map("organization_id")
-  action          String
-  details         Json?
-  previousStatus  String?  @map("previous_status")
-  newStatus       String?  @map("new_status")
-  ipAddress       String?  @map("ip_address")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  applicationId  String?  @map("application_id")
+  userId         String?  @map("user_id")
+  organizationId String?  @map("organization_id")
+  action         String
+  details        Json?
+  previousStatus String?  @map("previous_status")
+  newStatus      String?  @map("new_status")
+  ipAddress      String?  @map("ip_address")
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  application     Application? @relation(fields: [applicationId], references: [id])
-  user            User?        @relation(fields: [userId], references: [id])
+  application Application? @relation(fields: [applicationId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
 
   @@index([applicationId], map: "idx_audit_application")
   @@index([userId], map: "idx_audit_user")
@@ -807,17 +807,17 @@ model AuditLog {
 // ─── Field Visit ────────────────────────────────────────
 
 model FieldVisit {
-  id              String    @id @default(uuid())
-  applicationId   String    @map("application_id")
-  officerId       String    @map("officer_id")
-  visitDate       DateTime  @map("visit_date")
-  notes           String?
-  findings        Json?
-  completed       Boolean   @default(false)
-  createdAt       DateTime  @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  officerId     String   @map("officer_id")
+  visitDate     DateTime @map("visit_date")
+  notes         String?
+  findings      Json?
+  completed     Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  application     Application @relation(fields: [applicationId], references: [id])
-  officer         User        @relation(fields: [officerId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+  officer     User        @relation(fields: [officerId], references: [id])
 
   @@index([applicationId], map: "idx_field_visits_app")
   @@index([officerId], map: "idx_field_visits_officer")
@@ -848,19 +848,19 @@ model PortfolioSnapshot {
 // ─── Farm Activity ──────────────────────────────────────
 
 model FarmActivity {
-  id              String           @id @default(uuid())
-  farmerId        String           @map("farmer_id")
-  activityType    FarmActivityType @map("activity_type")
-  cropType        String?          @map("crop_type")
-  description     String?
-  quantity        Float?
-  unit            String?
-  lifecycleStage  LifecycleStage? @map("lifecycle_stage") // stage at time of activity
-  metadata        Json?
-  activityDate    DateTime         @map("activity_date")
-  createdAt       DateTime         @default(now()) @map("created_at")
+  id             String           @id @default(uuid())
+  farmerId       String           @map("farmer_id")
+  activityType   FarmActivityType @map("activity_type")
+  cropType       String?          @map("crop_type")
+  description    String?
+  quantity       Float?
+  unit           String?
+  lifecycleStage LifecycleStage?  @map("lifecycle_stage") // stage at time of activity
+  metadata       Json?
+  activityDate   DateTime         @map("activity_date")
+  createdAt      DateTime         @default(now()) @map("created_at")
 
-  farmer          Farmer           @relation(fields: [farmerId], references: [id])
+  farmer Farmer @relation(fields: [farmerId], references: [id])
 
   @@index([farmerId], map: "idx_activities_farmer")
   @@index([activityType], map: "idx_activities_type")
@@ -872,20 +872,20 @@ model FarmActivity {
 // ─── Reminder ───────────────────────────────────────────
 
 model Reminder {
-  id              String       @id @default(uuid())
-  farmerId        String       @map("farmer_id")
-  reminderType    ReminderType @map("reminder_type")
-  title           String
-  message         String
-  dueDate         DateTime     @map("due_date")
-  completed       Boolean      @default(false)
-  completedAt     DateTime?    @map("completed_at")
-  lifecycleStage  LifecycleStage? @map("lifecycle_stage")
-  triggerSource   String?         @map("trigger_source") // 'lifecycle_engine', 'activity', 'manual', 'seeded'
-  metadata        Json?
-  createdAt       DateTime     @default(now()) @map("created_at")
+  id             String          @id @default(uuid())
+  farmerId       String          @map("farmer_id")
+  reminderType   ReminderType    @map("reminder_type")
+  title          String
+  message        String
+  dueDate        DateTime        @map("due_date")
+  completed      Boolean         @default(false)
+  completedAt    DateTime?       @map("completed_at")
+  lifecycleStage LifecycleStage? @map("lifecycle_stage")
+  triggerSource  String?         @map("trigger_source") // 'lifecycle_engine', 'activity', 'manual', 'seeded'
+  metadata       Json?
+  createdAt      DateTime        @default(now()) @map("created_at")
 
-  farmer          Farmer       @relation(fields: [farmerId], references: [id])
+  farmer Farmer @relation(fields: [farmerId], references: [id])
 
   @@index([farmerId], map: "idx_reminders_farmer")
   @@index([completed], map: "idx_reminders_completed")
@@ -905,7 +905,7 @@ model FarmerNotification {
   metadata         Json?
   createdAt        DateTime         @default(now()) @map("created_at")
 
-  farmer           Farmer           @relation(fields: [farmerId], references: [id])
+  farmer Farmer @relation(fields: [farmerId], references: [id])
 
   @@index([farmerId], map: "idx_notifications_farmer")
   @@index([read], map: "idx_notifications_read")
@@ -928,7 +928,7 @@ model ProduceStorageStatus {
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  farmer           Farmer           @relation(fields: [farmerId], references: [id])
+  farmer Farmer @relation(fields: [farmerId], references: [id])
 
   @@index([farmerId], map: "idx_storage_farmer")
   @@map("produce_storage_status")
@@ -938,10 +938,10 @@ model ProduceStorageStatus {
 
 enum SeasonStatus {
   active
-  harvested    // harvest report submitted, pending final review/closure
-  completed    // fully closed and reviewed
-  abandoned    // voluntarily abandoned by farmer
-  failed       // crop failure declared
+  harvested // harvest report submitted, pending final review/closure
+  completed // fully closed and reviewed
+  abandoned // voluntarily abandoned by farmer
+  failed // crop failure declared
 }
 
 enum CropCondition {
@@ -964,40 +964,40 @@ enum PerformanceClassification {
 }
 
 model FarmSeason {
-  id                  String         @id @default(uuid())
-  farmerId            String         @map("farmer_id")
-  cropType            String         @map("crop_type")
-  farmSizeAcres       Float          @map("farm_size_acres")
-  areaUnit            String         @default("acres") @map("area_unit")
-  landSizeValue       Float?         @map("land_size_value")
-  landSizeUnit        String?        @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
-  landSizeHectares    Float?         @map("land_size_hectares")   // normalized value
-  normalizedAreaSqm   Float?         @map("normalized_area_sqm")  // m²: derived from landSizeValue+landSizeUnit at write
-  seedQuantity        Float?         @map("seed_quantity")
-  seedType            String?        @map("seed_type")
-  plantingDate        DateTime       @map("planting_date")
-  expectedHarvestDate DateTime?      @map("expected_harvest_date")
-  declaredIntent      String?        @map("declared_intent")
-  status              SeasonStatus   @default(active)
-  cropFailureReported Boolean        @default(false) @map("crop_failure_reported")
-  partialHarvest      Boolean        @default(false) @map("partial_harvest")
-  lastActivityDate    DateTime?      @map("last_activity_date")
-  closedAt            DateTime?      @map("closed_at")
-  closedBy            String?        @map("closed_by")          // userId of closer — audit trail, no @relation (historical integrity)
-  closureReason       String?        @map("closure_reason")
-  reopenedAt          DateTime?      @map("reopened_at")
-  reopenedBy          String?        @map("reopened_by")        // userId of reopener — audit trail, no @relation (historical integrity)
-  reopenReason        String?        @map("reopen_reason")
-  createdAt           DateTime       @default(now()) @map("created_at")
-  updatedAt           DateTime       @updatedAt @map("updated_at")
+  id                  String       @id @default(uuid())
+  farmerId            String       @map("farmer_id")
+  cropType            String       @map("crop_type")
+  farmSizeAcres       Float        @map("farm_size_acres")
+  areaUnit            String       @default("acres") @map("area_unit")
+  landSizeValue       Float?       @map("land_size_value")
+  landSizeUnit        String?      @map("land_size_unit") // ACRE | HECTARE | SQUARE_METER
+  landSizeHectares    Float?       @map("land_size_hectares") // normalized value
+  normalizedAreaSqm   Float?       @map("normalized_area_sqm") // m²: derived from landSizeValue+landSizeUnit at write
+  seedQuantity        Float?       @map("seed_quantity")
+  seedType            String?      @map("seed_type")
+  plantingDate        DateTime     @map("planting_date")
+  expectedHarvestDate DateTime?    @map("expected_harvest_date")
+  declaredIntent      String?      @map("declared_intent")
+  status              SeasonStatus @default(active)
+  cropFailureReported Boolean      @default(false) @map("crop_failure_reported")
+  partialHarvest      Boolean      @default(false) @map("partial_harvest")
+  lastActivityDate    DateTime?    @map("last_activity_date")
+  closedAt            DateTime?    @map("closed_at")
+  closedBy            String?      @map("closed_by") // userId of closer — audit trail, no @relation (historical integrity)
+  closureReason       String?      @map("closure_reason")
+  reopenedAt          DateTime?    @map("reopened_at")
+  reopenedBy          String?      @map("reopened_by") // userId of reopener — audit trail, no @relation (historical integrity)
+  reopenReason        String?      @map("reopen_reason")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
 
-  farmer              Farmer         @relation(fields: [farmerId], references: [id])
-  progressEntries     SeasonProgressEntry[]
-  stageConfirmations  StageConfirmation[]
-  harvestReport       HarvestReport?
-  progressScore       ProgressScore?
+  farmer                Farmer                 @relation(fields: [farmerId], references: [id])
+  progressEntries       SeasonProgressEntry[]
+  stageConfirmations    StageConfirmation[]
+  harvestReport         HarvestReport?
+  progressScore         ProgressScore?
   credibilityAssessment CredibilityAssessment?
-  officerValidations  OfficerValidation[]
+  officerValidations    OfficerValidation[]
 
   @@index([farmerId], map: "idx_seasons_farmer")
   @@index([status], map: "idx_seasons_status")
@@ -1007,27 +1007,27 @@ model FarmSeason {
 }
 
 model SeasonProgressEntry {
-  id              String           @id @default(uuid())
-  seasonId        String           @map("season_id")
-  entryType       String           @default("activity") // activity, condition, advice
+  id              String            @id @default(uuid())
+  seasonId        String            @map("season_id")
+  entryType       String            @default("activity") // activity, condition, advice
   activityType    FarmActivityType? @map("activity_type")
   description     String?
   quantity        Float?
   unit            String?
-  cropCondition   CropCondition?   @map("crop_condition")
-  conditionNotes  String?          @map("condition_notes")
-  followedAdvice  AdviceFollowed?  @map("followed_advice")
-  adviceNotes     String?          @map("advice_notes")
-  imageUrl        String?          @map("image_url")
-  imageStage      String?          @map("image_stage") // early_growth, mid_stage, pre_harvest, harvest, storage
-  imageUploadedAt DateTime?        @map("image_uploaded_at")
-  imageLatitude   Float?           @map("image_latitude")
-  imageLongitude  Float?           @map("image_longitude")
-  lifecycleStage  LifecycleStage?  @map("lifecycle_stage")
-  entryDate       DateTime         @map("entry_date")
-  createdAt       DateTime         @default(now()) @map("created_at")
+  cropCondition   CropCondition?    @map("crop_condition")
+  conditionNotes  String?           @map("condition_notes")
+  followedAdvice  AdviceFollowed?   @map("followed_advice")
+  adviceNotes     String?           @map("advice_notes")
+  imageUrl        String?           @map("image_url")
+  imageStage      String?           @map("image_stage") // early_growth, mid_stage, pre_harvest, harvest, storage
+  imageUploadedAt DateTime?         @map("image_uploaded_at")
+  imageLatitude   Float?            @map("image_latitude")
+  imageLongitude  Float?            @map("image_longitude")
+  lifecycleStage  LifecycleStage?   @map("lifecycle_stage")
+  entryDate       DateTime          @map("entry_date")
+  createdAt       DateTime          @default(now()) @map("created_at")
 
-  season          FarmSeason       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  season FarmSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@index([seasonId], map: "idx_progress_season")
   @@index([entryDate], map: "idx_progress_date")
@@ -1036,47 +1036,47 @@ model SeasonProgressEntry {
 }
 
 model StageConfirmation {
-  id              String         @id @default(uuid())
-  seasonId        String         @map("season_id")
-  expectedStage   LifecycleStage @map("expected_stage")
-  confirmedStage  LifecycleStage @map("confirmed_stage")
-  isMismatch      Boolean        @default(false) @map("is_mismatch")
-  note            String?
-  createdAt       DateTime       @default(now()) @map("created_at")
+  id             String         @id @default(uuid())
+  seasonId       String         @map("season_id")
+  expectedStage  LifecycleStage @map("expected_stage")
+  confirmedStage LifecycleStage @map("confirmed_stage")
+  isMismatch     Boolean        @default(false) @map("is_mismatch")
+  note           String?
+  createdAt      DateTime       @default(now()) @map("created_at")
 
-  season          FarmSeason     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  season FarmSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@index([seasonId], map: "idx_stage_confirm_season")
   @@map("stage_confirmations")
 }
 
 model HarvestReport {
-  id              String       @id @default(uuid())
-  seasonId        String       @unique @map("season_id")
-  totalHarvestKg  Float        @map("total_harvest_kg")
-  yieldPerAcre    Float?       @map("yield_per_acre")
-  salesAmount     Float?       @map("sales_amount")
-  salesCurrency   String?      @map("sales_currency")
-  notes           String?
-  createdAt       DateTime     @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  seasonId       String   @unique @map("season_id")
+  totalHarvestKg Float    @map("total_harvest_kg")
+  yieldPerAcre   Float?   @map("yield_per_acre")
+  salesAmount    Float?   @map("sales_amount")
+  salesCurrency  String?  @map("sales_currency")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  season          FarmSeason   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  season FarmSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@map("harvest_reports")
 }
 
 model ProgressScore {
-  id                          String                      @id @default(uuid())
-  seasonId                    String                      @unique @map("season_id")
-  progressScore               Float                       @map("progress_score")
-  riskLevel                   String                      @map("risk_level")
-  performanceClassification   PerformanceClassification   @map("performance_classification")
-  factors                     Json                        @default("{}")
-  reasons                     Json                        @default("[]")
-  createdAt                   DateTime                    @default(now()) @map("created_at")
-  updatedAt                   DateTime                    @updatedAt @map("updated_at")
+  id                        String                    @id @default(uuid())
+  seasonId                  String                    @unique @map("season_id")
+  progressScore             Float                     @map("progress_score")
+  riskLevel                 String                    @map("risk_level")
+  performanceClassification PerformanceClassification @map("performance_classification")
+  factors                   Json                      @default("{}")
+  reasons                   Json                      @default("[]")
+  createdAt                 DateTime                  @default(now()) @map("created_at")
+  updatedAt                 DateTime                  @updatedAt @map("updated_at")
 
-  season                      FarmSeason                  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  season FarmSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@map("progress_scores")
 }
@@ -1099,65 +1099,65 @@ enum ValidationType {
 }
 
 model CredibilityAssessment {
-  id                String           @id @default(uuid())
-  seasonId          String           @unique @map("season_id")
-  credibilityScore  Float            @map("credibility_score")
-  credibilityLevel  CredibilityLevel @map("credibility_level")
-  flags             Json             @default("[]")
-  reasons           Json             @default("[]")
-  confidence        String           @default("medium") // low, medium, high
-  evidenceCoverage  Json             @default("{}") @map("evidence_coverage")
-  anomalies         Json             @default("[]")
-  computedAt        DateTime         @default(now()) @map("computed_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
+  id               String           @id @default(uuid())
+  seasonId         String           @unique @map("season_id")
+  credibilityScore Float            @map("credibility_score")
+  credibilityLevel CredibilityLevel @map("credibility_level")
+  flags            Json             @default("[]")
+  reasons          Json             @default("[]")
+  confidence       String           @default("medium") // low, medium, high
+  evidenceCoverage Json             @default("{}") @map("evidence_coverage")
+  anomalies        Json             @default("[]")
+  computedAt       DateTime         @default(now()) @map("computed_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  season            FarmSeason       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  season FarmSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@map("credibility_assessments")
 }
 
 model OfficerValidation {
-  id                  String         @id @default(uuid())
-  seasonId            String         @map("season_id")
-  officerId           String         @map("officer_id")
-  validationType      ValidationType @map("validation_type")
-  confirmedStage      LifecycleStage? @map("confirmed_stage")
-  confirmedCondition  CropCondition?  @map("confirmed_condition")
-  confirmedHarvest    Boolean?       @map("confirmed_harvest")
-  note                String?
-  latitude            Float?
-  longitude           Float?
-  locationAccuracy    Float?         @map("location_accuracy")
-  validatedAt         DateTime       @default(now()) @map("validated_at")
-  completedAt         DateTime?      @map("completed_at")
-  createdAt           DateTime       @default(now()) @map("created_at")
+  id                 String          @id @default(uuid())
+  seasonId           String          @map("season_id")
+  officerId          String          @map("officer_id")
+  validationType     ValidationType  @map("validation_type")
+  confirmedStage     LifecycleStage? @map("confirmed_stage")
+  confirmedCondition CropCondition?  @map("confirmed_condition")
+  confirmedHarvest   Boolean?        @map("confirmed_harvest")
+  note               String?
+  latitude           Float?
+  longitude          Float?
+  locationAccuracy   Float?          @map("location_accuracy")
+  validatedAt        DateTime        @default(now()) @map("validated_at")
+  completedAt        DateTime?       @map("completed_at")
+  createdAt          DateTime        @default(now()) @map("created_at")
 
-  season              FarmSeason     @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  officer             User           @relation("ValidationOfficer", fields: [officerId], references: [id])
+  season  FarmSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  officer User       @relation("ValidationOfficer", fields: [officerId], references: [id])
 
+  @@unique([seasonId, officerId, validationType], map: "uq_officer_validation_season_officer_type")
   @@index([seasonId], map: "idx_officer_validation_season")
   @@index([officerId], map: "idx_officer_validation_officer")
   @@index([officerId, completedAt], map: "idx_officer_validation_officer_completed")
-  @@unique([seasonId, officerId, validationType], map: "uq_officer_validation_season_officer_type")
   @@map("officer_validations")
 }
 
 // ─── Buyer Interest ─────────────────────────────────────
 
 model BuyerInterest {
-  id               String   @id @default(uuid())
-  farmerId         String   @map("farmer_id")
-  cropType         String   @map("crop_type")
-  quantityKg       Float?   @map("quantity_kg")
-  preferredBuyerType String? @map("preferred_buyer_type")
-  priceExpectation Float?   @map("price_expectation")
-  currencyCode     String   @default("KES") @map("currency_code")
-  notes            String?
-  status           String   @default("expressed") // expressed, matched, withdrawn
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  farmerId           String   @map("farmer_id")
+  cropType           String   @map("crop_type")
+  quantityKg         Float?   @map("quantity_kg")
+  preferredBuyerType String?  @map("preferred_buyer_type")
+  priceExpectation   Float?   @map("price_expectation")
+  currencyCode       String   @default("KES") @map("currency_code")
+  notes              String?
+  status             String   @default("expressed") // expressed, matched, withdrawn
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  farmer           Farmer   @relation(fields: [farmerId], references: [id])
+  farmer Farmer @relation(fields: [farmerId], references: [id])
 
   @@index([farmerId], map: "idx_buyer_interest_farmer")
   @@map("buyer_interests")
@@ -1166,39 +1166,39 @@ model BuyerInterest {
 // ─── Approval Request (SoD + JIT) ───────────────────────
 
 model ApprovalRequest {
-  id              String              @id @default(uuid())
-  requestType     ApprovalRequestType @map("request_type")
-  status          ApprovalStatus      @default(pending)
+  id          String              @id @default(uuid())
+  requestType ApprovalRequestType @map("request_type")
+  status      ApprovalStatus      @default(pending)
 
   // Actors
-  requestedById   String              @map("requested_by_id")
-  requestedBy     User                @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
-  approvedById    String?             @map("approved_by_id")
-  approvedBy      User?               @relation("ApprovalApprovedBy", fields: [approvedById], references: [id])
-  revokedById     String?             @map("revoked_by_id")
-  revokedBy       User?               @relation("ApprovalRevokedBy", fields: [revokedById], references: [id])
+  requestedById String  @map("requested_by_id")
+  requestedBy   User    @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
+  approvedById  String? @map("approved_by_id")
+  approvedBy    User?   @relation("ApprovalApprovedBy", fields: [approvedById], references: [id])
+  revokedById   String? @map("revoked_by_id")
+  revokedBy     User?   @relation("ApprovalRevokedBy", fields: [revokedById], references: [id])
 
   // Organization scope
-  organizationId  String?             @map("organization_id")
-  organization    Organization?       @relation(fields: [organizationId], references: [id])
+  organizationId String?       @map("organization_id")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   // Target resource (one populated per request type)
-  targetUserId    String?             @map("target_user_id")
-  targetFarmerId  String?             @map("target_farmer_id")
-  targetSeasonId  String?             @map("target_season_id")
-  targetData      Json?               @map("target_data")
+  targetUserId   String? @map("target_user_id")
+  targetFarmerId String? @map("target_farmer_id")
+  targetSeasonId String? @map("target_season_id")
+  targetData     Json?   @map("target_data")
 
   // Reason and outcome
   reason          String
-  rejectionReason String?             @map("rejection_reason")
+  rejectionReason String? @map("rejection_reason")
 
   // JIT timing (null means no expiry window — pure SoD)
-  expiresAt       DateTime?           @map("expires_at")
-  revokedAt       DateTime?           @map("revoked_at")
-  executedAt      DateTime?           @map("executed_at")
+  expiresAt  DateTime? @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  executedAt DateTime? @map("executed_at")
 
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([requestedById], map: "idx_approval_requested_by")
   @@index([status], map: "idx_approval_status")
@@ -1244,15 +1244,15 @@ model PilotChecklistItem {
 // ─── User Feedback ──────────────────────────────────────
 
 model UserFeedback {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  role        String
-  message     String
-  context     String?
-  severity    String   @default("info") // info, low, medium, high
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  role      String
+  message   String
+  context   String?
+  severity  String   @default("info") // info, low, medium, high
+  createdAt DateTime @default(now()) @map("created_at")
 
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId], map: "idx_feedback_user")
   @@index([severity], map: "idx_feedback_severity")
@@ -1292,39 +1292,39 @@ enum AutoNotifStatus {
   pending
   sent
   failed
-  skipped     // rate-limited or opted-out
+  skipped // rate-limited or opted-out
 }
 
 enum AutoNotifType {
-  invite_reminder         // farmer invited but not accepted after N days
-  no_first_update         // no first progress entry after planting
-  stale_farmer            // no activity for N days
-  validation_pending      // season awaiting officer validation
-  reviewer_backlog        // reviewer has too many pending applications
-  high_risk_alert         // season risk level is Critical or High
-  onboarding_reminder     // user started onboarding but hasn't completed after N days
-  feedback_followup       // pest report created 5+ days ago with no feedback submitted
+  invite_reminder // farmer invited but not accepted after N days
+  no_first_update // no first progress entry after planting
+  stale_farmer // no activity for N days
+  validation_pending // season awaiting officer validation
+  reviewer_backlog // reviewer has too many pending applications
+  high_risk_alert // season risk level is Critical or High
+  onboarding_reminder // user started onboarding but hasn't completed after N days
+  feedback_followup // pest report created 5+ days ago with no feedback submitted
 }
 
 model AutoNotification {
-  id             String          @id @default(uuid())
-  organizationId String?         @map("organization_id")
-  userId         String?         @map("user_id")          // target staff user (null = all in org/role)
-  roleTarget     String?         @map("role_target")       // 'field_officer' | 'reviewer' | etc.
-  farmerId       String?         @map("farmer_id")
-  seasonId       String?         @map("season_id")
+  id             String           @id @default(uuid())
+  organizationId String?          @map("organization_id")
+  userId         String?          @map("user_id") // target staff user (null = all in org/role)
+  roleTarget     String?          @map("role_target") // 'field_officer' | 'reviewer' | etc.
+  farmerId       String?          @map("farmer_id")
+  seasonId       String?          @map("season_id")
   type           AutoNotifType
   channel        AutoNotifChannel
   subject        String?
   message        String
-  status         AutoNotifStatus @default(pending)
-  attempts       Int             @default(0)
-  sentAt         DateTime?       @map("sent_at")
-  failureReason  String?         @map("failure_reason")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  status         AutoNotifStatus  @default(pending)
+  attempts       Int              @default(0)
+  sentAt         DateTime?        @map("sent_at")
+  failureReason  String?          @map("failure_reason")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
-  targetUser     User?           @relation("AutoNotifTargetUser", fields: [userId], references: [id])
+  targetUser User? @relation("AutoNotifTargetUser", fields: [userId], references: [id])
 
   @@index([organizationId], map: "idx_autonotif_org")
   @@index([userId], map: "idx_autonotif_user")
@@ -1350,7 +1350,7 @@ enum FarmStage {
   harvest
   post_harvest
   // Legacy values kept for migration safety:
-  growing        // maps to vegetative
+  growing // maps to vegetative
 }
 
 enum RecommendationStatus {
@@ -1360,75 +1360,75 @@ enum RecommendationStatus {
 }
 
 model FarmProfile {
-  id              String    @id @default(uuid())
-  farmerId        String?   @map("farmer_id")
-  userId          String?   @map("user_id_direct")   // direct User relation for cookie-based auth flow
-  farmerUuid      String?   @unique @map("farmer_uuid")
-  farmerName      String    @map("farmer_name")
-  farmName        String?   @map("farm_name")
-  country         String?   @map("country")
-  locationName    String?   @map("location_name")
-  latitude        Float?
-  longitude       Float?
-  locationLabel   String?   @map("location_label")   // cached reverse-geocoded label e.g. "Accra, Ghana"
-  crop            String
+  id                       String    @id @default(uuid())
+  farmerId                 String?   @map("farmer_id")
+  userId                   String?   @map("user_id_direct") // direct User relation for cookie-based auth flow
+  farmerUuid               String?   @unique @map("farmer_uuid")
+  farmerName               String    @map("farmer_name")
+  farmName                 String?   @map("farm_name")
+  country                  String?   @map("country")
+  locationName             String?   @map("location_name")
+  latitude                 Float?
+  longitude                Float?
+  locationLabel            String?   @map("location_label") // cached reverse-geocoded label e.g. "Accra, Ghana"
+  crop                     String
   // ─── NGO program tag ─────────────────────────────────
-  program         String?                             // mirrors User.program for farms created via NGO import
-  farmSizeAcres   Float?    @map("farm_size_acres")
-  landSizeValue   Float?    @map("land_size_value")
-  landSizeUnit    String?   @map("land_size_unit")       // ACRE | HECTARE | SQUARE_METER
-  landSizeHectares Float?   @map("land_size_hectares")   // normalized value
-  normalizedAreaSqm Float?  @map("normalized_area_sqm")  // m²: derived from landSizeValue+landSizeUnit at write
-  stage           FarmStage @default(planning)
-  plantedAt       DateTime? @map("planted_at")
+  program                  String? // mirrors User.program for farms created via NGO import
+  farmSizeAcres            Float?    @map("farm_size_acres")
+  landSizeValue            Float?    @map("land_size_value")
+  landSizeUnit             String?   @map("land_size_unit") // ACRE | HECTARE | SQUARE_METER
+  landSizeHectares         Float?    @map("land_size_hectares") // normalized value
+  normalizedAreaSqm        Float?    @map("normalized_area_sqm") // m²: derived from landSizeValue+landSizeUnit at write
+  stage                    FarmStage @default(planning)
+  plantedAt                DateTime? @map("planted_at")
   // ─── Seasonal timing (per-farm calendar) ─────────────
-  seasonStartMonth         Int?      @map("season_start_month")          // 1–12
-  seasonEndMonth           Int?      @map("season_end_month")            // 1–12
+  seasonStartMonth         Int?      @map("season_start_month") // 1–12
+  seasonEndMonth           Int?      @map("season_end_month") // 1–12
   plantingWindowStartMonth Int?      @map("planting_window_start_month") // 1–12
-  plantingWindowEndMonth   Int?      @map("planting_window_end_month")   // 1–12
-  currentSeasonLabel       String?   @map("current_season_label")        // e.g. "Main Season 2026"
+  plantingWindowEndMonth   Int?      @map("planting_window_end_month") // 1–12
+  currentSeasonLabel       String?   @map("current_season_label") // e.g. "Main Season 2026"
   lastRainySeasonStart     DateTime? @map("last_rainy_season_start")
   lastDrySeasonStart       DateTime? @map("last_dry_season_start")
-  status          String    @default("active") @map("status")  // active | inactive | archived
-  isDefault       Boolean   @default(false) @map("is_default")
-  experienceLevel String?   @map("experience_level")   // "new" | "experienced" — null = not answered
+  status                   String    @default("active") @map("status") // active | inactive | archived
+  isDefault                Boolean   @default(false) @map("is_default")
+  experienceLevel          String?   @map("experience_level") // "new" | "experienced" — null = not answered
 
   // ─── U.S. state-aware onboarding (used by /api/v2/recommend/us) ─
   // These are nullable so non-U.S. farms and legacy rows keep working.
-  stateCode      String?  @map("state_code")        // "TX" | "MD" | ... | "DC"
-  farmType       String?  @map("farm_type")         // "backyard" | "small_farm" | "commercial"
-  beginnerLevel  String?  @map("beginner_level")    // "beginner" | "intermediate" | "advanced"
-  growingStyle   String?  @map("growing_style")     // "container" | "raised_bed" | "in_ground" | "mixed"
-  farmPurpose    String?  @map("farm_purpose")      // "home_food" | "sell_locally" | "learning" | "mixed"
+  stateCode     String? @map("state_code") // "TX" | "MD" | ... | "DC"
+  farmType      String? @map("farm_type") // "backyard" | "small_farm" | "commercial"
+  beginnerLevel String? @map("beginner_level") // "beginner" | "intermediate" | "advanced"
+  growingStyle  String? @map("growing_style") // "container" | "raised_bed" | "in_ground" | "mixed"
+  farmPurpose   String? @map("farm_purpose") // "home_food" | "sell_locally" | "learning" | "mixed"
 
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  clientUpdatedAt  DateTime? @map("client_updated_at") // Timestamp from client device for conflict ordering
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  clientUpdatedAt DateTime? @map("client_updated_at") // Timestamp from client device for conflict ordering
 
-  farmer          Farmer?   @relation(fields: [farmerId], references: [id])
-  userDirect      User?     @relation("DirectFarmProfile", fields: [userId], references: [id])
-  seasons         V2Season[]
-  recommendations RecommendationRecord[]
-  weatherSnapshots WeatherSnapshot[]
-  financeScores   FarmFinanceScore[]
-  supplyReadiness V2SupplyReadiness[]
-  landBoundaries  V2LandBoundary[]
-  seedScans       V2SeedScan[]
-  landInsights    V2LandInsight[]
+  farmer              Farmer?                @relation(fields: [farmerId], references: [id])
+  userDirect          User?                  @relation("DirectFarmProfile", fields: [userId], references: [id])
+  seasons             V2Season[]
+  recommendations     RecommendationRecord[]
+  weatherSnapshots    WeatherSnapshot[]
+  financeScores       FarmFinanceScore[]
+  supplyReadiness     V2SupplyReadiness[]
+  landBoundaries      V2LandBoundary[]
+  seedScans           V2SeedScan[]
+  landInsights        V2LandInsight[]
   verificationSignals V2VerificationSignal[]
   // Intelligence relations
-  cropCycles        V2CropCycle[]
-  pestImages        V2PestImage[]
-  pestReports       V2PestReport[]
-  satelliteScans    V2SatelliteScan[]
-  fieldStressScores V2FieldStressScore[]
-  hotspotZones      V2HotspotZone[]
-  droneScans        V2DroneScan[]
-  treatmentActions  V2TreatmentAction[]
-  farmPestRisks     V2FarmPestRisk[]
-  harvestRecords    V2HarvestRecord[]
-  costRecords       V2FarmCostRecord[]
-  taskCompletions   V2FarmTaskCompletion[]
+  cropCycles          V2CropCycle[]
+  pestImages          V2PestImage[]
+  pestReports         V2PestReport[]
+  satelliteScans      V2SatelliteScan[]
+  fieldStressScores   V2FieldStressScore[]
+  hotspotZones        V2HotspotZone[]
+  droneScans          V2DroneScan[]
+  treatmentActions    V2TreatmentAction[]
+  farmPestRisks       V2FarmPestRisk[]
+  harvestRecords      V2HarvestRecord[]
+  costRecords         V2FarmCostRecord[]
+  taskCompletions     V2FarmTaskCompletion[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
   @@index([userId], map: "idx_farm_profiles_user")
@@ -1440,14 +1440,14 @@ model FarmProfile {
 
 // ─── Learned crop usage (adaptive crop suggestions) ────────
 model CropUsage {
-  id          String   @id @default(uuid())
-  cropCode    String   @map("crop_code")       // "MAIZE" or "OTHER:Teff"
-  cropName    String   @map("crop_name")       // normalized display name: "Maize" or "Teff"
-  country     String?  @map("country")         // country for region-aware suggestions
-  region      String?  @map("region")          // region/county for finer targeting
-  useCount    Int      @default(1) @map("use_count")
-  lastUsedAt  DateTime @default(now()) @map("last_used_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  cropCode   String   @map("crop_code") // "MAIZE" or "OTHER:Teff"
+  cropName   String   @map("crop_name") // normalized display name: "Maize" or "Teff"
+  country    String?  @map("country") // country for region-aware suggestions
+  region     String?  @map("region") // region/county for finer targeting
+  useCount   Int      @default(1) @map("use_count")
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@unique([cropCode, country], map: "uq_crop_usage_code_country")
   @@index([country], map: "idx_crop_usage_country")
@@ -1456,22 +1456,22 @@ model CropUsage {
 }
 
 model RecommendationRecord {
-  id                String               @id @default(uuid())
-  farmProfileId     String               @map("farm_profile_id")
-  title             String
-  action            String
-  urgency           String?
-  confidence        Float?
-  reason            String?
-  nextReviewDays    Int?                 @map("next_review_days")
-  score             Float?
-  status            RecommendationStatus @default(pending)
-  farmerNote        String?              @map("farmer_note")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
+  id             String               @id @default(uuid())
+  farmProfileId  String               @map("farm_profile_id")
+  title          String
+  action         String
+  urgency        String?
+  confidence     Float?
+  reason         String?
+  nextReviewDays Int?                 @map("next_review_days")
+  score          Float?
+  status         RecommendationStatus @default(pending)
+  farmerNote     String?              @map("farmer_note")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
 
-  farmProfile       FarmProfile          @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
-  feedback          RecommendationFeedback[]
+  farmProfile FarmProfile              @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+  feedback    RecommendationFeedback[]
 
   @@index([farmProfileId], map: "idx_rec_records_farm")
   @@index([status], map: "idx_rec_records_status")
@@ -1482,24 +1482,24 @@ model RecommendationRecord {
 // ─── Weather Snapshot (lean cache) ─────────────────────
 
 model WeatherSnapshot {
-  id              String    @id @default(uuid())
-  farmProfileId   String    @map("farm_profile_id")
-  latitude        Float
-  longitude       Float
-  temperatureC    Float     @map("temperature_c")
-  rainForecastMm  Float     @map("rain_forecast_mm")
-  humidityPct     Float?    @map("humidity_pct")
-  windSpeedKmh    Float?    @map("wind_speed_kmh")
-  condition       String?
-  forecastDays    Int       @default(3) @map("forecast_days")
-  source          String    @default("open-meteo")
-  rainExpected    Boolean?  @map("rain_expected")
-  heavyRainRisk   Boolean?  @map("heavy_rain_risk")
-  drySpellRisk    Boolean?  @map("dry_spell_risk")
-  forecastDate    DateTime? @map("forecast_date")
-  fetchedAt       DateTime  @default(now()) @map("fetched_at")
+  id             String    @id @default(uuid())
+  farmProfileId  String    @map("farm_profile_id")
+  latitude       Float
+  longitude      Float
+  temperatureC   Float     @map("temperature_c")
+  rainForecastMm Float     @map("rain_forecast_mm")
+  humidityPct    Float?    @map("humidity_pct")
+  windSpeedKmh   Float?    @map("wind_speed_kmh")
+  condition      String?
+  forecastDays   Int       @default(3) @map("forecast_days")
+  source         String    @default("open-meteo")
+  rainExpected   Boolean?  @map("rain_expected")
+  heavyRainRisk  Boolean?  @map("heavy_rain_risk")
+  drySpellRisk   Boolean?  @map("dry_spell_risk")
+  forecastDate   DateTime? @map("forecast_date")
+  fetchedAt      DateTime  @default(now()) @map("fetched_at")
 
-  farmProfile     FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+  farmProfile FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
 
   @@index([farmProfileId], map: "idx_weather_farm")
   @@index([fetchedAt], map: "idx_weather_fetched")
@@ -1509,18 +1509,18 @@ model WeatherSnapshot {
 // ─── Farm Finance Score ────────────────────────────────
 
 model FarmFinanceScore {
-  id              String   @id @default(uuid())
-  farmProfileId   String   @map("farm_profile_id")
-  score           Int
-  band            String
-  readiness       String
-  confidence      String   @default("medium")
-  factors         Json     @default("[]")
-  nextSteps       Json     @default("[]") @map("next_steps")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  farmProfileId String   @map("farm_profile_id")
+  score         Int
+  band          String
+  readiness     String
+  confidence    String   @default("medium")
+  factors       Json     @default("[]")
+  nextSteps     Json     @default("[]") @map("next_steps")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  farmProfile     FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
+  farmProfile FarmProfile @relation(fields: [farmProfileId], references: [id], onDelete: Cascade)
 
   @@index([farmProfileId], map: "idx_finance_score_farm")
   @@index([farmProfileId, createdAt], map: "idx_finance_score_farm_created")
@@ -1530,37 +1530,37 @@ model FarmFinanceScore {
 // ─── Referral ──────────────────────────────────────────
 
 model Referral {
-  id           String   @id @default(uuid())
-  referrerId   String   @map("referrer_id")
-  refereeId    String   @map("referee_id")
-  code         String   @unique
-  status       String   @default("joined") // joined, active
-  createdAt    DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  referrerId String   @map("referrer_id")
+  refereeId  String   @map("referee_id")
+  code       String   @unique
+  status     String   @default("joined") // joined, active
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  referrer     User     @relation("ReferralGiver", fields: [referrerId], references: [id])
-  referee      User     @relation("ReferralReceiver", fields: [refereeId], references: [id])
+  referrer User @relation("ReferralGiver", fields: [referrerId], references: [id])
+  referee  User @relation("ReferralReceiver", fields: [refereeId], references: [id])
 
+  @@unique([referrerId, refereeId], map: "uq_referral_pair")
   @@index([referrerId], map: "idx_referral_referrer")
   @@index([refereeId], map: "idx_referral_referee")
   @@index([code], map: "idx_referral_code")
-  @@unique([referrerId, refereeId], map: "uq_referral_pair")
   @@map("referrals")
 }
 
 // ─── Recommendation Feedback ───────────────────────────
 
 model RecommendationFeedback {
-  id                 String   @id @default(uuid())
-  recommendationId   String   @map("recommendation_id")
-  userId             String?  @map("user_id")
-  helpful            Boolean
-  note               String?
-  createdAt          DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid())
+  recommendationId String   @map("recommendation_id")
+  userId           String?  @map("user_id")
+  helpful          Boolean
+  note             String?
+  createdAt        DateTime @default(now()) @map("created_at")
 
-  recommendation     RecommendationRecord @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  recommendation RecommendationRecord @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
 
-  @@index([recommendationId], map: "idx_rec_feedback_rec")
   @@unique([recommendationId, userId], map: "uq_rec_feedback_rec_user")
+  @@index([recommendationId], map: "idx_rec_feedback_rec")
   @@map("recommendation_feedback")
 }
 
@@ -1573,7 +1573,7 @@ model AnalyticsEvent {
   metadata  Json?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User?    @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([event], map: "idx_analytics_event")
   @@index([userId], map: "idx_analytics_user")
@@ -1628,9 +1628,9 @@ model Issue {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  user         User          @relation("IssueReporter", fields: [userId], references: [id])
-  assignedTo   User?         @relation("IssueAssignee", fields: [assignedToId], references: [id])
-  organization Organization? @relation(fields: [orgId], references: [id])
+  user         User              @relation("IssueReporter", fields: [userId], references: [id])
+  assignedTo   User?             @relation("IssueAssignee", fields: [assignedToId], references: [id])
+  organization Organization?     @relation(fields: [orgId], references: [id])
   comments     IssueComment[]
   attachments  IssueAttachment[]
 
@@ -1660,14 +1660,14 @@ model IssueComment {
 }
 
 model IssueAttachment {
-  id          String   @id @default(uuid())
-  issueId     String   @map("issue_id")
-  userId      String   @map("user_id")
-  filename    String
-  originalName String  @map("original_name")
-  mimeType    String   @map("mime_type")
-  sizeBytes   Int      @map("size_bytes")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  issueId      String   @map("issue_id")
+  userId       String   @map("user_id")
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
   user  User  @relation("IssueUploader", fields: [userId], references: [id])
@@ -1706,15 +1706,15 @@ model SystemSetting {
 // ─── V2 Season Engine ─────────────────────────────────
 
 model V2Season {
-  id            String    @id @default(uuid())
-  userId        String    @map("user_id")
-  farmProfileId String?   @map("farm_profile_id")
-  cropType      String    @map("crop_type")
-  startDate     DateTime  @map("start_date")
-  stage         String    @default("planting")
-  isActive      Boolean   @default(true) @map("is_active")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  farmProfileId String?  @map("farm_profile_id")
+  cropType      String   @map("crop_type")
+  startDate     DateTime @map("start_date")
+  stage         String   @default("planting")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   farmProfile FarmProfile? @relation(fields: [farmProfileId], references: [id])
@@ -1727,14 +1727,14 @@ model V2Season {
 }
 
 model V2Task {
-  id          String    @id @default(uuid())
-  seasonId    String    @map("season_id")
+  id          String   @id @default(uuid())
+  seasonId    String   @map("season_id")
   title       String
   description String?
-  status      String    @default("pending")
-  dueDate     DateTime  @map("due_date")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  status      String   @default("pending")
+  dueDate     DateTime @map("due_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   season V2Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
@@ -1746,18 +1746,18 @@ model V2Task {
 
 // ─── V2 Farm Task Completions ──────────────────────────────
 model V2FarmTaskCompletion {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  farmId        String   @map("farm_id")
-  taskRuleId    String   @map("task_rule_id")    // e.g. "stage-planning-choose-seed"
-  taskId        String   @map("task_id")          // e.g. "stage-planning-choose-seed-farmId"
-  title         String
-  priority      String?
-  actionType    String?  @map("action_type")
-  status          String   @default("completed")    // completed | skipped
-  completedAt     DateTime @default(now()) @map("completed_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  idempotencyKey  String?  @map("idempotency_key")  // Client-generated UUID for dedup
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  farmId          String    @map("farm_id")
+  taskRuleId      String    @map("task_rule_id") // e.g. "stage-planning-choose-seed"
+  taskId          String    @map("task_id") // e.g. "stage-planning-choose-seed-farmId"
+  title           String
+  priority        String?
+  actionType      String?   @map("action_type")
+  status          String    @default("completed") // completed | skipped
+  completedAt     DateTime  @default(now()) @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  idempotencyKey  String?   @map("idempotency_key") // Client-generated UUID for dedup
   clientCreatedAt DateTime? @map("client_created_at") // Timestamp from client device
 
   user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1812,19 +1812,19 @@ model V2SupplyReadiness {
   readyToSell         Boolean   @default(false) @map("ready_to_sell")
   crop                String
   estimatedQuantity   Float?    @map("estimated_quantity")
-  quantityUnit        String    @default("kg") @map("quantity_unit")  // kg | bags | tonnes | crates
+  quantityUnit        String    @default("kg") @map("quantity_unit") // kg | bags | tonnes | crates
   expectedHarvestDate DateTime? @map("expected_harvest_date")
   priceExpectation    Float?    @map("price_expectation")
   currency            String    @default("GHS")
   qualityNotes        String?   @map("quality_notes")
-  status              String    @default("active")                     // active | connected | withdrawn
+  status              String    @default("active") // active | connected | withdrawn
   connectedAt         DateTime? @map("connected_at")
-  connectedBy         String?   @map("connected_by")                  // admin userId who marked connected
+  connectedBy         String?   @map("connected_by") // admin userId who marked connected
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  profile             FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  buyerLinks          V2BuyerLink[]
+  profile    FarmProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  buyerLinks V2BuyerLink[]
 
   @@unique([profileId, crop, status], map: "uq_supply_profile_crop_active")
   @@index([profileId], map: "idx_v2_supply_profile")
@@ -1836,24 +1836,24 @@ model V2SupplyReadiness {
 // ─── V2 Land Boundary (linked to FarmProfile, not Application) ──────
 
 model V2LandBoundary {
-  id                  String              @id @default(uuid())
-  profileId           String              @map("profile_id")
-  captureMethod       String              @map("capture_method")   // manual_pin | gps_walk | officer_assisted | fallback_pin
-  measuredArea        Float?              @map("measured_area_hectares") // normalized hectares
-  perimeterMeters     Float?              @map("perimeter_meters")
-  pointCount          Int                 @default(0) @map("point_count")
-  capturedAt          DateTime            @default(now()) @map("captured_at")
-  capturedBy          String?             @map("captured_by")      // userId of capturer (officer or self)
-  notes               String?
+  id                 String   @id @default(uuid())
+  profileId          String   @map("profile_id")
+  captureMethod      String   @map("capture_method") // manual_pin | gps_walk | officer_assisted | fallback_pin
+  measuredArea       Float?   @map("measured_area_hectares") // normalized hectares
+  perimeterMeters    Float?   @map("perimeter_meters")
+  pointCount         Int      @default(0) @map("point_count")
+  capturedAt         DateTime @default(now()) @map("captured_at")
+  capturedBy         String?  @map("captured_by") // userId of capturer (officer or self)
+  notes              String?
   // Boundary validation
-  boundaryConfidence  Float?              @map("boundary_confidence")    // 0–100
-  validationStatus    String              @default("pending") @map("validation_status") // pending | valid | invalid | needs_redraw
-  validationReason    String?             @map("validation_reason")
-  createdAt           DateTime            @default(now()) @map("created_at")
-  updatedAt           DateTime            @updatedAt @map("updated_at")
+  boundaryConfidence Float?   @map("boundary_confidence") // 0–100
+  validationStatus   String   @default("pending") @map("validation_status") // pending | valid | invalid | needs_redraw
+  validationReason   String?  @map("validation_reason")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  profile         FarmProfile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  points          V2BoundaryPoint[]
+  profile FarmProfile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  points  V2BoundaryPoint[]
 
   @@index([profileId], map: "idx_v2_land_boundaries_profile")
   @@index([validationStatus], map: "idx_v2_land_boundaries_validation")
@@ -1861,14 +1861,14 @@ model V2LandBoundary {
 }
 
 model V2BoundaryPoint {
-  id          String          @id @default(uuid())
-  boundaryId  String          @map("boundary_id")
-  pointOrder  Int             @map("point_order")
-  latitude    Float
-  longitude   Float
-  accuracy    Float?          // GPS accuracy in meters
+  id         String @id @default(uuid())
+  boundaryId String @map("boundary_id")
+  pointOrder Int    @map("point_order")
+  latitude   Float
+  longitude  Float
+  accuracy   Float? // GPS accuracy in meters
 
-  boundary    V2LandBoundary  @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
+  boundary V2LandBoundary @relation(fields: [boundaryId], references: [id], onDelete: Cascade)
 
   @@index([boundaryId], map: "idx_v2_boundary_points_boundary")
   @@map("v2_boundary_points")
@@ -1879,21 +1879,21 @@ model V2BoundaryPoint {
 model V2SeedScan {
   id              String    @id @default(uuid())
   profileId       String    @map("profile_id")
-  scanMethod      String    @map("scan_method")       // qr | barcode | manual
-  seedType        String?   @map("seed_type")          // maize, rice, cassava, etc.
+  scanMethod      String    @map("scan_method") // qr | barcode | manual
+  seedType        String?   @map("seed_type") // maize, rice, cassava, etc.
   variety         String?
   supplier        String?
   batchNumber     String?   @map("batch_number")
   expiryDate      DateTime? @map("expiry_date")
-  rawScanData     String?   @map("raw_scan_data")      // raw QR/barcode payload
-  authenticity    String    @default("unknown")         // unknown | verified | warning | failed
-  authenticityMsg String?   @map("authenticity_msg")    // human-readable reason
+  rawScanData     String?   @map("raw_scan_data") // raw QR/barcode payload
+  authenticity    String    @default("unknown") // unknown | verified | warning | failed
+  authenticityMsg String?   @map("authenticity_msg") // human-readable reason
   scannedAt       DateTime  @default(now()) @map("scanned_at")
-  scannedBy       String?   @map("scanned_by")          // userId
+  scannedBy       String?   @map("scanned_by") // userId
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  profile         FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId], map: "idx_v2_seed_scans_profile")
   @@index([authenticity], map: "idx_v2_seed_scans_auth")
@@ -1903,16 +1903,16 @@ model V2SeedScan {
 // ─── V2 Land Insight (satellite / remote sensing placeholder) ───
 
 model V2LandInsight {
-  id            String    @id @default(uuid())
-  profileId     String    @map("profile_id")
-  insightType   String    @map("insight_type")    // vegetation_index | land_use | change_detection | soil_moisture
-  source        String    @default("pending")      // pending | sentinel2 | landsat | manual
-  value         Json?                              // structured data (NDVI, classification, etc.)
-  confidence    Float?                             // 0-1
-  observedAt    DateTime? @map("observed_at")      // when satellite captured
-  generatedAt   DateTime  @default(now()) @map("generated_at")
+  id          String    @id @default(uuid())
+  profileId   String    @map("profile_id")
+  insightType String    @map("insight_type") // vegetation_index | land_use | change_detection | soil_moisture
+  source      String    @default("pending") // pending | sentinel2 | landsat | manual
+  value       Json? // structured data (NDVI, classification, etc.)
+  confidence  Float? // 0-1
+  observedAt  DateTime? @map("observed_at") // when satellite captured
+  generatedAt DateTime  @default(now()) @map("generated_at")
 
-  profile       FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId], map: "idx_v2_land_insights_profile")
   @@index([insightType], map: "idx_v2_land_insights_type")
@@ -1922,18 +1922,18 @@ model V2LandInsight {
 // ─── V2 Verification Signal (generic internal signal model) ─────
 
 model V2VerificationSignal {
-  id            String    @id @default(uuid())
-  profileId     String    @map("profile_id")
-  signalType    String    @map("signal_type")     // boundary_mismatch | seed_auth_warning | area_discrepancy | satellite_anomaly
-  severity      String    @default("info")         // info | warning | critical
-  message       String
-  details       Json?                              // structured context
-  resolved      Boolean   @default(false)
-  resolvedAt    DateTime? @map("resolved_at")
-  resolvedBy    String?   @map("resolved_by")
-  createdAt     DateTime  @default(now()) @map("created_at")
+  id         String    @id @default(uuid())
+  profileId  String    @map("profile_id")
+  signalType String    @map("signal_type") // boundary_mismatch | seed_auth_warning | area_discrepancy | satellite_anomaly
+  severity   String    @default("info") // info | warning | critical
+  message    String
+  details    Json? // structured context
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedBy String?   @map("resolved_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
-  profile       FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId], map: "idx_v2_signals_profile")
   @@index([signalType], map: "idx_v2_signals_type")
@@ -1944,20 +1944,20 @@ model V2VerificationSignal {
 // ─── V2 Buyer (admin-managed buyer records) ───────────────────
 
 model V2Buyer {
-  id              String    @id @default(uuid())
-  buyerName       String    @map("buyer_name")
-  companyName     String?   @map("company_name")
-  contactName     String?   @map("contact_name")
+  id              String   @id @default(uuid())
+  buyerName       String   @map("buyer_name")
+  companyName     String?  @map("company_name")
+  contactName     String?  @map("contact_name")
   phone           String?
   email           String?
-  cropsInterested String?   @map("crops_interested")       // comma-separated crop list
-  regionsCovered  String?   @map("regions_covered")        // comma-separated region list
+  cropsInterested String?  @map("crops_interested") // comma-separated crop list
+  regionsCovered  String?  @map("regions_covered") // comma-separated region list
   notes           String?
-  createdBy       String    @map("created_by")             // admin userId
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String   @map("created_by") // admin userId
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  buyerLinks      V2BuyerLink[]
+  buyerLinks V2BuyerLink[]
 
   @@index([createdBy], map: "idx_v2_buyer_created_by")
   @@map("v2_buyers")
@@ -1966,18 +1966,18 @@ model V2Buyer {
 // ─── V2 Buyer Link (admin links buyer ↔ sale-ready supply) ────
 
 model V2BuyerLink {
-  id              String    @id @default(uuid())
-  supplyId        String    @map("supply_id")
-  buyerId         String    @map("buyer_id")
-  linkedBy        String    @map("linked_by")              // admin userId
-  linkedAt        DateTime  @default(now()) @map("linked_at")
-  status          String    @default("buyer_linked")       // buyer_linked | buyer_contacted | in_discussion | matched | closed | cancelled
-  notes           String?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  supplyId  String   @map("supply_id")
+  buyerId   String   @map("buyer_id")
+  linkedBy  String   @map("linked_by") // admin userId
+  linkedAt  DateTime @default(now()) @map("linked_at")
+  status    String   @default("buyer_linked") // buyer_linked | buyer_contacted | in_discussion | matched | closed | cancelled
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  supply          V2SupplyReadiness @relation(fields: [supplyId], references: [id], onDelete: Cascade)
-  buyer           V2Buyer           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  supply V2SupplyReadiness @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+  buyer  V2Buyer           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 
   @@unique([supplyId, buyerId], map: "uq_buyer_link_supply_buyer")
   @@index([supplyId], map: "idx_v2_buyer_link_supply")
@@ -1991,28 +1991,28 @@ model V2BuyerLink {
 // ═══════════════════════════════════════════════════════════════
 
 model V2CropCycle {
-  id                  String    @id @default(uuid())
-  profileId           String    @map("profile_id")
-  cropType            String    @map("crop_type")
+  id                  String           @id @default(uuid())
+  profileId           String           @map("profile_id")
+  cropType            String           @map("crop_type")
   variety             String?
-  plantingDate        DateTime  @map("planting_date")
-  expectedHarvestDate DateTime? @map("expected_harvest_date")
-  growthStage         String    @default("seedling") @map("growth_stage")
+  plantingDate        DateTime         @map("planting_date")
+  expectedHarvestDate DateTime?        @map("expected_harvest_date")
+  growthStage         String           @default("seedling") @map("growth_stage")
   // Lifecycle status — see CropCycleStatus enum. Nullable until we
   // backfill existing rows; new writes set it explicitly.
   lifecycleStatus     CropCycleStatus? @map("lifecycle_status")
-  statusReason        String?          @map("status_reason")   // short note for delayed/failed
+  statusReason        String?          @map("status_reason") // short note for delayed/failed
   // Action-driven risk band updated by the feedback loop on every
   // meaningful farmer action. Nullable so existing rows stay valid.
-  riskBand            String?          @map("risk_band")       // low | medium | high
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-  createdAt           DateTime  @default(now()) @map("created_at")
+  riskBand            String?          @map("risk_band") // low | medium | high
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  createdAt           DateTime         @default(now()) @map("created_at")
 
-  profile             FarmProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  pestReports         V2PestReport[]
-  issueReports        IssueReport[]
-  verificationRecords VerificationRecord[]
-  taskPlans           CycleTaskPlan[]
+  profile                FarmProfile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  pestReports            V2PestReport[]
+  issueReports           IssueReport[]
+  verificationRecords    VerificationRecord[]
+  taskPlans              CycleTaskPlan[]
   recommendationSnapshot RecommendationSnapshot?
 
   @@index([profileId], map: "idx_v2_crop_cycle_profile")
@@ -2039,20 +2039,20 @@ enum CropCycleStatus {
 // week-indexed task template so the Today feed can surface
 // "what's due now" without re-deriving from crop logic.
 model CycleTaskPlan {
-  id            String    @id @default(uuid())
-  cropCycleId   String    @map("crop_cycle_id")
-  title         String
-  detail        String?
-  weekIndex     Int       @map("week_index")         // 0 = planting week, 1 = week 1, ...
-  dueDate       DateTime? @map("due_date")
-  status        String    @default("pending")         // pending | completed | skipped | overdue
-  priority      String    @default("medium")          // low | medium | high
-  completedAt   DateTime? @map("completed_at")
-  completedBy   String?   @map("completed_by")
-  note          String?
-  isTodayTask   Boolean   @default(false) @map("is_today_task")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  cropCycleId String    @map("crop_cycle_id")
+  title       String
+  detail      String?
+  weekIndex   Int       @map("week_index") // 0 = planting week, 1 = week 1, ...
+  dueDate     DateTime? @map("due_date")
+  status      String    @default("pending") // pending | completed | skipped | overdue
+  priority    String    @default("medium") // low | medium | high
+  completedAt DateTime? @map("completed_at")
+  completedBy String?   @map("completed_by")
+  note        String?
+  isTodayTask Boolean   @default(false) @map("is_today_task")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   cropCycle V2CropCycle @relation(fields: [cropCycleId], references: [id], onDelete: Cascade)
 
@@ -2067,21 +2067,21 @@ model CycleTaskPlan {
 // thinks needs human attention. Persisted so staff can triage and
 // reviewer actions have an audit trail.
 model Intervention {
-  id                  String   @id @default(uuid())
-  farmProfileId       String   @map("farm_profile_id")
-  cropCycleId         String?  @map("crop_cycle_id")
-  interventionScore   Int      @map("intervention_score")     // 0..100
-  priority            String                                    // critical | high | medium | low
-  reason              String
-  recommendedAction   String   @map("recommended_action")
-  dueAt               DateTime? @map("due_at")
-  status              String   @default("open")                 // open | in_progress | resolved | dismissed
-  assignedTo          String?  @map("assigned_to")
-  resolvedAt          DateTime? @map("resolved_at")
-  reviewerNote        String?  @map("reviewer_note")
-  signals             Json?                                      // structured blob of what fired the score
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                String    @id @default(uuid())
+  farmProfileId     String    @map("farm_profile_id")
+  cropCycleId       String?   @map("crop_cycle_id")
+  interventionScore Int       @map("intervention_score") // 0..100
+  priority          String // critical | high | medium | low
+  reason            String
+  recommendedAction String    @map("recommended_action")
+  dueAt             DateTime? @map("due_at")
+  status            String    @default("open") // open | in_progress | resolved | dismissed
+  assignedTo        String?   @map("assigned_to")
+  resolvedAt        DateTime? @map("resolved_at")
+  reviewerNote      String?   @map("reviewer_note")
+  signals           Json? // structured blob of what fired the score
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   @@index([farmProfileId], map: "idx_intervention_farm")
   @@index([priority], map: "idx_intervention_priority")
@@ -2094,18 +2094,18 @@ model Intervention {
 // One row per farmProfile. Recomputed on demand; not normalized
 // to status transitions so we can regenerate cheaply.
 model FarmerScore {
-  id                 String   @id @default(uuid())
-  farmProfileId      String   @unique @map("farm_profile_id")
-  performanceScore   Int      @map("performance_score")  // 0..100
-  consistencyScore   Int      @map("consistency_score")  // 0..100
-  riskScore          Int      @map("risk_score")         // 0..100 (higher = riskier)
-  verificationScore  Int      @map("verification_score") // 0..100
-  healthScore        Int      @map("health_score")       // weighted composite 0..100
-  scoreBand          String   @map("score_band")         // excellent | good | fair | weak
-  signals            Json?                                // input-counts used to compute scores
-  computedAt         DateTime @default(now()) @map("computed_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  farmProfileId     String   @unique @map("farm_profile_id")
+  performanceScore  Int      @map("performance_score") // 0..100
+  consistencyScore  Int      @map("consistency_score") // 0..100
+  riskScore         Int      @map("risk_score") // 0..100 (higher = riskier)
+  verificationScore Int      @map("verification_score") // 0..100
+  healthScore       Int      @map("health_score") // weighted composite 0..100
+  scoreBand         String   @map("score_band") // excellent | good | fair | weak
+  signals           Json? // input-counts used to compute scores
+  computedAt        DateTime @default(now()) @map("computed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@index([scoreBand], map: "idx_farmer_score_band")
   @@index([healthScore], map: "idx_farmer_score_health")
@@ -2114,18 +2114,18 @@ model FarmerScore {
 
 // ─── Funding eligibility decision ───────────────────────────
 model FundingDecision {
-  id                 String   @id @default(uuid())
-  farmProfileId      String   @map("farm_profile_id")
-  decision           String                               // eligible | monitor | not_yet_eligible | needs_review
-  reason             String
-  healthScore        Int?     @map("health_score")
-  verificationScore  Int?     @map("verification_score")
-  blockers           Json?                                // string[] of soft blockers
-  reviewerStatus     String   @default("pending") @map("reviewer_status")  // pending | approved | rejected
-  reviewerNote       String?  @map("reviewer_note")
-  decidedAt          DateTime @default(now()) @map("decided_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  farmProfileId     String   @map("farm_profile_id")
+  decision          String // eligible | monitor | not_yet_eligible | needs_review
+  reason            String
+  healthScore       Int?     @map("health_score")
+  verificationScore Int?     @map("verification_score")
+  blockers          Json? // string[] of soft blockers
+  reviewerStatus    String   @default("pending") @map("reviewer_status") // pending | approved | rejected
+  reviewerNote      String?  @map("reviewer_note")
+  decidedAt         DateTime @default(now()) @map("decided_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@index([farmProfileId], map: "idx_funding_decision_farm")
   @@index([decision], map: "idx_funding_decision_outcome")
@@ -2145,12 +2145,12 @@ model RecommendationSnapshot {
   cropName       String   @map("crop_name")
   stateCode      String?  @map("state_code")
   farmType       String?  @map("farm_type")
-  why            Json?                                  // reasons[]
+  why            Json? // reasons[]
   riskNotes      Json?    @map("risk_notes")
   plantingWindow Json?    @map("planting_window")
   harvestWindow  Json?    @map("harvest_window")
   tags           Json?
-  rawPayload     Json?    @map("raw_payload")           // full source blob for auditability
+  rawPayload     Json?    @map("raw_payload") // full source blob for auditability
   createdAt      DateTime @default(now()) @map("created_at")
 
   cropCycle V2CropCycle @relation(fields: [cropCycleId], references: [id], onDelete: Cascade)
@@ -2164,24 +2164,24 @@ model RecommendationSnapshot {
 // for future guidance. Keep the schema flat so non-technical staff
 // can triage rows directly in Prisma Studio.
 model IssueReport {
-  id               String   @id @default(uuid())
-  farmProfileId    String   @map("farm_profile_id")
-  cropCycleId      String?  @map("crop_cycle_id")
-  farmerId         String?  @map("farmer_id")
-  category         String                                // pest | disease | weather | water | soil | other
-  severity         String   @default("medium")           // low | medium | high
-  description      String
-  photoUrl         String?  @map("photo_url")
-  latitude         Float?
-  longitude        Float?
-  reportedAt       DateTime @default(now()) @map("reported_at")
-  resolvedAt       DateTime? @map("resolved_at")
-  status           String   @default("open")             // open | in_review | resolved | ignored
-  reviewerNote     String?  @map("reviewer_note")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  farmProfileId String    @map("farm_profile_id")
+  cropCycleId   String?   @map("crop_cycle_id")
+  farmerId      String?   @map("farmer_id")
+  category      String // pest | disease | weather | water | soil | other
+  severity      String    @default("medium") // low | medium | high
+  description   String
+  photoUrl      String?   @map("photo_url")
+  latitude      Float?
+  longitude     Float?
+  reportedAt    DateTime  @default(now()) @map("reported_at")
+  resolvedAt    DateTime? @map("resolved_at")
+  status        String    @default("open") // open | in_review | resolved | ignored
+  reviewerNote  String?   @map("reviewer_note")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  cropCycle        V2CropCycle? @relation(fields: [cropCycleId], references: [id], onDelete: SetNull)
+  cropCycle V2CropCycle? @relation(fields: [cropCycleId], references: [id], onDelete: SetNull)
 
   @@index([farmProfileId], map: "idx_issue_report_farm")
   @@index([farmerId], map: "idx_issue_report_farmer")
@@ -2198,21 +2198,21 @@ model IssueReport {
 // automated signal. Makes the NGO dashboard defensible without
 // requiring a full KYC workflow yet.
 model VerificationRecord {
-  id               String   @id @default(uuid())
-  farmProfileId    String   @map("farm_profile_id")
-  cropCycleId      String?  @map("crop_cycle_id")
-  subjectType      String   @map("subject_type")          // planting | harvest | issue | task | profile
-  subjectId        String?  @map("subject_id")            // PK of the thing being verified, opaque
-  method           String                                 // field_visit | photo | peer | automated | document
-  verifiedBy       String   @map("verified_by")           // userId | 'system' | 'peer:<farmerId>'
-  verifiedAt       DateTime @default(now()) @map("verified_at")
-  outcome          String   @default("confirmed")         // confirmed | rejected | inconclusive
-  confidence       Float?                                 // 0..1 for automated signals
-  evidenceUrl      String?  @map("evidence_url")
-  notes            String?
-  createdAt        DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  farmProfileId String   @map("farm_profile_id")
+  cropCycleId   String?  @map("crop_cycle_id")
+  subjectType   String   @map("subject_type") // planting | harvest | issue | task | profile
+  subjectId     String?  @map("subject_id") // PK of the thing being verified, opaque
+  method        String // field_visit | photo | peer | automated | document
+  verifiedBy    String   @map("verified_by") // userId | 'system' | 'peer:<farmerId>'
+  verifiedAt    DateTime @default(now()) @map("verified_at")
+  outcome       String   @default("confirmed") // confirmed | rejected | inconclusive
+  confidence    Float? // 0..1 for automated signals
+  evidenceUrl   String?  @map("evidence_url")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  cropCycle        V2CropCycle? @relation(fields: [cropCycleId], references: [id], onDelete: SetNull)
+  cropCycle V2CropCycle? @relation(fields: [cropCycleId], references: [id], onDelete: SetNull)
 
   @@index([farmProfileId], map: "idx_verification_farm")
   @@index([subjectType, subjectId], map: "idx_verification_subject")
@@ -2230,8 +2230,8 @@ model FarmerActionLog {
   farmProfileId String?  @map("farm_profile_id")
   cropCycleId   String?  @map("crop_cycle_id")
   userId        String?  @map("user_id")
-  actionType    String   @map("action_type")      // task_completed | task_skipped | issue_reported | harvest_reported
-  subjectType   String?  @map("subject_type")     // task | issue | harvest
+  actionType    String   @map("action_type") // task_completed | task_skipped | issue_reported | harvest_reported
+  subjectType   String?  @map("subject_type") // task | issue | harvest
   subjectId     String?  @map("subject_id")
   details       Json?
   occurredAt    DateTime @default(now()) @map("occurred_at")
@@ -2250,24 +2250,24 @@ model FarmerActionLog {
 // harvest report. Fields after `notes` are pre-aggregated from the
 // task plan + action log so the tuner doesn't have to re-scan.
 model HarvestOutcome {
-  id                  String   @id @default(uuid())
-  farmProfileId       String?  @map("farm_profile_id")
-  cropCycleId         String   @unique @map("crop_cycle_id")
-  cropKey             String?  @map("crop_key")
-  actualYieldKg       Float?   @map("actual_yield_kg")
-  yieldUnit           String   @default("kg") @map("yield_unit")
-  qualityBand         String?  @map("quality_band")       // poor | fair | good | excellent
-  completedTasksCount Int?     @map("completed_tasks_count")
-  skippedTasksCount   Int?     @map("skipped_tasks_count")
-  overdueTasksCount   Int?     @map("overdue_tasks_count")
-  issueCount          Int?     @map("issue_count")
-  issueTags           Json?    @map("issue_tags")         // string[] e.g. ['pest','drought']
-  harvestedAt         DateTime? @map("harvested_at")      // farmer-reported harvest date
-  outcomeClass        String?   @map("outcome_class")      // successful | delayed | high_risk | failed
+  id                  String    @id @default(uuid())
+  farmProfileId       String?   @map("farm_profile_id")
+  cropCycleId         String    @unique @map("crop_cycle_id")
+  cropKey             String?   @map("crop_key")
+  actualYieldKg       Float?    @map("actual_yield_kg")
+  yieldUnit           String    @default("kg") @map("yield_unit")
+  qualityBand         String?   @map("quality_band") // poor | fair | good | excellent
+  completedTasksCount Int?      @map("completed_tasks_count")
+  skippedTasksCount   Int?      @map("skipped_tasks_count")
+  overdueTasksCount   Int?      @map("overdue_tasks_count")
+  issueCount          Int?      @map("issue_count")
+  issueTags           Json?     @map("issue_tags") // string[] e.g. ['pest','drought']
+  harvestedAt         DateTime? @map("harvested_at") // farmer-reported harvest date
+  outcomeClass        String?   @map("outcome_class") // successful | delayed | high_risk | failed
   notes               String?
-  reportedAt          DateTime @default(now()) @map("reported_at")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  reportedAt          DateTime  @default(now()) @map("reported_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   @@index([farmProfileId], map: "idx_harvest_outcome_farm")
   @@index([cropKey], map: "idx_harvest_outcome_crop")
@@ -2280,34 +2280,34 @@ model HarvestOutcome {
 // Not an open marketplace — every interest routes through the
 // farmer's acceptance before contact is revealed.
 model CropListing {
-  id             String    @id @default(uuid())
-  farmerId       String    @map("farmer_id")
-  farmProfileId  String?   @map("farm_profile_id")
-  cropCycleId    String?   @unique @map("crop_cycle_id")
-  cropKey        String    @map("crop_key")
-  quantity       Float
-  unit           String    @default("kg")
-  quality        String                                    // high | medium | low
-  country        String
-  stateCode      String?   @map("state_code")
-  city           String?
-  availableFrom  DateTime? @map("available_from")
-  price          Float?
-  pricingMode    String    @default("negotiable") @map("pricing_mode") // fixed | negotiable | ask_buyer
-  deliveryMode   String    @default("either") @map("delivery_mode")    // pickup | delivery | either
-  status         String    @default("draft")                           // draft | active | reserved | sold | closed
-  supportConfidence String? @map("support_confidence")                 // high | medium | low
-  notes          String?
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id                String    @id @default(uuid())
+  farmerId          String    @map("farmer_id")
+  farmProfileId     String?   @map("farm_profile_id")
+  cropCycleId       String?   @unique @map("crop_cycle_id")
+  cropKey           String    @map("crop_key")
+  quantity          Float
+  unit              String    @default("kg")
+  quality           String // high | medium | low
+  country           String
+  stateCode         String?   @map("state_code")
+  city              String?
+  availableFrom     DateTime? @map("available_from")
+  price             Float?
+  pricingMode       String    @default("negotiable") @map("pricing_mode") // fixed | negotiable | ask_buyer
+  deliveryMode      String    @default("either") @map("delivery_mode") // pickup | delivery | either
+  status            String    @default("draft") // draft | active | reserved | sold | closed
+  supportConfidence String?   @map("support_confidence") // high | medium | low
+  notes             String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  interests      MarketInterest[]
+  interests MarketInterest[]
 
-  @@index([farmerId],  map: "idx_crop_listing_farmer")
-  @@index([cropKey],   map: "idx_crop_listing_crop")
-  @@index([country],   map: "idx_crop_listing_country")
+  @@index([farmerId], map: "idx_crop_listing_farmer")
+  @@index([cropKey], map: "idx_crop_listing_crop")
+  @@index([country], map: "idx_crop_listing_country")
   @@index([stateCode], map: "idx_crop_listing_state")
-  @@index([status],    map: "idx_crop_listing_status")
+  @@index([status], map: "idx_crop_listing_status")
   @@index([createdAt], map: "idx_crop_listing_created")
   @@map("crop_listings")
 }
@@ -2324,32 +2324,32 @@ model MarketInterest {
   quantityRequested  Float?    @map("quantity_requested")
   offeredPrice       Float?    @map("offered_price")
   note               String?
-  status             String    @default("pending")                  // pending | accepted | declined | expired
+  status             String    @default("pending") // pending | accepted | declined | expired
   farmerResponseNote String?   @map("farmer_response_note")
   respondedAt        DateTime? @map("responded_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  listing            CropListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing CropListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId], map: "idx_market_interest_listing")
-  @@index([buyerId],   map: "idx_market_interest_buyer")
-  @@index([status],    map: "idx_market_interest_status")
+  @@index([buyerId], map: "idx_market_interest_buyer")
+  @@index([status], map: "idx_market_interest_status")
   @@map("market_buyer_interests")
 }
 
 model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  type      String                                    // listing_interest | interest_accepted | interest_declined | …
+  type      String // listing_interest | interest_accepted | interest_declined | …
   title     String
   message   String
   isRead    Boolean  @default(false) @map("is_read")
   metadata  Json?
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([userId,   isRead],  map: "idx_notification_user_unread")
-  @@index([userId,   createdAt], map: "idx_notification_user_time")
+  @@index([userId, isRead], map: "idx_notification_user_unread")
+  @@index([userId, createdAt], map: "idx_notification_user_time")
   @@map("notifications")
 }
 
@@ -2360,14 +2360,14 @@ model Notification {
 // beyond the userId itself; metadata blob is free-form but should
 // stay small.
 model EventLog {
-  id        String   @id @default(uuid())
-  userId    String?  @map("user_id")
-  eventType String   @map("event_type")      // onboarding_completed | task_completed | …
-  metadata  Json?
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  eventType  String   @map("event_type") // onboarding_completed | task_completed | …
+  metadata   Json?
   occurredAt DateTime @default(now()) @map("occurred_at")
 
-  @@index([eventType,  occurredAt], map: "idx_event_log_type_time")
-  @@index([userId,     occurredAt], map: "idx_event_log_user_time")
+  @@index([eventType, occurredAt], map: "idx_event_log_type_time")
+  @@index([userId, occurredAt], map: "idx_event_log_user_time")
   @@map("event_logs")
 }
 
@@ -2379,8 +2379,8 @@ model EventLog {
 model BuyerProfile {
   id                 String   @id @default(uuid())
   userId             String   @unique @map("user_id")
-  preferredCountries String[] @default([]) @map("preferred_countries")   // ['US','GH']
-  preferredRegions   Json     @default("[]") @map("preferred_regions")   // [{country:'US', stateCode:'MD'}, …]
+  preferredCountries String[] @default([]) @map("preferred_countries") // ['US','GH']
+  preferredRegions   Json     @default("[]") @map("preferred_regions") // [{country:'US', stateCode:'MD'}, …]
   expandSearch       Boolean  @default(false) @map("expand_search")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
@@ -2390,26 +2390,26 @@ model BuyerProfile {
 }
 
 model V2PestImage {
-  id            String    @id @default(uuid())
-  profileId     String    @map("profile_id")
-  uploadedBy    String    @map("uploaded_by")
-  imageType     String    @map("image_type")         // leaf_closeup | whole_plant | field_wide | hotspot_photo | followup
-  imageUrl      String    @map("image_url")
-  capturedAt    DateTime? @map("captured_at")
-  gpsLat        Float?    @map("gps_lat")
-  gpsLng        Float?    @map("gps_lng")
-  qualityScore  Float?    @map("quality_score")       // 0–100
-  qualityNotes  String?   @map("quality_notes")
+  id              String    @id @default(uuid())
+  profileId       String    @map("profile_id")
+  uploadedBy      String    @map("uploaded_by")
+  imageType       String    @map("image_type") // leaf_closeup | whole_plant | field_wide | hotspot_photo | followup
+  imageUrl        String    @map("image_url")
+  capturedAt      DateTime? @map("captured_at")
+  gpsLat          Float?    @map("gps_lat")
+  gpsLng          Float?    @map("gps_lng")
+  qualityScore    Float?    @map("quality_score") // 0–100
+  qualityNotes    String?   @map("quality_notes")
   // Image quality enforcement
-  blurScore     Float?    @map("blur_score")           // 0–100 (higher = sharper)
-  brightnessScore Float?  @map("brightness_score")     // 0–100
-  resolutionOk  Boolean   @default(true) @map("resolution_ok")
-  qualityPassed Boolean   @default(true) @map("quality_passed")
-  rejectionReason String? @map("rejection_reason")     // too_blurry | too_dark | too_bright | low_resolution
-  createdAt     DateTime  @default(now()) @map("created_at")
+  blurScore       Float?    @map("blur_score") // 0–100 (higher = sharper)
+  brightnessScore Float?    @map("brightness_score") // 0–100
+  resolutionOk    Boolean   @default(true) @map("resolution_ok")
+  qualityPassed   Boolean   @default(true) @map("quality_passed")
+  rejectionReason String?   @map("rejection_reason") // too_blurry | too_dark | too_bright | low_resolution
+  createdAt       DateTime  @default(now()) @map("created_at")
 
-  profile       FarmProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  detections    V2ImageDetection[]
+  profile    FarmProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  detections V2ImageDetection[]
 
   @@index([profileId], map: "idx_v2_pest_image_profile")
   @@index([uploadedBy], map: "idx_v2_pest_image_uploader")
@@ -2417,17 +2417,17 @@ model V2PestImage {
 }
 
 model V2ImageDetection {
-  id                  String   @id @default(uuid())
-  imageId             String   @map("image_id")
-  likelyIssue         String   @map("likely_issue")       // pest | disease | nutrient_deficiency | water_heat_stress | uncertain
-  alternativeIssue    String?  @map("alternative_issue")
-  confidenceScore     Float    @map("confidence_score")    // 0–100
-  severityScore       Float    @map("severity_score")      // 0–100
-  isUncertain         Boolean  @default(false) @map("is_uncertain")
-  detectionMetadata   Json?    @map("detection_metadata")  // indicators found: bite_marks, holes, stippling, etc.
-  createdAt           DateTime @default(now()) @map("created_at")
+  id                String   @id @default(uuid())
+  imageId           String   @map("image_id")
+  likelyIssue       String   @map("likely_issue") // pest | disease | nutrient_deficiency | water_heat_stress | uncertain
+  alternativeIssue  String?  @map("alternative_issue")
+  confidenceScore   Float    @map("confidence_score") // 0–100
+  severityScore     Float    @map("severity_score") // 0–100
+  isUncertain       Boolean  @default(false) @map("is_uncertain")
+  detectionMetadata Json?    @map("detection_metadata") // indicators found: bite_marks, holes, stippling, etc.
+  createdAt         DateTime @default(now()) @map("created_at")
 
-  image               V2PestImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  image V2PestImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
   @@index([imageId], map: "idx_v2_detection_image")
   @@index([likelyIssue], map: "idx_v2_detection_issue")
@@ -2435,32 +2435,32 @@ model V2ImageDetection {
 }
 
 model V2PestReport {
-  id                String   @id @default(uuid())
-  profileId         String   @map("profile_id")
-  reportedBy        String   @map("reported_by")
-  cropCycleId       String?  @map("crop_cycle_id")
-  reportSource      String   @default("farmer_scan") @map("report_source") // farmer_scan | satellite_alert | admin_report | regional_watch
-  suspectedIssue    String?  @map("suspected_issue")
-  reportConfidence  Float?   @map("report_confidence")
-  spreadScope       String?  @map("spread_scope")    // isolated | localized | widespread
-  riskLevel         String?  @map("risk_level")       // low | moderate | high | urgent
-  riskScore         Float?   @map("risk_score")
-  likelyIssue       String?  @map("likely_issue")     // pest | disease | nutrient_deficiency | water_heat_stress | uncertain
-  alternativeIssue  String?  @map("alternative_issue")
-  confidenceScore   Float?   @map("confidence_score") // 0–100
-  isUncertain       Boolean  @default(false) @map("is_uncertain")
-  actionGuidance    Json?    @map("action_guidance")   // structured action steps
-  notes             String?
-  imageIds          String[] @map("image_ids")
-  status            String   @default("open")         // open | under_review | confirmed | resolved | false_positive
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  profileId        String   @map("profile_id")
+  reportedBy       String   @map("reported_by")
+  cropCycleId      String?  @map("crop_cycle_id")
+  reportSource     String   @default("farmer_scan") @map("report_source") // farmer_scan | satellite_alert | admin_report | regional_watch
+  suspectedIssue   String?  @map("suspected_issue")
+  reportConfidence Float?   @map("report_confidence")
+  spreadScope      String?  @map("spread_scope") // isolated | localized | widespread
+  riskLevel        String?  @map("risk_level") // low | moderate | high | urgent
+  riskScore        Float?   @map("risk_score")
+  likelyIssue      String?  @map("likely_issue") // pest | disease | nutrient_deficiency | water_heat_stress | uncertain
+  alternativeIssue String?  @map("alternative_issue")
+  confidenceScore  Float?   @map("confidence_score") // 0–100
+  isUncertain      Boolean  @default(false) @map("is_uncertain")
+  actionGuidance   Json?    @map("action_guidance") // structured action steps
+  notes            String?
+  imageIds         String[] @map("image_ids")
+  status           String   @default("open") // open | under_review | confirmed | resolved | false_positive
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  profile               FarmProfile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  cropCycle             V2CropCycle?           @relation(fields: [cropCycleId], references: [id])
-  verificationAnswers   V2VerificationAnswer[]
-  treatmentActions      V2TreatmentAction[]
-  diagnosisFeedback     V2DiagnosisFeedback[]
+  profile             FarmProfile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  cropCycle           V2CropCycle?           @relation(fields: [cropCycleId], references: [id])
+  verificationAnswers V2VerificationAnswer[]
+  treatmentActions    V2TreatmentAction[]
+  diagnosisFeedback   V2DiagnosisFeedback[]
 
   @@index([profileId], map: "idx_v2_pest_report_profile")
   @@index([status], map: "idx_v2_pest_report_status")
@@ -2470,27 +2470,27 @@ model V2PestReport {
 }
 
 model V2VerificationAnswer {
-  id            String   @id @default(uuid())
-  pestReportId  String   @map("pest_report_id")
-  questionKey   String   @map("question_key")    // leaves_eaten | spreading | insects_visible | widespread | recent_rain | recent_heat
-  answerValue   String   @map("answer_value")    // yes | no | unsure
-  createdAt     DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  pestReportId String   @map("pest_report_id")
+  questionKey  String   @map("question_key") // leaves_eaten | spreading | insects_visible | widespread | recent_rain | recent_heat
+  answerValue  String   @map("answer_value") // yes | no | unsure
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  pestReport    V2PestReport @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
+  pestReport V2PestReport @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
 
   @@index([pestReportId], map: "idx_v2_verify_report")
   @@map("v2_verification_answers")
 }
 
 model V2SatelliteScan {
-  id              String   @id @default(uuid())
-  profileId       String   @map("profile_id")
-  scanDate        DateTime @map("scan_date")
-  imagerySource   String   @default("sentinel2") @map("imagery_source")
-  cloudCover      Float?   @map("cloud_cover")
-  scanConfidence  Float?   @map("scan_confidence")
-  rawMetadata     Json?    @map("raw_metadata")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  profileId      String   @map("profile_id")
+  scanDate       DateTime @map("scan_date")
+  imagerySource  String   @default("sentinel2") @map("imagery_source")
+  cloudCover     Float?   @map("cloud_cover")
+  scanConfidence Float?   @map("scan_confidence")
+  rawMetadata    Json?    @map("raw_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   profile           FarmProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
   fieldStressScores V2FieldStressScore[]
@@ -2520,16 +2520,16 @@ model V2FieldStressScore {
 }
 
 model V2HotspotZone {
-  id                  String   @id @default(uuid())
-  profileId           String   @map("profile_id")
-  sourceType          String   @map("source_type")       // satellite | drone | manual
-  zoneGeoJson         Json     @map("zone_geojson")
-  hotspotScore        Float    @map("hotspot_score")
-  severity            String                              // low | moderate | high | critical
-  inspectionPriority  Int      @default(0) @map("inspection_priority")
-  status              String   @default("active")         // active | inspected | resolved | false_alarm
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  profileId          String   @map("profile_id")
+  sourceType         String   @map("source_type") // satellite | drone | manual
+  zoneGeoJson        Json     @map("zone_geojson")
+  hotspotScore       Float    @map("hotspot_score")
+  severity           String // low | moderate | high | critical
+  inspectionPriority Int      @default(0) @map("inspection_priority")
+  status             String   @default("active") // active | inspected | resolved | false_alarm
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   profile    FarmProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   droneScans V2DroneScan[]
@@ -2541,14 +2541,14 @@ model V2HotspotZone {
 }
 
 model V2DroneScan {
-  id              String    @id @default(uuid())
-  profileId       String    @map("profile_id")
-  hotspotZoneId   String?   @map("hotspot_zone_id")
-  flightDate      DateTime  @map("flight_date")
-  imageBundleUrl  String?   @map("image_bundle_url")
-  validationScore Float?    @map("validation_score")
+  id              String   @id @default(uuid())
+  profileId       String   @map("profile_id")
+  hotspotZoneId   String?  @map("hotspot_zone_id")
+  flightDate      DateTime @map("flight_date")
+  imageBundleUrl  String?  @map("image_bundle_url")
+  validationScore Float?   @map("validation_score")
   metadata        Json?
-  createdAt       DateTime  @default(now()) @map("created_at")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   profile     FarmProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
   hotspotZone V2HotspotZone? @relation(fields: [hotspotZoneId], references: [id])
@@ -2566,7 +2566,7 @@ model V2OutbreakCluster {
   likelyIssue     String?  @map("likely_issue")
   confidenceScore Float?   @map("confidence_score")
   farmCount       Int      @default(0) @map("farm_count")
-  status          String   @default("active")        // active | monitoring | resolved
+  status          String   @default("active") // active | monitoring | resolved
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -2585,9 +2585,9 @@ model V2DistrictRiskScore {
   dominantRiskType    String?  @map("dominant_risk_type")
   trendDirection      String   @default("stable") @map("trend_direction") // rising | stable | declining
   // Regional confidence
-  signalCount         Int      @default(0) @map("signal_count")          // total data points behind this score
+  signalCount         Int      @default(0) @map("signal_count") // total data points behind this score
   confidenceLevel     String   @default("low_confidence") @map("confidence_level") // confirmed | probable | low_confidence
-  dataQualityScore    Float    @default(0) @map("data_quality_score")    // 0–100
+  dataQualityScore    Float    @default(0) @map("data_quality_score") // 0–100
   metadata            Json?
   createdAt           DateTime @default(now()) @map("created_at")
 
@@ -2599,9 +2599,9 @@ model V2DistrictRiskScore {
 
 model V2AlertEvent {
   id               String    @id @default(uuid())
-  targetType       String    @map("target_type")       // farm | region | farmer
+  targetType       String    @map("target_type") // farm | region | farmer
   targetId         String    @map("target_id")
-  alertLevel       String    @map("alert_level")        // watch | elevated | high_risk | urgent
+  alertLevel       String    @map("alert_level") // watch | elevated | high_risk | urgent
   alertReason      String    @map("alert_reason")
   alertMessage     String    @map("alert_message")
   confidenceScore  Float     @map("confidence_score")
@@ -2620,14 +2620,14 @@ model V2AlertEvent {
 }
 
 model V2TreatmentAction {
-  id            String   @id @default(uuid())
-  profileId     String   @map("profile_id")
-  pestReportId  String   @map("pest_report_id")
-  actionTaken   String   @map("action_taken")
-  actionDate    DateTime @map("action_date")
-  productUsed   String?  @map("product_used")
-  notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  pestReportId String   @map("pest_report_id")
+  actionTaken  String   @map("action_taken")
+  actionDate   DateTime @map("action_date")
+  productUsed  String?  @map("product_used")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
 
   profile    FarmProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
   pestReport V2PestReport         @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
@@ -2641,7 +2641,7 @@ model V2TreatmentAction {
 model V2TreatmentOutcome {
   id                String   @id @default(uuid())
   treatmentActionId String   @map("treatment_action_id")
-  outcomeStatus     String   @map("outcome_status")       // improved | same | worse | resolved
+  outcomeStatus     String   @map("outcome_status") // improved | same | worse | resolved
   outcomeScore      Float?   @map("outcome_score")
   followupNotes     String?  @map("followup_notes")
   followupImageUrl  String?  @map("followup_image_url")
@@ -2655,14 +2655,14 @@ model V2TreatmentOutcome {
 }
 
 model V2DiagnosisFeedback {
-  id              String   @id @default(uuid())
-  pestReportId    String   @map("pest_report_id")
-  userId          String   @map("user_id")
-  userFeedback    String   @map("user_feedback")     // accurate | partially_accurate | inaccurate
-  helpfulScore    Int?     @map("helpful_score")      // 1–5
-  confirmedIssue  String?  @map("confirmed_issue")
-  notes           String?
-  createdAt       DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  pestReportId   String   @map("pest_report_id")
+  userId         String   @map("user_id")
+  userFeedback   String   @map("user_feedback") // accurate | partially_accurate | inaccurate
+  helpfulScore   Int?     @map("helpful_score") // 1–5
+  confirmedIssue String?  @map("confirmed_issue")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
 
   pestReport V2PestReport @relation(fields: [pestReportId], references: [id], onDelete: Cascade)
 
@@ -2681,7 +2681,7 @@ model V2FarmPestRisk {
   farmHistoryScore          Float    @default(0) @map("farm_history_score")
   verificationResponseScore Float    @default(0) @map("verification_response_score")
   overallRiskScore          Float    @map("overall_risk_score")
-  riskLevel                 String   @map("risk_level")   // low | moderate | high | urgent
+  riskLevel                 String   @map("risk_level") // low | moderate | high | urgent
   computedAt                DateTime @default(now()) @map("computed_at")
 
   profile FarmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
@@ -2727,10 +2727,10 @@ model V2ScoringConfig {
 model OnboardingEvent {
   id             String   @id @default(uuid())
   userId         String   @map("user_id")
-  eventType      String   @map("event_type")       // started, step_completed, completed, abandoned, resumed
-  stepName       String?  @map("step_name")         // welcome, farmName, country, crop, farmSize, gender, age, location, photo, processing
-  metadataJson   Json?    @map("metadata_json")     // e.g. { source: 'self_register', device: 'mobile' }
-  eventTimestamp  DateTime @default(now()) @map("event_timestamp")
+  eventType      String   @map("event_type") // started, step_completed, completed, abandoned, resumed
+  stepName       String?  @map("step_name") // welcome, farmName, country, crop, farmSize, gender, age, location, photo, processing
+  metadataJson   Json?    @map("metadata_json") // e.g. { source: 'self_register', device: 'mobile' }
+  eventTimestamp DateTime @default(now()) @map("event_timestamp")
   createdAt      DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2762,7 +2762,7 @@ model EmailLog {
   metadata        Json?
   createdAt       DateTime       @default(now()) @map("created_at")
 
-  relatedUser     User?          @relation("EmailLogUser", fields: [relatedUserId], references: [id])
+  relatedUser User? @relation("EmailLogUser", fields: [relatedUserId], references: [id])
 
   @@index([recipient], map: "idx_email_log_recipient")
   @@index([templateName], map: "idx_email_log_template")
@@ -2774,31 +2774,31 @@ model EmailLog {
 
 // ─── Yield / Harvest Records (per-farm, multiple over time) ─────
 model V2HarvestRecord {
-  id                  String   @id @default(uuid())
-  farmId              String   @map("farm_id")
+  id                  String    @id @default(uuid())
+  farmId              String    @map("farm_id")
   // Optional link to a specific V2CropCycle so harvest totals can be
   // rolled into per-cycle progress. Nullable for legacy rows and
   // for farmers who report a harvest without having started a
   // tracked cycle first.
-  cropCycleId         String?  @map("crop_cycle_id")
-  cropId              String   @map("crop_id")
-  cropLabel           String   @map("crop_label")
-  harvestDate         DateTime @map("harvest_date")
-  quantityHarvested   Float    @map("quantity_harvested")
-  quantityUnit        String   @map("quantity_unit")        // kg | bags | tonnes | crates | bundles
-  quantitySold        Float?   @map("quantity_sold")
-  quantityStored      Float?   @map("quantity_stored")
-  quantityLost        Float?   @map("quantity_lost")
-  averageSellingPrice Float?   @map("average_selling_price")
-  currency            String?  @map("currency")             // GHS | NGN | KES | TZS | USD | XOF
-  qualityGrade        String?  @map("quality_grade")        // A | B | C | poor | good | excellent
+  cropCycleId         String?   @map("crop_cycle_id")
+  cropId              String    @map("crop_id")
+  cropLabel           String    @map("crop_label")
+  harvestDate         DateTime  @map("harvest_date")
+  quantityHarvested   Float     @map("quantity_harvested")
+  quantityUnit        String    @map("quantity_unit") // kg | bags | tonnes | crates | bundles
+  quantitySold        Float?    @map("quantity_sold")
+  quantityStored      Float?    @map("quantity_stored")
+  quantityLost        Float?    @map("quantity_lost")
+  averageSellingPrice Float?    @map("average_selling_price")
+  currency            String?   @map("currency") // GHS | NGN | KES | TZS | USD | XOF
+  qualityGrade        String?   @map("quality_grade") // A | B | C | poor | good | excellent
   notes               String?
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  idempotencyKey      String?  @map("idempotency_key")  // Client-generated UUID for dedup
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  idempotencyKey      String?   @map("idempotency_key") // Client-generated UUID for dedup
   clientCreatedAt     DateTime? @map("client_created_at") // Timestamp from client device
 
-  farm                FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@unique([cropCycleId], map: "uq_harvest_records_cycle")
   @@index([farmId], map: "idx_harvest_records_farm")
@@ -2810,20 +2810,20 @@ model V2HarvestRecord {
 
 // ─── Farm Cost Records (per-farm expenses, multiple over time) ──
 model V2FarmCostRecord {
-  id          String   @id @default(uuid())
-  farmId      String   @map("farm_id")
-  date        DateTime
-  category    String                        // seeds | fertilizer | pesticide | herbicide | labor | irrigation | transport | storage | equipment | land_preparation | other
-  description String
-  amount      Float
-  currency    String?                       // GHS | NGN | KES | TZS | USD | XOF
-  notes            String?
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-  idempotencyKey   String?  @map("idempotency_key")  // Client-generated UUID for dedup
-  clientCreatedAt  DateTime? @map("client_created_at") // Timestamp from client device
+  id              String    @id @default(uuid())
+  farmId          String    @map("farm_id")
+  date            DateTime
+  category        String // seeds | fertilizer | pesticide | herbicide | labor | irrigation | transport | storage | equipment | land_preparation | other
+  description     String
+  amount          Float
+  currency        String? // GHS | NGN | KES | TZS | USD | XOF
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  idempotencyKey  String?   @map("idempotency_key") // Client-generated UUID for dedup
+  clientCreatedAt DateTime? @map("client_created_at") // Timestamp from client device
 
-  farm        FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@index([farmId], map: "idx_cost_records_farm")
   @@index([farmId, date], map: "idx_cost_records_farm_date")
@@ -2838,21 +2838,21 @@ model V2FarmCostRecord {
 // admin-dashboard spec's farm_events table one-to-one.
 // Run `npx prisma migrate dev --name add_farm_events` to apply.
 model FarmEvent {
-  id         String   @id @default(uuid())
-  userId     String?  @map("user_id")
-  farmId     String?  @map("farm_id")
-  eventType  String   @map("event_type")   // task_completed | crop_changed | farm_updated | task_feedback | ...
-  payload    Json?
-  country    String?
-  region     String?
-  crop       String?
-  createdAt  DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  farmId    String?  @map("farm_id")
+  eventType String   @map("event_type") // task_completed | crop_changed | farm_updated | task_feedback | ...
+  payload   Json?
+  country   String?
+  region    String?
+  crop      String?
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([createdAt], map: "idx_farm_events_created")
-  @@index([userId],    map: "idx_farm_events_user")
-  @@index([farmId],    map: "idx_farm_events_farm")
+  @@index([userId], map: "idx_farm_events_user")
+  @@index([farmId], map: "idx_farm_events_farm")
   @@index([eventType], map: "idx_farm_events_type")
-  @@index([region],    map: "idx_farm_events_region")
+  @@index([region], map: "idx_farm_events_region")
   @@map("farm_events")
 }
 
@@ -2870,19 +2870,19 @@ model FarmEvent {
 //
 // Run `npx prisma migrate deploy` after pulling to apply.
 model FarmMetrics {
-  id          String   @id @default(uuid())
-  farmId      String   @map("farm_id")
-  metric      String                              // 'risk_score' | 'task_completion' | 'open_issues' | ...
-  value       Float
-  unit        String?                             // optional — 'count' | 'percent' | 'score'
-  program     String?
-  source      String?                              // 'cron' | 'worker' | 'api' | 'admin'
-  capturedAt  DateTime @default(now()) @map("captured_at")
-  metadata    Json?
+  id         String   @id @default(uuid())
+  farmId     String   @map("farm_id")
+  metric     String // 'risk_score' | 'task_completion' | 'open_issues' | ...
+  value      Float
+  unit       String? // optional — 'count' | 'percent' | 'score'
+  program    String?
+  source     String? // 'cron' | 'worker' | 'api' | 'admin'
+  capturedAt DateTime @default(now()) @map("captured_at")
+  metadata   Json?
 
   @@index([farmId, metric, capturedAt(sort: Desc)], map: "idx_farm_metrics_farm_metric_time")
-  @@index([metric, capturedAt(sort: Desc)],         map: "idx_farm_metrics_metric_time")
-  @@index([program, capturedAt(sort: Desc)],        map: "idx_farm_metrics_program_time")
+  @@index([metric, capturedAt(sort: Desc)], map: "idx_farm_metrics_metric_time")
+  @@index([program, capturedAt(sort: Desc)], map: "idx_farm_metrics_program_time")
   @@map("farm_metrics")
 }
 
@@ -2897,44 +2897,44 @@ model FarmMetrics {
 // the table being absent — autonomous actions fall back to the
 // ops event log so the feature never blocks on a missing migration.
 model ActionLog {
-  id            String   @id @default(uuid())
-  actionType    String   @map("action_type")        // 'sms_reminder' | 'email_alert' | 'assign_officer' | 'review' | ...
-  targetType    String?  @map("target_type")        // 'farmer' | 'farm' | 'issue' | 'program'
-  targetId      String?  @map("target_id")
-  actorRole     String?  @map("actor_role")         // 'system' for autonomous runs; role string otherwise
-  actorId       String?  @map("actor_id")
-  channel       String?                              // 'sms' | 'email' | 'in_app' | null
-  outcome       String                               // 'success' | 'failure' | 'skipped'
-  reason        String?                              // short machine-readable code when outcome ≠ success
-  priorityScore Int?     @map("priority_score")     // from scoringEngine
-  metadata      Json?                                // free-form context (phone, subject, rule tag, etc.)
+  id            String    @id @default(uuid())
+  actionType    String    @map("action_type") // 'sms_reminder' | 'email_alert' | 'assign_officer' | 'review' | ...
+  targetType    String?   @map("target_type") // 'farmer' | 'farm' | 'issue' | 'program'
+  targetId      String?   @map("target_id")
+  actorRole     String?   @map("actor_role") // 'system' for autonomous runs; role string otherwise
+  actorId       String?   @map("actor_id")
+  channel       String? // 'sms' | 'email' | 'in_app' | null
+  outcome       String // 'success' | 'failure' | 'skipped'
+  reason        String? // short machine-readable code when outcome ≠ success
+  priorityScore Int?      @map("priority_score") // from scoringEngine
+  metadata      Json? // free-form context (phone, subject, rule tag, etc.)
   scheduledFor  DateTime? @map("scheduled_for")
   executedAt    DateTime? @map("executed_at")
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
-  @@index([createdAt],   map: "idx_sys_action_log_created")
-  @@index([actionType],  map: "idx_sys_action_log_type")
-  @@index([targetId],    map: "idx_sys_action_log_target")
-  @@index([outcome],     map: "idx_sys_action_log_outcome")
+  @@index([createdAt], map: "idx_sys_action_log_created")
+  @@index([actionType], map: "idx_sys_action_log_type")
+  @@index([targetId], map: "idx_sys_action_log_target")
+  @@index([outcome], map: "idx_sys_action_log_outcome")
   @@map("action_logs")
 }
 
 model AdminAuditLog {
   id         String   @id @default(uuid())
-  actorId    String?  @map("actor_id")        // user id of the admin / NGO operator
-  actorRole  String?  @map("actor_role")      // role at the time of action
-  action     String                             // e.g. 'ngo_import', 'farmer_update', 'program_change'
-  targetId   String?  @map("target_id")       // farmId / userId / listingId depending on action
-  targetKind String?  @map("target_kind")     // 'farm' | 'user' | 'listing' | 'program'
-  payload    Json?                              // structured context
+  actorId    String?  @map("actor_id") // user id of the admin / NGO operator
+  actorRole  String?  @map("actor_role") // role at the time of action
+  action     String // e.g. 'ngo_import', 'farmer_update', 'program_change'
+  targetId   String?  @map("target_id") // farmId / userId / listingId depending on action
+  targetKind String?  @map("target_kind") // 'farm' | 'user' | 'listing' | 'program'
+  payload    Json? // structured context
   ip         String?
   userAgent  String?  @map("user_agent")
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([createdAt], map: "idx_admin_audit_created")
-  @@index([actorId],   map: "idx_admin_audit_actor")
-  @@index([action],    map: "idx_admin_audit_action")
-  @@index([targetId],  map: "idx_admin_audit_target")
+  @@index([actorId], map: "idx_admin_audit_actor")
+  @@index([action], map: "idx_admin_audit_action")
+  @@index([targetId], map: "idx_admin_audit_target")
   @@map("admin_audit_logs")
 }
 
@@ -2942,62 +2942,62 @@ model AdminAuditLog {
 // Mirrors the spec's produce_listings table one-to-one.
 // Run `npx prisma migrate dev --name add_marketplace` to apply.
 model ProduceListing {
-  id           String   @id @default(uuid())
-  farmId       String?  @map("farm_id")
-  crop         String
-  quantity     Int
-  priceFdUnit  Decimal? @map("price_per_unit") @db.Decimal(12, 2)
-  location     String?
-  region       String?
-  status       String   @default("available")  // available | reserved | sold | cancelled
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt           @map("updated_at")
+  id          String   @id @default(uuid())
+  farmId      String?  @map("farm_id")
+  crop        String
+  quantity    Int
+  priceFdUnit Decimal? @map("price_per_unit") @db.Decimal(12, 2)
+  location    String?
+  region      String?
+  status      String   @default("available") // available | reserved | sold | cancelled
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@index([status],   map: "idx_produce_listings_status")
-  @@index([crop],     map: "idx_produce_listings_crop")
-  @@index([farmId],   map: "idx_produce_listings_farm")
+  @@index([status], map: "idx_produce_listings_status")
+  @@index([crop], map: "idx_produce_listings_crop")
+  @@index([farmId], map: "idx_produce_listings_farm")
   @@index([createdAt], map: "idx_produce_listings_created")
   // Production infra spec §3 — region + country lookups for the
   // marketplace browse filters.
-  @@index([region],   map: "idx_produce_listings_region")
+  @@index([region], map: "idx_produce_listings_region")
   @@map("produce_listings")
 }
 
 // ─── Marketplace: buyer-originated purchase requests ────────
 model BuyerRequest {
-  id         String   @id @default(uuid())
-  buyerName  String?  @map("buyer_name")
-  buyerId    String?  @map("buyer_id")
-  crop       String
-  quantity   Int
-  location   String?
-  region     String?
-  status     String   @default("open")  // open | matched | fulfilled | cancelled
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt       @map("updated_at")
+  id        String   @id @default(uuid())
+  buyerName String?  @map("buyer_name")
+  buyerId   String?  @map("buyer_id")
+  crop      String
+  quantity  Int
+  location  String?
+  region    String?
+  status    String   @default("open") // open | matched | fulfilled | cancelled
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([status],  map: "idx_buyer_requests_status")
-  @@index([crop],    map: "idx_buyer_requests_crop")
+  @@index([status], map: "idx_buyer_requests_status")
+  @@index([crop], map: "idx_buyer_requests_crop")
   @@index([buyerId], map: "idx_buyer_requests_buyer")
   // Production infra spec §3 — region filters + recency sort.
-  @@index([region],    map: "idx_buyer_requests_region")
+  @@index([region], map: "idx_buyer_requests_region")
   @@index([createdAt], map: "idx_buyer_requests_created")
   @@map("buyer_requests")
 }
 
 // ─── Marketplace: simple payments ledger (v1 simulated) ─────
 model MarketplacePayment {
-  id          String   @id @default(uuid())
-  buyerId     String?  @map("buyer_id")
-  listingId   String   @map("listing_id")
-  amount      Decimal  @db.Decimal(12, 2)
-  currency    String?
-  status      String   @default("completed") // completed | failed | pending
-  createdAt   DateTime @default(now())       @map("created_at")
+  id        String   @id @default(uuid())
+  buyerId   String?  @map("buyer_id")
+  listingId String   @map("listing_id")
+  amount    Decimal  @db.Decimal(12, 2)
+  currency  String?
+  status    String   @default("completed") // completed | failed | pending
+  createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([buyerId],   map: "idx_marketplace_payments_buyer")
+  @@index([buyerId], map: "idx_marketplace_payments_buyer")
   @@index([listingId], map: "idx_marketplace_payments_listing")
-  @@index([status],    map: "idx_marketplace_payments_status")
+  @@index([status], map: "idx_marketplace_payments_status")
   // Production infra spec §3 — recency sort for ledger reads.
   @@index([createdAt], map: "idx_marketplace_payments_created")
   @@map("marketplace_payments")
@@ -3016,25 +3016,25 @@ model MarketplacePayment {
 // stream: TODAY_VIEWED, TASK_COMPLETED, LABEL_SUBMITTED,
 // LOCATION_CAPTURED, etc. They evolve independently.
 model ClientEvent {
-  id          String   @id                                            // client-minted UUID
-  orgId       String?                                                  @map("org_id")     // SET FROM JWT — never trust client
-  farmerId    String?  @map("farmer_id")
-  farmId      String?  @map("farm_id")
-  type        String                                                  // EVENT_TYPES enum value
-  payload     Json?
-  createdAt   DateTime                                                  @map("created_at")
-  receivedAt  DateTime @default(now())                                 @map("received_at")
-  appVersion  String?                                                  @map("app_version")
-  offline     Boolean  @default(false)
+  id         String   @id // client-minted UUID
+  orgId      String?  @map("org_id") // SET FROM JWT — never trust client
+  farmerId   String?  @map("farmer_id")
+  farmId     String?  @map("farm_id")
+  type       String // EVENT_TYPES enum value
+  payload    Json?
+  createdAt  DateTime @map("created_at")
+  receivedAt DateTime @default(now()) @map("received_at")
+  appVersion String?  @map("app_version")
+  offline    Boolean  @default(false)
 
-  @@index([type],                                map: "idx_client_events_type")
-  @@index([createdAt],                           map: "idx_client_events_created_at")
-  @@index([farmId],                              map: "idx_client_events_farm")
-  @@index([farmerId, createdAt],                 map: "idx_client_events_farmer_time")
-  @@index([type, createdAt],                     map: "idx_client_events_type_time")
-  @@index([orgId],                               map: "idx_client_events_org")
-  @@index([orgId, type],                         map: "idx_client_events_org_type")
-  @@index([orgId, createdAt],                    map: "idx_client_events_org_created")
+  @@index([type], map: "idx_client_events_type")
+  @@index([createdAt], map: "idx_client_events_created_at")
+  @@index([farmId], map: "idx_client_events_farm")
+  @@index([farmerId, createdAt], map: "idx_client_events_farmer_time")
+  @@index([type, createdAt], map: "idx_client_events_type_time")
+  @@index([orgId], map: "idx_client_events_org")
+  @@index([orgId, type], map: "idx_client_events_org_type")
+  @@index([orgId, createdAt], map: "idx_client_events_org_created")
   @@map("client_events")
 }
 
@@ -3044,24 +3044,24 @@ model ClientEvent {
 // models emit. Indexed for region-level NGO queries (latest
 // risk per region across all farms).
 model RiskSnapshot {
-  id         String   @id @default(uuid())
-  orgId      String?                                @map("org_id")    // SET BY ENGINE — never trust caller
-  farmId     String   @map("farm_id")
-  riskType   String   @map("risk_type")             // 'pest' | 'drought' | 'weather'
-  riskLevel  String   @map("risk_level")            // 'LOW' | 'MEDIUM' | 'HIGH'
-  score      Float?
-  reasons    Json?
-  region     String?
-  country    String?
-  district   String?
-  clusterId  String?  @map("cluster_id")
-  createdAt  DateTime @default(now())               @map("created_at")
+  id        String   @id @default(uuid())
+  orgId     String?  @map("org_id") // SET BY ENGINE — never trust caller
+  farmId    String   @map("farm_id")
+  riskType  String   @map("risk_type") // 'pest' | 'drought' | 'weather'
+  riskLevel String   @map("risk_level") // 'LOW' | 'MEDIUM' | 'HIGH'
+  score     Float?
+  reasons   Json?
+  region    String?
+  country   String?
+  district  String?
+  clusterId String?  @map("cluster_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([farmId,   createdAt], map: "idx_risk_farm_time")
-  @@index([region,   createdAt], map: "idx_risk_region_time")
-  @@index([riskLevel],           map: "idx_risk_level")
+  @@index([farmId, createdAt], map: "idx_risk_farm_time")
+  @@index([region, createdAt], map: "idx_risk_region_time")
+  @@index([riskLevel], map: "idx_risk_level")
   @@index([riskType, riskLevel], map: "idx_risk_type_level")
-  @@index([orgId],               map: "idx_risk_org")
+  @@index([orgId], map: "idx_risk_org")
   @@map("risk_snapshots")
 }
 
@@ -3072,38 +3072,74 @@ model RiskSnapshot {
 // data accumulates. Indexed for cohort sampling (by crop +
 // country + region) and recency cuts.
 model ScanTrainingEvent {
-  id              String   @id @default(uuid())
-  scanId          String                              @map("scan_id")
-  userId          String?                             @map("user_id")
-  imageUrl        String?                             @map("image_url")
-  cropName        String?                             @map("crop_name")
-  plantName       String?                             @map("plant_name")
-  country         String?
-  region          String?
-  weatherSummary  Json?                               @map("weather_summary")
-  predictedIssue  String?                             @map("predicted_issue")
-  confidence      String?                             // low | medium | high
+  id                    String   @id @default(uuid())
+  scanId                String   @map("scan_id")
+  userId                String?  @map("user_id")
+  imageUrl              String?  @map("image_url")
+  cropName              String?  @map("crop_name")
+  plantName             String?  @map("plant_name")
+  country               String?
+  region                String?
+  weatherSummary        Json?    @map("weather_summary")
+  predictedIssue        String?  @map("predicted_issue")
+  confidence            String? // low | medium | high
   // High-confidence ML scan layer (spec §6) — verification
   // checklist answers + eventual outcome.
   // verificationAnswers: { [questionId]: 'yes' | 'no' }
-  verificationAnswers Json?                           @map("verification_answers")
-  verificationDowngrade Boolean? @default(false)      @map("verification_downgrade")
+  verificationAnswers   Json?    @map("verification_answers")
+  verificationDowngrade Boolean? @default(false) @map("verification_downgrade")
   // Eventual outcome — set later when the user reports back
   // (e.g. 'recovered' | 'spread' | 'lost' | 'unknown'). Used
   // to evaluate model performance over time.
-  outcome         String?                             @map("outcome")
-  outcomeNote     String?                             @map("outcome_note")
-  userFeedback    String?                             @map("user_feedback")    // helpful | not_helpful | not_sure
-  correctedIssue  String?                             @map("corrected_issue")
-  expertLabel     String?                             @map("expert_label")
-  createdAt       DateTime @default(now())            @map("created_at")
+  outcome               String?  @map("outcome")
+  outcomeNote           String?  @map("outcome_note")
+  userFeedback          String?  @map("user_feedback") // helpful | not_helpful | not_sure
+  correctedIssue        String?  @map("corrected_issue")
+  expertLabel           String?  @map("expert_label")
+  createdAt             DateTime @default(now()) @map("created_at")
 
-  @@index([scanId],                    map: "idx_scan_train_scan")
-  @@index([cropName],                  map: "idx_scan_train_crop")
-  @@index([country, region],           map: "idx_scan_train_country_region")
+  @@index([scanId], map: "idx_scan_train_scan")
+  @@index([cropName], map: "idx_scan_train_crop")
+  @@index([country, region], map: "idx_scan_train_country_region")
   @@index([predictedIssue, createdAt], map: "idx_scan_train_issue_time")
-  @@index([userFeedback],              map: "idx_scan_train_feedback")
-  @@index([createdAt],                 map: "idx_scan_train_created")
+  @@index([userFeedback], map: "idx_scan_train_feedback")
+  @@index([createdAt], map: "idx_scan_train_created")
   @@map("scan_training_events")
 }
 
+// ─── Global Insights Layer (Data Moat §1) ──────────────
+// Privacy-safe aggregated counts per (region × cropOrPlant ×
+// setup × condition). NO per-user data — every column is a
+// rollup that the client batches via POST /api/insights/batch
+// and the server upserts. Reads via GET /api/insights drive
+// the dailyPlanEngine reorder hook (never treatment recs).
+model InsightAggregate {
+  id String @id @default(cuid())
+
+  // Normalised on the server side via insightNormalize.js
+  // (lowercased / coarse-bucketed). `setup` is optional —
+  // some entries are crop-only without a farm-vs-garden
+  // bucket; we still want them to aggregate.
+  region      String  @map("region")
+  cropOrPlant String  @map("crop_or_plant")
+  setup       String? @map("setup")
+  condition   String  @map("condition")
+
+  // Counter columns. Always >= 0; service.upsertBatch
+  // clamps negatives. `success` / `failure` are derived
+  // from health-feedback events ('looks_healthy' /
+  // 'getting_worse') on the client and shipped as deltas.
+  shown     Int @default(0) @map("shown")
+  completed Int @default(0) @map("completed")
+  success   Int @default(0) @map("success")
+  failure   Int @default(0) @map("failure")
+
+  lastUpdated DateTime @updatedAt @map("last_updated")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([region, cropOrPlant, setup, condition], map: "uq_insight_aggregate_key")
+  @@index([region], map: "idx_insight_region")
+  @@index([cropOrPlant], map: "idx_insight_crop")
+  @@index([condition], map: "idx_insight_condition")
+  @@map("insight_aggregates")
+}

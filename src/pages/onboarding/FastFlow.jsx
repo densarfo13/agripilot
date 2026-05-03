@@ -1,4 +1,8 @@
 /**
+ * @deprecated Onboarding cleanup — superseded by `FastOnboarding`
+ *   at `/onboarding/fast`. This component's route now redirects
+ *   to the canonical entry. Slated for deletion.
+ *
  * FastFlow — 3-step onboarding per the high-trust onboarding
  * spec (post-fix).
  *
@@ -625,7 +629,7 @@ function ScreenFirstTask({ state, lang, onAct }) {
         style={S.cta}
         data-testid="fast-flow-act"
       >
-        {tStrict('fastFlow.firstTask.cta', 'Act now')} →
+        {tStrict('fastFlow.firstTask.cta', 'Done')} \u2192
       </button>
     </section>
   );

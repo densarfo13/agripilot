@@ -550,6 +550,11 @@ const T = {
   'actionHome.progress.status.onTrack':        { en: 'On track',        hi: 'सही रास्ते पर',   tw: 'Ɛkɔ yie',         es: 'En marcha',           pt: 'No caminho certo',    fr: 'Sur la bonne voie', ar: 'في المسار الصحيح', sw: 'Unaenda vizuri',          id: 'Di jalur yang tepat' },
   'actionHome.progress.status.slightDelay':    { en: 'Slight delay',    hi: 'थोड़ी देरी',      tw: 'Akyire kakra',    es: 'Ligero retraso',      pt: 'Leve atraso',         fr: 'Léger retard',      ar: 'تأخر بسيط',        sw: 'Kuchelewa kidogo',        id: 'Sedikit terlambat' },
   'actionHome.progress.status.needsAttention': { en: 'Needs attention', hi: 'ध्यान की जरूरत',  tw: 'Hia adwene',      es: 'Necesita atención',   pt: 'Precisa de atenção',  fr: 'Demande attention', ar: 'يحتاج انتباه',    sw: 'Inahitaji umakini',       id: 'Perlu perhatian' },
+  // Core Product Signal §7 — reinforcement-only state added so
+  // the progress pill can flip from "On track" → "All done" when
+  // the day's work is complete, without ever stepping into a
+  // warning tone.
+  'actionHome.progress.status.allDone':        { en: 'All done',        hi: 'सब पूरा',         tw: 'Awie',            es: 'Todo hecho',          pt: 'Tudo feito',          fr: 'Tout est fait',     ar: 'تم كل شيء',        sw: 'Imekamilika',             id: 'Selesai semua', ha: 'An gama duka' },
   'actionHome.nextHint.label':       { en: 'Next:', hi: 'आगे:', tw: 'Nea ɛdi hɔ:', es: 'Siguiente:', pt: 'Próximo:', fr: 'Ensuite :', ar: 'التالي:', sw: 'Ifuatayo:', id: 'Berikutnya:' },
 
   // ─── Today: 2-state system (ACTIVE vs DONE) ─────────────
@@ -4894,7 +4899,11 @@ const T = {
 
   'guided.pestReason': { en: 'Pests or disease may be affecting your crop. Act quickly.', fr: 'Des ravageurs pourraient affecter votre culture. Agissez vite.', sw: 'Wadudu au ugonjwa unaweza kuathiri mazao yako. Chukua hatua haraka.', ha: 'Ƙwari ko cuta na iya shafar amfanin ku. Yi gaggawa.', tw: 'Ebia mmoa bɔne resia wo nnɔbae. Yɛ ntɛm.' },
   'guided.alertReason': { en: 'This needs your attention today.', fr: 'Ceci nécessite votre attention aujourd\'hui.', sw: 'Hii inahitaji umakini wako leo.', ha: 'Wannan yana buƙatar hankalin ku yau.', tw: 'Eyi hia wo adwene ɛnnɛ.' },
-  'guided.alertCta': { en: 'Act now', fr: 'Agir maintenant', sw: 'Chukua hatua sasa', ha: 'Yi aiki yanzu', tw: 'Yɛ seesei' },
+  // CTA standardization (Core Product Signal §2) — all action
+  // CTAs across Home / Tasks / Progress collapse to a single
+  // "Done" verb so the user never has to decode "Act now" vs
+  // "Complete task" vs "Do this now".
+  'guided.alertCta': { en: 'Done', fr: 'Fait', sw: 'Imekamilika', ha: 'An gama', tw: 'Wie', hi: 'पूरा' },
 
   'guided.doneTitle': { en: 'All done for today!', fr: 'Tout est fait !', sw: 'Umekamilisha yote leo!', ha: 'An gama duk na yau!', tw: 'Woawie nyinaa ɛnnɛ!' },
   'guided.doneReason': { en: 'Great work. Check back tomorrow for new tasks.', fr: 'Bon travail. Revenez demain.', sw: 'Kazi nzuri. Rudi kesho kwa kazi mpya.', ha: 'Aiki nagari. Ka dawo gobe don sabbin ayyuka.', tw: 'Adwuma pa. San ba ɔkyena ma adwuma foforo.' },
@@ -5563,7 +5572,11 @@ const T = {
   // complete-circle quick-tap affordance; this is the
   // visible label on the prominent green CTA.
   'tasks.completeTask': {
-    en: 'Complete task', fr: 'Terminer la t\u00E2che', sw: 'Maliza kazi', ha: 'Kammala aikin', tw: 'Wie adwuma no', hi: 'कार्य पूरा करें',
+    // Core Product Signal §2 + §6 — Tasks screen is "list only,
+    // no dominant CTA". The button still exists but the verb
+    // collapses to the single "Done" word every other surface
+    // uses too.
+    en: 'Done', fr: 'Fait', sw: 'Imekamilika', ha: 'An gama', tw: 'Wie', hi: 'पूरा',
   },
   'tasks.completing': {
     en: 'Completing\u2026', fr: 'Termine\u2026', sw: 'Inakamilisha\u2026', ha: 'Ana kammalawa\u2026', tw: 'Ɛrewie\u2026', hi: 'पूरा कर रहे हैं\u2026',
@@ -8534,7 +8547,8 @@ const T = {
     en: 'Fix this today', fr: 'Réglez ça aujourd\'hui', sw: 'Shughulikia leo', ha: 'Gyara yau', tw: 'Siesie nnɛ', hi: 'आज ठीक करें',
   },
   'home.cta.actNow': {
-    en: 'Act now', fr: 'Agir maintenant', sw: 'Chukua hatua sasa', ha: 'Yi yanzu', tw: 'Yɛ seesei',
+    // Core Product Signal §2 — single "Done" verb everywhere.
+    en: 'Done', fr: 'Fait', sw: 'Imekamilika', ha: 'An gama', tw: 'Wie', hi: 'पूरा',
   },
   'home.nextUp': {
     en: 'Next up', fr: 'Ensuite', sw: 'Inayofuata', ha: 'Na gaba', tw: 'Nea ɛdi hɔ',
@@ -9497,6 +9511,250 @@ const T = {
   'actions.takePhoto':            { en: 'Take photo',                        fr: 'Prendre une photo',                        sw: 'Piga picha',                    ha: 'Ɗauki hoto',                         tw: 'Twa mfoni',                   hi: 'फोटो लें' },
   'actions.checkWeather':         { en: 'Check weather',                     fr: 'Voir la météo',                            sw: 'Angalia hali ya hewa',          ha: 'Duba yanayi',                        tw: 'Hwɛ ewiem tebea',             hi: 'मौसम देखें' },
 
+  // ─── Global Insights Layer — peer-signal hint copy (data moat §7) ─
+  // Rendered by dailyPlanEngine._applyGlobalInsightsReorder when a
+  // medium/high-confidence aggregate matches the current context.
+  // Wording is deliberately a soft hint ("growers in your area
+  // report …"), never a treatment / dosage instruction. Twi /
+  // Hausa values are short approximations where polished phrasing
+  // isn't available; strict no-leak rule.
+  'plan.insights.checkLeavesEarly':       { en: 'Check leaves early today',                                           fr: 'Vérifiez les feuilles tôt aujourd\'hui',                                  sw: 'Angalia majani mapema leo',                                  ha: 'Duba ganye da wuri yau',                                tw: 'Hwɛ nhabamma anɔpa nnɛ',                       hi: 'आज जल्दी पत्तियाँ जाँचें' },
+  'plan.insights.checkLeavesEarlyDetail': { en: 'Growers in your area report better results checking leaves early in humid weather.', fr: 'Les producteurs de votre région obtiennent de meilleurs résultats en vérifiant les feuilles tôt par temps humide.', sw: 'Wakulima wa eneo lako wanapata matokeo bora kwa kuangalia majani mapema katika hali ya unyevu.', ha: 'Manoman yankinku suna samun sakamako mai kyau ta hanyar duba ganye da wuri a yanayin laima.', tw: 'W\'ahohyɛ akuafoɔ nya nnetebea pa bere a wɔhwɛ nhabamma anɔpa wɔ ewiem a fi yi mu.', hi: 'आपके क्षेत्र के किसान नम मौसम में पत्तियाँ जल्दी देखकर बेहतर परिणाम पाते हैं।' },
+  'plan.insights.protectFromRain':        { en: 'Protect from heavy rain',                                            fr: 'Protégez contre la forte pluie',                                          sw: 'Linda dhidi ya mvua kubwa',                                  ha: 'Kare daga ruwan sama mai yawa',                         tw: 'Bɔ ho ban firi nsu pii ho',                    hi: 'भारी बारिश से बचाएँ' },
+  'plan.insights.protectFromRainDetail':  { en: 'Growers in your area report better results sheltering young plants before heavy rain.', fr: 'Les producteurs de votre région obtiennent de meilleurs résultats en protégeant les jeunes plants avant les fortes pluies.', sw: 'Wakulima wa eneo lako wanapata matokeo bora kwa kufunika mimea michanga kabla ya mvua kubwa.', ha: 'Manoman yankinku suna samun sakamako mai kyau ta hanyar kare ƙananan tsire kafin ruwan sama mai yawa.', tw: 'W\'ahohyɛ akuafoɔ nya nnetebea pa bere a wɔbɔ nnua nketewa ho ban ansa na nsutɔ kɛseɛ aba.', hi: 'आपके क्षेत्र के किसान भारी बारिश से पहले पौधों को ढककर बेहतर परिणाम पाते हैं।' },
+  'plan.insights.waterDeepEvening':       { en: 'Water deeply in the evening',                                        fr: 'Arrosez en profondeur le soir',                                           sw: 'Mwagilia kwa kina jioni',                                    ha: 'Shayar da zurfi da yamma',                              tw: 'Gugu nsuo bebree anwumere',                    hi: 'शाम को गहराई से पानी दें' },
+  'plan.insights.waterDeepEveningDetail': { en: 'Growers in your area report better results watering deeply in the evening when it is hot.', fr: 'Les producteurs de votre région obtiennent de meilleurs résultats en arrosant abondamment le soir par temps chaud.', sw: 'Wakulima wa eneo lako wanapata matokeo bora kwa kumwagilia kwa kina jioni wakati wa joto.', ha: 'Manoman yankinku suna samun sakamako mai kyau ta hanyar shayarwa da zurfi da yamma lokacin zafi.', tw: 'W\'ahohyɛ akuafoɔ nya nnetebea pa bere a wɔgu nsuo bebree anwumere wɔ hyew bere mu.', hi: 'आपके क्षेत्र के किसान गर्मी में शाम को गहराई से पानी देकर बेहतर परिणाम पाते हैं।' },
+  'plan.insights.keepRoutine':            { en: 'Keep your routine',                                                  fr: 'Maintenez votre routine',                                                 sw: 'Endelea na ratiba yako',                                     ha: 'Ci gaba da tsarinka',                                   tw: 'Toa wo daa daa nneyɛeɛ no so',                 hi: 'अपनी दिनचर्या जारी रखें' },
+  'plan.insights.keepRoutineDetail':      { en: 'Growers in your area report success with steady routines.',          fr: 'Les producteurs de votre région réussissent avec des routines régulières.',  sw: 'Wakulima wa eneo lako wanapata mafanikio kwa ratiba thabiti.', ha: 'Manoman yankinku suna samun nasara da tsarin aiki na yau da kullum.', tw: 'W\'ahohyɛ akuafoɔ nya nkonimdie denam daa daa nneyɛeɛ so.', hi: 'आपके क्षेत्र के किसान नियमित दिनचर्या से सफलता पाते हैं।' },
+
+  // ─── Settings — Help-improve-recommendations toggle (data moat §8) ─
+  'settings.helpImprove.title':       { en: 'Help improve recommendations',                                         fr: 'Aider à améliorer les recommandations',                                   sw: 'Saidia kuboresha mapendekezo',                            ha: 'Taimaka inganta shawarwarin',                            tw: 'Boa ma yɛn afotuo no yɛ pa',                  hi: 'सुझावों को बेहतर बनाने में मदद करें' },
+  'settings.helpImprove.description': { en: 'Share anonymous usage counts to help us improve tips for your area.',  fr: 'Partagez des compteurs d\'utilisation anonymes pour nous aider à améliorer les conseils pour votre région.', sw: 'Shiriki hesabu zisizo na utambulisho ili tukusaidie kuboresha vidokezo vya eneo lako.', ha: 'Raba lambobin amfani da ba a san su ba domin mu inganta shawarwarin yankinku.', tw: 'Kyɛ akontaabuo a wɔnnim wo na yɛatumi ayɛ afotuo a ɛfa wo mpɔtam ho yiye.', hi: 'अपने क्षेत्र के लिए सुझाव सुधारने हेतु अनाम उपयोग संख्याएँ साझा करें।' },
+  'settings.helpImprove.on':          { en: 'On',  fr: 'Activé',     sw: 'Kuwasha',  ha: 'A kunna',  tw: 'Eyɛ',    hi: 'चालू' },
+  'settings.helpImprove.off':         { en: 'Off', fr: 'Désactivé',  sw: 'Imezimwa', ha: 'A kashe',  tw: 'Adum',   hi: 'बंद' },
+
+  // ─── Indispensable Home Loop §1-§7 — First-Action Gate ────────
+  // Decision-language only (no "you may want to" / "consider").
+  // Every fallback is the spec's exact wording. Twi / Hausa kept
+  // short where polished phrasing isn't available; strict no-leak.
+  // Dependency System §1 — header reworded to "Before you act,
+  // check this first". Tighter, action-implying wording so the
+  // gate frames itself as a check-in, not a checklist item.
+  'firstAction.header':                       { en: 'Before you act, check this first',                       fr: 'Avant d\'agir, vérifiez ceci',                              sw: 'Kabla hujachukua hatua, kagua hili kwanza',           ha: 'Kafin ka yi aiki, duba wannan da farko',              tw: 'Ansa na woayɛ biribiara, di kan hwɛ yi',           hi: 'कार्य करने से पहले, पहले यह जाँचें' },
+  'primaryAction.cta.done':                   { en: 'Done',                                                  fr: 'Fait',                                                       sw: 'Imekamilika',                                          ha: 'An gama',                                              tw: 'Awie',                                              hi: 'हो गया' },
+  'primaryAction.cta.skip':                   { en: 'Not now',                                               fr: 'Pas maintenant',                                              sw: 'Si sasa',                                              ha: 'Ba yanzu ba',                                          tw: 'Ɛnnyɛ seesei',                                       hi: 'अभी नहीं' },
+  'primaryAction.cta.skipAria':               { en: 'Skip this action',                                      fr: 'Ignorer cette action',                                        sw: 'Ruka kitendo hiki',                                    ha: 'Tsallake wannan aiki',                                 tw: 'Tra adwuma yi',                                     hi: 'इस क्रिया को छोड़ें' },
+  'primaryAction.tomorrow.hook':              { en: 'Tomorrow: quick leaf check (30s)',                      fr: 'Demain : vérification rapide des feuilles (30s)',           sw: 'Kesho: ukaguzi wa haraka wa majani (sekunde 30)',     ha: 'Gobe: dubawa ganye da sauri (dakika 30)',             tw: 'Ɔkyena: nhabamma nhwehwɛmu ntɛm (sekan 30)',        hi: 'कल: त्वरित पत्ती जाँच (30 सेकंड)' },
+  'primaryAction.areaInsight':                { en: 'Growers in your area see better results doing this.',   fr: 'Les producteurs de votre région obtiennent de meilleurs résultats en faisant cela.', sw: 'Wakulima wa eneo lako wanapata matokeo bora kwa kufanya hivi.', ha: 'Manoman yankinku suna samun sakamako mai kyau ta yin haka.', tw: 'W\'ahohyɛ akuafoɔ nya nnetebea pa bere a wɔyɛ saa.',     hi: 'आपके क्षेत्र के किसान ऐसा करने से बेहतर परिणाम पाते हैं।' },
+
+  // Action titles + details + reasons + consequences
+  'primaryAction.noWater.title':              { en: 'Do not water today',                                    fr: 'Ne pas arroser aujourd\'hui',                                sw: 'Usimwagilie maji leo',                                 ha: 'Kada ka shayar yau',                                   tw: 'Mma nsuo nnɛ',                                      hi: 'आज पानी न दें' },
+  'primaryAction.noWater.detail':             { en: 'Rain is expected — overwatering may harm roots.',       fr: 'De la pluie est attendue — trop d\'eau peut nuire aux racines.', sw: 'Mvua inatarajiwa — kumwagilia kupita kiasi kunaweza kudhuru mizizi.', ha: 'Ana sa ran ruwan sama — yawan shayarwa na iya cutar da saiwoyin.', tw: 'Yɛhwɛ kwan sɛ nsuo bɛtɔ — nsuo dodoɔ bɛtumi asɛe nhini.', hi: 'बारिश की संभावना है — अधिक पानी जड़ों को नुकसान पहुँचा सकता है।' },
+  'primaryAction.checkLeaves.title':          { en: 'Check leaves now',                                      fr: 'Vérifiez les feuilles maintenant',                          sw: 'Angalia majani sasa',                                  ha: 'Duba ganye yanzu',                                     tw: 'Hwɛ nhabamma seesei',                               hi: 'पत्तियाँ अभी जाँचें' },
+  'primaryAction.checkLeaves.detail':         { en: 'High humidity increases leaf spot risk.',               fr: 'Une forte humidité augmente le risque de taches foliaires.',  sw: 'Unyevu wa juu huongeza hatari ya madoa kwenye majani.', ha: 'Yawan laima yana ƙara haɗarin tabo a ganye.',         tw: 'Mfutuma kɛseɛ ma nhabamma so nsenkyerɛnneɛ asiane kɔ soro.', hi: 'अधिक नमी से पत्ती धब्बों का जोखिम बढ़ता है।' },
+  'primaryAction.simpleCheck.title':          { en: 'Start with a quick check',                              fr: 'Commencez par une vérification rapide',                      sw: 'Anza na ukaguzi wa haraka',                            ha: 'Fara da dubawa cikin sauri',                           tw: 'Hyɛ ase wɔ nhwehwɛmu ntɛm',                         hi: 'त्वरित जाँच से शुरू करें' },
+  'primaryAction.simpleCheck.detail':         { en: 'Inspect leaves for 30 seconds.',                        fr: 'Inspectez les feuilles pendant 30 secondes.',                sw: 'Kagua majani kwa sekunde 30.',                         ha: 'Duba ganye na dakika 30.',                             tw: 'Hwɛ nhabamma sekan 30.',                            hi: '30 सेकंड के लिए पत्तियाँ देखें।' },
+  'primaryAction.gardenDefault.title':        { en: 'Check soil before watering',                            fr: 'Vérifiez le sol avant d\'arroser',                          sw: 'Angalia udongo kabla ya kumwagilia',                   ha: 'Duba ƙasa kafin ka shayar',                            tw: 'Hwɛ asaase ansa na woagugu nsuo',                   hi: 'पानी देने से पहले मिट्टी जाँचें' },
+  'primaryAction.gardenDefault.detail':       { en: 'Only water if the top soil feels dry.',                 fr: 'Arrosez seulement si le sol en surface est sec.',            sw: 'Mwagilia tu ikiwa udongo wa juu ni mkavu.',            ha: 'Shayar ne kawai idan saman ƙasa ya bushe.',           tw: 'Gugu nsuo kɛkɛ sɛ asaase atifi awo.',                hi: 'ऊपरी मिट्टी सूखी हो तभी पानी दें।' },
+  'primaryAction.farmDefault.title':          { en: 'Check crop leaves today',                               fr: 'Vérifiez les feuilles des cultures aujourd\'hui',           sw: 'Angalia majani ya zao leo',                            ha: 'Duba ganyen amfanin gona yau',                         tw: 'Hwɛ aduane nhabamma nnɛ',                            hi: 'आज फसल की पत्तियाँ जाँचें' },
+  'primaryAction.farmDefault.detail':         { en: 'Look for spots, holes, insects, or unusual color.',     fr: 'Cherchez des taches, des trous, des insectes ou des couleurs inhabituelles.', sw: 'Tafuta madoa, mashimo, wadudu, au rangi isiyo ya kawaida.', ha: 'Nemo tabo, ramuka, kwari, ko launi mara kyau.',     tw: 'Hwehwɛ nsenkyerɛnneɛ, atokuro, nkekaboa, anaa hwasoɔ a ɛnyɛ amane.', hi: 'धब्बे, छेद, कीट, या असामान्य रंग देखें।' },
+
+  // Primary Action Intelligence — moisture-driven branches.
+  // Strict no-leak: every key has all 6 launch languages.
+  'primaryAction.noWaterMoist.title':         { en: 'Do not water today',                                   fr: 'Ne pas arroser aujourd\'hui',                              sw: 'Usimwagilie maji leo',                              ha: 'Kada ka shayar yau',                                   tw: 'Mma nsuo nnɛ',                                   hi: 'आज पानी न दें' },
+  'primaryAction.noWaterMoist.detail':        { en: 'Soil likely still moist from recent conditions.',      fr: 'Le sol est probablement encore humide après les conditions récentes.', sw: 'Udongo huenda bado una unyevu kutoka hali za hivi karibuni.', ha: 'Ƙasa wataƙila har yanzu tana da ɗanshi daga yanayin baya-bayan nan.', tw: 'Asaase no da so wɔ nsuo wɔ mu firi nneɛma a abɛsi nnansa yi mu.', hi: 'हाल की परिस्थितियों के कारण मिट्टी अब भी नम होगी।' },
+  'primaryAction.checkSoilMoist.title':       { en: 'Check soil before watering',                            fr: 'Vérifiez le sol avant d\'arroser',                          sw: 'Angalia udongo kabla ya kumwagilia',                ha: 'Duba ƙasa kafin ka shayar',                            tw: 'Hwɛ asaase ansa na woagugu nsuo',                hi: 'पानी देने से पहले मिट्टी जाँचें' },
+  'primaryAction.checkSoilMoist.detail':      { en: 'Soil may still hold moisture.',                         fr: 'Le sol peut encore retenir de l\'humidité.',                sw: 'Udongo huenda bado una unyevu.',                    ha: 'Ƙasa na iya har yanzu tana da ɗanshi.',                tw: 'Asaase no betumi akora nsuo.',                   hi: 'मिट्टी में अब भी नमी हो सकती है।' },
+  'primaryAction.checkEarlyMoist.title':      { en: 'Check soil early today',                                fr: 'Vérifiez le sol tôt aujourd\'hui',                          sw: 'Angalia udongo mapema leo',                         ha: 'Duba ƙasa da wuri yau',                                tw: 'Hwɛ asaase anɔpa nnɛ',                           hi: 'आज जल्दी मिट्टी जाँचें' },
+  'primaryAction.checkEarlyMoist.detail':     { en: 'Warm conditions may dry soil faster.',                  fr: 'La chaleur peut assécher le sol plus rapidement.',          sw: 'Hali ya joto inaweza kukausha udongo haraka.',     ha: 'Yanayin zafi na iya bushe ƙasa da sauri.',             tw: 'Hyew tebea betumi ama asaase awo ntɛm.',         hi: 'गर्म परिस्थितियाँ मिट्टी को जल्दी सुखा सकती हैं।' },
+
+  'primaryAction.noWaterBehavior.title':      { en: 'Do not water today',                                   fr: 'Ne pas arroser aujourd\'hui',                              sw: 'Usimwagilie maji leo',                              ha: 'Kada ka shayar yau',                                   tw: 'Mma nsuo nnɛ',                                   hi: 'आज पानी न दें' },
+  'primaryAction.noWaterBehavior.detail':     { en: 'Recent watering may be causing stress.',                fr: 'L\'arrosage récent peut causer du stress.',                  sw: 'Kumwagilia kwa hivi karibuni kunaweza kusababisha mfadhaiko.', ha: 'Shayarwar baya-bayan nan na iya haifar da damuwa.', tw: 'Nsuo a wuguu seesei ara no betumi de haw aba.',  hi: 'हाल की सिंचाई तनाव पैदा कर रही हो सकती है।' },
+
+  // New confidence-line keys for the moisture branches.
+  'primaryAction.reason.recentRainHumidity':  { en: 'Based on recent rain and humidity.',                   fr: 'Selon la pluie et l\'humidité récentes.',                    sw: 'Kulingana na mvua na unyevu wa hivi karibuni.',     ha: 'Bisa ga ruwan sama da laima na baya-bayan nan.',       tw: 'Ɛgyina nsutɔ ne mfutuma a abɛsi nnansa yi so.',  hi: 'हाल की बारिश और नमी के आधार पर।' },
+  'primaryAction.reason.humidityConditions':  { en: 'Based on humidity and recent conditions.',             fr: 'Selon l\'humidité et les conditions récentes.',              sw: 'Kulingana na unyevu na hali za hivi karibuni.',     ha: 'Bisa ga laima da yanayin baya-bayan nan.',             tw: 'Ɛgyina mfutuma ne nneɛma a abɛsi nnansa yi so.', hi: 'नमी और हाल की परिस्थितियों के आधार पर।' },
+  'primaryAction.reason.tempSetup':           { en: 'Based on temperature and your setup.',                 fr: 'Selon la température et votre installation.',                sw: 'Kulingana na joto na mpangilio wako.',              ha: 'Bisa ga zafi da tsarinka.',                            tw: 'Ɛgyina hyew ne wo nhyehyɛeɛ so.',               hi: 'तापमान और आपके सेटअप के आधार पर।' },
+  'primaryAction.reason.recentWatering':      { en: 'Based on your recent watering and feedback.',          fr: 'Selon votre arrosage récent et vos retours.',                sw: 'Kulingana na umwagiliaji wako wa hivi karibuni na maoni.', ha: 'Bisa ga shayarwar ku ta baya-bayan nan da ra\'ayoyi.', tw: 'Ɛgyina wo nsuo a wuguu seesei ne wo nkyerɛkyerɛmu so.', hi: 'आपकी हालिया सिंचाई और प्रतिक्रिया के आधार पर।' },
+
+  // Primary Action Intelligence §4 — reinforcement memory line
+  // (skipped + healthy combo). Wins over the existing memory
+  // priorities when the engine flags it.
+  'primaryAction.memory.skippedHealthy':      { en: 'Last time you waited, your plant stayed healthy.',     fr: 'La dernière fois que vous avez attendu, votre plante est restée en bonne santé.', sw: 'Mara ya mwisho ulipongoja, mmea wako ulibaki mzuri.', ha: 'Lokacin ƙarshe da kuka yi jiran, shukarka ta ci gaba da kasancewa cikin koshin lafiya.', tw: 'Bere a etwa toɔ a wotwɛn no, w\'aduane no nyaa ahooden.', hi: 'पिछली बार जब आपने इंतज़ार किया, आपका पौधा स्वस्थ रहा।' },
+
+  // Primary Action Intelligence §5 — risk-boost note. Surfaces
+  // as a single supporting line under the consequence.
+  'primaryAction.riskNote.checkLeaves':       { en: 'Also check leaves for spots.',                         fr: 'Vérifiez aussi les feuilles pour des taches.',               sw: 'Pia angalia majani kwa madoa.',                     ha: 'Hakanan duba ganye don tabo.',                         tw: 'Bio nso, hwɛ nhabamma sɛ nsenkyerɛnneɛ wɔ so.',  hi: 'पत्तियों पर धब्बे भी जाँचें।' },
+  'primaryAction.riskNote.high':              { en: 'High \u2014 follow up closely today.',                  fr: 'Élevé \u2014 suivez de près aujourd\'hui.',                  sw: 'Juu \u2014 fuatilia kwa karibu leo.',               ha: 'Babba \u2014 bi diddigi a hankali yau.',               tw: 'Asiane kɛseɛ \u2014 di akyiri pɛɛ nnɛ.',         hi: 'उच्च \u2014 आज पास से ध्यान दें।' },
+
+  // Ultimate Decision §4 — scan follow-up branch.
+  'primaryAction.scanFollowup.title':         { en: 'Check the same leaves again today',                    fr: 'Vérifiez à nouveau les mêmes feuilles aujourd\'hui',         sw: 'Angalia majani yale yale tena leo',                 ha: 'Sake duba ganye ɗaya yau',                             tw: 'San hwɛ nhabamma korɔ no bio nnɛ',               hi: 'आज वही पत्तियाँ फिर से जाँचें' },
+  'primaryAction.scanFollowup.detail':        { en: 'Look at the leaves you scanned earlier — has it improved or spread?', fr: 'Regardez les feuilles scannées plus tôt — c\'est mieux ou pire ?', sw: 'Angalia majani uliyochunguza awali — yameboresha au yameenea?', ha: 'Duba ganyen da kuka duba a baya — ya inganta ko ya yaɗu?', tw: 'Hwɛ nhabamma a wohwehwɛeɛ kane no — ɛyɛ pa anaa atrɛw mu?', hi: 'जो पत्तियाँ पहले स्कैन कीं — सुधरीं या फैलीं?' },
+  'primaryAction.reason.recentScan':          { en: 'Recent scan showed a possible issue that needs follow-up.', fr: 'Un scan récent a montré un possible problème à suivre.',   sw: 'Skani ya hivi karibuni ilionyesha tatizo linalohitaji ufuatiliaji.', ha: 'Dubawar baya-bayan nan ta nuna matsala da ake bukatar bibiya.', tw: 'Mfoni nhwehwɛmu a etwa toɔ daa asɛm bi adi a ehia mma yɛnkɔ akyiri.', hi: 'हाल के स्कैन में एक संभावित समस्या मिली जिसे फॉलो-अप चाहिए।' },
+
+  // Ultimate Decision §11 — tomorrow previews.
+  'tomorrow.quickLeafCheck':                  { en: 'Tomorrow: quick leaf check',                            fr: 'Demain : vérification rapide des feuilles',                  sw: 'Kesho: ukaguzi wa haraka wa majani',                 ha: 'Gobe: dubawa ganye da sauri',                          tw: 'Ɔkyena: nhabamma nhwehwɛmu ntɛm',                hi: 'कल: त्वरित पत्ती जाँच' },
+  'tomorrow.checkSoil':                       { en: 'Tomorrow: check soil moisture again',                   fr: 'Demain : vérifiez à nouveau l\'humidité du sol',             sw: 'Kesho: angalia unyevu wa udongo tena',              ha: 'Gobe: sake duba ɗanshi na ƙasa',                       tw: 'Ɔkyena: san hwɛ asaase fɔ',                      hi: 'कल: मिट्टी की नमी फिर जाँचें' },
+  'tomorrow.followUpScan':                    { en: 'Tomorrow: follow up on today\u2019s scan',              fr: 'Demain : suivez le scan d\'aujourd\'hui',                    sw: 'Kesho: fuata skani ya leo',                         ha: 'Gobe: bi diddigin dubawar yau',                        tw: 'Ɔkyena: di nnɛ mfoni nhwehwɛmu akyiri',           hi: 'कल: आज के स्कैन की फॉलो-अप करें' },
+
+  // Ultimate Decision §7 — composer-level learning message
+  // (consistency reinforcement). The skip+healthy reinforcement
+  // already lands on `primaryAction.memory.skippedHealthy` from
+  // the engine; this is the parallel "you've been steady" line.
+  'learning.consistent':                      { en: 'You\u2019ve been consistent \u2014 keep going.',         fr: 'Vous avez été régulier \u2014 continuez.',                   sw: 'Umekuwa thabiti \u2014 endelea.',                    ha: 'Kun kasance masu daidaito \u2014 ku ci gaba.',         tw: 'Wakora w\'adwuma daa daa \u2014 toa so.',         hi: 'आप लगातार बने हुए हैं \u2014 जारी रखें।' },
+
+  // Ultimate Decision §6 — crop-specific supporting hints.
+  'crop.hint.pepper.underside':               { en: 'Inspect underside of leaves',                           fr: 'Inspectez le dessous des feuilles',                          sw: 'Kagua chini ya majani',                              ha: 'Duba ƙasan ganye',                                     tw: 'Hwɛ nhabamma ase',                                hi: 'पत्तियों के नीचे जाँचें' },
+  'crop.hint.pepper.humidSpots':              { en: 'Watch for leaf spots in humidity',                      fr: 'Surveillez les taches foliaires par temps humide',            sw: 'Tafuta madoa kwenye majani wakati wa unyevu',       ha: 'Lura da tabo a ganye lokacin laima',                   tw: 'Hwɛ nhabamma so nsenkyerɛnneɛ wɔ mfutuma mu',     hi: 'नमी में पत्ती धब्बे देखें' },
+  'crop.hint.tomato.lower':                   { en: 'Check lower leaves for spots',                          fr: 'Vérifiez les feuilles inférieures pour des taches',           sw: 'Angalia majani ya chini kwa madoa',                  ha: 'Duba ganye na ƙasa don tabo',                          tw: 'Hwɛ nhabamma a ɛwɔ ase no nsenkyerɛnneɛ',         hi: 'निचली पत्तियों के धब्बे जाँचें' },
+  'crop.hint.tomato.dryLeaves':               { en: 'Avoid wetting leaves when watering',                    fr: 'Évitez de mouiller les feuilles en arrosant',                 sw: 'Epuka kuloweka majani wakati wa kumwagilia',         ha: 'Guji jika ganye lokacin shayarwa',                     tw: 'Mma nsuo nka nhabamma bere a wugu nsuo',         hi: 'पानी देते समय पत्तियों को गीला न करें' },
+  'crop.hint.maize.streaks':                  { en: 'Check leaves for streaks, holes, or dry edges',         fr: 'Vérifiez les feuilles pour les stries, trous ou bords secs',  sw: 'Angalia majani kwa michirizi, mashimo, au kingo kavu', ha: 'Duba ganye don sharar, ramuka, ko gefuna busassu',     tw: 'Hwɛ nhabamma sɛ wɔn so wɔ nsensaneɛ, atokuro, anaa wɔn ano awo', hi: 'पत्तियों पर धारियाँ, छेद या सूखे किनारे जाँचें' },
+  'crop.hint.herbs.overwater':                { en: 'Avoid overwatering',                                    fr: 'Évitez le sur-arrosage',                                      sw: 'Epuka kumwagilia kupita kiasi',                       ha: 'Ka guji yawan shayarwa',                               tw: 'Mma nsuo dodoɔ',                                  hi: 'अधिक पानी देने से बचें' },
+  'crop.hint.herbs.light':                    { en: 'Check light exposure',                                  fr: 'Vérifiez l\'exposition à la lumière',                         sw: 'Angalia mwanga unaopata',                            ha: 'Duba bayyanar haske',                                  tw: 'Hwɛ kanea a enya',                                hi: 'प्रकाश पहुँच जाँचें' },
+
+  // Ultimate Decision §10 — generic risk reason fallback.
+  'risk.reason.normal':                       { en: 'Conditions look normal today.',                         fr: 'Les conditions semblent normales aujourd\'hui.',              sw: 'Hali zinaonekana za kawaida leo.',                   ha: 'Yanayi yana kama na al\'ada yau.',                     tw: 'Tebea yɛ amane nnɛ.',                            hi: 'आज स्थितियाँ सामान्य लग रही हैं।' },
+
+  // FarmSwitcher dropdown section headers — Farm + Garden context
+  // switching spec. Short uppercase labels grouping farm rows from
+  // garden rows in a single dropdown.
+  'farm.section.farms':                       { en: 'FARMS',                                                 fr: 'FERMES',                                                      sw: 'MASHAMBA',                                            ha: 'GONAKI',                                              tw: 'MFUO',                                            hi: 'खेत' },
+  'farm.section.gardens':                     { en: 'GARDENS',                                               fr: 'JARDINS',                                                     sw: 'BUSTANI',                                              ha: 'LAMBUNA',                                             tw: 'NTURO',                                           hi: 'बगीचे' },
+
+  // Smart Reminder System §4 — daily email subject. Body lines
+  // are reused from the existing primaryAction.* / tomorrow.*
+  // / primaryAction.reason.* keys (rendered by the email
+  // transport at send time, not stored separately).
+  'email.daily.subject':                      { en: 'Your Farroway plan for today',                          fr: 'Votre plan Farroway du jour',                                 sw: 'Mpango wako wa Farroway leo',                       ha: 'Shirinku na Farroway na yau',                          tw: 'Wo Farroway nhyehyɛeɛ nnɛ',                       hi: 'आज आपकी Farroway योजना' },
+
+  'primaryAction.reason.weather':             { en: 'Based on your location and today\u2019s weather.',      fr: 'Selon votre localisation et la météo du jour.',              sw: 'Kulingana na eneo lako na hali ya hewa ya leo.',       ha: 'Bisa ga wurinka da yanayin yau.',                      tw: 'Ɛgyina wo baabi ne nnɛ ewiem tebea so.',             hi: 'आपके स्थान और आज के मौसम के आधार पर।' },
+  'primaryAction.reason.context':             { en: 'Based on your plant and setup.',                        fr: 'Selon votre plante et votre installation.',                  sw: 'Kulingana na mmea wako na mpangilio.',                 ha: 'Bisa ga shukarka da tsarin.',                          tw: 'Ɛgyina w\'aduane ne ne nhyehyɛeɛ so.',                hi: 'आपके पौधे और सेटअप के आधार पर।' },
+  'primaryAction.reason.cropConditions':      { en: 'Based on your crop and conditions.',                    fr: 'Selon votre culture et les conditions.',                     sw: 'Kulingana na zao na hali zako.',                       ha: 'Bisa ga amfanin gona da yanayi.',                      tw: 'Ɛgyina w\'aduane ne nnipa tebea so.',                hi: 'आपकी फसल और स्थिति के आधार पर।' },
+  'primaryAction.reason.consistency':         { en: 'Keep it simple to stay consistent.',                    fr: 'Restez simple pour rester régulier.',                        sw: 'Iweke rahisi ili uendelee.',                           ha: 'Ka sauƙaƙa don ka ci gaba.',                           tw: 'Yɛ no tiawa na atoa so.',                            hi: 'सरल रखें ताकि जारी रख सकें।' },
+
+  'primaryAction.consequence.rain':           { en: 'Watering now may harm roots.',                          fr: 'Arroser maintenant peut nuire aux racines.',                  sw: 'Kumwagilia sasa kunaweza kudhuru mizizi.',             ha: 'Shayarwa yanzu na iya cutar da saiwoyin.',             tw: 'Sɛ wogu nsuo seesei a, ɛbɛtumi asɛe nhini.',         hi: 'अभी पानी देना जड़ों को नुकसान पहुँचा सकता है।' },
+  'primaryAction.consequence.humidity':       { en: 'Skipping this check can lead to leaf spots.',           fr: 'Ne pas faire cette vérification peut provoquer des taches foliaires.', sw: 'Kuruka ukaguzi huu kunaweza kusababisha madoa kwenye majani.', ha: 'Tsallake wannan dubawa na iya kai ga tabo a ganye.', tw: 'Sɛ wonhwɛ yi a, ɛbɛtumi de nsenkyerɛnneɛ aba nhabamma so.', hi: 'इस जाँच को छोड़ने से पत्तियों पर धब्बे हो सकते हैं।' },
+  'primaryAction.consequence.default':        { en: 'This quick check helps prevent problems early.',        fr: 'Cette vérification rapide aide à prévenir les problèmes.',     sw: 'Ukaguzi huu wa haraka husaidia kuzuia matatizo mapema.', ha: 'Wannan dubawa cikin sauri yana taimakawa hana matsaloli da wuri.', tw: 'Saa nhwehwɛmu ntɛm yi boa siw nsɛm ano ntɛm.',      hi: 'यह त्वरित जाँच समस्याओं को जल्दी रोकने में मदद करती है।' },
+
+  // Memory lines — at most one rendered (engine picks).
+  // Daily Habit Loop §5 — streak display. Spec is explicit:
+  // "Do NOT over-gamify". Phrasing collapsed to the minimal
+  // "{count} days in a row" — no leading praise, no trailing
+  // exhortation. The engine's threshold lowered to ≥2 so a
+  // 2-day chain shows up immediately, matching the spec's
+  // example wording exactly.
+  'primaryAction.memory.streak':              { en: '{count} days in a row',                                  fr: '{count} jours d\'affil\u00E9e',                              sw: 'siku {count} mfululizo',                              ha: 'kwana {count} a jere',                                tw: 'nna {count} a edi adi',                              hi: 'लगातार {count} दिन' },
+  'primaryAction.memory.lastHealthy':         { en: 'Last time, your plant looked healthy.',                  fr: 'La dernière fois, votre plante avait l\'air en bonne santé.', sw: 'Mara ya mwisho, mmea wako ulionekana mzuri.',          ha: 'Lokacin ƙarshe, shukarka tana cikin koshin lafiya.',  tw: 'Bere a etwa toɔ, w\'aduane no yɛɛ apɔw.',           hi: 'पिछली बार, आपका पौधा स्वस्थ दिख रहा था।' },
+  // Retention §5 — wording tightened to "Conditions changed —
+  // let's get back on track" so the prompt explains WHY (signals
+  // shifted while the user was away) rather than just nudging.
+  // Daily Habit Loop §7 — missed-day return copy. Phrasing
+  // stays remedial-but-encouraging: it asks the user to do ONE
+  // small thing rather than recovering everything they missed.
+  'primaryAction.memory.backOnTrack':         { en: 'Let\u2019s get back on track \u2014 start with one quick check', fr: 'Reprenons \u2014 commencez par une v\u00E9rification rapide',  sw: 'Turudi kwenye njia \u2014 anza na ukaguzi mmoja wa haraka',  ha: 'Mu koma kan hanya \u2014 fara da bincike \u0257aya cikin sauri', tw: 'Y\u025Bnsan nk\u0254 so \u2014 fa nhwehw\u025B kor\u0254 firi ase', hi: 'फिर शुरू करें \u2014 एक त्वरित जाँच से शुरुआत करें' },
+  // Retention §4 — single-day-gap returner welcome. Fires when
+  // the user has prior activity AND was away exactly yesterday.
+  'primaryAction.memory.welcomeBack':         { en: 'Back again \u2014 nice consistency.',                     fr: 'De retour \u2014 belle régularité.',                          sw: 'Umerudi tena \u2014 thabiti.',                          ha: 'Kun dawo \u2014 daidaito mai kyau.',                  tw: 'Wo san aba \u2014 daa daa pa.',                       hi: 'फिर वापस \u2014 अच्छी निरंतरता।' },
+
+  // Dependency System §4 — Trust confirmation. Fires when the
+  // user has ≥2 completed actions AND last feedback was healthy.
+  // Sits ahead of the generic lastHealthy line so the more
+  // specific "your action prevented this" praise wins.
+  'primaryAction.memory.goodCall':            { en: 'Good call \u2014 this helped prevent issues.',            fr: 'Bonne décision \u2014 ça a aidé à éviter des problèmes.',     sw: 'Uamuzi mzuri \u2014 hii ilisaidia kuzuia matatizo.',  ha: 'Yanke shawara mai kyau \u2014 wannan ya hana matsaloli.', tw: 'Gyinaeɛ pa \u2014 yi siw nsɛm ano.',               hi: 'अच्छा निर्णय \u2014 इससे समस्याएँ टली।' },
+
+  // Toasts (Done) — context-specific (spec §7).
+  // Conversion upgrade §5 — toast wording tightened to "you
+  // stayed ahead today" / "you reduced risk today" so the user
+  // hears credit for the action they just took, not a generic
+  // "this helps" line.
+  'firstAction.toast.garden':                 { en: 'Nice — you stayed ahead today 🌱',                       fr: 'Bien — vous avez pris de l\'avance aujourd\'hui 🌱',          sw: 'Vyema — umejitahidi kuwa mbele leo 🌱',               ha: 'Madalla — kun yi nasara a yau 🌱',                     tw: 'Eyɛ — woadi anim nnɛ 🌱',                       hi: 'अच्छा — आज आप आगे रहे 🌱' },
+  'firstAction.toast.farm':                   { en: 'Nice — you reduced risk today 🚜',                       fr: 'Bien — vous avez réduit le risque aujourd\'hui 🚜',           sw: 'Vyema — umepunguza hatari leo 🚜',                    ha: 'Madalla — kun rage haɗari yau 🚜',                     tw: 'Eyɛ — woatew asiane so nnɛ 🚜',                  hi: 'अच्छा — आज आपने जोखिम कम किया 🚜' },
+
+  // Conversion upgrade §1 effort line — fixed copy directly
+  // under the headline so the user knows it's a 30-second ask.
+  'firstAction.effort':                       { en: 'Takes 30 seconds',                                       fr: 'Prend 30 secondes',                                          sw: 'Inachukua sekunde 30',                                ha: 'Yana ɗaukar dakika 30',                                tw: 'Ɛgye sekan 30',                                  hi: '30 सेकंड लगते हैं' },
+
+  // Retention §2 — time anchor under the tomorrow hook so the
+  // user has a concrete return cue ("come back at this time").
+  'firstAction.tomorrow.timeAnchor':          { en: 'Check again tomorrow morning',                           fr: 'Revérifiez demain matin',                                     sw: 'Angalia tena kesho asubuhi',                          ha: 'Sake duba gobe da safe',                                tw: 'San hwɛ ɔkyena anɔpa',                          hi: 'कल सुबह फिर जाँचें' },
+
+  // Retention §3 — descriptive progress summary. Var-interp
+  // shape: "{done} of {total} done today". Engine fills both.
+  'retention.progressBar.summary':            { en: '{done} of {total} done today',                          fr: '{done} sur {total} faits aujourd\'hui',                       sw: '{done} kati ya {total} vimekamilika leo',             ha: '{done} daga {total} an gama yau',                       tw: '{done} firi {total} mu awie nnɛ',                hi: 'आज {total} में से {done} पूरे' },
+
+  // Data Moat §2 — health-feedback prompt rendered inline after
+  // the Done toast. Three single-tap options. Stored via
+  // healthFeedbackStore.recordHealthFeedback({ healthFeedback:
+  // 'yes' | 'no' | 'not_sure' }) — vocabulary mapping in the
+  // gate's onPickHealth handler.
+  'healthPrompt.title':                       { en: 'How is your plant doing?',                               fr: 'Comment va votre plante ?',                                  sw: 'Mmea wako uko vipi?',                                ha: 'Yaya shukarka take?',                                   tw: 'W\'aduane no te sɛn?',                          hi: 'आपका पौधा कैसा है?' },
+  'healthPrompt.healthy':                     { en: 'Healthy',                                                fr: 'En bonne santé',                                              sw: 'Mzuri',                                              ha: 'Mai lafiya',                                            tw: 'Apɔw',                                          hi: 'स्वस्थ' },
+  'healthPrompt.worse':                       { en: 'Getting worse',                                          fr: 'Empire',                                                      sw: 'Inazidi kuwa mbaya',                                  ha: 'Yana ƙara muni',                                        tw: 'Ɛresɛe',                                        hi: 'और बिगड़ रहा' },
+  'healthPrompt.notSure':                     { en: 'Not sure',                                               fr: 'Pas sûr(e)',                                                  sw: 'Sina uhakika',                                       ha: 'Ban tabbata ba',                                        tw: 'Mennim',                                        hi: 'पक्का नहीं' },
+  'healthPrompt.thanks':                      { en: 'Thanks — this helps us learn.',                          fr: 'Merci — ça nous aide à apprendre.',                            sw: 'Asante — hii inatusaidia kujifunza.',                ha: 'Na gode — wannan yana taimaka mana mu koya.',          tw: 'Meda wo ase — yi boa yɛn ma yɛsua adeɛ.',     hi: 'धन्यवाद — इससे हमें सीखने में मदद मिलती है।' },
+
+  // Dependency System §3 — uncertainty signal for weather-
+  // driven actions. Engine flags `showUncertainty: true` only
+  // when the action depends on weather; gate renders this line
+  // quietly under the effort cue.
+  'firstAction.uncertainty':                  { en: 'Conditions may have changed today',                      fr: 'Les conditions peuvent avoir changé aujourd\'hui',           sw: 'Hali zinaweza kuwa zimebadilika leo',                ha: 'Yanayi na iya canza yau',                              tw: 'Tebea bɛtumi asakra nnɛ',                       hi: 'आज स्थितियाँ बदल चुकी हो सकती हैं' },
+
+  // Learning + Scoring §5 — personal track-record boost. Fires
+  // only when this user's success rate on this action type is
+  // ≥70% across ≥3 samples (composer enforces both thresholds).
+  'firstAction.personalBoost':                { en: 'You\u2019ve had good results with this before',          fr: 'Cela a bien marché pour vous auparavant',                     sw: 'Umepata matokeo mazuri na hii hapo awali',           ha: 'Kun samu sakamako mai kyau da wannan a baya',          tw: 'Wonya nnetebea pa wɔ yi mu kane',               hi: 'पहले इससे आपको अच्छे परिणाम मिले हैं' },
+  // Demo / Investor Mode §3 — when the local insights store has no
+  // real "area" rollup (typical on a fresh demo session), the
+  // FirstActionGate falls back to this line so the spec's exact
+  // wording lands on screen for the investor walkthrough. Hidden
+  // outside demo mode so production users never see imputed
+  // social-proof copy.
+  'firstAction.areaInsight.demo':             { en: 'Growers in your area see better results doing this',     fr: 'Les producteurs pr\u00E8s de chez vous obtiennent de meilleurs r\u00E9sultats ainsi', sw: 'Wakulima wa eneo lako wanapata matokeo bora zaidi kwa kufanya hivi', ha: 'Manoma a yankinka suna samun sakamako mafi kyau ta yin haka', tw: 'Akuafoɔ a w\u0254w\u0254 wo mpasua so nya nnetebea pa fa eyi y\u025B', hi: 'आपके क्षेत्र के किसान ऐसा करके बेहतर परिणाम पा रहे हैं' },
+
+  // Dependency System §2 — 7-day rotating day-cue line. Engine
+  // picks slot via day-of-year mod 7. Cosmetic only, but gives
+  // the gate texture so it doesn't feel identical day-to-day.
+  'firstAction.dayCue.0':                     { en: 'Today\u2019s check',     fr: 'Vérification du jour',         sw: 'Ukaguzi wa leo',                  ha: 'Dubawar yau',                              tw: 'Nnɛ nhwehwɛmu',                  hi: 'आज की जाँच' },
+  'firstAction.dayCue.1':                     { en: 'A fresh look',           fr: 'Un regard neuf',                sw: 'Mtazamo mpya',                    ha: 'Sabon dubawa',                             tw: 'Hwɛ foforɔ',                     hi: 'नई नज़र' },
+  'firstAction.dayCue.2':                     { en: 'Daily snapshot',         fr: 'Aperçu quotidien',              sw: 'Picha ya kila siku',              ha: 'Hoton yau da kullum',                       tw: 'Daa daa nsɛm tiawa',             hi: 'दैनिक झलक' },
+  'firstAction.dayCue.3':                     { en: 'Quick read',             fr: 'Lecture rapide',                sw: 'Soma haraka',                     ha: 'Karatu da sauri',                           tw: 'Kenkan ntɛm',                    hi: 'तुरंत पढ़ें' },
+  'firstAction.dayCue.4':                     { en: 'Today\u2019s status',    fr: 'Statut du jour',                sw: 'Hali ya leo',                     ha: 'Yanayin yau',                              tw: 'Nnɛ tebea',                     hi: 'आज की स्थिति' },
+  'firstAction.dayCue.5':                     { en: 'Brief check-in',         fr: 'Bref point',                    sw: 'Ukaguzi mfupi',                   ha: 'Taƙaitaccen dubawa',                       tw: 'Nhwehwɛmu tiawa',               hi: 'संक्षिप्त जाँच' },
+  'firstAction.dayCue.6':                     { en: 'Today\u2019s update',    fr: 'Mise à jour du jour',           sw: 'Sasisho la leo',                  ha: 'Sabuntawa ta yau',                          tw: 'Nnɛ nsesaeɛ',                   hi: 'आज का अद्यतन' },
+
+  // Monetisation §3 — paywall copy. Single CTA + dismiss.
+  'paywall.title':                            { en: 'Get smarter daily decisions',                            fr: 'Obtenez des décisions quotidiennes plus intelligentes',       sw: 'Pata maamuzi bora zaidi ya kila siku',                ha: 'Sami yanke shawara mai kyau na yau da kullum',         tw: 'Nya gyinaeɛ pa daa daa',                          hi: 'रोज़ बेहतर निर्णय पाएँ' },
+  // Freemium spec §4 — body wording aligned to "Avoid mistakes
+  // and improve your results with better guidance" (the previous
+  // "insights" phrasing was generic; "guidance" matches the
+  // decision-engine value prop).
+  'paywall.body':                             { en: 'Avoid mistakes and improve your results with better guidance.', fr: '\u00C9vitez les erreurs et am\u00E9liorez vos r\u00E9sultats avec des conseils plus pr\u00E9cis.', sw: 'Epuka makosa na boresha matokeo yako kwa mwongozo bora.', ha: 'Guji kurakurai ka inganta sakamakon ku tare da jagora mai kyau.', tw: 'Twe ho firi mfomsoɔ na nya nnetebea pa fa akwanky\u025Cr\u025B pa so.', hi: 'गलतियों से बचें और बेहतर मार्गदर्शन से अपने परिणाम सुधारें।' },
+  // Freemium spec §5 — single price line. Default "$7/month"
+  // rendered between the body and the CTA. Currency follows the
+  // active locale only when the team's billing layer ships per-
+  // region price tables; until then we ship the USD anchor as the
+  // launch default and let the localized value override it.
+  'paywall.price':                            { en: '$7/month',                                               fr: '7\u00A0$/mois',                                              sw: '$7/mwezi',                                            ha: '$7/wata',                                              tw: '$7/bosome',                                       hi: '$7/महीना' },
+  'paywall.cta':                              { en: 'Upgrade to Pro',                                         fr: 'Passer à Pro',                                                sw: 'Boresha hadi Pro',                                    ha: 'Haɓaka zuwa Pro',                                       tw: 'Kɔ Pro so',                                       hi: 'Pro में अपग्रेड करें' },
+  'paywall.dismiss':                          { en: 'Maybe later',                                            fr: 'Plus tard peut-être',                                         sw: 'Labda baadaye',                                       ha: 'Wataƙila daga baya',                                    tw: 'Ebia akyiri',                                     hi: 'शायद बाद में' },
+
+  // Conversion upgrade §2 — urgency chip labels.
+  'firstAction.urgency.now':                  { en: 'Do this now',                                            fr: 'À faire maintenant',                                         sw: 'Fanya sasa',                                          ha: 'Yi yanzu',                                             tw: 'Yɛ seesei',                                       hi: 'अभी करें' },
+  'firstAction.urgency.today':                { en: 'Do today',                                               fr: 'À faire aujourd\'hui',                                       sw: 'Fanya leo',                                           ha: 'Yi yau',                                                tw: 'Yɛ nnɛ',                                          hi: 'आज करें' },
+  'firstAction.urgency.week':                 { en: 'This week',                                              fr: 'Cette semaine',                                              sw: 'Wiki hii',                                            ha: 'A wannan mako',                                         tw: 'Saa nnawɔtwe yi',                                hi: 'इस हफ्ते' },
+
+  // ─── Indispensable Home Loop §11 — Notification copy ──────────
+  'notification.morning.title':               { en: 'Open Farroway first',                                    fr: 'Ouvrez Farroway d\'abord',                                   sw: 'Fungua Farroway kwanza',                              ha: 'Buɗe Farroway da farko',                              tw: 'Bue Farroway kane',                                  hi: 'पहले Farroway खोलें' },
+  // Daily Habit Loop §8 — notification body must mirror Home's
+  // trigger phrasing: "Before you water—check Farroway first".
+  'notification.morning.body':                { en: 'Before you water\u2014check Farroway first',             fr: 'Avant d\'arroser\u2014v\u00E9rifiez Farroway d\'abord',     sw: 'Kabla ya kumwagilia\u2014angalia Farroway kwanza',     ha: 'Kafin ka shayar\u2014duba Farroway da farko',         tw: 'Ansa na wugu nsuo\u2014hw\u025B Farroway kane',       hi: 'पानी देने से पहले\u2014पहले Farroway जाँचें' },
+  'notification.rain.title':                  { en: 'Rain expected today',                                    fr: 'Pluie attendue aujourd\'hui',                                sw: 'Mvua inatarajiwa leo',                                ha: 'Ana sa ran ruwan sama yau',                          tw: 'Yɛhwɛ kwan sɛ nsuo bɛtɔ nnɛ',                       hi: 'आज बारिश की संभावना' },
+  'notification.rain.body':                   { en: 'Rain expected — check before watering today.',           fr: 'Pluie attendue — vérifiez avant d\'arroser aujourd\'hui.',    sw: 'Mvua inatarajiwa — angalia kabla ya kumwagilia leo.', ha: 'Ana sa ran ruwan sama — duba kafin ka shayar yau.',  tw: 'Nsuo betɔ — hwɛ ansa na wugu nsuo nnɛ.',             hi: 'बारिश की संभावना — आज पानी देने से पहले जाँचें।' },
+  'notification.humidity.title':              { en: 'Humidity is high',                                       fr: 'L\'humidité est élevée',                                     sw: 'Unyevu ni mkubwa',                                     ha: 'Laima na ƙwarai',                                     tw: 'Mfutuma yɛ kɛseɛ',                                   hi: 'नमी अधिक है' },
+  'notification.humidity.body':               { en: 'Humidity is high — check leaves today.',                 fr: 'L\'humidité est élevée — vérifiez les feuilles aujourd\'hui.', sw: 'Unyevu ni mkubwa — angalia majani leo.',              ha: 'Laima na ƙwarai — duba ganye yau.',                  tw: 'Mfutuma yɛ kɛseɛ — hwɛ nhabamma nnɛ.',              hi: 'नमी अधिक है — आज पत्तियाँ जाँचें।' },
+  'notification.inactive.title':              { en: 'Welcome back',                                           fr: 'Heureux de vous revoir',                                     sw: 'Karibu tena',                                          ha: 'Barka da dawowa',                                     tw: 'Akwaaba',                                            hi: 'वापसी पर स्वागत है' },
+  'notification.inactive.body':               { en: 'Let\u2019s get back on track \u2014 start with one quick check.', fr: 'Reprenons \u2014 commencez par une vérification rapide.',  sw: 'Hebu turudi \u2014 anza na ukaguzi mmoja wa haraka.',  ha: 'Mu koma \u2014 fara da dubawa ɗaya cikin sauri.',     tw: 'Yɛnsan nkɔ so \u2014 hyɛ ase wɔ nhwehwɛmu ntɛm baako so.', hi: 'फिर शुरू करें \u2014 एक त्वरित जाँच से शुरू करें।' },
+
   // ─── Strict cleanup patch — task / priority / status / weather
   //    helpers required by src/data/taskLibrary.js + the rendering
   //    contract in the spec. All 6 launch languages populated. Twi
@@ -10071,7 +10329,10 @@ const T = {
   // Single-action-flow spec (Apr 2026): label was "Do this now",
   // updated to "Act now" per spec — shorter, more imperative,
   // same key so call sites don't need touching.
-  'farm.next.cta.doThisNow':       { en: 'Act now',             fr: 'Agir maintenant',       sw: 'Chukua hatua sasa',   ha: 'Yi aiki yanzu',              tw: 'Yɛ seesei ara',          hi: 'अभी कार्य करें' },
+  // Core Product Signal §2 — single "Done" verb. Old labels
+  // "Do this now" → "Act now" → "Done"; key kept stable so call
+  // sites don't churn.
+  'farm.next.cta.doThisNow':       { en: 'Done',                fr: 'Fait',                  sw: 'Imekamilika',         ha: 'An gama',                    tw: 'Wie',                    hi: 'पूरा' },
   // Control-panel spec (Apr 2026): when the farmer's setup is
   // incomplete, the CTA on Today's Action card swaps from the
   // generic "Act now" to a clearer "Complete setup" so the
@@ -10214,6 +10475,19 @@ const T = {
   'retention.progressBar.onTrack':         { en: 'On track',                  fr: 'Sur la bonne voie',                                  sw: 'Njia nzuri',                              ha: 'Kan hanya',                                 tw: 'Ɛkwan pa so',                                hi: 'सही रास्ते पर' },
   'retention.progressBar.needsAttention':  { en: 'Needs attention',           fr: 'Besoin d\'attention',                                sw: 'Inahitaji umakini',                       ha: 'Yana bukatar kulawa',                       tw: 'Ehia adwen',                                 hi: 'ध्यान दें' },
 
+  // Core Product Signal §3 + §7 — Progress screens speak in
+  // reinforcement only; no warnings that contradict completion.
+  // The home progress bar uses these two phrases instead of the
+  // legacy "0/100 Needs attention" flag.
+  //   • progress.stepsLeft.one    — exactly 1 step remaining
+  //   • progress.stepsLeft.other  — n>1 steps remaining ({n} var)
+  //   • progress.allDone          — all of today's steps complete
+  // Wording stays identical across garden / farm because §4
+  // requires context-pure copy.
+  'progress.stepsLeft.one':    { en: 'You\u2019re on track \u2014 1 step left today',     fr: 'Vous \u00EAtes sur la bonne voie \u2014 1 \u00E9tape restante aujourd\'hui',     sw: 'Uko kwenye njia \u2014 hatua 1 imebaki leo',          ha: 'Kana kan hanya \u2014 mataki 1 ya rage yau',         tw: '\u0190kwan pa so \u2014 \u0254kwan 1 aka nn\u025B',                hi: 'सही रास्ते पर \u2014 आज 1 कदम बाकी' },
+  'progress.stepsLeft.other':  { en: 'You\u2019re on track \u2014 {n} steps left today',  fr: 'Vous \u00EAtes sur la bonne voie \u2014 {n} \u00E9tapes restantes aujourd\'hui', sw: 'Uko kwenye njia \u2014 hatua {n} zimebaki leo',       ha: 'Kana kan hanya \u2014 matakai {n} sun rage yau',     tw: '\u0190kwan pa so \u2014 nkwan {n} aka nn\u025B',                  hi: 'सही रास्ते पर \u2014 आज {n} कदम बाकी' },
+  'progress.allDone':          { en: 'Nice \u2014 you\u2019re done for today',            fr: 'Bravo \u2014 c\'est termin\u00E9 pour aujourd\'hui',                              sw: 'Vyema \u2014 umemaliza kwa leo',                       ha: 'Kyau \u2014 ka gama na yau',                         tw: '\u0190y\u025B \u2014 woawie nn\u025B',                                  hi: 'बहुत बढ़िया \u2014 आज के लिए पूरा' },
+
   // Spec v2 §4 — daily SMS / push trigger fallbacks. Used when the
   // server-side renderer doesn't have the language pack and falls
   // back to the literal string sent by the client. Caller passes
@@ -10294,7 +10568,8 @@ const T = {
   // Screen 4 — first task
   'fastFlow.firstTask.title':     { en: "Today\u2019s action",           fr: 'Action du jour',                             sw: 'Hatua ya leo',                    ha: 'Aikin yau',               tw: 'Nnɛ adwuma',             hi: 'आज की क्रिया' },
   'fastFlow.firstTask.body':      { en: 'Walk your land and check soil moisture before planting {crop}.', fr: 'Parcourez votre terrain et vérifiez l\'humidité du sol avant de planter {crop}.', sw: 'Tembea shamba lako na uangalie unyevu wa udongo kabla ya kupanda {crop}.', ha: 'Yi yawo a gonarka kuma duba danshin ƙasa kafin ka shuka {crop}.', tw: 'Nantew w\'asaase no so na hwɛ asaase no fɔforɔ ansa na woadua {crop}.', hi: '{crop} बोने से पहले अपनी जमीन देखें और मिट्टी की नमी जाँचें।' },
-  'fastFlow.firstTask.cta':       { en: 'Act now',                       fr: 'Agir maintenant',                            sw: 'Tenda sasa',                      ha: 'Yi yanzu',                tw: 'Yɛ seesei',              hi: 'अभी करें' },
+  // Core Product Signal §2 — single "Done" verb everywhere.
+  'fastFlow.firstTask.cta':       { en: 'Done',                          fr: 'Fait',                                       sw: 'Imekamilika',                     ha: 'An gama',                 tw: 'Wie',                    hi: 'पूरा' },
   'fastFlow.firstTask.crop.fallback': { en: 'your crop',                 fr: 'votre culture',                              sw: 'zao lako',                        ha: 'shukarka',                tw: 'w\'aduane',              hi: 'आपकी फसल' },
 
   // ─── 7-day engagement loop ────────────────────────────────────
@@ -11939,6 +12214,12 @@ const T = {
   // Fast backyard onboarding (3-step optimized flow). Gated by
   // `fastBackyardOnboarding`. Target total time < 10 seconds.
   'fastOnboarding.step':                 { en: 'Step {current} of {total}',                   fr: 'Étape {current} sur {total}',                   sw: 'Hatua {current} kati ya {total}',            ha: 'Mataki na {current} cikin {total}',        tw: 'Anammɔn {current} wɔ {total} mu',             hi: 'चरण {current} / {total}' },
+
+  // Activation §3 — single-tap experience toggle on step 1.
+  // Defaults to farm; tapping flips to garden and vice-versa
+  // without a separate screen.
+  'fastOnboarding.toggleToGarden':       { en: 'Growing in a garden? Switch',                fr: 'Vous cultivez au jardin ? Basculer',           sw: 'Unalima bustanini? Badilisha',               ha: 'Kuna noma a lambu? Sauya',                  tw: 'Wodua wɔ turo mu? Sesa',                      hi: 'बगीचे में उगा रहे हैं? बदलें' },
+  'fastOnboarding.toggleToFarm':         { en: 'On a farm? Switch',                          fr: 'Sur une ferme ? Basculer',                      sw: 'Kwenye shamba? Badilisha',                   ha: 'A gona? Sauya',                             tw: 'Wɔ afuo so? Sesa',                            hi: 'खेत पर हैं? बदलें' },
 
   'fastOnboarding.intro.title':          { en: 'Know what to do every day',                   fr: 'Sachez quoi faire chaque jour',                 sw: 'Jua la kufanya kila siku',                   ha: 'San abin da za ka yi kowace rana',         tw: 'Hu deɛ ɛsɛ sɛ woyɛ daa',                       hi: 'हर दिन क्या करना है जानें' },
   'fastOnboarding.intro.subtitle':       { en: 'A simple, daily plan for your home garden \u2014 ready in seconds.', fr: 'Un plan quotidien simple pour votre jardin \u2014 prêt en quelques secondes.', sw: 'Mpango rahisi wa kila siku kwa bustani yako \u2014 tayari kwa sekunde.', ha: 'Sauƙin shirin yau da kullum don lambun ku \u2014 cikin daƙiƙai.', tw: 'Da biara nhyehyɛeɛ a ɛyɛ mmerɛ ma wo turo \u2014 ɛsiesie wɔ daakye.', hi: 'आपके घर के बगीचे के लिए सरल दैनिक योजना \u2014 कुछ सेकंड में तैयार।' },

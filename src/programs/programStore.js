@@ -116,7 +116,17 @@ export function createProgram(input) {
 
   const stored = {
     id,
-    title:        String(safe.title || '').trim(),
+    // NGO Layer §1 — `name` is the spec's preferred field name;
+    // we accept either `name` or the legacy `title` and store
+    // both for backward compatibility with existing call sites.
+    title:        String(safe.title || safe.name || '').trim(),
+    name:         String(safe.name  || safe.title || '').trim(),
+    // NGO Layer §1 — organization (NGO/owner) is now a first-class
+    // field. Falls back to createdBy when an explicit organization
+    // wasn't supplied so the dashboard can always group programs
+    // by sponsor without forcing every existing call site to
+    // backfill the field.
+    organization: String(safe.organization || safe.org || '').trim() || null,
     type:         PROGRAM_TYPES.includes(safe.type) ? safe.type : 'announcement',
     message:      String(safe.message || '').trim(),
     target: {

@@ -42,6 +42,7 @@ import { saveTaskCompletion } from '../../store/farrowayLocal.js';
 import { generateFirstPlan } from '../../core/firstPlanEngine.js';
 import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../core/analytics.js';
+import { stampOnboardingStart } from '../../core/onboardingTiming.js';
 
 // ── Color tokens (mirror onboarding visual language) ────────────
 const C = {
@@ -78,6 +79,24 @@ const S = {
     margin: 0, fontSize: '1.5rem', fontWeight: 800,
     color: C.ink, letterSpacing: '-0.01em',
     lineHeight: 1.2,
+  },
+  // Activation §3 — small experience toggle on step 1. Sits
+  // above the headline; tap flips garden ↔ farm without a
+  // separate screen. Subtle styling so it doesn't compete with
+  // the crop-picker tiles below.
+  experienceToggle: {
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(34,197,94,0.45)',
+    borderRadius: 999,
+    color: '#86EFAC',
+    fontSize: 12,
+    fontWeight: 700,
+    padding: '6px 14px',
+    cursor: 'pointer',
+    alignSelf: 'flex-start',
+    margin: '0 0 6px',
+    WebkitTapHighlightColor: 'transparent',
   },
   subtitle: {
     margin: 0, fontSize: '0.9rem', color: C.inkDim, lineHeight: 1.4,
@@ -185,23 +204,37 @@ const S = {
 };
 
 // ── Pickable tile sets (kept tiny on purpose) ───────────────────
-const PLANT_OPTIONS = [
+//
+// Unify §1/§2 — there is ONE crop list shown to every user
+// regardless of garden/farm mode. The earlier split (PLANT_OPTIONS
+// vs CROP_OPTIONS) caused the tile grid to reshuffle when the user
+// flipped the experience toggle, which read as a bug. The unified
+// list is the deduplicated union of both legacy sets, ordered so
+// the most common picks (tomato, pepper, maize) come first.
+//
+// Experience (garden vs farm) is now an INDEPENDENT signal driven
+// by the toggle pill above the headline + future behavioural
+// inference (skipped tasks, scan counts, feedback patterns). It
+// only controls downstream routing — addGarden vs addFarm,
+// engine wording, urgency tiers — never the crop list itself.
+const UNIFIED_CROP_OPTIONS = [
   { value: 'tomato',   label: 'Tomato',   emoji: '\u{1F345}' },
   { value: 'pepper',   label: 'Pepper',   emoji: '\u{1F336}' },
+  { value: 'maize',    label: 'Maize',    emoji: '\u{1F33D}' },
+  { value: 'cassava',  label: 'Cassava',  emoji: '\u{1F33E}' },
+  { value: 'rice',     label: 'Rice',     emoji: '\u{1F35A}' },
   { value: 'leafy',    label: 'Greens',   emoji: '\u{1F96C}' },
   { value: 'herbs',    label: 'Herbs',    emoji: '\u{1F33F}' },
   { value: 'flowers',  label: 'Flowers',  emoji: '\u{1F33C}' },
   { value: 'other',    label: 'Other',    emoji: '\u{1F331}' },
 ];
 
-const CROP_OPTIONS = [
-  { value: 'maize',    label: 'Maize',    emoji: '\u{1F33D}' },
-  { value: 'tomato',   label: 'Tomato',   emoji: '\u{1F345}' },
-  { value: 'pepper',   label: 'Pepper',   emoji: '\u{1F336}' },
-  { value: 'cassava',  label: 'Cassava',  emoji: '\u{1F33E}' },
-  { value: 'rice',     label: 'Rice',     emoji: '\u{1F35A}' },
-  { value: 'other',    label: 'Other',    emoji: '\u{1F331}' },
-];
+// Legacy aliases — kept so existing label-lookup call sites
+// (persistRow's cropLabel) don't churn. Both point at the same
+// unified list, so behaviour is identical regardless of which
+// branch runs.
+const PLANT_OPTIONS = UNIFIED_CROP_OPTIONS;
+const CROP_OPTIONS  = UNIFIED_CROP_OPTIONS;
 
 const GROWING_SETUPS = [
   { value: 'container',      label: 'Pots / containers' },
@@ -219,11 +252,18 @@ const FARM_SIZE_BUCKETS = [
 // ── Component ───────────────────────────────────────────────────
 export default function FastOnboarding() {
   const navigate = useNavigate();
-  const [stepIdx, setStepIdx] = useState(0);
+  // Activation §1/§2 — default to step 1 (crop pick) and assume
+  // experience='farm' so the experience-pick screen is auto-
+  // skipped. Users who're growing in a garden can flip via the
+  // small "Growing in a garden?" link rendered above the crop
+  // list, OR change later via the My Grow Farms/Gardens toggle.
+  // This collapses the flow from 4 screens to effectively 1
+  // (crop pick) → direct navigation to Home.
+  const [stepIdx, setStepIdx] = useState(1);
 
   // Form state — every field stays optional EXCEPT the experience
   // pick on screen 1 and the plant/crop pick on screen 2.
-  const [experience, setExperience] = useState(null);   // 'garden' | 'farm'
+  const [experience, setExperience] = useState('farm');   // 'garden' | 'farm'
   const [plant,      setPlant]      = useState('');     // garden plant code
   const [crop,       setCrop]       = useState('');     // farm crop code
   const [otherText,  setOtherText]  = useState('');     // when 'other' picked
@@ -244,6 +284,18 @@ export default function FastOnboarding() {
     if (startedAtRef.current) return;
     startedAtRef.current = Date.now();
     try { trackEvent('fast_onboarding_started', {}); } catch { /* swallow */ }
+    // Onboarding cleanup §4 — stamp the canonical "first action
+    // timer" so FirstActionGate can compute time_to_first_action_ms
+    // on the user's first Done tap. Idempotent — a returning user
+    // who re-enters this flow doesn't restart the clock.
+    try { stampOnboardingStart(); } catch { /* swallow */ }
+    // Activation §1 — auto-request the device's location in the
+    // background so by the time the user has picked a crop the
+    // geo state is already settled. requestLocation itself is a
+    // no-throw no-op when geolocation is unsupported / denied,
+    // so this can run unconditionally on every mount.
+    try { requestLocation(); } catch { /* swallow */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isGarden = experience === 'garden';
@@ -372,10 +424,34 @@ export default function FastOnboarding() {
 
   function goNext() {
     if (!canAdvance()) return;
+    // Activation §4 — collapse the flow. Once the user has picked
+    // a crop on step 1 (the only required input now that step 0
+    // auto-skips), persist the row and jump straight to Home so
+    // the FirstActionGate becomes the very next thing they see.
+    // Skips the legacy in-flow location screen + first-action
+    // preview; both are still reachable via /onboarding/fast for
+    // pilots / tests but the typical happy path is one screen +
+    // one navigation.
+    if (stepIdx === 1) {
+      try { persistRow(); } catch { /* never block navigation */ }
+      try { setOnboardingComplete(); } catch { /* swallow */ }
+      try {
+        trackEvent('fast_onboarding_collapsed_to_home', {
+          experience,
+          elapsedMs: startedAtRef.current
+            ? Date.now() - startedAtRef.current : null,
+        });
+      } catch { /* swallow */ }
+      try { navigate('/home', { replace: true }); }
+      catch {
+        try { navigate('/dashboard', { replace: true }); }
+        catch { /* swallow */ }
+      }
+      return;
+    }
+    // Legacy multi-step path — preserved for any deep-link
+    // entry that bypassed step 1 (e.g. a test setting stepIdx=2).
     if (stepIdx === 2) {
-      // Entering screen 4 — save context first so a tab-close on
-      // the action screen still leaves a usable row + the engine
-      // has cropOrPlant to work with.
       persistRow();
     }
     setStepIdx((i) => Math.min(totalSteps - 1, i + 1));
@@ -524,6 +600,20 @@ export default function FastOnboarding() {
       {/* ── Screen 2: plant/crop + setup/size ─────────────── */}
       {stepIdx === 1 ? (
         <>
+          {/* Activation §3 — small "garden vs farm" toggle right
+              above the headline. Defaults to farm; the user can
+              flip to garden in one tap WITHOUT a separate
+              experience-pick screen. */}
+          <button
+            type="button"
+            onClick={() => setExperience(isGarden ? 'farm' : 'garden')}
+            style={S.experienceToggle}
+            data-testid="fast-onboarding-experience-toggle"
+          >
+            {isGarden
+              ? tStrict('fastOnboarding.toggleToFarm', 'On a farm? Switch')
+              : tStrict('fastOnboarding.toggleToGarden', 'Growing in a garden? Switch')}
+          </button>
           <h1 style={S.title}>
             {isGarden
               ? tStrict('fastOnboarding.title.plant',
@@ -542,7 +632,12 @@ export default function FastOnboarding() {
               : tStrict('fastOnboarding.label.crop',  'Crop')}
           </span>
           <div style={S.pillRow}>
-            {(isGarden ? PLANT_OPTIONS : CROP_OPTIONS).map((opt) => {
+            {/* Unify §1/§2 — single options list, single test-id
+                shape. Picking writes to BOTH plant + crop state
+                so the downstream persistRow path (which still
+                reads experience-specific fields) stays stable
+                whichever way the user later flips the toggle. */}
+            {UNIFIED_CROP_OPTIONS.map((opt) => {
               const picked = isGarden ? plant : crop;
               const active = picked === opt.value;
               return (
@@ -550,11 +645,11 @@ export default function FastOnboarding() {
                   key={opt.value}
                   type="button"
                   onClick={() => {
-                    if (isGarden) setPlant(opt.value);
-                    else          setCrop(opt.value);
+                    setPlant(opt.value);
+                    setCrop(opt.value);
                   }}
                   style={active ? { ...S.pill, ...S.pillActive } : S.pill}
-                  data-testid={`fast-onboarding-${isGarden ? 'plant' : 'crop'}-${opt.value}`}
+                  data-testid={`fast-onboarding-crop-${opt.value}`}
                   aria-pressed={active}
                 >
                   <span aria-hidden="true" style={{ marginRight: 6 }}>{opt.emoji}</span>

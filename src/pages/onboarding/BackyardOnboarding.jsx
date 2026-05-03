@@ -1,4 +1,8 @@
 /**
+ * @deprecated Onboarding cleanup — superseded by `FastOnboarding`
+ *   at `/onboarding/fast`. This component's route now redirects
+ *   to the canonical entry. Slated for deletion.
+ *
  * BackyardOnboarding — dedicated 6-step setup flow for U.S.
  * backyard / home-garden users at /onboarding/backyard.
  *

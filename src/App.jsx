@@ -637,6 +637,63 @@ export default function App() {
     };
   }, []);
 
+  // Global Insights Layer — opportunistic batch sync of locally-
+  // aggregated event deltas to /api/insights/batch. The sync helper
+  // (src/core/localInsightSync.js) self-respects the privacy
+  // opt-out (farroway:helpImproveRecommendations) AND short-
+  // circuits when offline, so this effect can fire freely without
+  // an online-check here.
+  //
+  // Cadence (per spec §5: "daily or on app idle"):
+  //   • One opportunistic sync 30s after mount (settle period)
+  //   • Every 30 minutes while the tab is open
+  //   • Whenever the tab becomes visible again (handles "open
+  //     overnight, foreground in the morning" path which the 30-
+  //     minute tick would otherwise miss for hours)
+  //   • Whenever the network flips back online (mirrors the
+  //     offline-queue dispatcher above)
+  //
+  // No backend ticket: the endpoint already exists, model already
+  // migrated. Auto-flush turns on the data flow. ​
+  useEffect(() => {
+    let cancelled = false;
+    let lastRunAt = 0;
+    const MIN_GAP_MS = 60_000; // never run twice within 60s
+    async function runSync() {
+      if (cancelled) return;
+      if (Date.now() - lastRunAt < MIN_GAP_MS) return;
+      lastRunAt = Date.now();
+      try {
+        const [{ syncInsights }, { default: api }] = await Promise.all([
+          import('./core/localInsightSync.js'),
+          import('./api/client.js'),
+        ]);
+        await syncInsights({ apiClient: api });
+      } catch {
+        // Failure is intentionally swallowed — the helper itself
+        // never throws, but a dynamic-import failure on a slow
+        // network shouldn't break boot.
+      }
+    }
+    const startId = setTimeout(runSync, 30_000);
+    const tickId  = setInterval(runSync, 30 * 60_000);
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        runSync();
+      }
+    };
+    const onOnline = () => runSync();
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
+    if (typeof window   !== 'undefined') window.addEventListener('online', onOnline);
+    return () => {
+      cancelled = true;
+      clearTimeout(startId);
+      clearInterval(tickId);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+      if (typeof window   !== 'undefined') window.removeEventListener('online', onOnline);
+    };
+  }, []);
+
   // Go-live audit — listing expiry sweep. Runs once on boot via
   // a microtask so it never blocks render. Idempotent: rerunning
   // is a no-op once everything stale is already flagged. Lazy-
@@ -747,13 +804,20 @@ export default function App() {
                 destination. Legacy /onboarding + /onboarding/fast
                 routes remain reachable for users / scripts that
                 deep-link to them. */}
-            <Route path="/onboarding/quick" element={<QuickStart />} />
+            {/* Onboarding cleanup — single canonical entry. Every
+                legacy onboarding route now redirects to
+                /onboarding/fast (FastOnboarding, the sub-30s path).
+                The component imports stay for now so any tests
+                that exercise them keep working; the visible flow
+                converges on one place. Deletion of dead components
+                is a separate follow-up commit. */}
+            <Route path="/onboarding/quick" element={<Navigate to="/onboarding/fast" replace />} />
             {/* /onboarding/start — new 4-screen FastFlow per the
                 action-first spec. Reaches first-task in <60 s.
                 Existing /onboarding/quick + /onboarding/minimal
                 + /onboarding/v3 routes stay intact for scripts
                 or links that deep-link to them. */}
-            <Route path="/onboarding/start" element={<FastFlow />} />
+            <Route path="/onboarding/start" element={<Navigate to="/onboarding/fast" replace />} />
             {/* Perfect Onboarding spec — sub-30-second 4-screen
                 path. /onboarding/fast is the canonical entry.
                 The bare /onboarding path stays bound to
@@ -763,9 +827,9 @@ export default function App() {
                 own redirect logic without us double-mounting
                 the route here. */}
             <Route path="/onboarding/fast" element={<FastOnboarding />} />
-            <Route path="/onboarding/minimal" element={<MinimalOnboarding />} />
-            <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
-            <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />
+            <Route path="/onboarding/minimal" element={<Navigate to="/onboarding/fast" replace />} />
+            <Route path="/onboarding/farmer-type" element={<Navigate to="/onboarding/fast" replace />} />
+            <Route path="/onboarding/starter-guide" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/dashboard" element={<ExperienceFallback><V2Dashboard /></ExperienceFallback>} />
             <Route path="/tasks" element={<AllTasksPage />} />
             <Route path="/my-farm" element={<ExperienceFallback><MyFarmPage /></ExperienceFallback>} />
@@ -774,7 +838,7 @@ export default function App() {
                 FEATURE_SIMPLE_ONBOARDING inside the component;
                 when off it forwards to /onboarding so existing
                 pilots are unaffected. */}
-            <Route path="/onboarding/simple" element={<SimpleOnboarding />} />
+            <Route path="/onboarding/simple" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/progress" element={<FarmerProgressPage />} />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />
@@ -857,13 +921,13 @@ export default function App() {
             {/* /onboarding/backyard — feature-flag-gated 6-step
                 garden setup. The page checks the flag itself
                 and redirects to /dashboard when off. */}
-            <Route path="/onboarding/backyard" element={<BackyardOnboarding />} />
+            <Route path="/onboarding/backyard" element={<Navigate to="/onboarding/fast" replace />} />
             {/* /onboarding/us-experience — chooser between Backyard
                 and Farm for U.S. users. The page checks the flag
                 itself and bounces to /dashboard when off. Routes
                 onward to /onboarding/backyard or /onboarding (V3)
                 based on choice. */}
-            <Route path="/onboarding/us-experience" element={<USExperienceSelection />} />
+            <Route path="/onboarding/us-experience" element={<Navigate to="/onboarding/fast" replace />} />
             {/* Scan detection — feature-flag gated. Pages
                 self-bounce to /scan-crop when off so deep links
                 stay reachable. */}
@@ -935,19 +999,16 @@ export default function App() {
             <Route path="/market/listings/:id" element={<ListingDetailPage />} />
             <Route path="/buyer/interests" element={<MyInterestsPage />} />
             <Route path="/buyer/notifications" element={<BuyerNotificationsPage />} />
-            <Route path="/onboarding/smart" element={<FarmerOnboardingPage />} />
-            <Route path="/onboarding/fast" element={<FastOnboardingRoute />} />
-            {/* Canonical 3-step flow — replaces the heavy wizard for
-                new signups. Legacy /fast + /smart kept for back-compat
-                with any in-flight sessions but all new entry points
-                (FarmerRegister, ProfileGuard) point here. */}
-            {/* /onboarding now routes through OnboardingRouter
-                so U.S. users with no experience selection bounce
-                to /onboarding/us-experience. Flag-off path:
-                identical to V3. /onboarding/v3 stays as a direct
-                deep-link to V3 for QA. */}
-            <Route path="/onboarding"    element={<OnboardingRouter />} />
-            <Route path="/onboarding/v3" element={<OnboardingV3 />} />
+            <Route path="/onboarding/smart" element={<Navigate to="/onboarding/fast" replace />} />
+            {/* Onboarding cleanup — duplicate /onboarding/fast
+                (FastOnboardingRoute) intentionally removed; the
+                canonical /onboarding/fast handler is mounted
+                earlier in this file under the V2ProtectedLayout
+                block (FastOnboarding component). FastOnboardingRoute
+                stays in the bundle as a lazy import for any test
+                that imports it directly; the route is gone. */}
+            <Route path="/onboarding"    element={<Navigate to="/onboarding/fast" replace />} />
+            <Route path="/onboarding/v3" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/edit-farm" element={<EditFarmScreen />} />
             {/* /farm/new now routes through AdaptiveFarmSetup
                 so backyard users get the simple GardenSetupForm

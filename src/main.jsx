@@ -11,6 +11,7 @@ import RecoveryErrorBoundary from './components/system/RecoveryErrorBoundary.jsx
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx';
 import LanguageRegionGate from './components/LanguageRegionGate.jsx';
 import { initSyncCoordinator } from './services/syncCoordinator.js';
+import { initPrimaryActionDoneBridge } from './core/primaryActionDoneBridge.js';
 import { registerServiceWorker } from './lib/sw/registerServiceWorker.js';
 import './index.css';
 // Bootstrap the JSON-driven react-i18next namespace once, before any
@@ -21,6 +22,13 @@ import './i18n/i18next.js';
 
 // Initialize offline sync coordinator (auto-flushes on reconnect + visibility)
 initSyncCoordinator();
+
+// Wire the FirstActionGate's `farroway:primaryActionDone` event
+// into streakEngine.recordTaskCompleted() once at app boot. Bridge
+// is idempotent against HMR (sets _bound flag) and the streak
+// engine itself dedupes per-day, so this is safe to fire freely.
+try { initPrimaryActionDoneBridge(); }
+catch { /* never block boot */ }
 
 // Final feedback-loop spec §7: auto-attach __farrowayPrintFeedback
 // in dev so engineers can summarise local feedback from the

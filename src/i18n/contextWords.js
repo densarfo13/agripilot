@@ -215,7 +215,71 @@ export function getContextProgressLabel(context) {
   return PROGRESS_LABELS[ctx];
 }
 
-export const _internal = Object.freeze({ WORDS, EMPTY_STATES, PROGRESS_LABELS, ICONS });
+/**
+ * sanitizeContextCopy(text, context) → string
+ *
+ * Core Product Signal §4 — context purity. A defensive belt that
+ * scans rendered copy for words from the OTHER context and swaps
+ * them for the active-context equivalent. Cheap, non-throwing,
+ * idempotent — safe to wrap any user-visible string. Case is
+ * preserved on a best-effort basis (lowercase / Capitalised input
+ * keeps its case in output).
+ *
+ *   sanitizeContextCopy('Check your farm before noon', 'garden')
+ *     → 'Check your garden before noon'
+ *   sanitizeContextCopy('Mulch the pots tonight',     'farm')
+ *     → 'Mulch the rows tonight'
+ *
+ * Why a runtime swap rather than fixing every string at source:
+ * launch-language packs are large, copy slips through, and
+ * spec §8 demands "no mixed Garden/Farm language". A sanitizer
+ * gives us a guarantee, not just a guideline.
+ */
+const _SWAP_PAIRS = Object.freeze([
+  // [garden-side, farm-side]. Order matters when both forms could
+  // match — process the longer / more-specific first.
+  ['gardens', 'farms'],
+  ['garden',  'farm'],
+  ['plants',  'crops'],
+  ['plant',   'crop'],
+  ['pots',    'rows'],
+  ['pot',     'row'],
+]);
+
+function _matchCase(template, replacement) {
+  if (!template) return replacement;
+  // ALL CAPS
+  if (template === template.toUpperCase() && template !== template.toLowerCase()) {
+    return replacement.toUpperCase();
+  }
+  // Capitalised first letter
+  if (template[0] === template[0].toUpperCase()) {
+    return replacement[0].toUpperCase() + replacement.slice(1);
+  }
+  return replacement;
+}
+
+export function sanitizeContextCopy(text, context) {
+  if (typeof text !== 'string' || !text) return text;
+  const ctx = _normalise(context);
+  // Pick which side of each pair is the WRONG one for this context,
+  // and swap it for the right one. On the farm side, swap garden
+  // → farm; on the garden side, swap farm → garden.
+  const [fromIdx, toIdx] = ctx === 'garden' ? [1, 0] : [0, 1];
+  let out = text;
+  for (const pair of _SWAP_PAIRS) {
+    const from = pair[fromIdx];
+    const to   = pair[toIdx];
+    if (from === to) continue;
+    // Whole-word, case-insensitive. \b respects word boundaries so
+    // "farmer" / "potato" / "implant" stay untouched.
+    const re = new RegExp(`\\b${from}\\b`, 'gi');
+    out = out.replace(re, (m) => _matchCase(m, to));
+  }
+  return out;
+}
+
+export const _internal = Object.freeze({ WORDS, EMPTY_STATES, PROGRESS_LABELS, ICONS, _SWAP_PAIRS });
 
 export default {
   getContextWord,
@@ -223,4 +287,5 @@ export default {
   getContextIcon,
   getContextEmptyState,
   getContextProgressLabel,
+  sanitizeContextCopy,
 };

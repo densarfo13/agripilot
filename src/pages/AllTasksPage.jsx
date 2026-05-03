@@ -698,25 +698,31 @@ const S = {
   // green palette + shadow profile as other primary CTAs in
   // the app (Sell submit, NextActionCard CTA).
   completeBtn: {
+    // Core Product Signal §6 — Tasks screen shows the list; it is
+    // NOT the place the user is meant to act. The button stays
+    // functional (so a farmer who navigates here can still mark
+    // an item done) but visually it's a quiet ghost-style chip,
+    // not a dominant green CTA. Home is the only screen with a
+    // dominant action affordance.
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    // width: 100% + flexBasis: 100% forces the button onto a
-    // new line below the body row inside the flex-wrap card.
-    width: '100%',
-    flexBasis: '100%',
+    // Width capped so the button no longer spans the row and
+    // shouts "act here" — it sits as a small affordance below
+    // the task body.
+    width: 'auto',
+    alignSelf: 'flex-start',
     appearance: 'none',
-    border: 'none',
-    background: '#22C55E',
-    color: '#FFFFFF',
-    borderRadius: 12,
-    padding: '0.75rem 1rem',
-    marginTop: '0.75rem',
-    fontSize: '0.95rem',
-    fontWeight: 700,
+    border: '1px solid rgba(34,197,94,0.35)',
+    background: 'rgba(34,197,94,0.08)',
+    color: '#86EFAC',
+    borderRadius: 999,
+    padding: '0.375rem 0.875rem',
+    marginTop: '0.625rem',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
     cursor: 'pointer',
-    minHeight: 48,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    minHeight: 32,
   },
 
   // Spec polish (Apr 2026): labeled sections inside the

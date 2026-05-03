@@ -30,6 +30,26 @@ import {
 import { getEvents, logEvent } from '../events/eventLogger.js';
 import { createIssue, getAllIssues, assignIssue, updateIssueStatus,
          setOfficerRegistry, addIssueNote, ISSUE_STATUS } from '../issues/issueStore.js';
+// Demo / Investor Mode §1 + §2 — the existing seed populates the
+// NGO/admin view only. Investors viewing the FARMER side hit an
+// empty FirstActionGate / Home loop because no garden/farm /
+// streak / completion exists in the local stores. The
+// `seedFarmerHome` helper below threads minimal sample state into
+// every store the farmer Home reads from so a fresh `?demo=1`
+// session lands on a fully-populated home screen with primary
+// action + sample completion + sample outcome already in place.
+import {
+  addGarden as _addGarden,
+  addFarm   as _addFarm,
+  getGardens as _getGardens,
+  getFarms   as _getMxFarms,
+} from '../../store/multiExperience.js';
+import { setOnboardingComplete as _setOnboardingComplete } from '../../utils/onboarding.js';
+import {
+  getRetentionState as _getRetentionState,
+  recordVisit       as _recordVisit,
+  recordCompletion  as _recordCompletion,
+} from '../retention/streakStore.js';
 
 const SEED_MARK_KEY = 'farroway.demoSeed.done';
 const DAY_MS = 24 * 3600 * 1000;
@@ -211,6 +231,16 @@ export function ensureDemoSeed({ now = Date.now() } = {}) {
     timestamp: now - 2 * 3600 * 1000,
   });
 
+  // Demo / Investor Mode §1 + §2 — also populate the farmer-side
+  // state so opening Home in demo mode lands on a fully-rendered
+  // FirstActionGate. Doesn't affect the NGO seed above; pure
+  // additive pass with its own try/catch so a failure here can't
+  // unwind the NGO seed that already wrote successfully.
+  const farmerHome = (() => {
+    try { return seedFarmerHome({ now }); }
+    catch { return { seeded: false }; }
+  })();
+
   markSeeded();
 
   return {
@@ -221,6 +251,121 @@ export function ensureDemoSeed({ now = Date.now() } = {}) {
       issues:     (getAllIssues() || []).length,
       events:     (getEvents() || []).length,
       officers:   DEMO_OFFICERS.length,
+      farmerHome: !!(farmerHome && farmerHome.seeded),
+    },
+  };
+}
+
+/**
+ * seedFarmerHome — populate the farmer-side stores so demo mode
+ * lands on a fully-rendered Home (spec §1 + §2).
+ *
+ * Writes:
+ *   • `multiExperience.addGarden` — sample garden ("Pepper") so
+ *     the experience switcher has both sides represented
+ *   • `multiExperience.addFarm`   — sample farm ("Maize") set as
+ *     active so FirstActionGate immediately has a context
+ *   • `setOnboardingComplete()` — keeps the demo from bouncing
+ *     back to onboarding on first paint
+ *   • `streakStore.recordCompletion` × 3 with back-dated visits —
+ *     creates a 3-day streak so the spec §5 streak line and the
+ *     dependency-trust memory line both fire
+ *   • `task_completed` event — gives the engine a recent
+ *     completion to anchor "Last time, you waited…" reinforcement
+ *
+ * Idempotent: bails out if multiExperience already has rows so
+ * a re-seed doesn't double the gardens/farms list.
+ */
+export function seedFarmerHome({ now = Date.now() } = {}) {
+  // Bail if there's already a real garden / farm — never overwrite
+  // an investor's mid-demo state.
+  let existingGardens = [];
+  let existingFarms   = [];
+  try { existingGardens = _getGardens()  || []; } catch { /* ignore */ }
+  try { existingFarms   = _getMxFarms()  || []; } catch { /* ignore */ }
+  if (existingGardens.length > 0 || existingFarms.length > 0) {
+    return { seeded: false, reason: 'already_populated' };
+  }
+
+  let gardenRow = null;
+  let farmRow   = null;
+  try {
+    gardenRow = _addGarden({
+      name:         'Sample garden',
+      crop:         'pepper',
+      cropLabel:    'Pepper',
+      country:      'GH',
+      countryLabel: 'Ghana',
+      state:        'AS',
+      stateLabel:   'Ashanti',
+      growingSetup: 'container',
+      gardenSizeCategory: 'small',
+      farmType:     'backyard',
+    });
+  } catch { /* ignore — degrade to farm-only seed */ }
+  try {
+    farmRow = _addFarm({
+      name:         'Sample farm',
+      crop:         'maize',
+      cropLabel:    'Maize',
+      country:      'GH',
+      countryLabel: 'Ghana',
+      state:        'AS',
+      stateLabel:   'Ashanti',
+      sizeBucket:   '1to5',
+      farmSizeBucket: '1to5',
+      farmType:     'small_farm',
+    });
+  } catch { /* ignore */ }
+
+  // Mark onboarding complete so ProfileGuard / FarmerEntry don't
+  // route the demo to setup on cold boot.
+  try { _setOnboardingComplete(); } catch { /* ignore */ }
+
+  // Build a 3-day streak by stamping completion on each of the
+  // last three calendar days. recordCompletion advances streakDays
+  // by 1 when called exactly one day apart; we walk the stamps
+  // newest-first via a tiny date wrapper so the helper sees the
+  // gaps it expects.
+  try {
+    const d2 = new Date(now - 2 * DAY_MS);
+    const d1 = new Date(now - 1 * DAY_MS);
+    const d0 = new Date(now);
+    _recordVisit(d2);     _recordCompletion(d2);
+    _recordVisit(d1);     _recordCompletion(d1);
+    _recordVisit(d0);     _recordCompletion(d0);
+  } catch { /* ignore */ }
+
+  // Pre-stamp a recent task_completed event so the userMemory
+  // rollup shows healthy reinforcement on the first render.
+  try {
+    const farmId = (farmRow && farmRow.id) || (gardenRow && gardenRow.id) || null;
+    logEvent({
+      farmId,
+      type:      'task_completed',
+      payload:   {
+        taskId:    'demo.morning.check',
+        taskTitle: 'Check moisture',
+      },
+      timestamp: now - 2 * 3600 * 1000,
+    });
+    logEvent({
+      farmId,
+      type:      'health_feedback_submitted',
+      payload:   { healthFeedback: 'yes' },
+      timestamp: now - 1 * 3600 * 1000,
+    });
+  } catch { /* ignore */ }
+
+  return {
+    seeded: true,
+    counts: {
+      garden: gardenRow ? 1 : 0,
+      farm:   farmRow   ? 1 : 0,
+      streakDays: (() => {
+        try { return _getRetentionState().streakDays || 0; }
+        catch { return 0; }
+      })(),
     },
   };
 }

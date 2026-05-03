@@ -1,4 +1,11 @@
 /**
+ * @deprecated Onboarding cleanup — `FastOnboarding` is the single
+ *   canonical flow at `/onboarding/fast`. Every legacy onboarding
+ *   route now redirects to that entry point; this component is
+ *   no longer reachable from the live router. Kept in the bundle
+ *   for tests / scripts that import it directly. Slated for
+ *   deletion in a follow-up cleanup commit.
+ *
  * QuickStart — one-screen, frictionless onboarding for low-
  * literacy farmers.
  *

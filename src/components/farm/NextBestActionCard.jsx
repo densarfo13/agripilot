@@ -168,10 +168,11 @@ export default function NextBestActionCard({ farm }) {
     } else {
       ctaRoute = '/tasks';
     }
-    // Window button text always wins for action tasks. The
-    // fallback "Act now" matches the prior default when the
-    // window degrades to its safe fallback (spec §6).
-    ctaFallback = window.buttonText || 'Act now';
+    // Window button text always wins for action tasks. Default
+    // verb is "Done" per Core Product Signal §2 — single CTA
+    // word across Home / Tasks / Progress so the user never has
+    // to decode multiple action verbs.
+    ctaFallback = window.buttonText || 'Done';
     // i18n key derived from the wording so translators don't
     // have to know about the rule chain.
     ctaKey = 'farm.next.cta.' + _slugCta(ctaFallback);

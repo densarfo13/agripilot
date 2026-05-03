@@ -614,10 +614,23 @@ function _applyWeather(plan, w, ctx) {
     tasks.push('Avoid spraying during strong wind');
   }
 
+  // ─── Global Insights reorder hook (Data Moat §7) ───────────
+  // Optional. The caller may pass `ctx.globalInsights` — an array
+  // of scored insight rows from `globalInsightsClient.fetchInsights`.
+  // We use insights ONLY to nudge ordering / append a peer-signal
+  // hint. We never let the server hint inject a treatment / dosage
+  // / chemical-application instruction; the recommendation field
+  // is restricted to a curated tag set and rendered as a soft
+  // hint, not a directive.
+  const finalTasks = _applyGlobalInsightsReorder(
+    _capTasks(tasks),
+    ctx && Array.isArray(ctx.globalInsights) ? ctx.globalInsights : null,
+  );
+
   return {
     priority,
     reason,
-    tasks:           _capTasks(tasks),
+    tasks:           finalTasks,
     riskAlerts:      risks.slice(0, 3),
     tomorrowPreview: _tomorrowPreview(ctx || {}, w),
     // Final Home + Review Copy Polish \u00a76 \u2014 surfaced for the
@@ -626,6 +639,83 @@ function _applyWeather(plan, w, ctx) {
     riskLevel:       risk.riskLevel,
     riskReason:      risk.riskReason,
   };
+}
+
+// ─── Insights reorder helper (Data Moat §7) ──────────────────
+//
+// Bumps a matching existing task to the top, or prepends a
+// single peer-signal hint if no existing task matches. Re-caps
+// to the 3-task limit. Returns a new array; never mutates input.
+//
+// Strict rule: ONLY a curated tag set from the server is honoured.
+// Anything else is ignored. This prevents a malicious / buggy
+// server response from injecting unsafe text into the plan.
+
+const INSIGHT_TAG_TO_HINT = Object.freeze({
+  'tag:checkLeavesEarlyHumid': {
+    titleKey: 'plan.insights.checkLeavesEarly',
+    titleFallback: 'Check leaves early today',
+    detailKey: 'plan.insights.checkLeavesEarlyDetail',
+    detailFallback: 'Growers in your area report better results checking leaves early in humid weather.',
+  },
+  'tag:protectFromRain': {
+    titleKey: 'plan.insights.protectFromRain',
+    titleFallback: 'Protect from heavy rain',
+    detailKey: 'plan.insights.protectFromRainDetail',
+    detailFallback: 'Growers in your area report better results when they shelter young plants before rain.',
+  },
+  'tag:waterDeepEvening': {
+    titleKey: 'plan.insights.waterDeepEvening',
+    titleFallback: 'Water deeply in the evening',
+    detailKey: 'plan.insights.waterDeepEveningDetail',
+    detailFallback: 'Growers in your area report better results watering deeply in the evening when it is hot.',
+  },
+  'tag:keepRoutine': {
+    titleKey: 'plan.insights.keepRoutine',
+    titleFallback: 'Keep your routine',
+    detailKey: 'plan.insights.keepRoutineDetail',
+    detailFallback: 'Growers in your area report success with steady routines.',
+  },
+});
+
+function _applyGlobalInsightsReorder(tasks, insights) {
+  if (!Array.isArray(tasks) || !insights || !insights.length) return tasks;
+
+  // Pick the highest-scored row whose confidence is medium/high
+  // and whose recommendation tag we recognise. Anything else is
+  // dropped to avoid amplifying low-evidence signals.
+  let best = null;
+  for (const r of insights) {
+    if (!r || (r.confidence !== 'medium' && r.confidence !== 'high')) continue;
+    const tag = r.recommendation;
+    if (!tag || !INSIGHT_TAG_TO_HINT[tag]) continue;
+    if (!best || (r.score || 0) > (best.score || 0)) best = r;
+  }
+  if (!best) return tasks;
+
+  const hint = INSIGHT_TAG_TO_HINT[best.recommendation];
+
+  // If an existing task matches the hint's title key, bubble it
+  // to the top instead of appending a new card.
+  const matchIdx = tasks.findIndex(t => t && t.titleKey === hint.titleKey);
+  if (matchIdx > 0) {
+    const reordered = [tasks[matchIdx], ...tasks.slice(0, matchIdx), ...tasks.slice(matchIdx + 1)];
+    return _capTasks(reordered);
+  }
+
+  // No match — prepend a soft hint card. Tagged so the renderer
+  // can style it as a peer-signal (lower visual weight than a
+  // primary task) and so the analytics layer can attribute
+  // engagement to the global insights path.
+  const hintTask = {
+    titleKey:       hint.titleKey,
+    titleFallback:  hint.titleFallback,
+    detailKey:      hint.detailKey,
+    detailFallback: hint.detailFallback,
+    source:         'global_insights',
+    confidence:     best.confidence,
+  };
+  return _capTasks([hintTask, ...tasks]);
 }
 
 /**

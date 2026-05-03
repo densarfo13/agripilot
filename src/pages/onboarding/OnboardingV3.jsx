@@ -1,4 +1,8 @@
 /**
+ * @deprecated Onboarding cleanup — superseded by `FastOnboarding`
+ *   at `/onboarding/fast`. This component's route now redirects
+ *   to the canonical entry. Slated for deletion.
+ *
  * OnboardingV3 — clean three-step farmer onboarding.
  *
  *   Step 1 — Farmer Setup   : isNewFarmer, country, language
