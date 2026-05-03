@@ -59,11 +59,23 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Spec §1 funnel → event-name map. Caller can override via opts
 // when running against a custom event log (test fixtures, etc).
+//
+// User Behavior Tracking spec inserts location_confirmed +
+// crop_selected between started/completed, plus action_clicked
+// between shown/completed, so the dashboard's drop-off chart
+// shows the granular onboarding + action progression. Each
+// stage carries the event name(s) that count toward it; a stage
+// with multiple names sums them (e.g. app_opened counts both
+// first_visit and session_started so cold-boot vs returning
+// users both contribute).
 const DEFAULT_FUNNEL = Object.freeze([
   { stage: 'app_opened',           events: ['first_visit', 'session_started'] },
   { stage: 'onboarding_started',   events: ['fast_onboarding_started'] },
+  { stage: 'location_confirmed',   events: ['location_confirmed'] },
+  { stage: 'crop_selected',        events: ['crop_selected'] },
   { stage: 'onboarding_completed', events: ['onboarding_completed'] },
   { stage: 'action_shown',         events: ['primary_action_shown'] },
+  { stage: 'action_clicked',       events: ['action_clicked'] },
   { stage: 'action_completed',     events: ['primary_action_completed'] },
 ]);
 

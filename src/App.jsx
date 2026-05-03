@@ -76,6 +76,58 @@ const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 // already collects only location + crop (spec §4).
 const ViralLandingPage = lazy(() => import('./pages/ViralLandingPage.jsx'));
 
+/**
+ * ExitTrackingObserver — User Behavior Tracking §4.
+ *
+ * Lives inside the Router so it can subscribe to useLocation()
+ * route changes. Two responsibilities:
+ *   1. Record every route as the "last screen viewed"
+ *      (sessionStorage so the unload handler can read it).
+ *   2. Install browser exit listeners ONCE on first mount so
+ *      `exit_point` fires when the user closes the tab.
+ *
+ * Pure observer — renders nothing. Side-effect-only via
+ * useEffect. The exit listeners themselves are installed once
+ * via the module's idempotent installExitTracking().
+ */
+function ExitTrackingObserver() {
+  const location = useLocation();
+  // Record the route on every change. recordScreenView is a
+  // synchronous sessionStorage write — cheap.
+  useEffect(() => {
+    let cancelled = false;
+    import('./analytics/exitTracking.js')
+      .then((mod) => {
+        if (cancelled) return;
+        try { mod.recordScreenView(location.pathname || '/'); }
+        catch { /* swallow */ }
+      })
+      .catch(() => { /* swallow */ });
+    return () => { cancelled = true; };
+  }, [location.pathname]);
+  // Install exit listeners once. Cleanup on unmount removes them.
+  useEffect(() => {
+    let teardown = () => {};
+    let cancelled = false;
+    Promise.all([
+      import('./analytics/exitTracking.js'),
+      import('./analytics/analyticsStore.js'),
+    ]).then(([exit, store]) => {
+      if (cancelled) return;
+      try {
+        teardown = exit.installExitTracking({
+          trackEvent: store && store.trackEvent,
+        });
+      } catch { /* swallow */ }
+    }).catch(() => { /* swallow */ });
+    return () => {
+      cancelled = true;
+      try { teardown(); } catch { /* ignore */ }
+    };
+  }, []);
+  return null;
+}
+
 // Buyer + Funding/Impact layer (v3 merge, local-first)
 //   /sell           — farmer creates a produce listing
 //   /marketplace    — buyer browses available produce
@@ -724,6 +776,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* User Behavior Tracking §4 — observes route changes and
+          installs page-unload exit listeners. Renders nothing;
+          purely a side-effect component so it has to live INSIDE
+          BrowserRouter (useLocation is unavailable above it). */}
+      <ExitTrackingObserver />
       <NetworkProvider>
       <AppPrefsProvider>
       <AuthProvider>

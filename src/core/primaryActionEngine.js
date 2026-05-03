@@ -164,12 +164,79 @@ const ACTIONS = Object.freeze({
     consequenceKey:  'primaryAction.consequence.default',
     consequenceFallback: 'This quick check helps prevent problems early.',
   },
+  // Optimize First Action Completion (log_cost) — verb-typed
+  // action template for the cost-tracking entry point. Spec
+  // mapping:
+  //   §1 ACTION TEXT          → titleFallback
+  //   §2 ADD WHY              → consequenceFallback
+  //   §3 MICRO COMMITMENT     → detailFallback
+  //   §4 CTA "Log cost ✓"    → CTA_BY_TYPE.log_cost (above)
+  //   §5 REWARD               → firstAction.toast.logCost (i18n)
+  // The engine emission rule that picks `log_cost` as the active
+  // primaryActionType is intentionally NOT wired here — that
+  // requires backend cost-storage + a "user has logged 0 costs"
+  // signal which is a separate feature. The TEMPLATE lives here
+  // so the moment cost-tracking ships, a single one-line rule
+  // can switch the engine onto it without copy churn.
+  log_cost: {
+    titleKey:        'primaryAction.logCost.title',
+    titleFallback:   'Log your first cost (30 sec)',
+    detailKey:       'primaryAction.logCost.detail',
+    detailFallback:  'Just add one cost \u2014 that\u2019s it.',
+    reasonKey:       'primaryAction.logCost.reason',
+    reasonFallback:  'Tracking your spending.',
+    consequenceKey:  'primaryAction.logCost.consequence',
+    consequenceFallback: 'Helps you see if you\u2019re making profit.',
+  },
 });
 
 const CTA_DONE = Object.freeze({
   ctaDoneKey:      'primaryAction.cta.done',
   ctaDoneFallback: 'Done',
 });
+
+// Primary Action Clarity §1 + §3 — typed CTA registry. The
+// generic "Done" works for inspection-style actions ("Check
+// moisture today" → tap "Done ✓"), but action types whose verb
+// IS the work (water / log cost / spray) read clearer when the
+// CTA mirrors that verb: "Watered ✓", "Log cost ✓", "Sprayed ✓".
+//
+// Keys are primaryActionType values; values are the i18n key +
+// fallback to use INSTEAD of the generic CTA_DONE. Anything
+// not in the table falls back to CTA_DONE so existing action
+// types keep working unchanged.
+//
+// Adding a new entry is a one-line change here + an i18n key
+// in translations.js. The render path in FirstActionGate is
+// already engine-driven; no JSX edits needed.
+const CTA_BY_TYPE = Object.freeze({
+  water: {
+    ctaDoneKey:      'primaryAction.cta.watered',
+    ctaDoneFallback: 'Watered',
+  },
+  spray: {
+    ctaDoneKey:      'primaryAction.cta.sprayed',
+    ctaDoneFallback: 'Sprayed',
+  },
+  log_cost: {
+    ctaDoneKey:      'primaryAction.cta.logCost',
+    ctaDoneFallback: 'Log cost',
+  },
+  scan: {
+    ctaDoneKey:      'primaryAction.cta.scanned',
+    ctaDoneFallback: 'Scanned',
+  },
+});
+
+/**
+ * Pick the CTA for an action. Single point of truth so
+ * inspection-style actions ("Done") and verb-typed actions
+ * ("Watered ✓") share one resolution path.
+ */
+function _pickCta(primaryActionType) {
+  const t = String(primaryActionType || '').toLowerCase();
+  return CTA_BY_TYPE[t] || CTA_DONE;
+}
 
 const TOMORROW = Object.freeze({
   tomorrowKey:      'primaryAction.tomorrow.hook',
@@ -396,15 +463,15 @@ function _pickMemoryLine(memory, opts = {}) {
     };
   }
 
-  // Daily Habit Loop §5 — lightweight streak. Threshold dropped
-  // from ≥3 to ≥2 so the spec's "2 days in a row" example fires
-  // on the second consecutive day. Phrasing intentionally tight
-  // — no "keep going" exhortation; spec says "Do NOT over-gamify".
+  // Daily Habit Loop §5 (revised) — streak format tightened to
+  // "{n}-day streak" per the spec wording. Threshold ≥2 kept
+  // so the line fires on the second consecutive day. Still
+  // minimal — no exclamation, no progress bar, no badge.
   const streak = Number(memory.currentStreakDays || memory.streak || 0);
   if (Number.isFinite(streak) && streak >= 2) {
     return {
       key:      'primaryAction.memory.streak',
-      fallback: `${streak} days in a row`,
+      fallback: `${streak}-day streak`,
       vars:     { count: streak },
     };
   }
@@ -846,8 +913,19 @@ export function buildPrimaryAction(input = {}) {
     showAreaInsight,
     areaInsightKey:       'primaryAction.areaInsight',
     areaInsightFallback:  'Growers in your area see better results doing this.',
-    ctaDoneKey:           CTA_DONE.ctaDoneKey,
-    ctaDoneFallback:      CTA_DONE.ctaDoneFallback,
+    // Primary Action Clarity §1 + §3 — pick the CTA that matches
+    // the action verb. Inspection-style actions still resolve to
+    // "Done"; typed actions (water / spray / log_cost / scan)
+    // get verb-specific labels so the CTA "Log cost ✓" /
+    // "Watered ✓" reads as alignment rather than a generic
+    // confirmation.
+    ...(() => {
+      const cta = _pickCta(action.primaryActionType);
+      return {
+        ctaDoneKey:      cta.ctaDoneKey,
+        ctaDoneFallback: cta.ctaDoneFallback,
+      };
+    })(),
     tomorrowKey:          TOMORROW.tomorrowKey,
     tomorrowFallback:     TOMORROW.tomorrowFallback,
   };

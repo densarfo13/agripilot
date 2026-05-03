@@ -42,33 +42,38 @@ function _readActiveFarm() {
   } catch { return null; }
 }
 
+// Simplify Core User Flow §2 — visual tone softened from amber
+// ("you must complete this") to neutral grey ("optional invite").
+// Title color likewise demoted from yellow accent → muted ink.
+// The card still surfaces the same affordance but reads as a
+// gentle suggestion, never as a setup-pressure alarm.
 const S = {
   card: {
-    background: 'rgba(252,211,77,0.10)',
-    border: '1px solid rgba(252,211,77,0.40)',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.10)',
     borderRadius: 14,
     padding: '12px 14px',
     color: '#fff',
     display: 'flex',
     alignItems: 'flex-start',
     gap: 12,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
     margin: '0 0 12px',
   },
   icon: { fontSize: 24, lineHeight: 1, flex: '0 0 auto' },
   body: { display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 },
-  title: { fontSize: 14, fontWeight: 800, color: '#FDE68A' },
-  copy:  { fontSize: 12, color: 'rgba(255,255,255,0.78)', lineHeight: 1.5 },
+  title: { fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.92)' },
+  copy:  { fontSize: 12, color: 'rgba(255,255,255,0.62)', lineHeight: 1.5 },
   rowBtns: { display: 'flex', gap: 8, marginTop: 6 },
   primary: {
     appearance: 'none',
-    border: 'none',
-    background: '#FCD34D',
-    color: '#0B1D34',
+    border: '1px solid rgba(34,197,94,0.40)',
+    background: 'rgba(34,197,94,0.10)',
+    color: '#86EFAC',
     padding: '8px 12px',
     borderRadius: 8,
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 700,
     cursor: 'pointer',
     fontFamily: 'inherit',
   },
@@ -170,11 +175,11 @@ export default function ProfileCompletionPrompt({ style }) {
       <span style={S.icon} aria-hidden="true">{'\u270F\uFE0F'}</span>
       <div style={S.body}>
         <span style={S.title}>
-          {tStrict('onb.complete.title', 'Complete your configuration')}
+          {tStrict('onb.complete.title', 'More details (optional)')}
         </span>
         <span style={S.copy}>
           {tStrict('onb.complete.copy',
-            'Finish setup to get better recommendations.')}
+            'Optional \u2014 add more details later')}
         </span>
         {/* Final UI launch spec §5: visible progress indicator
             so the user knows how close they are. Five canonical
@@ -219,7 +224,7 @@ export default function ProfileCompletionPrompt({ style }) {
             style={S.primary}
             data-testid="profile-completion-start"
           >
-            {tStrict('onb.complete.cta', 'Finish setup')}
+            {tStrict('onb.complete.cta', 'Add details')}
           </button>
           <button
             type="button"

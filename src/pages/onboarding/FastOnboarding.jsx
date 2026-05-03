@@ -955,7 +955,20 @@ export default function FastOnboarding() {
               never gated on it. */}
           <button
             type="button"
-            onClick={() => setStepIdx(1)}
+            onClick={() => {
+              // User Behavior Tracking §1 — fire location_confirmed
+              // on Continue tap. Carries the geo state so the
+              // funnel can split on auto-detect-success vs
+              // manual-entry vs skipped paths.
+              try {
+                trackEvent('location_confirmed', {
+                  geoStatus,
+                  hasManualCountry: !!country.trim(),
+                  hasManualRegion:  !!region.trim(),
+                });
+              } catch { /* swallow */ }
+              setStepIdx(1);
+            }}
             style={S.primaryBtn}
             data-testid="fast-onboarding-location-continue"
           >
@@ -1066,6 +1079,19 @@ export default function FastOnboarding() {
                   onClick={() => {
                     setPlant(opt.value);
                     setCrop(opt.value);
+                    // User Behavior Tracking §1 — fire
+                    // crop_selected on tile tap (NOT on the
+                    // downstream "Next" button) so the funnel
+                    // captures the moment the user actually
+                    // chose, not the moment they advanced.
+                    // Lets us measure tile-tap → next-button
+                    // hesitation as its own micro-funnel.
+                    try {
+                      trackEvent('crop_selected', {
+                        crop:       opt.value,
+                        experience: isGarden ? 'garden' : 'farm',
+                      });
+                    } catch { /* swallow */ }
                   }}
                   style={active ? { ...S.pill, ...S.pillActive } : S.pill}
                   data-testid={`fast-onboarding-crop-${opt.value}`}

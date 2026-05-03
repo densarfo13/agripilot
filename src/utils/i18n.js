@@ -7,6 +7,11 @@
  * All t*() functions return fallback English if translations haven't loaded.
  */
 
+// Global Multilingual System §1 — initial-language orchestrator.
+// Pure + sync + never throws; consulted exactly once at module
+// init below. Top-level ESM import (Vite is ESM-only).
+import { detectInitialLanguage } from './autoDetectLanguage.js';
+
 // Detect Capacitor native platform for correct API base URL
 const cap = typeof window !== 'undefined' && window.Capacitor;
 const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
@@ -14,7 +19,33 @@ const API_BASE = isNative
   ? (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || 'https://farroway.app/api')
   : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || '/api');
 
-let currentLang = localStorage.getItem('farroway_lang') || 'en';
+// Global Multilingual System §1 — initial language picked via
+// the autoDetectLanguage orchestrator (priority: stored pref →
+// navigator.language → location-derived → 'en'). On a fresh
+// install this lets a French-speaking user land in French
+// without any manual toggle. Existing users are unaffected
+// because their stored value still wins.
+//
+// Lazy import would be cleaner but this file is consumed
+// synchronously at module init by other surfaces — top-level
+// import keeps the call chain simple. The orchestrator itself
+// is pure + never throws.
+let currentLang;
+try {
+  // The orchestrator handles all storage / browser checks itself
+  // and never throws; this outer try/catch is a belt-and-braces
+  // guard for the truly-pathological "module load failed" case
+  // (test fixtures with no localStorage shim).
+  currentLang = detectInitialLanguage();
+} catch {
+  try { currentLang = localStorage.getItem('farroway_lang') || 'en'; }
+  catch { currentLang = 'en'; }
+}
+// Mirror the resolved language into localStorage so the rest of
+// the app reads a consistent value (existing
+// `getCurrentLang()` consumers, the LanguageSwitcher, etc).
+try { if (currentLang) localStorage.setItem('farroway_lang', currentLang); }
+catch { /* SSR / locked-down */ }
 let translations = {};
 let loaded = false;
 

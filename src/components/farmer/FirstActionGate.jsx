@@ -60,6 +60,12 @@ import { isDemoMode } from '../../config/demoMode.js';
 // outgoing message reads "Farroway told me {action} based on my
 // location".
 import { shareFarrowayInsight } from '../../growth/insightShare.js';
+// Primary Action Clarity §6 — small "Listen" button rendered
+// directly below the Done CTA so low-literacy users can hear
+// the headline (engine-driven) read aloud in the active UI
+// language. Visually secondary by spec (size='sm', ghost
+// styling); never competes with the Done CTA above.
+import VoiceButton from '../VoiceButton.jsx';
 
 export default function FirstActionGate({
   weather,
@@ -136,6 +142,13 @@ export default function FirstActionGate({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onClickDone = useCallback(() => {
+    // User Behavior Tracking §2 — fire `action_clicked` on the
+    // very first line of the handler so the analytics records
+    // the tap regardless of any downstream failure (state flip,
+    // analytics write, navigation). Distinct from
+    // `primary_action_completed` so the funnel can measure the
+    // shown→clicked→completed micro-progression separately.
+    safeTrack('action_clicked', context, action);
     // Conversion §6 tap interaction:
     //   1. Brief scale-down on press (pressing=true) for a tactile
     //      "I felt the click" cue. Cleared 140ms later.
@@ -269,7 +282,7 @@ export default function FirstActionGate({
     } catch { /* ignore */ }
     return false;
   })();
-  const headerText      = tStrict('firstAction.header',       'Before you water, check this first');
+  const headerText      = tStrict('firstAction.header',       'Before you water today, check this first');
   const title           = tStrict(action.titleKey,            action.titleFallback);
   const detail          = tStrict(action.detailKey,           action.detailFallback);
   const reason          = tStrict(action.reasonKey,           action.reasonFallback);
@@ -342,7 +355,31 @@ export default function FirstActionGate({
 
   // Toast wording is context-specific (spec §7).
   const isGarden = String(context && context.activeExperience || '').toLowerCase() === 'garden';
-  const toastText = isGarden
+  // Optimize First Action Completion §5 — action-type-specific
+  // reward toasts. When the engine emits a verb-typed action
+  // (log_cost, water, spray, scan), the toast picks up its
+  // matching context-specific copy ("Nice — you're tracking
+  // your costs"). Inspection-style actions fall through to the
+  // existing garden / farm split so the daily-habit-loop rewards
+  // stay in place.
+  const _typeToastKey = (() => {
+    const t = String(action.primaryActionType || '').toLowerCase();
+    if (t === 'log_cost') return 'firstAction.toast.logCost';
+    if (t === 'water')    return 'firstAction.toast.watered';
+    if (t === 'spray')    return 'firstAction.toast.sprayed';
+    if (t === 'scan')     return 'firstAction.toast.scanned';
+    return null;
+  })();
+  const _typeToastFallback = (() => {
+    if (_typeToastKey === 'firstAction.toast.logCost') return 'Nice \u2014 you\u2019re tracking your costs';
+    if (_typeToastKey === 'firstAction.toast.watered') return 'Nice \u2014 your plants are taken care of';
+    if (_typeToastKey === 'firstAction.toast.sprayed') return 'Nice \u2014 you protected your crop today';
+    if (_typeToastKey === 'firstAction.toast.scanned') return 'Nice \u2014 we have a read on your plant';
+    return null;
+  })();
+  const toastText = _typeToastKey
+    ? tStrict(_typeToastKey, _typeToastFallback)
+    : isGarden
     ? tStrict('firstAction.toast.garden', 'Nice — you stayed ahead today 🌱')
     : tStrict('firstAction.toast.farm',   'Nice — you reduced risk today 🚜');
 
@@ -487,6 +524,12 @@ export default function FirstActionGate({
                 Decorative; aria-hidden. The ctaDone string is
                 still engine/i18n-driven so localized labels
                 stay intact, just with the glyph stamped after. */}
+            {/* Primary Action Clarity §1 + §3 — when the engine
+                emits an action-specific CTA (e.g. "Log cost",
+                "Mark watered"), it surfaces here verbatim and
+                aligns with the action verb shown above. Default
+                "Done" stays the safe fallback for inspection-
+                style actions where the verb IS "done". */}
             <span>{ctaDone}</span>
             <span
               aria-hidden="true"
@@ -495,6 +538,20 @@ export default function FirstActionGate({
               {'\u2713'}
             </span>
           </button>
+
+          {/* Primary Action Clarity §6 — secondary "Listen"
+              affordance below the Done CTA. size='sm' per spec
+              ("smaller, secondary"); wrapped in a centered row
+              so it stays visually below the dominant green CTA
+              without crowding it. Speaks the engine's headline
+              (the "what to do today" sentence the user just
+              read) in the active UI language. Self-hides when
+              speech synthesis is unavailable (VoiceButton's
+              own contract). */}
+          <div style={S.listenRow}>
+            <VoiceButton text={headline} size="sm" />
+          </div>
+
           {/* CONVERSION §4/§7: visible "Not now" affordance was
               removed because it competed with Done. The skip
               code path + `primary_action_skipped` analytics
@@ -958,6 +1015,15 @@ const S = {
     fontWeight: 700,
     color: '#86EFAC',
     letterSpacing: '0.01em',
+  },
+  // Primary Action Clarity §6 — Listen-button row sits directly
+  // below the Done CTA. Centered + small top margin so the row
+  // reads as a quiet secondary affordance. The VoiceButton
+  // itself has its own pill styling; we only add positioning.
+  listenRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: 6,
   },
   // Viral Growth Loop §1 — "Share this insight" button shown
   // after Done. Visual weight kept light (ghost-style chip) so

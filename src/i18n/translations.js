@@ -9540,15 +9540,46 @@ const T = {
   // Dependency System §1 — header reworded to "Before you act,
   // check this first". Tighter, action-implying wording so the
   // gate frames itself as a check-in, not a checklist item.
-  // Viral Hook §4 — wording aligned to "Before you water, check
-  // this first" so the home header picks up the watering hook
-  // narrative ("Most people water too early today") shown on
-  // the post-onboarding hook screen. Engine still emits varied
-  // primaryActionType values (moisture_check / spray / scout / etc)
-  // — the header is the user-facing framing, not a per-action
-  // verb. Engine-driven action verbs render in the headline below.
-  'firstAction.header':                       { en: 'Before you water, check this first',                     fr: 'Avant d\'arroser, v\u00E9rifiez ceci',                       sw: 'Kabla ya kumwagilia, kagua hili kwanza',              ha: 'Kafin ka shayar, duba wannan da farko',               tw: 'Ansa na wugu nsuo, di kan hw\u025B yi',           hi: 'पानी देने से पहले, पहले यह जाँचें' },
+  // Daily Habit Loop §1 — header tightened with the explicit
+  // "today" anchor ("Before you water today, check this first").
+  // The added word ties the trigger to the user's specific
+  // calendar day, reinforcing the daily-return cadence the rest
+  // of the loop (streak, anticipation line, retention bar) is
+  // built around. Earlier Viral-Hook framing kept; only the
+  // wording grew by one word so existing fallbacks stay close.
+  'firstAction.header':                       { en: 'Before you water today, check this first',               fr: 'Avant d\'arroser aujourd\'hui, v\u00E9rifiez ceci',          sw: 'Kabla ya kumwagilia leo, kagua hili kwanza',          ha: 'Kafin ka shayar yau, duba wannan da farko',           tw: 'Ansa na wugu nsuo nn\u025B, di kan hw\u025B yi',  hi: 'आज पानी देने से पहले, पहले यह जाँचें' },
   'primaryAction.cta.done':                   { en: 'Done',                                                  fr: 'Fait',                                                       sw: 'Imekamilika',                                          ha: 'An gama',                                              tw: 'Awie',                                              hi: 'हो गया' },
+  // Primary Action Clarity §1 + §3 — typed CTA labels. Engine
+  // routes water / spray / log_cost / scan actions to these
+  // verb-specific CTAs so the button reads "Watered ✓" /
+  // "Sprayed ✓" / "Log cost ✓" / "Scanned ✓" instead of the
+  // generic "Done ✓". The ✓ glyph is appended decoratively in
+  // FirstActionGate so these strings stay clean.
+  'primaryAction.cta.watered':                { en: 'Watered',                                               fr: 'Arros\u00E9',                                                sw: 'Imemwagiliwa',                                         ha: 'An shayar',                                            tw: 'Y\u025Bguu nsuo',                                hi: 'पानी दिया' },
+  'primaryAction.cta.sprayed':                { en: 'Sprayed',                                               fr: 'Pulv\u00E9ris\u00E9',                                        sw: 'Imenyunyiziwa',                                        ha: 'An fesa',                                              tw: 'Y\u025Bpetee',                                    hi: 'छिड़काव किया' },
+  'primaryAction.cta.logCost':                { en: 'Log cost',                                              fr: 'Enregistrer le co\u00FBt',                                   sw: 'Sajili gharama',                                       ha: 'Rajistar kuɗi',                                        tw: 'Twer\u025B sika',                                hi: 'लागत दर्ज करें' },
+  'primaryAction.cta.scanned':                { en: 'Scanned',                                               fr: 'Scann\u00E9',                                                sw: 'Imechanganuliwa',                                      ha: 'An duba',                                              tw: 'Y\u025Bhwehw\u025Bee',                            hi: 'स्कैन किया' },
+
+  // Optimize First Action Completion (log_cost action template).
+  // Used by primaryActionEngine when the active action is
+  // log_cost. Spec mapping:
+  //   §1 ACTION TEXT       → primaryAction.logCost.title
+  //   §2 ADD WHY           → primaryAction.logCost.consequence
+  //   §3 MICRO COMMITMENT  → primaryAction.logCost.detail
+  //   §5 REWARD            → firstAction.toast.logCost
+  'primaryAction.logCost.title':              { en: 'Log your first cost (30 sec)',                          fr: 'Enregistrez votre premier co\u00FBt (30 s)',                 sw: 'Sajili gharama yako ya kwanza (sekunde 30)',           ha: 'Rajistar kuɗi na farko (daƙiƙa 30)',                 tw: 'Twer\u025B sika a edi kan (anim\u025B 30)',      hi: 'पहली लागत दर्ज करें (30 सेकंड)' },
+  'primaryAction.logCost.detail':             { en: 'Just add one cost \u2014 that\u2019s it.',              fr: 'Ajoutez juste un co\u00FBt \u2014 c\'est tout.',             sw: 'Ongeza gharama moja tu \u2014 ndio.',                  ha: 'Sai dai \u0257aya \u2014 shi ke nan.',               tw: 'Fa sika baako pɛ ka ho \u2014 \u025Bno ara ne.', hi: 'बस एक लागत जोड़ें \u2014 इतना ही।' },
+  'primaryAction.logCost.reason':             { en: 'Tracking your spending.',                               fr: 'Suivi de vos d\u00E9penses.',                                sw: 'Kufuatilia matumizi yako.',                            ha: 'Bin diddigin kashe ku\u0257in ku.',                  tw: 'Hw\u025B sika a wosee.',                          hi: 'आपके खर्च पर नज़र।' },
+  'primaryAction.logCost.consequence':        { en: 'Helps you see if you\u2019re making profit.',           fr: 'Vous aide \u00E0 voir si vous faites du profit.',            sw: 'Hukusaidia kuona ikiwa unapata faida.',                ha: 'Yana taimaka muku ku ga ko kuna samun riba.',          tw: 'Ɛboa wo ma wuhu s\u025B woreny\u025B mfaso anaa.', hi: 'देखने में मदद करता है कि आप मुनाफा कमा रहे हैं या नहीं।' },
+
+  // Optimize First Action Completion §5 — typed-action reward
+  // toasts. log_cost gets the spec's exact "Nice — you're
+  // tracking your costs" line; the others mirror the same
+  // calm reinforcement tone.
+  'firstAction.toast.logCost':                { en: 'Nice \u2014 you\u2019re tracking your costs',           fr: 'Bravo \u2014 vous suivez vos co\u00FBts',                    sw: 'Vyema \u2014 unafuatilia gharama zako',                ha: 'Kyau \u2014 kuna bin diddigin ku\u0257in ku',         tw: '\u0190y\u025B \u2014 worehw\u025B wo sika',       hi: 'बहुत बढ़िया \u2014 आप अपनी लागत ट्रैक कर रहे हैं' },
+  'firstAction.toast.watered':                { en: 'Nice \u2014 your plants are taken care of',             fr: 'Bravo \u2014 vos plantes sont prises en charge',             sw: 'Vyema \u2014 mimea yako imehudumiwa',                  ha: 'Kyau \u2014 an kula da shukokinka',                   tw: '\u0190y\u025B \u2014 wo nnua ho ts\u025B asuo',  hi: 'बहुत बढ़िया \u2014 आपके पौधों की देखभाल हो गई' },
+  'firstAction.toast.sprayed':                { en: 'Nice \u2014 you protected your crop today',             fr: 'Bravo \u2014 vous avez prot\u00E9g\u00E9 votre culture aujourd\'hui', sw: 'Vyema \u2014 umelinda zao lako leo',                ha: 'Kyau \u2014 ka kāre amfanin gonarka yau',             tw: '\u0190y\u025B \u2014 wob\u0254 wo nnɔbae ho ban', hi: 'बहुत बढ़िया \u2014 आपने आज अपनी फसल की रक्षा की' },
+  'firstAction.toast.scanned':                { en: 'Nice \u2014 we have a read on your plant',              fr: 'Bravo \u2014 nous avons une lecture de votre plante',        sw: 'Vyema \u2014 tuna usomi wa mmea wako',                 ha: 'Kyau \u2014 muna da karatun shukarka',                tw: '\u0190y\u025B \u2014 yenya wo aduane ho mfomso',  hi: 'बहुत बढ़िया \u2014 हमें आपके पौधे की जानकारी मिल गई' },
   'primaryAction.cta.skip':                   { en: 'Not now',                                               fr: 'Pas maintenant',                                              sw: 'Si sasa',                                              ha: 'Ba yanzu ba',                                          tw: 'Ɛnnyɛ seesei',                                       hi: 'अभी नहीं' },
   'primaryAction.cta.skipAria':               { en: 'Skip this action',                                      fr: 'Ignorer cette action',                                        sw: 'Ruka kitendo hiki',                                    ha: 'Tsallake wannan aiki',                                 tw: 'Tra adwuma yi',                                     hi: 'इस क्रिया को छोड़ें' },
   'primaryAction.tomorrow.hook':              { en: 'Tomorrow: quick leaf check (30s)',                      fr: 'Demain : vérification rapide des feuilles (30s)',           sw: 'Kesho: ukaguzi wa haraka wa majani (sekunde 30)',     ha: 'Gobe: dubawa ganye da sauri (dakika 30)',             tw: 'Ɔkyena: nhabamma nhwehwɛmu ntɛm (sekan 30)',        hi: 'कल: त्वरित पत्ती जाँच (30 सेकंड)' },
@@ -9644,13 +9675,14 @@ const T = {
   'primaryAction.consequence.default':        { en: 'This quick check helps prevent problems early.',        fr: 'Cette vérification rapide aide à prévenir les problèmes.',     sw: 'Ukaguzi huu wa haraka husaidia kuzuia matatizo mapema.', ha: 'Wannan dubawa cikin sauri yana taimakawa hana matsaloli da wuri.', tw: 'Saa nhwehwɛmu ntɛm yi boa siw nsɛm ano ntɛm.',      hi: 'यह त्वरित जाँच समस्याओं को जल्दी रोकने में मदद करती है।' },
 
   // Memory lines — at most one rendered (engine picks).
-  // Daily Habit Loop §5 — streak display. Spec is explicit:
-  // "Do NOT over-gamify". Phrasing collapsed to the minimal
-  // "{count} days in a row" — no leading praise, no trailing
-  // exhortation. The engine's threshold lowered to ≥2 so a
-  // 2-day chain shows up immediately, matching the spec's
-  // example wording exactly.
-  'primaryAction.memory.streak':              { en: '{count} days in a row',                                  fr: '{count} jours d\'affil\u00E9e',                              sw: 'siku {count} mfululizo',                              ha: 'kwana {count} a jere',                                tw: 'nna {count} a edi adi',                              hi: 'लगातार {count} दिन' },
+  // Daily Habit Loop §5 (revised) — streak display tightened
+  // to the spec's explicit "{count}-day streak" shape. The
+  // earlier "{count} days in a row" phrasing read longer; the
+  // hyphenated compound reads as a single noun ("3-day streak")
+  // which lands faster on a small screen. Threshold ≥2 retained
+  // so the line surfaces immediately on the second consecutive
+  // day. Still minimal — no leading praise, no exclamation.
+  'primaryAction.memory.streak':              { en: '{count}-day streak',                                     fr: 'S\u00E9rie de {count} jours',                                sw: 'Mfululizo wa siku {count}',                          ha: 'Jeri na kwana {count}',                               tw: 'Nna {count} a edi adi nky\u025B',                hi: '{count}-दिन की लय' },
   'primaryAction.memory.lastHealthy':         { en: 'Last time, your plant looked healthy.',                  fr: 'La dernière fois, votre plante avait l\'air en bonne santé.', sw: 'Mara ya mwisho, mmea wako ulionekana mzuri.',          ha: 'Lokacin ƙarshe, shukarka tana cikin koshin lafiya.',  tw: 'Bere a etwa toɔ, w\'aduane no yɛɛ apɔw.',           hi: 'पिछली बार, आपका पौधा स्वस्थ दिख रहा था।' },
   // Retention §5 — wording tightened to "Conditions changed —
   // let's get back on track" so the prompt explains WHY (signals
@@ -9782,6 +9814,11 @@ const T = {
   'growth.funnel.onboarding_completed':  { en: 'Onboarding completed',                                  fr: 'Onboarding termin\u00E9',                                    sw: 'Uingizaji ulikamilika',                            ha: 'An kammala onboarding',                              tw: 'Onboarding awie',                                hi: 'ऑनबोर्डिंग पूर्ण' },
   'growth.funnel.action_shown':          { en: 'Action shown',                                          fr: 'Action affich\u00E9e',                                       sw: 'Hatua ilionyeshwa',                                ha: 'An nuna aiki',                                       tw: 'Adwuma a yekyer\u025B\u025B',                    hi: 'क्रिया दिखाई' },
   'growth.funnel.action_completed':      { en: 'Action completed',                                      fr: 'Action termin\u00E9e',                                       sw: 'Hatua ilikamilishwa',                              ha: 'An kammala aiki',                                    tw: 'Adwuma awie',                                    hi: 'क्रिया पूर्ण' },
+  // User Behavior Tracking §1 + §2 — additional funnel labels
+  // for the granular onboarding + action progression stages.
+  'growth.funnel.location_confirmed':    { en: 'Location confirmed',                                    fr: 'Emplacement confirm\u00E9',                                  sw: 'Mahali pamethibitishwa',                           ha: 'An tabbatar da wuri',                                tw: 'Y\u025Bsi pi w\'asaase',                          hi: 'स्थान पुष्टि' },
+  'growth.funnel.crop_selected':         { en: 'Crop selected',                                         fr: 'Culture s\u00E9lectionn\u00E9e',                             sw: 'Zao limechaguliwa',                                ha: 'An za\u0253i amfanin gona',                         tw: 'Y\u025Bpaw aduane',                              hi: 'फसल चुनी' },
+  'growth.funnel.action_clicked':        { en: 'Action clicked',                                        fr: 'Action cliqu\u00E9e',                                        sw: 'Hatua imebofyezwa',                                ha: 'An danna aiki',                                      tw: 'Y\u025Bmiaa adwuma',                              hi: 'क्रिया क्लिक' },
 
   // Data-Driven Product Decisions — weekly-focus card surfaces
   // the lowest-performing funnel metric + the spec's remediation
@@ -13167,9 +13204,15 @@ const T = {
   // Final UI launch spec §5: copy aligned to "Complete your
   // configuration" / "Finish setup to get better recommendations"
   // / "Finish setup".
-  'onb.complete.title':                        { en: 'Complete your configuration',             fr: 'Terminez votre configuration',                sw: 'Kamilisha usanidi wako',                     ha: 'Kammala saiti naka',                       tw: 'Wie wo nhyehyɛeɛ no',                          hi: 'अपना कॉन्फ़िगरेशन पूरा करें' },
-  'onb.complete.copy':                         { en: 'Finish setup to get better recommendations.', fr: 'Terminez la configuration pour de meilleures recommandations.', sw: 'Maliza usanidi ili upate mapendekezo bora.', ha: 'Kammala saitin don samun shawarwari mafi kyau.', tw: 'Wie nhyehyɛeɛ no na woanya afotuɔ a ɛyɛ den.', hi: 'बेहतर सुझाव पाने के लिए सेटअप पूरा करें।' },
-  'onb.complete.cta':                          { en: 'Finish setup',                            fr: 'Terminer la configuration',                   sw: 'Maliza usanidi',                             ha: 'Kammala saiti',                            tw: 'Wie nhyehyɛeɛ',                               hi: 'सेटअप पूरा करें' },
+  // Simplify Core User Flow §2 — copy reframed from setup-pressure
+  // ("Complete your configuration / Finish setup") to optional /
+  // low-pressure ("More details (optional) / add more later").
+  // The prompt still surfaces missing fields but as an
+  // invitation, not a requirement — so a fresh user can ignore
+  // it and still drive the primary loop.
+  'onb.complete.title':                        { en: 'More details (optional)',                 fr: 'Plus de d\u00E9tails (facultatif)',           sw: 'Maelezo zaidi (ya hiari)',                  ha: '\u0181ari da\u0257an bayanai (zaɓi)',     tw: 'Nsɛm pii (woomp\u025B a)',                     hi: 'और जानकारी (वैकल्पिक)' },
+  'onb.complete.copy':                         { en: 'Optional \u2014 add more details later',   fr: 'Facultatif \u2014 ajoutez plus de d\u00E9tails plus tard', sw: 'Ya hiari \u2014 ongeza maelezo zaidi baadaye', ha: 'Zaɓi ne \u2014 ƙara bayani daga baya',         tw: 'Woomp\u025B a \u2014 fa nsɛm pii ka ho akyiri', hi: 'वैकल्पिक \u2014 बाद में अधिक जानकारी जोड़ें' },
+  'onb.complete.cta':                          { en: 'Add details',                             fr: 'Ajouter des d\u00E9tails',                    sw: 'Ongeza maelezo',                             ha: '\u0181ara bayanai',                        tw: 'Fa nsɛm ka ho',                                hi: 'विवरण जोड़ें' },
 
   'onb.entry.recommended':                     { en: 'Recommended',                             fr: 'Recommandé',                                  sw: 'Inapendekezwa',                              ha: 'An ba da shawara',                         tw: 'Yɛrekamfo',                                    hi: 'अनुशंसित' },
   'onb.tile.farm.compactCopy':                 { en: 'Just crop + location \u2014 30 seconds.', fr: 'Juste culture + lieu \u2014 30 secondes.',    sw: 'Zao + eneo tu \u2014 sekunde 30.',           ha: 'Amfanin gona + wuri kawai \u2014 daƙiƙa 30.', tw: 'Aduane + beaeɛ \u2014 simma 30.',          hi: 'बस फसल + स्थान \u2014 30 सेकंड।' },
