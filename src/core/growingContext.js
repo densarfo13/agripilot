@@ -127,6 +127,17 @@ function _pickSetup(row) {
 
 function _pickSize(row) {
   const r = (row && typeof row === 'object') ? row : {};
+  // Data-model spec §7 — autoFarmClass wins. Newly-saved rows
+  // carry a pre-computed class derived from sizeInAcres so a
+  // user-tagged "small" 100-acre row still drives the large-farm
+  // task plan. We translate the spec's 'small_farm/medium_farm/
+  // large_farm/unknown_farm' codes into the engine's existing
+  // 'small/medium/large/unknown' rule keys.
+  const cls = String(r.autoFarmClass || '').toLowerCase();
+  if (cls === 'small_farm')   return 'small';
+  if (cls === 'medium_farm')  return 'medium';
+  if (cls === 'large_farm')   return 'large';
+  if (cls === 'unknown_farm') return 'unknown';
   // Prefer the explicit bucket the user picked during onboarding
   // (when present). FARM_SIZE_BUCKETS values are 'lt1' / '1to5'
   // / 'gt5' / 'unknown' — we collapse the first three into the
@@ -139,8 +150,58 @@ function _pickSize(row) {
   // Fallthrough: derive from the canonical sqft field. Both farm
   // saves (QuickFarmSetup + AdaptiveFarmSetup) write
   // `landSizeSqFt`; the legacy partition uses `farmSize`.
-  const sqftRaw = Number(r.landSizeSqFt ?? r.farmSize);
+  const sqftRaw = Number(r.sizeInSqFt ?? r.landSizeSqFt ?? r.farmSize);
   return _bucketFromSqFt(sqftRaw);
+}
+
+/**
+ * _pickAutoFarmClass — return the spec-shaped class string
+ * ('small_farm' / 'medium_farm' / 'large_farm' / 'unknown_farm' /
+ * 'garden') the engine + downstream surfaces (insightAggregator,
+ * NGO summaries) read alongside the legacy `size` key.
+ *
+ * Data-model spec §7 — single source of truth for tier decisions.
+ * Falls back to deriving from `landSizeSqFt` / `farmSize` so
+ * pre-spec rows continue to work without a migration.
+ */
+function _pickAutoFarmClass(row, type) {
+  const r = (row && typeof row === 'object') ? row : {};
+  if (type === 'garden') return 'garden';
+  const cls = String(r.autoFarmClass || '').toLowerCase();
+  if (cls === 'small_farm' || cls === 'medium_farm'
+   || cls === 'large_farm' || cls === 'unknown_farm') return cls;
+  // Derive from sqft when the row predates the spec.
+  const sqftRaw = Number(r.sizeInSqFt ?? r.landSizeSqFt ?? r.farmSize);
+  const bucket  = _bucketFromSqFt(sqftRaw);
+  if (bucket === 'small')  return 'small_farm';
+  if (bucket === 'medium') return 'medium_farm';
+  if (bucket === 'large')  return 'large_farm';
+  return 'unknown_farm';
+}
+
+/**
+ * _pickSizeInAcres / _pickSizeInSqFt — surface the canonical
+ * pre-computed numeric size on the context so decision-engine
+ * consumers (rule selection, weather thresholds) and any future
+ * growth-curve / yield calculator never re-do unit math.
+ */
+function _pickSizeInAcres(row) {
+  const r = (row && typeof row === 'object') ? row : {};
+  const n = Number(r.sizeInAcres);
+  if (Number.isFinite(n) && n > 0) return n;
+  // Derive from sqft when the row predates the spec.
+  const sqft = Number(r.sizeInSqFt ?? r.landSizeSqFt);
+  if (Number.isFinite(sqft) && sqft > 0) {
+    return Math.round((sqft / SQFT_PER_ACRE) * 10000) / 10000;
+  }
+  return null;
+}
+
+function _pickSizeInSqFt(row) {
+  const r = (row && typeof row === 'object') ? row : {};
+  const n = Number(r.sizeInSqFt ?? r.landSizeSqFt);
+  if (Number.isFinite(n) && n > 0) return n;
+  return null;
 }
 
 function _pickPlantedAt(row, explicit) {
@@ -203,12 +264,21 @@ export function buildGrowingContext(input = {}) {
 
   return {
     type,
-    cropOrPlant: _pickCropOrPlant(farm),
+    cropOrPlant:   _pickCropOrPlant(farm),
     setup,
     size,
-    location:    _pickLocation(farm),
-    plantedAt:   _pickPlantedAt(farm, input?.plantedAt),
-    weather:     _pickWeather(weather),
+    // Data-model spec §7 — canonical pre-computed numeric size +
+    // derived class. The engine's existing branches read `size`,
+    // but new branches (and downstream consumers like the
+    // insightAggregator + NGO summaries) read these directly so a
+    // confused user's manual farmType can never override the
+    // size-derived tier.
+    sizeInAcres:   _pickSizeInAcres(farm),
+    sizeInSqFt:    _pickSizeInSqFt(farm),
+    autoFarmClass: _pickAutoFarmClass(farm, type),
+    location:      _pickLocation(farm),
+    plantedAt:     _pickPlantedAt(farm, input?.plantedAt),
+    weather:       _pickWeather(weather),
   };
 }
 

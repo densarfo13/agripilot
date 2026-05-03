@@ -47,6 +47,13 @@ const UNIT_UC_TO_LC = { ACRE: 'acres', HECTARE: 'hectares', SQFT: 'sqft', SQM: '
 import {
   searchCrops, normalizeCrop, CROP_OTHER, getCropLabel,
 } from '../config/crops.js';
+// Data-model spec §5: Edit Farm hides the Backyard chip when
+// activeExperience === 'farm' and shows a derived classification
+// banner ("Detected farm type: Small/Medium/Large farm") so the
+// tier is read-only / size-driven instead of manually selectable.
+import { getActiveExperience } from '../store/multiExperience.js';
+import { classifyGrowingContext } from '../core/farmClassifier.js';
+import { convertToAcres } from '../core/unitUtils.js';
 // Pilot crash root cause (Apr 2026): EditFarmScreen used
 // `getCropLabelSafe(value, lang)` in 5 places without importing
 // it, surfacing as a runtime `ReferenceError: getCropLabelSafe is
@@ -120,6 +127,24 @@ export default function EditFarmScreen() {
 
   const patch = useMemo(() => editFormToPatch(form, original), [form, original]);
   const dirty = useMemo(() => hasAnyChange(form, original),   [form, original]);
+
+  // Data-model spec §5 — Edit Farm derives the farm class from
+  // (activeExperience, sizeInAcres) and renders it read-only.
+  // Backyard is suppressed entirely when the user is in farm mode
+  // so a 100-acre farm can never be reclassified back into the
+  // garden partition by an accidental chip tap.
+  const activeExperience = useMemo(() => {
+    try { return getActiveExperience() || 'farm'; }
+    catch { return 'farm'; }
+  }, []);
+  const isFarmExperience = activeExperience === 'farm';
+  const derivedFarmClass = useMemo(() => {
+    const acres = convertToAcres(form.size, form.sizeUnit);
+    return classifyGrowingContext({
+      activeExperience: isFarmExperience ? 'farm' : 'garden',
+      sizeInAcres:      acres,
+    });
+  }, [form.size, form.sizeUnit, isFarmExperience]);
 
   // No farm to edit → bounce to /my-farm. This should be rare;
   // ProfileGuard normally catches empty-profile cases earlier.
@@ -504,12 +529,24 @@ export default function EditFarmScreen() {
               full translations for backyard / small_farm / commercial
               across all five launch languages. */}
           {resolve(t, 'setup.farmType', 'Farm type')}{' *'}
+          {/* Data-model spec §5 — when the user is in farm mode
+              the Backyard chip is removed so a real farm can
+              never be miscategorised as a garden. The classification
+              banner below shows the size-derived tier as read-only
+              copy. Garden mode keeps the legacy chip set so the
+              user can still tier a small backyard manually. */}
           <div style={S.chipRow} data-testid="edit-farm-type-row">
-            {[
-              { code: 'backyard',   label: getFarmTypeLabel('backyard',   lang) },
-              { code: 'small_farm', label: getFarmTypeLabel('small_farm', lang) },
-              { code: 'commercial', label: getFarmTypeLabel('commercial', lang) },
-            ].map((opt) => (
+            {(isFarmExperience
+              ? [
+                  { code: 'small_farm', label: getFarmTypeLabel('small_farm', lang) },
+                  { code: 'commercial', label: getFarmTypeLabel('commercial', lang) },
+                ]
+              : [
+                  { code: 'backyard',   label: getFarmTypeLabel('backyard',   lang) },
+                  { code: 'small_farm', label: getFarmTypeLabel('small_farm', lang) },
+                  { code: 'commercial', label: getFarmTypeLabel('commercial', lang) },
+                ]
+            ).map((opt) => (
               <button
                 key={opt.code}
                 type="button"
@@ -525,6 +562,37 @@ export default function EditFarmScreen() {
               </button>
             ))}
           </div>
+          {/* Spec §5 — derived classification banner. Read-only;
+              auto-recomputes whenever size / unit changes. The
+              copy follows the spec example: "Detected farm type:
+              Large farm". */}
+          {isFarmExperience ? (
+            <p
+              data-testid="edit-farm-detected-class"
+              data-farm-class={derivedFarmClass}
+              style={{
+                marginTop: '0.5rem', padding: '0.5rem 0.75rem',
+                borderRadius: 10, background: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.28)',
+                color: '#93C5FD', fontSize: '0.8125rem', lineHeight: 1.4,
+              }}
+            >
+              {(function () {
+                const labels = {
+                  small_farm:   'Small farm',
+                  medium_farm:  'Medium farm',
+                  large_farm:   'Large farm',
+                  unknown_farm: 'Not yet detected',
+                };
+                const cls = labels[derivedFarmClass] || labels.unknown_farm;
+                return resolve(
+                  t,
+                  `farm.detectedClass.${derivedFarmClass}`,
+                  `Detected farm type: ${cls}`,
+                );
+              })()}
+            </p>
+          ) : null}
         </label>
 
         <div style={S.row}>

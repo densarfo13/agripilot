@@ -46,6 +46,11 @@
 import {
   getFarms, saveFarm, setActiveFarmId, getActiveFarmId,
 } from './farrowayLocal.js';
+// Data-model spec §3 + §5 + §8 — every add{Garden,Farm} write
+// runs through validateGrowingContext so NaN / non-positive
+// sizes BLOCK the save and a backyard-tagged 100-acre row
+// auto-corrects to the size-derived farm class.
+import { validateGrowingContext } from '../core/contextValidation.js';
 
 export const EXPERIENCE = Object.freeze({
   GARDEN: 'garden',
@@ -272,18 +277,42 @@ export function switchExperience(target) {
  * addGarden(payload) — create a backyard / home-garden row and
  * pin it as the active garden. Forces `farmType: 'backyard'` so
  * the row never lands in the farms partition.
+ *
+ * Data-model spec §3 + §8 — runs validateGrowingContext before the
+ * write so NaN / non-positive sizes block the save (returns null +
+ * a `{ ok:false, errors:[...] }` companion via the second return
+ * slot). Existing single-return callers keep working unchanged
+ * because the row is still the primary return value on success.
  */
 export function addGarden(payload = {}) {
   const safe = (payload && typeof payload === 'object') ? payload : {};
-  const row  = saveFarm({
+  const validation = validateGrowingContext({
+    activeExperience: 'garden',
+    exactSize:        safe.farmSize ?? safe.size ?? null,
+    unit:             safe.sizeUnit ?? null,
+    farmType:         'backyard',
+    growingSetup:     safe.growingSetup ?? null,
+    skipConfirmation: safe.skipConfirmation === true,
+  });
+  if (!validation.ok) {
+    // Spec §3 — block the write on any blocking error. The caller
+    // can read the most recent validation via getLastValidation().
+    _setLastValidation(validation);
+    return null;
+  }
+  const row = saveFarm({
     ...safe,
     farmType: 'backyard',
     setActive: false, // we manage the active garden pointer ourselves
   });
-  if (!row || !row.id) return null;
+  if (!row || !row.id) {
+    _setLastValidation(validation);
+    return null;
+  }
   setActiveGardenId(row.id);
   _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.GARDEN);
   _emitSwitch(EXPERIENCE.GARDEN, row.id, { added: true });
+  _setLastValidation(validation);
   return row;
 }
 
@@ -291,22 +320,75 @@ export function addGarden(payload = {}) {
  * addFarm(payload) — create a non-garden farm row and pin it as
  * the active farm. Defaults to 'small_farm' when farmType is
  * absent; rejects 'backyard' so cross-type writes can't sneak in.
+ *
+ * Data-model spec §3 + §5 — runs validateGrowingContext before
+ * persisting. Auto-corrects a mis-tagged `backyard` farmType when
+ * sizeInAcres >= 1 so a 100-acre row can never be stored as a
+ * backyard.
  */
 export function addFarm(payload = {}) {
   const safe = (payload && typeof payload === 'object') ? payload : {};
   const ft = String(safe.farmType || 'small_farm').toLowerCase();
+  // Spec §5 — never let a 'farm' experience persist a backyard
+  // farmType. Coerce up front; validateGrowingContext also re-
+  // checks below so an auto-correct still kicks in if the size
+  // crosses the 1-acre threshold.
   const safeType = (ft === 'backyard' || ft === 'home_garden' || ft === 'home')
     ? 'small_farm'
     : ft;
+
+  const validation = validateGrowingContext({
+    activeExperience: 'farm',
+    exactSize:        safe.farmSize ?? safe.size ?? null,
+    unit:             safe.sizeUnit ?? null,
+    farmType:         safeType,
+    skipConfirmation: safe.skipConfirmation === true,
+  });
+  if (!validation.ok) {
+    _setLastValidation(validation);
+    return null;
+  }
+
+  // Apply autoCorrect — when the validator rewrote the farmType
+  // (e.g. backyard-sized at 100 acres → large_farm), respect it.
+  // Note: saveFarm canonicalises farmType to backyard/small_farm/
+  // commercial; the autoCorrect class is recorded on the row's
+  // autoFarmClass field, not farmType. We DO update farmType to
+  // the closest legacy bucket so existing readers stay coherent.
+  const correctedType = (function () {
+    const c = validation.autoCorrect && validation.autoCorrect.farmType;
+    if (!c) return safeType;
+    if (c === 'large_farm' || c === 'medium_farm') return 'commercial';
+    if (c === 'small_farm' || c === 'unknown_farm') return 'small_farm';
+    return safeType;
+  })();
+
   const row = saveFarm({
     ...safe,
-    farmType: safeType,
+    farmType: correctedType,
     setActive: true, // existing setActiveFarmId behaviour
   });
-  if (!row || !row.id) return null;
+  if (!row || !row.id) {
+    _setLastValidation(validation);
+    return null;
+  }
   _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.FARM);
   _emitSwitch(EXPERIENCE.FARM, row.id, { added: true });
+  _setLastValidation(validation);
   return row;
+}
+
+// ── Validation result inspection ─────────────────────────────────
+// Spec §3: blocking errors return null from add{Garden,Farm}; the
+// caller reads the most recent result via getLastValidation() so
+// it can render the "Size must be greater than zero" error inline
+// without needing a try/catch wrapper.
+let _lastValidation = null;
+function _setLastValidation(v) {
+  _lastValidation = v && typeof v === 'object' ? v : null;
+}
+export function getLastValidation() {
+  return _lastValidation;
 }
 
 /**

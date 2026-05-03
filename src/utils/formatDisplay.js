@@ -117,15 +117,27 @@ export function formatLocation(location) {
  *   {
  *     sizeCategory: 'small' | 'medium' | 'large' | 'custom' | 'unknown',
  *     exactSize:    number | null,
- *     unit:         'acres' | 'hectares',
+ *     unit:         'acres' | 'hectares' | 'sqft' | 'sqm',
+ *     sizeInAcres:  number | null,    // (data-model spec §6) optional
+ *                                     // pre-computed acre value used for
+ *                                     // the "(~N acres)" preview when the
+ *                                     // user typed in sqft / sqm.
  *   }
  *
  * Resolution order (per spec §2 — single source of truth):
  *   1. exactSize present (truthy + finite + > 0) → '<n> <unit>'
- *      (unit defaults to 'hectares' if missing — the safer
- *       metric default).
+ *      • when unit is sqft / sqm AND sizeInAcres > 0.5, append a
+ *        "(~N acres)" preview so the user sees the magnitude in a
+ *        familiar unit (data-model spec §6).
+ *      • unit defaults to 'hectares' if missing — the safer metric
+ *        default.
  *   2. sizeCategory present + recognized → 'Small/Medium/Large farm'
  *   3. anything else → 'Not specified'
+ *
+ * Strict-rule audit
+ *   • Pure function. Idempotent. Never throws.
+ *   • Returns plain strings only — no React, no translation lookup.
+ *   • "(~N acres)" preview rounded to a whole number for tidiness.
  */
 export function formatFarmSize(data) {
   const d = (data && typeof data === 'object') ? data : {};
@@ -133,21 +145,41 @@ export function formatFarmSize(data) {
   // Path 1: exact size wins.
   const exact = Number(d.exactSize);
   if (Number.isFinite(exact) && exact > 0) {
-    const unit = (d.unit === 'acres' || d.unit === 'hectares')
+    const unit = (d.unit === 'acres' || d.unit === 'hectares'
+               || d.unit === 'sqft'  || d.unit === 'sqm')
       ? d.unit : 'hectares';
-    // Drop trailing zeros for whole numbers ("2 acres", not
-    // "2.0 acres") but keep the user-typed precision otherwise.
+    const unitLabel = ({
+      acres:    'acres',
+      hectares: 'hectares',
+      sqft:     'sq ft',
+      sqm:      'sq m',
+    })[unit] || unit;
+    // Format the value with thousands separators for readability —
+    // a 4,356,000 sqft input renders cleanly. Whole numbers stay
+    // whole; fractional values keep up to 4 decimal places.
     const formatted = Number.isInteger(exact)
-      ? String(exact)
-      : String(exact);
-    return `${formatted} ${unit}`;
+      ? exact.toLocaleString('en-US')
+      : (Math.round(exact * 10000) / 10000).toLocaleString('en-US');
+
+    // Spec §6 — when the user typed in sqft / sqm AND the value
+    // exceeds half an acre, append a preview in acres so the
+    // magnitude is obvious.
+    let preview = '';
+    if (unit === 'sqft' || unit === 'sqm') {
+      const acres = Number(d.sizeInAcres);
+      if (Number.isFinite(acres) && acres > 0.5) {
+        const rounded = Math.round(acres);
+        preview = ` (\u2248${rounded.toLocaleString('en-US')} acres)`;
+      }
+    }
+    return `${formatted} ${unitLabel}${preview}`;
   }
 
   // Path 2: size category bucket.
   const cat = String(d.sizeCategory || '').toLowerCase();
-  if (cat === 'small')  return 'Small farm';
-  if (cat === 'medium') return 'Medium farm';
-  if (cat === 'large')  return 'Large farm';
+  if (cat === 'small'  || cat === 'small_farm')  return 'Small farm';
+  if (cat === 'medium' || cat === 'medium_farm') return 'Medium farm';
+  if (cat === 'large'  || cat === 'large_farm')  return 'Large farm';
 
   // Path 3: anything else (custom-without-value, unknown,
   // missing) falls through to the spec default.

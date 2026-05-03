@@ -22,6 +22,12 @@ import { toSquareMeters } from '../lib/units/areaConversion.js';
 // so the UI converts ONCE on render. normalizedAreaSqm stays
 // alongside for back-compat with existing per-area math.
 import { toLandSizeSqFt } from '../lib/units/landSizeBase.js';
+// Data-model spec §4: every saved row carries pre-computed
+// sizeInAcres + sizeInSqFt + autoFarmClass so downstream
+// consumers (decision engine, review display, NGO summaries)
+// never re-do unit math or guess at a tier from drifted strings.
+import { convertToAcres, convertToSqFt } from '../core/unitUtils.js';
+import { classifyGrowingContext } from '../core/farmClassifier.js';
 
 import { logEvent } from '../lib/events/eventLogger.js';
 
@@ -257,6 +263,14 @@ export function saveFarm({
       const v = toLandSizeSqFt(sizeNum, sizeUnit);
       return Number.isFinite(v) ? Math.round(v * 10000) / 10000 : null;
     })(),
+    // Data-model spec §4 — canonical pre-computed size fields.
+    // Acres + sqft are written alongside landSizeSqFt /
+    // normalizedAreaSqm so the decision engine + review
+    // formatters never re-do unit math. Both null when size or
+    // unit is missing/invalid; the engine treats null as
+    // "unknown" (spec §8 safety fallback).
+    sizeInAcres: convertToAcres(sizeNum, sizeUnit),
+    sizeInSqFt:  convertToSqFt(sizeNum, sizeUnit),
     displayUnit: sizeUnit ? String(sizeUnit).trim() : null,
     stage:    stage    ? String(stage).trim()    : null,
     // Farm type tiers the downstream experience (task engine,
@@ -271,6 +285,20 @@ export function saveFarm({
       if (s === 'home_food' || s === 'backyard_home' || s === 'home') return 'backyard';
       if (s === 'commercial_farm' || s === 'large' || s === 'enterprise') return 'commercial';
       return 'small_farm';
+    })(),
+    // Data-model spec §2 + §7 — autoFarmClass is the canonical
+    // tier the decision engine reads. Derived from
+    // (activeExperience, sizeInAcres) so a confused user who
+    // tagged a 100-acre row as "small farm" still drives the
+    // large-farm task plan.
+    autoFarmClass: (function () {
+      const exp = (String(farmType || '').toLowerCase() === 'backyard')
+        ? 'garden' : 'farm';
+      const acres = convertToAcres(sizeNum, sizeUnit);
+      return classifyGrowingContext({
+        activeExperience: exp,
+        sizeInAcres:      acres,
+      });
     })(),
     // Legacy mirrors — kept so existing readers continue to work.
     location: locationStr,
@@ -326,8 +354,10 @@ export function updateFarm(farmId, patch = {}) {
   const after = { ...before, ...changed, updatedAt: Date.now() };
   // Recompute the normalized area whenever a size- or unit-relevant
   // field changed so yield / value math keeps a consistent base.
-  if (changed.farmSize != null || changed.sizeUnit != null
-      || changed.size != null) {
+  const sizeOrUnitChanged = changed.farmSize != null
+                         || changed.sizeUnit != null
+                         || changed.size     != null;
+  if (sizeOrUnitChanged) {
     const size = after.farmSize != null ? after.farmSize : after.size;
     after.normalizedAreaSqm = toSquareMeters(size, after.sizeUnit);
     // Land-size base-unit spec: keep landSizeSqFt + displayUnit
@@ -339,6 +369,23 @@ export function updateFarm(farmId, patch = {}) {
       ? Math.round(baseFt * 10000) / 10000
       : null;
     after.displayUnit  = after.sizeUnit ? String(after.sizeUnit).trim() : null;
+    // Data-model spec §4 — keep sizeInAcres / sizeInSqFt aligned
+    // with the legacy fields. Both null when the input is missing
+    // or invalid; the engine treats null as 'unknown'.
+    after.sizeInAcres = convertToAcres(size, after.sizeUnit);
+    after.sizeInSqFt  = convertToSqFt(size, after.sizeUnit);
+  }
+  // Spec §7 — autoFarmClass must always reflect the latest
+  // (activeExperience, sizeInAcres) tuple. Recompute on any
+  // size/unit/farmType change so the decision engine never reads
+  // a stale tier after a user edits their farm.
+  if (sizeOrUnitChanged || changed.farmType != null) {
+    const exp = (String(after.farmType || '').toLowerCase() === 'backyard')
+      ? 'garden' : 'farm';
+    after.autoFarmClass = classifyGrowingContext({
+      activeExperience: exp,
+      sizeInAcres:      after.sizeInAcres,
+    });
   }
   farms[idx] = after;
   writeJson(K.FARMS, farms);

@@ -410,7 +410,36 @@ export function generateDailyPlan(context) {
   // the engine MUST NEVER throw. A null/undefined context
   // collapses to the farm fallback path.
   const ctx = (context && typeof context === 'object') ? context : {};
-  const type = (ctx.type === 'garden' || ctx.type === 'farm') ? ctx.type : 'farm';
+  const type = (ctx.type === 'garden' || ctx.type === 'farm')
+    ? ctx.type
+    : (String(ctx.activeExperience || '').toLowerCase() === 'garden'
+        ? 'garden' : 'farm');
+
+  // Data-model spec §7 — the decision engine reads autoFarmClass
+  // FIRST, falling back to ctx.size only when no class is
+  // present. This keeps existing callers (which hand-craft
+  // ctx.size) working while letting new callers feed the
+  // spec-shaped class directly.
+  let sizeKey = ctx.size;
+  if (type === 'farm') {
+    const cls = String(ctx.autoFarmClass || '').toLowerCase();
+    if (cls === 'small_farm')   sizeKey = 'small';
+    else if (cls === 'medium_farm')  sizeKey = 'medium';
+    else if (cls === 'large_farm')   sizeKey = 'large';
+    else if (cls === 'unknown_farm') sizeKey = 'unknown';
+    // If autoFarmClass is missing AND ctx.size is missing AND we
+    // do have a sizeInAcres number, derive on the fly so the
+    // engine still picks the right rule (spec §8 safety
+    // fallback).
+    if (!sizeKey || sizeKey === 'unknown') {
+      const acres = Number(ctx.sizeInAcres);
+      if (Number.isFinite(acres) && acres > 0) {
+        if (acres <= 5)       sizeKey = 'small';
+        else if (acres <= 50) sizeKey = 'medium';
+        else                  sizeKey = 'large';
+      }
+    }
+  }
 
   // Pick the base recipe by type + setup/size. Garden falls
   // through to the per-setup rule; farm to the per-size rule.
@@ -418,7 +447,7 @@ export function generateDailyPlan(context) {
   if (type === 'garden') {
     base = GARDEN_SETUP_RULES[ctx.setup] || null;
   } else {
-    base = FARM_SIZE_RULES[ctx.size] || null;
+    base = FARM_SIZE_RULES[sizeKey] || null;
   }
 
   // Spec §8 fallback — when the context didn't carry a usable
