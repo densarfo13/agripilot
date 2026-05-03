@@ -34,13 +34,12 @@ export default function BeginnerReassurance() {
   function handleContinue() {
     markSeen();
     safeTrackEvent('onboarding.reassurance_continue', {});
-    // Risk-fix follow-up to 9874630: route into the canonical
-    // post-rewrite FastFlow at /onboarding/start (Step 0 language
-    // picker \u2192 Step 1 "What are you growing?" \u2192 quick setup),
-    // not the older /onboarding/fast V2 route. Both routes still
-    // exist; pointing here ensures new users land on the polished
-    // canonical path.
-    navigate('/onboarding/start', { replace: true });
+    // Perfect Onboarding spec — route into the new sub-30-second
+    // /onboarding/fast flow ("What are you growing?" \u2192 minimal
+    // pick \u2192 location \u2192 first action). The legacy paths
+    // /onboarding/start (FastFlow) and /onboarding/v3 remain
+    // mounted for any in-flight users / deep links.
+    navigate('/onboarding/fast', { replace: true });
   }
 
   return (

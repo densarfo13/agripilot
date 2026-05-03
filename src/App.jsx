@@ -202,6 +202,11 @@ const PostHarvestSummaryPage = lazy(() => import('./pages/farmer/PostHarvestSumm
 const FarmerOnboardingPage = lazy(() => import('./pages/onboarding/FarmerOnboardingPage.jsx'));
 const FastOnboardingRoute = lazy(() => import('./pages/onboarding/fast/FastOnboardingRoute.jsx'));
 const OnboardingV3 = lazy(() => import('./pages/onboarding/OnboardingV3.jsx'));
+// Perfect Onboarding spec — 4-screen sub-30-second path. Lives
+// at /onboarding/fast. Replaces the legacy multi-step paths for
+// new sign-ups; the older paths remain mounted for any in-flight
+// users / deep links.
+const FastOnboarding = lazy(() => import('./pages/onboarding/FastOnboarding.jsx'));
 // OnboardingRouter — thin guard that bounces U.S. users to the
 // experience chooser when they haven't picked one yet. Flag-off
 // behaviour: identical to OnboardingV3.
@@ -749,6 +754,15 @@ export default function App() {
                 + /onboarding/v3 routes stay intact for scripts
                 or links that deep-link to them. */}
             <Route path="/onboarding/start" element={<FastFlow />} />
+            {/* Perfect Onboarding spec — sub-30-second 4-screen
+                path. /onboarding/fast is the canonical entry.
+                The bare /onboarding path stays bound to
+                OnboardingRouter (line 947) so the existing
+                LandingPage / FarmerEntry funnel keeps working;
+                that router can opt into the fast flow via its
+                own redirect logic without us double-mounting
+                the route here. */}
+            <Route path="/onboarding/fast" element={<FastOnboarding />} />
             <Route path="/onboarding/minimal" element={<MinimalOnboarding />} />
             <Route path="/onboarding/farmer-type" element={<V2FarmerType />} />
             <Route path="/onboarding/starter-guide" element={<V2StarterGuide />} />

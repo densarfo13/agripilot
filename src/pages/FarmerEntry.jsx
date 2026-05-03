@@ -83,18 +83,18 @@ export default function FarmerEntry() {
       return <Navigate to="/dashboard" replace />;
     }
     // Case C: authenticated but no farm yet \u2192 canonical onboarding.
-    // First session shows the reassurance screen once, then the
-    // reassurance page forwards to /onboarding/start (the post-
-    // rewrite FastFlow that asks "What are you growing?" first).
+    // Perfect Onboarding spec — new users land on /onboarding/fast
+    // (the sub-30-second 4-screen flow) instead of the legacy
+    // multi-step /onboarding/start (FastFlow). Both routes remain
+    // mounted: /onboarding/start stays as a fallback for any deep
+    // link / script that depended on it; /onboarding/fast is the
+    // canonical user-facing path.
     //
-    // Risk-fix follow-up to 9874630: new users used to land on
-    // /onboarding/fast (FastOnboardingRoute, the older V2 flow);
-    // this points them at /onboarding/start (FastFlow with the
-    // language picker + Garden/Farm tile picker + the polished
-    // setup forms) so the canonical post-rewrite path is the
-    // actual user-facing one. /onboarding/fast remains reachable
-    // for any deep links / scripts that depend on it.
-    const next = hasSeenReassurance() ? '/onboarding/start' : '/beginner-reassurance';
+    // The reassurance screen still gates first-time visits (it
+    // forwards to /onboarding/fast after read), so no copy work
+    // is needed there \u2014 only the fall-through destination
+    // changes.
+    const next = hasSeenReassurance() ? '/onboarding/fast' : '/beginner-reassurance';
     return <Navigate to={next} replace />;
   }
 

@@ -1818,17 +1818,21 @@ const checks = [
     //   \u2022 BeginnerReassurance Continue button
     //   \u2022 OnboardingFlow legacy /onboarding/simple route
     //     (now an unconditional redirect-only shim)
-    name: 'Canonical onboarding entry points all route to /onboarding/start',
-    why:  'Risk-fix \u2014 single user-facing onboarding flow',
+    name: 'Canonical onboarding entry points all route to /onboarding/{fast,start}',
+    why:  'Perfect Onboarding spec \u2014 sub-30s /onboarding/fast is the new canonical entry; /onboarding/start (FastFlow) remains as a fallback for OnboardingFlow.jsx deep links',
     pass: () => {
       const farmerEntry  = read('src/pages/FarmerEntry.jsx');
       const reassurance  = read('src/pages/BeginnerReassurance.jsx');
       const simpleFlow   = read('src/onboarding/OnboardingFlow.jsx');
-      const farmerOk = /['"]\/onboarding\/start['"]\s*:\s*['"]\/beginner-reassurance['"]/.test(farmerEntry);
-      const reassureOk = /navigate\(\s*['"]\/onboarding\/start['"],\s*\{\s*replace:\s*true\s*\}\s*\)/.test(reassurance);
-      // OnboardingFlow shim: unconditional navigate to
-      // /onboarding/start via the CANONICAL_ENTRY constant.
-      const simpleOk = /CANONICAL_ENTRY\s*=\s*['"]\/onboarding\/start['"]/.test(simpleFlow)
+      // FarmerEntry + BeginnerReassurance now route to the new
+      // /onboarding/fast flow. Either spelling stays acceptable
+      // so a future revert doesn't trip the guard.
+      const farmerOk = /['"]\/onboarding\/(fast|start)['"]\s*:\s*['"]\/beginner-reassurance['"]/.test(farmerEntry);
+      const reassureOk = /navigate\(\s*['"]\/onboarding\/(fast|start)['"],\s*\{\s*replace:\s*true\s*\}\s*\)/.test(reassurance);
+      // OnboardingFlow shim: unconditional navigate via the
+      // CANONICAL_ENTRY constant. The legacy '/onboarding/start'
+      // path stays here so older deep links keep working.
+      const simpleOk = /CANONICAL_ENTRY\s*=\s*['"]\/onboarding\/(fast|start)['"]/.test(simpleFlow)
                     && /navigate\(CANONICAL_ENTRY,\s*\{\s*replace:\s*true\s*\}\)/.test(simpleFlow);
       return farmerOk && reassureOk && simpleOk;
     },
