@@ -41,6 +41,10 @@
 import { useNavigate } from 'react-router-dom';
 import useExperience from '../../hooks/useExperience.js';
 import { tSafe } from '../../i18n/tSafe.js';
+// Final Farroway Navigation §3 — userType resolver for the
+// backyard-only-shows-Gardens gate below. Top-level ESM
+// import (Vite is ESM-only); pure derivation, never throws.
+import { getUserType as _getUserTypeForTabs } from '../../core/userType.js';
 
 const C = {
   panel:    '#102C47',
@@ -97,6 +101,16 @@ export default function ExperienceTabs({
   // visible even before a user has both experience types.
   if (!forceShow && (!hasGarden || !hasFarm)) return null;
 
+  // Final Farroway Navigation §3 — backyard users see GARDENS
+  // ONLY (no Farms tab). Resolved via the canonical userType
+  // helper; try/catch so SSR / locked-storage edge cases
+  // collapse to "show both tabs" (the conservative default —
+  // never accidentally hide a tab the user might need).
+  let _userType = 'farmer';
+  try { _userType = _getUserTypeForTabs(); }
+  catch { _userType = 'farmer'; }
+  const _backyardOnly = _userType === 'backyard';
+
   function go(target) {
     // No-op when tapping the already-active tab.
     if (target === current) return;
@@ -130,17 +144,23 @@ export default function ExperienceTabs({
           as the parent-vs-child visual cue (§1) — a sheaf of
           grain reads as the larger / parent entity, the seedling
           reads as the smaller / nested one. */}
-      <button
-        role="tab"
-        type="button"
-        aria-selected={current === 'farm'}
-        onClick={() => go('farm')}
-        style={current === 'farm' ? { ...S.tab, ...S.tabActive } : S.tab}
-        data-testid="experience-tab-farms"
-      >
-        <span aria-hidden="true" style={{ marginRight: 6 }}>{'\uD83C\uDF3E'}</span>
-        {tSafe('experienceTabs.farms', 'Farms')}
-      </button>
+      {/* Final Farroway Navigation §3 — Farms tab hidden for
+          backyard users so the spec's "show gardens only"
+          constraint holds. Farmer users continue to see both
+          tabs as before. */}
+      {!_backyardOnly ? (
+        <button
+          role="tab"
+          type="button"
+          aria-selected={current === 'farm'}
+          onClick={() => go('farm')}
+          style={current === 'farm' ? { ...S.tab, ...S.tabActive } : S.tab}
+          data-testid="experience-tab-farms"
+        >
+          <span aria-hidden="true" style={{ marginRight: 6 }}>{'\uD83C\uDF3E'}</span>
+          {tSafe('experienceTabs.farms', 'Farms')}
+        </button>
+      ) : null}
       <button
         role="tab"
         type="button"

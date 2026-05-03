@@ -79,6 +79,13 @@ import { getGardens } from '../../store/multiExperience.js';
 // Top-level ESM import (Vite is ESM-only); `getUserType` is a
 // pure derivation that never throws.
 import { getUserType as _resolveUserType } from '../../core/userType.js';
+// Final Farroway Navigation §8 — top-of-Home context label
+// "Your Garden" / "Farm: [Name]" + ContextSwitcher pattern.
+// Reads the resolved context (with parent-farm lookup) so a
+// garden-only user sees the parent's name, not the garden's
+// own name.
+import { resolveContext as _resolveContext } from '../../core/contextResolver.js';
+import { getLabel as _getModeLabel } from '../../core/terminology.js';
 import { recordDayActive, getEngagement } from '../../core/userEngagement.js';
 import {
   shouldShowPaywall, markPaywallShown, markUpgraded,
@@ -1066,6 +1073,64 @@ export default function FarmerTodayPage() {
           written by the BackyardOnboarding page; reading directly
           avoids a new context dependency. Defensive — falls back
           to the existing farm header on any error. */}
+      {/* Final Farroway Navigation §8 — top-of-Home context
+          label. Backyard users see "Your Garden"; farmers see
+          "Farm: {Name}". Garden rows with a parentFarmId
+          surface "From farm: {parentName}". Renders ABOVE the
+          existing page-title eyebrow so the user reads
+          identity first, then sees the FirstActionGate below.
+          Self-hides when context is missing (e.g. truly empty
+          state — the FarmerTodayPage's own onboarding redirect
+          handles that path). */}
+      {(() => {
+        let ctx = null;
+        try { ctx = _resolveContext(); }
+        catch { ctx = null; }
+        if (!ctx || !ctx.hasContext) return null;
+        // Backyard / garden mode: prefer "From farm: {parent}"
+        // when a parent is resolved (the auto-created
+        // "My Backyard" lands here for garden-only users);
+        // otherwise the simpler "Your Garden" landmark.
+        if (ctx.userType === 'backyard') {
+          const fromLabel = ctx.parentFarmName
+            ? `${_getModeLabel('contextLabel', 'farmer')}: ${ctx.parentFarmName}`
+            : _getModeLabel('contextLabel', 'backyard');
+          return (
+            <div
+              style={S.homeContextLabel}
+              data-testid="home-context-label"
+              data-mode="backyard"
+            >
+              {ctx.parentFarmName ? (
+                <span style={S.homeContextEyebrow}>From farm:</span>
+              ) : null}
+              <span style={S.homeContextName}>
+                {ctx.parentFarmName || _getModeLabel('contextLabel', 'backyard')}
+              </span>
+              {/* The fromLabel composition is referenced via
+                  void so a future "Your garden — From farm: X"
+                  combined render can pick it up without a fresh
+                  computation. */}
+              {void fromLabel}
+            </div>
+          );
+        }
+        // Farmer mode: "Farm: {Name}".
+        return (
+          <div
+            style={S.homeContextLabel}
+            data-testid="home-context-label"
+            data-mode="farm"
+          >
+            <span style={S.homeContextEyebrow}>
+              {`${_getModeLabel('farmLabel', 'farmer')}:`}
+            </span>
+            <span style={S.homeContextName}>
+              {ctx.displayName || _getModeLabel('contextLabel', 'farmer')}
+            </span>
+          </div>
+        );
+      })()}
       <h1 style={S.pageTitle}>{(() => {
         try {
           const raw = typeof localStorage !== 'undefined'
@@ -1630,6 +1695,33 @@ function microStatusStyleFor(code) {
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
+  // Final Farroway Navigation §8 — top-of-Home context label.
+  // Single-row chip showing "Farm: {Name}" or "From farm:
+  // {parent}". Visual weight kept light so the FirstActionGate
+  // below stays the dominant element above the fold.
+  homeContextLabel: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 6,
+    margin: '0 0 8px',
+    padding: '6px 12px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    alignSelf: 'flex-start',
+  },
+  homeContextEyebrow: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  homeContextName: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#FFFFFF',
+  },
   // Onboarding Completion §6 — first-action-prepared banner. Soft
   // green chip rendered above the FirstActionGate immediately
   // after a fresh onboarding completion. Auto-hides after 6s

@@ -55,6 +55,10 @@ import { loadData, saveData } from '../store/localStore.js';
 import { getTodayTasks } from '../lib/dailyTasks/taskScheduler.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 import HomeProgressBar from '../components/farmer/HomeProgressBar.jsx';
+// Final Farroway Navigation §7 — per-userType feature
+// visibility for the farmer-only Funding/Sell shortcuts on
+// the action stack. Backyard users get false → shortcuts hide.
+import { isFeatureVisible as _isFeatureVisible } from '../core/featuresByUserType.js';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -241,6 +245,19 @@ export default function MyFarmPage() {
   const isBackyardActive = _activeFarmType === 'backyard'
                         || _activeFarmType === 'home_garden'
                         || _activeFarmType === 'home';
+
+  // Final Farroway Navigation §7 — farmer-only Funding + Sell
+  // shortcut visibility. Reads the central per-userType
+  // visibility matrix; backyard users get false (matrix
+  // already returns false for showFunding/showSell on the
+  // backyard row). Wrapped in try/catch so SSR / locked-
+  // storage failures collapse to false (conservative hide).
+  let _canSeeFunding = false;
+  let _canSeeSell    = false;
+  try {
+    _canSeeFunding = _isFeatureVisible('showFunding', isBackyardActive ? 'backyard' : 'farmer');
+    _canSeeSell    = _isFeatureVisible('showSell',    isBackyardActive ? 'backyard' : 'farmer');
+  } catch { /* keep both false */ }
 
   // Spec §5 — surface a "Switch to Farm" shortcut on the garden
   // surface when at least one non-backyard record exists, and
@@ -663,6 +680,50 @@ export default function MyFarmPage() {
           <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
         </button>
       </div>
+
+      {/* Final Farroway Navigation §7 — farmer-only Funding +
+          Sell shortcuts. Hidden for backyard users per spec
+          ("Backyard users should not see Funding/Sell"); the
+          isFeatureVisible() check reads from
+          featuresByUserType — which already returns false for
+          showFunding/showSell on backyard rows. Wrapping the
+          two links in a single shortcut row so they read as a
+          paired utility (not a primary CTA). Routes unchanged
+          (/opportunities + /sell still mounted in App.jsx);
+          this is just the entry-point migration. */}
+      {(() => {
+        // Lazy ESM imports would create a circular hazard
+        // (MyFarmPage → featuresByUserType → userType →
+        // multiExperience). Top-level imports are added below
+        // alongside the existing import block.
+        if (!_canSeeFunding && !_canSeeSell) return null;
+        return (
+          <div style={S.shortcutRow} data-testid="my-farm-shortcuts">
+            {_canSeeFunding ? (
+              <button
+                type="button"
+                onClick={() => { try { navigate('/opportunities'); } catch { /* ignore */ } }}
+                style={S.shortcutLink}
+                data-testid="my-farm-shortcut-funding"
+              >
+                {tSafe('myFarm.shortcut.funding', 'Funding')}
+                <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
+              </button>
+            ) : null}
+            {_canSeeSell ? (
+              <button
+                type="button"
+                onClick={() => { try { navigate('/sell'); } catch { /* ignore */ } }}
+                style={S.shortcutLink}
+                data-testid="my-farm-shortcut-sell"
+              >
+                {tSafe('myFarm.shortcut.sell', 'Sell')}
+                <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
+              </button>
+            ) : null}
+          </div>
+        );
+      })()}
 
       {/* ── 6. Help Card (spec §6) ─────────────────────────────
           Compact card: headset/help icon on the left, "Need
@@ -1201,6 +1262,37 @@ const S = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  // Final Farroway Navigation §7 — farmer-only Funding + Sell
+  // shortcut row. Sits below the manage link, paired side by
+  // side. Visual weight kept light (link-style, no background)
+  // so the row reads as a quiet utility section rather than
+  // primary CTAs.
+  shortcutRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  shortcutLink: {
+    appearance: 'none',
+    background: 'transparent',
+    border: 'none',
+    color: 'rgba(234,242,255,0.62)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '0.5rem 0.5rem',
+    minHeight: 32,
+    display: 'inline-flex',
+    alignItems: 'center',
+    fontFamily: 'inherit',
+    textDecoration: 'underline',
+    textDecorationColor: 'rgba(234,242,255,0.32)',
+    textUnderlineOffset: 3,
   },
   // Optimize Farm/Garden Mental Model §7 — "Manage →" rendered
   // as a link, not a full button. Demoted visual weight so it

@@ -11,8 +11,12 @@ export const NAV_ICONS = {
   farm: '\uD83C\uDF31',       // 🌱
   tasks: '\u2705',             // ✅
   progress: '\uD83D\uDCCA',   // 📊
-  sell: '\uD83C\uDFF7\uFE0F',         // 🏷️  (v3 buyer layer)
-  opportunities: '\uD83C\uDFAF',      // 🎯  (v3 funding layer)
+  // Standardize Navigation System §1 — Scan is now a top-level
+  // tab on the unified 5-tab nav (Home / My Grow / Tasks /
+  // Progress / Scan).
+  scan: '\uD83D\uDCF7',       // 📷
+  sell: '\uD83C\uDFF7\uFE0F',         // 🏷️  (kept for legacy /sell route)
+  opportunities: '\uD83C\uDFAF',      // 🎯  (kept for legacy /opportunities)
 };
 
 // ─── Section icons (used in headers / labels) ───────────────

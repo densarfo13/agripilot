@@ -6726,6 +6726,16 @@ const T = {
   'myFarm.manage': {
     en: 'Manage', fr: 'G\u00E9rer', sw: 'Dhibiti', ha: 'Sarrafa', tw: 'Hw\u025B so', hi: 'प्रबंधित करें',
   },
+  // Final Farroway Navigation §7 — farmer-only shortcut links
+  // surfaced inside My Grow once Funding + Sell are out of
+  // the bottom nav. Backyard users never see these (gated by
+  // featuresByUserType.isFeatureVisible).
+  'myFarm.shortcut.funding': {
+    en: 'Funding', fr: 'Financement', sw: 'Ufadhili', ha: 'Tallafi', tw: 'Sika boa', hi: 'फंडिंग',
+  },
+  'myFarm.shortcut.sell': {
+    en: 'Sell', fr: 'Vendre', sw: 'Uza', ha: 'Sayar', tw: 'T\u0254n', hi: 'बेचें',
+  },
   'myFarm.noFarm': {
     en: 'No farm yet. Set up your farm to get started.',
     fr: 'Pas encore de ferme. Configurez votre ferme pour commencer.',
@@ -7177,6 +7187,10 @@ const T = {
   'nav.myGrow':   { en: 'My Grow',  fr: 'Mon espace', sw: 'Kilimo Changu', ha: 'Gonata', tw: 'Me Mfuo', hi: 'मेरी फ़सल' },
   'nav.tasks':    { en: 'Tasks',    fr: 'Tâches',  sw: 'Kazi',       ha: 'Ayyuka',  tw: 'Adwuma', hi: 'कार्य' },
   'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo',  ha: 'Ci gaba', tw: 'Nkɔso',  hi: 'प्रगति' },
+  // Standardize Navigation System §1 — Scan promoted to a
+  // top-level nav tab on the unified 5-tab structure (Home /
+  // My Grow / Tasks / Progress / Scan).
+  'nav.scan':     { en: 'Scan',     fr: 'Scan',    sw: 'Changanua',  ha: 'Duba',    tw: 'Hwehw\u025B', hi: 'स्कैन' },
   'nav.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',        ha: 'Sayar',   tw: 'Tɔn',    hi: 'बेचें' },
   // Spec-named aliases (common.*) — same values, kept in sync
   // so callers using the spec key shape resolve identically.
