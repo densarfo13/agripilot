@@ -6,7 +6,7 @@ import { writeAuditLog } from '../lib/audit.js';
 // /:id routes. The handler still does its own profile + scan
 // lookup as defence-in-depth (so seedScan reads stay consistent
 // even if a future refactor changes the param shape).
-import { requireOwnership } from '../../src/middleware/requireOwnership.js';
+import { requireOwnership } from '../src/middleware/requireOwnership.js';
 
 const router = express.Router();
 

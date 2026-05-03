@@ -24,7 +24,7 @@ import { requireAuth, requireRole } from '../middleware/rbac.js';
 // filter would have been undefined and the query would have
 // returned every org's data. Adding extractOrganization here
 // guarantees a reviewer's queries are bounded to their own org.
-import { extractOrganization } from '../../src/middleware/orgScope.js';
+import { extractOrganization } from '../src/middleware/orgScope.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();

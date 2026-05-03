@@ -8,7 +8,7 @@ import { evaluatePesticideCompliance, buildComplianceTimeline, determineConfiden
 // is only populated when extractOrganization runs in the chain.
 // Without it the inline check evaluates against undefined and
 // silently allows cross-org reads.
-import { extractOrganization } from '../../src/middleware/orgScope.js';
+import { extractOrganization } from '../src/middleware/orgScope.js';
 
 const router = express.Router();
 

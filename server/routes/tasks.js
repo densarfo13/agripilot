@@ -6,7 +6,7 @@ import { writeAuditLog } from '../lib/audit.js';
 // `v2Task` resource resolves ownership via the parent V2Season's
 // userId. The handler's existing inline `season: { userId }`
 // filter remains as defence-in-depth.
-import { requireOwnership } from '../../src/middleware/requireOwnership.js';
+import { requireOwnership } from '../src/middleware/requireOwnership.js';
 
 const router = express.Router();
 

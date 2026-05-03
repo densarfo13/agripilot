@@ -16,7 +16,7 @@ import { authenticate } from '../middleware/authenticate.js';
 // middleware adds the spec-mandated where-clause + 404-on-miss
 // pattern at the chain level so a future refactor cannot
 // accidentally remove the inline check.
-import { requireOwnership } from '../../src/middleware/requireOwnership.js';
+import { requireOwnership } from '../src/middleware/requireOwnership.js';
 import { generateTasksForFarm } from '../lib/farmTaskEngine.js';
 import { resolveStage, CROP_STAGES } from '../lib/cropStages.js';
 import { getSeasonalContext } from '../lib/seasonalTiming.js';
