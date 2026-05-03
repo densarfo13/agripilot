@@ -84,6 +84,10 @@ function buildLocalFallback(userType, language) {
       : tSafe('todayTask.nextSoonFarmer',   'Check again tomorrow morning'),
     completionPrompt: tSafe('todayTask.completionPrompt',
       'Nice — you stayed ahead today \uD83C\uDF31'),
+    // Final-polish spec §4 — local fallback also carries a CTA
+    // so the button text never reads from the raw default in
+    // a network-down render path.
+    ctaLabel: tSafe('todayTask.cta', 'Check now \u2713'),
     ruleId:    'local_fallback',
     userType:  ut,
     fallback:  true,
@@ -288,13 +292,20 @@ export default function TodayTaskCard({ userType: userTypeProp, onDone }) {
             <span aria-hidden="true">{'\u26A0\uFE0F'}</span> {task.safetyNote}
           </p>
         ) : null}
+        {/* Final-polish spec §4 — CTA must match the action.
+            Engine returns `ctaLabel` per rule + userType + locale.
+            Falls back to localizedText.ctaLabel, then the
+            universal "Check now \u2713" so older clients still
+            render a sensible button. */}
         <button
           type="button"
           onClick={handleDone}
           style={S.cta}
           data-testid="today-task-cta"
         >
-          {tSafe('todayTask.cta', 'Check now \u2713')}
+          {task.ctaLabel
+            || (task.localizedText && task.localizedText.ctaLabel)
+            || tSafe('todayTask.cta', 'Check now \u2713')}
         </button>
         {error ? (
           <p style={S.subtle}>

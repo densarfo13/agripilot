@@ -85,6 +85,31 @@ export function generateTodayTask(input) {
   const safetyNote      = tmpl.safetyNote ? tr('safetyNote') : null;
   const completionPrompt = tr('completionPrompt');
   const nextRecommended  = tr('nextRecommended');
+  // Final-polish spec §4 — CTA must match the action.
+  //
+  // Resolution order:
+  //   1. Template's own `ctaLabel` map (per-rule override)
+  //   2. Default per-rule + per-userType map (DEFAULT_CTA_BY_RULE)
+  //   3. Hard-coded universal default "Check now \u2713"
+  //
+  // Per-userType defaults reflect the spec's own examples:
+  //   farmer Log first cost  → "Log cost \u2713"
+  //   farmer Inspect crop    → "Inspect now \u2713"
+  //   farmer Scout for pests → "Scout now \u2713"
+  //   backyard Check soil    → "Check now \u2713"
+  //   backyard Scan plant    → "Scan now"
+  const ctaLabel = (() => {
+    if (tmpl.ctaLabel) {
+      const fromTemplate = tmpl.ctaLabel[lang] || tmpl.ctaLabel.en;
+      if (fromTemplate) return fromTemplate;
+    }
+    const defaultMap = DEFAULT_CTA_BY_RULE[ruleId];
+    if (defaultMap) {
+      const def = defaultMap[safe.userType] || defaultMap.farmer;
+      if (def) return (def[lang] || def.en) || 'Check now \u2713';
+    }
+    return 'Check now \u2713';
+  })();
 
   return {
     todayTaskTitle:   title,
@@ -92,11 +117,13 @@ export function generateTodayTask(input) {
     urgency:          tmpl.urgency || 'medium',
     estimatedTime:    tmpl.estimatedTime || '5 min',
     safetyNote,
+    ctaLabel,
     localizedText: {
       title,
       reason,
       safetyNote,
       completionPrompt,
+      ctaLabel,
     },
     nextRecommendedTask: nextRecommended,
     completionPrompt,
@@ -186,10 +213,72 @@ function _pickRule(ctx) {
   return 'fallback_check';
 }
 
+// Final-polish spec §4 — per-rule + per-userType CTA defaults.
+// Every active rule maps to wording that matches the action's
+// verb. Wording is short, imperative, ends with the daily-loop
+// completion check ("\u2713"). Falls back to English when the
+// locale is missing.
+const _CTA_CHECK_NOW = {
+  en: 'Check now \u2713', fr: 'V\u00e9rifier maintenant \u2713', sw: 'Angalia sasa \u2713',
+  ha: 'Duba yanzu \u2713', tw: 'Hwehw\u025b nn\u025b \u2713', hi: '\u0905\u092d\u0940 \u091c\u093e\u0902\u091a\u0947\u0902 \u2713',
+};
+const _CTA_INSPECT_NOW = {
+  en: 'Inspect now \u2713', fr: 'Inspecter \u2713', sw: 'Kagua sasa \u2713',
+  ha: 'Bincika yanzu \u2713', tw: 'Hwehw\u025b nn\u025b \u2713', hi: '\u0928\u093f\u0930\u0940\u0915\u094d\u0937\u0923 \u0915\u0930\u0947\u0902 \u2713',
+};
+const _CTA_SCOUT_NOW = {
+  en: 'Scout now \u2713', fr: 'Inspecter \u2713', sw: 'Tembea sasa \u2713',
+  ha: 'Yawo yanzu \u2713', tw: 'Tu mmer\u025b\u025b \u2713', hi: '\u091c\u093e\u0902\u091a\u0947\u0902 \u2713',
+};
+const _CTA_WATER_NOW = {
+  en: 'Water now \u2713', fr: 'Arroser \u2713', sw: 'Mwagilia sasa \u2713',
+  ha: 'Ba ruwa yanzu \u2713', tw: 'Gu nsuo nn\u025b \u2713', hi: '\u0905\u092d\u0940 \u092a\u093e\u0928\u0940 \u0926\u0947\u0902 \u2713',
+};
+const _CTA_DONE = {
+  en: 'Done \u2713', fr: 'Termin\u00e9 \u2713', sw: 'Imekamilika \u2713',
+  ha: 'Kammala \u2713', tw: 'Aw\u00ec \u2713', hi: '\u0939\u094b \u0917\u092f\u093e \u2713',
+};
+const _CTA_HARVEST = {
+  en: 'Start harvest \u2713', fr: 'R\u00e9colter \u2713', sw: 'Anza kuvuna \u2713',
+  ha: 'Fara girbi \u2713', tw: 'Hyɛ tw\u025bre\u025b ase \u2713', hi: '\u0915\u091f\u093e\u0908 \u0936\u0941\u0930\u0942 \u0915\u0930\u0947\u0902 \u2713',
+};
+const _CTA_PICK = {
+  en: 'Pick now \u2713', fr: 'Cueillir \u2713', sw: 'Vuna sasa \u2713',
+  ha: 'Tsamo yanzu \u2713', tw: 'Tw\u025b nn\u025b \u2713', hi: '\u0905\u092d\u0940 \u0924\u094b\u0921\u093c\u0947\u0902 \u2713',
+};
+
+const DEFAULT_CTA_BY_RULE = Object.freeze({
+  // Weather rules — same verb both userTypes
+  heavy_rain_warning:  { farmer: _CTA_DONE,        backyard: _CTA_DONE        },
+  heat_stress_warning: { farmer: _CTA_WATER_NOW,   backyard: _CTA_WATER_NOW   },
+  cold_stress_warning: { farmer: _CTA_DONE,        backyard: _CTA_DONE        },
+  dry_irrigation:      { farmer: _CTA_WATER_NOW,   backyard: _CTA_WATER_NOW   },
+
+  // Stage defaults — farmer leans on production verbs, backyard
+  // stays casual / "check now"
+  stage_planning:    { farmer: _CTA_DONE,        backyard: _CTA_DONE        },
+  stage_planting:    { farmer: _CTA_DONE,        backyard: _CTA_DONE        },
+  stage_germination: { farmer: _CTA_INSPECT_NOW, backyard: _CTA_CHECK_NOW   },
+  stage_vegetative:  { farmer: _CTA_SCOUT_NOW,   backyard: _CTA_CHECK_NOW   },
+  stage_flowering:   { farmer: _CTA_DONE,        backyard: _CTA_CHECK_NOW   },
+  stage_maturity:    { farmer: _CTA_INSPECT_NOW, backyard: _CTA_CHECK_NOW   },
+  stage_harvest:     { farmer: _CTA_HARVEST,     backyard: _CTA_PICK        },
+  stage_post_harvest:{ farmer: _CTA_DONE,        backyard: _CTA_DONE        },
+
+  // Walk-and-look fallback
+  fallback_check:    { farmer: _CTA_INSPECT_NOW, backyard: _CTA_CHECK_NOW   },
+
+  // profile_missing intentionally omitted — its template carries
+  // a tailored "Add details \u2713" already; the lookup falls back
+  // to the universal "Check now \u2713" which is fine if the
+  // template is removed in a future cut.
+});
+
 export const _internal = Object.freeze({
   HEAVY_RAIN_THRESHOLD_MM,
   HEAT_STRESS_THRESHOLD_C,
   COLD_STRESS_THRESHOLD_C,
+  DEFAULT_CTA_BY_RULE,
   _pickRule,
   _normalize,
 });

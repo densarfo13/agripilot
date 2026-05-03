@@ -36,6 +36,17 @@
  *   • Pure data — no I/O, no mutation.
  */
 
+// Final-polish spec §4 — CTA-by-action map. Every rule below
+// carries a `ctaLabel` field that matches the action's verb.
+// Wording rules:
+//   • Imperative voice ("Check now", "Log cost", "Scan now")
+//   • Trailing "✓" reinforces the daily-loop completion vibe
+//   • Both farmer + backyard variants get tailored wording when
+//     the verb differs (e.g. farmer = "Log cost ✓", backyard
+//     = "Done ✓")
+//   • All 6 launch languages — falls back to English when a
+//     locale is missing per the engine's `tr()` helper
+
 // Helper: build the universal "completion prompt" line in 6 langs.
 const COMPLETION_PROMPT_FARMER = {
   en: 'Great job. Next task will update soon.',
@@ -79,6 +90,10 @@ export const TASK_TEMPLATES = Object.freeze({
         tw: 'F\u025b m\u025bn\u025b a wud\u0254w no ho da no.',
         hi: '\u0938\u093f\u0916\u093e\u0908 \u0915\u0940 \u0924\u093e\u0930\u0940\u0916 \u0921\u093e\u0932\u0947\u0902\u0964',
       },
+      ctaLabel: {
+        en: 'Add details \u2713', fr: 'Ajouter \u2713', sw: 'Ongeza maelezo \u2713',
+        ha: 'Kara bayanai \u2713', tw: 'F\u025b nkyer\u025b\u025bmu \u2713', hi: '\u091c\u093e\u0928\u0915\u093e\u0930\u0940 \u091c\u094b\u0921\u093c\u0947\u0902 \u2713',
+      },
       urgency:       'high',
       estimatedTime: '2 min',
     },
@@ -108,6 +123,10 @@ export const TASK_TEMPLATES = Object.freeze({
         ha: 'Kara hoton shukarka don shawara mai inganci.',
         tw: 'F\u025b w\u0254 dua mfonin so na yatumi b\u025boa wo yiye.',
         hi: '\u092c\u0947\u0939\u0924\u0930 \u0938\u0941\u091d\u093e\u0935 \u0915\u0947 \u0932\u093f\u090f \u092a\u094c\u0927\u0947 \u0915\u0940 \u090f\u0915 \u0924\u0938\u094d\u0935\u0940\u0930 \u091c\u094b\u0921\u093c\u0947\u0902\u0964',
+      },
+      ctaLabel: {
+        en: 'Add details \u2713', fr: 'Ajouter \u2713', sw: 'Ongeza \u2713',
+        ha: 'Kara \u2713', tw: 'F\u025b nkyer\u025b\u025bmu \u2713', hi: '\u091c\u094b\u0921\u093c\u0947\u0902 \u2713',
       },
       urgency:       'high',
       estimatedTime: '2 min',

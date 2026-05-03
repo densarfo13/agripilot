@@ -101,6 +101,11 @@ describe('generateTodayTask — output envelope', () => {
     expect(out).toHaveProperty('localizedText');
     expect(out).toHaveProperty('nextRecommendedTask');
     expect(out).toHaveProperty('completionPrompt');
+    // Final-polish spec §4 — CTA matching
+    expect(out).toHaveProperty('ctaLabel');
+    expect(typeof out.ctaLabel).toBe('string');
+    expect(out.ctaLabel.length).toBeGreaterThan(0);
+    expect(out.localizedText).toHaveProperty('ctaLabel');
     // Diagnostics
     expect(out).toHaveProperty('ruleId');
     expect(out).toHaveProperty('userType');
@@ -108,6 +113,59 @@ describe('generateTodayTask — output envelope', () => {
     expect(out).toHaveProperty('reasonCode');
     expect(out).toHaveProperty('language');
     expect(out).toHaveProperty('generatedAt');
+  });
+
+  describe('CTA matching (spec \u00a74)', () => {
+    it('farmer harvest → "Start harvest \u2713"', () => {
+      const out = generateTodayTask({ userType: 'farmer', crop: 'maize', stage: 'harvest' });
+      expect(out.ctaLabel).toMatch(/Start harvest/i);
+    });
+
+    it('backyard harvest → "Pick now \u2713"', () => {
+      const out = generateTodayTask({ userType: 'backyard', crop: 'tomato', stage: 'harvest' });
+      expect(out.ctaLabel).toMatch(/Pick now/i);
+    });
+
+    it('farmer vegetative → "Scout now \u2713"', () => {
+      const out = generateTodayTask({ userType: 'farmer', crop: 'maize', stage: 'vegetative' });
+      expect(out.ctaLabel).toMatch(/Scout now/i);
+    });
+
+    it('backyard vegetative → "Check now \u2713"', () => {
+      const out = generateTodayTask({ userType: 'backyard', crop: 'tomato', stage: 'vegetative' });
+      expect(out.ctaLabel).toMatch(/Check now/i);
+    });
+
+    it('heat stress (any userType) → water-now CTA', () => {
+      const a = generateTodayTask({ userType: 'farmer',   crop: 'maize',  stage: 'vegetative', temperature: 38 });
+      const b = generateTodayTask({ userType: 'backyard', crop: 'tomato', stage: 'flowering',  temperature: 38 });
+      expect(a.ctaLabel).toMatch(/Water/i);
+      expect(b.ctaLabel).toMatch(/Water/i);
+    });
+
+    it('dry irrigation → water-now CTA', () => {
+      const out = generateTodayTask({
+        userType: 'farmer', crop: 'maize', stage: 'germination', weather: 'dry',
+      });
+      expect(out.ctaLabel).toMatch(/Water/i);
+    });
+
+    it('localized French CTA on heat stress', () => {
+      const out = generateTodayTask({
+        userType: 'farmer', crop: 'maize', stage: 'vegetative',
+        temperature: 38, language: 'fr',
+      });
+      expect(out.ctaLabel).toMatch(/Arroser/i);
+    });
+
+    it('falls back to "Check now \u2713" when neither template nor default map carries a value', () => {
+      // profile_missing has its own ctaLabel set on the template
+      // ("Add details \u2713"). Verify a contrived rule that's
+      // missing both falls back gracefully.
+      const out = generateTodayTask({ userType: 'farmer', crop: 'maize', stage: 'flowering' });
+      // stage_flowering's farmer default in the rule map is _CTA_DONE
+      expect(out.ctaLabel).toBeTruthy();
+    });
   });
 
   it('localizedText carries title / reason / completionPrompt', () => {

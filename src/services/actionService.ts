@@ -43,18 +43,24 @@ export type TodayActionEnvelope = {
     reason:           string | null;
     safetyNote:       string | null;
     completionPrompt: string;
+    // Final-polish spec §4 — per-rule + per-locale CTA. Engine
+    // populates this so the frontend never falls back to a
+    // generic "Check now \u2713" when a sharper verb fits.
+    ctaLabel?:        string;
   };
   nextRecommendedTask: string;
   completionPrompt:    string;
+  // Final-polish spec §4 — top-level mirror of localizedText.ctaLabel
+  // for callers that don't want to dig into the locale map.
+  ctaLabel?:           string;
   // Diagnostics (the engine returns these for auditability)
   ruleId?:    string;
   userType?:  'farmer' | 'backyard';
   fallback?:  boolean;
   language?:  string;
   generatedAt?: string;
-  // Convenience CTA label the spec asks for as a top-level
-  // field. We fill it from urgency + userType heuristics so
-  // the caller doesn't have to.
+  // Legacy convenience CTA the older client read; aliased to
+  // `ctaLabel` for backward compatibility.
   cta?: string;
 };
 
