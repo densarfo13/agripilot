@@ -16,7 +16,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { NAV_ICONS } from '../../lib/farmerIcons.js';
-import { useProfile } from '../../context/ProfileContext.jsx';
+// useProfileOrNull is the non-throwing variant — bottom nav
+// renders on login pages where ProfileProvider isn't mounted.
+// Wrapping `useProfile()` in try/catch would desync React's
+// hook counter (error #310). The OrNull variant uses
+// `useContext` directly and returns null when no provider.
+import { useProfileOrNull } from '../../context/ProfileContext.jsx';
 import {
   getRegionConfig, shouldUseBackyardExperience,
 } from '../../config/regionConfig.js';
@@ -117,9 +122,12 @@ export default function BottomTabNav() {
   // existing ProfileContext so we never need an extra fetch.
   // Falls back to the farm tab list whenever profile / region
   // is unknown — pilots running today are unaffected.
-  let profile = null;
-  try { profile = useProfile()?.profile || null; }
-  catch { /* outside ProfileContext (e.g. login page) */ }
+  // Direct hook call — no try/catch (which would desync React's
+  // hook counter). useProfileOrNull returns null when no
+  // provider is mounted (login pages), allowing BottomTabNav to
+  // render safely there.
+  const _profileCtx = useProfileOrNull();
+  const profile = (_profileCtx && _profileCtx.profile) || null;
   const country = profile?.country || profile?.countryCode || null;
   // Context-driven UI spec §2 — `activeContextType` from
   // useExperience is the canonical signal: 'farm' shows all

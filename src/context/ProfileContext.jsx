@@ -413,3 +413,23 @@ export function useProfile() {
   if (!context) throw new Error('useProfile must be used within ProfileProvider');
   return context;
 }
+
+/**
+ * useProfileOrNull — non-throwing variant for surfaces that
+ * render BOTH inside and outside the ProfileProvider tree
+ * (e.g. BottomTabNav on the login page, VoiceAssistant during
+ * onboarding).
+ *
+ * Returns the context object when available, `null` when the
+ * provider isn't mounted. NEVER throws — and crucially does NOT
+ * wrap the hook call in try/catch (which would desync React's
+ * internal hook counter and surface as the minified error #310
+ * "Rendered more hooks than during the previous render").
+ *
+ * Usage:
+ *   const profileCtx = useProfileOrNull();
+ *   const profile = profileCtx?.profile || null;
+ */
+export function useProfileOrNull() {
+  return useContext(ProfileContext);
+}

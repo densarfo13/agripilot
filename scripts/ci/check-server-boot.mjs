@@ -53,9 +53,9 @@ const TEST_ENV = {
   ...process.env,
   NODE_ENV:        'test',
   DATABASE_URL:    'postgresql://server-boot-guard@localhost:5432/server-boot-guard',
-  AUTH_SECRET:     'server-boot-guard-placeholder-32-chars-min',
-  JWT_SECRET:      'server-boot-guard-placeholder-32-chars-min',
-  ACCESS_TOKEN_SECRET: 'server-boot-guard-placeholder-access-token',
+  AUTH_SECRET:     'server-boot-guard-placeholder-32-chars-min', // secrets-scanner:ignore
+  JWT_SECRET:      'server-boot-guard-placeholder-32-chars-min', // secrets-scanner:ignore
+  ACCESS_TOKEN_SECRET: 'server-boot-guard-placeholder-access-token', // secrets-scanner:ignore
   REDIS_URL:       '',
 };
 

@@ -41,7 +41,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { tStrict } from '../../i18n/strictT.js';
 import { useTranslation } from '../../i18n/index.js';
-import { useAuth } from '../../context/AuthContext.jsx';
+// Use the non-throwing context variant. ExperienceFallback can
+// render outside the AuthProvider during boot. Wrapping the
+// hook in try/catch (the previous _safeUseAuth pattern) would
+// desync React's hook counter and surface as the minified
+// error #310 on the next render.
+import { useAuthOrNull } from '../../context/AuthContext.jsx';
 import useExperience from '../../hooks/useExperience.js';
 import {
   repairFarrowaySession,
@@ -111,26 +116,23 @@ const S = {
   },
 };
 
-function _safeUseAuth() {
-  try { return useAuth() || {}; }
-  catch { return { user: null, authLoading: false }; }
-}
-
-function _safeUseExperience() {
-  try { return useExperience(); }
-  catch {
-    return {
-      experience: null, activeEntity: null,
-      hasGarden: false, hasFarm: false, hasBoth: false,
-      EXPERIENCE: { GARDEN: 'garden', FARM: 'farm' },
-    };
-  }
-}
+// `_safeUseAuth` and `_safeUseExperience` were try/catch
+// wrappers around hooks. They surfaced the minified React
+// error #310 ("Rendered more hooks than during the previous
+// render") because a try/catch around a hook desyncs React's
+// hook counter when the wrapped call throws. Direct hook calls
+// against non-throwing variants (`useAuthOrNull`,
+// `useExperience`) replace them — same number of hooks every
+// render, regardless of provider presence.
 
 export default function ExperienceFallback({ children }) {
   useTranslation();
-  const { user, authLoading } = _safeUseAuth();
-  const xp = _safeUseExperience();
+  const _authCtx = useAuthOrNull();        // null when AuthProvider missing
+  const user        = (_authCtx && _authCtx.user)        || null;
+  const authLoading = (_authCtx && _authCtx.authLoading) || false;
+  // useExperience never throws (its store calls swallow errors)
+  // so it's safe to call directly.
+  const xp = useExperience();
 
   // Final fix spec §1–§5: auto-repair + auto-redirect instead of
   // rendering the recovery card on first detection of missing

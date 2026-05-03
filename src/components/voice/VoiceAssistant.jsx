@@ -47,7 +47,11 @@ import {
   getDailyPlanVoiceSummary as getPlanV2VoiceSummary,
 } from '../../core/dailyPlanEngine.js';
 import { buildGrowingContext } from '../../core/growingContext.js';
-import { useProfile } from '../../context/ProfileContext.jsx';
+// useProfileOrNull is the non-throwing variant — voice can
+// render outside ProfileProvider during onboarding. Wrapping
+// useProfile() in try/catch would desync React's hook counter
+// (error #310 on the next render).
+import { useProfileOrNull } from '../../context/ProfileContext.jsx';
 import {
   getRegionConfig, shouldUseBackyardExperience,
 } from '../../config/regionConfig.js';
@@ -66,10 +70,11 @@ export default function VoiceAssistant({ open, onClose }) {
   // Profile context — used by the today_tasks intent so the
   // voice answer reflects the farmer's actual daily plan when
   // FEATURE_DAILY_INTELLIGENCE is on.
-  let profile = null;
-  try { profile = useProfile()?.profile || null; }
-  catch { /* outside ProfileContext — voice still works with
-              the static intent answer. */ }
+  // Direct hook call — no try/catch. useProfileOrNull returns
+  // null when no provider, so voice still works during
+  // onboarding with the static intent answer.
+  const _profileCtx = useProfileOrNull();
+  const profile = (_profileCtx && _profileCtx.profile) || null;
 
   const [state, setState] = React.useState(STATE.IDLE);
   const [transcript, setTranscript] = React.useState('');

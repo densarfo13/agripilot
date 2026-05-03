@@ -66,29 +66,21 @@ function formatSize(size, unit) {
   return `${size} ${u}`;
 }
 
-/**
- * useExperienceSafe — wrap useExperience with a try/catch so
- * a render outside the hook scope (or before window is ready)
- * never crashes the page. Used by MyFarmPage to read activeEntity
- * for the Farms/Gardens toggle. Returns a stable empty snapshot
- * on failure so callers can chain `.activeEntity` without a
- * null-check.
- */
-function useExperienceSafe() {
-  try {
-    return useExperience();
-  } catch {
-    return {
-      experience:    null,
-      activeEntity:  null,
-      gardens:       [],
-      farms:         [],
-      hasGarden:     false,
-      hasFarm:       false,
-      hasBoth:       false,
-    };
-  }
-}
+// `useExperienceSafe` was a try/catch wrapper around `useExperience`.
+// It surfaced the minified React error #310 ("Rendered more hooks
+// than during the previous render") because a try/catch around a
+// hook desyncs React's internal hook counter between renders the
+// moment the wrapped hook throws — on the next render the counter
+// disagrees with the previous render and React bails out the whole
+// subtree.
+//
+// The wrapper was paranoia: `useExperience` is documented to never
+// throw (see hooks/useExperience.js header — "all store calls
+// already swallow errors"). `_readSnapshot` inside the hook returns
+// a stable empty snapshot on every failure path.
+//
+// Fix: call `useExperience()` directly. This comment stays so
+// future code review doesn't re-introduce the wrapper.
 
 /**
  * localizeCountry — turn a country code or name into a human-
@@ -126,7 +118,7 @@ export default function MyFarmPage() {
   // `activeEntity`. We prefer that row over the profile when
   // present so the detail card immediately swaps to the picked
   // experience without a route change.
-  const _exp = useExperienceSafe();
+  const _exp = useExperience();
 
   // Spec §1 redesign: removed the previous useEffect that ran
   // `getTodayTasks` + `processNotifications`. Those side effects

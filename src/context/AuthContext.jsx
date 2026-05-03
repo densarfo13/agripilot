@@ -500,3 +500,16 @@ export function useAuth() {
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }
+
+/**
+ * useAuthOrNull — non-throwing variant for surfaces that may
+ * render outside the AuthProvider tree (e.g. ExperienceFallback
+ * during pre-auth render). Same fix as `useProfileOrNull`:
+ * NEVER wrap a hook in try/catch — that desyncs React's internal
+ * hook counter and surfaces as the minified error #310 on the
+ * NEXT render. Use `useContext` directly so the call is always
+ * the same number of hooks regardless of provider presence.
+ */
+export function useAuthOrNull() {
+  return useContext(AuthContext);
+}
